@@ -100,11 +100,23 @@ pub(crate) async fn scan_volume_via_trait(
     // sentinel), mapping the scan root to ROOT_ID — identical to the jwalk
     // scanner's volume-root setup, so all downstream id/parent logic is shared.
     let db_path = writer.db_path();
-    let mut scan_ctx = {
+    // The scan reads `current_epoch` once at start (seeding meta to "1" if
+    // absent) and stamps every successfully-listed dir with it, so a first scan
+    // stamps epoch 1. The seed write commits on this same connection before we
+    // read it back. (Bumping the epoch at scan start is a later milestone's job.)
+    let (mut scan_ctx, epoch) = {
         let conn = IndexStore::open_write_connection(&db_path).map_err(|e| VolumeScanError::Context(e.to_string()))?;
-        ScanContext::new(&conn, &root, true, Arc::clone(writer.next_id()))
-            .map_err(|e| VolumeScanError::Context(e.to_string()))?
+        let epoch = IndexStore::seed_current_epoch(&conn).map_err(|e| VolumeScanError::Context(e.to_string()))?;
+        let ctx = ScanContext::new(&conn, &root, true, Arc::clone(writer.next_id()))
+            .map_err(|e| VolumeScanError::Context(e.to_string()))?;
+        (ctx, epoch)
     };
+
+    // Ids of every directory whose listing SUCCEEDED (including empty results).
+    // Emitted as `MarkDirsListed` once after the final `flush_batch` and before
+    // `ComputeAllAggregates`, so each row is committed-in-order when stamped and
+    // the ordering invariant (marks precede the final aggregate) holds for free.
+    let mut listed_ids: Vec<i64> = Vec::new();
 
     let mut batch: Vec<EntryRow> = Vec::with_capacity(BATCH_SIZE);
     let mut total_entries: u64 = 0;
@@ -156,6 +168,13 @@ pub(crate) async fn scan_volume_via_trait(
             }
         };
 
+        // This directory's listing succeeded — record its id so it gets stamped
+        // `listed_epoch`, even when empty (empty-but-listed → `0 bytes`, distinct
+        // from never-listed → `—`). Done here, outside the per-entry loop below,
+        // so an empty result still marks. A listing that ERRORED hit `continue`
+        // above and never reaches this point, so it stays `listed_epoch=0`.
+        listed_ids.push(parent_id);
+
         for entry in entries {
             let is_dir = entry.is_directory;
             let is_symlink = entry.is_symlink;
@@ -205,6 +224,11 @@ pub(crate) async fn scan_volume_via_trait(
     }
 
     flush_batch(&mut batch, &writer)?;
+
+    // Stamp every successfully-listed dir AFTER the final flush (every entry row
+    // is now committed-in-order) and BEFORE `ComputeAllAggregates` (the ordering
+    // invariant). The single in-order writer guarantees the marks land first.
+    send_marks(&listed_ids, epoch, &writer)?;
 
     // Clean finish: aggregate exactly like the local scanner, then trim the WAL.
     writer
@@ -261,6 +285,23 @@ fn drain_autorelease_pool() {
     objc2::rc::autoreleasepool(|_| {});
 }
 
+/// Number of dir ids per `MarkDirsListed` message. Bounds each message's size;
+/// the writer's `mark_dirs_listed` chunks the SQL `UPDATE` further if needed.
+const MARK_CHUNK: usize = 10_000;
+
+/// Emit `MarkDirsListed` for the accumulated dir ids, chunked. A no-op when empty.
+fn send_marks(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), VolumeScanError> {
+    for chunk in listed_ids.chunks(MARK_CHUNK) {
+        writer
+            .send(WriteMessage::MarkDirsListed {
+                ids: chunk.to_vec(),
+                epoch,
+            })
+            .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+    }
+    Ok(())
+}
+
 fn flush_batch(batch: &mut Vec<EntryRow>, writer: &IndexWriter) -> Result<(), VolumeScanError> {
     if batch.is_empty() {
         return Ok(());
@@ -285,10 +326,13 @@ fn summary(entries: u64, dirs: u64, physical_bytes: u64, start: Instant, cancell
 mod tests {
     use std::sync::atomic::AtomicU64;
 
+    use std::future::Future;
+    use std::pin::Pin;
+
     use super::*;
     use crate::file_system::listing::FileEntry;
-    use crate::file_system::volume::InMemoryVolume;
-    use crate::indexing::store::ROOT_ID;
+    use crate::file_system::volume::{InMemoryVolume, ListingProgress, VolumeError};
+    use crate::indexing::store::{ROOT_ID, resolve_path};
 
     fn progress() -> Arc<ScanProgress> {
         // `ScanProgress::new` is private; build the public-fielded struct directly.
@@ -357,6 +401,120 @@ mod tests {
         assert_eq!(sub_children.len(), 1);
         assert_eq!(sub_children[0].name, "leaf.txt");
         assert_eq!(sub_children[0].logical_size, Some(11));
+    }
+
+    /// A test `Volume` that delegates to an inner `InMemoryVolume` but returns a
+    /// `DeviceDisconnected` error when listing one specific path. Lets the
+    /// scanner exercise the "a listing that errors is NOT marked" branch.
+    struct FailingListVolume {
+        inner: InMemoryVolume,
+        fail_path: PathBuf,
+    }
+
+    type ListFut<'a, T> = Pin<Box<dyn Future<Output = Result<T, VolumeError>> + Send + 'a>>;
+
+    impl Volume for FailingListVolume {
+        fn name(&self) -> &str {
+            self.inner.name()
+        }
+        fn root(&self) -> &Path {
+            self.inner.root()
+        }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+        fn list_directory<'a>(
+            &'a self,
+            path: &'a Path,
+            on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        ) -> ListFut<'a, Vec<FileEntry>> {
+            if path == self.fail_path {
+                return Box::pin(async { Err(VolumeError::DeviceDisconnected("test: subdir listing failed".into())) });
+            }
+            self.inner.list_directory(path, on_progress)
+        }
+        fn get_metadata<'a>(&'a self, path: &'a Path) -> ListFut<'a, FileEntry> {
+            self.inner.get_metadata(path)
+        }
+        fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+            self.inner.exists(path)
+        }
+        fn is_directory<'a>(&'a self, path: &'a Path) -> ListFut<'a, bool> {
+            self.inner.is_directory(path)
+        }
+    }
+
+    /// A subdir whose listing errors is NOT stamped (`listed_epoch` stays 0),
+    /// while its successfully-listed siblings (including an empty-but-listed dir)
+    /// and the root get the current epoch. The unit-level disconnect anchor.
+    #[tokio::test]
+    async fn errored_listing_is_not_marked() {
+        use crate::indexing::writer::IndexWriter;
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("vol-scan-mark.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        // Tree:
+        //   /good/        (dir, lists fine, has one file)
+        //   /good/a.txt
+        //   /empty/       (dir, lists fine but empty → empty-but-listed)
+        //   /bad/         (dir, listing ERRORS → must stay listed_epoch=0)
+        //   /bad/hidden   (file under bad; never discovered because bad won't list)
+        let inner = InMemoryVolume::with_entries(
+            "Test",
+            vec![
+                entry("good", "/good", true, None),
+                entry("a.txt", "/good/a.txt", false, Some(7)),
+                entry("empty", "/empty", true, None),
+                entry("bad", "/bad", true, None),
+                entry("hidden", "/bad/hidden", false, Some(3)),
+            ],
+        );
+        let vol: Arc<dyn Volume> = Arc::new(FailingListVolume {
+            inner,
+            fail_path: PathBuf::from("/bad"),
+        });
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let summary = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
+            .await
+            .expect("scan should complete (a single bad subdir is skipped)");
+        assert!(!summary.was_cancelled);
+
+        writer.flush().await.expect("flush");
+        writer.shutdown();
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        let epoch = IndexStore::read_current_epoch(&conn).expect("epoch");
+        assert_eq!(epoch, 1, "first scan stamps epoch 1");
+
+        let id_of = |p: &str| -> i64 { resolve_path(&conn, p).expect("resolve").expect("present") };
+
+        // Root and the dirs that listed successfully (incl. empty) are stamped.
+        assert_eq!(
+            IndexStore::get_listed_epoch_by_id(&conn, ROOT_ID).expect("root epoch"),
+            Some(1),
+            "root listed",
+        );
+        assert_eq!(
+            IndexStore::get_listed_epoch_by_id(&conn, id_of("/good")).expect("good epoch"),
+            Some(1),
+            "good listed",
+        );
+        assert_eq!(
+            IndexStore::get_listed_epoch_by_id(&conn, id_of("/empty")).expect("empty epoch"),
+            Some(1),
+            "empty-but-listed dir is stamped",
+        );
+
+        // The errored subdir's row exists (parent listed it) but stays unlisted.
+        assert_eq!(
+            IndexStore::get_listed_epoch_by_id(&conn, id_of("/bad")).expect("bad epoch"),
+            Some(0),
+            "a dir whose own listing errored stays listed_epoch=0 (honest unknown)",
+        );
     }
 
     /// A pre-set cancel flag stops the walk immediately and reports

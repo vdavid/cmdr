@@ -17,7 +17,15 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-const SCHEMA_VERSION: &str = "12";
+const SCHEMA_VERSION: &str = "13";
+
+/// Meta key for the per-volume epoch counter (TEXT, like all meta values).
+///
+/// Bumped on every continuity break; a scan/reconcile *stamps* listed dirs with
+/// the current epoch but does not bump it. Absent ⇒ treat as epoch 1 (a volume
+/// with no recorded epoch behaves as "all current", not "all stale"). See the
+/// "Honest sizes" model in `indexing/DETAILS.md`.
+pub const CURRENT_EPOCH_KEY: &str = "current_epoch";
 
 /// Root entry sentinel ID. All top-level entries have `parent_id = ROOT_ID`.
 pub const ROOT_ID: i64 = 1;
@@ -59,6 +67,14 @@ pub struct DirStatsById {
     /// `true` if the directory's subtree (including direct children) contains
     /// any symlink entries. Aggregated bottom-up alongside size totals.
     pub recursive_has_symlinks: bool,
+    /// Coverage + freshness for this directory's whole subtree, as one integer:
+    /// `min` over `{this dir's listed_epoch}` ∪ `{each child dir's
+    /// min_subtree_epoch}`. `0` means some directory in the subtree was never
+    /// listed (size is a lower bound); `> 0` means the subtree is fully covered
+    /// and the value is the oldest listing epoch in it. Rolled up bottom-up by
+    /// the aggregator (a separate agent's milestone); stays at its `0` default
+    /// until then. See the "Honest sizes" model in `indexing/DETAILS.md`.
+    pub min_subtree_epoch: u64,
 }
 
 /// A row from the integer-keyed `entries` table. Used as the primary entry
@@ -287,7 +303,8 @@ const CREATE_TABLES_SQL: &str = "
         logical_size  INTEGER,
         physical_size INTEGER,
         modified_at   INTEGER,
-        inode         INTEGER
+        inode         INTEGER,
+        listed_epoch  INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name_folded ON entries (parent_id, name_folded);
@@ -299,7 +316,8 @@ const CREATE_TABLES_SQL: &str = "
         recursive_physical_size  INTEGER NOT NULL DEFAULT 0,
         recursive_file_count     INTEGER NOT NULL DEFAULT 0,
         recursive_dir_count      INTEGER NOT NULL DEFAULT 0,
-        recursive_has_symlinks   INTEGER NOT NULL DEFAULT 0
+        recursive_has_symlinks   INTEGER NOT NULL DEFAULT 0,
+        min_subtree_epoch        INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS meta (
@@ -691,7 +709,7 @@ impl IndexStore {
     /// Look up dir_stats for a single entry by ID.
     pub fn get_dir_stats_by_id(conn: &Connection, entry_id: i64) -> Result<Option<DirStatsById>, IndexStoreError> {
         let mut stmt = conn.prepare_cached(
-            "SELECT entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks
+            "SELECT entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks, min_subtree_epoch
              FROM dir_stats WHERE entry_id = ?1",
         )?;
         let result = stmt
@@ -703,6 +721,7 @@ impl IndexStore {
                     recursive_file_count: row.get(3)?,
                     recursive_dir_count: row.get(4)?,
                     recursive_has_symlinks: row.get::<_, i32>(5)? != 0,
+                    min_subtree_epoch: row.get(6)?,
                 })
             })
             .optional()?;
@@ -733,7 +752,7 @@ impl IndexStore {
             .collect::<Vec<_>>()
             .join(", ");
         let sql = format!(
-            "SELECT entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks
+            "SELECT entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks, min_subtree_epoch
              FROM dir_stats WHERE entry_id IN ({placeholders})"
         );
         let mut stmt = conn.prepare(&sql)?;
@@ -748,6 +767,7 @@ impl IndexStore {
                 recursive_file_count: row.get(3)?,
                 recursive_dir_count: row.get(4)?,
                 recursive_has_symlinks: row.get::<_, i32>(5)? != 0,
+                min_subtree_epoch: row.get(6)?,
             })
         })?;
 
@@ -1010,8 +1030,8 @@ impl IndexStore {
         with_savepoint(conn, "upsert_stats", |conn| {
             let mut stmt = conn.prepare_cached(
                 "INSERT OR REPLACE INTO dir_stats
-                     (entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                     (entry_id, recursive_logical_size, recursive_physical_size, recursive_file_count, recursive_dir_count, recursive_has_symlinks, min_subtree_epoch)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             )?;
             for s in stats {
                 stmt.execute(params![
@@ -1021,6 +1041,7 @@ impl IndexStore {
                     s.recursive_file_count,
                     s.recursive_dir_count,
                     s.recursive_has_symlinks as i32,
+                    s.min_subtree_epoch,
                 ])?;
             }
             Ok(())
@@ -1042,10 +1063,82 @@ impl IndexStore {
         Ok(())
     }
 
+    /// Read the volume's `current_epoch` from `meta`.
+    ///
+    /// Absent (older / first-run DB) or unparseable ⇒ `1`: a volume with no
+    /// recorded epoch behaves as "all current" rather than "all stale". See
+    /// `CURRENT_EPOCH_KEY` and the "Honest sizes" model in `indexing/DETAILS.md`.
+    pub fn read_current_epoch(conn: &Connection) -> Result<u64, IndexStoreError> {
+        let raw = Self::read_meta_value(conn, CURRENT_EPOCH_KEY)?;
+        Ok(raw.and_then(|v| v.parse::<u64>().ok()).unwrap_or(1))
+    }
+
+    /// Ensure `current_epoch` exists in `meta`, seeding it to `"1"` if absent.
+    /// Returns the epoch after seeding. Idempotent: leaves an existing value
+    /// untouched. Used by a scan at start so the first scan stamps epoch 1.
+    pub fn seed_current_epoch(conn: &Connection) -> Result<u64, IndexStoreError> {
+        if Self::read_meta_value(conn, CURRENT_EPOCH_KEY)?.is_none() {
+            Self::update_meta(conn, CURRENT_EPOCH_KEY, "1")?;
+            return Ok(1);
+        }
+        Self::read_current_epoch(conn)
+    }
+
+    /// Bump `current_epoch` by one and persist it, returning the new value.
+    /// A continuity break (reconnect, watcher death, overflow, rescan) calls
+    /// this; a scan/reconcile only *stamps* with the value, never bumps. Seeds
+    /// to `1` first if absent, so the first bump yields `2`.
+    pub fn bump_current_epoch(conn: &Connection) -> Result<u64, IndexStoreError> {
+        let next = Self::read_current_epoch(conn)?.saturating_add(1);
+        Self::update_meta(conn, CURRENT_EPOCH_KEY, &next.to_string())?;
+        Ok(next)
+    }
+
+    /// Stamp a batch of directories' `listed_epoch` by primary key.
+    ///
+    /// PK-keyed `UPDATE` (no `platform_case` cost), chunked so a huge id list
+    /// doesn't exceed SQLite's bound-parameter limit. Records "these dirs'
+    /// direct contents were successfully listed at epoch E". A dir whose listing
+    /// errored is never passed here, so it stays `listed_epoch = 0` (honest
+    /// "unknown", distinct from a genuinely-empty `0 bytes`).
+    pub fn mark_dirs_listed(conn: &Connection, ids: &[i64], epoch: u64) -> Result<(), IndexStoreError> {
+        if ids.is_empty() {
+            return Ok(());
+        }
+        // Stay well under SQLite's default 999-parameter ceiling (+1 for epoch).
+        const CHUNK: usize = 900;
+        with_savepoint(conn, "mark_dirs_listed", |conn| {
+            for chunk in ids.chunks(CHUNK) {
+                let placeholders: String = (0..chunk.len())
+                    .map(|i| format!("?{}", i + 2))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let sql = format!("UPDATE entries SET listed_epoch = ?1 WHERE id IN ({placeholders})");
+                let mut stmt = conn.prepare_cached(&sql)?;
+                let mut values: Vec<&dyn rusqlite::types::ToSql> = Vec::with_capacity(chunk.len() + 1);
+                let epoch_i = epoch as i64;
+                values.push(&epoch_i as &dyn rusqlite::types::ToSql);
+                for id in chunk {
+                    values.push(id as &dyn rusqlite::types::ToSql);
+                }
+                stmt.execute(&*values)?;
+            }
+            Ok(())
+        })
+    }
+
     /// Get a single meta value by key.
     #[cfg(test)]
     pub fn get_meta(conn: &Connection, key: &str) -> Result<Option<String>, IndexStoreError> {
         Self::read_meta_value(conn, key)
+    }
+
+    /// Read an entry's `listed_epoch` by id. `None` if the entry doesn't exist.
+    #[cfg(test)]
+    pub fn get_listed_epoch_by_id(conn: &Connection, id: i64) -> Result<Option<u64>, IndexStoreError> {
+        let mut stmt = conn.prepare_cached("SELECT listed_epoch FROM entries WHERE id = ?1")?;
+        let result = stmt.query_row(params![id], |row| row.get::<_, u64>(0)).optional()?;
+        Ok(result)
     }
 
     /// Get all directory paths from the entries table.
@@ -1296,6 +1389,144 @@ mod tests {
         assert_eq!(status.schema_version.as_deref(), Some(SCHEMA_VERSION));
     }
 
+    /// `min_subtree_epoch` survives a `dir_stats` write + read round-trip
+    /// (single and batch paths), and defaults to 0 for an un-set row.
+    #[test]
+    fn dir_stats_min_subtree_epoch_round_trips() {
+        let (store, _dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+        let a = insert_entry(&conn, ROOT_ID, "a", true, None);
+        let b = insert_entry(&conn, ROOT_ID, "b", true, None);
+
+        IndexStore::upsert_dir_stats_by_id(
+            &conn,
+            &[
+                DirStatsById {
+                    entry_id: a,
+                    recursive_logical_size: 100,
+                    min_subtree_epoch: 7,
+                    ..Default::default()
+                },
+                DirStatsById {
+                    entry_id: b,
+                    recursive_logical_size: 0,
+                    min_subtree_epoch: 0,
+                    ..Default::default()
+                },
+            ],
+        )
+        .unwrap();
+
+        let single = IndexStore::get_dir_stats_by_id(&conn, a).unwrap().unwrap();
+        assert_eq!(single.min_subtree_epoch, 7);
+
+        let batch = IndexStore::get_dir_stats_batch_by_ids(&conn, &[a, b]).unwrap();
+        assert_eq!(batch[0].as_ref().unwrap().min_subtree_epoch, 7);
+        assert_eq!(batch[1].as_ref().unwrap().min_subtree_epoch, 0);
+    }
+
+    /// A fresh entry defaults to `listed_epoch = 0`; `mark_dirs_listed` stamps the
+    /// given ids and leaves unlisted ones at 0.
+    #[test]
+    fn mark_dirs_listed_stamps_only_given_ids() {
+        let (store, _dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+        let a = insert_entry(&conn, ROOT_ID, "a", true, None);
+        let b = insert_entry(&conn, ROOT_ID, "b", true, None);
+
+        assert_eq!(
+            IndexStore::get_listed_epoch_by_id(&conn, a).unwrap(),
+            Some(0),
+            "default is 0"
+        );
+
+        IndexStore::mark_dirs_listed(&conn, &[a], 3).unwrap();
+        assert_eq!(
+            IndexStore::get_listed_epoch_by_id(&conn, a).unwrap(),
+            Some(3),
+            "a stamped"
+        );
+        assert_eq!(
+            IndexStore::get_listed_epoch_by_id(&conn, b).unwrap(),
+            Some(0),
+            "b untouched"
+        );
+
+        // Empty id list is a no-op.
+        IndexStore::mark_dirs_listed(&conn, &[], 9).unwrap();
+        assert_eq!(IndexStore::get_listed_epoch_by_id(&conn, a).unwrap(), Some(3));
+    }
+
+    /// `current_epoch` helpers: absent reads as 1, seed makes it 1, bump increments.
+    #[test]
+    fn current_epoch_helpers() {
+        let (store, _dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+
+        // Absent ⇒ treated as 1 (all current, not all stale).
+        assert_eq!(IndexStore::get_meta(&conn, CURRENT_EPOCH_KEY).unwrap(), None);
+        assert_eq!(IndexStore::read_current_epoch(&conn).unwrap(), 1);
+
+        // Seeding writes "1" and is idempotent.
+        assert_eq!(IndexStore::seed_current_epoch(&conn).unwrap(), 1);
+        assert_eq!(
+            IndexStore::get_meta(&conn, CURRENT_EPOCH_KEY).unwrap().as_deref(),
+            Some("1")
+        );
+        assert_eq!(
+            IndexStore::seed_current_epoch(&conn).unwrap(),
+            1,
+            "seed leaves existing value"
+        );
+
+        // Bump increments and persists.
+        assert_eq!(IndexStore::bump_current_epoch(&conn).unwrap(), 2);
+        assert_eq!(IndexStore::read_current_epoch(&conn).unwrap(), 2);
+    }
+
+    /// A schema-version mismatch drops + rebuilds; the rebuilt DB still has the
+    /// new v13 columns (a write/read round-trip through them succeeds).
+    #[test]
+    fn schema_bump_rebuild_has_new_columns() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("bump.db");
+
+        // Open, then stamp a stale version to force a drop+rebuild on reopen.
+        {
+            let store = IndexStore::open(&db_path).unwrap();
+            let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+            IndexStore::update_meta(&conn, "schema_version", "1").unwrap();
+        }
+
+        let store = IndexStore::open(&db_path).unwrap();
+        assert_eq!(
+            store.get_index_status().unwrap().schema_version.as_deref(),
+            Some(SCHEMA_VERSION)
+        );
+
+        // The new columns exist and round-trip on the rebuilt schema.
+        let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+        let a = insert_entry(&conn, ROOT_ID, "a", true, None);
+        IndexStore::mark_dirs_listed(&conn, &[a], 5).unwrap();
+        assert_eq!(IndexStore::get_listed_epoch_by_id(&conn, a).unwrap(), Some(5));
+        IndexStore::upsert_dir_stats_by_id(
+            &conn,
+            &[DirStatsById {
+                entry_id: a,
+                min_subtree_epoch: 5,
+                ..Default::default()
+            }],
+        )
+        .unwrap();
+        assert_eq!(
+            IndexStore::get_dir_stats_by_id(&conn, a)
+                .unwrap()
+                .unwrap()
+                .min_subtree_epoch,
+            5
+        );
+    }
+
     /// `apply_pragmas` must set a non-zero `busy_timeout` on both read and
     /// write connections. Without it, concurrent connections fail with
     /// `SQLITE_BUSY` on the first lock contention instead of waiting.
@@ -1397,6 +1628,7 @@ mod tests {
                 recursive_file_count: 42,
                 recursive_dir_count: 5,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             }],
         )
         .unwrap();
@@ -1426,6 +1658,7 @@ mod tests {
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 },
                 DirStatsById {
                     entry_id: b_id,
@@ -1434,6 +1667,7 @@ mod tests {
                     recursive_file_count: 2,
                     recursive_dir_count: 1,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 },
             ],
         )
@@ -1881,6 +2115,7 @@ mod tests {
                     recursive_file_count: 1,
                     recursive_dir_count: 1,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 },
                 DirStatsById {
                     entry_id: b,
@@ -1889,6 +2124,7 @@ mod tests {
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 },
             ],
         )
@@ -1940,6 +2176,7 @@ mod tests {
                 recursive_file_count: 10,
                 recursive_dir_count: 3,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             }],
         )
         .unwrap();
@@ -1969,6 +2206,7 @@ mod tests {
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 },
                 DirStatsById {
                     entry_id: d2,
@@ -1977,6 +2215,7 @@ mod tests {
                     recursive_file_count: 2,
                     recursive_dir_count: 1,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 },
             ],
         )

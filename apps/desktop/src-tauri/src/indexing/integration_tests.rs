@@ -370,6 +370,7 @@ fn end_to_end_scan_enrich_watcher_update() {
         recursive_file_count: 2,
         recursive_dir_count: 0,
         recursive_has_symlinks: false,
+        min_subtree_epoch: 0,
     };
     IndexStore::upsert_dir_stats_by_id(&conn, &[updated_user]).expect("update user stats");
 
@@ -380,6 +381,7 @@ fn end_to_end_scan_enrich_watcher_update() {
         recursive_file_count: 2,
         recursive_dir_count: 1,
         recursive_has_symlinks: false,
+        min_subtree_epoch: 0,
     };
     IndexStore::upsert_dir_stats_by_id(&conn, &[updated_home]).expect("update home stats");
 

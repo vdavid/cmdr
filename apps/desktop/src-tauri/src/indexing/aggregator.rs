@@ -249,6 +249,10 @@ fn compute_bottom_up(
                 recursive_file_count,
                 recursive_dir_count,
                 recursive_has_symlinks,
+                // The bottom-up `min_subtree_epoch` rollup is a later milestone
+                // (the aggregator computes it from per-dir `listed_epoch`); until
+                // then it stays at its honest `0` default.
+                min_subtree_epoch: 0,
             },
         );
 
@@ -694,7 +698,7 @@ fn bulk_get_child_dir_ids(conn: &Connection) -> Result<HashMap<i64, Vec<i64>>, I
 fn bulk_get_all_dir_stats(conn: &Connection) -> Result<HashMap<i64, DirStatsById>, IndexStoreError> {
     let mut stmt = conn.prepare(
         "SELECT entry_id, recursive_logical_size, recursive_physical_size,
-                recursive_file_count, recursive_dir_count, recursive_has_symlinks
+                recursive_file_count, recursive_dir_count, recursive_has_symlinks, min_subtree_epoch
          FROM dir_stats",
     )?;
     let rows = stmt.query_map([], |row| {
@@ -705,6 +709,7 @@ fn bulk_get_all_dir_stats(conn: &Connection) -> Result<HashMap<i64, DirStatsById
             recursive_file_count: row.get(3)?,
             recursive_dir_count: row.get(4)?,
             recursive_has_symlinks: row.get::<_, i32>(5)? != 0,
+            min_subtree_epoch: row.get(6)?,
         })
     })?;
     let mut map = HashMap::new();
@@ -1022,6 +1027,7 @@ mod tests {
                 recursive_file_count: 1,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             }],
         )
         .unwrap();

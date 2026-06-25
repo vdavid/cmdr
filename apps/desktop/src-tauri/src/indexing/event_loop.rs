@@ -1123,6 +1123,7 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
                                     recursive_file_count: 0,
                                     recursive_dir_count: 0,
                                     recursive_has_symlinks: false,
+                                    min_subtree_epoch: 0,
                                 });
                             deltas.push((parent_id, stats));
                         }
@@ -2102,6 +2103,7 @@ mod tests {
                     recursive_file_count: 9,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 }],
             )
             .unwrap();
@@ -2171,6 +2173,7 @@ mod tests {
                     recursive_file_count: 3,
                     recursive_dir_count: 1,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 },
                 DirStatsById {
                     entry_id: dir_b_id,
@@ -2179,6 +2182,7 @@ mod tests {
                     recursive_file_count: 0,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 },
             ],
         )
@@ -2196,6 +2200,7 @@ mod tests {
                 recursive_file_count: 3,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             }],
         )
         .unwrap();
@@ -2367,6 +2372,7 @@ mod tests {
                     recursive_file_count: 17,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 }],
             )
             .unwrap();

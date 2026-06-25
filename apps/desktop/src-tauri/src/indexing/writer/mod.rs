@@ -190,6 +190,17 @@ pub enum WriteMessage {
     /// instead of replaying on top of a gutted index. Not search-relevant, so
     /// (like `UpdateMeta`) it does NOT bump the writer generation.
     DeleteMeta(String),
+    /// Stamp the given directories' `listed_epoch` (their direct contents were
+    /// successfully listed at `epoch`). The scanner ACCUMULATES the ids of every
+    /// successfully-listed dir and sends this ONCE after the final
+    /// `flush_batch` and BEFORE `ComputeAllAggregates`, so every entry row is
+    /// already committed-in-order when the PK-keyed `UPDATE` runs (a per-dir
+    /// emit could update a row still pending in an unflushed batch, leaving it
+    /// `listed_epoch=0` forever). Like `UpdateMeta`/`DeleteMeta`, it does NOT
+    /// bump the writer generation: it changes nothing search cares about, so it
+    /// must not thrash a root-search reload each scan. See the "Honest sizes"
+    /// model in `indexing/DETAILS.md`.
+    MarkDirsListed { ids: Vec<i64>, epoch: u64 },
     /// Request current entry count (for progress reporting).
     #[cfg(test)]
     GetEntryCount(oneshot::Sender<Result<u64, IndexStoreError>>),
@@ -946,6 +957,16 @@ fn process_message(
                 log::warn!("Index writer: delete_meta({key}) failed: {e}");
             }
         }
+        WriteMessage::MarkDirsListed { ids, epoch } => {
+            // No MutationTracker::bump(): stamping coverage changes nothing
+            // search indexes, so it must not trigger a root-search reload.
+            if let Err(e) = IndexStore::mark_dirs_listed(conn, &ids, epoch) {
+                log::warn!(
+                    "Index writer: mark_dirs_listed (count={}, epoch={epoch}) failed: {e}",
+                    ids.len()
+                );
+            }
+        }
         #[cfg(test)]
         WriteMessage::GetEntryCount(reply) => {
             let result = IndexStore::get_entry_count(conn);
@@ -1087,6 +1108,58 @@ pub(super) mod tests {
         assert_eq!(
             before, after,
             "the SMB/MTP writer's mutation must not bump the root search generation"
+        );
+        writer.shutdown();
+    }
+
+    /// `MarkDirsListed` must NOT bump the global search generation, even on the
+    /// search-feeding (root) writer: stamping coverage changes nothing search
+    /// indexes, so a scan's marks must not thrash a full root-search reload (N4).
+    /// It still does its work (the row's `listed_epoch` is stamped).
+    #[test]
+    fn mark_dirs_listed_does_not_bump_global_generation() {
+        let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let (db_path, _dir) = setup_db();
+        // A root (search-feeding) writer — the one that WOULD bump on a mutation.
+        let writer = IndexWriter::spawn_for(&db_path, None, true).unwrap();
+
+        // Insert a dir to stamp, then flush so its row is committed.
+        writer
+            .send(WriteMessage::InsertEntriesV2(vec![EntryRow {
+                id: 10,
+                parent_id: ROOT_ID,
+                name: "dir".into(),
+                is_directory: true,
+                is_symlink: false,
+                logical_size: None,
+                physical_size: None,
+                modified_at: None,
+                inode: None,
+            }]))
+            .unwrap();
+        writer.flush_blocking().unwrap();
+
+        let before = WRITER_GENERATION.load(Ordering::Relaxed);
+        writer
+            .send(WriteMessage::MarkDirsListed {
+                ids: vec![10],
+                epoch: 4,
+            })
+            .unwrap();
+        writer.flush_blocking().unwrap();
+        let after = WRITER_GENERATION.load(Ordering::Relaxed);
+
+        assert_eq!(
+            before, after,
+            "MarkDirsListed must not bump the search generation (it's not a search-relevant mutation)"
+        );
+
+        // It still stamped the row.
+        let conn = IndexStore::open_read_connection(&db_path).unwrap();
+        assert_eq!(
+            IndexStore::get_listed_epoch_by_id(&conn, 10).unwrap(),
+            Some(4),
+            "the mark was actually applied",
         );
         writer.shutdown();
     }

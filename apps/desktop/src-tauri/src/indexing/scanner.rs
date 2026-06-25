@@ -9,17 +9,35 @@
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use jwalk::WalkDir;
 
+use crate::ignore_poison::IgnorePoison;
 use crate::indexing::firmlinks;
 use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::pluralize::{pluralize, pluralize_with};
+
+/// Number of dir ids per `MarkDirsListed` message (mirrors `volume_scanner`).
+const MARK_CHUNK: usize = 10_000;
+
+/// Emit `MarkDirsListed` for the accumulated dir ids, chunked. A no-op when empty.
+/// Sent by the completion paths (`scan_volume`/`scan_subtree`) after the final
+/// `flush_batch` and before the final aggregate, so the ordering invariant holds.
+fn send_marks(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) {
+    for chunk in listed_ids.chunks(MARK_CHUNK) {
+        if let Err(e) = writer.send(WriteMessage::MarkDirsListed {
+            ids: chunk.to_vec(),
+            epoch,
+        }) {
+            log::warn!("Scanner: failed to send MarkDirsListed: {e}");
+        }
+    }
+}
 
 // ── Exclusion prefixes ──────────────────────────────────────────────
 
@@ -219,7 +237,7 @@ pub fn scan_volume(
     let thread_handle = std::thread::Builder::new()
         .name("index-scanner".into())
         .spawn(move || {
-            let summary = run_scan(
+            let result = run_scan(
                 &config.root,
                 &cancelled,
                 &progress,
@@ -229,14 +247,16 @@ pub fn scan_volume(
                 true, // volume scan: root always maps to ROOT_ID
             );
 
-            // Trigger full aggregation if scan completed without cancellation.
-            // Follow it immediately with a WAL checkpoint so the GB-scale
-            // post-scan WAL spike gets trimmed right away instead of waiting
-            // up to 30 s for the maintenance ticker. Both messages are
-            // processed in order by the single writer thread.
-            if let Ok(ref s) = summary
-                && !s.was_cancelled
+            // On a clean finish: stamp the listed dirs FIRST, then aggregate,
+            // then trim the WAL. The mark→aggregate order is the ordering
+            // invariant (a mark queued behind the final aggregate would leave
+            // that dir at epoch 0 and roll the whole tree to incomplete). The
+            // single in-order writer enforces it. The WAL checkpoint trims the
+            // GB-scale post-scan spike now instead of waiting for the ticker.
+            if let Ok((summary, listed_ids, epoch)) = &result
+                && !summary.was_cancelled
             {
+                send_marks(listed_ids, *epoch, &writer);
                 if let Err(e) = writer.send(WriteMessage::ComputeAllAggregates) {
                     log::warn!("Scanner: failed to send ComputeAllAggregates: {e}");
                 } else if let Err(e) = writer.send(WriteMessage::WalCheckpoint) {
@@ -244,7 +264,7 @@ pub fn scan_volume(
                 }
             }
 
-            summary
+            result.map(|(summary, _, _)| summary)
         })
         .map_err(ScanError::Io)?;
 
@@ -257,9 +277,11 @@ pub fn scan_volume(
 /// `ComputeSubtreeAggregates` to the writer.
 pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());
-    let summary = run_scan(root, cancelled, &progress, writer, 2000, 0, false)?;
+    let (summary, listed_ids, epoch) = run_scan(root, cancelled, &progress, writer, 2000, 0, false)?;
 
     if !summary.was_cancelled {
+        // Stamp the listed dirs before the subtree aggregate (ordering invariant).
+        send_marks(&listed_ids, epoch, writer);
         let root_str = root.to_string_lossy().to_string();
         if let Err(e) = writer.send(WriteMessage::ComputeSubtreeAggregates { root: root_str }) {
             log::warn!("Scanner: failed to send ComputeSubtreeAggregates: {e}");
@@ -287,7 +309,7 @@ fn run_scan(
     batch_size: usize,
     num_threads: usize,
     is_volume_root: bool,
-) -> Result<ScanSummary, ScanError> {
+) -> Result<(ScanSummary, Vec<i64>, u64), ScanError> {
     let start = Instant::now();
     let mut batch: Vec<EntryRow> = Vec::with_capacity(batch_size);
     let mut total_entries: u64 = 0;
@@ -300,7 +322,12 @@ fn run_scan(
     // Initialize the scan context: seed root mapping and get the shared ID counter.
     // Volume-root scans need a write connection (to create the root sentinel).
     // Subtree scans only need a read connection (for resolve_path).
-    let mut scan_ctx = {
+    //
+    // Read `current_epoch` once here so every dir listed this scan is stamped
+    // with it (a first scan stamps epoch 1). A volume-root scan has a write
+    // connection and seeds meta to "1" if absent; a subtree scan runs after a
+    // full scan (epoch already present) and just reads it on its read connection.
+    let (mut scan_ctx, epoch) = {
         let db_path = writer.db_path();
         let conn = if is_volume_root {
             IndexStore::open_write_connection(&db_path).map_err(|e| ScanError::WriterSend(e.to_string()))?
@@ -309,9 +336,21 @@ fn run_scan(
         };
         conn.busy_timeout(std::time::Duration::from_secs(5))
             .map_err(|e| ScanError::WriterSend(e.to_string()))?;
-        ScanContext::new(&conn, root, is_volume_root, Arc::clone(writer.next_id()))
-            .map_err(|e| ScanError::WriterSend(e.to_string()))?
+        let epoch = if is_volume_root {
+            IndexStore::seed_current_epoch(&conn).map_err(|e| ScanError::WriterSend(e.to_string()))?
+        } else {
+            IndexStore::read_current_epoch(&conn).map_err(|e| ScanError::WriterSend(e.to_string()))?
+        };
+        let ctx = ScanContext::new(&conn, root, is_volume_root, Arc::clone(writer.next_id()))
+            .map_err(|e| ScanError::WriterSend(e.to_string()))?;
+        (ctx, epoch)
     };
+
+    // Raw paths of every directory whose readdir succeeded (incl. empty),
+    // collected by `process_read_dir` on the rayon worker threads. Resolved to
+    // entry ids after the walk and returned to the caller, which emits
+    // `MarkDirsListed` before the final aggregate (the ordering invariant).
+    let listed_paths: Arc<Mutex<Vec<PathBuf>>> = Arc::new(Mutex::new(Vec::new()));
 
     // For subtree rescans, delete existing descendants first to prevent orphaned entries.
     // The scan will re-insert fresh children with correct parent-child relationships.
@@ -322,19 +361,25 @@ fn run_scan(
             .map_err(|e| ScanError::WriterSend(e.to_string()))?;
     }
 
-    let walker = build_walker(root, num_threads, is_volume_root);
+    let walker = build_walker(root, num_threads, is_volume_root, Arc::clone(&listed_paths));
 
     for entry_result in walker {
         if cancelled.load(Ordering::Relaxed) {
-            // Flush remaining batch before returning
+            // Flush remaining batch before returning. A cancelled scan emits no
+            // marks (the caller discards/heals the partial); M2 handles keeping
+            // an interrupted partial honest.
             flush_batch(&mut batch, writer)?;
-            return Ok(ScanSummary {
-                total_entries,
-                total_dirs,
-                total_physical_bytes,
-                duration_ms: start.elapsed().as_millis() as u64,
-                was_cancelled: true,
-            });
+            return Ok((
+                ScanSummary {
+                    total_entries,
+                    total_dirs,
+                    total_physical_bytes,
+                    duration_ms: start.elapsed().as_millis() as u64,
+                    was_cancelled: true,
+                },
+                Vec::new(),
+                epoch,
+            ));
         }
 
         let entry = match entry_result {
@@ -468,24 +513,66 @@ fn run_scan(
 
     // Flush final batch
     flush_batch(&mut batch, writer)?;
+
+    // Resolve the successfully-listed dir paths to entry ids via the scan
+    // context. Paths from `process_read_dir` are raw FS paths; the context keys
+    // child dirs by their firmlink-normalized path (the main loop's
+    // normalization), so try the normalized form first. The scan root, however,
+    // is seeded into the context under its RAW path (and skipped by the main
+    // loop), so fall back to the raw path — this is what stamps ROOT_ID when the
+    // root's own readdir succeeds. A path that resolves to neither (an
+    // excluded/aliased dir never registered) is dropped — no row to stamp.
+    let listed_ids: Vec<i64> = {
+        let paths = listed_paths.lock_ignore_poison();
+        let mut ids = Vec::with_capacity(paths.len());
+        for p in paths.iter() {
+            let normalized = firmlinks::normalize_path(&p.to_string_lossy());
+            let id = scan_ctx
+                .lookup_parent(&PathBuf::from(normalized))
+                .or_else(|| scan_ctx.lookup_parent(p));
+            if let Some(id) = id {
+                ids.push(id);
+            }
+        }
+        ids
+    };
+
     log::debug!(
-        "Scanner: walk complete: {}, {} in {}ms",
+        "Scanner: walk complete: {}, {} ({} listed) in {}ms",
         pluralize_with(total_entries, "entry", "entries"),
         pluralize(total_dirs, "dir"),
+        listed_ids.len(),
         start.elapsed().as_millis()
     );
 
-    Ok(ScanSummary {
-        total_entries,
-        total_dirs,
-        total_physical_bytes,
-        duration_ms: start.elapsed().as_millis() as u64,
-        was_cancelled: false,
-    })
+    Ok((
+        ScanSummary {
+            total_entries,
+            total_dirs,
+            total_physical_bytes,
+            duration_ms: start.elapsed().as_millis() as u64,
+            was_cancelled: false,
+        },
+        listed_ids,
+        epoch,
+    ))
 }
 
 /// Build the jwalk walker with exclusion filtering in `process_read_dir`.
-fn build_walker(root: &Path, num_threads: usize, is_volume_root: bool) -> WalkDir {
+///
+/// `listed_paths` collects the raw path of every directory whose `readdir`
+/// SUCCEEDED (jwalk calls `process_read_dir` only after a successful
+/// `fs::read_dir`, including an empty-but-successful read; a wholly-errored
+/// readdir surfaces as an `Err` entry in the parent and never reaches here).
+/// `run_scan` later resolves these to entry ids and stamps `listed_epoch`. A
+/// dir whose readdir failed is therefore never marked → it stays
+/// `listed_epoch=0` (honest "unknown", not a misleading empty).
+fn build_walker(
+    root: &Path,
+    num_threads: usize,
+    is_volume_root: bool,
+    listed_paths: Arc<Mutex<Vec<PathBuf>>>,
+) -> WalkDir {
     let parallelism = if num_threads == 0 {
         jwalk::Parallelism::RayonNewPool(0)
     } else {
@@ -497,7 +584,13 @@ fn build_walker(root: &Path, num_threads: usize, is_volume_root: bool) -> WalkDi
         .follow_links(false)
         .sort(false)
         .parallelism(parallelism)
-        .process_read_dir(move |_depth, _path, _read_dir_state, children| {
+        .process_read_dir(move |depth, path, _read_dir_state, children| {
+            // `depth == None` is the synthetic pre-pass over the root entry's
+            // own results (its parent's listing), not a directory read — skip it.
+            // Every other call means `path`'s readdir succeeded, so record it.
+            if depth.is_some() {
+                listed_paths.lock_ignore_poison().push(path.to_path_buf());
+            }
             if !is_volume_root {
                 return;
             }
@@ -850,6 +943,54 @@ mod tests {
             file1.logical_size.unwrap_or(0) > 0,
             "file should have nonzero logical size"
         );
+    }
+
+    /// After a clean local scan, EVERY directory (root + every subdir, all of
+    /// which jwalk read successfully) has `listed_epoch == current_epoch`. This
+    /// is the ordering-invariant anchor: a `MarkDirsListed` queued *behind* the
+    /// final `ComputeAllAggregates` would leave a dir at epoch 0, so this test
+    /// would catch the "renders incomplete/stale forever" race.
+    #[test]
+    fn clean_scan_stamps_every_listed_dir_with_current_epoch() {
+        let scan_root = scan_test_tempdir();
+        create_test_tree(scan_root.path());
+
+        let (writer, db_path, _db_dir) = setup_writer();
+
+        let config = ScanConfig {
+            root: scan_root.path().to_path_buf(),
+            batch_size: 100,
+            num_threads: 1,
+        };
+
+        let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+        let summary = join_handle.join().expect("scan thread panicked").unwrap();
+        assert!(!summary.was_cancelled);
+
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        let conn = IndexStore::open_read_connection(&db_path).unwrap();
+        let epoch = IndexStore::read_current_epoch(&conn).unwrap();
+        assert_eq!(epoch, 1, "first scan seeds + stamps epoch 1");
+
+        // Every directory row must carry the current epoch. Read all dir rows
+        // directly (PK + listed_epoch) and assert none stayed at 0.
+        let mut stmt = conn
+            .prepare("SELECT id, listed_epoch FROM entries WHERE is_directory = 1")
+            .unwrap();
+        let rows: Vec<(i64, u64)> = stmt
+            .query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, u64>(1)?)))
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect();
+        assert!(rows.len() >= 3, "root + subdir + deep are all directories");
+        for (id, listed_epoch) in rows {
+            assert_eq!(
+                listed_epoch, epoch,
+                "dir id={id} should be stamped with the current epoch (mark must precede the final aggregate)",
+            );
+        }
     }
 
     #[test]

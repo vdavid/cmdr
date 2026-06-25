@@ -312,6 +312,10 @@ fn upsert_insert_new(
                         recursive_file_count: 0,
                         recursive_dir_count: 0,
                         recursive_has_symlinks: false,
+                        // A live-created dir is unlisted (no scanner walked its
+                        // contents), so `0` is correct/honest. A later verifier
+                        // scan stamps it and lifts coverage.
+                        min_subtree_epoch: 0,
                     }],
                 ) {
                     log::warn!("Writer: init dir_stats for new dir id={new_id} failed: {e}");
@@ -969,6 +973,7 @@ mod tests {
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 }],
             )
             .unwrap();
@@ -1043,6 +1048,7 @@ mod tests {
                         recursive_file_count: 1,
                         recursive_dir_count: 2,
                         recursive_has_symlinks: false,
+                        min_subtree_epoch: 0,
                     },
                     DirStatsById {
                         entry_id: 10,
@@ -1051,6 +1057,7 @@ mod tests {
                         recursive_file_count: 1,
                         recursive_dir_count: 1,
                         recursive_has_symlinks: false,
+                        min_subtree_epoch: 0,
                     },
                 ],
             )
@@ -1109,6 +1116,7 @@ mod tests {
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 }],
             )
             .unwrap();
@@ -1157,6 +1165,7 @@ mod tests {
                     recursive_file_count: 0,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 }],
             )
             .unwrap();
@@ -1218,6 +1227,7 @@ mod tests {
                     recursive_file_count: 1,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 }],
             )
             .unwrap();
@@ -1284,6 +1294,7 @@ mod tests {
                     recursive_file_count: 0,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 }],
             )
             .unwrap();
@@ -1479,6 +1490,7 @@ mod tests {
                     recursive_file_count: 0,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 }],
             )
             .unwrap();
@@ -1681,6 +1693,7 @@ mod tests {
                     recursive_file_count: 0,
                     recursive_dir_count: 0,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 }],
             )
             .unwrap();
@@ -2022,6 +2035,7 @@ mod tests {
                 recursive_file_count: 7,
                 recursive_dir_count: 1,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
         insert_dir_with_stats(
@@ -2037,6 +2051,7 @@ mod tests {
                 recursive_file_count: 7,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
 
@@ -2113,6 +2128,7 @@ mod tests {
                 recursive_file_count: 2,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
         insert_file(&writer, 20, 10, "draft.txt", 100);
@@ -2165,6 +2181,7 @@ mod tests {
                 recursive_file_count: 3,
                 recursive_dir_count: 1,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
         insert_dir_with_stats(
@@ -2180,6 +2197,7 @@ mod tests {
                 recursive_file_count: 1,
                 recursive_dir_count: 1,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
         insert_dir_with_stats(
@@ -2195,6 +2213,7 @@ mod tests {
                 recursive_file_count: 3,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
         insert_dir_with_stats(
@@ -2210,6 +2229,7 @@ mod tests {
                 recursive_file_count: 1,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
         insert_file(&writer, 22, 21, "old.txt", 500);
@@ -2279,6 +2299,7 @@ mod tests {
                 recursive_file_count: 5,
                 recursive_dir_count: 1,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
         insert_dir_with_stats(
@@ -2294,6 +2315,7 @@ mod tests {
                 recursive_file_count: 0,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
         insert_dir_with_stats(
@@ -2309,6 +2331,7 @@ mod tests {
                 recursive_file_count: 5,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
 
@@ -2366,6 +2389,7 @@ mod tests {
                 recursive_file_count: 1,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
         insert_dir_with_stats(
@@ -2381,6 +2405,7 @@ mod tests {
                 recursive_file_count: 0,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
 
@@ -2441,6 +2466,7 @@ mod tests {
                 recursive_file_count: 3,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
 
@@ -2493,6 +2519,7 @@ mod tests {
                 recursive_file_count: 0,
                 recursive_dir_count: 1,
                 recursive_has_symlinks: true,
+                min_subtree_epoch: 0,
             },
         );
         insert_dir_with_stats(
@@ -2508,6 +2535,7 @@ mod tests {
                 recursive_file_count: 0,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
         // The dir being moved carries the symlink flag in its own subtree.
@@ -2524,6 +2552,7 @@ mod tests {
                 recursive_file_count: 0,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: true,
+                min_subtree_epoch: 0,
             },
         );
 
@@ -2564,6 +2593,7 @@ mod tests {
                 recursive_file_count: 0,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
+                min_subtree_epoch: 0,
             },
         );
 

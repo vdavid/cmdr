@@ -178,6 +178,7 @@ mod tests {
                     recursive_file_count: 5,
                     recursive_dir_count: 1,
                     recursive_has_symlinks: false,
+                    min_subtree_epoch: 0,
                 }],
             )
             .unwrap();

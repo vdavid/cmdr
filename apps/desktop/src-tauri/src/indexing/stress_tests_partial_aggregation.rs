@@ -23,7 +23,7 @@ fn snapshot_dir_stats(conn: &Connection) -> HashMap<i64, DirStatsById> {
     let mut stmt = conn
         .prepare(
             "SELECT entry_id, recursive_logical_size, recursive_physical_size,
-                    recursive_file_count, recursive_dir_count, recursive_has_symlinks
+                    recursive_file_count, recursive_dir_count, recursive_has_symlinks, min_subtree_epoch
              FROM dir_stats",
         )
         .unwrap();
@@ -36,6 +36,7 @@ fn snapshot_dir_stats(conn: &Connection) -> HashMap<i64, DirStatsById> {
                 recursive_file_count: row.get(3)?,
                 recursive_dir_count: row.get(4)?,
                 recursive_has_symlinks: row.get::<_, i32>(5)? != 0,
+                min_subtree_epoch: row.get(6)?,
             })
         })
         .unwrap();
