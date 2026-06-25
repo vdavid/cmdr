@@ -29,7 +29,7 @@ use aggregation::{
     handle_backfill_missing_dir_stats, handle_compute_all_aggregates, handle_compute_partial_aggregates,
     handle_compute_subtree_aggregates,
 };
-use delta::propagate_delta_by_id;
+use delta::{propagate_delta_by_id, propagate_min_subtree_epoch};
 use entries::{
     handle_delete_entry_by_id, handle_delete_subtree_by_id, handle_insert_entries_v2, handle_move_entry_v2,
     handle_truncate_data, handle_upsert_entry_v2,
@@ -164,6 +164,13 @@ pub enum WriteMessage {
         file_count_delta: i32,
         dir_count_delta: i32,
     },
+    /// Recompute `min_subtree_epoch` up the parent chain starting at `start_id`.
+    /// Fired by the off-writer-thread fill paths (`reconcile_subtree`, the
+    /// verifier's `scan_subtree`) AFTER they have marked the dirs they listed,
+    /// so ancestors lift their coverage. The in-writer shape-change handlers
+    /// (`UpsertEntryV2`/delete/move) call `propagate_min_subtree_epoch` directly
+    /// and don't need this message. Coverage-only, so no generation bump.
+    PropagateMinSubtreeEpoch(i64),
     /// Full scan complete: trigger bottom-up aggregation for all directories.
     ComputeAllAggregates,
     /// Mid-scan: compute partial recursive sizes from the accumulator maps as
@@ -536,7 +543,9 @@ impl WriterStats {
             WriteMessage::DeleteSubtreeById(_) | WriteMessage::DeleteDescendantsById(_) => {
                 self.current.delete_subtree += 1;
             }
-            WriteMessage::PropagateDeltaById { .. } => self.current.propagate_delta += 1,
+            WriteMessage::PropagateDeltaById { .. } | WriteMessage::PropagateMinSubtreeEpoch(_) => {
+                self.current.propagate_delta += 1;
+            }
             WriteMessage::ComputeAllAggregates | WriteMessage::ComputeSubtreeAggregates { .. } => {
                 self.current.compute_aggregates += 1;
             }
@@ -929,6 +938,9 @@ fn process_message(
                 file_count_delta,
                 dir_count_delta,
             );
+        }
+        WriteMessage::PropagateMinSubtreeEpoch(start_id) => {
+            propagate_min_subtree_epoch(conn, start_id);
         }
         WriteMessage::TruncateData => {
             handle_truncate_data(conn, accumulator, expected_total_entries, next_id, mutation_tracker);

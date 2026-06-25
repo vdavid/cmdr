@@ -403,6 +403,16 @@ pub(super) fn reconcile_subtree(
     let mut removed: u64 = 0;
     let mut updated: u64 = 0;
 
+    // The epoch every dir we successfully list this pass is stamped with. A
+    // reconcile *stamps* with the current epoch; it never bumps it. Read once.
+    let epoch = IndexStore::read_current_epoch(conn).unwrap_or(1);
+    // Every dir whose direct contents we successfully list (incl. empty), so we
+    // can `MarkDirsListed` them after the walk and lift ancestor coverage.
+    // Without this, a reconcile-discovered subtree stays `listed_epoch = 0`
+    // forever and drags every ancestor to incomplete — the exact local-live-path
+    // regression this milestone guards against.
+    let mut listed_dir_ids: Vec<i64> = Vec::new();
+
     let root_str = firmlinks::normalize_path(&root.to_string_lossy());
     let root_id = match store::resolve_path(conn, &root_str) {
         Ok(Some(id)) => id,
@@ -495,6 +505,9 @@ pub(super) fn reconcile_subtree(
             Some(c) => c,
             None => continue,
         };
+        // We successfully listed this dir's direct contents (an empty listing
+        // still counts). Stamp it at the current epoch after the walk.
+        listed_dir_ids.push(dir_id);
 
         let db_children =
             IndexStore::list_children_on(dir_id, conn).map_err(|e| format!("list_children_on({dir_id}): {e}"))?;
@@ -597,6 +610,27 @@ pub(super) fn reconcile_subtree(
                     queue.push_back((new_dir, id));
                 }
             }
+        }
+    }
+
+    // Stamp every dir we listed at the current epoch, then lift ancestor
+    // coverage. The walk collected ids shallow→deep (BFS), so recompute
+    // deepest-first: a parent's `min_subtree_epoch` reads its children's stored
+    // values, which must already reflect this pass. `propagate_min_subtree_epoch`
+    // short-circuits once a value stabilizes, so the repeated up-walks are cheap.
+    if !listed_dir_ids.is_empty() {
+        // Chunk under SQLite's bound-parameter ceiling (+1 for the epoch param).
+        const MARK_CHUNK: usize = 900;
+        for chunk in listed_dir_ids.chunks(MARK_CHUNK) {
+            if let Err(e) = writer.send(WriteMessage::MarkDirsListed {
+                ids: chunk.to_vec(),
+                epoch,
+            }) {
+                log::warn!("reconcile_subtree: failed to send MarkDirsListed: {e}");
+            }
+        }
+        for dir_id in listed_dir_ids.iter().rev() {
+            let _ = writer.send(WriteMessage::PropagateMinSubtreeEpoch(*dir_id));
         }
     }
 
@@ -1871,6 +1905,69 @@ mod tests {
             .expect("new directory should be in the DB after reconcile");
         let children = store.list_children(new_dir_id).unwrap();
         assert_eq!(children.len(), 2, "both child files should be indexed");
+    }
+
+    /// A reconcile-discovered subtree must be stamped `listed_epoch = current`
+    /// for every dir it lists (including empty ones), and ancestor coverage must
+    /// lift. Without the mark, the subtree stays `listed_epoch = 0` forever and
+    /// drags ancestors to incomplete — the exact local-live-path regression M1
+    /// guards against.
+    #[test]
+    fn reconcile_subtree_marks_listed_dirs_at_current_epoch() {
+        let (writer, dir, conn) = setup_test_writer();
+        let db_path = dir.path().join("test-reconciler.db");
+
+        // Stamp the volume's current epoch at 5.
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::update_meta(&wconn, "current_epoch", "5").unwrap();
+        }
+
+        // On disk: a new tree with a child dir (non-empty) and an empty dir.
+        let test_dir = non_excluded_tempdir();
+        let new_dir = test_dir.path().join("tree");
+        std::fs::create_dir(&new_dir).unwrap();
+        std::fs::create_dir(new_dir.join("sub")).unwrap();
+        std::fs::write(new_dir.join("sub").join("f.txt"), "x").unwrap();
+        std::fs::create_dir(new_dir.join("empty")).unwrap();
+
+        // Only the parent of `tree` is in the DB (mimics must_scan_sub_dirs).
+        ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
+
+        let cancelled = AtomicBool::new(false);
+        reconcile_subtree(&new_dir, &conn, &writer, &cancelled).unwrap();
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        let store = IndexStore::open(&db_path).unwrap();
+        let rconn = store.read_conn();
+        let resolve = |p: &Path| {
+            store::resolve_path(rconn, &p.to_string_lossy())
+                .unwrap()
+                .unwrap_or_else(|| panic!("{} should be in DB", p.display()))
+        };
+        let tree_id = resolve(&new_dir);
+        let sub_id = resolve(&new_dir.join("sub"));
+        let empty_id = resolve(&new_dir.join("empty"));
+
+        // Every listed dir (including the empty one) is stamped at epoch 5.
+        for (label, id) in [("tree", tree_id), ("sub", sub_id), ("empty", empty_id)] {
+            assert_eq!(
+                IndexStore::get_listed_epoch_by_id(rconn, id).unwrap(),
+                Some(5),
+                "{label} must be listed at the current epoch"
+            );
+        }
+
+        // Coverage lifted: the whole reconciled subtree is complete at epoch 5.
+        assert_eq!(
+            IndexStore::get_dir_stats_by_id(rconn, tree_id)
+                .unwrap()
+                .unwrap()
+                .min_subtree_epoch,
+            5,
+            "tree's min_subtree_epoch lifts to 5 (fully listed)"
+        );
     }
 
     /// Bug 2: after a MustScanSubDirs rescan completes, pending queued rescans

@@ -436,6 +436,12 @@ async fn verify_and_correct(dir_path: &str, writer: &IndexWriter) -> Vec<String>
                 file_count_delta: stats.recursive_file_count as i32,
                 dir_count_delta: stats.recursive_dir_count as i32,
             });
+            // `scan_subtree` stamped the new dir's `listed_epoch` and its
+            // `ComputeSubtreeAggregates` set its `min_subtree_epoch`, but the
+            // `UpsertEntryV2` that created it earlier dropped every ancestor's
+            // coverage to 0. Recompute up from the parent so a now-fully-listed
+            // subtree lifts ancestor coverage back to exact.
+            let _ = writer.send(WriteMessage::PropagateMinSubtreeEpoch(*p_id));
         }
     }
 

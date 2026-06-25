@@ -15,7 +15,7 @@ use crate::indexing::aggregator::AggregationPhase;
 use crate::indexing::store::{DirStatsById, EntryRow, IndexStore};
 use crate::pluralize::pluralize_with;
 
-use super::delta::{propagate_delta_by_id, propagate_recursive_has_symlinks};
+use super::delta::{propagate_delta_by_id, propagate_min_subtree_epoch, propagate_recursive_has_symlinks};
 use super::{AccumulatorMaps, AggregationProgressEvent, MutationTracker, phase_to_str};
 
 pub(super) fn handle_insert_entries_v2(
@@ -321,6 +321,12 @@ fn upsert_insert_new(
                     log::warn!("Writer: init dir_stats for new dir id={new_id} failed: {e}");
                 }
                 propagate_delta_by_id(conn, parent_id, 0, 0, 0, 1);
+                // The new dir is unlisted (`min_subtree_epoch = 0`), so a new
+                // incomplete subtree now exists: drop every ancestor's coverage
+                // to 0. A later verifier/reconcile scan stamps it and lifts
+                // coverage back. Fire from the parent so the dir's own (correct)
+                // 0 propagates up the chain.
+                propagate_min_subtree_epoch(conn, parent_id);
             } else {
                 let logical = logical_size.unwrap_or(0) as i64;
                 let physical = physical_size.unwrap_or(0) as i64;
@@ -498,6 +504,16 @@ pub(super) fn handle_move_entry_v2(
         }
     }
 
+    // Coverage changes on BOTH ancestor chains when a (possibly incomplete)
+    // subtree moves: the old chain may RISE (the incomplete child left), the new
+    // chain may DROP (it arrived). The moved subtree's own `min_subtree_epoch` is
+    // unchanged (it moved intact), so recompute only the two ancestor chains —
+    // mirroring the dual-chain `recursive_has_symlinks` recompute above.
+    if old_entry.is_directory {
+        propagate_min_subtree_epoch(conn, old_entry.parent_id);
+        propagate_min_subtree_epoch(conn, new_parent_id);
+    }
+
     mutation_tracker.bump();
 }
 
@@ -535,6 +551,12 @@ pub(super) fn handle_delete_entry_by_id(
         // may flip back to false (and propagate further up).
         if entry.is_symlink {
             propagate_recursive_has_symlinks(conn, entry.parent_id);
+        }
+        // Removing a directory can RAISE the parent's coverage (its incomplete
+        // child is gone). Deleting a file never changes coverage. Fire only for
+        // a directory removal.
+        if entry.is_directory {
+            propagate_min_subtree_epoch(conn, entry.parent_id);
         }
     }
     mutation_tracker.bump();
@@ -587,6 +609,9 @@ pub(super) fn handle_delete_subtree_by_id(
         if subtree_had_symlinks {
             propagate_recursive_has_symlinks(conn, pid);
         }
+        // The removed subtree may have been incomplete (`min_subtree_epoch = 0`);
+        // its removal can RAISE the parent's coverage, so recompute up the chain.
+        propagate_min_subtree_epoch(conn, pid);
     }
     mutation_tracker.bump();
 }

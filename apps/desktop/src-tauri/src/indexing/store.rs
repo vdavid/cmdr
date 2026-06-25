@@ -1134,11 +1134,52 @@ impl IndexStore {
     }
 
     /// Read an entry's `listed_epoch` by id. `None` if the entry doesn't exist.
-    #[cfg(test)]
     pub fn get_listed_epoch_by_id(conn: &Connection, id: i64) -> Result<Option<u64>, IndexStoreError> {
         let mut stmt = conn.prepare_cached("SELECT listed_epoch FROM entries WHERE id = ?1")?;
         let result = stmt.query_row(params![id], |row| row.get::<_, u64>(0)).optional()?;
         Ok(result)
+    }
+
+    /// Recompute a directory's `min_subtree_epoch` from its own `listed_epoch`
+    /// and every child directory's stored `min_subtree_epoch`, taking the
+    /// 0-absorbing `min` (any `0` ⇒ `0`).
+    ///
+    /// This is the per-dir step of `delta::propagate_min_subtree_epoch`, kept in
+    /// the store as a single SQL pass so the walk does one round trip per
+    /// ancestor instead of N+1. A dir with no `entries` row is treated as
+    /// unlisted (`0`). The 0-absorbing semantics differ from a plain `MIN()`:
+    /// SQL `MIN` over `{1, 0}` is `0` (correct here by luck), but `MIN` over an
+    /// empty child set is `NULL`, and `MIN` ignoring NULLs could mask a missing
+    /// `dir_stats` row — so the CTE coalesces a missing child stat to `0`.
+    pub fn recompute_min_subtree_epoch(conn: &Connection, dir_id: i64) -> Result<u64, IndexStoreError> {
+        // Own listed_epoch (0 if the row is gone).
+        let own: u64 = conn
+            .prepare_cached("SELECT listed_epoch FROM entries WHERE id = ?1")?
+            .query_row(params![dir_id], |row| row.get::<_, u64>(0))
+            .optional()?
+            .unwrap_or(0);
+        if own == 0 {
+            return Ok(0);
+        }
+
+        // 0-absorbing min over child dirs' min_subtree_epoch. A child dir with no
+        // dir_stats row counts as 0 (unknown coverage), so LEFT JOIN + COALESCE.
+        // If ANY child is 0, MIN is 0. No child dirs ⇒ MIN over empty ⇒ NULL ⇒
+        // keep `own` (a listed-but-childless dir is fully covered at its epoch).
+        let child_min: Option<u64> = conn
+            .prepare_cached(
+                "SELECT MIN(COALESCE(ds.min_subtree_epoch, 0))
+                 FROM entries c
+                 LEFT JOIN dir_stats ds ON ds.entry_id = c.id
+                 WHERE c.parent_id = ?1 AND c.is_directory = 1",
+            )?
+            .query_row(params![dir_id], |row| row.get::<_, Option<u64>>(0))?;
+
+        Ok(match child_min {
+            None => own,             // no child dirs: covered at own epoch
+            Some(0) => 0,            // some child subtree is unlisted
+            Some(cm) => own.min(cm), // weakest link across self + children
+        })
     }
 
     /// Get all directory paths from the entries table.
@@ -1482,6 +1523,72 @@ mod tests {
         // Bump increments and persists.
         assert_eq!(IndexStore::bump_current_epoch(&conn).unwrap(), 2);
         assert_eq!(IndexStore::read_current_epoch(&conn).unwrap(), 2);
+    }
+
+    /// `recompute_min_subtree_epoch`: the 0-absorbing min over the dir's own
+    /// `listed_epoch` and every child dir's stored `min_subtree_epoch`.
+    #[test]
+    fn recompute_min_subtree_epoch_cases() {
+        let (store, _dir) = open_temp_store();
+        let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+
+        // An unlisted dir (listed_epoch = 0) is always 0, regardless of children.
+        let unlisted = insert_entry(&conn, ROOT_ID, "unlisted", true, None);
+        assert_eq!(IndexStore::recompute_min_subtree_epoch(&conn, unlisted).unwrap(), 0);
+
+        // A listed dir with NO child dirs is covered at its own epoch.
+        let leaf = insert_entry(&conn, ROOT_ID, "leaf", true, None);
+        IndexStore::mark_dirs_listed(&conn, &[leaf], 5).unwrap();
+        assert_eq!(
+            IndexStore::recompute_min_subtree_epoch(&conn, leaf).unwrap(),
+            5,
+            "listed-childless ⇒ own epoch"
+        );
+
+        // A listed parent with one complete child (epoch 4) and one incomplete
+        // child (epoch 0) ⇒ 0 (the 0 absorbs).
+        let parent = insert_entry(&conn, ROOT_ID, "parent", true, None);
+        IndexStore::mark_dirs_listed(&conn, &[parent], 9).unwrap();
+        let complete = insert_entry(&conn, parent, "complete", true, None);
+        let incomplete = insert_entry(&conn, parent, "incomplete", true, None);
+        IndexStore::upsert_dir_stats_by_id(
+            &conn,
+            &[
+                DirStatsById {
+                    entry_id: complete,
+                    min_subtree_epoch: 4,
+                    ..Default::default()
+                },
+                DirStatsById {
+                    entry_id: incomplete,
+                    min_subtree_epoch: 0,
+                    ..Default::default()
+                },
+            ],
+        )
+        .unwrap();
+        assert_eq!(
+            IndexStore::recompute_min_subtree_epoch(&conn, parent).unwrap(),
+            0,
+            "an incomplete child absorbs to 0"
+        );
+
+        // With both children complete (4 and 6), the parent is the weakest link
+        // across self (9) and children ⇒ 4.
+        IndexStore::upsert_dir_stats_by_id(
+            &conn,
+            &[DirStatsById {
+                entry_id: incomplete,
+                min_subtree_epoch: 6,
+                ..Default::default()
+            }],
+        )
+        .unwrap();
+        assert_eq!(
+            IndexStore::recompute_min_subtree_epoch(&conn, parent).unwrap(),
+            4,
+            "weakest link = min(own=9, 4, 6) = 4"
+        );
     }
 
     /// A schema-version mismatch drops + rebuilds; the rebuilt DB still has the
