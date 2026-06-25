@@ -34,7 +34,6 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume_rename_merge_tests.rs": 897,
     "apps/desktop/src-tauri/src/file_viewer/session.rs": 1459,
     "apps/desktop/src-tauri/src/file_viewer/session_test.rs": 1777,
-    "apps/desktop/src-tauri/src/indexing/aggregator.rs": 1267,
     "apps/desktop/src-tauri/src/indexing/event_loop.rs": 2330,
     "apps/desktop/src-tauri/src/indexing/integration_tests.rs": 1111,
     "apps/desktop/src-tauri/src/indexing/manager.rs": 982,
