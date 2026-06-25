@@ -22,7 +22,7 @@
     "@astrojs/sitemap": "^3.7.2",
     "@resvg/resvg-js": "2.6.2",
     "@tailwindcss/vite": "^4.2.4",
-    "astro": "^6.1.9",
+    "astro": "6.1.9",
     "marked": "^18.0.2",
     "rehype-external-links": "3.0.0",
     "remark-smartypants": "^3.0.2",
