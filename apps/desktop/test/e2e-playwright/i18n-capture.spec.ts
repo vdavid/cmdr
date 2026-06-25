@@ -5,7 +5,7 @@
  * and, for each, records which catalog keys render there (via the runtime's
  * capture mode in `$lib/intl/messages.svelte.ts`) and saves a native screenshot.
  * The output is a single JSON map (surface → keys + screenshot file) that
- * `scripts/couple-screenshots.js` turns into `@key.screenshot` couplings.
+ * `scripts/couple-screenshots.ts` turns into `@key.screenshot` couplings.
  *
  * Run it like any single spec (the app must already be running; see the suite's
  * DETAILS.md § "Running a single spec"), or via `pnpm i18n:capture` which builds,
@@ -222,7 +222,7 @@ test.describe('i18n screenshot capture', () => {
     const main = tauriPage as TauriPage
     mkdirSync(screenshotsDir, { recursive: true })
 
-    // The orchestrator (`scripts/i18n-capture.js`) drives several launches: the
+    // The orchestrator (`scripts/i18n-capture.ts`) drives several launches: the
     // `main` pass (no mock) plus per-launch passes carrying a `CMDR_MOCK_LICENSE`
     // / `CMDR_MOCK_FDA` the app reads once at startup. `CMDR_I18N_CAPTURE_PASS`
     // names the active pass. The `main` pass writes the report fresh; every other
@@ -410,7 +410,7 @@ test.describe('i18n screenshot capture', () => {
     // hook. Every friendly error shares this title/explanation/suggestion layout,
     // so the coupler maps the whole uncoupled `errors.*` family to this image with
     // a `@key.screenshotNote` (see `REPRESENTATIVE_SCREENSHOTS` in
-    // `scripts/couple-screenshots.js`). Run last among the main-pass surfaces so a
+    // `scripts/couple-screenshots.ts`). Run last among the main-pass surfaces so a
     // transient error state can't perturb earlier captures.
     await captureErrorPaneExample('error-message-example', report, failed, main)
 
@@ -570,7 +570,7 @@ test.describe('i18n screenshot capture', () => {
     }
 
     // Always write the report with whatever succeeded. The shape stays a flat
-    // `surface → { screenshot, keys }` map because `couple-screenshots.js`
+    // `surface → { screenshot, keys }` map because `couple-screenshots.ts`
     // consumes it directly (`Object.values(report)`); the failed- and skipped-
     // surface lists go to SIBLING files (coverage honesty) so the coupler
     // contract is untouched. Empty/absent sibling files mean a clean run.

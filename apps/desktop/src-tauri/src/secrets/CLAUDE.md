@@ -17,7 +17,7 @@ and `ai/api_keys.rs` (cloud AI API keys, raw UTF-8 under `ai.apiKey.<provider>` 
 
 ## Backend selection
 
-`store()` picks once at first access: `CMDR_SECRET_STORE=file` env (set by `tauri-wrapper.js` in dev) → `PlainFileStore`;
+`store()` picks once at first access: `CMDR_SECRET_STORE=file` env (set by `tauri-wrapper.ts` in dev) → `PlainFileStore`;
 else macOS → Keychain; else Linux + Secret Service available → Keyring; else Linux → `EncryptedFileStore`; else
 `PlainFileStore`. Chosen at init via an `is_available()` write-read-delete probe, not per-operation.
 

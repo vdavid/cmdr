@@ -64,7 +64,7 @@ source supports as `tentative` pending native review.
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.js`. These are
+tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`. These are
 LTR Latin tokens inside RTL runs: wrap them so bidi doesn't reorder them, and verify they render correctly mid-sentence.
 
 ## Plurals

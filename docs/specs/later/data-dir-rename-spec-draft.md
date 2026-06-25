@@ -39,7 +39,7 @@ the identifier" change, not an identifier change.
 ## 3. What makes this non-trivial
 
 1. **Tauri derives `app_data_dir()` from the identifier.** The app already bypasses this broadly: the dev wrapper
-   (`apps/desktop/scripts/tauri-wrapper.js`) resolves `CMDR_INSTANCE_ID`, writes a per-instance `tauri.instance.json` so
+   (`apps/desktop/scripts/tauri-wrapper.ts`) resolves `CMDR_INSTANCE_ID`, writes a per-instance `tauri.instance.json` so
    Tauri's own `app_data_dir()` lands on the right path, and exports `CMDR_DATA_DIR` so direct file I/O agrees (see
    `docs/tooling/instance-isolation.md`). Whether this mechanism (or another) can cleanly repoint a PROD build's data
    dir without touching the identifier is **the core go/no-go investigation**. HOLE: the author does not know Tauri's

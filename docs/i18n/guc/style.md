@@ -56,7 +56,7 @@ locale: an agent draft here is genuinely a first pass that a Wayuunaiki speaker 
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.js`. Given the
+tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`. Given the
 vocabulary gaps, expect more English/Spanish passthrough than in a well-resourced locale.
 
 ## Plurals

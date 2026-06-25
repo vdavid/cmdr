@@ -1,5 +1,5 @@
 /**
- * Tests for the plural-category coverage check (`i18n-check-plural.js`).
+ * Tests for the plural-category coverage check (`i18n-check-plural.ts`).
  *
  * Clean path: the committed pseudolocale fixture's plural message covers en-XA's
  * required categories (one, other). Negative paths: drop a required category from
@@ -11,15 +11,19 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { runPluralCheck, pluralCoverageDetail, requiredPluralCategories } from './i18n-check-plural.js'
-import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.js'
+import { runPluralCheck, pluralCoverageDetail, requiredPluralCategories } from './i18n-check-plural.ts'
+import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.ts'
 
 const FIXTURE_ROOT = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
 
 function capture() {
-  /** @type {string[]} */
-  const lines = []
-  return { lines, write: (/** @type {string} */ l) => void lines.push(l) }
+  const lines: string[] = []
+  return {
+    lines,
+    write: (l: string) => {
+      lines.push(l)
+    },
+  }
 }
 
 describe('requiredPluralCategories: data-driven from Intl', () => {
@@ -81,19 +85,19 @@ describe('runPluralCheck against the committed fixture', () => {
 })
 
 describe('runPluralCheck negative case (temp catalog copy)', () => {
-  /** @type {string} */
-  let root
-  /** @type {string} */
-  let xaFile
+  let root: string
+  let xaFile: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-plural-'))
     cpSync(FIXTURE_ROOT, root, { recursive: true })
     xaFile = join(root, 'en-XA', 'fixture.json')
   })
-  afterEach(() => rmSync(root, { recursive: true, force: true }))
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
 
   it('flags exactly the plural key that dropped a required category', () => {
-    const xa = JSON.parse(readFileSync(xaFile, 'utf8'))
+    const xa = JSON.parse(readFileSync(xaFile, 'utf8')) as Record<string, unknown>
     xa['fixture.fileCount'] = '{count, plural, other {# ḟíļéš}}' // dropped the `one` branch
     writeFileSync(xaFile, JSON.stringify(xa, null, 2) + '\n', 'utf8')
     const cap = capture()
@@ -106,14 +110,15 @@ describe('runPluralCheck negative case (temp catalog copy)', () => {
 })
 
 describe('no-locales path (only en)', () => {
-  /** @type {string} */
-  let root
+  let root: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-plural-only-en-'))
     mkdirSync(join(root, 'en'), { recursive: true })
     cpSync(join(FIXTURE_ROOT, 'en', 'fixture.json'), join(root, 'en', 'fixture.json'))
   })
-  afterEach(() => rmSync(root, { recursive: true, force: true }))
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
 
   it('is a clean no-op', () => {
     expect(localesToCheck(root)).toEqual([])

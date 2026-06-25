@@ -26,7 +26,7 @@ see [DETAILS.md](DETAILS.md).
   `go`), so resolution order (check → app → group) can't silently change meaning.
 - **Checks refuse to run in the main clone** (the auto-fixers reformat tracked files; the solo-dev workflow only does
   that in a worktree). Detection: `--git-dir` == `--git-common-dir` (`isMainWorkingTree`). CI is exempt via `--ci`;
-  override a deliberate local main run with `--allow-main` / `-m`. The same guard lives in `tauri-wrapper.js` for
+  override a deliberate local main run with `--allow-main` / `-m`. The same guard lives in `tauri-wrapper.ts` for
   `pnpm dev` (not `build`).
 - **Cache ordering is load-bearing.** Planning runs BEFORE `pnpm install` and SMB/Docker bring-up, so a run whose
   node/SMB checks are all cache hits installs no deps and starts no container. Don't move planning after them. A

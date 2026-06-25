@@ -17,8 +17,8 @@
  * It deliberately reuses the same `sourceHash()` and catalog helpers as the
  * pseudolocale generator and the stale check, so the hashes agree.
  *
- * Run: `node scripts/gen-locale-skeleton.js <tag> [<tag> …]`
- *   e.g. `node scripts/gen-locale-skeleton.js de fr es`
+ * Run: `node scripts/gen-locale-skeleton.ts <tag> [<tag> …]`
+ *   e.g. `node scripts/gen-locale-skeleton.ts de fr es`
  * Pass `--messages-root <dir>` to point at a fixture.
  *
  * Idempotent for keys: re-running overwrites each area file from `en` again, so
@@ -28,7 +28,7 @@
 
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { isMetadataKey, readLocaleFiles, resolveMessagesRoot, sourceHash } from './i18n-catalog-lib.js'
+import { isMetadataKey, readLocaleFiles, resolveMessagesRoot, sourceHash } from './i18n-catalog-lib.ts'
 
 const SOURCE_LOCALE = 'en'
 
@@ -37,12 +37,10 @@ const SOURCE_LOCALE = 'en'
  * with its `@key.sourceHash`, in source order, exactly the interleaved
  * `key` / `@key` shape the pseudolocale and real locales use — but with the
  * English value left in place for the translator to overwrite.
- * @param {Record<string, unknown>} rawEnFile a parsed `en/<area>.json`
- * @returns {Record<string, unknown>}
+ * @param rawEnFile a parsed `en/<area>.json`
  */
-export function buildSkeletonFile(rawEnFile) {
-  /** @type {Record<string, unknown>} */
-  const out = {}
+export function buildSkeletonFile(rawEnFile: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(rawEnFile)) {
     if (isMetadataKey(key) || typeof value !== 'string') continue
     out[key] = value
@@ -53,13 +51,14 @@ export function buildSkeletonFile(rawEnFile) {
 
 /**
  * Generates the full `<tag>/` skeleton from `en/`, one file per area.
- * @param {string} tag the BCP-47 locale tag (catalog dir name)
- * @param {object} [opts]
- * @param {string} [opts.messagesRoot] override the `messages/` root (for tests)
- * @param {boolean} [opts.force] overwrite a non-empty existing locale dir
- * @returns {{ files: number, keys: number }}
+ * @param tag the BCP-47 locale tag (catalog dir name)
+ * @param opts.messagesRoot override the `messages/` root (for tests)
+ * @param opts.force overwrite a non-empty existing locale dir
  */
-export function generateSkeleton(tag, opts = {}) {
+export function generateSkeleton(
+  tag: string,
+  opts: { messagesRoot?: string; force?: boolean } = {},
+): { files: number; keys: number } {
   if (tag === SOURCE_LOCALE) throw new Error(`Refusing to scaffold the source locale '${SOURCE_LOCALE}'.`)
   const root = resolveMessagesRoot(opts.messagesRoot)
   const outDir = join(root, tag)
@@ -87,7 +86,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const messagesRoot = rootFlag !== -1 ? argv[rootFlag + 1] : undefined
   const tags = argv.filter((a, i) => !a.startsWith('--') && i !== (rootFlag !== -1 ? rootFlag + 1 : -1))
   if (tags.length === 0) {
-    console.error('Usage: node scripts/gen-locale-skeleton.js <tag> [<tag> …] [--force] [--messages-root <dir>]')
+    console.error('Usage: node scripts/gen-locale-skeleton.ts <tag> [<tag> …] [--force] [--messages-root <dir>]')
     process.exit(1)
   }
   for (const tag of tags) {

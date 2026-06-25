@@ -66,7 +66,7 @@ Two pieces, both already in the repo for E2E:
 
 - **Compile-time gate.** The virtual device lives behind the `virtual-mtp` Cargo feature
   (`src-tauri/src/mtp/virtual_device.rs`), so release `pnpm build` binaries never contain it. The wrapper
-  (`apps/desktop/scripts/tauri-wrapper.js`) appends `--features virtual-mtp` to the dev build only when
+  (`apps/desktop/scripts/tauri-wrapper.ts`) appends `--features virtual-mtp` to the dev build only when
   `CMDR_VIRTUAL_MTP` is set.
 - **Runtime gate.** At startup `activate_from_env_if_requested()` decides whether to register the device. It registers
   when either we're under an E2E run (`CMDR_E2E_MODE=1`) **or** `CMDR_VIRTUAL_MTP` is set, and never when

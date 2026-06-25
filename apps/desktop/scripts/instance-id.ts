@@ -205,7 +205,10 @@ export interface InstanceConfig {
  * The updater endpoints list always points at a dead URL for non-prod instances so a stray
  * dev or E2E build never phones home to the real `api.getcmdr.com`.
  */
-export function buildInstanceConfig(instanceId: string | null, opts: { vitePort?: number } = {}): InstanceConfig | null {
+export function buildInstanceConfig(
+  instanceId: string | null,
+  opts: { vitePort?: number } = {},
+): InstanceConfig | null {
   if (!instanceId) return null
   const config: InstanceConfig = {
     $schema: 'https://schema.tauri.app/config/2',

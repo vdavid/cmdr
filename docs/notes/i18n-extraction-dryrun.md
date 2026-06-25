@@ -1,7 +1,7 @@
 # i18n extraction dry-run (M1 analysis artifact)
 
 > One-shot heuristic scan, NOT a shipped catalog. Regenerate with
-> `node apps/desktop/scripts/extract-user-facing-strings.js`.
+> `node apps/desktop/scripts/extract-user-facing-strings.ts`.
 
 Candidate user-facing string literals found in the closed sink set (`addToast` content,
 `title`/`aria-label`/`label`/`placeholder` props, `.svelte` text nodes). This is a LOWER BOUND on the real string count

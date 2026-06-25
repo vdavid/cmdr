@@ -70,7 +70,7 @@ Add rows as terms come up, each with sources and a confidence.
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style tokens
 and any `{email}`-style placeholders. Enforced by `desktop-i18n-dont-translate` (list in
-`apps/desktop/scripts/i18n-catalog-lib.js`). macOS UI names Cmdr opens into (System Settings panes, "Prullenmand")
+`apps/desktop/scripts/i18n-catalog-lib.ts`). macOS UI names Cmdr opens into (System Settings panes, "Prullenmand")
 should match a Dutch macOS.
 
 ## Plurals

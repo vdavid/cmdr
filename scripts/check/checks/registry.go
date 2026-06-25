@@ -266,7 +266,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts"}),
 		Run:               RunDesktopI18nStale,
 	},
 	{
@@ -281,7 +281,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts"}),
 		Run:               RunDesktopI18nParity,
 	},
 	{
@@ -295,7 +295,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts"}),
 		Run:               RunDesktopI18nIcu,
 	},
 	{
@@ -309,7 +309,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts"}),
 		Run:               RunDesktopI18nPlural,
 	},
 	{
@@ -326,7 +326,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts"}),
 		Run:               RunDesktopI18nCoverage,
 	},
 	{
@@ -342,7 +342,7 @@ var AllChecks = []CheckDefinition{
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
-		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.js"}),
+		Inputs:            inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts"}),
 		Run:               RunDesktopI18nDontTranslate,
 	},
 	{

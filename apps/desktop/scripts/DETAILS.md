@@ -6,7 +6,7 @@ instance-isolation reference (per-resource derivation, race-window analysis, deb
 
 ## The wrapper architecture
 
-`tauri-wrapper.js` is the single composition point for dev vs prod. Pure helpers in `instance-id.js` do the work so they
+`tauri-wrapper.ts` is the single composition point for dev vs prod. Pure helpers in `instance-id.ts` do the work so they
 stay testable. For `pnpm dev`, the wrapper resolves an instance ID (from `--worktree <slug>`, the existing
 `CMDR_INSTANCE_ID` env, or the default `"dev"`), reserves ephemeral ports, composes the bundle identifier + productName
 
@@ -27,7 +27,7 @@ defaults as explicit choices — is a known settings-store follow-up (see `src-t
 
 ## Key decisions
 
-- **Pure helpers in `instance-id.js`, side effects in `tauri-wrapper.js`.** The sanitizer, identifier composer,
+- **Pure helpers in `instance-id.ts`, side effects in `tauri-wrapper.ts`.** The sanitizer, identifier composer,
   port-file writer, and config-payload builder are all unit-testable in isolation. The wrapper is ~200 lines of obvious
   orchestration. Touching either side without breaking the other is the goal.
 - **Generated `tauri.instance.json` lives in `$TMPDIR`, not the repo.** A crashed wrapper leaves the file behind;

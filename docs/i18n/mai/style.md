@@ -70,7 +70,7 @@ From the 2008 Nautilus catalog (loose reference; needs native confirmation). For
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style and
 `{email}`-style tokens, and well-known English acronyms in Roman (PIN, ID, Wi-Fi). Enforced by
-`desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.js`).
+`desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`).
 
 ## Plurals
 

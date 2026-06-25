@@ -83,7 +83,7 @@ Tentative / needs a native check:
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
 tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`. Latin brand tokens sit inside Cyrillic text; keep them Latin.
+`apps/desktop/scripts/i18n-catalog-lib.ts`. Latin brand tokens sit inside Cyrillic text; keep them Latin.
 
 ## Plurals
 

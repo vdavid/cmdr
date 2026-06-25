@@ -104,7 +104,7 @@ A few core terms confirmed against Apple Finder, GNOME Nautilus, and Microsoft t
 
 Keep these verbatim (product or platform names, not words to translate): Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust,
 Svelte, Quick Look. The same list (plus the system placeholder tokens) is enforced by the `desktop-i18n-dont-translate`
-check; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.js`.
+check; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`.
 
 ## Plurals
 

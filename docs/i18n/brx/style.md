@@ -56,7 +56,7 @@ any Bodo computing glossary; mark everything `tentative` until reviewed.
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.js`. Latin
+tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`. Latin
 brand words sit inside Devanagari runs; verify they render cleanly.
 
 ## Plurals

@@ -56,13 +56,17 @@ const TYPE = Object.freeze({
   tag: 8,
 })
 
+/** A locale's merged catalog: renderable messages plus the separated `@key` metadata. */
+export interface Catalog {
+  messages: Record<string, string>
+  metadata: Record<string, Record<string, unknown>>
+}
+
 /**
  * Whether a catalog entry key is ARB-style `@key` metadata (stripped before the
  * runtime/codegen see it). Mirrors the runtime's `stripMetadata`.
- * @param {string} key
- * @returns {boolean}
  */
-export function isMetadataKey(key) {
+export function isMetadataKey(key: string): boolean {
   return key.startsWith('@')
 }
 
@@ -71,19 +75,16 @@ export function isMetadataKey(key) {
  * The runtime keeps only string-valued non-`@` entries as messages; everything
  * `@`-prefixed is metadata, keyed WITHOUT the leading `@` so it lines up with
  * its message key.
- * @param {Record<string, unknown>} raw a parsed `<area>.json`
- * @returns {{ messages: Record<string, string>, metadata: Record<string, Record<string, unknown>> }}
+ * @param raw a parsed `<area>.json`
  */
-export function splitCatalogFile(raw) {
-  /** @type {Record<string, string>} */
-  const messages = {}
-  /** @type {Record<string, Record<string, unknown>>} */
-  const metadata = {}
+export function splitCatalogFile(raw: Record<string, unknown>): Catalog {
+  const messages: Record<string, string> = {}
+  const metadata: Record<string, Record<string, unknown>> = {}
   for (const [key, value] of Object.entries(raw)) {
     if (isMetadataKey(key)) {
       const messageKey = key.slice(1)
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        metadata[messageKey] = /** @type {Record<string, unknown>} */ (value)
+        metadata[messageKey] = value as Record<string, unknown>
       }
       continue
     }
@@ -97,14 +98,10 @@ export function splitCatalogFile(raw) {
  * `{ messages, metadata }` pair, matching the runtime's catalog merge. Later
  * files win on a key collision (same as `Object.assign`); in practice keys never
  * collide across area files (prefix ↔ filename is 1:1).
- * @param {Record<string, Record<string, unknown>>} files
- * @returns {{ messages: Record<string, string>, metadata: Record<string, Record<string, unknown>> }}
  */
-export function mergeCatalogFiles(files) {
-  /** @type {Record<string, string>} */
-  const messages = {}
-  /** @type {Record<string, Record<string, unknown>>} */
-  const metadata = {}
+export function mergeCatalogFiles(files: Record<string, Record<string, unknown>>): Catalog {
+  const messages: Record<string, string> = {}
+  const metadata: Record<string, Record<string, unknown>> = {}
   for (const raw of Object.values(files)) {
     const split = splitCatalogFile(raw)
     Object.assign(messages, split.messages)
@@ -116,10 +113,8 @@ export function mergeCatalogFiles(files) {
 /**
  * The absolute path to the `messages/` root (parent of each `<locale>/` dir),
  * resolved relative to this script. Override `messagesRoot` in tests.
- * @param {string} [messagesRoot]
- * @returns {string}
  */
-export function resolveMessagesRoot(messagesRoot) {
+export function resolveMessagesRoot(messagesRoot?: string): string {
   if (messagesRoot) return messagesRoot
   // This file lives in `apps/desktop/scripts/`; messages live in
   // `apps/desktop/src/lib/intl/messages/`.
@@ -130,21 +125,19 @@ export function resolveMessagesRoot(messagesRoot) {
  * Reserved sibling directories under `messages/` that are NOT locales. Today
  * just `screenshots/` (capture artifacts; it holds `*.json` so a "has JSON"
  * heuristic alone would misclassify it).
- * @type {Set<string>}
  */
-export const NON_LOCALE_DIRS = new Set(['screenshots'])
+export const NON_LOCALE_DIRS: Set<string> = new Set(['screenshots'])
 
 /**
  * Lists the locale directories under `messages/` (each holding `<area>.json`
  * files), sorted. A locale is any direct subdirectory that holds at least one
  * `*.json` and isn't a reserved non-locale dir (`NON_LOCALE_DIRS`).
- * @param {string} [messagesRoot]
- * @returns {string[]} BCP-47-ish locale tags (the dir names), e.g. `['en', 'en-XA']`
+ * @param messagesRoot
+ * @returns BCP-47-ish locale tags (the dir names), e.g. `['en', 'en-XA']`
  */
-export function listLocales(messagesRoot) {
+export function listLocales(messagesRoot?: string): string[] {
   const root = resolveMessagesRoot(messagesRoot)
-  /** @type {string[]} */
-  const locales = []
+  const locales: string[] = []
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     if (!entry.isDirectory() || NON_LOCALE_DIRS.has(entry.name)) continue
     const dir = join(root, entry.name)
@@ -156,20 +149,18 @@ export function listLocales(messagesRoot) {
 
 /**
  * Reads every `<area>.json` in one locale dir into a filename → parsed-JSON map.
- * @param {string} locale the locale dir name (e.g. `en`)
- * @param {string} [messagesRoot]
- * @returns {Record<string, Record<string, unknown>>}
+ * @param locale the locale dir name (e.g. `en`)
+ * @param messagesRoot
  */
-export function readLocaleFiles(locale, messagesRoot) {
+export function readLocaleFiles(locale: string, messagesRoot?: string): Record<string, Record<string, unknown>> {
   const dir = join(resolveMessagesRoot(messagesRoot), locale)
   if (!existsSync(dir) || !statSync(dir).isDirectory()) {
     throw new Error(`No catalog directory for locale "${locale}" at ${dir}`)
   }
-  /** @type {Record<string, Record<string, unknown>>} */
-  const files = {}
+  const files: Record<string, Record<string, unknown>> = {}
   for (const name of readdirSync(dir)) {
     if (!name.endsWith('.json')) continue
-    files[name] = JSON.parse(readFileSync(join(dir, name), 'utf8'))
+    files[name] = JSON.parse(readFileSync(join(dir, name), 'utf8')) as Record<string, unknown>
   }
   return files
 }
@@ -177,12 +168,34 @@ export function readLocaleFiles(locale, messagesRoot) {
 /**
  * Loads one locale's merged catalog from disk: its renderable messages and its
  * `@key` metadata, separated (the runtime never sees metadata).
- * @param {string} locale the locale dir name (e.g. `en`, `en-XA`)
- * @param {string} [messagesRoot]
- * @returns {{ messages: Record<string, string>, metadata: Record<string, Record<string, unknown>> }}
+ * @param locale the locale dir name (e.g. `en`, `en-XA`)
+ * @param messagesRoot
  */
-export function loadCatalog(locale, messagesRoot) {
+export function loadCatalog(locale: string, messagesRoot?: string): Catalog {
   return mergeCatalogFiles(readLocaleFiles(locale, messagesRoot))
+}
+
+/**
+ * The structure extracted from an ICU message: placeholder/argument names,
+ * `<tag>` names, and the category labels per argument, kept in SEPARATE maps for
+ * `plural` vs `select`.
+ */
+interface MessageStructure {
+  placeholders: Set<string>
+  tags: Set<string>
+  pluralCategories: Map<string, Set<string>>
+  selectCategories: Map<string, Set<string>>
+}
+
+/**
+ * One `intl-messageformat` AST element. Loosely typed (the exact shape varies by
+ * `type`); we only read `type`, `value`, `options`, and `children`.
+ */
+interface AstElement {
+  type: number
+  value: string
+  options?: Record<string, { value: AstElement[] }>
+  children?: AstElement[]
 }
 
 /** A parsed-message analysis. See `parseMessage`. */
@@ -194,10 +207,8 @@ export function loadCatalog(locale, messagesRoot) {
  * locale's required CLDR set, where `select` categories are an arbitrary,
  * message-defined enumeration that must match English exactly (and is covered by
  * placeholder/tag parity, not by CLDR coverage).
- * @param {readonly any[]} ast
- * @param {{ placeholders: Set<string>, tags: Set<string>, pluralCategories: Map<string, Set<string>>, selectCategories: Map<string, Set<string>> }} acc
  */
-function walkAst(ast, acc) {
+function walkAst(ast: readonly AstElement[], acc: MessageStructure): void {
   for (const el of ast) {
     switch (el.type) {
       case TYPE.argument:
@@ -216,10 +227,10 @@ function walkAst(ast, acc) {
         // categories go into separate maps (see the JSDoc above).
         acc.placeholders.add(el.value)
         const target = el.type === TYPE.plural ? acc.pluralCategories : acc.selectCategories
-        const cats = target.get(el.value) ?? new Set()
-        for (const [category, branch] of Object.entries(el.options)) {
+        const cats = target.get(el.value) ?? new Set<string>()
+        for (const [category, branch] of Object.entries(el.options ?? {})) {
           cats.add(category)
-          walkAst(/** @type {any} */ (branch).value, acc)
+          walkAst(branch.value, acc)
         }
         target.set(el.value, cats)
         break
@@ -227,7 +238,7 @@ function walkAst(ast, acc) {
       case TYPE.tag:
         // `<name>…children…</name>`. Record the tag name and walk its children.
         acc.tags.add(el.value)
-        walkAst(el.children, acc)
+        walkAst(el.children ?? [], acc)
         break
       // literal (0) and pound (7) carry no structure a translation must match.
       default:
@@ -244,24 +255,20 @@ function walkAst(ast, acc) {
  * construction throws; this returns `{ ok: false, error }` with empty sets so
  * the ICU-validity check (M3) can flag it without crashing the run.
  *
- * @param {string} value the ICU message string
- * @param {string} [locale] locale tag for parsing (default `en`; the AST shape
+ * @param value the ICU message string
+ * @param locale locale tag for parsing (default `en`; the AST shape
  *   is locale-independent, so this only affects which CLDR plural set the engine
  *   would later use, irrelevant to structure extraction)
- * @returns {{
- *   placeholders: Set<string>,
- *   tags: Set<string>,
- *   pluralCategories: Map<string, Set<string>>,
- *   selectCategories: Map<string, Set<string>>,
- *   ok: boolean,
- *   error?: string,
- * }}
  */
-export function parseMessage(value, locale = 'en') {
-  /** @type {{ placeholders: Set<string>, tags: Set<string>, pluralCategories: Map<string, Set<string>>, selectCategories: Map<string, Set<string>> }} */
-  const acc = { placeholders: new Set(), tags: new Set(), pluralCategories: new Map(), selectCategories: new Map() }
+export function parseMessage(value: string, locale = 'en'): MessageStructure & { ok: boolean; error?: string } {
+  const acc: MessageStructure = {
+    placeholders: new Set(),
+    tags: new Set(),
+    pluralCategories: new Map(),
+    selectCategories: new Map(),
+  }
   try {
-    const ast = new IntlMessageFormat(value, locale).getAst()
+    const ast = new IntlMessageFormat(value, locale).getAst() as unknown as readonly AstElement[]
     walkAst(ast, acc)
     return { ...acc, ok: true }
   } catch (err) {
@@ -276,10 +283,10 @@ export function parseMessage(value, locale = 'en') {
  * from, and compared by the stale check (M2): stored hash ≠ current English value's
  * hash ⇒ the translation is stale. Deterministic and git-independent (survives
  * rebases/reformats); hashes the exact string, so any byte change flips it.
- * @param {string} englishValue the exact English message value
- * @returns {string} 7-char lowercase hex
+ * @param englishValue the exact English message value
+ * @returns 7-char lowercase hex
  */
-export function sourceHash(englishValue) {
+export function sourceHash(englishValue: string): string {
   return createHash('sha256').update(englishValue, 'utf8').digest('hex').slice(0, 7)
 }
 
@@ -291,9 +298,8 @@ export function sourceHash(englishValue) {
  * truth, shared by the don't-translate check (which warns when a translation drops
  * one) AND the pseudolocale generator (which keeps them verbatim so en-XA, a
  * faithful translation simulation, passes that check). Case-sensitive, whole-word.
- * @type {readonly string[]}
  */
-export const BRAND_WORDS = Object.freeze([
+export const BRAND_WORDS: readonly string[] = Object.freeze([
   'Cmdr', // the product name
   'macOS', // Apple's OS name; never localized
   'GitHub', // external service
@@ -316,9 +322,8 @@ export const BRAND_WORDS = Object.freeze([
  * `system-strings.svelte.ts` `ENGLISH_DEFAULTS` in snake_case `{token}` form. Also
  * guarded structurally by the parity check's raw `{token}` comparison; the
  * don't-translate check lists them for a clearer, token-specific message.
- * @type {readonly string[]}
  */
-export const SYSTEM_TOKENS = Object.freeze([
+export const SYSTEM_TOKENS: readonly string[] = Object.freeze([
   '{system_settings}',
   '{privacy_and_security}',
   '{full_disk_access}',
@@ -332,21 +337,16 @@ export const SYSTEM_TOKENS = Object.freeze([
  * boundaries use lookarounds against ASCII alphanumerics, so "macOS" inside
  * "macOSes" doesn't count but "macOS." does. Shared by the don't-translate check
  * and the pseudolocale generator's brand-word protection.
- * @param {string} value
- * @param {string} word
- * @returns {boolean}
  */
-export function hasWholeWord(value, word) {
+export function hasWholeWord(value: string, word: string): boolean {
   return wholeWordRegExp(word).test(value)
 }
 
 /**
  * A fresh whole-word matcher for `word` (global, so callers can iterate matches).
  * Regex metacharacters in `word` are escaped (none today, but safe).
- * @param {string} word
- * @returns {RegExp}
  */
-export function wholeWordRegExp(word) {
+export function wholeWordRegExp(word: string): RegExp {
   const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return new RegExp(`(?<![A-Za-z0-9])${escaped}(?![A-Za-z0-9])`, 'g')
 }
@@ -366,11 +366,8 @@ export function wholeWordRegExp(word) {
  * start. This is intentionally looser than `hasWholeWord`: use it for the
  * LOCALE-side presence test, where inflection is legitimate; keep `hasWholeWord`
  * for the ENGLISH side, where the brand appears bare.
- * @param {string} value
- * @param {string} word
- * @returns {boolean}
  */
-export function hasBrandPresent(value, word) {
+export function hasBrandPresent(value: string, word: string): boolean {
   const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}\\p{Ll}*(?![\\p{L}\\p{N}])`, 'u').test(value)
 }
@@ -385,10 +382,8 @@ export function hasBrandPresent(value, word) {
  * ICU); they compare the raw `{token}` set instead. Single source of truth for the
  * raw/ICU split, reused by the pseudolocale generator and the locale checks.
  * See `src/lib/errors/CLAUDE.md` + `src/lib/intl/CLAUDE.md`.
- * @param {string} key
- * @returns {boolean}
  */
-export function isRawKey(key) {
+export function isRawKey(key: string): boolean {
   return key.startsWith('errors.')
 }
 
@@ -399,14 +394,13 @@ export function isRawKey(key) {
  * set, exactly the role placeholder parity plays for ICU messages. Mirrors the
  * generator's `pseudoRaw` token handling: a `{…}` span (no nesting in raw error
  * tokens) is one token; everything else is literal.
- * @param {string} value the raw English/locale message
- * @returns {Set<string>} token names without the braces, e.g. `{ 'system_settings' }`
+ * @param value the raw English/locale message
+ * @returns token names without the braces, e.g. `{ 'system_settings' }`
  */
-export function rawTokens(value) {
-  /** @type {Set<string>} */
-  const tokens = new Set()
+export function rawTokens(value: string): Set<string> {
+  const tokens = new Set<string>()
   const re = /\{([^{}]*)\}/g
-  let match
+  let match: RegExpExecArray | null
   while ((match = re.exec(value)) !== null) tokens.add(match[1])
   return tokens
 }

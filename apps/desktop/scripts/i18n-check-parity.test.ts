@@ -1,5 +1,5 @@
 /**
- * Tests for the placeholder/tag parity check (`i18n-check-parity.js`).
+ * Tests for the placeholder/tag parity check (`i18n-check-parity.ts`).
  *
  * Clean path: the committed pseudolocale fixture preserves every placeholder,
  * tag, and raw `{token}`, so it passes. Negative paths copy the fixture into a
@@ -11,15 +11,19 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { runParityCheck, parityDetail } from './i18n-check-parity.js'
-import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.js'
+import { runParityCheck, parityDetail } from './i18n-check-parity.ts'
+import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.ts'
 
 const FIXTURE_ROOT = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
 
 function capture() {
-  /** @type {string[]} */
-  const lines = []
-  return { lines, write: (/** @type {string} */ l) => void lines.push(l) }
+  const lines: string[] = []
+  return {
+    lines,
+    write: (l: string) => {
+      lines.push(l)
+    },
+  }
 }
 
 describe('parityDetail: pure comparison', () => {
@@ -64,21 +68,22 @@ describe('runParityCheck against the committed fixture', () => {
 })
 
 describe('runParityCheck negative cases (temp catalog copies)', () => {
-  /** @type {string} */
-  let root
-  /** @type {string} */
-  let xaFile
+  let root: string
+  let xaFile: string
 
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-parity-'))
     cpSync(FIXTURE_ROOT, root, { recursive: true })
     xaFile = join(root, 'en-XA', 'fixture.json')
   })
-  afterEach(() => rmSync(root, { recursive: true, force: true }))
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
 
-  const read = () => JSON.parse(readFileSync(xaFile, 'utf8'))
-  /** @param {Record<string, any>} obj */
-  const writeXa = (obj) => writeFileSync(xaFile, JSON.stringify(obj, null, 2) + '\n', 'utf8')
+  const read = (): Record<string, unknown> => JSON.parse(readFileSync(xaFile, 'utf8')) as Record<string, unknown>
+  const writeXa = (obj: Record<string, unknown>) => {
+    writeFileSync(xaFile, JSON.stringify(obj, null, 2) + '\n', 'utf8')
+  }
   const run = () => {
     const cap = capture()
     const code = runParityCheck({ messagesRoot: root, write: cap.write })
@@ -126,14 +131,15 @@ describe('runParityCheck negative cases (temp catalog copies)', () => {
 })
 
 describe('no-locales path (only en)', () => {
-  /** @type {string} */
-  let root
+  let root: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-parity-only-en-'))
     mkdirSync(join(root, 'en'), { recursive: true })
     cpSync(join(FIXTURE_ROOT, 'en', 'fixture.json'), join(root, 'en', 'fixture.json'))
   })
-  afterEach(() => rmSync(root, { recursive: true, force: true }))
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
 
   it('localesToCheck is empty and the check is a clean no-op', () => {
     expect(localesToCheck(root)).toEqual([])

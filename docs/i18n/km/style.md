@@ -77,7 +77,7 @@ Mark a term `high` only once MS terminology confirms it; the thin GNOME catalog 
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
 tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`. Latin brand names stay in Latin script inside Khmer text (don't insert ZWSP
+`apps/desktop/scripts/i18n-catalog-lib.ts`. Latin brand names stay in Latin script inside Khmer text (don't insert ZWSP
 inside a Latin brand word).
 
 ## Plurals

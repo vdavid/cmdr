@@ -142,7 +142,7 @@ function resolveRaw(locale: string, key: string): string {
 // A screenshot-coupling harness drives the app surface-by-surface, records which
 // catalog keys render on each surface, and writes `@key.screenshot` couplings
 // from the result (see `test/e2e-playwright/i18n-capture.spec.ts` and
-// `scripts/couple-screenshots.js`). The runtime is the only place that knows the
+// `scripts/couple-screenshots.ts`). The runtime is the only place that knows the
 // RESOLVED key behind every `t()`/`getMessage()`/`<Trans>` call, so the
 // instrumentation lives here.
 //

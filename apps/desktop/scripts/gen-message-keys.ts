@@ -10,7 +10,7 @@
  *    written keys, so a dynamically-built key reads as dead (don't blindly
  *    delete on this warning alone — see the `messages/` docs).
  *
- * Pure logic lives in `gen-message-keys-lib.js` (unit-tested); this CLI does the
+ * Pure logic lives in `gen-message-keys-lib.ts` (unit-tested); this CLI does the
  * filesystem I/O and the source scan. Run via `pnpm intl:keys` from the desktop
  * app dir, or through the `keys-fresh` check in the pipeline. Never hand-edit
  * `keys.gen.ts`.
@@ -25,7 +25,7 @@ import {
   findCatalogKeyMentions,
   diffKeys,
   emitKeysModule,
-} from './gen-message-keys-lib.js'
+} from './gen-message-keys-lib.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const desktopDir = join(here, '..')
@@ -47,20 +47,17 @@ const SKIP_FILES = new Set(['messages.svelte.ts', 'Trans.svelte'])
 
 /**
  * Whether a filename should be excluded from the usage scan.
- * @param {string} name
- * @returns {boolean}
  */
-function isScanExcluded(name) {
+function isScanExcluded(name: string): boolean {
   return SKIP_FILES.has(name) || name.endsWith('.test.ts') || name.endsWith('.test.js')
 }
 
 /** Reads and parses every `en/*.json` catalog into a filename → JSON map. */
-function readCatalogFiles() {
-  /** @type {Record<string, Record<string, unknown>>} */
-  const files = {}
+function readCatalogFiles(): Record<string, Record<string, unknown>> {
+  const files: Record<string, Record<string, unknown>> = {}
   for (const file of readdirSync(messagesDir)) {
     if (!file.endsWith('.json')) continue
-    files[file] = JSON.parse(readFileSync(join(messagesDir, file), 'utf8'))
+    files[file] = JSON.parse(readFileSync(join(messagesDir, file), 'utf8')) as Record<string, unknown>
   }
   return files
 }
@@ -71,12 +68,12 @@ function readCatalogFiles() {
  * missing detection) and catalog keys whose literal appears anywhere (into
  * `mentioned`, suppresses false dead warnings for indirection). The generated
  * `keys.gen.ts` is skipped (it lists the catalog keys, not usages).
- * @param {string} dir
- * @param {Set<string>} acc keys from direct references
- * @param {Set<string>} mentioned catalog keys whose literal appears in source
- * @param {string[]} catalogKeys the catalog key list to scan for mentions
+ * @param dir
+ * @param acc keys from direct references
+ * @param mentioned catalog keys whose literal appears in source
+ * @param catalogKeys the catalog key list to scan for mentions
  */
-function scanUsedKeys(dir, acc, mentioned, catalogKeys) {
+function scanUsedKeys(dir: string, acc: Set<string>, mentioned: Set<string>, catalogKeys: string[]): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
       if (!SKIP_DIRS.has(entry.name)) scanUsedKeys(join(dir, entry.name), acc, mentioned, catalogKeys)
@@ -93,10 +90,9 @@ function scanUsedKeys(dir, acc, mentioned, catalogKeys) {
 const catalogKeys = collectCatalogKeys(readCatalogFiles())
 writeFileSync(outFile, emitKeysModule(catalogKeys))
 
-/** @type {Set<string>} */
-const usedKeys = new Set()
-/** @type {Set<string>} Catalog keys whose literal text appears in source, for dead-key suppression. */
-const literalKeys = new Set()
+const usedKeys = new Set<string>()
+/** Catalog keys whose literal text appears in source, for dead-key suppression. */
+const literalKeys = new Set<string>()
 scanUsedKeys(srcDir, usedKeys, literalKeys, catalogKeys)
 const { missing, dead } = diffKeys({ catalogKeys, usedKeys, literalKeys })
 

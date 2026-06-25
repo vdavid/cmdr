@@ -68,7 +68,7 @@ From Microsoft terminology Dari (Tier 2). Cross-reference `fa` but prefer these 
 Keep these verbatim (product or platform names, not words to translate): Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust,
 Svelte, Quick Look. They render LTR inside RTL text, so bidi handling must keep them intact. The same list (plus the
 system placeholder tokens) is enforced by the `desktop-i18n-dont-translate` check; see the curated list in
-`apps/desktop/scripts/i18n-catalog-lib.js`.
+`apps/desktop/scripts/i18n-catalog-lib.ts`.
 
 ## Plurals
 

@@ -85,7 +85,7 @@ Linux uses `gio mount` (GVFS) instead.
 Full UX control (login form appears in-pane), smart defaults (pre-fill username from connection history), and
 guest/credentials toggle. `keychain.rs` delegates to `crate::secrets::store()` for platform-agnostic credential storage
 (macOS Keychain, Linux Secret Service, encrypted file fallback). Passwords never stored in our settings file.
-`CMDR_SECRET_STORE=file` forces the plain file backend in dev mode (set by `tauri-wrapper.js`).
+`CMDR_SECRET_STORE=file` forces the plain file backend in dev mode (set by `tauri-wrapper.ts`).
 
 To make this hold, every NetFS mount sets `UIOption = NoUI` (`open_option_entries` in `mount.rs`). Without it, NetFS
 hands auth *failures* to NetAuthAgent even when we pass explicit credentials: the agent pops a system dialog ("You

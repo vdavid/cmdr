@@ -39,7 +39,7 @@ func RunDesktopMessageScreenshotsFresh(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
-	cmd := exec.Command("node", "scripts/couple-screenshots.js", "--check")
+	cmd := exec.Command("node", "scripts/couple-screenshots.ts", "--check")
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {

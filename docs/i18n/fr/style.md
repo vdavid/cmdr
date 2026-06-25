@@ -151,7 +151,7 @@ Add rows as terms come up, each with sources and a confidence.
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{email}`-style placeholder
-tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.js`. macOS UI
+tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`. macOS UI
 names Cmdr opens into (System Settings panes, "Corbeille") should match a French macOS.
 
 Existing crash-reporter term choices (keep consistent across the catalog):

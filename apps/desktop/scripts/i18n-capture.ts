@@ -44,6 +44,7 @@
  */
 
 import { spawn, spawnSync, execSync } from 'node:child_process'
+import type { ChildProcess, SpawnSyncOptions } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -69,10 +70,13 @@ const wantBuild = process.argv.includes('--build')
  * --build`.
  */
 const localeIdx = process.argv.indexOf('--locale')
-const captureLocale = localeIdx >= 0 ? process.argv[localeIdx + 1] : 'en'
-if (localeIdx >= 0 && (captureLocale === undefined || captureLocale.startsWith('--'))) {
+// `argv.at(localeIdx + 1)` is `string | undefined`: undefined when `--locale` is
+// the last arg, so the guard below stays meaningful (not a dead branch).
+const localeArg = localeIdx >= 0 ? process.argv.at(localeIdx + 1) : 'en'
+if (localeArg === undefined || localeArg.startsWith('--')) {
   throw new Error('`--locale` needs a tag, e.g. `--locale en-XA`')
 }
+const captureLocale = localeArg
 const isOverflow = captureLocale !== 'en'
 // `--worst-case` (only meaningful in an overflow pass) stresses layout the
 // hardest: on top of the pseudolocale, the driver sets the UI zoom to its max
@@ -91,12 +95,7 @@ if (wantWorstCase && !isOverflow) {
 // another worktree can never collide and relaunches don't race a stale bind.
 const SOCKET_OVERRIDE = process.env.CMDR_PLAYWRIGHT_SOCKET
 
-/**
- * @param {string} cmd
- * @param {string[]} args
- * @param {import('node:child_process').SpawnSyncOptions} [opts]
- */
-function run(cmd, args, opts = {}) {
+function run(cmd: string, args: string[], opts: SpawnSyncOptions = {}) {
   const res = spawnSync(cmd, args, { cwd: desktopDir, stdio: 'inherit', ...opts })
   if (res.status !== 0) {
     throw new Error(`${cmd} ${args.join(' ')} exited ${String(res.status)}`)
@@ -105,9 +104,8 @@ function run(cmd, args, opts = {}) {
 
 /**
  * Resolves the host target triple (matches the build target).
- * @returns {string}
  */
-function hostTriple() {
+function hostTriple(): string {
   const line = execSync('rustc -vV', { encoding: 'utf8' })
     .split('\n')
     .find((l) => l.startsWith('host:'))
@@ -117,23 +115,24 @@ function hostTriple() {
 
 /**
  * Polls a Unix socket until connectable or the deadline passes.
- * @param {string} path
- * @param {number} timeoutMs
- * @returns {Promise<void>}
  */
-async function waitForSocket(path, timeoutMs) {
+async function waitForSocket(path: string, timeoutMs: number): Promise<void> {
   const deadline = Date.now() + timeoutMs
   for (;;) {
-    const ok = await new Promise((resolve) => {
+    const ok = await new Promise<boolean>((resolve) => {
       const c = net.connect(path, () => {
         c.end()
         resolve(true)
       })
-      c.on('error', () => resolve(false))
+      c.on('error', () => {
+        resolve(false)
+      })
     })
     if (ok) return
     if (Date.now() > deadline) throw new Error(`tauri-playwright socket ${path} never became ready`)
-    await new Promise((r) => setTimeout(r, 150))
+    await new Promise<void>((r) => {
+      setTimeout(r, 150)
+    })
   }
 }
 
@@ -146,10 +145,9 @@ async function waitForSocket(path, timeoutMs) {
  * discovery comes back unusable, failing those surfaces. A tiny bind/release race
  * window is acceptable here (single local process, no contention). Returns a
  * number in the OS ephemeral range (high), matching the no-standard-ports rule.
- * @returns {Promise<number>}
  */
-function reserveFreePort() {
-  return new Promise((resolve, reject) => {
+function reserveFreePort(): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
     const srv = net.createServer()
     srv.on('error', reject)
     srv.listen(0, '127.0.0.1', () => {
@@ -173,8 +171,7 @@ function reserveFreePort() {
 // store) must render. So every launch gets the same fresh mktemp dir, removed
 // on exit. Created lazily on first launch; reused across the multi-launch
 // passes so they share one default-settings baseline.
-/** @type {string | null} */
-let captureDataDir = null
+let captureDataDir: string | null = null
 function ensureCaptureDataDir() {
   if (captureDataDir == null) {
     captureDataDir = mkdtempSync(join(tmpdir(), 'cmdr-i18n-capture-data-'))
@@ -193,8 +190,7 @@ function cleanupCaptureDataDir() {
 }
 process.on('exit', cleanupCaptureDataDir)
 
-/** @type {import('node:child_process').ChildProcess | null} */
-let appProc = null
+let appProc: ChildProcess | null = null
 // Stop ONLY the app process THIS script launched, never a broad
 // `pkill -f 'target.*Cmdr'`: that pattern matches any worktree's running Cmdr
 // (dev or E2E) and would clobber a parallel session. We spawn the binary
@@ -247,7 +243,7 @@ async function main() {
     // can't switch to it. Only `en-XA` (the pseudolocale) is generable today.
     if (captureLocale === 'en-XA') {
       console.log(`[i18n-capture] overflow pass: generating ${captureLocale} catalog…`)
-      run('node', ['scripts/gen-pseudolocale.js'])
+      run('node', ['scripts/gen-pseudolocale.ts'])
     } else {
       console.log(
         `[i18n-capture] overflow pass in ${captureLocale}: assuming its catalog is already on disk ` +
@@ -303,7 +299,7 @@ async function main() {
   // Fresh fixtures so the panes have predictable content for the screenshot.
   // This imports a `.ts` module, so the script runs under `tsx` (see the
   // `i18n:capture` package script), matching `check:type-drift`'s convention.
-  const { createFixtures } = await import('../test/e2e-shared/fixtures.js')
+  const { createFixtures } = await import('../test/e2e-shared/fixtures.ts')
   const startPath = createFixtures()
   console.log(`[i18n-capture] fixtures at ${startPath}`)
 
@@ -315,8 +311,7 @@ async function main() {
   // `CMDR_I18N_OVERFLOW_LOCALE` (overflow pass only) tells the spec to switch the
   // app to the pseudolocale, redirect screenshots to `overflow/`, and run the
   // clip scan; empty/absent → the normal English coupling capture.
-  /** @type {Record<string, string>} */
-  const mainEnv = { CMDR_MOCK_FDA: 'granted' }
+  const mainEnv: Record<string, string> = { CMDR_MOCK_FDA: 'granted' }
   if (isOverflow) mainEnv.CMDR_I18N_OVERFLOW_LOCALE = captureLocale
   // Worst-case overflow pass: the spec reads this to also max the UI zoom and
   // shrink each window to its minimum before each shot + clip scan, and to
@@ -339,8 +334,7 @@ async function main() {
   // debug-assertions capture build is what makes `CMDR_MOCK_LICENSE` /
   // `CMDR_MOCK_FDA` (both `#[cfg(debug_assertions)]`) take effect in a release
   // binary. `CMDR_MOCK_LICENSE` values per `app_status.rs::get_mock_status`.
-  /** @type {{ env: Record<string, string>, label: string }[]} */
-  const passes = [
+  const passes: { env: Record<string, string>; label: string }[] = [
     // License states (paid About, perpetual About, commercial reminder, expired).
     { env: { CMDR_MOCK_LICENSE: 'commercial' }, label: 'license:commercial' },
     { env: { CMDR_MOCK_LICENSE: 'perpetual' }, label: 'license:perpetual' },
@@ -355,7 +349,7 @@ async function main() {
   // others (each pass MERGES into the report, so partial progress is kept). A
   // failed Playwright run throws out of `launchAndCapture`; catch it, record the
   // pass, and continue. We surface the failures (non-zero exit) at the very end.
-  const failedPasses = []
+  const failedPasses: string[] = []
   for (const { env: passEnv, label } of passes) {
     try {
       await launchAndCapture(binary, startPath, { ...passEnv, CMDR_I18N_CAPTURE_PASS: label }, label)
@@ -376,13 +370,13 @@ async function main() {
  * Launches the capture binary (with `extraEnv` merged in), waits for its unique
  * socket, runs ONLY the capture spec against it, then stops that app. One launch
  * per pass so a `CMDR_MOCK_LICENSE` state takes effect (it's read once at launch).
- * @param {string} binary
- * @param {string} startPath
- * @param {Record<string, string>} extraEnv
- * @param {string} passLabel
- * @returns {Promise<void>}
  */
-async function launchAndCapture(binary, startPath, extraEnv, passLabel) {
+async function launchAndCapture(
+  binary: string,
+  startPath: string,
+  extraEnv: Record<string, string>,
+  passLabel: string,
+): Promise<void> {
   // A per-pass unique socket: the prior app is stopped, but a fresh socket path
   // avoids any stale-bind races across relaunches. An explicit override wins.
   const socket =
@@ -450,7 +444,7 @@ main()
     killApp()
     process.exit(0)
   })
-  .catch((e) => {
+  .catch((e: unknown) => {
     console.error(`[i18n-capture] ${e instanceof Error ? e.message : String(e)}`)
     killApp()
     process.exit(1)

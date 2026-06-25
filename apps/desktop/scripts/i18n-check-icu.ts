@@ -16,21 +16,20 @@
  * instead. (The pseudolocale generator makes the same split via `isRawKey`, so
  * the fixture's raw value stays raw and is correctly skipped here.)
  *
- * Run: `pnpm i18n:check-icu` (desktop) or `node scripts/i18n-check-icu.js`.
+ * Run: `pnpm i18n:check-icu` (desktop) or `node scripts/i18n-check-icu.ts`.
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
-import { parseMessage, isRawKey } from './i18n-catalog-lib.js'
-import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.js'
+import { parseMessage, isRawKey } from './i18n-catalog-lib.ts'
+import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /**
  * Returns the ICU parse error for a locale value, or `null` if it compiles (or is
  * a raw key, which isn't ICU). Exposed for unit tests.
- * @param {string} key the message key (used to skip the raw `errors.*` family)
- * @param {string} localeValue the locale's value
- * @returns {string | null}
+ * @param key the message key (used to skip the raw `errors.*` family)
+ * @param localeValue the locale's value
  */
-export function icuError(key, localeValue) {
+export function icuError(key: string, localeValue: string): string | null {
   if (isRawKey(key)) return null // raw errors.* aren't ICU; the parity check guards their tokens
   const r = parseMessage(localeValue)
   if (r.ok) return null
@@ -40,12 +39,10 @@ export function icuError(key, localeValue) {
 
 /**
  * Runs the ICU-validity check over the catalogs under `messagesRoot`.
- * @param {object} [opts]
- * @param {string} [opts.messagesRoot] override the `messages/` root (for tests)
- * @param {(line: string) => void} [opts.write] output sink, one line at a time (for tests)
- * @returns {number}
+ * @param opts.messagesRoot override the `messages/` root (for tests)
+ * @param opts.write output sink, one line at a time (for tests)
  */
-export function runIcuCheck(opts = {}) {
+export function runIcuCheck(opts: { messagesRoot?: string; write?: (line: string) => void } = {}): number {
   return runLocaleCheck({
     title: 'ICU validity',
     messagesRoot: opts.messagesRoot,

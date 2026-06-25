@@ -128,7 +128,7 @@ Add terms in the same `chosen · sources · confidence` shape; keep the catalog 
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. The curated list is enforced by `desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.js`.
+tokens. The curated list is enforced by `desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.ts`.
 
 ## Plurals
 

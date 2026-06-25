@@ -1,6 +1,6 @@
 /**
  * Tests for the key-parity / untranslated-visibility check
- * (`i18n-check-coverage.js`).
+ * (`i18n-check-coverage.ts`).
  *
  * Clean path: the committed pseudolocale fixture defines every English key and
  * accents every value, so nothing is missing or identical. Negative paths: drop a
@@ -11,15 +11,14 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { runCoverageCheck, coverageStatus } from './i18n-check-coverage.js'
-import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.js'
+import { runCoverageCheck, coverageStatus } from './i18n-check-coverage.ts'
+import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.ts'
 
 const FIXTURE_ROOT = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
 
 function capture() {
-  /** @type {string[]} */
-  const lines = []
-  return { lines, write: (/** @type {string} */ l) => void lines.push(l) }
+  const lines: string[] = []
+  return { lines, write: (l: string) => void lines.push(l) }
 }
 
 describe('coverageStatus: pure classifier', () => {
@@ -56,20 +55,21 @@ describe('runCoverageCheck against the committed fixture', () => {
 })
 
 describe('runCoverageCheck negative cases (temp catalog copies)', () => {
-  /** @type {string} */
-  let root
-  /** @type {string} */
-  let xaFile
+  let root: string
+  let xaFile: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-coverage-'))
     cpSync(FIXTURE_ROOT, root, { recursive: true })
     xaFile = join(root, 'en-XA', 'fixture.json')
   })
-  afterEach(() => rmSync(root, { recursive: true, force: true }))
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
 
-  const read = () => JSON.parse(readFileSync(xaFile, 'utf8'))
-  /** @param {Record<string, any>} obj */
-  const writeXa = (obj) => writeFileSync(xaFile, JSON.stringify(obj, null, 2) + '\n', 'utf8')
+  const read = (): Record<string, unknown> => JSON.parse(readFileSync(xaFile, 'utf8')) as Record<string, unknown>
+  const writeXa = (obj: Record<string, unknown>) => {
+    writeFileSync(xaFile, JSON.stringify(obj, null, 2) + '\n', 'utf8')
+  }
   const run = () => {
     const cap = capture()
     return { code: runCoverageCheck({ messagesRoot: root, write: cap.write }), text: cap.lines.join('\n') }
@@ -100,7 +100,7 @@ describe('runCoverageCheck negative cases (temp catalog copies)', () => {
     const xa = read()
     xa['fixture.plainLabel'] = 'Cancel' // verbatim English, but deliberately so
     xa['@fixture.plainLabel'] = {
-      ...xa['@fixture.plainLabel'],
+      ...(xa['@fixture.plainLabel'] as Record<string, unknown>),
       sameAsSourceJustification: 'brand name; do not translate',
     }
     writeXa(xa)
@@ -111,14 +111,15 @@ describe('runCoverageCheck negative cases (temp catalog copies)', () => {
 })
 
 describe('no-locales path (only en)', () => {
-  /** @type {string} */
-  let root
+  let root: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-coverage-only-en-'))
     mkdirSync(join(root, 'en'), { recursive: true })
     cpSync(join(FIXTURE_ROOT, 'en', 'fixture.json'), join(root, 'en', 'fixture.json'))
   })
-  afterEach(() => rmSync(root, { recursive: true, force: true }))
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
 
   it('is a clean no-op', () => {
     expect(localesToCheck(root)).toEqual([])

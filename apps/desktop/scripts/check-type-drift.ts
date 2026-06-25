@@ -7,8 +7,6 @@
  * Run: pnpm tsx scripts/check-type-drift.ts
  */
 
-/* eslint-disable no-console */
-
 import * as fs from 'fs'
 import * as path from 'path'
 

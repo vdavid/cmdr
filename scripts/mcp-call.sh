@@ -25,7 +25,7 @@ set -euo pipefail
 #   1. CMDR_MCP_PORT env: explicit pin wins.
 #   2. Read <data_dir>/mcp.port (the server writes it atomically after bind). The data
 #      dir comes from CMDR_DATA_DIR, else is derived from CMDR_INSTANCE_ID (per OS,
-#      mirroring tauri-wrapper.js + instance-id.js), else defaults to the "dev"
+#      mirroring tauri-wrapper.ts + instance-id.ts), else defaults to the "dev"
 #      instance so a bare `./scripts/mcp-call.sh` against a stock `pnpm dev` works.
 #   3. Fail loud. No legacy hardcoded-port fallback: the dev default is an EPHEMERAL
 #      port (developer.mcpPort = 0), so a missing port file means the server hasn't
@@ -35,7 +35,7 @@ HOST="127.0.0.1"
 TIMEOUT=30
 
 resolve_data_dir() {
-    # Mirrors computeAppDataDir() in apps/desktop/scripts/instance-id.js.
+    # Mirrors computeAppDataDir() in apps/desktop/scripts/instance-id.ts.
     local instance="$1"
     local identifier="com.veszelovszki.cmdr-${instance}"
     case "$(uname -s)" in

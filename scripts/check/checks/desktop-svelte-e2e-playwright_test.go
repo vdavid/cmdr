@@ -7,7 +7,7 @@ import (
 )
 
 // shardInstanceID stamps the CMDR_INSTANCE_ID env var the binary picks up at launch. The
-// format is load-bearing on two fronts: (1) instance-id.js productName() expects exactly
+// format is load-bearing on two fronts: (1) instance-id.ts productName() expects exactly
 // `e2e-<short>-<pid>` to reshape the Dock label into `Cmdr (E2E <short>)`, and (2) the
 // macOS Keychain backend suffixes its SERVICE_NAME with the same string. Drift would
 // quietly turn the Dock label into "Cmdr (e2e-mtp-12345)" (still works, ugly) and break a
@@ -53,7 +53,7 @@ func TestPlanShardsAssignsInstanceIDs(t *testing.T) {
 	}
 
 	// Non-MTP shards use the `nonmtp<i>` short name (no dash between "nonmtp" and the index)
-	// to match the productName regex in instance-id.js.
+	// to match the productName regex in instance-id.ts.
 	for i := 1; i <= nonMtpShards; i++ {
 		shard := shards[i]
 		wantInstance := fmt.Sprintf("e2e-nonmtp%d-%d", i, pid)

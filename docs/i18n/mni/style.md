@@ -39,7 +39,7 @@ are DOLEN's English-Manipuri Dictionary and SAGOLSEM's Pukeilol.)
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
-`desktop-i18n-dont-translate`; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.js`. Note Microsoft
+`desktop-i18n-dont-translate`; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`. Note Microsoft
 translates a bare "&" to অমসুং (amasung) in running text but keeps it in tags, placeholders, and shortcuts; our
 placeholder tokens are protected by the same check.
 

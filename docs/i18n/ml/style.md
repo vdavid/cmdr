@@ -109,7 +109,7 @@ than mirroring English plural rules. No gender or case agreement interacts with 
 
 Keep verbatim (in Latin script, not transliterated): Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look,
 plus the `{system_settings}`-style tokens. The curated list is enforced by `desktop-i18n-dont-translate`
-(`apps/desktop/scripts/i18n-catalog-lib.js`). Don't transliterate brand names into Malayalam script.
+(`apps/desktop/scripts/i18n-catalog-lib.ts`). Don't transliterate brand names into Malayalam script.
 
 ## Terminology and glossary
 

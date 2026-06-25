@@ -61,7 +61,7 @@ value:
   them).
 
 The unit on which this raw/ICU split is decided is the KEY PREFIX (`errors.`), single-sourced as `isRawKey()` in
-[`../../../../scripts/i18n-catalog-lib.js`](../../../../scripts/i18n-catalog-lib.js). The locale checks honor it: the
+[`../../../../scripts/i18n-catalog-lib.ts`](../../../../scripts/i18n-catalog-lib.ts). The locale checks honor it: the
 ICU-validity check (`desktop-i18n-icu`) SKIPS `errors.*` (so valid raw copy isn't flagged as invalid ICU), and the
 parity check (`desktop-i18n-parity`) compares the raw `{token}` set instead of an ICU placeholder set for these keys.
 Translator-facing version of this note: [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Error
@@ -114,7 +114,7 @@ codegen ever sees it:
   title/explanation in this same pane"). Absent on direct (captured) couplings. Like `screenshot`, it's harness-written,
   never hand-authored, and stripped before runtime/codegen.
 - `sourceHash` (non-`en` locales only): a 7-char lowercase hex hash (git-style; the SHA-256 prefix of the EXACT English
-  value the translation was made from), computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.js`. The
+  value the translation was made from), computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.ts`. The
   pseudolocale generator and any locale skeleton write it; the `desktop-i18n-stale` check compares the stored hash
   against the current English value's hash and flags a translation whose source has since changed as STALE.
   Deterministic and git-independent (survives rebases/reformats); not present in `en` (the source has no source).
@@ -134,7 +134,7 @@ codegen ever sees it:
   byte-identical to English is deliberately identical in this locale, not a missed translation — a brand name
   (`Dropbox`), a unit symbol (`GB`), a placeholder-only string (`{width} × {height}`), or a word the locale genuinely
   shares with English (German `Server`, Swedish `Smart`). Present and non-empty → the `desktop-i18n-coverage` check
-  stops flagging that key as "possibly untranslated" (see `i18n-check-coverage.js`). It is a per-LOCALE judgment (German
+  stops flagging that key as "possibly untranslated" (see `i18n-check-coverage.ts`). It is a per-LOCALE judgment (German
   keeps `Server`; Spanish translates it to `Servidor`), so it lives in the locale catalog, never in `en`, and is
   repeated per locale even for universal brands (the repetition is accepted: each translator vouches for each identical
   key in their language). It only suppresses the IDENTICAL signal — a MISSING key still reports. Tie it to the source
@@ -162,8 +162,8 @@ twin too (it strips the leading `@` and checks the underlying key), so a metadat
 
 `@key.screenshot` values are populated by a re-runnable harness, never hand-authored. **`pnpm i18n:shots`** is the one
 command: it captures fresh screenshots, then rewrites every `@key.screenshot`. (Under the hood it's
-`i18n:capture --build` then `i18n:couple`; the orchestrator is `apps/desktop/scripts/i18n-capture.js`, the coupler is
-`couple-screenshots.js`, each carrying a full header comment. Conceptual overview + the prod-no-op define:
+`i18n:capture --build` then `i18n:couple`; the orchestrator is `apps/desktop/scripts/i18n-capture.ts`, the coupler is
+`couple-screenshots.ts`, each carrying a full header comment. Conceptual overview + the prod-no-op define:
 [`/docs/guides/i18n.md`](../../../../../../docs/guides/i18n.md) § Screenshots.)
 
 What's where, and what's tracked:
@@ -187,7 +187,7 @@ The coupler writes screenshots in two passes:
 - **Direct**: a key that rendered on a captured surface gets that surface's screenshot (no note). It assigns each key
   its FIRST surface in the report's order (surfaces ordered narrow-to-broad, so the most-specific surface wins).
 - **Representative**: for a key STILL uncoupled after the direct pass that matches a curated prefix in
-  `REPRESENTATIVE_SCREENSHOTS` (in `scripts/couple-screenshots.js`), the coupler writes a STAND-IN screenshot (a real
+  `REPRESENTATIVE_SCREENSHOTS` (in `scripts/couple-screenshots.ts`), the coupler writes a STAND-IN screenshot (a real
   capture of the same panel/toast/dialog where the string appears), plus a `@key.screenshotNote` explaining the mapping.
   This sets translators up for success on families with no captured surface of their own: the dynamic `errors.*` tail
   (mapped to one captured error pane, `error-message-example.png`), AI/cloud states, SMB/MTP connection states, the

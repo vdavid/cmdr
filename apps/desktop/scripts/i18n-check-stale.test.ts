@@ -1,6 +1,6 @@
 /**
- * Tests for the stale-translation check (`i18n-check-stale.js`) and the reusable
- * locale-check scaffolding (`i18n-locale-check-lib.js`) under it.
+ * Tests for the stale-translation check (`i18n-check-stale.ts`) and the reusable
+ * locale-check scaffolding (`i18n-locale-check-lib.ts`) under it.
  *
  * The clean path runs against the COMMITTED fixture (`test/fixtures/
  * i18n-pseudolocale/`): its `en-XA` hashes were generated from its `en`, so they
@@ -22,7 +22,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { runStaleCheck, staleReason } from './i18n-check-stale.js'
+import { runStaleCheck, staleReason } from './i18n-check-stale.ts'
 import {
   EXIT_CLEAN,
   EXIT_ISSUES,
@@ -30,17 +30,15 @@ import {
   localesToCheck,
   reportFindings,
   newFindings,
-} from './i18n-locale-check-lib.js'
-import { sourceHash } from './i18n-catalog-lib.js'
+} from './i18n-locale-check-lib.ts'
+import { sourceHash } from './i18n-catalog-lib.ts'
 
 const FIXTURE_ROOT = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
 
 /** Collect a run's output lines instead of printing them. */
 function capture() {
-  /** @type {string[]} */
-  const lines = []
-  /** @param {string} l */
-  const write = (l) => {
+  const lines: string[] = []
+  const write = (l: string) => {
     lines.push(l)
   }
   return { lines, write }
@@ -108,12 +106,9 @@ describe('runStaleCheck against the committed fixture', () => {
 })
 
 describe('runStaleCheck negative cases (temp catalog copies)', () => {
-  /** @type {string} */
-  let root
-  /** @type {string} */
-  let enFile
-  /** @type {string} */
-  let xaFile
+  let root: string
+  let enFile: string
+  let xaFile: string
 
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-stale-'))
@@ -126,10 +121,11 @@ describe('runStaleCheck negative cases (temp catalog copies)', () => {
     rmSync(root, { recursive: true, force: true })
   })
 
-  /** @param {string} file @returns {Record<string, any>} */
-  const read = (file) => JSON.parse(readFileSync(file, 'utf8'))
-  /** @param {string} file @param {Record<string, any>} obj */
-  const write = (file, obj) => writeFileSync(file, JSON.stringify(obj, null, 2) + '\n', 'utf8')
+  const read = (file: string): Record<string, unknown> =>
+    JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>
+  const write = (file: string, obj: Record<string, unknown>) => {
+    writeFileSync(file, JSON.stringify(obj, null, 2) + '\n', 'utf8')
+  }
 
   /** Run and return { code, text }. */
   const run = () => {
@@ -152,7 +148,7 @@ describe('runStaleCheck negative cases (temp catalog copies)', () => {
 
   it('flags a translation whose stored hash is missing', () => {
     const xa = read(xaFile)
-    delete xa['@fixture.greeting'].sourceHash
+    delete (xa['@fixture.greeting'] as Record<string, unknown>).sourceHash
     write(xaFile, xa)
 
     const { code, text } = run()
@@ -163,7 +159,7 @@ describe('runStaleCheck negative cases (temp catalog copies)', () => {
 
   it('flags a corrupted stored hash', () => {
     const xa = read(xaFile)
-    xa['@fixture.greeting'].sourceHash = '0000000'
+    ;(xa['@fixture.greeting'] as Record<string, unknown>).sourceHash = '0000000'
     write(xaFile, xa)
 
     const { code, text } = run()
@@ -176,7 +172,7 @@ describe('runStaleCheck negative cases (temp catalog copies)', () => {
     en['fixture.plainLabel'] = 'Dismiss'
     write(enFile, en)
     const xa = read(xaFile)
-    xa['@fixture.plainLabel'].reviewed = true
+    ;(xa['@fixture.plainLabel'] as Record<string, unknown>).reviewed = true
     write(xaFile, xa)
 
     const { code, text } = run()
@@ -197,10 +193,8 @@ describe('runStaleCheck negative cases (temp catalog copies)', () => {
 })
 
 describe('release-strict mode escalates a stale finding to an error exit', () => {
-  /** @type {string} */
-  let root
-  /** @type {string} */
-  let enFile
+  let root: string
+  let enFile: string
 
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-stale-strict-'))
@@ -212,8 +206,8 @@ describe('release-strict mode escalates a stale finding to an error exit', () =>
   })
 
   /** Make one en value drift so en-XA goes stale, then run in the given mode. */
-  const runStaleFixture = (/** @type {boolean} */ strict) => {
-    const en = JSON.parse(readFileSync(enFile, 'utf8'))
+  const runStaleFixture = (strict: boolean) => {
+    const en = JSON.parse(readFileSync(enFile, 'utf8')) as Record<string, unknown>
     en['fixture.plainLabel'] = 'Dismiss' // was "Cancel"
     writeFileSync(enFile, JSON.stringify(en, null, 2) + '\n', 'utf8')
     const { lines, write } = capture()
@@ -235,8 +229,7 @@ describe('release-strict mode escalates a stale finding to an error exit', () =>
 })
 
 describe('review is never a gate', () => {
-  /** @type {string} */
-  let root
+  let root: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-stale-noreview-'))
     cpSync(FIXTURE_ROOT, root, { recursive: true })
@@ -261,8 +254,7 @@ describe('review is never a gate', () => {
 })
 
 describe('no-locales path (only en)', () => {
-  /** @type {string} */
-  let root
+  let root: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-stale-only-en-'))
     mkdirSync(join(root, 'en'), { recursive: true })

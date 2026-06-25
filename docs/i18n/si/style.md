@@ -73,7 +73,7 @@ them, ideally cross-referenced against Microsoft's Sinhala glossary, not GNOME a
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
 tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`. Since macOS isn't localized into Sinhala, the macOS UI names Cmdr opens into
+`apps/desktop/scripts/i18n-catalog-lib.ts`. Since macOS isn't localized into Sinhala, the macOS UI names Cmdr opens into
 will appear to the user in English (or the user's actual macOS language), not Sinhala, so keep those references matching
 what the user's system actually shows.
 

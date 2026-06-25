@@ -22,7 +22,7 @@ zero-byte read can't happen):
 | Server           | Port file (under `<data_dir>`) | Writer                                     |
 | ---------------- | ------------------------------ | ------------------------------------------ |
 | Cmdr MCP HTTP    | `mcp.port`                     | Rust (after `bind`)                        |
-| Tauri MCP bridge | `tauri-mcp.port`               | `tauri-wrapper.js` (before Tauri launches) |
+| Tauri MCP bridge | `tauri-mcp.port`               | `tauri-wrapper.ts` (before Tauri launches) |
 
 Resolve `<data_dir>` for the instance you care about:
 

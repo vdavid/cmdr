@@ -14,7 +14,7 @@ import (
 // `intl-messageformat` throws on a `{name}` it has no value for, and the raw
 // error pipeline mis-substitutes a token. So unlike the maintenance-signal
 // checks (stale, key parity, don't-translate), a parity break MUST fail the
-// build. See `apps/desktop/scripts/i18n-check-parity.js`.
+// build. See `apps/desktop/scripts/i18n-check-parity.ts`.
 //
 // Exit-code contract (mirrored by `i18n-locale-check-lib.js`): 0 = clean / no
 // locales, 1 = at least one parity mismatch, any other code = a genuine script
@@ -28,7 +28,7 @@ import (
 func RunDesktopI18nParity(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
 
-	cmd := exec.Command("node", "scripts/i18n-check-parity.js")
+	cmd := exec.Command("node", "scripts/i18n-check-parity.ts")
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {

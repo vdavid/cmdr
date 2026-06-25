@@ -8,7 +8,7 @@ Operational depth for the desktop app: running, debugging, testing, MCP control,
 
 Run from the repo root: `pnpm dev` (start) and `pnpm build` (release build). The root `package.json` has no `tauri`
 script, so don't `cd` here just to run the app. If you've already `cd`d into `apps/desktop/`, `pnpm tauri dev` is
-equivalent; both paths invoke `scripts/tauri-wrapper.js`.
+equivalent; both paths invoke `scripts/tauri-wrapper.ts`.
 
 The wrapper is the single source of truth for dev / prod path separation. It resolves `CMDR_INSTANCE_ID` (from
 `--worktree <slug>`, the existing env, else `"dev"`), composes `CMDR_DATA_DIR` to match, and writes a fresh
@@ -54,7 +54,7 @@ Data dirs are separate for prod, dev, and each worktree:
 - Plain `pnpm dev`: `~/Library/Application Support/com.veszelovszki.cmdr-dev/`.
 - `pnpm dev --worktree foo`: `~/Library/Application Support/com.veszelovszki.cmdr-dev-foo/`.
 
-`tauri-wrapper.js` exports `CMDR_DATA_DIR` to the same path it gives Tauri's `app_data_dir()`, so direct file I/O (crash
+`tauri-wrapper.ts` exports `CMDR_DATA_DIR` to the same path it gives Tauri's `app_data_dir()`, so direct file I/O (crash
 reports, logs, file-backed secret store) agrees without round-tripping through Tauri's API.
 
 - **Logging**: frontend and backend logs land together in the terminal and the log dir (dev: `<CMDR_DATA_DIR>/logs/`,

@@ -126,7 +126,7 @@ reviewer; leave them for the translation pass and record each choice here as it 
 
 Keep verbatim, same as every locale: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the system
 placeholder tokens. In RTL text these are LTR runs and must be bidi-isolated (see RTL above). The list is enforced by
-`desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.js`.
+`desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.ts`.
 
 ## Plurals
 

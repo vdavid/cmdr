@@ -21,7 +21,7 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { buildPseudoFile } from '../../../scripts/gen-pseudolocale.js'
+import { buildPseudoFile } from '../../../scripts/gen-pseudolocale.ts'
 
 /**
  * The curated English source. Apostrophes here are in `@key` metadata

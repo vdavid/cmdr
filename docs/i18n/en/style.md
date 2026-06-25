@@ -41,7 +41,7 @@ into its language.
 
 Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style tokens, are verbatim
 in every language including the source. Enforced by `desktop-i18n-dont-translate`; list in
-`apps/desktop/scripts/i18n-catalog-lib.js`.
+`apps/desktop/scripts/i18n-catalog-lib.ts`.
 
 ## Plurals
 

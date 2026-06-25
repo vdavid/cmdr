@@ -16,7 +16,7 @@ The Tauri 2 + Rust backend. Subsystem must-knows live in each module's colocated
   `clippy::unwrap_used`; `#[test]` fns are exempt (`clippy.toml` `allow-unwrap-in-tests`), but test *helper* fns outside
   `#[test]` aren't, so they use `.expect("…")` too.
 - ❌ Never build with raw `cargo build` (white screen, no embedded frontend). Use `pnpm tauri build` or the
-  `tauri-wrapper.js build` wrapper, which runs `beforeBuildCommand`. See [`../scripts/CLAUDE.md`](../scripts/CLAUDE.md).
+  `tauri-wrapper.ts build` wrapper, which runs `beforeBuildCommand`. See [`../scripts/CLAUDE.md`](../scripts/CLAUDE.md).
 - ❌ Every `unsafe {}` block (and `unsafe impl`) needs a `// SAFETY:` comment on the immediately-preceding line, stating
   the concrete invariant that makes THAT site sound (receiver/pointer validity, selector ABI match, thread, Create-vs-Get
   ownership, success-gate) — specific, never boilerplate. Enforced by `clippy::undocumented_unsafe_blocks`. Rote FFI is

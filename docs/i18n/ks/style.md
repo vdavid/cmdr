@@ -80,7 +80,7 @@ adapt to Kashmiri.
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
 tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`. In `ks-Arab` (RTL), a Latin brand name is an LTR run embedded in RTL text;
+`apps/desktop/scripts/i18n-catalog-lib.ts`. In `ks-Arab` (RTL), a Latin brand name is an LTR run embedded in RTL text;
 rely on bidi isolation so it renders correctly.
 
 ## Plurals

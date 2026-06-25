@@ -126,7 +126,7 @@ Add rows as terms come up, each with sources and a confidence.
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.js`). macOS UI names
+tokens. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`). macOS UI names
 Cmdr opens into (System Settings panes, "Papierkorb") should match a German macOS.
 
 ## Plurals

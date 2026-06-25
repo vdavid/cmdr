@@ -173,7 +173,7 @@ consistent and transliterate values 1:1 if the shipped script flips.
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
 tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`. Since macOS ships no Serbian, the macOS UI names Cmdr opens into (System
+`apps/desktop/scripts/i18n-catalog-lib.ts`. Since macOS ships no Serbian, the macOS UI names Cmdr opens into (System
 Settings panes, etc.) appear in whatever language the user's Mac runs in (commonly English); don't invent Serbian
 translations for them, refer to them as the user's own Mac shows them.
 

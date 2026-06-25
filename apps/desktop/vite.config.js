@@ -4,7 +4,7 @@ import Icons from 'unplugin-icons/vite'
 
 const host = process.env.TAURI_DEV_HOST
 
-// The wrapper (scripts/tauri-wrapper.js) reserves an ephemeral Vite port per instance and
+// The wrapper (scripts/tauri-wrapper.ts) reserves an ephemeral Vite port per instance and
 // passes it via `CMDR_VITE_PORT` so two `pnpm dev` sessions from two worktrees don't
 // collide on 1420. Raw `pnpm vite dev` outside the wrapper still gets the legacy 1420 so a
 // dev poking around without the wrapper sees the same behavior as before. `strictPort` is

@@ -142,7 +142,7 @@ the agreed choice.
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
 tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`. The macOS UI names Cmdr opens into (System Settings panes, "Papperskorgen")
+`apps/desktop/scripts/i18n-catalog-lib.ts`. The macOS UI names Cmdr opens into (System Settings panes, "Papperskorgen")
 should match what a Swedish macOS actually shows.
 
 ## Plurals

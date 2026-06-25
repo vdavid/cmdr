@@ -121,7 +121,7 @@ confidence. Note RTL bidi isolation for any term sitting next to a `{path}` or b
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
 tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`. These Latin tokens are LTR runs inside RTL text: bidi-isolate them.
+`apps/desktop/scripts/i18n-catalog-lib.ts`. These Latin tokens are LTR runs inside RTL text: bidi-isolate them.
 
 ## Plurals
 

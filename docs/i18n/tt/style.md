@@ -97,7 +97,7 @@ rest on Microsoft alone and stay tentative until a native reviewer signs off. Tr
 
 Keep verbatim (product/platform names, not words): Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus
 the `{system_settings}`-style tokens. Enforced by `desktop-i18n-dont-translate`; the curated list lives in
-`apps/desktop/scripts/i18n-catalog-lib.js`.
+`apps/desktop/scripts/i18n-catalog-lib.ts`.
 
 ## Plurals
 

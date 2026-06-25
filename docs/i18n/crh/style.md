@@ -59,7 +59,7 @@ from there and mark them `tentative` until a native reviewer or a second source 
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.js`. As with
+tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`. As with
 other agglutinative languages, suffixes may attach to brand words in running text; keep the brand stem verbatim.
 
 ## Plurals

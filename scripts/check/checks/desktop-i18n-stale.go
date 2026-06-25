@@ -10,7 +10,7 @@ import (
 
 // staleStrictEnv is the env var the release flow sets to escalate a stale
 // translation from a WARN to a build-failing ERROR. Kept in lockstep with
-// `STALE_STRICT_ENV` in `apps/desktop/scripts/i18n-check-stale.js`.
+// `STALE_STRICT_ENV` in `apps/desktop/scripts/i18n-check-stale.ts`.
 const staleStrictEnv = "CMDR_I18N_STALE_STRICT"
 
 // RunDesktopI18nStale flags a non-`en` locale that holds a translation whose
@@ -19,7 +19,7 @@ const staleStrictEnv = "CMDR_I18N_STALE_STRICT"
 // translation is STALE). It also flags a present translation with no stored hash,
 // a translated key whose English source was removed, and a stale key still
 // carrying `reviewed: true` (the human sign-off no longer applies). See
-// `apps/desktop/scripts/i18n-check-stale.js`.
+// `apps/desktop/scripts/i18n-check-stale.ts`.
 //
 // Two strictness modes, selected by the `CMDR_I18N_STALE_STRICT` env var so the
 // SAME check serves daily dev and release gating:
@@ -50,7 +50,7 @@ func RunDesktopI18nStale(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
 	strict := os.Getenv(staleStrictEnv) == "1"
 
-	cmd := exec.Command("node", "scripts/i18n-check-stale.js")
+	cmd := exec.Command("node", "scripts/i18n-check-stale.ts")
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {

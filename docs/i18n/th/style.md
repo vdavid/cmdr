@@ -123,7 +123,7 @@ sources + confidence.
 
 Keep these verbatim (product or platform names): Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. The
 same list (plus system placeholder tokens) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`.
+`apps/desktop/scripts/i18n-catalog-lib.ts`.
 
 ## Plurals
 

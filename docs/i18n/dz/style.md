@@ -56,7 +56,7 @@ confirmed by native review. Leave this table to be populated from those sources 
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.js`. Brand
+tokens. Enforced by `desktop-i18n-dont-translate`; curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`. Brand
 words in Latin script sit inside Tibetan-script runs; verify they render and don't break bidi/line-breaking oddly.
 
 ## Plurals

@@ -5,7 +5,7 @@
  * `no-raw-user-facing-string` lint enforces, to size the i18n migration and
  * surface every multi-variable / rich-text case that needs ICU or `<Trans>`.
  *
- * Run: `node scripts/extract-user-facing-strings.js` (from `apps/desktop/`).
+ * Run: `node scripts/extract-user-facing-strings.ts` (from `apps/desktop/`).
  * Writes a Markdown report to `docs/notes/i18n-extraction-dryrun.md` and prints
  * a summary. Re-run any time to refresh the migration planning numbers; the output is a
  * working artifact, NOT a shipped catalog.
@@ -47,31 +47,26 @@ const TEXT_NODE_RE = />\s*([A-Za-z][^<>{}]*?)\s*</g
 // hiding a real string in a sizing exercise).
 const NON_COPY_RE = /^(?:[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)+|[a-z-]+|https?:|#|\/|true|false|null|undefined)$/
 
-/**
- * @typedef {{ value: string, file: string, line: number, sink: string }} Candidate
- * @typedef {Map<string, Candidate[]>} ByArea
- */
+interface Candidate {
+  value: string
+  file: string
+  line: number
+  sink: string
+}
+type ByArea = Map<string, Candidate[]>
 
 /**
  * Records a candidate user-facing string with where it was found.
- * @param {ByArea} map
- * @param {string} area
- * @param {string} value
- * @param {string} file
- * @param {number} line
- * @param {string} sink
  */
-function record(map, area, value, file, line, sink) {
+function record(map: ByArea, area: string, value: string, file: string, line: number, sink: string) {
   if (!map.has(area)) map.set(area, [])
   map.get(area)?.push({ value, file, line, sink })
 }
 
 /**
  * The feature area a `src/...` path belongs to, for grouping.
- * @param {string} relPath
- * @returns {string}
  */
-function areaOf(relPath) {
+function areaOf(relPath: string): string {
   const parts = relPath.split('/')
   // src/lib/<area>/...  or  src/routes/<area>/...
   if (parts[1] === 'lib') return parts[2] ?? 'lib'
@@ -81,10 +76,8 @@ function areaOf(relPath) {
 
 /**
  * Whether a captured literal is plausibly real copy (a letter, not a key/path).
- * @param {string} value
- * @returns {boolean}
  */
-function isCandidate(value) {
+function isCandidate(value: string): boolean {
   const trimmed = value.trim()
   if (trimmed.length < 2) return false
   if (!/[A-Za-z]/.test(trimmed)) return false
@@ -92,12 +85,7 @@ function isCandidate(value) {
   return true
 }
 
-/**
- * @param {string} path
- * @param {string} relPath
- * @param {ByArea} byArea
- */
-function scanFile(path, relPath, byArea) {
+function scanFile(path: string, relPath: string, byArea: ByArea) {
   const source = readFileSync(path, 'utf8')
   const lines = source.split('\n')
   const area = areaOf(relPath)
@@ -118,11 +106,7 @@ function scanFile(path, relPath, byArea) {
   })
 }
 
-/**
- * @param {string} dir
- * @param {ByArea} byArea
- */
-function walk(dir, byArea) {
+function walk(dir: string, byArea: ByArea) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry)
     if (statSync(full).isDirectory()) {
@@ -135,19 +119,17 @@ function walk(dir, byArea) {
   }
 }
 
-/** @type {ByArea} */
-const byArea = new Map()
+const byArea: ByArea = new Map()
 walk(srcDir, byArea)
 
 // Build the report. Materialize each area's list once (sorted by area) so the
 // rest works over concrete `Candidate[]`, never `| undefined`.
-/** @type {[string, Candidate[]][]} */
-const entries = [...byArea.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+const entries: [string, Candidate[]][] = [...byArea.entries()].sort((a, b) => a[0].localeCompare(b[0]))
 let total = 0
 for (const [, list] of entries) total += list.length
 
 let md = `# i18n extraction dry-run (analysis artifact)\n\n`
-md += `> One-shot heuristic scan, NOT a shipped catalog. Regenerate with \`node apps/desktop/scripts/extract-user-facing-strings.js\`.\n\n`
+md += `> One-shot heuristic scan, NOT a shipped catalog. Regenerate with \`node apps/desktop/scripts/extract-user-facing-strings.ts\`.\n\n`
 md += `Candidate user-facing string literals found in the closed sink set (\`addToast\` content, \`title\`/\`aria-label\`/\`label\`/\`placeholder\` props, \`.svelte\` text nodes). This is a LOWER BOUND on the real string count (see "What this misses").\n\n`
 md += `## Total: ${String(total)} candidate strings across ${String(entries.length)} areas\n\n`
 md += `Candidates per area (a 2-column table would trip \`docs-table-hygiene\`, so this is a list):\n\n`
@@ -162,8 +144,7 @@ md += `- **Already-migrated copy** (\`t()\` / \`<Trans>\`): correctly NOT counte
 
 md += `\n## Multi-variable / rich-text candidates (need ICU or \`<Trans>\`)\n\n`
 md += `Heuristic flag: a captured literal containing \`{\` (interpolation), a digit (likely a count), or a \`<tag>\` (inline component). Verify by hand per tranche.\n\n`
-/** @type {(Candidate & { area: string })[]} */
-const richCases = []
+const richCases: (Candidate & { area: string })[] = []
 for (const [area, list] of entries) {
   for (const c of list) {
     if (/[{<]/.test(c.value) || /\d/.test(c.value)) richCases.push({ area, ...c })

@@ -1,5 +1,5 @@
 /**
- * Tests for the ICU-validity check (`i18n-check-icu.js`).
+ * Tests for the ICU-validity check (`i18n-check-icu.ts`).
  *
  * Clean path: the committed pseudolocale fixture is valid ICU (its raw
  * `errors.*` value is correctly skipped). Negative path: corrupt one ICU value
@@ -10,15 +10,14 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { runIcuCheck, icuError } from './i18n-check-icu.js'
-import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.js'
+import { runIcuCheck, icuError } from './i18n-check-icu.ts'
+import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.ts'
 
 const FIXTURE_ROOT = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
 
 function capture() {
-  /** @type {string[]} */
-  const lines = []
-  return { lines, write: (/** @type {string} */ l) => void lines.push(l) }
+  const lines: string[] = []
+  return { lines, write: (l: string) => void lines.push(l) }
 }
 
 describe('icuError: pure classifier', () => {
@@ -50,20 +49,21 @@ describe('runIcuCheck against the committed fixture', () => {
 })
 
 describe('runIcuCheck negative cases (temp catalog copies)', () => {
-  /** @type {string} */
-  let root
-  /** @type {string} */
-  let xaFile
+  let root: string
+  let xaFile: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-icu-'))
     cpSync(FIXTURE_ROOT, root, { recursive: true })
     xaFile = join(root, 'en-XA', 'fixture.json')
   })
-  afterEach(() => rmSync(root, { recursive: true, force: true }))
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
 
-  const read = () => JSON.parse(readFileSync(xaFile, 'utf8'))
-  /** @param {Record<string, any>} obj */
-  const writeXa = (obj) => writeFileSync(xaFile, JSON.stringify(obj, null, 2) + '\n', 'utf8')
+  const read = (): Record<string, string> => JSON.parse(readFileSync(xaFile, 'utf8')) as Record<string, string>
+  const writeXa = (obj: Record<string, string>) => {
+    writeFileSync(xaFile, JSON.stringify(obj, null, 2) + '\n', 'utf8')
+  }
   const run = () => {
     const cap = capture()
     return { code: runIcuCheck({ messagesRoot: root, write: cap.write }), text: cap.lines.join('\n') }
@@ -91,14 +91,15 @@ describe('runIcuCheck negative cases (temp catalog copies)', () => {
 })
 
 describe('no-locales path (only en)', () => {
-  /** @type {string} */
-  let root
+  let root: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-icu-only-en-'))
     mkdirSync(join(root, 'en'), { recursive: true })
     cpSync(join(FIXTURE_ROOT, 'en', 'fixture.json'), join(root, 'en', 'fixture.json'))
   })
-  afterEach(() => rmSync(root, { recursive: true, force: true }))
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
 
   it('is a clean no-op', () => {
     expect(localesToCheck(root)).toEqual([])

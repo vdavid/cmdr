@@ -26,7 +26,7 @@ choice here so it stays consistent.)
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look. Enforced by
-`desktop-i18n-dont-translate`; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.js`.
+`desktop-i18n-dont-translate`; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`.
 
 ## Plurals
 

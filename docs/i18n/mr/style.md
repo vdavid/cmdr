@@ -136,7 +136,7 @@ above also applies to the counted noun and its verb.
 
 Keep verbatim (in Latin script, not transliterated): Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look,
 plus the `{system_settings}`-style tokens. The curated list is enforced by `desktop-i18n-dont-translate`
-(`apps/desktop/scripts/i18n-catalog-lib.js`). Don't transliterate brand names into Devanagari.
+(`apps/desktop/scripts/i18n-catalog-lib.ts`). Don't transliterate brand names into Devanagari.
 
 ## Terminology and glossary
 

@@ -1,5 +1,5 @@
 /**
- * TDD for the message-key codegen (`gen-message-keys-lib.js`): catalog → the
+ * TDD for the message-key codegen (`gen-message-keys-lib.ts`): catalog → the
  * `MessageKey` union, plus the missing-key (build failure) and dead-key
  * (warning) reports.
  *
@@ -16,7 +16,7 @@ import {
   findCatalogKeyMentions,
   diffKeys,
   emitKeysModule,
-} from './gen-message-keys-lib.js'
+} from './gen-message-keys-lib.ts'
 
 describe('stripMetadataKeys', () => {
   it('keeps message keys and drops ARB-style @key metadata entries', () => {

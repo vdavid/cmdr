@@ -96,7 +96,7 @@ export async function pollPortFile(
  * Precedence: `CMDR_MCP_PORT` env → `<dataDir>/mcp.port` file → throw.
  *
  * Pass the data dir explicitly so callers can compose it from `CMDR_DATA_DIR` or from
- * `CMDR_INSTANCE_ID` via instance-id.js's `computeAppDataDir` rules (see the wrapper).
+ * `CMDR_INSTANCE_ID` via instance-id.ts's `computeAppDataDir` rules (see the wrapper).
  */
 export async function resolveMcpPort(
   dataDir: string,

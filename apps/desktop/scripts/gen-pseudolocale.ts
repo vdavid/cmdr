@@ -65,9 +65,9 @@ import {
   resolveMessagesRoot,
   sourceHash,
   wholeWordRegExp,
-} from './i18n-catalog-lib.js'
+} from './i18n-catalog-lib.ts'
 
-// `isRawKey` is the shared raw/ICU split (single source: `i18n-catalog-lib.js`).
+// `isRawKey` is the shared raw/ICU split (single source: `i18n-catalog-lib.ts`).
 // Re-exported here because it's part of this module's tested surface and reads
 // naturally alongside the pseudo value routing below.
 export { isRawKey }
@@ -78,7 +78,7 @@ export const PSEUDO_LOCALE = 'en-XA'
 /** The source locale the pseudolocale is derived from. */
 const SOURCE_LOCALE = 'en'
 
-/** AST element `type` constants (the `@formatjs` `TYPE` enum; mirrors `i18n-catalog-lib.js`). */
+/** AST element `type` constants (the `@formatjs` `TYPE` enum; mirrors `i18n-catalog-lib.ts`). */
 const TYPE = Object.freeze({
   literal: 0,
   argument: 1,
@@ -92,14 +92,28 @@ const TYPE = Object.freeze({
 })
 
 /**
+ * One `intl-messageformat` AST element. Loosely typed (the exact shape varies by
+ * `type`); the serializer reads `type`, `value`, `style`, `pluralType`, `offset`,
+ * `options`, and `children`.
+ */
+interface AstElement {
+  type: number
+  value: string
+  style?: string | object | null
+  pluralType?: 'cardinal' | 'ordinal'
+  offset?: number
+  options?: Record<string, { value: AstElement[] }>
+  children?: AstElement[]
+}
+
+/**
  * The ASCII→accented map. A fixed, deterministic table covering every ASCII
  * letter with a visually-similar accented/decorated glyph, so the output reads
  * as the same words (overflow + pseudo-translation are obvious) without being a
  * real language. Letters outside the table (none, here) and all non-letters pass
  * through untouched, which is what preserves markdown, digits, and punctuation.
- * @type {Readonly<Record<string, string>>}
  */
-const ACCENT_MAP = Object.freeze({
+const ACCENT_MAP: Readonly<Record<string, string>> = Object.freeze({
   a: 'á',
   b: 'ḅ',
   c: 'ç',
@@ -172,10 +186,8 @@ const EXPANSION = 0.4
  * Accents one string of literal text: ASCII letters → their accented twin via
  * `ACCENT_MAP`; everything else (spaces, digits, punctuation, markdown chars,
  * already-accented glyphs) is left exactly as-is.
- * @param {string} text
- * @returns {string}
  */
-function accent(text) {
+function accent(text: string): string {
   let out = ''
   for (const ch of text) out += ACCENT_MAP[ch] ?? ch
   return out
@@ -188,11 +200,10 @@ function accent(text) {
  * giving the segment ~+40% length. Empty/whitespace-only segments get no filler
  * (nothing meaningful to expand, and we must not invent text inside e.g. a
  * single-space literal between placeholders).
- * @param {string} segment the original literal segment (used for its length + a position-independent seed)
- * @returns {string}
+ * @param segment the original literal segment (used for its length + a position-independent seed)
  */
-function filler(segment) {
-  const visibleLen = [...segment.replace(/\s/g, '')].length
+function filler(segment: string): string {
+  const visibleLen = Array.from(segment.replace(/\s/g, '')).length
   if (visibleLen === 0) return ''
   const padCount = Math.ceil(visibleLen * EXPANSION)
   let run = ''
@@ -206,18 +217,15 @@ function filler(segment) {
  * word (`Cmdr`, `macOS`, …; see `BRAND_WORDS`), and keeping them verbatim is what
  * lets en-XA pass the don't-translate check. Returns parts in source order, each
  * tagged `protected` (a brand word) or not.
- * @param {string} text
- * @returns {{ text: string, protected: boolean }[]}
  */
-function splitBrandWords(text) {
+function splitBrandWords(text: string): { text: string; protected: boolean }[] {
   // One alternation of all brand words, whole-word. Build from each word's matcher
   // source so escaping/boundaries stay identical to the check's matching.
   const alternation = BRAND_WORDS.map((w) => wholeWordRegExp(w).source).join('|')
   const re = new RegExp(alternation, 'g')
-  /** @type {{ text: string, protected: boolean }[]} */
-  const parts = []
+  const parts: { text: string; protected: boolean }[] = []
   let last = 0
-  let m
+  let m: RegExpExecArray | null
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) parts.push({ text: text.slice(last, m.index), protected: false })
     parts.push({ text: m[0], protected: true })
@@ -233,10 +241,8 @@ function splitBrandWords(text) {
  * adjacent placeholders stay adjacent to the real (accented) words, which is what
  * overflow testing wants. A span with no visible characters (pure whitespace) is
  * accented only (no brackets), preserving spacing around placeholders.
- * @param {string} text
- * @returns {string}
  */
-function transformSpan(text) {
+function transformSpan(text: string): string {
   const accented = accent(text)
   const pad = filler(text)
   if (pad === '') return accented
@@ -251,10 +257,8 @@ function transformSpan(text) {
  * through verbatim; every other span is accented and length-expanded. So the
  * pseudolocale reads as a translated, overflow-stressed string while preserving
  * the don't-translate tokens a real translator would keep.
- * @param {string} text
- * @returns {string}
  */
-function transformText(text) {
+function transformText(text: string): string {
   return splitBrandWords(text)
     .map((part) => (part.protected ? part.text : transformSpan(part.text)))
     .join('')
@@ -265,13 +269,12 @@ function transformText(text) {
  * text (type 0) nodes. Placeholder names, tag names, plural/select keywords, and
  * `#` are emitted verbatim. We write our own serializer (rather than importing
  * `@formatjs`'s `printAST`) because that parser package isn't resolvable by bare
- * specifier under pnpm's strict layout (see `i18n-catalog-lib.js` header), and
+ * specifier under pnpm's strict layout (see `i18n-catalog-lib.ts` header), and
  * writing it gives full control over apostrophe/`#` escaping. Correctness is
  * proven by the round-trip test (token-set equality + `ok:true`).
- * @param {any} el one AST element
- * @returns {string}
+ * @param el one AST element
  */
-function serializeElement(el) {
+function serializeElement(el: AstElement): string {
   switch (el.type) {
     case TYPE.literal:
       return escapeLiteral(transformText(el.value))
@@ -286,7 +289,7 @@ function serializeElement(el) {
     case TYPE.pound:
       return '#'
     case TYPE.tag:
-      return `<${el.value}>${serializeAst(el.children)}</${el.value}>`
+      return `<${el.value}>${serializeAst(el.children ?? [])}</${el.value}>`
     case TYPE.select:
       return serializePluralOrSelect(el, 'select')
     case TYPE.plural:
@@ -305,10 +308,9 @@ function serializeElement(el) {
  * placeholders, which are separate AST nodes), so the only character we must
  * guard is the apostrophe: per the ICU rule, a lone `'` is doubled to `''`,
  * which always renders as a single `'`.
- * @param {string} text transformed literal text
- * @returns {string}
+ * @param text transformed literal text
  */
-function escapeLiteral(text) {
+function escapeLiteral(text: string): string {
   return text.replaceAll("'", "''")
 }
 
@@ -319,11 +321,8 @@ function escapeLiteral(text) {
  * A string style is emitted verbatim; a parsed skeleton object can't be
  * faithfully reconstructed from the parser's output, so it's an explicit error
  * rather than a silent corruption.
- * @param {any} el
- * @param {'number'|'date'|'time'} kind
- * @returns {string}
  */
-function serializeArgWithStyle(el, kind) {
+function serializeArgWithStyle(el: AstElement, kind: 'number' | 'date' | 'time'): string {
   if (el.style == null) return `{${el.value}, ${kind}}`
   if (typeof el.style === 'string') return `{${el.value}, ${kind}, ${el.style}}`
   throw new Error(
@@ -335,25 +334,20 @@ function serializeArgWithStyle(el, kind) {
  * Serializes a `plural`/`selectordinal`/`select` element: the arg name, the
  * keyword, the optional plural `offset:N`, then each category branch verbatim
  * (`one {…}`, `=0 {…}`, `other {…}`) with its body recursively serialized.
- * @param {any} el
- * @param {'plural'|'selectordinal'|'select'} keyword
- * @returns {string}
  */
-function serializePluralOrSelect(el, keyword) {
+function serializePluralOrSelect(el: AstElement, keyword: 'plural' | 'selectordinal' | 'select'): string {
   const offset = keyword !== 'select' && el.offset ? ` offset:${String(el.offset)}` : ''
   let branches = ''
-  for (const [category, branch] of Object.entries(el.options)) {
-    branches += ` ${category} {${serializeAst(/** @type {any} */ (branch).value)}}`
+  for (const [category, branch] of Object.entries(el.options ?? {})) {
+    branches += ` ${category} {${serializeAst(branch.value)}}`
   }
   return `{${el.value}, ${keyword},${offset}${branches}}`
 }
 
 /**
  * Serializes a full AST (array of elements) back to an ICU message string.
- * @param {readonly any[]} ast
- * @returns {string}
  */
-function serializeAst(ast) {
+function serializeAst(ast: readonly AstElement[]): string {
   let out = ''
   for (const el of ast) out += serializeElement(el)
   return out
@@ -363,11 +357,11 @@ function serializeAst(ast) {
  * Transforms one ICU message via the AST path: parse → transform literal nodes →
  * serialize. Throws if the value doesn't parse as ICU (a real bug for a non-error
  * key; surfaced loudly rather than silently passed through).
- * @param {string} value the English ICU message
- * @returns {string} the pseudo ICU message
+ * @param value the English ICU message
+ * @returns the pseudo ICU message
  */
-export function pseudoIcu(value) {
-  const ast = new IntlMessageFormat(value, SOURCE_LOCALE).getAst()
+export function pseudoIcu(value: string): string {
+  const ast = new IntlMessageFormat(value, SOURCE_LOCALE).getAst() as unknown as readonly AstElement[]
   return serializeAst(ast)
 }
 
@@ -385,10 +379,10 @@ export function pseudoIcu(value) {
  * are inside braces, but we transform a letter RUN, and a run that's part of a
  * token would alter the token, so we must NOT transform letters inside `{…}`.
  * We therefore skip whole `{…}` spans explicitly.
- * @param {string} value the raw English message
- * @returns {string} the pseudo raw message
+ * @param value the raw English message
+ * @returns the pseudo raw message
  */
-export function pseudoRaw(value) {
+export function pseudoRaw(value: string): string {
   let out = ''
   let i = 0
   while (i < value.length) {
@@ -421,11 +415,10 @@ export function pseudoRaw(value) {
 /**
  * Produces the pseudolocale value for one message, choosing the ICU or raw path
  * by key.
- * @param {string} key the message key
- * @param {string} value the English value
- * @returns {string}
+ * @param key the message key
+ * @param value the English value
  */
-export function pseudoValue(key, value) {
+export function pseudoValue(key: string, value: string): string {
   return isRawKey(key) ? pseudoRaw(value) : pseudoIcu(value)
 }
 
@@ -439,12 +432,10 @@ export function pseudoValue(key, value) {
  * identical-to-English signal stays honest instead of flagging by-construction
  * matches as "possibly untranslated". Deterministic and order-stable (keys in
  * source order).
- * @param {Record<string, unknown>} rawEnFile a parsed `en/<area>.json`
- * @returns {Record<string, unknown>}
+ * @param rawEnFile a parsed `en/<area>.json`
  */
-export function buildPseudoFile(rawEnFile) {
-  /** @type {Record<string, unknown>} */
-  const out = {}
+export function buildPseudoFile(rawEnFile: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(rawEnFile)) {
     if (isMetadataKey(key) || typeof value !== 'string') continue
     const pseudo = pseudoValue(key, value)
@@ -463,10 +454,9 @@ export function buildPseudoFile(rawEnFile) {
 
 /**
  * Generates the full `en-XA/` pseudolocale from `en/`, writing one file per area.
- * @param {string} [messagesRoot] override the `messages/` root (for tests)
- * @returns {{ files: number, keys: number }}
+ * @param messagesRoot override the `messages/` root (for tests)
  */
-export function generatePseudolocale(messagesRoot) {
+export function generatePseudolocale(messagesRoot?: string): { files: number; keys: number } {
   const root = resolveMessagesRoot(messagesRoot)
   const enFiles = readLocaleFiles(SOURCE_LOCALE, root)
   const outDir = join(root, PSEUDO_LOCALE)
@@ -486,15 +476,12 @@ export function generatePseudolocale(messagesRoot) {
 // operator prunes them (rare, since area files map 1:1 to `en`).
 /**
  * Names of `en-XA/*.json` files with no matching `en/*.json` (orphans to prune).
- * @param {string} [messagesRoot]
- * @returns {string[]}
  */
-function orphanPseudoFiles(messagesRoot) {
+function orphanPseudoFiles(messagesRoot?: string): string[] {
   const root = resolveMessagesRoot(messagesRoot)
   const enNames = new Set(Object.keys(readLocaleFiles(SOURCE_LOCALE, root)))
   const outDir = join(root, PSEUDO_LOCALE)
-  /** @type {string[]} */
-  const orphans = []
+  const orphans: string[] = []
   for (const name of readdirSync(outDir)) {
     if (name.endsWith('.json') && !enNames.has(name)) orphans.push(name)
   }

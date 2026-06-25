@@ -138,7 +138,7 @@ code-switching decision point); lock each as it's used.
 
 Keep these verbatim (product or platform names, not words to translate): Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust,
 Svelte, Quick Look. The same list (plus the system placeholder tokens) is enforced by the `desktop-i18n-dont-translate`
-check; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.js`. Acronyms (SMB, MTP, URL) stay Latin.
+check; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`. Acronyms (SMB, MTP, URL) stay Latin.
 
 ## Plurals
 

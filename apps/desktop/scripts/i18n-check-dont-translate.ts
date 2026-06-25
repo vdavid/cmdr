@@ -7,7 +7,7 @@
  * locale's value dropped it, the translator likely localized something that
  * shouldn't be. That's a quality slip, not a crash, so warn-only.
  *
- * The curated lists (`BRAND_WORDS`, `SYSTEM_TOKENS`) live in `i18n-catalog-lib.js`
+ * The curated lists (`BRAND_WORDS`, `SYSTEM_TOKENS`) live in `i18n-catalog-lib.ts`
  * as the single source of truth, shared with the pseudolocale generator (which
  * keeps them verbatim so en-XA passes this check). Two token kinds (NO
  * language-specific translations, only token NAMES):
@@ -26,12 +26,12 @@
  * with a `NotInCI` reason). English-only today → a clean no-op.
  *
  * Run: `pnpm i18n:check-dont-translate` (desktop) or
- * `node scripts/i18n-check-dont-translate.js`. Pass `--messages-root <dir>` to
+ * `node scripts/i18n-check-dont-translate.ts`. Pass `--messages-root <dir>` to
  * point at a fixture (used by the tests).
  */
 
-import { BRAND_WORDS, SYSTEM_TOKENS, hasWholeWord, hasBrandPresent } from './i18n-catalog-lib.js'
-import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.js'
+import { BRAND_WORDS, SYSTEM_TOKENS, hasWholeWord, hasBrandPresent } from './i18n-catalog-lib.ts'
+import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 export { BRAND_WORDS, SYSTEM_TOKENS }
 
@@ -43,13 +43,12 @@ export { BRAND_WORDS, SYSTEM_TOKENS }
  * it, possibly inflected — "Cmdrben", "Cmdrs"?). So a genuine omission is still
  * flagged, but a brand that took a natural inflectional suffix is not a false drop.
  * System tokens are literal substrings on both sides. Exposed for unit tests.
- * @param {string} englishValue
- * @param {string} localeValue
- * @returns {string[]} dropped tokens (sorted, deduped)
+ * @param englishValue the English value
+ * @param localeValue the locale's value
+ * @returns dropped tokens (sorted, deduped)
  */
-export function droppedTokens(englishValue, localeValue) {
-  /** @type {string[]} */
-  const dropped = []
+export function droppedTokens(englishValue: string, localeValue: string): string[] {
+  const dropped: string[] = []
   for (const word of BRAND_WORDS) {
     if (hasWholeWord(englishValue, word) && !hasBrandPresent(localeValue, word)) dropped.push(word)
   }
@@ -61,12 +60,10 @@ export function droppedTokens(englishValue, localeValue) {
 
 /**
  * Runs the don't-translate check over the catalogs under `messagesRoot`.
- * @param {object} [opts]
- * @param {string} [opts.messagesRoot] override the `messages/` root (for tests)
- * @param {(line: string) => void} [opts.write] output sink, one line at a time (for tests)
- * @returns {number}
+ * @param opts.messagesRoot override the `messages/` root (for tests)
+ * @param opts.write output sink, one line at a time (for tests)
  */
-export function runDontTranslateCheck(opts = {}) {
+export function runDontTranslateCheck(opts: { messagesRoot?: string; write?: (line: string) => void } = {}): number {
   return runLocaleCheck({
     title: "Don't-translate tokens",
     messagesRoot: opts.messagesRoot,
@@ -75,6 +72,9 @@ export function runDontTranslateCheck(opts = {}) {
     inspectLocale: ({ base, locale_catalog: localeCatalog, findings }) => {
       for (const [key, localeValue] of Object.entries(localeCatalog.messages)) {
         const englishValue = base.messages[key]
+        // A locale key with no English counterpart can't drop an English token; skip it.
+        // The record index is `string` to the types, but undefined at runtime when the key is absent.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (englishValue === undefined) continue
         const dropped = droppedTokens(englishValue, localeValue)
         if (dropped.length > 0) findings.add(key, `dropped ${dropped.join(', ')} (keep verbatim)`)

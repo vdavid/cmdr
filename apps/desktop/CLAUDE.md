@@ -8,7 +8,7 @@ in [DETAILS.md](DETAILS.md). Feature must-knows in the colocated `CLAUDE.md`s.
 
 ## Must-knows
 
-- **Run from the repo root**: `pnpm dev` / `pnpm build`. Both go through `scripts/tauri-wrapper.js`, the single source
+- **Run from the repo root**: `pnpm dev` / `pnpm build`. Both go through `scripts/tauri-wrapper.ts`, the single source
   of truth for dev/prod data-dir and port separation; never `cargo tauri dev` / `cargo build` directly (wrong data dir,
   or a binary with no embedded frontend). Side-by-side worktree sessions: `pnpm dev --worktree <slug>`. See
   [DETAILS.md](DETAILS.md) § Running.
@@ -34,5 +34,5 @@ in [DETAILS.md](DETAILS.md). Feature must-knows in the colocated `CLAUDE.md`s.
 
 - `src/`: Svelte frontend (SvelteKit static adapter, TypeScript strict).
 - `src-tauri/`: Rust backend (Tauri 2, serde, notify, tokio).
-- `scripts/`: dev/build scripts, mainly `tauri-wrapper.js`; see its [CLAUDE.md](scripts/CLAUDE.md).
+- `scripts/`: dev/build scripts, mainly `tauri-wrapper.ts`; see its [CLAUDE.md](scripts/CLAUDE.md).
 - `test/`: Vitest unit tests, plus `test/e2e-playwright/`, `test/e2e-linux/`, and `test/smb-servers/` fixtures.

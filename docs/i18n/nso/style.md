@@ -61,7 +61,7 @@ From Microsoft terminology (Tier 2) and GNOME Nautilus (Tier 3). Treat as `tenta
 
 Keep these verbatim (product or platform names, not words to translate): Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust,
 Svelte, Quick Look. The same list (plus the system placeholder tokens) is enforced by the `desktop-i18n-dont-translate`
-check; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.js`.
+check; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`.
 
 ## Plurals
 

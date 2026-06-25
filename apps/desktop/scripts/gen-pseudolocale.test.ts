@@ -1,5 +1,5 @@
 /**
- * Tests for the pseudolocale generator (`gen-pseudolocale.js`): the universal
+ * Tests for the pseudolocale generator (`gen-pseudolocale.ts`): the universal
  * i18n test fixture that M2/M3 trust, so correctness of placeholder/ICU
  * preservation is the load-bearing property here.
  *
@@ -18,23 +18,13 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { loadCatalog, parseMessage, sourceHash, isMetadataKey, readLocaleFiles } from './i18n-catalog-lib.js'
-import { buildPseudoFile, isRawKey, pseudoIcu, pseudoRaw, pseudoValue, PSEUDO_LOCALE } from './gen-pseudolocale.js'
+import { loadCatalog, parseMessage, sourceHash, isMetadataKey, readLocaleFiles } from './i18n-catalog-lib.ts'
+import { buildPseudoFile, isRawKey, pseudoIcu, pseudoRaw, pseudoValue, PSEUDO_LOCALE } from './gen-pseudolocale.ts'
 
-/**
- * Set equality.
- * @param {Set<string>} a
- * @param {Set<string>} b
- * @returns {boolean}
- */
-const setEq = (a, b) => a.size === b.size && [...a].every((x) => b.has(x))
-/**
- * `Map<string, Set<string>>` equality.
- * @param {Map<string, Set<string>>} a
- * @param {Map<string, Set<string>>} b
- * @returns {boolean}
- */
-const mapEq = (a, b) => {
+/** Set equality. */
+const setEq = (a: Set<string>, b: Set<string>): boolean => a.size === b.size && [...a].every((x) => b.has(x))
+/** `Map<string, Set<string>>` equality. */
+const mapEq = (a: Map<string, Set<string>>, b: Map<string, Set<string>>): boolean => {
   if (a.size !== b.size) return false
   for (const [k, v] of a) {
     const w = b.get(k)
@@ -42,20 +32,15 @@ const mapEq = (a, b) => {
   }
   return true
 }
-/**
- * The `{name}` brace-tokens of a raw (non-ICU) string: the substitution targets.
- * @param {string} s
- * @returns {Set<string>}
- */
-const braceTokens = (s) => new Set([...s.matchAll(/\{([^{}]+)\}/g)].map((m) => m[1]))
+/** The `{name}` brace-tokens of a raw (non-ICU) string: the substitution targets. */
+const braceTokens = (s: string): Set<string> => new Set([...s.matchAll(/\{([^{}]+)\}/g)].map((m) => m[1]))
 
 describe('pseudoIcu: transforms literal text, preserves structure', () => {
   /**
    * Parse both sides and assert token-set equality + valid pseudo ICU.
-   * @param {string} en
-   * @returns {string} the pseudo value
+   * @returns the pseudo value
    */
-  const expectStructurePreserved = (en) => {
+  const expectStructurePreserved = (en: string): string => {
     const pseudo = pseudoIcu(en)
     const pe = parseMessage(en)
     const pp = parseMessage(pseudo)
@@ -69,7 +54,7 @@ describe('pseudoIcu: transforms literal text, preserves structure', () => {
   it('a plain label is accented and expanded', () => {
     const pseudo = pseudoIcu('Cancel')
     expect(pseudo).not.toBe('Cancel')
-    expect([...pseudo].length).toBeGreaterThan('Cancel'.length)
+    expect(Array.from(pseudo).length).toBeGreaterThan('Cancel'.length)
     // No ASCII letters survive (all mapped).
     expect(/[A-Za-z]/.test(pseudo)).toBe(false)
   })
@@ -239,13 +224,13 @@ describe('ACCEPTANCE BAR: whole real en catalog round-trips with no structural l
   const en = loadCatalog('en')
 
   it('every ICU key: pseudo is valid ICU and token sets equal the source', () => {
-    const failures = []
+    const failures: string[] = []
     for (const [key, value] of Object.entries(en.messages)) {
       if (isRawKey(key)) continue
       const pseudo = pseudoValue(key, value)
       const pe = parseMessage(value)
       const pp = parseMessage(pseudo)
-      if (!pp.ok) failures.push(`${key}: invalid pseudo ICU (${pp.error})`)
+      if (!pp.ok) failures.push(`${key}: invalid pseudo ICU (${String(pp.error)})`)
       else if (
         !setEq(pp.placeholders, pe.placeholders) ||
         !setEq(pp.tags, pe.tags) ||
@@ -258,7 +243,7 @@ describe('ACCEPTANCE BAR: whole real en catalog round-trips with no structural l
   })
 
   it('every raw errors.* key: {…} brace-token set is preserved', () => {
-    const failures = []
+    const failures: string[] = []
     for (const [key, value] of Object.entries(en.messages)) {
       if (!isRawKey(key)) continue
       const pseudo = pseudoValue(key, value)
@@ -293,7 +278,7 @@ describe('ACCEPTANCE BAR: whole real en catalog round-trips with no structural l
     for (const [key, value] of Object.entries(en.messages)) {
       total++
       const pseudo = pseudoValue(key, value)
-      if ([...pseudo].length > [...value].length) grew++
+      if (Array.from(pseudo).length > Array.from(value).length) grew++
     }
     // All but the rare all-placeholder messages grow.
     expect(grew).toBeGreaterThan(total * 0.98)
@@ -302,11 +287,8 @@ describe('ACCEPTANCE BAR: whole real en catalog round-trips with no structural l
 
 describe('committed fixture matches the generator', () => {
   const fixtureDir = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
-  /**
-   * @param {string} rel
-   * @returns {Record<string, any>}
-   */
-  const readJson = (rel) => JSON.parse(readFileSync(join(fixtureDir, rel), 'utf8'))
+  const readJson = (rel: string): Record<string, unknown> =>
+    JSON.parse(readFileSync(join(fixtureDir, rel), 'utf8')) as Record<string, unknown>
 
   it('en-XA/fixture.json is exactly buildPseudoFile(en/fixture.json)', () => {
     const en = readJson('en/fixture.json')

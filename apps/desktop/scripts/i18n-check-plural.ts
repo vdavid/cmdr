@@ -33,26 +33,24 @@
  * is why the catalog helper keeps `pluralCategories` and `selectCategories`
  * separate. Raw `errors.*` keys carry no ICU plurals, so they contribute nothing.
  *
- * Run: `pnpm i18n:check-plural` (desktop) or `node scripts/i18n-check-plural.js`.
+ * Run: `pnpm i18n:check-plural` (desktop) or `node scripts/i18n-check-plural.ts`.
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
-import { parseMessage } from './i18n-catalog-lib.js'
-import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.js'
+import { parseMessage } from './i18n-catalog-lib.ts'
+import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /**
  * The CLDR plural categories a locale requires, from the platform's `Intl`
  * (no bundled CLDR table). Cached per locale.
- * @type {Map<string, Set<string>>}
  */
-const requiredCache = new Map()
+const requiredCache = new Map<string, Set<string>>()
 
 /**
  * Returns the set of plural categories `locale` requires per CLDR.
- * @param {string} locale a BCP-47 tag
- * @returns {Set<string>}
+ * @param locale a BCP-47 tag
  */
-export function requiredPluralCategories(locale) {
+export function requiredPluralCategories(locale: string): Set<string> {
   const cached = requiredCache.get(locale)
   if (cached) return cached
   const cats = new Set(new Intl.PluralRules(locale).resolvedOptions().pluralCategories)
@@ -65,10 +63,9 @@ export function requiredPluralCategories(locale) {
  * beyond `other`), meaning the whole quantitative range is in play. A degenerate
  * `other`-only English plural restricts the value domain, so its translations need
  * only `other`.
- * @param {Set<string>} englishCats the categories English used for this arg
- * @returns {boolean}
+ * @param englishCats the categories English used for this arg
  */
-function englishUsesFullPlural(englishCats) {
+function englishUsesFullPlural(englishCats: Set<string>): boolean {
   return [...englishCats].some((c) => c !== 'other')
 }
 
@@ -77,20 +74,21 @@ function englishUsesFullPlural(englishCats) {
  * locale, gated on the English source's own plural shape (see the file header).
  * Returns a short coverage detail, or `null` if every plural arg is covered (a
  * parse failure → null, since the ICU check owns that). Exposed for unit tests.
- * @param {string} locale the BCP-47 tag (drives the locale's CLDR set)
- * @param {string} localeValue the locale's message value
- * @param {Map<string, Set<string>>} [englishPlurals] English's plural categories per
- *   arg for this key (from `parseMessage(englishValue).pluralCategories`). Absent →
- *   treat English as engaging the full plural (the strict default for callers that
- *   don't supply it).
- * @returns {string | null}
+ * @param locale the BCP-47 tag (drives the locale's CLDR set)
+ * @param localeValue the locale's message value
+ * @param englishPlurals English's plural categories per arg for this key (from
+ *   `parseMessage(englishValue).pluralCategories`). Absent → treat English as
+ *   engaging the full plural (the strict default for callers that don't supply it).
  */
-export function pluralCoverageDetail(locale, localeValue, englishPlurals) {
+export function pluralCoverageDetail(
+  locale: string,
+  localeValue: string,
+  englishPlurals?: Map<string, Set<string>>,
+): string | null {
   const parsed = parseMessage(localeValue, locale)
   if (!parsed.ok || parsed.pluralCategories.size === 0) return null
   const localeCldr = requiredPluralCategories(locale)
-  /** @type {string[]} */
-  const parts = []
+  const parts: string[] = []
   for (const [arg, provided] of parsed.pluralCategories) {
     const englishCats = englishPlurals?.get(arg)
     // If English engaged the full plural (or we have no English reference), require
@@ -105,14 +103,18 @@ export function pluralCoverageDetail(locale, localeValue, englishPlurals) {
   return parts.length === 0 ? null : parts.join('; ')
 }
 
+/** Options for `runPluralCheck`. */
+interface RunPluralCheckOptions {
+  /** override the `messages/` root (for tests) */
+  messagesRoot?: string
+  /** output sink, one line at a time (for tests) */
+  write?: (line: string) => void
+}
+
 /**
  * Runs the plural-coverage check over the catalogs under `messagesRoot`.
- * @param {object} [opts]
- * @param {string} [opts.messagesRoot] override the `messages/` root (for tests)
- * @param {(line: string) => void} [opts.write] output sink, one line at a time (for tests)
- * @returns {number}
  */
-export function runPluralCheck(opts = {}) {
+export function runPluralCheck(opts: RunPluralCheckOptions = {}): number {
   return runLocaleCheck({
     title: 'Plural-category coverage',
     messagesRoot: opts.messagesRoot,
@@ -122,7 +124,9 @@ export function runPluralCheck(opts = {}) {
       for (const [key, localeValue] of Object.entries(localeCatalog.messages)) {
         const englishValue = base.messages[key]
         // Parse English to learn its plural shape (degenerate vs full); absent en
-        // key → leave undefined so the strict default applies.
+        // key → leave undefined so the strict default applies. The record index is
+        // `string` to the types, but undefined at runtime when the key is absent.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         const englishPlurals = englishValue === undefined ? undefined : parseMessage(englishValue).pluralCategories
         const detail = pluralCoverageDetail(locale, localeValue, englishPlurals)
         if (detail !== null) findings.add(key, detail)

@@ -94,7 +94,7 @@ Start all containers and run the app with `smb-e2e` enabled:
 
 ```bash
 ./test/smb-servers/start.sh all
-cd apps/desktop && node scripts/tauri-wrapper.js dev -- --features smb-e2e
+cd apps/desktop && node scripts/tauri-wrapper.ts dev -- --features smb-e2e
 ```
 
 All 14 virtual SMB hosts appear in the Network sidebar. Click them to test share listing, mounting, file browsing, and

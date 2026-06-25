@@ -62,7 +62,7 @@ To test with a virtual MTP device (simulated Android phone):
 pnpm dev -- --features virtual-mtp
 ```
 
-This still flows through `apps/desktop/scripts/tauri-wrapper.js`, which generates the per-instance config (bundle
+This still flows through `apps/desktop/scripts/tauri-wrapper.ts`, which generates the per-instance config (bundle
 identifier, `CMDR_DATA_DIR`, file-backed secret store) on the fly. Pass `--worktree <slug>` first to isolate a
 worktree's data dir from your main dev session: `pnpm dev --worktree foo -- --features virtual-mtp`.
 

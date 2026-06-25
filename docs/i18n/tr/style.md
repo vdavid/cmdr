@@ -124,7 +124,7 @@ Format per term: `English → chosen · sources · confidence`. Tier order: macO
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.js`). macOS UI names
+tokens. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`). macOS UI names
 Cmdr opens into (System Settings panes, "Çöp Sepeti") should match a Turkish macOS.
 
 ## Plurals

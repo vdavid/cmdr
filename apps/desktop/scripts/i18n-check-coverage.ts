@@ -28,11 +28,11 @@
  * breaker (the spec lists it in the WARN class with a `NotInCI` reason like the
  * stale check). English-only today → a clean no-op.
  *
- * Run: `pnpm i18n:check-coverage` (desktop) or `node scripts/i18n-check-coverage.js`.
+ * Run: `pnpm i18n:check-coverage` (desktop) or `node scripts/i18n-check-coverage.ts`.
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
-import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.js'
+import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /**
  * Classifies one English key against a locale's catalog: `missing`,
@@ -44,15 +44,23 @@ import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.js'
  * it's correctly identical (a brand, a unit, a placeholder-only string, a shared
  * word). The exemption applies ONLY to the identical case: a missing key is still
  * `missing` even with a justification recorded.
- * @param {string} key the English message key
- * @param {string} englishValue the English value
- * @param {Record<string, string>} localeMessages the locale's messages
- * @param {Record<string, Record<string, unknown>>} [localeMetadata] the locale's `@key` metadata
- * @returns {'missing' | 'identical' | null}
+ *
+ * @param key the English message key
+ * @param englishValue the English value
+ * @param localeMessages the locale's messages
+ * @param localeMetadata the locale's `@key` metadata
  */
-export function coverageStatus(key, englishValue, localeMessages, localeMetadata = {}) {
+export function coverageStatus(
+  key: string,
+  englishValue: string,
+  localeMessages: Record<string, string>,
+  localeMetadata: Record<string, Record<string, unknown>> = {},
+): 'missing' | 'identical' | null {
   if (!(key in localeMessages)) return 'missing'
   if (localeMessages[key] === englishValue) {
+    // The record index types as non-nullish, but a key with no `@key` metadata is
+    // undefined at runtime; the optional chain guards that.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const justification = localeMetadata[key]?.['sameAsSourceJustification']
     if (typeof justification === 'string' && justification !== '') return null
     return 'identical'
@@ -62,12 +70,10 @@ export function coverageStatus(key, englishValue, localeMessages, localeMetadata
 
 /**
  * Runs the coverage check over the catalogs under `messagesRoot`.
- * @param {object} [opts]
- * @param {string} [opts.messagesRoot] override the `messages/` root (for tests)
- * @param {(line: string) => void} [opts.write] output sink, one line at a time (for tests)
- * @returns {number}
+ * @param opts.messagesRoot override the `messages/` root (for tests)
+ * @param opts.write output sink, one line at a time (for tests)
  */
-export function runCoverageCheck(opts = {}) {
+export function runCoverageCheck(opts: { messagesRoot?: string; write?: (line: string) => void } = {}): number {
   return runLocaleCheck({
     title: 'Translation coverage',
     messagesRoot: opts.messagesRoot,

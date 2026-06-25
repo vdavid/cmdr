@@ -102,7 +102,7 @@ or OS catalog), so terms should be filled in with a native reviewer rather than 
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. The curated list is enforced by `desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.js`.
+tokens. The curated list is enforced by `desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.ts`.
 For English acronyms the MS guide suggests expanding on first use with the acronym in parentheses, but in short UI
 labels keep the acronym alone.
 

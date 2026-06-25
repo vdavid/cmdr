@@ -53,7 +53,7 @@ which is for instructional prose, not buttons.
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate`; the curated list is in `apps/desktop/scripts/i18n-catalog-lib.js`.
+tokens. Enforced by `desktop-i18n-dont-translate`; the curated list is in `apps/desktop/scripts/i18n-catalog-lib.ts`.
 
 ## Plurals
 

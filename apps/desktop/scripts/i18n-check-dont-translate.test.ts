@@ -1,5 +1,5 @@
 /**
- * Tests for the don't-translate-tokens check (`i18n-check-dont-translate.js`).
+ * Tests for the don't-translate-tokens check (`i18n-check-dont-translate.ts`).
  *
  * Clean path: the committed pseudolocale fixture preserves `{system_settings}`
  * (its only listed token) in en-XA. Negative paths (temp copies): drop the system
@@ -10,15 +10,14 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { runDontTranslateCheck, droppedTokens, BRAND_WORDS, SYSTEM_TOKENS } from './i18n-check-dont-translate.js'
-import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.js'
+import { runDontTranslateCheck, droppedTokens, BRAND_WORDS, SYSTEM_TOKENS } from './i18n-check-dont-translate.ts'
+import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.ts'
 
 const FIXTURE_ROOT = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
 
 function capture() {
-  /** @type {string[]} */
-  const lines = []
-  return { lines, write: (/** @type {string} */ l) => void lines.push(l) }
+  const lines: string[] = []
+  return { lines, write: (l: string) => void lines.push(l) }
 }
 
 describe('curated lists', () => {
@@ -73,24 +72,23 @@ describe('runDontTranslateCheck against the committed fixture', () => {
 })
 
 describe('runDontTranslateCheck negative cases (temp catalog copies)', () => {
-  /** @type {string} */
-  let root
-  /** @type {string} */
-  let enFile
-  /** @type {string} */
-  let xaFile
+  let root: string
+  let enFile: string
+  let xaFile: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-dt-'))
     cpSync(FIXTURE_ROOT, root, { recursive: true })
     enFile = join(root, 'en', 'fixture.json')
     xaFile = join(root, 'en-XA', 'fixture.json')
   })
-  afterEach(() => rmSync(root, { recursive: true, force: true }))
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
 
-  /** @param {string} f */
-  const read = (f) => JSON.parse(readFileSync(f, 'utf8'))
-  /** @param {string} f @param {Record<string, any>} o */
-  const writeJson = (f, o) => writeFileSync(f, JSON.stringify(o, null, 2) + '\n', 'utf8')
+  const read = (f: string): Record<string, string> => JSON.parse(readFileSync(f, 'utf8')) as Record<string, string>
+  const writeJson = (f: string, o: Record<string, string>) => {
+    writeFileSync(f, JSON.stringify(o, null, 2) + '\n', 'utf8')
+  }
   const run = () => {
     const cap = capture()
     return { code: runDontTranslateCheck({ messagesRoot: root, write: cap.write }), text: cap.lines.join('\n') }
@@ -120,14 +118,15 @@ describe('runDontTranslateCheck negative cases (temp catalog copies)', () => {
 })
 
 describe('no-locales path (only en)', () => {
-  /** @type {string} */
-  let root
+  let root: string
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'cmdr-i18n-dt-only-en-'))
     mkdirSync(join(root, 'en'), { recursive: true })
     cpSync(join(FIXTURE_ROOT, 'en', 'fixture.json'), join(root, 'en', 'fixture.json'))
   })
-  afterEach(() => rmSync(root, { recursive: true, force: true }))
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+  })
 
   it('is a clean no-op', () => {
     expect(localesToCheck(root)).toEqual([])

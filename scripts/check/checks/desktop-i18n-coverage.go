@@ -17,7 +17,7 @@ import (
 // a translation feature is exactly the kind of headline a warn-only signal lets
 // slip past a release, so coverage gaps block the build. Deliberately-identical
 // strings (brand names, units) opt out per-key via `@key.sameAsSourceJustification`.
-// See `apps/desktop/scripts/i18n-check-coverage.js`.
+// See `apps/desktop/scripts/i18n-check-coverage.ts`.
 //
 // Exit-code contract (mirrored by `i18n-locale-check-lib.js`): 0 = clean / no
 // locales, 1 = at least one coverage gap (→ ERROR), any other code = a genuine
@@ -26,7 +26,7 @@ import (
 func RunDesktopI18nCoverage(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
 
-	cmd := exec.Command("node", "scripts/i18n-check-coverage.js")
+	cmd := exec.Command("node", "scripts/i18n-check-coverage.ts")
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {

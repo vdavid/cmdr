@@ -4,7 +4,7 @@
  *
  * A translated value in a non-`en` locale records, in `@key.sourceHash`, a hash
  * of the EXACT English value it was translated from (written by the pseudolocale
- * generator / a locale skeleton; see `i18n-catalog-lib.js` `sourceHash()` and
+ * generator / a locale skeleton; see `i18n-catalog-lib.ts` `sourceHash()` and
  * `messages/DETAILS.md` § `@key` schema). When the English source later changes,
  * the stored hash no longer matches the current English value's hash, so the
  * translation is STALE: it renders text translated from a sentence that no longer
@@ -21,7 +21,7 @@
  *    "deliberately identical to English" reason was vouched for the OLD English
  *    value, so once the source changes the justification must be re-confirmed (or
  *    the key now needs a real translation). This keeps the coverage exemption
- *    (see `i18n-check-coverage.js`) from silently outliving the text it vouched for.
+ *    (see `i18n-check-coverage.ts`) from silently outliving the text it vouched for.
  *
  * Two strictness modes, selected by the `CMDR_I18N_STALE_STRICT` env var:
  *  - NORMAL (unset): a stale finding exits 1, which the Go wrapper maps to a
@@ -39,12 +39,12 @@
  * today's English-only repo there are no non-`en` locales, so it's a clean no-op
  * either way.
  *
- * Run: `pnpm i18n:check-stale` (desktop) or `node scripts/i18n-check-stale.js`.
+ * Run: `pnpm i18n:check-stale` (desktop) or `node scripts/i18n-check-stale.ts`.
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
-import { sourceHash } from './i18n-catalog-lib.js'
-import { EXIT_ERROR, EXIT_ISSUES, runLocaleCheck } from './i18n-locale-check-lib.js'
+import { sourceHash } from './i18n-catalog-lib.ts'
+import { EXIT_ERROR, EXIT_ISSUES, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /** Env var the release flow sets to escalate a stale finding from WARN to a build-failing ERROR. */
 export const STALE_STRICT_ENV = 'CMDR_I18N_STALE_STRICT'
@@ -52,13 +52,19 @@ export const STALE_STRICT_ENV = 'CMDR_I18N_STALE_STRICT'
 /**
  * Classifies one locale key against the current English catalog. Returns a short
  * stale reason, or `null` if the key is fresh.
- * @param {string} key the message key present in the locale
- * @param {Record<string, string>} enMessages current English messages
- * @param {Record<string, unknown> | undefined} keyMetadata the locale's `@key` metadata (absent for a key with no metadata)
- * @returns {string | null} stale detail, or null if fresh
+ * @param key the message key present in the locale
+ * @param enMessages current English messages
+ * @param keyMetadata the locale's `@key` metadata (absent for a key with no metadata)
+ * @returns stale detail, or null if fresh
  */
-export function staleReason(key, enMessages, keyMetadata) {
+export function staleReason(
+  key: string,
+  enMessages: Record<string, string>,
+  keyMetadata: Record<string, unknown> | undefined,
+): string | null {
   const englishValue = enMessages[key]
+  // The record index is `string` to the types, but undefined at runtime when the key is absent.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (englishValue === undefined) return 'English source removed; drop this translated key'
 
   const stored = keyMetadata && typeof keyMetadata === 'object' ? keyMetadata['sourceHash'] : undefined
@@ -70,7 +76,7 @@ export function staleReason(key, enMessages, keyMetadata) {
     const meta = keyMetadata && typeof keyMetadata === 'object' ? keyMetadata : {}
     const reviewed = meta['reviewed'] === true
     const justified = typeof meta['sameAsSourceJustification'] === 'string' && meta['sameAsSourceJustification'] !== ''
-    const notes = []
+    const notes: string[] = []
     if (reviewed) notes.push('the reviewed flag no longer applies; reset it and re-review')
     if (justified) notes.push('the sameAsSourceJustification no longer applies; re-confirm it or translate')
     return notes.length > 0
@@ -78,6 +84,16 @@ export function staleReason(key, enMessages, keyMetadata) {
       : 'source changed since translation'
   }
   return null
+}
+
+/** Options for `runStaleCheck`. */
+interface RunStaleCheckOptions {
+  /** override the `messages/` root (for tests) */
+  messagesRoot?: string
+  /** escalate a stale finding from WARN (exit 1) to ERROR (exit 2) */
+  strict?: boolean
+  /** output sink, one line at a time (for tests) */
+  write?: (line: string) => void
 }
 
 /**
@@ -89,13 +105,8 @@ export function staleReason(key, enMessages, keyMetadata) {
  * instead. A clean run returns `EXIT_CLEAN` (0) in both modes. Review is never a
  * gate: a stale key that carries `reviewed: true` is reported with a reset note,
  * but the absence of review never makes a clean key fail.
- * @param {object} [opts]
- * @param {string} [opts.messagesRoot] override the `messages/` root (for tests)
- * @param {boolean} [opts.strict] escalate a stale finding from WARN (exit 1) to ERROR (exit 2)
- * @param {(line: string) => void} [opts.write] output sink, one line at a time (for tests)
- * @returns {number}
  */
-export function runStaleCheck(opts = {}) {
+export function runStaleCheck(opts: RunStaleCheckOptions = {}): number {
   const code = runLocaleCheck({
     title: 'Stale translations',
     messagesRoot: opts.messagesRoot,

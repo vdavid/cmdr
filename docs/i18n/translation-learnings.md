@@ -7,7 +7,7 @@ go HERE or in the guide. When a learning becomes a hard rule, promote it into th
 
 ## Pipeline (how a wave-1 locale gets made)
 
-1. **Scaffold the skeleton**: `node apps/desktop/scripts/gen-locale-skeleton.js <tag>` writes `messages/<tag>/*.json`
+1. **Scaffold the skeleton**: `node apps/desktop/scripts/gen-locale-skeleton.ts <tag>` writes `messages/<tag>/*.json`
    with the English values in place and each `@key.sourceHash` already stamped. Translators EDIT values in place and
    never touch the hash.
 2. **Build the glossary first**: mine the pile for the recurring core terms and record them in `<tag>/style.md` +
@@ -23,9 +23,9 @@ go HERE or in the guide. When a learning becomes a hard rule, promote it into th
 ## Catalog mechanics (verified 2026-06-21)
 
 - A non-`en` catalog file is interleaved `"key": "value"` + `"@key": { "sourceHash": "<7 hex>" }`, keys in `en` source
-  order, NO `description` (that's `en`-only per-string context). The pseudolocale generator (`gen-pseudolocale.js`) is
+  order, NO `description` (that's `en`-only per-string context). The pseudolocale generator (`gen-pseudolocale.ts`) is
   the canonical shape; the skeleton generator emits the same shape with English values.
-- `sourceHash(englishValue)` = first 7 hex of SHA-256 (in `i18n-catalog-lib.js`). The skeleton stamps it; the stale
+- `sourceHash(englishValue)` = first 7 hex of SHA-256 (in `i18n-catalog-lib.ts`). The skeleton stamps it; the stale
   check (`desktop-i18n-stale`) compares it. Editing only the VALUE keeps the hash valid (it hashes the English source,
   which didn't change).
 - ICU vs raw split: every `errors.*` key renders RAW (normal apostrophes, literal `<…>`, `{token}` as a literal

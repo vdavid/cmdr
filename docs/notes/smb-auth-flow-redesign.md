@@ -259,5 +259,5 @@ Keychain import via the Security framework.
   allowing UI). Cmdr's explicit-creds/Guest strategy avoids the _Keychain-lookup_ prompt but not the _auth-failure_ UI.
 - `smbutil view -N` authenticates from the **system** Keychain, which Cmdr can use for listing but not for NetFS (we
   suppress the lookup with the Guest key) nor for smb2 (we can't read the secret).
-- Dev instances run `CMDR_SECRET_STORE=file` (set by `tauri-wrapper.js`), so credentials saved in prod Cmdr or by Finder
+- Dev instances run `CMDR_SECRET_STORE=file` (set by `tauri-wrapper.ts`), so credentials saved in prod Cmdr or by Finder
   are never visible to a dev session's own store. Any dev test of this flow starts credential-less by design.

@@ -125,7 +125,7 @@ Core terms confirmed against Microsoft terminology and GNOME Nautilus. Extend as
 
 Keep these verbatim (product or platform names, not words to translate): Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust,
 Svelte, Quick Look. The same list (plus the system placeholder tokens) is enforced by the `desktop-i18n-dont-translate`
-check; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.js`. Acronyms (SMB, MTP, URL) stay Latin and take
+check; see the curated list in `apps/desktop/scripts/i18n-catalog-lib.ts`. Acronyms (SMB, MTP, URL) stay Latin and take
 Macedonian inflection with a hyphen when needed.
 
 ## Plurals

@@ -22,41 +22,35 @@
  * English, no crash); the key-parity check surfaces missing keys as a warn. Here
  * we only inspect keys the locale actually defines.
  *
- * Run: `pnpm i18n:check-parity` (desktop) or `node scripts/i18n-check-parity.js`.
+ * Run: `pnpm i18n:check-parity` (desktop) or `node scripts/i18n-check-parity.ts`.
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
-import { parseMessage, isRawKey, rawTokens } from './i18n-catalog-lib.js'
-import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.js'
+import { parseMessage, isRawKey, rawTokens } from './i18n-catalog-lib.ts'
+import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
 
 /**
  * Renders a set as a stable, comma-joined string for a finding detail, or `(none)`.
- * @param {Set<string>} set
- * @returns {string}
  */
-function fmtSet(set) {
+function fmtSet(set: Set<string>): string {
   return set.size === 0 ? '(none)' : [...set].sort().join(', ')
 }
 
 /**
  * The members in `a` but not `b`, as a sorted array.
- * @param {Set<string>} a
- * @param {Set<string>} b
- * @returns {string[]}
  */
-function difference(a, b) {
+function difference(a: Set<string>, b: Set<string>): string[] {
   return [...a].filter((x) => !b.has(x)).sort()
 }
 
 /**
  * Compares one key's English vs locale substitution structure and returns a short
  * parity-failure detail, or `null` if they match. Exposed for unit tests.
- * @param {string} key the message key
- * @param {string} englishValue the English source value
- * @param {string} localeValue the locale's value for the same key
- * @returns {string | null}
+ * @param key the message key
+ * @param englishValue the English source value
+ * @param localeValue the locale's value for the same key
  */
-export function parityDetail(key, englishValue, localeValue) {
+export function parityDetail(key: string, englishValue: string, localeValue: string): string | null {
   if (isRawKey(key)) {
     const en = rawTokens(englishValue)
     const loc = rawTokens(localeValue)
@@ -79,8 +73,7 @@ export function parityDetail(key, englishValue, localeValue) {
   if (phMissing.length === 0 && phExtra.length === 0 && tagMissing.length === 0 && tagExtra.length === 0) {
     return null
   }
-  /** @type {string[]} */
-  const parts = []
+  const parts: string[] = []
   if (phMissing.length > 0 || phExtra.length > 0) {
     parts.push(`placeholders expected {${fmtSet(en.placeholders)}}, got {${fmtSet(loc.placeholders)}}`)
   }
@@ -90,15 +83,19 @@ export function parityDetail(key, englishValue, localeValue) {
   return parts.join('; ')
 }
 
+/** Options for `runParityCheck`. */
+interface RunParityCheckOptions {
+  /** override the `messages/` root (for tests) */
+  messagesRoot?: string
+  /** output sink, one line at a time (for tests) */
+  write?: (line: string) => void
+}
+
 /**
  * Runs the parity check over the catalogs under `messagesRoot`. Returns the
  * process exit code.
- * @param {object} [opts]
- * @param {string} [opts.messagesRoot] override the `messages/` root (for tests)
- * @param {(line: string) => void} [opts.write] output sink, one line at a time (for tests)
- * @returns {number}
  */
-export function runParityCheck(opts = {}) {
+export function runParityCheck(opts: RunParityCheckOptions = {}): number {
   return runLocaleCheck({
     title: 'Placeholder/tag parity',
     messagesRoot: opts.messagesRoot,
@@ -107,7 +104,10 @@ export function runParityCheck(opts = {}) {
     inspectLocale: ({ base, locale_catalog: localeCatalog, findings }) => {
       for (const [key, localeValue] of Object.entries(localeCatalog.messages)) {
         const englishValue = base.messages[key]
-        if (englishValue === undefined) continue // missing-from-en is the key-parity/stale check's concern
+        // The record index is `string` to the types, but undefined at runtime when the key is absent.
+        // missing-from-en is the key-parity/stale check's concern.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (englishValue === undefined) continue
         const detail = parityDetail(key, englishValue, localeValue)
         if (detail !== null) findings.add(key, detail)
       }

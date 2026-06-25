@@ -1,6 +1,6 @@
 /**
  * Pure logic for the message-key codegen, factored out of the CLI
- * (`gen-message-keys.js`) so it's unit-testable against in-memory inputs.
+ * (`gen-message-keys.ts`) so it's unit-testable against in-memory inputs.
  *
  * Responsibilities:
  *  - parse the `messages/en/*.json` catalogs into the sorted `MessageKey` set
@@ -19,22 +19,18 @@
 /**
  * Drops ARB-style `@key` metadata entries from one parsed catalog file, keeping
  * only the renderable message keys, in file order.
- * @param {Record<string, unknown>} raw
- * @returns {string[]}
  */
-export function stripMetadataKeys(raw) {
+export function stripMetadataKeys(raw: Record<string, unknown>): string[] {
   return Object.keys(raw).filter((key) => !key.startsWith('@'))
 }
 
 /**
  * Merges every message key across all parsed catalog files into one sorted,
  * deduped list.
- * @param {Record<string, Record<string, unknown>>} files filename → parsed JSON
- * @returns {string[]}
+ * @param files filename → parsed JSON
  */
-export function collectCatalogKeys(files) {
-  /** @type {Set<string>} */
-  const keys = new Set()
+export function collectCatalogKeys(files: Record<string, Record<string, unknown>>): string[] {
+  const keys = new Set<string>()
   for (const raw of Object.values(files)) {
     for (const key of stripMetadataKeys(raw)) keys.add(key)
   }
@@ -64,15 +60,12 @@ const KEY_PROPERTY_RE = /\b[a-zA-Z]*[Kk]eys?\s*:\s*(['"])([a-z][a-zA-Z0-9]*(?:\.
  * Extracts every statically-resolvable message key referenced in a source
  * string. A key with an interpolated/template-expression form can't be read
  * statically and is skipped on purpose.
- * @param {string} source
- * @returns {Set<string>}
  */
-export function extractUsedKeys(source) {
-  /** @type {Set<string>} */
-  const used = new Set()
+export function extractUsedKeys(source: string): Set<string> {
+  const used = new Set<string>()
   for (const re of [KEY_REFERENCE_RE, TRANS_KEY_RE, KEY_PROPERTY_RE]) {
     re.lastIndex = 0
-    let match
+    let match: RegExpExecArray | null
     while ((match = re.exec(source)) !== null) {
       used.add(match[2])
     }
@@ -88,13 +81,9 @@ export function extractUsedKeys(source) {
  * it "not dead" even when `extractUsedKeys` (strict, for missing detection) saw
  * no direct reference. Scoped to the catalog (a substring scan over real keys),
  * so it never produces a phantom "missing key"; it only narrows `dead`.
- * @param {string} source
- * @param {string[]} catalogKeys
- * @returns {Set<string>}
  */
-export function findCatalogKeyMentions(source, catalogKeys) {
-  /** @type {Set<string>} */
-  const mentioned = new Set()
+export function findCatalogKeyMentions(source: string, catalogKeys: string[]): Set<string> {
+  const mentioned = new Set<string>()
   for (const key of catalogKeys) {
     if (source.includes(key)) mentioned.add(key)
   }
@@ -102,16 +91,30 @@ export function findCatalogKeyMentions(source, catalogKeys) {
 }
 
 /**
- * Diffs the catalog keys against the keys referenced in code.
- * @param {{ catalogKeys: string[], usedKeys: Set<string>, literalKeys?: Set<string> }} args
- *   `usedKeys`: keys from direct reference forms (drives missing detection).
- *   `literalKeys` (optional): keys whose exact literal appears anywhere in
+ * Arguments to `diffKeys`.
+ *
+ * - `usedKeys`: keys from direct reference forms (drives missing detection).
+ * - `literalKeys` (optional): keys whose exact literal appears anywhere in
  *   source; suppresses the dead warning for keys reached through indirection.
- * @returns {{ missing: string[], dead: string[] }} `missing`: used in code,
- *   absent from the catalog (a build failure). `dead`: in the catalog, never
- *   referenced in code (a warning).
  */
-export function diffKeys({ catalogKeys, usedKeys, literalKeys }) {
+export interface DiffKeysArgs {
+  catalogKeys: string[]
+  usedKeys: Set<string>
+  literalKeys?: Set<string>
+}
+
+/** The result of `diffKeys`. */
+export interface KeyDiff {
+  /** Used in code, absent from the catalog (a build failure). */
+  missing: string[]
+  /** In the catalog, never referenced in code (a warning). */
+  dead: string[]
+}
+
+/**
+ * Diffs the catalog keys against the keys referenced in code.
+ */
+export function diffKeys({ catalogKeys, usedKeys, literalKeys }: DiffKeysArgs): KeyDiff {
   const catalogSet = new Set(catalogKeys)
   const missing = [...usedKeys].filter((key) => !catalogSet.has(key)).sort()
   const dead = catalogKeys.filter((key) => !usedKeys.has(key) && !(literalKeys?.has(key) ?? false)).sort()
@@ -120,12 +123,10 @@ export function diffKeys({ catalogKeys, usedKeys, literalKeys }) {
 
 /**
  * Renders the `keys.gen.ts` source for a sorted key list.
- * @param {string[]} keys
- * @returns {string}
  */
-export function emitKeysModule(keys) {
+export function emitKeysModule(keys: string[]): string {
   const union = keys.length > 0 ? keys.map((k) => `  | '${k}'`).join('\n') : '  never'
-  return `// AUTO-GENERATED by scripts/gen-message-keys.js. Do not edit by hand.
+  return `// AUTO-GENERATED by scripts/gen-message-keys.ts. Do not edit by hand.
 // Run \`pnpm intl:keys\` (or the check pipeline) to refresh.
 
 /** Every key present in \`messages/en/*.json\`. A wrong key is a typecheck error. */

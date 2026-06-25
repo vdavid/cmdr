@@ -30,11 +30,12 @@
  *
  * Pure (no app/runtime imports beyond the M0 catalog lib, no `window`/DOM, no
  * time/RNG): everything is driven off `loadCatalog` / `listLocales` from
- * `i18n-catalog-lib.js`, with a `messagesRoot` override so tests point at the
+ * `i18n-catalog-lib.ts`, with a `messagesRoot` override so tests point at the
  * committed fixture instead of the real catalogs.
  */
 
-import { listLocales, loadCatalog } from './i18n-catalog-lib.js'
+import { listLocales, loadCatalog } from './i18n-catalog-lib.ts'
+import type { Catalog } from './i18n-catalog-lib.ts'
 
 /** The base (source) locale every other locale is checked against. */
 export const BASE_LOCALE = 'en'
@@ -47,50 +48,73 @@ export const EXIT_ERROR = 2
 /**
  * The non-`en` locales a check must inspect, sorted. In a repo with only `en`
  * (today's shipping state) this is empty, so every locale check is a clean no-op.
- * @param {string} [messagesRoot] override the `messages/` root (for tests)
- * @returns {string[]}
+ * @param messagesRoot override the `messages/` root (for tests)
  */
-export function localesToCheck(messagesRoot) {
+export function localesToCheck(messagesRoot?: string): string[] {
   return listLocales(messagesRoot).filter((locale) => locale !== BASE_LOCALE)
 }
 
 /**
  * Loads the `en` base catalog (messages + `@key` metadata) once, for a check to
  * compare every locale against.
- * @param {string} [messagesRoot]
- * @returns {{ messages: Record<string, string>, metadata: Record<string, Record<string, unknown>> }}
  */
-export function loadBaseCatalog(messagesRoot) {
+export function loadBaseCatalog(messagesRoot?: string): Catalog {
   return loadCatalog(BASE_LOCALE, messagesRoot)
+}
+
+/** One per-key issue: `detail` is a short, translator-facing reason. */
+export interface Issue {
+  key: string
+  detail: string
 }
 
 /**
  * One locale's accumulated findings: a list of per-key issues, each a `{ key,
  * detail }` pair where `detail` is a short, translator-facing reason. A check adds
  * to it as it walks the locale's keys; `reportFindings` renders it.
- * @typedef {{ locale: string, issues: { key: string, detail: string }[] }} LocaleFindings
  */
+export interface LocaleFindings {
+  locale: string
+  issues: Issue[]
+}
+
+/** A `LocaleFindings` plus its `add` recorder, returned by `newFindings`. */
+export type FindingsAccumulator = LocaleFindings & { add(key: string, detail: string): void }
 
 /**
  * Starts an empty findings accumulator for one locale.
- * @param {string} locale
- * @returns {LocaleFindings & { add(key: string, detail: string): void }}
  */
-export function newFindings(locale) {
-  /** @type {{ key: string, detail: string }[]} */
-  const issues = []
+export function newFindings(locale: string): FindingsAccumulator {
+  const issues: Issue[] = []
   return {
     locale,
     issues,
     /**
      * Records one issue against a key.
-     * @param {string} key
-     * @param {string} detail short reason, e.g. "source changed since translation"
+     * @param key
+     * @param detail short reason, e.g. "source changed since translation"
      */
-    add(key, detail) {
+    add(key: string, detail: string) {
       issues.push({ key, detail })
     },
   }
+}
+
+/**
+ * Options for `reportFindings`.
+ *
+ * - `title`: one-line check title, e.g. "Stale translations".
+ * - `findings`: one entry per checked locale (issues may be empty).
+ * - `summaryLine`: per-locale summary for a locale WITH issues, given its issue
+ *   count (default: "N stale key(s)"); the issue lines follow.
+ * - `write`: sink for one output line at a time (default `console.log`); tests
+ *   pass a collector to assert on the rendered report.
+ */
+export interface ReportFindingsOptions {
+  title: string
+  findings: LocaleFindings[]
+  summaryLine?: (count: number) => string
+  write?: (line: string) => void
 }
 
 /**
@@ -98,17 +122,14 @@ export function newFindings(locale) {
  * say what's clean, list what isn't, no silent gaps) and returns the process exit
  * code for the whole run.
  *
- * @param {object} opts
- * @param {string} opts.title one-line check title, e.g. "Stale translations"
- * @param {LocaleFindings[]} opts.findings one entry per checked locale (issues may be empty)
- * @param {(count: number) => string} [opts.summaryLine] per-locale summary for a locale WITH
- *   issues, given its issue count (default: "N stale key(s)"); the issue lines follow.
- * @param {(line: string) => void} [opts.write] sink for one output line at a time
- *   (default `console.log`); tests pass a collector to assert on the rendered report.
- * @returns {number} `EXIT_CLEAN` if no locales or all clean, else `EXIT_ISSUES`
+ * @returns `EXIT_CLEAN` if no locales or all clean, else `EXIT_ISSUES`
  */
-export function reportFindings({ title, findings, summaryLine, write }) {
-  const out = write ?? ((line) => console.log(line))
+export function reportFindings({ title, findings, summaryLine, write }: ReportFindingsOptions): number {
+  const out =
+    write ??
+    ((line: string) => {
+      console.log(line)
+    })
   if (findings.length === 0) {
     out(`${title}: no non-${BASE_LOCALE} locales to check.`)
     return EXIT_CLEAN
@@ -133,30 +154,49 @@ export function reportFindings({ title, findings, summaryLine, write }) {
   return EXIT_ISSUES
 }
 
+/** The arguments `runLocaleCheck` hands a per-locale `inspectLocale` body. */
+export interface InspectLocaleArgs {
+  locale: string
+  base: Catalog
+  locale_catalog: Catalog
+  findings: FindingsAccumulator
+}
+
+/**
+ * Options for `runLocaleCheck`.
+ *
+ * - `title`: check title for the report.
+ * - `inspectLocale`: per-locale check body (it mutates `findings`).
+ * - `summaryLine`: see `reportFindings`.
+ * - `messagesRoot`: override the `messages/` root (for tests).
+ * - `write`: output sink, one line at a time (for tests).
+ */
+export interface RunLocaleCheckOptions {
+  title: string
+  inspectLocale: (args: InspectLocaleArgs) => void
+  summaryLine?: (count: number) => string
+  messagesRoot?: string
+  write?: (line: string) => void
+}
+
 /**
  * Wires the standard locale-check loop: load `en` once, run `inspectLocale` for
  * every non-`en` locale, then report. `inspectLocale` gets the base catalog, the
  * locale's catalog, and a fresh `findings` accumulator to populate; it returns
  * nothing (it mutates `findings`).
  *
- * @param {object} opts
- * @param {string} opts.title check title for the report
- * @param {(args: {
- *   locale: string,
- *   base: { messages: Record<string, string>, metadata: Record<string, Record<string, unknown>> },
- *   locale_catalog: { messages: Record<string, string>, metadata: Record<string, Record<string, unknown>> },
- *   findings: ReturnType<typeof newFindings>,
- * }) => void} opts.inspectLocale per-locale check body
- * @param {(count: number) => string} [opts.summaryLine] see `reportFindings`
- * @param {string} [opts.messagesRoot] override the `messages/` root (for tests)
- * @param {(line: string) => void} [opts.write] output sink, one line at a time (for tests)
- * @returns {number} the process exit code (`EXIT_CLEAN` / `EXIT_ISSUES`)
+ * @returns the process exit code (`EXIT_CLEAN` / `EXIT_ISSUES`)
  */
-export function runLocaleCheck({ title, inspectLocale, summaryLine, messagesRoot, write }) {
+export function runLocaleCheck({
+  title,
+  inspectLocale,
+  summaryLine,
+  messagesRoot,
+  write,
+}: RunLocaleCheckOptions): number {
   const locales = localesToCheck(messagesRoot)
   const base = loadBaseCatalog(messagesRoot)
-  /** @type {LocaleFindings[]} */
-  const findings = []
+  const findings: LocaleFindings[] = []
   for (const locale of locales) {
     const localeCatalog = loadCatalog(locale, messagesRoot)
     const acc = newFindings(locale)

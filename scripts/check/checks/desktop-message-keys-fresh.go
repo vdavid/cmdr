@@ -41,7 +41,7 @@ func RunDesktopMessageKeysFresh(ctx *CheckContext) (CheckResult, error) {
 		}()
 	}
 
-	regenCmd := exec.Command("node", "scripts/gen-message-keys.js")
+	regenCmd := exec.Command("node", "scripts/gen-message-keys.ts")
 	regenCmd.Dir = desktopDir
 	output, regenErr := RunCommand(regenCmd, true)
 	if regenErr != nil {
@@ -50,7 +50,7 @@ func RunDesktopMessageKeysFresh(ctx *CheckContext) (CheckResult, error) {
 		}
 		// The codegen exits non-zero only on missing keys (used in code, absent
 		// from the catalog); surface its report verbatim.
-		return CheckResult{}, fmt.Errorf("`node scripts/gen-message-keys.js` failed:\n%s", indentOutput(output))
+		return CheckResult{}, fmt.Errorf("`node scripts/gen-message-keys.ts` failed:\n%s", indentOutput(output))
 	}
 
 	regenerated, err := os.ReadFile(keysPath)

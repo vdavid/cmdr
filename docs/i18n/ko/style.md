@@ -122,7 +122,7 @@ Add rows as terms come up, each with sources and a confidence.
 
 Keep verbatim, in Latin script: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the
 `{system_settings}`-style tokens. Enforced by `desktop-i18n-dont-translate` (list in
-`apps/desktop/scripts/i18n-catalog-lib.js`). macOS keeps these Latin in Korean text ("이 Mac 검색" keeps "Mac" Latin).
+`apps/desktop/scripts/i18n-catalog-lib.ts`). macOS keeps these Latin in Korean text ("이 Mac 검색" keeps "Mac" Latin).
 **Particle-after-brand watch**: when a particle follows a Latin brand token (e.g. "SMB로" vs "SMB으로"), Korean reads
 the token by how it's pronounced; use the dual-particle form "(으)로" if unsure, or spell the particle for the token's
 actual Korean reading. See the particle decision point.

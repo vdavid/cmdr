@@ -157,7 +157,7 @@ Watch two false-friend traps from Microsoft's general (non-file-manager) corpus:
 
 Keep verbatim (product/platform names, not words to translate): Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte,
 Quick Look, plus the `{system_settings}`-style tokens. Enforced by `desktop-i18n-dont-translate` (curated list:
-`apps/desktop/scripts/i18n-catalog-lib.js`). These stay in Latin script inside Ge'ez-script sentences; that mixing is
+`apps/desktop/scripts/i18n-catalog-lib.ts`). These stay in Latin script inside Ge'ez-script sentences; that mixing is
 expected and correct.
 
 ## Plurals

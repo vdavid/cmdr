@@ -417,7 +417,7 @@ which handles the full lifecycle (build → launch → test → cleanup), or sta
 section above).
 
 **Gotcha**: Frontend `tauri-plugin-store` stores read the developer's REAL store files unless redirected. **Why**: the
-checker launches the pre-built binary directly (no `tauri-wrapper.js`), so Tauri's `app_data_dir()` keeps the prod
+checker launches the pre-built binary directly (no `tauri-wrapper.ts`), so Tauri's `app_data_dir()` keeps the prod
 identifier `com.veszelovszki.cmdr` and `tauri-plugin-store` would resolve a bare store name to
 `~/Library/Application Support/com.veszelovszki.cmdr/<name>`. That leaked a locally-flipped setting into tests:
 `fileExplorer.suppressQuickLookHint: true` (set by clicking "Don't show again" on the Quick Look hint toast in your real

@@ -8,7 +8,11 @@ import {
   representativeFor,
   buildCouplings,
   REPRESENTATIVE_SCREENSHOTS,
-} from './couple-screenshots.js'
+} from './couple-screenshots.ts'
+
+// `JSON.parse` is untyped (`any`); the catalogs are `{ key: string | object }`,
+// so parse to a known shape for the assertions below.
+const parse = (s: string): Record<string, unknown> => JSON.parse(s) as Record<string, unknown>
 
 // An oxfmt-shaped fixture catalog mirroring the real `messages/en/<area>.json`:
 // 2-space indent, each `@key` twin right after its message key, BLANK LINES
@@ -51,8 +55,8 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
     expect(couplingCount).toBe(2)
 
     // The output must still parse and carry every message value byte-identical.
-    const before = JSON.parse(FIXTURE)
-    const after = JSON.parse(text)
+    const before = parse(FIXTURE)
+    const after = parse(text)
     for (const k of Object.keys(before)) {
       if (k.startsWith('@')) continue
       expect(after[k]).toBe(before[k])
@@ -86,7 +90,7 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
     expect(changed).toBe(true)
     expect(couplingCount).toBe(1)
 
-    const after = JSON.parse(text)
+    const after = parse(text)
     expect(after['@common.ok']).toEqual({
       description: 'Confirm button in dialogs.',
       screenshot: 'rep.png',
@@ -104,34 +108,36 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
     // Couple representatively (with a note), then re-couple directly (no note):
     // the note must be removed, and the twin must stay valid + parseable.
     const rep = coupleCatalog(FIXTURE, new Map([['common.cancel', { screenshot: 'rep.png', note: 'stand-in' }]])).text
-    expect(JSON.parse(rep)['@common.cancel'].screenshotNote).toBe('stand-in')
+    expect((parse(rep)['@common.cancel'] as Record<string, unknown>).screenshotNote).toBe('stand-in')
 
     const direct = coupleCatalog(rep, new Map([['common.cancel', { screenshot: 'real.png' }]]))
     expect(direct.changed).toBe(true)
-    const obj = JSON.parse(direct.text)
-    expect(obj['@common.cancel']).toEqual({
+    const obj = parse(direct.text)
+    const cancelTwin = obj['@common.cancel'] as Record<string, unknown>
+    expect(cancelTwin).toEqual({
       description: 'Dismiss button in dialogs.',
       placeholders: {},
       screenshot: 'real.png',
     })
-    expect('screenshotNote' in obj['@common.cancel']).toBe(false)
+    expect('screenshotNote' in cancelTwin).toBe(false)
     // No dangling comma / broken JSON anywhere.
-    expect(() => JSON.parse(direct.text)).not.toThrow()
+    expect(() => {
+      JSON.parse(direct.text)
+    }).not.toThrow()
   })
 
   it('preserves the blank lines between catalog groups', () => {
     const { text } = coupleCatalog(FIXTURE, new Map([['common.ok', { screenshot: 'dialog.png' }]]))
     // Same number of blank (empty) lines as the input: the round-trip bug this
     // guards would collapse them to zero.
-    /** @param {string} s */
-    const blanks = (s) => s.split('\n').filter((/** @type {string} */ l) => l === '').length
+    const blanks = (s: string) => s.split('\n').filter((l: string) => l === '').length
     expect(blanks(text)).toBe(blanks(FIXTURE))
   })
 
   it('replaces an existing screenshot value rather than duplicating it', () => {
     const once = coupleCatalog(FIXTURE, new Map([['common.ok', { screenshot: 'first.png' }]])).text
     const twice = coupleCatalog(once, new Map([['common.ok', { screenshot: 'second.png' }]])).text
-    const obj = JSON.parse(twice)
+    const obj = parse(twice)
     expect(obj['@common.ok']).toEqual({ description: 'Confirm button in dialogs.', screenshot: 'second.png' })
     // Exactly one screenshot line for this twin.
     expect((twice.match(/"screenshot": "second.png"/g) ?? []).length).toBe(1)

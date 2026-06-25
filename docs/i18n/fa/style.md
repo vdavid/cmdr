@@ -155,7 +155,7 @@ Tentative / needs a native check (thin evidence, no macOS):
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
 tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`. In RTL text these LTR brand runs need bidi isolation (see RTL decision
+`apps/desktop/scripts/i18n-catalog-lib.ts`. In RTL text these LTR brand runs need bidi isolation (see RTL decision
 point). There's no macOS Persian UI to match macOS-name strings against, so brand/system names stay as their Latin
 forms.
 

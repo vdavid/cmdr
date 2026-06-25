@@ -61,7 +61,7 @@ it can, but the judgment is yours.
    fr "Coup d’œil", de "Übersicht", es "Vista rápida"); others Apple keeps English in every locale (Spotlight, Mission
    Control, AirDrop, Siri, Time Machine, Finder). To decide, check `<tag>/macOS/` in the reference pile: if Apple's
    localized macOS uses a translated term, use it; if it keeps the English name, keep it. Match what the user actually
-   sees in their Finder. (This is why `BRAND_WORDS` in `apps/desktop/scripts/i18n-catalog-lib.js` lists the kept-English
+   sees in their Finder. (This is why `BRAND_WORDS` in `apps/desktop/scripts/i18n-catalog-lib.ts` lists the kept-English
    names but NOT Quick Look — a translated Quick Look must not read as a dropped brand.)
 2. **Prefer the macOS Finder term when macOS and Windows/Microsoft differ.** Cmdr is a macOS app, so the native-OS term
    wins over the Windows convention. For example, pt-BR delete = "Apagar" (Finder), not "Excluir" (Windows); German move
@@ -190,9 +190,9 @@ metadata schema.
 1. **Pick the BCP-47 tag.** A language base (`xx`) for the universal set, or a region variant (`xx-YY`) when a region
    needs overrides. The tag is a format identifier, not translatable. The base is the fallback for its variants; `en` is
    the final fallback. Convention + resolution order: [`i18n.md`](i18n.md) § Locale-format convention.
-2. **Create the skeleton.** Run `node apps/desktop/scripts/gen-locale-skeleton.js <tag>`: it mirrors `en/`'s files and
+2. **Create the skeleton.** Run `node apps/desktop/scripts/gen-locale-skeleton.ts <tag>`: it mirrors `en/`'s files and
    keys under `messages/<tag>/` with the English values in place and each `@key.sourceHash` = the 7-char hash of the
-   exact English value it was translated from (computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.js`;
+   exact English value it was translated from (computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.ts`;
    the pseudolocale generator does exactly this and is the reference). The hash is what `desktop-i18n-stale` uses to
    know a translation is still current.
 3. **Write the per-language style guide** (input 2 above).
@@ -219,7 +219,7 @@ The routine maintenance loop, run for every change that adds or edits user-facin
 1. **Add or edit the `en` key** with a `@key.description` that meets the bar (`messages/DETAILS.md` § `@key` metadata
    schema, noting the fragment-key and pass-through-placeholder requirements). Run `pnpm intl:keys` to regenerate the
    key union.
-2. **Propagate the keys to every locale**: run `node apps/desktop/scripts/sync-locale-keys.js` (all locales) — it adds
+2. **Propagate the keys to every locale**: run `node apps/desktop/scripts/sync-locale-keys.ts` (all locales) — it adds
    each new `en` key as an English skeleton with the correct `@key.sourceHash`, drops keys you removed, and preserves
    existing translations. Then, for each locale, read its style guide and translate the new/changed keys in place (the
    coverage check lists exactly what's still English).
@@ -287,7 +287,7 @@ awkward rewrite or an exposed gendered default.
 REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine the reference pile for how Apple/Microsoft, the explorer file managers (GNOME Nautilus, Xfce Thunar, KDE Dolphin), and the orthodox two-pane pair (Total Commander, Double Commander) render each term and for similar sentences to model phrasing on; reuse and cite, never guess. The pile is gitignored and lives ONLY in the MAIN clone at the ABSOLUTE path ~/projects-git/vdavid/cmdr/_ignored/i18n/[TARGET LANGUAGE TAG]/ — it is NOT in your worktree, so a worktree-relative _ignored/i18n/ will look empty and that "absent" reading is the worktree trap, not a missing pile. If unsure of the path, run `git worktree list | head -1` and mine <that main-clone path>/_ignored/i18n/[TAG]/. Match the source to Cmdr's UI: for two-pane concepts the OS/explorer managers lack (pane, file list, command line), the orthodox pair is the closest lineage match. Mind the four mining gotchas in the guide's "Researching terms" section (wrong-family terms, a source naming a different concept, brand names that yield no generic term, shared-root signal). Read and extend the language glossary at docs/i18n/[TAG]/glossary.md as you settle terms (chosen, sources, confidence). Recipes: docs/i18n/reference-pile/how-to-mine.md.
 
 DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, and the {system_settings}-style
-tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in apps/desktop/scripts/i18n-catalog-lib.js, and the
+tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in apps/desktop/scripts/i18n-catalog-lib.ts, and the
 desktop-i18n-dont-translate check enforces it.
 
 DELIBERATELY-IDENTICAL: When a value is CORRECTLY identical to English in your language (a brand, a unit symbol, a

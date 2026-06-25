@@ -118,7 +118,7 @@ Add rows as terms come up, each with sources and a confidence.
 ## Brand and do-not-translate
 
 Keep verbatim, in Latin script: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.js`). macOS keeps
+tokens. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`). macOS keeps
 these Latin in Japanese text ("このMacを検索" keeps "Mac" Latin). **Quick Look is the one wrinkle**: macOS localizes it
 to katakana "クイックルック", but Cmdr's do-not-translate list keeps "Quick Look" verbatim, flag this conflict for David
 (verbatim "Quick Look" vs macOS-native "クイックルック").

@@ -222,7 +222,7 @@ func aggregateShardResults(results []shardResult, totalShards int) (CheckResult,
 
 // shardInstanceID returns the CMDR_INSTANCE_ID for a shard short-name. Format:
 // `e2e-<short>-<pid>`. The wrapper / binary derive the macOS Keychain suffix from this and
-// instance-id.js reshapes it into `Cmdr (E2E <short>)` for the Dock label so cleanup
+// instance-id.ts reshapes it into `Cmdr (E2E <short>)` for the Dock label so cleanup
 // scripts can `pgrep -f 'Cmdr (E2E '` cleanly. See P3 in
 // docs/specs/instance-isolation-plan.md.
 func shardInstanceID(shortName string, pid int) string {

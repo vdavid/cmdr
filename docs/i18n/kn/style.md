@@ -76,7 +76,7 @@ To settle from MS terminology / GNOME with a native check:
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
 tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`. Latin brand names stay in Latin script inside Kannada text.
+`apps/desktop/scripts/i18n-catalog-lib.ts`. Latin brand names stay in Latin script inside Kannada text.
 
 ## Plurals
 

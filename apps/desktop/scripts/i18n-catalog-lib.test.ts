@@ -1,5 +1,5 @@
 /**
- * Tests for the shared i18n catalog/ICU helper (`i18n-catalog-lib.js`): the
+ * Tests for the shared i18n catalog/ICU helper (`i18n-catalog-lib.ts`): the
  * pure cores consumed by the pseudolocale generator and the locale checks.
  *
  * Covered:
@@ -24,7 +24,7 @@ import {
   rawTokens,
   hasWholeWord,
   hasBrandPresent,
-} from './i18n-catalog-lib.js'
+} from './i18n-catalog-lib.ts'
 
 describe('isMetadataKey', () => {
   it('flags @-prefixed keys only', () => {
@@ -69,9 +69,8 @@ describe('mergeCatalogFiles', () => {
 describe('parseMessage', () => {
   /**
    * Convenience: parse and return plain arrays/objects for easy assertion.
-   * @param {string} value
    */
-  const parsed = (value) => {
+  const parsed = (value: string) => {
     const r = parseMessage(value)
     return {
       ok: r.ok,

@@ -69,7 +69,7 @@ selection (noun + was/were agreement), never for display. Don't reformat inside 
 
 ### Generated keys, codegen, checks
 
-`scripts/gen-message-keys.js` (pure logic in `gen-message-keys-lib.js`, run via `pnpm intl:keys`) reads
+`scripts/gen-message-keys.ts` (pure logic in `gen-message-keys-lib.ts`, run via `pnpm intl:keys`) reads
 `messages/en/*.json`, strips `@key` metadata, and emits the `keys.gen.ts` `MessageKey` union, so a wrong/missing key is
 a typecheck error. It also reports keys used-in-code-but-missing (exit 1, a build failure) and catalog-keys-never-used
 (a warning; the scan only sees STATIC keys, so a dynamically-built key reads as dead, so verify before deleting). Two Go

@@ -136,7 +136,7 @@ Add rows as terms come up, each with sources and a confidence.
 
 Keep verbatim, in Latin script, left-to-right within the RTL text: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte,
 Quick Look, plus the `{system_settings}`-style tokens. Enforced by `desktop-i18n-dont-translate` (list in
-`apps/desktop/scripts/i18n-catalog-lib.js`). Each such token is a bidi island inside an RTL sentence, see the script
+`apps/desktop/scripts/i18n-catalog-lib.ts`). Each such token is a bidi island inside an RTL sentence, see the script
 decision point; structure the sentence so the LTR token reads correctly. macOS itself keeps these Latin ("اتصال
 بالخادم…" but "SMB"/"Mac" stay Latin), so this matches user expectation.
 

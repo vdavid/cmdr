@@ -17,7 +17,7 @@
  *  - PER-LAUNCH surfaces (`captureLicensePass`, `captureFdaOnboardingPass`):
  *    each needs a launch-time env (`CMDR_MOCK_LICENSE` / `CMDR_MOCK_FDA`) read
  *    once at startup, so they run in their OWN orchestrator launch and MERGE
- *    into the report the main pass wrote (see `scripts/i18n-capture.js`'s
+ *    into the report the main pass wrote (see `scripts/i18n-capture.ts`'s
  *    multi-launch loop and the spec's pass dispatch).
  *
  * All use the shared engines in `i18n-capture-helpers.ts`.

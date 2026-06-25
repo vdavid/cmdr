@@ -77,7 +77,7 @@ Add terms as they come up; triangulate GNOME + the MS `az-Latn` glossary, and re
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.js`. When a Turkic suffix
+tokens. Enforced by `desktop-i18n-dont-translate`; see `apps/desktop/scripts/i18n-catalog-lib.ts`. When a Turkic suffix
 must attach to a brand token, Azerbaijani uses an apostrophe ("macOS'da") - that's orthography, not translation, but
 mind the ICU apostrophe-doubling rule below.
 

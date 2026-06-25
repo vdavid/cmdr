@@ -130,7 +130,7 @@ Add terms as they come up in this same `chosen · sources · confidence` shape.
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
 tokens. The curated list (BRAND_WORDS + SYSTEM_TOKENS) is enforced by `desktop-i18n-dont-translate`; see
-`apps/desktop/scripts/i18n-catalog-lib.js`. macOS UI names Cmdr opens into (System Settings panes, "Смітник") should
+`apps/desktop/scripts/i18n-catalog-lib.ts`. macOS UI names Cmdr opens into (System Settings panes, "Смітник") should
 match what a Ukrainian macOS actually shows.
 
 ## Plurals

@@ -24,7 +24,7 @@ pure function of that string. Prod leaves it unset and ends up byte-identical to
 
 Slug rules for `--worktree`: lowercase ASCII `[a-z0-9-]+`, max 32 chars, runs of `-` collapsed, leading/trailing `-`
 trimmed. Rejection happens in Node before any Rust process spawns. Source of truth: `sanitizeWorktreeSlug` in
-[`apps/desktop/scripts/instance-id.js`](../../apps/desktop/scripts/instance-id.js).
+[`apps/desktop/scripts/instance-id.ts`](../../apps/desktop/scripts/instance-id.ts).
 
 ## Per-resource breakdown
 
@@ -34,7 +34,7 @@ trimmed. Rejection happens in Node before any Rust process spawns. Source of tru
 Wrapper sets both so they agree.
 
 Authoritative files: [`config.rs`](../../apps/desktop/src-tauri/src/config.rs),
-[`instance-id.js`](../../apps/desktop/scripts/instance-id.js).
+[`instance-id.ts`](../../apps/desktop/scripts/instance-id.ts).
 
 ### `tauri-plugin-store`
 
@@ -64,7 +64,7 @@ Authoritative file: [`keychain_macos.rs`](../../apps/desktop/src-tauri/src/secre
 Wrapper exports `CMDR_SECRET_STORE=file` for any non-prod instance, so dev and per-worktree dev never trigger the
 Keychain password dialog. E2E forces the same path via `is_e2e_mode()`.
 
-Authoritative files: [`tauri-wrapper.js`](../../apps/desktop/scripts/tauri-wrapper.js),
+Authoritative files: [`tauri-wrapper.ts`](../../apps/desktop/scripts/tauri-wrapper.ts),
 [`secrets/mod.rs`](../../apps/desktop/src-tauri/src/secrets/mod.rs).
 
 ### Cmdr MCP HTTP port
@@ -80,7 +80,7 @@ Authoritative files: [`mcp/server.rs`](../../apps/desktop/src-tauri/src/mcp/serv
 Wrapper allocates via `net.createServer().listen(0)`, exports `CMDR_MCP_BRIDGE_PORT`, writes `<data_dir>/tauri-mcp.port`
 BEFORE Tauri launches. Plugin forced to `127.0.0.1` (was `0.0.0.0`, a LAN exposure: load-bearing security fix).
 
-Authoritative files: [`tauri-wrapper.js`](../../apps/desktop/scripts/tauri-wrapper.js),
+Authoritative files: [`tauri-wrapper.ts`](../../apps/desktop/scripts/tauri-wrapper.ts),
 [`lib.rs`](../../apps/desktop/src-tauri/src/lib.rs).
 
 ### Vite dev port
@@ -88,7 +88,7 @@ Authoritative files: [`tauri-wrapper.js`](../../apps/desktop/scripts/tauri-wrapp
 Wrapper allocates ephemeral, exports `CMDR_VITE_PORT`, writes `build.devUrl` into the generated config so the Tauri
 webview points at the same number Vite binds.
 
-Authoritative files: [`tauri-wrapper.js`](../../apps/desktop/scripts/tauri-wrapper.js),
+Authoritative files: [`tauri-wrapper.ts`](../../apps/desktop/scripts/tauri-wrapper.ts),
 [`vite.config.js`](../../apps/desktop/vite.config.js).
 
 ### Updater endpoint
@@ -96,7 +96,7 @@ Authoritative files: [`tauri-wrapper.js`](../../apps/desktop/scripts/tauri-wrapp
 Non-prod gets `https://localhost.invalid/no-updater` in the generated config so dev or E2E never phones home
 accidentally.
 
-Authoritative file: [`instance-id.js`](../../apps/desktop/scripts/instance-id.js).
+Authoritative file: [`instance-id.ts`](../../apps/desktop/scripts/instance-id.ts).
 
 ### Clipboard (NSPasteboard)
 
@@ -129,8 +129,8 @@ Authoritative file: [`lib.rs`](../../apps/desktop/src-tauri/src/lib.rs).
 
 ## Wrapper architecture
 
-`apps/desktop/scripts/tauri-wrapper.js` is the single composition point. The split between it and
-`apps/desktop/scripts/instance-id.js` exists so the pure helpers (slug sanitization, instance derivation, config payload
+`apps/desktop/scripts/tauri-wrapper.ts` is the single composition point. The split between it and
+`apps/desktop/scripts/instance-id.ts` exists so the pure helpers (slug sanitization, instance derivation, config payload
 builder, port-file write protocol) are unit-testable via Vitest without spawning Tauri.
 
 The launch sequence:

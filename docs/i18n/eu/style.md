@@ -75,7 +75,7 @@ Add rows as terms come up, each with sources and a confidence.
 ## Brand and do-not-translate
 
 Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style tokens
-and `{email}`. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.js`). Note that
+and `{email}`. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`). Note that
 Basque case suffixes attach to brand words too in running text ("Cmdr-ek", "GitHub-en"); keep the brand stem verbatim
 and let the suffix follow with a hyphen as Basque convention allows, but never alter the brand token itself.
 

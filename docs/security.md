@@ -12,7 +12,7 @@ security risk in production (untrusted JS could access system APIs, not good), s
 2. **Config separation**: `"withGlobalTauri": false` in `tauri.conf.json` (production). For any non-prod instance, the
    wrapper generates a fresh `tauri.instance.json` under `$TMPDIR` that flips `withGlobalTauri` to `true` (plus sets the
    per-instance identifier and `productName`).
-3. **Wrapper script**: `apps/desktop/scripts/tauri-wrapper.js` writes the generated config and passes it via
+3. **Wrapper script**: `apps/desktop/scripts/tauri-wrapper.ts` writes the generated config and passes it via
    `-c <absolute path>` for `dev` commands. Tauri merges it with `tauri.conf.json` via
    [JSON Merge Patch (RFC 7396)](https://datatracker.ietf.org/doc/html/rfc7396). Prod builds skip the wrapper's instance
    composition entirely, so canonical `tauri.conf.json` (with `withGlobalTauri: false`) governs the bundle.

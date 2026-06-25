@@ -12,7 +12,7 @@ import (
 // tag, or a malformed `plural`/`select`. An invalid ICU message THROWS at render
 // time, so it's a runtime crash, not a typo. The raw `errors.*` family is
 // excluded (it resolves raw via `getMessage()`, not ICU). See
-// `apps/desktop/scripts/i18n-check-icu.js`.
+// `apps/desktop/scripts/i18n-check-icu.ts`.
 //
 // Exit-code contract (mirrored by `i18n-locale-check-lib.js`): 0 = clean / no
 // locales, 1 = at least one invalid ICU message, any other code = a genuine
@@ -21,7 +21,7 @@ import (
 func RunDesktopI18nIcu(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
 
-	cmd := exec.Command("node", "scripts/i18n-check-icu.js")
+	cmd := exec.Command("node", "scripts/i18n-check-icu.ts")
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {

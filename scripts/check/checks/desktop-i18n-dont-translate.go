@@ -12,7 +12,7 @@ import (
 // (`Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP`, the `{system_settings}`-family
 // substitution tokens, …). A quality slip (the translator localized something
 // that shouldn't be), not a crash, so warn-only. The curated list lives in
-// `apps/desktop/scripts/i18n-check-dont-translate.js`.
+// `apps/desktop/scripts/i18n-check-dont-translate.ts`.
 //
 // Exit-code contract (mirrored by `i18n-locale-check-lib.js`): 0 = clean / no
 // locales, 1 = at least one dropped token (→ WARN), any other code = a genuine
@@ -20,7 +20,7 @@ import (
 func RunDesktopI18nDontTranslate(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
 
-	cmd := exec.Command("node", "scripts/i18n-check-dont-translate.js")
+	cmd := exec.Command("node", "scripts/i18n-check-dont-translate.ts")
 	cmd.Dir = desktopDir
 	output, err := RunCommand(cmd, true)
 	if err == nil {
