@@ -819,7 +819,7 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Mindestens so viel: Einige Unterordner wurden noch nicht durchsucht, daher kann die tatsächliche Gesamtgröße größer sein.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "6d92a68"
+    "sourceHash": "03803e8"
   },
   "fileExplorer.dirSize.unknownTooltip": "Größe unbekannt: Dieser Ordner wurde noch nicht durchsucht.",
   "@fileExplorer.dirSize.unknownTooltip": {

@@ -815,7 +815,7 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Legalább ennyi: néhány almappát még nem vizsgáltunk át, így a valódi összeg ennél nagyobb is lehet.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "6d92a68"
+    "sourceHash": "03803e8"
   },
   "fileExplorer.dirSize.unknownTooltip": "Ismeretlen méret: ezt a mappát még nem vizsgáltuk át.",
   "@fileExplorer.dirSize.unknownTooltip": {

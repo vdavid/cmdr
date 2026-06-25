@@ -816,7 +816,7 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Minst så här mycket: vissa undermappar har inte genomsökts än, så den verkliga summan kan vara större.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "6d92a68"
+    "sourceHash": "03803e8"
   },
   "fileExplorer.dirSize.unknownTooltip": "Storlek okänd: den här mappen har inte genomsökts än.",
   "@fileExplorer.dirSize.unknownTooltip": {

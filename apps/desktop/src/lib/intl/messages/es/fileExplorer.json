@@ -816,7 +816,7 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Al menos esto: algunas subcarpetas aún no se han analizado, así que el total real puede ser mayor.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "6d92a68"
+    "sourceHash": "03803e8"
   },
   "fileExplorer.dirSize.unknownTooltip": "Tamaño desconocido: esta carpeta aún no se ha analizado.",
   "@fileExplorer.dirSize.unknownTooltip": {

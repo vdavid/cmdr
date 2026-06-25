@@ -815,7 +815,7 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Ít nhất là chừng này: một số thư mục con chưa được quét, nên tổng thực tế có thể lớn hơn.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "6d92a68"
+    "sourceHash": "03803e8"
   },
   "fileExplorer.dirSize.unknownTooltip": "Không rõ kích thước: thư mục này chưa được quét.",
   "@fileExplorer.dirSize.unknownTooltip": {

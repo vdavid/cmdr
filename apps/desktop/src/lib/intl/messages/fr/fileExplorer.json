@@ -817,7 +817,7 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Au moins ceci : certains sous-dossiers n''ont pas encore été analysés, le total réel peut donc être plus grand.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "6d92a68"
+    "sourceHash": "03803e8"
   },
   "fileExplorer.dirSize.unknownTooltip": "Taille inconnue : ce dossier n''a pas encore été analysé.",
   "@fileExplorer.dirSize.unknownTooltip": {

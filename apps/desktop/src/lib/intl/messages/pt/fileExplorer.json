@@ -817,7 +817,7 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Pelo menos isto: algumas subpastas ainda não foram analisadas, então o total real pode ser maior.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "6d92a68"
+    "sourceHash": "03803e8"
   },
   "fileExplorer.dirSize.unknownTooltip": "Tamanho desconhecido: esta pasta ainda não foi analisada.",
   "@fileExplorer.dirSize.unknownTooltip": {

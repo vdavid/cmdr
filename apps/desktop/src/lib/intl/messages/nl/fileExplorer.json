@@ -819,7 +819,7 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Minstens dit: sommige submappen zijn nog niet gescand, dus het echte totaal kan groter zijn.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "6d92a68"
+    "sourceHash": "03803e8"
   },
   "fileExplorer.dirSize.unknownTooltip": "Grootte onbekend: deze map is nog niet gescand.",
   "@fileExplorer.dirSize.unknownTooltip": {

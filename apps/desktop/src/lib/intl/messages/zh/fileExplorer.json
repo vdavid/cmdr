@@ -814,7 +814,7 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "至少这么多：部分子文件夹尚未扫描，因此实际总量可能更大。",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "6d92a68"
+    "sourceHash": "03803e8"
   },
   "fileExplorer.dirSize.unknownTooltip": "大小未知：此文件夹尚未扫描。",
   "@fileExplorer.dirSize.unknownTooltip": {
