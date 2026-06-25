@@ -498,7 +498,7 @@
   "provider:Box:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/Box-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/Box-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **Box**. Here's what to try:\n- Open Box Drive and check your sync status\n- Make sure you're signed in to Box Drive\n- Check that you have access to this folder in Box",
     "title": "This folder is restricted by macOS"
@@ -506,7 +506,7 @@
   "provider:Box:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/Box-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Box-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **Box**. Here's what to try:\n- Quit and reopen Box Drive\n- Sign out and back in to Box Drive\n- Check Box's status page for outages",
     "title": "Couldn't read this folder"
@@ -522,7 +522,7 @@
   "provider:CmVolumes:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr doesn't have permission to access `/Users/veszelovszki/.CMVolumes/MyMount/&#95;f`. macOS controls which apps can access which folders, and Cmdr hasn't been granted access to this one yet.",
+    "explanation": "Cmdr doesn't have permission to access `/Users/example/.CMVolumes/MyMount/&#95;f`. macOS controls which apps can access which folders, and Cmdr hasn't been granted access to this one yet.",
     "retryHint": false,
     "suggestion": "This is a cloud mount. Here's what to try:\n- Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n- Disconnect and reconnect the mount\n- Check your credentials haven't expired",
     "title": "No permission"
@@ -530,7 +530,7 @@
   "provider:CmVolumes:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/.CMVolumes/MyMount/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/.CMVolumes/MyMount/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This is a cloud mount. Here's what to try:\n- Check that the mount software (CloudMounter, Mountain Duck, etc.) is running\n- Disconnect and reconnect the mount\n- Check your credentials haven't expired",
     "title": "Couldn't read this folder"
@@ -546,7 +546,7 @@
   "provider:Dropbox:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/Dropbox/&#95;f&#95;&#42;x` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/Dropbox/&#95;f&#95;&#42;x` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **Dropbox**. Here's what to try:\n- Open Dropbox and check your sync status\n- Make sure you're signed in to Dropbox\n- Check that you have access to this folder in Dropbox",
     "title": "This folder is restricted by macOS"
@@ -554,7 +554,7 @@
   "provider:Dropbox:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/Dropbox/&#95;f&#95;&#42;x`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Dropbox/&#95;f&#95;&#42;x`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **Dropbox**. Here's what to try:\n- Quit and reopen Dropbox\n- Sign out and back in to Dropbox\n- Check Dropbox's status page for outages",
     "title": "Couldn't read this folder"
@@ -570,7 +570,7 @@
   "provider:Egnyte:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/Egnyte-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/Egnyte-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **Egnyte**. Here's what to try:\n- Open Egnyte Connect and check your sync status\n- Make sure you're signed in to Egnyte Connect\n- Check that you have access to this folder in Egnyte",
     "title": "This folder is restricted by macOS"
@@ -578,7 +578,7 @@
   "provider:Egnyte:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/Egnyte-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Egnyte-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **Egnyte**. Here's what to try:\n- Quit and reopen Egnyte Connect\n- Sign out and back in to Egnyte Connect\n- Check Egnyte's status page for outages",
     "title": "Couldn't read this folder"
@@ -594,7 +594,7 @@
   "provider:GenericCloudStorage:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/Unknown-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/Unknown-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by a cloud provider. Here's what to try:\n- Check that the sync app is running\n- Sign out and back in to the cloud app\n- Check your internet connection",
     "title": "This folder is restricted by macOS"
@@ -602,7 +602,7 @@
   "provider:GenericCloudStorage:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/Unknown-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Unknown-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by a cloud provider. Here's what to try:\n- Check that the sync app is running\n- Sign out and back in to the cloud app\n- Check your internet connection",
     "title": "Couldn't read this folder"
@@ -618,7 +618,7 @@
   "provider:GoogleDrive:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/GoogleDrive-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/GoogleDrive-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **Google Drive**. Here's what to try:\n- Open Google Drive and check your sync status\n- Make sure you're signed in to Google Drive\n- Check that you have access to this folder in Google Drive",
     "title": "This folder is restricted by macOS"
@@ -626,7 +626,7 @@
   "provider:GoogleDrive:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/GoogleDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/GoogleDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **Google Drive**. Here's what to try:\n- Quit and reopen Google Drive\n- Sign out and back in to Google Drive\n- Check Google Drive's status page for outages",
     "title": "Couldn't read this folder"
@@ -642,7 +642,7 @@
   "provider:ICloud:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/Mobile Documents/com&#126;apple&#126;CloudDocs/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/Mobile Documents/com&#126;apple&#126;CloudDocs/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **iCloud Drive**. Here's what to try:\n- Check that iCloud Drive is enabled in **System Settings > Apple Account > iCloud**\n- Make sure you're signed in to the right Apple account\n- Check your iCloud storage isn't full",
     "title": "This folder is restricted by macOS"
@@ -650,7 +650,7 @@
   "provider:ICloud:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/Mobile Documents/com&#126;apple&#126;CloudDocs/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/Mobile Documents/com&#126;apple&#126;CloudDocs/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **iCloud Drive**. Here's what to try:\n- Sign out and back in to iCloud in System Settings\n- Check Apple's [system status page](https://www.apple.com/support/systemstatus/)",
     "title": "Couldn't read this folder"
@@ -666,7 +666,7 @@
   "provider:MacDroid:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/MacDroid-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/MacDroid-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **MacDroid**. Here's what to try:\n- Open MacDroid and check that your phone is connected\n- Make sure your phone is unlocked with the screen on\n- Check that USB file transfer mode is enabled on your phone",
     "title": "This folder is restricted by macOS"
@@ -674,7 +674,7 @@
   "provider:MacDroid:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/MacDroid-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/MacDroid-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **MacDroid**. Here's what to try:\n- Unplug and replug the USB cable\n- Restart MacDroid\n- Try a different USB port or cable",
     "title": "Couldn't read this folder"
@@ -690,7 +690,7 @@
   "provider:Nextcloud:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/Nextcloud-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/Nextcloud-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **Nextcloud**. Here's what to try:\n- Open Nextcloud and check your sync status\n- Make sure you're signed in to Nextcloud\n- Check that you have access to this folder in Nextcloud",
     "title": "This folder is restricted by macOS"
@@ -698,7 +698,7 @@
   "provider:Nextcloud:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/Nextcloud-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Nextcloud-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **Nextcloud**. Here's what to try:\n- Quit and reopen Nextcloud\n- Sign out and back in to Nextcloud\n- Check Nextcloud's status page for outages",
     "title": "Couldn't read this folder"
@@ -714,7 +714,7 @@
   "provider:OneDrive:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/OneDrive-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/OneDrive-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **OneDrive**. Here's what to try:\n- Open OneDrive and check your sync status\n- Make sure you're signed in to OneDrive\n- Check that you have access to this folder in OneDrive",
     "title": "This folder is restricted by macOS"
@@ -722,7 +722,7 @@
   "provider:OneDrive:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/OneDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/OneDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **OneDrive**. Here's what to try:\n- Quit and reopen OneDrive\n- Sign out and back in to OneDrive\n- Check OneDrive's status page for outages",
     "title": "Couldn't read this folder"
@@ -738,7 +738,7 @@
   "provider:PCloud:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/pCloud/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/pCloud/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **pCloud**. Here's what to try:\n- Open pCloud Drive and check your sync status\n- Make sure you're signed in to pCloud Drive\n- Check that you have access to this folder in pCloud",
     "title": "This folder is restricted by macOS"
@@ -746,7 +746,7 @@
   "provider:PCloud:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/pCloud/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/pCloud/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **pCloud**. Here's what to try:\n- Quit and reopen pCloud Drive\n- Sign out and back in to pCloud Drive\n- Check pCloud's status page for outages",
     "title": "Couldn't read this folder"
@@ -786,7 +786,7 @@
   "provider:ProtonDrive:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/ProtonDrive-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/ProtonDrive-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **Proton Drive**. Here's what to try:\n- Open Proton Drive and check your sync status\n- Make sure you're signed in to Proton Drive\n- Check that you have access to this folder in Proton Drive",
     "title": "This folder is restricted by macOS"
@@ -794,7 +794,7 @@
   "provider:ProtonDrive:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/ProtonDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/ProtonDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **Proton Drive**. Here's what to try:\n- Quit and reopen Proton Drive\n- Sign out and back in to Proton Drive\n- Check Proton Drive's status page for outages",
     "title": "Couldn't read this folder"
@@ -810,7 +810,7 @@
   "provider:Sync:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/Sync-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/Sync-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **Sync.com**. Here's what to try:\n- Open Sync.com and check your sync status\n- Make sure you're signed in to Sync.com\n- Check that you have access to this folder in Sync.com",
     "title": "This folder is restricted by macOS"
@@ -818,7 +818,7 @@
   "provider:Sync:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/Sync-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Sync-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **Sync.com**. Here's what to try:\n- Quit and reopen Sync.com\n- Sign out and back in to Sync.com\n- Check Sync.com's status page for outages",
     "title": "Couldn't read this folder"
@@ -834,7 +834,7 @@
   "provider:SynologyDrive:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/SynologyDrive-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/SynologyDrive-x/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **Synology Drive**. Here's what to try:\n- Open Synology Drive and check your sync status\n- Make sure you're signed in to Synology Drive\n- Check that you have access to this folder in Synology Drive",
     "title": "This folder is restricted by macOS"
@@ -842,7 +842,7 @@
   "provider:SynologyDrive:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/SynologyDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/SynologyDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **Synology Drive**. Here's what to try:\n- Quit and reopen Synology Drive\n- Sign out and back in to Synology Drive\n- Check Synology Drive's status page for outages",
     "title": "Couldn't read this folder"
@@ -858,7 +858,7 @@
   "provider:Tresorit:needs_action": {
     "actionKind": "open_privacy_settings",
     "category": "needs_action",
-    "explanation": "Cmdr can't read `/Users/veszelovszki/Library/CloudStorage/Tresorit/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
+    "explanation": "Cmdr can't read `/Users/example/Library/CloudStorage/Tresorit/&#95;f` because macOS hasn't granted access to this folder yet. This is a privacy gate, not a Cmdr bug.",
     "retryHint": false,
     "suggestion": "This folder is managed by **Tresorit**. Here's what to try:\n- Open Tresorit and check your sync status\n- Make sure you're signed in to Tresorit\n- Check that you have access to this folder in Tresorit",
     "title": "This folder is restricted by macOS"
@@ -866,7 +866,7 @@
   "provider:Tresorit:serious": {
     "actionKind": null,
     "category": "serious",
-    "explanation": "Cmdr ran into a problem with `/Users/veszelovszki/Library/CloudStorage/Tresorit/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
+    "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Tresorit/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
     "suggestion": "This folder is managed by **Tresorit**. Here's what to try:\n- Quit and reopen Tresorit\n- Sign out and back in to Tresorit\n- Check Tresorit's status page for outages",
     "title": "Couldn't read this folder"

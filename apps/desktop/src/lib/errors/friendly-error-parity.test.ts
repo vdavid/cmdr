@@ -35,12 +35,12 @@ const goldenMap = golden as unknown as Record<string, GoldenEntry>
 const MATRIX_PATH = '/Volumes/share/_todo_*pics/photo.jpg'
 const PLAIN_PATH = '/some/plain/folder/_x_*y'
 const IO_MESSAGE = 'Protocol error: STATUS_DELETE_PENDING during Create'
-// The home prefix the Rust golden generator captured for the CloudStorage
-// provider arms. It baked in the dev's real home, so this MUST be that exact
-// literal, NOT `os.homedir()`: the runtime home differs per machine (e.g.
-// `/home/runner` on Linux CI), which made the byte-for-byte comparison fail
-// everywhere except the machine that generated the golden.
-const HOME = '/Users/veszelovszki'
+// The placeholder home prefix the golden's CloudStorage provider arms are pinned
+// to. It MUST match the golden literal, NOT `os.homedir()`: the byte-for-byte
+// compare has to be machine-independent (a real `os.homedir()` is `/home/runner`
+// on Linux CI, `/Users/<you>` locally), so the golden uses this fixed fake home
+// and the test feeds the same one.
+const HOME = '/Users/example'
 
 // errno number → the FE listing reason it maps to (matching Rust `errno.rs`).
 const ERRNO_REASON: Record<number, ListingErrorReason> = {
