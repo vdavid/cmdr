@@ -25,6 +25,7 @@ mod scheduler;
 use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
 pub use errors::MtpConnectionError;
 use errors::map_mtp_error;
+pub(crate) use file_ops::MtpReadSession;
 use scheduler::{DevicePriorityGate, ForegroundGuard};
 
 use log::{debug, error, info, warn};
@@ -44,6 +45,29 @@ use crate::file_system::{MtpVolume, get_volume_manager};
 
 /// Default timeout for MTP operations (30 seconds - some devices are slow).
 const MTP_TIMEOUT_SECS: u64 = 30;
+
+/// Window size for one bounded MTP read transaction (`GetPartialObject64`).
+///
+/// 8 MiB is the spike-validated value: large enough for healthy USB throughput,
+/// small enough that the per-window device-lock hold (~80 ms on a Pixel) lets a
+/// foreground listing slip in between windows. It's the throughput-vs-yield-
+/// latency knob; M3 tunes it on real hardware. The volume backend's read stream
+/// caches this at open and can shrink it in tests. See
+/// [DETAILS.md](DETAILS.md) § "Bounded-window reads".
+pub(crate) const MTP_READ_WINDOW: u32 = 8 * 1024 * 1024;
+
+/// Bytes to request for the next read window starting at `offset`, or `None` at
+/// EOF (`offset >= total_size`, which also covers an empty file).
+///
+/// Clamps the request to the bytes remaining, so the final window is exact and
+/// no read ever runs past EOF. The returned length is always `> 0`. This is the
+/// load-bearing arithmetic for the read loop's data safety: each window covers
+/// exactly `[offset, offset + len)` and the caller advances `offset` by the
+/// bytes the device actually returned.
+pub(crate) fn mtp_window_len(offset: u64, total_size: u64, window: u32) -> Option<u32> {
+    let remaining = total_size.checked_sub(offset).filter(|r| *r > 0)?;
+    Some(remaining.min(u64::from(window)) as u32)
+}
 
 // ============================================================================
 // Progress events for MTP file operations
@@ -789,7 +813,7 @@ impl MtpConnectionManager {
 // Remaining impl blocks are in submodules:
 // - directory_ops.rs: list_directory, resolve_path_to_handle, handle_device_disconnected
 // - event_loop.rs: start_event_loop, stop_event_loop, event handling
-// - file_ops.rs: download_file, upload_file, open_download_stream_at_offset, upload_from_stream
+// - file_ops.rs: download_file, upload_file, open_read_session + read_window (bounded-window reads), upload_from_stream
 // - mutation_ops.rs: delete_object, create_folder, rename_object, move_object
 // - bulk_ops.rs: scan_for_copy, upload_recursive
 
@@ -995,6 +1019,22 @@ fn get_mtp_icon_id(is_dir: bool, filename: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mtp_window_len_clamps_to_remaining_and_stops_at_eof() {
+        // Full window while plenty remains.
+        assert_eq!(mtp_window_len(0, 100, 8), Some(8));
+        assert_eq!(mtp_window_len(8, 100, 8), Some(8));
+        // Final short window: fewer bytes than a full window remain.
+        assert_eq!(mtp_window_len(96, 100, 8), Some(4));
+        // Exactly at EOF (and an empty file, offset == total == 0) ⇒ None.
+        assert_eq!(mtp_window_len(100, 100, 8), None);
+        assert_eq!(mtp_window_len(0, 0, 8), None);
+        // Defensive: an offset past EOF never panics, just reports EOF.
+        assert_eq!(mtp_window_len(120, 100, 8), None);
+        // A window larger than the whole file returns the whole file in one go.
+        assert_eq!(mtp_window_len(0, 5, 8), Some(5));
+    }
 
     #[test]
     fn resolve_device_location_id_is_none_when_no_device_matches() {

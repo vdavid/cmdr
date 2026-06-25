@@ -1,19 +1,38 @@
 //! MTP file transfer operations (download, upload, and streaming).
 
 use log::debug;
-use mtp_rs::{NewObjectInfo, ObjectHandle, StorageId};
+use mtp_rs::{MtpDevice, NewObjectInfo, ObjectHandle, Storage, StorageId};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::AppHandle;
 use tauri_specta::Event;
 use tokio::io::AsyncWriteExt;
+use tokio::sync::Mutex;
 
 use super::errors::{MtpConnectionError, is_stale_handle_rejection, map_mtp_error};
 use super::{
-    MTP_TIMEOUT_SECS, MtpConnectionManager, MtpObjectInfo, MtpOperationResult, MtpTransferProgress, MtpTransferType,
-    acquire_device_lock, normalize_mtp_path,
+    MTP_READ_WINDOW, MTP_TIMEOUT_SECS, MtpConnectionManager, MtpObjectInfo, MtpOperationResult, MtpTransferProgress,
+    MtpTransferType, acquire_device_lock, mtp_window_len, normalize_mtp_path,
 };
+
+/// Cached state for a bounded-window MTP read.
+///
+/// `open_read_session` resolves the object handle, obtains the mtp-rs `Storage`,
+/// and reads `total_size` ONCE under the device lock; each `read_window` then
+/// reuses this, paying only `acquire_device_lock` + one `GetPartialObject64` per
+/// window (no per-window handle/`Storage` re-resolve, which would cost an extra
+/// `GetStorageInfo`/resolve USB roundtrip per window). The `Storage` carries its
+/// own `Arc<MtpDeviceInner>`, so it outlives the device-lock guard taken per
+/// window.
+pub(crate) struct MtpReadSession {
+    device_arc: Arc<Mutex<MtpDevice>>,
+    storage: Storage,
+    object_handle: ObjectHandle,
+    /// Full object size in bytes (anchors progress and the EOF check). Read by
+    /// the volume backend's read stream.
+    pub(crate) total_size: u64,
+}
 
 impl MtpConnectionManager {
     /// Downloads a file from the MTP device to a local path.
@@ -59,10 +78,13 @@ impl MtpConnectionManager {
         operation_id: &str,
         on_progress: Option<&(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Send + Sync)>,
     ) -> Result<MtpOperationResult, MtpConnectionError> {
-        // Foreground priority: a user download preempts the background scan for
-        // the whole transfer (the user is actively copying; the scan defers).
-        let _fg = self.foreground_guard(device_id).await;
-
+        // A download takes NO foreground_guard. A transfer is a *background* user
+        // of the device gate — it yields TO a foreground listing/nav, so raising
+        // `foreground_pending` would make the copy contend with itself. Instead it
+        // reads in bounded windows: each `read_window` takes the per-device lock
+        // for just one `GetPartialObject64` (~80 ms), freeing the PTP session
+        // between windows so a foreground listing slips in. See
+        // `mtp/connection/DETAILS.md` § "Bounded-window reads".
         debug!(
             "MTP download_file: device={}, storage={}, path={}, dest={}",
             device_id,
@@ -71,44 +93,50 @@ impl MtpConnectionManager {
             local_dest.display()
         );
 
-        // Get the device and resolve path to handle
+        // Get the device and resolve path to handle.
         let (device_arc, object_handle) = {
             let devices = self.devices.lock().await;
             let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
                 device_id: device_id.to_string(),
             })?;
-
-            // Resolve path to handle
             let handle = self.resolve_path_to_handle(entry, storage_id, object_path)?;
             (Arc::clone(&entry.device), handle)
         };
 
-        let device = acquire_device_lock(&device_arc, device_id, "download_file").await?;
+        // Resolve the Storage + size ONCE under the device lock (the filename is
+        // for the progress event), then release the lock so windows can interleave
+        // with foreground ops.
+        let (storage, total_size, filename) = {
+            let device = acquire_device_lock(&device_arc, device_id, "download_file").await?;
+            let storage = tokio::time::timeout(
+                Duration::from_secs(MTP_TIMEOUT_SECS),
+                device.storage(StorageId(storage_id)),
+            )
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
-        // Get the storage
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+            let object_info = tokio::time::timeout(
+                Duration::from_secs(MTP_TIMEOUT_SECS),
+                storage.get_object_info(object_handle),
+            )
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
-        // Get object info to determine size
-        let object_info = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.get_object_info(object_handle),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
+            (storage, object_info.size, object_info.filename.clone())
+        };
 
-        let total_size = object_info.size;
-        let filename = object_info.filename.clone();
+        let session = MtpReadSession {
+            device_arc,
+            storage,
+            object_handle,
+            total_size,
+        };
 
         // Emit initial progress
         if let Some(app) = app {
@@ -123,17 +151,6 @@ impl MtpConnectionManager {
             .emit(app);
         }
 
-        // Download the file as a stream (holds session lock until complete)
-        let mut download = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS * 10), // Longer timeout for large files
-            storage.download_stream(object_handle),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
-
         // Create the local file
         let mut file = tokio::fs::File::create(local_dest)
             .await
@@ -142,41 +159,43 @@ impl MtpConnectionManager {
                 message: format!("Failed to create local file: {}", e),
             })?;
 
-        // Write chunks to file, checking for cancellation between chunks.
-        // On cancel: use mtp-rs's USB SIC cancel to abort the transfer cleanly (~300ms).
-        let mut bytes_written = 0u64;
+        // Read the file as a sequence of bounded windows. Each window takes +
+        // releases the device lock, so a foreground listing slips in between
+        // windows. `offset` advances by the bytes the device actually returned (a
+        // short read mid-file is legal); a 0-byte read before EOF is a stall, not
+        // loop continuation.
+        let mut offset = 0u64;
         let mut cancelled = false;
-        while let Some(chunk_result) = download.next_chunk().await {
-            let chunk = chunk_result.map_err(|e| MtpConnectionError::Other {
-                device_id: device_id.to_string(),
-                message: format!("Download error: {}", e),
-            })?;
+        while let Some(len) = mtp_window_len(offset, total_size, MTP_READ_WINDOW) {
+            let chunk = self.read_window(&session, device_id, offset, len).await?;
+            if chunk.is_empty() {
+                return Err(MtpConnectionError::Other {
+                    device_id: device_id.to_string(),
+                    message: format!("MTP read returned 0 bytes at offset {offset} of {total_size} bytes"),
+                });
+            }
 
             file.write_all(&chunk).await.map_err(|e| MtpConnectionError::Other {
                 device_id: device_id.to_string(),
                 message: format!("Failed to write local file: {}", e),
             })?;
 
-            bytes_written += chunk.len() as u64;
+            offset += chunk.len() as u64;
 
             // Report progress and check for cancellation
             if let Some(ref cb) = on_progress
-                && cb(bytes_written, total_size).is_break()
+                && cb(offset, total_size).is_break()
             {
                 cancelled = true;
                 break;
             }
         }
 
-        // On cancellation, abort the USB transfer cleanly before releasing the lock
-        if cancelled {
-            let _ = download.cancel(mtp_rs::DEFAULT_CANCEL_TIMEOUT).await;
-        }
+        let bytes_written = offset;
 
-        // Release device lock after download completes (or is cancelled)
-        drop(download);
-        drop(storage);
-        drop(device);
+        // Release the cached Storage/handle (a mid-window drop self-heals via
+        // mtp-rs's TransactionScope; between windows nothing is in flight).
+        drop(session);
 
         // On cancellation, clean up the partial file
         if cancelled {
@@ -416,104 +435,109 @@ impl MtpConnectionManager {
         })
     }
 
-    /// Opens a streaming download for a file, starting at a byte offset.
+    /// Opens a bounded-window read of a file: resolves the object handle, obtains
+    /// the `Storage`, and reads `total_size` ONCE under the device lock, returning
+    /// an [`MtpReadSession`] the caller caches and feeds to [`read_window`] per
+    /// window. The lock is released before returning, so nothing is held between
+    /// windows.
     ///
-    /// `offset == 0` is the whole file (the plain full streaming download). A
-    /// non-zero offset resumes a previously-paused download: it drives mtp-rs's
-    /// `download_stream_from_offset`, which streams `[offset, size)` via
-    /// `GetPartialObject64`. The returned `FileDownload::size()` reports the FULL
-    /// object size, and `total_size` (the second tuple element) is likewise the
-    /// full size — so resume progress stays anchored to the whole file.
+    /// Takes NO `foreground_guard`: a transfer is a *background* user of the
+    /// device gate (it yields TO foreground), so raising `foreground_pending`
+    /// here would make the copy contend with itself. See
+    /// `mtp/connection/DETAILS.md` § "Bounded-window reads".
     ///
-    /// This is what lets the streaming copy loop release the MTP session on pause
-    /// (drop the stream) and reopen here at the kept byte count on resume. See
-    /// `MtpVolume::pause_releases_read_stream`.
-    pub async fn open_download_stream_at_offset(
+    /// [`read_window`]: Self::read_window
+    pub async fn open_read_session(
         &self,
         device_id: &str,
         storage_id: u32,
         path: &str,
-        offset: u64,
-    ) -> Result<(mtp_rs::FileDownload, u64), MtpConnectionError> {
-        // Foreground priority for the stream SETUP (handle resolve + open). The
-        // returned `FileDownload` reads chunks via mtp-rs's own `Arc`/operation
-        // lock, not Cmdr's device lock, so per-chunk reads interleave with scan
-        // units at mtp-rs's per-transaction granularity (no 30 s starvation). See
-        // DETAILS § "Foreground-priority device scheduler".
-        let _fg = self.foreground_guard(device_id).await;
-
+    ) -> Result<MtpReadSession, MtpConnectionError> {
         debug!(
-            "MTP open_download_stream: device={}, storage={}, path={}, offset={}",
-            device_id, storage_id, path, offset
+            "MTP open_read_session: device={}, storage={}, path={}",
+            device_id, storage_id, path
         );
 
-        // Get the device and resolve path to handle
+        // Get the device and resolve path to handle.
         let (device_arc, object_handle) = {
             let devices = self.devices.lock().await;
             let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
                 device_id: device_id.to_string(),
             })?;
-
             let handle = self.resolve_path_to_handle(entry, storage_id, path)?;
             (Arc::clone(&entry.device), handle)
         };
 
-        let device = acquire_device_lock(&device_arc, device_id, "open_download_stream").await?;
-
-        // Get the storage
-        let storage = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
-
-        // Get object info to determine size
-        let object_info = tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            storage.get_object_info(object_handle),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))?;
-
-        let total_size = object_info.size;
-
-        // Open the download stream. offset 0 uses the plain full streaming
-        // download (identical wire behavior to before); a non-zero offset routes
-        // through the resumable GetPartialObject64 path.
-        let open_fut = async {
-            if offset == 0 {
-                storage.download_stream(object_handle).await
-            } else {
-                storage.download_stream_from_offset(object_handle, offset).await
-            }
-        };
-        let download = tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS * 10), open_fut)
+        let (storage, total_size) = {
+            let device = acquire_device_lock(&device_arc, device_id, "open_read_session").await?;
+            let storage = tokio::time::timeout(
+                Duration::from_secs(MTP_TIMEOUT_SECS),
+                device.storage(StorageId(storage_id)),
+            )
             .await
             .map_err(|_| MtpConnectionError::Timeout {
                 device_id: device_id.to_string(),
             })?
             .map_err(|e| map_mtp_error(e, device_id))?;
 
-        // Note: We intentionally don't drop 'storage' and 'device' here.
-        // The FileDownload holds a reference to the storage session internally.
-        // The caller must consume the entire download before other operations.
-        // This is a design limitation of the current mtp-rs streaming API.
-        // In practice, the Volume trait methods run in spawn_blocking, so
-        // the device lock is released when the blocking task completes.
+            let object_info = tokio::time::timeout(
+                Duration::from_secs(MTP_TIMEOUT_SECS),
+                storage.get_object_info(object_handle),
+            )
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?
+            .map_err(|e| map_mtp_error(e, device_id))?;
 
-        debug!(
-            "MTP open_download_stream: stream opened for {} bytes (offset {})",
-            total_size, offset
-        );
+            (storage, object_info.size)
+        };
 
-        Ok((download, total_size))
+        debug!("MTP open_read_session: opened {} bytes for {}", total_size, path);
+
+        Ok(MtpReadSession {
+            device_arc,
+            storage,
+            object_handle,
+            total_size,
+        })
+    }
+
+    /// Reads one bounded window `[offset, offset + len)` of an object opened with
+    /// [`open_read_session`]. Acquires the per-device lock for just this one
+    /// `GetPartialObject64` (released on return), so the PTP session is free
+    /// between windows for a foreground listing/nav.
+    ///
+    /// Returns the bytes the device actually delivered — possibly fewer than
+    /// `len` (a short read mid-file is legal; the caller advances `offset` by the
+    /// returned length, and treats a 0-byte read before EOF as a stall, not loop
+    /// continuation). Takes NO `foreground_guard` (a transfer is a background gate
+    /// user; see `open_read_session`).
+    ///
+    /// Drop-safety: if this future is dropped mid-flight (task abort, device
+    /// disconnect), mtp-rs's `TransactionScope` flags the pipe and the next op
+    /// drains it under the operation lock (one ~300 ms self-heal), so an aborted
+    /// window never permanently desyncs the session. This is what makes the
+    /// buffered-window model safe to abort at any point.
+    ///
+    /// [`open_read_session`]: Self::open_read_session
+    pub async fn read_window(
+        &self,
+        session: &MtpReadSession,
+        device_id: &str,
+        offset: u64,
+        len: u32,
+    ) -> Result<Vec<u8>, MtpConnectionError> {
+        let _device = acquire_device_lock(&session.device_arc, device_id, "read_window").await?;
+        tokio::time::timeout(
+            Duration::from_secs(MTP_TIMEOUT_SECS),
+            session.storage.download_partial_64(session.object_handle, offset, len),
+        )
+        .await
+        .map_err(|_| MtpConnectionError::Timeout {
+            device_id: device_id.to_string(),
+        })?
+        .map_err(|e| map_mtp_error(e, device_id))
     }
 
     /// Uploads pre-collected chunks to the MTP device.

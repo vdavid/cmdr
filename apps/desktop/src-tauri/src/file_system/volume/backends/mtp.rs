@@ -9,7 +9,7 @@ use super::{
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_watched_listing;
-use crate::mtp::connection::{MtpConnectionError, connection_manager};
+use crate::mtp::connection::{MtpConnectionError, MtpReadSession, connection_manager, mtp_window_len};
 use log::debug;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -831,18 +831,23 @@ impl Volume for MtpVolume {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
 
-            let (download, total_size) = connection_manager()
-                .open_download_stream_at_offset(&self.device_id, self.storage_id, &mtp_path, offset)
+            let session = connection_manager()
+                .open_read_session(&self.device_id, self.storage_id, &mtp_path)
                 .await
                 .map_err(map_mtp_error)?;
+            let total_size = session.total_size;
 
             Ok(Box::new(MtpReadStream {
-                download: Some(download),
+                reader: Box::new(MtpWindowReader {
+                    session,
+                    device_id: self.device_id.clone(),
+                }),
                 total_size,
-                // `bytes_read` counts bytes delivered by THIS stream (the resume
-                // tail when offset > 0), not the full file. `total_size` is the
-                // full object size, so progress stays anchored across a resume.
-                bytes_read: 0,
+                // `offset` is the absolute byte position of the next window. A
+                // non-zero start resumes a reopened read (see `CheckpointStream`);
+                // `total_size` is the full object size, so progress stays anchored.
+                offset,
+                window: mtp_read_window(),
             }) as Box<dyn VolumeReadStream>)
         })
     }
@@ -954,47 +959,124 @@ fn volume_read_stream_to_chunk_stream<'a>(
     )
 }
 
-/// Direct async streaming reader for MTP files.
-///
-/// Calls `FileDownload::next_chunk().await` directly (`VolumeReadStream::next_chunk()`
-/// is async, so no background task or channel needed).
-struct MtpReadStream {
-    download: Option<mtp_rs::FileDownload>,
-    total_size: u64,
-    bytes_read: u64,
-}
-
-impl Drop for MtpReadStream {
-    fn drop(&mut self) {
-        if let Some(mut download) = self.download.take() {
-            // Not fully consumed: cancel the USB transfer to prevent
-            // ReceiveStream's Drop from panicking (and corrupting the session).
-            if let Ok(handle) = tokio::runtime::Handle::try_current() {
-                handle.spawn(async move {
-                    let timeout = mtp_rs::DEFAULT_CANCEL_TIMEOUT;
-                    if let Err(e) = download.cancel(timeout).await {
-                        log::warn!("MTP download cancel on drop: {:?}", e);
-                    }
-                });
-            }
+/// Bytes-per-window for a [`MtpReadStream`]. Production uses
+/// [`crate::mtp::connection::MTP_READ_WINDOW`]; tests shrink it via
+/// [`test_window`] so a small fixture spans multiple windows.
+fn mtp_read_window() -> u32 {
+    #[cfg(test)]
+    {
+        let o = test_window::get();
+        if o != 0 {
+            return o;
         }
     }
+    crate::mtp::connection::MTP_READ_WINDOW
+}
+
+/// Test-only override for the read window size (see [`mtp_read_window`]). A
+/// global is harmless here: every read test wants a small window, and the
+/// production default is never asserted, so a value set by one test never
+/// breaks another. Unit tests construct [`MtpReadStream`] with an explicit
+/// `window` instead and don't touch this.
+#[cfg(test)]
+mod test_window {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    static OVERRIDE: AtomicU32 = AtomicU32::new(0);
+
+    pub(super) fn get() -> u32 {
+        OVERRIDE.load(Ordering::Relaxed)
+    }
+
+    #[cfg(feature = "virtual-mtp")]
+    pub(super) fn set(window: u32) {
+        OVERRIDE.store(window, Ordering::Relaxed);
+    }
+}
+
+/// Reads one bounded window of an MTP object.
+///
+/// Abstracted behind a trait so the windowed read loop's offset accounting
+/// (advance-by-returned-length, EOF, the 0-byte-before-EOF guard) is
+/// unit-testable with a scripted reader. Production ([`MtpWindowReader`]) routes
+/// to the connection layer's per-window read (per-device lock + one
+/// `GetPartialObject64`).
+trait WindowReader: Send {
+    fn read_window<'a>(
+        &'a self,
+        offset: u64,
+        len: u32,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>>;
+}
+
+/// Production [`WindowReader`]: holds the cached read session + device id and
+/// delegates to the connection manager's `read_window`.
+struct MtpWindowReader {
+    session: MtpReadSession,
+    device_id: String,
+}
+
+impl WindowReader for MtpWindowReader {
+    fn read_window<'a>(
+        &'a self,
+        offset: u64,
+        len: u32,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            connection_manager()
+                .read_window(&self.session, &self.device_id, offset, len)
+                .await
+                .map_err(map_mtp_error)
+        })
+    }
+}
+
+/// Bounded-window MTP read stream.
+///
+/// Reads a file as a sequence of bounded `GetPartialObject64(offset, window)`
+/// transactions instead of one held-open `GetObject`. Between windows nothing is
+/// in flight and the one-per-device PTP session is free, so a foreground listing
+/// slips in at window granularity (the whole point — navigate the phone during a
+/// copy). It caches the resolved session (`Storage` + object handle +
+/// `total_size`) so each window pays only a device-lock acquire + one read.
+///
+/// Data safety: `offset` is the absolute position of the next window and equals
+/// the bytes delivered so far. Each `next_chunk` reads exactly
+/// `[offset, offset + len)` and advances by the bytes ACTUALLY returned. A short
+/// read mid-file is legal; a 0-byte read before EOF is surfaced as an error (not
+/// a frozen-progress spin).
+struct MtpReadStream {
+    reader: Box<dyn WindowReader>,
+    total_size: u64,
+    /// Absolute byte offset of the next window == bytes delivered so far.
+    offset: u64,
+    /// Bytes requested per window (`mtp_read_window()`; overridable in tests).
+    window: u32,
 }
 
 impl VolumeReadStream for MtpReadStream {
     fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
         Box::pin(async move {
-            let download = self.download.as_mut()?;
-            match download.next_chunk().await {
-                Some(Ok(bytes)) => {
-                    self.bytes_read += bytes.len() as u64;
-                    Some(Ok(bytes.to_vec()))
+            // EOF (incl. empty file / offset == total_size): no window issued.
+            let len = mtp_window_len(self.offset, self.total_size, self.window)?;
+            match self.reader.read_window(self.offset, len).await {
+                Ok(bytes) => {
+                    if bytes.is_empty() {
+                        // A 0-byte read while bytes remain (offset < total_size,
+                        // len > 0) is a device stall, not EOF. Surface a transient
+                        // error rather than loop forever on frozen progress.
+                        return Some(Err(VolumeError::IoError {
+                            message: format!(
+                                "MTP read returned 0 bytes at offset {} of {} bytes",
+                                self.offset, self.total_size
+                            ),
+                            raw_os_error: None,
+                        }));
+                    }
+                    self.offset += bytes.len() as u64;
+                    Some(Ok(bytes))
                 }
-                Some(Err(e)) => Some(Err(VolumeError::IoError {
-                    message: e.to_string(),
-                    raw_os_error: None,
-                })),
-                None => None,
+                Err(e) => Some(Err(e)),
             }
         })
     }
@@ -1004,25 +1086,13 @@ impl VolumeReadStream for MtpReadStream {
     }
 
     fn bytes_read(&self) -> u64 {
-        self.bytes_read
+        self.offset
     }
 
-    fn cancel_and_release(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async move {
-            // Abort the in-flight download synchronously (USB SIC cancel + pipe
-            // drain) and await it, so the one-per-device PTP session is free the
-            // moment this returns. The pause-aware copy wrapper calls this before
-            // parking, so the device can be listed/navigated while paused. Unlike
-            // `Drop` (which fire-and-forgets the cancel on the runtime), this is
-            // deterministic: the next reopen at the kept offset won't race a
-            // still-draining pipe.
-            if let Some(mut download) = self.download.take()
-                && let Err(e) = download.cancel(mtp_rs::DEFAULT_CANCEL_TIMEOUT).await
-            {
-                log::warn!("MTP download cancel_and_release: {e:?}");
-            }
-        })
-    }
+    // `cancel_and_release` uses the trait default (no-op): bounded windows hold
+    // nothing between reads, so there's no in-flight transaction to abort. A
+    // window read in flight when the stream is dropped self-heals via mtp-rs's
+    // `TransactionScope` (see the connection layer's `read_window`).
 }
 
 /// Maps MTP connection errors to Volume errors.
@@ -1258,6 +1328,250 @@ mod tests {
         );
     }
 
+    // ========================================================================
+    // Bounded-window read loop (MtpReadStream offset accounting)
+    //
+    // These drive `MtpReadStream` with a scripted `WindowReader` so the
+    // load-bearing offset accounting — advance-by-returned-length, EOF, the
+    // 0-byte-before-EOF guard — is tested deterministically WITHOUT the virtual
+    // device (which, backed by a real file, can't return a short/empty read
+    // mid-file). The end-to-end byte-exactness over the real wire is the
+    // `virtual-mtp` test `bounded_window_read_assembles_byte_exact`.
+    // ========================================================================
+
+    /// A `WindowReader` serving from an in-memory buffer, with optional per-call
+    /// caps so a test can force a short or zero-length window mid-file, and an
+    /// optional per-call error. The recorded `(offset, len)` requests live behind
+    /// a shared `Arc`, so a test inspects them after the reader is boxed into the
+    /// stream.
+    struct FakeWindowReader {
+        data: Vec<u8>,
+        /// call index -> bytes to return (capped to what's available). Absent ⇒
+        /// return the full requested window (what a healthy device does).
+        caps: std::collections::HashMap<usize, usize>,
+        /// call index -> error to return instead of bytes.
+        errors: std::collections::HashMap<usize, VolumeError>,
+        calls: std::sync::atomic::AtomicUsize,
+        /// Each `(offset, len)` actually requested, in order (shared with the test).
+        requested: std::sync::Arc<std::sync::Mutex<Vec<(u64, u32)>>>,
+    }
+
+    impl FakeWindowReader {
+        fn new(data: Vec<u8>) -> Self {
+            Self {
+                data,
+                caps: std::collections::HashMap::new(),
+                errors: std::collections::HashMap::new(),
+                calls: std::sync::atomic::AtomicUsize::new(0),
+                requested: std::sync::Arc::new(std::sync::Mutex::new(Vec::new())),
+            }
+        }
+
+        /// A handle to the recorded requests, to assert on after boxing.
+        fn requests(&self) -> std::sync::Arc<std::sync::Mutex<Vec<(u64, u32)>>> {
+            std::sync::Arc::clone(&self.requested)
+        }
+    }
+
+    impl WindowReader for FakeWindowReader {
+        fn read_window<'a>(
+            &'a self,
+            offset: u64,
+            len: u32,
+        ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
+            Box::pin(async move {
+                let idx = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                self.requested.lock().unwrap().push((offset, len));
+                if let Some(e) = self.errors.get(&idx) {
+                    return Err(e.clone());
+                }
+                let start = offset as usize;
+                let available = self.data.len().saturating_sub(start);
+                let want = (len as usize).min(available);
+                // A cap can force FEWER bytes than available (short/zero read).
+                let n = self.caps.get(&idx).map_or(want, |c| (*c).min(want));
+                Ok(self.data[start..start + n].to_vec())
+            })
+        }
+    }
+
+    /// Drains a stream to EOF, returning the assembled bytes. Fails the test on
+    /// any error item.
+    async fn drain_ok(stream: &mut MtpReadStream) -> Vec<u8> {
+        let mut out = Vec::new();
+        while let Some(item) = stream.next_chunk().await {
+            out.extend_from_slice(&item.expect("window read should be Ok"));
+        }
+        out
+    }
+
+    #[tokio::test]
+    async fn bounded_window_read_assembles_multiple_windows_byte_exact() {
+        let data: Vec<u8> = (0..=200u32).map(|i| i as u8).collect(); // 201 bytes
+        let reader = FakeWindowReader::new(data.clone());
+        let requested = reader.requests();
+        let mut stream = MtpReadStream {
+            reader: Box::new(reader),
+            total_size: data.len() as u64,
+            offset: 0,
+            window: 64,
+        };
+
+        // Pull the first window explicitly and assert the offset advanced by the
+        // returned length — this is what fails against a held-open single-stream
+        // model (which delivers in its own chunk sizes, not bounded windows).
+        let first = stream.next_chunk().await.expect("a window").expect("ok");
+        assert_eq!(first.len(), 64, "first window is one full WINDOW");
+        assert_eq!(stream.bytes_read(), 64, "offset advanced by the window length");
+
+        let mut assembled = first;
+        assembled.extend(drain_ok(&mut stream).await);
+        assert_eq!(assembled, data, "windows reassemble to the exact source bytes");
+        assert_eq!(stream.bytes_read(), data.len() as u64);
+        // 201 bytes / 64 = windows of 64, 64, 64, 9 (the final one clamped to the
+        // remaining bytes, so the read never requests past EOF).
+        assert_eq!(
+            *requested.lock().unwrap(),
+            vec![(0, 64), (64, 64), (128, 64), (192, 9)],
+            "each window requests [offset, min(WINDOW, remaining)), offset advancing per call"
+        );
+    }
+
+    #[tokio::test]
+    async fn bounded_window_read_eof_non_multiple_has_short_final_window() {
+        let data: Vec<u8> = vec![7u8; 10];
+        let reader = FakeWindowReader::new(data.clone());
+        let requested = reader.requests();
+        let mut stream = MtpReadStream {
+            reader: Box::new(reader),
+            total_size: 10,
+            offset: 0,
+            window: 4,
+        };
+        let assembled = drain_ok(&mut stream).await;
+        assert_eq!(assembled, data);
+        assert_eq!(
+            *requested.lock().unwrap(),
+            vec![(0, 4), (4, 4), (8, 2)],
+            "final window is clamped to the 2 remaining bytes"
+        );
+    }
+
+    #[tokio::test]
+    async fn bounded_window_read_empty_file_yields_none_without_reading() {
+        let reader = FakeWindowReader::new(Vec::new());
+        let requested = reader.requests();
+        let mut stream = MtpReadStream {
+            reader: Box::new(reader),
+            total_size: 0,
+            offset: 0,
+            window: 8,
+        };
+        assert!(stream.next_chunk().await.is_none(), "empty file ⇒ immediate None");
+        assert!(
+            requested.lock().unwrap().is_empty(),
+            "no window read is issued for an empty file"
+        );
+    }
+
+    #[tokio::test]
+    async fn bounded_window_read_offset_at_total_yields_none_without_reading() {
+        // The reopen-at-offset path: a stream opened at offset == total_size has
+        // nothing left and must not issue a read.
+        let reader = FakeWindowReader::new(vec![1u8; 16]);
+        let requested = reader.requests();
+        let mut stream = MtpReadStream {
+            reader: Box::new(reader),
+            total_size: 16,
+            offset: 16,
+            window: 8,
+        };
+        assert!(stream.next_chunk().await.is_none());
+        assert_eq!(stream.bytes_read(), 16);
+        assert!(requested.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn bounded_window_read_zero_length_before_eof_is_error_not_spin() {
+        // Force the SECOND call (offset 4) to return 0 bytes while data remains.
+        let mut reader = FakeWindowReader::new(vec![9u8; 12]);
+        reader.caps.insert(1, 0);
+        let mut stream = MtpReadStream {
+            reader: Box::new(reader),
+            total_size: 12,
+            offset: 0,
+            window: 4,
+        };
+        let first = stream.next_chunk().await.expect("a window").expect("ok");
+        assert_eq!(first.len(), 4);
+        let second = stream.next_chunk().await.expect("an item");
+        assert!(
+            matches!(second, Err(VolumeError::IoError { .. })),
+            "a 0-byte read before EOF must surface an error, not loop forever; got {second:?}"
+        );
+        // Offset did NOT advance past the stall.
+        assert_eq!(stream.bytes_read(), 4);
+    }
+
+    #[tokio::test]
+    async fn bounded_window_read_short_mid_file_advances_by_returned_length() {
+        // Device returns only 1 byte for the first window (offset 0, len 4), then
+        // serves normally — the loop must resume from offset 1, not offset 4.
+        let data: Vec<u8> = (0..10u8).collect();
+        let mut reader = FakeWindowReader::new(data.clone());
+        reader.caps.insert(0, 1);
+        let requested = reader.requests();
+        let mut stream = MtpReadStream {
+            reader: Box::new(reader),
+            total_size: 10,
+            offset: 0,
+            window: 4,
+        };
+        let assembled = drain_ok(&mut stream).await;
+        assert_eq!(assembled, data, "a short mid-file read still assembles byte-exact");
+        assert_eq!(
+            *requested.lock().unwrap(),
+            vec![(0, 4), (1, 4), (5, 4), (9, 1)],
+            "after a 1-byte short read at offset 0, the next window starts at offset 1"
+        );
+    }
+
+    #[tokio::test]
+    async fn bounded_window_read_surfaces_window_error() {
+        let mut reader = FakeWindowReader::new(vec![3u8; 8]);
+        reader
+            .errors
+            .insert(1, VolumeError::ConnectionTimeout("device stalled".into()));
+        let mut stream = MtpReadStream {
+            reader: Box::new(reader),
+            total_size: 8,
+            offset: 0,
+            window: 4,
+        };
+        let _first = stream.next_chunk().await.expect("a window").expect("ok");
+        let second = stream.next_chunk().await.expect("an item");
+        assert!(matches!(second, Err(VolumeError::ConnectionTimeout(_))));
+    }
+
+    #[tokio::test]
+    async fn bounded_window_cancel_and_release_is_prompt_and_keeps_partials() {
+        // cancel_and_release holds nothing to drain, so it returns immediately and
+        // the bytes already delivered (the kept partial) are reflected in bytes_read.
+        let data: Vec<u8> = vec![5u8; 20];
+        let mut stream = MtpReadStream {
+            reader: Box::new(FakeWindowReader::new(data)),
+            total_size: 20,
+            offset: 0,
+            window: 8,
+        };
+        let _ = stream.next_chunk().await.expect("a window").expect("ok");
+        assert_eq!(stream.bytes_read(), 8);
+        // Returns without awaiting any device drain.
+        stream.cancel_and_release().await;
+        assert_eq!(stream.bytes_read(), 8, "the kept partial offset survives a cancel");
+        drop(stream); // no panic, nothing held
+    }
+
     #[test]
     fn test_listing_is_watched_false_when_device_not_connected() {
         // Without `virtual-mtp`, we can still assert the negative case: a freshly
@@ -1275,7 +1589,11 @@ mod tests {
 
         // Register a virtual device backed by a tmp dir.
         let location_id = setup_virtual_mtp_device();
-        let device_id = format!("mtp-{}", location_id);
+        let device_id = crate::mtp::list_mtp_devices()
+            .into_iter()
+            .find(|d| d.location_id == location_id)
+            .map(|d| d.id)
+            .expect("the virtual device must appear in discovery");
 
         // Before connect: false.
         let vol = MtpVolume::new(&device_id, 65537, "Test");
@@ -1339,7 +1657,11 @@ mod tests {
         use crate::mtp::virtual_device::setup_virtual_mtp_device;
 
         let location_id = setup_virtual_mtp_device();
-        let device_id = format!("mtp-{}", location_id);
+        let device_id = crate::mtp::list_mtp_devices()
+            .into_iter()
+            .find(|d| d.location_id == location_id)
+            .map(|d| d.id)
+            .expect("the virtual device must appear in discovery");
 
         let info = connection_manager()
             .connect(&device_id, None)
@@ -1423,7 +1745,11 @@ mod tests {
         use crate::mtp::virtual_device::setup_virtual_mtp_device;
 
         let location_id = setup_virtual_mtp_device();
-        let device_id = format!("mtp-{}", location_id);
+        let device_id = crate::mtp::list_mtp_devices()
+            .into_iter()
+            .find(|d| d.location_id == location_id)
+            .map(|d| d.id)
+            .expect("the virtual device must appear in discovery");
 
         let info = connection_manager()
             .connect(&device_id, None)
@@ -1504,7 +1830,11 @@ mod tests {
         use crate::mtp::virtual_device::{VIRTUAL_DEVICE_SERIAL, setup_virtual_mtp_device};
 
         let location_id = setup_virtual_mtp_device();
-        let device_id = format!("mtp-{}", location_id);
+        let device_id = crate::mtp::list_mtp_devices()
+            .into_iter()
+            .find(|d| d.location_id == location_id)
+            .map(|d| d.id)
+            .expect("the virtual device must appear in discovery");
 
         let info = connection_manager()
             .connect(&device_id, None)
@@ -1577,6 +1907,83 @@ mod tests {
             entries.iter().map(|e| &e.name).collect::<Vec<_>>()
         );
 
+        connection_manager()
+            .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
+            .await
+            .expect("virtual-mtp disconnect should succeed");
+    }
+
+    /// End-to-end over the real wire: a multi-window file read through
+    /// `MtpVolume::open_read_stream` (the SHARED read path used by both the copy
+    /// and native drag-out) reassembles to the exact source bytes. Drives
+    /// repeated `GetPartialObject64` at advancing offsets via the virtual
+    /// transport, with the window shrunk so a small fixture spans several windows.
+    /// This is the bounded-window analogue of a copy's source read; the offset
+    /// accounting itself is unit-tested above with a scripted reader.
+    #[cfg(feature = "virtual-mtp")]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn bounded_window_read_assembles_byte_exact() {
+        use crate::mtp::virtual_device::{rescan_virtual_device, setup_virtual_mtp_device};
+
+        let location_id = setup_virtual_mtp_device();
+        // Derive the device id the way discovery does (serial-based when the
+        // device reports one), not `format!("mtp-{location_id}")`.
+        let device_id = crate::mtp::list_mtp_devices()
+            .into_iter()
+            .find(|d| d.location_id == location_id)
+            .map(|d| d.id)
+            .expect("the virtual device must appear in discovery");
+
+        // Write a fixture larger than one (shrunk) window into the internal
+        // backing dir, then rescan so the virtual device hands it a handle.
+        let payload: Vec<u8> = (0..3500u32).map(|i| (i % 251) as u8).collect();
+        let internal = Path::new(crate::mtp::virtual_device::MTP_FIXTURE_ROOT).join("internal");
+        std::fs::write(internal.join("bigfile.bin"), &payload).expect("write fixture");
+        rescan_virtual_device();
+
+        // 1000-byte windows over 3500 bytes ⇒ 4 windows (1000, 1000, 1000, 500).
+        test_window::set(1000);
+
+        let info = connection_manager()
+            .connect(&device_id, None)
+            .await
+            .expect("virtual-mtp connect should succeed");
+        let storage_id = info.storages.first().expect("virtual device should have storages").id;
+
+        // Prime the path cache (resolve_path_to_handle is cache-only).
+        connection_manager()
+            .list_directory(&device_id, storage_id, "/")
+            .await
+            .expect("list root should succeed");
+
+        let vol = MtpVolume::new(&device_id, storage_id, "Internal Storage");
+        let mut stream = vol
+            .open_read_stream(Path::new("/bigfile.bin"))
+            .await
+            .expect("open_read_stream should succeed");
+
+        assert_eq!(stream.total_size(), payload.len() as u64);
+
+        let mut assembled = Vec::new();
+        let mut windows = 0;
+        while let Some(item) = stream.next_chunk().await {
+            let chunk = item.expect("each window read should be Ok");
+            assert!(!chunk.is_empty(), "a window before EOF must not be empty");
+            windows += 1;
+            assembled.extend_from_slice(&chunk);
+        }
+
+        assert_eq!(
+            assembled, payload,
+            "bounded windows reassemble to the exact source bytes"
+        );
+        assert_eq!(stream.bytes_read(), payload.len() as u64);
+        assert!(
+            windows >= 2,
+            "the fixture must span multiple bounded windows (got {windows}); else this isn't testing windowing"
+        );
+
+        test_window::set(0);
         connection_manager()
             .disconnect(&device_id, None, crate::mtp::connection::MtpDisconnectReason::User)
             .await

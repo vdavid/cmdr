@@ -8,8 +8,8 @@ The trait shape, capability matrix, streaming patterns, and "Building a new volu
 
 - `local_posix.rs`: `LocalPosixVolume`, real filesystem; delegates listing/indexing/watching to `file_system::listing`
   and `indexing`, copy scanning via `walkdir`, space info via `libc::statvfs` FFI.
-- `mtp.rs`: `MtpVolume`, MTP device storage; direct async MTP calls, `MtpReadStream` for streaming. Gated
-  `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
+- `mtp.rs`: `MtpVolume`, MTP device storage; direct async MTP calls, `MtpReadStream` (bounded-window reads). macOS/Linux
+  only.
 - `smb.rs`: `SmbVolume`, direct async smb2. Split session storage, `AtomicU8` connection state, cached
   `SmbConnectionParams` for reconnect, global `AppHandle` for `smb-connection-changed` events. Same cfg gate.
 - `smb_watcher.rs`: background SMB change watcher on a dedicated smb2 session (separate TCP connection).
@@ -33,10 +33,11 @@ The trait shape, capability matrix, streaming patterns, and "Building a new volu
 - **`LocalPosixVolume::write_from_stream` `sync_data`s each file (+ best-effort parent-dir fsync) before returning.**
   Every cross-volume copy/move landing on local disk flows through this one method; a bare `flush()` leaves bytes only
   in the page cache, so an eject/sleep loses data (on a move, from both sides). Don't drop the fsync.
-- **`MtpVolume::get_metadata` lists the entire parent directory** (MTP has no single-file stat). Fine for infrequent
-  `notify_mutation` use; avoid it in hot paths.
-- **`MtpReadStream::Drop` spawns a detached cancel task.** mtp-rs's `ReceiveStream` panics on drop if not consumed or
-  cancelled (USB session corruption guard). Safe because the stream always lives in an async context.
+- **`MtpVolume::get_metadata` lists the entire parent directory** (MTP has no single-file stat). Avoid in hot paths.
+- **`MtpReadStream` reads in bounded windows, not one held-open stream.** Each `next_chunk` issues one
+  `GetPartialObject64(offset, MTP_READ_WINDOW)`; the device lock is held per window, freeing the session between
+  windows (foreground nav slips in). `cancel_and_release` is a no-op; a mid-window drop self-heals (mtp-rs
+  `TransactionScope`). Offset/EOF rules: `mtp/connection/DETAILS.md` § "Bounded-window reads".
 - **SMB watcher filenames need normalizing**: backslashes to forward slashes, and NFC (from server) to NFD (macOS
   mount paths) before cache lookups. See [DETAILS.md](DETAILS.md) § "Gotchas".
 - **SMB auto-upgrade is gated on `network.directSmbConnection`** and is a no-op when no SMB mounts are present (so it

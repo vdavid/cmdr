@@ -182,19 +182,20 @@ Reads and writes have different shapes because the consumer relationship is diff
 
 The rest of this section is about **read-side** lifetime handling. Which pattern to pick depends on whether your protocol SDK's download handle is `'static` or borrowed.
 
-### Pattern A: own the download (use when the SDK's download type is `'static`)
+### Pattern A: cached session + bounded windows (use when the SDK exposes a stateless partial-read primitive)
 
-If the SDK gives you a download handle that owns its session internally and doesn't borrow from anything, store it directly in your stream struct. **Example: `MtpReadStream`** (`backends/mtp.rs`).
+If the SDK can read an arbitrary byte range on demand (no held streaming handle), cache the resolved session in your stream struct and issue one bounded read per `next_chunk`, advancing an offset. Nothing is held between reads, so there's no lifetime gymnastics, no task, no channel, and no `Drop` to write. **Example: `MtpReadStream`** (`backends/mtp.rs`), which loops `GetPartialObject64`.
 
 ```rust
 struct MtpReadStream {
-    download: Option<mtp_rs::FileDownload>,  // 'static, no lifetime parameter
+    reader: Box<dyn WindowReader>,  // caches the MtpReadSession (Storage + handle)
     total_size: u64,
-    bytes_read: u64,
+    offset: u64,                    // absolute position of the next window
+    window: u32,                    // bytes per window (MTP_READ_WINDOW)
 }
 ```
 
-`next_chunk()` calls `download.as_mut()?.next_chunk().await` directly, no task spawn, no channel. `Drop` cancels the transfer (see the MtpReadStream Drop gotcha in `backends/CLAUDE.md` for the detached-task cancel pattern).
+`next_chunk()` issues one `[offset, offset + len)` window via the cached session, advancing `offset` by the bytes actually returned. `cancel_and_release` is the trait default no-op (nothing held); a mid-window drop self-heals via mtp-rs's `TransactionScope`. The windowing/offset rules live in `mtp/connection` (DETAILS § "Bounded-window reads").
 
 ### Pattern B: channel-backed stream (use when the SDK's download type borrows `&mut Connection`)
 

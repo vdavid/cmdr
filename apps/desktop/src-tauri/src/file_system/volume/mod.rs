@@ -981,9 +981,9 @@ pub trait Volume: Send + Sync {
     /// **Must stream.** Don't read the whole file into a `Vec<u8>` inside
     /// this method and hand chunks of it back. That's just pre-buffering
     /// with extra steps. A user streaming an 8 GB file would allocate 8 GB
-    /// of RAM before the consumer sees a single byte. Drive the backend's
-    /// streaming reader (smb2: `FileDownload`, mtp-rs: `FileDownload`) on
-    /// demand from `next_chunk`. If the backend gives you a borrowed
+    /// of RAM before the consumer sees a single byte. Drive the backend on
+    /// demand from `next_chunk` (smb2: an `smb2::FileDownload`; MTP: bounded
+    /// `GetPartialObject64` windows). If the backend gives you a borrowed
     /// handle, use a bounded producer/consumer channel (see `SmbReadStream`
     /// for the pattern).
     ///

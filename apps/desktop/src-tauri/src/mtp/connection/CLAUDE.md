@@ -22,13 +22,14 @@ The MTP session layer: opens devices, owns the per-device tokio task, and expose
 
 - **Device lock**: `Arc<tokio::sync::Mutex<MtpDevice>>` held across `.await` for one USB I/O call; ops serialize per
   device with a 30 s timeout (`MTP_TIMEOUT_SECS`). Event polling sidesteps it by cloning `MtpDevice` (cheap `Arc`).
-- **Foreground-priority scheduler (`scheduler.rs`)**: ❌ Every foreground device op (nav, copy, delete, rename, move,
-  upload, visible-pane resolve) MUST take `foreground_guard(device_id)` for its lifetime, or background users won't yield
-  (livelock returns). Two background users consult the gate (`background_yield_point` / `foreground_pending`) between
-  work units: the index scan (`list_directory_for_scan`, never `list_directory*`) and a running MTP transfer (its
-  per-chunk checkpoint releases + reopens the PTP session — see `write_operations/transfer/`). ❌ Gate the live index
-  feed BEFORE any device resolve (`feed_index_added_or_changed` → `indexing::buffer_mtp_handle_if_scanning` first).
-  Deadlock-freedom + sizing: [DETAILS.md](DETAILS.md) § "Foreground-priority device scheduler".
+- **Foreground-priority scheduler (`scheduler.rs`)**: ❌ Every foreground device op (nav, delete, rename, move, upload,
+  visible-pane resolve) MUST take `foreground_guard(device_id)` for its lifetime, or background users won't yield. ❌ A
+  READ (download / drag-out) takes NO guard — a guard would make a copy yield to itself forever. Two background users
+  consult the gate (`background_yield_point` / `foreground_pending`) between work units: the index scan
+  (`list_directory_for_scan`, never `list_directory*`) and a running transfer, which reads in bounded windows, freeing
+  the session between them (DETAILS § "Bounded-window reads"). ❌ Gate the live index feed BEFORE device resolve
+  (`feed_index_added_or_changed` → `indexing::buffer_mtp_handle_if_scanning` first). [DETAILS.md](DETAILS.md) §
+  "Foreground-priority device scheduler".
 - **`resolve_path_to_handle()` is cache-only**: returns `ObjectNotFound` if the path hasn't appeared in a prior
   `list_directory()` (no on-demand walk), so list ancestors first; whole-tree ops that skip list-first fail here, not at
   the USB call. (Its inverse `resolve_handle_to_path()` *does* walk on demand — for pathless PTP events.)
@@ -56,5 +57,4 @@ The MTP session layer: opens devices, owns the per-device tokio task, and expose
 - **Cancel propagation** (parent `../CLAUDE.md`): cancel-aware entry points are `delete()`, `list_objects_with_cancel`,
   and `list_directory_for_scan` (all threaded to `mtp-rs`).
 
-Conventions, upload mechanics, event resolution, index feeding, and the scheduler: [DETAILS.md](DETAILS.md). Read it
-before any non-trivial work here.
+Conventions, upload/event/index mechanics, and the scheduler: [DETAILS.md](DETAILS.md). Read before non-trivial work.

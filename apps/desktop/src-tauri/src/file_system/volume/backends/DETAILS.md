@@ -8,7 +8,7 @@ modifying `SmbVolume`, `MtpVolume`, `LocalPosixVolume`, the SMB watcher, or `InM
 ## Key files
 
 - **`local_posix.rs`**: `LocalPosixVolume`: real filesystem; delegates listing to `file_system::listing`, indexing to `indexing::scanner`, watching to `indexing::watcher` (FSEvents), copy scanning via `walkdir`. Uses `libc::statvfs` FFI for space info.
-- **`mtp.rs`**: `MtpVolume`: MTP device storage; async `Volume` trait with direct async MTP calls. Uses `MtpReadStream` for streaming (calls `FileDownload::next_chunk().await` directly). Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
+- **`mtp.rs`**: `MtpVolume`: MTP device storage; async `Volume` trait with direct async MTP calls. Uses `MtpReadStream`, which reads in bounded `GetPartialObject64` windows over a cached `MtpReadSession` (per-window `WindowReader`; the windowing/offset logic lives in `mtp/connection`). Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
 - **`smb.rs`**: `SmbVolume`: SMB share storage; async `Volume` trait with direct async smb2 calls. Splits session storage into `Arc<Mutex<Option<SmbClient>>>` + `Arc<RwLock<Option<Arc<Tree>>>>` so the hot read/write paths can clone `Connection` under a brief lock and drive compound / download ops without serializing on the client mutex. `AtomicU8` connection state. Caches `SmbConnectionParams` (host, share, port, credentials) so `attempt_reconnect` can rebuild the session in place after a transient disconnect, single-flighted via `reconnect_lock`. Holds a global `AppHandle` (`set_app_handle` in `lib.rs::setup`) for emitting `smb-connection-changed` events (the typed `tauri_specta::Event` struct `SmbConnectionChanged` lives in the always-compiled `network/mod.rs`, not here, so `collect_events!` in `ipc.rs` can reference it on every platform; `emit_state_change` just builds and `.emit()`s it). Also contains `connect_smb_volume()`. Gated with `#[cfg(any(target_os = "macos", target_os = "linux"))]`.
 - **`smb_watcher.rs`**: Background SMB change watcher (`run_smb_watcher`). Owns a dedicated smb2 session (separate TCP connection from the volume's primary client) and uses smb2 0.10's `'static` `Watcher` with pipelined CHANGE_NOTIFY (one request kept pre-issued on the wire so events arriving during consumer processing don't fall in a re-arm gap). Debounces events, feeds `notify_directory_changed`. Spawned by `connect_smb_volume()` and respawned by `attempt_reconnect`. No internal reconnect — bails on `next_events` errors and lets `attempt_reconnect` handle session recovery.
 - **`in_memory.rs`**: `InMemoryVolume`: `RwLock<HashMap>` store for tests; also used for stress tests (`with_file_count`)
@@ -99,12 +99,8 @@ updated them.
 
 ## Gotchas
 
-**Gotcha**: `MtpReadStream::Drop` spawns a detached cancel task
-**Why**: When a download is cancelled mid-stream (user presses Cancel during MTP copy), the `MtpReadStream` is dropped
-before the `FileDownload` is fully consumed. mtp-rs's `ReceiveStream` panics on drop if not consumed or cancelled
-(to prevent USB session corruption). The `Drop` impl calls `download.cancel(DEFAULT_CANCEL_TIMEOUT).await` on a
-spawned detached task. This is safe because the stream always lives in an async context (tokio worker thread), so
-`Handle::try_current()` succeeds. The detached task runs independently; the drop returns immediately.
+**Gotcha**: `MtpReadStream` holds nothing scarce between windows, so dropping it mid-read is safe and needs no `Drop` impl
+**Why**: It reads in bounded `GetPartialObject64(offset, MTP_READ_WINDOW)` windows (the windowing + offset accounting live in `mtp/connection`; see that module's DETAILS § "Bounded-window reads"). Between windows nothing is in flight — no held `FileDownload`, no pinned PTP session — so a cancel/pause/drop has nothing to abort or drain (`cancel_and_release` is the trait default no-op). If the stream is dropped WHILE a window read is in flight, mtp-rs's `TransactionScope` flags the pipe and the next op drains it under the operation lock (one ~300 ms self-heal), so an aborted window never desyncs the session. ❌ Don't re-add a `Drop`/cancel here: there's no held `FileDownload`, so mtp-rs's `ReceiveStream` unconsumed-drop panic (the reason a `Drop` cancel was once needed) can't apply.
 
 **Gotcha**: `MtpVolume::get_metadata` is expensive: it lists the entire parent directory
 **Why**: MTP has no single-file stat call. `get_metadata` lists the parent directory and searches for the entry by name. This is used by `notify_mutation` after each self-mutation (create, delete, rename) and is acceptable because those are infrequent, but avoid calling it in hot paths.
