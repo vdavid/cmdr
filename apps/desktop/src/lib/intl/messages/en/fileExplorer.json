@@ -1725,6 +1725,10 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "description": "Short inline text shown in place of a volume''s disk-space figure when its free space couldn''t be fetched. Tight space; keep it short."
   },
+  "fileExplorer.navigation.spaceMtpHint": "On a phone, this also counts apps and system files. Over USB, Cmdr can reach only your shared files, so the folders here add up to less than the used space.",
+  "@fileExplorer.navigation.spaceMtpHint": {
+    "description": "Hover tooltip on a connected phone''s disk-space readout (the free/total figure and its usage bar), shown only for phones reached over USB (MTP). Explains why the visible folders add up to far less than the space reported as used: a phone''s apps and system data count toward usage but can''t be browsed over USB. \"USB\" is the cable connection; \"Cmdr\" is the app name (do not translate)."
+  },
 
   "fileExplorer.navigation.volumesStillUnreachable": "Still unreachable. Try again later",
   "@fileExplorer.navigation.volumesStillUnreachable": {

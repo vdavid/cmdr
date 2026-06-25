@@ -1171,6 +1171,10 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "sourceHash": "ca18449"
   },
+  "fileExplorer.navigation.spaceMtpHint": "En un teléfono, esto también incluye apps y archivos del sistema. Por USB, Cmdr solo puede acceder a tus archivos compartidos, así que las carpetas que ves aquí suman menos que el espacio usado.",
+  "@fileExplorer.navigation.spaceMtpHint": {
+    "sourceHash": "43ec861"
+  },
   "fileExplorer.navigation.volumesStillUnreachable": "Sigue sin poder accederse. Inténtalo de nuevo más tarde",
   "@fileExplorer.navigation.volumesStillUnreachable": {
     "sourceHash": "e4661d2"

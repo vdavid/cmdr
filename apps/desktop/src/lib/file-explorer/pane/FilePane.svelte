@@ -303,6 +303,14 @@
     const isSearchResultsView = $derived(caps.kind === 'search-results')
 
     /**
+     * The phone-storage caveat for the disk-space readout, only on MTP volumes
+     * (keyed on `caps.kind`, not a volume-id string, per A6). Over USB a phone
+     * exposes only its shared storage, so the browsable folders add up to far
+     * less than the space reported as used; this explains the gap on hover.
+     */
+    const mtpSpaceHint = $derived(caps.kind === 'mtp' ? tString('fileExplorer.navigation.spaceMtpHint') : undefined)
+
+    /**
      * Snapshot id encoded in `currentPath` for the search-results pane (`search-results://<id>`),
      * or `null` for any other pane / unparseable path. Drives the breadcrumb label, the
      * row-count for keyboard cursor clamping, and the view's snapshot lookup.
@@ -2929,12 +2937,13 @@
             stats={listingStats}
             selectedCount={selection.selectedIndices.size}
             {volumeSpace}
+            {mtpSpaceHint}
         />
         <!--suppress HtmlWrongAttributeValue -- We know this is not a valid ARIA role, it's fine -->
         <div
             class="disk-usage-bar-wrapper"
             use:tooltip={volumeSpace
-                ? { text: formatBarTooltip(volumeSpace, (b) => formatFileSizeWithFormat(b, getFileSizeFormat())) }
+                ? { text: formatBarTooltip(volumeSpace, (b) => formatFileSizeWithFormat(b, getFileSizeFormat()), mtpSpaceHint) }
                 : ''}
         >
             <div

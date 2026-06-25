@@ -1177,6 +1177,10 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "sourceHash": "ca18449"
   },
+  "fileExplorer.navigation.spaceMtpHint": "Op een telefoon tellen hier ook apps en systeembestanden mee. Via USB kan Cmdr alleen bij je gedeelde bestanden, dus de mappen hier komen samen op minder uit dan de gebruikte ruimte.",
+  "@fileExplorer.navigation.spaceMtpHint": {
+    "sourceHash": "43ec861"
+  },
   "fileExplorer.navigation.volumesStillUnreachable": "Nog steeds onbereikbaar. Probeer het later opnieuw",
   "@fileExplorer.navigation.volumesStillUnreachable": {
     "sourceHash": "e4661d2"

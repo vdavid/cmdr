@@ -41,8 +41,10 @@ lives in `FilePane.svelte` as a `Set<number>`).
   briefly after a theme/accent change clears the cache) and swaps seamlessly to the live accent-tinted OS icon once
   `get_icons` populates the cache. The component subscribes to `$iconCacheVersion` to re-render then.
 
-## Symlink and stale-size hints (`SelectionInfo`)
+## Status-bar hints (`SelectionInfo`)
 
+- **Phone-storage hint (MTP)** tooltips the free-space readout on `caps.kind === 'mtp'` volumes (`mtpSpaceHint` from
+  `FilePane`), explaining the folders-vs-used-space gap. See [DETAILS.md](DETAILS.md).
 - **Stale (hourglass) indicator** appears when directory sizes may be incomplete: in `selection-summary` mode while
   `isScanning()` and dirs are selected, and in `file-info` mode via the shared `getDirSizeDisplayState(...)` (the same
   decider FullList uses, so Brief's status bar matches Full's size column). File sizes come from metadata and are always

@@ -172,4 +172,23 @@ describe('formatBarTooltip', () => {
     const customFormat = (bytes: number): string => `${String(Math.round(bytes / 1073741824))} GB`
     expect(formatBarTooltip(space, customFormat)).toBe('1 GB of 1 GB free (50%)')
   })
+
+  it('appends the extra hint after the sizes when space is OK', () => {
+    const space = createSpace(1000, 400) // 60% used
+    expect(formatBarTooltip(space, mockFormatSize, 'Phones hide app data.')).toBe(
+      '400 B of 1000 B free (40%). Phones hide app data.',
+    )
+  })
+
+  it('appends the extra hint after a low-space warning', () => {
+    const space = createSpace(1000, 100) // 90% used → yellow
+    expect(formatBarTooltip(space, mockFormatSize, 'Phones hide app data.')).toBe(
+      '100 B of 1000 B free (10%). This bar is yellow to indicate that the volume is somewhat low on space. Phones hide app data.',
+    )
+  })
+
+  it('omits the hint when none is provided', () => {
+    const space = createSpace(1000, 400)
+    expect(formatBarTooltip(space, mockFormatSize, undefined)).toBe('400 B of 1000 B free (40%)')
+  })
 })

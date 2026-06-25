@@ -824,6 +824,7 @@ export type MessageKey =
   | 'fileExplorer.navigation.reorderFavoritesFailed'
   | 'fileExplorer.navigation.searchResultsVolume'
   | 'fileExplorer.navigation.spaceFetchFailed'
+  | 'fileExplorer.navigation.spaceMtpHint'
   | 'fileExplorer.navigation.spaceRetrying'
   | 'fileExplorer.navigation.spaceRetryingAuto'
   | 'fileExplorer.navigation.spaceRetryingText'

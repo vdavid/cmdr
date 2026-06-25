@@ -54,6 +54,20 @@ Other layout: filename truncation uses `useShortenMiddle` with `preferBreakAt: '
 `measureDateColumnWidth(formatDateTime)` to stay in sync with FullList; `formatDateTime` comes from
 `reactive-settings.svelte`.
 
+## Phone-storage hint (MTP)
+
+On a phone reached over USB (MTP), the disk-space readout reports the whole device userdata partition, but Cmdr can only
+browse the shared-storage subtree; apps and system data make up the rest and aren't reachable over MTP. So the visible
+folders add up to far less than the space reported as used, which reads as a Cmdr bug. A hover hint closes that gap.
+
+- The copy lives in `fileExplorer.navigation.spaceMtpHint`. `FilePane` resolves it to the `mtpSpaceHint` prop only when
+  `caps.kind === 'mtp'` (the A6-correct discriminant, not a volume-id string); it's `undefined` for every other kind.
+- Both surfaces that show the figure carry it: `SelectionInfo` tooltips the visible free-space text (the number users
+  read), and `FilePane` passes the same string as the third arg of `formatBarTooltip` for the disk-usage bar, appended
+  after the size/level sentences. One catalog key, so the two never drift.
+- It rides on `use:tooltip`, so it's hover-only: a touch/keyboard user reading the footer text never sees it. Making the
+  footer text itself focusable is the honest a11y fix if that matters later.
+
 ## `FileIcon.svelte`
 
 Props: `file: FileEntry`, `syncIcon?: string` (URL for sync overlay badge).

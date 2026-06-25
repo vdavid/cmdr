@@ -1171,6 +1171,10 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "sourceHash": "ca18449"
   },
+  "fileExplorer.navigation.spaceMtpHint": "På en telefon räknas även appar och systemfiler med. Över USB når Cmdr bara dina delade filer, så mapparna här blir tillsammans mindre än det använda utrymmet.",
+  "@fileExplorer.navigation.spaceMtpHint": {
+    "sourceHash": "43ec861"
+  },
   "fileExplorer.navigation.volumesStillUnreachable": "Kan fortfarande inte nås. Försök igen senare",
   "@fileExplorer.navigation.volumesStillUnreachable": {
     "sourceHash": "e4661d2"

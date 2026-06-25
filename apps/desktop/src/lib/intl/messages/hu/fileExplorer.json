@@ -1169,6 +1169,10 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "sourceHash": "ca18449"
   },
+  "fileExplorer.navigation.spaceMtpHint": "Telefonon ez az appokat és a rendszerfájlokat is beleszámolja. USB-n keresztül a Cmdr csak a közös fájljaidhoz fér hozzá, ezért az itteni mappák kevesebbet adnak ki, mint a használt hely.",
+  "@fileExplorer.navigation.spaceMtpHint": {
+    "sourceHash": "43ec861"
+  },
   "fileExplorer.navigation.volumesStillUnreachable": "Továbbra sem elérhető. Próbáld újra később",
   "@fileExplorer.navigation.volumesStillUnreachable": {
     "sourceHash": "e4661d2"

@@ -1168,6 +1168,10 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "sourceHash": "ca18449"
   },
+  "fileExplorer.navigation.spaceMtpHint": "在手机上，这还包含 App 和系统文件。通过 USB，Cmdr 只能访问你的共享文件，因此这里的文件夹加起来会小于已用空间。",
+  "@fileExplorer.navigation.spaceMtpHint": {
+    "sourceHash": "43ec861"
+  },
   "fileExplorer.navigation.volumesStillUnreachable": "仍然无法访问。请稍后再试",
   "@fileExplorer.navigation.volumesStillUnreachable": {
     "sourceHash": "e4661d2"

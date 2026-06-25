@@ -1169,6 +1169,10 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "sourceHash": "ca18449"
   },
+  "fileExplorer.navigation.spaceMtpHint": "Trên điện thoại, con số này còn tính cả ứng dụng và tệp hệ thống. Qua USB, Cmdr chỉ truy cập được các tệp được chia sẻ của bạn, nên tổng các thư mục ở đây ít hơn dung lượng đã dùng.",
+  "@fileExplorer.navigation.spaceMtpHint": {
+    "sourceHash": "43ec861"
+  },
   "fileExplorer.navigation.volumesStillUnreachable": "Vẫn không truy cập được. Hãy thử lại sau",
   "@fileExplorer.navigation.volumesStillUnreachable": {
     "sourceHash": "e4661d2"

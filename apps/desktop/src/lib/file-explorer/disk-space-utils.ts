@@ -36,16 +36,24 @@ export function formatDiskSpaceShort(space: VolumeSpaceInfo, formatSize: FormatS
   return `${freeText} free of ${totalText}`
 }
 
-/** Formats the usage bar tooltip: sizes, percentage, and a contextual warning when space is low. */
-export function formatBarTooltip(space: VolumeSpaceInfo, formatSize: FormatSize): string {
+/**
+ * Formats the usage bar tooltip: sizes, percentage, a contextual warning when
+ * space is low, and an optional trailing hint. `mtpHint` carries the
+ * phone-storage explanation (resolved from the message catalog by the caller)
+ * for MTP volumes, where the browsable folders add up to less than the used
+ * space because apps and system data aren't reachable over USB.
+ */
+export function formatBarTooltip(space: VolumeSpaceInfo, formatSize: FormatSize, mtpHint?: string): string {
   const freeText = formatSize(space.availableBytes)
   const totalText = formatSize(space.totalBytes)
   const usedPercent = getUsedPercent(space)
   const freePercent = 100 - usedPercent
   const level = getDiskUsageLevel(usedPercent)
+  const sentences: string[] = []
+  if (level.label === 'Critical') sentences.push('This bar is red to indicate that the volume is low on space.')
+  else if (level.label === 'Warning')
+    sentences.push('This bar is yellow to indicate that the volume is somewhat low on space.')
+  if (mtpHint) sentences.push(mtpHint)
   const base = `${freeText} of ${totalText} free (${String(freePercent)}%)`
-  if (level.label === 'Critical') return `${base}. This bar is red to indicate that the volume is low on space.`
-  if (level.label === 'Warning')
-    return `${base}. This bar is yellow to indicate that the volume is somewhat low on space.`
-  return base
+  return sentences.length > 0 ? `${base}. ${sentences.join(' ')}` : base
 }

@@ -1177,6 +1177,10 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "sourceHash": "ca18449"
   },
+  "fileExplorer.navigation.spaceMtpHint": "Auf einem Smartphone zählen hier auch Apps und Systemdateien mit. Über USB erreicht Cmdr nur deine freigegebenen Dateien, daher ergeben die Ordner hier zusammen weniger als der belegte Speicherplatz.",
+  "@fileExplorer.navigation.spaceMtpHint": {
+    "sourceHash": "43ec861"
+  },
   "fileExplorer.navigation.volumesStillUnreachable": "Weiterhin nicht erreichbar. Versuche es später erneut",
   "@fileExplorer.navigation.volumesStillUnreachable": {
     "sourceHash": "e4661d2"

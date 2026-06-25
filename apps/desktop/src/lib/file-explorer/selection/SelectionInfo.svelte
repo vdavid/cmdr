@@ -57,9 +57,15 @@
         selectedCount: number
         /** Disk space info for current volume (null when unavailable) */
         volumeSpace?: VolumeSpaceInfo | null
+        /**
+         * Phone-storage caveat for the disk-space readout, set only on MTP
+         * volumes. When present, it tooltips the free/total text to explain why
+         * the browsable folders add up to less than the used space.
+         */
+        mtpSpaceHint?: string
     }
 
-    const { viewMode, entry, currentDirModifiedAt, stats, selectedCount, volumeSpace }: Props = $props()
+    const { viewMode, entry, currentDirModifiedAt, stats, selectedCount, volumeSpace, mtpSpaceHint }: Props = $props()
 
     // ========================================================================
     // Display mode determination
@@ -243,7 +249,7 @@
     {#if displayMode === 'empty'}
         <span class="summary-text">{tString('fileExplorer.selectionInfo.nothingHere')}</span>
         {#if volumeSpace}
-            <span class="disk-space-text">{diskSpaceStatusText(volumeSpace)}</span>
+            <span class="disk-space-text" use:tooltip={mtpSpaceHint ?? ''}>{diskSpaceStatusText(volumeSpace)}</span>
         {/if}
     {:else if displayMode === 'file-info' && entry}
         <!-- Brief mode without selection: show file info -->
@@ -297,13 +303,13 @@
             {#if datePlaceholder !== null}{datePlaceholder}{:else}<DateLabel modifiedAt={dateTimestamp} />{/if}
         </span>
         {#if volumeSpace}
-            <span class="disk-space-text">{diskSpaceStatusText(volumeSpace)}</span>
+            <span class="disk-space-text" use:tooltip={mtpSpaceHint ?? ''}>{diskSpaceStatusText(volumeSpace)}</span>
         {/if}
     {:else if displayMode === 'no-selection'}
         <!-- Full mode without selection: show totals -->
         <span class="summary-text">{noSelectionText}</span>
         {#if volumeSpace}
-            <span class="disk-space-text">{diskSpaceStatusText(volumeSpace)}</span>
+            <span class="disk-space-text" use:tooltip={mtpSpaceHint ?? ''}>{diskSpaceStatusText(volumeSpace)}</span>
         {/if}
     {:else if displayMode === 'selection-summary' && stats}
         <!-- Selection summary -->
