@@ -378,8 +378,8 @@ impl IndexManager {
         // (stale) throughout and a mid-rescan disconnect leaves it intact. A first
         // scan (empty DB) truncates and bulk-builds (faster on empty). The
         // predicate is "the entries table already has data" — which is true for
-        // both a prior COMPLETED index and a persisted PARTIAL (the M2 disconnect
-        // case), so a persisted partial now survives relaunch shown stale instead
+        // both a prior COMPLETED index and a persisted PARTIAL (from a prior
+        // mid-scan disconnect), so a persisted partial survives relaunch shown stale instead
         // of being truncated. See `indexing/DETAILS.md` § "Non-destructive rescan".
         let reconcile = IndexStore::get_entry_count(self.store.read_conn())
             .map(|n| n > 0)
