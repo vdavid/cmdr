@@ -27,31 +27,30 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
   where `index-scan-started` fires between the query and listener registration and the UI sticks on "not scanning".
   Don't reorder. Errors from `get_index_status` are swallowed (indexing may be disabled or not yet initialized).
 - **`get_index_status` backfill recovers tier inputs after a mid-scan reload**, but `scanStartedAt` can't cross IPC, so
-  it stays 0 after a reload: the percent still works (elapsed-free), but the tier-1 ETA seed and elapsed extrapolation
-  degrade until the sliding window fills. Accepted graceful degradation. The backfill's tier-1 calibration
-  (`priorTotalEntries`, `priorScanDurationMs`) reads the nested `indexStatus` meta (`totalEntries` / `scanDurationMs`,
-  which are the PREVIOUS completed scan's totals, not live counters). Meta values are TEXT; parse via `parseMetaNumber`.
+  it stays 0: the percent still works (elapsed-free), while the tier-1 ETA seed and elapsed extrapolation degrade until
+  the sliding window fills (accepted). Tier-1 calibration (`priorTotalEntries`, `priorScanDurationMs`) reads the nested
+  `indexStatus` meta (`totalEntries` / `scanDurationMs` — the PREVIOUS completed scan's totals, not live; TEXT, parse via
+  `parseMetaNumber`).
 - **Scan progress has two tiers** (`computeScanProgress`): tier 1 (`priorTotalEntries` present) is
   `entriesScanned / priorTotalEntries`, clamped to 0.99, apples-to-apples. Tier 2 (`volumeUsedBytes` present) is
   `bytesScanned / volumeUsedBytes`, clamped lower to 0.95 (APFS clones overshoot the statfs denominator) and flagged
   `rough`. Neither → null (counter-only). The ETA unit must match the tier (entries for tier 1, bytes for tier 2), so
   the component's scan window samples the same counter the tier divides by. `formatEta` carries a `Number.isFinite`
   guard so a dropped null gate can't surface "Infinitym left".
-- **The status indicator is one component for all three activity states** (scan/aggregation/replay), since they're one
-  thing in the user's mental model. Message priority: aggregation > scan > replay. Visibility:
-  `isScanning() || isAggregating() || isReplaying()`, shown immediately (no grace delay; a small icon is unobtrusive).
+- **The status indicator is one component for all three activity states** (scan/aggregation/replay). Message priority:
+  aggregation > scan > replay. Visibility: `isScanning() || isAggregating() || isReplaying()`, shown immediately.
 - **The indicator is a focusable, hoverable icon** (`role="img"`, `tabindex="0"`), not `pointer-events: none`: the
-  detail lives in a tooltip reached by hover or focus. The tab stop is indexing-only (renders nothing when idle, so no
-  dead tab stop). Don't use `role="status"` (that's a live region for auto-announced changes, wrong for a focusable
-  hover target); the tooltip carries the live label + ETA via `aria-describedby`.
+  detail lives in a tooltip reached by hover or focus. The tab stop is indexing-only (nothing renders when idle). Don't
+  use `role="status"` (a live region — wrong for a focusable hover target); the tooltip carries the live label + ETA via
+  `aria-describedby`.
 - **`index-dir-updated` callbacks get a batch of paths** (multiple during DB replay, typically one in live FS-watch).
   `DualPaneExplorer` checks each against each pane's current dir with a path-prefix comparison (relies on trailing-slash
   normalization).
 - **The `IndexingStatusIndicator.a11y.test.ts` mock must include every getter the indicator imports**, or the existing
   scanning case crashes on `undefined`.
 - **Directory sizes are HONEST: unknown (`—`) ≠ empty (`0 bytes`) ≠ lower-bound (`≥`).** `getDirSizeDisplayState`
-  (`views/full-list-utils.ts`) is the single source of truth; `FullList`, `SelectionInfo`, and `measure-column-widths`
-  consume it in lockstep. Rendering + sort: [DETAILS.md](DETAILS.md) § Honest size rendering.
+  (`views/full-list-utils.ts`) is the single source of truth, consumed in lockstep by `FullList` / `SelectionInfo` /
+  `measure-column-widths`. Rendering + sort: [DETAILS.md](DETAILS.md).
 
 Full public API, the eight-event table, tooltip content per state, ETA blending, dependencies, and tests:
 [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
