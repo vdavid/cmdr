@@ -156,9 +156,10 @@ pub(crate) async fn scan_volume_via_trait(
     // scanner's volume-root setup, so all downstream id/parent logic is shared.
     let db_path = writer.db_path();
     // The scan reads `current_epoch` once at start (seeding meta to "1" if
-    // absent) and stamps every successfully-listed dir with it, so a first scan
-    // stamps epoch 1. The seed write commits on this same connection before we
-    // read it back. (Bumping the epoch at scan start is a later milestone's job.)
+    // absent) and stamps every successfully-listed dir with it. The caller
+    // (`start_volume_scan`) has already bumped + flushed `current_epoch` before
+    // spawning this walk, so the seed here is a no-op fallback and we read back
+    // the bumped value on this same connection.
     let (mut scan_ctx, epoch) = {
         let conn = IndexStore::open_write_connection(&db_path).map_err(|e| VolumeScanError::Context(e.to_string()))?;
         let epoch = IndexStore::seed_current_epoch(&conn).map_err(|e| VolumeScanError::Context(e.to_string()))?;
@@ -214,9 +215,10 @@ pub(crate) async fn scan_volume_via_trait(
             Err(VolumeScanError::Volume(e)) if is_typed_disconnect(&e) => {
                 log::warn!(
                     "volume_scanner: device disconnected listing {}: {e}; \
-                     keeping honest partial ({total_dirs} dirs listed, {} queued unscanned)",
+                     keeping honest partial ({} listed, {} queued unscanned)",
                     dir_path.display(),
-                    queue.len(),
+                    crate::pluralize::pluralize(total_dirs, "dir"),
+                    crate::pluralize::pluralize(queue.len() as u64, "dir"),
                 );
                 finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
                 return Err(VolumeScanError::Volume(e));
@@ -244,8 +246,9 @@ pub(crate) async fn scan_volume_via_trait(
                     log::warn!(
                         "volume_scanner: {consecutive_failures} consecutive listing failures \
                          (looks like a disconnect); aborting walk and keeping honest partial \
-                         ({total_dirs} dirs listed, {} queued unscanned)",
-                        queue.len(),
+                         ({} listed, {} queued unscanned)",
+                        crate::pluralize::pluralize(total_dirs, "dir"),
+                        crate::pluralize::pluralize(queue.len() as u64, "dir"),
                     );
                     finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
                     return Err(VolumeScanError::ConsecutiveFailures {

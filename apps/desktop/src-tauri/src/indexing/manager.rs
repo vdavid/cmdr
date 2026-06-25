@@ -515,9 +515,10 @@ impl IndexManager {
                 // was scanned: scanned subtrees read exact-but-stale, unscanned
                 // ones `—`/`≥`. So DON'T discard — keep the instance + DB, leave
                 // `scan_completed_at` UNwritten (it heals to a rescan on relaunch,
-                // the accepted session-scoped limitation until the reconcile rescan lands), bump `current_epoch`
-                // (the continuity break that makes the kept rows stale), and mark
-                // the volume Stale. The buffered live changes are meaningless now
+                // the accepted session-scoped limitation until the reconcile rescan
+                // lands), bump `current_epoch` (the continuity break that makes the
+                // kept rows stale), and mark the volume Stale. The buffered live
+                // changes are meaningless now
                 // (we can't trust the partial tree), so drop them.
                 Err(ref e) if e.is_terminal_disconnect() => {
                     log::warn!(

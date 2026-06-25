@@ -29,8 +29,8 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
 - **`get_index_status` backfill recovers tier inputs after a mid-scan reload**, but `scanStartedAt` can't cross IPC, so
   it stays 0: the percent still works (elapsed-free), while the tier-1 ETA seed and elapsed extrapolation degrade until
   the sliding window fills (accepted). Tier-1 calibration (`priorTotalEntries`, `priorScanDurationMs`) reads the nested
-  `indexStatus` meta (`totalEntries` / `scanDurationMs` — the PREVIOUS completed scan's totals, not live; TEXT, parse via
-  `parseMetaNumber`).
+  `indexStatus` meta (`totalEntries` / `scanDurationMs` — the PREVIOUS completed scan's totals, not live; TEXT, parse
+  via `parseMetaNumber`).
 - **Scan progress has two tiers** (`computeScanProgress`): tier 1 (`priorTotalEntries` present) is
   `entriesScanned / priorTotalEntries`, clamped to 0.99, apples-to-apples. Tier 2 (`volumeUsedBytes` present) is
   `bytesScanned / volumeUsedBytes`, clamped lower to 0.95 (APFS clones overshoot the statfs denominator) and flagged

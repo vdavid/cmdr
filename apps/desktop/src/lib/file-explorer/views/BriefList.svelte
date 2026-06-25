@@ -771,6 +771,8 @@
             indexing,
             formatFileSize,
             formatNumber,
+            file.recursiveSizeComplete,
+            file.recursiveSizeStale,
         )
         if (!base) return undefined
 

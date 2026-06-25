@@ -42,12 +42,13 @@ Four `$derived displayMode` values, each with its condition:
 - `file-info`: Brief mode, no selection: name, size triads, date.
 
 Stale-size hourglass detail: in `file-info` mode the shared
-`getDirSizeDisplayState(displaySize, indexing, recursiveSizePending)` drives it, with
-`indexing = isScanning() || isAggregating()`. An unindexed dir shows `DIR`; while indexing it adds a "Size not ready
-yet" hourglass (tooltip "Sizes appear as the scan progresses"). The per-folder `recursiveSizePending` flag lives only on
-`DirStats` (not `get_file_range`), so `FilePane.fetchEntryUnderCursor` overlays it onto the cursor entry via
-`updateIndexSizesInPlace([entry])` (skipping `..`, whose entry path is the parent folder) and re-runs on
-`index-dir-updated` so the hourglass tracks a storm live.
+`getDirSizeDisplayState(recursiveSize, complete, stale, updating)` drives it, where `complete`/`stale` come from the
+entry's `recursiveSizeComplete`/`recursiveSizeStale` and
+`updating = isScanning() || isAggregating() || recursiveSizePending`. An unindexed or never-listed dir shows the unknown
+state; a partially-scanned one is a lower bound (`≥`), and the `updating` flag adds the "Size not ready yet" hourglass
+on top. The per-folder `recursiveSizePending` flag lives only on `DirStats` (not `get_file_range`), so
+`FilePane.fetchEntryUnderCursor` overlays it onto the cursor entry via `updateIndexSizesInPlace([entry])` (skipping
+`..`, whose entry path is the parent folder) and re-runs on `index-dir-updated` so the hourglass tracks a storm live.
 
 Other layout: filename truncation uses `useShortenMiddle` with `preferBreakAt: '.'`. Date column width is computed via
 `measureDateColumnWidth(formatDateTime)` to stay in sync with FullList; `formatDateTime` comes from
