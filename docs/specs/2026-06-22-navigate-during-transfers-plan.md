@@ -2,17 +2,18 @@
 
 Created 2026-06-22. Status: planned.
 
-Make the app fully responsive while an MTP→local transfer is running: navigating folders, listing, and metadata reads
-on the phone work *during* an active copy — not just while it's manually paused. The transfer briefly, automatically
-yields the device to the foreground request, then resumes from where it stopped.
+Make the app fully responsive while an MTP→local transfer is running: navigating folders, listing, and metadata reads on
+the phone work _during_ an active copy — not just while it's manually paused. The transfer briefly, automatically yields
+the device to the foreground request, then resumes from where it stopped.
 
 ## Why
 
 Today a long MTP copy makes the phone feel locked: the device has one PTP session, and an in-flight `GetObject`/
 `GetPartialObject64` download owns it, so a foreground listing can't get through until the current file finishes. We
 already shipped two of the three pieces this needs:
+
 - **Manual pause releases the session** (`CheckpointStream`, `pause_releases_read_stream()`): on pause it
-  `cancel_and_release`s the download (freeing the session) and reopens at the byte offset on resume. So the user *can*
+  `cancel_and_release`s the download (freeing the session) and reopens at the byte offset on resume. So the user _can_
   browse — but only by manually pausing first.
 - **A foreground/background priority arbiter** already exists per device (`mtp/connection/scheduler.rs`,
   `DevicePriorityGate`): foreground ops (nav/list/delete/rename/move/upload/visible-pane resolve) take a
@@ -25,14 +26,14 @@ protocol work, no new mtp-rs API.
 
 ## The core reframe
 
-A transfer is currently *neither* foreground nor a yielding background user during streaming. Its
+A transfer is currently _neither_ foreground nor a yielding background user during streaming. Its
 `open_download_stream_at_offset` takes a `ForegroundGuard` only for **stream setup** (`mtp/connection/file_ops.rs:443`),
 which drops before the chunk loop. So while streaming, the transfer holds no guard and consults the gate nowhere — it
 just competes for the per-op device lock chunk by chunk, and a foreground listing can't preempt the open download data
 phase.
 
 The fix: **the transfer's per-chunk checkpoint becomes a `background_yield_point`** — exactly what the index scan does
-at its unit boundary, but because a transfer holds an *open download transaction* (not cheap per-unit ops), yielding
+at its unit boundary, but because a transfer holds an _open download transaction_ (not cheap per-unit ops), yielding
 means **release the session** (`cancel_and_release`), wait for foreground to drain, then **reopen at the offset**. The
 release/reopen machinery already exists in `CheckpointStream`; this adds a second trigger for it (foreground-pending)
 alongside the existing one (user pause).
@@ -48,17 +49,19 @@ an MTP device with foreground work pending, release the session, `background_yie
 the pause flag.
 
 So the checkpoint's logic becomes, in order:
+
 - Cancelled? → let the backend's `on_progress` `is_cancelled` own cancel+cleanup (unchanged).
 - User-paused? → release-and-park until resume/cancel (existing behavior, unchanged).
-- Foreground pending on this device (and we've debounced, see below)? → `cancel_and_release`, `await
-  background_yield_point(device_id)`, reopen at `bytes_yielded`. The op stays **Running** — this is a transient device
-  yield, not a user pause.
+- Foreground pending on this device (and we've debounced, see below)? → `cancel_and_release`,
+  `await background_yield_point(device_id)`, reopen at `bytes_yielded`. The op stays **Running** — this is a transient
+  device yield, not a user pause.
 - Else → `yield_now()` and continue (the runtime-fairness yield we already have).
 
 ### Reaching the gate from the stream
 
 `CheckpointStream` needs the source device's `DevicePriorityGate` (or a cheap `foreground_pending(device_id) -> bool`
 probe + `background_yield_point(device_id)` future). Options, pick at implementation time:
+
 - Add an optional `fn device_priority_probe(&self) -> Option<ForegroundProbe>` to the `Volume` trait (default `None`;
   `MtpVolume` returns a handle wrapping its `MtpConnectionManager` + `device_id`). Keeps `CheckpointStream` volume-
   agnostic and testable with a fake probe. **Preferred.**
@@ -66,21 +69,22 @@ probe + `background_yield_point(device_id)` future). Options, pick at implementa
   path for reopen), since release-on-pause MTP sources are exactly the ones that have a gate.
 
 Either way the probe is two operations: "is foreground pending?" (sync, cheap — an atomic load) and "await until
-foreground drains" (`background_yield_point`). Both already exist on `MtpConnectionManager`
-(`mod.rs:577`); this exposes them through the volume/stream boundary.
+foreground drains" (`background_yield_point`). Both already exist on `MtpConnectionManager` (`mod.rs:577`); this exposes
+them through the volume/stream boundary.
 
 ### Debounce / hysteresis (load-bearing)
 
 The index scan yields for free (it just doesn't issue the next cheap op). A transfer's yield costs a real session
 teardown + `GetPartialObject64` re-setup on resume, so naive yielding thrashes under rapid navigation (each keystroke in
 a folder tree = a release+reopen). Rules:
+
 - **Suspend promptly** on the first foreground demand observed at a chunk boundary (responsiveness is the whole point).
 - **Resume only after foreground has been idle for a debounce window** (start ~300–500 ms; tune on device). The
   `background_yield_point` already waits until `foreground_pending == 0`; add a short "stay parked until quiet for N ms"
   so a burst of listings is served as one suspension, not N.
 - Consider a **minimum-progress floor**: after a resume, transfer at least one chunk (or ~M ms) before honoring the next
   yield, so a continuous stream of foreground ops can't starve the transfer to zero throughput. (Foreground priority is
-  right, but the transfer must still make *some* progress — the scan has the same tension; mirror its policy.)
+  right, but the transfer must still make _some_ progress — the scan has the same tension; mirror its policy.)
 
 ### Status / UX
 
@@ -94,7 +98,7 @@ a folder tree = a release+reopen). Rules:
 ### What stays unchanged (and must)
 
 - **Byte exactness**: identical to release-on-pause — `bytes_yielded` == destination temp length, reopen appends
-  `[bytes_yielded, size)`, safe-replace temp+rename untouched. The auto-yield uses the *same* release/reopen code, so it
+  `[bytes_yielded, size)`, safe-replace temp+rename untouched. The auto-yield uses the _same_ release/reopen code, so it
   inherits the same guarantees (and tests).
 - **Cancellation** wins over an auto-yield exactly as it wins over pause (cancel observed → reopen, let the next chunk
   flow to `on_progress`, backend cleans up).

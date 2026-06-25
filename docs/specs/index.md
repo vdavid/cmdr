@@ -63,9 +63,9 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
       types, via a central Operation Manager wrapping all five spawn paths; Pause + Queue (F2) on progress dialogs and a
       standalone macOS queue window (multi-select, cancel selected, pause all); cancel-only (no rollback) for now
 - [ ] 2026-06-22 navigate-during-transfers-plan.md - Make the phone responsive DURING an MTP transfer: the per-chunk
-      `CheckpointStream` checkpoint auto-yields the PTP session to foreground nav/list ops (release + `background_yield_point`
-      + reopen at offset), with debounce + a min-progress floor; reuses the release-on-pause primitive and the device
-      priority gate (op stays Running, not Paused)
+      `CheckpointStream` checkpoint auto-yields the PTP session to foreground nav/list ops (release +
+      `background_yield_point` + reopen at offset), with debounce + a min-progress floor; reuses the release-on-pause
+      primitive and the device priority gate (op stays Running, not Paused)
 
 ## Later
 
