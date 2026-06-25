@@ -272,6 +272,9 @@ jobs:
       - name: Check i18n plural-category coverage
         run: ./scripts/check/check --check desktop-i18n-plural --ci
 
+      - name: Check i18n translation coverage
+        run: ./scripts/check/check --check desktop-i18n-coverage --ci
+
       - name: Run Knip
         run: ./scripts/check/check --check desktop-svelte-knip --ci
 

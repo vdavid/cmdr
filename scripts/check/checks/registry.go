@@ -318,11 +318,11 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "i18n-coverage",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
-		// Warn-only metric (keys missing from a locale fall back silently to English;
-		// values byte-identical to English are likely untranslated). Honest-coverage
-		// signal, not a build breaker, like desktop-i18n-stale, a CI step would be
-		// noise since it can never fail.
-		NotInCI:           "warn-only metric; it can never fail, so a CI step would be noise",
+		// Error-level gate: a key missing from a locale (silent English fallback) or
+		// byte-identical to English without a `@key.sameAsSourceJustification` is an
+		// untranslated string that would ship a half-translated locale. A translation
+		// feature is exactly the kind of headline a warn-only signal lets slip past a
+		// release, so coverage gaps block the build and run in CI.
 		FreestyleIncompat: false,
 		DependsOn:         nil,
 		IsFast:            true,
