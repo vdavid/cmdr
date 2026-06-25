@@ -40,7 +40,7 @@ Writer + connection + schema discipline (one writer thread per DB, bounded `sync
 - **Mid-scan partial aggregation has four easy-to-break rules** that otherwise ship wrong sizes — DETAILS § "Key
   decisions".
 - **The index is a disposable cache**: schema mismatch / corruption drops + rebuilds; no migrations or user-facing DB
-  errors. An interrupted scan heals to a rescan — gate only `scan_completed_at` writes.
+  errors. Gate only `scan_completed_at` writes (absence ⇒ heal to a rescan).
 - **Defer `root` auto-start until FDA is decided** (`should_auto_start_indexing`): a scan from `/` stacks TCC popups over
   the FDA modal. FDA gates ONLY `root` — don't route SMB/MTP through it (not TCC-protected).
 
@@ -49,10 +49,11 @@ SMB/MTP indexing (dedicated DETAILS sections — read before touching this area)
 - **Gated on a `direct` (smb2) connection; an `os_mount` upgrades first** (`start_indexing_for_smb` refuses with a TYPED
   `SmbIndexGateReason`, never a substring); MTP has no smb2 gate. Scans use `volume_scanner`, not jwalk, with three
   round-trip disciplines (cancel, timeout, `autoreleasepool`).
-- **Freshness has ONE transition table (`freshness.rs`); don't branch elsewhere.** No journal, so a persisted index
-  loads **Stale** on launch (correct, not a bug); an interrupted scan resets to gray.
+- **Freshness has ONE transition table (`freshness.rs`); don't branch elsewhere.** No journal ⇒ a persisted index
+  loads **Stale** on launch (not a bug); mid-scan disconnect keeps an honest partial + Stale, only user-cancel resets
+  to gray.
 - **Live watch → index runs with NO pane open** (`apply_smb_change` hooks `notify_directory_changed` before the pane
-  early-return; don't remove the hook). Three easy-to-break rules.
+  early-return; don't remove the hook).
 - **Deletes resolve against the INDEX, not a live stat**: delete only a known entry; an unknown name/handle is a no-op
   (a recreate heals via the add). Local FSEvents `item_removed` stat-verifies.
 - **Threads + resources.** Memory watchdog: one GLOBAL 16 GB budget (`stop_all_indexing`), not per-volume; start is

@@ -370,6 +370,13 @@ impl IndexManager {
         let _ = self
             .writer
             .send(WriteMessage::DeleteMeta("scan_completed_at".to_string()));
+        // Bump `current_epoch` at the scan-start funnel (a continuity break:
+        // reconnect/journal-gap/stale/overflow/force rescans all funnel here, so
+        // bumping once covers them without enumerating the trigger). The first-ever
+        // scan also bumps (1→2 with nothing yet at epoch 1) — benign. The flush
+        // below commits it BEFORE the scan thread reads `current_epoch` on its own
+        // connection (else it would stamp the stale epoch).
+        let _ = self.writer.send(WriteMessage::BumpCurrentEpoch);
         let _ = self.writer.send(WriteMessage::TruncateData);
         if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
             log::warn!("network scan: flush after TruncateData failed: {e}");
@@ -501,11 +508,38 @@ impl IndexManager {
                     }
                     .emit(&app);
                 }
+                // A mid-walk DISCONNECT: keep the honest partial. The scanner
+                // already ran its partial-preserving write sequence (flush +
+                // MarkDirsListed + ComputeAllAggregates) before returning the
+                // typed error, so `dir_stats`/`min_subtree_epoch` exist for what
+                // was scanned: scanned subtrees read exact-but-stale, unscanned
+                // ones `—`/`≥`. So DON'T discard — keep the instance + DB, leave
+                // `scan_completed_at` UNwritten (it heals to a rescan on relaunch,
+                // the accepted M2 session-scoped limitation), bump `current_epoch`
+                // (the continuity break that makes the kept rows stale), and mark
+                // the volume Stale. The buffered live changes are meaningless now
+                // (we can't trust the partial tree), so drop them.
+                Err(ref e) if e.is_terminal_disconnect() => {
+                    log::warn!(
+                        "network scan: disconnected for '{volume_id}' ({e}); keeping honest partial, marking Stale"
+                    );
+                    discard_buffered_changes_for_kind(kind, &volume_id);
+                    // Bump the epoch via the captured `writer` directly, NOT
+                    // `state::bump_current_epoch_for` (which needs the phase to be
+                    // `Running`): this completion task can fire while the volume is
+                    // still `Initializing` for a first scan, before the manager is
+                    // promoted, so the registry lookup would no-op. The scanner
+                    // stamped the partial's listed dirs at the scan-start epoch;
+                    // bumping past it makes those rows read exact-but-stale, the
+                    // honest state for a connection that vanished.
+                    let _ = writer.send(WriteMessage::BumpCurrentEpoch);
+                    super::state::apply_freshness_event(&volume_id, super::freshness::FreshnessEvent::WatcherDied);
+                    DEBUG_STATS.set_phase(ActivityPhase::Idle, "network scan disconnected (honest partial kept)");
+                }
                 other => {
-                    // Cancelled, timed out, or the volume vanished mid-walk: the
-                    // partial index is worthless (D-interrupted). Discard it by
-                    // resetting the volume to gray / not-indexed, and drop any
-                    // changes buffered during the aborted scan (meaningless now).
+                    // User cancel, timeout, or another genuine abort: the partial
+                    // is discardable. Reset the volume to gray / not-indexed and
+                    // drop the changes buffered during the aborted scan.
                     match &other {
                         Ok(_) => log::info!("network scan: cancelled for '{volume_id}', discarding partial"),
                         Err(e) => log::warn!("network scan: failed for '{volume_id}' ({e}), discarding partial"),
@@ -707,6 +741,19 @@ impl IndexManager {
             .send(WriteMessage::DeleteMeta("scan_completed_at".to_string()))
         {
             log::warn!("Failed to send DeleteMeta(scan_completed_at): {e}");
+        }
+
+        // Step 0a': Bump `current_epoch` at the scan-start funnel. Every full
+        // (re)scan funnels through here regardless of trigger (journal-gap, stale,
+        // overflow, force_scan), so bumping once covers them all without
+        // enumerating `RescanReason` (those are FE-toast notifications, not
+        // control-flow points). The first-ever scan bumps 1→2 (benign). The
+        // flush below (Step 0b) commits it BEFORE the scan thread reads
+        // `current_epoch` on its own connection — else the walk stamps the stale
+        // epoch. (Local is journaled, so a Fresh-on-launch load skips this funnel
+        // entirely and doesn't bump; only an actual rescan does.)
+        if let Err(e) = self.writer.send(WriteMessage::BumpCurrentEpoch) {
+            log::warn!("Failed to send BumpCurrentEpoch: {e}");
         }
 
         // Step 0b: Truncate entries + dir_stats so the scan inserts into an empty DB.

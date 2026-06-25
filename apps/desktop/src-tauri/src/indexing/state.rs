@@ -389,6 +389,25 @@ pub(crate) fn apply_freshness_event(volume_id: &str, event: FreshnessEvent) {
     }
 }
 
+/// Bump a volume's `current_epoch` on a continuity break that does NOT rescan
+/// (watcher death, change-notify overflow, MTP disconnect, or the disconnect
+/// completion branch). Routes through the volume's running writer so the bump
+/// honors the single-writer-per-DB invariant. No-op for an unindexed or
+/// not-yet-`Running` volume (a scan-start funnel bumps via its own flushed send,
+/// not this helper).
+///
+/// Fire-and-forget: the bump rides the writer channel in order behind any
+/// in-flight writes, so a subsequent read may briefly see the old epoch. That's
+/// benign — the freshness badge already flips Stale alongside this call, and the
+/// per-dir stale derivation self-corrects once the bump commits.
+pub(crate) fn bump_current_epoch_for(volume_id: &str) {
+    if let Some((writer, _scanning)) = get_writer_and_scanning_for(volume_id)
+        && let Err(e) = writer.send(WriteMessage::BumpCurrentEpoch)
+    {
+        log::warn!("bump_current_epoch_for('{volume_id}'): writer send failed: {e}");
+    }
+}
+
 /// Read a volume's current freshness, if it has a registered instance.
 pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
     INDEX_REGISTRY
@@ -482,6 +501,29 @@ fn start_indexing_for(
         .map(|s| s.scan_completed_at.is_some())
         .unwrap_or(false);
     let initial_freshness = super::freshness::initial_freshness_on_launch(scan_completed, kind.is_journaled());
+
+    // Launch-as-Stale ⇒ bump `current_epoch` at THIS call site (the pure
+    // `initial_freshness_on_launch` has no DB handle and can't bump). A
+    // non-journaled (SMB/MTP) index with a completed prior scan loads Stale —
+    // we weren't watching while off, so its persisted dirs are stale-but-visible;
+    // bumping the epoch makes the read side render them stale (not falsely
+    // current) per the honest-sizes model. A journaled local index loads Fresh
+    // and does NOT bump (continuity self-heals via FSEvents replay). No writer is
+    // running for this volume yet (it spawns inside `resume_or_scan`), so we bump
+    // directly on a short-lived write connection — safe, single-writer not yet
+    // contended. A bump failure is non-fatal: the read side degrades a missing
+    // epoch to "all current", so worst case the launch reads Fresh-looking until
+    // the next continuity break.
+    if initial_freshness == Some(Freshness::Stale) {
+        match IndexStore::open_write_connection(&db_path) {
+            Ok(conn) => {
+                if let Err(e) = IndexStore::bump_current_epoch(&conn) {
+                    log::warn!("start_indexing_for('{volume_id}'): launch epoch bump failed: {e}");
+                }
+            }
+            Err(e) => log::warn!("start_indexing_for('{volume_id}'): launch epoch bump conn failed: {e}"),
+        }
+    }
 
     if try_reserve_initializing_phase(
         volume_id,
@@ -942,6 +984,72 @@ mod tests {
         assert_eq!(get_freshness("never-registered"), None);
 
         INDEX_REGISTRY.lock().unwrap().remove("smb-fresh-test");
+        clear_registry_and_pools();
+    }
+
+    /// The M2 disconnect-vs-cancel completion split, at the registry level (the
+    /// full `start_volume_scan` completion handler needs an `AppHandle`, so it
+    /// stays under integration; this pins the two state actions it dispatches):
+    ///
+    /// - DISCONNECT keeps the instance and marks it Stale (so the honest partial
+    ///   is still served), via `apply_freshness_event(WatcherDied)` — NOT a
+    ///   reset. The instance stays active and routable.
+    /// - USER CANCEL discards via `reset_to_not_indexed`, which removes the
+    ///   instance ⇒ gray.
+    ///
+    /// `bump_current_epoch_for` is a safe no-op on a non-`Running` (here
+    /// `Initializing`) or absent volume — the scan-start funnel bumps via its own
+    /// flushed writer send, and the disconnect branch runs while `Running`.
+    #[test]
+    fn disconnect_keeps_instance_stale_user_cancel_resets_to_gray() {
+        let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        clear_registry_and_pools();
+        INDEX_REGISTRY.lock().unwrap().remove("smb-disco-test");
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("index-smb-disco-test.db");
+        let store = IndexStore::open(&db_path).expect("open store");
+        let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+        let pending = Arc::new(PendingSizes::new());
+
+        // Reserve, then drive to Fresh as if a scan just completed.
+        assert!(try_reserve_initializing_phase("smb-disco-test", store, pool, pending, Some(Freshness::Stale)).is_ok());
+        apply_freshness_event("smb-disco-test", FreshnessEvent::ScanStarted);
+        apply_freshness_event("smb-disco-test", FreshnessEvent::ScanCompleted);
+        assert_eq!(get_freshness("smb-disco-test"), Some(Freshness::Fresh));
+
+        // A non-`Running` / absent volume's epoch bump must not panic.
+        bump_current_epoch_for("smb-disco-test"); // Initializing ⇒ no-op
+        bump_current_epoch_for("never-registered"); // absent ⇒ no-op
+
+        // DISCONNECT branch: keep the instance, mark Stale.
+        apply_freshness_event("smb-disco-test", FreshnessEvent::WatcherDied);
+        assert_eq!(
+            get_freshness("smb-disco-test"),
+            Some(Freshness::Stale),
+            "a disconnect keeps the instance and marks it Stale (honest partial still served)"
+        );
+        assert!(
+            is_active("smb-disco-test"),
+            "the disconnect branch must NOT remove the instance"
+        );
+        assert!(
+            get_read_pool_for("smb-disco-test").is_some(),
+            "the ReadPool stays installed so sizes are still served"
+        );
+
+        // USER CANCEL branch: reset to gray (instance gone).
+        reset_to_not_indexed("smb-disco-test");
+        assert_eq!(
+            get_freshness("smb-disco-test"),
+            None,
+            "user cancel resets to gray (no instance ⇒ no freshness)"
+        );
+        assert!(
+            !is_active("smb-disco-test"),
+            "reset_to_not_indexed removes the instance"
+        );
+
         clear_registry_and_pools();
     }
 

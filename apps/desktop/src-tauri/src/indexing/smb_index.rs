@@ -196,6 +196,9 @@ pub async fn start_indexing_for_smb(app: AppHandle, volume_id: String) -> Result
 /// Deliberately NOT fired on a clean watcher cancel (volume unmount / deliberate
 /// stop): that's a teardown, not a continuity break to surface as Stale.
 pub(crate) fn on_smb_watcher_died(volume_id: &str) {
+    // Continuity broke: bump the epoch so the persisted dirs read stale (the
+    // honest-sizes model), then flip the badge Stale.
+    super::state::bump_current_epoch_for(volume_id);
     super::state::apply_freshness_event(volume_id, super::freshness::FreshnessEvent::WatcherDied);
 }
 
@@ -214,6 +217,9 @@ pub(crate) fn on_smb_watcher_died(volume_id: &str) {
 /// session is fine), so it's a different code path, never conflated with a
 /// disconnect. No-op for an unindexed volume.
 pub(crate) fn on_smb_overflow(volume_id: &str) {
+    // Continuity broke (the index may have drifted): bump the epoch so persisted
+    // dirs read stale, then flip the badge Stale.
+    super::state::bump_current_epoch_for(volume_id);
     super::state::apply_freshness_event(volume_id, super::freshness::FreshnessEvent::OverflowUnrecoverable);
 }
 

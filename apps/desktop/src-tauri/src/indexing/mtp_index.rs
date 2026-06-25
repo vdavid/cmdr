@@ -70,6 +70,9 @@ pub(crate) fn on_mtp_device_disconnected(device_id: &str) {
     // the device-id prefix plus a numeric storage tail (robust to a `:` in a
     // serial device id via `mtp::identity`).
     for volume_id in super::state::registered_mtp_volume_ids_for_device(device_id) {
+        // Continuity broke for this storage: bump the epoch (persisted dirs read
+        // stale per the honest-sizes model), then flip the badge Stale.
+        super::state::bump_current_epoch_for(&volume_id);
         super::state::apply_freshness_event(&volume_id, super::freshness::FreshnessEvent::WatcherDied);
     }
 }

@@ -208,6 +208,16 @@ pub enum WriteMessage {
     /// must not thrash a root-search reload each scan. See the "Honest sizes"
     /// model in `indexing/DETAILS.md`.
     MarkDirsListed { ids: Vec<i64>, epoch: u64 },
+    /// Bump the volume's `current_epoch` by one and persist it (a continuity
+    /// break: reconnect/rescan, watcher death, overflow, disconnect, or a
+    /// launch-loading-Stale). A scan/reconcile only STAMPS `listed_epoch` with
+    /// the value, never bumps. Routed through the writer to honor the
+    /// single-writer-per-DB invariant. Like `UpdateMeta`/`MarkDirsListed`, it
+    /// does NOT bump the writer generation: it touches only `meta`, nothing
+    /// search indexes. At a scan-start funnel, the caller `flush`es after this so
+    /// the bump is committed BEFORE the scan thread reads `current_epoch` on its
+    /// own connection. See the "Honest sizes" epoch model in `indexing/DETAILS.md`.
+    BumpCurrentEpoch,
     /// Request current entry count (for progress reporting).
     #[cfg(test)]
     GetEntryCount(oneshot::Sender<Result<u64, IndexStoreError>>),
@@ -979,6 +989,14 @@ fn process_message(
                 );
             }
         }
+        WriteMessage::BumpCurrentEpoch => {
+            // No MutationTracker::bump(): a meta-only write, nothing search cares
+            // about (same policy as MarkDirsListed/UpdateMeta).
+            match IndexStore::bump_current_epoch(conn) {
+                Ok(epoch) => log::debug!("Index writer: bumped current_epoch to {epoch}"),
+                Err(e) => log::warn!("Index writer: bump_current_epoch failed: {e}"),
+            }
+        }
         #[cfg(test)]
         WriteMessage::GetEntryCount(reply) => {
             let result = IndexStore::get_entry_count(conn);
@@ -1173,6 +1191,93 @@ pub(super) mod tests {
             Some(4),
             "the mark was actually applied",
         );
+        writer.shutdown();
+    }
+
+    /// `BumpCurrentEpoch` persists the next epoch and, like `MarkDirsListed`,
+    /// must NOT bump the global search generation (a meta-only write touches
+    /// nothing search indexes). Round-trips: a fresh DB reads epoch 1, one bump
+    /// makes it 2.
+    #[test]
+    fn bump_current_epoch_persists_and_does_not_bump_global_generation() {
+        let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn_for(&db_path, None, true).unwrap();
+
+        let conn = IndexStore::open_read_connection(&db_path).unwrap();
+        assert_eq!(
+            IndexStore::read_current_epoch(&conn).unwrap(),
+            1,
+            "a fresh DB reads as epoch 1 (absent ⇒ 1)",
+        );
+
+        let before = WRITER_GENERATION.load(Ordering::Relaxed);
+        writer.send(WriteMessage::BumpCurrentEpoch).unwrap();
+        writer.flush_blocking().unwrap();
+        let after = WRITER_GENERATION.load(Ordering::Relaxed);
+
+        assert_eq!(
+            before, after,
+            "BumpCurrentEpoch must not bump the search generation (meta-only write)"
+        );
+        assert_eq!(
+            IndexStore::read_current_epoch(&conn).unwrap(),
+            2,
+            "one bump takes the epoch from 1 to 2",
+        );
+        writer.shutdown();
+    }
+
+    /// M2 §5 consistency: the per-volume `Freshness` badge stays consistent with
+    /// `root.min_subtree_epoch == current_epoch ⇒ Fresh` (modulo Scanning). This
+    /// pins the data-layer half of that invariant — that a clean scan leaves the
+    /// root's coverage epoch EQUAL to `current_epoch` (Fresh-consistent), and a
+    /// continuity-break bump makes it STRICTLY LESS (Stale-consistent) — so the
+    /// two layers can't silently drift. The freshness-enum half is pinned in
+    /// `state::tests::disconnect_keeps_instance_stale_user_cancel_resets_to_gray`.
+    #[test]
+    fn root_coverage_epoch_tracks_current_epoch_across_a_continuity_break() {
+        use crate::indexing::store::ROOT_ID;
+
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn_for(&db_path, None, false).unwrap();
+
+        // A clean scan stamps the root listed at the current epoch, then
+        // aggregates. (One root dir, no children: a fully-covered tree.)
+        writer
+            .send(WriteMessage::MarkDirsListed {
+                ids: vec![ROOT_ID],
+                epoch: 1,
+            })
+            .unwrap();
+        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer.flush_blocking().unwrap();
+
+        let conn = IndexStore::open_read_connection(&db_path).unwrap();
+        let current = IndexStore::read_current_epoch(&conn).unwrap();
+        let root_cov = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID)
+            .unwrap()
+            .unwrap()
+            .min_subtree_epoch;
+        assert_eq!(
+            root_cov, current,
+            "after a clean scan, root coverage == current_epoch ⇒ Fresh-consistent"
+        );
+
+        // A continuity break bumps current_epoch; the root's coverage doesn't move
+        // (no rescan stamped it), so it's now strictly behind ⇒ Stale-consistent.
+        writer.send(WriteMessage::BumpCurrentEpoch).unwrap();
+        writer.flush_blocking().unwrap();
+        let bumped = IndexStore::read_current_epoch(&conn).unwrap();
+        let root_cov_after = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID)
+            .unwrap()
+            .unwrap()
+            .min_subtree_epoch;
+        assert!(
+            root_cov_after < bumped,
+            "after a continuity-break bump, root coverage ({root_cov_after}) < current_epoch ({bumped}) ⇒ Stale-consistent"
+        );
+
         writer.shutdown();
     }
 

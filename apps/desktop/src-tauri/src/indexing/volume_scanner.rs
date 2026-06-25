@@ -24,14 +24,26 @@
 //!   autoreleases leak multi-GB over a long walk (the same rule the index writer
 //!   thread follows — see `indexing/CLAUDE.md`).
 //!
-//! ## Partial completion ⇒ discard (D-interrupted)
+//! ## Terminal disconnect ⇒ keep an honest partial; cancel ⇒ discard
 //!
-//! If the volume vanishes mid-walk, the partial index is worthless (we'd be
-//! Stale anyway), so the caller treats a non-`Completed` outcome as "reset to
-//! gray / not-indexed" and discards the partial. This scanner does NOT write the
-//! `scan_completed_at` meta marker; the caller's completion handler does, only
-//! on a clean finish — the same `scan_completed_at`-absent ⇒ no-Fresh mechanism
-//! the local scanner relies on (see `manager.rs`).
+//! A mid-walk **disconnect** (the typed `DeviceDisconnected`/`Disconnected`, or
+//! the consecutive-failure backstop for a disconnect-shaped untyped error) is
+//! TERMINAL: the walk stops immediately rather than churning the still-queued
+//! dirs into silently-empty rows (the reported prod bug). Before returning the
+//! typed error, it runs the partial-preserving write sequence
+//! ([`finish_partial_scan`]: flush + `MarkDirsListed` + `ComputeAllAggregates`)
+//! so the kept partial is self-describing — scanned subtrees roll up to
+//! `min_subtree_epoch > 0` (exact, stale once the epoch is bumped), unscanned
+//! ones stay `0` (`—`/`≥`). The completion handler (`manager.rs`) then keeps the
+//! instance + DB and marks the volume Stale.
+//!
+//! A **user cancel** still discards: `cancelled` returns `was_cancelled` with no
+//! marks/aggregate, and the completion handler resets the volume to gray.
+//!
+//! This scanner NEVER writes the `scan_completed_at` meta marker (on any path);
+//! the caller's completion handler does, only on a clean finish — the same
+//! `scan_completed_at`-absent ⇒ no-Fresh / heal-to-rescan mechanism the local
+//! scanner relies on (see `manager.rs`).
 
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
@@ -53,17 +65,57 @@ const LIST_TIMEOUT: Duration = Duration::from_secs(120);
 /// Batch size for `InsertEntriesV2` sends — matches the jwalk scanner's default.
 const BATCH_SIZE: usize = 2000;
 
+/// Consecutive-failure backstop. A whole-volume disconnect that doesn't map to
+/// the typed `DeviceDisconnected`/`Disconnected` variant (e.g. a generic
+/// `IoError` "connection reset") would otherwise make every remaining queued
+/// listing fail instantly — the exact prod bug, where ~6,475 dirs churned into
+/// empty rows in ~1 s. So after this many CONSECUTIVE listing failures we abort
+/// the walk (terminal), keeping the honest partial, rather than fabricating
+/// empties. The counter resets on every success, so an isolated bad dir is still
+/// skip-and-continue. 32 is generous enough that a sparse cluster of genuinely
+/// unlistable dirs (a permission-walled tree) doesn't trip it, but small enough
+/// that a real disconnect aborts in milliseconds.
+const CONSECUTIVE_FAILURE_ABORT: usize = 32;
+
 /// Why a `Volume`-trait scan ended other than cleanly.
 #[derive(Debug)]
 pub(crate) enum VolumeScanError {
     /// A directory listing exceeded `LIST_TIMEOUT` (wedged/hung mount).
     Timeout(PathBuf),
     /// The backend returned an error (disconnect mid-walk, permission, etc.).
+    /// A `DeviceDisconnected`/`Disconnected` value here is a TERMINAL disconnect
+    /// (see [`VolumeScanError::is_terminal_disconnect`]); other variants are the
+    /// root-fatal case (failing to list the root itself).
     Volume(crate::file_system::volume::VolumeError),
+    /// The consecutive-failure backstop tripped: `count` listings in a row
+    /// failed with a non-typed (disconnect-shaped) error, so the walk aborted
+    /// rather than churning every queued dir into a silently-empty row. `last`
+    /// is the most recent failing error's display. Treated as a terminal
+    /// disconnect by the completion handler — see `is_terminal_disconnect`.
+    ConsecutiveFailures { count: usize, last: String },
     /// A writer send failed (the writer thread is gone).
     WriterSend(String),
     /// Setting up the scan context (root sentinel, id counter) failed.
     Context(String),
+}
+
+impl VolumeScanError {
+    /// Whether this error means the volume went away mid-walk (a continuity
+    /// break), so the completion handler should KEEP the honest partial and mark
+    /// the volume Stale rather than discard it. True for a typed
+    /// `DeviceDisconnected`/`Disconnected` and for the consecutive-failure
+    /// backstop; false for a timeout / context / writer-send failure (those are
+    /// genuine aborts with no honest partial to keep).
+    ///
+    /// Classifies by the TYPED variant, never a message substring
+    /// (`.claude/rules/no-string-matching.md`).
+    pub(crate) fn is_terminal_disconnect(&self) -> bool {
+        use crate::file_system::volume::VolumeError;
+        matches!(
+            self,
+            Self::Volume(VolumeError::DeviceDisconnected(_)) | Self::ConsecutiveFailures { .. }
+        )
+    }
 }
 
 impl std::fmt::Display for VolumeScanError {
@@ -71,6 +123,9 @@ impl std::fmt::Display for VolumeScanError {
         match self {
             Self::Timeout(p) => write!(f, "listing timed out: {}", p.display()),
             Self::Volume(e) => write!(f, "volume error: {e}"),
+            Self::ConsecutiveFailures { count, last } => {
+                write!(f, "{count} consecutive listing failures (last: {last})")
+            }
             Self::WriterSend(m) => write!(f, "writer send failed: {m}"),
             Self::Context(m) => write!(f, "scan context setup failed: {m}"),
         }
@@ -122,6 +177,9 @@ pub(crate) async fn scan_volume_via_trait(
     let mut total_entries: u64 = 0;
     let mut total_dirs: u64 = 0;
     let mut total_physical_bytes: u64 = 0;
+    // Run of consecutive listing failures (any error, typed or not). Reset to 0
+    // on every successful listing; the backstop trips at `CONSECUTIVE_FAILURE_ABORT`.
+    let mut consecutive_failures: usize = 0;
 
     // Breadth-first so a directory's id is always registered in the context
     // before we list its children (their parent lookup must hit). Each queue
@@ -141,21 +199,62 @@ pub(crate) async fn scan_volume_via_trait(
         // releases it between bounded units and yields to pending foreground ops,
         // rather than pinning it for the whole (possibly huge) directory.
         let entries = match list_one_directory(volume.as_ref(), &dir_path, &cancelled).await {
-            Ok(e) => e,
+            Ok(e) => {
+                consecutive_failures = 0;
+                e
+            }
+            // TERMINAL disconnect: the whole volume went away mid-walk. Matched
+            // by the TYPED variant (never a message substring,
+            // `.claude/rules/no-string-matching.md`). Stop the walk immediately —
+            // do NOT churn the still-queued dirs into silently-empty rows (the
+            // reported prod bug). Write the partial-preserving sequence in ONE
+            // place (flush + marks + aggregate, NO scan_completed_at) so the kept
+            // partial is honest, then surface the typed error to the completion
+            // handler.
+            Err(VolumeScanError::Volume(e)) if is_typed_disconnect(&e) => {
+                log::warn!(
+                    "volume_scanner: device disconnected listing {}: {e}; \
+                     keeping honest partial ({total_dirs} dirs listed, {} queued unscanned)",
+                    dir_path.display(),
+                    queue.len(),
+                );
+                finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
+                return Err(VolumeScanError::Volume(e));
+            }
             Err(VolumeScanError::Volume(ref e)) if dir_path == root => {
-                // Failing to list the root itself is fatal — there's nothing to
-                // index. Surface it so the caller discards and resets to gray.
+                // Failing to list the root itself with a non-disconnect error is
+                // fatal — there's nothing to index. Surface it so the caller
+                // discards and resets to gray (no honest partial to keep).
                 return Err(VolumeScanError::Volume(e.clone()));
             }
-            Err(VolumeScanError::Volume(e)) => {
-                // A sub-directory we can't list (permission, transient): skip it
-                // and keep walking the rest, like the jwalk scanner skips errored
-                // entries. A vanished VOLUME surfaces as repeated failures and the
-                // freshness model handles it; a single bad dir shouldn't abort.
-                log::debug!("volume_scanner: skipping unlistable dir {}: {e}", dir_path.display());
+            Err(err) => {
+                // A sub-directory we can't list (permission, transient, timeout),
+                // or a disconnect-shaped error that didn't map to the typed
+                // variant. Skip it and keep walking the rest, like the jwalk
+                // scanner skips errored entries — BUT count consecutive failures.
+                // A vanished volume that surfaces as an untyped error makes EVERY
+                // remaining listing fail back-to-back, so the backstop aborts the
+                // walk (terminal) instead of fabricating empties for the rest.
+                consecutive_failures += 1;
+                log::debug!(
+                    "volume_scanner: skipping unlistable dir {} (consecutive_failures={consecutive_failures}): {err}",
+                    dir_path.display(),
+                );
+                if consecutive_failures >= CONSECUTIVE_FAILURE_ABORT {
+                    log::warn!(
+                        "volume_scanner: {consecutive_failures} consecutive listing failures \
+                         (looks like a disconnect); aborting walk and keeping honest partial \
+                         ({total_dirs} dirs listed, {} queued unscanned)",
+                        queue.len(),
+                    );
+                    finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
+                    return Err(VolumeScanError::ConsecutiveFailures {
+                        count: consecutive_failures,
+                        last: err.to_string(),
+                    });
+                }
                 continue;
             }
-            Err(other) => return Err(other),
         };
 
         // The parent's id was registered when it was discovered (or is ROOT_ID
@@ -223,17 +322,11 @@ pub(crate) async fn scan_volume_via_trait(
         }
     }
 
-    flush_batch(&mut batch, &writer)?;
-
-    // Stamp every successfully-listed dir AFTER the final flush (every entry row
-    // is now committed-in-order) and BEFORE `ComputeAllAggregates` (the ordering
-    // invariant). The single in-order writer guarantees the marks land first.
-    send_marks(&listed_ids, epoch, &writer)?;
-
-    // Clean finish: aggregate exactly like the local scanner, then trim the WAL.
-    writer
-        .send(WriteMessage::ComputeAllAggregates)
-        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+    // Clean finish: the same partial-preserving sequence the terminal-abort
+    // branches run (flush + marks + aggregate), then trim the WAL. Sharing it
+    // keeps the ordering invariant (marks precede the final aggregate) in ONE
+    // place, so a clean scan and an aborted partial roll up identically.
+    finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
     writer
         .send(WriteMessage::WalCheckpoint)
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
@@ -283,6 +376,55 @@ async fn list_one_directory(
 fn drain_autorelease_pool() {
     #[cfg(target_os = "macos")]
     objc2::rc::autoreleasepool(|_| {});
+}
+
+/// Whether a `VolumeError` means the whole volume went away mid-walk (terminal
+/// disconnect), classified by the TYPED variant — never a message substring
+/// (`.claude/rules/no-string-matching.md`).
+///
+/// `DeviceDisconnected` is the one `VolumeError` variant that means "the volume
+/// is gone": a dropped MTP device AND a broken SMB smb2 session both surface as
+/// `DeviceDisconnected` from `list_directory` (the SMB-connection-state
+/// `Disconnected` is a separate enum used by the FE-facing `smb_connection_state`
+/// probe, not returned from a listing call). A `ConnectionTimeout` is handled by
+/// the `Timeout`/consecutive-failure path, not here.
+fn is_typed_disconnect(e: &crate::file_system::volume::VolumeError) -> bool {
+    use crate::file_system::volume::VolumeError;
+    matches!(e, VolumeError::DeviceDisconnected(_))
+}
+
+/// The partial-preserving write sequence, in ONE place (plan M2 §1, round-3
+/// SF-1). Run on BOTH a clean finish and a terminal abort (disconnect /
+/// consecutive-failure backstop):
+///
+/// (a) `flush_batch` the last in-flight `InsertEntriesV2` batch (else up to
+///     `BATCH_SIZE` rows are dropped),
+/// (b) emit the accumulated `MarkDirsListed` for every successfully-listed dir,
+/// (c) emit `ComputeAllAggregates` so `dir_stats` (hence `min_subtree_epoch`)
+///     exist for what's present — marked subtrees roll up to `epoch > 0` (exact,
+///     and stale once the epoch is bumped), unmarked ones to `0` (`—`/`≥`).
+///
+/// It deliberately does NOT write `scan_completed_at` — that's the completion
+/// handler's job, gated on a clean finish, so an interrupted partial heals to a
+/// rescan on relaunch (the accepted M2 limitation) while staying honest and
+/// browsable this session.
+fn finish_partial_scan(
+    batch: &mut Vec<EntryRow>,
+    listed_ids: &[i64],
+    epoch: u64,
+    writer: &IndexWriter,
+) -> Result<(), VolumeScanError> {
+    // (a) Flush the last batch so every entry row is committed-in-order before
+    // the marks' PK-keyed UPDATE and the aggregate run.
+    flush_batch(batch, writer)?;
+    // (b) Stamp every successfully-listed dir (ordering invariant: marks precede
+    // the final aggregate; the single in-order writer guarantees it).
+    send_marks(listed_ids, epoch, writer)?;
+    // (c) Aggregate over what's present.
+    writer
+        .send(WriteMessage::ComputeAllAggregates)
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+    Ok(())
 }
 
 /// Number of dir ids per `MarkDirsListed` message. Bounds each message's size;
@@ -404,8 +546,10 @@ mod tests {
     }
 
     /// A test `Volume` that delegates to an inner `InMemoryVolume` but returns a
-    /// `DeviceDisconnected` error when listing one specific path. Lets the
-    /// scanner exercise the "a listing that errors is NOT marked" branch.
+    /// TRANSIENT (`PermissionDenied`) error when listing one specific path. Lets
+    /// the scanner exercise the "a listing that errors is NOT marked, but the
+    /// walk continues" branch — a single transient/permission failure is
+    /// skip-and-continue, distinct from a typed `DeviceDisconnected` (terminal).
     struct FailingListVolume {
         inner: InMemoryVolume,
         fail_path: PathBuf,
@@ -429,7 +573,7 @@ mod tests {
             on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
         ) -> ListFut<'a, Vec<FileEntry>> {
             if path == self.fail_path {
-                return Box::pin(async { Err(VolumeError::DeviceDisconnected("test: subdir listing failed".into())) });
+                return Box::pin(async { Err(VolumeError::PermissionDenied("test: subdir listing failed".into())) });
             }
             self.inner.list_directory(path, on_progress)
         }
@@ -460,7 +604,7 @@ mod tests {
         //   /good/        (dir, lists fine, has one file)
         //   /good/a.txt
         //   /empty/       (dir, lists fine but empty → empty-but-listed)
-        //   /bad/         (dir, listing ERRORS → must stay listed_epoch=0)
+        //   /bad/         (dir, listing ERRORS transiently → must stay listed_epoch=0)
         //   /bad/hidden   (file under bad; never discovered because bad won't list)
         let inner = InMemoryVolume::with_entries(
             "Test",
@@ -515,6 +659,242 @@ mod tests {
             Some(0),
             "a dir whose own listing errored stays listed_epoch=0 (honest unknown)",
         );
+    }
+
+    /// A test `Volume` that counts `list_directory` calls and returns a
+    /// `DeviceDisconnected` error once the count reaches `fail_after_calls`. Lets
+    /// a test assert the walk STOPS at the disconnect (no further round trips
+    /// against a dead session) by reading the call counter back afterwards.
+    struct CountingDisconnectVolume {
+        inner: InMemoryVolume,
+        fail_after_calls: usize,
+        /// Total `list_directory` attempts so far (incremented on every call).
+        calls: Arc<AtomicU64>,
+        /// When true, the failure is a plain `IoError` (a disconnect-SHAPED error
+        /// that does NOT map to the typed `DeviceDisconnected`/`Disconnected`
+        /// variant), to exercise the consecutive-failure backstop instead of the
+        /// typed terminal branch. When false, it's `DeviceDisconnected` (typed).
+        untyped_failure: bool,
+    }
+
+    impl Volume for CountingDisconnectVolume {
+        fn name(&self) -> &str {
+            self.inner.name()
+        }
+        fn root(&self) -> &Path {
+            self.inner.root()
+        }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+        fn list_directory<'a>(
+            &'a self,
+            path: &'a Path,
+            on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        ) -> ListFut<'a, Vec<FileEntry>> {
+            let n = (self.calls.fetch_add(1, Ordering::Relaxed) + 1) as usize;
+            if n >= self.fail_after_calls {
+                let untyped = self.untyped_failure;
+                return Box::pin(async move {
+                    if untyped {
+                        Err(VolumeError::IoError {
+                            message: "test: connection reset".into(),
+                            raw_os_error: None,
+                        })
+                    } else {
+                        Err(VolumeError::DeviceDisconnected("test: session dropped mid-walk".into()))
+                    }
+                });
+            }
+            self.inner.list_directory(path, on_progress)
+        }
+        fn get_metadata<'a>(&'a self, path: &'a Path) -> ListFut<'a, FileEntry> {
+            self.inner.get_metadata(path)
+        }
+        fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+            self.inner.exists(path)
+        }
+        fn is_directory<'a>(&'a self, path: &'a Path) -> ListFut<'a, bool> {
+            self.inner.is_directory(path)
+        }
+    }
+
+    /// Build a wide tree: a root with `n_subdirs` empty subdirs. The BFS lists
+    /// the root first (call 1), then each subdir in turn (calls 2..=n_subdirs+1).
+    fn wide_tree(n_subdirs: usize) -> InMemoryVolume {
+        let mut entries = Vec::new();
+        for i in 0..n_subdirs {
+            entries.push(entry(&format!("d{i}"), &format!("/d{i}"), true, None));
+        }
+        InMemoryVolume::with_entries("Test", entries)
+    }
+
+    /// THE regression test for the reported prod bug. A volume disconnects after
+    /// listing K of N dirs: the walk must STOP promptly (not churn the remaining
+    /// N−K queued dirs into empty rows), return the typed `DeviceDisconnected`
+    /// error, and — crucially — the caller must write NO `scan_completed_at`
+    /// (asserted at the manager level; here we assert the typed error + prompt
+    /// stop, which is what the completion handler routes on).
+    #[tokio::test]
+    async fn disconnect_mid_walk_stops_promptly_and_returns_typed_error() {
+        use crate::indexing::writer::IndexWriter;
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("vol-scan-disconnect.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        // Root + 100 empty subdirs. BFS: list root (call 1) discovers 100 dirs,
+        // then lists them (calls 2, 3, ...). Disconnect on the 4th call, i.e.
+        // after the root and 2 subdirs listed successfully → 97 still queued.
+        let n_subdirs = 100;
+        let fail_after_calls = 4;
+        let calls = Arc::new(AtomicU64::new(0));
+        let vol: Arc<dyn Volume> = Arc::new(CountingDisconnectVolume {
+            inner: wide_tree(n_subdirs),
+            fail_after_calls,
+            calls: Arc::clone(&calls),
+            untyped_failure: false,
+        });
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let result = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+
+        // The typed terminal error, NOT a clean Ok (which is today's bug: a clean
+        // finish over silently-empty rows). Matched by the TYPED variant.
+        match result {
+            Err(VolumeScanError::Volume(VolumeError::DeviceDisconnected(_))) => {}
+            other => panic!("expected typed DeviceDisconnected terminal error, got {other:?}"),
+        }
+
+        // Prompt stop: the walk did NOT attempt the remaining ~97 dirs. It made
+        // exactly `fail_after_calls` calls (the failing one included) and bailed.
+        let made = calls.load(Ordering::Relaxed) as usize;
+        assert_eq!(
+            made,
+            fail_after_calls,
+            "walk must stop at the disconnect, not churn the {} still-queued dirs",
+            n_subdirs - (fail_after_calls - 1),
+        );
+
+        writer.flush().await.expect("flush");
+        writer.shutdown();
+    }
+
+    /// The consecutive-failure backstop: a disconnect-shaped error that does NOT
+    /// map to the typed variant (here `IoError`) must still abort the walk after
+    /// `CONSECUTIVE_FAILURE_ABORT` consecutive failures, rather than churning
+    /// every queued dir into an empty row.
+    #[tokio::test]
+    async fn consecutive_untyped_failures_trip_the_backstop() {
+        use crate::indexing::writer::IndexWriter;
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("vol-scan-backstop.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        // Enough subdirs that the backstop (N consecutive) trips well before the
+        // queue drains. Root lists fine (call 1), then every subdir listing fails
+        // with an untyped IoError starting at call 2.
+        let n_subdirs = CONSECUTIVE_FAILURE_ABORT * 4;
+        let calls = Arc::new(AtomicU64::new(0));
+        let vol: Arc<dyn Volume> = Arc::new(CountingDisconnectVolume {
+            inner: wide_tree(n_subdirs),
+            fail_after_calls: 2, // root ok, then every child fails
+            calls: Arc::clone(&calls),
+            untyped_failure: true,
+        });
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let result = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+
+        match result {
+            Err(VolumeScanError::ConsecutiveFailures { count, .. }) => {
+                assert_eq!(count, CONSECUTIVE_FAILURE_ABORT, "aborts at exactly the threshold");
+            }
+            other => panic!("expected ConsecutiveFailures backstop abort, got {other:?}"),
+        }
+
+        // Stopped after: 1 (root) + N (the consecutive failures) calls. The
+        // remaining dirs were never attempted.
+        let made = calls.load(Ordering::Relaxed) as usize;
+        assert_eq!(
+            made,
+            1 + CONSECUTIVE_FAILURE_ABORT,
+            "backstop stops after the root plus N consecutive failures",
+        );
+
+        writer.flush().await.expect("flush");
+        writer.shutdown();
+    }
+
+    /// A single transient failure followed by successes does NOT trip the
+    /// backstop: the consecutive counter resets on every success, so an isolated
+    /// bad dir is still skip-and-continue (the existing behavior we keep).
+    #[tokio::test]
+    async fn isolated_transient_failure_does_not_trip_backstop() {
+        use crate::indexing::writer::IndexWriter;
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("vol-scan-transient.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        // One subdir fails (untyped), the rest list fine. The scan completes
+        // cleanly (the bad dir is skipped, stays listed_epoch=0).
+        let inner = InMemoryVolume::with_entries(
+            "Test",
+            vec![
+                entry("good", "/good", true, None),
+                entry("a.txt", "/good/a.txt", false, Some(7)),
+                entry("bad", "/bad", true, None),
+                entry("alsogood", "/alsogood", true, None),
+            ],
+        );
+        let vol: Arc<dyn Volume> = Arc::new(FailingListVolume {
+            inner,
+            fail_path: PathBuf::from("/bad"),
+        });
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let summary = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
+            .await
+            .expect("an isolated transient failure is skipped, scan completes");
+        assert!(!summary.was_cancelled);
+
+        writer.flush().await.expect("flush");
+        writer.shutdown();
+    }
+
+    /// `is_terminal_disconnect` routes the completion handler: true for a typed
+    /// `DeviceDisconnected` and the consecutive-failure backstop (keep honest
+    /// partial + Stale), false for a timeout / context / writer-send (discard).
+    #[test]
+    fn terminal_disconnect_classification() {
+        assert!(
+            VolumeScanError::Volume(VolumeError::DeviceDisconnected("x".into())).is_terminal_disconnect(),
+            "typed DeviceDisconnected is a terminal disconnect"
+        );
+        assert!(
+            VolumeScanError::ConsecutiveFailures {
+                count: CONSECUTIVE_FAILURE_ABORT,
+                last: "io".into()
+            }
+            .is_terminal_disconnect(),
+            "the consecutive-failure backstop is a terminal disconnect"
+        );
+        // Non-disconnect terminations are NOT kept as honest partials.
+        assert!(
+            !VolumeScanError::Timeout(PathBuf::from("/wedged")).is_terminal_disconnect(),
+            "a timeout is discarded, not kept"
+        );
+        assert!(
+            !VolumeScanError::Volume(VolumeError::PermissionDenied("root".into())).is_terminal_disconnect(),
+            "a non-disconnect volume error (root-fatal) is discarded"
+        );
+        assert!(!VolumeScanError::WriterSend("gone".into()).is_terminal_disconnect());
+        assert!(!VolumeScanError::Context("ctx".into()).is_terminal_disconnect());
     }
 
     /// A pre-set cancel flag stops the walk immediately and reports
