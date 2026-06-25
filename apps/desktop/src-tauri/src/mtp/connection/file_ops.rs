@@ -171,7 +171,7 @@ impl MtpConnectionManager {
             if chunk.is_empty() {
                 return Err(MtpConnectionError::Other {
                     device_id: device_id.to_string(),
-                    message: format!("MTP read returned 0 bytes at offset {offset} of {total_size} bytes"),
+                    message: format!("MTP read returned 0 bytes at offset {offset}/{total_size}"),
                 });
             }
 

@@ -823,6 +823,12 @@ impl Volume for MtpVolume {
         self.open_read_stream_at_offset(path, 0)
     }
 
+    // Reads in bounded windows from `offset` forward. Since the copy path
+    // (`CheckpointStream`) parks in place between windows rather than releasing +
+    // reopening, NOTHING calls this with a non-zero offset anymore; it's reached
+    // only via `open_read_stream`'s `offset == 0`. Keep the offset parameter
+    // (the resumable primitive is correct and cheap) — don't "clean it up" as
+    // dead just because the non-zero path currently has no caller.
     fn open_read_stream_at_offset<'a>(
         &'a self,
         path: &'a Path,
@@ -853,20 +859,21 @@ impl Volume for MtpVolume {
     }
 
     fn pause_releases_read_stream(&self) -> bool {
-        // MTP's in-flight download holds the one-per-device PTP session, so a
-        // pause must release it (close the stream) and reopen from the kept
-        // offset on resume — otherwise the device stays locked (no listings, no
-        // navigation) for the whole pause. This is the "navigate while paused"
-        // feature. Backed by `open_read_stream_at_offset` +
-        // `MtpReadStream::cancel_and_release`.
-        true
+        // MTP reads in bounded windows (~8 MiB) and holds the one-per-device PTP
+        // session ONLY during a window — between windows the session is free. So a
+        // pause has nothing scarce to release: it just stops starting the next
+        // window (park-in-place, like every other backend). The phone stays
+        // navigable while paused because the copy isn't holding the session.
+        false
     }
 
     fn supports_foreground_yield(&self) -> bool {
-        // A running MTP copy holds the PTP session across the whole download, so
-        // it must yield it to a foreground listing/nav mid-copy — same machinery
-        // as release-on-pause, triggered by `foreground_pending` instead of a
-        // user pause. See `CheckpointStream`'s auto-yield arm.
+        // A running MTP copy reads in bounded windows, so a foreground listing/nav
+        // already slips in between windows; this opt-in tells `CheckpointStream`
+        // to ALSO not start the next window while foreground work is pending (so
+        // the copy doesn't immediately re-grab the device lock and starve it). The
+        // yield is "don't start the next window," not a session release. See
+        // `CheckpointStream`'s auto-yield arm.
         true
     }
 

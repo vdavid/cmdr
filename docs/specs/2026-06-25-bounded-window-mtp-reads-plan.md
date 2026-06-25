@@ -1,9 +1,9 @@
 # Navigate during MTP transfers, take 2: bounded-window reads
 
 Created 2026-06-25. Status: planned. **Supersedes the auto-yield mechanism in**
-[`2026-06-22-navigate-during-transfers-plan.md`](2026-06-22-navigate-during-transfers-plan.md) (M1 shipped in
-`06d1874d` but is broken on real hardware — see below). The *goal* is unchanged: the phone stays navigable while an
-MTP→local copy runs. Only the *mechanism* changes.
+[`2026-06-22-navigate-during-transfers-plan.md`](2026-06-22-navigate-during-transfers-plan.md) (M1 shipped in `06d1874d`
+but is broken on real hardware — see below). The _goal_ is unchanged: the phone stays navigable while an MTP→local copy
+runs. Only the _mechanism_ changes.
 
 ## Why the shipped version is broken
 
@@ -33,8 +33,8 @@ Run on the connected Pixel 9 Pro XL (throwaway `download_partial_64`-loop exampl
 So a bounded `GetPartialObject64` releases the single PTP session every ~80 ms, and a foreground listing slips in
 between windows at its natural cost. The hypothesis holds.
 
-Implication for the design: **the "yield" cost drops from ~35 s (abort a 2 GB read) to ≤ ~one window (~80 ms, finish
-the current window and don't start the next).** That's the whole fix.
+Implication for the design: **the "yield" cost drops from ~35 s (abort a 2 GB read) to ≤ ~one window (~80 ms, finish the
+current window and don't start the next).** That's the whole fix.
 
 ## The mechanism
 
@@ -47,7 +47,7 @@ is in flight and the PTP session is free**, so:
 2. **The device lock is the natural arbiter.** Each window acquires Cmdr's per-device lock (the one the
    foreground-priority scheduler arbitrates) for only ~80 ms. Between windows the copy holds nothing, so a foreground
    listing's `foreground_guard` + lock contention lets it through. The explicit `foreground_pending` check + debounce
-   still gate the *next* window (lock fairness alone could let the copy immediately re-grab and starve foreground), but
+   still gate the _next_ window (lock fairness alone could let the copy immediately re-grab and starve foreground), but
    the heavy abort is gone.
 3. **Pause becomes instant too**, via the same "don't start the next window" path — no session drain on pause either.
 4. **Cancellation becomes cheap**: between windows there's nothing to drain; mid-window is a ≤~80 ms read, so even an
@@ -59,9 +59,9 @@ The spike used the **already-published** `Storage::download_partial_64` (in `mtp
 loop it directly. Reasons this is the right end state, not just the cheap one:
 
 - **Correct separation of concerns.** mtp-rs already provides the bounded-read primitive (`download_partial_64`, a
-  single `GetPartialObject64` transaction that releases the session on return). The *windowing + yield policy* (window
+  single `GetPartialObject64` transaction that releases the session on return). The _windowing + yield policy_ (window
   size, when to pause/yield, debounce, the foreground gate) is a Cmdr concern that lives next to the scheduler — it
-  cannot live in mtp-rs, which knows nothing about Cmdr's foreground gate. A windowed-stream type *inside* mtp-rs would
+  cannot live in mtp-rs, which knows nothing about Cmdr's foreground gate. A windowed-stream type _inside_ mtp-rs would
   still have to hand control back to Cmdr between windows for the gate check.
 - **The one thing such a type WOULD save, Cmdr does itself.** A windowed type retaining the `Storage` handle + object
   handle across windows would avoid re-resolving them per window — but `MtpReadStream` already holds equivalent state
@@ -106,9 +106,8 @@ acquiring + releasing the per-device lock, instead of one held-open `FileDownloa
   - an **open** that resolves the object handle + obtains the `Storage` + reads `total_size` ONCE (under the device
     lock), returning them for the stream to cache;
   - a **per-window read** that takes only `acquire_device_lock` + `storage.download_partial_64(handle, offset, window)`
-    and returns the `Vec<u8>`.
-  This replaces `open_download_stream_at_offset`'s role for the read path.
-- **The copy's window reads take NO `foreground_guard`.** A running transfer is a *background* user of the device gate
+    and returns the `Vec<u8>`. This replaces `open_download_stream_at_offset`'s role for the read path.
+- **The copy's window reads take NO `foreground_guard`.** A running transfer is a _background_ user of the device gate
   (it yields TO foreground), so it must not raise `foreground_pending` — if a window read held a `foreground_guard`, the
   copy's own checkpoint would see pending foreground and **yield to itself forever** (livelock, frozen copy). Only the
   per-window `acquire_device_lock` is taken (held ~80 ms/window); the **open** method likewise takes no
@@ -118,20 +117,20 @@ acquiring + releasing the per-device lock, instead of one held-open `FileDownloa
   download's setup-time guard dropped on return — but because the single streaming `GetObject` held mtp-rs's
   `operation_lock` continuously for the whole file; bounded windows release that lock between windows.)
 - **`MtpReadStream`** (`file_system/volume/backends/mtp.rs`): no longer wraps a `FileDownload`. It caches the resolved
-  `Storage` + object handle + `total_size`, plus `offset` and `window`. `next_chunk()` issues the next bounded window via
-  the per-window read, advances `offset` by the bytes ACTUALLY returned, returns the window's bytes (or `None` at EOF).
-  `cancel_and_release()` becomes a near-noop (nothing held between windows). `bytes_read()` = `offset`.
+  `Storage` + object handle + `total_size`, plus `offset` and `window`. `next_chunk()` issues the next bounded window
+  via the per-window read, advances `offset` by the bytes ACTUALLY returned, returns the window's bytes (or `None` at
+  EOF). `cancel_and_release()` becomes a near-noop (nothing held between windows). `bytes_read()` = `offset`.
 - **Rework the SHARED stream, so drag-out benefits too — don't fork a copy-only path.** `MtpVolume::open_read_stream`
   (used by native drag-out in `native_drag/fulfillment.rs`) and `open_read_stream_at_offset` (the copy path) both build
   `MtpReadStream`. Rework that one shared type; both consumers get bounded windows for free. Then
-  `open_download_stream_at_offset` has zero callers (confirmed: its only caller is `MtpVolume::open_read_stream_at_offset`)
-  — retire it and the `FileDownload`-wrapping `MtpReadStream` internals.
+  `open_download_stream_at_offset` has zero callers (confirmed: its only caller is
+  `MtpVolume::open_read_stream_at_offset`) — retire it and the `FileDownload`-wrapping `MtpReadStream` internals.
 - **Also fix the single-file download command (same chokepoint).** `download_mtp_file` (FE-wired: `downloadMtpFile` →
   `commands/mtp.rs` → `file_ops.rs::download_file_with_progress`) still uses held-open `storage.download_stream` and
   holds the device lock + a `foreground_guard` for the WHOLE file — so "navigate during a single-file download" hits the
-  identical wedge. It shares the connection layer, so route it through the same bounded-window read (drop its
-  whole-file `foreground_guard`). If a quick check shows the current FE never actually invokes it (the real MTP→local
-  copy is the streaming-copy path), note it out of scope instead — but don't silently leave a second held-open reader.
+  identical wedge. It shares the connection layer, so route it through the same bounded-window read (drop its whole-file
+  `foreground_guard`). If a quick check shows the current FE never actually invokes it (the real MTP→local copy is the
+  streaming-copy path), note it out of scope instead — but don't silently leave a second held-open reader.
 - **Window size**: a named const (`MTP_READ_WINDOW`, default 8 MiB — the spike's value), with a one-line rationale
   (throughput vs. yield-latency knob; M3 tunes it). Make it overridable for tests.
 - **Data safety / liveness**: the offset accounting is the load-bearing invariant — each window reads exactly
@@ -154,14 +153,15 @@ acquiring + releasing the per-device lock, instead of one held-open `FileDownloa
   - EOF: a file whose size isn't a window multiple ends cleanly with a short final window, exact total bytes.
   - Empty file / `offset == total_size`: first `next_chunk` returns `None` immediately (no window read issued).
   - **Zero-length read before EOF → error, not a spin** (drive the virtual device to return an empty window mid-file —
-    `read_partial` uses `file.read()`, so a short/empty read is serveable; assert a `VolumeError`, not an infinite loop).
+    `read_partial` uses `file.read()`, so a short/empty read is serveable; assert a `VolumeError`, not an infinite
+    loop).
   - Short mid-file read advances by the returned length and still assembles byte-exact.
   - Cancel mid-read returns promptly and keeps-partials correctly (no held transaction to drain).
 - **Docs**: `mtp/connection/CLAUDE.md` + `DETAILS.md` (the read is now bounded windows; the session is free between
   windows; per-window lock acquisition is what lets foreground in). `file_system/volume/backends/` notes on
   `MtpReadStream`.
-- **Checks**: `pnpm check rust` (note: cargo-audit is pre-existing-red on quinn-proto/memmap2 — verify via
-  clippy + rust-tests + integration + bindings + rustfmt green).
+- **Checks**: `pnpm check rust` (note: cargo-audit is pre-existing-red on quinn-proto/memmap2 — verify via clippy +
+  rust-tests + integration + bindings + rustfmt green).
 
 ### M2 — Rework the auto-yield + pause to "don't start the next window"
 
@@ -174,9 +174,9 @@ window just reads from the current offset," so the explicit release/reopen dance
 released anything to reopen).
 
 - **Intention**: the M1 release-on-pause + auto-yield code was built around "release the held session, reopen later."
-  Bounded windows make the held session — and thus the release/reopen — obsolete. Keep the *policy* (pause parks;
+  Bounded windows make the held session — and thus the release/reopen — obsolete. Keep the _policy_ (pause parks;
   foreground parks with debounce + min-progress floor; op stays **Running** during a foreground yield, never flips to
-  `Paused`; cancel wins) and drop the *mechanism* (cancel_and_release/reopen). Net: less code, and the ~35 s stall is
+  `Paused`; cancel wins) and drop the _mechanism_ (cancel_and_release/reopen). Net: less code, and the ~35 s stall is
   structurally impossible.
 - **CRITICAL re-gating (don't take the feature down with the reopen code).** Today BOTH the pause arm and
   `auto_yield_to_foreground` are switched on by `self.reopen.is_some()` (the MTP-detection proxy: `volume_strategy.rs`
@@ -192,10 +192,10 @@ released anything to reopen).
   `pause_releases_read_stream()` to `false` — pause just stops starting the next window, no session release. That makes
   pause instant and removes the last reopen caller. **Update the now-stale doc comments** on
   `MtpVolume::pause_releases_read_stream()` (`mtp.rs` ~850, "in-flight download holds the PTP session") and
-  `supports_foreground_yield()` (`mtp.rs` ~860, "holds the PTP session across the whole download") — these predicates are
-  load-bearing and their rationale changes. `open_read_stream_at_offset` with a non-zero offset then has no caller (the
-  copy reads from offset 0 forward in windows); keep the trait method (it's reached via `open_read_stream`'s offset 0)
-  but note the non-zero path is now unused so it isn't later "cleaned up" as dead by mistake.
+  `supports_foreground_yield()` (`mtp.rs` ~860, "holds the PTP session across the whole download") — these predicates
+  are load-bearing and their rationale changes. `open_read_stream_at_offset` with a non-zero offset then has no caller
+  (the copy reads from offset 0 forward in windows); keep the trait method (it's reached via `open_read_stream`'s
+  offset 0) but note the non-zero path is now unused so it isn't later "cleaned up" as dead by mistake.
 - **Keep**: byte-exactness (offset == temp length), cancellation-wins, debounce (`FOREGROUND_YIELD_DEBOUNCE`),
   min-progress floor (`MIN_PROGRESS_FLOOR_BYTES`), op-stays-Running, non-MTP no-op.
 - **Watch**: the foreground `wait_until_foreground_idle` race-against-cancel (the `select!` that prevents a
@@ -260,8 +260,9 @@ written together.
   the window).
 - **Retiring `open_download_stream_at_offset` / `FileDownload` use**: confirm no other consumer (search, drag-out) needs
   a held-open stream before removing it; if one does, keep it for that path and only swap the copy path.
-- **mtp-rs unchanged** means the `download_stream_from_offset` API added in 0.21.0 becomes unused by the copy path. Leave
-  it (it's a fine published primitive; the resume-a-paused-copy example still uses it) — don't churn mtp-rs to remove it.
+- **mtp-rs unchanged** means the `download_stream_from_offset` API added in 0.21.0 becomes unused by the copy path.
+  Leave it (it's a fine published primitive; the resume-a-paused-copy example still uses it) — don't churn mtp-rs to
+  remove it.
 
 ## Pointers (read, don't transcribe)
 

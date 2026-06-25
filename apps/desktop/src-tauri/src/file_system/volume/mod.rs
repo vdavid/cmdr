@@ -362,19 +362,16 @@ pub trait VolumeReadStream: Send {
     /// Bytes read so far (for progress tracking).
     fn bytes_read(&self) -> u64;
 
-    /// Promptly release any scarce backend resource this stream holds, before
-    /// the stream is dropped.
-    ///
-    /// The motivating case is MTP: a `MtpReadStream` holds the one-per-device
-    /// PTP session for the whole download, so the device can't be listed or
-    /// navigated until the stream ends. When a transfer is paused, the
-    /// pause-aware copy wrapper calls this to abort the in-flight download (USB
-    /// SIC cancel + pipe drain) and free the session *now*, instead of leaving
-    /// the device locked while parked. After this call the stream is spent;
+    /// Promptly release any scarce backend resource this stream holds across
+    /// chunks, before the stream is dropped. After this call the stream is spent;
     /// `next_chunk` must not be called again on it.
     ///
-    /// Default is a no-op: backends whose streams hold nothing scarce (local FS,
-    /// in-memory) need do nothing, and the wrapper parks them in place instead.
+    /// Default is a no-op, and that's what every current backend uses: reads that
+    /// could otherwise pin a scarce resource (MTP's one-per-device PTP session)
+    /// are bounded windows that hold nothing between chunks, so the copy wrapper
+    /// (`CheckpointStream`) parks in place rather than releasing anything. This
+    /// stays a trait hook for a hypothetical future backend whose stream genuinely
+    /// holds a resource across chunks; nothing in the copy path calls it today.
     #[allow(
         clippy::type_complexity,
         reason = "async trait method returns a pinned boxed future by design"
@@ -1032,15 +1029,14 @@ pub trait Volume: Send + Sync {
     /// remaining tail), so a resumed transfer's progress stays anchored to the
     /// whole file; `bytes_read()` counts only this segment.
     ///
-    /// This backs pause/resume for backends where pausing should release a
-    /// scarce resource (see [`pause_releases_read_stream`](Self::pause_releases_read_stream)):
-    /// the copy wrapper closes the in-flight stream on pause, then reopens here
-    /// at the byte count already written to the destination temp, and appends
-    /// the rest. The byte range is exact — `[offset, size)`, no gap or overlap —
-    /// so appending it onto a temp of length `offset` reconstructs the file.
+    /// A resumable-read primitive. The copy path no longer reopens at an offset
+    /// (pause and foreground yield park in place between bounded windows in the
+    /// transfer wrapper `CheckpointStream`, so nothing calls this with a non-zero
+    /// offset today), but MTP keeps it correct: a non-zero `offset` streams
+    /// exactly `[offset, size)` with no gap or overlap.
     ///
-    /// Default is `NotSupported`. Only backends that implement it (MTP) opt into
-    /// release-on-pause; others park the open stream in place.
+    /// Default is `NotSupported`; only MTP implements it. `MtpVolume`'s
+    /// `open_read_stream` routes through it with `offset == 0`.
     #[allow(
         clippy::type_complexity,
         reason = "async trait method returns a pinned boxed future by design"
@@ -1054,37 +1050,31 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
-    /// Whether pausing a streaming read from this volume should CLOSE the source
-    /// stream (freeing a scarce backend resource) and REOPEN it from the kept
-    /// offset on resume, rather than park the open stream in place.
+    /// Whether pausing a streaming read from this volume needs to release a
+    /// scarce backend resource (rather than park the open stream in place).
     ///
-    /// `true` only for MTP, where an in-flight download holds the one-per-device
-    /// PTP session: parking in place would keep the device locked (no listings,
-    /// no navigation) for the whole pause. Releasing the session is the entire
-    /// point of "navigate the phone while a transfer is paused". Requires
-    /// [`open_read_stream_at_offset`](Self::open_read_stream_at_offset) and
-    /// [`VolumeReadStream::cancel_and_release`].
-    ///
-    /// `false` (default) for local FS, SMB, and in-memory: their streams hold
-    /// nothing a pause needs to free, so parking in place is simpler and avoids
-    /// re-open round-trips.
+    /// `false` for every backend now — including MTP, whose reads are bounded
+    /// windows that hold the one-per-device PTP session only DURING a window, not
+    /// between them, so a pause has nothing to release and just stops starting the
+    /// next window. The predicate is kept as the trait extension point for a
+    /// hypothetical future backend whose stream genuinely pins a resource across
+    /// the whole read; no backend currently overrides it and the copy wrapper no
+    /// longer reads it.
     fn pause_releases_read_stream(&self) -> bool {
         false
     }
 
-    /// Whether a running transfer reading from this volume should AUTO-YIELD its
-    /// scarce backend resource to foreground device work mid-copy (release the
-    /// stream, wait for foreground to drain, reopen at the kept offset), without
-    /// the user pausing.
+    /// Whether a running transfer reading from this volume should AUTO-YIELD to
+    /// foreground device work mid-copy (don't start the next read window while
+    /// foreground work is pending; resume from the current offset once it drains),
+    /// without the user pausing.
     ///
-    /// `true` only for MTP, where an in-flight download holds the one-per-device
-    /// PTP session: a long copy would otherwise lock the phone (no listings, no
-    /// navigation) until the file finishes. With this on, the copy's per-chunk
-    /// checkpoint behaves like the index scan's `background_yield_point` — it
-    /// briefly releases the session so a foreground listing/nav gets the device,
-    /// then resumes. Requires the same primitives as release-on-pause
-    /// ([`open_read_stream_at_offset`](Self::open_read_stream_at_offset) +
-    /// [`VolumeReadStream::cancel_and_release`]).
+    /// `true` only for MTP. Its reads are bounded windows, so a foreground
+    /// listing/nav already slips in between windows; this opt-in additionally
+    /// keeps the copy from immediately re-grabbing the device lock and starving
+    /// foreground — the copy's per-window checkpoint behaves like the index scan's
+    /// `background_yield_point`, parking until foreground drains. No session is
+    /// released; "yield" means "don't start the next window."
     ///
     /// `false` (default): the auto-yield arm in `CheckpointStream` is a no-op, so
     /// local FS, SMB, and in-memory transfers behave exactly as before.
@@ -1104,12 +1094,12 @@ pub trait Volume: Send + Sync {
 
     /// Park until this volume's device is clear of foreground work.
     ///
-    /// Called by `CheckpointStream` after it releases the source stream for an
-    /// auto-yield: it waits here so the foreground listing/nav owns the device,
-    /// then the checkpoint reopens at the kept offset and resumes. `MtpVolume`
-    /// delegates to the per-device gate's `background_yield_point` (returns the
-    /// instant the last foreground guard drops); every other backend uses the
-    /// default no-op. See [`supports_foreground_yield`](Self::supports_foreground_yield).
+    /// Called by `CheckpointStream`'s auto-yield arm to hold off the next read
+    /// window: it waits here so the foreground listing/nav owns the device, then
+    /// the checkpoint lets the next window proceed from the current offset.
+    /// `MtpVolume` delegates to the per-device gate's `background_yield_point`
+    /// (returns the instant the last foreground guard drops); every other backend
+    /// uses the default no-op. See [`supports_foreground_yield`](Self::supports_foreground_yield).
     fn wait_until_foreground_idle<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
         Box::pin(async {})
     }

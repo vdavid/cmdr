@@ -745,11 +745,13 @@ async fn stream_pipe_file_retries_once_on_stale_destination_handle() {
 }
 
 // ========================================================================
-// Release-on-pause (MTP "navigate while paused"): a paused MTP→local copy
-// must CLOSE the source stream (freeing the device session), then on resume
-// REOPEN at the kept offset and append the rest, reconstructing the file
-// exactly. These mirror the production wiring with a fake source that records
-// open/close + supports an offset open, so no real device is needed.
+// Pause for an MTP source (bounded-window "navigate while paused"): because an
+// MTP read is bounded windows that hold nothing between chunks, a paused
+// MTP→local copy parks IN PLACE — it stops starting the next window and resumes
+// from the current offset, byte-exact. It must NOT release/reopen the source
+// (the obsolete model). These mirror the production wiring with a fake
+// MTP-shaped source that records every open and counts any (now-unexpected)
+// `cancel_and_release`, so no real device is needed.
 // ========================================================================
 
 use std::sync::Mutex as StdMutex;
@@ -758,14 +760,16 @@ const REL_TOTAL: usize = 200 * 1024; // 200 KiB, well over one chunk
 const REL_CHUNK: usize = 16 * 1024;
 const REL_CHUNK_DELAY: Duration = Duration::from_millis(4);
 
-/// Records what a `ReleasingSource` did, so a test can assert the stream was
-/// released on pause and reopened at the right offset.
+/// Records what a `ReleasingSource` did, so a test can assert the stream is
+/// opened exactly once (no reopen) and `cancel_and_release` is never called (no
+/// release) under the bounded-window park-in-place model.
 #[derive(Default)]
 struct RelLog {
-    /// Offsets at which a stream was opened (0 for the initial open, then the
-    /// kept offset for each resume).
+    /// Offsets at which a stream was opened. The bounded-window model opens once
+    /// at offset 0 and never reopens, so this should always be `[0]`.
     opens: Vec<u64>,
-    /// Number of times `cancel_and_release` ran (one per pause that released).
+    /// Number of times `cancel_and_release` ran. Should always be 0 now — the
+    /// copy wrapper parks in place between windows, never releasing the source.
     releases: usize,
 }
 
@@ -813,8 +817,10 @@ impl VolumeReadStream for ReleasingStream {
     }
 }
 
-/// A source volume that opts into release-on-pause and serves an offset-aware
-/// stream — the test-double of `MtpVolume`.
+/// An MTP-shaped source that serves the offset-pattern stream and counts any
+/// `cancel_and_release` — the test-double of `MtpVolume` for the pause tests. It
+/// does NOT opt into foreground yield (the default), so it also doubles as the
+/// "non-yield-capable source" in `non_mtp_source_never_auto_yields_for_foreground`.
 struct ReleasingSource {
     log: Arc<StdMutex<RelLog>>,
 }
@@ -854,9 +860,6 @@ impl Volume for ReleasingSource {
     fn supports_streaming(&self) -> bool {
         true
     }
-    fn pause_releases_read_stream(&self) -> bool {
-        true
-    }
     fn open_read_stream<'a>(
         &'a self,
         path: &'a Path,
@@ -887,7 +890,7 @@ fn rel_expected_bytes() -> Vec<u8> {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn release_on_pause_copy_releases_source_then_resumes_from_offset() {
+async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
     use std::fs;
 
     let log = Arc::new(StdMutex::new(RelLog::default()));
@@ -926,19 +929,20 @@ async fn release_on_pause_copy_releases_source_then_resumes_from_offset() {
         .await
     });
 
-    // Let a few chunks stream, then pause MID-FILE.
+    // Let a few windows stream, then pause MID-FILE.
     tokio::time::sleep(Duration::from_millis(30)).await;
     state.pause_gate.pause();
 
-    // The byte count must freeze AND the source stream must be RELEASED (the
-    // whole point: the device session is freed while paused).
+    // The byte count must freeze: the wrapper parks before starting the next
+    // window. NOTHING is released — the bounded-window read holds no session
+    // between windows, so there's nothing to free.
     tokio::time::sleep(Duration::from_millis(60)).await;
     let frozen = bytes_seen.load(Ordering::SeqCst);
     tokio::time::sleep(Duration::from_millis(60)).await;
     assert_eq!(
         bytes_seen.load(Ordering::SeqCst),
         frozen,
-        "a paused copy must stop advancing mid-file"
+        "a paused copy must stop starting the next window mid-file"
     );
     assert!(
         frozen > 0 && (frozen as usize) < REL_TOTAL,
@@ -947,11 +951,11 @@ async fn release_on_pause_copy_releases_source_then_resumes_from_offset() {
     assert!(!op.is_finished(), "the copy task must still be parked while paused");
     assert_eq!(
         log.lock().unwrap().releases,
-        1,
-        "pause must have RELEASED the source stream exactly once (freeing the session)"
+        0,
+        "pause must NOT release the source stream — bounded windows hold nothing to free (park-in-place)"
     );
 
-    // Resume → reopens at the kept offset and completes.
+    // Resume → keeps reading from the current offset and completes.
     state.pause_gate.resume();
     let bytes = tokio::time::timeout(Duration::from_secs(10), op)
         .await
@@ -961,8 +965,9 @@ async fn release_on_pause_copy_releases_source_then_resumes_from_offset() {
 
     assert_eq!(bytes, REL_TOTAL as u64, "resumed copy reports the full byte count");
 
-    // The destination must hold EXACTLY the full file (prefix + resumed tail),
-    // byte-for-byte equal to a non-paused copy.
+    // The destination must hold EXACTLY the full file, byte-for-byte equal to a
+    // non-paused copy: parking left the offset alone, so the next window read
+    // `[offset, …)` with no gap or overlap.
     let written = fs::read(dst_dir.join("movie.bin")).unwrap();
     assert_eq!(
         written,
@@ -970,21 +975,16 @@ async fn release_on_pause_copy_releases_source_then_resumes_from_offset() {
         "assembled bytes must equal the source exactly"
     );
 
-    // The reopen happened at the kept offset (the frozen byte count), with no
-    // gap or overlap — proven by the byte-exact assembly above plus the open log.
+    // The stream was opened ONCE at offset 0 and never reopened — no release, no
+    // reopen-at-offset in the bounded-window model.
     let opens = log.lock().unwrap().opens.clone();
-    assert_eq!(opens.len(), 2, "one initial open + one resume reopen");
-    assert_eq!(opens[0], 0, "initial open is at offset 0");
-    assert_eq!(
-        opens[1], frozen,
-        "resume must reopen at exactly the kept offset (= destination temp length)"
-    );
+    assert_eq!(opens, vec![0], "a single open at offset 0; no reopen while paused");
 
     let _ = fs::remove_dir_all(&dst_dir);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn release_on_pause_cancel_while_paused_keeps_no_partial() {
+async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
     use std::fs;
 
     let log = Arc::new(StdMutex::new(RelLog::default()));
@@ -1035,11 +1035,15 @@ async fn release_on_pause_cancel_while_paused_keeps_no_partial() {
     state.pause_gate.pause();
     tokio::time::sleep(Duration::from_millis(60)).await;
     assert!(!op.is_finished(), "parked while paused");
-    assert_eq!(log.lock().unwrap().releases, 1, "pause released the source stream");
+    assert_eq!(
+        log.lock().unwrap().releases,
+        0,
+        "pause parks in place — no release in the bounded-window model"
+    );
 
-    // Cancel (keep partials) while paused. The parked stream unblocks, reopens,
-    // and the next chunk flows through to on_progress, which breaks on cancel and
-    // the local sink removes its in-flight temp.
+    // Cancel (keep partials) while paused. The parked stream unblocks and the
+    // next chunk flows through to on_progress, which breaks on cancel and the
+    // local sink removes its in-flight temp.
     cancel_write_operation(&op_id, false);
 
     let result = tokio::time::timeout(Duration::from_secs(10), op)
@@ -1060,11 +1064,11 @@ async fn release_on_pause_cancel_while_paused_keeps_no_partial() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-async fn release_on_pause_unpaused_copy_never_releases() {
+async fn unpaused_mtp_copy_streams_straight_through() {
     use std::fs;
 
-    // Sanity: with no pause, a release-on-pause source streams straight through
-    // with a single open and no release — the resume machinery stays dormant.
+    // Sanity: with no pause, an MTP-shaped source streams straight through with a
+    // single open and no release — the pause/yield machinery stays dormant.
     let log = Arc::new(StdMutex::new(RelLog::default()));
     let source: Arc<dyn Volume> = Arc::new(ReleasingSource { log: Arc::clone(&log) });
 
@@ -1100,16 +1104,16 @@ async fn release_on_pause_unpaused_copy_never_releases() {
 }
 
 // ========================================================================
-// Foreground auto-yield (M1, "navigate during transfers"): a RUNNING (not
-// paused) MTP→local copy must, when foreground work pends on the source
-// device, RELEASE the session, wait for foreground to drain plus a debounce
-// window, then REOPEN at the kept offset and resume — byte-exact, op stays
-// Running. A min-progress floor keeps continuous foreground nav from starving
-// the copy to zero throughput, and a debounce collapses a burst of listings
-// into one release/reopen.
+// Foreground auto-yield ("navigate during transfers"): a RUNNING (not paused)
+// MTP→local copy must, when foreground work pends on the source device, stop
+// starting the next window, wait for foreground to drain plus a debounce window,
+// then resume from the current offset — byte-exact, op stays Running, with NO
+// session release/reopen (bounded windows hold nothing between chunks). A
+// min-progress floor keeps continuous foreground nav from starving the copy to
+// zero throughput, and a debounce collapses a burst of listings into one park.
 //
-// These mirror the production wiring with a fake source that (a) opts into
-// release-on-pause offset reopen and (b) carries a controllable
+// These mirror the production wiring with a fake MTP-shaped source that (a)
+// opts into `supports_foreground_yield()` and (b) carries a controllable
 // `foreground_pending` signal — the test-double of `MtpVolume` + its device
 // priority gate. No real device or USB latency needed.
 //
@@ -1152,10 +1156,10 @@ impl Drop for AutoYieldTuningGuard {
     }
 }
 
-/// A source volume that opts into release-on-pause AND foreground auto-yield,
-/// serving an offset-aware stream — the test-double of `MtpVolume`. The
-/// `foreground` flag is the controllable equivalent of the device priority
-/// gate's `foreground_pending`.
+/// An MTP-shaped source that opts into foreground auto-yield, serving the
+/// offset-pattern stream — the test-double of `MtpVolume` + its device priority
+/// gate. The `foreground` flag is the controllable equivalent of the gate's
+/// `foreground_pending`.
 struct YieldingSource {
     log: Arc<StdMutex<RelLog>>,
     /// When `true`, `foreground_pending()` reports a foreground op is waiting.
@@ -1195,9 +1199,6 @@ impl Volume for YieldingSource {
         Box::pin(async { Ok(false) })
     }
     fn supports_streaming(&self) -> bool {
-        true
-    }
-    fn pause_releases_read_stream(&self) -> bool {
         true
     }
     fn supports_foreground_yield(&self) -> bool {
@@ -1243,7 +1244,7 @@ impl Volume for YieldingSource {
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn auto_yield_releases_and_reopens_byte_exact() {
+async fn auto_yield_parks_before_next_window_then_resumes_byte_exact() {
     use std::fs;
 
     // Near-zero debounce, tiny floor (one chunk) so the arm fires within the
@@ -1295,12 +1296,12 @@ async fn auto_yield_releases_and_reopens_byte_exact() {
                 .await
             });
 
-            // Let a few chunks stream past the floor, then raise foreground.
+            // Let a few windows stream past the floor, then raise foreground.
             tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(true, Ordering::SeqCst);
 
-            // The copy must RELEASE the source (freeing the session) and NOT advance
-            // while foreground is held.
+            // The copy must NOT start the next window (freeze) while foreground is
+            // held — but it must NOT release the source either (park-in-place).
             tokio::time::sleep(Duration::from_millis(40)).await;
             let frozen = bytes_seen.load(Ordering::SeqCst);
             tokio::time::sleep(Duration::from_millis(40)).await;
@@ -1315,8 +1316,8 @@ async fn auto_yield_releases_and_reopens_byte_exact() {
             );
             assert_eq!(
                 log.lock().unwrap().releases,
-                1,
-                "foreground-pending must RELEASE the source stream exactly once"
+                0,
+                "a foreground yield must NOT release the source — it parks before the next window"
             );
             assert!(
                 !op.is_finished(),
@@ -1328,7 +1329,7 @@ async fn auto_yield_releases_and_reopens_byte_exact() {
                 "an auto-yield must NOT touch OperationIntent — the op stays Running"
             );
 
-            // Drop foreground: the copy reopens at the kept offset and completes.
+            // Drop foreground: the copy resumes from the current offset and completes.
             foreground.store(false, Ordering::SeqCst);
             let bytes = tokio::time::timeout(Duration::from_secs(10), op)
                 .await
@@ -1345,12 +1346,7 @@ async fn auto_yield_releases_and_reopens_byte_exact() {
             );
 
             let opens = log.lock().unwrap().opens.clone();
-            assert_eq!(opens.len(), 2, "one initial open + one resume reopen");
-            assert_eq!(opens[0], 0, "initial open at offset 0");
-            assert_eq!(
-                opens[1], frozen,
-                "reopen at exactly the kept offset (= dest temp length)"
-            );
+            assert_eq!(opens, vec![0], "a single open at offset 0; no reopen across the yield");
         })
         .await;
 
@@ -1358,12 +1354,14 @@ async fn auto_yield_releases_and_reopens_byte_exact() {
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn auto_yield_debounces_a_burst_into_one_release() {
+async fn auto_yield_debounces_a_burst_into_one_park() {
     use std::fs;
 
-    // A real debounce window so a brief gap between two listings is collapsed
-    // into ONE suspension, not two. Floor = one chunk so the arm can fire early.
-    let _tuning = AutoYieldTuningGuard::new(Duration::from_millis(60), REL_CHUNK as u64);
+    // A real (long) debounce window so a brief gap between two listings is
+    // collapsed into ONE park, not two. Floor = one chunk so the arm fires early.
+    // The debounce here (120 ms) is wide enough that the second listing lands
+    // inside the quiet window after the first drains.
+    let _tuning = AutoYieldTuningGuard::new(Duration::from_millis(120), REL_CHUNK as u64);
 
     let log = Arc::new(StdMutex::new(RelLog::default()));
     let foreground = Arc::new(AtomicBool::new(false));
@@ -1378,13 +1376,16 @@ async fn auto_yield_debounces_a_burst_into_one_release() {
     let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
+    let bytes_seen = Arc::new(AtomicU64::new(0));
     let local = tokio::task::LocalSet::new();
     local
         .run_until(async {
             let source_drv = Arc::clone(&source);
             let dest_drv = Arc::clone(&dest);
             let state_drv = Arc::clone(&state);
+            let bytes_seen_drv = Arc::clone(&bytes_seen);
             let op = tokio::task::spawn_local(async move {
+                let bytes_ref = &bytes_seen_drv;
                 copy_single_path(
                     &source_drv,
                     Path::new("/movie.bin"),
@@ -1394,25 +1395,43 @@ async fn auto_yield_debounces_a_burst_into_one_release() {
                     Path::new("movie.bin"),
                     &state_drv,
                     &CreatedPaths::default(),
-                    &|_, _| ControlFlow::Continue(()),
+                    &|bytes_done, _total| {
+                        bytes_ref.store(bytes_done, Ordering::SeqCst);
+                        ControlFlow::Continue(())
+                    },
                     &|| {},
                     None,
                 )
                 .await
             });
 
-            // First listing: raise, then drop. The copy releases and parks in the
-            // debounce window.
+            // First listing: stream past the floor, raise, then drop. The copy
+            // parks (doesn't start the next window) and enters the debounce window.
             tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(true, Ordering::SeqCst);
-            tokio::time::sleep(Duration::from_millis(20)).await;
+            tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(false, Ordering::SeqCst);
-            // Second listing arrives BEFORE the 60 ms quiet window elapses — the copy
-            // must stay parked (re-drain), not reopen-then-release again.
-            tokio::time::sleep(Duration::from_millis(20)).await;
+            // Sample the parked offset: the copy has been parked since ~the raise
+            // and is now in the quiet window.
+            let parked = bytes_seen.load(Ordering::SeqCst);
+            assert!(
+                parked > 0 && (parked as usize) < REL_TOTAL,
+                "must be parked mid-file before the burst's second listing"
+            );
+
+            // Second listing arrives BEFORE the quiet window elapses. If the
+            // debounce collapses the burst, the copy stays parked the whole time
+            // (no next window between the two listings); without it, the copy would
+            // have resumed and advanced in the gap.
+            tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(true, Ordering::SeqCst);
-            tokio::time::sleep(Duration::from_millis(20)).await;
+            tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(false, Ordering::SeqCst);
+            assert_eq!(
+                bytes_seen.load(Ordering::SeqCst),
+                parked,
+                "a burst within the debounce window must collapse into ONE park — the copy must not start a window between the two listings"
+            );
 
             let bytes = tokio::time::timeout(Duration::from_secs(10), op)
                 .await
@@ -1424,8 +1443,8 @@ async fn auto_yield_debounces_a_burst_into_one_release() {
             assert_eq!(fs::read(dst_dir.join("movie.bin")).unwrap(), rel_expected_bytes());
             assert_eq!(
                 log.lock().unwrap().releases,
-                1,
-                "a burst of foreground ops within the debounce window must collapse into ONE release/reopen"
+                0,
+                "the bounded-window model parks; it never releases the source"
             );
         })
         .await;
@@ -1587,12 +1606,13 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
             tokio::time::sleep(Duration::from_millis(40)).await;
             foreground.store(true, Ordering::SeqCst);
             tokio::time::sleep(Duration::from_millis(40)).await;
-            assert_eq!(log.lock().unwrap().releases, 1, "yielded and parked");
+            assert_eq!(log.lock().unwrap().releases, 0, "parked, not released");
             assert!(!op.is_finished(), "parked in the debounce window");
 
             // Cancel (keep partials) WHILE yielding. The cancel-aware debounce must bail
-            // promptly; ensure_open reopens and the next chunk flows to on_progress,
-            // which breaks on cancel and the local sink removes its in-flight temp.
+            // promptly (the `select!` races the foreground-idle park against cancel);
+            // the next chunk then flows to on_progress, which breaks on cancel and the
+            // local sink removes its in-flight temp. The cancel must not hang.
             cancel_write_operation(&op_id, false);
 
             let result = tokio::time::timeout(Duration::from_secs(10), op)
@@ -1618,9 +1638,9 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
 async fn non_mtp_source_never_auto_yields_for_foreground() {
     // Regression guard: a source that does NOT support foreground yield
     // (`supports_foreground_yield() == false`, the default for local/SMB/
-    // in-memory) must never release for foreground, even with a tiny floor and a
-    // foreground signal that would trigger an MTP source. `ReleasingSource` opts
-    // into release-on-pause but NOT foreground-yield, so it's the right double.
+    // in-memory) must never auto-yield, even with a tiny floor. `ReleasingSource`
+    // is MTP-shaped but does NOT opt into foreground-yield, so it's the right
+    // double — it parks in place for pause but never yields for foreground.
     use std::fs;
 
     let _tuning = AutoYieldTuningGuard::new(Duration::from_millis(0), REL_CHUNK as u64);
@@ -1659,6 +1679,140 @@ async fn non_mtp_source_never_auto_yields_for_foreground() {
     let l = log.lock().unwrap();
     assert_eq!(l.releases, 0, "no foreground yield ⇒ no release");
     assert_eq!(l.opens, vec![0], "no release ⇒ a single open at offset 0");
+
+    let _ = fs::remove_dir_all(&dst_dir);
+}
+
+/// A yield-capable MTP-shaped source whose `foreground_pending()` is ALWAYS
+/// false and whose `wait_until_foreground_idle()` PANICS if ever called. The
+/// auto-yield arm parks (its only caller) only after `foreground_pending()`
+/// returns true, so with no foreground pending the arm must short-circuit and
+/// never touch this method. A panic here means the copy yielded to ITSELF.
+struct NeverPendingYieldSource {
+    opens: Arc<StdMutex<Vec<u64>>>,
+}
+
+impl Volume for NeverPendingYieldSource {
+    fn name(&self) -> &str {
+        "never-pending-yield-source"
+    }
+    fn root(&self) -> &Path {
+        Path::new("/")
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(Vec::new()) })
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+    fn exists<'a>(&'a self, _path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async { true })
+    }
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(false) })
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    fn supports_foreground_yield(&self) -> bool {
+        true
+    }
+    fn foreground_pending<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async { false })
+    }
+    fn wait_until_foreground_idle<'a>(&'a self) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async {
+            panic!("auto-yield parked despite no foreground pending — self-yield livelock regression");
+        })
+    }
+    fn open_read_stream<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
+        let opens = Arc::clone(&self.opens);
+        Box::pin(async move {
+            opens.lock().unwrap().push(0);
+            Ok(Box::new(ReleasingStream {
+                log: Arc::new(StdMutex::new(RelLog::default())),
+                pos: 0,
+                emitted_here: 0,
+                released: false,
+            }) as Box<dyn VolumeReadStream>)
+        })
+    }
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn yield_capable_source_with_no_foreground_pending_never_self_yields() {
+    // A copy from a yield-capable source with NOTHING pending in foreground must
+    // run to completion at full speed and NEVER park itself. The tiny floor means
+    // the floor gate is satisfied early, so the ONLY thing keeping the arm from
+    // parking is `foreground_pending()` being false — exactly the property a
+    // self-yield livelock (a window read raising its own foreground_pending, or
+    // the enable-switch regressing) would violate. The source panics if the arm
+    // ever parks, so this hard-fails on regression instead of silently freezing.
+    use std::fs;
+
+    let _tuning = AutoYieldTuningGuard::new(Duration::from_millis(0), REL_CHUNK as u64);
+
+    let opens = Arc::new(StdMutex::new(Vec::<u64>::new()));
+    let source: Arc<dyn Volume> = Arc::new(NeverPendingYieldSource {
+        opens: Arc::clone(&opens),
+    });
+
+    let dst_dir = std::env::temp_dir().join(format!("cmdr_no_self_yield_dst_{:?}", std::thread::current().id()));
+    let _ = fs::remove_dir_all(&dst_dir);
+    fs::create_dir_all(&dst_dir).unwrap();
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+
+    let state = make_state();
+    let local = tokio::task::LocalSet::new();
+    local
+        .run_until(async {
+            let source_drv = Arc::clone(&source);
+            let dest_drv = Arc::clone(&dest);
+            let state_drv = Arc::clone(&state);
+            let op = tokio::task::spawn_local(async move {
+                copy_single_path(
+                    &source_drv,
+                    Path::new("/movie.bin"),
+                    false,
+                    None,
+                    &dest_drv,
+                    Path::new("movie.bin"),
+                    &state_drv,
+                    &CreatedPaths::default(),
+                    &|_, _| ControlFlow::Continue(()),
+                    &|| {},
+                    None,
+                )
+                .await
+            });
+
+            let bytes = tokio::time::timeout(Duration::from_secs(10), op)
+                .await
+                .expect("a copy with no foreground pending must complete, never self-park")
+                .expect("copy task must not panic (a panic = self-yield livelock)")
+                .expect("copy must succeed");
+
+            assert_eq!(bytes, REL_TOTAL as u64);
+            assert_eq!(fs::read(dst_dir.join("movie.bin")).unwrap(), rel_expected_bytes());
+            assert_eq!(*opens.lock().unwrap(), vec![0], "a single open at offset 0; no reopen");
+        })
+        .await;
 
     let _ = fs::remove_dir_all(&dst_dir);
 }

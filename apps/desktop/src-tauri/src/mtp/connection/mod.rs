@@ -51,7 +51,7 @@ const MTP_TIMEOUT_SECS: u64 = 30;
 /// 8 MiB is the spike-validated value: large enough for healthy USB throughput,
 /// small enough that the per-window device-lock hold (~80 ms on a Pixel) lets a
 /// foreground listing slip in between windows. It's the throughput-vs-yield-
-/// latency knob; M3 tunes it on real hardware. The volume backend's read stream
+/// latency knob, tuned on real hardware. The volume backend's read stream
 /// caches this at open and can shrink it in tests. See
 /// [DETAILS.md](DETAILS.md) § "Bounded-window reads".
 pub(crate) const MTP_READ_WINDOW: u32 = 8 * 1024 * 1024;
