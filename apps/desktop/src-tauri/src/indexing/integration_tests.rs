@@ -170,7 +170,7 @@ fn enrich_entries_via_parent_id_end_to_end() {
     ];
 
     // Use the integer-keyed fast path
-    let result = enrich_via_parent_id_on(&mut file_entries, store.read_conn(), "/projects");
+    let result = enrich_via_parent_id_on(&mut file_entries, store.read_conn(), "/projects", 1);
     assert!(result.is_ok(), "enrich_via_parent_id should succeed: {result:?}");
 
     // Verify enrichment results
@@ -225,7 +225,7 @@ fn enrich_entries_fallback_individual_paths() {
     let mut file_entries = vec![make_file_entry("docs", "/docs", true)];
 
     // Use the individual path fallback
-    enrich_via_individual_paths_on(ROOT_VOLUME_ID, &mut file_entries, store.read_conn());
+    enrich_via_individual_paths_on(ROOT_VOLUME_ID, &mut file_entries, store.read_conn(), 1);
 
     let docs = &file_entries[0];
     assert_eq!(docs.recursive_size, Some(500));
@@ -238,7 +238,7 @@ fn enrich_entries_fallback_individual_paths() {
 fn enrich_entries_empty_list() {
     let (store, _conn, _dir) = open_temp_store();
     let mut entries: Vec<FileEntry> = Vec::new();
-    enrich_via_individual_paths_on(ROOT_VOLUME_ID, &mut entries, store.read_conn());
+    enrich_via_individual_paths_on(ROOT_VOLUME_ID, &mut entries, store.read_conn(), 1);
 }
 
 /// Test that enrichment handles entries with no matching index data.
@@ -246,7 +246,7 @@ fn enrich_entries_empty_list() {
 fn enrich_entries_no_matching_index() {
     let (store, _conn, _dir) = open_temp_store();
     let mut entries = vec![make_file_entry("nonexistent", "/nonexistent", true)];
-    enrich_via_individual_paths_on(ROOT_VOLUME_ID, &mut entries, store.read_conn());
+    enrich_via_individual_paths_on(ROOT_VOLUME_ID, &mut entries, store.read_conn(), 1);
     assert_eq!(entries[0].recursive_size, None, "unindexed dir should remain None");
 }
 
@@ -352,7 +352,7 @@ fn end_to_end_scan_enrich_watcher_update() {
 
     // Phase 2: Enrich a listing of /home children
     let mut listing = vec![make_file_entry("user", "/home/user", true)];
-    let result = enrich_via_parent_id_on(&mut listing, store.read_conn(), "/home");
+    let result = enrich_via_parent_id_on(&mut listing, store.read_conn(), "/home", 1);
     assert!(result.is_ok());
     assert_eq!(listing[0].recursive_size, Some(1000));
     assert_eq!(listing[0].recursive_file_count, Some(1));
@@ -387,7 +387,7 @@ fn end_to_end_scan_enrich_watcher_update() {
 
     // Phase 4: Re-enrich after watcher event
     let mut listing2 = vec![make_file_entry("user", "/home/user", true)];
-    let result2 = enrich_via_parent_id_on(&mut listing2, store.read_conn(), "/home");
+    let result2 = enrich_via_parent_id_on(&mut listing2, store.read_conn(), "/home", 1);
     assert!(result2.is_ok());
     assert_eq!(listing2[0].recursive_size, Some(1500), "should reflect new file");
     assert_eq!(listing2[0].recursive_file_count, Some(2));
@@ -460,7 +460,7 @@ fn enrich_entries_at_root_level() {
         make_file_entry("Users", "/Users", true),
     ];
 
-    let result = enrich_via_parent_id_on(&mut listing, store.read_conn(), "/");
+    let result = enrich_via_parent_id_on(&mut listing, store.read_conn(), "/", 1);
     assert!(result.is_ok());
 
     assert_eq!(listing[0].recursive_size, Some(5000));

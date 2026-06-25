@@ -24,6 +24,9 @@
     import {
         getDisplaySize,
         getDirSizeDisplayState,
+        isDirSizeUpdating,
+        LOWER_BOUND_GLYPH,
+        UNKNOWN_SIZE_GLYPH,
         buildFileSizeTooltip,
         buildDirSizeTooltip,
         buildSelectionSizeTooltip,
@@ -118,9 +121,11 @@
     // Per-folder size-column state, shared with FullList via getDirSizeDisplayState.
     // `dirActive` = the folder's size is unsettled: a full scan/aggregation is
     // running, OR this folder has live index writes in flight (recursiveSizePending).
-    const dirActive = $derived(isDirectory && (indexing || (entry?.recursiveSizePending ?? false)))
+    const dirActive = $derived(isDirectory && isDirSizeUpdating(indexing, entry?.recursiveSizePending ?? false))
     const dirSizeState = $derived(
-        isDirectory ? getDirSizeDisplayState(displaySize, indexing, entry?.recursiveSizePending) : null,
+        isDirectory
+            ? getDirSizeDisplayState(displaySize, entry?.recursiveSizeComplete, entry?.recursiveSizeStale, dirActive)
+            : null,
     )
     const sizeTooltip = $derived(
         entry
@@ -133,6 +138,8 @@
                       dirActive,
                       formatFileSize,
                       formatNumber,
+                      entry.recursiveSizeComplete,
+                      entry.recursiveSizeStale,
                   ) || undefined
                 : buildFileSizeTooltip(entry.size, entry.physicalSize, formatFileSize)
             : undefined,
@@ -242,7 +249,10 @@
         <!-- Brief mode without selection: show file info -->
         <span class="name" use:tooltip={displayName} use:useShortenMiddle={{ text: displayName, preferBreakAt: '.', startRatio: 0.7 }}></span>
         <span class="size" use:tooltip={sizeTooltip}>
-            {#if sizeDisplay === 'DIR'}
+            {#if dirSizeState === 'unknown'}
+                <!-- `—`: incomplete subtree, nothing known below. Distinct from `0 bytes`. -->
+                {UNKNOWN_SIZE_GLYPH}
+            {:else if sizeDisplay === 'DIR'}
                 {tString('fileExplorer.selectionInfo.dir')}
                 {#if dirSizeState === 'scanning'}
                     <span
@@ -255,10 +265,13 @@
                     </span>
                 {/if}
             {:else if sizeDisplay}
-                {#each sizeDisplay as triad, i (i)}
-                    <span class={triad.tierClass}>{triad.value}</span>
-                {/each}
-                {#if dirSizeState === 'size-stale'}
+                <span class:size-freshness-stale={dirSizeState === 'size-stale'}>
+                    {#if dirSizeState === 'lower-bound'}<span class="size-lower-bound-prefix">{LOWER_BOUND_GLYPH}</span>{/if}
+                    {#each sizeDisplay as triad, i (i)}
+                        <span class={triad.tierClass}>{triad.value}</span>
+                    {/each}
+                </span>
+                {#if dirActive}
                     <span
                         class="stale-indicator stale-icon"
                         role="img"
@@ -390,6 +403,18 @@
         align-items: center;
         vertical-align: middle;
         cursor: help;
+    }
+
+    /* Freshness-stale: an exact size from an older epoch, muted to match the
+       yellow=stale freshness badge (plan §1I). Mirrors FullList's treatment so
+       Brief's status bar matches Full's size column. */
+    .size-freshness-stale {
+        opacity: 0.6;
+    }
+
+    /* `≥` lower-bound prefix: secondary color so it reads as a qualifier. */
+    .size-lower-bound-prefix {
+        color: var(--color-text-secondary);
     }
 
     .stale-icon {

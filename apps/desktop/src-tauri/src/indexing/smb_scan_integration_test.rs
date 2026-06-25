@@ -332,7 +332,7 @@ async fn smb_integration_enrich_listing_shows_sizes() {
     assert_eq!(index_parent, "/", "the mount root maps to the index ROOT_ID path");
 
     let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
-    enrich_via_parent_id_on(&mut entries, &conn, &index_parent).expect("enrichment must succeed");
+    enrich_via_parent_id_on(&mut entries, &conn, &index_parent, 1).expect("enrichment must succeed");
 
     // The directory `sub/` must now carry a recursive size from its index: it
     // contains leaf.txt (11 bytes). Pre-fix this assertion failed — the

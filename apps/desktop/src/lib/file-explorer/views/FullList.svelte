@@ -40,6 +40,9 @@
         buildFileSizeTooltip,
         getDisplaySize,
         getDirSizeDisplayState,
+        isDirSizeUpdating,
+        LOWER_BOUND_GLYPH,
+        UNKNOWN_SIZE_GLYPH,
         hasSizeMismatch,
         getDisplayExtension,
         getNameColumnText,
@@ -982,28 +985,41 @@
                                         file.recursivePhysicalSize,
                                         file.recursiveFileCount ?? 0,
                                         file.recursiveDirCount ?? 0,
-                                        indexing || (file.recursiveSizePending ?? false),
+                                        isDirSizeUpdating(indexing, file.recursiveSizePending),
                                         formatFileSize,
                                         formatNumber,
+                                        file.recursiveSizeComplete,
+                                        file.recursiveSizeStale,
                                     )
                                   : buildFileSizeTooltip(file.size, file.physicalSize, formatFileSize)}
                         >
                             {#if sizeOverride.override !== undefined}
                                 <span class="size-text">{sizeOverride.override}</span>
                             {:else if file.isDirectory}
+                                {@const dirUpdating = isDirSizeUpdating(indexing, file.recursiveSizePending)}
                                 {@const dirSizeState = getDirSizeDisplayState(
                                     dirDisplaySize,
-                                    indexing,
-                                    file.recursiveSizePending,
+                                    file.recursiveSizeComplete,
+                                    file.recursiveSizeStale,
+                                    dirUpdating,
                                 )}
-                                {#if dirDisplaySize != null}
-                                    <span class="size-text"
-                                        >{#each formatSizeForDisplay(dirDisplaySize, sizeFormatOpts) as triad, i (i)}<span
+                                {#if dirSizeState === 'unknown'}
+                                    <!-- `—`: incomplete subtree, nothing known below. Distinct from `0 bytes`. -->
+                                    <span class="size-dir">{UNKNOWN_SIZE_GLYPH}</span>
+                                    {#if dirUpdating}
+                                        <span class="size-updating icon-indicator" use:tooltip={tString('fileExplorer.dirSize.updatingIndexTooltip')}
+                                            ><Icon name="hourglass" size={12} /></span
+                                        >
+                                    {/if}
+                                {:else if dirDisplaySize != null}
+                                    <span class="size-text" class:size-freshness-stale={dirSizeState === 'size-stale'}
+                                        >{#if dirSizeState === 'lower-bound'}<span class="size-lower-bound-prefix">{LOWER_BOUND_GLYPH}</span
+                                            >{/if}{#each formatSizeForDisplay(dirDisplaySize, sizeFormatOpts) as triad, i (i)}<span
                                                 class={triad.tierClass}>{triad.value}</span
                                             >{/each}</span
                                     >
-                                    {#if dirSizeState === 'size-stale'}
-                                        <span class="size-stale icon-indicator" use:tooltip={tString('fileExplorer.dirSize.updatingIndexTooltip')}
+                                    {#if dirUpdating}
+                                        <span class="size-updating icon-indicator" use:tooltip={tString('fileExplorer.dirSize.updatingIndexTooltip')}
                                             ><Icon name="hourglass" size={12} /></span
                                         >
                                     {/if}
@@ -1013,9 +1029,11 @@
                                             file.recursivePhysicalSize,
                                             file.recursiveFileCount ?? 0,
                                             file.recursiveDirCount ?? 0,
-                                            dirSizeState === 'size-stale',
+                                            dirUpdating,
                                             formatFileSize,
                                             formatNumber,
+                                            file.recursiveSizeComplete,
+                                            file.recursiveSizeStale,
                                         )}
                                         {@const dirTooltipHtml =
                                             typeof dirTooltip === 'object' ? dirTooltip.html : dirTooltip}
@@ -1032,7 +1050,7 @@
                                 {:else if dirSizeState === 'scanning'}
                                     <span class="size-dir">{tString('fileExplorer.dirSize.dirPlaceholder')}</span>
                                     <span
-                                        class="size-stale icon-indicator"
+                                        class="size-updating icon-indicator"
                                         role="img"
                                         aria-label={tString('fileExplorer.selectionInfo.sizeNotReadyAriaLabel')}
                                         use:tooltip={tString('fileExplorer.dirSize.scanProgressTooltip')}
@@ -1403,10 +1421,28 @@
         color: var(--color-accent);
     }
 
-    .size-stale {
+    /* In-flux hourglass wrapper (orthogonal to content state): the index has
+       unsettled writes for this dir (`isDirSizeUpdating`). Named for the
+       concept, freeing "stale" for the freshness treatment above. */
+    .size-updating {
         display: inline-flex;
         align-items: center;
         cursor: help;
+    }
+
+    /* Freshness-stale: an exact size computed at an older epoch (drive not
+       re-scanned since reconnecting). Muted to match the yellow=stale
+       freshness language of the per-drive badge; the tooltip explains why.
+       Tunable (flagged for David, plan §1I open decision #1). */
+    .size-text.size-freshness-stale {
+        opacity: 0.6;
+    }
+
+    /* `≥` lower-bound prefix: secondary color so it reads as a qualifier on the
+       number, not a digit. The number itself keeps its size-tier color. */
+    .size-lower-bound-prefix {
+        color: var(--color-text-secondary);
+        margin-right: 1px;
     }
 
     .size-mismatch {

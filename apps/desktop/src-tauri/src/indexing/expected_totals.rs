@@ -59,6 +59,13 @@ fn per_source_contribution(conn: &Connection, source: &Path) -> Option<ExpectedT
 
     if entry.is_directory && !entry.is_symlink {
         let stats = IndexStore::get_dir_stats_by_id(conn, entry_id).ok().flatten()?;
+        // A source whose subtree is incomplete (`min_subtree_epoch == 0`) only
+        // has a lower-bound size, not a real total. Treat it like an unindexed
+        // source and return `None`, so write-op progress denominators never use
+        // a lower bound and overshoot 100%. (Plan §1H.)
+        if stats.min_subtree_epoch == 0 {
+            return None;
+        }
         Some(ExpectedTotals {
             files: stats.recursive_file_count,
             bytes: stats.recursive_logical_size,
@@ -97,7 +104,13 @@ mod tests {
         IndexStore::insert_entry_v2(conn, parent_id, name, false, false, size, size, None, None).unwrap()
     }
 
+    /// Upsert stats for a fully-covered (exact) directory: `min_subtree_epoch > 0`.
     fn upsert_stats(conn: &Connection, id: i64, files: u64, bytes: u64) {
+        upsert_stats_with_epoch(conn, id, files, bytes, 1);
+    }
+
+    /// Upsert stats with an explicit `min_subtree_epoch` (0 = incomplete subtree).
+    fn upsert_stats_with_epoch(conn: &Connection, id: i64, files: u64, bytes: u64, min_subtree_epoch: u64) {
         IndexStore::upsert_dir_stats_by_id(
             conn,
             &[DirStatsById {
@@ -107,7 +120,7 @@ mod tests {
                 recursive_file_count: files,
                 recursive_dir_count: 0,
                 recursive_has_symlinks: false,
-                min_subtree_epoch: 0,
+                min_subtree_epoch,
             }],
         )
         .unwrap();
@@ -170,6 +183,22 @@ mod tests {
             &conn,
             &[PathBuf::from("/Users/alice"), PathBuf::from("/Users/never-indexed")],
         );
+        assert_eq!(totals, None);
+    }
+
+    #[test]
+    fn incomplete_subtree_source_returns_none() {
+        // A directory with stats but `min_subtree_epoch == 0` is partially
+        // scanned: `recursive_logical_size` is only a lower bound, not a real
+        // total. It must behave exactly like an unindexed source (return `None`)
+        // so a write-op progress denominator never uses the lower bound and
+        // overshoots 100%. (Plan §1H, review N1.)
+        let (conn, _dir) = open_test_conn();
+        let users_id = insert_dir(&conn, ROOT_ID, "Users");
+        let alice_id = insert_dir(&conn, users_id, "alice");
+        upsert_stats_with_epoch(&conn, alice_id, 42, 1024 * 1024, 0);
+
+        let totals = sum_expected_totals(&conn, &[PathBuf::from("/Users/alice")]);
         assert_eq!(totals, None);
     }
 

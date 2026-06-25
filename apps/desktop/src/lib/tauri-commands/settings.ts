@@ -210,6 +210,21 @@ export interface DirStats {
    * it, and consumers treat absent as `false`.
    */
   recursiveSizePending?: boolean
+  /**
+   * `true` when `recursiveSize` is an exact total, `false` when it's a lower
+   * bound (some subtree was never listed). Derived backend-side from the
+   * subtree's coverage; the UI renders an exact size when `true`, a `≥` lower
+   * bound (or `—` when size is 0) when `false`. Optional so test fixtures and
+   * pre-field callers stay valid; absent is treated as `true` (exact).
+   */
+  recursiveSizeComplete?: boolean
+  /**
+   * `true` when the exact `recursiveSize` is accurate-but-stale (computed at an
+   * older volume epoch than the current one). Only meaningful when
+   * `recursiveSizeComplete` is `true`; drives the muted "stale" treatment.
+   * Optional; absent is treated as `false` (fresh).
+   */
+  recursiveSizeStale?: boolean
 }
 
 /**

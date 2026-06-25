@@ -813,6 +813,18 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
+  "fileExplorer.dirSize.lowerBoundLine": "Ít nhất là chừng này: một số thư mục con chưa được quét, nên tổng thực tế còn lớn hơn.",
+  "@fileExplorer.dirSize.lowerBoundLine": {
+    "sourceHash": "6d92a68"
+  },
+  "fileExplorer.dirSize.unknownTooltip": "Không rõ kích thước: thư mục này chưa được quét.",
+  "@fileExplorer.dirSize.unknownTooltip": {
+    "sourceHash": "0207a3d"
+  },
+  "fileExplorer.dirSize.staleLine": "Các kích thước này là từ lần quét trước và có thể đã lỗi thời.",
+  "@fileExplorer.dirSize.staleLine": {
+    "sourceHash": "4d6d21c"
+  },
   "fileExplorer.selectionTooltip.selected": "Đã chọn",
   "@fileExplorer.selectionTooltip.selected": {
     "sourceHash": "57fd7a0"

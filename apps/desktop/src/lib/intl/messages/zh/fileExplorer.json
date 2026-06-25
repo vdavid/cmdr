@@ -812,6 +812,18 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
+  "fileExplorer.dirSize.lowerBoundLine": "至少这么多：部分子文件夹尚未扫描，因此实际总量更大。",
+  "@fileExplorer.dirSize.lowerBoundLine": {
+    "sourceHash": "6d92a68"
+  },
+  "fileExplorer.dirSize.unknownTooltip": "大小未知：此文件夹尚未扫描。",
+  "@fileExplorer.dirSize.unknownTooltip": {
+    "sourceHash": "0207a3d"
+  },
+  "fileExplorer.dirSize.staleLine": "这些大小来自较早的扫描，可能已过时。",
+  "@fileExplorer.dirSize.staleLine": {
+    "sourceHash": "4d6d21c"
+  },
   "fileExplorer.selectionTooltip.selected": "已选",
   "@fileExplorer.selectionTooltip.selected": {
     "sourceHash": "57fd7a0"

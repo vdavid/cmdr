@@ -17,7 +17,15 @@ import { createPretextMeasure } from '$lib/utils/shorten-middle'
 import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
 
 import type { DirStats } from './file-list-utils'
-import { getDirSizeDisplayState, getDisplayExtension, getDisplaySize, hasSizeMismatch } from './full-list-utils'
+import {
+  getDirSizeDisplayState,
+  isDirSizeUpdating,
+  LOWER_BOUND_GLYPH,
+  UNKNOWN_SIZE_GLYPH,
+  getDisplayExtension,
+  getDisplaySize,
+  hasSizeMismatch,
+} from './full-list-utils'
 import { tString } from '$lib/intl/messages.svelte'
 
 export interface ColumnWidths {
@@ -209,10 +217,15 @@ function sizeTextForEntry(
   }
   if (entry.isDirectory) {
     const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, sizeDisplayMode)
-    if (s !== undefined) return sizeCellText(s, sizeFormatOpts)
-    // Mirror FullList's render decision (same `getDirSizeDisplayState`): both the
-    // scanning and dir states render the `<dir>` placeholder text (the scanning
-    // state adds an hourglass on top, reserved separately in `sizeIconSuffixForEntry`).
+    // Mirror FullList's honest-size render decision (same `getDirSizeDisplayState`):
+    // unknown → `—`, lower-bound → `≥` prefix + size, otherwise the formatted size
+    // or the `<dir>` placeholder. The hourglass is reserved separately.
+    const state = getDirSizeDisplayState(s, entry.recursiveSizeComplete, entry.recursiveSizeStale)
+    if (state === 'unknown') return UNKNOWN_SIZE_GLYPH
+    if (s !== undefined) {
+      const prefix = state === 'lower-bound' ? LOWER_BOUND_GLYPH : ''
+      return prefix + sizeCellText(s, sizeFormatOpts)
+    }
     return tString('fileExplorer.dirSize.dirPlaceholder')
   }
   const s = getDisplaySize(entry.size, entry.physicalSize, sizeDisplayMode)
@@ -228,14 +241,12 @@ function sizeIconSuffixForEntry(
 ): number {
   let suffix = 0
   if (entry.isDirectory) {
-    // FullList draws the hourglass for both the `size-stale` state (a settled
-    // size that may still change) and the `scanning` state (`<dir>` placeholder
-    // with no size yet). Both reserve the icon width here so the shrink-wrapped
-    // column doesn't clip the glyph. Mirror the same `getDirSizeDisplayState`
-    // decision the renderer uses.
-    const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, sizeDisplayMode)
-    const state = getDirSizeDisplayState(s, indexing, entry.recursiveSizePending)
-    if (state === 'size-stale' || state === 'scanning') suffix += SIZE_ICON_WIDTH
+    // FullList draws the hourglass whenever the dir's size is in flux (the
+    // orthogonal `isDirSizeUpdating`): any size-bearing state plus the `unknown`
+    // (`—`) and `scanning` placeholders show it. Reserve the icon width here so
+    // the shrink-wrapped column doesn't clip the glyph. Mirror the renderer.
+    const updating = isDirSizeUpdating(indexing, entry.recursiveSizePending)
+    if (updating) suffix += SIZE_ICON_WIDTH
   }
   if (showSizeMismatchWarning) {
     const logical = entry.isDirectory ? entry.recursiveSize : entry.size

@@ -198,16 +198,11 @@ pub fn get_dir_stats_on_volume(volume_id: &str, path: &str) -> Result<Option<Dir
         let stats =
             IndexStore::get_dir_stats_by_id(conn, entry_id).map_err(|e| format!("Couldn't get dir stats: {e}"))?;
 
+        // Read the volume's current epoch on this same connection so the derived
+        // honest-size booleans are consistent with the stats just read.
+        let current_epoch = IndexStore::read_current_epoch(conn).unwrap_or(1);
         let pending = get_pending_sizes_for(volume_id).is_some_and(|t| t.is_pending(&normalized));
-        Ok(stats.map(|s| DirStats {
-            path: normalized.clone(),
-            recursive_size: s.recursive_logical_size,
-            recursive_physical_size: s.recursive_physical_size,
-            recursive_file_count: s.recursive_file_count,
-            recursive_dir_count: s.recursive_dir_count,
-            recursive_has_symlinks: s.recursive_has_symlinks,
-            recursive_size_pending: pending,
-        }))
+        Ok(stats.map(|s| dir_stats_from(normalized.clone(), &s, current_epoch, pending)))
     })?
 }
 
@@ -256,23 +251,37 @@ pub fn get_dir_stats_batch_on_volume(volume_id: &str, paths: &[String]) -> Resul
             let stats_batch = IndexStore::get_dir_stats_batch_by_ids(conn, &ids)
                 .map_err(|e| format!("Couldn't get dir stats batch: {e}"))?;
 
+            // Read the volume's current epoch once for the whole batch.
+            let current_epoch = IndexStore::read_current_epoch(conn).unwrap_or(1);
             let tracker = get_pending_sizes_for(volume_id);
             for ((_, idx, normalized), stats_opt) in id_to_idx.into_iter().zip(stats_batch) {
                 let pending = tracker.as_ref().is_some_and(|t| t.is_pending(&normalized));
-                results[idx] = stats_opt.map(|s| DirStats {
-                    path: normalized,
-                    recursive_size: s.recursive_logical_size,
-                    recursive_physical_size: s.recursive_physical_size,
-                    recursive_file_count: s.recursive_file_count,
-                    recursive_dir_count: s.recursive_dir_count,
-                    recursive_has_symlinks: s.recursive_has_symlinks,
-                    recursive_size_pending: pending,
-                });
+                results[idx] = stats_opt.map(|s| dir_stats_from(normalized, &s, current_epoch, pending));
             }
         }
 
         Ok(results)
     })?
+}
+
+/// Build the path-keyed IPC `DirStats` from the integer-keyed stats, deriving
+/// the FE-facing honest-size booleans (`recursive_size_complete` /
+/// `recursive_size_stale`) from `min_subtree_epoch` vs `current_epoch`. Raw
+/// epochs never cross IPC. Mirrors `enrichment::apply_dir_stats` for the
+/// `FileEntry` read surface. See plan §1F.
+fn dir_stats_from(path: String, s: &store::DirStatsById, current_epoch: u64, pending: bool) -> DirStats {
+    let complete = s.min_subtree_epoch > 0;
+    DirStats {
+        path,
+        recursive_size: s.recursive_logical_size,
+        recursive_physical_size: s.recursive_physical_size,
+        recursive_file_count: s.recursive_file_count,
+        recursive_dir_count: s.recursive_dir_count,
+        recursive_has_symlinks: s.recursive_has_symlinks,
+        recursive_size_pending: pending,
+        recursive_size_complete: complete,
+        recursive_size_stale: complete && s.min_subtree_epoch < current_epoch,
+    }
 }
 
 /// Batch lookup of dir_stats, resolving the owning volume from the paths. The

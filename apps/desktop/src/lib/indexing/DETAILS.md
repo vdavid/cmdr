@@ -100,3 +100,38 @@ typed rescan-reason and aggregation-phase discriminators map to catalog KEYS (`r
 `phaseToLabelKey`), resolved at render time — branch on the typed enum, never on wording. The `'bytes'` / `'entries'`
 scan-unit tags and `'scan'`/`'aggregation'`/`'replay'` mode strings are internal discriminators, not copy. Base-en
 output is parity-pinned by `indexing-i18n-parity.test.ts`.
+
+## Honest size rendering
+
+The drive index serves directory sizes that are sometimes exact, sometimes a lower bound, sometimes unknown, and
+sometimes accurate-but-stale. The backend collapses its epoch model into two booleans per `FileEntry` / `DirStats`
+(`recursiveSizeComplete`, `recursiveSizeStale`); the FE renders from `{recursiveSize, complete, stale}` and never sees
+raw epochs. The full data model is in the backend `indexing/DETAILS.md` § "Honest sizes" and
+`docs/specs/2026-06-25-honest-index-sizes-plan.md`.
+
+**Content state — `getDirSizeDisplayState(recursiveSize, complete, stale, updating)`** (`views/full-list-utils.ts`), a
+pure function and the single source of truth:
+
+- `recursiveSize == null` → `'dir'` (the `<dir>` placeholder), or `'scanning'` when `updating`.
+- `complete === false && size === 0` → `'unknown'` → `—` (`UNKNOWN_SIZE_GLYPH`). The crux: distinct from a
+  genuinely-empty `0 bytes`.
+- `complete === false && size > 0` → `'lower-bound'` → `≥` (`LOWER_BOUND_GLYPH`) prefix + the formatted size.
+- `complete === true && stale === true` → `'size-stale'` → the formatted size, muted (reduced opacity, matching the
+  yellow=stale freshness badge; tunable, plan §1I open decision #1).
+- otherwise → `'size'` → the plain formatted size (incl. a genuinely-empty `0 bytes`).
+- Absent `complete`/`stale` (a dir enriched before the flags, or a fixture) ⇒ treated as exact + fresh.
+
+**The in-flux hourglass is ORTHOGONAL** — `isDirSizeUpdating(indexing, pending)` (`indexing || pending`), applied on top
+of any content state. A dir can be both `'size-stale'` (freshness) and updating (in-flux). The `≥`/`—` are symbols, not
+translatable copy; the per-state explanation is a one-line label in `buildDirSizeTooltip` (keys
+`fileExplorer.dirSize.{lowerBoundLine,unknownTooltip,staleLine}`).
+
+**Three consumers, kept in lockstep** (or rendered text and pre-measured width drift): `FullList.svelte` (the Size
+cell), `SelectionInfo.svelte` (Brief-mode status bar, so it matches Full), and `measure-column-widths.ts` (reserves the
+`—`/`≥` glyph widths and the hourglass icon when `isDirSizeUpdating`). The `..` parent row carries the flags too (it
+renders the current dir's own stats), so a partially-scanned dir shows `..` as `≥`/`—`.
+
+**Sort-by-size keeps the three classes distinct** and runs in Rust (`file_system/listing/sorting.rs`), not the FE.
+`known_dir_size` returns `None` (sorts LAST, by name, regardless of order) for an unknown dir — either `—` (incomplete +
+size 0) or a not-yet-enriched `None`; a genuinely-empty `0 bytes` and a lower-bound both return their known numeric
+value and sort by it. Don't re-conflate unknown with exact-0 in the comparator.

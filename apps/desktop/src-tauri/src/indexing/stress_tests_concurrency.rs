@@ -379,7 +379,7 @@ fn concurrent_scan_with_enrichment_reads() {
 
                     // Try parent-id-based enrichment
                     let parent_result =
-                        pool.with_conn(|conn| enrichment::enrich_via_parent_id_on(&mut entries, conn, "/"));
+                        pool.with_conn(|conn| enrichment::enrich_via_parent_id_on(&mut entries, conn, "/", 1));
                     // During concurrent writes, enrichment may fail to find stats;
                     // that's expected. What matters: no SQLite errors, no panics.
                     if let Err(e) = parent_result {
@@ -393,6 +393,7 @@ fn concurrent_scan_with_enrichment_reads() {
                             crate::indexing::state::ROOT_VOLUME_ID,
                             &mut entries,
                             conn,
+                            1,
                         );
                     });
                     if let Err(e) = fallback_result {
@@ -564,7 +565,7 @@ fn live_event_storm_with_concurrent_reads() {
                         make_file_entry("dir_L0_D3", "/dir_L0_D3", true),
                     ];
 
-                    let result = pool.with_conn(|conn| enrichment::enrich_via_parent_id_on(&mut entries, conn, "/"));
+                    let result = pool.with_conn(|conn| enrichment::enrich_via_parent_id_on(&mut entries, conn, "/", 1));
                     if let Err(e) = result {
                         panic!("ReadPool error on thread {thread_idx} iteration {iteration}: {e}");
                     }
@@ -574,6 +575,7 @@ fn live_event_storm_with_concurrent_reads() {
                             crate::indexing::state::ROOT_VOLUME_ID,
                             &mut entries,
                             conn,
+                            1,
                         );
                     });
                     if let Err(e) = result {
@@ -929,7 +931,7 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
                 // 2) enrich -- this is the dominant cost when the index is contended.
                 let parent_path = path.to_string_lossy().to_string();
                 let enrich_start = Instant::now();
-                let _ = pool.with_conn(|conn| enrichment::enrich_via_parent_id_on(&mut entries, conn, &parent_path));
+                let _ = pool.with_conn(|conn| enrichment::enrich_via_parent_id_on(&mut entries, conn, &parent_path, 1));
                 let enrich_ms = enrich_start.elapsed().as_millis();
                 if enrich_ms > 100 {
                     log::info!(

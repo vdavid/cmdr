@@ -340,34 +340,77 @@ export function buildSelectionSizeTooltip(
 // Directory Size Display Helpers
 // ============================================================================
 
-/** Display state for a directory's size column in FullList. */
-export type DirSizeDisplayState = 'dir' | 'scanning' | 'size' | 'size-stale'
+/**
+ * Prefix glyph for a lower-bound directory size (`≥1.2 GB`): the known total is
+ * a floor because part of the subtree hasn't been scanned. A symbol, not
+ * translatable copy (the explanation lives in the tooltip).
+ */
+export const LOWER_BOUND_GLYPH = '≥'
 
 /**
- * Determine the display state for a directory's size column.
+ * Glyph for an unknown directory size (`—`): the subtree is incomplete with
+ * nothing known below it. Visually distinct from a genuinely-empty `0 bytes`.
+ * A symbol, not translatable copy (the explanation lives in the tooltip).
+ */
+export const UNKNOWN_SIZE_GLYPH = '—'
+
+/**
+ * Content state for a directory's size column. The "honest sizes" model splits
+ * one displayed value into distinct truths (plan §1I):
+ * - `'dir'`: not enriched yet (no recursive size) → `<dir>` placeholder.
+ * - `'scanning'`: same, but a scan is active → `<dir>` placeholder (hourglass on top).
+ * - `'unknown'`: subtree incomplete with nothing known below → `—` (NOT `0 bytes`).
+ * - `'lower-bound'`: subtree incomplete but a partial total is known → `≥1.2 GB`.
+ * - `'size'`: exact and fresh → `1.2 GB` (or a genuinely-empty `0 bytes`).
+ * - `'size-stale'`: exact but computed at an older epoch → `1.2 GB`, muted.
  *
- * Rules (where "active" = global `indexing` OR this dir's own `pending` flag):
- * - Has recursiveSize + active     -> 'size-stale' (show size with hourglass)
- * - Has recursiveSize + not active -> 'size' (show formatted size)
- * - No recursiveSize + active      -> 'scanning' (show <dir> placeholder with hourglass)
- * - No recursiveSize + not active  -> 'dir' (show <dir> placeholder)
+ * The in-flux hourglass (`indexing || pending`) is ORTHOGONAL — see
+ * `isDirSizeUpdating` — and applies on top of any of these.
+ */
+export type DirSizeDisplayState = 'dir' | 'scanning' | 'unknown' | 'lower-bound' | 'size' | 'size-stale'
+
+/**
+ * Determine the CONTENT display state for a directory's size column — a pure
+ * function of `{recursiveSize, complete, stale}`. The in-flux hourglass is
+ * decided separately by `isDirSizeUpdating` (orthogonal: a dir can be both
+ * `'size-stale'` and updating).
  *
- * Global `indexing` means a full scan/aggregation is running (every size in
- * flux); per-dir `pending` means this dir has live writes in flight (a big
- * delete/copy) even when no full scan is active. See `indexing/pending_sizes.rs`.
+ * `complete` / `stale` come from the backend's honest-size derivation
+ * (`recursiveSizeComplete` / `recursiveSizeStale` on `FileEntry`/`DirStats`).
+ * Absent (a dir enriched before the flags exist, or a test fixture) is treated
+ * as exact + fresh, so it renders a plain size rather than masquerading as `—`.
+ *
+ * Crux: an incomplete subtree at size 0 is UNKNOWN (`—`), distinct from a
+ * complete subtree at size 0 (a genuinely-empty `0 bytes`).
  */
 export function getDirSizeDisplayState(
   recursiveSize: number | null | undefined,
-  indexing: boolean,
-  pending = false,
+  complete?: boolean | null,
+  stale?: boolean | null,
+  updating = false,
 ): DirSizeDisplayState {
-  const active = indexing || pending
   // `!= null` covers both `null` (post-Group-A wire format) and `undefined`
   // (legacy/tests). See `getDisplaySize` for the migration context.
-  if (recursiveSize != null) {
-    return active ? 'size-stale' : 'size'
+  if (recursiveSize == null) {
+    // No size yet: the `<dir>` placeholder. `'scanning'` adds the hourglass +
+    // "size not ready" aria when an update is in flight.
+    return updating ? 'scanning' : 'dir'
   }
-  return active ? 'scanning' : 'dir'
+  // Absent `complete` ⇒ treat as exact (pre-honest-sizes / fixtures).
+  if (complete === false) {
+    return recursiveSize > 0 ? 'lower-bound' : 'unknown'
+  }
+  return stale === true ? 'size-stale' : 'size'
+}
+
+/**
+ * Whether the dir's size is in flux right now (the orthogonal hourglass): a full
+ * scan/aggregation is running globally (`indexing`), OR this dir has live index
+ * writes in flight (`pending`, a big delete/copy) even with no full scan. See
+ * `indexing/pending_sizes.rs`. Applies on top of any `DirSizeDisplayState`.
+ */
+export function isDirSizeUpdating(indexing: boolean, pending = false): boolean {
+  return indexing || pending
 }
 
 /**
@@ -377,9 +420,12 @@ export function getDirSizeDisplayState(
  * @param recursivePhysicalSize - The recursive physical size in bytes, or undefined.
  * @param recursiveFileCount - The recursive file count, or 0 if unknown.
  * @param recursiveDirCount - The recursive folder count, or 0 if unknown.
- * @param scanning - Whether a scan is currently active.
+ * @param scanning - Whether a scan is currently active (the in-flux hourglass).
  * @param formatSize - Function to format bytes as a human-readable string.
  * @param formatNum - Function to format a number with locale separators.
+ * @param complete - Whether the size is exact (`true`) or a lower bound
+ *   (`false`). Absent ⇒ treated as exact. Drives the `≥` / `—` state line.
+ * @param stale - Whether the exact size is from an older epoch (accurate-but-stale).
  */
 export function buildDirSizeTooltip(
   recursiveSize: number | null | undefined,
@@ -389,7 +435,14 @@ export function buildDirSizeTooltip(
   scanning: boolean,
   formatSize: (bytes: number) => string,
   formatNum: (n: number) => string,
+  complete?: boolean | null,
+  stale?: boolean | null,
 ): string | { html: string } {
+  // Unknown (`—`): incomplete subtree with nothing known below (size 0). A
+  // distinct tooltip, not the size breakdown — there's no size to show.
+  if (recursiveSize != null && complete === false && recursiveSize === 0) {
+    return tString('fileExplorer.dirSize.unknownTooltip')
+  }
   if (recursiveSize != null) {
     const lines: string[] = []
 
@@ -417,6 +470,14 @@ export function buildDirSizeTooltip(
             countText: formatNum(recursiveDirCount),
           })
     lines.push(`${filesStr}, ${foldersStr}`)
+
+    // One-line honest-size state label (plan §1I). Lower-bound and stale are
+    // mutually exclusive content states; either can also be mid-update.
+    if (complete === false) {
+      lines.push(tString('fileExplorer.dirSize.lowerBoundLine'))
+    } else if (stale === true) {
+      lines.push(tString('fileExplorer.dirSize.staleLine'))
+    }
 
     if (scanning) {
       lines.push(tString('fileExplorer.dirSize.updatingIndexLine'))

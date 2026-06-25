@@ -815,6 +815,18 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
+  "fileExplorer.dirSize.lowerBoundLine": "Au moins ceci : certains sous-dossiers n''ont pas encore été analysés, le total réel est donc plus grand.",
+  "@fileExplorer.dirSize.lowerBoundLine": {
+    "sourceHash": "6d92a68"
+  },
+  "fileExplorer.dirSize.unknownTooltip": "Taille inconnue : ce dossier n''a pas encore été analysé.",
+  "@fileExplorer.dirSize.unknownTooltip": {
+    "sourceHash": "0207a3d"
+  },
+  "fileExplorer.dirSize.staleLine": "Ces tailles proviennent d''une analyse antérieure et peuvent être obsolètes.",
+  "@fileExplorer.dirSize.staleLine": {
+    "sourceHash": "4d6d21c"
+  },
   "fileExplorer.selectionTooltip.selected": "Sélectionné",
   "@fileExplorer.selectionTooltip.selected": {
     "sourceHash": "57fd7a0"

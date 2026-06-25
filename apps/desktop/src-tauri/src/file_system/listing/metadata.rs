@@ -142,6 +142,19 @@ pub struct FileEntry {
     /// recursive size). Drives the "size omits symlinked content" hint in the UI.
     /// `None` when the directory isn't indexed yet.
     pub recursive_has_symlinks: Option<bool>,
+    /// Whether `recursive_size` is an exact total (`true`) or a lower bound
+    /// (`false`). Derived backend-side from the subtree's `min_subtree_epoch`
+    /// (`> 0` ⇒ fully covered ⇒ exact). The frontend never sees raw epochs: it
+    /// renders an exact size when `true`, a `≥` lower bound (or `—` when the
+    /// size is 0) when `false`. `None` when the directory isn't indexed yet. See
+    /// the "Honest sizes" model in `indexing/DETAILS.md`.
+    pub recursive_size_complete: Option<bool>,
+    /// Whether the (exact) `recursive_size` was computed at an older volume epoch
+    /// than the current one, so it's accurate-but-stale (the subtree hasn't been
+    /// re-listed since a continuity break). Only meaningful when
+    /// `recursive_size_complete` is `true`; drives the muted "stale" treatment.
+    /// `None` when the directory isn't indexed yet.
+    pub recursive_size_stale: Option<bool>,
     /// When set on a virtual entry, the frontend navigates to this path instead
     /// of treating the entry as a normal directory listing. Currently set on
     /// `worktrees/` and `submodules/` entries inside the git portal so they
@@ -189,6 +202,8 @@ impl FileEntry {
             recursive_file_count: None,
             recursive_dir_count: None,
             recursive_has_symlinks: None,
+            recursive_size_complete: None,
+            recursive_size_stale: None,
             redirect_to_path: None,
             display_size: None,
             display_size_tooltip: None,

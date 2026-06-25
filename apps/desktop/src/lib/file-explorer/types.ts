@@ -34,6 +34,22 @@ export interface FileEntry {
    */
   recursiveSizePending?: boolean
   /**
+   * Whether `recursiveSize` is an exact total (`true`) or a lower bound
+   * (`false`, some subtree was never listed). Derived backend-side from the
+   * subtree's coverage. Drives the `≥` lower-bound vs `—` unknown vs exact
+   * size rendering in the Size column. `undefined` when not indexed yet;
+   * consumers treat absent as exact. Carried on `DirStats` and copied here by
+   * `updateIndexSizesInPlace` / `createParentEntry`, and set by the backend
+   * `FileEntry` enrichment on first paint.
+   */
+  recursiveSizeComplete?: boolean
+  /**
+   * Whether the exact `recursiveSize` is accurate-but-stale (computed at an
+   * older volume epoch than now). Only meaningful when `recursiveSizeComplete`
+   * is `true`; drives the muted "stale" treatment. Absent is treated as fresh.
+   */
+  recursiveSizeStale?: boolean
+  /**
    * When set on a virtual entry, the frontend navigates to this path instead
    * of treating the entry as a normal directory listing. Currently set on
    * `worktrees/` and `submodules/` entries inside the git portal. Lives on

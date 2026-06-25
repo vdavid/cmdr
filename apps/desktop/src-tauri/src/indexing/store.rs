@@ -54,6 +54,16 @@ pub struct DirStats {
     /// Sourced from the in-memory `pending_sizes` tracker at build time, not the
     /// DB. See `indexing/pending_sizes.rs`.
     pub recursive_size_pending: bool,
+    /// Whether `recursive_size` is an exact total (`true`) or a lower bound
+    /// (`false`), derived backend-side from the subtree's `min_subtree_epoch`
+    /// (`> 0` ⇒ exact). The FE renders an exact size when `true`, a `≥` lower
+    /// bound (or `—` when size is 0) when `false`. Raw epochs never cross IPC.
+    /// See the "Honest sizes" model in `indexing/DETAILS.md`.
+    pub recursive_size_complete: bool,
+    /// Whether the (exact) `recursive_size` was computed at an older volume epoch
+    /// than the current one (accurate-but-stale). Only meaningful when
+    /// `recursive_size_complete` is `true`; drives the muted "stale" treatment.
+    pub recursive_size_stale: bool,
 }
 
 /// Dir stats keyed by entry ID. Used internally by the integer-keyed store.

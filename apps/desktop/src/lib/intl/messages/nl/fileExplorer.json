@@ -817,6 +817,18 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
+  "fileExplorer.dirSize.lowerBoundLine": "Minstens dit: sommige submappen zijn nog niet gescand, dus het echte totaal is groter.",
+  "@fileExplorer.dirSize.lowerBoundLine": {
+    "sourceHash": "6d92a68"
+  },
+  "fileExplorer.dirSize.unknownTooltip": "Grootte onbekend: deze map is nog niet gescand.",
+  "@fileExplorer.dirSize.unknownTooltip": {
+    "sourceHash": "0207a3d"
+  },
+  "fileExplorer.dirSize.staleLine": "Deze groottes komen uit een eerdere scan en zijn mogelijk verouderd.",
+  "@fileExplorer.dirSize.staleLine": {
+    "sourceHash": "4d6d21c"
+  },
   "fileExplorer.selectionTooltip.selected": "Geselecteerd",
   "@fileExplorer.selectionTooltip.selected": {
     "sourceHash": "57fd7a0"

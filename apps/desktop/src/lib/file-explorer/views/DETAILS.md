@@ -18,10 +18,13 @@ invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
 - **brief-list-utils.ts** / **full-list-utils.ts** – Mode-specific rendering logic. `full-list-utils.ts` includes
   dual-size display helpers: `getDisplaySize()` (picks logical/physical/smart), `hasSizeMismatch()`,
   `buildFileSizeTooltip()`, `buildDirSizeTooltip()`, `buildSelectionSizeTooltip()`, and `getDirSizeDisplayState()` — the
-  single source of truth for a directory's size-column state (`'dir' | 'scanning' | 'size' | 'size-stale'`, where
-  stale/scanning fold in the global `indexing` flag and the per-row `recursiveSizePending`). Both `FullList.svelte`'s
-  size cell and `measure-column-widths.ts` consume it so the rendered text and the pre-measured column width agree;
-  don't re-inline the dir/scanning/stale decision in either.
+  single source of truth for a directory's size-column CONTENT state
+  (`'dir' | 'scanning' | 'unknown' | 'lower-bound' | 'size' | 'size-stale'`, a pure function of
+  `{recursiveSize, complete, stale, updating}` — the "honest sizes" model; see `$lib/indexing/DETAILS.md` § Honest size
+  rendering). The in-flux hourglass is the ORTHOGONAL `isDirSizeUpdating` (`indexing || pending`), not a state value.
+  `FullList.svelte`'s size cell, `SelectionInfo.svelte`'s Brief status bar, and `measure-column-widths.ts` all consume
+  these so rendered text and pre-measured column width agree; don't re-inline the decision in any of them. The `≥`/`—`
+  glyphs are `LOWER_BOUND_GLYPH` / `UNKNOWN_SIZE_GLYPH` (symbols, not copy).
 - **measure-column-widths.ts** – `computeFullListColumnWidths()`: pixel-accurate widths for the Ext / Size / Modified
   columns based on the currently loaded entries. Uses `@chenglou/pretext` for canvas-based measurement (no DOM reflow).
   FullList transitions `grid-template-columns` over 300ms so widths refine smoothly as more entries stream in.
@@ -36,15 +39,16 @@ invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
   delegates to triads in bytes mode, a dynamic friendliest-unit string in dynamic mode, and a forced single-unit string
   in `kB`/`MB`/`GB` mode. `measure-column-widths.ts` accepts the same options so the size column shrink-wraps the
   actually-rendered cell text. Renders glyphs via `<Icon>`: `circle-alert` for size mismatch warnings and `hourglass`
-  for the index indicators. The hourglass shows when the global `indexing` flag is set (full scan/aggregation, every
-  size in flux) OR the row's own `recursiveSizePending` is set (live delete/copy in flight for that dir, even with no
-  scan running). Two flavors share the glyph: the `size-stale` state pairs it with a visible recursive size (tooltip
-  "Updating index: size may change."), while the `scanning` state (no size yet) renders the `<dir>` placeholder plus the
-  hourglass with tooltip "Sizes appear as the scan progresses" so a fresh install reads as quietly working rather than
-  `Scanning...` on every row. `measure-column-widths.ts` reserves `SIZE_ICON_WIDTH` for both states so the
-  shrink-wrapped column never clips the glyph. The per-dir flag rides `DirStats.recursiveSizePending`, copied onto
-  entries by `updateIndexSizesInPlace` / `createParentEntry` (backend: `indexing/pending_sizes.rs`). Also renders an
-  optional Git status column between Name and Ext when `gitRepoRoot` is set and `showGitColumn` is true (gated by the
+  for the index indicators. The hourglass (`size-updating` wrapper class) shows whenever `isDirSizeUpdating` is true:
+  the global `indexing` flag (full scan/aggregation, every size in flux) OR the row's own `recursiveSizePending` (live
+  delete/copy in flight for that dir, even with no scan running) — orthogonal to the content state, so it rides on top
+  of a size, a `≥` lower bound, a `—` unknown, or the `<dir>` placeholder (the `scanning` state, tooltip "Sizes appear
+  as the scan progresses", so a fresh install reads as quietly working rather than `Scanning...` on every row).
+  Freshness-stale (`size-stale` content state) is a SEPARATE, muted treatment on an exact-but-older size, no glyph.
+  `measure-column-widths.ts` reserves `SIZE_ICON_WIDTH` whenever `isDirSizeUpdating` so the shrink-wrapped column never
+  clips the glyph. The per-dir flag rides `DirStats.recursiveSizePending`, copied onto entries by
+  `updateIndexSizesInPlace` / `createParentEntry` (backend: `indexing/pending_sizes.rs`). Also renders an optional Git
+  status column between Name and Ext when `gitRepoRoot` is set and `showGitColumn` is true (gated by the
   `fileExplorer.git.showStatusColumn` setting in `FilePane`); fetches `fetchStatusMap` and refreshes on
   `git-state-changed` for the active repo
 - **dir-size-display.test.ts** – Tests for `getDirSizeDisplayState` / `buildDirSizeTooltip` (functions in

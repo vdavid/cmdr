@@ -140,6 +140,23 @@ export const commands = {
          */
         recursiveHasSymlinks: boolean | null
         /**
+         *  Whether `recursive_size` is an exact total (`true`) or a lower bound
+         *  (`false`). Derived backend-side from the subtree's `min_subtree_epoch`
+         *  (`> 0` ⇒ fully covered ⇒ exact). The frontend never sees raw epochs: it
+         *  renders an exact size when `true`, a `≥` lower bound (or `—` when the
+         *  size is 0) when `false`. `None` when the directory isn't indexed yet. See
+         *  the "Honest sizes" model in `indexing/DETAILS.md`.
+         */
+        recursiveSizeComplete: boolean | null
+        /**
+         *  Whether the (exact) `recursive_size` was computed at an older volume epoch
+         *  than the current one, so it's accurate-but-stale (the subtree hasn't been
+         *  re-listed since a continuity break). Only meaningful when
+         *  `recursive_size_complete` is `true`; drives the muted "stale" treatment.
+         *  `None` when the directory isn't indexed yet.
+         */
+        recursiveSizeStale: boolean | null
+        /**
          *  When set on a virtual entry, the frontend navigates to this path instead
          *  of treating the entry as a normal directory listing. Currently set on
          *  `worktrees/` and `submodules/` entries inside the git portal so they
@@ -1450,6 +1467,20 @@ export const commands = {
          *  DB. See `indexing/pending_sizes.rs`.
          */
         recursiveSizePending: boolean
+        /**
+         *  Whether `recursive_size` is an exact total (`true`) or a lower bound
+         *  (`false`), derived backend-side from the subtree's `min_subtree_epoch`
+         *  (`> 0` ⇒ exact). The FE renders an exact size when `true`, a `≥` lower
+         *  bound (or `—` when size is 0) when `false`. Raw epochs never cross IPC.
+         *  See the "Honest sizes" model in `indexing/DETAILS.md`.
+         */
+        recursiveSizeComplete: boolean
+        /**
+         *  Whether the (exact) `recursive_size` was computed at an older volume epoch
+         *  than the current one (accurate-but-stale). Only meaningful when
+         *  `recursive_size_complete` is `true`; drives the muted "stale" treatment.
+         */
+        recursiveSizeStale: boolean
       } | null,
       string
     >(__TAURI_INVOKE('get_dir_stats', { path })),
@@ -3011,6 +3042,20 @@ export type DirStats = {
    *  DB. See `indexing/pending_sizes.rs`.
    */
   recursiveSizePending: boolean
+  /**
+   *  Whether `recursive_size` is an exact total (`true`) or a lower bound
+   *  (`false`), derived backend-side from the subtree's `min_subtree_epoch`
+   *  (`> 0` ⇒ exact). The FE renders an exact size when `true`, a `≥` lower
+   *  bound (or `—` when size is 0) when `false`. Raw epochs never cross IPC.
+   *  See the "Honest sizes" model in `indexing/DETAILS.md`.
+   */
+  recursiveSizeComplete: boolean
+  /**
+   *  Whether the (exact) `recursive_size` was computed at an older volume epoch
+   *  than the current one (accurate-but-stale). Only meaningful when
+   *  `recursive_size_complete` is `true`; drives the muted "stale" treatment.
+   */
+  recursiveSizeStale: boolean
 }
 
 // `directory-deleted` event: the watched directory itself was deleted.
@@ -3312,6 +3357,23 @@ export type FileEntry = {
    *  `None` when the directory isn't indexed yet.
    */
   recursiveHasSymlinks: boolean | null
+  /**
+   *  Whether `recursive_size` is an exact total (`true`) or a lower bound
+   *  (`false`). Derived backend-side from the subtree's `min_subtree_epoch`
+   *  (`> 0` ⇒ fully covered ⇒ exact). The frontend never sees raw epochs: it
+   *  renders an exact size when `true`, a `≥` lower bound (or `—` when the
+   *  size is 0) when `false`. `None` when the directory isn't indexed yet. See
+   *  the "Honest sizes" model in `indexing/DETAILS.md`.
+   */
+  recursiveSizeComplete: boolean | null
+  /**
+   *  Whether the (exact) `recursive_size` was computed at an older volume epoch
+   *  than the current one, so it's accurate-but-stale (the subtree hasn't been
+   *  re-listed since a continuity break). Only meaningful when
+   *  `recursive_size_complete` is `true`; drives the muted "stale" treatment.
+   *  `None` when the directory isn't indexed yet.
+   */
+  recursiveSizeStale: boolean | null
   /**
    *  When set on a virtual entry, the frontend navigates to this path instead
    *  of treating the entry as a normal directory listing. Currently set on

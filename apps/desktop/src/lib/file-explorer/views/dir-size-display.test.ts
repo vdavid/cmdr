@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import {
   getDirSizeDisplayState,
+  isDirSizeUpdating,
   buildDirSizeTooltip,
   getDisplaySize,
   buildFileSizeTooltip,
@@ -41,54 +42,67 @@ function tooltipHtml(result: string | { html: string }): string {
 // ============================================================================
 
 describe('getDirSizeDisplayState', () => {
-  it('returns "dir" when no data and not scanning', () => {
-    expect(getDirSizeDisplayState(undefined, false)).toBe('dir')
+  // The CONTENT state is a pure function of {recursiveSize, complete, stale}.
+  // The in-flux hourglass (indexing||pending) is ORTHOGONAL — see `isDirSizeUpdating`.
+
+  it('returns "dir" when no size data (not enriched yet) and not updating', () => {
+    expect(getDirSizeDisplayState(undefined)).toBe('dir')
+    expect(getDirSizeDisplayState(null)).toBe('dir')
   })
 
-  it('returns "scanning" when no data and scanning is active', () => {
-    expect(getDirSizeDisplayState(undefined, true)).toBe('scanning')
+  it('returns "scanning" when no size data and an update is in flight', () => {
+    // 4th arg is the orthogonal `updating` flag (indexing||pending).
+    expect(getDirSizeDisplayState(undefined, undefined, undefined, true)).toBe('scanning')
   })
 
-  it('returns "size" when data available and not scanning', () => {
-    expect(getDirSizeDisplayState(1234, false)).toBe('size')
+  it('returns "unknown" (—) when incomplete and size is 0', () => {
+    // The crux: an incomplete subtree with nothing known below renders `—`,
+    // distinct from a genuinely-empty "0 bytes" folder.
+    expect(getDirSizeDisplayState(0, false, false)).toBe('unknown')
   })
 
-  it('returns "size-stale" when data available and scanning', () => {
-    expect(getDirSizeDisplayState(1234, true)).toBe('size-stale')
+  it('returns "lower-bound" (≥) when incomplete and size > 0', () => {
+    expect(getDirSizeDisplayState(1234, false, false)).toBe('lower-bound')
   })
 
-  it('returns "size" for zero size when not scanning', () => {
-    expect(getDirSizeDisplayState(0, false)).toBe('size')
+  it('returns "size" when complete and fresh', () => {
+    expect(getDirSizeDisplayState(1234, true, false)).toBe('size')
   })
 
-  it('returns "size-stale" for zero size when scanning', () => {
-    expect(getDirSizeDisplayState(0, true)).toBe('size-stale')
+  it('returns "size" (0 bytes) when complete, fresh, and size is 0 — genuinely empty', () => {
+    // complete + size 0 is a KNOWN "0 bytes", NOT the unknown `—`.
+    expect(getDirSizeDisplayState(0, true, false)).toBe('size')
   })
 
-  it('handles undefined recursiveSize correctly regardless of scanning state', () => {
-    expect(getDirSizeDisplayState(undefined, false)).toBe('dir')
-    expect(getDirSizeDisplayState(undefined, true)).toBe('scanning')
+  it('returns "size-stale" when complete but stale (older epoch)', () => {
+    expect(getDirSizeDisplayState(1234, true, true)).toBe('size-stale')
+    // Genuinely-empty but stale is still a stale exact "0 bytes".
+    expect(getDirSizeDisplayState(0, true, true)).toBe('size-stale')
   })
 
-  // Per-directory pending flag: drives the hourglass when a live delete/copy is
-  // in flight for this dir, even with no global scan running.
-  it('returns "size-stale" when per-dir pending even if not globally indexing', () => {
-    expect(getDirSizeDisplayState(1234, false, true)).toBe('size-stale')
+  it('treats absent complete/stale flags as exact + fresh (pre-honest-sizes callers)', () => {
+    // A dir enriched before the flags exist (or a test fixture) defaults to the
+    // exact, fresh rendering rather than masquerading as unknown.
+    expect(getDirSizeDisplayState(1234)).toBe('size')
+    expect(getDirSizeDisplayState(0)).toBe('size')
+  })
+})
+
+describe('isDirSizeUpdating', () => {
+  // Orthogonal in-flux hourglass: a full scan/aggregation is running OR this dir
+  // has live writes in flight. Applies on TOP of any content state.
+  it('is true when globally indexing', () => {
+    expect(isDirSizeUpdating(true, false)).toBe(true)
   })
 
-  it('returns "size" when per-dir pending is false and not indexing', () => {
-    expect(getDirSizeDisplayState(1234, false, false)).toBe('size')
-    // Default (omitted) pending arg behaves as false, preserving old callers.
-    expect(getDirSizeDisplayState(1234, false)).toBe('size')
+  it('is true when the per-dir pending flag is set', () => {
+    expect(isDirSizeUpdating(false, true)).toBe(true)
   })
 
-  it('returns "scanning" when no data and only per-dir pending is set', () => {
-    expect(getDirSizeDisplayState(undefined, false, true)).toBe('scanning')
-  })
-
-  it('stays "size-stale" when global indexing and per-dir pending disagree', () => {
-    expect(getDirSizeDisplayState(1234, true, false)).toBe('size-stale')
-    expect(getDirSizeDisplayState(1234, false, true)).toBe('size-stale')
+  it('is false when neither indexing nor pending', () => {
+    expect(isDirSizeUpdating(false, false)).toBe(false)
+    // Default (omitted) pending arg behaves as false.
+    expect(isDirSizeUpdating(false)).toBe(false)
   })
 })
 
@@ -197,6 +211,40 @@ describe('buildDirSizeTooltip', () => {
   it('includes colored triad spans in HTML output', () => {
     const html = tooltipHtml(buildDirSizeTooltip(1234567, undefined, 5, 2, false, formatSize, formatNum))
     expect(html).toContain('class="size-')
+  })
+
+  // Honest-size state lines (plan §1I): the tooltip gains a one-line label per state.
+  it('returns the unknown tooltip when incomplete and size is 0 (the — state)', () => {
+    // No size breakdown — there's nothing known. complete=false, size=0.
+    const result = buildDirSizeTooltip(0, undefined, 0, 0, false, formatSize, formatNum, false, false)
+    expect(tooltipHtml(result)).toBe("Size unknown: this folder hasn't been scanned yet.")
+  })
+
+  it('appends the lower-bound line when incomplete and size > 0 (the ≥ state)', () => {
+    const html = tooltipHtml(buildDirSizeTooltip(1234, undefined, 10, 3, false, formatSize, formatNum, false, false))
+    expect(html).toContain('1234 bytes')
+    expect(html).toContain('At least this much')
+  })
+
+  it('appends the stale line when complete but stale', () => {
+    const html = tooltipHtml(buildDirSizeTooltip(1234, undefined, 10, 3, false, formatSize, formatNum, true, true))
+    expect(html).toContain('1234 bytes')
+    expect(html).toContain('from an earlier scan')
+    // Stale and lower-bound are mutually exclusive content states.
+    expect(html).not.toContain('At least this much')
+  })
+
+  it('shows a normal breakdown with no state line when complete and fresh', () => {
+    const html = tooltipHtml(buildDirSizeTooltip(1234, undefined, 10, 3, false, formatSize, formatNum, true, false))
+    expect(html).toContain('1234 bytes')
+    expect(html).not.toContain('At least this much')
+    expect(html).not.toContain('from an earlier scan')
+  })
+
+  it('treats absent complete/stale as exact + fresh (pre-honest-sizes callers)', () => {
+    const html = tooltipHtml(buildDirSizeTooltip(1234, undefined, 10, 3, false, formatSize, formatNum))
+    expect(html).toContain('1234 bytes')
+    expect(html).not.toContain('At least this much')
   })
 })
 

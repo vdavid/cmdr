@@ -814,6 +814,18 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
+  "fileExplorer.dirSize.lowerBoundLine": "Minst så här mycket: vissa undermappar har inte genomsökts än, så den verkliga summan är större.",
+  "@fileExplorer.dirSize.lowerBoundLine": {
+    "sourceHash": "6d92a68"
+  },
+  "fileExplorer.dirSize.unknownTooltip": "Storlek okänd: den här mappen har inte genomsökts än.",
+  "@fileExplorer.dirSize.unknownTooltip": {
+    "sourceHash": "0207a3d"
+  },
+  "fileExplorer.dirSize.staleLine": "De här storlekarna är från en tidigare genomsökning och kan vara inaktuella.",
+  "@fileExplorer.dirSize.staleLine": {
+    "sourceHash": "4d6d21c"
+  },
   "fileExplorer.selectionTooltip.selected": "Markerat",
   "@fileExplorer.selectionTooltip.selected": {
     "sourceHash": "57fd7a0"

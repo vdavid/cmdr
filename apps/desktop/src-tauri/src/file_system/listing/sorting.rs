@@ -71,6 +71,22 @@ fn compare_names_natural(a: &str, b: &str) -> std::cmp::Ordering {
     alphanumeric_sort::compare_str(a.to_lowercase(), b.to_lowercase())
 }
 
+/// The directory's recursive size for sorting, or `None` when it's unknown.
+///
+/// "Unknown" (sorts last, like the pre-honest-sizes `recursive_size == None`):
+/// either the dir isn't enriched yet, or its subtree is incomplete with nothing
+/// known below it (`recursive_size_complete == Some(false)` and size `0`, the
+/// `—` render). A genuinely-empty dir (`complete == Some(true)`, size `0`) and a
+/// lower-bound (`complete == Some(false)`, size `> 0`, the `≥N` render) are both
+/// KNOWN and sort by their numeric value. See plan §1I.
+fn known_dir_size(e: &FileEntry) -> Option<u64> {
+    match (e.recursive_size, e.recursive_size_complete) {
+        (None, _) => None,
+        (Some(0), Some(false)) => None, // `—` unknown
+        (Some(size), _) => Some(size),  // genuinely-empty 0, lower-bound, or exact
+    }
+}
+
 /// Returns a comparator that orders `FileEntry` values according to the given sort params.
 ///
 /// Directories always come first, then files. Within each group the comparator
@@ -99,10 +115,21 @@ pub fn entry_comparator(
         }
 
         // For directories in LikeFiles mode sorting by Size, use recursive_size.
-        // Handled separately because dirs with unknown (None) size must always sort last,
-        // regardless of ascending/descending order.
+        // Handled separately because dirs with an UNKNOWN size must always sort
+        // last (and stably by name), regardless of ascending/descending order,
+        // so they don't masquerade as exact-0 dirs at the top of an ascending sort.
+        //
+        // Honest-size semantics (plan §1I): a dir's size is "unknown" when either
+        // it isn't enriched yet (`recursive_size == None`) OR its subtree is
+        // incomplete with nothing known below it (`recursive_size_complete ==
+        // Some(false)` and size `0`, rendered as `—`). A genuinely-empty dir
+        // (`complete == Some(true)`, size `0`) is a KNOWN `0 bytes` and sorts by
+        // its value, ahead of unknowns. A lower-bound (`complete == Some(false)`,
+        // size `> 0`, rendered `≥N`) sorts by its known floor `N`.
         if a.is_directory && b.is_directory && sort_by == SortColumn::Size {
-            return match (a.recursive_size, b.recursive_size) {
+            let a_known = known_dir_size(a);
+            let b_known = known_dir_size(b);
+            return match (a_known, b_known) {
                 (None, None) => {
                     // Both unknown: sort by name, respecting sort order
                     let cmp = compare_names_natural(&a.name, &b.name);
@@ -111,7 +138,7 @@ pub fn entry_comparator(
                         SortOrder::Descending => cmp.reverse(),
                     }
                 }
-                (None, Some(_)) => std::cmp::Ordering::Greater, // None always last
+                (None, Some(_)) => std::cmp::Ordering::Greater, // Unknown always last
                 (Some(_), None) => std::cmp::Ordering::Less,    // Known always first
                 (Some(a_size), Some(b_size)) => {
                     let cmp = a_size.cmp(&b_size);

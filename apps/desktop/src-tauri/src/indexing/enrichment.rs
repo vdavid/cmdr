@@ -219,14 +219,27 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
 
     log::debug!("enrich: {} under {parent_path}", pluralize(dir_count as u64, "dir"));
 
+    // Read the volume's `current_epoch` once for this enrichment pass, on the
+    // same connection that does the stats lookup. Absent (older / first-run DB)
+    // reads as 1 (`read_current_epoch`), so a volume with no recorded epoch
+    // behaves as "all current". This is what turns the stored `min_subtree_epoch`
+    // into the FE-facing `recursive_size_complete` / `recursive_size_stale`
+    // booleans — the FE never learns the epoch scheme.
+    //
     // Use the integer-keyed fast path: resolve parent once, batch-fetch child stats
     if let Err(e) = pool
-        .with_conn(|conn| enrich_via_parent_id_on(entries, conn, &index_parent_path))
+        .with_conn(|conn| {
+            let current_epoch = IndexStore::read_current_epoch(conn).unwrap_or(1);
+            enrich_via_parent_id_on(entries, conn, &index_parent_path, current_epoch)
+        })
         .and_then(|r| r)
     {
         log::debug!("Enrichment fast path failed: {e}, trying fallback");
         // Fallback: resolve each path individually (handles mixed-parent edge cases)
-        let _ = pool.with_conn(|conn| enrich_via_individual_paths_on(volume_id, entries, conn));
+        let _ = pool.with_conn(|conn| {
+            let current_epoch = IndexStore::read_current_epoch(conn).unwrap_or(1);
+            enrich_via_individual_paths_on(volume_id, entries, conn, current_epoch)
+        });
     }
 
     let enriched = entries
@@ -236,11 +249,33 @@ pub fn enrich_entries_with_index_on_volume(volume_id: &str, entries: &mut [FileE
     log::debug!("enrich: {enriched}/{} got sizes", pluralize(dir_count as u64, "dir"));
 }
 
+/// Copy a directory's aggregated stats onto its `FileEntry`, deriving the
+/// FE-facing honest-size booleans from `min_subtree_epoch` vs `current_epoch`.
+///
+/// - `recursive_size_complete = min_subtree_epoch > 0` (subtree fully covered ⇒
+///   the size is exact, not a lower bound).
+/// - `recursive_size_stale = 0 < min_subtree_epoch < current_epoch` (exact, but
+///   computed at an older epoch than the current one).
+///
+/// The FE never sees raw epochs; it renders from `{recursive_size, complete,
+/// stale}` alone. See plan §1F and the "Honest sizes" model in DETAILS.
+fn apply_dir_stats(entry: &mut FileEntry, stats: &DirStatsById, current_epoch: u64) {
+    entry.recursive_size = Some(stats.recursive_logical_size);
+    entry.recursive_physical_size = Some(stats.recursive_physical_size);
+    entry.recursive_file_count = Some(stats.recursive_file_count);
+    entry.recursive_dir_count = Some(stats.recursive_dir_count);
+    entry.recursive_has_symlinks = Some(stats.recursive_has_symlinks);
+    let complete = stats.min_subtree_epoch > 0;
+    entry.recursive_size_complete = Some(complete);
+    entry.recursive_size_stale = Some(complete && stats.min_subtree_epoch < current_epoch);
+}
+
 /// Fast path: resolve parent dir → id, get child dir IDs, batch-fetch stats.
 pub(super) fn enrich_via_parent_id_on(
     entries: &mut [FileEntry],
     conn: &Connection,
     parent_path: &str,
+    current_epoch: u64,
 ) -> Result<(), String> {
     let t0 = std::time::Instant::now();
 
@@ -284,11 +319,7 @@ pub(super) fn enrich_via_parent_id_on(
         };
         let normalized_name = store::normalize_for_comparison(basename);
         if let Some(stats) = name_to_stats.get(&normalized_name) {
-            entry.recursive_size = Some(stats.recursive_logical_size);
-            entry.recursive_physical_size = Some(stats.recursive_physical_size);
-            entry.recursive_file_count = Some(stats.recursive_file_count);
-            entry.recursive_dir_count = Some(stats.recursive_dir_count);
-            entry.recursive_has_symlinks = Some(stats.recursive_has_symlinks);
+            apply_dir_stats(entry, stats, current_epoch);
         }
     }
     let match_ms = t3.elapsed().as_millis();
@@ -315,7 +346,12 @@ pub(super) fn enrich_via_parent_id_on(
 ///
 /// Each entry's mount-absolute path is mapped into the volume's index path space
 /// (mount-relative for SMB) before `resolve_path`, mirroring the fast path.
-pub(super) fn enrich_via_individual_paths_on(volume_id: &str, entries: &mut [FileEntry], conn: &Connection) {
+pub(super) fn enrich_via_individual_paths_on(
+    volume_id: &str,
+    entries: &mut [FileEntry],
+    conn: &Connection,
+    current_epoch: u64,
+) {
     // Resolve each dir path → entry_id, then batch-fetch stats. We key the stats
     // map on the index-rooted path (what resolved) so the apply loop below, which
     // recomputes the same index-rooted path per entry, matches.
@@ -359,11 +395,7 @@ pub(super) fn enrich_via_individual_paths_on(volume_id: &str, entries: &mut [Fil
             continue;
         };
         if let Some(stats) = stats_map.get(&index_path) {
-            entry.recursive_size = Some(stats.recursive_logical_size);
-            entry.recursive_physical_size = Some(stats.recursive_physical_size);
-            entry.recursive_file_count = Some(stats.recursive_file_count);
-            entry.recursive_dir_count = Some(stats.recursive_dir_count);
-            entry.recursive_has_symlinks = Some(stats.recursive_has_symlinks);
+            apply_dir_stats(entry, stats, current_epoch);
         }
     }
 }
@@ -375,6 +407,45 @@ mod tests {
     fn dir(path: &str) -> FileEntry {
         let name = path.rsplit('/').next().unwrap_or(path).to_string();
         FileEntry::new(name, path.to_string(), true, false)
+    }
+
+    fn stats_with_epoch(min_subtree_epoch: u64) -> DirStatsById {
+        DirStatsById {
+            entry_id: 1,
+            recursive_logical_size: 1234,
+            recursive_physical_size: 1234,
+            recursive_file_count: 5,
+            recursive_dir_count: 2,
+            recursive_has_symlinks: false,
+            min_subtree_epoch,
+        }
+    }
+
+    /// `apply_dir_stats` derives the FE-facing honest-size booleans from
+    /// `min_subtree_epoch` vs `current_epoch`. This is the read-side contract
+    /// (plan §1F): the FE never sees raw epochs.
+    #[test]
+    fn apply_dir_stats_derives_complete_and_stale() {
+        let current_epoch = 5;
+
+        // Incomplete subtree: `min_subtree_epoch == 0` ⇒ lower bound, not stale.
+        let mut e = dir("/a");
+        apply_dir_stats(&mut e, &stats_with_epoch(0), current_epoch);
+        assert_eq!(e.recursive_size, Some(1234));
+        assert_eq!(e.recursive_size_complete, Some(false));
+        assert_eq!(e.recursive_size_stale, Some(false));
+
+        // Complete and current: `min_subtree_epoch == current_epoch` ⇒ exact, fresh.
+        let mut e = dir("/a");
+        apply_dir_stats(&mut e, &stats_with_epoch(current_epoch), current_epoch);
+        assert_eq!(e.recursive_size_complete, Some(true));
+        assert_eq!(e.recursive_size_stale, Some(false));
+
+        // Complete but older: `0 < min_subtree_epoch < current_epoch` ⇒ exact, stale.
+        let mut e = dir("/a");
+        apply_dir_stats(&mut e, &stats_with_epoch(3), current_epoch);
+        assert_eq!(e.recursive_size_complete, Some(true));
+        assert_eq!(e.recursive_size_stale, Some(true));
     }
 
     #[test]
