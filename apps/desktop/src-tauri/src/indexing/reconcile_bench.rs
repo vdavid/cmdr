@@ -1,9 +1,5 @@
-//! M3.0 GATE — PERFORMANCE microbenchmark for the non-destructive reconcile rescan.
-//!
-//! THROWAWAY bench/measurement code for the M3.0 gate (docs/specs/2026-06-25-honest-index-sizes-plan.md,
-//! Milestone 3). NOT a regression test, NOT production wiring. The lead reviews this, then it can be
-//! deleted (or one no-op-cost assertion kept as the standing "reconcile-no-op writes zero rows" guard
-//! the gate relied on). Marked `#[ignore]` so it never runs in CI; run explicitly:
+//! Performance guard for the non-destructive reconcile rescan (must stay cheaper than truncate-rebuild,
+//! or reconcile-on-rescan would be a regression). Marked `#[ignore]` so it never runs in CI; run explicitly:
 //!
 //!   find apps/desktop/src-tauri/src -name '*.rs' | xargs touch   # avoid stale COW build
 //!   cargo nextest run -p cmdr-lib --no-capture reconcile_bench --run-ignored all
@@ -12,7 +8,7 @@
 //!
 //! The DB WRITE-PATH delta that the reconcile design introduces, isolated from FS/network walk cost.
 //! The walk (read_dir / SMB list_directory) is unchanged from today's scan and dominated by I/O — that
-//! is NOT what M3 changes, so we drive the writer with the exact message stream each strategy emits and
+//! is NOT what the reconcile design changes, so we drive the writer with the exact message stream each strategy emits and
 //! time the writer-side work. The three arms over one synthetic tree:
 //!
 //!   1. BASELINE (today): `TruncateData` → `InsertEntriesV2` batches → `ComputeAllAggregates`.
@@ -29,12 +25,12 @@
 //! (which is identical across all three arms anyway, hence not the delta under test).
 
 #[cfg(test)]
-// Throwaway M3.0 perf bench: `eprintln!` is the deliverable (the measured numbers must be visible on
+// `eprintln!` is the deliverable here (the measured numbers must be visible on
 // `--nocapture`); `log::*` is level-filtered out under the test harness. This is `#[ignore]`d and never
 // runs in CI, so the print_stderr ban (meant for production paths) is justifiably waived here only.
 #[allow(
     clippy::print_stderr,
-    reason = "throwaway #[ignore]d M3.0 perf bench; the measured numbers must print on --nocapture, and log::* is level-filtered under the test harness. Never runs in CI."
+    reason = "ignored perf bench; the measured numbers must print on --nocapture, and log::* is level-filtered under the test harness. Never runs in CI."
 )]
 mod bench {
     use std::collections::HashMap;
@@ -257,11 +253,11 @@ mod bench {
     }
 
     #[test]
-    #[ignore = "M3.0 perf bench, run explicitly with --run-ignored all"]
-    fn m3_reconcile_perf_gate() {
+    #[ignore = "reconcile perf bench, run explicitly with --run-ignored all"]
+    fn reconcile_perf_gate() {
         let facts = build_tree();
         eprintln!(
-            "\n=== M3.0 RECONCILE PERF GATE ===\nTree: levels={LEVELS} dirs/level={DIRS_PER_LEVEL} files/dir={FILES_PER_DIR}\n      {} entries, {} dirs\n",
+            "\n=== RECONCILE PERF GATE ===\nTree: levels={LEVELS} per_level={DIRS_PER_LEVEL} per_dir={FILES_PER_DIR}; entries={}, dir_count={}\n",
             facts.n_entries, facts.n_dirs
         );
 
@@ -329,7 +325,7 @@ mod bench {
         eprintln!("  baseline (truncate+reinsert+aggregate): {baseline_ms} ms");
         eprintln!("  reconcile NO-OP (per-dir propagate):      {noop_ms} ms   (entries still {noop_rows_after})");
         eprintln!("  reconcile NO-OP (single aggregate):       {noop_agg_ms} ms   (recommended design)");
-        eprintln!("  reconcile 1%-changed ({n_changed} dirs):           {one_pct_ms} ms");
+        eprintln!("  reconcile 1%-changed ({n_changed} changed):        {one_pct_ms} ms");
         let ratio = if noop_ms == 0 {
             f64::INFINITY
         } else {

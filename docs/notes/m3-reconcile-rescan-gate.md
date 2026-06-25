@@ -16,31 +16,31 @@ Throwaway gate artifacts (review, then delete or promote): `apps/desktop/src-tau
   orphans, no ghost sizes, across repeated cycles. The reconciled index matches a fresh-from-scratch index byte-for-byte
   on sizes/counts/membership. **No extra orphan-sweep mechanism is required for correctness** when a complete reconcile
   runs; a prototype epoch sweep is included as an optional belt-and-suspenders.
-- **Perf is acceptable — IF the coverage recompute is done right.** Firing `PropagateMinSubtreeEpoch` once per dir
-  (37k ancestor-walks) is the dominant cost and makes a no-op reconcile ~2× SLOWER than today's truncate baseline.
-  Replacing it with ONE bottom-up aggregate after the walk makes a no-op reconcile CHEAPER than the truncate baseline.
+- **Perf is acceptable — IF the coverage recompute is done right.** Firing `PropagateMinSubtreeEpoch` once per dir (37k
+  ancestor-walks) is the dominant cost and makes a no-op reconcile ~2× SLOWER than today's truncate baseline. Replacing
+  it with ONE bottom-up aggregate after the walk makes a no-op reconcile CHEAPER than the truncate baseline.
 
 ## A. Performance
 
 Bench measures the DB write-path delta only (the FS/network walk is unchanged from today's scan and is the same across
 all strategies, so it's excluded — we drive the real writer with each strategy's exact message stream). Synthetic tree:
-**486,836 entries / 37,449 dirs** (≈ local `root` entry scale; ~37k dirs extrapolates ×~14 to the doc's ~538k-dir
-figure — costs below are O(dirs)/O(entries) linear, so scale them by ~14 for full `root`).
+**486,836 entries / 37,449 dirs** (≈ local `root` entry scale; ~37k dirs extrapolates ×~14 to the doc's ~538k-dir figure
+— costs below are O(dirs)/O(entries) linear, so scale them by ~14 for full `root`).
 
-Release build, representative run (run-to-run varies with machine load; the *ranking* is stable):
+Release build, representative run (run-to-run varies with machine load; the _ranking_ is stable):
 
-| Strategy | Time | vs baseline |
-| --- | --- | --- |
-| Baseline: truncate + bulk reinsert + `ComputeAllAggregates` | ~910–1900 ms | 1.0× |
-| Reconcile no-op, **per-dir `PropagateMinSubtreeEpoch`** (naive) | ~1950–2600 ms | ~2× SLOWER |
-| Reconcile no-op, **single bottom-up aggregate** (recommended) | ~720–1070 ms | **~0.6–0.8× (faster)** |
-| Reconcile 1%-changed (375 dirs) | ~1200–2600 ms | ~1.3× |
+| Strategy                                                        | Time          | vs baseline            |
+| --------------------------------------------------------------- | ------------- | ---------------------- |
+| Baseline: truncate + bulk reinsert + `ComputeAllAggregates`     | ~910–1900 ms  | 1.0×                   |
+| Reconcile no-op, **per-dir `PropagateMinSubtreeEpoch`** (naive) | ~1950–2600 ms | ~2× SLOWER             |
+| Reconcile no-op, **single bottom-up aggregate** (recommended)   | ~720–1070 ms  | **~0.6–0.8× (faster)** |
+| Reconcile 1%-changed (375 dirs)                                 | ~1200–2600 ms | ~1.3×                  |
 
-No-op phase breakdown (release): per-dir DB read+name-diff ≈ 350 ms, `MarkDirsListed` ≈ 40–55 ms (cheap, PK-keyed
-UPDATE as designed), **per-dir propagate ≈ 1550–2200 ms** (the killer), single aggregate ≈ 370–550 ms.
+No-op phase breakdown (release): per-dir DB read+name-diff ≈ 350 ms, `MarkDirsListed` ≈ 40–55 ms (cheap, PK-keyed UPDATE
+as designed), **per-dir propagate ≈ 1550–2200 ms** (the killer), single aggregate ≈ 370–550 ms.
 
 Why per-dir propagate is so costly: `propagate_min_subtree_epoch` walks the ancestor chain doing `recompute` +
-`get_parent_id` queries per hop, with a short-circuit only once a value stabilizes. After a *full* reconcile that
+`get_parent_id` queries per hop, with a short-circuit only once a value stabilizes. After a _full_ reconcile that
 re-stamps every dir to the same new epoch, nothing stabilizes early on the first deep walks, so it degenerates toward
 O(dirs × depth) round trips. A single bottom-up pass (`compute_all_aggregates_reported`, the SQL fallback
 `ComputeAllAggregates` already takes when accumulator maps are empty) recomputes the whole coverage rollup in O(dirs)
@@ -75,9 +75,9 @@ All in `reconcile_correctness.rs`, real `reconcile_subtree` against real on-disk
    `listed_epoch < rescan_epoch` AND whose parent was re-listed at `rescan_epoch`); prunes exactly the vanished dir,
    spares re-listed ones.
 
-Why orphan-freedom holds without a mandatory sweep: a *complete* reconcile re-lists every dir and its delete branch
+Why orphan-freedom holds without a mandatory sweep: a _complete_ reconcile re-lists every dir and its delete branch
 (`for row in db_children { if !matched { Delete } }`) removes any child absent from the live listing — including the
-whole subtree of a dir deleted while a prior pass was interrupted, because that dir is a direct child of *some* dir the
+whole subtree of a dir deleted while a prior pass was interrupted, because that dir is a direct child of _some_ dir the
 complete pass re-lists. The interrupted state is transiently dirty (lingering rows, coverage shows incomplete = honest
 "≥"/"—"), and the next complete pass is exhaustive.
 
@@ -94,10 +94,9 @@ warranted — the perf concern was the coverage recompute strategy, not the volu
 
 ### M3.1 design shape (blueprint)
 
-- **Reuse `reconcile_subtree`'s per-dir diff** as the rescan body. For local, generalize it to drive from the jwalk
-  walk (or keep BFS read_dir — the walk cost is I/O-bound and unchanged); for SMB/MTP, drive it from
-  `volume_scanner`'s `Volume::list_directory` BFS instead of `std::fs::read_dir`. The diff/upsert/delete logic is
-  identical.
+- **Reuse `reconcile_subtree`'s per-dir diff** as the rescan body. For local, generalize it to drive from the jwalk walk
+  (or keep BFS read_dir — the walk cost is I/O-bound and unchanged); for SMB/MTP, drive it from `volume_scanner`'s
+  `Volume::list_directory` BFS instead of `std::fs::read_dir`. The diff/upsert/delete logic is identical.
 - **Drop the up-front `TruncateData` for rescans.** Production truncate sites to change: `manager.rs:764` (local
   `start_scan`) and `manager.rs:380` (network `start_volume_scan`). Keep `TruncateData` ONLY for a true first scan (no
   existing index) and `clear_index` rebuild.
@@ -108,8 +107,8 @@ warranted — the perf concern was the coverage recompute strategy, not the volu
   small-scope live verifier reconciles (where the chain is short), not the full rescan.
 - **Epoch bump at rescan start** (continuity break) → whole tree reads stale-but-visible; each reconciled dir flips
   fresh as re-listed. The bump funnels already exist (`start_scan` / `start_volume_scan` per M2).
-- **Keep `next_id` from the shared `Arc<AtomicI64>`** (reads `MAX(id)+1` on writer spawn; never reset for a rescan).
-  IDs growing across rescans is harmless (i64).
+- **Keep `next_id` from the shared `Arc<AtomicI64>`** (reads `MAX(id)+1` on writer spawn; never reset for a rescan). IDs
+  growing across rescans is harmless (i64).
 - **Preserve the pre-arm-before-snapshot live-change buffering**, adapted: there's no truncate to race now, so a
   mid-rescan live change to an already-reconciled dir can be applied directly (or kept buffered + replayed; either is
   safe since the prior tree is intact). Simpler than today.

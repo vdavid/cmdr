@@ -54,7 +54,7 @@ mod stress_tests_concurrency;
 mod stress_tests_lifecycle;
 #[cfg(test)]
 mod stress_tests_partial_aggregation;
-// M3.0 gate (throwaway): perf bench + correctness for the non-destructive reconcile rescan.
+// Reconcile rescan: perf guard (ignored bench) + correctness regression tests.
 #[cfg(test)]
 mod reconcile_bench;
 #[cfg(test)]

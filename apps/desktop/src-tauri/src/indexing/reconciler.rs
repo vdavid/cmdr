@@ -417,7 +417,7 @@ pub(super) struct DirDiff {
 /// `DeleteSubtreeById` for vanished rows). Shared by the local `read_dir` walk
 /// and the network `Volume`-trait walk so the diff logic lives in ONE place.
 ///
-/// Writes NOTHING for an unchanged row (the no-op-cheap property the M3.0 gate
+/// Writes NOTHING for an unchanged row (the no-op-cheap property the perf bench
 /// relied on): a matched row is re-UPSERTed only when its size/mtime (file) or
 /// mtime (dir/symlink) actually differs, so a rescan over an unchanged tree
 /// issues zero entry-row writes and never touches the catastrophic
@@ -550,7 +550,7 @@ pub(super) fn diff_dir_against_db(
 /// listed dir. The full-rescan path does NOT use this — the network rescan walks
 /// via `volume_scanner::reconcile_volume_via_trait`, which reuses the shared
 /// [`diff_dir_against_db`] but stamps + runs ONE `ComputeAllAggregates` (the
-/// single-aggregate constraint the M3.0 gate mandates), never per-dir propagation.
+/// single-aggregate constraint the perf bench measured), never per-dir propagation.
 pub(super) fn reconcile_subtree(
     root: &Path,
     conn: &Connection,

@@ -1,11 +1,10 @@
-//! M3.0 GATE — CORRECTNESS tests for the non-destructive reconcile rescan.
+//! Correctness tests for the non-destructive reconcile rescan.
 //!
-//! THROWAWAY gate code for M3.0 (docs/specs/2026-06-25-honest-index-sizes-plan.md, Milestone 3). These
-//! tests drive the REAL `reconciler::reconcile_subtree` against REAL on-disk temp trees and a real
+//! These drive the REAL `reconciler::reconcile_subtree` against REAL on-disk temp trees and a real
 //! store + writer, to prove the correctness half of the gate:
 //!
 //!  1. Reconcile handles add / remove / modify / dir↔file type-change, updating dir_stats +
-//!     min_subtree_epoch (the basic diff correctness M3.1 would route the full rescan through).
+//!     min_subtree_epoch (the diff the full network rescan routes through).
 //!  2. An INTERRUPTED reconcile (cancel mid-walk) followed by a later COMPLETE reconcile leaves NO
 //!     orphan rows and NO ghost sizes — across REPEATED interrupt→reconcile cycles. Specifically: a dir
 //!     deleted on the live side while the reconcile was interrupted before reaching it must NOT linger
@@ -13,8 +12,7 @@
 //!  3. Epoch re-stamp gives partial-rescan granularity (reconcile /a but not /b → /a fresh, /b stale).
 //!  4. A prototype epoch-based ORPHAN SWEEP, proving the design's safety net works if (2) ever needs it.
 //!
-//! Unlike the perf bench, these are cheap and run in CI normally (no `#[ignore]`). They are the gate's
-//! standing evidence; the lead may keep them (renamed) as the M3 correctness regression suite.
+//! Cheap; run in CI normally (no `#[ignore]`).
 //!
 //! Reconcile root note: `reconcile_subtree` requires the root path's entry to exist (it auto-creates
 //! the LEAF root via its parent, but the parent chain must resolve). `non_excluded_tempdir` lives under
@@ -358,7 +356,7 @@ mod tests {
         );
         for (k, va) in &map_a {
             let vb = &map_b[k];
-            assert_eq!(va, vb, "entry {k} differs: reconciled={va:?} fresh={vb:?}");
+            assert_eq!(va, vb, "entry {k}: reconciled={va:?} fresh={vb:?}");
         }
     }
 

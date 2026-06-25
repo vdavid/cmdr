@@ -356,7 +356,7 @@ pub(crate) async fn scan_volume_via_trait(
 /// the truncate for the reconcile path).
 ///
 /// Coverage: stamps every successfully-listed dir, then runs ONE
-/// `ComputeAllAggregates` (NOT per-dir propagation — the M3.0 gate measured that
+/// `ComputeAllAggregates` (NOT per-dir propagation — the perf bench measured that
 /// ~2× slower at full scale; `docs/notes/m3-reconcile-rescan-gate.md`). After a
 /// reconcile the writer's accumulator maps are empty (no `InsertEntriesV2`), so
 /// `ComputeAllAggregates` takes the O(dirs) bulk-SQL bottom-up path.
@@ -547,8 +547,9 @@ pub(crate) async fn reconcile_volume_via_trait(
         .send(WriteMessage::WalCheckpoint)
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
 
+    let dirs_listed = crate::pluralize::pluralize(total_dirs, "dir");
     log::info!(
-        "volume_scanner: reconcile complete for {}: +{added} -{removed} ~{updated} ({total_dirs} dirs re-listed) in {}ms",
+        "volume_scanner: reconcile complete for {}: +{added} -{removed} ~{updated} ({dirs_listed} re-listed) in {}ms",
         root.display(),
         start.elapsed().as_millis()
     );
@@ -557,7 +558,7 @@ pub(crate) async fn reconcile_volume_via_trait(
 }
 
 /// Stamp the reconciled dirs' `listed_epoch`, then run ONE `ComputeAllAggregates`.
-/// The single-aggregate coverage refresh the M3.1 full-rescan path mandates: NOT
+/// The single-aggregate coverage refresh the full-rescan path uses: NOT
 /// per-dir propagation. A no-op reconcile still runs the aggregate (cheap O(dirs)
 /// bulk SQL) so coverage re-stamps to the new epoch; it writes no entry rows.
 fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), VolumeScanError> {
@@ -1148,7 +1149,7 @@ mod tests {
         writer.shutdown();
     }
 
-    // ── M3.1: non-destructive reconcile rescan (network path) ────────
+    // ── Non-destructive reconcile rescan (network path) ────────
 
     use crate::indexing::writer::IndexWriter;
     use rusqlite::Connection;
@@ -1206,7 +1207,7 @@ mod tests {
     }
 
     /// A reconcile rescan over an UNCHANGED tree writes ZERO entry rows (the
-    /// no-op-cheap property the M3.0 gate relied on): unchanged rows are diffed and
+    /// no-op-cheap property the perf bench relied on): unchanged rows are diffed and
     /// skipped, never re-UPSERTed, so the catastrophic INSERT OR REPLACE path is
     /// never touched. Coverage still re-stamps to the new epoch.
     #[tokio::test]
@@ -1338,7 +1339,7 @@ mod tests {
     /// — no truncate ran) and surfaces the typed terminal error. The re-listed dirs
     /// are stamped at the rescan epoch; unreached dirs keep their prior data. The
     /// completion handler (manager) then bumps past the epoch so everything reads
-    /// stale — here we assert the prior data SURVIVES (the headline M3.1 property).
+    /// stale — here we assert the prior data SURVIVES (the headline reconcile property).
     #[tokio::test]
     async fn mid_reconcile_disconnect_keeps_prior_index() {
         // Wide tree so the disconnect leaves real dirs unreached.
