@@ -66,6 +66,9 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
       `CheckpointStream` checkpoint auto-yields the PTP session to foreground nav/list ops (release +
       `background_yield_point` + reopen at offset), with debounce + a min-progress floor; reuses the release-on-pause
       primitive and the device priority gate (op stays Running, not Paused)
+- [ ] 2026-06-25 honest-index-sizes-plan.md - Honest directory sizes: exact / ≥lower-bound / unknown plus fresh-vs-stale
+      via a per-dir `listed_epoch` + rolled-up `min_subtree_epoch` and a per-volume epoch counter; fixes the mid-scan
+      disconnect "0 bytes" lie and lays groundwork for lazy fill and offline browse
 
 ## Later
 
