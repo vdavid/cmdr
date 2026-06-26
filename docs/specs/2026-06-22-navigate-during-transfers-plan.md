@@ -1,6 +1,15 @@
 # Navigation works during MTP transfers (auto-yield)
 
-Created 2026-06-22. Status: planned.
+Created 2026-06-22. **Status: SUPERSEDED** (goal shipped, mechanism replaced) — see
+[`2026-06-25-bounded-window-mtp-reads-plan.md`](2026-06-25-bounded-window-mtp-reads-plan.md).
+
+> **Superseded.** This plan's GOAL — navigate the phone during an MTP→local copy — shipped. But its MECHANISM (on a
+> foreground op, ABORT the in-flight download to free the PTP session, then reopen at the offset) proved broken on real
+> hardware: aborting a multi-GB read takes ~35 s to drain, so the listing timed out and the user got kicked to Macintosh
+> HD. The bounded-window plan above replaced that mechanism (read in ~8 MiB windows; "don't start the next window"
+> instead of "abort"), and its M2 deleted the release/reopen machinery this plan built. The scaffolding this plan
+> introduced — `CheckpointStream`, the foreground priority-gate wiring, the debounce, and the min-progress floor — all
+> SURVIVES, just driven differently. Kept for the decision history; don't implement from it.
 
 Make the app fully responsive while an MTP→local transfer is running: navigating folders, listing, and metadata reads on
 the phone work _during_ an active copy — not just while it's manually paused. The transfer briefly, automatically yields

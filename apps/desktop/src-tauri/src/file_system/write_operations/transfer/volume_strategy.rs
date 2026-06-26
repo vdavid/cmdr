@@ -38,10 +38,22 @@ const FOREGROUND_YIELD_DEBOUNCE: Duration = Duration::from_millis(400);
 /// Minimum-progress floor for the foreground auto-yield: after a resume, the
 /// transfer must move at least this many bytes before it will honor the next
 /// foreground yield. Without it, continuous foreground nav would park the copy
-/// before every window and starve it to zero throughput. 4 MiB is currently
-/// SMALLER than one bounded read window (`MTP_READ_WINDOW`, 8 MiB), so the floor
-/// is effectively "one window" — the copy always reads at least one more window
-/// between yields. To be re-tuned together with the window size on real hardware.
+/// before every window and starve it to zero throughput.
+///
+/// At 4 MiB this is SMALLER than one bounded read window (`MTP_READ_WINDOW`,
+/// 8 MiB), so in practice the floor resolves to "at least one full window between
+/// yields" — the copy always reads one more 8 MiB window before it can yield
+/// again. That's the intended guarantee; the 4 MiB value just never bites
+/// distinctly from the window today (real-device verified to feel right).
+///
+/// ⚠️ Don't naively raise this to a "big" number to make it look meaningful: the
+/// gate SKIPS the yield until this many bytes have moved since the last resume,
+/// so a floor ≥ a typical file size means the copy would NEVER yield to a
+/// foreground op for files smaller than the floor — i.e. it would disable
+/// navigate-during-transfer for normal files. If you want it to read as a real
+/// multi-window guard, raise it to a small multiple of `MTP_READ_WINDOW` (e.g.
+/// 2-4× = "N windows between yields"); that changes behavior, so re-verify on a
+/// real device.
 const MIN_PROGRESS_FLOOR_BYTES: u64 = 4 * 1024 * 1024;
 
 /// The (debounce, min-progress-floor) pair a freshly-built `CheckpointStream`
