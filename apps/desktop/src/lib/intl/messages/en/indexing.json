@@ -72,6 +72,16 @@
     }
   },
 
+  "indexing.progress.percentEta": "{percent}%, {eta}",
+  "@indexing.progress.percentEta": {
+    "description": "Compact progress line in the indexing tooltip joining the percent complete with the time remaining, e.g. '95%, roughly 8s left'. {eta} is an already-formatted time-left phrase (don't translate inside it); place the comma idiomatically for your language.",
+    "placeholders": {
+      "percent": "whole-number percent complete, already formatted (e.g. 95)",
+      "eta": "the formatted time-remaining phrase, e.g. 'roughly 8s left'"
+    },
+    "screenshot": "indexing-status.png"
+  },
+
   "indexing.eta.almostDone": "Almost done",
   "@indexing.eta.almostDone": {
     "description": "Time-remaining phrase shown when an indexing operation has under two seconds left (a precise countdown there would be noise). Reassuring and terse.",

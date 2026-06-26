@@ -47,6 +47,10 @@
   "@indexing.replay.detail": {
     "sourceHash": "e80c077"
   },
+  "indexing.progress.percentEta": "{percent}%，{eta}",
+  "@indexing.progress.percentEta": {
+    "sourceHash": "26b29da"
+  },
   "indexing.eta.almostDone": "即将完成",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"

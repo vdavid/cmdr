@@ -52,13 +52,19 @@ The component renders the content inside a `<div hidden>` host and passes the in
 the tooltip action via `contentEl`, so the adopted element doesn't carry `hidden` into the tooltip.
 
 - **Scan**: a two-tier label + counters, plus `ProgressBar` + percent + ETA when a denominator exists. Tier 1
-  (calibrated): "Scanning your drive... 42,000 entries, 1,200 dirs" with "42% · 1m 20s left". Tier 2 (first scan,
-  rough): "Scanning your drive (first scan)... ..." with "36% · roughly 19m left". `computeScanProgress` null → the
-  counter-only label.
+  (calibrated): "Scanning your drive... 42,000 entries, 1,200 dirs" with "42%, 1m 20s left". Tier 2 (first scan, rough):
+  "Scanning your drive (first scan)... ..." with "36%, roughly 19m left". `computeScanProgress` null → the counter-only
+  label.
 - **Aggregation**: phase label ("Saving entries...", "Loading directories...", "Sorting directories...", "Computing
   directory sizes...", "Saving directory sizes...") + `ProgressBar` + percent + ETA for the phases that have progress
   (`saving_entries`, `computing`, `writing`).
 - **Replay**: "Updating index..." + "N events processed" + `ProgressBar` + blended ETA.
+
+The percent and ETA render as one span joined through `indexing.progress.percentEta` (`"{percent}%, {eta}"`), so the
+comma separator is translatable per locale (e.g. a full-width comma in `zh`, a space before `%` in `de`/`fr`); without
+an ETA yet, just the bare percent shows. The label span has no `white-space: nowrap`: the scan counters grow without
+bound, so the label wraps within the tooltip's `max-width` (on `.cmdr-tooltip`) instead of overflowing past the
+right-anchored, viewport-clamped box and clipping off the window edge.
 
 The hourglass is a ~14px `<Icon>` (the same icon as the size-column stale indicator), `position: absolute` top/right at
 `var(--spacing-sm)`, tertiary text color, gentle opacity pulse gated behind `prefers-reduced-motion: reduce`.

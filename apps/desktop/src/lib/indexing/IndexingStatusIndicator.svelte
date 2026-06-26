@@ -222,6 +222,17 @@
 
     const percent = $derived(progress != null ? Math.min(100, Math.round(progress * 100)) : null)
 
+    // Join the percent and the ETA through the catalog so the separator (a comma in English:
+    // "95%, roughly 8s left") is translatable, not a hardcoded glyph. Without an ETA yet, show
+    // the bare percent. Null when there's no percent at all (the row isn't rendered then).
+    const percentDisplay = $derived(
+        percent == null
+            ? null
+            : eta
+              ? tString('indexing.progress.percentEta', { percent: String(percent), eta })
+              : `${String(percent)}%`,
+    )
+
     // The tooltip action adopts `tooltipContent` (not the hidden wrapper) so it renders visibly
     // inside the tooltip: an adopted element keeps its own `hidden` attribute, so a hidden host
     // passed as `contentEl` would render an empty tooltip.
@@ -241,17 +252,14 @@
 
     <div hidden>
         <div bind:this={tooltipContent} class="tooltip-content">
-            <span class="tooltip-label">{label}</span>
+            <span>{label}</span>
             {#if detail}
                 <span class="tooltip-detail">{detail}</span>
             {/if}
             {#if percent != null}
                 <div class="tooltip-progress">
                     <ProgressBar value={progress ?? 0} size="sm" ariaLabel={label} />
-                    <span class="tooltip-percent">{percent}%</span>
-                    {#if eta}
-                        <span class="tooltip-eta">{eta}</span>
-                    {/if}
+                    <span class="tooltip-percent">{percentDisplay}</span>
                 </div>
             {/if}
         </div>
@@ -298,16 +306,20 @@
         flex-direction: column;
         gap: var(--spacing-xxs);
         /* Stable width so the tooltip doesn't jitter as the counters tick (the tooltip
-           action measures once on show and can't see later content growth). */
+           action measures once on show and can't see later content growth). The label and
+           detail below wrap within the tooltip's own `max-width` (set on `.cmdr-tooltip`),
+           so a long first line ("Scanning your drive (first scan)... 4,881,661 entries,
+           446,123 dirs") wraps onto a second line instead of overflowing past the
+           right-anchored tooltip box and clipping off the window edge. */
         min-width: 200px;
     }
 
-    .tooltip-label {
-        white-space: nowrap;
-    }
-
+    /* The scan label (the first `<span>` in `.tooltip-content`) carries the live entry/dir
+       counters, which grow without bound. It intentionally has NO `white-space: nowrap`:
+       forcing it onto one line is what pushed the text past the window edge. Letting it wrap
+       keeps the whole first line visible inside the clamped tooltip box (the box is
+       `max-width`-capped on `.cmdr-tooltip` and viewport-clamped by the tooltip action). */
     .tooltip-detail {
-        white-space: nowrap;
         color: var(--color-text-tertiary);
     }
 
@@ -317,13 +329,10 @@
         gap: var(--spacing-xs);
     }
 
+    /* Holds the combined "95%, roughly 8s left" line. `tabular-nums` keeps the leading
+       percent from reflowing as it ticks; the line wraps within the tooltip box rather
+       than overflowing (the box is `max-width`-capped and viewport-clamped). */
     .tooltip-percent {
         font-variant-numeric: tabular-nums;
-        min-width: 28px;
-        text-align: right;
-    }
-
-    .tooltip-eta {
-        color: var(--color-text-tertiary);
     }
 </style>

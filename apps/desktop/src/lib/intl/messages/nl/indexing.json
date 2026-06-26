@@ -47,6 +47,11 @@
   "@indexing.replay.detail": {
     "sourceHash": "e80c077"
   },
+  "indexing.progress.percentEta": "{percent}%, {eta}",
+  "@indexing.progress.percentEta": {
+    "sourceHash": "26b29da",
+    "sameAsSourceJustification": "Pure format string ({percent}%, {eta}) — a number, a percent sign, a comma separator, and an already-formatted phrase. This locale uses the same percent spacing and comma as English, so the format is genuinely identical; nothing here is translatable prose."
+  },
   "indexing.eta.almostDone": "Bijna klaar",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"

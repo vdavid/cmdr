@@ -1177,6 +1177,7 @@ export type MessageKey =
   | 'indexing.firstConnect.silenceAll'
   | 'indexing.firstConnect.silenceDrive'
   | 'indexing.firstConnect.title'
+  | 'indexing.progress.percentEta'
   | 'indexing.replay.detail'
   | 'indexing.replay.label'
   | 'indexing.rescan.fallback'
