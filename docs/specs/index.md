@@ -31,27 +31,27 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
 - [x] 2026-06-08 typed-events-plan.md - Make Tauri event names and payloads generated and typed
 - [x] 2026-06-09 beta-analytics-plan.md - Privacy-clean beta usage analytics with a true daily-active count
 - [x] 2026-06-11 query-dialogs-overhaul-plan.md - Overhaul the Search and Select dialogs end to end
-- [ ] 2026-06-11 whats-new-popup-plan.md - Post-update "What's new" changelog dialog
-- [ ] 2026-06-13 dropdown-uniformization-plan.md - Converge every dropdown onto two reusable macOS-y Ark primitives
-- [ ] 2026-06-13 editable-favorites-plan.md - User-editable favorites (add, remove, rename, reorder) in the volume
+- [x] 2026-06-11 whats-new-popup-plan.md - Post-update "What's new" changelog dialog
+- [x] 2026-06-13 dropdown-uniformization-plan.md - Converge every dropdown onto two reusable macOS-y Ark primitives
+- [x] 2026-06-13 editable-favorites-plan.md - User-editable favorites (add, remove, rename, reorder) in the volume
       switcher
-- [ ] 2026-06-14 viewer-media-plan.md - Render images (incl. HEIC, SVG) and PDFs inline in the File viewer via
+- [x] 2026-06-14 viewer-media-plan.md - Render images (incl. HEIC, SVG) and PDFs inline in the File viewer via
       WKWebView, no Rust decoder
 - [x] 2026-06-16 friendly-error-text-to-frontend-plan.md - Move all user-facing error prose from Rust to the frontend
       (typed reason + params over IPC), keeping classification in Rust; step 1 of i18n-readiness
-- [ ] 2026-06-16 i18n-formatter-layer-plan.md - Route numbers, file sizes, and the system date through one locale-aware
+- [x] 2026-06-16 i18n-formatter-layer-plan.md - Route numbers, file sizes, and the system date through one locale-aware
       formatting layer with a single locale source; step 3 of i18n-readiness (formatters only, no plurals/catalog)
-- [ ] 2026-06-16 i18n-runtime-plan.md - Custom thin i18n runtime + JSON message catalog (intl-messageformat ICU engine,
+- [x] 2026-06-16 i18n-runtime-plan.md - Custom thin i18n runtime + JSON message catalog (intl-messageformat ICU engine,
       Svelte `<Trans>`, generated `MessageKey` types, semantic scoped keys, no TMS); step 2 of i18n-readiness
-- [ ] 2026-06-16 i18n-screenshots-plan.md - Auto-couple a context screenshot to every catalog key via runtime
+- [x] 2026-06-16 i18n-screenshots-plan.md - Auto-couple a context screenshot to every catalog key via runtime
       capture-mode + a Playwright driver; visual context for translator agents (i18n follow-on)
-- [ ] 2026-06-17 i18n-translation-maintenance-plan.md - Translation-readiness + maintenance tooling (pseudolocale,
+- [x] 2026-06-17 i18n-translation-maintenance-plan.md - Translation-readiness + maintenance tooling (pseudolocale,
       stale-detection via source-hash, placeholder/ICU/plural/key-parity checks, translator guide); pseudolocale as the
       universal test fixture; English-only today, ready for the first real locales
 - [x] 2026-06-15 doc-context-diet-plan.md - Shrank the resident agent-doc bundle (9.5k → 2k words): re-homed desktop
       content, ratcheted CLAUDE.md toward 600, mandated sibling DETAILS.md, dieted the rules to path-scoped homes,
       enforced with checks (details-sibling, resident-doc-budget, dead-links)
-- [ ] 2026-06-16 settings-card-groups-plan.md - Third settings grouping level: rows grouped into `SectionCard`s per
+- [x] 2026-06-16 settings-card-groups-plan.md - Third settings grouping level: rows grouped into `SectionCard`s per
       page, empty cards auto-hidden, search-grouping kept in sync (fixes empty-card and blank-page search bugs)
 - [x] 2026-06-19 smb-mtp-indexing-plan.md - Extended drive indexing to SMB and MTP volumes with a new "admittedly stale"
       freshness model, a per-drive status badge, and per-drive last-index duration (per-volume index registry; SMB and
@@ -62,17 +62,17 @@ this folder is and when it gets wiped. Checked means the work shipped; unchecked
 - [x] 2026-06-21 transfer-queue-pause-plan.md - Pause/resume + a lane-based queue for copy/move/delete across all volume
       types, via a central Operation Manager wrapping all five spawn paths; Pause + Queue (F2) on progress dialogs and a
       standalone macOS queue window (multi-select, cancel selected, pause all); cancel-only (no rollback) for now
-- [ ] 2026-06-22 navigate-during-transfers-plan.md - Make the phone responsive DURING an MTP transfer: the per-chunk
+- [x] 2026-06-22 navigate-during-transfers-plan.md - Make the phone responsive DURING an MTP transfer: the per-chunk
       `CheckpointStream` checkpoint auto-yields the PTP session to foreground nav/list ops (release +
       `background_yield_point` + reopen at offset), with debounce + a min-progress floor; reuses the release-on-pause
       primitive and the device priority gate (op stays Running, not Paused). MECHANISM SUPERSEDED by
       2026-06-25-bounded-window-mtp-reads-plan.md (the abort-to-yield drained a multi-GB read for ~35s → listing
       timeout; bounded-window reads replace it)
-- [ ] 2026-06-25 bounded-window-mtp-reads-plan.md - Fix navigate-during-MTP-transfer for real: read MTP files as bounded
+- [x] 2026-06-25 bounded-window-mtp-reads-plan.md - Fix navigate-during-MTP-transfer for real: read MTP files as bounded
       ~8 MiB `GetPartialObject64` windows (session free between windows, ~80ms each, real-device-spike-validated) so
       "yield" = "don't start the next window" instead of aborting a giant read; needs no mtp-rs change (loops the
       existing `download_partial_64`)
-- [ ] 2026-06-25 honest-index-sizes-plan.md - Honest directory sizes: exact / ≥lower-bound / unknown plus fresh-vs-stale
+- [x] 2026-06-25 honest-index-sizes-plan.md - Honest directory sizes: exact / ≥lower-bound / unknown plus fresh-vs-stale
       via a per-dir `listed_epoch` + rolled-up `min_subtree_epoch` and a per-volume epoch counter; fixes the mid-scan
       disconnect "0 bytes" lie and lays groundwork for lazy fill and offline browse
 - [x] 2026-06-25 2026-06-25-error-report-system-snapshot-plan.md - Attach a richer system snapshot (Mac model, RAM
