@@ -3,28 +3,39 @@
 Depth for the frontend indexing bridge. `CLAUDE.md` holds the must-knows; this file holds the full API, event table,
 tooltip content, ETA mechanics, and tests.
 
-## Public API (`index.ts`)
+## State model: per-volume map + a global aggregation signal
 
-Call scan-state getters from `.svelte` files or `.svelte.ts` reactive contexts.
+`index-state.svelte.ts` holds a `SvelteMap<volumeId, VolumeIndexActivity>` (`activity`): one entry per volume that's
+actively scanning or replaying, removed the moment that volume finishes. Each `VolumeIndexActivity` carries a `phase`
+(`'scanning' | 'replaying'`), the scan fields (`entriesScanned`, `dirsFound`, `bytesScanned`, `scanStartedAt`,
+`priorTotalEntries`, `priorScanDurationMs`, `volumeUsedBytes`), and the replay fields (`replayEventsProcessed`,
+`replayEstimatedTotal`, `replayStartedAt`). Scan and replay events each carry their own `volumeId`, so they key the map
+directly — that's what makes the indicator track local + SMB + MTP, not just root.
+
+Aggregation is the one signal with no `volumeId` (see below), so it stays module-level scalar `$state` (`aggregating`,
+`aggregationPhase`, `aggregationCurrent`, `aggregationTotal`, `aggregationStartedAt`) plus `lastCompletedScanVolumeId`
+for attribution.
+
+### Public API (`index.ts`)
+
+The barrel exports only the lifecycle + the two cross-module reads (`isScanning`, `getEntriesScanned`, consumed by
+SearchDialog), plus `initIndexState` / `destroyIndexState` / `initIndexEvents`. The indicator imports the rest directly
+from `./index-state.svelte`:
 
 ```ts
-isScanning(): boolean
-getEntriesScanned(): number
-getDirsFound(): number
-getBytesScanned(): number            // resolved post-dedup physical bytes scanned (tier-2 numerator)
-getScanStartedAt(): number           // Date.now() at scan start; 0 on late-join (no wall-clock backfill)
-getPriorTotalEntries(): number | null      // prior completed scan's entry total (tier-1 denominator)
-getPriorScanDurationMs(): number | null    // prior completed scan's duration (tier-1 ETA seed)
-getVolumeUsedBytes(): number | null        // scanned volume's used bytes (tier-2 denominator)
+// Multi-drive API (the indicator):
+getActiveIndexVolumes(): VolumeIndexActivity[]   // every scanning/replaying volume
+isAnyVolumeIndexing(): boolean                    // map non-empty OR aggregating (visibility gate)
+getAggregatingVolumeId(): string                  // who aggregation is attributed to (last scan to complete, or 'root')
 isAggregating(): boolean
 getAggregationPhase(): string        // 'saving_entries' | 'loading' | 'sorting' | 'computing' | 'writing'
 getAggregationCurrent(): number
 getAggregationTotal(): number
 getAggregationStartedAt(): number    // Date.now() timestamp
-isReplaying(): boolean
-getReplayEventsProcessed(): number
-getReplayEstimatedTotal(): number
-getReplayStartedAt(): number         // Date.now() timestamp
+// Backward-compatible scalars (other consumers):
+isScanning(): boolean                // any volume scanning (size-updating hourglass, search-unavailable)
+getEntriesScanned(): number          // the ROOT volume's live count (SearchDialog index-build progress)
+// Lifecycle:
 initIndexState(): Promise<void>      // call once at app mount
 destroyIndexState(): void            // call at app teardown
 initIndexEvents(onDirUpdated: (paths: string[]) => void): Promise<UnlistenFn>
@@ -32,24 +43,46 @@ initIndexEvents(onDirUpdated: (paths: string[]) => void): Promise<UnlistenFn>
 
 ## Scan-state events (`index-state.svelte.ts`)
 
-Eight Tauri events drive the module-level `$state`:
+Eight Tauri events drive the state. Scan and replay are per-volume (keyed into the map); aggregation is global:
 
-- **`index-scan-started`** (`{ volumeId, priorTotalEntries, priorScanDurationMs, volumeUsedBytes }`): `scanning = true`,
-  reset counters, `scanStartedAt = Date.now()`, stash the per-scan calibration.
-- **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update counters.
-- **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): `scanning = false`, set final counts,
-  reset aggregation.
+- **`index-scan-started`** (`{ volumeId, priorTotalEntries, priorScanDurationMs, volumeUsedBytes }`): create/replace the
+  volume's `activity` entry (`phase: 'scanning'`, `scanStartedAt = Date.now()`, stash the calibration).
+- **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update that volume's counters
+  (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
+- **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): set `lastCompletedScanVolumeId`,
+  remove the volume's entry.
 - **`index-rescan-notification`** (`{ volumeId, reason, details }`): show an info toast with a reason-specific message.
-- **`index-replay-progress`** (`{ volumeId, eventsProcessed, estimatedTotal }`): `replaying = true` on first, update
-  counters.
-- **`index-replay-complete`** (`{ volumeId, durationMs }`): reset replay state.
-- **`index-aggregation-progress`** (`{ phase, current, total }`): `aggregating = true`, update phase/progress/ETA.
+- **`index-replay-progress`** (`{ volumeId, eventsProcessed, estimatedTotal }`): create/replace the volume's `activity`
+  entry as `phase: 'replaying'`, update counters.
+- **`index-replay-complete`** (`{ volumeId, durationMs }`): remove the volume's replay entry.
+- **`index-aggregation-progress`** (`{ phase, current, total }` — NO volumeId): `aggregating = true`, update
+  phase/progress/ETA.
 - **`index-aggregation-complete`** (`()`): reset aggregation state.
+
+### Aggregation has no volumeId
+
+`index-aggregation-progress` (`AggregationProgressEvent`, Rust `writer/mod.rs`) carries only `{ phase, current, total }`
+— every volume's writer emits the same event with no attribution (each non-root writer gets an `AppHandle`, so the
+events DO fire for SMB/MTP, just unattributed). Aggregation runs right after a writer's scan completes, so the FE
+attributes it to `lastCompletedScanVolumeId` (the volume whose `index-scan-complete` fired most recently), defaulting to
+`root` before any completes this session. The indicator folds the aggregation phase into that volume's row; if that
+volume has no live scan/replay entry (its scan already finished), the indicator adds a synthetic aggregation-only row so
+the phase stays visible. This is a heuristic, not ground truth — if two writers ever aggregate concurrently, the second
+isn't separately attributed. Fixing it properly needs a `volumeId` on the aggregation event (a backend change).
 
 ## Status indicator tooltip content
 
-The component renders the content inside a `<div hidden>` host and passes the inner content div (not the hidden host) to
-the tooltip action via `contentEl`, so the adopted element doesn't carry `hidden` into the tooltip.
+`IndexingStatusIndicator.svelte` is the thin shell: the hourglass icon (shown iff `isAnyVolumeIndexing()`) plus a tooltip
+that renders one `IndexingDriveRow` per active drive (from `getActiveIndexVolumes()`, plus a synthetic row for the
+aggregating volume when it has no live entry). It resolves each `volumeId` to a display name via the volume store's
+`getVolumes()` (falling back to the id). The per-drive heading (`indexing.drive.heading`, a `{name}` passthrough) shows
+only when more than one drive is active, so the common single-drive case is as terse as before. The component renders the
+content inside a `<div hidden>` host and passes the inner content div (not the hidden host) to the tooltip action via
+`contentEl`, so the adopted element doesn't carry `hidden` into the tooltip.
+
+Each `IndexingDriveRow` owns its own ETA sliding-window (so several drives indexing at once each get an independent rate
+estimate) and renders one of three modes (priority aggregation > scan > replay), reading from its `VolumeIndexActivity`
+plus the folded-in aggregation props:
 
 - **Scan**: a two-tier label + counters, plus `ProgressBar` + percent + ETA when a denominator exists. Tier 1
   (calibrated): "Scanning your drive... 42,000 entries, 1,200 dirs" with "42%, 1m 20s left". Tier 2 (first scan, rough):
@@ -73,17 +106,18 @@ The hourglass is a ~14px `<Icon>` (the same icon as the size-column stale indica
 
 Pure helpers. Aggregation uses a single elapsed extrapolation. Scan and replay blend that 50-50 with a sliding-window
 rate over the last ~5 seconds (early extrapolation alone is wildly wrong). The window-snapshot collection is the only
-stateful glue and stays in the component; it feeds the pure `pruneSnapshots` / `computeWindowEta` / `blendEtas` /
-`formatEta`. Tier 1's prior-duration seed (`priorScanDurationMs − elapsed`, ms→seconds) covers the gap before the window
-has samples. Tier 2's ETA is prefixed "roughly".
+stateful glue and stays in each `IndexingDriveRow` (so per-drive rates don't collide); it feeds the pure `pruneSnapshots`
+/ `computeWindowEta` / `blendEtas` / `formatEta`. Tier 1's prior-duration seed (`priorScanDurationMs − elapsed`,
+ms→seconds) covers the gap before the window has samples. Tier 2's ETA is prefixed "roughly".
 
 ## Tests
 
 - **`eta.test.ts`**: the pure ETA helpers (thresholds, elapsed + window estimation, blending, snapshot pruning), plus
   `computeScanProgress` (tier selection, both clamps, null/zero-denominator fallbacks) and the `formatEta` non-finite
   pin.
-- **`IndexingStatusIndicator.a11y.test.ts`**: tier-3 axe checks for idle (renders nothing), scanning (counter-only and
-  calibrated-with-bar), and aggregating-with-progress, mocking `index-state.svelte`.
+- **`IndexingStatusIndicator.a11y.test.ts`**: tier-3 axe checks for idle (renders nothing), single-drive scanning
+  (counter-only and calibrated-with-bar), aggregating-with-progress, and multi-drive (a heading per drive). Mocks both
+  `index-state.svelte` and the volume store's `getVolumes` (drive-name resolution).
 
 The reactive event-driven glue in `index-state.svelte.ts` is allowlisted in `coverage-allowlist.json`. Manual end-to-end
 testing runs the Rust indexer via `pnpm dev`.
@@ -96,7 +130,8 @@ testing runs the Rust indexer via `pnpm dev`.
 - `$lib/ui/toast`: `addToast` (rescan notification toasts).
 - `$lib/file-explorer/selection/selection-info-utils`: `formatNumber` (indicator only, `'en-US'` locale).
 - `$lib/tooltip/tooltip`: `tooltip` action with the `contentEl` live-content param (indicator only).
-- `$lib/ui/ProgressBar.svelte`: size `sm` (indicator tooltip).
+- `$lib/ui/ProgressBar.svelte`: size `sm` (drive row).
+- `$lib/stores/volume-store.svelte`: `getVolumes` (indicator resolves `volumeId` → display name).
 
 ## i18n
 

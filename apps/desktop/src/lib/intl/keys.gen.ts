@@ -1176,6 +1176,7 @@ export type MessageKey =
   | 'indexing.aggregation.savingEntries'
   | 'indexing.aggregation.sorting'
   | 'indexing.aggregation.writing'
+  | 'indexing.drive.heading'
   | 'indexing.eta.almostDone'
   | 'indexing.eta.minutesLeft'
   | 'indexing.eta.secondsLeft'

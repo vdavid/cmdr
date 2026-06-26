@@ -3,6 +3,11 @@
   "@indexing.status.ariaLabel": {
     "sourceHash": "49edebb"
   },
+  "indexing.drive.heading": "{name}",
+  "@indexing.drive.heading": {
+    "sourceHash": "5e291d7",
+    "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
+  },
   "indexing.scan.label": "Meghajtó átvizsgálása…",
   "@indexing.scan.label": {
     "sourceHash": "e7d6d6a"

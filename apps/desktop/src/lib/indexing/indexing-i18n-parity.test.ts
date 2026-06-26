@@ -4,10 +4,10 @@
  * The drive-indexing status labels, ETA phrases, and rescan-reason toasts moved
  * from hardcoded English into the `indexing.*` catalog. This is a
  * behavior-preserving MOVE: every rendered en string must be byte-identical to
- * the pre-migration copy. These goldens are the literals that lived in
- * `IndexingStatusIndicator.svelte`, `eta.ts`, and `index-state.svelte.ts` before
- * the move; if a future copy edit is intended, it lands in the catalog AND here
- * together, never silently.
+ * the pre-migration copy. These goldens are the literals rendered by the
+ * indexing indicator (`IndexingStatusIndicator.svelte` / `IndexingDriveRow.svelte`),
+ * `eta.ts`, and `index-state.svelte.ts`; if a future copy edit is intended, it
+ * lands in the catalog AND here together, never silently.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
@@ -30,6 +30,7 @@ describe('indexing catalog parity (en)', () => {
       '12,345 entries, 678 dirs',
     )
     expect(tString('indexing.scan.etaRough', { eta: '2m left' })).toBe('roughly 2m left')
+    expect(tString('indexing.drive.heading', { name: 'Macintosh HD' })).toBe('Macintosh HD')
   })
 
   it('resolves the aggregation phase labels', () => {
