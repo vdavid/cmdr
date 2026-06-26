@@ -400,7 +400,7 @@ pub(crate) async fn reconcile_volume_via_trait(
     cancelled: Arc<AtomicBool>,
 ) -> Result<ScanSummary, VolumeScanError> {
     use crate::indexing::reconciler::{self, LiveChild};
-    use crate::indexing::store::{ROOT_ID, resolve_path};
+    use crate::indexing::store::ROOT_ID;
 
     let start = Instant::now();
     let db_path = writer.db_path();
@@ -429,8 +429,15 @@ pub(crate) async fn reconcile_volume_via_trait(
     // ids after a writer flush before we recurse into them.
     let mut queue: VecDeque<(PathBuf, i64)> = VecDeque::new();
     queue.push_back((root.clone(), ROOT_ID));
-    // Names of new child dirs per parent path, drained after a level's flush.
-    let mut new_dirs: Vec<(PathBuf, String)> = Vec::new();
+    // New child dirs discovered this pass, drained after a level's flush. Each is
+    // (parent dir path, parent DB id, child name): we resolve the freshly-written
+    // child by `(parent_id, name)` rather than by absolute path, because the index
+    // root is the VOLUME root (mapped to ROOT_ID), not `/`. An absolute-path walk
+    // from ROOT_ID would fail for any non-`/` root (e.g. `/Volumes/naspi`), which
+    // is exactly the SMB/MTP case — that bug left a post-Forget enable resolving
+    // zero new dirs, so the reconcile stopped at the root and falsely completed.
+    // See `indexing/DETAILS.md` § "Non-destructive rescan".
+    let mut new_dirs: Vec<(PathBuf, i64, String)> = Vec::new();
 
     while let Some((dir_path, dir_id)) = queue.pop_front() {
         if cancelled.load(Ordering::Relaxed) {
@@ -554,7 +561,7 @@ pub(crate) async fn reconcile_volume_via_trait(
             queue.push_back((dir_path.join(child_name), child_id));
         }
         for child_name in diff.new_child_dir_names {
-            new_dirs.push((dir_path.clone(), child_name));
+            new_dirs.push((dir_path.clone(), dir_id, child_name));
         }
 
         // When the current BFS level is drained and new dirs were created, flush so
@@ -565,19 +572,21 @@ pub(crate) async fn reconcile_volume_via_trait(
                 .flush()
                 .await
                 .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
-            for (parent_path, child_name) in new_dirs.drain(..) {
+            for (parent_path, parent_id, child_name) in new_dirs.drain(..) {
                 let child_path = parent_path.join(&child_name);
-                // Network index paths are stored verbatim (no firmlink
-                // normalization — that's local-only), so resolve by the same
-                // absolute path the scan walks.
-                match resolve_path(&conn, &child_path.to_string_lossy()) {
+                // Resolve by (parent_id, name), NOT by absolute path: the index
+                // root is the volume root (ROOT_ID), so an absolute-path walk from
+                // ROOT_ID only works when the root is `/`. We already hold the
+                // parent's DB id, so a single-component lookup is both correct for
+                // any root AND cheaper than re-walking the whole path.
+                match IndexStore::resolve_component(&conn, parent_id, &child_name) {
                     Ok(Some(id)) => queue.push_back((child_path, id)),
                     Ok(None) => log::debug!(
                         "volume_scanner: reconcile couldn't resolve new dir after flush: {}",
                         child_path.display()
                     ),
                     Err(e) => log::warn!(
-                        "volume_scanner: reconcile resolve_path failed for {}: {e}",
+                        "volume_scanner: reconcile resolve_component failed for {}: {e}",
                         child_path.display()
                     ),
                 }
@@ -1720,6 +1729,93 @@ mod tests {
             rows_before,
             "a glitched empty-root reconcile must not blank the prior index",
         );
+
+        writer.shutdown();
+    }
+
+    /// THE regression test for the post-Forget SMB enable bug: a reconcile over an
+    /// EMPTY DB whose scan root is NOT `/` (the real case — an SMB share mounts at
+    /// `/Volumes/<share>`) must still DESCEND into every newly-discovered child
+    /// dir, fully indexing the multi-level tree.
+    ///
+    /// The enable path routes a no-completion-marker DB through the reconcile walk;
+    /// post-Forget that DB is empty, so EVERY dir is "new". New dirs are resolved
+    /// after a flush to get their freshly-assigned ids before recursing. Resolving
+    /// by ABSOLUTE PATH (`/Volumes/naspi/_test`) walks component-by-component from
+    /// ROOT_ID, but the index root IS `/Volumes/naspi` (mapped to ROOT_ID) — so the
+    /// walk fails at the first component (`Volumes`) and resolves NOTHING. The
+    /// reconcile then stops at the root and falsely "completes" with only the
+    /// top-level entries (badge green, no real scan). Resolving by `(parent_id,
+    /// name)` is correct for any root. Pre-fix this assertion fails: only the root
+    /// and its immediate children are indexed, the subtrees are missing.
+    #[tokio::test]
+    async fn reconcile_from_empty_db_with_non_root_mount_indexes_full_tree() {
+        // An SMB-shaped mount: root is `/Volumes/naspi`, with a multi-level tree.
+        let root = PathBuf::from("/Volumes/naspi");
+        let tree = vec![
+            entry("top", "/Volumes/naspi/top", true, None),
+            entry("sub", "/Volumes/naspi/top/sub", true, None),
+            entry("deep.txt", "/Volumes/naspi/top/sub/deep.txt", false, Some(42)),
+            entry("other", "/Volumes/naspi/other", true, None),
+            entry("leaf.txt", "/Volumes/naspi/other/leaf.txt", false, Some(7)),
+        ];
+        let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("naspi", tree));
+
+        // Empty DB + writer (the post-Forget state). The manager bumps the epoch at
+        // the scan-start funnel before spawning the walk; mirror that so listed dirs
+        // stamp the bumped epoch.
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("reconcile-empty.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+        let new_epoch = {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::bump_current_epoch(&wconn).unwrap()
+        };
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let summary = reconcile_volume_via_trait(vol, root, writer.clone(), progress(), cancelled)
+            .await
+            .expect("reconcile from empty DB on a non-`/` mount");
+        assert!(!summary.was_cancelled);
+        writer.flush().await.expect("flush");
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+
+        // The walk descended into EVERY dir: root + top + top/sub + other = 4 dirs,
+        // all stamped at the new epoch. Pre-fix only the root (1) was stamped.
+        assert_eq!(
+            dirs_listed_at_epoch(&conn, new_epoch),
+            4,
+            "reconcile must re-list every dir (root + top + top/sub + other), not stop at the root"
+        );
+
+        // The deep files prove recursion actually listed the subtrees rather than
+        // just stamping the top level. Resolved by (parent_id, name) chains since
+        // `resolve_path` from `/` can't reach a `/Volumes/naspi`-rooted index.
+        let id_of = |parent: i64, name: &str| -> i64 {
+            IndexStore::resolve_component(&conn, parent, name)
+                .expect("resolve")
+                .unwrap_or_else(|| panic!("{name} should be indexed after reconcile descends"))
+        };
+        let top = id_of(ROOT_ID, "top");
+        let sub = id_of(top, "sub");
+        let deep = id_of(sub, "deep.txt");
+        let deep_row = IndexStore::get_entry_by_id(&conn, deep)
+            .expect("entry")
+            .expect("present");
+        assert_eq!(
+            deep_row.logical_size,
+            Some(42),
+            "deep.txt reconciled with its real size"
+        );
+
+        let other = id_of(ROOT_ID, "other");
+        let leaf = id_of(other, "leaf.txt");
+        let leaf_row = IndexStore::get_entry_by_id(&conn, leaf)
+            .expect("entry")
+            .expect("present");
+        assert_eq!(leaf_row.logical_size, Some(7), "leaf.txt reconciled with its real size");
 
         writer.shutdown();
     }
