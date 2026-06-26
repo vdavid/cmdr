@@ -368,3 +368,42 @@ AppKit + SystemSettings, 2026-06-21).
   pudo …" pattern; calm, avoids the bare "failed" label · high
 - "Cancel selected" (toolbar) → Cancelar lo seleccionado · "lo seleccionado" for the neutral "the selection" sense ·
   high
+
+### Settled during the double-click-to-parent navigation pass (Navigation & file ops settings + breadcrumb + double-click hint; macOS Finder + Double Commander + Thunar + MS terminology, 2026-06-26)
+
+- parent folder → carpeta superior · CHOSEN over macOS Finder's "carpeta contenedora" ("Go To Enclosing Folder" → "Ir
+  a la carpeta contenedora", `es/macOS/Finder/Localizable.json`) and Nautilus's "carpeta padre". Reasons, in order: (1)
+  the es catalog already standardizes on it — `commands.navParent.label` = "Ir a la carpeta superior", plus four
+  `errors.json` suggestions — so consistency settles it; (2) Double Commander, the orthodox two-pane source, renders the
+  literally-identical feature ("Enable changing to parent folder when double-clicking on empty part of file view" →
+  "Cambiar a la carpeta superior al hacer doble clic en una zona vacía de la vista de archivos"), and Thunar agrees
+  ("Open the parent folder" → "Abrir la carpeta superior"); (3) "superior" carries the upward directionality of these
+  go-up strings, so "subir a la carpeta superior" reads more naturally and concisely than the formal "carpeta
+  contenedora" · high (overrides macOS Tier 1 on consistency + orthodox-two-pane + naturalness grounds; macOS-vs-file-
+  manager split noted for the reviewer)
+- double-click (verb) → hacer doble clic · MS terminology ("double-click"→"hacer doble clic", all regions incl. ESP,
+  419, id 2133499); Double Commander ("al hacer doble clic"). Imperative `tú`: "Haz doble clic"; preterite "Hiciste
+  doble clic" (matches macOS preterite address, e.g. "abriste") · high
+- pane background → fondo del panel · "panel" = pane (glossary); "fondo" = the empty backdrop. Kept distinct from
+  "empty space in a file list" (below) to preserve the source's two distinct phrasings · high
+- empty space (in a file list) → espacio vacío · literal; Double Commander uses the equivalent "zona vacía de la vista
+  de archivos" for the same gesture · high
+- file list → lista de archivos · Double Commander (orthodox two-pane: "Refresh file list"→"Actualizar la lista de
+  archivos", "left and right file list"→"la lista de archivos izquierda y derecha") · high
+- navigate (to) → ir (a) · MS terminology ("navigate"→"ir", all regions, id 1624173); macOS Finder ("Ir a…"). "Click to
+  navigate to {path}" → "Haz clic para ir a {path}" ({path} preserved) · high
+- hint (one-time notification, internal label) → aviso · the doubleClickHint notification; "aviso" (notice) fits the
+  transient-notification framing, consistent with "toast → aviso" (onboarding pass). Only on the internal/hidden
+  `doubleClickOnPaneNotificationSeen` keys; no user-facing string names it "hint" · tentative (internal-only, low stakes)
+- "go up to" (navigation) → subir a · natural with "carpeta superior"; "subir a la carpeta superior" · high
+- "What just happened?" → ¿Qué acaba de pasar? · idiomatic; inverted ¿ · high
+- "I like it" / "Don''t like it?" (hint buttons) → Me gusta / ¿No te gusta? · idiomatic short button copy · high
+- "Never do this again" (hint button) → No volver a hacer esto · infinitive, per the button-label convention · high
+- "Navigation & file ops" (settings subsection) → Navegación y operaciones de archivos · "file ops" = "operaciones de
+  archivos" (File operations, settings-titles list); es has no terse short form, so the full noun phrase is used · high
+- row / file row → fila / "la fila de un archivo" · MS terminology ("row"→"fila", all regions incl. ESP, 419, id
+  106411); macOS ("Filas", NSTableOptionsPanel); Double Commander ("one per row"→"uno por fila"). "not a file row" → "no
+  la fila de un archivo" (contrasts the empty pane background with an actual file''s row) · high
+- "go up a folder" (shorter "go to parent") → subir a la carpeta superior · same destination as "go up to the parent
+  folder"; reuses settled "carpeta superior". Label reworded to the imperative "Haz doble clic en el fondo del panel
+  para subir a la carpeta superior" · high

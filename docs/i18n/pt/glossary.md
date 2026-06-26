@@ -155,6 +155,28 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - background / send to background (running transfer) · **segundo plano** / **em segundo plano** · Total Commander pt-BR
   (`1185="Download em segundo plano (fila separada)"`, "Work in background"→"em segundo plano") · confirmed. Process
   sense, NOT MS's wallpaper-sense "tela de fundo". `fileOperations.transferProgress.queueTooltip/backgroundedToast`
+- double-click · noun **clique duplo**, verb **clicar duas vezes** / imperative **Clique duas vezes** · shipped pt-BR
+  catalog: network-browser tooltips use the verb ("Double-click to connect…"→"Clique duas vezes para conectar…",
+  `fileExplorer.network.browser.tooltip.doubleClickToConnect/credsStored/requiresLogin`); the viewer body uses the noun
+  ("double-click the file"→"dê um duplo clique no arquivo", `viewer.binaryWarning.body`) · confirmed. Use the noun
+  "clique duplo" in labels/titles, the verb form in running text.
+- parent folder (navigation sense) · **pasta superior** · `commands.navParent.label` "Go to parent folder"→"Ir para a
+  pasta superior" (the navigate-up action) · confirmed. Use **pasta superior** for the go-up navigation concept;
+  `errors.json` uses "pasta principal" in error suggestions, but the navigation action is consistently "pasta superior".
+  Note: external pile evidence actually favors **pasta pai** (MS terminology BRA-tagged; GNOME Nautilus "Parent
+  folder"→"Pasta pai"; Xfce Thunar alt; macOS Finder's nearest is the context-bound "Ir para a Pasta Original"). We keep
+  **pasta superior** anyway for catalog consistency — switching would fork terminology (menu "pasta superior" vs new
+  settings/toast "pasta pai") and needs a full-catalog migration, not a piecemeal change. Used in the
+  doubleClickPaneNavigatesToParent settings + `doubleClickHint` body.
+- navigate (verb) · **navegar** · MS terminology (BRA); rendered "navegar até {path}" in
+  `fileExplorer.breadcrumb.navigateTooltip` · high
+- pane background (empty backing area of a pane) · **fundo do painel** (the empty space: **espaço vazio**) · descriptive;
+  no direct pile source (Double Commander's "empty part of file view" is untranslated in pt-BR). MS's "tela de fundo"
+  (wallpaper) and "segundo plano" (process) are wrong senses; "fundo do painel" reads naturally · tentative
+- hint (one-time tip) · **dica** · Total Commander pt-BR ("DICA:"); `doubleClickHint.*` and the seen-flag settings · high
+- row / file row · **linha** ("file row" → **linha de arquivo**) · MS terminology (BRA "row"→"linha"), Xfce Thunar
+  ("by one row"→"uma linha") · high. Used in `doubleClickPaneNavigatesToParent.description` ("not a file row"→"não uma
+  linha de arquivo") to contrast the pane background with a clickable file row.
 
 ### Reconciliation notes
 

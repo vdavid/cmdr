@@ -81,10 +81,20 @@ it can, but the judgment is yours.
 Checking the reference pile is MANDATORY for every term: mine it for the term and for similar sentences, reuse and cite,
 never guess. The reference pile holds authoritative localizations keyed by language: the ~3 GB of macOS, Microsoft, and
 five file managers — the explorer family (GNOME Nautilus, Xfce Thunar, KDE Dolphin) plus the orthodox two-pane pair
-(Total Commander, Double Commander) — sits gitignored at `_ignored/i18n/<tag>/` (one folder per language), and the docs
-explaining it are tracked in the repo. Read [`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's
-there and the authority tiers, and [`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested
-per-source recipes (greps, jq, `msggrep`, `pdftotext`, `.lng`).
+(Total Commander, Double Commander) — one folder per language. Read
+[`reference-pile/README.md`](../i18n/reference-pile/README.md) for what's there and the authority tiers, and
+[`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested per-source recipes (greps, jq,
+`msggrep`, `pdftotext`, `.lng`).
+
+> [!IMPORTANT]
+> **Where the pile is — and why a worktree can't see it.** The pile is gitignored (`_ignored/` is untracked), so it
+> lives ONLY in the main clone, at **`~/projects-git/vdavid/cmdr/_ignored/i18n/<tag>/`**. It is NOT copied into git
+> worktrees. Translation almost always runs from a worktree (`.claude/worktrees/<slug>/`), and there a relative
+> `_ignored/i18n/` **does not exist** — checking the worktree-relative path returns "absent" and tempts you to translate
+> without the pile (guessing, which this guide forbids). So ALWAYS use the absolute main-clone path above. If you can't
+> assume the path, resolve the main clone with `git worktree list | head -1` (its first column is the main checkout) and
+> mine `<that path>/_ignored/i18n/<tag>/`. A "no reference pile present" conclusion is almost always this worktree trap,
+> not a genuinely missing pile — re-check the main-clone absolute path before deciding it's gone.
 
 For each term or convention: triangulate across every source the language has, pick the most native-sounding fit for
 Cmdr's voice, then record it in the style guide's glossary as **chosen · sources · confidence**. Weight by authority:
@@ -275,7 +285,7 @@ nouns, status that agrees with the object ("Connection established", not "You ar
 result still reads naturally; if neutral phrasing would be stilted, flag the string for human review rather than ship an
 awkward rewrite or an exposed gendered default.
 
-REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine _ignored/i18n/[TARGET LANGUAGE TAG]/ for how Apple/Microsoft, the explorer file managers (GNOME Nautilus, Xfce Thunar, KDE Dolphin), and the orthodox two-pane pair (Total Commander, Double Commander) render each term and for similar sentences to model phrasing on; reuse and cite, never guess. Match the source to Cmdr's UI: for two-pane concepts the OS/explorer managers lack (pane, file list, command line), the orthodox pair is the closest lineage match. Mind the four mining gotchas in the guide's "Researching terms" section (wrong-family terms, a source naming a different concept, brand names that yield no generic term, shared-root signal). Read and extend the language glossary at docs/i18n/[TAG]/glossary.md as you settle terms (chosen, sources, confidence). Recipes: docs/i18n/reference-pile/how-to-mine.md.
+REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine the reference pile for how Apple/Microsoft, the explorer file managers (GNOME Nautilus, Xfce Thunar, KDE Dolphin), and the orthodox two-pane pair (Total Commander, Double Commander) render each term and for similar sentences to model phrasing on; reuse and cite, never guess. The pile is gitignored and lives ONLY in the MAIN clone at the ABSOLUTE path ~/projects-git/vdavid/cmdr/_ignored/i18n/[TARGET LANGUAGE TAG]/ — it is NOT in your worktree, so a worktree-relative _ignored/i18n/ will look empty and that "absent" reading is the worktree trap, not a missing pile. If unsure of the path, run `git worktree list | head -1` and mine <that main-clone path>/_ignored/i18n/[TAG]/. Match the source to Cmdr's UI: for two-pane concepts the OS/explorer managers lack (pane, file list, command line), the orthodox pair is the closest lineage match. Mind the four mining gotchas in the guide's "Researching terms" section (wrong-family terms, a source naming a different concept, brand names that yield no generic term, shared-root signal). Read and extend the language glossary at docs/i18n/[TAG]/glossary.md as you settle terms (chosen, sources, confidence). Recipes: docs/i18n/reference-pile/how-to-mine.md.
 
 DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, and the {system_settings}-style
 tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in apps/desktop/scripts/i18n-catalog-lib.js, and the

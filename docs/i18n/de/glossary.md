@@ -296,3 +296,29 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
   Hintergrund weiterlaufen lassen" · macOS ("Synchronisierung im Hintergrund", "Drucken im Hintergrund"), MS ("im
   Hintergrund") · high. Cmdr's send-to-background action routes through the queue, so its button is "Warteschlange" and
   its toasts say "im Hintergrund"
+- double-click → Doppelklick (noun) / doppelklicken (verb, du-imperative "Doppelklicke auf …") · Double Commander
+  (`tfrmoptionsfilesviewscomplement.cbdblclicktoparent.caption` → "… durch Doppelklick auf den leeren Teil der
+  Dateiansicht …"), macOS ("Doppelklick") · high
+- navigate to (a folder/path) → zu … navigieren (verb) · macOS Finder ("Navigates the front Finder window to its
+  enclosing folder" → "Navigiert im vorderen Finder-Fenster zu seinem übergeordneten Ordner"; "Navigates to a location …"
+  → "Navigiert zu einem Ort …", verified in `de/macOS/Finder/Localizable.json`, 2026-06-26) · high. Used for the
+  breadcrumb tooltip ("zu {path} navigieren") and the double-click hint body ("Das navigiert zum übergeordneten Ordner").
+  The settings switch's label/description use DC's "wechseln" (below) to match the source's "go up a folder" phrasing
+- pane background → Bereichshintergrund (pane→Bereich, glossary); the empty backdrop of a file pane · KDE Dolphin
+  ("double clicking view background" → "Doppelklick auf den Hintergrund der Ansicht"), Double Commander ("empty part of
+  file view" → "leeren Teil der Dateiansicht") · high
+- empty space (in/around a file list) → leere Fläche; "empty space around the file list" → "leere Fläche rund um die
+  Dateiliste" · Double Commander ("empty part of file view" → "leeren Teil der Dateiansicht"; "Fläche" reads more natural
+  than "Teil" for the empty backdrop sense) · high
+- row (list/table row) → Zeile; "file row" → Dateizeile · Microsoft terminology (row → Zeile, AUT/DEU/CHE/LUX), Double
+  Commander ("one per row" → "eins pro Zeile") · high
+- "go up a folder" / "changing to parent folder" (the DC two-pane feature verb) → in den übergeordneten Ordner wechseln ·
+  Double Commander (the exact same setting: "Enable changing to parent folder when double-clicking on empty part of file
+  view" → "Wechsel in das übergeordnete Verzeichnis durch Doppelklick auf den leeren Teil der Dateiansicht aktivieren";
+  Cmdr keeps macOS "Ordner" over DC's "Verzeichnis") · high
+- "What just happened?" (one-time hint title) → Was ist gerade passiert? · standard DE friendly question; matches
+  Cmdr's warm du-voice · high
+- "I like it" / "Don''t like it?" (hint buttons) → Gefällt mir / Gefällt dir das nicht? · standard DE; "Gefällt mir" is
+  Apple/social-standard for "like" · high
+- "Never do this again" (turn the gesture off) → Das nie wieder tun · standard DE; turns the behavior off (not just
+  hides the notice), so the literal "tun" phrasing fits better than macOS's notice-hiding "Nicht mehr anzeigen" · high

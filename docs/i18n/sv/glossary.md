@@ -359,3 +359,28 @@ The per-file fan-out left a few same-term-rendered-differently drifts; resolved 
   `desktop-i18n-dont-translate` check flags `Cmdrs` as a "dropped Cmdr token" (boundary matcher); this is a known false
   positive shared with `hu`/`fr`, NOT a defect: the brand IS present, inflected correctly. Don't "fix" it to satisfy the
   check.
+
+## Navigation & file ops keys re-validated against the reference pile (2026-06-26)
+
+The `settings.json` + `fileExplorer.json` double-click-to-parent and breadcrumb keys, first translated glossary-only,
+re-checked against `sv/macOS/`. New term:
+
+- **parent folder / enclosing folder: `överordnad mapp`** (definite `den överordnade mappen`) · macOS Finder, confirmed
+  (was `tentative`). Finder uses it uniformly: "Go To Enclosing Folder" → "Öppna överordnad mapp", "Navigates the front
+  Finder window to its enclosing folder" → "Navigerar det översta Finder-fönstret till den överordnade mappen", "Reveal
+  in enclosing folder" → "Visa i överordnad mapp", and standalone titles "Överordnad mapp"
+  (`sv/macOS/Finder/LocalizableMerged.json` keys `N162`, `FV10`, `FV9`, `300753.title`, `250.title`,
+  `BU37_V1/V2`). The first pass's `överordnad mapp` was right; upgraded `tentative` → `high`. **`upp till`** for "go up
+  to" in the helper text stays (natural Swedish, no competing source).
+- **go up a folder / navigate to (the gesture): `gå upp till den överordnade mappen`** · the shortened toggle label
+  "Double-click the pane background to go up a folder" → "Dubbelklicka på panelens bakgrund för att gå upp till den
+  överordnade mappen". "go up a folder" = go to the parent, so it reuses `överordnad mapp`; "gå upp till" is the natural
+  Swedish for going up a level (the same phrasing Finder uses in body strings). For Finder's imperative menu COMMAND the
+  form is "Öppna överordnad mapp"; the descriptive sentence "Navigerar … till den överordnade mappen" is also attested.
+  The breadcrumb tooltip "Click to navigate to {path}" keeps the warmer "Klicka för att gå till {path}". `high`.
+- **file row (a row in the file list): `filrad`** (definite `filraden`) · row = `rad`, from KDE Dolphin "Highlight
+  entire row" → "Markera hela raden" (`sv/kde-dolphin/dolphin.po`); compounded with `fil` per the standard Swedish IT
+  pattern. Toggle description "That''s the empty space around the file list, not a file row." → "Det är den tomma ytan
+  runt fillistan, inte en filrad." (reuses settled `tomma ytan` + `fillista` → definite `fillistan`). `high`.
+- **What just happened? (one-time hint title): `Vad hände nyss?`**; notification body "This navigates to the parent
+  folder" → "Det tar dig till den överordnade mappen" (warmer notification voice). `high`.

@@ -1,4 +1,28 @@
 {
+  "fileExplorer.breadcrumb.navigateTooltip": "Haz clic para ir a {path}",
+  "@fileExplorer.breadcrumb.navigateTooltip": {
+    "sourceHash": "9d08428"
+  },
+  "fileExplorer.doubleClickHint.title": "¿Qué acaba de pasar?",
+  "@fileExplorer.doubleClickHint.title": {
+    "sourceHash": "865b71e"
+  },
+  "fileExplorer.doubleClickHint.body": "Hiciste doble clic en el fondo del panel. Esto te lleva a la carpeta superior.",
+  "@fileExplorer.doubleClickHint.body": {
+    "sourceHash": "cfbc7d3"
+  },
+  "fileExplorer.doubleClickHint.dontLikeIt": "¿No te gusta?",
+  "@fileExplorer.doubleClickHint.dontLikeIt": {
+    "sourceHash": "2049722"
+  },
+  "fileExplorer.doubleClickHint.neverAgain": "No volver a hacer esto",
+  "@fileExplorer.doubleClickHint.neverAgain": {
+    "sourceHash": "5026f4a"
+  },
+  "fileExplorer.doubleClickHint.iLikeIt": "Me gusta",
+  "@fileExplorer.doubleClickHint.iLikeIt": {
+    "sourceHash": "6859406"
+  },
   "fileExplorer.pane.filePaneAriaLabel": "Panel de archivos {side, select, left {izquierdo} other {derecho}}",
   "@fileExplorer.pane.filePaneAriaLabel": {
     "sourceHash": "77f3961"

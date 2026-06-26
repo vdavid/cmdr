@@ -1,4 +1,28 @@
 {
+  "fileExplorer.breadcrumb.navigateTooltip": "Cliquez pour accéder à {path}",
+  "@fileExplorer.breadcrumb.navigateTooltip": {
+    "sourceHash": "9d08428"
+  },
+  "fileExplorer.doubleClickHint.title": "Que s''est-il passé ?",
+  "@fileExplorer.doubleClickHint.title": {
+    "sourceHash": "865b71e"
+  },
+  "fileExplorer.doubleClickHint.body": "Vous avez double-cliqué sur l''arrière-plan du panneau. Cela remonte au dossier parent.",
+  "@fileExplorer.doubleClickHint.body": {
+    "sourceHash": "cfbc7d3"
+  },
+  "fileExplorer.doubleClickHint.dontLikeIt": "Vous n''aimez pas ?",
+  "@fileExplorer.doubleClickHint.dontLikeIt": {
+    "sourceHash": "2049722"
+  },
+  "fileExplorer.doubleClickHint.neverAgain": "Ne plus jamais faire ça",
+  "@fileExplorer.doubleClickHint.neverAgain": {
+    "sourceHash": "5026f4a"
+  },
+  "fileExplorer.doubleClickHint.iLikeIt": "J''aime bien",
+  "@fileExplorer.doubleClickHint.iLikeIt": {
+    "sourceHash": "6859406"
+  },
   "fileExplorer.pane.filePaneAriaLabel": "{side, select, left {Panneau de fichiers gauche} other {Panneau de fichiers droit}}",
   "@fileExplorer.pane.filePaneAriaLabel": {
     "sourceHash": "77f3961"

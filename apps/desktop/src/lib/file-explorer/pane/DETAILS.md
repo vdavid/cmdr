@@ -73,7 +73,26 @@ list).
 - **`selection-dialog-keys.ts`**: Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)
 - **`function-key-commands.ts`**: `fnKeyToCommand`: the F-key bar's 9 button → command-id map (typed; unit-tested)
 - **`error-pane-utils.ts`**: Tiny helper for `ErrorPane`'s technical-details rendering
+- **`pane-background-dblclick.ts`**: `isFileListBackgroundClick(target)`: true only for a double-click on the empty
+  file-list background (inside a `[role="listbox"]`, not on a `.file-entry` row). Gates the double-click-to-parent
+  gesture, scoped to list views (error / network / search panes have no listbox, so they never trigger it).
 - **`integration-test-utils.ts`**: Shared test scaffolding for pane integration tests
+
+#### Easy-navigation gestures (GitHub #33)
+
+Two mouse conveniences, both routed through the normal pane navigation (so Back/Forward history and the error pipeline
+come for free):
+
+- **Clickable breadcrumb segments.** Each path piece in the breadcrumb is a button that navigates to that ancestor.
+  The breadcrumb shows a DISPLAY path (volume prefix stripped, home collapsed to `~`); reconstructing the real target is
+  the pure `navigation/breadcrumb-navigation.ts` (`enrichBreadcrumbSegments`), unit-tested. The current folder (last
+  segment), the empty root marker, and search-results panes (whose "path" is a query label) are non-clickable.
+- **Double-click the empty pane background → parent folder** (Directory Opus-style), gated by
+  `behavior.doubleClickPaneNavigatesToParent` (default on). The `ondblclick` lives on the `.file-pane` root (which
+  already carries `role="region"`, so no new a11y exposure); `isFileListBackgroundClick` filters to genuine list
+  background. The first time it fires it raises a one-time INFO toast (`DoubleClickPaneHintToastContent`) and flips the
+  hidden `behavior.doubleClickOnPaneNotificationSeen` so the hint shows once. "Never do this again" turns the gesture
+  off from the toast.
 
 ### Tests
 

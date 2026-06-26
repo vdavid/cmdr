@@ -1,4 +1,31 @@
 {
+  "fileExplorer.breadcrumb.navigateTooltip": "Click to navigate to {path}",
+  "@fileExplorer.breadcrumb.navigateTooltip": {
+    "description": "Tooltip on a clickable path segment in a pane's breadcrumb. Clicking the segment opens that ancestor folder.",
+    "placeholders": {
+      "path": "the friendly path of the ancestor folder the click navigates to, e.g. ~/projects"
+    }
+  },
+  "fileExplorer.doubleClickHint.title": "What just happened?",
+  "@fileExplorer.doubleClickHint.title": {
+    "description": "Title of the one-time notification shown the first time a double-click on a pane''s empty background navigates up to the parent folder."
+  },
+  "fileExplorer.doubleClickHint.body": "You double-clicked the pane background. This navigates to the parent folder.",
+  "@fileExplorer.doubleClickHint.body": {
+    "description": "Body of the one-time double-click-to-parent notification, explaining what the gesture did. \"pane\" = one of the two file-list columns."
+  },
+  "fileExplorer.doubleClickHint.dontLikeIt": "Don''t like it?",
+  "@fileExplorer.doubleClickHint.dontLikeIt": {
+    "description": "Short prompt next to the two buttons in the double-click-to-parent notification, inviting the user to turn the behavior off."
+  },
+  "fileExplorer.doubleClickHint.neverAgain": "Never do this again",
+  "@fileExplorer.doubleClickHint.neverAgain": {
+    "description": "Secondary button in the double-click-to-parent notification. Turns the double-click-to-parent behavior off."
+  },
+  "fileExplorer.doubleClickHint.iLikeIt": "I like it",
+  "@fileExplorer.doubleClickHint.iLikeIt": {
+    "description": "Primary button in the double-click-to-parent notification. Keeps the behavior on and dismisses the notification."
+  },
   "fileExplorer.pane.filePaneAriaLabel": "{side, select, left {Left} other {Right}} file pane",
   "@fileExplorer.pane.filePaneAriaLabel": {
     "description": "Accessibility label for one of the two file-list panes. The app always has a left and a right pane; this names which one.",

@@ -29,13 +29,13 @@ describe('allowFileExtensionChanges setting', () => {
     expect(values).toContain('ask')
   })
 
-  it('should be in the File operations section', () => {
+  it('should be in the Navigation & file ops section', () => {
     const def = getSettingDefinition('fileOperations.allowFileExtensionChanges')
-    expect(def?.section).toEqual(['Behavior', 'File operations'])
+    expect(def?.section).toEqual(['Behavior', 'Navigation & file ops'])
   })
 
-  it('should appear in File operations section listing', () => {
-    const settings = getSettingsInSection(['Behavior', 'File operations'])
+  it('should appear in Navigation & file ops section listing', () => {
+    const settings = getSettingsInSection(['Behavior', 'Navigation & file ops'])
     const ids = settings.map((s) => s.id)
     expect(ids).toContain('fileOperations.allowFileExtensionChanges')
   })

@@ -457,6 +457,28 @@ REVIEW FLAGS (transfer-queue pass):
   and the host sentence wraps it as "Er {countText} deze voor, dus deze wacht op zijn beurt." Renders "Er gaat 1
   overdracht deze voor" / "Er gaan 3 overdrachten deze voor". Token kept in the same slot.
 
+From the navigation + double-click-hint pass (`settings.json` Behavior restructure + new `fileExplorer.doubleClickHint.*` and `breadcrumb.navigateTooltip`; first drafted glossary-only, then RE-VALIDATED against the reference pile `_ignored/i18n/nl/`, 2026-06-26):
+
+- rename (in the section summary) → naam wijzigen, NOT hernoemen · macOS Finder uses "Wijzig naam" / "naam wijzigen" exclusively (key cross-ref `nl/macOS/Finder/LocalizableMerged.json`: "Rename"→"Wijzig naam", "The item can't be renamed"→"De naam ... kan niet worden gewijzigd"); confirms the existing glossary rename row. `settings.summary.navigationAndFileOps` changed "het hernoemen van bestanden" → "het wijzigen van bestandsnamen" to match · high
+- double-click → Dubbelklik (button/imperative) / dubbelklikken (verb, gerund) · Double Commander ("double click for files"→"dubbelklik voor bestanden"), KDE Dolphin ("double clicking view background"→"dubbel klikken op ... achtergrond"); already used in fileExplorer tooltips · high
+- pane background → paneelachtergrond · compound of glossary "paneel" + "achtergrond"; KDE Dolphin renders "view background"→"... achtergrond" (background→achtergrond corroborated), pane→paneel from the glossary (Double Commander) · high
+- navigate (to a path/folder) → naar … gaan · macOS Finder attests both "navigeren naar de bovenliggende map" ("Navigates ... to its enclosing folder") and the menu "Ga naar bovenliggende map"; chose the shorter "Ga naar"/"naar … gaan" for tooltips ("Klik om naar {path} te gaan"). MS terminology confirms navigate→navigeren if the literal verb is ever wanted · high
+- "Navigation & file ops" (Settings section, short) → Navigatie en bewerkingen · the short sidebar/page heading; "Navigatie" confirmed (MS terminology "Navigation"→"Navigatie", ProperNoun). "bewerkingen" mirrors the EN casual shortening of "operations"→"ops"; the sibling card heading keeps the full "Bestandsbewerkingen" (glossary "File operations"). "&" → "en" (matches "Updates en privacy", "Privacy en beveiliging") · tentative (the clip, not the term)
+- Navigation (card heading) → Navigatie · MS terminology ("Navigation"→"Navigatie") · high
+- parent folder → bovenliggende map · reuses glossary row, now doubly corroborated here (macOS Finder "enclosing folder"→"bovenliggende map" across many keys; Double Commander "Go to parent directory"→"Ga naar bovenliggende map") · high
+- hint (internal seen-flag label) → hint · MS terminology keeps "hint"→"hint" (NLD/BEL); the `doubleClickOnPaneNotificationSeen.*` keys are internal/hidden so this is low-stakes · high
+- row (file-list row) → rij; "file row" → bestandsrij · MS terminology ("row"→"rij", NLD/BEL), Double Commander ("one per row"→"één per rij"). Used in `doubleClickPaneNavigatesToParent.description` ("not a file row"→"geen bestandsrij") · high
+
+David later shortened the EN for the double-click setting; the two re-worded values keep the settled terms:
+- `doubleClickPaneNavigatesToParent.label` EN "Double-click the pane background to go up a folder" → "Dubbelklik op de paneelachtergrond om naar de bovenliggende map te gaan" ("go up a folder" rendered with the settled "bovenliggende map").
+- `doubleClickPaneNavigatesToParent.description` EN "That''s the empty space around the file list, not a file row." → "Dat is de lege ruimte rondom de bestandenlijst, geen bestandsrij." ("around" → "rondom"; "not a file row" → "geen bestandsrij"; reuses "lege ruimte" + "bestandenlijst"). No ICU apostrophe needed — "Dat is" has none.
+
+REVIEW FLAGS (navigation/double-click-hint pass):
+
+- `fileExplorer.doubleClickHint.dontLikeIt` "Don''t like it?" → "Bevalt het niet?" (friendly, concise; pairs with the "Doe dit nooit meer" / "Ik vind het leuk" buttons). Subjective tone call; pile has no UI-microcopy match for this phrase.
+- `fileExplorer.doubleClickHint.iLikeIt` "I like it" (primary button) → "Ik vind het leuk". Subjective; alternatives "Prima"/"Top!" are shorter but less literal.
+- `settings.section.navigationAndFileOps` "Navigatie en bewerkingen": shortened-section vs full-card distinction is a deliberate parallel to EN's "ops". Confirm the sidebar width is comfortable; the fuller "Navigatie en bestandsbewerkingen" is the fallback if the clip reads odd.
+
 ## Cross-file reconciliation (2026-06-21)
 
 Drift the parallel per-file passes left behind, found and fixed in a whole-locale reconciliation. Recorded so the

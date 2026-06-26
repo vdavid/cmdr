@@ -56,7 +56,7 @@ test.describe('Settings page', () => {
       'File and folder sizes',
       'Listing',
       'Behavior',
-      'File operations',
+      'Navigation & file ops',
       'File system watching',
       'Search',
       'AI',
@@ -81,17 +81,17 @@ test.describe('Settings page', () => {
 
   test('clicking a subsection routes to the matching section component', async () => {
     // Default boot lands on Appearance > Colors and formats; navigate elsewhere so we
-    // can prove the click handler swapped the content. "File operations" is a small
-    // subsection (one setting) so this stays fast.
-    const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('File operations'))
+    // can prove the click handler swapped the content. "Navigation & file ops" is a
+    // small subsection so this stays fast.
+    const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('Navigation & file ops'))
     expect(clicked).toBe(true)
 
     // The content area renders a wrapper `<section data-section-id="...">` per matched
     // path. Wait for the new wrapper to appear, then read its header + visible labels.
-    await settings.waitForSelector('[data-section-id="behavior-file-operations"]', 3000)
+    await settings.waitForSelector('[data-section-id="behavior-navigation-and-file-ops"]', 3000)
     const probe = await settings.evaluate<{ title: string; labels: string[] }>(
       `(function() {
-        var wrapper = document.querySelector('[data-section-id="behavior-file-operations"]');
+        var wrapper = document.querySelector('[data-section-id="behavior-navigation-and-file-ops"]');
         if (!wrapper) return { title: '', labels: [] };
         var title = (wrapper.querySelector('.section-title')?.textContent || '').trim();
         var labels = Array.from(wrapper.querySelectorAll('.setting-label')).map(function(el) {
@@ -100,7 +100,7 @@ test.describe('Settings page', () => {
         return { title: title, labels: labels };
       })()`,
     )
-    expect(probe.title).toBe('File operations')
+    expect(probe.title).toBe('Navigation & file ops')
     expect(probe.labels).toContain('Allow file extension changes')
 
     // No leftover Appearance content under the wrapper (would mean both rendered together).

@@ -1,4 +1,28 @@
 {
+  "fileExplorer.breadcrumb.navigateTooltip": "Klik om naar {path} te gaan",
+  "@fileExplorer.breadcrumb.navigateTooltip": {
+    "sourceHash": "9d08428"
+  },
+  "fileExplorer.doubleClickHint.title": "Wat is er net gebeurd?",
+  "@fileExplorer.doubleClickHint.title": {
+    "sourceHash": "865b71e"
+  },
+  "fileExplorer.doubleClickHint.body": "Je dubbelklikte op de paneelachtergrond. Hiermee ga je naar de bovenliggende map.",
+  "@fileExplorer.doubleClickHint.body": {
+    "sourceHash": "cfbc7d3"
+  },
+  "fileExplorer.doubleClickHint.dontLikeIt": "Bevalt het niet?",
+  "@fileExplorer.doubleClickHint.dontLikeIt": {
+    "sourceHash": "2049722"
+  },
+  "fileExplorer.doubleClickHint.neverAgain": "Doe dit nooit meer",
+  "@fileExplorer.doubleClickHint.neverAgain": {
+    "sourceHash": "5026f4a"
+  },
+  "fileExplorer.doubleClickHint.iLikeIt": "Ik vind het leuk",
+  "@fileExplorer.doubleClickHint.iLikeIt": {
+    "sourceHash": "6859406"
+  },
   "fileExplorer.pane.filePaneAriaLabel": "{side, select, left {Linker} other {Rechter}}bestandspaneel",
   "@fileExplorer.pane.filePaneAriaLabel": {
     "sourceHash": "77f3961"

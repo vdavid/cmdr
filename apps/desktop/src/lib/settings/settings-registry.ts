@@ -474,12 +474,49 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   },
 
   // ========================================================================
-  // Behavior › File operations
+  // Behavior › Navigation & file ops
   // ========================================================================
   {
+    id: 'behavior.doubleClickPaneNavigatesToParent',
+    section: ['Behavior', 'Navigation & file ops'],
+    cardKey: 'settings.navigationAndFileOps.card.navigation',
+    labelKey: 'settings.behavior.doubleClickPaneNavigatesToParent.label',
+    descriptionKey: 'settings.behavior.doubleClickPaneNavigatesToParent.description',
+    keywords: [
+      'double-click',
+      'doubleclick',
+      'double click',
+      'pane',
+      'background',
+      'empty',
+      'parent',
+      'folder',
+      'up',
+      'navigate',
+      'navigation',
+    ],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    // Internal (FE-owned): whether the one-time "what just happened?" toast has
+    // fired. Set to true the first time a background double-click navigates up.
+    // No UI row; hidden from search and the section tree.
+    id: 'behavior.doubleClickOnPaneNotificationSeen',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.doubleClickOnPaneNotificationSeen.label',
+    descriptionKey: 'settings.behavior.doubleClickOnPaneNotificationSeen.description',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+  {
     id: 'fileOperations.allowFileExtensionChanges',
-    section: ['Behavior', 'File operations'],
-    cardKey: 'settings.fileOperations.card.renaming',
+    section: ['Behavior', 'Navigation & file ops'],
+    cardKey: 'settings.navigationAndFileOps.card.fileOperations',
     labelKey: 'settings.fileOperations.allowFileExtensionChanges.label',
     descriptionKey: 'settings.fileOperations.allowFileExtensionChanges.description',
     keywords: ['extension', 'rename', 'file', 'change', 'ask', 'confirm'],

@@ -76,8 +76,8 @@ const SETTINGS_SECTIONS: { path: string[]; sectionId: string; label: string }[] 
   },
   { path: ['Appearance', 'Listing'], sectionId: 'appearance-listing', label: 'settings-appearance-listing' },
   {
-    path: ['Behavior', 'File operations'],
-    sectionId: 'behavior-file-operations',
+    path: ['Behavior', 'Navigation & file ops'],
+    sectionId: 'behavior-navigation-and-file-ops',
     label: 'settings-behavior-file-operations',
   },
   {

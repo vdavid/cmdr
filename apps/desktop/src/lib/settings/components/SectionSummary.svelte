@@ -25,7 +25,7 @@
         'Zoom and density': 'settings.summary.zoomAndDensity',
         'File and folder sizes': 'settings.summary.fileAndFolderSizes',
         Listing: 'settings.summary.listing',
-        'File operations': 'settings.summary.fileOperations',
+        'Navigation & file ops': 'settings.summary.navigationAndFileOps',
         'File system watching': 'settings.summary.fileSystemWatching',
         Search: 'settings.summary.search',
         'SMB/Network shares': 'settings.summary.smbNetworkShares',

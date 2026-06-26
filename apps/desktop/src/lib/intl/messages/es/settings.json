@@ -1017,9 +1017,33 @@
   "@settings.section.behavior": {
     "sourceHash": "edf8d3f"
   },
-  "settings.section.fileOperations": "Operaciones de archivos",
-  "@settings.section.fileOperations": {
+  "settings.section.navigationAndFileOps": "Navegación y operaciones de archivos",
+  "@settings.section.navigationAndFileOps": {
+    "sourceHash": "4e26af0"
+  },
+  "settings.navigationAndFileOps.card.navigation": "Navegación",
+  "@settings.navigationAndFileOps.card.navigation": {
+    "sourceHash": "3db65f8"
+  },
+  "settings.navigationAndFileOps.card.fileOperations": "Operaciones de archivos",
+  "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.label": "Haz doble clic en el fondo del panel para subir a la carpeta superior",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
+    "sourceHash": "57563c9"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "Es el espacio vacío alrededor de la lista de archivos, no la fila de un archivo.",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
+    "sourceHash": "734b6c2"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Aviso de doble clic a la carpeta superior mostrado",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
+    "sourceHash": "e830535"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Si el aviso único de doble clic a la carpeta superior ya se ha mostrado.",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
+    "sourceHash": "56238d4"
   },
   "settings.section.fileSystemWatching": "Vigilancia del sistema de archivos",
   "@settings.section.fileSystemWatching": {
@@ -1098,9 +1122,9 @@
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
-  "settings.summary.fileOperations": "Comportamiento al renombrar archivos (p. ej., cambios de extensión).",
-  "@settings.summary.fileOperations": {
-    "sourceHash": "a81b164"
+  "settings.summary.navigationAndFileOps": "Navegación con doble clic a la carpeta superior y comportamiento al renombrar archivos.",
+  "@settings.summary.navigationAndFileOps": {
+    "sourceHash": "68e38d0"
   },
   "settings.summary.fileSystemWatching": "Indexación de unidades, avisos de descargas y el atajo global de ir a la última descarga. Requiere Acceso a todo el disco.",
   "@settings.summary.fileSystemWatching": {
@@ -1330,10 +1354,6 @@
   "settings.appearance.card.briefMode": "Modo Breve",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
-  },
-  "settings.fileOperations.card.renaming": "Renombrado",
-  "@settings.fileOperations.card.renaming": {
-    "sourceHash": "ba6aeb3"
   },
   "settings.network.card.connection": "Conexión",
   "@settings.network.card.connection": {

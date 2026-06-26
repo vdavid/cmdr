@@ -857,6 +857,7 @@
     <!-- Scrollable file list -->
     <div
         class="brief-list"
+        data-file-list-surface
         bind:this={scrollContainer}
         bind:clientHeight={containerHeight}
         bind:clientWidth={containerWidth}

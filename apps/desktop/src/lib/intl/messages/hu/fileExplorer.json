@@ -1,4 +1,28 @@
 {
+  "fileExplorer.breadcrumb.navigateTooltip": "Kattints ide az ugráshoz: {path}",
+  "@fileExplorer.breadcrumb.navigateTooltip": {
+    "sourceHash": "9d08428"
+  },
+  "fileExplorer.doubleClickHint.title": "Mi történt az imént?",
+  "@fileExplorer.doubleClickHint.title": {
+    "sourceHash": "865b71e"
+  },
+  "fileExplorer.doubleClickHint.body": "Duplán kattintottál a panel hátterére. Ezzel a szülőmappába lépsz.",
+  "@fileExplorer.doubleClickHint.body": {
+    "sourceHash": "cfbc7d3"
+  },
+  "fileExplorer.doubleClickHint.dontLikeIt": "Nem tetszik?",
+  "@fileExplorer.doubleClickHint.dontLikeIt": {
+    "sourceHash": "2049722"
+  },
+  "fileExplorer.doubleClickHint.neverAgain": "Soha többé",
+  "@fileExplorer.doubleClickHint.neverAgain": {
+    "sourceHash": "5026f4a"
+  },
+  "fileExplorer.doubleClickHint.iLikeIt": "Tetszik",
+  "@fileExplorer.doubleClickHint.iLikeIt": {
+    "sourceHash": "6859406"
+  },
   "fileExplorer.pane.filePaneAriaLabel": "{side, select, left {Bal} other {Jobb}} oldali fájlpanel",
   "@fileExplorer.pane.filePaneAriaLabel": {
     "sourceHash": "77f3961"

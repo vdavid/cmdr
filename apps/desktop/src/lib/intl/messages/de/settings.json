@@ -1020,9 +1020,34 @@
   "@settings.section.behavior": {
     "sourceHash": "edf8d3f"
   },
-  "settings.section.fileOperations": "Dateioperationen",
-  "@settings.section.fileOperations": {
+  "settings.section.navigationAndFileOps": "Navigation & Dateioperationen",
+  "@settings.section.navigationAndFileOps": {
+    "sourceHash": "4e26af0"
+  },
+  "settings.navigationAndFileOps.card.navigation": "Navigation",
+  "@settings.navigationAndFileOps.card.navigation": {
+    "sourceHash": "3db65f8",
+    "sameAsSourceJustification": "'Navigation' is a standard German noun, spelled identically to English; macOS/MS DE use 'Navigation'. The sibling card.fileOperations is fully translated to 'Dateioperationen'."
+  },
+  "settings.navigationAndFileOps.card.fileOperations": "Dateioperationen",
+  "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.label": "Doppelklicke auf den Bereichshintergrund, um in den übergeordneten Ordner zu wechseln",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
+    "sourceHash": "57563c9"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "Das ist die leere Fläche rund um die Dateiliste, keine Dateizeile.",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
+    "sourceHash": "734b6c2"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Hinweis zum Doppelklick in den übergeordneten Ordner gezeigt",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
+    "sourceHash": "e830535"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Ob der einmalige Hinweis zum Doppelklick in den übergeordneten Ordner gezeigt wurde.",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
+    "sourceHash": "56238d4"
   },
   "settings.section.fileSystemWatching": "Dateisystemüberwachung",
   "@settings.section.fileSystemWatching": {
@@ -1101,9 +1126,9 @@
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
-  "settings.summary.fileOperations": "Verhalten beim Umbenennen von Dateien (z. B. Endungsänderungen).",
-  "@settings.summary.fileOperations": {
-    "sourceHash": "a81b164"
+  "settings.summary.navigationAndFileOps": "Navigation per Doppelklick zum übergeordneten Ordner und das Verhalten beim Umbenennen von Dateien.",
+  "@settings.summary.navigationAndFileOps": {
+    "sourceHash": "68e38d0"
   },
   "settings.summary.fileSystemWatching": "Laufwerksindizierung, Download-Mitteilungen und der globale Kurzbefehl „Zum neuesten Download springen“. Erfordert „Voller Festplattenzugriff“.",
   "@settings.summary.fileSystemWatching": {
@@ -1334,10 +1359,6 @@
   "settings.appearance.card.briefMode": "Kompaktmodus",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
-  },
-  "settings.fileOperations.card.renaming": "Umbenennen",
-  "@settings.fileOperations.card.renaming": {
-    "sourceHash": "ba6aeb3"
   },
   "settings.network.card.connection": "Verbindung",
   "@settings.network.card.connection": {

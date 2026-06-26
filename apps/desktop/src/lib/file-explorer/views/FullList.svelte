@@ -787,6 +787,7 @@
          the same scroll container. -->
     <div
         class="full-list"
+        data-file-list-surface
         bind:this={scrollContainer}
         bind:clientHeight={containerHeight}
         onscroll={handleScroll}

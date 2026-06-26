@@ -334,9 +334,9 @@ for (const mode of ['light', 'dark'] as const) {
           },
           { name: 'Appearance > Listing', path: ['Appearance', 'Listing'], sectionId: 'appearance-listing' },
           {
-            name: 'Behavior > File operations',
-            path: ['Behavior', 'File operations'],
-            sectionId: 'behavior-file-operations',
+            name: 'Behavior > Navigation & file ops',
+            path: ['Behavior', 'Navigation & file ops'],
+            sectionId: 'behavior-navigation-and-file-ops',
           },
           {
             name: 'Behavior > File system watching',

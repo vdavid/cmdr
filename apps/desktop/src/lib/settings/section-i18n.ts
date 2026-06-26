@@ -24,7 +24,7 @@ const SECTION_TITLE_KEY: Partial<Record<string, MessageKey>> = {
   'File and folder sizes': 'settings.section.fileAndFolderSizes',
   Listing: 'settings.section.listing',
   Behavior: 'settings.section.behavior',
-  'File operations': 'settings.section.fileOperations',
+  'Navigation & file ops': 'settings.section.navigationAndFileOps',
   'File system watching': 'settings.section.fileSystemWatching',
   Search: 'settings.section.search',
   AI: 'settings.section.ai',

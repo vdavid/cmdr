@@ -1017,9 +1017,33 @@
   "@settings.section.behavior": {
     "sourceHash": "edf8d3f"
   },
-  "settings.section.fileOperations": "Operações de arquivo",
-  "@settings.section.fileOperations": {
+  "settings.section.navigationAndFileOps": "Navegação e operações de arquivo",
+  "@settings.section.navigationAndFileOps": {
+    "sourceHash": "4e26af0"
+  },
+  "settings.navigationAndFileOps.card.navigation": "Navegação",
+  "@settings.navigationAndFileOps.card.navigation": {
+    "sourceHash": "3db65f8"
+  },
+  "settings.navigationAndFileOps.card.fileOperations": "Operações de arquivo",
+  "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.label": "Clique duplo no fundo do painel para ir à pasta superior",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
+    "sourceHash": "57563c9"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "É o espaço vazio ao redor da lista de arquivos, não uma linha de arquivo.",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
+    "sourceHash": "734b6c2"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Dica de clique duplo para a pasta superior exibida",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
+    "sourceHash": "e830535"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Se a dica única de clique duplo para a pasta superior já foi exibida.",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
+    "sourceHash": "56238d4"
   },
   "settings.section.fileSystemWatching": "Monitoramento do sistema de arquivos",
   "@settings.section.fileSystemWatching": {
@@ -1098,9 +1122,9 @@
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
-  "settings.summary.fileOperations": "Comportamento ao renomear arquivos (ex.: mudanças de extensão).",
-  "@settings.summary.fileOperations": {
-    "sourceHash": "a81b164"
+  "settings.summary.navigationAndFileOps": "Navegação com clique duplo para a pasta superior e comportamento ao renomear arquivos.",
+  "@settings.summary.navigationAndFileOps": {
+    "sourceHash": "68e38d0"
   },
   "settings.summary.fileSystemWatching": "Indexação de disco, notificações de Downloads e o atalho global de ir para o download mais recente. Precisa de Acesso Total ao Disco.",
   "@settings.summary.fileSystemWatching": {
@@ -1331,10 +1355,6 @@
   "settings.appearance.card.briefMode": "Modo resumido",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
-  },
-  "settings.fileOperations.card.renaming": "Renomeação",
-  "@settings.fileOperations.card.renaming": {
-    "sourceHash": "ba6aeb3"
   },
   "settings.network.card.connection": "Conexão",
   "@settings.network.card.connection": {

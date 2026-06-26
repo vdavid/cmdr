@@ -18,10 +18,12 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **`AppearanceSizesSection.svelte`**: `Appearance > File and folder sizes`: size display, size unit (binary/SI drives
   `kB`↔`KB` label override), file size format, size mismatch warning
 - **`ListingSection.svelte`**: `Appearance > Listing`: document icons, directory sort, brief column width
-- **`FileOperationsSection.svelte`**: `Behavior > File operations`: one unlabeled `SectionCard` holding only the
-  extension-change confirmation row (`allowFileExtensionChanges`). The conflict/progress settings live ONLY in Advanced
-  now (`maxConflictsToShow`, `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. Card frame gated
-  via `anyVisible(shouldShow, ...)` (same pattern as FSW above).
+- **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: two labeled `SectionCard`s — Navigation
+  (the `behavior.doubleClickPaneNavigatesToParent` switch) then File operations (the extension-change confirmation row
+  `allowFileExtensionChanges`). The conflict/progress settings live ONLY in Advanced (`maxConflictsToShow`,
+  `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. The hidden
+  `behavior.doubleClickOnPaneNotificationSeen` flag (one-time-hint tracker) is registered but renders no row. Each card
+  frame gated via `anyVisible(shouldShow, ...)` (same pattern as FSW above).
 - **`FileSystemWatchingSection.svelte`**: `Behavior > File system watching`: three `SectionCard` card groups — Drive
   indexing (toggle + clear-index action, the hidden `indexing.indexSize` search anchor), Downloads (BOTH
   Downloads-folder features in one card: the 4-option `downloadsNotifications` ToggleGroup, plus the on/off go-to-latest

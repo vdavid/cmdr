@@ -1289,10 +1289,33 @@
     "description": "Top-level Settings section title: Behavior. Sidebar and page heading.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.section.fileOperations": "File operations",
-  "@settings.section.fileOperations": {
-    "description": "Settings subsection title under Behavior: File operations (copy, move, rename, delete). Sidebar and page heading.",
-    "screenshot": "settings-appearance.png"
+  "settings.section.navigationAndFileOps": "Navigation & file ops",
+  "@settings.section.navigationAndFileOps": {
+    "description": "Settings subsection title under Behavior: Navigation & file ops. Covers folder navigation and file operations (copy, move, rename, delete). Sidebar and page heading. \"ops\" is a casual short form of \"operations\"."
+  },
+  "settings.navigationAndFileOps.card.navigation": "Navigation",
+  "@settings.navigationAndFileOps.card.navigation": {
+    "description": "Heading of the Navigation card (folder-navigation settings) in Settings > Behavior > Navigation & file ops."
+  },
+  "settings.navigationAndFileOps.card.fileOperations": "File operations",
+  "@settings.navigationAndFileOps.card.fileOperations": {
+    "description": "Heading of the File operations card (copy, move, rename, delete settings) in Settings > Behavior > Navigation & file ops."
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.label": "Double-click the pane background to go up a folder",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
+    "description": "Label of the switch that controls whether double-clicking the empty background of a file pane goes up one folder (to the parent folder). \"pane\" = one of the two file-list columns; \"go up a folder\" = navigate to the parent folder."
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "That''s the empty space around the file list, not a file row.",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
+    "description": "Helper text under the double-click-to-parent switch in Settings > Behavior > Navigation & file ops. Clarifies what \"pane background\" (named in the switch label just above) means: the blank area around the file list, as opposed to a row representing a file. \"That''s\" refers back to \"the pane background\" in the label."
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Double-click-to-parent hint shown",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
+    "description": "Internal, never shown in the UI: tracks whether the one-time double-click-to-parent hint notification has appeared."
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Whether the one-time double-click-to-parent hint has been shown.",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
+    "description": "Internal, never shown in the UI. Pairs with the double-click-to-parent hint label."
   },
   "settings.section.fileSystemWatching": "File system watching",
   "@settings.section.fileSystemWatching": {
@@ -1386,9 +1409,9 @@
   "@settings.summary.listing": {
     "description": "One-line summary shown under the \"Listing\" subsection heading. \"directory\" = folder; \"Brief\" is a Cmdr view-mode name (translate consistently)."
   },
-  "settings.summary.fileOperations": "Behavior when renaming files (e.g. extension changes).",
-  "@settings.summary.fileOperations": {
-    "description": "One-line summary shown under the \"File operations\" subsection heading. \"extension\" = a filename's dotted suffix."
+  "settings.summary.navigationAndFileOps": "Double-click-to-parent navigation, and behavior when renaming files.",
+  "@settings.summary.navigationAndFileOps": {
+    "description": "One-line summary shown under the \"Navigation & file ops\" subsection heading. \"extension\" = a filename's dotted suffix; \"parent\" = the folder one level up."
   },
   "settings.summary.fileSystemWatching": "Drive indexing, Downloads notifications, and the global go-to-latest-download shortcut. Needs Full Disk Access.",
   "@settings.summary.fileSystemWatching": {
@@ -1665,11 +1688,6 @@
   "@settings.appearance.card.briefMode": {
     "description": "Heading of the brief-mode card (brief column width mode and max width) in Settings > Appearance > Listing.",
     "screenshot": "settings-appearance-listing.png"
-  },
-  "settings.fileOperations.card.renaming": "Renaming",
-  "@settings.fileOperations.card.renaming": {
-    "description": "Heading of the renaming card (the file-extension-change confirmation setting) in Settings > Behavior > File operations.",
-    "screenshot": "settings-behavior-file-operations.png"
   },
   "settings.network.card.connection": "Connection",
   "@settings.network.card.connection": {

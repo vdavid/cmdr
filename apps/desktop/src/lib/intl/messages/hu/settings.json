@@ -1014,9 +1014,33 @@
   "@settings.section.behavior": {
     "sourceHash": "edf8d3f"
   },
-  "settings.section.fileOperations": "Fájlműveletek",
-  "@settings.section.fileOperations": {
+  "settings.section.navigationAndFileOps": "Navigáció és fájlműveletek",
+  "@settings.section.navigationAndFileOps": {
+    "sourceHash": "4e26af0"
+  },
+  "settings.navigationAndFileOps.card.navigation": "Navigáció",
+  "@settings.navigationAndFileOps.card.navigation": {
+    "sourceHash": "3db65f8"
+  },
+  "settings.navigationAndFileOps.card.fileOperations": "Fájlműveletek",
+  "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.label": "Dupla kattintás a panel hátterére a szülőmappába lépéshez",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
+    "sourceHash": "57563c9"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "Ez a fájllista körüli üres terület, nem pedig egy fájlsor.",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
+    "sourceHash": "734b6c2"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "A szülőmappába vivő dupla kattintás tippje megjelent",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
+    "sourceHash": "e830535"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Hogy az egyszeri, szülőmappába vivő dupla kattintás tippje megjelent-e már.",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
+    "sourceHash": "56238d4"
   },
   "settings.section.fileSystemWatching": "Fájlrendszer figyelése",
   "@settings.section.fileSystemWatching": {
@@ -1096,9 +1120,9 @@
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
-  "settings.summary.fileOperations": "Viselkedés fájlok átnevezésekor (pl. kiterjesztésváltozások).",
-  "@settings.summary.fileOperations": {
-    "sourceHash": "a81b164"
+  "settings.summary.navigationAndFileOps": "Navigáció a szülőmappába dupla kattintással, és viselkedés fájlok átnevezésekor.",
+  "@settings.summary.navigationAndFileOps": {
+    "sourceHash": "68e38d0"
   },
   "settings.summary.fileSystemWatching": "Meghajtó-indexelés, Letöltések értesítések és a globális „ugrás a legutóbbi letöltéshez” parancs. Teljes lemezhozzáférést igényel.",
   "@settings.summary.fileSystemWatching": {
@@ -1328,10 +1352,6 @@
   "settings.appearance.card.briefMode": "Rövid mód",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
-  },
-  "settings.fileOperations.card.renaming": "Átnevezés",
-  "@settings.fileOperations.card.renaming": {
-    "sourceHash": "ba6aeb3"
   },
   "settings.network.card.connection": "Kapcsolat",
   "@settings.network.card.connection": {

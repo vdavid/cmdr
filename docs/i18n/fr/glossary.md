@@ -411,3 +411,65 @@ Phrasing notes for this pass:
   integers never select `many`, but the parity check requires the branch). `#` placeholders preserved.
 - The standalone "Pause" button (`queue.row.pause`, `fileOperations.transferProgress.pause`) is legitimately identical
   to English (valid FR, macOS keeps it); the coverage check flags it but it's correct.
+
+Re-validated against the reference pile during the `easy-navi` navigation + double-click-to-parent pass (2026-06-26).
+The glossary-only first pass of these 14 keys held up: the pile CONFIRMS every term-based choice (and the orthodox
+two-pane family carries the exact feature). A later same-day copy reword (David, coordinator-relayed) shortened the two
+`doubleClickPaneNavigatesToParent` values; they reuse the terms below (see the reword note at the end). ICU values,
+single apostrophes doubled below to match this doc's convention:
+
+- double-click (noun) → double-clic; double-click (verb, imperative "Double-click …") → double-cliquez; (past
+  participle "you double-clicked") → double-cliqué · Double Commander ("lorsqu''on double-clique dans un espace vide
+  d''un panneau"), Total Commander ("Lors d''un double-clic sur la barre…"), KDE Dolphin ("double-clic", "Déclencheurs
+  sur double-clics"), Nautilus ("_Double-clic pour activer les éléments") · high — hyphenated "double-clic" / "double-cliquer"
+  is unanimous across the orthodox + explorer families.
+- pane background → arrière-plan du panneau · `arrière-plan` from KDE Dolphin ("Action à déclencher lors d''un
+  double-clic sur l''arrière-plan de la vue") and the catalog-settled `background → arrière-plan`; `panneau` from the
+  glossary's settled `pane → panneau` (Double Commander / Total Commander "panneau de fichiers") · high
+- navigate to / go up to the parent folder → accéder au / remonter au dossier parent · macOS Finder Tier-1 for "accéder
+  à" (the Go-menu item "Accéder au dossier parent", help text "Accède au dossier parent dans la fenêtre du Finder au
+  premier plan"); "remonter au dossier parent" is the natural FR for the "go up" sense (Double Commander frames it
+  "changement vers le répertoire-parent", but we keep macOS-Tier-1 "dossier parent", not DC's "répertoire-parent") ·
+  high — the reworded `…label` uses "pour remonter au dossier parent" (the EN became "go up a folder"); the
+  `fileExplorer.doubleClickHint.body` also uses "remonte au dossier parent".
+- empty space (of a pane / file list) → espace vide · Double Commander ("un espace vide d''un panneau"), exact · high —
+  the `…description` keeps the source's "file list" word as "liste de fichiers", mirroring the English mix of "pane"
+  (label) vs "file list" (description).
+- hint (the one-time double-click-to-parent notification / tip) → astuce · macOS Finder Tier-1 ("Astuces pour votre
+  Mac"); Microsoft terminology FRA renders both "hint" and "tip" as "conseil", but macOS "astuce" wins (Cmdr is a macOS
+  app) · high — feminine, so the agreeing participle is "affichée" in
+  `settings.behavior.doubleClickOnPaneNotificationSeen.label` ("Astuce … affichée").
+- row / file row (a row representing a file in the file list) → ligne / ligne de fichier · Microsoft terminology FRA
+  (`row` → "ligne", feminine, FRA), matching the catalog's settled "striped rows → lignes alternées" · high — used in
+  the reworded `…description` to contrast the pane background with a file row.
+
+Conversational microcopy in the `doubleClickHint.*` notification (no direct pile source; idiomatic UI judgment, friendly
+`vous` register):
+
+- "What just happened?" → "Que s''est-il passé ?" · the punchy idiomatic surprise phrase; the English "just" is carried
+  by context, not a literal "juste" · tentative (idiomatic, no pile hit)
+- "Don''t like it?" → "Vous n''aimez pas ?" · friendly `vous`, the "it" dropped as natural FR · tentative
+- "Never do this again" → "Ne plus jamais faire ça" · casual register matching the warm hint voice; refers to the
+  navigation behavior, distinct from "ne plus afficher" (which would mean the hint) · tentative
+- "I like it" → "J''aime bien" · natural casual FR for liking a feature (not the over-strong "J''aime"/"Je l''aime") ·
+  tentative
+
+Phrasing notes for this pass:
+
+- Section/card consistency: `settings.section.navigationAndFileOps` → "Navigation et opérations" (concise rendering of
+  the casual "Navigation & file ops"; French has no clean casual abbrev for "ops", so spelled out); the card
+  `…card.fileOperations` keeps the settled "Opérations sur les fichiers"; `…card.navigation` is identical "Navigation"
+  (carries `sameAsSourceJustification`). The summary lists the Oxford comma as ", et".
+- Regular ASCII space before `?` throughout ("Que s''est-il passé ?", "Vous n''aimez pas ?"), per the catalog-wide
+  settled spacing (style.md § Punctuation spacing); never U+202F.
+- `fileExplorer.breadcrumb.navigateTooltip` → "Cliquez pour accéder à {path}" · macOS pattern ("cliquez", "accéder à");
+  `{path}` placeholder preserved · high.
+- Copy reword applied 2026-06-26 (David picked shorter wording; coordinator-relayed). The two
+  `doubleClickPaneNavigatesToParent` values were updated to the new EN, reusing the terms above:
+  - label, new EN "Double-click the pane background to go up a folder" → "Double-cliquez sur l''arrière-plan du panneau
+    pour remonter au dossier parent" (imperative `double-cliquez` + settled `arrière-plan du panneau` + the "go up" verb
+    `remonter au dossier parent`).
+  - description, new EN "That''s the empty space around the file list, not a file row." → "C''est l''espace vide autour
+    de la liste de fichiers, pas une ligne de fichier." ("That''s" → concise friendly "C''est", referring back to the
+    pane background named in the label; settled `espace vide` + `liste de fichiers`; "around" → "autour de"; `ligne de
+    fichier` per the new row term).

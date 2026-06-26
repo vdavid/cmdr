@@ -1021,9 +1021,34 @@
   "@settings.section.behavior": {
     "sourceHash": "edf8d3f"
   },
-  "settings.section.fileOperations": "Opérations sur les fichiers",
-  "@settings.section.fileOperations": {
+  "settings.section.navigationAndFileOps": "Navigation et opérations",
+  "@settings.section.navigationAndFileOps": {
+    "sourceHash": "4e26af0"
+  },
+  "settings.navigationAndFileOps.card.navigation": "Navigation",
+  "@settings.navigationAndFileOps.card.navigation": {
+    "sourceHash": "3db65f8",
+    "sameAsSourceJustification": "'Navigation' is identical in French (standard French/macOS term, e.g. 'Navigateur de fichiers'); kept as the card heading, alongside the translated sibling 'Opérations sur les fichiers'."
+  },
+  "settings.navigationAndFileOps.card.fileOperations": "Opérations sur les fichiers",
+  "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.label": "Double-cliquez sur l''arrière-plan du panneau pour remonter au dossier parent",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
+    "sourceHash": "57563c9"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "C''est l''espace vide autour de la liste de fichiers, pas une ligne de fichier.",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
+    "sourceHash": "734b6c2"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Astuce du double-clic vers le dossier parent affichée",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
+    "sourceHash": "e830535"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Si l''astuce unique du double-clic vers le dossier parent a été affichée.",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
+    "sourceHash": "56238d4"
   },
   "settings.section.fileSystemWatching": "Surveillance du système de fichiers",
   "@settings.section.fileSystemWatching": {
@@ -1102,9 +1127,9 @@
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
-  "settings.summary.fileOperations": "Comportement lors du renommage des fichiers (ex. : changements d''extension).",
-  "@settings.summary.fileOperations": {
-    "sourceHash": "a81b164"
+  "settings.summary.navigationAndFileOps": "Navigation par double-clic vers le dossier parent, et comportement lors du renommage des fichiers.",
+  "@settings.summary.navigationAndFileOps": {
+    "sourceHash": "68e38d0"
   },
   "settings.summary.fileSystemWatching": "Indexation du disque, notifications de téléchargements, et raccourci global « aller au dernier téléchargement ». Nécessite l''Accès complet au disque.",
   "@settings.summary.fileSystemWatching": {
@@ -1334,10 +1359,6 @@
   "settings.appearance.card.briefMode": "Mode Bref",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
-  },
-  "settings.fileOperations.card.renaming": "Renommage",
-  "@settings.fileOperations.card.renaming": {
-    "sourceHash": "ba6aeb3"
   },
   "settings.network.card.connection": "Connexion",
   "@settings.network.card.connection": {

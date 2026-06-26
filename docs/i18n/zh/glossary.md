@@ -395,6 +395,33 @@ cross-check.
 - **pause all / resume all / cancel selected (toolbar)** · `全部暂停` / `全部继续` / `取消所选` · built on settled
   verbs + `全部`/`所选` · `high`
 
+### Navigation & file-ops settings + double-click-to-parent hint (reference-pile pass, 2026-06-26)
+
+macOS Finder zh-CN Tier 1, Double Commander zh-CN (the exact two-pane feature) + Microsoft TBX cross-check.
+
+- **navigation (settings section/card)** · `导航` · Microsoft TBX (`Navigation` → 导航, CHN); macOS Finder uses `导览`
+  for the verb `navigate`, but `导航` is the standard UI noun for a navigation section · `high`
+- **file operations** · `文件操作` · Microsoft TBX (`operation` → 操作) · `high`
+- **parent folder** · `上层文件夹` · macOS Finder (`Go To Enclosing Folder` → 前往上层文件夹; `Navigates … to its
+  enclosing folder` → 导览至其上层文件夹). NOTE: Double Commander uses `父文件夹`, but macOS-Tier-1 wins — keep
+  `上层文件夹` (matches the explorer-pass `上层文件夹`) · `confirmed`
+- **go to / navigate to (parent, a path piece)** · `前往` · macOS Finder (`Go to ${location}` → 前往${location}; `Go To
+  Folder` → 前往文件夹). The breadcrumb tooltip `Click to navigate to {path}` → `点击前往 {path}` · `confirmed`
+- **double-click** · `双击` · macOS + Double Commander (`双击文件视图的空白区域时，切换到父文件夹`) · `confirmed`
+- **pane background / empty space around the file list (double-click target)** · `窗格背景` (label) / `空白区域`
+  (description) · Double Commander attests both framings: `双击视图背景` (view background → 背景) and
+  `双击文件视图的空白区域` (empty area → 空白区域). `窗格` from the settled pane term. Label
+  `双击窗格背景前往上层文件夹` is unchanged across the two en wordings ("…navigates to parent folder" and the shorter
+  "…to go up a folder") — Chinese collapses both to one concise form · `high`
+- **row (a file row in the list)** · `行` · Microsoft TBX (`row` → 行). Description renders "not a file row" as
+  `而不是某个文件所在的行` (the row a file sits on), contrasting the empty area with a clickable file row · `high`
+- **one-time hint (notification)** · `一次性…提示` · descriptive; `提示` = hint, `已显示` = shown · `high`
+- **"What just happened?" (hint title)** · `刚刚发生了什么？` · natural rendering, full-width `？` · `high`
+- **"Don''t like it?" / "Never do this again" / "I like it" (hint buttons)** · `不喜欢？` / `不再这样做` / `我喜欢` ·
+  friendly informal `你`-register per style.md; concise · `high`
+
+### Ellipsis normalization
+
 - **Ellipsis: always the single full-width `…` (U+2026), regardless of the en source''s `...` vs `…`.** Chinese
   typography uses `…`, not ASCII three-dots, so every zh status/label string renders `…` (`正在发送…`, `正在加载…`,
   `正在取消…`). This is a deliberate, locale-wide normalization (not source-faithful byte-copying): the whole zh catalog

@@ -1020,9 +1020,33 @@
   "@settings.section.behavior": {
     "sourceHash": "edf8d3f"
   },
-  "settings.section.fileOperations": "Bestandsbewerkingen",
-  "@settings.section.fileOperations": {
+  "settings.section.navigationAndFileOps": "Navigatie en bewerkingen",
+  "@settings.section.navigationAndFileOps": {
+    "sourceHash": "4e26af0"
+  },
+  "settings.navigationAndFileOps.card.navigation": "Navigatie",
+  "@settings.navigationAndFileOps.card.navigation": {
+    "sourceHash": "3db65f8"
+  },
+  "settings.navigationAndFileOps.card.fileOperations": "Bestandsbewerkingen",
+  "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.label": "Dubbelklik op de paneelachtergrond om naar de bovenliggende map te gaan",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
+    "sourceHash": "57563c9"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "Dat is de lege ruimte rondom de bestandenlijst, geen bestandsrij.",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
+    "sourceHash": "734b6c2"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Hint voor dubbelklik naar bovenliggende map getoond",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
+    "sourceHash": "e830535"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Of de eenmalige hint voor dubbelklik naar bovenliggende map is getoond.",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
+    "sourceHash": "56238d4"
   },
   "settings.section.fileSystemWatching": "Bestandssysteem volgen",
   "@settings.section.fileSystemWatching": {
@@ -1102,9 +1126,9 @@
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
-  "settings.summary.fileOperations": "Gedrag bij het hernoemen van bestanden (bijv. wijzigingen van extensie).",
-  "@settings.summary.fileOperations": {
-    "sourceHash": "a81b164"
+  "settings.summary.navigationAndFileOps": "Navigeren naar de bovenliggende map met dubbelklik, en gedrag bij het wijzigen van bestandsnamen.",
+  "@settings.summary.navigationAndFileOps": {
+    "sourceHash": "68e38d0"
   },
   "settings.summary.fileSystemWatching": "Schijf indexeren, downloadmeldingen, en de globale sneltoets ga-naar-laatste-download. Vereist Volledige schijftoegang.",
   "@settings.summary.fileSystemWatching": {
@@ -1335,10 +1359,6 @@
   "settings.appearance.card.briefMode": "Weergave Kort",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
-  },
-  "settings.fileOperations.card.renaming": "Naam wijzigen",
-  "@settings.fileOperations.card.renaming": {
-    "sourceHash": "ba6aeb3"
   },
   "settings.network.card.connection": "Verbinding",
   "@settings.network.card.connection": {

@@ -389,3 +389,65 @@ Wave-1-prep phrasings settled (keep consistent): "Waiting" (queued status) → `
 → `Xong`; "Cancelled" → `Đã hủy`; "Couldn''t finish" (gentle failed wording) → `Chưa hoàn tất được` (negative-capability
 framing per the error voice, avoids a bare "lỗi"/"thất bại"). "Cancel selected" → `Hủy mục đã chọn`. "Show transfer
 queue" (command) → `Hiện hàng đợi truyền`.
+
+Added during the navigation-and-file-ops pass (2026-06-26): the new `settings` Navigation & file ops section + the
+`fileExplorer` breadcrumb tooltip and double-click-to-parent hint toast. RE-VALIDATED against the reference pile
+(`_ignored/i18n/vi/`, mined 2026-06-26) after a first pass that wrongly assumed the pile absent. Two terms have a
+macOS-vs-shipped-catalog split: the pile's macOS-ideal form differs from what the shipped vi catalog already uses, and
+catalog consistency wins (one catalog must not carry two terms for one concept; adopting the macOS form is a
+full-catalog migration, not a 14-key split). Reuses prior terms (pane → `khung`, file list → `danh sách tệp`, rename →
+`đổi tên`, file ops/file operations → `Thao tác tệp`):
+
+- **navigation / navigate (section + card heading): `điều hướng`** · macOS Finder (the `điều hướng` verb/noun, e.g.
+  "Location to navigate to" → `Vị trí sẽ điều hướng đến`) and GNOME Nautilus ("Điều hướng"). Used for the `Navigation`
+  card heading and the `Navigation & file ops` section (`Điều hướng & thao tác tệp`, joined with `&` like the
+  `Cập nhật & quyền riêng tư` section). `high`.
+- **navigate to (an action, "go to X"): `đi tới`** · macOS Finder ("Go To Folder" → `Đi tới Thư mục`, "Go To Location"
+  → `Đi tới vị trí`) and the in-catalog command convention (`commands.navParent` → `Đi tới thư mục cha`,
+  `commands.navGoToPath` → `Đi tới đường dẫn…`). Breadcrumb "Click to navigate to {path}" → `Bấm để đi tới {path}`.
+  "Navigates to parent" rendered `đi tới thư mục cha` (matching `commands.navParent`), not the first pass's
+  `lên thư mục cha`. `high`.
+- **double-click: `bấm đúp`** (kept for catalog consistency) · the shipped vi catalog uses `bấm đúp`
+  (`fileExplorer.network.browser.tooltip.doubleClickToConnect` = "Bấm đúp để kết nối…"), so these keys match it. Note
+  `bấm đúp` already uses macOS's click verb `bấm` (macOS Finder/AppKit: `bấm` for "click", 54 occurrences, ZERO `nhấp`
+  in `vi/macOS/`), paired with the common `đúp` for "double". The pile-IDEAL form is `bấm kép` (macOS `kép` = "double",
+  e.g. "Gạch chân kép"; MS terminology "double-click" → `bấm kép` VNM), deferred to a full-catalog migration to avoid
+  forking terminology. A stray `nhấp đúp` (`viewer.binaryWarning.body`) is a separate pre-existing catalog
+  inconsistency, not touched here. `high` (catalog-consistent).
+- **click (single, the action): `bấm`** · macOS Finder/AppKit (`bấm` for "click", 54×, ZERO `nhấp`). Breadcrumb "Click
+  to navigate" → `Bấm để đi tới`. (The catalog also has `nhấp` in `viewer.statusBar.hint.image` — same pre-existing
+  inconsistency as `nhấp đúp`.) `high`.
+- **parent folder: `thư mục cha`** (kept for catalog consistency) · the shipped vi catalog uses `thư mục cha`
+  (`commands.navParent` → `Đi tới thư mục cha`; multiple `errors.json` suggestions), so these keys match it. The
+  pile-IDEAL form is macOS's `thư mục chứa` (macOS Finder localizes the exact up-navigation command "Go To Enclosing
+  Folder" → `Đi tới thư mục chứa`, and uses it generically, "thư mục chứa tệp này"), deferred to a full-catalog
+  migration to avoid forking. `high` (catalog-consistent).
+- **pane: `khung`** (UPGRADES the prior `tentative` to `high`) · macOS AppKit/Finder uses `khung` for a UI pane: "Khung
+  Xem trước" (Preview pane), "Khung hiện tại" (current pane). Total Commander also uses `khung`. `high`.
+- **pane background: `nền khung`** · `nền` (background, macOS-attested: "màu nền chữ") + `khung` (pane, above); the
+  constructed compound is sound. KDE Dolphin has the parallel concept "double clicking view background" (untranslated in
+  vi, but it confirms the "background" framing). `high`.
+- **hint (one-time UI hint/tip): `gợi ý`** · macOS ("Cửa sổ gợi ý" = hint window, "Gợi ý mật khẩu" = password hint); MS
+  terminology "hint" Noun. `high`.
+- **empty space (in a list): `khoảng trống`** · natural rendering ("the empty space in a file list" → "khoảng trống
+  trong danh sách tệp"; "the empty space around the file list" → "khoảng trống xung quanh danh sách tệp"). `high`.
+- **row (file-list row): `hàng`** · Cmdr's own catalog already uses `hàng` for file-list rows ("Hàng sọc xen kẽ" =
+  alternating striped rows; "Bộ đệm ảo hóa (hàng)" / "Số hàng dựng thêm phía trên và dưới vùng hiển thị" = list
+  virtualization rows), reserving `dòng` for text LINES in the viewer ("{count} dòng", "ngắt dòng"). MS terminology
+  agrees (row → `hàng`). "a file row" → `một hàng tệp`. KDE Dolphin's `dòng` ("click anywhere on the row" → "trong
+  dòng") is overridden by Cmdr's own established `hàng`. `high` (catalog-consistent).
+
+A later copy revision (2026-06-26, David picked shorter wording) reworded this switch's label + description; the keys now
+read: label `Bấm đúp vào nền khung để lên thư mục cha` ("go up a folder" → `lên thư mục cha`, the shorter directional
+form), description `Đó là khoảng trống xung quanh danh sách tệp, không phải một hàng tệp.` ("That''s…, not a file row").
+
+Phrasings settled this pass (double-click-to-parent hint toast, casual/friendly product voice — free copy, no single
+pile source):
+
+- **"What just happened?" → `Chuyện gì vừa xảy ra?`** · natural friendly framing. `tentative`.
+- **"Don''t like it?" → `Không thích à?`** · `à` casual softening particle; matches the friendly voice. `tentative`.
+- **"Never do this again" (button) → `Đừng làm vậy nữa`** · natural imperative. `tentative`.
+- **"I like it" (primary button) → `Tôi thích`** · the user speaking in first person; `Tôi` (I) here, not the app''s
+  `bạn`. `tentative`.
+- **"This navigates to the parent folder" (hint body) → `Thao tác này đưa bạn đến thư mục cha`** · `đưa bạn đến` (takes
+  you to) for a friendly, concrete rendering. `tentative`.

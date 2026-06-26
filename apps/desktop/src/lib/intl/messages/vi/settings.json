@@ -1011,9 +1011,33 @@
   "@settings.section.behavior": {
     "sourceHash": "edf8d3f"
   },
-  "settings.section.fileOperations": "Thao tác tệp",
-  "@settings.section.fileOperations": {
+  "settings.section.navigationAndFileOps": "Điều hướng & thao tác tệp",
+  "@settings.section.navigationAndFileOps": {
+    "sourceHash": "4e26af0"
+  },
+  "settings.navigationAndFileOps.card.navigation": "Điều hướng",
+  "@settings.navigationAndFileOps.card.navigation": {
+    "sourceHash": "3db65f8"
+  },
+  "settings.navigationAndFileOps.card.fileOperations": "Thao tác tệp",
+  "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.label": "Bấm đúp vào nền khung để lên thư mục cha",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
+    "sourceHash": "57563c9"
+  },
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "Đó là khoảng trống xung quanh danh sách tệp, không phải một hàng tệp.",
+  "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
+    "sourceHash": "734b6c2"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Đã hiện gợi ý bấm đúp để đi tới thư mục cha",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
+    "sourceHash": "e830535"
+  },
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "Liệu gợi ý bấm đúp để đi tới thư mục cha (chỉ hiện một lần) đã được hiển thị hay chưa.",
+  "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
+    "sourceHash": "56238d4"
   },
   "settings.section.fileSystemWatching": "Theo dõi hệ thống tệp",
   "@settings.section.fileSystemWatching": {
@@ -1093,9 +1117,9 @@
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
-  "settings.summary.fileOperations": "Hành vi khi đổi tên tệp (ví dụ đổi đuôi tệp).",
-  "@settings.summary.fileOperations": {
-    "sourceHash": "a81b164"
+  "settings.summary.navigationAndFileOps": "Điều hướng bằng bấm đúp tới thư mục cha, và hành vi khi đổi tên tệp.",
+  "@settings.summary.navigationAndFileOps": {
+    "sourceHash": "68e38d0"
   },
   "settings.summary.fileSystemWatching": "Lập chỉ mục ổ đĩa, thông báo Tải về, và phím tắt toàn cục đến-tệp-tải-về-mới-nhất. Cần Toàn quyền truy cập đĩa.",
   "@settings.summary.fileSystemWatching": {
@@ -1325,10 +1349,6 @@
   "settings.appearance.card.briefMode": "Chế độ rút gọn",
   "@settings.appearance.card.briefMode": {
     "sourceHash": "b75e4b3"
-  },
-  "settings.fileOperations.card.renaming": "Đổi tên",
-  "@settings.fileOperations.card.renaming": {
-    "sourceHash": "ba6aeb3"
   },
   "settings.network.card.connection": "Kết nối",
   "@settings.network.card.connection": {

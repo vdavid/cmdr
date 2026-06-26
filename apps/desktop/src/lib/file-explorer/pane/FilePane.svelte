@@ -66,10 +66,13 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import VolumeBreadcrumb from '../navigation/VolumeBreadcrumb.svelte'
     import { splitPathSegments } from '../navigation/path-segments'
+    import { enrichBreadcrumbSegments } from '../navigation/breadcrumb-navigation'
     import RepoChip from '../git/RepoChip.svelte'
     import { lookupRepoInfo, subscribeToRepo, unsubscribeFromRepo, type RepoInfo } from '../git/git-store.svelte'
     import { isVirtualGitPath } from '../git/path-detection'
-    import { getSetting, onSpecificSettingChange } from '$lib/settings'
+    import { getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
+    import { isFileListBackgroundClick } from './pane-background-dblclick'
+    import DoubleClickPaneHintToastContent from './DoubleClickPaneHintToastContent.svelte'
     import ErrorPane from './ErrorPane.svelte'
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
     import SmbReauthView from './SmbReauthView.svelte'
@@ -455,6 +458,46 @@
             ? [{ text: breadcrumbDisplayPath, gitPortal: false }]
             : splitPathSegments(breadcrumbDisplayPath),
     )
+
+    // Each segment enriched with a navigation `target` (null when not clickable)
+    // and a friendly `displayPath` for the tooltip. Clicking a clickable segment
+    // navigates to that ancestor via the normal pane nav (history + errors).
+    // Pure logic lives in `breadcrumb-navigation.ts` (unit-tested).
+    const clickableBreadcrumbSegments = $derived(
+        enrichBreadcrumbSegments(breadcrumbSegments, {
+            volumeId,
+            volumePath,
+            currentPath,
+            userHomePath,
+            isSearchResults: isSearchResultsView,
+        }),
+    )
+
+    /** Navigate to a breadcrumb ancestor. Errors surface via the pane's error pipeline. */
+    function handleBreadcrumbSegmentClick(target: string): void {
+        void navigateToPath(target).catch(() => {})
+    }
+
+    /**
+     * Double-clicking the empty file-list background navigates up one folder
+     * (Directory Opus-style), gated by `behavior.doubleClickPaneNavigatesToParent`.
+     * On the very first trigger we raise a one-time INFO toast explaining it, and
+     * flip the hidden `behavior.doubleClickOnPaneNotificationSeen` so it shows once.
+     */
+    function handlePaneBackgroundDblClick(e: MouseEvent): void {
+        if (!getSetting('behavior.doubleClickPaneNavigatesToParent')) return
+        if (!isFileListBackgroundClick(e.target)) return
+        if (!hasParent) return // nothing above (volume root / search-results pane)
+        void navigateToParent()
+        if (!getSetting('behavior.doubleClickOnPaneNotificationSeen')) {
+            setSetting('behavior.doubleClickOnPaneNotificationSeen', true)
+            addToast(DoubleClickPaneHintToastContent, {
+                level: 'info',
+                dismissal: 'persistent',
+                id: 'double-click-pane-hint',
+            })
+        }
+    }
 
     // Check if we're viewing an MTP device
     const isMtpView = $derived(isMtpVolumeId(volumeId))
@@ -2749,6 +2792,7 @@
     class="file-pane"
     class:is-focused={isFocused}
     onclick={handlePaneClick}
+    ondblclick={handlePaneBackgroundDblClick}
     onkeydown={() => {}}
     role="region"
     aria-label={tString('fileExplorer.pane.filePaneAriaLabel', { side: paneId })}
@@ -2764,7 +2808,13 @@
             onVolumeChange={handleVolumeChangeFromBreadcrumb}
             onSmbUpgradeLogin={handleSmbUpgradeLogin}
         />
-        <span class="path">{#each breadcrumbSegments as seg, i (i)}{#if i > 0 && seg.text !== ''}<span class="path-sep">/</span>{/if}<span class:git-portal={seg.gitPortal}>{seg.text}</span>{/each}</span>
+        <span class="path">{#each clickableBreadcrumbSegments as seg, i (i)}{#if i > 0 && seg.text !== ''}<span class="path-sep">/</span>{/if}{#if seg.target !== null}<button
+                    type="button"
+                    class="path-segment"
+                    class:git-portal={seg.gitPortal}
+                    use:tooltip={tString('fileExplorer.breadcrumb.navigateTooltip', { path: seg.displayPath })}
+                    onclick={() => { handleBreadcrumbSegmentClick(seg.target as string); }}
+                >{seg.text}</button>{:else}<span class:git-portal={seg.gitPortal}>{seg.text}</span>{/if}{/each}</span>
         {#if showRepoChip && gitRepoInfo}
             <RepoChip info={gitRepoInfo} />
         {/if}
@@ -3042,10 +3092,34 @@
         min-width: 0;
     }
 
+    /* Clickable ancestor segments: bare inline buttons (no chrome), inheriting
+       the breadcrumb's color, brightening to the primary text color on hover so
+       the click affordance is visible. Cursor stays the app-wide default (only
+       `LinkButton` opts into a pointer). */
+    .path :global(.path-segment) {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        cursor: default;
+    }
+
+    .path :global(.path-segment:hover) {
+        color: var(--color-text-primary);
+    }
+
     /* Segments inside a `.git/...` portal pick up the dedicated git-portal
        token so the user can see at a glance they're "in history-land." */
     .path :global(.git-portal) {
         color: var(--color-git-portal-text);
+    }
+
+    /* Git-portal segments brighten to the bolder git-portal token on hover,
+       keeping the "history-land" hue instead of jumping to the primary color. */
+    .path :global(.path-segment.git-portal:hover) {
+        color: var(--color-git-portal);
     }
 
     .path :global(.path-sep) {

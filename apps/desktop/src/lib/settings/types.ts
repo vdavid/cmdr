@@ -231,6 +231,10 @@ export interface SettingsValues {
   // Quick Look
   'fileExplorer.suppressQuickLookHint': boolean
 
+  // Navigation
+  'behavior.doubleClickPaneNavigatesToParent': boolean
+  'behavior.doubleClickOnPaneNotificationSeen': boolean
+
   // File operations
   'fileOperations.mtpEnabled': boolean
   'fileOperations.mtpConnectionWarning': boolean
