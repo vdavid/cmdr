@@ -1431,4 +1431,104 @@ mod tests {
 
         writer.shutdown();
     }
+
+    /// Count entries stamped at exactly `epoch` (the dirs this reconcile pass
+    /// successfully re-listed). A reconcile that descends the whole tree stamps
+    /// every dir; one that stops at the root stamps only the root.
+    fn dirs_listed_at_epoch(conn: &Connection, epoch: u64) -> i64 {
+        conn.query_row(
+            "SELECT COUNT(*) FROM entries WHERE is_directory = 1 AND listed_epoch = ?1",
+            [epoch],
+            |r| r.get(0),
+        )
+        .expect("count listed dirs")
+    }
+
+    /// THE regression test for the reported prod bug: a reconcile over an
+    /// already-partially-indexed share must DESCEND into every existing child
+    /// dir, not stop at the root after matching its children by name.
+    ///
+    /// Setup mirrors prod (`naspi`): the DB knows the root + its top-level dirs
+    /// from an earlier interrupted scan, but those dirs are EMPTY in the index —
+    /// their real subtrees were never listed. The live volume has the full tree.
+    /// A child dir being "unchanged" at the root's level (same mtime → no UPSERT)
+    /// says NOTHING about whether its own subtree was ever scanned, so the
+    /// reconcile must recurse into it regardless.
+    ///
+    /// Pre-fix (recursion gated on a change/upsert) this stamped only the root
+    /// and left every deep file missing — a green badge over an unscanned share.
+    #[tokio::test]
+    async fn reconcile_descends_into_existing_unchanged_child_dirs() {
+        // Prior index: root + 3 top-level dirs, each EMPTY (the interrupted-scan
+        // state). A fresh scan stamps these at epoch 1 with stable mtimes.
+        let shallow = vec![
+            entry("a", "/a", true, None),
+            entry("b", "/b", true, None),
+            entry("c", "/c", true, None),
+        ];
+        let vol_prior: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", shallow));
+        let (writer, db_path, _dir) = fresh_scan(Arc::clone(&vol_prior)).await;
+
+        // The full live tree: the SAME 3 top dirs (unchanged → no UPSERT at the
+        // root), now each holding a subdir with a deep file. 3 top dirs + 3
+        // subdirs = 6 dirs total under the root, plus the root itself = 7 dirs.
+        let full = vec![
+            entry("a", "/a", true, None),
+            entry("sub_a", "/a/sub_a", true, None),
+            entry("deep_a.txt", "/a/sub_a/deep_a.txt", false, Some(11)),
+            entry("b", "/b", true, None),
+            entry("sub_b", "/b/sub_b", true, None),
+            entry("deep_b.txt", "/b/sub_b/deep_b.txt", false, Some(22)),
+            entry("c", "/c", true, None),
+            entry("sub_c", "/c/sub_c", true, None),
+            entry("deep_c.txt", "/c/sub_c/deep_c.txt", false, Some(33)),
+        ];
+        let vol_full: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", full));
+
+        // A continuity break bumps the epoch before a rescan; mirror that so the
+        // reconcile stamps re-listed dirs at the NEW epoch (distinct from epoch 1).
+        let new_epoch = {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::bump_current_epoch(&wconn).unwrap()
+        };
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        reconcile_volume_via_trait(vol_full, PathBuf::from("/"), writer.clone(), progress(), cancelled)
+            .await
+            .expect("reconcile");
+        writer.flush().await.expect("flush");
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+
+        // The walk descended into EVERY dir: root + 3 top + 3 sub = 7 dirs, all
+        // stamped at the new epoch. Pre-fix only the root (1) was stamped.
+        assert_eq!(
+            dirs_listed_at_epoch(&conn, new_epoch),
+            7,
+            "reconcile must re-list every dir (root + 3 top + 3 sub), not stop at the root"
+        );
+
+        // The deep files the prior index never had are now present and sized —
+        // proof the recursion actually listed the subtrees, not just stamped them.
+        for (path, size) in [
+            ("/a/sub_a/deep_a.txt", 11u64),
+            ("/b/sub_b/deep_b.txt", 22),
+            ("/c/sub_c/deep_c.txt", 33),
+        ] {
+            let id = resolve_path(&conn, path)
+                .expect("resolve")
+                .unwrap_or_else(|| panic!("{path} should be indexed after reconcile descends"));
+            let row = IndexStore::get_entry_by_id(&conn, id).expect("entry").expect("present");
+            assert_eq!(row.logical_size, Some(size), "{path} reconciled with its real size");
+        }
+
+        // Recursive sizes rolled up through the descended tree: root = 11+22+33.
+        assert_eq!(
+            dir_size(&conn, "/"),
+            66,
+            "root recursive size reflects the deep files the reconcile descended to find"
+        );
+
+        writer.shutdown();
+    }
 }

@@ -405,6 +405,10 @@ pub(super) struct DirDiff {
     pub updated: u64,
     /// `(child_dir_id, child_name)` for every EXISTING child dir that matched a
     /// live dir — the caller recurses into these (their id is already known).
+    /// This is UNCONDITIONAL of whether the dir changed: an unchanged dir still
+    /// recurses, because "unchanged at the parent's level" says nothing about
+    /// whether its own subtree was ever listed. Gating this on `changed` is the
+    /// reconcile-stops-at-the-root bug (see the fn doc).
     pub matched_child_dirs: Vec<(i64, String)>,
     /// Names of NEW child dirs created this pass — the caller flushes the writer,
     /// resolves their ids, then recurses (the id isn't known until the insert
@@ -422,6 +426,15 @@ pub(super) struct DirDiff {
 /// mtime (dir/symlink) actually differs, so a rescan over an unchanged tree
 /// issues zero entry-row writes and never touches the catastrophic
 /// `INSERT OR REPLACE`/`platform_case` path.
+///
+/// The recursion set (`matched_child_dirs`) is DECOUPLED from that write
+/// decision: every matched child dir is returned for the caller to descend into,
+/// changed or not. The walk must re-list each existing child dir's subtree on a
+/// reconcile — a child being unchanged at THIS dir's level proves nothing about
+/// whether its subtree was ever scanned. (Re-gating recursion on `changed` is the
+/// reconcile-stops-at-the-root prod bug: a share with only its top dirs indexed
+/// would match them, write nothing, recurse nowhere, and "complete" instantly
+/// over an unscanned tree.)
 pub(super) fn diff_dir_against_db(
     dir_id: i64,
     live_children: &[LiveChild],
