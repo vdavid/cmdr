@@ -206,6 +206,14 @@ column now that the Ext track is gone.
 
 ## Gotchas
 
+**Gotcha**: Both scroll containers carry a `data-file-list-surface` attribute (`.brief-list` and `.full-list`) — don't
+drop it. **Why**: the pane's double-click-to-parent gesture (`pane/pane-background-dblclick.ts`, gated by
+`behavior.doubleClickPaneNavigatesToParent`) hit-tests on it to tell "empty list background" from a row or the Full-view
+sort header. It can't key off `[role="listbox"]`: in Full view the listbox spans only the rows, so the empty space below
+a short listing falls outside it and the gesture silently no-ops there (the original bug). The surface fills the pane in
+both views, so it covers that gap. Remove the attribute and double-click-to-parent quietly dies with no view-level test
+catching it (the contract is covered in `pane/pane-background-dblclick.test.ts`).
+
 **Gotcha**: `$state()` cannot live in `.ts` files **Why**: `virtual-scroll.ts` is pure functions. Reactive state must be
 in `.svelte` or `.svelte.ts`. Math functions return plain objects consumed by `$derived` in components.
 

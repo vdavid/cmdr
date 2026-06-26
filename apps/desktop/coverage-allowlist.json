@@ -49,9 +49,6 @@
     "file-explorer/network/NetworkBrowser.svelte": {
       "reason": "Network component, needs Tauri integration"
     },
-    "file-explorer/network/NetworkLoginForm.svelte": {
-      "reason": "Network component, needs Tauri integration"
-    },
     "file-explorer/network/ShareBrowser.svelte": {
       "reason": "Network component, needs integration tests"
     },
@@ -144,9 +141,6 @@
     },
     "file-viewer/open-viewer.ts": {
       "reason": "Depends on Tauri WebviewWindow API"
-    },
-    "font-metrics/measure.ts": {
-      "reason": "Depends on DOM APIs"
     },
     "hmr-recovery.ts": {
       "reason": "Dev-only HMR crash handler, runs inside import.meta.hot, depends on window/sessionStorage/location.reload"
