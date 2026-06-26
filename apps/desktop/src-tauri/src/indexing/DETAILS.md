@@ -283,7 +283,7 @@ Key column rationales:
 - **`recursive_has_symlinks`** (`dir_stats`, default 0): OR-aggregated bottom-up. Surfaced via `DirStats.recursive_has_symlinks` and `FileEntry.recursive_has_symlinks` so the frontend can show a `(i)` next to size on symlink-containing folders, explaining the `du`/Finder-style omission.
 - **`UNIQUE (parent_id, name_folded)`** on `idx_parent_name_folded`: the DB physically rejects duplicate rows. Without it, two concurrent `IndexWriter` instances racing on the same DB (each with its own `Arc<AtomicI64>` ID counter) could insert distinct rows for the same `(parent_id, name)`, which the aggregator then double-counts into `dir_stats`. **Observed once as a 1.83 TB ghost size on the `..` row of a 994 GB volume.** The state-machine fix (lock-first `start_indexing`) closes the trigger; this constraint is the safety net.
 
-Schema version mismatch (any bump in `SCHEMA_VERSION`) drops the DB and rebuilds. No online migrations: the index is a disposable cache. See `store.rs` for the current version. `SCHEMA_VERSION` is `"13"` (v13 added the honest-sizes columns below).
+Schema version mismatch (any bump in `SCHEMA_VERSION`) drops the DB and rebuilds. No online migrations: the index is a disposable cache. See `store.rs` for the current version. `SCHEMA_VERSION` is `"14"` (v13 added the honest-sizes columns below; v14 is a forced rebuild, not a schema change — it heals testers off earlier builds whose reconcile could falsely mark a partial network scan complete, so SMB/MTP indexes rebuild cleanly on upgrade with no manual Forget).
 
 ## Honest sizes (coverage + freshness)
 

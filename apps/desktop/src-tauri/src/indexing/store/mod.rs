@@ -17,7 +17,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-const SCHEMA_VERSION: &str = "13";
+// Bump to invalidate on-disk indexes (the cache is disposable: a mismatch drops +
+// rebuilds, no migration). v14 is a forced rebuild, not a schema change: earlier
+// builds' reconcile could falsely mark a partial network scan `scan_completed_at`,
+// stranding SMB/MTP indexes as "complete" so they'd never rescan. Dropping every
+// index on upgrade heals testers to a clean, fully-scanned state with no manual
+// Forget.
+const SCHEMA_VERSION: &str = "14";
 
 /// Meta key for the per-volume epoch counter (TEXT, like all meta values).
 ///
