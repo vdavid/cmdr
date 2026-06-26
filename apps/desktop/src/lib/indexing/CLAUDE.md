@@ -48,9 +48,9 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
   normalization).
 - **The `IndexingStatusIndicator.a11y.test.ts` mock must include every getter the indicator imports**, or the existing
   scanning case crashes on `undefined`.
-- **Directory sizes are HONEST: unknown (the `<dir>` placeholder) ≠ empty (`0 bytes`) ≠ lower-bound (`≥`).** `getDirSizeDisplayState`
-  (`views/full-list-utils.ts`) is the single source of truth, consumed in lockstep by `FullList` / `SelectionInfo` /
-  `measure-column-widths`. Rendering + sort: [DETAILS.md](DETAILS.md).
+- **Directory sizes are HONEST: unknown (the `<dir>` placeholder) ≠ empty (`0 bytes`) ≠ lower-bound (`≥`).**
+  `getDirSizeDisplayState` (`views/full-list-utils.ts`) is the single source of truth, consumed in lockstep by
+  `FullList` / `SelectionInfo` / `measure-column-widths`. Rendering + sort: [DETAILS.md](DETAILS.md).
 
 Full public API, the eight-event table, tooltip content per state, ETA blending, dependencies, and tests:
 [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

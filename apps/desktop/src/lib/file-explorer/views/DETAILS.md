@@ -21,13 +21,13 @@ invariants and gotchas live in [CLAUDE.md](CLAUDE.md).
   single source of truth for a directory's size-column CONTENT state
   (`'dir' | 'scanning' | 'lower-bound' | 'size' | 'size-stale'`, a pure function of
   `{recursiveSize, complete, stale, updating}` — the "honest sizes" model; see `$lib/indexing/DETAILS.md` § Honest size
-  rendering). The in-flux hourglass is the ORTHOGONAL `isDirSizeUpdating` (`indexing || pending`), not a state value.
-  An unknown size (not enriched yet, OR an incomplete subtree with nothing known below it: `complete === false` and
+  rendering). The in-flux hourglass is the ORTHOGONAL `isDirSizeUpdating` (`indexing || pending`), not a state value. An
+  unknown size (not enriched yet, OR an incomplete subtree with nothing known below it: `complete === false` and
   `recursiveSize === 0`) collapses into `'dir'`/`'scanning'` → the familiar `<dir>` placeholder, never a settled-looking
   value, kept distinct from a genuinely-empty `0 bytes` (`complete === true`, `recursiveSize === 0` → `'size'`).
   `FullList.svelte`'s size cell, `SelectionInfo.svelte`'s Brief status bar, and `measure-column-widths.ts` all consume
-  these so rendered text and pre-measured column width agree; don't re-inline the decision in any of them. The lower-bound
-  prefix glyph is `LOWER_BOUND_GLYPH` (`≥`, a symbol, not copy).
+  these so rendered text and pre-measured column width agree; don't re-inline the decision in any of them. The
+  lower-bound prefix glyph is `LOWER_BOUND_GLYPH` (`≥`, a symbol, not copy).
 - **measure-column-widths.ts** – `computeFullListColumnWidths()`: pixel-accurate widths for the Ext / Size / Modified
   columns based on the currently loaded entries. Uses `@chenglou/pretext` for canvas-based measurement (no DOM reflow).
   FullList transitions `grid-template-columns` over 300ms so widths refine smoothly as more entries stream in.
