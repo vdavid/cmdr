@@ -98,7 +98,14 @@ mod tests {
         let pending = Arc::new(PendingSizes::new());
         INDEX_REGISTRY.lock().expect("registry").remove(vid);
         assert!(
-            try_reserve_initializing_phase(vid, store, pool, pending, Some(initial)).is_ok(),
+            try_reserve_initializing_phase(
+                vid,
+                store,
+                pool,
+                pending,
+                Arc::new(std::sync::Mutex::new(Some(initial)))
+            )
+            .is_ok(),
             "reserve must succeed",
         );
         body();

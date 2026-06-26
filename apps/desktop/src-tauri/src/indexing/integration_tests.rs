@@ -937,7 +937,7 @@ fn reserve_initializing_for(volume_id: &str) -> tempfile::TempDir {
     let store = IndexStore::open(&db_path).expect("open init store");
     let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
     let pending = Arc::new(pending_sizes::PendingSizes::new());
-    try_reserve_initializing_phase(volume_id, store, pool, pending, None)
+    try_reserve_initializing_phase(volume_id, store, pool, pending, Arc::new(std::sync::Mutex::new(None)))
         .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
     dir
 }
@@ -976,7 +976,13 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     let store2 = IndexStore::open(&db2).expect("open store");
     let pool2 = Arc::new(ReadPool::new(db2.clone()).expect("pool"));
     let pending2 = Arc::new(pending_sizes::PendingSizes::new());
-    let res = try_reserve_initializing_phase(ROOT_VOLUME_ID, store2, pool2, pending2, None);
+    let res = try_reserve_initializing_phase(
+        ROOT_VOLUME_ID,
+        store2,
+        pool2,
+        pending2,
+        Arc::new(std::sync::Mutex::new(None)),
+    );
     assert!(
         res.is_err(),
         "second reservation while already Initializing must fail (would spawn a second writer)"
@@ -1013,7 +1019,13 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     let store4 = IndexStore::open(&db4).expect("open store");
     let pool4 = Arc::new(ReadPool::new(db4.clone()).expect("pool"));
     let pending4 = Arc::new(pending_sizes::PendingSizes::new());
-    let res = try_reserve_initializing_phase(ROOT_VOLUME_ID, store4, pool4, pending4, None);
+    let res = try_reserve_initializing_phase(
+        ROOT_VOLUME_ID,
+        store4,
+        pool4,
+        pending4,
+        Arc::new(std::sync::Mutex::new(None)),
+    );
     assert!(res.is_err(), "reservation from ShuttingDown must fail");
     assert!(
         matches!(

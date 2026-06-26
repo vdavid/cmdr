@@ -325,12 +325,17 @@ pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
 /// On success, installs the volume's `read_pool`/`pending_sizes` into the
 /// registry instance (and, for root, the module globals) so enrichment works
 /// during the `Initializing` phase.
+///
+/// The caller owns the `freshness` `Arc` (it shares a clone with the
+/// `IndexManager`, which fires scan transitions through it WITHOUT re-locking
+/// the registry); the instance stores the same `Arc`, so the manager and the
+/// registry never disagree about freshness.
 pub(crate) fn try_reserve_initializing_phase(
     volume_id: &str,
     store: IndexStore,
     read_pool: Arc<ReadPool>,
     pending_sizes: Arc<PendingSizes>,
-    initial_freshness: Option<Freshness>,
+    freshness: Arc<std::sync::Mutex<Option<Freshness>>>,
 ) -> Result<(), Box<IndexStore>> {
     let mut reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
     if reg.contains_key(volume_id) {
@@ -344,7 +349,7 @@ pub(crate) fn try_reserve_initializing_phase(
             phase: IndexPhase::Initializing { store },
             read_pool,
             pending_sizes,
-            freshness: Arc::new(std::sync::Mutex::new(initial_freshness)),
+            freshness,
         },
     );
     Ok(())
@@ -354,23 +359,54 @@ pub(crate) fn try_reserve_initializing_phase(
 /// (`freshness::Freshness::on`). No-op if the volume has no registered instance
 /// or no current freshness value yet.
 ///
-/// The live-watch layer routes watcher-driven transitions
-/// (`FreshnessEvent::WatcherDied` / `OverflowUnrecoverable`) through here, and
-/// the scan paths call it with `ScanStarted` / `ScanCompleted`.
+/// EXTERNAL callers that only have a volume id (the live-watch layer:
+/// `smb_index` / `mtp_index` firing `WatcherDied` / `OverflowUnrecoverable`)
+/// use this entry point — it looks the instance's freshness `Arc` up UNDER the
+/// registry lock, then delegates to `apply_freshness_event_on` (which does the
+/// real transition + emit and never touches the registry).
+///
+/// ⚠️ Callers that ALREADY hold the registry lock (or can deadlock if it's
+/// re-entered) must NOT use this. `IndexManager` fires its own scan-transition
+/// events via `apply_freshness_event_on(&self.freshness, …)` using the `Arc` it
+/// holds directly, so a `force_scan`/fallback caller can hold the registry lock
+/// across `start_scan` without self-deadlocking on this re-lock.
 pub(crate) fn apply_freshness_event(volume_id: &str, event: FreshnessEvent) {
+    // Resolve the volume's freshness Arc UNDER the registry lock, clone it, then
+    // DROP the lock before the transition + emit. The transition itself never
+    // needs the registry, so holding it across the emit (a Tauri call) is both
+    // unnecessary and a re-entrancy hazard for any caller already under the lock.
+    let freshness = {
+        let Ok(reg) = INDEX_REGISTRY.lock() else { return };
+        let Some(instance) = reg.get(volume_id) else { return };
+        Arc::clone(&instance.freshness)
+    };
+    apply_freshness_event_on(&freshness, volume_id, event);
+}
+
+/// The actual freshness transition + FE emit, operating on a volume's freshness
+/// `Arc` DIRECTLY — it NEVER locks `INDEX_REGISTRY`. This is the lock-discipline
+/// seam: `IndexManager` holds a clone of its volume's freshness `Arc` and fires
+/// scan transitions through here, so a scan-start firing can't re-enter the
+/// registry (the self-deadlock a held-registry caller like `force_scan` hit).
+///
+/// `apply_freshness_event` is the registry-lookup wrapper for external callers
+/// that only have a volume id.
+pub(crate) fn apply_freshness_event_on(
+    freshness: &std::sync::Mutex<Option<Freshness>>,
+    volume_id: &str,
+    event: FreshnessEvent,
+) {
     // `ScanStarted` is total even from "not yet determined": a scan can begin on
     // a volume that has no freshness yet (first ever scan). Seed it so the
     // transition is meaningful, then apply the event.
     //
-    // We compute the next value under the registry + freshness locks, then emit
-    // the FE event AFTER dropping both (emit never needs them, and holding a std
-    // Mutex across a Tauri call risks contention). The event fires only on an
-    // actual value change, so the FE's one-time stale dialog sees the exact
-    // Fresh→Stale transition (subscribe-don't-poll).
+    // We compute the next value under the freshness lock, then emit the FE event
+    // AFTER dropping it (emit never needs it, and holding a std Mutex across a
+    // Tauri call risks contention). The event fires only on an actual value
+    // change, so the FE's one-time stale dialog sees the exact Fresh→Stale
+    // transition (subscribe-don't-poll).
     let changed_to = {
-        let Ok(reg) = INDEX_REGISTRY.lock() else { return };
-        let Some(instance) = reg.get(volume_id) else { return };
-        let Ok(mut f) = instance.freshness.lock() else { return };
+        let Ok(mut f) = freshness.lock() else { return };
         let previous = *f;
         let next = f.unwrap_or(Freshness::Scanning).on(event);
         *f = Some(next);
@@ -525,12 +561,18 @@ fn start_indexing_for(
         }
     }
 
+    // One freshness `Arc` per volume, shared by the registry instance and the
+    // `IndexManager`. The manager fires its scan transitions through this handle
+    // directly (no registry re-lock), so a held-registry caller (`force_scan`,
+    // the journal-gap fallback) can drive a scan without self-deadlocking.
+    let freshness = Arc::new(std::sync::Mutex::new(initial_freshness));
+
     if try_reserve_initializing_phase(
         volume_id,
         init_store,
         Arc::clone(&pool),
         Arc::clone(&pending),
-        initial_freshness,
+        Arc::clone(&freshness),
     )
     .is_err()
     {
@@ -538,7 +580,13 @@ fn start_indexing_for(
         return Ok(());
     }
 
-    let mut manager = match IndexManager::new_for_kind(volume_id.to_string(), volume_root, app.clone(), kind) {
+    let mut manager = match IndexManager::new_for_kind(
+        volume_id.to_string(),
+        volume_root,
+        app.clone(),
+        kind,
+        Arc::clone(&freshness),
+    ) {
         Ok(m) => m,
         Err(e) => {
             // Reservation succeeded but manager construction failed: remove the
@@ -777,11 +825,54 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
 // ── Module-level public API (called by IPC commands) ─────────────────
 
 /// Force a fresh full scan for a volume (for debug/manual trigger).
+///
+/// Takes the `Running` manager OUT of the registry under the lock (publishing a
+/// transient `ShuttingDown`), DROPS the guard, then runs `start_scan` — whose
+/// prelude does blocking I/O (`block_in_place(flush_blocking)`, a space-info
+/// query) — off the lock, and finally re-locks only to put the manager back as
+/// `Running`. Same drop-the-guard-before-blocking discipline as
+/// `stop_indexing`/`clear_index` (DETAILS § "Drop the registry guard before the
+/// shutdown drain"): a blocking flush under the global registry lock would
+/// freeze every concurrent registry user (the QA-observed UI freeze), on top of
+/// the self-deadlock from the freshness firing (now fixed via the manager's own
+/// freshness `Arc`). `start_scan`'s spawned tasks capture their own clones and
+/// never re-resolve the manager in the registry, so it's safe to run detached.
 pub fn force_scan(volume_id: &str) -> Result<(), String> {
+    // Take the manager out under the lock (transient `ShuttingDown`), so the
+    // blocking `start_scan` prelude runs WITHOUT holding the registry lock.
+    let mut mgr = {
+        let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+        let instance = reg.get_mut(volume_id).ok_or("Indexing not initialized")?;
+        match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+            IndexPhase::Running(mgr) => mgr,
+            other => {
+                // Not running (Initializing / ShuttingDown): nothing to force.
+                // Put the phase back and report not-initialized, as before.
+                instance.phase = other;
+                return Err("Indexing not initialized".to_string());
+            }
+        }
+    };
+
+    // Guard released: run the (blocking-prelude) scan start off the lock.
+    let result = mgr.start_scan("manual start");
+
+    // Re-lock to restore the manager as `Running`. If the instance vanished
+    // while we were detached (a concurrent `stop_indexing`/`clear_index` swapped
+    // it out), respect that and shut our now-orphaned manager down instead of
+    // resurrecting a removed volume.
     let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match reg.get_mut(volume_id).map(|i| &mut i.phase) {
-        Some(IndexPhase::Running(mgr)) => mgr.start_scan("manual start"),
-        _ => Err("Indexing not initialized".to_string()),
+    match reg.get_mut(volume_id) {
+        Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
+            instance.phase = IndexPhase::Running(mgr);
+            result
+        }
+        _ => {
+            drop(reg);
+            log::info!("force_scan: '{volume_id}' was torn down during scan start; shutting down the manager");
+            mgr.shutdown();
+            result
+        }
     }
 }
 
@@ -864,7 +955,7 @@ mod tests {
             let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
             let pending = Arc::new(PendingSizes::new());
             assert!(
-                try_reserve_initializing_phase(name, store, pool, pending, None).is_ok(),
+                try_reserve_initializing_phase(name, store, pool, pending, fresh(None)).is_ok(),
                 "reserve {name} must succeed"
             );
         };
@@ -910,8 +1001,8 @@ mod tests {
         let (s1, p1, pe1) = mk("vol-a");
         let (s2, p2, pe2) = mk("vol-b");
 
-        assert!(try_reserve_initializing_phase("vol-a", s1, p1, pe1, None).is_ok());
-        assert!(try_reserve_initializing_phase("vol-b", s2, p2, pe2, None).is_ok());
+        assert!(try_reserve_initializing_phase("vol-a", s1, p1, pe1, fresh(None)).is_ok());
+        assert!(try_reserve_initializing_phase("vol-b", s2, p2, pe2, fresh(None)).is_ok());
         assert!(is_active("vol-a"));
         assert!(is_active("vol-b"));
         // Each volume routes to ITS OWN pool, never the other's (no cross-talk).
@@ -921,7 +1012,7 @@ mod tests {
         // on the same DB) while vol-b is untouched.
         let (s1b, p1b, pe1b) = mk("vol-a");
         assert!(
-            try_reserve_initializing_phase("vol-a", s1b, p1b, pe1b, None).is_err(),
+            try_reserve_initializing_phase("vol-a", s1b, p1b, pe1b, fresh(None)).is_err(),
             "double-start of the same volume must be rejected"
         );
         assert!(is_active("vol-b"), "vol-b unaffected by vol-a's rejected start");
@@ -936,6 +1027,77 @@ mod tests {
         assert!(is_active("vol-b"), "removing vol-a must not disturb vol-b");
         assert!(get_read_pool_for("vol-b").is_some(), "vol-b still routable");
 
+        clear_registry_and_pools();
+    }
+
+    /// REGRESSION (QA-frozen-app self-deadlock): the scan-start freshness firing
+    /// must NOT re-lock `INDEX_REGISTRY`, so a caller that already holds the
+    /// registry lock (the real `force_scan` → `mgr.start_scan` → fire-`ScanStarted`
+    /// chain) can fire it without self-deadlocking on the non-recursive mutex.
+    ///
+    /// We reproduce the cycle's exact shape WITHOUT standing up a full
+    /// `IndexManager`: acquire the global `INDEX_REGISTRY` lock (as `force_scan`
+    /// does), then — still holding it — fire the scan-start transition through the
+    /// `Arc`-direct seam (`apply_freshness_event_on`), exactly as the manager now
+    /// does via `self.freshness`. The whole thing runs on a watchdog thread; if
+    /// the firing re-locked the registry (the pre-fix `apply_freshness_event`
+    /// path), this would hang forever and the watchdog would fire. It returns
+    /// promptly, and the transition still lands (Stale → Scanning).
+    ///
+    /// Pre-fix, swapping the body to `apply_freshness_event(vid, ScanStarted)`
+    /// under the held lock deadlocks (the watchdog trips) — a genuine red→green.
+    #[test]
+    fn scan_start_freshness_firing_does_not_relock_the_registry() {
+        use std::sync::mpsc;
+
+        let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        clear_registry_and_pools();
+        INDEX_REGISTRY.lock().unwrap().remove("deadlock-test");
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("index-deadlock-test.db");
+        let store = IndexStore::open(&db_path).expect("open store");
+        let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+        let pending = Arc::new(PendingSizes::new());
+        let freshness = fresh(Some(Freshness::Stale));
+        assert!(
+            try_reserve_initializing_phase("deadlock-test", store, pool, pending, Arc::clone(&freshness)).is_ok(),
+            "reserve must succeed"
+        );
+
+        // Run the held-lock firing on a watchdog thread so a deadlock can't wedge
+        // the test runner forever — it surfaces as a timeout instead.
+        let (done_tx, done_rx) = mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            // Hold the registry lock, exactly as `force_scan` does across
+            // `mgr.start_scan`.
+            let _reg = INDEX_REGISTRY.lock().expect("registry lock");
+            // Fire the scan-start transition through the Arc-direct seam — the
+            // manager's `self.freshness` path. This must NOT touch the registry.
+            apply_freshness_event_on(&freshness, "deadlock-test", FreshnessEvent::ScanStarted);
+            let _ = done_tx.send(());
+            // Drop `_reg` here, after signalling: the assertion below proves we
+            // got this far without blocking on the lock we already hold.
+        });
+
+        // Before the fix, the firing re-locks `INDEX_REGISTRY` and hangs forever;
+        // the watchdog would never receive the signal. 5 s is generous for a pure
+        // in-memory transition.
+        assert!(
+            done_rx.recv_timeout(Duration::from_secs(5)).is_ok(),
+            "scan-start freshness firing deadlocked while the registry lock was held \
+             (it must NOT re-lock INDEX_REGISTRY)"
+        );
+        worker.join().expect("watchdog thread must not panic");
+
+        // The transition still landed: Stale → Scanning.
+        assert_eq!(
+            get_freshness("deadlock-test"),
+            Some(Freshness::Scanning),
+            "the scan-start firing must still flip Stale → Scanning"
+        );
+
+        INDEX_REGISTRY.lock().unwrap().remove("deadlock-test");
         clear_registry_and_pools();
     }
 
@@ -961,7 +1123,8 @@ mod tests {
         // Reserve as Stale — the load-as-Stale-on-launch case for a persisted
         // SMB index.
         assert!(
-            try_reserve_initializing_phase("smb-fresh-test", store, pool, pending, Some(Freshness::Stale)).is_ok(),
+            try_reserve_initializing_phase("smb-fresh-test", store, pool, pending, fresh(Some(Freshness::Stale)))
+                .is_ok(),
             "reserve must succeed"
         );
         assert_eq!(get_freshness("smb-fresh-test"), Some(Freshness::Stale), "loads Stale");
@@ -1013,7 +1176,10 @@ mod tests {
         let pending = Arc::new(PendingSizes::new());
 
         // Reserve, then drive to Fresh as if a scan just completed.
-        assert!(try_reserve_initializing_phase("smb-disco-test", store, pool, pending, Some(Freshness::Stale)).is_ok());
+        assert!(
+            try_reserve_initializing_phase("smb-disco-test", store, pool, pending, fresh(Some(Freshness::Stale)))
+                .is_ok()
+        );
         apply_freshness_event("smb-disco-test", FreshnessEvent::ScanStarted);
         apply_freshness_event("smb-disco-test", FreshnessEvent::ScanCompleted);
         assert_eq!(get_freshness("smb-disco-test"), Some(Freshness::Fresh));
@@ -1075,7 +1241,8 @@ mod tests {
         // Reserve as Stale (the load-as-Stale-on-launch case, then re-enabled so
         // it's mid-scan / Initializing).
         assert!(
-            try_reserve_initializing_phase("smb-forget-test", store, pool, pending, Some(Freshness::Stale)).is_ok(),
+            try_reserve_initializing_phase("smb-forget-test", store, pool, pending, fresh(Some(Freshness::Stale)))
+                .is_ok(),
             "reserve must succeed"
         );
         assert_eq!(get_freshness("smb-forget-test"), Some(Freshness::Stale), "loads Stale");
@@ -1125,7 +1292,7 @@ mod tests {
             let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
             let pending = Arc::new(PendingSizes::new());
             assert!(
-                try_reserve_initializing_phase(vid, store, pool, pending, Some(Freshness::Stale)).is_ok(),
+                try_reserve_initializing_phase(vid, store, pool, pending, fresh(Some(Freshness::Stale))).is_ok(),
                 "reserve {vid} must succeed (registry not wedged)"
             );
         };
@@ -1188,6 +1355,13 @@ mod tests {
         );
 
         clear_registry_and_pools();
+    }
+
+    /// Wrap an initial freshness in the `Arc<Mutex<…>>` the reservation now
+    /// takes (the manager and the registry share this same handle in
+    /// production).
+    fn fresh(initial: Option<Freshness>) -> Arc<std::sync::Mutex<Option<Freshness>>> {
+        Arc::new(std::sync::Mutex::new(initial))
     }
 
     /// Reset every registry-backed test global: the instance map plus the root

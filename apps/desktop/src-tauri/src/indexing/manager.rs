@@ -19,7 +19,7 @@ use super::events::{
 use super::partial_agg;
 use super::reconciler::{self, EventReconciler};
 use super::scanner::{self, ScanConfig};
-use super::state::{INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind};
+use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
 use super::store::IndexStore;
 use super::watcher::{self, DriveWatcher};
 use super::writer::{IndexWriter, WriteMessage};
@@ -57,6 +57,14 @@ pub(crate) struct IndexManager {
     pub(super) app: AppHandle,
     /// Whether a full scan is currently running. Shared with the completion handler.
     pub(super) scanning: Arc<AtomicBool>,
+    /// This volume's freshness signal — the SAME `Arc` the registry `IndexInstance`
+    /// holds. The manager fires its scan transitions (`ScanStarted`,
+    /// `ScanCompleted`, `WatcherDied`) through this handle via
+    /// `state::apply_freshness_event_on`, which never locks `INDEX_REGISTRY`. That
+    /// is what lets a held-registry caller (`force_scan`, the journal-gap fallback)
+    /// drive a scan without self-deadlocking on a registry re-lock. External
+    /// (volume-id-only) callers still use `state::apply_freshness_event`.
+    pub(super) freshness: Arc<std::sync::Mutex<Option<super::freshness::Freshness>>>,
     /// Calibration for the in-flight scan, captured in `start_scan`: the prior
     /// completed scan's totals (read from meta before truncating) plus the
     /// scanned volume's used bytes (fetched once). A plain field is enough —
@@ -145,6 +153,7 @@ impl IndexManager {
         volume_root: PathBuf,
         app: AppHandle,
         kind: IndexVolumeKind,
+        freshness: Arc<std::sync::Mutex<Option<super::freshness::Freshness>>>,
     ) -> Result<Self, String> {
         let data_dir = crate::config::resolved_app_data_dir(&app)?;
 
@@ -178,6 +187,7 @@ impl IndexManager {
             live_event_task: Arc::new(std::sync::Mutex::new(None)),
             app,
             scanning: Arc::new(AtomicBool::new(false)),
+            freshness,
             scan_calibration: None,
         })
     }
@@ -416,8 +426,15 @@ impl IndexManager {
             self.volume_id,
         );
 
-        // Freshness ⇒ Scanning (blue), via the state machine.
-        super::state::apply_freshness_event(&self.volume_id, super::freshness::FreshnessEvent::ScanStarted);
+        // Freshness ⇒ Scanning (blue), via the state machine. Fire through the
+        // manager's OWN freshness handle (`apply_freshness_event_on`), NOT the
+        // volume-id lookup, so a held-registry caller can't self-deadlock on a
+        // registry re-lock here.
+        super::state::apply_freshness_event_on(
+            &self.freshness,
+            &self.volume_id,
+            super::freshness::FreshnessEvent::ScanStarted,
+        );
 
         let _ = IndexScanStartedEvent {
             volume_id: self.volume_id.clone(),
@@ -462,6 +479,10 @@ impl IndexManager {
         let app = self.app.clone();
         let volume_id = self.volume_id.clone();
         let scanning = Arc::clone(&self.scanning);
+        // Clone the freshness handle into the completion task so it fires the
+        // `ScanCompleted` / `WatcherDied` transition through the `Arc` directly,
+        // never re-locking the registry.
+        let freshness = Arc::clone(&self.freshness);
         let root = self.volume_root.clone();
         let kind = self.kind;
         tauri::async_runtime::spawn(async move {
@@ -532,8 +553,10 @@ impl IndexManager {
 
                     if stayed_fresh {
                         // Freshness ⇒ Fresh (green). The volume is now authoritative
-                        // until the live watcher observes a continuity break.
-                        super::state::apply_freshness_event(
+                        // until the live watcher observes a continuity break. Fire
+                        // through the cloned `Arc` (no registry re-lock).
+                        super::state::apply_freshness_event_on(
+                            &freshness,
                             &volume_id,
                             super::freshness::FreshnessEvent::ScanCompleted,
                         );
@@ -572,7 +595,11 @@ impl IndexManager {
                     // bumping past it makes those rows read exact-but-stale, the
                     // honest state for a connection that vanished.
                     let _ = writer.send(WriteMessage::BumpCurrentEpoch);
-                    super::state::apply_freshness_event(&volume_id, super::freshness::FreshnessEvent::WatcherDied);
+                    super::state::apply_freshness_event_on(
+                        &freshness,
+                        &volume_id,
+                        super::freshness::FreshnessEvent::WatcherDied,
+                    );
                     DEBUG_STATS.set_phase(ActivityPhase::Idle, "network scan disconnected (honest partial kept)");
                 }
                 other => {
@@ -689,32 +716,76 @@ impl IndexManager {
         tauri::async_runtime::spawn(async move {
             if fallback_rx.await.is_ok() {
                 log::warn!("Journal replay detected gap, initiating full scan fallback");
+
+                // Take the manager OUT of the registry (transient `ShuttingDown`)
+                // so the blocking `start_scan` prelude runs OFF the registry lock.
+                // Holding the lock across `start_scan`'s `flush_blocking` +
+                // space-info query would freeze every concurrent registry user;
+                // the freshness firing inside `start_scan` would also re-lock the
+                // registry (now fired through the manager's own freshness `Arc`).
+                // Mirrors `state::force_scan`'s extract-drop-run-reinsert flow.
+                let mut mgr = {
+                    let mut reg = match INDEX_REGISTRY.lock() {
+                        Ok(g) => g,
+                        Err(e) => {
+                            log::warn!("Failed to lock registry for fallback scan: {e}");
+                            return;
+                        }
+                    };
+                    let Some(instance) = reg.get_mut(&fallback_volume_id) else {
+                        return;
+                    };
+                    // `mgr` is the `Box<IndexManager>` taken out of `Running`.
+                    match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown) {
+                        IndexPhase::Running(mut mgr) => {
+                            // Stop the current watcher (replay detected it's useless)
+                            // while still under the lock — these are non-blocking.
+                            if let Some(ref mut watcher) = mgr.drive_watcher {
+                                watcher.stop();
+                            }
+                            mgr.drive_watcher = None;
+                            {
+                                let mut task_guard = mgr.live_event_task.lock_ignore_poison();
+                                if let Some(task) = task_guard.take() {
+                                    task.abort();
+                                }
+                            }
+                            mgr
+                        }
+                        other => {
+                            instance.phase = other;
+                            return;
+                        }
+                    }
+                };
+
+                // Guard released: run the blocking-prelude scan start off the lock.
+                let result = mgr.start_scan("journal replay detected gap");
+                if let Err(ref e) = result {
+                    log::warn!("Fallback full scan failed: {e}");
+                }
+
+                // Re-lock to restore the manager as `Running`. If the volume was
+                // torn down while we were detached, shut the orphaned manager down
+                // instead of resurrecting a removed volume.
                 let mut reg = match INDEX_REGISTRY.lock() {
                     Ok(g) => g,
                     Err(e) => {
-                        log::warn!("Failed to lock registry for fallback scan: {e}");
+                        log::warn!("Failed to re-lock registry after fallback scan: {e}");
+                        mgr.shutdown();
                         return;
                     }
                 };
-                if let Some(IndexInstance {
-                    phase: IndexPhase::Running(mgr),
-                    ..
-                }) = reg.get_mut(&fallback_volume_id)
-                {
-                    // Stop the current watcher (replay detected it's useless)
-                    if let Some(ref mut watcher) = mgr.drive_watcher {
-                        watcher.stop();
+                match reg.get_mut(&fallback_volume_id) {
+                    Some(instance) if matches!(instance.phase, IndexPhase::ShuttingDown) => {
+                        instance.phase = IndexPhase::Running(mgr);
                     }
-                    mgr.drive_watcher = None;
-                    {
-                        let mut task_guard = mgr.live_event_task.lock_ignore_poison();
-                        if let Some(task) = task_guard.take() {
-                            task.abort();
-                        }
-                    }
-
-                    if let Err(e) = mgr.start_scan("journal replay detected gap") {
-                        log::warn!("Fallback full scan failed: {e}");
+                    _ => {
+                        drop(reg);
+                        log::info!(
+                            "fallback scan: '{fallback_volume_id}' was torn down during scan start; shutting down the manager"
+                        );
+                        mgr.shutdown();
                     }
                 }
             }
@@ -851,8 +922,15 @@ impl IndexManager {
         // Freshness ⇒ Scanning (blue). For local `root` this also drives the
         // per-drive badge; the clean-completion handler flips it back
         // to Fresh. (Root is journaled, so a restart re-seeds Fresh; this keeps
-        // the badge honest DURING a scan/rescan.)
-        super::state::apply_freshness_event(&self.volume_id, super::freshness::FreshnessEvent::ScanStarted);
+        // the badge honest DURING a scan/rescan.) Fire through the manager's OWN
+        // freshness handle (`apply_freshness_event_on`), NOT the volume-id lookup:
+        // `force_scan` (and the journal-gap fallback) call `start_scan` while
+        // holding the registry lock, so a registry re-lock here deadlocks.
+        super::state::apply_freshness_event_on(
+            &self.freshness,
+            &self.volume_id,
+            super::freshness::FreshnessEvent::ScanStarted,
+        );
 
         // Step 2: Start the full scan
         let config = ScanConfig {
@@ -923,6 +1001,9 @@ impl IndexManager {
         let app = self.app.clone();
         let writer = self.writer.clone();
         let scanning = Arc::clone(&self.scanning);
+        // Clone the freshness handle into the completion task so it fires
+        // `ScanCompleted` through the `Arc` directly, never re-locking the registry.
+        let freshness = Arc::clone(&self.freshness);
         let live_event_task_slot = Arc::clone(&self.live_event_task);
         let watcher_overflow_flag = watcher_overflow;
         tauri::async_runtime::spawn(async move {
@@ -1123,7 +1204,8 @@ impl IndexManager {
                     // it isn't reset to gray the way an interrupted SMB scan is,
                     // because local data isn't tied to a connection that vanished.
                     if !summary.was_cancelled {
-                        super::state::apply_freshness_event(
+                        super::state::apply_freshness_event_on(
+                            &freshness,
                             &volume_id,
                             super::freshness::FreshnessEvent::ScanCompleted,
                         );
