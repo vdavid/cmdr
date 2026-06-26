@@ -78,7 +78,7 @@ const SETTINGS_SECTIONS: { path: string[]; sectionId: string; label: string }[] 
   {
     path: ['Behavior', 'Navigation & file ops'],
     sectionId: 'behavior-navigation-and-file-ops',
-    label: 'settings-behavior-file-operations',
+    label: 'settings-behavior-navigation-and-file-ops',
   },
   {
     path: ['Behavior', 'File system watching'],
@@ -414,8 +414,14 @@ export async function captureFrontendToasts(
   })
 
   // Zoom in (`view.zoom.in` → "Zoom increased to N%" + reset-hint). Resolves
-  // `commands.handler.zoomIncreased` plus a `zoomResetHint*` key.
+  // `commands.handler.zoomIncreased` plus a `zoomResetHint*` key. Reset the text
+  // size to a sub-max value FIRST (via the capture API's direct setter, which
+  // emits no zoom toast of its own): `view.zoom.in` early-returns with no toast
+  // when the size is already at the 150% cap, which the worst-case pass leaves it
+  // at. Resetting to 100 guarantees the +10 step is a real change, so the toast
+  // always fires.
   await captureToastSurface('toast-zoom-in', report, failed, main, async () => {
+    await captureCall(main, 'setTextSize', '100')
     await dispatchMenuCommand(main, 'view.zoom.in')
   })
 
@@ -433,8 +439,15 @@ export async function captureFrontendToasts(
   await captureToastSurface('toast-transfer-complete', report, failed, main, async () => {
     recreateFixtures(getFixtureRoot())
     await ensureAppReady(main)
-    await skipParentEntry(main)
-    await moveCursorToFile(main, 'file-b.txt')
+    // Land the cursor on `file-b.txt` via the MCP `move_cursor` tool, which jumps
+    // straight to the named file (and flushes the backend cursor before replying),
+    // so the copy never runs on the `..` parent row. No `skipParentEntry` first:
+    // that presses a synthetic ArrowDown, which is a no-op whenever the E2E main
+    // window has lost OS focus (the keypress lands on `<body>`), and `move_cursor`
+    // doesn't need the cursor off `..` anyway. Assert it landed so a miss fails
+    // here loudly instead of copying the wrong entry.
+    const moved = await moveCursorToFile(main, 'file-b.txt')
+    expect(moved, 'cursor did not land on file-b.txt for the transfer-complete toast').toBe(true)
     await dispatchMenuCommand(main, 'file.copy')
     await main.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 5000)
     await main.click(`${TRANSFER_DIALOG} .btn-primary`)

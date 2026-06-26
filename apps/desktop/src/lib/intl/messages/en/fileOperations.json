@@ -746,7 +746,8 @@
 
   "fileOperations.transferProgress.pause": "Pause",
   "@fileOperations.transferProgress.pause": {
-    "description": "Button on the progress dialog that pauses this transfer in place. It can be resumed later. Toggles to \"Resume\". Short control label."
+    "description": "Button on the progress dialog that pauses this transfer in place. It can be resumed later. Toggles to \"Resume\". Short control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.resume": "Resume",
@@ -756,7 +757,8 @@
 
   "fileOperations.transferProgress.pauseAria": "Pause this transfer",
   "@fileOperations.transferProgress.pauseAria": {
-    "description": "Screen-reader label for the Pause button on the progress dialog (the visible button shows only \"Pause\")."
+    "description": "Screen-reader label for the Pause button on the progress dialog (the visible button shows only \"Pause\").",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.resumeAria": "Resume this transfer",
@@ -766,17 +768,20 @@
 
   "fileOperations.transferProgress.queue": "Queue",
   "@fileOperations.transferProgress.queue": {
-    "description": "Button on the progress dialog that sends this transfer to the background and opens the transfer queue window, so the user can keep working while it runs. It does not pause the transfer. Mirrors Total Commander's copy-dialog F2. Short control label."
+    "description": "Button on the progress dialog that sends this transfer to the background and opens the transfer queue window, so the user can keep working while it runs. It does not pause the transfer. Mirrors Total Commander's copy-dialog F2. Short control label.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.queueAria": "Send to the transfer queue",
   "@fileOperations.transferProgress.queueAria": {
-    "description": "Screen-reader label for the Queue button on the progress dialog (the visible button shows only \"Queue\"). Explains that the transfer moves to the background and is managed in the queue window."
+    "description": "Screen-reader label for the Queue button on the progress dialog (the visible button shows only \"Queue\"). Explains that the transfer moves to the background and is managed in the queue window.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.queueTooltip": "Keep this running in the background and manage it in the transfer queue (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
-    "description": "Tooltip on the Queue button explaining that the transfer keeps running in the background and is managed in the transfer queue window. F2 is the keyboard shortcut for the same action while this dialog is open."
+    "description": "Tooltip on the Queue button explaining that the transfer keeps running in the background and is managed in the transfer queue window. F2 is the keyboard shortcut for the same action while this dialog is open.",
+    "screenshot": "conflict-dialog.png"
   },
 
   "fileOperations.transferProgress.queuedToast": "{countText} ahead of this one, so it''s waiting its turn. Find it in the transfer queue.",

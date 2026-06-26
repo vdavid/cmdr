@@ -95,7 +95,8 @@
 
   "commands.queueShow.label": "Show transfer queue",
   "@commands.queueShow.label": {
-    "description": "Command name that opens the transfer queue window, which lists every running and waiting copy, move, and delete operation. Appears in the command palette and the Help menu."
+    "description": "Command name that opens the transfer queue window, which lists every running and waiting copy, move, and delete operation. Appears in the command palette and the Help menu.",
+    "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.queueShow.description": "Open a window listing every running and waiting transfer, where you can pause, resume, or cancel them",
   "@commands.queueShow.description": {

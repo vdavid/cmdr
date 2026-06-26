@@ -482,6 +482,10 @@ export async function captureToastSurface(
     // (not the `view.zoom.*` command), so it does NOT emit the zoom-change toast
     // that would pollute this surface. No-op outside the worst-case pass.
     await stressLayoutIfWorstCase(main, 'main')
+    // Bring the main window foreground BEFORE the trigger so the toast's CSS
+    // enter-animation actually composites (an occluded window pauses rAF, leaving
+    // the toast stuck at opacity 0 — `waitForToastSettled` would then time out).
+    await focusWindow(main, 'main').catch(() => {})
     await trigger()
     // The toast appearing IS the readiness signal: the key was resolved (and so
     // recorded) at emit time, which is inside `trigger`.

@@ -4,7 +4,8 @@
     "description": "Tooltip on a clickable path segment in a pane's breadcrumb. Clicking the segment opens that ancestor folder.",
     "placeholders": {
       "path": "the friendly path of the ancestor folder the click navigates to, e.g. ~/projects"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "fileExplorer.doubleClickHint.title": "What just happened?",
   "@fileExplorer.doubleClickHint.title": {
@@ -384,17 +385,20 @@
   "fileExplorer.network.browser.fetching": "fetching...",
   "@fileExplorer.network.browser.fetching": {
     "description": "Placeholder shown in the network host list''s IP or hostname cell while that value is still being resolved. Lowercase, matching the quiet inline style.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.unknown": "(unknown)",
   "@fileExplorer.network.browser.unknown": {
     "description": "Placeholder in the network host list''s Shares cell when the share count could not be determined. Shown in parentheses.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.searching": "Searching...",
   "@fileExplorer.network.browser.searching": {
     "description": "Status shown while the app is still discovering network hosts (mDNS browsing in progress).",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.connectToServerRow": "Connect to server...",
   "@fileExplorer.network.browser.connectToServerRow": {
@@ -404,17 +408,20 @@
   "fileExplorer.network.browser.noHostsTitle": "No network hosts found",
   "@fileExplorer.network.browser.noHostsTitle": {
     "description": "Empty-state title in the network browser when no SMB hosts were discovered on the network.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.noHostsMessage": "Make sure you''re on a network with SMB-capable devices.",
   "@fileExplorer.network.browser.noHostsMessage": {
     "description": "Empty-state body in the network browser advising the user to check their network. \"SMB\" is the file-sharing protocol name; do not translate it.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.refresh": "Refresh",
   "@fileExplorer.network.browser.refresh": {
     "description": "Button in the empty network browser that re-scans the network for hosts.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.refreshAriaLabel": "Refresh network hosts",
   "@fileExplorer.network.browser.refreshAriaLabel": {
@@ -442,7 +449,8 @@
   "fileExplorer.network.browser.status.resolving": "Resolving...",
   "@fileExplorer.network.browser.status.resolving": {
     "description": "Status cell in the network host list while the host''s name and IP are still being resolved.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.waitingForNetwork": "Waiting for network...",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
@@ -453,7 +461,8 @@
   "fileExplorer.network.browser.status.notChecked": "Not checked",
   "@fileExplorer.network.browser.status.notChecked": {
     "description": "Status cell for a host that has not been contacted yet (the user has not tried connecting).",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.loggedIn": "🔑 Logged in{infoIcon}",
   "@fileExplorer.network.browser.status.loggedIn": {
@@ -479,7 +488,8 @@
     "placeholders": {
       "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
     },
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.status.timeout": "⏱️ Timeout{infoIcon}",
   "@fileExplorer.network.browser.status.timeout": {
@@ -534,8 +544,7 @@
   "fileExplorer.network.browser.status.connected": "✓ Connected",
   "@fileExplorer.network.browser.status.connected": {
     "description": "Status cell when connected to a host (generic, neither explicitly credentialed nor guest). The check mark prefix is part of the status.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.connectedStale": "✓ Connected 🔄",
   "@fileExplorer.network.browser.status.connectedStale": {
@@ -547,7 +556,8 @@
   "fileExplorer.network.browser.tooltip.resolving": "Resolving hostname and IP address...",
   "@fileExplorer.network.browser.tooltip.resolving": {
     "description": "Hover tooltip on a host row explaining that its name and IP are still being resolved.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Waiting for network name resolution",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -558,7 +568,8 @@
   "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Double-click to connect and view shares",
   "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
     "description": "Hover tooltip on a not-yet-contacted host row inviting the user to double-click to connect.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.tooltip.credsStored": "Credentials stored. Double-click to connect.",
   "@fileExplorer.network.browser.tooltip.credsStored": {
@@ -575,7 +586,8 @@
   "fileExplorer.network.browser.tooltip.requiresLogin": "This host requires login. Double-click to enter credentials.",
   "@fileExplorer.network.browser.tooltip.requiresLogin": {
     "description": "Hover tooltip on a host row that needs login and has no stored credentials.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
   "fileExplorer.network.browser.tooltip.authFailed": "Authentication failed. Check your credentials and try again.",
   "@fileExplorer.network.browser.tooltip.authFailed": {
@@ -1754,7 +1766,8 @@
   },
   "fileExplorer.navigation.spaceMtpHint": "On a phone, this also counts apps and system files. Over USB, Cmdr can reach only your shared files, so the folders here add up to less than the used space.",
   "@fileExplorer.navigation.spaceMtpHint": {
-    "description": "Hover tooltip on a connected phone''s disk-space readout (the free/total figure and its usage bar), shown only for phones reached over USB (MTP). Explains why the visible folders add up to far less than the space reported as used: a phone''s apps and system data count toward usage but can''t be browsed over USB. \"USB\" is the cable connection; \"Cmdr\" is the app name (do not translate)."
+    "description": "Hover tooltip on a connected phone''s disk-space readout (the free/total figure and its usage bar), shown only for phones reached over USB (MTP). Explains why the visible folders add up to far less than the space reported as used: a phone''s apps and system data count toward usage but can''t be browsed over USB. \"USB\" is the cable connection; \"Cmdr\" is the app name (do not translate).",
+    "screenshot": "mtp-browse.png"
   },
 
   "fileExplorer.navigation.volumesStillUnreachable": "Still unreachable. Try again later",
@@ -1772,11 +1785,13 @@
 
   "fileExplorer.navigation.driveIndex.ariaLabel": "Drive index status",
   "@fileExplorer.navigation.driveIndex.ariaLabel": {
-    "description": "Accessibility label, read aloud by screen readers, for the small colored dot next to a drive in the volume switcher that shows whether the drive is indexed and up to date. The color and the live detail are in its tooltip."
+    "description": "Accessibility label, read aloud by screen readers, for the small colored dot next to a drive in the volume switcher that shows whether the drive is indexed and up to date. The color and the live detail are in its tooltip.",
+    "screenshot": "main-window.png"
   },
   "fileExplorer.navigation.driveIndex.tooltipDisabled": "Indexing is off for this drive. Turn it on to see folder sizes and search here.",
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
-    "description": "Hover tooltip on the gray drive-index dot, shown when a drive isn''t indexed. Invites the user to turn indexing on for folder sizes and search."
+    "description": "Hover tooltip on the gray drive-index dot, shown when a drive isn''t indexed. Invites the user to turn indexing on for folder sizes and search.",
+    "screenshot": "mtp-browse.png"
   },
   "fileExplorer.navigation.driveIndex.tooltipScanning": "Indexing this drive…",
   "@fileExplorer.navigation.driveIndex.tooltipScanning": {
@@ -1805,7 +1820,8 @@
     "placeholders": {
       "date": "ISO date of the last completed scan, already formatted (e.g. 2026-06-19)",
       "duration": "how long the last scan took, already formatted (e.g. 2 min, 14 s)"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "fileExplorer.navigation.driveIndex.tooltipFreshNoScan": "Indexed and up to date.",
   "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
@@ -1856,7 +1872,8 @@
     "description": "A scan duration under a minute, e.g. ''14 s''. ''s'' abbreviates seconds.",
     "placeholders": {
       "seconds": "whole seconds, already formatted (e.g. 14)"
-    }
+    },
+    "screenshot": "main-window.png"
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr couldn''t connect to {name} directly, which it needs to index this share. Check the share is reachable and try again.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {

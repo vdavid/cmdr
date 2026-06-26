@@ -1,15 +1,18 @@
 {
   "settings.appearance.language.label": "Language",
   "@settings.appearance.language.label": {
-    "description": "Label for the app-language picker in Settings > Appearance > Colors and formats. Lets the user choose which language Cmdr's interface uses."
+    "description": "Label for the app-language picker in Settings > Appearance > Colors and formats. Lets the user choose which language Cmdr's interface uses.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.language.description": "Choose the language Cmdr uses. \"System default\" follows your Mac's language.",
   "@settings.appearance.language.description": {
-    "description": "Help text under the language picker in Settings > Appearance. \"Cmdr\" is the product name; do not translate it. \"System default\" must match the wording of the settings.appearance.language.opt.system option below."
+    "description": "Help text under the language picker in Settings > Appearance. \"Cmdr\" is the product name; do not translate it. \"System default\" must match the wording of the settings.appearance.language.opt.system option below.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.language.opt.system": "System default",
   "@settings.appearance.language.opt.system": {
-    "description": "Language-picker option: follow the Mac's system language instead of forcing a specific one. The other options in this picker are each language's own name (auto-generated, not translated here). This is the only translatable option label."
+    "description": "Language-picker option: follow the Mac's system language instead of forcing a specific one. The other options in this picker are each language's own name (auto-generated, not translated here). This is the only translatable option label.",
+    "screenshot": "settings-appearance.png"
   },
 
   "settings.theme.mode.label": "Theme mode",
@@ -425,27 +428,27 @@
   "settings.fileOperations.allowFileExtensionChanges.label": "Allow file extension changes",
   "@settings.fileOperations.allowFileExtensionChanges.label": {
     "description": "Label for the picker controlling what happens when a rename changes a file's extension. In Settings > Behavior > File operations.",
-    "screenshot": "settings-behavior-file-operations.png"
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.allowFileExtensionChanges.description": "What to do when you rename a file and the extension changes.",
   "@settings.fileOperations.allowFileExtensionChanges.description": {
     "description": "Help text for the allow-extension-changes setting. \"extension\" = the suffix after a filename's dot (.txt, .jpg).",
-    "screenshot": "settings-behavior-file-operations.png"
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.allowFileExtensionChanges.opt.yes": "Always allow",
   "@settings.fileOperations.allowFileExtensionChanges.opt.yes": {
     "description": "Extension-change option: always permit the extension to change without asking. Radio-button label.",
-    "screenshot": "settings-behavior-file-operations.png"
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.allowFileExtensionChanges.opt.no": "Never allow",
   "@settings.fileOperations.allowFileExtensionChanges.opt.no": {
     "description": "Extension-change option: never permit the extension to change. Radio-button label.",
-    "screenshot": "settings-behavior-file-operations.png"
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.fileOperations.allowFileExtensionChanges.opt.ask": "Always ask",
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "description": "Extension-change option: prompt for confirmation each time the extension would change. Radio-button label.",
-    "screenshot": "settings-behavior-file-operations.png"
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
 
   "settings.indexing.enabled.label": "Drive indexing",
@@ -461,35 +464,43 @@
 
   "settings.indexing.askForEachDrive.label": "Ask for each drive",
   "@settings.indexing.askForEachDrive.label": {
-    "description": "Label for the toggle that controls whether Cmdr asks, the first time you open a network share or USB device, if you''d like to index it. In Settings > Behavior > File system watching."
+    "description": "Label for the toggle that controls whether Cmdr asks, the first time you open a network share or USB device, if you''d like to index it. In Settings > Behavior > File system watching.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.indexing.askForEachDrive.description": "When you first open a network share or device, ask whether to index it.",
   "@settings.indexing.askForEachDrive.description": {
-    "description": "Help text for the \"Ask for each drive\" toggle. Indexing of external drives is off by default; this asks per drive the first time you open it."
+    "description": "Help text for the \"Ask for each drive\" toggle. Indexing of external drives is off by default; this asks per drive the first time you open it.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.indexing.staleNotify.label": "Notify me if any external drive index goes stale",
   "@settings.indexing.staleNotify.label": {
-    "description": "Label for the toggle that controls whether Cmdr shows a one-time explanation the first time an external drive''s index may be out of date (because the drive was disconnected). In Settings > Behavior > File system watching."
+    "description": "Label for the toggle that controls whether Cmdr shows a one-time explanation the first time an external drive''s index may be out of date (because the drive was disconnected). In Settings > Behavior > File system watching.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.indexing.staleNotify.description": "You''ll still see the yellow status if you turn this off.",
   "@settings.indexing.staleNotify.description": {
-    "description": "Help text under the stale-notification toggle, reassuring that the yellow drive-index status dot stays visible even with the notification turned off."
+    "description": "Help text under the stale-notification toggle, reassuring that the yellow drive-index status dot stays visible even with the notification turned off.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.indexing.reEnableNotifications.label": "Re-enable notifications for all drives",
   "@settings.indexing.reEnableNotifications.label": {
-    "description": "Label for the row holding the button that clears every per-drive \"Don''t ask again\" silence, so Cmdr will ask about indexing each drive again."
+    "description": "Label for the row holding the button that clears every per-drive \"Don''t ask again\" silence, so Cmdr will ask about indexing each drive again.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.indexing.reEnableNotifications.button": "Re-enable",
   "@settings.indexing.reEnableNotifications.button": {
-    "description": "Button that clears every per-drive \"Don''t ask again\" silence. Short label; sits in a row next to its description."
+    "description": "Button that clears every per-drive \"Don''t ask again\" silence. Short label; sits in a row next to its description.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.indexing.reEnableNotifications.description": "Ask again about indexing each drive you turned the prompt off for.",
   "@settings.indexing.reEnableNotifications.description": {
-    "description": "Help text under the \"Re-enable notifications for all drives\" button, explaining it undoes the per-drive \"Don''t ask again\" choices."
+    "description": "Help text under the \"Re-enable notifications for all drives\" button, explaining it undoes the per-drive \"Don''t ask again\" choices.",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.indexing.reEnableNotifications.disabledTooltip": "You haven''t turned off the prompt for any drive yet.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
-    "description": "Tooltip on the disabled \"Re-enable\" button, shown when the user hasn''t silenced the first-connect prompt for any drive (so there''s nothing to re-enable)."
+    "description": "Tooltip on the disabled \"Re-enable\" button, shown when the user hasn''t silenced the first-connect prompt for any drive (so there''s nothing to re-enable).",
+    "screenshot": "settings-behavior-file-system-watching.png"
   },
   "settings.indexing.silencedDrives.label": "Silenced drive prompts",
   "@settings.indexing.silencedDrives.label": {
@@ -1291,23 +1302,28 @@
   },
   "settings.section.navigationAndFileOps": "Navigation & file ops",
   "@settings.section.navigationAndFileOps": {
-    "description": "Settings subsection title under Behavior: Navigation & file ops. Covers folder navigation and file operations (copy, move, rename, delete). Sidebar and page heading. \"ops\" is a casual short form of \"operations\"."
+    "description": "Settings subsection title under Behavior: Navigation & file ops. Covers folder navigation and file operations (copy, move, rename, delete). Sidebar and page heading. \"ops\" is a casual short form of \"operations\".",
+    "screenshot": "settings-appearance.png"
   },
   "settings.navigationAndFileOps.card.navigation": "Navigation",
   "@settings.navigationAndFileOps.card.navigation": {
-    "description": "Heading of the Navigation card (folder-navigation settings) in Settings > Behavior > Navigation & file ops."
+    "description": "Heading of the Navigation card (folder-navigation settings) in Settings > Behavior > Navigation & file ops.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.navigationAndFileOps.card.fileOperations": "File operations",
   "@settings.navigationAndFileOps.card.fileOperations": {
-    "description": "Heading of the File operations card (copy, move, rename, delete settings) in Settings > Behavior > Navigation & file ops."
+    "description": "Heading of the File operations card (copy, move, rename, delete settings) in Settings > Behavior > Navigation & file ops.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Double-click the pane background to go up a folder",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
-    "description": "Label of the switch that controls whether double-clicking the empty background of a file pane goes up one folder (to the parent folder). \"pane\" = one of the two file-list columns; \"go up a folder\" = navigate to the parent folder."
+    "description": "Label of the switch that controls whether double-clicking the empty background of a file pane goes up one folder (to the parent folder). \"pane\" = one of the two file-list columns; \"go up a folder\" = navigate to the parent folder.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.doubleClickPaneNavigatesToParent.description": "That''s the empty space around the file list, not a file row.",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
-    "description": "Helper text under the double-click-to-parent switch in Settings > Behavior > Navigation & file ops. Clarifies what \"pane background\" (named in the switch label just above) means: the blank area around the file list, as opposed to a row representing a file. \"That''s\" refers back to \"the pane background\" in the label."
+    "description": "Helper text under the double-click-to-parent switch in Settings > Behavior > Navigation & file ops. Clarifies what \"pane background\" (named in the switch label just above) means: the blank area around the file list, as opposed to a row representing a file. \"That''s\" refers back to \"the pane background\" in the label.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Double-click-to-parent hint shown",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
@@ -1657,7 +1673,8 @@
   },
   "settings.appearance.card.language": "Language",
   "@settings.appearance.card.language": {
-    "description": "Heading of the Language card (the app-language picker) in Settings > Appearance > Colors and formats."
+    "description": "Heading of the Language card (the app-language picker) in Settings > Appearance > Colors and formats.",
+    "screenshot": "settings-appearance.png"
   },
   "settings.appearance.card.theme": "Theme",
   "@settings.appearance.card.theme": {

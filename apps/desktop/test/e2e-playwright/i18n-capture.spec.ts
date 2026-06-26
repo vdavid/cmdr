@@ -30,7 +30,6 @@ import { test, expect } from './fixtures.js'
 import {
   ensureAppReady,
   dismissOverlay,
-  skipParentEntry,
   openViewerWindow,
   closeScopedWindow,
   dispatchMenuCommand,
@@ -268,23 +267,30 @@ test.describe('i18n screenshot capture', () => {
       return { page: main }
     })
 
-    // ── Surface 2: new-folder dialog (F7) ────────────────────────────────────
+    // ── Surface 2: new-folder dialog ─────────────────────────────────────────
     // A modal overlay on the foreground main window, sharing the main sink. The
     // shared `settlePaint` in `captureSurface` ensures the just-opened modal is
     // in the composited frame the native capture reads.
+    //
+    // Open it via the registry command (the `file.newFolder` twin of
+    // `new-file-dialog`'s `file.newFile`), NOT a synthetic `F7` keypress. The
+    // Tauri `execute-command` event path is unaffected by DOM focus, whereas a
+    // synthesized keypress lands on `document.activeElement` — which is `<body>`
+    // whenever the E2E main window has lost OS focus (its `Prohibited` activation
+    // policy + ordered-to-back windows make that the norm), so the key never
+    // reaches the explorer's keydown handler. Making a folder doesn't depend on
+    // the cursor, so no `skipParentEntry` is needed either.
     await captureSurface('new-folder-dialog', report, failed, async () => {
-      await skipParentEntry(main)
-      await main.keyboard.press('F7')
+      await dispatchMenuCommand(main, 'file.newFolder')
       await main.waitForSelector(MKDIR_DIALOG, 5000)
       await main.waitForSelector(`${MKDIR_DIALOG} .name-input`, 3000)
       return { page: main }
     })
     // `captureSurface` already isolated any staging failure (and recorded it in
     // `failed`). The cleanup must not itself throw out of the test when the dialog
-    // never opened (e.g. a foreign window stole the F7 keypress): without the
-    // `.catch`, `dismissOverlay`'s "no overlay is open" abort would skip every
-    // later surface and the report write. Swallow it; the recorded failure still
-    // fails the run at the end.
+    // never opened: without the `.catch`, `dismissOverlay`'s "no overlay is open"
+    // abort would skip every later surface and the report write. Swallow it; the
+    // recorded failure still fails the run at the end.
     await dismissOverlay(main).catch(() => {})
     await captureCall(main, 'disable').catch(() => {})
 

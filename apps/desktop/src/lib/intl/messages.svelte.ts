@@ -220,7 +220,7 @@ interface I18nCaptureApi {
    * outside the capture build. Returns a promise the driver awaits before the
    * shot so the new scale has applied.
    */
-  setTextSize: (percent: number) => Promise<void>
+  setTextSize: (percent: number | string) => Promise<void>
 }
 
 if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
@@ -249,11 +249,15 @@ if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
     setLocale(tag: string | null) {
       setLocale(tag)
     },
-    async setTextSize(percent: number) {
+    async setTextSize(percent: number | string) {
       // Lazy import: keeps the always-loaded intl runtime free of a settings
       // dependency; this method only ever runs in the capture build.
       const { setSetting } = await import('$lib/settings')
-      setSetting('appearance.textSize', percent)
+      // Coerce: the E2E driver reaches this through `captureCall`, which
+      // JSON-stringifies every arg, so `percent` arrives as a string ("100").
+      // `appearance.textSize` is a typed number setting and rejects a string, so
+      // normalize before writing (hence `number | string` on the signature).
+      setSetting('appearance.textSize', Number(percent))
     },
   }
   ;(window as unknown as { __cmdrI18nCapture?: I18nCaptureApi }).__cmdrI18nCapture = api

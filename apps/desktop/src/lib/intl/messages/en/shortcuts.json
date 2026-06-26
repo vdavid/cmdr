@@ -2,8 +2,7 @@
   "shortcuts.list.noShortcut": "No shortcut",
   "@shortcuts.list.noShortcut": {
     "description": "Shown in the read-only Keyboard shortcuts help window in a command's shortcut column when that command has no shortcut assigned.",
-    "screenshot": "settings-keyboard-shortcuts.png",
-    "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
+    "screenshot": "shortcuts.png"
   },
 
   "shortcuts.list.addedTooltip": "Added",
