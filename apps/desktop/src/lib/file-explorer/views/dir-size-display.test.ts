@@ -55,10 +55,16 @@ describe('getDirSizeDisplayState', () => {
     expect(getDirSizeDisplayState(undefined, undefined, undefined, true)).toBe('scanning')
   })
 
-  it('returns "unknown" (—) when incomplete and size is 0', () => {
-    // The crux: an incomplete subtree with nothing known below renders `—`,
-    // distinct from a genuinely-empty "0 bytes" folder.
-    expect(getDirSizeDisplayState(0, false, false)).toBe('unknown')
+  it('returns "dir" (the <dir> placeholder) when incomplete and size is 0', () => {
+    // The crux: an incomplete subtree with nothing known below renders the
+    // familiar `<dir>` placeholder (same as a not-yet-scanned dir), distinct
+    // from a genuinely-empty "0 bytes" folder.
+    expect(getDirSizeDisplayState(0, false, false)).toBe('dir')
+  })
+
+  it('returns "scanning" when incomplete, size is 0, and an update is in flight', () => {
+    // Unknown-while-updating shows the `<dir>` placeholder plus the hourglass.
+    expect(getDirSizeDisplayState(0, false, false, true)).toBe('scanning')
   })
 
   it('returns "lower-bound" (≥) when incomplete and size > 0', () => {
@@ -70,7 +76,7 @@ describe('getDirSizeDisplayState', () => {
   })
 
   it('returns "size" (0 bytes) when complete, fresh, and size is 0 — genuinely empty', () => {
-    // complete + size 0 is a KNOWN "0 bytes", NOT the unknown `—`.
+    // complete + size 0 is a KNOWN "0 bytes", NOT the unknown `<dir>` placeholder.
     expect(getDirSizeDisplayState(0, true, false)).toBe('size')
   })
 
@@ -214,7 +220,7 @@ describe('buildDirSizeTooltip', () => {
   })
 
   // Honest-size state lines: the tooltip gains a one-line label per state.
-  it('returns the unknown tooltip when incomplete and size is 0 (the — state)', () => {
+  it('returns the unknown tooltip when incomplete and size is 0 (the <dir>-placeholder state)', () => {
     // No size breakdown — there's nothing known. complete=false, size=0.
     const result = buildDirSizeTooltip(0, undefined, 0, 0, false, formatSize, formatNum, false, false)
     expect(tooltipHtml(result)).toBe("Size unknown: this folder hasn't been scanned yet.")

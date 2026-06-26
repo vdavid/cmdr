@@ -348,26 +348,25 @@ export function buildSelectionSizeTooltip(
 export const LOWER_BOUND_GLYPH = '≥'
 
 /**
- * Glyph for an unknown directory size (`—`): the subtree is incomplete with
- * nothing known below it. Visually distinct from a genuinely-empty `0 bytes`.
- * A symbol, not translatable copy (the explanation lives in the tooltip).
- */
-export const UNKNOWN_SIZE_GLYPH = '—'
-
-/**
  * Content state for a directory's size column. The "honest sizes" model splits
  * one displayed value into distinct truths:
- * - `'dir'`: not enriched yet (no recursive size) → `<dir>` placeholder.
- * - `'scanning'`: same, but a scan is active → `<dir>` placeholder (hourglass on top).
- * - `'unknown'`: subtree incomplete with nothing known below → `—` (NOT `0 bytes`).
+ * - `'dir'`: size unknown → the familiar `<dir>` placeholder. Covers both
+ *   not-enriched-yet (no recursive size) AND an incomplete subtree with nothing
+ *   known below it (size 0). A size we don't know shows the same placeholder it
+ *   showed before it was ever scanned, NOT a settled-looking value.
+ * - `'scanning'`: same as `'dir'`, but a scan is active → `<dir>` placeholder
+ *   (hourglass on top).
  * - `'lower-bound'`: subtree incomplete but a partial total is known → `≥1.2 GB`.
  * - `'size'`: exact and fresh → `1.2 GB` (or a genuinely-empty `0 bytes`).
  * - `'size-stale'`: exact but computed at an older epoch → `1.2 GB`, muted.
  *
+ * Crux: an incomplete subtree at size 0 is UNKNOWN (the `<dir>` placeholder),
+ * distinct from a complete subtree at size 0 (a genuinely-empty `0 bytes`).
+ *
  * The in-flux hourglass (`indexing || pending`) is ORTHOGONAL — see
  * `isDirSizeUpdating` — and applies on top of any of these.
  */
-export type DirSizeDisplayState = 'dir' | 'scanning' | 'unknown' | 'lower-bound' | 'size' | 'size-stale'
+export type DirSizeDisplayState = 'dir' | 'scanning' | 'lower-bound' | 'size' | 'size-stale'
 
 /**
  * Determine the CONTENT display state for a directory's size column — a pure
@@ -378,10 +377,11 @@ export type DirSizeDisplayState = 'dir' | 'scanning' | 'unknown' | 'lower-bound'
  * `complete` / `stale` come from the backend's honest-size derivation
  * (`recursiveSizeComplete` / `recursiveSizeStale` on `FileEntry`/`DirStats`).
  * Absent (a dir enriched before the flags exist, or a test fixture) is treated
- * as exact + fresh, so it renders a plain size rather than masquerading as `—`.
+ * as exact + fresh, so it renders a plain size rather than the `<dir>` placeholder.
  *
- * Crux: an incomplete subtree at size 0 is UNKNOWN (`—`), distinct from a
- * complete subtree at size 0 (a genuinely-empty `0 bytes`).
+ * Crux: an incomplete subtree at size 0 is UNKNOWN — it renders the `<dir>`
+ * placeholder (the `'dir'`/`'scanning'` states), distinct from a complete subtree
+ * at size 0 (a genuinely-empty `0 bytes`).
  */
 export function getDirSizeDisplayState(
   recursiveSize: number | null | undefined,
@@ -389,16 +389,18 @@ export function getDirSizeDisplayState(
   stale?: boolean | null,
   updating = false,
 ): DirSizeDisplayState {
-  // `!= null` covers both `null` (post-Group-A wire format) and `undefined`
-  // (legacy/tests). See `getDisplaySize` for the migration context.
-  if (recursiveSize == null) {
-    // No size yet: the `<dir>` placeholder. `'scanning'` adds the hourglass +
-    // "size not ready" aria when an update is in flight.
+  // Unknown size → the `<dir>` placeholder. Two ways to be unknown: no size yet
+  // (`recursiveSize == null` — `!= null` covers both `null`, the post-Group-A
+  // wire format, and `undefined`, legacy/tests), OR an incomplete subtree with
+  // nothing known below it (`complete === false && recursiveSize === 0`). Both
+  // render the same familiar placeholder; `'scanning'` adds the hourglass +
+  // "size not ready" aria when an update is in flight.
+  if (recursiveSize == null || (complete === false && recursiveSize === 0)) {
     return updating ? 'scanning' : 'dir'
   }
   // Absent `complete` ⇒ treat as exact (pre-honest-sizes / fixtures).
   if (complete === false) {
-    return recursiveSize > 0 ? 'lower-bound' : 'unknown'
+    return 'lower-bound'
   }
   return stale === true ? 'size-stale' : 'size'
 }
@@ -424,7 +426,7 @@ export function isDirSizeUpdating(indexing: boolean, pending = false): boolean {
  * @param formatSize - Function to format bytes as a human-readable string.
  * @param formatNum - Function to format a number with locale separators.
  * @param complete - Whether the size is exact (`true`) or a lower bound
- *   (`false`). Absent ⇒ treated as exact. Drives the `≥` / `—` state line.
+ *   (`false`). Absent ⇒ treated as exact. Drives the `≥` / unknown state line.
  * @param stale - Whether the exact size is from an older epoch (accurate-but-stale).
  */
 export function buildDirSizeTooltip(
@@ -438,8 +440,9 @@ export function buildDirSizeTooltip(
   complete?: boolean | null,
   stale?: boolean | null,
 ): string | { html: string } {
-  // Unknown (`—`): incomplete subtree with nothing known below (size 0). A
-  // distinct tooltip, not the size breakdown — there's no size to show.
+  // Unknown size (renders the `<dir>` placeholder): incomplete subtree with
+  // nothing known below (size 0). A distinct tooltip, not the size breakdown —
+  // there's no size to show.
   if (recursiveSize != null && complete === false && recursiveSize === 0) {
     return tString('fileExplorer.dirSize.unknownTooltip')
   }

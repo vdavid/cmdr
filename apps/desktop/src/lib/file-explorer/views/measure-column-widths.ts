@@ -21,7 +21,6 @@ import {
   getDirSizeDisplayState,
   isDirSizeUpdating,
   LOWER_BOUND_GLYPH,
-  UNKNOWN_SIZE_GLYPH,
   getDisplayExtension,
   getDisplaySize,
   hasSizeMismatch,
@@ -218,15 +217,13 @@ function sizeTextForEntry(
   if (entry.isDirectory) {
     const s = getDisplaySize(entry.recursiveSize, entry.recursivePhysicalSize, sizeDisplayMode)
     // Mirror FullList's honest-size render decision (same `getDirSizeDisplayState`):
-    // unknown → `—`, lower-bound → `≥` prefix + size, otherwise the formatted size
-    // or the `<dir>` placeholder. The hourglass is reserved separately.
+    // `'dir'`/`'scanning'` (size unknown — not enriched yet, or an incomplete subtree
+    // with nothing known below) → the `<dir>` placeholder; lower-bound → `≥` prefix +
+    // size; otherwise the formatted size. The hourglass is reserved separately.
     const state = getDirSizeDisplayState(s, entry.recursiveSizeComplete, entry.recursiveSizeStale)
-    if (state === 'unknown') return UNKNOWN_SIZE_GLYPH
-    if (s !== undefined) {
-      const prefix = state === 'lower-bound' ? LOWER_BOUND_GLYPH : ''
-      return prefix + sizeCellText(s, sizeFormatOpts)
-    }
-    return tString('fileExplorer.dirSize.dirPlaceholder')
+    if (state === 'dir' || state === 'scanning') return tString('fileExplorer.dirSize.dirPlaceholder')
+    const prefix = state === 'lower-bound' ? LOWER_BOUND_GLYPH : ''
+    return prefix + sizeCellText(s ?? 0, sizeFormatOpts)
   }
   const s = getDisplaySize(entry.size, entry.physicalSize, sizeDisplayMode)
   return s !== undefined ? sizeCellText(s, sizeFormatOpts) : ''
@@ -242,8 +239,8 @@ function sizeIconSuffixForEntry(
   let suffix = 0
   if (entry.isDirectory) {
     // FullList draws the hourglass whenever the dir's size is in flux (the
-    // orthogonal `isDirSizeUpdating`): any size-bearing state plus the `unknown`
-    // (`—`) and `scanning` placeholders show it. Reserve the icon width here so
+    // orthogonal `isDirSizeUpdating`): any size-bearing state plus the `<dir>`
+    // placeholder (`'dir'`/`'scanning'`) show it. Reserve the icon width here so
     // the shrink-wrapped column doesn't clip the glyph. Mirror the renderer.
     const updating = isDirSizeUpdating(indexing, entry.recursiveSizePending)
     if (updating) suffix += SIZE_ICON_WIDTH

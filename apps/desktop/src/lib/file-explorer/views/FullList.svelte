@@ -42,7 +42,6 @@
         getDirSizeDisplayState,
         isDirSizeUpdating,
         LOWER_BOUND_GLYPH,
-        UNKNOWN_SIZE_GLYPH,
         hasSizeMismatch,
         getDisplayExtension,
         getNameColumnText,
@@ -1003,11 +1002,18 @@
                                     file.recursiveSizeStale,
                                     dirUpdating,
                                 )}
-                                {#if dirSizeState === 'unknown'}
-                                    <!-- `—`: incomplete subtree, nothing known below. Distinct from `0 bytes`. -->
-                                    <span class="size-dir">{UNKNOWN_SIZE_GLYPH}</span>
-                                    {#if dirUpdating}
-                                        <span class="size-updating icon-indicator" use:tooltip={tString('fileExplorer.dirSize.updatingIndexTooltip')}
+                                {#if dirSizeState === 'dir' || dirSizeState === 'scanning'}
+                                    <!-- Size unknown (not enriched yet, OR an incomplete subtree with
+                                         nothing known below): the familiar `<dir>` placeholder, never a
+                                         settled-looking value. Distinct from a genuinely-empty `0 bytes`.
+                                         `'scanning'` adds the size-updating hourglass on top. -->
+                                    <span class="size-dir">{tString('fileExplorer.dirSize.dirPlaceholder')}</span>
+                                    {#if dirSizeState === 'scanning'}
+                                        <span
+                                            class="size-updating icon-indicator"
+                                            role="img"
+                                            aria-label={tString('fileExplorer.selectionInfo.sizeNotReadyAriaLabel')}
+                                            use:tooltip={tString('fileExplorer.dirSize.scanProgressTooltip')}
                                             ><Icon name="hourglass" size={12} /></span
                                         >
                                     {/if}
@@ -1047,17 +1053,6 @@
                                             <Icon name="circle-alert" size={12} />
                                         </span>
                                     {/if}
-                                {:else if dirSizeState === 'scanning'}
-                                    <span class="size-dir">{tString('fileExplorer.dirSize.dirPlaceholder')}</span>
-                                    <span
-                                        class="size-updating icon-indicator"
-                                        role="img"
-                                        aria-label={tString('fileExplorer.selectionInfo.sizeNotReadyAriaLabel')}
-                                        use:tooltip={tString('fileExplorer.dirSize.scanProgressTooltip')}
-                                        ><Icon name="hourglass" size={12} /></span
-                                    >
-                                {:else}
-                                    <span class="size-dir">{tString('fileExplorer.dirSize.dirPlaceholder')}</span>
                                 {/if}
                             {:else if fileDisplaySize != null}
                                 <span class="size-text"

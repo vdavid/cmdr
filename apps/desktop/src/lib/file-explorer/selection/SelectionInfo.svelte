@@ -26,7 +26,6 @@
         getDirSizeDisplayState,
         isDirSizeUpdating,
         LOWER_BOUND_GLYPH,
-        UNKNOWN_SIZE_GLYPH,
         buildFileSizeTooltip,
         buildDirSizeTooltip,
         buildSelectionSizeTooltip,
@@ -255,10 +254,12 @@
         <!-- Brief mode without selection: show file info -->
         <span class="name" use:tooltip={displayName} use:useShortenMiddle={{ text: displayName, preferBreakAt: '.', startRatio: 0.7 }}></span>
         <span class="size" use:tooltip={sizeTooltip}>
-            {#if dirSizeState === 'unknown'}
-                <!-- `—`: incomplete subtree, nothing known below. Distinct from `0 bytes`. -->
-                {UNKNOWN_SIZE_GLYPH}
-            {:else if sizeDisplay === 'DIR'}
+            {#if dirSizeState === 'dir' || dirSizeState === 'scanning' || sizeDisplay === 'DIR'}
+                <!-- Size unknown (not enriched yet, OR an incomplete subtree with nothing
+                     known below): the familiar `<dir>` placeholder, never a settled-looking
+                     value. Distinct from a genuinely-empty `0 bytes`. `dirSizeState` takes
+                     priority over the byte triads so an incomplete-at-0 folder still reads
+                     as `<dir>`. `'scanning'` adds the size-updating hourglass on top. -->
                 {tString('fileExplorer.selectionInfo.dir')}
                 {#if dirSizeState === 'scanning'}
                     <span
