@@ -102,6 +102,16 @@ right-anchored, viewport-clamped box and clipping off the window edge.
 The hourglass is a ~14px `<Icon>` (the same icon as the size-column stale indicator), `position: absolute` top/right at
 `var(--spacing-sm)`, tertiary text color, gentle opacity pulse gated behind `prefers-reduced-motion: reduce`.
 
+## Two-tier scan progress (`computeScanProgress`)
+
+- **Tier 1** (`priorTotalEntries` present): `entriesScanned / priorTotalEntries`, clamped to 0.99, apples-to-apples.
+- **Tier 2** (`volumeUsedBytes` present): `bytesScanned / volumeUsedBytes`, clamped to 0.95 (APFS clones overshoot the
+  statfs denominator), flagged `rough`.
+- **Neither** → `null` (counter-only, no bar).
+
+The ETA window samples the SAME counter the tier divides by (entries for tier 1, bytes for tier 2) — don't mix them.
+`formatEta` carries a `Number.isFinite` guard so a dropped null gate can't surface "Infinitym left".
+
 ## ETA mechanics (`eta.ts`)
 
 Pure helpers. Aggregation uses a single elapsed extrapolation. Scan and replay blend that 50-50 with a sliding-window

@@ -24,33 +24,28 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
 
 - **`$state` must live in `.svelte.ts`**, not plain `.ts` (Svelte runes). `index-state.svelte.ts` is allowlisted in
   `coverage-allowlist.json` (event-driven module `$state`).
-- **`initIndexState` uses "listen first, then query"**: register the event listeners, THEN call `get_index_status`. The
-  Rust indexer starts in Tauri's `setup()` hook before the frontend mounts, so querying first would leave a race window
-  where `index-scan-started` fires between the query and listener registration and the UI sticks on "not scanning".
-  Don't reorder. Errors from `get_index_status` are swallowed (indexing may be disabled or not yet initialized).
+- **`initIndexState` uses "listen first, then query"**: register event listeners, THEN call `get_index_status`. The
+  Rust indexer starts in `setup()` before the frontend mounts, so querying first leaves a race where
+  `index-scan-started` fires between query and listener registration and the UI sticks on "not scanning". Don't reorder.
 - **`get_index_status` backfill (root-only) recovers tier inputs after a mid-scan reload**, but `scanStartedAt` can't
-  cross IPC so it stays 0 (percent still works; ETA degrades until the window fills — accepted). Tier-1 calibration reads
-  the PREVIOUS scan's totals from nested `indexStatus` meta (TEXT, via `parseMetaNumber`). Mechanics: DETAILS.md.
-- **Scan progress has two tiers** (`computeScanProgress`): tier 1 (`priorTotalEntries` present) is
-  `entriesScanned / priorTotalEntries`, clamped to 0.99, apples-to-apples. Tier 2 (`volumeUsedBytes` present) is
-  `bytesScanned / volumeUsedBytes`, clamped lower to 0.95 (APFS clones overshoot the statfs denominator) and flagged
-  `rough`. Neither → null (counter-only). The ETA unit must match the tier (entries for tier 1, bytes for tier 2), so
-  the component's scan window samples the same counter the tier divides by. `formatEta` carries a `Number.isFinite`
-  guard so a dropped null gate can't surface "Infinitym left".
-- **The indicator tracks ALL drives** via a per-volume `activity` map keyed by `volumeId` (scan/replay events carry it);
-  aggregation carries NO `volumeId`, so it's attributed to the last scan to complete (default `root`). Don't assume
-  aggregation is root's. State model, attribution, the API: [DETAILS.md](DETAILS.md).
+  cross IPC so it stays 0 (ETA degrades until the window fills — accepted). Tier-1 reads prior scan totals from nested
+  `indexStatus` meta via `parseMetaNumber`. Mechanics: DETAILS.md.
+- **Scan progress has two tiers** (`computeScanProgress`). Each tier uses a specific counter as both the numerator and
+  the ETA window sample — don't mix them (swapping counter and denominator ships wrong ETAs). Details and clamping
+  values: DETAILS.md.
+- **The indicator tracks ALL drives** via a per-volume `activity` map keyed by `volumeId`; aggregation carries NO
+  `volumeId`, so it's attributed to the last scan to complete (default `root`). Don't assume aggregation is root's.
+  State model, attribution, and the API: [DETAILS.md](DETAILS.md).
 - **Don't widen `getEntriesScanned` to "any volume"**: it reports `root` on purpose (SearchDialog reads it as local
   index-build progress). `isScanning`/`isAggregating` are the "any volume" booleans.
 - **The indicator is a focusable, hoverable icon** (`role="img"`, `tabindex="0"`), not `pointer-events: none`: the
-  detail lives in a tooltip reached by hover or focus. The tab stop is indexing-only (nothing renders when idle). Don't
-  use `role="status"` (a live region — wrong for a focusable hover target); the tooltip carries the live label + ETA via
-  `aria-describedby`.
+  detail lives in a tooltip reached by hover or focus. Don't use `role="status"` (a live region — wrong for a focusable
+  hover target); the tooltip carries the live label + ETA via `aria-describedby`.
 - **`index-dir-updated` callbacks get a batch of paths** (multiple during DB replay, typically one in live FS-watch).
   `DualPaneExplorer` checks each against each pane's current dir with a path-prefix comparison (relies on trailing-slash
   normalization).
 - **The `IndexingStatusIndicator.a11y.test.ts` mock must stub the whole `index-state.svelte` API the indicator imports
-  AND the `$lib/stores/volume-store.svelte` `getVolumes`** (the indicator resolves drive names through it), or a case
+  AND `$lib/stores/volume-store.svelte` `getVolumes`** (the indicator resolves drive names through it), or a case
   crashes on `undefined`.
 - **Directory sizes are HONEST: unknown (the `<dir>` placeholder) ≠ empty (`0 bytes`) ≠ lower-bound (`≥`).**
   `getDirSizeDisplayState` (`views/full-list-utils.ts`) is the single source of truth, consumed in lockstep by
