@@ -1235,6 +1235,10 @@
   "@fileExplorer.navigation.driveIndex.menuStop": {
     "sourceHash": "70ae907"
   },
+  "fileExplorer.navigation.driveIndex.menuForget": "Glöm den här enhetens index",
+  "@fileExplorer.navigation.driveIndex.menuForget": {
+    "sourceHash": "a553f83"
+  },
   "fileExplorer.navigation.driveIndex.footer": "Senast indexerad: {date} · tog {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
     "sourceHash": "9877397"

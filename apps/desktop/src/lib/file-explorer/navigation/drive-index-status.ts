@@ -43,21 +43,23 @@ export function driveIndexColorClass(state: DriveIndexState): string {
 
 /**
  * The menu actions available for a state, in display order. The menu renders a
- * row per id; `enable`/`rescan`/`disable`/`stop` map to the per-drive IPC
- * commands. A `disabled` drive offers only enable; a `scanning` one only stop;
- * fresh/stale share rescan + disable.
+ * row per id; `enable`/`rescan`/`disable`/`stop`/`forget` map to the per-drive
+ * IPC commands. A `disabled` drive offers only enable; a `scanning` one stop +
+ * forget; fresh/stale share rescan + disable + forget. `forget` deletes the
+ * drive's index DB outright (vs `disable`, which keeps it on disk to resume);
+ * it's the recovery path for an index stuck in a bad state.
  */
-export type DriveIndexMenuAction = 'enable' | 'rescan' | 'disable' | 'stop'
+export type DriveIndexMenuAction = 'enable' | 'rescan' | 'disable' | 'stop' | 'forget'
 
 export function driveIndexMenuActions(state: DriveIndexState): DriveIndexMenuAction[] {
   switch (state) {
     case 'disabled':
       return ['enable']
     case 'scanning':
-      return ['stop']
+      return ['stop', 'forget']
     case 'fresh':
     case 'stale':
-      return ['rescan', 'disable']
+      return ['rescan', 'disable', 'forget']
   }
 }
 
@@ -72,6 +74,8 @@ export function driveIndexMenuLabelKey(action: DriveIndexMenuAction): MessageKey
       return 'fileExplorer.navigation.driveIndex.menuDisable'
     case 'stop':
       return 'fileExplorer.navigation.driveIndex.menuStop'
+    case 'forget':
+      return 'fileExplorer.navigation.driveIndex.menuForget'
   }
 }
 

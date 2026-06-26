@@ -1804,6 +1804,10 @@
   "@fileExplorer.navigation.driveIndex.menuStop": {
     "description": "Menu item to cancel an in-progress scan (shown while the drive is being indexed). Sentence case."
   },
+  "fileExplorer.navigation.driveIndex.menuForget": "Forget this drive''s index",
+  "@fileExplorer.navigation.driveIndex.menuForget": {
+    "description": "Menu item that deletes the drive''s index entirely (removes its database from disk), so a fresh full scan starts next time the user turns indexing on. The recovery action when an index is stuck. More destructive than ''Turn off indexing'', which keeps the index to resume. Sentence case."
+  },
   "fileExplorer.navigation.driveIndex.footer": "Last indexed: {date} · took {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
     "description": "Non-interactive footer at the bottom of the drive-index menu, naming when the drive was last indexed and how long that scan took. The middle dot (·) is a separator; keep it.",

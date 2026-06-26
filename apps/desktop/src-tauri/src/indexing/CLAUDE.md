@@ -49,6 +49,14 @@ SMB/MTP indexing (dedicated DETAILS sections — read before touching this area)
 - **Gated on a `direct` (smb2) connection; an `os_mount` upgrades first** (`start_indexing_for_smb` refuses with a TYPED
   `SmbIndexGateReason`, never a substring); MTP has no smb2 gate. Scans use `volume_scanner`, not jwalk, with three
   round-trip disciplines (cancel, timeout, `autoreleasepool`).
+- **A manual rescan routes by the TYPED kind.** `force_scan` → `mgr.force_rescan` → `start_volume_scan` for SMB/MTP, only
+  `Local` → `start_scan` (jwalk). Don't call `start_scan` for a trait-scanned volume: jwalk over a network mount walks
+  nothing and falsely marks the index complete (the "Rescan does nothing to the NAS" bug). DETAILS § "Drop the registry
+  guard".
+- **Never write `scan_completed_at` for an empty root.** A `Volume`-trait scan/reconcile whose ROOT lists ZERO children
+  returns `VolumeScanError::EmptyRoot` (not `Ok`), so no completion marker persists — else a transient empty/glitched
+  root strands the index as falsely "complete" and refuses all future rescans. Distinct from a root listing that FAILS
+  (`Volume`, root-fatal). DETAILS § "No completion marker on an empty root".
 - **Freshness has ONE transition table (`freshness.rs`); don't branch elsewhere.** No journal ⇒ a persisted index
   loads **Stale** on launch (not a bug); mid-scan disconnect keeps an honest partial + Stale, only user-cancel resets
   to gray. The manager fires transitions via `apply_freshness_event_on` (its own `Arc`, no registry re-lock — see the

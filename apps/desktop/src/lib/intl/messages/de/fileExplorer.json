@@ -1241,6 +1241,10 @@
   "@fileExplorer.navigation.driveIndex.menuStop": {
     "sourceHash": "70ae907"
   },
+  "fileExplorer.navigation.driveIndex.menuForget": "Index dieses Laufwerks vergessen",
+  "@fileExplorer.navigation.driveIndex.menuForget": {
+    "sourceHash": "a553f83"
+  },
   "fileExplorer.navigation.driveIndex.footer": "Zuletzt indiziert: {date} · dauerte {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
     "sourceHash": "9877397"

@@ -53,13 +53,17 @@ describe('driveIndexMenuActions', () => {
     expect(driveIndexMenuActions('disabled')).toEqual(['enable'])
   })
 
-  it('offers only stop while scanning', () => {
-    expect(driveIndexMenuActions('scanning')).toEqual(['stop'])
+  it('offers stop + forget while scanning', () => {
+    expect(driveIndexMenuActions('scanning')).toEqual(['stop', 'forget'])
   })
 
-  it('offers rescan + disable when fresh or stale', () => {
-    expect(driveIndexMenuActions('fresh')).toEqual(['rescan', 'disable'])
-    expect(driveIndexMenuActions('stale')).toEqual(['rescan', 'disable'])
+  it('offers rescan + disable + forget when fresh or stale', () => {
+    expect(driveIndexMenuActions('fresh')).toEqual(['rescan', 'disable', 'forget'])
+    expect(driveIndexMenuActions('stale')).toEqual(['rescan', 'disable', 'forget'])
+  })
+
+  it('does not offer forget when disabled (no index to delete)', () => {
+    expect(driveIndexMenuActions('disabled')).not.toContain('forget')
   })
 })
 

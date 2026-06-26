@@ -1241,6 +1241,10 @@
   "@fileExplorer.navigation.driveIndex.menuStop": {
     "sourceHash": "70ae907"
   },
+  "fileExplorer.navigation.driveIndex.menuForget": "Index van deze schijf vergeten",
+  "@fileExplorer.navigation.driveIndex.menuForget": {
+    "sourceHash": "a553f83"
+  },
   "fileExplorer.navigation.driveIndex.footer": "Laatst geïndexeerd: {date} · duurde {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
     "sourceHash": "9877397"

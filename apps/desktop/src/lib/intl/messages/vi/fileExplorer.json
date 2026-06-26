@@ -1233,6 +1233,10 @@
   "@fileExplorer.navigation.driveIndex.menuStop": {
     "sourceHash": "70ae907"
   },
+  "fileExplorer.navigation.driveIndex.menuForget": "Quên chỉ mục của ổ đĩa này",
+  "@fileExplorer.navigation.driveIndex.menuForget": {
+    "sourceHash": "a553f83"
+  },
   "fileExplorer.navigation.driveIndex.footer": "Lần lập chỉ mục gần nhất: {date} · mất {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
     "sourceHash": "9877397"

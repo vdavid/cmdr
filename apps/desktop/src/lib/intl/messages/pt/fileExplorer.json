@@ -1238,6 +1238,10 @@
   "@fileExplorer.navigation.driveIndex.menuStop": {
     "sourceHash": "70ae907"
   },
+  "fileExplorer.navigation.driveIndex.menuForget": "Esquecer o índice deste drive",
+  "@fileExplorer.navigation.driveIndex.menuForget": {
+    "sourceHash": "a553f83"
+  },
   "fileExplorer.navigation.driveIndex.footer": "Última indexação: {date} · levou {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
     "sourceHash": "9877397"

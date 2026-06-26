@@ -97,6 +97,17 @@ pub(crate) enum VolumeScanError {
     WriterSend(String),
     /// Setting up the scan context (root sentinel, id counter) failed.
     Context(String),
+    /// The ROOT listing SUCCEEDED but returned zero children, so the walk
+    /// produced an empty index. Distinct from a root listing that FAILED
+    /// (`Volume`) — here the backend answered, it just answered "nothing". For a
+    /// NAS share that's almost always a transient glitch or a wrong scan root,
+    /// not a genuinely empty share, so we treat it as a failed scan: surfacing
+    /// this makes the completion handler NOT persist `scan_completed_at`, which
+    /// would otherwise strand the index as falsely "complete" and refuse all
+    /// future rescans (the real-hardware bug). A genuinely empty share is
+    /// vanishingly rare and self-heals on the next rescan, so the safe rule
+    /// wins. See `indexing/DETAILS.md` § "No completion marker on an empty root".
+    EmptyRoot,
 }
 
 impl VolumeScanError {
@@ -128,6 +139,7 @@ impl std::fmt::Display for VolumeScanError {
             }
             Self::WriterSend(m) => write!(f, "writer send failed: {m}"),
             Self::Context(m) => write!(f, "scan context setup failed: {m}"),
+            Self::EmptyRoot => write!(f, "root listing returned no children (treating as a failed scan)"),
         }
     }
 }
@@ -325,6 +337,22 @@ pub(crate) async fn scan_volume_via_trait(
         }
     }
 
+    // The whole walk produced zero entries, which can only mean the ROOT itself
+    // listed empty (a non-empty root queues children and pushes rows). A NAS
+    // share that lists fine in a live pane but scans to nothing is the
+    // wrong-root / transient-glitch case, not a genuinely empty share — so treat
+    // it as a failed scan and refuse to mark completion (the completion handler
+    // maps `Err` to "discard, reset to gray", leaving no stranding marker). We
+    // bail BEFORE `finish_partial_scan` so no marks/aggregate touch the empty DB.
+    if total_entries == 0 {
+        log::warn!(
+            "volume_scanner: root listed empty for {} ({}ms) — treating as a failed scan, not marking complete",
+            root.display(),
+            start.elapsed().as_millis()
+        );
+        return Err(VolumeScanError::EmptyRoot);
+    }
+
     // Clean finish: the same partial-preserving sequence the terminal-abort
     // branches run (flush + marks + aggregate), then trim the WAL. Sharing it
     // keeps the ordering invariant (marks precede the final aggregate) in ONE
@@ -460,6 +488,22 @@ pub(crate) async fn reconcile_volume_via_trait(
                 continue;
             }
         };
+
+        // The ROOT listed EMPTY: bail BEFORE diffing it, so we don't write
+        // removals for every prior child (which would blank the index). A
+        // reconcile only runs over an already-populated index, so an empty root
+        // here is the share glitching/half-dead, not a real "everything was
+        // deleted" — refuse to mark completion and keep the prior stale-but-real
+        // index. Matched on the typed root path, not a message. (A non-root dir
+        // that lists empty is a genuine empty subdir and reconciles normally.)
+        if dir_path == root && entries.is_empty() {
+            log::warn!(
+                "volume_scanner: reconcile root listed empty for {} ({}ms) — treating as a failed rescan, keeping prior index",
+                root.display(),
+                start.elapsed().as_millis()
+            );
+            return Err(VolumeScanError::EmptyRoot);
+        }
 
         // This dir's listing succeeded — stamp it (incl. empty).
         listed_ids.push(dir_id);
@@ -1125,6 +1169,107 @@ mod tests {
         assert!(!VolumeScanError::Context("ctx".into()).is_terminal_disconnect());
     }
 
+    /// A `Volume` whose ROOT listing FAILS with a non-disconnect, non-typed
+    /// error (here `PermissionDenied`). Lets a test exercise the root-fatal
+    /// branch: the scanner must surface the error so the caller doesn't mark
+    /// completion over a never-built index.
+    struct RootFailsVolume {
+        inner: InMemoryVolume,
+    }
+
+    impl Volume for RootFailsVolume {
+        fn name(&self) -> &str {
+            self.inner.name()
+        }
+        fn root(&self) -> &Path {
+            self.inner.root()
+        }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+        fn list_directory<'a>(
+            &'a self,
+            path: &'a Path,
+            on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        ) -> ListFut<'a, Vec<FileEntry>> {
+            if path == Path::new("/") {
+                return Box::pin(async { Err(VolumeError::PermissionDenied("test: root listing denied".into())) });
+            }
+            self.inner.list_directory(path, on_progress)
+        }
+        fn get_metadata<'a>(&'a self, path: &'a Path) -> ListFut<'a, FileEntry> {
+            self.inner.get_metadata(path)
+        }
+        fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+            self.inner.exists(path)
+        }
+        fn is_directory<'a>(&'a self, path: &'a Path) -> ListFut<'a, bool> {
+            self.inner.is_directory(path)
+        }
+    }
+
+    /// A fresh scan whose ROOT listing SUCCEEDS but returns ZERO children must
+    /// NOT report a clean completion: it returns the typed `EmptyRoot` error so
+    /// the completion handler leaves `scan_completed_at` unwritten. This is the
+    /// guard against the real-hardware bug where a NAS scan that walked nothing
+    /// stamped a false "complete" marker and stranded the index forever. (The
+    /// completion handler's persistence of the marker is asserted at the manager
+    /// level; here we pin the typed error the handler routes on.)
+    #[tokio::test]
+    async fn empty_root_fresh_scan_does_not_complete() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("vol-scan-empty-root.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        // Root lists fine but has no children at all.
+        let vol: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", vec![]));
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let result = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+
+        match result {
+            Err(VolumeScanError::EmptyRoot) => {}
+            other => panic!("expected EmptyRoot (no completion), got {other:?}"),
+        }
+        // EmptyRoot is NOT a terminal disconnect: the completion handler discards
+        // and resets to gray rather than keeping a "stale" empty partial.
+        assert!(
+            !VolumeScanError::EmptyRoot.is_terminal_disconnect(),
+            "an empty root is a failed scan to discard, not an honest partial to keep",
+        );
+
+        writer.flush().await.expect("flush");
+        writer.shutdown();
+    }
+
+    /// The root-fatal case stays fatal: a ROOT listing that ERRORS (not empty,
+    /// not a disconnect) surfaces the error so no completion marker is written.
+    /// Distinguishes "root listing FAILED" (`Volume`) from "root listed EMPTY"
+    /// (`EmptyRoot`) — both refuse completion, via different typed variants.
+    #[tokio::test]
+    async fn failed_root_listing_does_not_complete() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("vol-scan-root-fail.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        let vol: Arc<dyn Volume> = Arc::new(RootFailsVolume {
+            inner: InMemoryVolume::with_entries("Test", vec![entry("a.txt", "/a.txt", false, Some(1))]),
+        });
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let result = scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+
+        match result {
+            Err(VolumeScanError::Volume(VolumeError::PermissionDenied(_))) => {}
+            other => panic!("expected the root-fatal Volume error (no completion), got {other:?}"),
+        }
+
+        writer.flush().await.expect("flush");
+        writer.shutdown();
+    }
+
     /// A pre-set cancel flag stops the walk immediately and reports
     /// `was_cancelled` (the caller then discards the partial — D-interrupted).
     #[tokio::test]
@@ -1527,6 +1672,53 @@ mod tests {
             dir_size(&conn, "/"),
             66,
             "root recursive size reflects the deep files the reconcile descended to find"
+        );
+
+        writer.shutdown();
+    }
+
+    /// A reconcile rescan whose ROOT suddenly lists EMPTY (the share glitched or
+    /// the session is half-dead) must NOT report a clean completion: it returns
+    /// the typed `EmptyRoot` error so the prior (stale-but-real) index is kept
+    /// and never overwritten as falsely-complete-and-empty. Without this guard a
+    /// transient empty root strands the index as "complete" with zero entries.
+    #[tokio::test]
+    async fn reconcile_empty_root_does_not_complete() {
+        // Start from a real, fully-scanned tree so the reconcile path runs over a
+        // populated index.
+        let populated: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", base_tree()));
+        let (writer, db_path, _dir) = fresh_scan(Arc::clone(&populated)).await;
+
+        let rows_before = {
+            let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+            entry_count(&conn)
+        };
+        assert!(rows_before > 0, "precondition: the index has data to reconcile against");
+
+        // A continuity break bumps the epoch before a rescan; mirror that.
+        {
+            let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::bump_current_epoch(&wconn).unwrap();
+        }
+
+        // Now reconcile against a volume whose root lists EMPTY (the glitch).
+        let empty: Arc<dyn Volume> = Arc::new(InMemoryVolume::with_entries("Test", vec![]));
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let result = reconcile_volume_via_trait(empty, PathBuf::from("/"), writer.clone(), progress(), cancelled).await;
+
+        match result {
+            Err(VolumeScanError::EmptyRoot) => {}
+            other => panic!("expected EmptyRoot from a reconcile whose root went empty, got {other:?}"),
+        }
+        writer.flush().await.expect("flush");
+
+        // The prior index is untouched — reconcile wrote no changes and we bailed
+        // before the diff/removal/marks, so the stale-but-real rows survive.
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        assert_eq!(
+            entry_count(&conn),
+            rows_before,
+            "a glitched empty-root reconcile must not blank the prior index",
         );
 
         writer.shutdown();

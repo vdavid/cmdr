@@ -143,6 +143,32 @@ fn discard_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) {
     let _ = (kind, volume_id);
 }
 
+/// Which scanner a forced (re)scan must use for a volume of a given kind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RescanScanner {
+    /// The `Volume`-trait walk from the share/storage root (`start_volume_scan`).
+    /// SMB and MTP — there is no local filesystem to jwalk and no FSEvents journal.
+    VolumeTrait,
+    /// The jwalk + FSEvents walk from the volume root (`start_scan`). Local disk only.
+    LocalJwalk,
+}
+
+/// Pure routing for `force_rescan`: pick the scanner by the TYPED volume kind.
+///
+/// This is the regression anchor for the real-hardware bug where a NAS "Rescan
+/// now" ran the local jwalk scanner over the SMB mount (walking nothing, then
+/// falsely marking the index complete). A trait-scanned kind (SMB/MTP) must map
+/// to `VolumeTrait`; only `Local` maps to `LocalJwalk`. Mirrors
+/// `resume_or_scan`'s `is_trait_scanned` routing, kept as a separate pure
+/// function so the dispatch is unit-testable without an `AppHandle`.
+fn rescan_scanner_for_kind(kind: IndexVolumeKind) -> RescanScanner {
+    if kind.is_trait_scanned() {
+        RescanScanner::VolumeTrait
+    } else {
+        RescanScanner::LocalJwalk
+    }
+}
+
 impl IndexManager {
     /// Create a new IndexManager for a volume of the given kind.
     ///
@@ -330,6 +356,25 @@ impl IndexManager {
             IndexVolumeKind::Mtp => "MTP",
             IndexVolumeKind::Smb => "SMB",
             IndexVolumeKind::Local => "local",
+        }
+    }
+
+    /// Force a (re)scan of this volume, routed to the RIGHT scanner by the typed
+    /// volume kind — exactly as `resume_or_scan` routes the startup scan.
+    ///
+    /// A trait-scanned volume (SMB/MTP) goes to `start_volume_scan` (the
+    /// `Volume`-trait walk from the share/storage root); a `Local` volume goes to
+    /// `start_scan` (jwalk + FSEvents from `/`). This is the manual-rescan entry
+    /// point behind `state::force_scan` / the "Rescan now" menu. Routing by kind
+    /// HERE (not unconditionally calling `start_scan`) is what keeps an SMB/MTP
+    /// rescan from running the local jwalk scanner over a network mount — which
+    /// walked nothing in ~2 ms and falsely marked the index complete (the
+    /// real-hardware "rescan does nothing to the NAS" bug). Classifies by the
+    /// typed `kind`, never a volume-id substring.
+    pub fn force_rescan(&mut self, scan_trigger: &str) -> Result<(), String> {
+        match rescan_scanner_for_kind(self.kind) {
+            RescanScanner::VolumeTrait => self.start_volume_scan(scan_trigger),
+            RescanScanner::LocalJwalk => self.start_scan(scan_trigger),
         }
     }
 
@@ -1475,5 +1520,30 @@ mod tests {
         let counters = live_scan_counters(Some(snapshot(10, 3, 4_096)), Some(calibration(None)));
         assert_eq!(counters.bytes_scanned, 4_096);
         assert_eq!(counters.volume_used_bytes, None);
+    }
+
+    /// Regression anchor for the real-hardware "SMB Rescan indexes nothing" bug:
+    /// `force_rescan` routes by the TYPED volume kind, so an SMB/MTP rescan hits
+    /// the `Volume`-trait scanner — NOT the local jwalk `start_scan`, which ran
+    /// over the network mount, walked nothing, and falsely marked the index
+    /// complete. Pre-fix `force_scan` called `start_scan` unconditionally, so an
+    /// SMB id wrongly mapped to `LocalJwalk`; this pins the correct mapping.
+    #[test]
+    fn force_rescan_routes_smb_and_mtp_to_the_trait_scanner_not_jwalk() {
+        assert_eq!(
+            rescan_scanner_for_kind(IndexVolumeKind::Smb),
+            RescanScanner::VolumeTrait,
+            "an SMB rescan must walk the Volume trait from the share root, not jwalk the mount",
+        );
+        assert_eq!(
+            rescan_scanner_for_kind(IndexVolumeKind::Mtp),
+            RescanScanner::VolumeTrait,
+            "an MTP rescan must walk the Volume trait, not jwalk",
+        );
+        assert_eq!(
+            rescan_scanner_for_kind(IndexVolumeKind::Local),
+            RescanScanner::LocalJwalk,
+            "only a local disk uses the jwalk + FSEvents scanner",
+        );
     }
 }

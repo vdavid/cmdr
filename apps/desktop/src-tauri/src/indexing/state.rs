@@ -839,7 +839,7 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
 /// never re-resolve the manager in the registry, so it's safe to run detached.
 pub fn force_scan(volume_id: &str) -> Result<(), String> {
     // Take the manager out under the lock (transient `ShuttingDown`), so the
-    // blocking `start_scan` prelude runs WITHOUT holding the registry lock.
+    // blocking rescan prelude runs WITHOUT holding the registry lock.
     let mut mgr = {
         let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
         let instance = reg.get_mut(volume_id).ok_or("Indexing not initialized")?;
@@ -855,7 +855,12 @@ pub fn force_scan(volume_id: &str) -> Result<(), String> {
     };
 
     // Guard released: run the (blocking-prelude) scan start off the lock.
-    let result = mgr.start_scan("manual start");
+    // `force_rescan` routes by the volume's TYPED kind: a `Local` volume jwalks
+    // (`start_scan`), an SMB/MTP volume walks the `Volume` trait from its share
+    // root (`start_volume_scan`). Calling `start_scan` unconditionally here ran
+    // the local jwalk scanner over a network mount — walking nothing and falsely
+    // marking the index complete — so a NAS "Rescan now" indexed zero entries.
+    let result = mgr.force_rescan("manual start");
 
     // Re-lock to restore the manager as `Running`. If the instance vanished
     // while we were detached (a concurrent `stop_indexing`/`clear_index` swapped

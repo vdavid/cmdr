@@ -82,16 +82,20 @@ describe('DriveIndexBadge menu', () => {
     expect(menuLabels(target)).toEqual(['Turn on indexing for this drive'])
   })
 
-  it('a scanning drive offers only "Stop indexing"', () => {
+  it('a scanning drive offers stop + forget', () => {
     const { target } = render(makeStatus({ freshness: 'scanning' }))
     openMenu(target)
-    expect(menuLabels(target)).toEqual(['Stop indexing'])
+    expect(menuLabels(target)).toEqual(['Stop indexing', "Forget this drive's index"])
   })
 
-  it('a fresh/stale drive offers rescan + turn off', () => {
+  it('a fresh/stale drive offers rescan + turn off + forget', () => {
     const { target } = render(makeStatus({ freshness: 'stale' }))
     openMenu(target)
-    expect(menuLabels(target)).toEqual(['Rescan now', 'Turn off indexing for this drive'])
+    expect(menuLabels(target)).toEqual([
+      'Rescan now',
+      'Turn off indexing for this drive',
+      "Forget this drive's index",
+    ])
   })
 
   it('shows the last-indexed footer only when scan facts exist', () => {

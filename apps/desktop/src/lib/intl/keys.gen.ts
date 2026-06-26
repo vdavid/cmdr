@@ -793,6 +793,7 @@ export type MessageKey =
   | 'fileExplorer.navigation.driveIndex.footer'
   | 'fileExplorer.navigation.driveIndex.menuDisable'
   | 'fileExplorer.navigation.driveIndex.menuEnable'
+  | 'fileExplorer.navigation.driveIndex.menuForget'
   | 'fileExplorer.navigation.driveIndex.menuRescan'
   | 'fileExplorer.navigation.driveIndex.menuStop'
   | 'fileExplorer.navigation.driveIndex.refusedDisconnected'
