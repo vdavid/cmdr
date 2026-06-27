@@ -1,0 +1,308 @@
+/* Styles for the rehype-generated blog media: theme-aware images, comparison rows, and the
+   before/after slider + lightbox (see src/plugins/blog-media.mjs + BlogCompareSlider.astro). Kept in
+   its own plain (unscoped) stylesheet — imported by BlogLayout.astro and linked by the dev blog
+   editor — so it only inlines into blog pages, not every page (the site inlines all CSS). Unscoped on
+   purpose: the `:root …` selectors below rely on exact specificity that Astro's scoped `<style>`
+   would mangle. Colors come from the tokens in global.css. */
+
+/* Theme-aware blog images. Mirrors the Shiki dual-theme pattern: default to dark, switch to light via
+   prefers-color-scheme or the data-theme override. Only the active variant renders (display:none drops
+   the other from the a11y tree). The `:root` prefix lifts specificity above the Astro-scoped
+   `.blog-content[data-astro-cid] img { display: block }` prose rule (0,2,1), which would otherwise
+   force both variants visible; the data-theme overrides below already clear it. */
+:root .blog-content .theme-image__light {
+  display: none;
+}
+:root .blog-content .theme-image__dark {
+  display: block;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .blog-content .theme-image__light {
+    display: block;
+  }
+  :root:not([data-theme='dark']) .blog-content .theme-image__dark {
+    display: none;
+  }
+}
+
+:root[data-theme='light'] .blog-content .theme-image__light {
+  display: block;
+}
+:root[data-theme='light'] .blog-content .theme-image__dark {
+  display: none;
+}
+
+/* Side-by-side comparison rows (a paragraph of 2+ images). Stacks on narrow screens. */
+.blog-figure-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.blog-figure-row .blog-figure {
+  flex: 1 1 0;
+  min-width: min(100%, 16rem);
+  margin: 0;
+}
+.blog-figure-row .blog-figure img,
+.blog-figure-row .blog-figure .theme-image {
+  margin: 0;
+}
+.blog-figure__cap {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Before/after comparison slider. The images stack in the same box; the top one is clipped to a
+   slanted edge at --reveal and the base to the complementary region, so each shows on only its side
+   (no see-through for any image pair). --slant is the wipe's half-width in % of the box and grows with
+   position (set in JS). The screenshots are trimmed to their opaque window, so the frame supplies the
+   surface backing (rounded corners) and a card shadow that the trim removed. */
+.img-compare {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1400 / 866;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.4);
+  touch-action: none;
+  user-select: none;
+}
+
+.img-compare:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.img-compare__pane {
+  position: absolute;
+  inset: 0;
+}
+
+/* The Astro-scoped `.blog-content img` prose rule is specificity (0,2,1) and otherwise leaks
+   `margin: 1.5rem 0` (and border/radius) onto slider and lightbox images; out-specify it (0,3,1) for
+   everything inside the slider. */
+:root .img-compare[data-img-compare] img {
+  margin: 0;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.img-compare__pane img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Seam leans "/" (top-right to bottom-left, pivoting from bottom-left): top edge at reveal+slant,
+   bottom at reveal-slant. --slant grows with position (set in JS), so the seam is vertical at the left
+   and leans ~30° to the right at the right edge. */
+.img-compare__top {
+  clip-path: polygon(
+    0 0,
+    calc((var(--reveal) + var(--slant)) * 1%) 0,
+    calc((var(--reveal) - var(--slant)) * 1%) 100%,
+    0 100%
+  );
+}
+
+/* Complement of the top clip: the base shows only to the right of the seam, so the two images never
+   overlap and a transparent or smaller top image can't reveal the base on its side. */
+.img-compare__base {
+  clip-path: polygon(
+    calc((var(--reveal) + var(--slant)) * 1%) 0,
+    100% 0,
+    100% 100%,
+    calc((var(--reveal) - var(--slant)) * 1%) 100%
+  );
+}
+
+/* Rotation is derived in JS from --slant and the box aspect so the bar matches the clipped seam.
+   Oversized (and offset) so it still spans the box at the steepest ~30°. */
+.img-compare__divider {
+  position: absolute;
+  top: -35%;
+  left: calc(var(--reveal) * 1%);
+  width: 3px;
+  height: 170%;
+  background: var(--color-accent);
+  transform: translateX(-50%) rotate(var(--divider-rot, 16deg));
+  transform-origin: center;
+  pointer-events: none;
+}
+
+/* Drag handle: only needed where there's no hover (touch), since on a pointer device the divider
+   follows the cursor on its own. Kept small and unobtrusive. */
+.img-compare__divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: none;
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 2px solid var(--color-background);
+  border-radius: 50%;
+  background: var(--color-accent);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
+}
+
+@media (hover: none) {
+  .img-compare__divider::after {
+    display: block;
+  }
+}
+
+.img-compare__range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: ew-resize;
+  opacity: 0;
+}
+
+.img-compare__label {
+  position: absolute;
+  bottom: 0.6rem;
+  z-index: 1;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, #000 55%, transparent);
+  color: #fff;
+  font-size: 0.8125rem;
+  pointer-events: none;
+}
+
+.img-compare__label--before {
+  left: 0.6rem;
+}
+
+.img-compare__label--after {
+  right: 0.6rem;
+}
+
+.img-compare__expand {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, #fff 30%, transparent);
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, #000 55%, transparent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.img-compare__expand:hover {
+  background: color-mix(in srgb, #000 72%, transparent);
+}
+
+.img-compare__expand-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* Accessible full-size view of both images (see BlogCompareSlider.astro). Native <dialog> gives the
+   focus trap, Esc-to-close, and focus restore for free. Centered both axes via inset:0 + margin:auto. */
+.img-compare__lightbox {
+  position: fixed;
+  inset: 0;
+  width: min(96vw, 110rem);
+  height: fit-content;
+  max-height: 94vh;
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.img-compare__lightbox::backdrop {
+  background: color-mix(in srgb, #000 70%, transparent);
+}
+
+.img-compare__lightbox-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.img-compare__lightbox-close-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.img-compare__lightbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  max-height: 94vh;
+  padding: 3rem 1.5rem 1.5rem;
+  overflow: auto;
+}
+
+/* Stack vertically sooner: below this width two side-by-side screenshots get too small to read. */
+@media (max-width: 1000px) {
+  .img-compare__lightbox-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.img-compare__lightbox-figure {
+  margin: 0;
+}
+
+.img-compare__lightbox-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  /* Restore the ClearShot drop shadow we trimmed off; drop-shadow follows the window's rounded shape
+     (the screenshots have transparent rounded corners), unlike box-shadow. */
+  filter: drop-shadow(0 12px 28px rgb(0 0 0 / 0.4));
+}
+
+/* The Cmdr image (the one we're selling) layers a subtle accent glow on top to set it apart. */
+.img-compare__lightbox-figure--feature img {
+  filter: drop-shadow(0 12px 28px rgb(0 0 0 / 0.4)) drop-shadow(0 0 9px var(--color-accent));
+}
+
+.img-compare__lightbox-figure figcaption {
+  margin-top: 1.75rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.875rem;
+  text-align: center;
+}

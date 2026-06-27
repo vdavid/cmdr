@@ -4,6 +4,9 @@ import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import BlogImageClick from '../components/BlogImageClick.astro'
 import BlogCompareSlider from '../components/BlogCompareSlider.astro'
+// Blog media (slider/lightbox/theme images) CSS — imported here, not in global.css, so it only
+// inlines into blog pages. Unscoped (plain import, not a <style>) to preserve its `:root` specificity.
+import '../styles/blog-media.css'
 
 interface Props {
     title: string
