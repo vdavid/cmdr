@@ -7,6 +7,7 @@
 //! - Cloud drives (Dropbox, iCloud, Google Drive, etc.)
 //! - Network locations
 
+pub mod disk_image;
 pub mod watcher;
 
 use serde::{Deserialize, Serialize};
@@ -48,8 +49,14 @@ pub struct LocationInfo {
     pub fs_type: Option<String>,
     /// Whether this volume supports macOS trash. Derived from `fs_type`.
     pub supports_trash: bool,
-    /// Whether this location is read-only (for example, MTP devices with locked storage).
+    /// Whether this location is read-only (for example, MTP devices with locked storage,
+    /// or a read-only mounted volume). Powers the 🔒 indicator and the copy/move write guard.
     pub is_read_only: bool,
+    /// Whether this volume is backed by a mounted disk image (a `.dmg`). Disk images are
+    /// transient install-style mounts: the UI suppresses indexing (badge + first-connect
+    /// prompt) and both free-space bars for them. Detected via DiskArbitration; see
+    /// `disk_image::is_disk_image_mount`. Always `false` off macOS and for non-volume locations.
+    pub is_disk_image: bool,
     /// SMB connection state indicator. Only set for volumes with an active `SmbVolume`.
     pub smb_connection_state: Option<SmbConnectionState>,
     /// Negotiated USB link speed. Set only for MTP/mobile volumes; everything
@@ -289,6 +296,11 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             LocationCategory::AttachedVolume
         };
         let icon = get_icon_for_path(&mount_point);
+        let is_read_only = read_only_from_statfs(&mount_point);
+        // Only attached, non-network volumes can be disk images; the boot volume never is.
+        let is_disk_image = matches!(category, LocationCategory::AttachedVolume)
+            && !is_smb_fs_type(Some(&fs_type))
+            && disk_image::is_disk_image_mount(&mount_point);
 
         Some(VolumeInfo {
             id: volume_id_for_mount(&mount_point),
@@ -299,7 +311,8 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             is_ejectable,
             fs_type: Some(fs_type),
             supports_trash,
-            is_read_only: false,
+            is_read_only,
+            is_disk_image,
             smb_connection_state: None,
             usb_speed: None,
         })
@@ -333,6 +346,29 @@ fn get_fs_type(path: &str) -> Option<String> {
         .map(|&c| c as u8)
         .collect();
     String::from_utf8(name_bytes).ok()
+}
+
+/// Whether the volume mounted at `path` is read-only, from the `statfs` `MNT_RDONLY` flag.
+///
+/// Covers any read-only mount (a read-only `.dmg`, a locked SD card, an optical disc),
+/// powering the copy/move write guard and the 🔒 indicator. Returns `false` if `statfs`
+/// fails (treat an unprobeable mount as writable: the OS write attempt is the backstop).
+fn read_only_from_statfs(path: &str) -> bool {
+    use std::ffi::CString;
+
+    let Ok(c_path) = CString::new(path) else {
+        return false;
+    };
+    let mut stat: std::mem::MaybeUninit<libc::statfs> = std::mem::MaybeUninit::uninit();
+    // SAFETY: `c_path` is a valid NUL-terminated C string from `path`, and `stat` is an
+    // uninitialized but correctly-typed `libc::statfs` out-buffer the kernel fills on success.
+    let result = unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) };
+    if result != 0 {
+        return false;
+    }
+    // SAFETY: `statfs` returned 0, so the kernel fully initialized `stat`.
+    let stat = unsafe { stat.assume_init() };
+    (stat.f_flags & libc::MNT_RDONLY as u32) != 0
 }
 
 /// Get all locations organized by category, deduplicated.
@@ -406,6 +442,7 @@ fn get_favorites() -> Vec<LocationInfo> {
                 fs_type,
                 supports_trash,
                 is_read_only: false,
+                is_disk_image: false,
                 smb_connection_state: None,
                 usb_speed: None,
             }
@@ -448,6 +485,7 @@ fn get_main_volume() -> Option<LocationInfo> {
                     fs_type,
                     supports_trash,
                     is_read_only: false,
+                    is_disk_image: false,
                     smb_connection_state: None,
                     usb_speed: None,
                 });
@@ -505,6 +543,10 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
             let is_ejectable = get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false);
             let fs_type = get_fs_type(&path);
             let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
+            let is_read_only = read_only_from_statfs(&path);
+            // Disk-image detection resolves the volume path via DiskArbitration; skip it for
+            // network mounts (always local for a `.dmg`) so a hung mount can't stall the call.
+            let is_disk_image = !is_smb_fs_type(fs_type.as_deref()) && disk_image::is_disk_image_mount(&path);
 
             // For SMB mounts, show "share on server" so the user knows which
             // server they're browsing (especially when multiple servers share
@@ -525,7 +567,8 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
                 is_ejectable,
                 fs_type,
                 supports_trash,
-                is_read_only: false,
+                is_read_only,
+                is_disk_image,
                 smb_connection_state: None,
                 usb_speed: None,
             });
@@ -598,6 +641,7 @@ fn cloud_volume_info(id: String, name: String, root: &Path) -> LocationInfo {
         fs_type,
         supports_trash,
         is_read_only: false,
+        is_disk_image: false,
         smb_connection_state: None,
         usb_speed: None,
     }

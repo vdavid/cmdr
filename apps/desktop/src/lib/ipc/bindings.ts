@@ -4159,8 +4159,18 @@ export type LocationInfo = {
   fsType: string | null
   // Whether this volume supports macOS trash. Derived from `fs_type`.
   supportsTrash: boolean
-  // Whether this location is read-only (for example, MTP devices with locked storage).
+  /**
+   *  Whether this location is read-only (for example, MTP devices with locked storage,
+   *  or a read-only mounted volume). Powers the 🔒 indicator and the copy/move write guard.
+   */
   isReadOnly: boolean
+  /**
+   *  Whether this volume is backed by a mounted disk image (a `.dmg`). Disk images are
+   *  transient install-style mounts: the UI suppresses indexing (badge + first-connect
+   *  prompt) and both free-space bars for them. Detected via DiskArbitration; see
+   *  `disk_image::is_disk_image_mount`. Always `false` off macOS and for non-volume locations.
+   */
+  isDiskImage: boolean
   // SMB connection state indicator. Only set for volumes with an active `SmbVolume`.
   smbConnectionState: SmbConnectionState | null
   /**

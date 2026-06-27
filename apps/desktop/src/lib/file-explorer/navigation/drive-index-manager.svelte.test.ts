@@ -56,7 +56,27 @@ vi.mock('$lib/ipc/bindings', async (importOriginal) => {
   }
 })
 
-import { createDriveIndexManager } from './drive-index-manager.svelte'
+import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelte'
+import type { VolumeInfo } from '../types'
+
+/** Minimal `VolumeInfo` for `isDriveRow`, which reads only `category`, `id`, and `isDiskImage`. */
+function vol(over: Partial<VolumeInfo>): VolumeInfo {
+  return {
+    id: 'vol-1',
+    name: 'Volume',
+    path: '/Volumes/Volume',
+    category: 'attached_volume',
+    icon: null,
+    isEjectable: false,
+    fsType: 'apfs',
+    supportsTrash: true,
+    isReadOnly: false,
+    isDiskImage: false,
+    smbConnectionState: null,
+    usbSpeed: null,
+    ...over,
+  } as VolumeInfo
+}
 
 /**
  * Build a manager and wait a microtask so the async `on*` registrations resolve
@@ -133,5 +153,21 @@ describe('drive index manager — per-volume scan progress', () => {
 
     onFreshness?.({ volumeId: 'smb-a', freshness: 'fresh' })
     expect(mgr.getScanProgress('smb-a')).toBeUndefined()
+  })
+})
+
+describe('isDriveRow — index-affordance eligibility', () => {
+  it('treats a regular attached volume as a drive row', () => {
+    expect(isDriveRow(vol({ category: 'attached_volume' }))).toBe(true)
+  })
+
+  it('excludes mounted disk images (no index badge, prompt, or status fetch)', () => {
+    expect(isDriveRow(vol({ category: 'attached_volume', isDiskImage: true }))).toBe(false)
+  })
+
+  it('still excludes favorites and the synthetic network / search-results rows', () => {
+    expect(isDriveRow(vol({ category: 'favorite' }))).toBe(false)
+    expect(isDriveRow(vol({ id: 'network' }))).toBe(false)
+    expect(isDriveRow(vol({ id: 'search-results' }))).toBe(false)
   })
 })

@@ -63,6 +63,17 @@ describe('fetchVolumeSpaces', () => {
     expect(mockGetVolumeSpace).not.toHaveBeenCalled()
   })
 
+  it('skips disk images even though they are attached volumes', async () => {
+    mockGetVolumeSpace.mockResolvedValue({ data: spaceInfo, timedOut: false })
+    const mgr = createVolumeSpaceManager()
+    const dmg = { ...makeVolume('dmg', '/Volumes/Installer', 'attached_volume'), isDiskImage: true } as VolumeInfo
+
+    await mgr.fetchVolumeSpaces([dmg])
+
+    expect(mockGetVolumeSpace).not.toHaveBeenCalled()
+    expect(mgr.volumeSpaceMap.has('dmg')).toBe(false)
+  })
+
   it('includes mobile_device volumes', async () => {
     mockGetVolumeSpace.mockResolvedValue({ data: spaceInfo, timedOut: false })
     const mgr = createVolumeSpaceManager()

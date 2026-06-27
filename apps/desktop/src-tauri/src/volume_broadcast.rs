@@ -239,6 +239,7 @@ async fn append_mtp_volumes(volumes: &mut Vec<LocationInfo>) {
                 icon: None,
                 is_ejectable: true,
                 is_read_only: storage.is_read_only,
+                is_disk_image: false,
                 fs_type: Some("mtp".to_string()),
                 supports_trash: false,
                 smb_connection_state: None,

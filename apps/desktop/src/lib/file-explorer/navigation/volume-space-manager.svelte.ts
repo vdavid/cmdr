@@ -76,8 +76,13 @@ export function createVolumeSpaceManager(): VolumeSpaceManager {
   }
 
   async function fetchVolumeSpaces(vols: VolumeInfo[]): Promise<void> {
+    // Disk images (.dmg) are transient and effectively full; their free space is meaningless,
+    // so skip the query entirely. With no entry in volumeSpaceMap / spaceTimedOutSet, the
+    // dropdown renders no space bar for them.
     const physicalVolumes = vols.filter(
-      (v) => v.category === 'main_volume' || v.category === 'attached_volume' || v.category === 'mobile_device',
+      (v) =>
+        !v.isDiskImage &&
+        (v.category === 'main_volume' || v.category === 'attached_volume' || v.category === 'mobile_device'),
     )
     await Promise.all(
       physicalVolumes

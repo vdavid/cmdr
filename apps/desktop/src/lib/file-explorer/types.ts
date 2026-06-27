@@ -198,6 +198,8 @@ export interface VolumeInfo {
   isEjectable: boolean
   /** Whether this volume is read-only (for example, PTP cameras) */
   isReadOnly?: boolean
+  /** Whether this volume is a mounted disk image (.dmg): no indexing affordances, no space bars. */
+  isDiskImage?: boolean
   /** Filesystem type from statfs (for example, "apfs", "smbfs", "exfat") */
   fsType?: string
   /** Whether this volume supports macOS trash. `undefined` means unknown (treat as `true`). */

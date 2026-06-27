@@ -23,12 +23,20 @@ import type { VolumeInfo } from '../types'
 /**
  * Whether a switcher entry is a real DRIVE row that can carry an index badge.
  * Excludes favorites and the synthetic `network` / `search-results` entries
- * (the plan: badges only on real drives, not Favorites/groups). Every remaining
- * category is a real volume the backend can report on (gray if not indexed).
+ * (the plan: badges only on real drives, not Favorites/groups), plus mounted
+ * disk images (transient `.dmg` mounts we deliberately never index). Every
+ * remaining category is a real volume the backend can report on (gray if not
+ * indexed).
+ *
+ * This predicate is the single chokepoint for index affordances: dropping a
+ * disk image here suppresses the index badge (both the active-volume spot and
+ * each dropdown row), the first-connect "index this drive?" prompt, and the
+ * per-volume index-status fetch, all at once.
  */
 export function isDriveRow(volume: VolumeInfo): boolean {
   if (volume.category === 'favorite') return false
   if (volume.id === 'network' || volume.id === 'search-results') return false
+  if (volume.isDiskImage) return false
   return true
 }
 

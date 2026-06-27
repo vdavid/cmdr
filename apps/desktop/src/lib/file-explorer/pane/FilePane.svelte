@@ -530,6 +530,11 @@
     /** True if this pane is on an SMB share (any state: direct, os_mount, or disconnected). */
     const isSmbVolume = $derived(currentVolumeInfo?.smbConnectionState != null)
     /**
+     * True on a mounted disk image (.dmg): a transient, effectively-full mount. Its free space
+     * is meaningless, so we skip the space query and hide the bottom disk-usage bar.
+     */
+    const isDiskImageVolume = $derived(currentVolumeInfo?.isDiskImage === true)
+    /**
      * Background tint for this pane based on the user's volume-type tint settings.
      * `null` when the user picked "no tint" for this volume's kind (the common case).
      */
@@ -1122,6 +1127,12 @@
     }
 
     export async function refreshVolumeSpace(): Promise<void> {
+        // Disk images report no meaningful free space; keep it null so neither the bottom
+        // disk-usage bar nor the SelectionInfo free/total text renders.
+        if (isDiskImageVolume) {
+            volumeSpace = null
+            return
+        }
         volumeSpace = (await getVolumeSpace(currentPath)).data
     }
 
@@ -2990,6 +3001,7 @@
             {mtpSpaceHint}
         />
         <!--suppress HtmlWrongAttributeValue -- We know this is not a valid ARIA role, it's fine -->
+        {#if !isDiskImageVolume}
         <div
             class="disk-usage-bar-wrapper"
             use:tooltip={volumeSpace
@@ -3013,6 +3025,7 @@
                 {/if}
             </div>
         </div>
+        {/if}
     {/if}
 </div>
 

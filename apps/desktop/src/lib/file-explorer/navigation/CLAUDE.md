@@ -32,11 +32,11 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
 - **`containingVolumeId` is derived via `resolvePathVolume(currentPath)`, not the `volumeId` prop** (a favorite's
   virtual id), so the active checkmark tracks the real containing volume.
 - **The drive-index freshness badge (`DriveIndexBadge.svelte`) renders only on real DRIVE rows** (`isDriveRow`: not
-  favorites or the synthetic `network` / `search-results` entries). State→color/menu is the pure
-  `drive-index-status.ts`; status stays live via the manager's event subscriptions, not polling. A scanning badge shows
-  a LIVE count off `index-scan-progress`, per-volume via `getScanProgress` (never bleed progress across drives). The
-  badge is a `<button>` (axe rejects `role="img"`). Refused enable/rescan is classified by typed `SmbIndexGateReason`,
-  never text. Full contract: DETAILS § Drive index freshness badge.
+  favorites, `network` / `search-results`, or disk images). State→color/menu is the pure `drive-index-status.ts`; status
+  stays live via the manager's event subscriptions, not polling. A scanning badge shows a LIVE count off
+  `index-scan-progress`, per-volume via `getScanProgress` (never bleed progress across drives). The badge is a
+  `<button>` (axe rejects `role="img"`). Refused enable/rescan is classified by typed `SmbIndexGateReason`, never text.
+  Full contract: DETAILS § Drive index freshness badge.
 - **Favorites: mutate ONLY via the `commands.*` wrappers, ALWAYS stripping the `fav-` prefix** (the switcher id is
   `fav-<favoriteId>`; the commands take the bare id via `stripFavoritePrefix`). The `volume-grouping.ts` favorites group
   always renders even when empty (the placeholder row), so don't tidy it into a hide-when-empty branch. "Add to
