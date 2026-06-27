@@ -1,10 +1,11 @@
 //! Send-decision logic and hot-path collection for mid-scan partial aggregation.
 //!
-//! The scan progress loop in `manager.rs` ticks every 500 ms. On each tick it
-//! asks `should_send_partial_agg` whether to fire a `ComputePartialAggregates`
-//! message; when it does, `collect_hot_paths` turns the live listing snapshot
-//! into the message's `hot_paths`. Keeping both pure lets them be unit-tested
-//! exhaustively while the timer loop itself stays a dumb caller.
+//! The scan progress loop in `progress_reporter.rs` ticks every 500 ms. On each
+//! tick it asks `should_send_partial_agg` whether to fire a
+//! `ComputePartialAggregates` message; when it does, `collect_hot_paths` turns
+//! the live listing snapshot into the message's `hot_paths`. Keeping both pure
+//! lets them be unit-tested exhaustively while the timer loop itself stays a dumb
+//! caller.
 
 use crate::file_system::listing::caching::ListingSummary;
 use crate::indexing::firmlinks;

@@ -17,6 +17,7 @@ pub mod firmlinks;
 pub mod freshness;
 mod manager;
 mod partial_agg;
+mod progress_reporter;
 mod queries;
 mod routing;
 mod state;

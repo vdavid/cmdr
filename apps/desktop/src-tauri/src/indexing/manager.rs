@@ -16,14 +16,13 @@ use super::events::{
     IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord,
     RescanReason, emit_rescan_notification,
 };
-use super::partial_agg;
+use super::progress_reporter::ScanProgressReporter;
 use super::reconciler::{self, EventReconciler};
 use super::scanner::{self, ScanConfig};
 use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
 use super::store::IndexStore;
 use super::watcher::{self, DriveWatcher};
 use super::writer::{IndexWriter, WriteMessage};
-use crate::file_system::listing::caching;
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
@@ -992,55 +991,19 @@ impl IndexManager {
         self.scanning.store(true, Ordering::Relaxed);
 
         // Shared flag: set to true when the scan finishes (or fails/panics), so the
-        // progress reporter can exit its loop.
+        // progress reporter loop exits. The completion handler below sets it.
         let scan_done = Arc::new(AtomicBool::new(false));
 
-        // Spawn progress reporter (polls every 500ms, exits when scan_done is set).
-        // Use tauri::async_runtime::spawn because indexing can start from the
-        // synchronous Tauri setup() hook where no Tokio runtime context exists.
-        let progress = Arc::clone(&scan_handle.progress);
-        let volume_id_progress = self.volume_id.clone();
-        let app_progress = self.app.clone();
-        let scan_done_progress = Arc::clone(&scan_done);
-        let writer_progress = self.writer.clone();
-        tauri::async_runtime::spawn(async move {
-            let mut tick: u64 = 0;
-            loop {
-                tokio::time::sleep(Duration::from_millis(500)).await;
-                if scan_done_progress.load(Ordering::Relaxed) {
-                    break;
-                }
-                let snap = progress.snapshot();
-                let _ = IndexScanProgressEvent {
-                    volume_id: volume_id_progress.clone(),
-                    entries_scanned: snap.entries_scanned,
-                    dirs_found: snap.dirs_found,
-                    bytes_scanned: snap.bytes_scanned,
-                }
-                .emit(&app_progress);
-
-                // Mid-scan partial aggregation: on the interval-th tick (and only
-                // when the writer isn't backed up), ask the writer to compute and
-                // write a bounded subset of partial dir sizes so visible listings
-                // show growing numbers during the scan. The whole block sits
-                // behind the gate so skipped ticks do zero extra work — which also
-                // makes disabling the feature a single call-site toggle. All logic
-                // lives in the tested helpers; this body just snapshots and sends.
-                tick += 1;
-                if partial_agg::should_send_partial_agg(tick, writer_progress.queue_depth()) {
-                    // Take the cheap, owned listing snapshot first and let its
-                    // read lock drop before any path work; don't hold a
-                    // cross-subsystem lock through normalization.
-                    let listings = caching::snapshot_listings();
-                    let hot_paths = partial_agg::collect_hot_paths(&listings, &volume_id_progress);
-                    match writer_progress.try_send(WriteMessage::ComputePartialAggregates { hot_paths }) {
-                        Ok(true) => {}
-                        Ok(false) => log::debug!("Partial aggregation pass dropped: writer channel full"),
-                        Err(e) => log::debug!("Partial aggregation send failed (writer gone): {e}"),
-                    }
-                }
-            }
-        });
+        // Spawn the 500 ms progress reporter: it emits `index-scan-progress` events
+        // and drives mid-scan partial aggregation, running until `scan_done` is set
+        // by the completion handler. The tick loop lives in `progress_reporter`.
+        ScanProgressReporter::new(
+            Arc::clone(&scan_handle.progress),
+            self.writer.clone(),
+            self.app.clone(),
+            self.volume_id.clone(),
+        )
+        .spawn(Arc::clone(&scan_done));
 
         // Step 3: Spawn completion handler that also does reconciliation.
         // Use tauri::async_runtime::spawn because indexing can start from the

@@ -12,7 +12,8 @@ Per-file roles: DETAILS § "Module structure" or `codegraph_search`. Groupings:
   `reconciler.rs` + `event_loop.rs`.
 - **SMB / MTP / freshness**: `freshness.rs`, `smb_index.rs` / `mtp_index.rs`, `smb_watch.rs` / `mtp_watch.rs`.
 - **Read path**: `enrichment.rs` (`ReadPool`), `store/`, `verifier.rs`, `expected_totals.rs`, `pending_sizes.rs`.
-- **Support**: `partial_agg.rs`, `watcher.rs`, `memory_watchdog.rs`, `events.rs`, plus `metadata`/`firmlinks`/`retention`.
+- **Support**: `partial_agg.rs`, `progress_reporter.rs`, `watcher.rs`, `memory_watchdog.rs`, `events.rs`, plus
+  `metadata`/`firmlinks`/`retention`.
 
 IPC in `commands/indexing.rs`; frontend in `src/lib/indexing/`; search in `src/search/`.
 
