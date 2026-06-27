@@ -15,7 +15,9 @@ ETA/throughput, settle contract).
 - `TransferDialog.svelte`: destination picker, Copy/Move toggle, dry-run scan, conflict-policy radios. Thin shell over
   `transfer-scan-state.svelte.ts` (deep scan preview) + `transfer-conflict-check.svelte.ts` (cheap top-level conflict
   check) + `transfer-dialog-logic.ts` (pure helpers).
-- `TransferProgressDialog.svelte`: execution, dual bars, cancel/rollback, conflict dialog, scan-phase body.
+- `TransferProgressDialog.svelte`: execution shell (dual bars, scan-phase body, action buttons) over
+  `transfer-progress-state.svelte.ts` (`createTransferProgressState`: the headless event/phase/cancel/pause/queue/
+  conflict/scan-wait state machine) + `TransferConflictDialog.svelte` (the conflict-resolution UI).
 - `TransferErrorDialog.svelte` + `FallbackErrorContent`: error display (renders from the typed `WriteOperationError`).
   `ScanPhaseBody`, `DirectionIndicator`, `transfer-dialog-utils.ts`, `transfer-error-messages.ts`,
   `transfer-complete-toast.ts`.

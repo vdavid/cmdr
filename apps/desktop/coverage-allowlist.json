@@ -139,6 +139,9 @@
     "file-operations/transfer/TransferProgressDialog.svelte": {
       "reason": "UI dialog, depends on Tauri events"
     },
+    "file-operations/transfer/transfer-progress-state.svelte.ts": {
+      "reason": "Reactive Svelte state machine (event buffering, phase/pause/cancel/conflict/scan-wait) extracted from TransferProgressDialog.svelte; depends on Tauri write-event listeners"
+    },
     "file-viewer/open-viewer.ts": {
       "reason": "Depends on Tauri WebviewWindow API"
     },

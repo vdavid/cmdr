@@ -18,8 +18,23 @@ and gotchas live in [CLAUDE.md](CLAUDE.md).
   parallel with the deep scan and stays decoupled from it. Deps are getter callbacks + a logger; state via getters
 - **`transfer-dialog-logic.ts`**: Pure helpers lifted from the dialog: `getPathValidationError()` (subfolder /
   already-here checks) and `formatSpaceInfo()` (free-of-total line, byte formatter injected). No reactivity, no IPC
-- **`TransferProgressDialog.svelte`**: Execution: dual progress bars, cancel/rollback, conflict dialog, scan-phase body,
-  terminal-event handling
+- **`TransferProgressDialog.svelte`**: Execution shell: dual progress bars, progress stages, scan-phase body, the
+  direction header, action buttons (cancel/rollback, pause/resume, queue), and the dialog title. Thin over
+  `transfer-progress-state.svelte.ts` (the state machine) + `TransferConflictDialog.svelte` (the conflict UI); owns only
+  display-derived values (labels, stage chips, `isSameVolumeMove`), the focus-trap `keydown`, and the
+  `onMount`/`onDestroy` → `start()`/`destroy()` wiring
+- **`transfer-progress-state.svelte.ts`**: `createTransferProgressState(config)`: the execution state machine, headless
+  and testable. Owns the six write-event listeners + the `operations-changed` stream, the `operationId`-scoped event
+  buffering/replay, the phase machine (scanning → active → flushing, plus rolling_back), the cancel/settle close-out
+  (`MIN_DISPLAY_MS` floor, slow-label + last-resort fallback timers), pause/resume, background-to-queue (incl.
+  auto-queue behind a busy lane), the conflict prompt, and the scan-wait path (`waitForScanThenStart`). Takes static
+  per-operation config + the outcome callbacks (`onComplete`/`onCancelled`/`onError`/`onQueue`); exposes `start()`,
+  `destroy()`, the handler methods, and state via getters. `backgrounded` and `destroyed` are plain `let`s (read live
+  during disposal), NOT `$state` — see the module header for why
+- **`TransferConflictDialog.svelte`**: Self-contained conflict-resolution UI (the comparison grid + the 4×2 button grid
+  + the bottom rollback/cancel row). Props: the `conflictEvent`, operation-type flags (`isCopy`/`isMove`/
+  `isSameVolumeMove`), the `isCancelling`/`isResolvingConflict` disable gates, and `onResolve`/`onCancel` callbacks.
+  Owns its own size-color helper, the file-over-folder warning, and all conflict CSS
 - **`TransferErrorDialog.svelte`**: Modal that renders entirely from the typed `WriteOperationError`, category-colored
   container, optional Retry button
 - **`FallbackErrorContent.svelte`**: Renders the FE-derived message (`getUserFriendlyMessage`) for the typed
