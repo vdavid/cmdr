@@ -125,3 +125,34 @@
   color: var(--color-text-primary);
   font-weight: 600;
 }
+
+.blog-content :global(.table-scroll) {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.blog-content :global(table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.blog-content :global(th),
+.blog-content :global(td) {
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.blog-content :global(th) {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.blog-content :global(tbody tr:nth-child(even)) {
+  background: color-mix(in srgb, var(--color-surface) 45%, transparent);
+}

@@ -19,6 +19,11 @@ when you click **Publish**. The draft directory is gitignored. Use **Add image**
 editor to add images; the editor stores draft images separately, inserts relative Markdown paths, and copies referenced
 images next to the post when publishing.
 
+The **Formatting help** button opens a cheat sheet covering everything below. In the body, description, and excerpt
+fields, <kbd>⌘</kbd><kbd>B</kbd> / <kbd>⌘</kbd><kbd>I</kbd> / <kbd>⌘</kbd><kbd>K</kbd> wrap the selection (or insert at
+the cursor) as bold, italic, and a link. The excerpt field renders as markdown in the preview, so a link there works
+(it's the blurb under the title on `/blog`).
+
 For manual authoring:
 
 1. Create a folder: `src/content/blog/{slug}/index.md`
@@ -83,6 +88,43 @@ plain link (the plugin only runs in the real Astro build).
 - Reference them with relative paths: `![Alt text](./my-image.webp)`
 - Images are click-to-open-fullsize automatically
 - CSS handles responsive sizing (`max-width: 100%`)
+
+## Theme-aware images and comparison rows
+
+Two conveniences plain markdown can't express, handled by the `rehypeBlogMedia` plugin (`src/plugins/blog-media.mjs`):
+
+- **Theme-aware image**: put the literal token `{theme}` in an image path and the post renders `…-light.webp` or
+  `…-dark.webp` to match the visitor's theme (the header toggle, falling back to `prefers-color-scheme`):
+
+  ```markdown
+  ![Cmdr on macOS](/blog/my-post/cmdr-{theme}.webp 'Caption')
+  ```
+
+  Provide both files (`cmdr-light.webp` and `cmdr-dark.webp`). Theme images **must live in `public/`** (e.g.
+  `public/blog/my-post/`), not colocated — Astro's per-file image optimizer can't resolve the `{theme}` token, the same
+  reason the hero screenshots live in `public/`.
+
+- **Side-by-side comparison**: two (or more) image lines in a single paragraph (no blank line between them) become a
+  responsive row that stacks on mobile. Each image's `"title"` becomes its caption:
+
+  ```markdown
+  ![Total Commander on Windows](/blog/my-post/totalcmd.webp 'Total Commander · Windows')
+  ![Cmdr on macOS](/blog/my-post/cmdr-{theme}.webp 'Cmdr · macOS')
+  ```
+
+The dev editor's preview mirrors both transforms in JS so you can see them while writing. The exact theme switch only
+happens on the built site.
+
+## Tables
+
+GitHub-style tables render (Astro enables GFM by default); wide tables scroll horizontally. The dev editor preview
+styles them too.
+
+```markdown
+| Feature  | Total Commander | Cmdr  |
+| -------- | --------------- | ----- |
+| Platform | Windows         | macOS |
+```
 
 ## Previewing locally
 

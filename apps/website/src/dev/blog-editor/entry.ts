@@ -62,7 +62,12 @@ const bodyInput = element<HTMLTextAreaElement>('bodyInput')
 const previewDate = element<HTMLTimeElement>('previewDate')
 const previewTitle = element<HTMLElement>('previewTitle')
 const previewDescription = element<HTMLElement>('previewDescription')
+const previewExcerpt = element<HTMLElement>('previewExcerpt')
+const previewExcerptBody = element<HTMLElement>('previewExcerptBody')
 const previewBody = element<HTMLElement>('previewBody')
+const formattingHelpButton = element<HTMLButtonElement>('formattingHelpButton')
+const formattingHelp = element<HTMLDialogElement>('formattingHelp')
+const formattingHelpClose = element<HTMLButtonElement>('formattingHelpClose')
 
 let entry: BlogEntry = emptyEntry()
 let slugEditedByHand = false
@@ -171,6 +176,24 @@ function attachListeners() {
   bodyInput.addEventListener('input', () => {
     entry.body = bodyInput.value
     markChanged()
+  })
+
+  for (const field of [bodyInput, descriptionInput, excerptInput]) {
+    attachMarkdownShortcuts(field)
+  }
+
+  formattingHelpButton.addEventListener('click', () => {
+    formattingHelp.showModal()
+  })
+
+  formattingHelpClose.addEventListener('click', () => {
+    formattingHelp.close()
+  })
+
+  formattingHelp.addEventListener('click', (event) => {
+    if (event.target === formattingHelp) {
+      formattingHelp.close()
+    }
   })
 
   bodyInput.addEventListener('paste', (event) => {
@@ -504,22 +527,157 @@ async function renderPreview() {
   previewDate.dateTime = entry.date
   previewDate.textContent = formatLongDate(entry.date)
   previewDescription.textContent = entry.description
+
+  // The excerpt is the markdown blurb shown under the title on /blog (links and all), so render it
+  // through marked just like the real index does, instead of leaving it looking like dead plain text.
+  const excerptSource = entry.excerpt.trim()
+  previewExcerpt.hidden = excerptSource.length === 0
+  previewExcerptBody.innerHTML = excerptSource ? await Promise.resolve(marked.parse(excerptSource)) : ''
+
   const html = await Promise.resolve(marked.parse(entry.body || ''))
   if (revision === previewRevision) {
-    previewBody.innerHTML = rewriteDraftImageSources(html)
+    const container = document.createElement('div')
+    container.innerHTML = html
+    rewriteDraftImageSources(container)
+    expandBlogMedia(container)
+    previewBody.innerHTML = container.innerHTML
   }
 }
 
-function rewriteDraftImageSources(html: string) {
-  const container = document.createElement('div')
-  container.innerHTML = html
+function rewriteDraftImageSources(container: HTMLElement) {
   for (const image of Array.from(container.querySelectorAll('img'))) {
     const source = image.getAttribute('src') ?? ''
     if (/^\.\/[a-z0-9][a-z0-9.-]*\.webp$/.test(source)) {
       image.src = draftAssetUrl(source.slice(2))
     }
   }
-  return container.innerHTML
+}
+
+/**
+ * Mirrors src/plugins/blog-media.mjs for the preview (the real rehype plugin only runs in the Astro
+ * build): expand `{theme}` images into a light/dark pair, then turn a paragraph of 2+ images into a
+ * captioned comparison row. Keep in sync with the plugin.
+ */
+function expandBlogMedia(container: HTMLElement) {
+  for (const image of Array.from(container.querySelectorAll('img'))) {
+    // marked may percent-encode the `{` `}`, so accept both `{theme}` and `%7Btheme%7D` (see blog-media.mjs).
+    const source = (image.getAttribute('src') ?? '').replace(/%7b/gi, '{').replace(/%7d/gi, '}')
+    if (!source.includes('{theme}')) {
+      continue
+    }
+    const span = document.createElement('span')
+    span.className = 'theme-image'
+    for (const theme of ['light', 'dark'] as const) {
+      const variant = document.createElement('img')
+      variant.src = source.replaceAll('{theme}', theme)
+      variant.alt = image.getAttribute('alt') ?? ''
+      const title = image.getAttribute('title')
+      if (title) {
+        variant.title = title
+      }
+      variant.className = `theme-image__${theme}`
+      span.append(variant)
+    }
+    image.replaceWith(span)
+  }
+
+  for (const table of Array.from(container.querySelectorAll('table'))) {
+    const scroll = document.createElement('div')
+    scroll.className = 'table-scroll'
+    table.replaceWith(scroll)
+    scroll.append(table)
+  }
+
+  for (const paragraph of Array.from(container.querySelectorAll('p'))) {
+    const cells = Array.from(paragraph.childNodes).filter(isMeaningfulNode)
+    const images = cells.filter(isImageCell)
+    if (images.length < 2 || images.length !== cells.length) {
+      continue
+    }
+    paragraph.classList.add('blog-figure-row')
+    paragraph.replaceChildren(
+      ...images.map((cell) => {
+        const figure = document.createElement('span')
+        figure.className = 'blog-figure'
+        figure.append(cell)
+        const caption = captionFor(cell)
+        if (caption) {
+          const captionEl = document.createElement('span')
+          captionEl.className = 'blog-figure__cap'
+          captionEl.textContent = caption
+          figure.append(captionEl)
+        }
+        return figure
+      }),
+    )
+  }
+}
+
+function isMeaningfulNode(node: ChildNode): boolean {
+  return node.nodeType !== Node.TEXT_NODE || (node.textContent ?? '').trim().length > 0
+}
+
+function isImageCell(node: ChildNode): node is HTMLElement {
+  if (!(node instanceof HTMLElement)) {
+    return false
+  }
+  return node.tagName === 'IMG' || (node.tagName === 'SPAN' && node.classList.contains('theme-image'))
+}
+
+function captionFor(cell: HTMLElement): string {
+  const image = cell.tagName === 'IMG' ? cell : cell.querySelector('img')
+  return image?.getAttribute('title') ?? ''
+}
+
+function attachMarkdownShortcuts(textarea: HTMLTextAreaElement) {
+  textarea.addEventListener('keydown', (event) => {
+    if (!(event.metaKey || event.ctrlKey) || event.altKey) {
+      return
+    }
+    const key = event.key.toLowerCase()
+    if (key === 'b') {
+      event.preventDefault()
+      wrapSelection(textarea, '**', '**')
+    } else if (key === 'i') {
+      event.preventDefault()
+      wrapSelection(textarea, '_', '_')
+    } else if (key === 'k') {
+      event.preventDefault()
+      insertLink(textarea)
+    }
+  })
+}
+
+function wrapSelection(textarea: HTMLTextAreaElement, before: string, after: string) {
+  const { selectionStart: start, selectionEnd: end, value } = textarea
+  const selected = value.slice(start, end)
+  textarea.value = `${value.slice(0, start)}${before}${selected}${after}${value.slice(end)}`
+  if (selected) {
+    textarea.setSelectionRange(start + before.length, end + before.length)
+  } else {
+    const caret = start + before.length
+    textarea.setSelectionRange(caret, caret)
+  }
+  textarea.focus()
+  textarea.dispatchEvent(new Event('input'))
+}
+
+function insertLink(textarea: HTMLTextAreaElement) {
+  const { selectionStart: start, selectionEnd: end, value } = textarea
+  const selected = value.slice(start, end)
+  const linkText = selected || 'text'
+  const urlPlaceholder = 'url'
+  textarea.value = `${value.slice(0, start)}[${linkText}](${urlPlaceholder})${value.slice(end)}`
+  if (selected) {
+    // Link text is set from the selection, so highlight the `url` placeholder for the next keystroke.
+    const urlStart = start + `[${linkText}](`.length
+    textarea.setSelectionRange(urlStart, urlStart + urlPlaceholder.length)
+  } else {
+    // No selection: highlight the `text` placeholder first.
+    textarea.setSelectionRange(start + 1, start + 1 + linkText.length)
+  }
+  textarea.focus()
+  textarea.dispatchEvent(new Event('input'))
 }
 
 function checkBackup() {

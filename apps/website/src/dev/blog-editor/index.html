@@ -33,6 +33,7 @@
         <button id="deleteDraftButton" type="button">Delete draft</button>
         <input id="imageInput" class="visually-hidden" type="file" accept="image/*" multiple />
         <button id="addImageButton" type="button">Add image</button>
+        <button id="formattingHelpButton" type="button" class="formatting-help-button">Formatting help</button>
         <button id="saveButton" type="button">Save now</button>
         <button id="publishButton" type="button" class="button-primary">Publish</button>
         <label class="overwrite-control">
@@ -91,10 +92,134 @@
             <h2 id="previewTitle"></h2>
             <p id="previewDescription"></p>
           </header>
+          <section id="previewExcerpt" class="preview-excerpt blog-content" hidden>
+            <p class="preview-excerpt-label">Blog index excerpt</p>
+            <div id="previewExcerptBody"></div>
+          </section>
           <article id="previewBody" class="blog-content"></article>
         </section>
       </section>
     </main>
+
+    <dialog id="formattingHelp" class="formatting-help" aria-labelledby="formattingHelpTitle">
+      <div class="formatting-help-head">
+        <h2 id="formattingHelpTitle">Formatting cheat sheet</h2>
+        <button id="formattingHelpClose" type="button">Close</button>
+      </div>
+      <div class="formatting-help-body">
+        <h3>Keyboard shortcuts</h3>
+        <p>Work in the body, description, and excerpt fields. Wrap the selection, or insert markers at the cursor.</p>
+        <table class="formatting-help-table">
+          <tbody>
+            <tr>
+              <td><kbd>&#8984;</kbd> <kbd>B</kbd></td>
+              <td>Bold (<code>**text**</code>)</td>
+            </tr>
+            <tr>
+              <td><kbd>&#8984;</kbd> <kbd>I</kbd></td>
+              <td>Italic (<code>_text_</code>)</td>
+            </tr>
+            <tr>
+              <td><kbd>&#8984;</kbd> <kbd>K</kbd></td>
+              <td>Link (<code>[text](url)</code>)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Text</h3>
+        <table class="formatting-help-table">
+          <tbody>
+            <tr>
+              <td><code># H1</code> … <code>### H3</code></td>
+              <td>Headings (sentence case)</td>
+            </tr>
+            <tr>
+              <td><code>**bold**</code></td>
+              <td>Bold</td>
+            </tr>
+            <tr>
+              <td><code>_italic_</code></td>
+              <td>Italic</td>
+            </tr>
+            <tr>
+              <td><code>`code`</code></td>
+              <td>Inline code</td>
+            </tr>
+            <tr>
+              <td><code>- item</code></td>
+              <td>Bullet list</td>
+            </tr>
+            <tr>
+              <td><code>1. item</code></td>
+              <td>Numbered list</td>
+            </tr>
+            <tr>
+              <td><code>&gt; quote</code></td>
+              <td>Blockquote</td>
+            </tr>
+            <tr>
+              <td><code>[text](https://…)</code></td>
+              <td>Link (external links open in a new tab)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Tables</h3>
+        <table class="formatting-help-table">
+          <tbody>
+            <tr>
+              <td><code>| A | B |</code><br /><code>|---|---|</code><br /><code>| 1 | 2 |</code></td>
+              <td>GitHub-style table. Wide tables scroll horizontally.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Images</h3>
+        <table class="formatting-help-table">
+          <tbody>
+            <tr>
+              <td>Add image / paste / drop</td>
+              <td>Stores the image with the post and inserts the markdown.</td>
+            </tr>
+            <tr>
+              <td><code>![alt](./pic.webp)</code></td>
+              <td>Colocated image (optimized at build).</td>
+            </tr>
+            <tr>
+              <td><code>![alt](/blog/slug/shot-{theme}.webp)</code></td>
+              <td>
+                Theme-aware image: renders <code>shot-light.webp</code> or <code>shot-dark.webp</code> to match the
+                visitor's theme. Must live in <code>public/</code>, not colocated.
+              </td>
+            </tr>
+            <tr>
+              <td><code>![A](…webp "Cap A")</code><br /><code>![B](…webp "Cap B")</code></td>
+              <td>
+                Two image lines in one paragraph (no blank line between) become a side-by-side comparison row, with the
+                <code>"titles"</code> as captions. Stacks on mobile.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Cmdr-specific</h3>
+        <table class="formatting-help-table">
+          <tbody>
+            <tr>
+              <td><code>[download](cmdr:download)</code></td>
+              <td>Inserts the arch-aware download dropdown.</td>
+            </tr>
+            <tr>
+              <td><code>&lt;!-- more --&gt;</code></td>
+              <td>Everything above it is the blog-index blurb.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          The preview approximates these; the download dropdown and exact theme switch only appear on the built site.
+        </p>
+      </div>
+    </dialog>
 
     <script type="module" src="/src/dev/blog-editor/entry.ts"></script>
   </body>

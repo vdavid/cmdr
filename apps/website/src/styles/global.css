@@ -150,6 +150,56 @@ body {
   text-decoration: var(--shiki-light-text-decoration) !important;
 }
 
+/* Theme-aware blog images (see src/plugins/blog-media.mjs). Mirrors the Shiki dual-theme pattern:
+   default to dark, switch to light via prefers-color-scheme or the data-theme override. Only the
+   active variant renders (display:none drops the other from the a11y tree). */
+.theme-image__light {
+  display: none;
+}
+.theme-image__dark {
+  display: block;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .theme-image__light {
+    display: block;
+  }
+  :root:not([data-theme='dark']) .theme-image__dark {
+    display: none;
+  }
+}
+
+:root[data-theme='light'] .theme-image__light {
+  display: block;
+}
+:root[data-theme='light'] .theme-image__dark {
+  display: none;
+}
+
+/* Side-by-side comparison rows (a paragraph of 2+ images). Stacks on narrow screens. */
+.blog-figure-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.blog-figure-row .blog-figure {
+  flex: 1 1 0;
+  min-width: min(100%, 16rem);
+  margin: 0;
+}
+.blog-figure-row .blog-figure img,
+.blog-figure-row .blog-figure .theme-image {
+  margin: 0;
+}
+.blog-figure__cap {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
 /* Glow effect */
 .glow {
   box-shadow: 0 0 40px var(--color-accent-glow);

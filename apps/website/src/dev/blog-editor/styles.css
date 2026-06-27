@@ -393,6 +393,149 @@ button:disabled {
   font-weight: 600;
 }
 
+.blog-content .table-scroll {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.blog-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.blog-content th,
+.blog-content td {
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.blog-content th {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* Excerpt preview: what the blog index shows under the title. */
+.preview-excerpt {
+  margin-bottom: 2rem;
+  padding: 0.875rem 1rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-background);
+}
+
+.preview-excerpt[hidden] {
+  display: none;
+}
+
+.preview-excerpt > .preview-excerpt-label {
+  margin: 0 0 0.5rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.preview-excerpt :last-child {
+  margin-bottom: 0;
+}
+
+/* Formatting cheat sheet (native <dialog>). */
+.formatting-help-button {
+  white-space: nowrap;
+}
+
+.formatting-help {
+  width: min(48rem, 92vw);
+  max-height: 85vh;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.formatting-help::backdrop {
+  background: color-mix(in srgb, #000 55%, transparent);
+}
+
+.formatting-help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.formatting-help-head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.formatting-help-body {
+  overflow-y: auto;
+  max-height: calc(85vh - 4.5rem);
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.formatting-help-body h3 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-accent-text);
+}
+
+.formatting-help-body h3:first-child {
+  margin-top: 0;
+}
+
+.formatting-help-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.formatting-help-table th,
+.formatting-help-table td {
+  padding: 0.4rem 0.625rem;
+  border: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+  font-size: 0.875rem;
+}
+
+.formatting-help-table td:first-child {
+  width: 11rem;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.formatting-help-table code {
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  background: var(--color-background);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.formatting-help kbd {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-bottom-width: 2px;
+  border-radius: 0.3rem;
+  background: var(--color-background);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
 @media (max-width: 900px) {
   .blog-editor-header,
   .blog-editor-toolbar,

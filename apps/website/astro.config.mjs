@@ -7,6 +7,7 @@ import remarkSmartypants from 'remark-smartypants'
 import sitemap from '@astrojs/sitemap'
 import { smartQuotesIntegration } from './src/plugins/smart-quotes.mjs'
 import { rehypeDownloadDropdown } from './src/plugins/download-dropdown.mjs'
+import { rehypeBlogMedia } from './src/plugins/blog-media.mjs'
 import { blogEditorDevServer } from './src/dev/blog-editor/dev-server.mjs'
 
 // https://astro.build/config
@@ -38,6 +39,7 @@ export default defineConfig({
     rehypePlugins: [
       [rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }],
       rehypeDownloadDropdown,
+      rehypeBlogMedia,
     ],
   },
   vite: {
