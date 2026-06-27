@@ -152,13 +152,14 @@ body {
 
 /* Theme-aware blog images (see src/plugins/blog-media.mjs). Mirrors the Shiki dual-theme pattern:
    default to dark, switch to light via prefers-color-scheme or the data-theme override. Only the
-   active variant renders (display:none drops the other from the a11y tree). Scoped under
-   `.blog-content` so these out-specific the `.blog-content img { display: block }` prose rule, which
-   would otherwise force both variants visible. */
-.blog-content .theme-image__light {
+   active variant renders (display:none drops the other from the a11y tree). The `:root` prefix lifts
+   specificity above the Astro-scoped `.blog-content[data-astro-cid] img { display: block }` prose rule
+   (0,2,1), which would otherwise force both variants visible; the data-theme overrides below already
+   clear it. */
+:root .blog-content .theme-image__light {
   display: none;
 }
-.blog-content .theme-image__dark {
+:root .blog-content .theme-image__dark {
   display: block;
 }
 
@@ -261,17 +262,27 @@ body {
   pointer-events: none;
 }
 
+/* Drag handle: only needed where there's no hover (touch), since on a pointer device the divider
+   follows the cursor on its own. Kept small and unobtrusive. */
 .img-compare__divider::after {
   content: '';
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 2rem;
-  height: 2rem;
+  display: none;
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 2px solid var(--color-background);
   border-radius: 50%;
   background: var(--color-accent);
   transform: translate(-50%, -50%) rotate(-20deg);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
+}
+
+@media (hover: none) {
+  .img-compare__divider::after {
+    display: block;
+  }
 }
 
 .img-compare__range {
