@@ -56,19 +56,26 @@ it's a *background* gate user that yields TO foreground, so raising `foreground_
 itself forever (livelock). See "Bounded-window reads" below.
 
 **Bounded-window reads (download + drag-out).** A read is NOT one held-open `GetObject` for the whole file. It's a
-sequence of bounded `GetPartialObject64(offset, MTP_READ_WINDOW)` transactions (`MTP_READ_WINDOW` = 8 MiB; the
-throughput-vs-yield-latency knob). `open_read_session` resolves the handle + obtains the `Storage` + reads `total_size`
-ONCE under the device lock and returns an `MtpReadSession` the caller caches; each `read_window` then takes the
-per-device lock for just one window (~80 ms on a Pixel) and releases it. **Between windows nothing is in flight and the
-single PTP session is free**, so a foreground listing/nav slips in at window granularity — the whole "navigate the phone
-during a copy" property, with no abort/drain (the old held-open `GetObject` pinned mtp-rs's `operation_lock` for the
-entire file, starving everything until a ~35 s CLASS_CANCEL drain). Both `MtpVolume`'s read stream (copy + drag-out) and
-`download_file_with_progress` (the single-file command) route through this same pair. Data safety is the offset
-accounting: each window covers exactly `[offset, offset + len)`, `offset` advances by the bytes ACTUALLY returned (a
-short read mid-file is legal), and a 0-byte read while `offset < total_size` is a transient ERROR, not loop continuation
-(else a frozen-progress livelock). **Drop-safety:** a window-read future dropped mid-flight (task abort, disconnect)
-does NOT desync the session — mtp-rs's `TransactionScope` flags the pipe and the next op drains it under the operation
-lock (one ~300 ms self-heal). That's what makes the buffered-window model safe to abort at any point.
+sequence of bounded `GetPartialObject64` transactions (window = `MTP_READ_WINDOW` = 8 MiB; the
+throughput-vs-yield-latency knob). `open_read_session` resolves the handle and builds an mtp-rs `WindowedDownload`
+(`storage.download_windowed_from_offset`, which reads `total_size` via one `get_object_info`) ONCE under the device lock,
+returning an `MtpReadSession` the caller caches; each `read_next_window` then takes the per-device lock for just one
+window (~80 ms on a Pixel) and releases it. **Between windows nothing is in flight and the single PTP session is free**,
+so a foreground listing/nav slips in at window granularity — the whole "navigate the phone during a copy" property, with
+no abort/drain (the old held-open `GetObject` pinned mtp-rs's `operation_lock` for the entire file, starving everything
+until a ~35 s CLASS_CANCEL drain). Both `MtpVolume`'s read stream (copy + drag-out) and `download_file_with_progress`
+(the single-file command) route through this same pair.
+
+**mtp-rs owns the window bookkeeping; Cmdr owns the LOCK.** The offset tracking, clamp-to-remaining, EOF (`None`),
+advance-by-bytes-actually-returned (a short read mid-file is legal), and the 0-byte-before-EOF stall (surfaced as an
+error, not loop continuation) all live in mtp-rs's `WindowedDownload::next_window` — Cmdr no longer hand-rolls any of it.
+But `next_window` reaches the PTP session DIRECTLY (it holds its own `Arc<MtpDeviceInner>`) and does NOT take Cmdr's
+per-device lock. The foreground-priority scheduler relies on every device op taking that lock for its turn, so
+❌ `read_next_window` MUST call `next_window` under `acquire_device_lock` (it does). Calling `next_window` without the
+lock would let a concurrent listing and the window read drive the same USB session → desync, and break the scheduler
+serialization. **Drop-safety:** a window-read future dropped mid-flight (task abort, disconnect) does NOT desync the
+session — mtp-rs's `TransactionScope` flags the pipe and the next op drains it under the operation lock (one ~300 ms
+self-heal). That's what makes the buffered-window model safe to abort at any point.
 
 **Two background consumers, not one.** The scan is no longer the only yielding background user of the gate. A RUNNING MTP transfer is the second: its between-window checkpoint polls `MtpConnectionManager::foreground_pending(device_id)` and, when foreground pends, simply does NOT start the next window — it awaits `background_yield_point(device_id)`, then resumes reading from the current offset (it stays `Running`, not Paused). Because the read is already bounded windows (see "Bounded-window reads" above), the session is free between windows, so this yield is cheap and needs no release/reopen — there is no in-flight transaction to abort/drain (`cancel_and_release` is a no-op, never called by the copy path). This is the "navigate the phone DURING a transfer" feature; the gate sees a transfer exactly as it sees the scan — a background user that consults `foreground_pending` / `background_yield_point` between work units. The manager exposes both `foreground_pending(device_id) -> bool` (the gate's `foreground_pending()`, `false` if absent) and `background_yield_point(device_id)` for this. Lane budget 1 on the MTP device means the only foreground contender is a listing/nav/metadata op, never a second transfer, so there's no transfer-vs-transfer or transfer-vs-scan priority inversion — both yield to the same signal. Mechanics + the debounce/min-progress-floor tuning live in `write_operations/transfer/DETAILS.md` § "Foreground auto-yield".
 

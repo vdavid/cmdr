@@ -1,7 +1,7 @@
 //! MTP file transfer operations (download, upload, and streaming).
 
 use log::debug;
-use mtp_rs::{MtpDevice, NewObjectInfo, ObjectHandle, Storage, StorageId};
+use mtp_rs::{MtpDevice, NewObjectInfo, ObjectHandle, StorageId, WindowedDownload};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -13,25 +13,39 @@ use tokio::sync::Mutex;
 use super::errors::{MtpConnectionError, is_stale_handle_rejection, map_mtp_error};
 use super::{
     MTP_READ_WINDOW, MTP_TIMEOUT_SECS, MtpConnectionManager, MtpObjectInfo, MtpOperationResult, MtpTransferProgress,
-    MtpTransferType, acquire_device_lock, mtp_window_len, normalize_mtp_path,
+    MtpTransferType, acquire_device_lock, normalize_mtp_path,
 };
 
 /// Cached state for a bounded-window MTP read.
 ///
-/// `open_read_session` resolves the object handle, obtains the mtp-rs `Storage`,
-/// and reads `total_size` ONCE under the device lock; each `read_window` then
-/// reuses this, paying only `acquire_device_lock` + one `GetPartialObject64` per
-/// window (no per-window handle/`Storage` re-resolve, which would cost an extra
-/// `GetStorageInfo`/resolve USB roundtrip per window). The `Storage` carries its
-/// own `Arc<MtpDeviceInner>`, so it outlives the device-lock guard taken per
-/// window.
+/// `open_read_session` resolves the object handle and builds an mtp-rs
+/// [`WindowedDownload`] ONCE under the device lock; each window then pays only
+/// `acquire_device_lock` + one `GetPartialObject64` (no per-window handle/storage
+/// re-resolve). The `WindowedDownload` OWNS the window bookkeeping — total size,
+/// current offset, per-window clamp, EOF, short-read advance, and the
+/// 0-byte-before-EOF stall guard — so Cmdr no longer hand-rolls any of it.
+///
+/// Cmdr keeps `device_arc` for one reason: `WindowedDownload::next_window` reaches
+/// the PTP session DIRECTLY (it holds its own `Arc<MtpDeviceInner>`) and does NOT
+/// take Cmdr's per-device lock. The foreground-priority scheduler relies on every
+/// device op taking that lock for its turn, so each window read MUST run under
+/// `acquire_device_lock` — see [`read_next_window`](MtpConnectionManager::read_next_window).
 pub(crate) struct MtpReadSession {
     device_arc: Arc<Mutex<MtpDevice>>,
-    storage: Storage,
-    object_handle: ObjectHandle,
+    windowed: WindowedDownload,
+}
+
+impl MtpReadSession {
     /// Full object size in bytes (anchors progress and the EOF check). Read by
     /// the volume backend's read stream.
-    pub(crate) total_size: u64,
+    pub(crate) fn total_size(&self) -> u64 {
+        self.windowed.size()
+    }
+
+    /// Bytes delivered so far (the offset of the next window).
+    pub(crate) fn bytes_read(&self) -> u64 {
+        self.windowed.offset()
+    }
 }
 
 impl MtpConnectionManager {
@@ -81,8 +95,8 @@ impl MtpConnectionManager {
         // A download takes NO foreground_guard. A transfer is a *background* user
         // of the device gate — it yields TO a foreground listing/nav, so raising
         // `foreground_pending` would make the copy contend with itself. Instead it
-        // reads in bounded windows: each `read_window` takes the per-device lock
-        // for just one `GetPartialObject64` (~80 ms), freeing the PTP session
+        // reads in bounded windows: each `read_next_window` takes the per-device
+        // lock for just one `GetPartialObject64` (~80 ms), freeing the PTP session
         // between windows so a foreground listing slips in. See
         // `mtp/connection/DETAILS.md` § "Bounded-window reads".
         debug!(
@@ -93,50 +107,18 @@ impl MtpConnectionManager {
             local_dest.display()
         );
 
-        // Get the device and resolve path to handle.
-        let (device_arc, object_handle) = {
-            let devices = self.devices.lock().await;
-            let entry = devices.get(device_id).ok_or_else(|| MtpConnectionError::NotConnected {
-                device_id: device_id.to_string(),
-            })?;
-            let handle = self.resolve_path_to_handle(entry, storage_id, object_path)?;
-            (Arc::clone(&entry.device), handle)
-        };
-
-        // Resolve the Storage + size ONCE under the device lock (the filename is
-        // for the progress event), then release the lock so windows can interleave
-        // with foreground ops.
-        let (storage, total_size, filename) = {
-            let device = acquire_device_lock(&device_arc, device_id, "download_file").await?;
-            let storage = tokio::time::timeout(
-                Duration::from_secs(MTP_TIMEOUT_SECS),
-                device.storage(StorageId(storage_id)),
-            )
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
-            .map_err(|e| map_mtp_error(e, device_id))?;
-
-            let object_info = tokio::time::timeout(
-                Duration::from_secs(MTP_TIMEOUT_SECS),
-                storage.get_object_info(object_handle),
-            )
-            .await
-            .map_err(|_| MtpConnectionError::Timeout {
-                device_id: device_id.to_string(),
-            })?
-            .map_err(|e| map_mtp_error(e, device_id))?;
-
-            (storage, object_info.size, object_info.filename.clone())
-        };
-
-        let session = MtpReadSession {
-            device_arc,
-            storage,
-            object_handle,
-            total_size,
-        };
+        // Resolve the handle + build the windowed download ONCE under the device
+        // lock, then release it so windows can interleave with foreground ops.
+        let mut session = self
+            .open_read_session(device_id, storage_id, object_path, 0, MTP_READ_WINDOW)
+            .await?;
+        let total_size = session.total_size();
+        // The filename is for the progress event only; it's the basename of the
+        // path that resolved to this handle, so it matches the device's object name.
+        let filename = Path::new(object_path)
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
 
         // Emit initial progress
         if let Some(app) = app {
@@ -159,42 +141,32 @@ impl MtpConnectionManager {
                 message: format!("Failed to create local file: {}", e),
             })?;
 
-        // Read the file as a sequence of bounded windows. Each window takes +
-        // releases the device lock, so a foreground listing slips in between
-        // windows. `offset` advances by the bytes the device actually returned (a
-        // short read mid-file is legal); a 0-byte read before EOF is a stall, not
-        // loop continuation.
-        let mut offset = 0u64;
+        // Read the file as a sequence of bounded windows. Each `read_next_window`
+        // takes + releases the device lock, so a foreground listing slips in
+        // between windows. mtp-rs's `WindowedDownload` owns the window bookkeeping
+        // (clamp-to-remaining, EOF → `None`, short-read advance, and surfacing a
+        // 0-byte-before-EOF stall as an error), so the loop is just write + report.
+        let mut bytes_written = 0u64;
         let mut cancelled = false;
-        while let Some(len) = mtp_window_len(offset, total_size, MTP_READ_WINDOW) {
-            let chunk = self.read_window(&session, device_id, offset, len).await?;
-            if chunk.is_empty() {
-                return Err(MtpConnectionError::Other {
-                    device_id: device_id.to_string(),
-                    message: format!("MTP read returned 0 bytes at offset {offset}/{total_size}"),
-                });
-            }
-
+        while let Some(chunk) = self.read_next_window(&mut session, device_id).await? {
             file.write_all(&chunk).await.map_err(|e| MtpConnectionError::Other {
                 device_id: device_id.to_string(),
                 message: format!("Failed to write local file: {}", e),
             })?;
 
-            offset += chunk.len() as u64;
+            bytes_written += chunk.len() as u64;
 
             // Report progress and check for cancellation
             if let Some(ref cb) = on_progress
-                && cb(offset, total_size).is_break()
+                && cb(bytes_written, total_size).is_break()
             {
                 cancelled = true;
                 break;
             }
         }
 
-        let bytes_written = offset;
-
-        // Release the cached Storage/handle (a mid-window drop self-heals via
-        // mtp-rs's TransactionScope; between windows nothing is in flight).
+        // Release the windowed download (between windows nothing is in flight, so
+        // drop is a no-op; a mid-window drop self-heals via mtp-rs's TransactionScope).
         drop(session);
 
         // On cancellation, clean up the partial file
@@ -435,27 +407,32 @@ impl MtpConnectionManager {
         })
     }
 
-    /// Opens a bounded-window read of a file: resolves the object handle, obtains
-    /// the `Storage`, and reads `total_size` ONCE under the device lock, returning
-    /// an [`MtpReadSession`] the caller caches and feeds to [`read_window`] per
-    /// window. The lock is released before returning, so nothing is held between
-    /// windows.
+    /// Opens a bounded-window read of a file: resolves the object handle and
+    /// builds an mtp-rs [`WindowedDownload`] (which reads `total_size` via one
+    /// `get_object_info`) ONCE under the device lock, returning an
+    /// [`MtpReadSession`] the caller feeds to [`read_next_window`] per window. The
+    /// lock is released before returning, so nothing is held between windows.
+    /// `window_size` is the per-window `GetPartialObject64` `max_bytes`
+    /// ([`MTP_READ_WINDOW`] in production; tests shrink it); `offset` is the
+    /// starting byte (0 for a fresh read, non-zero to resume).
     ///
     /// Takes NO `foreground_guard`: a transfer is a *background* user of the
     /// device gate (it yields TO foreground), so raising `foreground_pending`
     /// here would make the copy contend with itself. See
     /// `mtp/connection/DETAILS.md` § "Bounded-window reads".
     ///
-    /// [`read_window`]: Self::read_window
+    /// [`read_next_window`]: Self::read_next_window
     pub async fn open_read_session(
         &self,
         device_id: &str,
         storage_id: u32,
         path: &str,
+        offset: u64,
+        window_size: u32,
     ) -> Result<MtpReadSession, MtpConnectionError> {
         debug!(
-            "MTP open_read_session: device={}, storage={}, path={}",
-            device_id, storage_id, path
+            "MTP open_read_session: device={}, storage={}, path={}, offset={}",
+            device_id, storage_id, path, offset
         );
 
         // Get the device and resolve path to handle.
@@ -468,7 +445,7 @@ impl MtpConnectionManager {
             (Arc::clone(&entry.device), handle)
         };
 
-        let (storage, total_size) = {
+        let windowed = {
             let device = acquire_device_lock(&device_arc, device_id, "open_read_session").await?;
             let storage = tokio::time::timeout(
                 Duration::from_secs(MTP_TIMEOUT_SECS),
@@ -480,39 +457,39 @@ impl MtpConnectionManager {
             })?
             .map_err(|e| map_mtp_error(e, device_id))?;
 
-            let object_info = tokio::time::timeout(
+            tokio::time::timeout(
                 Duration::from_secs(MTP_TIMEOUT_SECS),
-                storage.get_object_info(object_handle),
+                storage.download_windowed_from_offset(object_handle, offset, window_size),
             )
             .await
             .map_err(|_| MtpConnectionError::Timeout {
                 device_id: device_id.to_string(),
             })?
-            .map_err(|e| map_mtp_error(e, device_id))?;
-
-            (storage, object_info.size)
+            .map_err(|e| map_mtp_error(e, device_id))?
         };
 
-        debug!("MTP open_read_session: opened {} bytes for {}", total_size, path);
+        debug!("MTP open_read_session: opened {} bytes for {}", windowed.size(), path);
 
-        Ok(MtpReadSession {
-            device_arc,
-            storage,
-            object_handle,
-            total_size,
-        })
+        Ok(MtpReadSession { device_arc, windowed })
     }
 
-    /// Reads one bounded window `[offset, offset + len)` of an object opened with
-    /// [`open_read_session`]. Acquires the per-device lock for just this one
-    /// `GetPartialObject64` (released on return), so the PTP session is free
-    /// between windows for a foreground listing/nav.
+    /// Reads the next bounded window of an object opened with
+    /// [`open_read_session`], or `Ok(None)` at EOF. Acquires the per-device lock
+    /// for just this one `GetPartialObject64` (released on return), so the PTP
+    /// session is free between windows for a foreground listing/nav.
     ///
-    /// Returns the bytes the device actually delivered — possibly fewer than
-    /// `len` (a short read mid-file is legal; the caller advances `offset` by the
-    /// returned length, and treats a 0-byte read before EOF as a stall, not loop
-    /// continuation). Takes NO `foreground_guard` (a transfer is a background gate
-    /// user; see `open_read_session`).
+    /// The window bookkeeping — offset tracking, clamp-to-remaining, EOF
+    /// detection, advance-by-bytes-actually-returned (a short read mid-file is
+    /// legal), and surfacing a 0-byte-before-EOF stall as an error — lives in
+    /// mtp-rs's [`WindowedDownload::next_window`]. Cmdr owns only the LOCK:
+    /// `next_window` reaches the PTP session directly and does NOT take Cmdr's
+    /// per-device lock, so it MUST run under `acquire_device_lock` — which is
+    /// exactly what this method does. Calling `next_window` without the lock would
+    /// let a concurrent listing (which holds the lock) and this read drive the
+    /// same USB session, desyncing it and breaking the scheduler serialization.
+    ///
+    /// Takes NO `foreground_guard` (a transfer is a background gate user; see
+    /// `open_read_session`).
     ///
     /// Drop-safety: if this future is dropped mid-flight (task abort, device
     /// disconnect), mtp-rs's `TransactionScope` flags the pipe and the next op
@@ -521,23 +498,22 @@ impl MtpConnectionManager {
     /// buffered-window model safe to abort at any point.
     ///
     /// [`open_read_session`]: Self::open_read_session
-    pub async fn read_window(
+    pub async fn read_next_window(
         &self,
-        session: &MtpReadSession,
+        session: &mut MtpReadSession,
         device_id: &str,
-        offset: u64,
-        len: u32,
-    ) -> Result<Vec<u8>, MtpConnectionError> {
+    ) -> Result<Option<Vec<u8>>, MtpConnectionError> {
         let _device = acquire_device_lock(&session.device_arc, device_id, "read_window").await?;
-        tokio::time::timeout(
-            Duration::from_secs(MTP_TIMEOUT_SECS),
-            session.storage.download_partial_64(session.object_handle, offset, len),
-        )
-        .await
-        .map_err(|_| MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        })?
-        .map_err(|e| map_mtp_error(e, device_id))
+        let outcome = tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), session.windowed.next_window())
+            .await
+            .map_err(|_| MtpConnectionError::Timeout {
+                device_id: device_id.to_string(),
+            })?;
+        match outcome {
+            Some(Ok(bytes)) => Ok(Some(bytes)),
+            Some(Err(e)) => Err(map_mtp_error(e, device_id)),
+            None => Ok(None),
+        }
     }
 
     /// Uploads pre-collected chunks to the MTP device.
