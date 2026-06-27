@@ -1,42 +1,50 @@
 <!-- Drives the before/after comparison sliders emitted by rehypeBlogMedia (`.img-compare`). The
-     divider follows the pointer (accounting for the 20° slant via the cursor's Y), the overlaid range
-     gives keyboard control, and an expand button opens the lightbox `<dialog>`. Geometry lives in
-     global.css; this moves --reveal and opens/closes the dialog. -->
+     divider follows the pointer (accounting for the slant via the cursor's Y), the overlaid range
+     gives keyboard control, and an expand button opens the lightbox `<dialog>`. The slant is
+     position-dependent: vertical at the left, leaning to ~30° toward the bottom-right at the right.
+     Geometry (clip + divider rotation) lives in global.css; this only sets --reveal/--slant and the
+     divider rotation, and opens/closes the dialog. -->
 <script>
+    const SLANT_MAX = 18 // half-width % of the wipe at the far right; ~30° at the slider's aspect.
+
     document.addEventListener('astro:page-load', () => {
         document.querySelectorAll<HTMLElement>('[data-img-compare]').forEach((root) => {
             if (root.dataset.compareReady) return
             root.dataset.compareReady = '1'
 
             const range = root.querySelector<HTMLInputElement>('.img-compare__range')
-            const slant = parseFloat(getComputedStyle(root).getPropertyValue('--slant')) || 0
+            const lightbox = root.querySelector<HTMLDialogElement>('[data-img-compare-lightbox]')
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
             let dragging = false
 
-            // --reveal is the divider's mid-height position and is intentionally NOT clamped to
-            // 0–100: because the divider is slanted, reaching a cursor at the top-left or bottom-right
-            // corner needs reveal slightly outside that range (down to -slant / up to 100+slant). Only
-            // the keyboard range stays 0–100.
-            const setReveal = (percent: number) => {
-                root.style.setProperty('--reveal', String(percent))
+            // Apply a divider position. --reveal is the mid-height seam position (NOT clamped to 0–100:
+            // the slant needs it slightly outside that to reach corners). --slant grows with position so
+            // the seam is vertical at the left and leans ~30° at the right; the divider's rotation is
+            // derived from --slant and the box's aspect so the bar matches the clipped seam exactly.
+            const apply = (reveal: number, slant: number, rect: DOMRect) => {
+                const angle = (Math.atan(((2 * slant) / 100) * (rect.width / rect.height)) * 180) / Math.PI
+                root.style.setProperty('--reveal', String(reveal))
+                root.style.setProperty('--slant', String(slant))
+                root.style.setProperty('--divider-rot', `${-angle}deg`)
                 if (range) {
-                    const value = String(Math.max(0, Math.min(100, Math.round(percent))))
+                    const value = String(Math.max(0, Math.min(100, Math.round(reveal))))
                     if (range.value !== value) range.value = value
                 }
             }
 
-            // The divider is slanted, so solve for the reveal whose slanted edge passes through the
-            // cursor: edge_x(cy) = reveal + slant - 2·slant·cy, set equal to cx. Clamp the cursor (not
-            // the reveal) to the box so a capture-drag past the edge stays sane.
+            // Slant scales with the cursor's horizontal position; solve for the reveal whose slanted
+            // edge passes through the cursor at its Y. Clamp the cursor (not the reveal) to the box.
             const revealFromPointer = (clientX: number, clientY: number) => {
                 const rect = root.getBoundingClientRect()
                 if (rect.width <= 0 || rect.height <= 0) return
                 const cx = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100))
                 const cy = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
-                setReveal(cx + slant * (2 * cy - 1))
+                const slant = (SLANT_MAX * cx) / 100
+                apply(cx - slant * (2 * cy - 1), slant, rect)
             }
 
             root.addEventListener('pointerdown', (event) => {
+                if (lightbox?.open) return
                 if ((event.target as HTMLElement).closest('.img-compare__expand, .img-compare__lightbox')) return
                 dragging = true
                 root.setPointerCapture?.(event.pointerId)
@@ -47,14 +55,19 @@
             }
             root.addEventListener('pointerup', endDrag)
             root.addEventListener('pointercancel', endDrag)
-            // On a pointer device the divider follows hover; with reduced motion it only moves while dragging.
+            // On a pointer device the divider follows hover; with reduced motion it only moves while
+            // dragging. Frozen entirely while the lightbox is open.
             root.addEventListener('pointermove', (event) => {
+                if (lightbox?.open) return
                 if (!reduceMotion || dragging) revealFromPointer(event.clientX, event.clientY)
             })
-            range?.addEventListener('input', () => setReveal(Number(range.value)))
+            range?.addEventListener('input', () => {
+                const rect = root.getBoundingClientRect()
+                const reveal = Number(range.value)
+                apply(reveal, (SLANT_MAX * reveal) / 100, rect)
+            })
 
             const expand = root.querySelector<HTMLButtonElement>('[data-img-compare-expand]')
-            const lightbox = root.querySelector<HTMLDialogElement>('[data-img-compare-lightbox]')
             const close = root.querySelector<HTMLButtonElement>('[data-img-compare-close]')
             expand?.addEventListener('click', () => lightbox?.showModal())
             close?.addEventListener('click', () => lightbox?.close())

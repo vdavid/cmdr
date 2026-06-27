@@ -155,8 +155,9 @@ function buildSlider(beforeCell, afterCell) {
     {
       className: ['img-compare'],
       'data-img-compare': '',
-      // --reveal is the divider position (0–100); --slant the half-width of the 20° wipe (see global.css).
-      style: '--reveal: 50; --slant: 12;',
+      // Initial state (also the no-JS fallback); BlogCompareSlider.astro recomputes --slant and the
+      // divider rotation per position. --slant 9 ≈ the ~16° lean at the 50% midpoint.
+      style: '--reveal: 50; --slant: 9;',
     },
     [
       el('span', { className: ['img-compare__pane', 'img-compare__base'] }, [afterCell, ...label(afterCap, 'after')]),

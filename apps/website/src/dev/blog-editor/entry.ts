@@ -645,7 +645,7 @@ function buildSlider(before: HTMLElement, after: HTMLElement): HTMLElement {
   const root = document.createElement('div')
   root.className = 'img-compare'
   root.dataset.imgCompare = ''
-  root.setAttribute('style', '--reveal: 50; --slant: 12;')
+  root.setAttribute('style', '--reveal: 50; --slant: 9;')
 
   const divider = document.createElement('span')
   divider.className = 'img-compare__divider'
@@ -713,25 +713,30 @@ function lightboxFigure(cell: HTMLElement, featured: boolean): HTMLElement {
 }
 
 /** Wire the preview's comparison sliders (mirrors BlogCompareSlider.astro). */
+const SLANT_MAX = 18 // half-width % of the wipe at the far right; ~30° at the slider's aspect.
+
 function activateCompareSliders(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>('[data-img-compare]').forEach((slider) => {
     const range = slider.querySelector<HTMLInputElement>('.img-compare__range')
-    const slant = parseFloat(getComputedStyle(slider).getPropertyValue('--slant')) || 0
+    const lightbox = slider.querySelector<HTMLDialogElement>('[data-img-compare-lightbox]')
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let dragging = false
 
-    // --reveal is intentionally unclamped (the slant needs it slightly outside 0–100 to reach corners);
-    // only the keyboard range stays 0–100. See BlogCompareSlider.astro.
-    const setReveal = (percent: number) => {
-      slider.style.setProperty('--reveal', String(percent))
+    // Mirrors BlogCompareSlider.astro: --reveal is unclamped (the slant needs it slightly outside
+    // 0–100 to reach corners); --slant grows with position; the divider rotation is derived so the bar
+    // matches the clipped seam.
+    const apply = (reveal: number, slant: number, rect: DOMRect) => {
+      const angle = (Math.atan(((2 * slant) / 100) * (rect.width / rect.height)) * 180) / Math.PI
+      slider.style.setProperty('--reveal', String(reveal))
+      slider.style.setProperty('--slant', String(slant))
+      slider.style.setProperty('--divider-rot', `${-angle}deg`)
       if (range) {
-        const value = String(Math.max(0, Math.min(100, Math.round(percent))))
+        const value = String(Math.max(0, Math.min(100, Math.round(reveal))))
         if (range.value !== value) {
           range.value = value
         }
       }
     }
-    // Slanted divider: solve reveal so its edge passes through the cursor; clamp the cursor to the box.
     const revealFromPointer = (clientX: number, clientY: number) => {
       const rect = slider.getBoundingClientRect()
       if (rect.width <= 0 || rect.height <= 0) {
@@ -739,10 +744,14 @@ function activateCompareSliders(root: HTMLElement) {
       }
       const cx = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100))
       const cy = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
-      setReveal(cx + slant * (2 * cy - 1))
+      const slant = (SLANT_MAX * cx) / 100
+      apply(cx - slant * (2 * cy - 1), slant, rect)
     }
 
     slider.addEventListener('pointerdown', (event) => {
+      if (lightbox?.open) {
+        return
+      }
       if ((event.target as HTMLElement).closest('.img-compare__expand, .img-compare__lightbox')) {
         return
       }
@@ -756,14 +765,20 @@ function activateCompareSliders(root: HTMLElement) {
     slider.addEventListener('pointerup', endDrag)
     slider.addEventListener('pointercancel', endDrag)
     slider.addEventListener('pointermove', (event) => {
+      if (lightbox?.open) {
+        return
+      }
       if (!reduceMotion || dragging) {
         revealFromPointer(event.clientX, event.clientY)
       }
     })
-    range?.addEventListener('input', () => setReveal(Number(range.value)))
+    range?.addEventListener('input', () => {
+      const rect = slider.getBoundingClientRect()
+      const reveal = Number(range.value)
+      apply(reveal, (SLANT_MAX * reveal) / 100, rect)
+    })
 
     const expand = slider.querySelector<HTMLButtonElement>('[data-img-compare-expand]')
-    const lightbox = slider.querySelector<HTMLDialogElement>('[data-img-compare-lightbox]')
     const close = slider.querySelector<HTMLButtonElement>('[data-img-compare-close]')
     expand?.addEventListener('click', () => lightbox?.showModal())
     close?.addEventListener('click', () => lightbox?.close())
