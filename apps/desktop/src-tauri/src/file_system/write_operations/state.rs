@@ -6,7 +6,7 @@ use crate::ignore_poison::IgnorePoison;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-use std::sync::{Arc, Condvar, LazyLock, OnceLock, RwLock};
+use std::sync::{Arc, LazyLock, OnceLock, RwLock};
 use std::time::{Duration, Instant};
 
 use super::eta::EtaEstimator;
@@ -14,179 +14,17 @@ use super::types::{
     ConflictResolution, OperationEventSink, OperationStatus, OperationSummary, WriteOperationPhase, WriteOperationType,
     WriteProgressEvent, WriteSettledEvent,
 };
-use crate::file_system::volume::CopyScanResult;
 
-// ============================================================================
-// Operation intent (state machine for cancellation)
-// ============================================================================
-
-/// What the operation should do next.
-///
-/// State machine: `Running` → `RollingBack` or `Stopped`, `RollingBack` → `Stopped`.
-/// No reverse transitions. Encoded as `AtomicU8` for lock-free sharing with native
-/// copy callbacks (macOS `copyfile`, chunked copy, etc.).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub(crate) enum OperationIntent {
-    /// Continue the operation normally.
-    Running = 0,
-    /// Stop the forward operation and delete created files.
-    RollingBack = 1,
-    /// Stop immediately, keep partial files.
-    Stopped = 2,
-}
-
-impl OperationIntent {
-    fn from_u8(v: u8) -> Self {
-        match v {
-            1 => Self::RollingBack,
-            2 => Self::Stopped,
-            _ => Self::Running,
-        }
-    }
-}
-
-/// Loads the current intent from an `AtomicU8`.
-pub(crate) fn load_intent(intent: &AtomicU8) -> OperationIntent {
-    OperationIntent::from_u8(intent.load(Ordering::Relaxed))
-}
-
-/// Returns true if the operation should stop (intent is not `Running`).
-/// Use this for the common cancellation check in copy/delete/move loops.
-pub(crate) fn is_cancelled(intent: &AtomicU8) -> bool {
-    intent.load(Ordering::Relaxed) != OperationIntent::Running as u8
-}
-
-// ============================================================================
-// Pause gate
-// ============================================================================
-
-/// Cooperative pause gate for a single write operation.
-///
-/// A paused op parks at a between-files boundary (the loop tops in the transfer
-/// drivers and the delete-phase walker loops, gated immediately AFTER the
-/// existing `is_cancelled` check so the data-safety ordering — cancel/skip
-/// before any destructive call — is preserved). The cross-volume streaming copy
-/// path parks at a finer grain too: BETWEEN CHUNKS, via the `CheckpointStream`
-/// wrapper in `transfer/volume_strategy.rs`, so a paused single large file (e.g.
-/// MTP→local) stops mid-stream instead of streaming to completion. It is
-/// **orthogonal to** [`OperationIntent`]: pausing never perturbs the validated
-/// `Running → RollingBack/Stopped` transitions. Cancellation ALWAYS wins over
-/// pause: the wait helpers return the instant cancel is observed, so the
-/// existing cancel path takes over.
-///
-/// Two waiters for two execution shapes:
-/// - `condvar` (+ its `Mutex<()>`) parks the **sync** driver, which runs inside
-///   `tokio::task::spawn_blocking` (a real OS thread — `std::sync::Condvar` is
-///   correct there, and the parked thread is the accepted resource asymmetry
-///   documented in the plan: a paused Running op legitimately holds its lane).
-/// - `notify` parks the **async** volume drivers without blocking an executor
-///   thread (`Notify::notified().await`).
-///
-/// `resume()` wakes both: `notify_all()` on the condvar and `notify_waiters()`
-/// on the `Notify`, so whichever shape is parked unblocks.
-///
-/// Mid-file pause is honored on the cross-volume streaming path (the
-/// `CheckpointStream` parks between chunks before reading the next one). A paused
-/// op therefore holds only its invisible `.cmdr-tmp-<uuid>` (the previous chunk
-/// is fully written, the next isn't yet read), never a torn target. The
-/// sync `on_progress` callbacks stay cancel-only — they can't `.await` to park,
-/// so the async wrapper owns mid-file parking. The local-FS sync chunk loop
-/// (`chunked_copy.rs`) is the one path that pauses only between files (it gets
-/// the cancel atom, not this gate); see transfer/DETAILS.md § "Pause reaches
-/// between chunks".
-pub struct PauseGate {
-    paused: AtomicBool,
-    /// Guards nothing real — `Condvar::wait` needs a held `MutexGuard`. The flag
-    /// itself is the `AtomicBool` so non-waiting readers (`is_paused`) and the
-    /// async waiter don't need the lock.
-    condvar_mutex: std::sync::Mutex<()>,
-    condvar: Condvar,
-    notify: tokio::sync::Notify,
-}
-
-impl PauseGate {
-    fn new() -> Self {
-        Self {
-            paused: AtomicBool::new(false),
-            condvar_mutex: std::sync::Mutex::new(()),
-            condvar: Condvar::new(),
-            notify: tokio::sync::Notify::new(),
-        }
-    }
-
-    /// Returns whether the op is currently paused.
-    pub fn is_paused(&self) -> bool {
-        self.paused.load(Ordering::Acquire)
-    }
-
-    /// Sets the paused flag. The op parks at its next loop-boundary gate. A
-    /// no-op-on-double-pause: setting an already-set flag changes nothing.
-    pub fn pause(&self) {
-        self.paused.store(true, Ordering::Release);
-    }
-
-    /// Clears the paused flag and wakes any waiter (sync condvar + async
-    /// notify). Safe to call when not paused (just wakes spurious waiters,
-    /// which re-check the flag and continue).
-    pub fn resume(&self) {
-        self.paused.store(false, Ordering::Release);
-        self.wake();
-    }
-
-    /// Wakes any parked waiter WITHOUT clearing the paused flag. The cancel path
-    /// calls this: a cancel must unblock a paused, parked op so it can observe
-    /// the non-`Running` intent and bail (cancellation wins over pause). The
-    /// waiters re-check `is_cancelled` on wake and return even though `paused`
-    /// is still set. Without this, a paused op parked on the condvar would never
-    /// see a cancel (the cancel path doesn't touch `paused`).
-    pub fn wake(&self) {
-        // Wake the sync waiter under the condvar mutex so a wake that races a
-        // just-about-to-`wait` thread isn't missed (the waiter re-checks under
-        // the lock).
-        {
-            let _guard = self.condvar_mutex.lock_ignore_poison();
-            self.condvar.notify_all();
-        }
-        // Wake the async waiter. `notify_waiters` only wakes tasks already
-        // parked in `notified().await`; the async helper's loop re-checks the
-        // flag on wake and after the await is registered, so no wake is lost.
-        self.notify.notify_waiters();
-    }
-
-    /// Parks the calling (blocking) thread while paused, returning as soon as
-    /// either the op resumes OR cancellation is observed. Cancellation wins:
-    /// `is_cancelled` is re-checked under the condvar lock before every wait, so
-    /// a cancel that lands during a pause unblocks the thread and the existing
-    /// cancel path takes over. Call from the sync driver, AFTER its
-    /// `is_cancelled` loop-top check.
-    pub fn wait_while_paused_sync(&self, intent: &AtomicU8) {
-        let mut guard = self.condvar_mutex.lock_ignore_poison();
-        while self.is_paused() && !is_cancelled(intent) {
-            // Recover from poison the same way `lock_ignore_poison` does: a
-            // panic elsewhere shouldn't abort the app, and this guards no real
-            // data (the flag is the `AtomicBool`).
-            guard = self.condvar.wait(guard).unwrap_or_else(|e| e.into_inner());
-        }
-    }
-
-    /// Async sibling of [`wait_while_paused_sync`]: parks the calling task
-    /// (without blocking an executor thread) while paused, returning as soon as
-    /// the op resumes OR cancellation is observed. Call from the async volume
-    /// drivers, AFTER their `is_cancelled` loop-top check.
-    pub async fn wait_while_paused_async(&self, intent: &AtomicU8) {
-        loop {
-            // Register interest BEFORE the flag check so a `resume()` /
-            // `notify_waiters()` racing between the check and the await can't be
-            // lost (tokio's documented `Notify` pattern).
-            let notified = self.notify.notified();
-            if !self.is_paused() || is_cancelled(intent) {
-                return;
-            }
-            notified.await;
-        }
-    }
-}
+// The operation-intent / pause-gate state machines and the scan-preview caches
+// live in sibling modules. Re-export them here so the established
+// `state::OperationIntent`, `state::PauseGate`, `state::FileInfo`,
+// `state::SCAN_PREVIEW_RESULTS`, etc. paths keep resolving for every caller.
+pub use super::operation_intent::PauseGate;
+pub(crate) use super::operation_intent::{OperationIntent, is_cancelled, load_intent};
+pub(super) use super::scan_cache::{
+    CachedScanResult, FileInfo, SCAN_PREVIEW_RESULTS, SCAN_PREVIEW_STATE, ScanPreviewState, ScanResult,
+    insert_scan_result, release_scan_result,
+};
 
 // ============================================================================
 // Operation state
@@ -803,211 +641,6 @@ pub fn resolve_write_conflict(operation_id: &str, resolution: ConflictResolution
 }
 
 // ============================================================================
-// Scan preview state
-// ============================================================================
-
-/// State for a scan preview operation.
-pub(super) struct ScanPreviewState {
-    pub cancelled: AtomicBool,
-    pub progress_interval: Duration,
-}
-
-/// Cached result from a completed scan preview.
-#[allow(dead_code, reason = "Fields read via take_cached_scan_result")]
-pub(super) struct CachedScanResult {
-    pub files: Vec<FileInfo>,
-    pub dirs: Vec<PathBuf>,
-    pub file_count: usize,
-    /// Write footprint (un-dedup'd). See `CopyScanResult::total_bytes`.
-    pub total_bytes: u64,
-    /// `du`-equivalent source footprint (hardlinks counted once). See
-    /// `CopyScanResult::dedup_bytes`.
-    pub dedup_bytes: u64,
-    /// Per-source-path scan results from volume scans. Empty for local-FS
-    /// previews (the `files` Vec already carries everything the local copy
-    /// engine needs). Populated by `run_volume_scan_preview` so the copy
-    /// pipeline's cached branch can rebuild `source_hints` without per-path
-    /// `is_directory` probes (which on MTP each list the parent dir).
-    pub per_path: Vec<(PathBuf, CopyScanResult)>,
-    /// When this result was inserted into `SCAN_PREVIEW_RESULTS`. Drives the
-    /// TTL safety net (`prune_expired_scan_results`): a forgetful caller that
-    /// never consumes the cache (dialog dismissed, op never started) can't leak
-    /// tens of thousands of `FileInfo` unbounded — entries older than
-    /// `SCAN_RESULT_TTL` are evicted on the next insert.
-    pub inserted_at: Instant,
-}
-
-/// How long a cached scan result lives before the TTL safety net evicts it.
-/// The normal lifecycle frees results far sooner (`take_cached_scan_result` at
-/// op start, or `release_scan_preview` on dialog teardown); this only catches
-/// the case where neither fires.
-pub(super) const SCAN_RESULT_TTL: Duration = Duration::from_secs(300);
-
-/// Returns the preview ids in `entries` whose `inserted_at` is older than
-/// `ttl` relative to `now`. Pure so it's unit-testable without touching the
-/// global cache. Callers remove the returned ids under the write lock.
-pub(super) fn expired_scan_result_ids<'a>(
-    entries: impl IntoIterator<Item = (&'a String, Instant)>,
-    now: Instant,
-    ttl: Duration,
-) -> Vec<String> {
-    entries
-        .into_iter()
-        .filter(|(_, inserted_at)| now.duration_since(*inserted_at) > ttl)
-        .map(|(id, _)| id.clone())
-        .collect()
-}
-
-/// Evicts cache entries older than `SCAN_RESULT_TTL`, then inserts `result`
-/// under `preview_id`. The single choke point for `SCAN_PREVIEW_RESULTS`
-/// inserts so the TTL sweep can't be forgotten by a new call site.
-pub(super) fn insert_scan_result(preview_id: String, result: CachedScanResult) {
-    if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
-        let now = Instant::now();
-        let expired = expired_scan_result_ids(cache.iter().map(|(k, v)| (k, v.inserted_at)), now, SCAN_RESULT_TTL);
-        for id in expired {
-            cache.remove(&id);
-        }
-        cache.insert(preview_id, result);
-    }
-}
-
-/// Drops the cached scan result for `preview_id`, if any. Called on dialog
-/// teardown (`release_scan_preview`) so a result that finished scanning but was
-/// never consumed by a started op doesn't linger until quit.
-pub(super) fn release_scan_result(preview_id: &str) {
-    if let Ok(mut cache) = SCAN_PREVIEW_RESULTS.write() {
-        cache.remove(preview_id);
-    }
-}
-
-/// Global cache for scan preview states.
-pub(super) static SCAN_PREVIEW_STATE: LazyLock<RwLock<HashMap<String, Arc<ScanPreviewState>>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
-
-/// Global cache for completed scan preview results.
-pub(super) static SCAN_PREVIEW_RESULTS: LazyLock<RwLock<HashMap<String, CachedScanResult>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
-
-// ============================================================================
-// FileInfo (used for scanning and sorting)
-// ============================================================================
-
-/// File info collected during scan (used for sorting).
-#[derive(Debug, Clone)]
-pub(super) struct FileInfo {
-    pub path: PathBuf,
-    /// Parent of the original source (used to compute relative path for destination)
-    pub source_root: PathBuf,
-    pub size: u64,
-    /// Bytes this entry contributes to operation progress. Equals `size` for
-    /// the first occurrence of an inode in the scan; `0` for subsequent
-    /// hardlink pairs to the same inode. Active-phase counters (delete,
-    /// trash, copy, move) sum this so the bar denominator (`total_bytes`,
-    /// also dedup'd at scan time) and the numerator (`bytes_done`) stay in
-    /// agreement. Without this split, a hardlink-heavy tree like cargo's
-    /// `target/` overshoots — 81.6 GB delete numerator against a 59.84 GB
-    /// scan denominator on a real-world repro.
-    ///
-    /// Set per call site: scan sets it from inode tracking; sites that build
-    /// `FileInfo` without inode info (the oracle path in `walk_cached_entries`,
-    /// MTP synthesis) fall back to `size` and accept the documented
-    /// cross-boundary overshoot (see write_operations CLAUDE.md gotcha).
-    pub progress_bytes: u64,
-    pub modified: u64, // Unix timestamp in seconds
-    pub created: u64,  // Unix timestamp in seconds
-    pub is_symlink: bool,
-}
-
-impl FileInfo {
-    /// Construct a `FileInfo` from filesystem metadata, treating it as the
-    /// first observation of its inode (`progress_bytes == size`). Use
-    /// `with_progress_bytes` to override when the scan-side inode tracker
-    /// has already seen this inode.
-    pub fn new(path: PathBuf, source_root: PathBuf, metadata: &std::fs::Metadata) -> Self {
-        use std::time::UNIX_EPOCH;
-        let size = metadata.len();
-        Self {
-            path,
-            source_root,
-            size,
-            progress_bytes: size,
-            modified: metadata
-                .modified()
-                .ok()
-                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map(|d| d.as_secs())
-                .unwrap_or(0),
-            created: metadata
-                .created()
-                .ok()
-                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map(|d| d.as_secs())
-                .unwrap_or(0),
-            is_symlink: metadata.is_symlink(),
-        }
-    }
-
-    /// Override `progress_bytes` (typically with `0`) when the scan-side
-    /// inode tracker reports this file shares an inode with a previously-seen
-    /// `FileInfo`. Keeps `size` (the actual file size) intact for sites that
-    /// need it (sorting, conflict checks).
-    #[must_use]
-    pub fn with_progress_bytes(mut self, progress_bytes: u64) -> Self {
-        self.progress_bytes = progress_bytes;
-        self
-    }
-
-    /// Get extension for sorting (lowercase, empty string if none).
-    pub fn extension(&self) -> String {
-        self.path
-            .extension()
-            .map(|e| e.to_string_lossy().to_lowercase())
-            .unwrap_or_default()
-    }
-
-    /// Get filename for sorting (lowercase).
-    pub fn name_lower(&self) -> String {
-        self.path
-            .file_name()
-            .map(|n| n.to_string_lossy().to_lowercase())
-            .unwrap_or_default()
-    }
-
-    /// Compute the destination path for this file given the destination root.
-    pub fn dest_path(&self, destination: &std::path::Path) -> PathBuf {
-        // Strip source_root from path to get relative path, then join with destination
-        if let Ok(relative) = self.path.strip_prefix(&self.source_root) {
-            destination.join(relative)
-        } else {
-            // Fallback: just use the filename
-            destination.join(self.path.file_name().unwrap_or_default())
-        }
-    }
-}
-
-/// Information about files to be processed.
-pub(super) struct ScanResult {
-    pub files: Vec<FileInfo>,
-    /// For deletion: in reverse order, deepest first.
-    pub dirs: Vec<PathBuf>,
-    /// Not including directories.
-    pub file_count: usize,
-    /// Write footprint (un-dedup'd): every file at full size. Copy's
-    /// disk-space check and active-phase bar use this. See
-    /// `CopyScanResult::total_bytes`.
-    pub total_bytes: u64,
-    /// `du`-equivalent source footprint (hardlinks counted once). Delete's
-    /// active phase uses this; the Copy dialog shows it as context. See
-    /// `CopyScanResult::dedup_bytes`.
-    pub dedup_bytes: u64,
-    /// Per-source-path scan results, populated by volume scan previews so the
-    /// copy pipeline can seed `source_hints` without re-statting. Empty for
-    /// local-FS scans.
-    pub per_path: Vec<(PathBuf, CopyScanResult)>,
-}
-
-// ============================================================================
 // Copy transaction for rollback
 // ============================================================================
 
@@ -1084,15 +717,16 @@ impl Drop for CopyTransaction {
 #[cfg(test)]
 mod tests {
     //! Targeted unit tests covering survivors from `cargo mutants` on this
-    //! module (state machine transitions, status-cache CRUD, FileInfo
-    //! sort-key derivation, and CopyTransaction commit/rollback/Drop).
+    //! module (state machine transitions, status-cache CRUD, and
+    //! CopyTransaction commit/rollback/Drop). The `OperationIntent` /
+    //! `PauseGate` state-machine tests live in `operation_intent.rs`; the
+    //! `FileInfo` sort-key and scan-result TTL tests live in `scan_cache.rs`.
     //!
     //! Tests that touch the global `WRITE_OPERATION_STATE` /
     //! `OPERATION_STATUS_CACHE` caches use unique operation IDs so they don't
     //! collide with concurrent test runs in the same process.
     use super::*;
     use crate::file_system::write_operations::types::{ConflictResolution, WriteOperationType};
-    use std::path::Path;
     use std::sync::atomic::Ordering;
 
     fn unique_id(label: &str) -> String {
@@ -1100,95 +734,6 @@ mod tests {
         static N: AtomicU64 = AtomicU64::new(0);
         let n = N.fetch_add(1, Ordering::Relaxed);
         format!("test-state-{label}-{n}-{:?}", std::thread::current().id())
-    }
-
-    // ---- OperationIntent::from_u8 ----
-
-    #[test]
-    fn from_u8_maps_each_known_variant() {
-        // Kills: replace from_u8 → Default::default(), delete match arm 1, delete match arm 2.
-        assert_eq!(OperationIntent::from_u8(0), OperationIntent::Running);
-        assert_eq!(OperationIntent::from_u8(1), OperationIntent::RollingBack);
-        assert_eq!(OperationIntent::from_u8(2), OperationIntent::Stopped);
-    }
-
-    #[test]
-    fn from_u8_unknown_values_fall_back_to_running() {
-        // Pins the catch-all arm. If a future variant is added, this should fail.
-        assert_eq!(OperationIntent::from_u8(3), OperationIntent::Running);
-        assert_eq!(OperationIntent::from_u8(255), OperationIntent::Running);
-    }
-
-    // ---- expired_scan_result_ids (TTL safety net) ----
-
-    #[test]
-    fn expired_scan_result_ids_returns_only_stale_entries() {
-        let now = Instant::now();
-        let ttl = Duration::from_secs(300);
-        let fresh = now - Duration::from_secs(10);
-        let stale = now - Duration::from_secs(400);
-        let fresh_id = String::from("fresh");
-        let stale_id = String::from("stale");
-        let entries = vec![(&fresh_id, fresh), (&stale_id, stale)];
-
-        let expired = expired_scan_result_ids(entries, now, ttl);
-
-        assert_eq!(expired, vec![String::from("stale")]);
-    }
-
-    #[test]
-    fn expired_scan_result_ids_empty_when_all_fresh() {
-        let now = Instant::now();
-        let ttl = Duration::from_secs(300);
-        let a = String::from("a");
-        let b = String::from("b");
-        let entries = vec![(&a, now), (&b, now - Duration::from_secs(299))];
-
-        let expired = expired_scan_result_ids(entries, now, ttl);
-
-        assert!(expired.is_empty());
-    }
-
-    #[test]
-    fn expired_scan_result_ids_boundary_is_strictly_greater_than_ttl() {
-        // Exactly at the TTL is NOT expired; one tick past it is.
-        let now = Instant::now();
-        let ttl = Duration::from_secs(300);
-        let at_ttl = String::from("at-ttl");
-        let past_ttl = String::from("past-ttl");
-        let entries = vec![
-            (&at_ttl, now - Duration::from_secs(300)),
-            (&past_ttl, now - Duration::from_secs(301)),
-        ];
-
-        let expired = expired_scan_result_ids(entries, now, ttl);
-
-        assert_eq!(expired, vec![String::from("past-ttl")]);
-    }
-
-    // ---- load_intent / is_cancelled ----
-
-    #[test]
-    fn load_intent_reflects_atomic_value() {
-        let atom = AtomicU8::new(OperationIntent::RollingBack as u8);
-        assert_eq!(load_intent(&atom), OperationIntent::RollingBack);
-        atom.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
-        assert_eq!(load_intent(&atom), OperationIntent::Stopped);
-        atom.store(OperationIntent::Running as u8, Ordering::Relaxed);
-        assert_eq!(load_intent(&atom), OperationIntent::Running);
-    }
-
-    #[test]
-    fn is_cancelled_is_true_for_any_non_running_value() {
-        // Kills: replace is_cancelled → true / → false, replace != with ==.
-        let running = AtomicU8::new(OperationIntent::Running as u8);
-        assert!(!is_cancelled(&running), "Running must not be reported as cancelled");
-
-        let rolling = AtomicU8::new(OperationIntent::RollingBack as u8);
-        assert!(is_cancelled(&rolling), "RollingBack must be reported as cancelled");
-
-        let stopped = AtomicU8::new(OperationIntent::Stopped as u8);
-        assert!(is_cancelled(&stopped), "Stopped must be reported as cancelled");
     }
 
     // ---- cancel_write_operation state-machine transitions ----
@@ -1536,56 +1081,6 @@ mod tests {
         unregister_operation_status(&id);
     }
 
-    // ---- FileInfo derived sort keys ----
-
-    fn make_file_info(path: &str, source_root: &str) -> FileInfo {
-        FileInfo {
-            path: PathBuf::from(path),
-            source_root: PathBuf::from(source_root),
-            size: 0,
-            progress_bytes: 0,
-            modified: 0,
-            created: 0,
-            is_symlink: false,
-        }
-    }
-
-    #[test]
-    fn extension_is_lowercased() {
-        // Kills: replace extension → String::new() / → "xyzzy".
-        assert_eq!(make_file_info("/x/Photo.JPG", "/x").extension(), "jpg");
-        assert_eq!(make_file_info("/x/archive.TAR.GZ", "/x").extension(), "gz");
-    }
-
-    #[test]
-    fn extension_is_empty_for_no_extension() {
-        assert_eq!(make_file_info("/x/README", "/x").extension(), "");
-    }
-
-    #[test]
-    fn name_lower_is_lowercased_filename_only() {
-        // Kills: replace name_lower → String::new() / → "xyzzy".
-        assert_eq!(make_file_info("/x/y/Foo.Bar", "/x").name_lower(), "foo.bar");
-    }
-
-    #[test]
-    fn dest_path_preserves_relative_layout_under_destination_root() {
-        // Kills: replace dest_path → Default::default().
-        let info = make_file_info("/src/dir/sub/leaf.txt", "/src");
-        assert_eq!(
-            info.dest_path(Path::new("/dst")),
-            PathBuf::from("/dst/dir/sub/leaf.txt")
-        );
-    }
-
-    #[test]
-    fn dest_path_falls_back_to_filename_when_prefix_does_not_match() {
-        // The fallback branch: when strip_prefix fails, just place the file
-        // by name at the destination root.
-        let info = make_file_info("/elsewhere/file.bin", "/different-root");
-        assert_eq!(info.dest_path(Path::new("/dst")), PathBuf::from("/dst/file.bin"));
-    }
-
     // ---- CopyTransaction ----
 
     #[test]
@@ -1750,146 +1245,10 @@ mod tests {
         );
     }
 
-    // ---- PauseGate -----------------------------------------------------------
-
-    #[test]
-    fn pause_gate_starts_unpaused() {
-        let gate = PauseGate::new();
-        assert!(!gate.is_paused());
-    }
-
-    #[test]
-    fn pause_gate_pause_then_resume_toggles_flag() {
-        let gate = PauseGate::new();
-        gate.pause();
-        assert!(gate.is_paused());
-        gate.resume();
-        assert!(!gate.is_paused());
-    }
-
-    #[test]
-    fn wait_while_paused_sync_returns_immediately_when_not_paused() {
-        // Not paused → the wait must be a no-op (no deadlock, no condvar park).
-        let gate = PauseGate::new();
-        let intent = AtomicU8::new(OperationIntent::Running as u8);
-        gate.wait_while_paused_sync(&intent); // returns instantly or the test hangs
-    }
-
-    #[test]
-    fn wait_while_paused_sync_unblocks_on_resume() {
-        // Pause, park a worker thread on the gate, then resume from the main
-        // thread. The worker must wake. Without a working condvar notify it
-        // would hang and the test would time out.
-        let gate = Arc::new(PauseGate::new());
-        let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
-        gate.pause();
-
-        let woke = Arc::new(AtomicBool::new(false));
-        let gate_t = Arc::clone(&gate);
-        let intent_t = Arc::clone(&intent);
-        let woke_t = Arc::clone(&woke);
-        let handle = std::thread::spawn(move || {
-            gate_t.wait_while_paused_sync(&intent_t);
-            woke_t.store(true, Ordering::SeqCst);
-        });
-
-        // Give the worker time to park, then resume.
-        std::thread::sleep(Duration::from_millis(50));
-        assert!(!woke.load(Ordering::SeqCst), "worker must still be parked while paused");
-        gate.resume();
-        handle.join().expect("worker thread joins");
-        assert!(woke.load(Ordering::SeqCst), "resume must wake the parked worker");
-    }
-
-    #[test]
-    fn wait_while_paused_sync_unblocks_on_cancel() {
-        // Cancellation must win over pause: a paused, parked thread wakes when
-        // the intent flips to a non-Running state, WITHOUT a resume.
-        let gate = Arc::new(PauseGate::new());
-        let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
-        gate.pause();
-
-        let woke = Arc::new(AtomicBool::new(false));
-        let gate_t = Arc::clone(&gate);
-        let intent_t = Arc::clone(&intent);
-        let woke_t = Arc::clone(&woke);
-        let handle = std::thread::spawn(move || {
-            gate_t.wait_while_paused_sync(&intent_t);
-            woke_t.store(true, Ordering::SeqCst);
-        });
-
-        std::thread::sleep(Duration::from_millis(50));
-        assert!(!woke.load(Ordering::SeqCst), "still parked before cancel");
-        // Mirror the production cancel path: flip intent to a non-Running state,
-        // then `wake()` (NOT `resume()`) so the paused flag stays set. The
-        // parked thread must still wake — cancellation wins over pause.
-        intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
-        gate.wake();
-        handle.join().expect("worker joins");
-        assert!(woke.load(Ordering::SeqCst), "cancel must unblock a paused wait");
-        assert!(
-            gate.is_paused(),
-            "cancel path leaves paused set; the waiter returned because cancel won, not because of resume"
-        );
-    }
-
-    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn wait_while_paused_async_returns_immediately_when_not_paused() {
-        let gate = PauseGate::new();
-        let intent = AtomicU8::new(OperationIntent::Running as u8);
-        // Must not hang.
-        tokio::time::timeout(Duration::from_secs(1), gate.wait_while_paused_async(&intent))
-            .await
-            .expect("not-paused async wait must return immediately");
-    }
-
-    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn wait_while_paused_async_unblocks_on_resume() {
-        let gate = Arc::new(PauseGate::new());
-        let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
-        gate.pause();
-
-        let gate_t = Arc::clone(&gate);
-        let intent_t = Arc::clone(&intent);
-        let task = tokio::spawn(async move {
-            gate_t.wait_while_paused_async(&intent_t).await;
-        });
-
-        tokio::time::sleep(Duration::from_millis(50)).await;
-        assert!(!task.is_finished(), "async waiter must still be parked while paused");
-        gate.resume();
-        tokio::time::timeout(Duration::from_secs(1), task)
-            .await
-            .expect("resume must wake the async waiter")
-            .expect("task joins");
-    }
-
-    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-    async fn wait_while_paused_async_unblocks_on_cancel() {
-        // Cancellation wins over pause for the async path too.
-        let gate = Arc::new(PauseGate::new());
-        let intent = Arc::new(AtomicU8::new(OperationIntent::Running as u8));
-        gate.pause();
-
-        let gate_t = Arc::clone(&gate);
-        let intent_t = Arc::clone(&intent);
-        let task = tokio::spawn(async move {
-            gate_t.wait_while_paused_async(&intent_t).await;
-        });
-
-        tokio::time::sleep(Duration::from_millis(50)).await;
-        assert!(!task.is_finished(), "still parked before cancel");
-        // Mirror the production cancel path: flip intent, then `wake()` (NOT
-        // `resume()`) — paused stays set. The waiter must observe cancel and
-        // return anyway.
-        intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);
-        gate.wake();
-        tokio::time::timeout(Duration::from_secs(1), task)
-            .await
-            .expect("cancel must unblock the async waiter")
-            .expect("task joins");
-        assert!(gate.is_paused(), "cancel path leaves paused set");
-    }
+    // ---- pause / resume on the live state ------------------------------------
+    // The pure `PauseGate` mechanics (sync/async parking, cancel-wins) are
+    // tested in `operation_intent.rs`; these pin the `WRITE_OPERATION_STATE`
+    // lookup wiring of `pause_write_operation` / `resume_write_operation`.
 
     #[test]
     fn pause_resume_write_operation_flip_the_live_gate() {

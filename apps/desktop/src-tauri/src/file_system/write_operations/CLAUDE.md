@@ -10,8 +10,10 @@ contract.
 - Subdirs: [`transfer/`](transfer/CLAUDE.md) (copy + move, conflict resolution, driver, copy backends),
   [`delete/`](delete/CLAUDE.md) (delete walker, trash, oracle-aware fast path).
 - Top level: `mod.rs` (public API + `start_write_operation` spawn lifecycle), `manager.rs` (the operation manager:
-  registry + lane admission every spawn path flows through), `state.rs` (caches, `WriteOperationState`,
-  `CopyTransaction`, settle guard), plus `types.rs`, `event_sinks.rs`, `validation.rs`, `conflict.rs`, `scan.rs`, and
+  registry + lane admission every spawn path flows through), `state.rs` (status cache, `WriteOperationState`,
+  `CopyTransaction`, busy-volumes, settle guard), `operation_intent.rs` (`OperationIntent` + `PauseGate` state
+  machines), `scan_cache.rs` (scan-preview caches, `FileInfo`, `ScanResult`) — the last two re-exported via `state`, so
+  `state::…` paths still resolve — plus `types.rs`, `event_sinks.rs`, `validation.rs`, `conflict.rs`, `scan.rs`, and
   others (full inventory in DETAILS). Behavior modules depend on `types`, not the reverse.
 - Frontend counterpart: [`src/lib/file-operations/CLAUDE.md`](../../../../src/lib/file-operations/CLAUDE.md).
 
