@@ -38,10 +38,13 @@ func RunJscpdRust(ctx *CheckContext) (CheckResult, error) {
 		"--min-tokens", "100",
 		"--threshold", "2",
 		// Exclude test code: jscpd guards duplication in production Rust, not
-		// tests (which are intentionally repetitive). `*_test*.rs` covers every
-		// test-file convention in this repo: `*_test.rs`, `*_tests.rs`, and
-		// `*_test_support.rs` shared-fixture modules.
-		"--ignore", "**/test*.rs,**/*_test*.rs",
+		// tests (which are intentionally repetitive). These globs cover every
+		// test-file convention in this repo without over-matching production names
+		// like `latest.rs`: `test*.rs` (prefix), `*_test.rs` / `*_tests.rs`
+		// (suffix), and `*_test_*.rs` (shared `*_test_support.rs` fixture modules).
+		// Comma-separated (not a brace alternation) because jscpd splits --ignore
+		// on commas, which would break a `{...}` group.
+		"--ignore", "**/test*.rs,**/*_test.rs,**/*_tests.rs,**/*_test_*.rs",
 		"--reporters", "console",
 	)
 	output, err := RunCommand(cmd, true)
