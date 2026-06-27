@@ -1,7 +1,5 @@
 //! Error types for MTP connection operations.
 
-use mtp_rs::ptp::ResponseCode;
-
 /// Error types for MTP connection operations.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase", tag = "type")]
@@ -37,6 +35,17 @@ pub enum MtpConnectionError {
         device_id: String,
     },
     /// Linux: USB device file not accessible (missing udev rules).
+    ///
+    /// Constructed only under `#[cfg(target_os = "linux")]` (see `mod.rs`), but it
+    /// stays part of the cross-platform, serialized error contract the frontend
+    /// dialog matches on, so it's not gated out on other targets.
+    #[cfg_attr(
+        not(target_os = "linux"),
+        allow(
+            dead_code,
+            reason = "Constructed only on Linux, but stays in the cross-platform serialized error contract the frontend matches on"
+        )
+    )]
     PermissionDenied {
         device_id: String,
     },
@@ -129,94 +138,66 @@ impl std::error::Error for MtpConnectionError {}
 /// recoverable stale-cache condition (refresh handles + retry once) rather than
 /// a real not-found.
 pub(super) fn is_stale_handle_rejection(e: &mtp_rs::Error) -> bool {
-    matches!(
-        e,
-        mtp_rs::Error::Protocol {
-            code: ResponseCode::InvalidObjectHandle | ResponseCode::InvalidParentObject,
-            ..
-        }
-    )
+    e.is_stale_handle()
 }
 
 /// Maps mtp_rs errors to our error types.
+///
+/// `mtp_rs::Error` is backend-neutral and `#[non_exhaustive]`, so this matches
+/// the neutral variants and keeps a catch-all for future ones.
 pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionError {
+    use mtp_rs::Error as E;
+    let device_id = device_id.to_string();
     match e {
-        mtp_rs::Error::NoDevice => MtpConnectionError::DeviceNotFound {
-            device_id: device_id.to_string(),
-        },
-        mtp_rs::Error::Disconnected => MtpConnectionError::Disconnected {
-            device_id: device_id.to_string(),
-        },
-        mtp_rs::Error::Timeout => MtpConnectionError::Timeout {
-            device_id: device_id.to_string(),
-        },
-        mtp_rs::Error::Cancelled => MtpConnectionError::Cancelled {
-            device_id: device_id.to_string(),
+        E::NoDevice => MtpConnectionError::DeviceNotFound { device_id },
+        E::Disconnected => MtpConnectionError::Disconnected { device_id },
+        E::Timeout => MtpConnectionError::Timeout { device_id },
+        E::Cancelled => MtpConnectionError::Cancelled {
+            device_id,
             message: "Operation cancelled".to_string(),
         },
-        mtp_rs::Error::SessionNotOpen => MtpConnectionError::NotConnected {
-            device_id: device_id.to_string(),
+        E::ExclusiveAccess => MtpConnectionError::ExclusiveAccess {
+            device_id,
+            blocking_process: None,
         },
-        mtp_rs::Error::Protocol { code, operation } => {
-            // Map specific response codes to user-friendly errors
-            match code {
-                ResponseCode::DeviceBusy => MtpConnectionError::DeviceBusy {
-                    device_id: device_id.to_string(),
-                },
-                ResponseCode::StoreFull => MtpConnectionError::StorageFull {
-                    device_id: device_id.to_string(),
-                },
-                ResponseCode::StoreReadOnly => MtpConnectionError::StoreReadOnly {
-                    device_id: device_id.to_string(),
-                },
-                ResponseCode::InvalidObjectHandle | ResponseCode::InvalidParentObject => {
-                    MtpConnectionError::ObjectNotFound {
-                        device_id: device_id.to_string(),
-                        path: format!("(operation: {:?})", operation),
-                    }
-                }
-                ResponseCode::AccessDenied => MtpConnectionError::Other {
-                    device_id: device_id.to_string(),
-                    message: "Access denied. The device rejected the operation.".to_string(),
-                },
-                _ => MtpConnectionError::Protocol {
-                    device_id: device_id.to_string(),
-                    message: format!("{:?}", code),
-                },
-            }
-        }
-        mtp_rs::Error::InvalidData { message } => MtpConnectionError::Other {
-            device_id: device_id.to_string(),
-            message: format!("Invalid data from device: {}", message),
+        E::Busy => MtpConnectionError::DeviceBusy { device_id },
+        E::StorageFull => MtpConnectionError::StorageFull { device_id },
+        // Read-only storage and write-protected/denied objects all surface to the
+        // user as "the device refused this write".
+        E::AccessDenied => MtpConnectionError::StoreReadOnly { device_id },
+        // A re-keyed handle is the recoverable stale-cache case; the upload path
+        // intercepts it via `is_stale_handle_rejection` before mapping, so reaching
+        // here means a non-recoverable context — surface it as not-found.
+        E::StaleHandle => MtpConnectionError::ObjectNotFound {
+            device_id,
+            path: "(stale object handle)".to_string(),
         },
-        mtp_rs::Error::Io(io_err) => MtpConnectionError::Other {
-            device_id: device_id.to_string(),
-            message: format!("I/O error: {}", io_err),
+        E::NotFound => MtpConnectionError::ObjectNotFound {
+            device_id,
+            path: "(not found)".to_string(),
         },
-        mtp_rs::Error::Usb(usb_err) => {
-            // nusb's typed `ErrorKind` enum already separates the cases we
-            // care about (Busy = exclusive-access / EBUSY, PermissionDenied =
-            // missing udev rules / OS denial). Don't fall back to substring-
-            // matching the message: it changes between nusb versions and
-            // platforms, and was previously the source of misclassified
-            // udev-permission errors looking like "other USB".
-            match usb_err.kind() {
-                nusb::ErrorKind::Busy => MtpConnectionError::ExclusiveAccess {
-                    device_id: device_id.to_string(),
-                    blocking_process: None,
-                },
-                nusb::ErrorKind::PermissionDenied => MtpConnectionError::PermissionDenied {
-                    device_id: device_id.to_string(),
-                },
-                nusb::ErrorKind::Disconnected => MtpConnectionError::Disconnected {
-                    device_id: device_id.to_string(),
-                },
-                _ => MtpConnectionError::Other {
-                    device_id: device_id.to_string(),
-                    message: format!("USB error: {}", usb_err),
-                },
-            }
-        }
+        E::Unsupported => MtpConnectionError::Other {
+            device_id,
+            message: "Operation not supported by this device.".to_string(),
+        },
+        E::InvalidData { message } => MtpConnectionError::Other {
+            device_id,
+            message: format!("Invalid data from device: {message}"),
+        },
+        E::Io { message } => MtpConnectionError::Other {
+            device_id,
+            message: format!("I/O error: {message}"),
+        },
+        E::Other { detail } => MtpConnectionError::Protocol {
+            device_id,
+            message: detail,
+        },
+        // `mtp_rs::Error` is `#[non_exhaustive]`; treat any future variant as a
+        // generic protocol error rather than failing to compile downstream.
+        other => MtpConnectionError::Other {
+            device_id,
+            message: other.to_string(),
+        },
     }
 }
 

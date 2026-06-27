@@ -97,7 +97,15 @@ fn remove_listing(id: &str) {
 /// (`"{device_id}:{storage_id}"`); see `mtp/CLAUDE.md` § Volume IDs.
 async fn connect_virtual_device() -> (String, Arc<MtpVolume>, String) {
     let location_id = setup_virtual_mtp_device();
-    let device_id = format!("mtp-{}", location_id);
+    // Derive the canonical device id from discovery, not `mtp-{location_id}`: the
+    // virtual device reports a serial, so its id is serial-based
+    // (`device_id_for`), and the connect path resolves by matching the live
+    // enumeration's `.id`.
+    let device_id = crate::mtp::list_mtp_devices()
+        .into_iter()
+        .find(|d| d.location_id == location_id)
+        .map(|d| d.id)
+        .expect("the virtual device must appear in discovery");
     let info = connection_manager()
         .connect(&device_id, None)
         .await

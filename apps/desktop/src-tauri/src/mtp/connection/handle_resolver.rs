@@ -1,11 +1,11 @@
 //! Resolve an opaque MTP/PTP object handle to its full virtual path.
 //!
-//! PTP change events ([`DeviceEvent::ObjectAdded`](mtp_rs::mtp::DeviceEvent) etc.) carry only an
-//! `ObjectHandle` (a `u32`), never a path — this is a wire-format property of
-//! the protocol (every event is `code + 3×u32`), not a library or Cmdr gap. To
-//! turn a handle into a path we ask the device for the object's
-//! [`ObjectInfo`](mtp_rs::ptp::ObjectInfo) (`{ parent, filename, .. }`) and walk
-//! the `parent` chain up to the storage root, prepending each filename.
+//! MTP change events ([`DeviceEvent::ObjectAdded`](mtp_rs::DeviceEvent) etc.) carry only an
+//! `ObjectHandle`, never a path — this is a wire-format property of the protocol
+//! (every event is `code + 3×u32`), not a library or Cmdr gap. To turn a handle
+//! into a path we ask the device for the object's
+//! [`ObjectInfo`](mtp_rs::ObjectInfo) (`{ parent, filename, .. }`) and walk the
+//! `parent` chain up to the storage root, prepending each filename.
 //!
 //! Two things keep that cheap and robust:
 //!
@@ -260,7 +260,7 @@ impl MtpConnectionManager {
         let device = acquire_device_lock(&device_arc, device_id, "resolve_object_for_index").await?;
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
+            device.storage(StorageId(u64::from(storage_id))),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
@@ -274,7 +274,7 @@ impl MtpConnectionManager {
             })?
             .map_err(|e| map_mtp_error(e, device_id))?;
 
-        let is_directory = info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+        let is_directory = info.is_folder();
         Ok(ResolvedMtpObject {
             path,
             is_directory,
@@ -308,7 +308,7 @@ impl MtpConnectionManager {
         let device = acquire_device_lock(device_arc, device_id, "resolve_handle_to_path").await?;
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
+            device.storage(StorageId(u64::from(storage_id))),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
@@ -350,10 +350,11 @@ mod tests {
         calls: &'a std::cell::RefCell<Vec<u32>>,
     ) -> impl FnMut(ObjectHandle) -> Option<(ObjectHandle, String)> + 'a {
         move |h: ObjectHandle| {
-            calls.borrow_mut().push(h.0);
+            // The in-memory test graph keys on u32; mtp-rs handles are opaque u64.
+            calls.borrow_mut().push(h.0 as u32);
             graph
-                .get(&h.0)
-                .map(|(parent, name)| (ObjectHandle(*parent), (*name).to_string()))
+                .get(&(h.0 as u32))
+                .map(|(parent, name)| (ObjectHandle(u64::from(*parent)), (*name).to_string()))
         }
     }
 

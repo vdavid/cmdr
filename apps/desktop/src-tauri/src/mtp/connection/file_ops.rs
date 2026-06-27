@@ -1,7 +1,7 @@
 //! MTP file transfer operations (download, upload, and streaming).
 
 use log::debug;
-use mtp_rs::{MtpDevice, NewObjectInfo, ObjectHandle, StorageId, WindowedDownload};
+use mtp_rs::{ByteRange, MtpDevice, NewObjectInfo, ObjectHandle, StorageId, WindowedDownload};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -302,7 +302,7 @@ impl MtpConnectionManager {
         // Get the storage
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
+            device.storage(StorageId(u64::from(storage_id))),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
@@ -399,7 +399,9 @@ impl MtpConnectionManager {
             .await;
 
         Ok(MtpObjectInfo {
-            handle: new_handle.0,
+            // mtp-rs handles are now opaque u64; Cmdr's wire DTO stays u32. Real
+            // Android PTP handles fit in u32, so narrow at the boundary.
+            handle: new_handle.0 as u32,
             name: filename,
             path: new_path_str,
             is_directory: false,
@@ -449,7 +451,7 @@ impl MtpConnectionManager {
             let device = acquire_device_lock(&device_arc, device_id, "open_read_session").await?;
             let storage = tokio::time::timeout(
                 Duration::from_secs(MTP_TIMEOUT_SECS),
-                device.storage(StorageId(storage_id)),
+                device.storage(StorageId(u64::from(storage_id))),
             )
             .await
             .map_err(|_| MtpConnectionError::Timeout {
@@ -459,7 +461,7 @@ impl MtpConnectionManager {
 
             tokio::time::timeout(
                 Duration::from_secs(MTP_TIMEOUT_SECS),
-                storage.download_windowed_from_offset(object_handle, offset, window_size),
+                storage.download_windowed(object_handle, ByteRange::From(offset), window_size),
             )
             .await
             .map_err(|_| MtpConnectionError::Timeout {
@@ -541,7 +543,7 @@ impl MtpConnectionManager {
         data_stream: S,
     ) -> Result<u64, MtpConnectionError>
     where
-        S: futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>> + Unpin + Send,
+        S: futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>> + Unpin + Send + 'static,
     {
         // Foreground priority for the whole upload: mtp-rs drains `data_stream`
         // within this call, so the guard covers the entire transfer (and the
@@ -573,7 +575,7 @@ impl MtpConnectionManager {
         // Get the storage
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
+            device.storage(StorageId(u64::from(storage_id))),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {

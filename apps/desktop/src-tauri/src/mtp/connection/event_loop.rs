@@ -152,7 +152,7 @@ impl MtpConnectionManager {
                 let app = app.clone();
                 tokio::spawn(async move {
                     connection_manager()
-                        .handle_storage_added(&device_id, storage_id.0, &app)
+                        .handle_storage_added(&device_id, storage_id.0 as u32, &app)
                         .await;
                 });
             }
@@ -162,7 +162,7 @@ impl MtpConnectionManager {
                 let app = app.clone();
                 tokio::spawn(async move {
                     connection_manager()
-                        .handle_storage_removed(&device_id, storage_id.0, &app)
+                        .handle_storage_removed(&device_id, storage_id.0 as u32, &app)
                         .await;
                 });
             }
@@ -211,7 +211,7 @@ impl MtpConnectionManager {
             let Some(storage_id) = crate::mtp::identity::storage_id_of_volume(&volume_id) else {
                 continue;
             };
-            if crate::indexing::buffer_mtp_handle_if_scanning(&volume_id, storage_id, handle.0) {
+            if crate::indexing::buffer_mtp_handle_if_scanning(&volume_id, storage_id, handle.0 as u32) {
                 // Scanning: buffered, replayed post-scan. No device hit.
                 continue;
             }
@@ -234,7 +234,7 @@ impl MtpConnectionManager {
                             &volume_id,
                             crate::indexing::MtpUpsert {
                                 path: obj.path,
-                                handle: handle.0,
+                                handle: handle.0 as u32,
                                 is_directory: obj.is_directory,
                                 size: obj.size,
                                 modified_at: obj.modified_at,
@@ -262,7 +262,7 @@ impl MtpConnectionManager {
     /// writer enqueue only, no USB), so no spawn. No-op without an indexed storage.
     fn feed_index_removed(device_id: &str, handle: ObjectHandle) {
         for volume_id in crate::indexing::registered_mtp_volume_ids_for_device(device_id) {
-            crate::indexing::apply_mtp_removed(&volume_id, handle.0);
+            crate::indexing::apply_mtp_removed(&volume_id, handle.0 as u32);
         }
     }
 

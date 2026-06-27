@@ -897,20 +897,29 @@ impl Volume for MtpVolume {
                 })?
                 .to_string();
 
-            let chunk_stream = volume_read_stream_to_chunk_stream(stream, size, on_progress);
-            let chunk_stream = Box::pin(chunk_stream);
+            // mtp-rs's upload needs a `'static` data stream, but `on_progress` is
+            // borrowed. Keep the callback out of the stream: the `'static`
+            // `upload_chunk_stream` reports byte totals over a channel and watches a
+            // shared cancel flag, while `drive_upload_progress` (which owns the
+            // borrow) relays to `on_progress` and flips the flag on `Break`. We run
+            // both concurrently and let the upload's completion drop the channel,
+            // ending the relay.
+            let cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let (bytes_tx, bytes_rx) = tokio::sync::mpsc::unbounded_channel();
+            let chunk_stream = Box::pin(upload_chunk_stream(stream, bytes_tx, std::sync::Arc::clone(&cancel)));
 
-            let bytes_written = connection_manager()
-                .upload_from_stream(
-                    &self.device_id,
-                    self.storage_id,
-                    &dest_folder,
-                    &filename,
-                    size,
-                    chunk_stream,
-                )
-                .await
-                .map_err(map_mtp_error)?;
+            let upload_fut = connection_manager().upload_from_stream(
+                &self.device_id,
+                self.storage_id,
+                &dest_folder,
+                &filename,
+                size,
+                chunk_stream,
+            );
+            let relay_fut = drive_upload_progress(bytes_rx, size, cancel, on_progress);
+
+            let (upload_result, ()) = futures_util::future::join(upload_fut, relay_fut).await;
+            let bytes_written = upload_result.map_err(map_mtp_error)?;
 
             // Patch the listing cache from local knowledge so the destination
             // pane sees the new file immediately. The MTP USB event loop is
@@ -958,6 +967,68 @@ pub(super) fn volume_read_stream_to_chunk_stream<'a>(
             }
         },
     )
+}
+
+/// `'static` upload chunk stream for [`MtpVolume::write_from_stream`].
+///
+/// mtp-rs's `Storage::upload` requires a `'static` data stream, but Cmdr's
+/// `write_from_stream` carries a BORROWED progress callback. So we keep the
+/// callback OUT of the stream: this adapter owns only the (`'static`)
+/// [`VolumeReadStream`] and two shared signals, and the caller runs a small relay
+/// loop ([`drive_upload_progress`]) that owns the borrow and calls `on_progress`.
+///
+/// - `bytes_tx` reports the running byte total after each chunk so the relay can
+///   forward it to the borrowed `on_progress` (preserving per-chunk progress).
+/// - `cancel` is checked before each chunk; when the relay sees `on_progress`
+///   return `ControlFlow::Break`, it sets this, and the next poll yields an
+///   `Interrupted` error — the same signal the old in-stream callback raised, so
+///   mtp-rs fails the upload and surfaces it as `Cancelled`.
+fn upload_chunk_stream(
+    stream: Box<dyn VolumeReadStream>,
+    bytes_tx: tokio::sync::mpsc::UnboundedSender<u64>,
+    cancel: std::sync::Arc<std::sync::atomic::AtomicBool>,
+) -> impl futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>> + Send + 'static {
+    use std::sync::atomic::Ordering;
+    futures_util::stream::unfold(
+        (stream, 0u64, bytes_tx, cancel),
+        |(mut stream, bytes_written, bytes_tx, cancel)| async move {
+            if cancel.load(Ordering::Relaxed) {
+                let err = std::io::Error::new(std::io::ErrorKind::Interrupted, "Operation cancelled");
+                return Some((Err(err), (stream, bytes_written, bytes_tx, cancel)));
+            }
+            match stream.next_chunk().await {
+                Some(Ok(chunk)) => {
+                    let new_total = bytes_written + chunk.len() as u64;
+                    // A closed receiver (relay gone) just means no one's listening; keep streaming.
+                    let _ = bytes_tx.send(new_total);
+                    Some((Ok(bytes::Bytes::from(chunk)), (stream, new_total, bytes_tx, cancel)))
+                }
+                Some(Err(e)) => {
+                    let err = std::io::Error::other(e.to_string());
+                    Some((Err(err), (stream, bytes_written, bytes_tx, cancel)))
+                }
+                None => None,
+            }
+        },
+    )
+}
+
+/// Relay loop for [`upload_chunk_stream`]: owns the borrowed `on_progress`,
+/// forwards each byte total the stream reports, and flips `cancel` when the
+/// callback asks to stop. Returns when the stream side closes `bytes_rx`.
+async fn drive_upload_progress(
+    mut bytes_rx: tokio::sync::mpsc::UnboundedReceiver<u64>,
+    total: u64,
+    cancel: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    on_progress: &(dyn Fn(u64, u64) -> std::ops::ControlFlow<()> + Sync),
+) {
+    use std::sync::atomic::Ordering;
+    while let Some(bytes_written) = bytes_rx.recv().await {
+        if on_progress(bytes_written, total) == std::ops::ControlFlow::Break(()) {
+            cancel.store(true, Ordering::Relaxed);
+            return;
+        }
+    }
 }
 
 /// Bytes-per-window for a [`MtpReadStream`]. Production uses

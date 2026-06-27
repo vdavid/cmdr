@@ -227,7 +227,7 @@ impl MtpConnectionManager {
             let device = acquire_device_lock(&device_arc, device_id, "list_directory_for_scan[handles]").await?;
             let storage = tokio::time::timeout(
                 Duration::from_secs(MTP_TIMEOUT_SECS),
-                device.storage(StorageId(storage_id)),
+                device.storage(StorageId(u64::from(storage_id))),
             )
             .await
             .map_err(|_| MtpConnectionError::Timeout {
@@ -265,7 +265,7 @@ impl MtpConnectionManager {
             for _ in 0..SCAN_METADATA_BATCH {
                 match tokio::time::timeout(Duration::from_secs(MTP_TIMEOUT_SECS), listing.next()).await {
                     Ok(Some(Ok(info))) => {
-                        let is_dir = info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+                        let is_dir = info.is_folder();
                         let child_path = parent_path.join(&info.filename);
                         cache_updates.push((child_path.clone(), info.handle));
                         entries.push(FileEntry {
@@ -275,7 +275,7 @@ impl MtpConnectionManager {
                             permissions: if is_dir { 0o755 } else { 0o644 },
                             icon_id: get_mtp_icon_id(is_dir, &info.filename),
                             extended_metadata_loaded: true,
-                            inode: Some(u64::from(info.handle.0)),
+                            inode: Some(info.handle.0),
                             ..FileEntry::new(
                                 info.filename.clone(),
                                 child_path.to_string_lossy().to_string(),
@@ -432,7 +432,7 @@ impl MtpConnectionManager {
         let usb_io_start = Instant::now();
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
+            device.storage(StorageId(u64::from(storage_id))),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
@@ -584,7 +584,7 @@ impl MtpConnectionManager {
         let usb_io_start = Instant::now();
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
+            device.storage(StorageId(u64::from(storage_id))),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
@@ -642,7 +642,7 @@ impl MtpConnectionManager {
                 }
             };
 
-            let is_dir = info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+            let is_dir = info.is_folder();
             let child_path = parent_path.join(&info.filename);
 
             cache_updates.push((child_path.clone(), info.handle));
@@ -657,7 +657,7 @@ impl MtpConnectionManager {
                 // Carry the PTP object handle in `inode` so the index can store it
                 // per entry; `ObjectRemoved{handle}` then resolves via
                 // `find_entry_by_inode` even though the object is already gone.
-                inode: Some(u64::from(info.handle.0)),
+                inode: Some(info.handle.0),
                 ..FileEntry::new(
                     info.filename.clone(),
                     child_path.to_string_lossy().to_string(),
@@ -949,13 +949,13 @@ fn scan_cancelled(device_id: &str) -> MtpConnectionError {
 /// Converts a list of `ObjectInfo` into `FileEntry` values and path-to-handle cache updates.
 fn convert_object_infos(
     parent_path: &Path,
-    object_infos: &[mtp_rs::ptp::ObjectInfo],
+    object_infos: &[mtp_rs::ObjectInfo],
 ) -> (Vec<FileEntry>, Vec<(PathBuf, ObjectHandle)>) {
     let mut entries = Vec::with_capacity(object_infos.len());
     let mut cache_updates = Vec::with_capacity(object_infos.len());
 
     for info in object_infos {
-        let is_dir = info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+        let is_dir = info.is_folder();
         let child_path = parent_path.join(&info.filename);
 
         cache_updates.push((child_path.clone(), info.handle));
@@ -969,7 +969,7 @@ fn convert_object_infos(
             extended_metadata_loaded: true,
             // Carry the PTP object handle in `inode` (see the streaming build site
             // above): the index stores it per entry so removals resolve by handle.
-            inode: Some(u64::from(info.handle.0)),
+            inode: Some(info.handle.0),
             ..FileEntry::new(
                 info.filename.clone(),
                 child_path.to_string_lossy().to_string(),

@@ -29,7 +29,6 @@ pub(crate) use file_ops::MtpReadSession;
 use scheduler::{DevicePriorityGate, ForegroundGuard};
 
 use log::{debug, error, info, warn};
-use mtp_rs::ptp::OperationCode;
 use mtp_rs::{MtpDevice, MtpDeviceBuilder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -326,15 +325,24 @@ impl MtpConnectionManager {
                 }
 
                 // Check for permission errors (Linux: missing udev rules).
-                // Use nusb's typed `ErrorKind` so we don't depend on the OS
-                // error message wording (which differs across distros and
-                // nusb versions).
+                //
+                // The backend-neutral `mtp_rs::Error` no longer surfaces nusb's
+                // typed `ErrorKind`, so a missing-udev-rules denial arrives as a
+                // generic `Error::Io { message }`. Best-effort detect it from the
+                // message text. This is a known information loss from the neutral
+                // API; if it proves flaky, mtp-rs should grow a `PermissionDenied`
+                // variant (or an `is_permission_denied()` predicate).
                 #[cfg(target_os = "linux")]
                 {
-                    if matches!(
+                    let is_permission_denied = matches!(
                         &e,
-                        mtp_rs::Error::Usb(usb_err) if usb_err.kind() == nusb::ErrorKind::PermissionDenied
-                    ) {
+                        mtp_rs::Error::Io { message }
+                            if {
+                                let m = message.to_lowercase();
+                                m.contains("permission denied") || m.contains("access denied")
+                            }
+                    );
+                    if is_permission_denied {
                         if let Some(app) = app {
                             let _ = MtpPermissionError {
                                 device_id: device_id.to_string(),
@@ -391,21 +399,15 @@ impl MtpConnectionManager {
             mtp_info.manufacturer, mtp_info.model
         );
 
-        // Check if device supports write operations (SendObjectInfo is required for uploads)
-        // PTP cameras often don't support this, making them effectively read-only
-        let device_supports_write = mtp_info.supports_operation(OperationCode::SendObjectInfo);
+        // Check if device supports write operations (upload requires the device to
+        // advertise create+send). PTP cameras often don't, making them effectively
+        // read-only. The neutral API exposes this via `Capabilities` instead of raw
+        // operation codes.
+        let caps = device.capabilities();
+        let device_supports_write = caps.can_upload;
         info!(
-            "Device '{}' write support: {} (operations: {:?})",
-            mtp_info.model,
-            device_supports_write,
-            mtp_info
-                .operations_supported
-                .iter()
-                .filter(|op| matches!(
-                    op,
-                    OperationCode::SendObjectInfo | OperationCode::SendObject | OperationCode::DeleteObject
-                ))
-                .collect::<Vec<_>>()
+            "Device '{}' write support: {} (can_upload={}, can_delete={}, can_rename={})",
+            mtp_info.model, device_supports_write, caps.can_upload, caps.can_delete, caps.can_rename
         );
 
         // Get storage information
@@ -651,7 +653,7 @@ impl MtpConnectionManager {
             }
         };
 
-        let mtp_storage_id = mtp_rs::ptp::StorageId(storage_id);
+        let mtp_storage_id = mtp_rs::StorageId(u64::from(storage_id));
         let storage = match device.storage(mtp_storage_id).await {
             Ok(s) => s,
             Err(e) => {
@@ -661,8 +663,8 @@ impl MtpConnectionManager {
         };
 
         let info = storage.info();
-        let device_supports_write = device.device_info().supports_operation(OperationCode::SendObjectInfo);
-        let storage_reports_read_only = !matches!(info.access_capability, mtp_rs::ptp::AccessCapability::ReadWrite);
+        let device_supports_write = device.capabilities().can_upload;
+        let storage_reports_read_only = !info.is_writable;
 
         let is_read_only = if !device_supports_write || storage_reports_read_only {
             true
@@ -680,8 +682,8 @@ impl MtpConnectionManager {
         let storage_info = MtpStorageInfo {
             id: storage_id,
             name: info.description.clone(),
-            total_bytes: info.max_capacity,
-            available_bytes: info.free_space_bytes,
+            total_bytes: info.total_capacity,
+            available_bytes: info.free_space,
             storage_type: Some(format!("{:?}", info.storage_type)),
             is_read_only,
         };
@@ -764,7 +766,7 @@ impl MtpConnectionManager {
             }
         };
 
-        let mtp_storage_id = mtp_rs::ptp::StorageId(storage_id);
+        let mtp_storage_id = mtp_rs::StorageId(u64::from(storage_id));
         let storage = match device.storage(mtp_storage_id).await {
             Ok(s) => s,
             Err(e) => {
@@ -776,8 +778,8 @@ impl MtpConnectionManager {
             }
         };
         let info = storage.info();
-        let total = info.max_capacity;
-        let available = info.free_space_bytes;
+        let total = info.total_capacity;
+        let available = info.free_space;
 
         // Release the device lock before updating the cache
         drop(device);
@@ -846,8 +848,6 @@ async fn open_device(location_id: u64) -> Result<MtpDevice, mtp_rs::Error> {
 /// Returns `true` if writes are supported (or probe was inconclusive), `false` only
 /// if the device explicitly rejected writes with `StoreReadOnly` or `AccessDenied`.
 async fn probe_write_capability(storage: &mtp_rs::Storage, storage_name: &str) -> bool {
-    use mtp_rs::ptp::ResponseCode;
-
     const PROBE_FOLDER_NAME: &str = ".cmdr_write_probe";
     const PROBE_TIMEOUT_SECS: u64 = 3;
 
@@ -867,14 +867,11 @@ async fn probe_write_capability(storage: &mtp_rs::Storage, storage_name: &str) -
             true
         }
         Ok(Err(e)) => {
-            // Check the specific error code to determine if this is a read-only issue
-            // or just a restriction on where we can create folders
-            let is_read_only_error = match &e {
-                mtp_rs::Error::Protocol { code, .. } => {
-                    matches!(code, ResponseCode::StoreReadOnly | ResponseCode::AccessDenied)
-                }
-                _ => false,
-            };
+            // A neutral `AccessDenied` (read-only storage or write-protected/denied)
+            // means the device truly refuses writes. A stale-handle rejection (can't
+            // create at root) is non-fatal: Android often blocks root creation but is
+            // still writable into existing folders.
+            let is_read_only_error = matches!(e, mtp_rs::Error::AccessDenied);
 
             if is_read_only_error {
                 debug!(
@@ -907,8 +904,6 @@ async fn probe_write_capability(storage: &mtp_rs::Storage, storage_name: &str) -
 /// * `device` - The connected MTP device
 /// * `device_supports_write` - Whether the device supports write operations (SendObjectInfo)
 async fn get_storages(device: &MtpDevice, device_supports_write: bool) -> Result<Vec<MtpStorageInfo>, mtp_rs::Error> {
-    use mtp_rs::ptp::AccessCapability;
-
     debug!("Calling device.storages()...");
     let storage_list = device.storages().await?;
     debug!("Got {} storage(s)", storage_list.len());
@@ -917,7 +912,7 @@ async fn get_storages(device: &MtpDevice, device_supports_write: bool) -> Result
     for storage in storage_list {
         let info = storage.info();
         // Check if storage reports read-only capability
-        let storage_reports_read_only = !matches!(info.access_capability, AccessCapability::ReadWrite);
+        let storage_reports_read_only = !info.is_writable;
 
         // Determine actual read-only status
         let is_read_only = if !device_supports_write || storage_reports_read_only {
@@ -938,15 +933,15 @@ async fn get_storages(device: &MtpDevice, device_supports_write: bool) -> Result
 
         // Log final determination
         info!(
-            "Storage '{}': access_capability={:?}, device_supports_write={}, is_read_only={}",
-            info.description, info.access_capability, device_supports_write, is_read_only
+            "Storage '{}': is_writable={}, device_supports_write={}, is_read_only={}",
+            info.description, info.is_writable, device_supports_write, is_read_only
         );
 
         storages.push(MtpStorageInfo {
-            id: storage.id().0,
+            id: storage.id().0 as u32,
             name: info.description.clone(),
-            total_bytes: info.max_capacity,
-            available_bytes: info.free_space_bytes,
+            total_bytes: info.total_capacity,
+            available_bytes: info.free_space,
             storage_type: Some(format!("{:?}", info.storage_type)),
             is_read_only,
         });
@@ -969,7 +964,7 @@ fn normalize_mtp_path(path: &str) -> PathBuf {
 }
 
 /// Converts MTP DateTime to Unix timestamp.
-pub(super) fn convert_mtp_datetime(dt: mtp_rs::ptp::DateTime) -> u64 {
+pub(super) fn convert_mtp_datetime(dt: mtp_rs::DateTime) -> u64 {
     // Convert the DateTime struct fields to Unix timestamp
     // This is a simplified conversion - MTP DateTime has year, month, day, hour, minute, second
 

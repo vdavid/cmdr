@@ -91,7 +91,7 @@ impl MtpConnectionManager {
         // Get the storage
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
+            device.storage(StorageId(u64::from(storage_id))),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
@@ -110,7 +110,7 @@ impl MtpConnectionManager {
         })?
         .map_err(|e| map_mtp_error(e, device_id))?;
 
-        let is_dir = object_info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+        let is_dir = object_info.is_folder();
 
         if is_dir {
             // For directories, recursively delete contents first. Threading the
@@ -168,7 +168,7 @@ impl MtpConnectionManager {
             let device = acquire_device_lock(&device_arc, device_id, "delete_object (empty folder)").await?;
             let storage = tokio::time::timeout(
                 Duration::from_secs(MTP_TIMEOUT_SECS),
-                device.storage(StorageId(storage_id)),
+                device.storage(StorageId(u64::from(storage_id))),
             )
             .await
             .map_err(|_| MtpConnectionError::Timeout {
@@ -260,7 +260,7 @@ impl MtpConnectionManager {
         // Get the storage
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
+            device.storage(StorageId(u64::from(storage_id))),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
@@ -312,7 +312,7 @@ impl MtpConnectionManager {
         debug!("MTP folder created: {}", new_path_str);
 
         Ok(MtpObjectInfo {
-            handle: new_handle.0,
+            handle: new_handle.0 as u32,
             name: folder_name.to_string(),
             path: new_path_str,
             is_directory: true,
@@ -359,7 +359,7 @@ impl MtpConnectionManager {
         // Get the storage
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
+            device.storage(StorageId(u64::from(storage_id))),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
@@ -378,7 +378,7 @@ impl MtpConnectionManager {
         })?
         .map_err(|e| map_mtp_error(e, device_id))?;
 
-        let is_dir = object_info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+        let is_dir = object_info.is_folder();
         let old_size = object_info.size;
 
         // Set the new filename using storage.rename()
@@ -419,7 +419,7 @@ impl MtpConnectionManager {
         debug!("MTP rename complete: {} -> {}", object_path, new_path_str);
 
         Ok(MtpObjectInfo {
-            handle: object_handle.0,
+            handle: object_handle.0 as u32,
             name: new_name.to_string(),
             path: new_path_str,
             is_directory: is_dir,
@@ -469,7 +469,7 @@ impl MtpConnectionManager {
         // Get the storage
         let storage = tokio::time::timeout(
             Duration::from_secs(MTP_TIMEOUT_SECS),
-            device.storage(StorageId(storage_id)),
+            device.storage(StorageId(u64::from(storage_id))),
         )
         .await
         .map_err(|_| MtpConnectionError::Timeout {
@@ -488,7 +488,7 @@ impl MtpConnectionManager {
         })?
         .map_err(|e| map_mtp_error(e, device_id))?;
 
-        let is_dir = object_info.format == mtp_rs::ptp::ObjectFormatCode::Association;
+        let is_dir = object_info.is_folder();
         let object_size = object_info.size;
         let object_name = object_info.filename.clone();
 
@@ -538,7 +538,7 @@ impl MtpConnectionManager {
                 debug!("MTP move complete: {} -> {}", object_path, new_path_str);
 
                 Ok(MtpObjectInfo {
-                    handle: object_handle.0,
+                    handle: object_handle.0 as u32,
                     name: object_name,
                     path: new_path_str,
                     is_directory: is_dir,

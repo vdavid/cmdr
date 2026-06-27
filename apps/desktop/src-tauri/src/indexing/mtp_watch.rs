@@ -390,7 +390,7 @@ fn resolve_and_apply_buffered_handles(volume_id: &str, handles: Vec<(u32, u32)>)
     tauri::async_runtime::spawn(async move {
         for (storage_id, handle) in handles {
             match crate::mtp::connection::connection_manager()
-                .resolve_object_for_index(&device_id, storage_id, mtp_rs::ObjectHandle(handle))
+                .resolve_object_for_index(&device_id, storage_id, mtp_rs::ObjectHandle(u64::from(handle)))
                 .await
             {
                 Ok(obj) => apply_mtp_added_or_changed(
