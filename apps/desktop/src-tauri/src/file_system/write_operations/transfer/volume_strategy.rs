@@ -66,7 +66,7 @@ const MIN_PROGRESS_FLOOR_BYTES: u64 = 4 * 1024 * 1024;
 fn auto_yield_tuning() -> (Duration, u64) {
     #[cfg(test)]
     {
-        if let Some(t) = tests::auto_yield_tuning_override() {
+        if let Some(t) = test_support::auto_yield_tuning_override() {
             return t;
         }
     }
@@ -831,5 +831,17 @@ async fn resolve_merge_child(
 }
 
 #[cfg(test)]
-#[path = "volume_strategy_tests.rs"]
-mod tests;
+#[path = "volume_strategy_copy_tests.rs"]
+mod copy_tests;
+#[cfg(test)]
+#[path = "volume_strategy_pause_tests.rs"]
+mod pause_tests;
+#[cfg(test)]
+#[path = "volume_strategy_stale_handle_tests.rs"]
+mod stale_handle_tests;
+#[cfg(test)]
+#[path = "volume_strategy_test_support.rs"]
+mod test_support;
+#[cfg(test)]
+#[path = "volume_strategy_yield_tests.rs"]
+mod yield_tests;

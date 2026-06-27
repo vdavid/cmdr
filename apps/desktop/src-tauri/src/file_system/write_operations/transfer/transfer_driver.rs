@@ -32,9 +32,9 @@
 //!    delegates this to the closure), nor
 //! 3. after cancellation has been signaled on the operation state.
 //!
-//! `transfer_driver_tests.rs` pins each of these properties so a future refactor
-//! that violates the contract gets caught here, not by structural inspection of
-//! four different functions.
+//! The `transfer_driver_*_tests.rs` suites pin each of these properties so a
+//! future refactor that violates the contract gets caught here, not by
+//! structural inspection of four different functions.
 //!
 //! # Sync vs async: two sibling entry points
 //!
@@ -90,14 +90,15 @@
 // (`TransferOutcome::Skipped`, `DriverConfig::{conflict_resolution,
 // pre_known_conflicts}`, `ConflictDecisionInput::{source_is_directory_hint,
 // source_size_hint}`, and the unused `TransferContext` fields). They're load-
-// bearing for the driver's contract and exercised by `transfer_driver_tests.rs`
+// bearing for the driver's contract and exercised by the
+// `transfer_driver_*_tests.rs` suites
 // (`TransferOutcome::Skipped` is constructed in test closures; the config
 // fields feed `build_pre_skip_set` audits). Keep them as part of the public-
 // to-the-module surface so adding a future caller doesn't require widening the
 // driver in a separate commit.
 #![allow(
     dead_code,
-    reason = "Driver surface kept stable for future callers; exercised by transfer_driver_tests.rs"
+    reason = "Driver surface kept stable for future callers; exercised by the transfer_driver_*_tests.rs suites"
 )]
 
 use std::collections::HashSet;
@@ -783,7 +784,7 @@ pub(super) enum ConflictDecision {
 /// The `+ Send` on the boxed future moves the Send obligation inside the
 /// per-call return type, where it's discharged at each call site.
 ///
-/// `transfer_driver_tests.rs::driver_future_is_send_across_spawn` pins this:
+/// `transfer_driver_async_tests.rs::driver_future_is_send_across_spawn` pins this:
 /// the driver call must compile inside a `tokio::spawn(async move { ... })`,
 /// which fails under `AsyncFnMut` and passes under the boxed-future shape.
 ///
@@ -1072,5 +1073,17 @@ where
 }
 
 #[cfg(test)]
-#[path = "transfer_driver_tests.rs"]
-mod tests;
+#[path = "transfer_driver_async_tests.rs"]
+mod async_tests;
+#[cfg(test)]
+#[path = "transfer_driver_concurrent_tests.rs"]
+mod concurrent_tests;
+#[cfg(test)]
+#[path = "transfer_driver_pre_skip_tests.rs"]
+mod pre_skip_tests;
+#[cfg(test)]
+#[path = "transfer_driver_sync_tests.rs"]
+mod sync_tests;
+#[cfg(test)]
+#[path = "transfer_driver_test_support.rs"]
+mod test_support;
