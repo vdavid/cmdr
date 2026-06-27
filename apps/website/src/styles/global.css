@@ -258,13 +258,14 @@ body {
   object-fit: cover;
 }
 
-/* Seam leans "\" (top-left to bottom-right): top edge at reveal-slant, bottom at reveal+slant. --slant
-   grows with position (set in JS), so the seam is vertical at the left and ~30° at the right. */
+/* Seam leans "/" (top-right to bottom-left, pivoting from bottom-left): top edge at reveal+slant,
+   bottom at reveal-slant. --slant grows with position (set in JS), so the seam is vertical at the left
+   and leans ~30° to the right at the right edge. */
 .img-compare__top {
   clip-path: polygon(
     0 0,
-    calc((var(--reveal) - var(--slant)) * 1%) 0,
-    calc((var(--reveal) + var(--slant)) * 1%) 100%,
+    calc((var(--reveal) + var(--slant)) * 1%) 0,
+    calc((var(--reveal) - var(--slant)) * 1%) 100%,
     0 100%
   );
 }
@@ -273,10 +274,10 @@ body {
    overlap and a transparent or smaller top image can't reveal the base on its side. */
 .img-compare__base {
   clip-path: polygon(
-    calc((var(--reveal) - var(--slant)) * 1%) 0,
+    calc((var(--reveal) + var(--slant)) * 1%) 0,
     100% 0,
     100% 100%,
-    calc((var(--reveal) + var(--slant)) * 1%) 100%
+    calc((var(--reveal) - var(--slant)) * 1%) 100%
   );
 }
 
@@ -289,7 +290,7 @@ body {
   width: 3px;
   height: 170%;
   background: var(--color-accent);
-  transform: translateX(-50%) rotate(var(--divider-rot, -16deg));
+  transform: translateX(-50%) rotate(var(--divider-rot, 16deg));
   transform-origin: center;
   pointer-events: none;
 }

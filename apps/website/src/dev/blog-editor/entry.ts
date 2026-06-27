@@ -765,7 +765,7 @@ function activateCompareSliders(root: HTMLElement) {
       const angle = (Math.atan(((2 * slant) / 100) * (rect.width / rect.height)) * 180) / Math.PI
       slider.style.setProperty('--reveal', String(reveal))
       slider.style.setProperty('--slant', String(slant))
-      slider.style.setProperty('--divider-rot', `${-angle}deg`)
+      slider.style.setProperty('--divider-rot', `${angle}deg`)
       if (range) {
         const value = String(Math.max(0, Math.min(100, Math.round(reveal))))
         if (range.value !== value) {
@@ -781,7 +781,7 @@ function activateCompareSliders(root: HTMLElement) {
       const cx = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100))
       const cy = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
       const slant = (SLANT_MAX * cx) / 100
-      apply(cx - slant * (2 * cy - 1), slant, rect)
+      apply(cx + slant * (2 * cy - 1), slant, rect)
     }
 
     slider.addEventListener('pointerdown', (event) => {
