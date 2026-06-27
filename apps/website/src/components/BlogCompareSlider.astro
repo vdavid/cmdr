@@ -13,21 +13,26 @@
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
             let dragging = false
 
+            // --reveal is the divider's mid-height position and is intentionally NOT clamped to
+            // 0–100: because the divider is slanted, reaching a cursor at the top-left or bottom-right
+            // corner needs reveal slightly outside that range (down to -slant / up to 100+slant). Only
+            // the keyboard range stays 0–100.
             const setReveal = (percent: number) => {
-                const clamped = Math.max(0, Math.min(100, percent))
-                root.style.setProperty('--reveal', String(clamped))
-                if (range && Number(range.value) !== Math.round(clamped)) {
-                    range.value = String(Math.round(clamped))
+                root.style.setProperty('--reveal', String(percent))
+                if (range) {
+                    const value = String(Math.max(0, Math.min(100, Math.round(percent))))
+                    if (range.value !== value) range.value = value
                 }
             }
 
             // The divider is slanted, so solve for the reveal whose slanted edge passes through the
-            // cursor: edge_x(cy) = reveal + slant - 2·slant·cy, set equal to cx.
+            // cursor: edge_x(cy) = reveal + slant - 2·slant·cy, set equal to cx. Clamp the cursor (not
+            // the reveal) to the box so a capture-drag past the edge stays sane.
             const revealFromPointer = (clientX: number, clientY: number) => {
                 const rect = root.getBoundingClientRect()
                 if (rect.width <= 0 || rect.height <= 0) return
-                const cx = ((clientX - rect.left) / rect.width) * 100
-                const cy = (clientY - rect.top) / rect.height
+                const cx = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100))
+                const cy = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
                 setReveal(cx + slant * (2 * cy - 1))
             }
 

@@ -210,7 +210,7 @@ body {
 .img-compare {
   position: relative;
   width: 100%;
-  aspect-ratio: 1500 / 990;
+  aspect-ratio: 1500 / 969;
   margin: 1.5rem 0;
   overflow: hidden;
   border: 1px solid var(--color-border-subtle);
@@ -344,10 +344,14 @@ body {
 }
 
 /* Accessible full-size view of both images (see BlogCompareSlider.astro). Native <dialog> gives the
-   focus trap, Esc-to-close, and focus restore for free. */
+   focus trap, Esc-to-close, and focus restore for free. Centered both axes via inset:0 + margin:auto. */
 .img-compare__lightbox {
-  width: min(92vw, 80rem);
-  max-height: 92vh;
+  position: fixed;
+  inset: 0;
+  width: min(96vw, 110rem);
+  height: fit-content;
+  max-height: 94vh;
+  margin: auto;
   padding: 0;
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
@@ -385,13 +389,14 @@ body {
 .img-compare__lightbox-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-  max-height: 92vh;
-  padding: 3rem 1.25rem 1.25rem;
+  gap: 1.5rem;
+  max-height: 94vh;
+  padding: 3rem 1.5rem 1.5rem;
   overflow: auto;
 }
 
-@media (max-width: 720px) {
+/* Stack vertically sooner: below this width two side-by-side screenshots get too small to read. */
+@media (max-width: 1000px) {
   .img-compare__lightbox-grid {
     grid-template-columns: 1fr;
   }
@@ -407,6 +412,13 @@ body {
   height: auto;
   margin: 0;
   border-radius: 0.5rem;
+}
+
+/* The Cmdr image (the one we're selling) gets a subtle accent glow to set it apart. */
+.img-compare__lightbox-figure--feature img {
+  box-shadow:
+    0 0 0 1px var(--color-accent),
+    0 0 32px -6px var(--color-accent-glow);
 }
 
 .img-compare__lightbox-figure figcaption {

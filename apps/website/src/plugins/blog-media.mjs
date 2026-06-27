@@ -131,12 +131,10 @@ function deepClone(node) {
   return JSON.parse(JSON.stringify(node))
 }
 
-function lightboxFigure(cell) {
+function lightboxFigure(cell, featured) {
   const caption = captionOf(cell)
-  return el('figure', { className: ['img-compare__lightbox-figure'] }, [
-    deepClone(cell),
-    ...(caption ? [el('figcaption', {}, [text(caption)])] : []),
-  ])
+  const className = ['img-compare__lightbox-figure', ...(featured ? ['img-compare__lightbox-figure--feature'] : [])]
+  return el('figure', { className }, [deepClone(cell), ...(caption ? [el('figcaption', {}, [text(caption)])] : [])])
 }
 
 /**
@@ -211,8 +209,8 @@ function buildSlider(beforeCell, afterCell) {
             ],
           ),
           el('div', { className: ['img-compare__lightbox-grid'] }, [
-            lightboxFigure(beforeCell),
-            lightboxFigure(afterCell),
+            lightboxFigure(beforeCell, false),
+            lightboxFigure(afterCell, true),
           ]),
         ],
       ),

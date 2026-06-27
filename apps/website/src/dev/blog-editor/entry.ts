@@ -683,7 +683,7 @@ function buildSlider(before: HTMLElement, after: HTMLElement): HTMLElement {
     '<svg class="img-compare__lightbox-close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
   const grid = document.createElement('div')
   grid.className = 'img-compare__lightbox-grid'
-  grid.append(lightboxFigure(before), lightboxFigure(after))
+  grid.append(lightboxFigure(before, false), lightboxFigure(after, true))
   lightbox.append(lightboxClose, grid)
 
   root.append(
@@ -697,9 +697,11 @@ function buildSlider(before: HTMLElement, after: HTMLElement): HTMLElement {
   return root
 }
 
-function lightboxFigure(cell: HTMLElement): HTMLElement {
+function lightboxFigure(cell: HTMLElement, featured: boolean): HTMLElement {
   const figure = document.createElement('figure')
-  figure.className = 'img-compare__lightbox-figure'
+  figure.className = featured
+    ? 'img-compare__lightbox-figure img-compare__lightbox-figure--feature'
+    : 'img-compare__lightbox-figure'
   figure.append(cell.cloneNode(true))
   const caption = captionFor(cell)
   if (caption) {
@@ -718,21 +720,25 @@ function activateCompareSliders(root: HTMLElement) {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let dragging = false
 
+    // --reveal is intentionally unclamped (the slant needs it slightly outside 0–100 to reach corners);
+    // only the keyboard range stays 0–100. See BlogCompareSlider.astro.
     const setReveal = (percent: number) => {
-      const clamped = Math.max(0, Math.min(100, percent))
-      slider.style.setProperty('--reveal', String(clamped))
-      if (range && Number(range.value) !== Math.round(clamped)) {
-        range.value = String(Math.round(clamped))
+      slider.style.setProperty('--reveal', String(percent))
+      if (range) {
+        const value = String(Math.max(0, Math.min(100, Math.round(percent))))
+        if (range.value !== value) {
+          range.value = value
+        }
       }
     }
-    // Slanted divider: solve reveal so its edge passes through the cursor (see BlogCompareSlider.astro).
+    // Slanted divider: solve reveal so its edge passes through the cursor; clamp the cursor to the box.
     const revealFromPointer = (clientX: number, clientY: number) => {
       const rect = slider.getBoundingClientRect()
       if (rect.width <= 0 || rect.height <= 0) {
         return
       }
-      const cx = ((clientX - rect.left) / rect.width) * 100
-      const cy = (clientY - rect.top) / rect.height
+      const cx = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100))
+      const cy = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
       setReveal(cx + slant * (2 * cy - 1))
     }
 
