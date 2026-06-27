@@ -409,33 +409,33 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
 
             <!-- Coming soon -->
             <section class="year-section">
-                <h2>Very soon</h2>
+                <h2 id="very-soon">Very soon</h2>
                 <ul class="milestone-list">
-                    <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">AI-powered rename</span>
-                        <span class="description">"Name these screenshots based on contents in 50 chars each"</span>
-                    </li>
-                    <li>
-                        <CheckIcon checked={false} />
-                        <span class="title">AI-powered file organization</span>
-                        <span class="description">Clean up your Downloads folder, with 100% human oversight.</span>
-                    </li>
                     <li>
                         <CheckIcon checked={false} />
                         <span class="title">Support more file systems</span>
                         <span class="description">S3 buckets, FTP(S), SFTP, SCP, WebDAV, NFS, etc.</span>
                     </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Handle zips</span>
+                        <span class="description">Compress/extract files, browse/modify archives.</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">AI-powered rename</span>
+                        <span class="description">"Name these screenshots based on contents in 50 chars each"</span>
+                    </li>
                 </ul>
             </section>
 
             <section class="year-section">
-                <h2>Also soon</h2>
+                <h2 id="also-soon">Also soon</h2>
                 <ul class="milestone-list">
                     <li>
                         <CheckIcon checked={false} />
-                        <span class="title">Handle zips</span>
-                        <span class="description">Compress/extract files, browse/modify zips.</span>
+                        <span class="title">Add plugins</span>
+                        <span class="description">Let you extend Cmdr with your scripts and tools.</span>
                     </li>
                     <li>
                         <CheckIcon checked={false} />
@@ -444,8 +444,13 @@ import NewsletterInlineWrapper from '../components/NewsletterInlineWrapper.astro
                     </li>
                     <li>
                         <CheckIcon checked={false} />
-                        <span class="title">Add plugins</span>
-                        <span class="description">Let you extend Cmdr with your scripts and tools.</span>
+                        <span class="title">AI-powered file organization</span>
+                        <span class="description">Clean up your Downloads folder, with 100% human oversight.</span>
+                    </li>
+                    <li>
+                        <CheckIcon checked={false} />
+                        <span class="title">Folder sync</span>
+                        <span class="description">Compare/sync two folders.</span>
                     </li>
                     <li>
                         <CheckIcon checked={false} />

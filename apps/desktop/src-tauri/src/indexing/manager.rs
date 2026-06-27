@@ -13,8 +13,8 @@ use super::event_loop::{
 };
 use super::events::{
     ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDebugStatusResponse, IndexDirUpdatedEvent,
-    IndexScanCompleteEvent, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord,
-    RescanReason, emit_rescan_notification,
+    IndexScanCompleteEvent, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord, RescanReason,
+    emit_rescan_notification,
 };
 use super::progress_reporter::ScanProgressReporter;
 use super::reconciler::{self, EventReconciler};
