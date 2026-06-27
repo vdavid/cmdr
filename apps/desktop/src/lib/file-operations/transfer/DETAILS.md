@@ -32,7 +32,7 @@ and gotchas live in [CLAUDE.md](CLAUDE.md).
   `destroy()`, the handler methods, and state via getters. `backgrounded` and `destroyed` are plain `let`s (read live
   during disposal), NOT `$state` — see the module header for why
 - **`TransferConflictDialog.svelte`**: Self-contained conflict-resolution UI (the comparison grid + the 4×2 button grid
-  + the bottom rollback/cancel row). Props: the `conflictEvent`, operation-type flags (`isCopy`/`isMove`/
+  plus the bottom rollback/cancel row). Props: the `conflictEvent`, operation-type flags (`isCopy`/`isMove`/
   `isSameVolumeMove`), the `isCancelling`/`isResolvingConflict` disable gates, and `onResolve`/`onCancel` callbacks.
   Owns its own size-color helper, the file-over-folder warning, and all conflict CSS
 - **`TransferErrorDialog.svelte`**: Modal that renders entirely from the typed `WriteOperationError`, category-colored

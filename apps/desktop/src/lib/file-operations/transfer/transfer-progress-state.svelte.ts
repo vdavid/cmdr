@@ -128,8 +128,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   /** Whether this move involves a non-local volume (MTP, etc.); backend handles all strategy. */
   const isVolumeMove =
     config.operationType === 'move' &&
-    (config.sourceVolumeId !== DEFAULT_VOLUME_ID ||
-      (config.destVolumeId ?? DEFAULT_VOLUME_ID) !== DEFAULT_VOLUME_ID)
+    (config.sourceVolumeId !== DEFAULT_VOLUME_ID || (config.destVolumeId ?? DEFAULT_VOLUME_ID) !== DEFAULT_VOLUME_ID)
 
   /** Minimum display time (ms) to prevent jarring one-frame flash. */
   const MIN_DISPLAY_MS = 400
