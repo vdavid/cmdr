@@ -204,6 +204,10 @@ and one write clobbers the other.
 
 Manual server IDs use the format `manual-{address}-{port}` with dots/colons replaced by dashes. This is deterministic (same address+port always produces the same ID), preventing duplicates. The `manual-` prefix avoids collision with mDNS-derived IDs.
 
+### TCP reachability check runs in the dialog, before the host is added
+
+`add_manual_server` does a TCP connect to `host:port` and fails up front if the port is closed, so the dialog shows the error inline and the host is never added on an unreachable address. Discovered hosts can sit in a "Resolving…" state because mDNS guarantees they exist; a typed address has no such guarantee, so without the up-front check a typo or dead host would clutter the list with an entry that never works. The check proves only that the port is open, not that SMB is healthy — protocol/auth failures still surface later through the normal share-listing pipeline once the host is in the list.
+
 ### Mount path disambiguation for same-name shares
 
 When two servers have a share with the same name (for example, two NAS devices both sharing `public`), the mount code

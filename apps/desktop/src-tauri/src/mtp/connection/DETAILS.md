@@ -90,7 +90,7 @@ foreground gets the device after the current in-flight transaction (mtp-rs guara
 scan's `cancelled` flag is checked at every unit boundary AND threaded into `mtp-rs` per `GetObjectInfo`, so a cancel
 stops within one round trip; heal-to-rescan, freshness, and buffer/replay/overflow are untouched.
 
-**Plan.** `docs/specs/mtp-device-scheduler-plan.md`.
+**Design history** is in git (former `docs/specs/mtp-device-scheduler-plan.md`).
 
 ## Upload partial cleanup (two-phase PTP uploads)
 

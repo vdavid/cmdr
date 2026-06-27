@@ -211,6 +211,13 @@ flag it. If you genuinely need a one-off variant, add the rationale via a `/* al
 native-`<select>` replacement in scope (settings via `SettingSelect`, viewer encoding / view-mode, transfer volume,
 debug panels) renders through it so the macOS-y look lives in one place.
 
+**Scope rule — exactly two value-picker primitives.** `Select` (pick one of a fixed list) and `Combobox` (pick from a
+list OR type your own, async list) are the ONLY value pickers; both are Ark-based so keyboard a11y and ARIA come for
+free. Converge any new picker onto one of them — don't hand-roll a native `<select>` or a bespoke listbox. Deliberately
+NOT value pickers: popovers/menus (`Popover`/`FilterPopover`, context menus, the swatch picker) are a different
+primitive, and `CommandPalette` is a bespoke fuzzy+recents launcher — forcing either onto Ark buys risk, not
+maintainability.
+
 Props:
 
 - `items: SelectItem[]` — `{ value, label, description?, group? }`. `description` renders as quieter inline text after
@@ -544,7 +551,8 @@ in one component is what guarantees the uniform look, while the prop split keeps
 `<button type="button">` wrapping the `<kbd>`, with `aria-label="Customize the {command name} shortcut"` and a
 "Customize this shortcut" tooltip. Clicking deep-links to Settings > Keyboard shortcuts (`openShortcutCustomization`).
 Set `clickable={false}` when the chip sits inside another interactive control (palette rows, F-key bar buttons) where a
-nested click target would double-activate. Non-clickable chips render a bare `<kbd>`.
+nested click target would double-activate (it's a competing click target, not a focus-nesting problem — don't "fix" it
+with focus management; the non-clickable chip is the fix). Non-clickable chips render a bare `<kbd>`.
 
 **Lazy-import constraint (load-bearing, don't break it).** The chip must NOT statically import
 `openShortcutCustomization`. That helper pulls in `@tauri-apps/api/webviewWindow` and window-positioning, which (1) must

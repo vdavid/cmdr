@@ -23,7 +23,8 @@ Frontend counterpart: [`apps/desktop/src/routes/viewer/CLAUDE.md`](../../../src/
   UTF-16 -> UTF-8 offset clamp (surrogate-safe), streaming via byte-offset seeks to keep `ByteSeek` honest
 - `encoding.rs`: `FileEncoding` enum (UTF-8, UTF-8 with BOM, Windows-1252, ISO-8859-1, Mac Roman, US-ASCII, UTF-16 LE,
   UTF-16 BE), BOM + 64 KB heuristic detection, `NewlineScanner` with carry-byte state for UTF-16 chunked reads,
-  `find_newlines` / `decode_line`, `same_byte_layout` predicate
+  `find_newlines` / `decode_line`, `same_byte_layout` predicate. `NewlineScanner::feed` throughput numbers anchoring the
+  large-log open budget: [viewer-encoding-bench](../../../../../docs/notes/viewer-encoding-bench.md)
 - `full_load.rs`: loads entire file into `String` (<1MB files); decodes per `FileEncoding`
 - `byte_seek.rs`: seeks by byte offset, scans backward for newline (instant open); ASCII-compatible encodings use the
   `memchr` fast path, UTF-16 uses `NewlineScanner` with byte-aligned reads
@@ -86,6 +87,25 @@ by the per-open token in the handler, not by CSP, so the app-wide allowance is a
 FDA: the handler `File::open`s a real path off an IPC-minted token, inheriting the viewer's existing assumption that a
 viewer only opens after the user picked the file (so FDA is already decided). This is NOT a new pre-gate read path
 (`fda_gate.rs`); a stray TCC denial reading bytes here is a real access failure, not a scheme bug.
+
+### Key decisions (media)
+
+**Decision**: Lean on WKWebView for decode/render; pull in NO Rust image/RAW decoder for the viewer.
+**Why**: On macOS the Tauri webview is WKWebView, which decodes JPEG/PNG/GIF/WebP/BMP/TIFF, HEIC, and SVG in a plain
+`<img>` (ImageIO) and renders PDF inline via `<embed>` (PDFKit), animation and EXIF auto-orientation included. Once
+camera RAW is out of scope (a power-user niche needing a real decode pipeline), a Rust decoder buys nothing a
+file-manager preview needs over what the engine already does — the feature reduces to "serve bytes to an `<img>`/`<embed>`
+and get out of the way." This holds ONLY while Cmdr is macOS-only: Linux/Windows (webkit2gtk / WebView2) won't decode
+HEIC and never RAW, so cross-platform is the fork point where a Rust decoder (`image` crate, or Prvw's) comes back. The
+`cmdr-media://` scheme is the seam to slot one behind later (RAW → PNG on the fly) without the frontend changing.
+
+**Decision**: Per-open capability token (`token -> path`), NOT validating the requested path against the session.
+**Why**: The viewer renders the content of an UNTRUSTED file; a hostile file can make the webview request
+`cmdr-media:///etc/ssh/id_rsa`. Path-validation defenses are weak: the scheme handler can't reliably know which window is
+asking, and the window already knows its own path anyway. The unguessable token means the backend only ever exposes
+files it chose to serve; there is no way to name an arbitrary file, and an unknown token is simply a 404. The data URL
+shortcut for small images (already allowed by `img-src data:`) was rejected for uniformity — PDFs and large images need
+the scheme + range support regardless, so one path (the token scheme for everything) beats a size-cliff between two.
 
 ## Backend selection logic
 

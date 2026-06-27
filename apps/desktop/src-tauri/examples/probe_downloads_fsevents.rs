@@ -1,8 +1,7 @@
 //! FSEvents-under-TCC probe for the downloads watcher.
 //!
-//! Pre-flight diagnostic for the downloads-watcher feature (see
-//! `docs/specs/downloads-watcher-plan.md`). This probe answers the open
-//! question: does `notify::recommended_watcher`
+//! Pre-flight diagnostic for the downloads watcher (`src/downloads/`). This
+//! probe answers the open question: does `notify::recommended_watcher`
 //! deliver events for `~/Downloads` when the user has only granted the
 //! per-folder Downloads TCC consent, or does it require full Full Disk Access?
 //!

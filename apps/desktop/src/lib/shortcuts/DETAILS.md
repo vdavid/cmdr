@@ -246,7 +246,7 @@ view-mode toggle and the appearance controls under `⌘,`), so we're not displac
 choosing not to mirror Finder for this one binding. `⌘J` is short, easy to reach, and intuitive as "Jump." Chrome's
 Downloads-tab shortcut is `⌘⇧J`, so there's no collision with the most common downloads workflow either. Finder migrants
 pick up the new muscle memory within a few uses because the view-mode controls they expect are still keyboard-accessible
-on dedicated keys. See `docs/specs/downloads-watcher-plan.md` § "In-app shortcut: ⌘J" for the full rationale.
+on dedicated keys.
 
 ### Why two tiers (action vs navigation commands)?
 

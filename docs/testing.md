@@ -319,3 +319,5 @@ E2E test hooks split along two axes:
 - IPC test helpers: [apps/desktop/src/lib/ipc/CLAUDE.md](../apps/desktop/src/lib/ipc/CLAUDE.md)
 - Notes from the speedup + coverage push: [docs/notes/speed-up-e2e-tests.md](notes/speed-up-e2e-tests.md),
   [docs/notes/extend-e2e-tests.md](notes/extend-e2e-tests.md)
+- Pre-release manual verification (native menus, drag-and-drop, real file system):
+  [docs/guides/testing/manual-checklist.md](guides/testing/manual-checklist.md)

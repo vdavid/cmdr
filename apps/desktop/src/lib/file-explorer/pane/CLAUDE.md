@@ -1,8 +1,7 @@
 # Pane subsystem
 
 Per-pane orchestrator: cursor, focus, dual-pane coordination, tab state, selection, type-to-jump, dialogs, drag, volume
-tinting, and navigation primitives. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and conventions:
-[DETAILS.md](DETAILS.md).
+tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and conventions: [DETAILS.md](DETAILS.md).
 
 ## Module map
 
@@ -32,8 +31,8 @@ tinting, and navigation primitives. Up: [`../CLAUDE.md`](../CLAUDE.md). Full fil
 - **`FilePane.applyIndices` jumps the cursor on SELECT only** (deselect leaves it put), via
   `firstSelectedIndex(idxs, hasParent)`, which skips the `..` row. Don't use raw `idxs[0]`; it can be `..`.
 - **Snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false` (no `..`
-  row) AND `isCrossVolumeNavigation` routes any real-path nav through the volume-change machinery. Skip either and
-  selection goes off-by-one or the pane keeps `search-results` on a real path.
+  row) AND `isCrossVolumeNavigation` routes any real-path nav through the volume-change machinery. Skip either → off-by-one
+  selection, or `search-results` stuck on a real path.
 - **The MTP clipboard refusal gate keys on `caps.kind === 'mtp'`, not `!supportsSystemClipboard`** (network and
   search-results lack one too, so the MTP-worded toast would misfire).
 - **The focus guard (`DualPaneExplorer.handleFocusGuard`) must keep its `[role="dialog"], [role="alertdialog"]`
@@ -44,14 +43,15 @@ tinting, and navigation primitives. Up: [`../CLAUDE.md`](../CLAUDE.md). Full fil
   in DETAILS).
 - **`navigate(intent, deps)` is the single coordinator-level pane-nav entry.** Its `NavigateResult` refusal `message`
   strings are an EXACT contract (pinned byte-for-byte; the MCP adapter forwards them verbatim): don't reword without
-  updating the tests, and don't make the in-place arm commit immediately. Also don't add `cd`-style heuristics in
+  updating tests, and don't make the in-place arm commit immediately. Don't add `cd`-style heuristics in
   `commitPathFromListing`; for a new virtual namespace, extend the explicit prefix branch. DETAILS § "The navigate()
   transaction".
 - **Self-drag drop builds from recorded app state, not the pasteboard** (`handleDrop` consumes
   `consumableSelfDragIdentity` only for an active self-drag from a registered backend-real volume). See
   [`../drag/CLAUDE.md`](../drag/CLAUDE.md).
-- **`DualPaneExplorer.svelte` and `FilePane.svelte` are ~3000 lines each** (`file-length`-flagged). Don't add to them:
-  cross-cutting state → a `*.svelte.ts` factory; pure logic → a `*.ts` helper + colocated test.
+- **`DualPaneExplorer.svelte` and `FilePane.svelte` are ~3000 lines each** (`file-length`-flagged). Don't add to them or
+  carve child components (DETAILS § "Why not child components"); cross-cutting state → a `*.svelte.ts` factory, pure
+  logic → a `*.ts` helper.
 - **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`. Don't drop the reactive
   `mediaTick`, or dark-mode / contrast swaps won't repaint the tint.
 

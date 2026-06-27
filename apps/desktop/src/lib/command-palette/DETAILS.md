@@ -60,4 +60,4 @@ User presses ⌘⇧P
   has `Backspace` and `⌘↑`); showing all crowds the row. Three is the product-decided cap (power users use the palette
   to discover alternates). Reading effective bindings (not `command.shortcuts`) keeps an open palette in sync with a
   mid-session rebind and avoids showing a rebound combo that no longer works. The full list lives in shortcut settings.
-  See decision (a) in `docs/specs/shortcut-display-unification-plan.md`.
+  Chips render non-clickable here (the row is already the button); see `$lib/ui/DETAILS.md` § ShortcutChip.

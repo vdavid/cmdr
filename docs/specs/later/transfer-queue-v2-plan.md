@@ -1,7 +1,7 @@
 # Transfer queue + pause — v2 follow-ups
 
-Created 2026-06-21. Status: deferred. Parent:
-[`../2026-06-21-transfer-queue-pause-plan.md`](../2026-06-21-transfer-queue-pause-plan.md) (shipped v1).
+Created 2026-06-21. Status: deferred. Parent: the shipped v1 transfer-queue + pause work (durable home:
+`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § Operation manager; design history in git).
 
 v1 shipped a lane-based queue (serialize per shared resource, parallelize disjoint), pause/resume between files, a
 standalone macOS queue window, and Pause + Queue (F2) controls on the progress dialog (cancel-only, no rollback). These

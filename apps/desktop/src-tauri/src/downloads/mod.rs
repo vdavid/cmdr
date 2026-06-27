@@ -48,8 +48,7 @@
 //! to a final-name file, or a direct create of a final-name file. CLI
 //! tools that write directly to the final name with no rename signal
 //! (curl/wget, `cp` from Terminal, 7-Zip extracting) are out of scope.
-//! See `docs/specs/downloads-watcher-plan.md` § "Latest download
-//! definition" for the rationale.
+//! `DETAILS.md` § "Browser-style rename scope" covers why no settle delay.
 //!
 //! ## Gotchas
 //!

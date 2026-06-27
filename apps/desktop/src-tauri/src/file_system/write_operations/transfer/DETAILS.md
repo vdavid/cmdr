@@ -139,7 +139,7 @@ The same ledger must flow out of the **interrupted-mid-stream** path, not just t
 
 ### Foreground auto-yield (navigate the phone DURING a transfer, no pause)
 
-Design spec (the bounded-window mechanism + the why behind debounce/floor/Running-not-Paused): [`docs/specs/2026-06-25-bounded-window-mtp-reads-plan.md`](../../../../../../../docs/specs/2026-06-25-bounded-window-mtp-reads-plan.md), which supersedes the release/reopen mechanism in [`2026-06-22-navigate-during-transfers-plan.md`](../../../../../../../docs/specs/2026-06-22-navigate-during-transfers-plan.md).
+The bounded-window mechanism and the why behind debounce/floor/Running-not-Paused are captured in this section and `mtp/connection/DETAILS.md` § "Bounded-window reads". Design history is in git (former `docs/specs/2026-06-25-bounded-window-mtp-reads-plan.md` and `2026-06-22-navigate-during-transfers-plan.md`).
 
 The same park-in-place behavior is also driven by a SECOND trigger: foreground device work pending while the copy is RUNNING. A long MTP→local copy could otherwise keep re-grabbing the device lock window after window and starve a foreground listing/nav. The fix makes the per-window checkpoint a `background_yield_point`, exactly like the index scan does at its unit boundary: a transfer becomes a yielding background user of the per-device `DevicePriorityGate` (`mtp/connection/scheduler.rs`). Because the read is bounded windows that hold nothing between them, "yield" means simply **don't start the next window** until foreground drains — no session release, no reopen — gated on `foreground_pending` instead of the pause flag.
 

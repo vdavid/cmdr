@@ -33,7 +33,8 @@
 //! pending), and a parked scan is always woken because the last foreground guard
 //! drop decrements to zero and notifies. We re-read the counter after every wake
 //! (`while` loop), so a stale or spurious wake just re-parks rather than
-//! proceeding wrongly. See `docs/specs/mtp-device-scheduler-plan.md`.
+//! proceeding wrongly. Design history is in git (former
+//! `docs/specs/mtp-device-scheduler-plan.md`).
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};

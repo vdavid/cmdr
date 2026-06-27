@@ -39,6 +39,10 @@ Background on default sort-order shortcuts: `docs/notes/sort-order-shortcut-rese
 - **`menuCommands` (in `shortcuts-store.ts`) must stay in sync with the Rust menu items.** The
   `menuCommands ↔ command_id_to_menu_id` set-equality test in `commands/rust-command-id-drift.test.ts` fails when a menu
   item is missing (stale accelerator after rebind) or excused without a documented reason.
+- **`downloads.goToLatest` binds `⌘J` deliberately, not by oversight.** Finder's `⌘J` is "View Options", so Finder
+  migrants may expect per-pane appearance controls — accepted (user-confirmed): Cmdr's view-mode and appearance controls
+  have their own bindings, and `⌘J` ("Jump" to the latest download) displaces no existing Cmdr action. Don't "fix" it to
+  match Finder.
 - **`handleGlobalKeyDown` bails when focus is in a text input and the combo `isTypingKeyCombo`** (central typing guard),
   so a bare-key Tier 1 binding (Tab → switch pane) doesn't fire mid-typing. No chorded shortcuts; modifier-only combos
   are rejected.

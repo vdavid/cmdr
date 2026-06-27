@@ -9,8 +9,8 @@ entry points; this is the playbook they assume.
 1. **Plan.** A planner agent writes a just-in-time plan in `docs/specs/`: loud rules, a fresh grep of the current code,
    milestones each carrying Scope / Intentions / Landmines / Test plan / DONE, and an invariants footer. Then fresh-eyes
    review rounds, each a NEW agent coming from a different angle, until one returns no meaningful input (usually 3-4
-   rounds). Every round tends to find real bugs, so don't skip them. Templates: `docs/specs/explorer-*-plan.md` and
-   `command-handler-record-plan.md`.
+   rounds). Every round tends to find real bugs, so don't skip them. For template examples, read a past refactor plan in
+   git history (the explorer phase plans and `command-handler-record-plan.md`, since wiped from `docs/specs/`).
 2. **Execute.** One Opus agent per milestone, sequential. Each reads the spec itself and reports back in ≤350 words. The
    orchestrator reads every spec in full and reviews every diff (full read for seam commits), and otherwise only
    coordinates: delegate all debugging.

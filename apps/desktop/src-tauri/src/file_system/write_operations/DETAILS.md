@@ -132,7 +132,7 @@ Every write-op driver MUST register its destination with the downloads watcher's
 
 **Contract:** call `crate::downloads::note_pending_write_for_cmdr(&dest_path)` immediately before the write syscall (or the volume-trait equivalent: `Volume::write_from_stream`, `Volume::create_file`, `Volume::create_directory`, `Volume::rename`, `Volume::delete`).
 
-**Locked-in scoping:** the prefix check lives INSIDE the helper (and the underlying `IgnoreSet::note_pending`). Call sites invoke unconditionally; paths outside the resolved Downloads root silently no-op. **Don't add `if path.starts_with(downloads_dir)` guards at call sites** — see [`docs/specs/downloads-watcher-plan.md`](../../../../../../docs/specs/downloads-watcher-plan.md) § "Cmdr-own-write ignore set" for the rationale.
+**Locked-in scoping:** the prefix check lives INSIDE the helper (and the underlying `IgnoreSet::note_pending`). Call sites invoke unconditionally; paths outside the resolved Downloads root silently no-op. **Don't add `if path.starts_with(downloads_dir)` guards at call sites**: centralizing the scope in the helper keeps it from drifting across call sites (the downloads watcher's ignore-set design lives in the `downloads` module docs).
 
 **No-op when the watcher is dormant.** If the FDA gate is closed (or `refresh_runtime` hasn't been called yet), the watcher isn't installed and the helper is a cheap no-op (single mutex `lock + is_none`). Production write ops fire freely; the cost is one atomic-bool read per write.
 
@@ -169,7 +169,7 @@ See also: [`apps/desktop/src-tauri/src/downloads/CLAUDE.md`](../../downloads/CLA
 
 ## Operation manager
 
-Design spec (the full v1/v2 plan and the why behind each decision): [`docs/specs/2026-06-21-transfer-queue-pause-plan.md`](../../../../../../docs/specs/2026-06-21-transfer-queue-pause-plan.md).
+The full model and the why behind each decision are captured in this section. Design history is in git (former `docs/specs/2026-06-21-transfer-queue-pause-plan.md`).
 
 `manager.rs` is the single coordinator every write op flows through. It exists because there were FIVE independent spawn paths (`start_write_operation` for local copy/move/trash + local delete; the volume-delete branch in `delete_files_start`; `copy_between_volumes`; `move_between_volumes`; `move_within_same_volume`), each hand-rolling its own `tokio::spawn` + state-insert + status-register + `WriteSettledGuard`, and an op always spawned immediately. The manager unifies them behind `spawn_managed(descriptor, state, deferred)` and adds a registry with real lifecycle states plus **lane-based admission** that can serialize ops which would thrash a shared device.
 

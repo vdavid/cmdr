@@ -3,8 +3,8 @@
  * deliberately pure so the decision truth table is unit-testable in isolation. The
  * reactive startup effect that calls it lives in `whats-new-trigger.svelte.ts`.
  *
- * The full intention behind each branch is in `docs/specs/whats-new-popup-plan.md`
- * § "When the popup shows" and the colocated `CLAUDE.md`.
+ * The full intention behind each branch (the "when the popup shows" rules) is in
+ * the colocated `CLAUDE.md`.
  */
 
 /** What the startup effect should do with this launch. */

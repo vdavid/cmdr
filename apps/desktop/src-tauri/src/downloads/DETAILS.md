@@ -60,6 +60,21 @@ tests use an in-memory `FakeRegistrar`.
 
 v1 scopes to browser-style downloads: a direct create of a final-name file, or a rename from a partial-suffix file
 (`.crdownload`, `.part`, `.download`) to a final-name file. CLI tools that write directly to the final name with no
-rename signal (curl/wget, `cp` from Terminal, 7-Zip extracting) are out of scope. See
-`docs/specs/downloads-watcher-plan.md` § "Latest download definition": no settle delay is added because the rename
-signal is reliable for the headline use case and a settle delay adds visible toast latency.
+rename signal (curl/wget, `cp` from Terminal, 7-Zip extracting) are out of scope. No settle delay (re-stat after N ms to
+confirm the size stabilized) is added: the rename signal is reliable for the headline use case, and a settle delay would
+add visible toast latency. Revisit if real-world feedback says CLI downloads matter.
+
+## Latest-download resolution
+
+`go_to_latest_download` resolves the target in two tiers:
+
+- **Primary — the event-driven `LatestRing`** (`watcher.latest_download()`): the most-recent eligible final-form file the
+  watcher observed this session. The ring is process-lifetime — it survives across hotkey presses and clears only on
+  restart.
+- **Fallback — a bounded recursive scan** (`scan_latest`, capped at `SCAN_MAX_DEPTH`, picking the max-mtime eligible
+  file), used ONLY when the ring is empty: a fresh launch where the hotkey fires before any download arrived this
+  session. Run via `spawn_blocking` so the directory walk never blocks the IPC thread. Both tiers empty → the
+  empty-state error (the FE offers to open Downloads anyway).
+
+Both tiers share the same `is_eligible` filter (hidden and partial-suffix files excluded; a regular file or a symlink to
+one accepted), so an event-detected "latest" and a scanned "latest" can't disagree.

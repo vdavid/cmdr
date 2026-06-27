@@ -152,8 +152,7 @@ output is parity-pinned by `indexing-i18n-parity.test.ts`.
 The drive index serves directory sizes that are sometimes exact, sometimes a lower bound, sometimes unknown, and
 sometimes accurate-but-stale. The backend collapses its epoch model into two booleans per `FileEntry` / `DirStats`
 (`recursiveSizeComplete`, `recursiveSizeStale`); the FE renders from `{recursiveSize, complete, stale}` and never sees
-raw epochs. The full data model is in the backend `indexing/DETAILS.md` § "Honest sizes" and
-`docs/specs/2026-06-25-honest-index-sizes-plan.md`.
+raw epochs. The full data model is in the backend `indexing/DETAILS.md` § "Honest sizes".
 
 **Content state — `getDirSizeDisplayState(recursiveSize, complete, stale, updating)`** (`views/full-list-utils.ts`), a
 pure function and the single source of truth:

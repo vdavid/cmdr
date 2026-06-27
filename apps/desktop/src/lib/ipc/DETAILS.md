@@ -155,7 +155,8 @@ Converting a consumer to an `on*` wrapper routes through `events.<name>.listen`,
   filter also closed a latent bug: the old `listen<{ state: 'direct' | 'disconnected' }>` cast lied about the runtime
   `needs_auth` value.
 
-See [`docs/specs/typed-events-plan.md`](../../../../../docs/specs/typed-events-plan.md) for the full event inventory.
+The authoritative list of typed events is the `collect_events![…]` block in `ipc.rs::builder()` (and the generated
+`events.*` in `bindings.ts`).
 
 ## Call-site convention: name your arguments
 

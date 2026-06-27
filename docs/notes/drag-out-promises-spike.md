@@ -1,8 +1,9 @@
 # Drag-out file promises — M0 spike findings
 
-Reference note for the [drag-out file promises plan](../specs/drag-out-file-promises-plan.md). Records the two
-load-bearing unknowns the M0 spike resolved before any real code landed: the chosen pasteboard layout and the
-folder-promise verdict. Linked from
+Records the two load-bearing unknowns the drag-out file-promises spike resolved before any real code landed: the chosen
+pasteboard layout and the folder-promise verdict. The shipped architecture and its rationale live in
+[`apps/desktop/src-tauri/src/native_drag/CLAUDE.md`](../../apps/desktop/src-tauri/src/native_drag/CLAUDE.md) (+ its
+`DETAILS.md`); design history is in git. Linked from
 [`src/lib/file-explorer/drag/CLAUDE.md`](../../apps/desktop/src/lib/file-explorer/drag/CLAUDE.md).
 
 ## Verdicts

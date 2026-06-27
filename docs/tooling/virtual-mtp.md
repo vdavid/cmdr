@@ -26,9 +26,10 @@ So you can immediately drag a file onto it, copy out of it, trigger a conflict d
 It's also **the test rig for drag-out file promises** (dragging a phone/NAS file to Finder downloads it). The Finder
 drop leg can't be automated honestly (Finder owns the gesture), so the virtual device is how you exercise that feature
 by hand: drag `DCIM/photo-001.jpg` from the virtual pane onto the Desktop and watch it download under Finder's chosen
-name, with a completion toast. See the manual protocol in `docs/specs/drag-out-file-promises-plan.md` § M4 and the
-architecture in
-[`apps/desktop/src-tauri/src/native_drag/CLAUDE.md`](../../apps/desktop/src-tauri/src/native_drag/CLAUDE.md).
+name, with a completion toast. The full manual protocol (the 11 Finder-leg checks) and the architecture live in
+[`apps/desktop/src-tauri/src/native_drag/DETAILS.md`](../../apps/desktop/src-tauri/src/native_drag/DETAILS.md)
+§ "Manual verification (the Finder leg)" and
+[`native_drag/CLAUDE.md`](../../apps/desktop/src-tauri/src/native_drag/CLAUDE.md).
 
 ## Running it alongside your real dev session
 

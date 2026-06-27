@@ -287,7 +287,7 @@ Schema version mismatch (any bump in `SCHEMA_VERSION`) drops the DB and rebuilds
 
 ## Honest sizes (coverage + freshness)
 
-The full design (display table, the four write paths, decisions) is in `docs/specs/2026-06-25-honest-index-sizes-plan.md`. The data model splits the overloaded "0 bytes" into two orthogonal facts, one stored integer each:
+The full design (the four write paths, the read-side derivation, the decisions) is captured in this section; the FE display table lives in `src/lib/indexing/DETAILS.md` § "Honest size rendering". Design history is in git (former `docs/specs/2026-06-25-honest-index-sizes-plan.md`). The data model splits the overloaded "0 bytes" into two orthogonal facts, one stored integer each:
 
 - **`entries.listed_epoch`** (per dir): the epoch at which this dir's direct contents were last successfully listed. `0` = never listed. This is what distinguishes a *genuinely empty* `0 bytes` folder (`listed_epoch > 0`, no children) from an *unknown* `—` folder (`listed_epoch == 0`).
 - **`dir_stats.min_subtree_epoch`** (rolled up by the aggregator): `min` over the dir's own `listed_epoch` and every child dir's `min_subtree_epoch`, with `0` absorbing. `> 0` ⇒ the subtree is fully covered (size is exact); `0` ⇒ some descendant is unlisted (size is a lower bound).

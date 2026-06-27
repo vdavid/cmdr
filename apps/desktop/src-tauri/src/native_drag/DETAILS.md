@@ -132,5 +132,20 @@ real failure uses code 1.
   leaf names, all-failed still surfaces a toast).
 - `type_plan.rs`: the pure pasteboard policy (local byte-identical, virtual empty across every item).
 
-The Finder leg itself can't be automated honestly (Finder owns the drop gesture); the manual protocol in
-`docs/specs/drag-out-file-promises-plan.md` § M4 covers it with the virtual-MTP rig.
+## Manual verification (the Finder leg)
+
+The Finder leg can't be automated honestly (Finder owns the drop gesture), so it's a manual protocol. Run it with the
+`CMDR_VIRTUAL_MTP=1` rig (`docs/tooling/virtual-mtp.md`), plus a real phone if available:
+
+1. Virtual MTP pane → drag one photo to Desktop → file lands, bytes correct, completion toast.
+2. Multi-select 3 files → all land, names right.
+3. Name collision at dest → Finder uniquifies → our file lands under THAT leaf (`sunset 2.jpg`), not the source basename.
+4. Folder drag → recursive download (the hand-rolled walk populates the Finder-created dir).
+5. Eject attempt mid-fulfillment → blocked (source volume busy).
+6. Failure injection (disconnect / read error mid-fulfillment) → Finder error alert, NO partial file at dest, friendly
+   log line.
+7. App quit mid-fulfillment → clean abort, no partial file.
+8. Drag back into Cmdr (self-drag) → recorded-identity path, unchanged.
+9. Drag from a LOCAL pane to Finder/terminal → byte-identical to today (URL drop + terminal text).
+10. Drag from a non-local pane to a terminal → clean no-op, no textClipping junk.
+11. SMB-native pane variant of (1).
