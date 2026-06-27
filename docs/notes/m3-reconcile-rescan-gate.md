@@ -14,8 +14,8 @@ Throwaway gate artifacts (review, then delete or promote): `apps/desktop/src-tau
   (add/remove/modify/dir↔file type-change) and already stamps `listed_epoch` + propagates `min_subtree_epoch` (M1/M2
   landed it). A complete reconcile deletes vanished children itself, so an interrupted→complete cycle self-heals: no
   orphans, no ghost sizes, across repeated cycles. The reconciled index matches a fresh-from-scratch index byte-for-byte
-  on sizes/counts/membership. **No extra orphan-sweep mechanism is required for correctness** when a complete reconcile
-  runs; a prototype epoch sweep is included as an optional belt-and-suspenders.
+  on sizes/counts/membership. **No orphan-sweep mechanism is required for correctness** when a complete reconcile
+  runs — and none is wired: an epoch sweep was prototyped and rejected (see the residual note below).
 - **Perf is acceptable — IF the coverage recompute is done right.** Firing `PropagateMinSubtreeEpoch` once per dir (37k
   ancestor-walks) is the dominant cost and makes a no-op reconcile ~2× SLOWER than today's truncate baseline. Replacing
   it with ONE bottom-up aggregate after the walk makes a no-op reconcile CHEAPER than the truncate baseline.
@@ -71,9 +71,6 @@ All in `reconcile_correctness.rs`, real `reconcile_subtree` against real on-disk
    whole subtree) → bump → interrupted reconcile → complete reconcile. After all cycles: no orphans, and the index
    matches a fresh-from-scratch build of the final disk state (no ghost sizes). This is the 1.83 TB-ghost-class guard as
    a standing test.
-5. `prototype_epoch_orphan_sweep_prunes_only_gone_rows` — prototype of the optional epoch sweep (prune dirs whose
-   `listed_epoch < rescan_epoch` AND whose parent was re-listed at `rescan_epoch`); prunes exactly the vanished dir,
-   spares re-listed ones.
 
 Why orphan-freedom holds without a mandatory sweep: a _complete_ reconcile re-lists every dir and its delete branch
 (`for row in db_children { if !matched { Delete } }`) removes any child absent from the live listing — including the
@@ -82,9 +79,12 @@ complete pass re-lists. The interrupted state is transiently dirty (lingering ro
 "≥"/"—"), and the next complete pass is exhaustive.
 
 The one residual: if a user is interrupted on EVERY rescan and never completes one, lingering rows persist (but coverage
-honestly reads incomplete the whole time — no false "complete"). The optional epoch sweep (test 5) self-heals that
-without waiting for the parent dir to be diffed again; recommend shipping it as cheap insurance, not as a correctness
-prerequisite.
+honestly reads incomplete the whole time — no false "complete"). An epoch sweep was prototyped for this case and
+rejected: it can't help. Its predicate (`listed_epoch < rescan_epoch` AND parent re-listed this epoch) only matches a
+child under a parent the pass DID re-list — and a re-listed parent already ran the delete branch, so its genuinely-gone
+children are pruned already. The only rows the sweep would then match are dirs still present on disk whose own listing
+failed transiently (kept at their old epoch by design as "honest unknown") — deleting those is a regression, not
+insurance. Nothing short of completing a reconcile of the parent fixes the never-completes case.
 
 ## Recommendation: full GO
 
@@ -112,8 +112,9 @@ warranted — the perf concern was the coverage recompute strategy, not the volu
 - **Preserve the pre-arm-before-snapshot live-change buffering**, adapted: there's no truncate to race now, so a
   mid-rescan live change to an already-reconciled dir can be applied directly (or kept buffered + replayed; either is
   safe since the prior tree is intact). Simpler than today.
-- **Optional orphan sweep** (prototype in test 5): run after a complete reconcile as cheap insurance for the
-  never-completes-a-rescan user. Bounded, logged. Not required for correctness.
+- **No orphan sweep.** An epoch sweep was prototyped and dropped: after a complete reconcile its true-positive set is
+  empty (the per-dir delete branch already pruned every gone child under a re-listed parent), and the only rows it would
+  match are present-on-disk dirs with a transient listing error — false deletes. See the residual note above.
 
 ### What this buys
 

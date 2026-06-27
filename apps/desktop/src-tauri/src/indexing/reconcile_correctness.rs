@@ -10,7 +10,6 @@
 //!     deleted on the live side while the reconcile was interrupted before reaching it must NOT linger
 //!     as an orphan.
 //!  3. Epoch re-stamp gives partial-rescan granularity (reconcile /a but not /b → /a fresh, /b stale).
-//!  4. A prototype epoch-based ORPHAN SWEEP, proving the design's safety net works if (2) ever needs it.
 //!
 //! Cheap; run in CI normally (no `#[ignore]`).
 //!
@@ -448,99 +447,6 @@ mod tests {
             current,
             "root coverage restored to current epoch after complete reconcile"
         );
-
-        h.writer.shutdown();
-    }
-
-    // ── 4. Prototype epoch-based ORPHAN SWEEP (the design's safety net) ──
-
-    /// The gate brief asks: if orphan-freedom needs an extra mechanism, prototype + test an epoch-based
-    /// orphan sweep — prune entries whose `listed_epoch` is older than the rescan epoch AND whose parent
-    /// was re-listed this epoch (i.e. genuinely gone). This proves the sweep is sound and cheap.
-    ///
-    /// IMPORTANT FINDING (see report): a *complete* reconcile already deletes vanished children itself
-    /// (the `for row in &db_children { if !matched ... Delete }` branch in reconcile_subtree), so the
-    /// sweep is NOT needed for correctness when a complete reconcile runs. The sweep matters only as a
-    /// belt-and-suspenders for a subtree whose PARENT is re-listed but which an interrupted pass
-    /// abandoned mid-deep — i.e. a self-heal that doesn't wait for the parent dir to be diffed again.
-    /// This test prototypes the sweep against a hand-built orphan and shows it prunes exactly the gone
-    /// rows and nothing fresh.
-    fn epoch_orphan_sweep(conn: &Connection, rescan_epoch: u64) -> usize {
-        // Candidate orphans: dirs whose own listed_epoch is older than the rescan epoch AND whose
-        // PARENT was re-listed at the rescan epoch (so the parent's current children are authoritative;
-        // a stale child not re-listed means it's gone). We delete those subtrees.
-        let victims: Vec<i64> = {
-            let mut stmt = conn
-                .prepare(
-                    "SELECT c.id
-                     FROM entries c
-                     JOIN entries p ON p.id = c.parent_id
-                     WHERE c.is_directory = 1
-                       AND c.listed_epoch > 0
-                       AND c.listed_epoch < ?1
-                       AND p.listed_epoch = ?1",
-                )
-                .unwrap();
-            stmt.query_map([rescan_epoch], |r| r.get::<_, i64>(0))
-                .unwrap()
-                .map(|r| r.unwrap())
-                .collect()
-        };
-        for id in &victims {
-            IndexStore::delete_subtree_by_id(conn, *id).unwrap();
-        }
-        victims.len()
-    }
-
-    #[test]
-    fn prototype_epoch_orphan_sweep_prunes_only_gone_rows() {
-        let h = setup();
-        let root = tree_root();
-        let root_path = root.path();
-        ensure_path_in_db(&h, &norm(root_path));
-
-        std::fs::create_dir(root_path.join("stay")).unwrap();
-        std::fs::write(root_path.join("stay/s.txt"), b"stay body").unwrap();
-        std::fs::create_dir(root_path.join("vanish")).unwrap();
-        std::fs::write(root_path.join("vanish/v.txt"), b"vanish body").unwrap();
-        reconcile_full(&h, root_path); // epoch 1, everything listed_epoch=1
-
-        // Construct the orphan scenario the sweep targets: bump epoch, re-list ONLY the root + stay
-        // (as a partial/interrupted reconcile would), leaving `vanish` at the old listed_epoch while
-        // its parent (root) is re-listed at the new epoch. On disk, vanish is gone.
-        std::fs::remove_dir_all(root_path.join("vanish")).unwrap();
-        let rescan_epoch = bump_epoch(&h); // 2
-
-        // Manually mark root + stay listed at the new epoch (simulating a reconcile that diffed root's
-        // listing but, say, was interrupted before the delete branch ran for vanish — the edge the
-        // sweep defends). We do NOT delete vanish here; the sweep must.
-        let root_id = resolve(&h, root_path).unwrap();
-        let stay_id = resolve(&h, &root_path.join("stay")).unwrap();
-        {
-            let wconn = IndexStore::open_write_connection(&h.db_path).unwrap();
-            IndexStore::mark_dirs_listed(&wconn, &[root_id, stay_id], rescan_epoch).unwrap();
-        }
-
-        assert!(
-            resolve(&h, &root_path.join("vanish")).is_some(),
-            "vanish present pre-sweep"
-        );
-
-        // Run the prototype sweep.
-        let pruned = {
-            let wconn = IndexStore::open_write_connection(&h.db_path).unwrap();
-            epoch_orphan_sweep(&wconn, rescan_epoch)
-        };
-        assert_eq!(pruned, 1, "sweep prunes exactly the one vanished dir");
-        assert!(
-            resolve(&h, &root_path.join("vanish")).is_none(),
-            "vanish pruned by sweep"
-        );
-        assert!(
-            resolve(&h, &root_path.join("stay")).is_some(),
-            "stay (re-listed) survives the sweep"
-        );
-        assert_no_orphans(&h);
 
         h.writer.shutdown();
     }

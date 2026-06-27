@@ -433,9 +433,10 @@ through it.
 - Epoch bump at rescan start (continuity break) → tree shows stale-but-visible; each reconciled dir flips fresh as
   re-listed (partial-rescan `/a` fresh / `/b` stale).
 - Preserve pre-arm-before-snapshot live-change buffering, adapted (no truncate to race).
-- Add an **orphan sweep** safety net: a reconcile that completes can prune entries whose `listed_epoch` is older than
-  the rescan epoch AND whose parent was re-listed this epoch (i.e., genuinely gone), bounded and logged — so an
-  interrupted prior reconcile self-heals on the next complete one. (Design detail to settle with the gate.)
+- **No orphan sweep.** Evaluated and dropped: after a complete reconcile the per-dir delete branch has already pruned
+  every gone child under a re-listed parent, so an epoch sweep keyed on `listed_epoch < rescan_epoch` AND parent
+  re-listed this epoch matches nothing real — only present-on-disk dirs whose own listing failed transiently, which it
+  would wrongly delete. The interrupted→complete self-heal needs no sweep.
 
 ### Tests (M3)
 
