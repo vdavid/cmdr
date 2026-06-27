@@ -7,9 +7,11 @@ volume root**.
 ## Module map
 
 - `mod.rs`: `Volume` trait (most methods async, returning `Pin<Box<dyn Future>>`; sync ones: `name`, `root`,
-  `supports_*`, `local_path`, `space_poll_interval`), the `VolumeScanner` / `VolumeWatcher` / `VolumeReadStream`
-  sub-traits, `MutationEvent`, and shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`,
-  `SourceItemInfo`).
+  `supports_*`, `local_path`, `space_poll_interval`) and the `VolumeScanner` / `VolumeWatcher` / `VolumeReadStream`
+  sub-traits. Re-exports `types::*` and `ids::*`, so the names below keep resolving as `volume::Name`.
+- `types.rs`: the data types the trait exchanges (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `BatchScanResult`,
+  `ScanConflict`, `SourceItemInfo`, `LaneKey`, `ListingProgress`, `MutationEvent`, `SmbConnectionState`).
+- `ids.rs`: the volume ID helpers (`path_to_id`, `smb_volume_id`).
 - `manager.rs`: `VolumeManager`, a thread-safe `RwLock<HashMap>` registry with a default volume.
 - `backends/`: per-backend impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See
   [`backends/CLAUDE.md`](backends/CLAUDE.md).

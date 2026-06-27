@@ -40,3 +40,7 @@ pub(crate) use super::{
 mod in_memory_test;
 #[cfg(test)]
 mod local_posix_test;
+// `mtp_test` is gated on the same platforms as the `mtp` module it tests (the
+// other two backends are cross-platform, so their test mods aren't gated).
+#[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
+mod mtp_test;

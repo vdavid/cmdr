@@ -15,7 +15,9 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 
 ## Key files
 
-- **`mod.rs`**: `Volume` trait (async: most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`), `VolumeScanner`, `VolumeWatcher`, `VolumeReadStream` traits, `MutationEvent` enum, shared types (`VolumeError`, `SpaceInfo`, `CopyScanResult`, `ScanConflict`, `SourceItemInfo`)
+- **`mod.rs`**: `Volume` trait (async: most methods return `Pin<Box<dyn Future>>`; sync: `name`, `root`, `supports_*`, `local_path`, `space_poll_interval`) plus the `VolumeScanner`, `VolumeWatcher`, and `VolumeReadStream` sub-traits. Re-exports `types::*` and `ids::*`
+- **`types.rs`**: the data types the trait exchanges (`VolumeError` + its `Display`/`Error`/`From<io::Error>` impls, `SpaceInfo`, `CopyScanResult`, `BatchScanResult`, `ScanConflict`, `SourceItemInfo`, `LaneKey`, `ListingProgress`, `MutationEvent`, `SmbConnectionState`)
+- **`ids.rs`**: the volume ID helpers (`path_to_id`, `smb_volume_id`)
 - **`manager.rs`**: `VolumeManager`: thread-safe `RwLock<HashMap>` registry; supports a default volume
 - **`backends/`**: Per-backend `Volume` impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See [`backends/CLAUDE.md`](backends/CLAUDE.md).
 - **`friendly_error/`**: User-facing error messages + provider detection. See [`friendly_error/CLAUDE.md`](friendly_error/CLAUDE.md).
