@@ -170,13 +170,14 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
   doubleClickPaneNavigatesToParent settings + `doubleClickHint` body.
 - navigate (verb) · **navegar** · MS terminology (BRA); rendered "navegar até {path}" in
   `fileExplorer.breadcrumb.navigateTooltip` · high
-- pane background (empty backing area of a pane) · **fundo do painel** (the empty space: **espaço vazio**) · descriptive;
-  no direct pile source (Double Commander's "empty part of file view" is untranslated in pt-BR). MS's "tela de fundo"
-  (wallpaper) and "segundo plano" (process) are wrong senses; "fundo do painel" reads naturally · tentative
-- hint (one-time tip) · **dica** · Total Commander pt-BR ("DICA:"); `doubleClickHint.*` and the seen-flag settings · high
-- row / file row · **linha** ("file row" → **linha de arquivo**) · MS terminology (BRA "row"→"linha"), Xfce Thunar
-  ("by one row"→"uma linha") · high. Used in `doubleClickPaneNavigatesToParent.description` ("not a file row"→"não uma
-  linha de arquivo") to contrast the pane background with a clickable file row.
+- pane background (empty backing area of a pane) · **fundo do painel** (the empty space: **espaço vazio**) ·
+  descriptive; no direct pile source (Double Commander's "empty part of file view" is untranslated in pt-BR). MS's "tela
+  de fundo" (wallpaper) and "segundo plano" (process) are wrong senses; "fundo do painel" reads naturally · tentative
+- hint (one-time tip) · **dica** · Total Commander pt-BR ("DICA:"); `doubleClickHint.*` and the seen-flag settings ·
+  high
+- row / file row · **linha** ("file row" → **linha de arquivo**) · MS terminology (BRA "row"→"linha"), Xfce Thunar ("by
+  one row"→"uma linha") · high. Used in `doubleClickPaneNavigatesToParent.description` ("not a file row"→"não uma linha
+  de arquivo") to contrast the pane background with a clickable file row.
 
 ### Reconciliation notes
 

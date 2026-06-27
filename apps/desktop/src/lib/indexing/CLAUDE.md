@@ -24,9 +24,9 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
 
 - **`$state` must live in `.svelte.ts`**, not plain `.ts` (Svelte runes). `index-state.svelte.ts` is allowlisted in
   `coverage-allowlist.json` (event-driven module `$state`).
-- **`initIndexState` uses "listen first, then query"**: register event listeners, THEN call `get_index_status`. The
-  Rust indexer starts in `setup()` before the frontend mounts, so querying first leaves a race where
-  `index-scan-started` fires between query and listener registration and the UI sticks on "not scanning". Don't reorder.
+- **`initIndexState` uses "listen first, then query"**: register event listeners, THEN call `get_index_status`. The Rust
+  indexer starts in `setup()` before the frontend mounts, so querying first leaves a race where `index-scan-started`
+  fires between query and listener registration and the UI sticks on "not scanning". Don't reorder.
 - **`get_index_status` backfill (root-only) recovers tier inputs after a mid-scan reload**, but `scanStartedAt` can't
   cross IPC so it stays 0 (ETA degrades until the window fills — accepted). Tier-1 reads prior scan totals from nested
   `indexStatus` meta via `parseMetaNumber`. Mechanics: DETAILS.md.

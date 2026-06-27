@@ -91,11 +91,7 @@ describe('DriveIndexBadge menu', () => {
   it('a fresh/stale drive offers rescan + turn off + forget', () => {
     const { target } = render(makeStatus({ freshness: 'stale' }))
     openMenu(target)
-    expect(menuLabels(target)).toEqual([
-      'Rescan now',
-      'Turn off indexing for this drive',
-      "Forget this drive's index",
-    ])
+    expect(menuLabels(target)).toEqual(['Rescan now', 'Turn off indexing for this drive', "Forget this drive's index"])
   })
 
   it('shows the last-indexed footer only when scan facts exist', () => {

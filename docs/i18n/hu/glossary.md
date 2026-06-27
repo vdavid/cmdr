@@ -375,18 +375,52 @@ Settled while translating `queue.json` + the new pause/queue/background keys in 
   = `{# átvitel}` both branches; `selectedCount` = `{# kijelölve}` both branches (the `-ve` adverbial participle,
   matching `Kész`/`Megszakítva`).
 
-Settled while translating the double-click-to-parent navigation keys (`settings.json` + `fileExplorer.json`, 2026-06-26; re-validated against the reference pile):
+Settled while translating the double-click-to-parent navigation keys (`settings.json` + `fileExplorer.json`, 2026-06-26;
+re-validated against the reference pile):
 
-- parent folder → `szülőmappa` · ms terminology (dedicated entry "parent folder" = `szülőmappa`), gn/xf (`szülőmappa`), Total Commander (`Szülő mappa`), Double Commander (`szülőkönyvtár`); kept for CATALOG CONSISTENCY · tentative. The whole shipped Cmdr catalog already uses `szülőmappa` for this concept: `commands.navParent.label` = `Ugrás a szülőmappára`, plus six `errors.json` suggestion strings (`Lépj a szülőmappába …`, `… az összes szülőmappával együtt`, `… írási hozzáférésed a szülőmappához`). These 14 new keys must NOT fork terminology — a user seeing `szülőmappa` in the menu but a different word in a settings toggle is worse than either consistent choice — so they reuse the catalog term. Inflects regularly (back-vowel `mappa`): illative `a szülőmappába`, allative `a szülőmappához`.
-  - Pile note for a future full-catalog migration: macOS Finder (Tier 1) renders ITS term for this gesture as `tartalmazó mappa` (`Localizable.json`: "Go To Enclosing Folder" = `Ugrás a tartalmazó mappához`; "Navigates the front Finder window to its enclosing folder" = `… a tartalmazó mappájához navigálja`). Apple's word translates "enclosing folder", not the "parent folder" wording every other source (and Cmdr's English) uses, so it isn't a clean win for "parent folder" — but if Cmdr ever wants the Finder-native term, the ONLY split-free way to adopt `tartalmazó mappa` is a single migration of the whole `hu` catalog (`commands.navParent` + the `errors.json` six) together with these keys, never a piecemeal switch. Until then, `szülőmappa` stays.
-- double-click → `dupla kattintás` (noun); verb `duplán kattint` · mac, ms · high. "Double-click the empty space" rendered conversationally (`te`): "Kattints duplán a … üres területére".
-- hint (Cmdr's one-time educational tip notification, `doubleClickHint`) → `tipp` · descriptive, common HU UI usage · high. The internal "hint shown" flag = `… tippje megjelent`.
-- "Never do this again" (playful button that turns the gesture off) → `Soha többé` · deliberate playful, impersonal rendering matching the EN button's tone (avoids the `te` imperative "ne csináld", per labels-are-impersonal) · tentative.
-- "I like it" (primary keep-on button) / "Don't like it?" (prompt) → `Tetszik` / `Nem tetszik?` · natural HU, the impersonal "it pleases [me]" construction, parallel pair · high.
-- breadcrumb segment tooltip "Click to navigate to {path}" → `Kattints ide az ugráshoz: {path}` · the locale-formatted `{path}` sits after a colon in a neutral slot so no Hungarian case suffix has to vowel-harmonize with an unknown runtime value (per style.md § Notes, the goToPath `{dir}` pattern) · high.
-- "Navigation" (card heading / section half) → `Navigáció` · descriptive · high. Section "Navigation & file ops" = `Navigáció és fájlműveletek` (reuses the settled `File operations → Fájlműveletek`).
-- pane → `panel` (confidence upgrade from `style.md`'s `tentative`): the orthodox two-pane pair confirms it directly — Total Commander (`az aktív panelről`, `A célpanelről`, `másik panelen`) and Double Commander (`a bal oldali panelen`, `&Panelra`). Now `high` for the two-pane sense. "pane background" = `a panel háttere` (`a panel hátterén`/`-re`).
-- file list → `fájllista` (confidence upgrade from `style.md`/`listing`'s `tentative`): Double Commander confirms it (`Elérési út mező szerkesztése a fájllista felett`, `Váltás a bal és jobb oldali fájllista között`). Now `high`.
-- row / file row → `sor` / `fájlsor` · ms terminology (`row` = `sor`, high), Double Commander (`one per row` = `soronként`) · high. A row in the file list, one representing a file. `fájlsor` is a transparent compound parallel to the settled `fájllista` and `naplósor` (log line). Used in `doubleClickPaneNavigatesToParent.description`: "not a file row" = `nem pedig egy fájlsor`. Distinct from `sor` = text line (viewer); same word, context disambiguates.
+- parent folder → `szülőmappa` · ms terminology (dedicated entry "parent folder" = `szülőmappa`), gn/xf (`szülőmappa`),
+  Total Commander (`Szülő mappa`), Double Commander (`szülőkönyvtár`); kept for CATALOG CONSISTENCY · tentative. The
+  whole shipped Cmdr catalog already uses `szülőmappa` for this concept: `commands.navParent.label` =
+  `Ugrás a szülőmappára`, plus six `errors.json` suggestion strings (`Lépj a szülőmappába …`,
+  `… az összes szülőmappával együtt`, `… írási hozzáférésed a szülőmappához`). These 14 new keys must NOT fork
+  terminology — a user seeing `szülőmappa` in the menu but a different word in a settings toggle is worse than either
+  consistent choice — so they reuse the catalog term. Inflects regularly (back-vowel `mappa`): illative
+  `a szülőmappába`, allative `a szülőmappához`.
+  - Pile note for a future full-catalog migration: macOS Finder (Tier 1) renders ITS term for this gesture as
+    `tartalmazó mappa` (`Localizable.json`: "Go To Enclosing Folder" = `Ugrás a tartalmazó mappához`; "Navigates the
+    front Finder window to its enclosing folder" = `… a tartalmazó mappájához navigálja`). Apple's word translates
+    "enclosing folder", not the "parent folder" wording every other source (and Cmdr's English) uses, so it isn't a
+    clean win for "parent folder" — but if Cmdr ever wants the Finder-native term, the ONLY split-free way to adopt
+    `tartalmazó mappa` is a single migration of the whole `hu` catalog (`commands.navParent` + the `errors.json` six)
+    together with these keys, never a piecemeal switch. Until then, `szülőmappa` stays.
+- double-click → `dupla kattintás` (noun); verb `duplán kattint` · mac, ms · high. "Double-click the empty space"
+  rendered conversationally (`te`): "Kattints duplán a … üres területére".
+- hint (Cmdr's one-time educational tip notification, `doubleClickHint`) → `tipp` · descriptive, common HU UI usage ·
+  high. The internal "hint shown" flag = `… tippje megjelent`.
+- "Never do this again" (playful button that turns the gesture off) → `Soha többé` · deliberate playful, impersonal
+  rendering matching the EN button's tone (avoids the `te` imperative "ne csináld", per labels-are-impersonal) ·
+  tentative.
+- "I like it" (primary keep-on button) / "Don't like it?" (prompt) → `Tetszik` / `Nem tetszik?` · natural HU, the
+  impersonal "it pleases [me]" construction, parallel pair · high.
+- breadcrumb segment tooltip "Click to navigate to {path}" → `Kattints ide az ugráshoz: {path}` · the locale-formatted
+  `{path}` sits after a colon in a neutral slot so no Hungarian case suffix has to vowel-harmonize with an unknown
+  runtime value (per style.md § Notes, the goToPath `{dir}` pattern) · high.
+- "Navigation" (card heading / section half) → `Navigáció` · descriptive · high. Section "Navigation & file ops" =
+  `Navigáció és fájlműveletek` (reuses the settled `File operations → Fájlműveletek`).
+- pane → `panel` (confidence upgrade from `style.md`'s `tentative`): the orthodox two-pane pair confirms it directly —
+  Total Commander (`az aktív panelről`, `A célpanelről`, `másik panelen`) and Double Commander (`a bal oldali panelen`,
+  `&Panelra`). Now `high` for the two-pane sense. "pane background" = `a panel háttere` (`a panel hátterén`/`-re`).
+- file list → `fájllista` (confidence upgrade from `style.md`/`listing`'s `tentative`): Double Commander confirms it
+  (`Elérési út mező szerkesztése a fájllista felett`, `Váltás a bal és jobb oldali fájllista között`). Now `high`.
+- row / file row → `sor` / `fájlsor` · ms terminology (`row` = `sor`, high), Double Commander (`one per row` =
+  `soronként`) · high. A row in the file list, one representing a file. `fájlsor` is a transparent compound parallel to
+  the settled `fájllista` and `naplósor` (log line). Used in `doubleClickPaneNavigatesToParent.description`: "not a file
+  row" = `nem pedig egy fájlsor`. Distinct from `sor` = text line (viewer); same word, context disambiguates.
 
-Copy revision (shorter wording, 2026-06-26): the double-click-to-parent label/description were re-shortened by David. New EN "Double-click the pane background to go up a folder" → `Dupla kattintás a panel hátterére a szülőmappába lépéshez` (nominal/no-direct-address, matching the other `settings.behavior.*.label` values like `Ugrás a legutóbbi letöltéshez`; reuses `panel háttér` + `szülőmappa`). New EN "That''s the empty space around the file list, not a file row." → `Ez a fájllista körüli üres terület, nem pedig egy fájlsor.` (`Ez` refers back to the pane background named in the label; reuses `fájllista` + the new `fájlsor`).
+Copy revision (shorter wording, 2026-06-26): the double-click-to-parent label/description were re-shortened by David.
+New EN "Double-click the pane background to go up a folder" →
+`Dupla kattintás a panel hátterére a szülőmappába lépéshez` (nominal/no-direct-address, matching the other
+`settings.behavior.*.label` values like `Ugrás a legutóbbi letöltéshez`; reuses `panel háttér` + `szülőmappa`). New EN
+"That''s the empty space around the file list, not a file row." →
+`Ez a fájllista körüli üres terület, nem pedig egy fájlsor.` (`Ez` refers back to the pane background named in the
+label; reuses `fájllista` + the new `fájlsor`).

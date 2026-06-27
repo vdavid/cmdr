@@ -83,9 +83,9 @@ list).
 Two mouse conveniences, both routed through the normal pane navigation (so Back/Forward history and the error pipeline
 come for free):
 
-- **Clickable breadcrumb segments.** Each path piece in the breadcrumb is a button that navigates to that ancestor.
-  The breadcrumb shows a DISPLAY path (volume prefix stripped, home collapsed to `~`); reconstructing the real target is
-  the pure `navigation/breadcrumb-navigation.ts` (`enrichBreadcrumbSegments`), unit-tested. The current folder (last
+- **Clickable breadcrumb segments.** Each path piece in the breadcrumb is a button that navigates to that ancestor. The
+  breadcrumb shows a DISPLAY path (volume prefix stripped, home collapsed to `~`); reconstructing the real target is the
+  pure `navigation/breadcrumb-navigation.ts` (`enrichBreadcrumbSegments`), unit-tested. The current folder (last
   segment), the empty root marker, and search-results panes (whose "path" is a query label) are non-clickable.
 - **Double-click the empty pane background → parent folder** (Directory Opus-style), gated by
   `behavior.doubleClickPaneNavigatesToParent` (default on). The `ondblclick` lives on the `.file-pane` root (which

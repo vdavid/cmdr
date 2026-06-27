@@ -62,8 +62,9 @@ reports, logs, file-backed secret store) agrees without round-tripping through T
   before using `RUST_LOG`: it has per-subsystem recipes. Key gotcha: the Rust library target is `cmdr_lib`, not `cmdr`,
   so use `RUST_LOG=cmdr_lib::module=debug`. `cmdr_lib` (lib) and `Cmdr` (bin) are both in the `cmdr` package, so
   `Compiling cmdr` in build output covers both targets.
-- **Dev live log path**: the running dev app's log is `~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/cmdr.log`
-  (the data-dir `logs/` subdir), NOT `~/Library/Logs/com.veszelovszki.cmdr-dev/` (which can be stale).
+- **Dev live log path**: the running dev app's log is
+  `~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/cmdr.log` (the data-dir `logs/` subdir), NOT
+  `~/Library/Logs/com.veszelovszki.cmdr-dev/` (which can be stale).
 - **Hard freeze (logs stop)**: when the app wedges and the log goes silent, `sample <pid>` (macOS) the running Cmdr
   process to capture the blocked threads' stacks — that's how a deadlock gets pinpointed when the logger never flushed.
 - **Crash reports**: a crash writes `crash-report.json` to the data dir; the next launch detects it and offers to send.
@@ -121,8 +122,9 @@ worktree under `.claude/worktrees/<slug>`:
     recompiling edited files** — cargo's mtime fingerprint can think the cloned objects are current, so a "green"
     bare-cargo run after editing `.rs` can be a FALSE green (tests run against stale code). Always
     `find apps/desktop/src-tauri/src -name '*.rs' | xargs touch` before a bare cargo run in a worktree, or use
-    `pnpm check` (cache-aware, builds correctly). Don't trust a bare-cargo green right after edits. (Also: `pnpm check
-    rust` does NOT run docs-group checks like `pluralize-noun` — run full `pnpm check` before claiming green.)
+    `pnpm check` (cache-aware, builds correctly). Don't trust a bare-cargo green right after edits. (Also:
+    `pnpm check rust` does NOT run docs-group checks like `pluralize-noun` — run full `pnpm check` before claiming
+    green.)
 - CodeGraph (from `~/.claude/docs/codegraph-worktree.md`): `mkdir -p <worktree>/.codegraph`,
   `cp -c .codegraph/codegraph.db` and `cp .codegraph/config.json` into it, then `(cd <worktree> && codegraph sync)`.
   Without its own populated `.codegraph`, the worktree session deadlocks against the main repo's DB.

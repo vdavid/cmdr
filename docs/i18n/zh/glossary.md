@@ -402,11 +402,11 @@ macOS Finder zh-CN Tier 1, Double Commander zh-CN (the exact two-pane feature) +
 - **navigation (settings section/card)** · `导航` · Microsoft TBX (`Navigation` → 导航, CHN); macOS Finder uses `导览`
   for the verb `navigate`, but `导航` is the standard UI noun for a navigation section · `high`
 - **file operations** · `文件操作` · Microsoft TBX (`operation` → 操作) · `high`
-- **parent folder** · `上层文件夹` · macOS Finder (`Go To Enclosing Folder` → 前往上层文件夹; `Navigates … to its
-  enclosing folder` → 导览至其上层文件夹). NOTE: Double Commander uses `父文件夹`, but macOS-Tier-1 wins — keep
-  `上层文件夹` (matches the explorer-pass `上层文件夹`) · `confirmed`
-- **go to / navigate to (parent, a path piece)** · `前往` · macOS Finder (`Go to ${location}` → 前往${location}; `Go To
-  Folder` → 前往文件夹). The breadcrumb tooltip `Click to navigate to {path}` → `点击前往 {path}` · `confirmed`
+- **parent folder** · `上层文件夹` · macOS Finder (`Go To Enclosing Folder` → 前往上层文件夹;
+  `Navigates … to its enclosing folder` → 导览至其上层文件夹). NOTE: Double Commander uses `父文件夹`, but macOS-Tier-1
+  wins — keep `上层文件夹` (matches the explorer-pass `上层文件夹`) · `confirmed`
+- **go to / navigate to (parent, a path piece)** · `前往` · macOS Finder (`Go to ${location}` → 前往${location};
+  `Go To Folder` → 前往文件夹). The breadcrumb tooltip `Click to navigate to {path}` → `点击前往 {path}` · `confirmed`
 - **double-click** · `双击` · macOS + Double Commander (`双击文件视图的空白区域时，切换到父文件夹`) · `confirmed`
 - **pane background / empty space around the file list (double-click target)** · `窗格背景` (label) / `空白区域`
   (description) · Double Commander attests both framings: `双击视图背景` (view background → 背景) and

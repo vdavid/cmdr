@@ -402,8 +402,8 @@ full-catalog migration, not a 14-key split). Reuses prior terms (pane → `khung
   "Location to navigate to" → `Vị trí sẽ điều hướng đến`) and GNOME Nautilus ("Điều hướng"). Used for the `Navigation`
   card heading and the `Navigation & file ops` section (`Điều hướng & thao tác tệp`, joined with `&` like the
   `Cập nhật & quyền riêng tư` section). `high`.
-- **navigate to (an action, "go to X"): `đi tới`** · macOS Finder ("Go To Folder" → `Đi tới Thư mục`, "Go To Location"
-  → `Đi tới vị trí`) and the in-catalog command convention (`commands.navParent` → `Đi tới thư mục cha`,
+- **navigate to (an action, "go to X"): `đi tới`** · macOS Finder ("Go To Folder" → `Đi tới Thư mục`, "Go To Location" →
+  `Đi tới vị trí`) and the in-catalog command convention (`commands.navParent` → `Đi tới thư mục cha`,
   `commands.navGoToPath` → `Đi tới đường dẫn…`). Breadcrumb "Click to navigate to {path}" → `Bấm để đi tới {path}`.
   "Navigates to parent" rendered `đi tới thư mục cha` (matching `commands.navParent`), not the first pass's
   `lên thư mục cha`. `high`.
@@ -437,9 +437,10 @@ full-catalog migration, not a 14-key split). Reuses prior terms (pane → `khung
   agrees (row → `hàng`). "a file row" → `một hàng tệp`. KDE Dolphin's `dòng` ("click anywhere on the row" → "trong
   dòng") is overridden by Cmdr's own established `hàng`. `high` (catalog-consistent).
 
-A later copy revision (2026-06-26, David picked shorter wording) reworded this switch's label + description; the keys now
-read: label `Bấm đúp vào nền khung để lên thư mục cha` ("go up a folder" → `lên thư mục cha`, the shorter directional
-form), description `Đó là khoảng trống xung quanh danh sách tệp, không phải một hàng tệp.` ("That''s…, not a file row").
+A later copy revision (2026-06-26, David picked shorter wording) reworded this switch's label + description; the keys
+now read: label `Bấm đúp vào nền khung để lên thư mục cha` ("go up a folder" → `lên thư mục cha`, the shorter
+directional form), description `Đó là khoảng trống xung quanh danh sách tệp, không phải một hàng tệp.` ("That''s…, not a
+file row").
 
 Phrasings settled this pass (double-click-to-parent hint toast, casual/friendly product voice — free copy, no single
 pile source):

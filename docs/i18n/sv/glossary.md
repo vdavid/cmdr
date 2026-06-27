@@ -369,9 +369,9 @@ re-checked against `sv/macOS/`. New term:
   (was `tentative`). Finder uses it uniformly: "Go To Enclosing Folder" → "Öppna överordnad mapp", "Navigates the front
   Finder window to its enclosing folder" → "Navigerar det översta Finder-fönstret till den överordnade mappen", "Reveal
   in enclosing folder" → "Visa i överordnad mapp", and standalone titles "Överordnad mapp"
-  (`sv/macOS/Finder/LocalizableMerged.json` keys `N162`, `FV10`, `FV9`, `300753.title`, `250.title`,
-  `BU37_V1/V2`). The first pass's `överordnad mapp` was right; upgraded `tentative` → `high`. **`upp till`** for "go up
-  to" in the helper text stays (natural Swedish, no competing source).
+  (`sv/macOS/Finder/LocalizableMerged.json` keys `N162`, `FV10`, `FV9`, `300753.title`, `250.title`, `BU37_V1/V2`). The
+  first pass's `överordnad mapp` was right; upgraded `tentative` → `high`. **`upp till`** for "go up to" in the helper
+  text stays (natural Swedish, no competing source).
 - **go up a folder / navigate to (the gesture): `gå upp till den överordnade mappen`** · the shortened toggle label
   "Double-click the pane background to go up a folder" → "Dubbelklicka på panelens bakgrund för att gå upp till den
   överordnade mappen". "go up a folder" = go to the parent, so it reuses `överordnad mapp`; "gå upp till" is the natural

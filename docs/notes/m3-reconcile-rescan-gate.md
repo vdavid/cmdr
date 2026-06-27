@@ -14,8 +14,8 @@ Throwaway gate artifacts (review, then delete or promote): `apps/desktop/src-tau
   (add/remove/modify/dir↔file type-change) and already stamps `listed_epoch` + propagates `min_subtree_epoch` (M1/M2
   landed it). A complete reconcile deletes vanished children itself, so an interrupted→complete cycle self-heals: no
   orphans, no ghost sizes, across repeated cycles. The reconciled index matches a fresh-from-scratch index byte-for-byte
-  on sizes/counts/membership. **No orphan-sweep mechanism is required for correctness** when a complete reconcile
-  runs — and none is wired: an epoch sweep was prototyped and rejected (see the residual note below).
+  on sizes/counts/membership. **No orphan-sweep mechanism is required for correctness** when a complete reconcile runs —
+  and none is wired: an epoch sweep was prototyped and rejected (see the residual note below).
 - **Perf is acceptable — IF the coverage recompute is done right.** Firing `PropagateMinSubtreeEpoch` once per dir (37k
   ancestor-walks) is the dominant cost and makes a no-op reconcile ~2× SLOWER than today's truncate baseline. Replacing
   it with ONE bottom-up aggregate after the walk makes a no-op reconcile CHEAPER than the truncate baseline.

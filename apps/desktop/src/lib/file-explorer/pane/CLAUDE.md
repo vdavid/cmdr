@@ -31,8 +31,8 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
 - **`FilePane.applyIndices` jumps the cursor on SELECT only** (deselect leaves it put), via
   `firstSelectedIndex(idxs, hasParent)`, which skips the `..` row. Don't use raw `idxs[0]`; it can be `..`.
 - **Snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false` (no `..`
-  row) AND `isCrossVolumeNavigation` routes any real-path nav through the volume-change machinery. Skip either → off-by-one
-  selection, or `search-results` stuck on a real path.
+  row) AND `isCrossVolumeNavigation` routes any real-path nav through the volume-change machinery. Skip either →
+  off-by-one selection, or `search-results` stuck on a real path.
 - **The MTP clipboard refusal gate keys on `caps.kind === 'mtp'`, not `!supportsSystemClipboard`** (network and
   search-results lack one too, so the MTP-worded toast would misfire).
 - **The focus guard (`DualPaneExplorer.handleFocusGuard`) must keep its `[role="dialog"], [role="alertdialog"]`

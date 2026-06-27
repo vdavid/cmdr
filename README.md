@@ -14,8 +14,8 @@ Give it a try: [download for macOS](https://getcmdr.com), or install with Homebr
 brew tap vdavid/tap && brew install --cask cmdr
 ```
 
-**Note:** If you'd love a nice short `brew install --cask cmdr`, **star**, **watch**, and **fork** this repo! Homebrew needs 225
-stars, 50 watchers, and 50 forks before it allows apps to its main tap.
+**Note:** If you'd love a nice short `brew install --cask cmdr`, **star**, **watch**, and **fork** this repo! Homebrew
+needs 225 stars, 50 watchers, and 50 forks before it allows apps to its main tap.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="brand/screenshots/app-main-dark.png" />

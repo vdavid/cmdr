@@ -86,15 +86,14 @@ five file managers — the explorer family (GNOME Nautilus, Xfce Thunar, KDE Dol
 [`reference-pile/how-to-mine.md`](../i18n/reference-pile/how-to-mine.md) for tested per-source recipes (greps, jq,
 `msggrep`, `pdftotext`, `.lng`).
 
-> [!IMPORTANT]
-> **Where the pile is — and why a worktree can't see it.** The pile is gitignored (`_ignored/` is untracked), so it
-> lives ONLY in the main clone, at **`~/projects-git/vdavid/cmdr/_ignored/i18n/<tag>/`**. It is NOT copied into git
-> worktrees. Translation almost always runs from a worktree (`.claude/worktrees/<slug>/`), and there a relative
-> `_ignored/i18n/` **does not exist** — checking the worktree-relative path returns "absent" and tempts you to translate
-> without the pile (guessing, which this guide forbids). So ALWAYS use the absolute main-clone path above. If you can't
-> assume the path, resolve the main clone with `git worktree list | head -1` (its first column is the main checkout) and
-> mine `<that path>/_ignored/i18n/<tag>/`. A "no reference pile present" conclusion is almost always this worktree trap,
-> not a genuinely missing pile — re-check the main-clone absolute path before deciding it's gone.
+> [!IMPORTANT] **Where the pile is — and why a worktree can't see it.** The pile is gitignored (`_ignored/` is
+> untracked), so it lives ONLY in the main clone, at **`~/projects-git/vdavid/cmdr/_ignored/i18n/<tag>/`**. It is NOT
+> copied into git worktrees. Translation almost always runs from a worktree (`.claude/worktrees/<slug>/`), and there a
+> relative `_ignored/i18n/` **does not exist** — checking the worktree-relative path returns "absent" and tempts you to
+> translate without the pile (guessing, which this guide forbids). So ALWAYS use the absolute main-clone path above. If
+> you can't assume the path, resolve the main clone with `git worktree list | head -1` (its first column is the main
+> checkout) and mine `<that path>/_ignored/i18n/<tag>/`. A "no reference pile present" conclusion is almost always this
+> worktree trap, not a genuinely missing pile — re-check the main-clone absolute path before deciding it's gone.
 
 For each term or convention: triangulate across every source the language has, pick the most native-sounding fit for
 Cmdr's voice, then record it in the style guide's glossary as **chosen · sources · confidence**. Weight by authority:

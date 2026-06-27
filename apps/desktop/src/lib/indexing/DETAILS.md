@@ -12,8 +12,8 @@ actively scanning or replaying, removed the moment that volume finishes. Each `V
 `replayEstimatedTotal`, `replayStartedAt`). Scan and replay events each carry their own `volumeId`, so they key the map
 directly — that's what makes the indicator track local + SMB + MTP, not just root.
 
-Aggregation carries its own `volumeId` too (see below), so it lives in a second per-volume map keyed by `volumeId`,
-each entry an `AggregationActivity` (`phase`, `current`, `total`, `startedAt`).
+Aggregation carries its own `volumeId` too (see below), so it lives in a second per-volume map keyed by `volumeId`, each
+entry an `AggregationActivity` (`phase`, `current`, `total`, `startedAt`).
 
 ### Public API (`index.ts`)
 
@@ -67,13 +67,13 @@ aggregating with no live scan/replay entry (its scan already finished) gets a sy
 
 ## Status indicator tooltip content
 
-`IndexingStatusIndicator.svelte` is the thin shell: the hourglass icon (shown iff `isAnyVolumeIndexing()`) plus a tooltip
-that renders one `IndexingDriveRow` per active drive (from `getActiveIndexVolumes()`, plus a synthetic row for any
-aggregating volume with no live entry, from `getAggregatingVolumeIds()`). It resolves each `volumeId` to a display name via the volume store's
-`getVolumes()` (falling back to the id). The per-drive heading (`indexing.drive.heading`, a `{name}` passthrough) shows
-only when more than one drive is active, so the common single-drive case is as terse as before. The component renders the
-content inside a `<div hidden>` host and passes the inner content div (not the hidden host) to the tooltip action via
-`contentEl`, so the adopted element doesn't carry `hidden` into the tooltip.
+`IndexingStatusIndicator.svelte` is the thin shell: the hourglass icon (shown iff `isAnyVolumeIndexing()`) plus a
+tooltip that renders one `IndexingDriveRow` per active drive (from `getActiveIndexVolumes()`, plus a synthetic row for
+any aggregating volume with no live entry, from `getAggregatingVolumeIds()`). It resolves each `volumeId` to a display
+name via the volume store's `getVolumes()` (falling back to the id). The per-drive heading (`indexing.drive.heading`, a
+`{name}` passthrough) shows only when more than one drive is active, so the common single-drive case is as terse as
+before. The component renders the content inside a `<div hidden>` host and passes the inner content div (not the hidden
+host) to the tooltip action via `contentEl`, so the adopted element doesn't carry `hidden` into the tooltip.
 
 Each `IndexingDriveRow` owns its own ETA sliding-window (so several drives indexing at once each get an independent rate
 estimate) and renders one of three modes (priority aggregation > scan > replay), reading from its `VolumeIndexActivity`
@@ -111,9 +111,10 @@ The ETA window samples the SAME counter the tier divides by (entries for tier 1,
 
 Pure helpers. Aggregation uses a single elapsed extrapolation. Scan and replay blend that 50-50 with a sliding-window
 rate over the last ~5 seconds (early extrapolation alone is wildly wrong). The window-snapshot collection is the only
-stateful glue and stays in each `IndexingDriveRow` (so per-drive rates don't collide); it feeds the pure `pruneSnapshots`
-/ `computeWindowEta` / `blendEtas` / `formatEta`. Tier 1's prior-duration seed (`priorScanDurationMs − elapsed`,
-ms→seconds) covers the gap before the window has samples. Tier 2's ETA is prefixed "roughly".
+stateful glue and stays in each `IndexingDriveRow` (so per-drive rates don't collide); it feeds the pure
+`pruneSnapshots` / `computeWindowEta` / `blendEtas` / `formatEta`. Tier 1's prior-duration seed
+(`priorScanDurationMs − elapsed`, ms→seconds) covers the gap before the window has samples. Tier 2's ETA is prefixed
+"roughly".
 
 ## Tests
 

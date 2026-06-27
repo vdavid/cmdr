@@ -27,9 +27,8 @@ It's also **the test rig for drag-out file promises** (dragging a phone/NAS file
 drop leg can't be automated honestly (Finder owns the gesture), so the virtual device is how you exercise that feature
 by hand: drag `DCIM/photo-001.jpg` from the virtual pane onto the Desktop and watch it download under Finder's chosen
 name, with a completion toast. The full manual protocol (the 11 Finder-leg checks) and the architecture live in
-[`apps/desktop/src-tauri/src/native_drag/DETAILS.md`](../../apps/desktop/src-tauri/src/native_drag/DETAILS.md)
-§ "Manual verification (the Finder leg)" and
-[`native_drag/CLAUDE.md`](../../apps/desktop/src-tauri/src/native_drag/CLAUDE.md).
+[`apps/desktop/src-tauri/src/native_drag/DETAILS.md`](../../apps/desktop/src-tauri/src/native_drag/DETAILS.md) § "Manual
+verification (the Finder leg)" and [`native_drag/CLAUDE.md`](../../apps/desktop/src-tauri/src/native_drag/CLAUDE.md).
 
 ## Running it alongside your real dev session
 

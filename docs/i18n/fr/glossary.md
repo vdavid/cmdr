@@ -418,11 +418,11 @@ two-pane family carries the exact feature). A later same-day copy reword (David,
 `doubleClickPaneNavigatesToParent` values; they reuse the terms below (see the reword note at the end). ICU values,
 single apostrophes doubled below to match this doc's convention:
 
-- double-click (noun) → double-clic; double-click (verb, imperative "Double-click …") → double-cliquez; (past
-  participle "you double-clicked") → double-cliqué · Double Commander ("lorsqu''on double-clique dans un espace vide
-  d''un panneau"), Total Commander ("Lors d''un double-clic sur la barre…"), KDE Dolphin ("double-clic", "Déclencheurs
-  sur double-clics"), Nautilus ("_Double-clic pour activer les éléments") · high — hyphenated "double-clic" / "double-cliquer"
-  is unanimous across the orthodox + explorer families.
+- double-click (noun) → double-clic; double-click (verb, imperative "Double-click …") → double-cliquez; (past participle
+  "you double-clicked") → double-cliqué · Double Commander ("lorsqu''on double-clique dans un espace vide d''un
+  panneau"), Total Commander ("Lors d''un double-clic sur la barre…"), KDE Dolphin ("double-clic", "Déclencheurs sur
+  double-clics"), Nautilus ("\_Double-clic pour activer les éléments") · high — hyphenated "double-clic" /
+  "double-cliquer" is unanimous across the orthodox + explorer families.
 - pane background → arrière-plan du panneau · `arrière-plan` from KDE Dolphin ("Action à déclencher lors d''un
   double-clic sur l''arrière-plan de la vue") and the catalog-settled `background → arrière-plan`; `panneau` from the
   glossary's settled `pane → panneau` (Double Commander / Total Commander "panneau de fichiers") · high
@@ -471,5 +471,5 @@ Phrasing notes for this pass:
     `remonter au dossier parent`).
   - description, new EN "That''s the empty space around the file list, not a file row." → "C''est l''espace vide autour
     de la liste de fichiers, pas une ligne de fichier." ("That''s" → concise friendly "C''est", referring back to the
-    pane background named in the label; settled `espace vide` + `liste de fichiers`; "around" → "autour de"; `ligne de
-    fichier` per the new row term).
+    pane background named in the label; settled `espace vide` + `liste de fichiers`; "around" → "autour de";
+    `ligne de fichier` per the new row term).

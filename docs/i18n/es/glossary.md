@@ -371,8 +371,8 @@ AppKit + SystemSettings, 2026-06-21).
 
 ### Settled during the double-click-to-parent navigation pass (Navigation & file ops settings + breadcrumb + double-click hint; macOS Finder + Double Commander + Thunar + MS terminology, 2026-06-26)
 
-- parent folder → carpeta superior · CHOSEN over macOS Finder's "carpeta contenedora" ("Go To Enclosing Folder" → "Ir
-  a la carpeta contenedora", `es/macOS/Finder/Localizable.json`) and Nautilus's "carpeta padre". Reasons, in order: (1)
+- parent folder → carpeta superior · CHOSEN over macOS Finder's "carpeta contenedora" ("Go To Enclosing Folder" → "Ir a
+  la carpeta contenedora", `es/macOS/Finder/Localizable.json`) and Nautilus's "carpeta padre". Reasons, in order: (1)
   the es catalog already standardizes on it — `commands.navParent.label` = "Ir a la carpeta superior", plus four
   `errors.json` suggestions — so consistency settles it; (2) Double Commander, the orthodox two-pane source, renders the
   literally-identical feature ("Enable changing to parent folder when double-clicking on empty part of file view" →
@@ -384,8 +384,8 @@ AppKit + SystemSettings, 2026-06-21).
 - double-click (verb) → hacer doble clic · MS terminology ("double-click"→"hacer doble clic", all regions incl. ESP,
   419, id 2133499); Double Commander ("al hacer doble clic"). Imperative `tú`: "Haz doble clic"; preterite "Hiciste
   doble clic" (matches macOS preterite address, e.g. "abriste") · high
-- pane background → fondo del panel · "panel" = pane (glossary); "fondo" = the empty backdrop. Kept distinct from
-  "empty space in a file list" (below) to preserve the source's two distinct phrasings · high
+- pane background → fondo del panel · "panel" = pane (glossary); "fondo" = the empty backdrop. Kept distinct from "empty
+  space in a file list" (below) to preserve the source's two distinct phrasings · high
 - empty space (in a file list) → espacio vacío · literal; Double Commander uses the equivalent "zona vacía de la vista
   de archivos" for the same gesture · high
 - file list → lista de archivos · Double Commander (orthodox two-pane: "Refresh file list"→"Actualizar la lista de
@@ -394,7 +394,8 @@ AppKit + SystemSettings, 2026-06-21).
   navigate to {path}" → "Haz clic para ir a {path}" ({path} preserved) · high
 - hint (one-time notification, internal label) → aviso · the doubleClickHint notification; "aviso" (notice) fits the
   transient-notification framing, consistent with "toast → aviso" (onboarding pass). Only on the internal/hidden
-  `doubleClickOnPaneNotificationSeen` keys; no user-facing string names it "hint" · tentative (internal-only, low stakes)
+  `doubleClickOnPaneNotificationSeen` keys; no user-facing string names it "hint" · tentative (internal-only, low
+  stakes)
 - "go up to" (navigation) → subir a · natural with "carpeta superior"; "subir a la carpeta superior" · high
 - "What just happened?" → ¿Qué acaba de pasar? · idiomatic; inverted ¿ · high
 - "I like it" / "Don''t like it?" (hint buttons) → Me gusta / ¿No te gusta? · idiomatic short button copy · high

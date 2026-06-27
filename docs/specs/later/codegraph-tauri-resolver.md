@@ -20,8 +20,8 @@ impact queries become correct across Cmdr's Rust↔TS boundary** with zero per-q
 - `codegraph_impact` on a command or event includes the frontend consumers, so "what breaks if I change this" finally
   spans the wire, the single most common refactor question in a Tauri app.
 - Event emit↔listen edges become visible (made trivially joinable by the typed-events pattern in
-  `apps/desktop/src/lib/ipc/CLAUDE.md`, which gave every event a `PascalCase` Rust struct ↔ `camelCase` TS
-  symbol pairing).
+  `apps/desktop/src/lib/ipc/CLAUDE.md`, which gave every event a `PascalCase` Rust struct ↔ `camelCase` TS symbol
+  pairing).
 
 It feeds **the graph agents already query**, not a separate tool, so the win is automatic and invisible-in-a-good-way.
 
