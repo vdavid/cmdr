@@ -1937,10 +1937,17 @@
         const isDeviceOnlyMtp = isMtpVolumeId(newVolumeId) && !newVolumeId.includes(':')
         if (newVolumeId !== 'network' && !isDeviceOnlyMtp) {
             void loadDirectory(targetPath)
-            void refreshVolumeSpace()
-            // Update disk-space watch to the new volume
             void unwatchVolumeSpace(paneId)
-            void watchVolumeSpace(paneId, newVolumeId, targetPath)
+            // Disk images have no meaningful free space: skip the poll, the bottom bar, and the
+            // SelectionInfo free/total text. Read the flag off the NEW volume directly — the
+            // `volumeId` prop (and so `isDiskImageVolume`) hasn't updated yet this tick.
+            const newIsDiskImage = getStoreVolumes().find((v) => v.id === newVolumeId)?.isDiskImage === true
+            if (newIsDiskImage) {
+                volumeSpace = null
+            } else {
+                void refreshVolumeSpace()
+                void watchVolumeSpace(paneId, newVolumeId, targetPath)
+            }
         } else {
             // Leaving a physical volume: stop watching
             void unwatchVolumeSpace(paneId)
@@ -2660,9 +2667,11 @@
             userHomePath = h.endsWith('/') ? h.slice(0, -1) : h
         })
 
-        // Listen for live disk-space updates from the backend poller (typed event)
+        // Listen for live disk-space updates from the backend poller (typed event).
+        // Ignore disk images: no meaningful free space. We don't register a watch for them
+        // (below), so this is a belt-and-suspenders guard against a late/stray event.
         void onVolumeSpaceChanged((payload) => {
-            if (payload.volumeId === volumeId) {
+            if (payload.volumeId === volumeId && !isDiskImageVolume) {
                 volumeSpace = {
                     totalBytes: payload.totalBytes,
                     availableBytes: payload.availableBytes,
@@ -2686,9 +2695,12 @@
         } else if (!isNetworkView && !isMtpDeviceOnly && !isSearchResultsView) {
             log.debug('[FilePane] onMount: triggering loadDirectory for paneId={paneId}', { paneId })
             void loadDirectory(currentPath)
-            void refreshVolumeSpace()
-            // Register for live disk-space polling
-            void watchVolumeSpace(paneId, volumeId, currentPath)
+            // Disk images have no meaningful free space: no poll, no bar, no SelectionInfo text.
+            if (!isDiskImageVolume) {
+                void refreshVolumeSpace()
+                // Register for live disk-space polling
+                void watchVolumeSpace(paneId, volumeId, currentPath)
+            }
         } else {
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for paneId={paneId}', { paneId })
             // Clear the initial `loading = true` for virtual-volume panes (network /
