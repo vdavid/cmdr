@@ -11,7 +11,7 @@ excerpt:
 ![Cmdr on macOS: the same two-pane layout with a clean, modern macOS look](/blog/total-commander-for-macos/cmdr-{theme}.webp 'Cmdr on macOS')
 [slider]
 
-I have a [long history](./35-years-of-file-managers) with file managers, and I _loved_ Total Commander while I used
+I have a [long history](/blog/35-years-of-file-managers) with file managers, and I _loved_ Total Commander while I used
 windows. Had I not switched to macOS, I'd still be using it happily.
 
 However, I did switch to macOS, and the **two-pane**, **keyboard-first** file managers that exist on macOS, frankly,
