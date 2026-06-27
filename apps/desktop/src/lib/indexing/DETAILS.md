@@ -12,9 +12,8 @@ actively scanning or replaying, removed the moment that volume finishes. Each `V
 `replayEstimatedTotal`, `replayStartedAt`). Scan and replay events each carry their own `volumeId`, so they key the map
 directly — that's what makes the indicator track local + SMB + MTP, not just root.
 
-Aggregation is the one signal with no `volumeId` (see below), so it stays module-level scalar `$state` (`aggregating`,
-`aggregationPhase`, `aggregationCurrent`, `aggregationTotal`, `aggregationStartedAt`) plus `lastCompletedScanVolumeId`
-for attribution.
+Aggregation carries its own `volumeId` too (see below), so it lives in a second per-volume map keyed by `volumeId`,
+each entry an `AggregationActivity` (`phase`, `current`, `total`, `startedAt`).
 
 ### Public API (`index.ts`)
 
@@ -25,13 +24,10 @@ from `./index-state.svelte`:
 ```ts
 // Multi-drive API (the indicator):
 getActiveIndexVolumes(): VolumeIndexActivity[]   // every scanning/replaying volume
-isAnyVolumeIndexing(): boolean                    // map non-empty OR aggregating (visibility gate)
-getAggregatingVolumeId(): string                  // who aggregation is attributed to (last scan to complete, or 'root')
-isAggregating(): boolean
-getAggregationPhase(): string        // 'saving_entries' | 'loading' | 'sorting' | 'computing' | 'writing'
-getAggregationCurrent(): number
-getAggregationTotal(): number
-getAggregationStartedAt(): number    // Date.now() timestamp
+isAnyVolumeIndexing(): boolean                    // scan/replay map non-empty OR any volume aggregating (visibility gate)
+getVolumeAggregation(volumeId): AggregationActivity | undefined  // that volume's live aggregation, or undefined
+getAggregatingVolumeIds(): string[]               // every volume currently aggregating
+isAggregating(): boolean                          // any volume aggregating
 // Backward-compatible scalars (other consumers):
 isScanning(): boolean                // any volume scanning (size-updating hourglass, search-unavailable)
 getEntriesScanned(): number          // the ROOT volume's live count (SearchDialog index-build progress)
@@ -43,38 +39,37 @@ initIndexEvents(onDirUpdated: (paths: string[]) => void): Promise<UnlistenFn>
 
 ## Scan-state events (`index-state.svelte.ts`)
 
-Eight Tauri events drive the state. Scan and replay are per-volume (keyed into the map); aggregation is global:
+Eight Tauri events drive the state. All of them carry a `volumeId`: scan and replay key the live-`activity` map,
+aggregation keys its own `aggregation` map.
 
 - **`index-scan-started`** (`{ volumeId, priorTotalEntries, priorScanDurationMs, volumeUsedBytes }`): create/replace the
   volume's `activity` entry (`phase: 'scanning'`, `scanStartedAt = Date.now()`, stash the calibration).
 - **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update that volume's counters
   (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
-- **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): set `lastCompletedScanVolumeId`,
-  remove the volume's entry.
+- **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry.
 - **`index-rescan-notification`** (`{ volumeId, reason, details }`): show an info toast with a reason-specific message.
 - **`index-replay-progress`** (`{ volumeId, eventsProcessed, estimatedTotal }`): create/replace the volume's `activity`
   entry as `phase: 'replaying'`, update counters.
 - **`index-replay-complete`** (`{ volumeId, durationMs }`): remove the volume's replay entry.
-- **`index-aggregation-progress`** (`{ phase, current, total }` — NO volumeId): `aggregating = true`, update
-  phase/progress/ETA.
-- **`index-aggregation-complete`** (`()`): reset aggregation state.
+- **`index-aggregation-progress`** (`{ volumeId, phase, current, total }`): upsert the volume's `aggregation` entry
+  (phase/progress, plus a `startedAt` ETA clock reset on each phase change).
+- **`index-aggregation-complete`** (`{ volumeId }`): remove that volume's `aggregation` entry.
 
-### Aggregation has no volumeId
+### Aggregation is per-volume
 
-`index-aggregation-progress` (`AggregationProgressEvent`, Rust `writer/mod.rs`) carries only `{ phase, current, total }`
-— every volume's writer emits the same event with no attribution (each non-root writer gets an `AppHandle`, so the
-events DO fire for SMB/MTP, just unattributed). Aggregation runs right after a writer's scan completes, so the FE
-attributes it to `lastCompletedScanVolumeId` (the volume whose `index-scan-complete` fired most recently), defaulting to
-`root` before any completes this session. The indicator folds the aggregation phase into that volume's row; if that
-volume has no live scan/replay entry (its scan already finished), the indicator adds a synthetic aggregation-only row so
-the phase stays visible. This is a heuristic, not ground truth — if two writers ever aggregate concurrently, the second
-isn't separately attributed. Fixing it properly needs a `volumeId` on the aggregation event (a backend change).
+`index-aggregation-progress` and `index-aggregation-complete` (`AggregationProgressEvent` /
+`IndexAggregationCompleteEvent`, Rust `writer/mod.rs` + `events.rs`) both carry the `volumeId`. The writer is spawned
+per volume, so the id is known at spawn time and threaded down to every emit site (the `saving_entries` phase in
+`writer/entries.rs` and the compute/write phases via `writer/aggregation.rs::build_progress_callback`). The FE keeps a
+separate `aggregation` map keyed by `volumeId`, so two drives aggregating at once each get their own progress — no
+guessing from the last scan to complete. The indicator folds each volume's aggregation into that volume's row; a volume
+aggregating with no live scan/replay entry (its scan already finished) gets a synthetic aggregation-only row.
 
 ## Status indicator tooltip content
 
 `IndexingStatusIndicator.svelte` is the thin shell: the hourglass icon (shown iff `isAnyVolumeIndexing()`) plus a tooltip
-that renders one `IndexingDriveRow` per active drive (from `getActiveIndexVolumes()`, plus a synthetic row for the
-aggregating volume when it has no live entry). It resolves each `volumeId` to a display name via the volume store's
+that renders one `IndexingDriveRow` per active drive (from `getActiveIndexVolumes()`, plus a synthetic row for any
+aggregating volume with no live entry, from `getAggregatingVolumeIds()`). It resolves each `volumeId` to a display name via the volume store's
 `getVolumes()` (falling back to the id). The per-drive heading (`indexing.drive.heading`, a `{name}` passthrough) shows
 only when more than one drive is active, so the common single-drive case is as terse as before. The component renders the
 content inside a `<div hidden>` host and passes the inner content div (not the hidden host) to the tooltip action via
@@ -82,7 +77,7 @@ content inside a `<div hidden>` host and passes the inner content div (not the h
 
 Each `IndexingDriveRow` owns its own ETA sliding-window (so several drives indexing at once each get an independent rate
 estimate) and renders one of three modes (priority aggregation > scan > replay), reading from its `VolumeIndexActivity`
-plus the folded-in aggregation props:
+plus its own `AggregationActivity | undefined` (this volume's aggregation, or `undefined` when it isn't aggregating):
 
 - **Scan**: a two-tier label + counters, plus `ProgressBar` + percent + ETA when a denominator exists. Tier 1
   (calibrated): "Scanning your drive... 42,000 entries, 1,200 dirs" with "42%, 1m 20s left". Tier 2 (first scan, rough):

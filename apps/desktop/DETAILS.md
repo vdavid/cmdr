@@ -62,6 +62,10 @@ reports, logs, file-backed secret store) agrees without round-tripping through T
   before using `RUST_LOG`: it has per-subsystem recipes. Key gotcha: the Rust library target is `cmdr_lib`, not `cmdr`,
   so use `RUST_LOG=cmdr_lib::module=debug`. `cmdr_lib` (lib) and `Cmdr` (bin) are both in the `cmdr` package, so
   `Compiling cmdr` in build output covers both targets.
+- **Dev live log path**: the running dev app's log is `~/Library/Application Support/com.veszelovszki.cmdr-dev/logs/cmdr.log`
+  (the data-dir `logs/` subdir), NOT `~/Library/Logs/com.veszelovszki.cmdr-dev/` (which can be stale).
+- **Hard freeze (logs stop)**: when the app wedges and the log goes silent, `sample <pid>` (macOS) the running Cmdr
+  process to capture the blocked threads' stacks — that's how a deadlock gets pinpointed when the logger never flushed.
 - **Crash reports**: a crash writes `crash-report.json` to the data dir; the next launch detects it and offers to send.
   See [`src-tauri/src/crash_reporter/CLAUDE.md`](src-tauri/src/crash_reporter/CLAUDE.md).
 - **Error reports**: to triage a bundle (zip + `manifest.json`), read

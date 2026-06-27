@@ -7,6 +7,7 @@ import { type UnlistenFn } from '@tauri-apps/api/event'
 import {
   events,
   type AggregationProgressEvent,
+  type IndexAggregationCompleteEvent,
   type IndexDirUpdatedEvent,
   type IndexFreshnessChangedEvent,
   type IndexMemoryWarningEvent,
@@ -46,10 +47,12 @@ export function onIndexAggregationProgress(callback: (payload: AggregationProgre
   })
 }
 
-/** Fires when aggregation finishes. Payloadless. */
-export function onIndexAggregationComplete(callback: () => void): Promise<UnlistenFn> {
-  return events.indexAggregationComplete.listen(() => {
-    callback()
+/** Fires when aggregation finishes, carrying the volume whose pass completed. */
+export function onIndexAggregationComplete(
+  callback: (payload: IndexAggregationCompleteEvent) => void,
+): Promise<UnlistenFn> {
+  return events.indexAggregationComplete.listen((event) => {
+    callback(event.payload)
   })
 }
 

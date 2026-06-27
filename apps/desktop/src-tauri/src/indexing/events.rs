@@ -108,10 +108,14 @@ pub struct IndexRescanNotificationEvent {
 }
 
 /// Emitted when a full-scan aggregation pass finishes and the UI can dismiss the
-/// progress overlay. Payloadless: it carries no data, only the signal.
+/// progress overlay. Carries the `volume_id` so the FE clears the right drive's
+/// aggregation row (two volumes can aggregate concurrently).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[tauri_specta(event_name = "index-aggregation-complete")]
-pub struct IndexAggregationCompleteEvent;
+#[serde(rename_all = "camelCase")]
+pub struct IndexAggregationCompleteEvent {
+    pub volume_id: String,
+}
 
 /// Emitted when the memory watchdog stops indexing to avoid a system crash.
 /// Drives a user-visible toast.

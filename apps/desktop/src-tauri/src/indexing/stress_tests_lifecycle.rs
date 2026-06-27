@@ -554,7 +554,8 @@ fn disconnect_storm_writer_drain_holds_across_volumes() {
         let order: [&std::path::PathBuf; 2] = if round % 2 == 0 { [&db_a, &db_b] } else { [&db_b, &db_a] };
         for db_path in order {
             // Connect: spawn a non-search-feeding writer (the SMB/MTP path).
-            let writer = IndexWriter::spawn_for(db_path, None, false).expect("spawn writer under storm");
+            let writer =
+                IndexWriter::spawn_for(db_path, None, false, "root".to_string()).expect("spawn writer under storm");
             // A small live-write burst (the watch→index path during a session).
             let tree = build_synthetic_tree(2, 2, 3, 256);
             for chunk in tree.chunks(8) {

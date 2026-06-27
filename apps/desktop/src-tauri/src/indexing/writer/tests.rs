@@ -57,7 +57,7 @@ fn non_search_feeding_tracker_does_not_bump_global_generation() {
 fn spawned_non_feeding_writer_does_not_bump_global_generation() {
     let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn_for(&db_path, None, false).unwrap();
+    let writer = IndexWriter::spawn_for(&db_path, None, false, "root".to_string()).unwrap();
 
     let before = WRITER_GENERATION.load(Ordering::Relaxed);
     writer
@@ -97,7 +97,7 @@ fn mark_dirs_listed_does_not_bump_global_generation() {
     let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let (db_path, _dir) = setup_db();
     // A root (search-feeding) writer — the one that WOULD bump on a mutation.
-    let writer = IndexWriter::spawn_for(&db_path, None, true).unwrap();
+    let writer = IndexWriter::spawn_for(&db_path, None, true, "root".to_string()).unwrap();
 
     // Insert a dir to stamp, then flush so its row is committed.
     writer
@@ -148,7 +148,7 @@ fn mark_dirs_listed_does_not_bump_global_generation() {
 fn bump_current_epoch_persists_and_does_not_bump_global_generation() {
     let _guard = WRITER_GENERATION_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn_for(&db_path, None, true).unwrap();
+    let writer = IndexWriter::spawn_for(&db_path, None, true, "root".to_string()).unwrap();
 
     let conn = IndexStore::open_read_connection(&db_path).unwrap();
     assert_eq!(
@@ -186,7 +186,7 @@ fn root_coverage_epoch_tracks_current_epoch_across_a_continuity_break() {
     use crate::indexing::store::ROOT_ID;
 
     let (db_path, _dir) = setup_db();
-    let writer = IndexWriter::spawn_for(&db_path, None, false).unwrap();
+    let writer = IndexWriter::spawn_for(&db_path, None, false, "root".to_string()).unwrap();
 
     // A clean scan stamps the root listed at the current epoch, then
     // aggregates. (One root dir, no children: a fully-covered tree.)

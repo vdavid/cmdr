@@ -1,7 +1,7 @@
 <script lang="ts">
     // One block in the multi-drive indexing tooltip: a single volume's live
-    // status (scan / replay), plus the aggregation phase when it's attributed to
-    // this volume (aggregation carries no volumeId; see index-state.svelte.ts).
+    // status (scan / replay), plus this volume's aggregation phase when it's
+    // aggregating (each volume's aggregation is its own; see index-state.svelte.ts).
     //
     // Each row owns its own sliding-window ETA snapshots, so several drives
     // indexing at once each get an independent rate estimate.
@@ -14,7 +14,7 @@
         computeScanProgress,
         type EtaSnapshot,
     } from './eta'
-    import type { VolumeIndexActivity } from './index-state.svelte'
+    import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -25,17 +25,18 @@
         driveName: string
         /** Show the drive-name heading (only when more than one drive is active). */
         showHeading: boolean
-        /** Aggregation is volume-less, so it's folded into the row it's attributed
-         *  to. These are 0/'' when aggregation isn't attributed to this drive. */
-        aggregating: boolean
-        aggPhase: string
-        aggCurrent: number
-        aggTotal: number
-        aggStartedAt: number
+        /** This volume's aggregation progress, folded into the row when present.
+         *  `undefined` when this drive isn't aggregating. */
+        aggregation: AggregationActivity | undefined
     }
 
-    const { activity, driveName, showHeading, aggregating, aggPhase, aggCurrent, aggTotal, aggStartedAt }: Props =
-        $props()
+    const { activity, driveName, showHeading, aggregation }: Props = $props()
+
+    const aggregating = $derived(aggregation != null)
+    const aggPhase = $derived(aggregation?.phase ?? '')
+    const aggCurrent = $derived(aggregation?.current ?? 0)
+    const aggTotal = $derived(aggregation?.total ?? 0)
+    const aggStartedAt = $derived(aggregation?.startedAt ?? 0)
 
     const scanning = $derived(activity.phase === 'scanning')
     const replaying = $derived(activity.phase === 'replaying')

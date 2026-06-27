@@ -7,13 +7,10 @@
     import {
         getActiveIndexVolumes,
         isAnyVolumeIndexing,
-        isAggregating,
-        getAggregationPhase,
-        getAggregationCurrent,
-        getAggregationTotal,
-        getAggregationStartedAt,
-        getAggregatingVolumeId,
+        getVolumeAggregation,
+        getAggregatingVolumeIds,
         type VolumeIndexActivity,
+        type AggregationActivity,
     } from './index-state.svelte'
     import IndexingDriveRow from './IndexingDriveRow.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -22,8 +19,7 @@
 
     const visible = $derived(isAnyVolumeIndexing())
     const activeVolumes = $derived(getActiveIndexVolumes())
-    const aggregating = $derived(isAggregating())
-    const aggVolumeId = $derived(getAggregatingVolumeId())
+    const aggregatingVolumeIds = $derived(getAggregatingVolumeIds())
     const volumes = $derived(getVolumes())
 
     // Resolve a volume id to a human display name from the shared volume store.
@@ -33,24 +29,30 @@
         return volumes.find((v) => v.id === volumeId)?.name ?? volumeId
     }
 
-    // The rows to render: every actively scanning/replaying volume, plus the
-    // volume aggregation is attributed to if it isn't already in that set (its
-    // scan completed, aggregation followed). Aggregation carries no volumeId, so
-    // it's folded into exactly one row (the last scan to complete).
+    // The rows to render: every actively scanning/replaying volume (with its
+    // aggregation folded in when that same volume is aggregating), plus a
+    // synthetic row for any volume that's aggregating with no live scan/replay
+    // entry (its scan already finished). Each volume's aggregation is its own,
+    // keyed by volumeId, so two drives aggregating at once stay separate.
     interface DriveRow {
         activity: VolumeIndexActivity
-        aggregating: boolean
+        aggregation: AggregationActivity | undefined
     }
 
     const rows = $derived.by<DriveRow[]>(() => {
         const result: DriveRow[] = activeVolumes.map((activity) => ({
             activity,
-            aggregating: aggregating && activity.volumeId === aggVolumeId,
+            aggregation: getVolumeAggregation(activity.volumeId),
         }))
-        // Aggregation attributed to a volume with no live scan/replay row: add a
-        // synthetic aggregation-only row so the phase is still visible.
-        if (aggregating && !activeVolumes.some((a) => a.volumeId === aggVolumeId)) {
-            result.push({ activity: aggregationOnlyActivity(aggVolumeId), aggregating: true })
+        // A volume aggregating with no live scan/replay row: add a synthetic
+        // aggregation-only row so its phase stays visible.
+        for (const volumeId of aggregatingVolumeIds) {
+            if (!activeVolumes.some((a) => a.volumeId === volumeId)) {
+                result.push({
+                    activity: aggregationOnlyActivity(volumeId),
+                    aggregation: getVolumeAggregation(volumeId),
+                })
+            }
         }
         return result
     })
@@ -79,11 +81,6 @@
     // the common single-drive case stays as terse as before.
     const showHeadings = $derived(rows.length > 1)
 
-    const aggPhase = $derived(getAggregationPhase())
-    const aggCurrent = $derived(getAggregationCurrent())
-    const aggTotal = $derived(getAggregationTotal())
-    const aggStartedAt = $derived(getAggregationStartedAt())
-
     // The tooltip action adopts `tooltipContent` (not the hidden wrapper) so it
     // renders visibly inside the tooltip: an adopted element keeps its own
     // `hidden` attribute, so a hidden host passed as `contentEl` would render
@@ -109,11 +106,7 @@
                     activity={row.activity}
                     driveName={driveName(row.activity.volumeId)}
                     showHeading={showHeadings}
-                    aggregating={row.aggregating}
-                    {aggPhase}
-                    {aggCurrent}
-                    {aggTotal}
-                    {aggStartedAt}
+                    aggregation={row.aggregation}
                 />
             {/each}
         </div>

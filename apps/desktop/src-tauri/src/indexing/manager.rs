@@ -194,7 +194,7 @@ impl IndexManager {
         // feed, or every NAS/phone change-notify event would thrash a full root
         // search reload. See `writer::WRITER_GENERATION` and `indexing/DETAILS.md`.
         let feeds_search = kind == IndexVolumeKind::Local;
-        let writer = IndexWriter::spawn_for(&db_path, Some(app.clone()), feeds_search)
+        let writer = IndexWriter::spawn_for(&db_path, Some(app.clone()), feeds_search, volume_id.clone())
             .map_err(|e| format!("Failed to spawn index writer: {e}"))?;
 
         log::debug!(
@@ -585,7 +585,10 @@ impl IndexManager {
                         duration_ms: summary.duration_ms,
                     }
                     .emit(&app);
-                    let _ = IndexAggregationCompleteEvent.emit(&app);
+                    let _ = IndexAggregationCompleteEvent {
+                        volume_id: volume_id.clone(),
+                    }
+                    .emit(&app);
 
                     // Replay changes the live watcher buffered DURING the scan
                     // (pre-arm-before-snapshot): the smb2 watcher ran throughout,
@@ -1157,7 +1160,10 @@ impl IndexManager {
                     // The flush above drains all queued writes including
                     // ComputeAllAggregates, so by this point the UI can dismiss
                     // the progress overlay.
-                    let _ = IndexAggregationCompleteEvent.emit(&app);
+                    let _ = IndexAggregationCompleteEvent {
+                        volume_id: volume_id.clone(),
+                    }
+                    .emit(&app);
 
                     DEBUG_STATS.close_phase_with_stats(vec![]);
                     DEBUG_STATS.set_phase(ActivityPhase::Reconciling, "post-scan");

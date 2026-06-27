@@ -6,11 +6,10 @@
  * events (each carries its `volumeId`). The corner hourglass shows whenever ANY
  * volume is active, and its tooltip lists every active drive.
  *
- * Aggregation is the one exception: `index-aggregation-progress` carries no
- * `volumeId` (a single writer-side signal). It runs right after a writer's scan
- * completes, so we attribute it to the volume whose scan most recently finished
- * (falling back to `root`, the common case). See § "Aggregation has no volumeId"
- * in DETAILS.md.
+ * Aggregation is per-volume too: `index-aggregation-progress` and
+ * `index-aggregation-complete` both carry the `volumeId`, so each drive's
+ * aggregation is tracked in its own map entry. Two drives aggregating at once
+ * each get their own progress. See § "Aggregation" in DETAILS.md.
  *
  * Backward-compatible scalar getters (`isScanning`, `getEntriesScanned`, …) are
  * retained for the other consumers: `isScanning`/`isAggregating`/`isReplaying`
@@ -39,9 +38,21 @@ import type { MessageKey } from '$lib/intl/keys.gen'
 /** The local volume's id (mirrors `DEFAULT_VOLUME_ID` in `tauri-commands/storage`). */
 const ROOT_VOLUME_ID = 'root'
 
-/** Which activity a volume is currently doing. Aggregation isn't a per-volume
- *  phase here (it has no `volumeId`); it's attributed via `aggregatingVolumeId`. */
+/** Which live activity a volume is currently doing. Aggregation is tracked
+ *  separately (its own per-volume map), folded into the row by the consumer. */
 export type IndexActivityPhase = 'scanning' | 'replaying'
+
+/** Per-volume aggregation progress, tracked separately from scan/replay because
+ *  aggregation runs on the writer thread after a scan and overlaps with nothing
+ *  else for the same volume. Keyed by `volumeId` in the `aggregation` map. */
+export interface AggregationActivity {
+  /** One of: `saving_entries` | `loading` | `sorting` | `computing` | `writing`. */
+  phase: string
+  current: number
+  total: number
+  /** `Date.now()` when this phase began (reset on each phase change), for ETA. */
+  startedAt: number
+}
 
 /** Live indexing activity for one volume. Scan and replay carry their own
  *  `volumeId`, so both are attributable; aggregation is folded in by the
@@ -102,16 +113,11 @@ function newReplayActivity(volumeId: string): VolumeIndexActivity {
 // finishes. Reactive: reading it re-renders the corner hourglass and its tooltip.
 const activity = new SvelteMap<string, VolumeIndexActivity>()
 
-// Aggregation is a single, volume-less signal (the event carries no volumeId).
-// We attribute it to whichever volume most recently completed a scan — the
-// writer that's now aggregating. Falls back to `root` (the common case) before
-// any scan-complete has been seen this session.
-let aggregating = $state(false)
-let aggregationPhase = $state('')
-let aggregationCurrent = $state(0)
-let aggregationTotal = $state(0)
-let aggregationStartedAt = $state(0)
-let lastCompletedScanVolumeId = $state(ROOT_VOLUME_ID)
+// Per-volume aggregation, keyed by volume id. An entry exists only while that
+// volume's writer is aggregating (between its `index-aggregation-progress` and
+// `index-aggregation-complete`, both volumeId-stamped). Reactive: reading it
+// re-renders the corner hourglass and its tooltip.
+const aggregation = new SvelteMap<string, AggregationActivity>()
 
 // Monotonic counter bumped by every scan/replay event. Prevents the
 // `get_index_status` IPC response (which can arrive late) from overwriting state
@@ -128,13 +134,20 @@ export function getActiveIndexVolumes(): VolumeIndexActivity[] {
 /** Whether ANY drive is scanning, replaying, or aggregating. The corner
  *  hourglass's visibility gate. Reactive. */
 export function isAnyVolumeIndexing(): boolean {
-  return activity.size > 0 || aggregating
+  return activity.size > 0 || aggregation.size > 0
 }
 
-/** The volume id aggregation is attributed to (the last scan to complete, or
- *  `root`). Reactive. */
-export function getAggregatingVolumeId(): string {
-  return lastCompletedScanVolumeId
+/** This volume's live aggregation progress, or `undefined` when it isn't
+ *  aggregating. Reactive. */
+export function getVolumeAggregation(volumeId: string): AggregationActivity | undefined {
+  return aggregation.get(volumeId)
+}
+
+/** Every volume currently aggregating, in insertion order. Reactive. Lets the
+ *  indicator add a row for a volume that's aggregating with no live scan/replay
+ *  entry (its scan already finished). */
+export function getAggregatingVolumeIds(): string[] {
+  return [...aggregation.keys()]
 }
 
 // ── Backward-compatible scalar getters ───────────────────────────────
@@ -160,32 +173,10 @@ export function getEntriesScanned(): number {
   return r?.phase === 'scanning' ? r.entriesScanned : 0
 }
 
+/** Whether ANY drive is aggregating (the size-updating hourglass and
+ *  search-unavailable consumers want global truth). Reactive. */
 export function isAggregating(): boolean {
-  return aggregating
-}
-
-export function getAggregationPhase(): string {
-  return aggregationPhase
-}
-
-export function getAggregationCurrent(): number {
-  return aggregationCurrent
-}
-
-export function getAggregationTotal(): number {
-  return aggregationTotal
-}
-
-export function getAggregationStartedAt(): number {
-  return aggregationStartedAt
-}
-
-function resetAggregation() {
-  aggregating = false
-  aggregationPhase = ''
-  aggregationCurrent = 0
-  aggregationTotal = 0
-  aggregationStartedAt = 0
+  return aggregation.size > 0
 }
 
 // Maps the backend's typed rescan-reason discriminator to its catalog message
@@ -232,29 +223,24 @@ export async function initIndexState(): Promise<void> {
 
   const unlistenComplete = await onIndexScanComplete((payload) => {
     eventVersion++
-    // This volume's scan is done; aggregation (volume-less) follows on its
-    // writer, so remember it for attribution.
-    lastCompletedScanVolumeId = payload.volumeId
+    // This volume's scan is done; aggregation follows on its writer, attributed
+    // by the volumeId-stamped aggregation events below.
     activity.delete(payload.volumeId)
   })
   unlistenHandles.push(unlistenComplete)
 
   const unlistenAggregation = await onIndexAggregationProgress((payload) => {
-    const { phase, current, total } = payload
-    if (!aggregating || phase !== aggregationPhase) {
-      aggregationStartedAt = Date.now()
-    }
-    if (!aggregating) {
-      aggregating = true
-    }
-    aggregationPhase = phase
-    aggregationCurrent = current
-    aggregationTotal = total
+    const { volumeId, phase, current, total } = payload
+    const existing = aggregation.get(volumeId)
+    // Reset the ETA clock on first sight of this volume's aggregation or on a
+    // phase change, so each phase's progress extrapolates from its own start.
+    const startedAt = existing && existing.phase === phase ? existing.startedAt : Date.now()
+    aggregation.set(volumeId, { phase, current, total, startedAt })
   })
   unlistenHandles.push(unlistenAggregation)
 
-  const unlistenAggComplete = await onIndexAggregationComplete(() => {
-    resetAggregation()
+  const unlistenAggComplete = await onIndexAggregationComplete((payload) => {
+    aggregation.delete(payload.volumeId)
   })
   unlistenHandles.push(unlistenAggComplete)
 
@@ -332,6 +318,5 @@ export function destroyIndexState(): void {
   }
   unlistenHandles.length = 0
   activity.clear()
-  resetAggregation()
-  lastCompletedScanVolumeId = ROOT_VOLUME_ID
+  aggregation.clear()
 }

@@ -2644,6 +2644,13 @@ export type ActivityPhase =
 
 // Tauri event payload for aggregation progress updates.
 export type AggregationProgressEvent = {
+  /**
+   *  The volume whose writer is aggregating. The writer is spawned per volume,
+   *  so this is known at spawn time and threaded down to every emit site. Lets
+   *  the FE attribute aggregation progress to the right drive even when two
+   *  volumes aggregate concurrently (no more `lastCompletedScanVolumeId` guess).
+   */
+  volumeId: string
   // One of `phase_to_str`'s outputs: `saving_entries` | `loading` | `sorting` | `computing` | `writing`.
   phase: string
   current: number
@@ -3608,9 +3615,12 @@ export type HostSource = 'discovered' | 'manual'
 
 /**
  *  Emitted when a full-scan aggregation pass finishes and the UI can dismiss the
- *  progress overlay. Payloadless: it carries no data, only the signal.
+ *  progress overlay. Carries the `volume_id` so the FE clears the right drive's
+ *  aggregation row (two volumes can aggregate concurrently).
  */
-export type IndexAggregationCompleteEvent = null
+export type IndexAggregationCompleteEvent = {
+  volumeId: string
+}
 
 /**
  *  Extended debug status for the debug window. Includes live DB counts

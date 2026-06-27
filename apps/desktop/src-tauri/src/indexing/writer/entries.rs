@@ -23,6 +23,7 @@ pub(super) fn handle_insert_entries_v2(
     entries: Vec<EntryRow>,
     accumulator: &mut AccumulatorMaps,
     app_handle: &Option<AppHandle>,
+    volume_id: &str,
     expected_total_entries: &AtomicU64,
     mutation_tracker: &MutationTracker,
 ) {
@@ -90,6 +91,7 @@ pub(super) fn handle_insert_entries_v2(
         && let Some(app) = app_handle
     {
         let _ = AggregationProgressEvent {
+            volume_id: volume_id.to_string(),
             phase: phase_to_str(AggregationPhase::SavingEntries).to_string(),
             current: accumulator.entries_inserted,
             total: expected,
@@ -751,6 +753,7 @@ mod tests {
             entries_dup,
             &mut accumulator,
             &None,
+            "root",
             &expected,
             &mutation_tracker,
         );

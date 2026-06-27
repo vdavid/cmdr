@@ -51,14 +51,12 @@ function replayActivity(overrides: Partial<VolumeIndexActivity> = {}): VolumeInd
 }
 
 const baseProps = {
+  // A scan activity by default; every test overrides `activity` explicitly. It's
+  // here so the merged props type carries the required `activity` field.
   activity: scanActivity(),
   driveName: 'Macintosh HD',
   showHeading: false,
-  aggregating: false,
-  aggPhase: '',
-  aggCurrent: 0,
-  aggTotal: 0,
-  aggStartedAt: 0,
+  aggregation: undefined,
 }
 
 async function mountRow(props: Record<string, unknown>): Promise<HTMLDivElement> {
@@ -100,11 +98,7 @@ describe('IndexingDriveRow a11y', () => {
   it('with an aggregation phase folded into the row has no a11y violations', async () => {
     const target = await mountRow({
       activity: scanActivity({ priorTotalEntries: 100000 }),
-      aggregating: true,
-      aggPhase: 'computing',
-      aggCurrent: 500,
-      aggTotal: 1000,
-      aggStartedAt: Date.now() - 3000,
+      aggregation: { phase: 'computing', current: 500, total: 1000, startedAt: Date.now() - 3000 },
     })
     await expectNoA11yViolations(target)
     target.remove()

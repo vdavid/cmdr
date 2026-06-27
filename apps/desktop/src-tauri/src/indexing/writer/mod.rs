@@ -17,6 +17,7 @@ use tauri::AppHandle;
 use tokio::sync::oneshot;
 
 use crate::indexing::aggregator::AggregationPhase;
+use crate::indexing::state::ROOT_VOLUME_ID;
 use crate::indexing::store::{EntryRow, IndexStore, IndexStoreError};
 use crate::pluralize::{pluralize, pluralize_with};
 
@@ -43,6 +44,11 @@ use maintenance::{handle_incremental_vacuum, handle_wal_checkpoint};
 #[tauri_specta(event_name = "index-aggregation-progress")]
 #[serde(rename_all = "camelCase")]
 pub struct AggregationProgressEvent {
+    /// The volume whose writer is aggregating. The writer is spawned per volume,
+    /// so this is known at spawn time and threaded down to every emit site. Lets
+    /// the FE attribute aggregation progress to the right drive even when two
+    /// volumes aggregate concurrently (no more `lastCompletedScanVolumeId` guess).
+    pub volume_id: String,
     /// One of `phase_to_str`'s outputs: `saving_entries` | `loading` | `sorting` | `computing` | `writing`.
     pub phase: String,
     pub current: u64,
@@ -305,15 +311,19 @@ impl IndexWriter {
     /// care about search isolation use [`spawn`](Self::spawn) (defaults to
     /// search-feeding, preserving prior behavior).
     pub fn spawn(db_path: &Path, app_handle: Option<AppHandle>) -> Result<Self, IndexStoreError> {
-        Self::spawn_for(db_path, app_handle, true)
+        Self::spawn_for(db_path, app_handle, true, ROOT_VOLUME_ID.to_string())
     }
 
     /// Spawn a writer, explicitly choosing whether it feeds the search index.
     /// See [`spawn`](Self::spawn) for the `feeds_search` contract.
+    ///
+    /// `volume_id` is stamped onto every `index-aggregation-progress` event this
+    /// writer emits, so the FE can attribute aggregation to the right drive.
     pub fn spawn_for(
         db_path: &Path,
         app_handle: Option<AppHandle>,
         feeds_search: bool,
+        volume_id: String,
     ) -> Result<Self, IndexStoreError> {
         let conn = IndexStore::open_write_connection(db_path)?;
         // SQLite busy retry logger. Brief contention is routine (WAL checkpoints, long-lived
@@ -352,6 +362,7 @@ impl IndexWriter {
                     conn,
                     receiver,
                     app_handle,
+                    volume_id,
                     expected_total_clone,
                     next_id_clone,
                     mutation_tracker_clone,
@@ -718,6 +729,7 @@ fn writer_loop(
     conn: rusqlite::Connection,
     receiver: mpsc::Receiver<WriteMessage>,
     app_handle: Option<AppHandle>,
+    volume_id: String,
     expected_total_entries: Arc<AtomicU64>,
     next_id: Arc<AtomicI64>,
     mutation_tracker: Arc<MutationTracker>,
@@ -769,6 +781,7 @@ fn writer_loop(
                 &stats,
                 &mut accumulator,
                 &app_handle,
+                &volume_id,
                 &expected_total_entries,
                 &next_id,
                 &mutation_tracker,
@@ -782,6 +795,7 @@ fn writer_loop(
             &stats,
             &mut accumulator,
             &app_handle,
+            &volume_id,
             &expected_total_entries,
             &next_id,
             &mutation_tracker,
@@ -870,6 +884,7 @@ fn process_message(
     stats: &WriterStats,
     accumulator: &mut AccumulatorMaps,
     app_handle: &Option<AppHandle>,
+    volume_id: &str,
     expected_total_entries: &AtomicU64,
     next_id: &AtomicI64,
     mutation_tracker: &MutationTracker,
@@ -883,6 +898,7 @@ fn process_message(
                 entries,
                 accumulator,
                 app_handle,
+                volume_id,
                 expected_total_entries,
                 mutation_tracker,
             );
@@ -956,7 +972,7 @@ fn process_message(
             handle_truncate_data(conn, accumulator, expected_total_entries, next_id, mutation_tracker);
         }
         WriteMessage::ComputeAllAggregates => {
-            handle_compute_all_aggregates(conn, accumulator, app_handle, expected_total_entries);
+            handle_compute_all_aggregates(conn, accumulator, app_handle, volume_id, expected_total_entries);
         }
         WriteMessage::ComputePartialAggregates { hot_paths } => {
             handle_compute_partial_aggregates(conn, accumulator, app_handle, hot_paths);

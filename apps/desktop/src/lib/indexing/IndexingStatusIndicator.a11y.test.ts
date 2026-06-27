@@ -12,13 +12,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import IndexingStatusIndicator from './IndexingStatusIndicator.svelte'
-import type { VolumeIndexActivity } from './index-state.svelte'
+import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 let activeVolumes: VolumeIndexActivity[] = []
-let aggregating = false
-let aggPhase = 'computing'
-let aggVolumeId = 'root'
+// Per-volume aggregation, keyed by volumeId (mirrors the real `aggregation` map).
+let aggregationByVolume: Record<string, AggregationActivity> = {}
 
 function scanActivity(volumeId: string, overrides: Partial<VolumeIndexActivity> = {}): VolumeIndexActivity {
   return {
@@ -40,13 +39,9 @@ function scanActivity(volumeId: string, overrides: Partial<VolumeIndexActivity> 
 
 vi.mock('./index-state.svelte', () => ({
   getActiveIndexVolumes: () => activeVolumes,
-  isAnyVolumeIndexing: () => activeVolumes.length > 0 || aggregating,
-  isAggregating: () => aggregating,
-  getAggregationPhase: () => aggPhase,
-  getAggregationCurrent: () => 500,
-  getAggregationTotal: () => 1000,
-  getAggregationStartedAt: () => Date.now() - 3000,
-  getAggregatingVolumeId: () => aggVolumeId,
+  isAnyVolumeIndexing: () => activeVolumes.length > 0 || Object.keys(aggregationByVolume).length > 0,
+  getVolumeAggregation: (volumeId: string) => aggregationByVolume[volumeId],
+  getAggregatingVolumeIds: () => Object.keys(aggregationByVolume),
 }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({
@@ -59,7 +54,7 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
 describe('IndexingStatusIndicator a11y', () => {
   it('idle (no activity) renders nothing', async () => {
     activeVolumes = []
-    aggregating = false
+    aggregationByVolume = {}
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(IndexingStatusIndicator, { target, props: {} })
@@ -70,7 +65,7 @@ describe('IndexingStatusIndicator a11y', () => {
 
   it('scanning (counter-only, no denominator) shows the icon with no a11y violations', async () => {
     activeVolumes = [scanActivity('root', { priorTotalEntries: null, volumeUsedBytes: null })]
-    aggregating = false
+    aggregationByVolume = {}
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(IndexingStatusIndicator, { target, props: {} })
@@ -82,7 +77,7 @@ describe('IndexingStatusIndicator a11y', () => {
 
   it('scanning with calibrated progress shows the bar with no a11y violations', async () => {
     activeVolumes = [scanActivity('root', { priorTotalEntries: 100000 })]
-    aggregating = false
+    aggregationByVolume = {}
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(IndexingStatusIndicator, { target, props: {} })
@@ -94,9 +89,9 @@ describe('IndexingStatusIndicator a11y', () => {
 
   it('aggregating with progress has no a11y violations', async () => {
     activeVolumes = []
-    aggregating = true
-    aggPhase = 'computing'
-    aggVolumeId = 'root'
+    aggregationByVolume = {
+      root: { phase: 'computing', current: 500, total: 1000, startedAt: Date.now() - 3000 },
+    }
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(IndexingStatusIndicator, { target, props: {} })
@@ -110,7 +105,7 @@ describe('IndexingStatusIndicator a11y', () => {
       scanActivity('root', { priorTotalEntries: 100000 }),
       scanActivity('smb-nas', { priorTotalEntries: 50000 }),
     ]
-    aggregating = false
+    aggregationByVolume = {}
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(IndexingStatusIndicator, { target, props: {} })
