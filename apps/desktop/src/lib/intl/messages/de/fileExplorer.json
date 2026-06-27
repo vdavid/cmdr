@@ -849,7 +849,7 @@
   "@fileExplorer.dirSize.unknownTooltip": {
     "sourceHash": "0207a3d"
   },
-  "fileExplorer.dirSize.staleLine": "Diese Größen stammen aus einer früheren Durchsuchung und sind möglicherweise veraltet.",
+  "fileExplorer.dirSize.staleLine": "Diese Größen stammen aus einem früheren Durchlauf und sind möglicherweise veraltet.",
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },

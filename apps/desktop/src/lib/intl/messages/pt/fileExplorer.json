@@ -1262,7 +1262,7 @@
   "@fileExplorer.navigation.driveIndex.menuStop": {
     "sourceHash": "70ae907"
   },
-  "fileExplorer.navigation.driveIndex.menuForget": "Esquecer o índice deste drive",
+  "fileExplorer.navigation.driveIndex.menuForget": "Esquecer o índice deste disco",
   "@fileExplorer.navigation.driveIndex.menuForget": {
     "sourceHash": "a553f83"
   },

@@ -845,7 +845,7 @@
   "@fileExplorer.dirSize.unknownTooltip": {
     "sourceHash": "0207a3d"
   },
-  "fileExplorer.dirSize.staleLine": "Ezek a méretek egy korábbi vizsgálatból származnak, és elavultak lehetnek.",
+  "fileExplorer.dirSize.staleLine": "Ezek a méretek egy korábbi átvizsgálásból származnak, és elavultak lehetnek.",
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },

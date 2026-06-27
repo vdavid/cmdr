@@ -841,11 +841,11 @@
   "@fileExplorer.dirSize.lowerBoundLine": {
     "sourceHash": "03803e8"
   },
-  "fileExplorer.dirSize.unknownTooltip": "Không rõ kích thước: thư mục này chưa được quét.",
+  "fileExplorer.dirSize.unknownTooltip": "Không rõ kích cỡ: thư mục này chưa được quét.",
   "@fileExplorer.dirSize.unknownTooltip": {
     "sourceHash": "0207a3d"
   },
-  "fileExplorer.dirSize.staleLine": "Các kích thước này là từ lần quét trước và có thể đã lỗi thời.",
+  "fileExplorer.dirSize.staleLine": "Các kích cỡ này là từ lần quét trước và có thể đã lỗi thời.",
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
