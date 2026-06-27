@@ -129,6 +129,23 @@ Two conveniences plain markdown can't express, handled by the `rehypeBlogMedia` 
 The dev editor's preview mirrors these transforms in JS so you can see them while writing. The exact theme switch only
 happens on the built site.
 
+### Preparing comparison/theme screenshots
+
+The slider overlays two windows and clips each to its side, so the screenshots must be clean app windows of matching
+size. Don't feed it raw ClearShot exports (those carry a transparent margin, a soft drop shadow, and slightly different
+window sizes — which made the smaller window let the other show through, and left halo specks in the rounded corners).
+Process each source (e.g. `brand/screenshots/app-main-{light,dark}.png` for Cmdr) with `sharp`:
+
+1. **Binarize the alpha**: any pixel below fully opaque (alpha 255) → fully transparent. This drops the soft shadow and
+   the semi-transparent corner halo; the later downscale re-adds clean anti-aliasing.
+2. **Trim to the opaque bounding box** (the window rectangle), discarding the now-transparent margin.
+3. **Resize all of them to the same width** (1400px), proportions intact — heights then land within a few px, which is
+   close enough for `object-fit: cover`.
+4. Save as `.webp` into `public/blog/<slug>/`. Don't bake a shadow in — `global.css` adds the slider's frame shadow and
+   the lightbox's per-window `drop-shadow` (which follows the rounded window shape).
+
+The light/dark Cmdr pair must share the `{theme}` filename stem (`cmdr-light.webp` / `cmdr-dark.webp`).
+
 ## Inline icons
 
 Write `:name:` to drop a small brand-colored Lucide icon inline — handy to prefix comparison-table cells for
