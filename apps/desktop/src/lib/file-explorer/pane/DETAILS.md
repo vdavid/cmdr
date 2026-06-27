@@ -355,7 +355,9 @@ component testable: pass deps in, get back a struct of state + handlers.
 
 **Live disk space.** `FilePane` registers each pane independently with the backend space poller (`watchVolumeSpace`
 keyed by pane ID). Two panes on the same volume have independent registrations; one navigating away doesn't unwatch the
-other. See parent § "Live disk space".
+other. See parent § "Live disk space". **Disk images (`.dmg`) are excluded from the watch** (mount and volume-change
+sites), and `onVolumeSpaceChanged` ignores them too: a disk image has no meaningful free space, so polling it would leak
+its free/total figure into the bottom bar and `SelectionInfo`. Don't drop these guards when refactoring the registration.
 
 **MCP surface.** `FilePane` mirrors `{ buffer, indicatorVisible, indicatorStale, lastMatchedName }` into the synced
 `PaneState.typeToJump` whenever the buffer or indicator is live, so MCP-driven E2E can assert without DOM poking. See
