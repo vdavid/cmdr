@@ -41,9 +41,29 @@ const currentYear = new Date().getFullYear()
             Built in Rust, free for personal use.
         </p>
 
-        <!-- CTA Button - Step 5 -->
-        <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-stretch">
+        <!-- CTA Button + Homebrew hint - Steps 5 & 6: the hint sits beside the button (vertically
+             centered) when it fits, and stacks below it on narrow viewports. -->
+        <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <DownloadButton variant="hero" class="animate-blur-in stagger-5 w-full sm:w-auto" />
+            <a
+                href="#homebrew"
+                data-brew-jump
+                class="animate-blur-in stagger-6 inline-flex items-center gap-1.5 self-center text-sm text-[var(--color-text-tertiary)] underline decoration-[var(--color-border)] underline-offset-4 transition-colors hover:text-[var(--color-accent-text)] hover:decoration-[var(--color-accent)] sm:self-auto"
+            >
+                or Homebrew
+                <svg
+                    class="h-3.5 w-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <path d="M12 5v14M19 12l-7 7-7-7"></path>
+                </svg>
+            </a>
         </div>
 
         <!-- Pricing hint - Step 7 -->

@@ -8,7 +8,14 @@ personal use. With fully optional, privacy-first AI features.
 Cmdr is for folks who love a rock-solid, keyboard-driven, two-pane file manager with a modern UI in 2026. Like Total
 Commander, but on macOS.
 
-Give it a try: [Download for macOS](https://getcmdr.com) on the website.
+Give it a try: [download for macOS](https://getcmdr.com), or install with Homebrew:
+
+```bash
+brew tap vdavid/tap && brew install --cask cmdr
+```
+
+**Note:** If you'd love a nice short `brew install --cask cmdr`, **star**, **watch**, and **fork** this repo! Homebrew needs 225
+stars, 50 watchers, and 50 forks before it allows apps to its main tap.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="brand/screenshots/app-main-dark.png" />

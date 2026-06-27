@@ -118,6 +118,9 @@
   flex-shrink: 0;
 }
 
+/* Center the button content. The card is always centered; the hero is content-hugging (`w-auto`) on
+   wider screens, so this only takes visual effect on narrow screens where the hero button is full-width. */
+.split-btn--hero .split-btn__main,
 .split-btn--card .split-btn__main {
   justify-content: center;
 }

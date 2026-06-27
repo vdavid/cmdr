@@ -1,0 +1,263 @@
+---
+// Secondary install path shown under the main "Download for macOS" button: the Homebrew command in a
+// monospace box with a copy-to-clipboard button. The command stays visible and selectable with JS
+// disabled; the button is a progressive enhancement.
+const command = 'brew tap vdavid/tap && brew install --cask cmdr'
+---
+
+<div class="brew" id="homebrew">
+    <p class="brew__label">or install with Homebrew</p>
+    <div class="brew__box">
+        <code class="brew__cmd" tabindex="0" data-brew-cmd>{command}</code>
+        <button
+            type="button"
+            class="brew__copy"
+            aria-label="Copy Homebrew install command"
+            title="Copy command"
+            data-brew-copy
+        >
+            <svg
+                class="brew__icon brew__icon--copy"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+            >
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+            </svg>
+            <svg
+                class="brew__icon brew__icon--check"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+            >
+                <path d="M20 6 9 17l-5-5"></path>
+            </svg>
+        </button>
+        <span class="sr-only" aria-live="polite" data-brew-status></span>
+    </div>
+</div>
+
+<style>
+    .brew {
+        margin-top: 1.5rem;
+        text-align: left;
+        /* Clear the sticky header when reached via the hero's #homebrew link without JS. */
+        scroll-margin-top: 6rem;
+    }
+
+    /* Brief on-brand flash when a visitor arrives here from the hero hint. */
+    .brew.is-arrived .brew__box {
+        animation: brew-arrive 1.2s var(--ease-out-expo);
+    }
+
+    @keyframes brew-arrive {
+        0%,
+        55% {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px var(--color-accent-glow);
+        }
+        100% {
+            border-color: var(--color-border);
+            box-shadow: 0 0 0 0 transparent;
+        }
+    }
+
+    .brew__label {
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--color-text-tertiary);
+        text-align: center;
+    }
+
+    .brew__box {
+        display: flex;
+        align-items: stretch;
+        min-height: 2.75rem;
+        border: 1px solid var(--color-border);
+        border-radius: 0.625rem;
+        background: var(--color-surface-elevated);
+        overflow: hidden;
+    }
+
+    .brew__cmd {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding: 0.5rem 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+        line-height: 1.5;
+        color: var(--color-text-primary);
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .brew__cmd:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+    .brew__copy {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        border-left: 1px solid var(--color-border);
+        background: transparent;
+        color: var(--color-text-tertiary);
+        cursor: pointer;
+        transition:
+            color 0.15s ease,
+            background-color 0.15s ease;
+    }
+
+    .brew__copy:hover {
+        color: var(--color-text-primary);
+        background: var(--color-surface);
+    }
+
+    .brew__copy:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: -2px;
+    }
+
+    .brew__icon {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .brew__icon--check {
+        display: none;
+        color: var(--color-accent);
+    }
+
+    .brew__copy.is-copied .brew__icon--copy {
+        display: none;
+    }
+
+    .brew__copy.is-copied .brew__icon--check {
+        display: inline-flex;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .brew__copy {
+            transition: none;
+        }
+
+        .brew.is-arrived .brew__box {
+            animation: none;
+        }
+    }
+</style>
+
+<script>
+    const button = document.querySelector('[data-brew-copy]')
+    const commandEl = document.querySelector<HTMLElement>('[data-brew-cmd]')
+
+    const selectCommand = () => {
+        if (!commandEl) return
+        const range = document.createRange()
+        range.selectNodeContents(commandEl)
+        const selection = window.getSelection()
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+    }
+
+    // Synchronous fallback for contexts where the async Clipboard API is missing or rejects (older
+    // browsers, insecure origins): a hidden textarea plus execCommand actually places text on the
+    // clipboard, unlike a bare text selection.
+    const copyWithExecCommand = (text: string) => {
+        const textarea = document.createElement('textarea')
+        textarea.value = text
+        textarea.setAttribute('readonly', '')
+        textarea.style.position = 'fixed'
+        textarea.style.top = '0'
+        textarea.style.left = '0'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        let copied = false
+        try {
+            copied = document.execCommand('copy')
+        } catch {
+            copied = false
+        }
+        document.body.removeChild(textarea)
+        return copied
+    }
+
+    const copyCommand = async (text: string) => {
+        if (navigator.clipboard?.writeText) {
+            try {
+                await navigator.clipboard.writeText(text)
+                return true
+            } catch {
+                // Fall through to the synchronous path below.
+            }
+        }
+        return copyWithExecCommand(text)
+    }
+
+    if (button && commandEl) {
+        const status = document.querySelector('[data-brew-status]')
+        const command = commandEl.textContent?.trim() ?? ''
+        let resetTimer: ReturnType<typeof setTimeout> | undefined
+
+        button.addEventListener('click', async () => {
+            const copied = await copyCommand(command)
+            if (!copied) {
+                // Last resort: select the text so the visitor can copy it by hand. No success state,
+                // since nothing reached the clipboard.
+                selectCommand()
+                return
+            }
+
+            button.classList.add('is-copied')
+            button.setAttribute('aria-label', 'Copied')
+            if (status) status.textContent = 'Copied'
+
+            clearTimeout(resetTimer)
+            resetTimer = setTimeout(() => {
+                button.classList.remove('is-copied')
+                button.setAttribute('aria-label', 'Copy Homebrew install command')
+                if (status) status.textContent = ''
+            }, 2000)
+        })
+    }
+
+    // Hero hint ("or install with Homebrew") scrolls here and moves focus so keyboard and screen-reader
+    // visitors land on the command too. The CSS `html { scroll-behavior }` rule already honors
+    // prefers-reduced-motion for the no-JS hash jump; this handler mirrors that for the focus + flash.
+    const brewTarget = document.getElementById('homebrew')
+    const jumpLinks = document.querySelectorAll('[data-brew-jump]')
+
+    if (brewTarget && jumpLinks.length > 0) {
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+        jumpLinks.forEach((link) => {
+            link.addEventListener('click', (event: Event) => {
+                event.preventDefault()
+                brewTarget.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'center' })
+                commandEl?.focus({ preventScroll: true })
+
+                if (!reduceMotion.matches) {
+                    brewTarget.classList.remove('is-arrived')
+                    void brewTarget.offsetWidth // restart the animation if clicked again
+                    brewTarget.classList.add('is-arrived')
+                }
+            })
+        })
+    }
+</script>

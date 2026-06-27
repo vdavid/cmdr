@@ -1,5 +1,6 @@
 ---
 import DownloadButton from './DownloadButton.astro'
+import HomebrewInstall from './HomebrewInstall.astro'
 import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
 ---
 
@@ -43,7 +44,9 @@ import NewsletterInlineWrapper from './NewsletterInlineWrapper.astro'
 
             <DownloadButton variant="card" class="mb-4 w-full" />
 
-            <div class="space-y-2 text-sm text-[var(--color-text-tertiary)]">
+            <HomebrewInstall />
+
+            <div class="mt-6 space-y-2 text-sm text-[var(--color-text-tertiary)]">
                 <p>
                     Free for personal use · <a
                         href="/pricing"
