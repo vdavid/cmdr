@@ -51,6 +51,7 @@ function replayActivity(overrides: Partial<VolumeIndexActivity> = {}): VolumeInd
 }
 
 const baseProps = {
+  activity: scanActivity(),
   driveName: 'Macintosh HD',
   showHeading: false,
   aggregating: false,
