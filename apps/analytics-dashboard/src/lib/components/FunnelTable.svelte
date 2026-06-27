@@ -6,7 +6,7 @@
 <script lang="ts">
     import type { SourceResult } from '$lib/server/types.js'
     import type { FunnelData } from '$lib/server/sources/funnel.js'
-    import { aggregateChannels } from '$lib/funnel.js'
+    import { aggregateChannels, aggregateReferers } from '$lib/funnel.js'
     import { formatNumber } from '$lib/format.js'
     import ErrorState from './ErrorState.svelte'
     import MetricTable from './MetricTable.svelte'
@@ -127,6 +127,31 @@
                 <MetricTable
                     items={channels.map((c) => ({ x: c.ref === '(none)' ? '(none / unknown)' : c.ref, y: c.count }))}
                     colLabel="Channel"
+                    colValue="Downloads"
+                />
+            {/if}
+        </div>
+
+        <!-- Download referrers: the raw Referer host of each /download hit, captured on every hit (not
+             just the website button), so it reveals where the direct, no-ref downloads came from. -->
+        {@const referers = aggregateReferers(rows)}
+        <div class="mt-6 border-t border-border-subtle pt-4">
+            <h3 class="mb-1 text-sm font-medium text-text-secondary">Download referrers (last 30 days)</h3>
+            <SectionDescription
+                insight={'The Referer host of each /download request. Unlike the first-touch channel above (set only ' +
+                    'by the website button), this is captured on every hit, so it shows where the direct, no-ref ' +
+                    'downloads came from: a link on AlternativeTo, a directory, GitHub, Reddit, or a forum.'}
+                caveat={'"(none)" means no usable referer: a typed URL, a privacy browser, a referrer-policy strip, ' +
+                    'Homebrew/curl, or rows before 2026-06-25 that predate the column. A download can appear both ' +
+                    'here (by referer) and above (by ref); the two breakdowns count the same downloads differently. ' +
+                    'All days UTC.'}
+            />
+            {#if referers.length === 0}
+                <p class="text-sm text-text-tertiary">No downloads with a referer yet.</p>
+            {:else}
+                <MetricTable
+                    items={referers.map((r) => ({ x: r.ref === '(none)' ? '(none / unknown)' : r.ref, y: r.count }))}
+                    colLabel="Referrer"
                     colValue="Downloads"
                 />
             {/if}

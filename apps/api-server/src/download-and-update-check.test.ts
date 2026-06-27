@@ -171,6 +171,60 @@ describe('GET /download/:version/:arch', () => {
     expect(bindMock.mock.calls[0][6]).toBeNull()
   })
 
+  it('stores the Referer host (scheme, path, and leading www stripped) of a direct download hit', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request(
+      '/download/1.2.3/aarch64',
+      { headers: { ...browserUa, referer: 'https://www.AlternativeTo.net/software/cmdr/about/?p=2' } },
+      bindings,
+    )
+
+    // bindArgs: [app_version, arch, country, continent, hashed_ip, source, ref, referer, user_agent]
+    expect(bindMock.mock.calls[0][7]).toBe('alternativeto.net')
+  })
+
+  it('stores NULL referer when no Referer header is sent', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/download/1.2.3/aarch64', { headers: browserUa }, bindings)
+
+    expect(bindMock.mock.calls[0][7]).toBeNull()
+  })
+
+  it('stores NULL referer when the Referer header is not a parseable URL', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/download/1.2.3/aarch64', { headers: { ...browserUa, referer: 'not a url' } }, bindings)
+
+    expect(bindMock.mock.calls[0][7]).toBeNull()
+  })
+
+  it('stores the User-Agent of the download hit', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request('/download/1.2.3/aarch64', { headers: browserUa }, bindings)
+
+    expect(bindMock.mock.calls[0][8]).toBe(browserUa['user-agent'])
+  })
+
+  it('caps the stored User-Agent at 400 chars', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    await app.request(
+      '/download/1.2.3/aarch64',
+      { headers: { 'user-agent': `Mozilla/5.0 ${'x'.repeat(600)}` } },
+      bindings,
+    )
+
+    expect((bindMock.mock.calls[0][8] as string).length).toBe(400)
+  })
+
   it('skips the D1 insert for bot/unfurler User-Agents but still serves the file', async () => {
     const { db, prepareMock } = createMockD1()
     const bindings = createBindings({ TELEMETRY_DB: db })

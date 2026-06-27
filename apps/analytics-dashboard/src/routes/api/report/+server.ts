@@ -3,7 +3,7 @@ import type { DashboardData } from '$lib/server/fetch-all.js'
 import type { DownloadRow } from '$lib/server/sources/cloudflare.js'
 import { fetchDashboardData } from '$lib/server/fetch-all.js'
 import { countFeedbackWithReplyTo, tallyErrorReportsByField, errorReportsByDay } from '$lib/feedback-and-errors.js'
-import { aggregateChannels } from '$lib/funnel.js'
+import { aggregateChannels, aggregateReferers } from '$lib/funnel.js'
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
 
@@ -93,6 +93,16 @@ function formatReport(data: DashboardData): string {
       blank()
       line('Channels (last 30 days), downloads by first-touch ref:')
       for (const c of channels) line(`- ${c.ref}: ${num(c.count)}`)
+    }
+    // Download referrers: the raw `Referer` host of each `/download` hit. Unlike the first-touch ref
+    // above (set only by the website button), this is captured on every hit, so it reveals where the
+    // direct, no-ref downloads came from. "(none)" = no usable referer (typed URL, privacy browser,
+    // referrer-policy strip, Homebrew/curl, pre-2026-06-25 rows).
+    const referers = aggregateReferers(data.funnel.data.rows)
+    if (referers.length > 0) {
+      blank()
+      line("Download referrers (last 30 days), by the /download hit's Referer host:")
+      for (const r of referers) line(`- ${r.ref}: ${num(r.count)}`)
     }
   }
   blank()

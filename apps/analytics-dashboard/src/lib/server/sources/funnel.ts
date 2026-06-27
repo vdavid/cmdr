@@ -31,6 +31,12 @@ export interface FunnelRow {
    * worker source on a day with no downloads.
    */
   downloadsByRef: Record<string, number> | null
+  /**
+   * That day's server downloads split by the `Referer` host of the `/download` hit: a map of host ->
+   * count, illuminating the `(none)` first-touch bucket (direct links carry a referer but no `ref`).
+   * `null` when the worker is unavailable, `{}` for a present worker source on a day with no downloads.
+   */
+  downloadsByReferer: Record<string, number> | null
   /** Installs whose first-ever heartbeat landed that day (api-server). `null` when the worker is unavailable. */
   newInstalls: number | null
   /** D7 retention fraction (0..1) for this cohort, or `null` when too young / worker unavailable. */
@@ -52,6 +58,8 @@ interface WorkerFunnelDay {
   date: string
   downloads: number
   downloadsByRef: Record<string, number>
+  // Optional so the dashboard still maps a response from a worker deployed before migration 0010.
+  downloadsByReferer?: Record<string, number>
   newInstalls: number
   d7Retention: number | null
   d7Retained: number | null
@@ -61,7 +69,7 @@ interface WorkerFunnelDay {
 // The ranked-channel helper and its type are client-safe (the page renders them), so they live in
 // `$lib/funnel.ts` outside `$lib/server`. Re-exported here so server-side callers and the existing
 // tests can keep importing from this module.
-export { aggregateChannels, type ChannelCount } from '../../funnel.js'
+export { aggregateChannels, aggregateReferers, type ChannelCount } from '../../funnel.js'
 
 interface FunnelEnv {
   LICENSE_SERVER_ADMIN_TOKEN: string
@@ -108,6 +116,7 @@ export function assembleFunnelRows(
       serverDownloads: workerByDay ? (worker?.downloads ?? 0) : null,
       // A present worker source with no row that day means a real empty breakdown (`{}`), not unknown.
       downloadsByRef: workerByDay ? (worker?.downloadsByRef ?? {}) : null,
+      downloadsByReferer: workerByDay ? (worker?.downloadsByReferer ?? {}) : null,
       newInstalls: workerByDay ? (worker?.newInstalls ?? 0) : null,
       // D7 and signups can be null even when the worker responded (young cohort / Listmonk down), so
       // read them straight off the worker row and default a missing day to null, not 0.

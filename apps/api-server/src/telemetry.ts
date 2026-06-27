@@ -389,6 +389,40 @@ function sanitizeRef(refParam: string | undefined): string | null {
   return cleaned.length > 0 ? cleaned : null
 }
 
+const disallowedHostChars = /[^a-z0-9.-]/g
+
+/**
+ * Sanitize the HTTP `Referer` header down to a storable host. A direct hit to `/download` (a link shared
+ * on AlternativeTo, a directory, GitHub, Reddit, a forum) carries no `?ref` but does carry a `Referer`,
+ * so its host is the first-party signal for where that download came from. We keep the HOST only (never
+ * the path or query, so a referring page's own query string can't leak in), lowercase it, strip a leading
+ * `www.`, drop anything outside `[a-z0-9.-]`, and cap at 120 chars. Returns `null` when the header is
+ * absent, unparseable, or sanitizes to empty, so the column stays NULL (the `(none)` bucket).
+ */
+function sanitizeRefererHost(refererHeader: string | undefined): string | null {
+  if (!refererHeader) return null
+  let host: string
+  try {
+    host = new URL(refererHeader).hostname
+  } catch {
+    return null
+  }
+  const cleaned = host
+    .toLowerCase()
+    .replace(/^www\./, '')
+    .replace(disallowedHostChars, '')
+    .slice(0, maxRefLength)
+  return cleaned.length > 0 ? cleaned : null
+}
+
+const maxUserAgentLength = 400
+
+/** Cap the stored User-Agent so a hostile client can't bloat a row; `null` when absent. */
+function cappedUserAgent(userAgent: string | undefined): string | null {
+  if (!userAgent) return null
+  return userAgent.slice(0, maxUserAgentLength)
+}
+
 telemetry.get('/download/:version/:arch', async (c) => {
   const { version, arch } = c.req.param()
 
@@ -413,6 +447,10 @@ telemetry.get('/download/:version/:arch', async (c) => {
   const source = classifyDownloadSource(userAgent, c.req.query('src'))
   // First-touch channel the website captured on the visitor's first page view and forwarded here.
   const ref = sanitizeRef(c.req.query('ref'))
+  // The hit's own `Referer` host + User-Agent: the only first-party signal for a direct `/download`
+  // link (no `?ref`), so the dashboard can attribute the otherwise-unknown downloads. See migration 0010.
+  const referer = sanitizeRefererHost(c.req.header('referer'))
+  const storedUserAgent = cappedUserAgent(userAgent)
 
   // Hash IP with a daily-rotating salt: lets the dashboard count distinct same-day downloaders
   // (`COUNT(DISTINCT hashed_ip)`) without storing an IP or anything linkable across days. Same
@@ -424,9 +462,9 @@ telemetry.get('/download/:version/:arch', async (c) => {
 
   // Write to D1 (fire-and-forget). One row per request: the raw count stays `COUNT(*)`.
   const dbWrite = c.env.TELEMETRY_DB.prepare(
-    `INSERT INTO downloads (app_version, arch, country, continent, hashed_ip, source, ref) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO downloads (app_version, arch, country, continent, hashed_ip, source, ref, referer, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
-    .bind(version, arch, country, continent, hashedIp, source, ref)
+    .bind(version, arch, country, continent, hashedIp, source, ref, referer, storedUserAgent)
     .run()
     .catch(() => {})
 

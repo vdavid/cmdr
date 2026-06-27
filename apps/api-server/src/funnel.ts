@@ -34,6 +34,14 @@ export interface FunnelDay {
    * had no downloads at all.
    */
   downloadsByRef: Record<string, number>
+  /**
+   * Server downloads split by the `Referer` host of the `/download` hit: a map of host -> count for that
+   * day. This illuminates the `(none)` first-touch bucket: a direct link to `/download` (shared on
+   * AlternativeTo, a directory, GitHub, Reddit, a forum) carries no `ref` but does arrive with a `Referer`,
+   * so its host names the page that drove it. Downloads with no referer (typed URL, privacy browser,
+   * referrer-policy strip, Homebrew/curl, and rows before migration 0010) are keyed under `"(none)"`.
+   */
+  downloadsByReferer: Record<string, number>
   /** Installs whose very first heartbeat ever landed that day (a true new-install count). */
   newInstalls: number
   /** Distinct install ids that beat at all that day (true DAU from the heartbeat). */
@@ -55,6 +63,12 @@ interface DownloadBySourceRow {
 interface DownloadByRefRow {
   date: string
   ref: string
+  count: number
+}
+
+interface DownloadByRefererRow {
+  date: string
+  referer: string
   count: number
 }
 
@@ -122,6 +136,27 @@ async function queryDownloadsByRef(db: D1Database, sinceDate: string): Promise<D
     )
     .bind(sinceDate)
     .all<DownloadByRefRow>()
+  return results
+}
+
+/**
+ * Per-day server downloads, split by the `Referer` host of the `/download` hit. The `referer` column is
+ * NULL for hits with no/unparseable `Referer` (typed URL, privacy browser, referrer-policy strip,
+ * Homebrew/curl) and for rows before migration 0010; those COALESCE to the `"(none)"` bucket. The host
+ * was already sanitized at write time, so grouping is on the stored value as-is. This is a separate
+ * signal from `ref`: `ref` is the website's first-touch attribution; `referer` is the raw request host,
+ * which is what reveals where the direct (no-`ref`) downloads came from.
+ */
+async function queryDownloadsByReferer(db: D1Database, sinceDate: string): Promise<DownloadByRefererRow[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT date(created_at) AS date, COALESCE(referer, '(none)') AS referer, COUNT(*) AS count
+         FROM downloads
+         WHERE date(created_at) >= ?1
+         GROUP BY date, referer`,
+    )
+    .bind(sinceDate)
+    .all<DownloadByRefererRow>()
   return results
 }
 
@@ -258,6 +293,7 @@ export function assembleFunnel(
   dates: string[],
   downloadsBySource: DownloadBySourceRow[],
   downloadsByRef: DownloadByRefRow[],
+  downloadsByReferer: DownloadByRefererRow[],
   newInstalls: InstallDayRow[],
   dau: DauRow[],
   d7Retained: D7Row[],
@@ -277,6 +313,12 @@ export function assembleFunnel(
     const entry = refMap.get(row.date) ?? {}
     entry[row.ref] = (entry[row.ref] ?? 0) + row.count
     refMap.set(row.date, entry)
+  }
+  const refererMap = new Map<string, Record<string, number>>()
+  for (const row of downloadsByReferer) {
+    const entry = refererMap.get(row.date) ?? {}
+    entry[row.referer] = (entry[row.referer] ?? 0) + row.count
+    refererMap.set(row.date, entry)
   }
   const newInstallsMap = new Map(newInstalls.map((r) => [r.date, r.newInstalls]))
   const dauMap = new Map(dau.map((r) => [r.date, r.dau]))
@@ -303,6 +345,7 @@ export function assembleFunnel(
       downloads,
       downloadsBySource: bySource,
       downloadsByRef: refMap.get(date) ?? {},
+      downloadsByReferer: refererMap.get(date) ?? {},
       newInstalls: installs,
       dau: dauMap.get(date) ?? 0,
       d7Retention,
@@ -334,9 +377,10 @@ funnel.get('/admin/funnel', async (c) => {
   const sinceDate = dates[0]
 
   const db = c.env.TELEMETRY_DB
-  const [downloadsBySource, downloadsByRef, newInstalls, dau, d7Retained] = await Promise.all([
+  const [downloadsBySource, downloadsByRef, downloadsByReferer, newInstalls, dau, d7Retained] = await Promise.all([
     queryDownloadsBySource(db, sinceDate),
     queryDownloadsByRef(db, sinceDate),
+    queryDownloadsByReferer(db, sinceDate),
     queryNewInstalls(db, sinceDate),
     queryDau(db, sinceDate),
     queryD7Retained(db, sinceDate),
@@ -358,6 +402,7 @@ funnel.get('/admin/funnel', async (c) => {
     dates,
     downloadsBySource,
     downloadsByRef,
+    downloadsByReferer,
     newInstalls,
     dau,
     d7Retained,

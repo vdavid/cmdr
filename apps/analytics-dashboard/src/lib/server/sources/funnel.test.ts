@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aggregateChannels, assembleFunnelRows, buildFunnelDateList } from './funnel.js'
+import { aggregateChannels, aggregateReferers, assembleFunnelRows, buildFunnelDateList } from './funnel.js'
 
 interface WorkerDay {
   date: string
@@ -117,5 +117,21 @@ describe('aggregateChannels', () => {
   it('returns an empty list when no day has any ref data', () => {
     const rows: { downloadsByRef: Record<string, number> | null }[] = [{ downloadsByRef: null }, { downloadsByRef: {} }]
     expect(aggregateChannels(rows)).toEqual([])
+  })
+})
+
+describe('aggregateReferers', () => {
+  it('sums referer hosts across days into a ranked list, biggest first, with (none) labeled', () => {
+    const rows: { downloadsByReferer: Record<string, number> | null }[] = [
+      { downloadsByReferer: { 'alternativeto.net': 6, '(none)': 4 } },
+      { downloadsByReferer: { 'github.com': 5, 'alternativeto.net': 1 } },
+      { downloadsByReferer: null },
+      { downloadsByReferer: {} },
+    ]
+    expect(aggregateReferers(rows)).toEqual([
+      { ref: 'alternativeto.net', count: 7 },
+      { ref: 'github.com', count: 5 },
+      { ref: '(none)', count: 4 },
+    ])
   })
 })

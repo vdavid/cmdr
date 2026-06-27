@@ -312,8 +312,9 @@ network/5xx errors and returns `null` on 404 (transaction not found). This lets 
 status on transient Paddle outages instead of overwriting a valid "active" cache with "invalid."
 
 **Download tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `downloads`). One row per download event with
-`app_version`, `arch`, `country`, `continent`, `hashed_ip`, `source`, and `ref`. D1 write is fire-and-forget via
-`waitUntil` + `.catch(() => {})`. Three things make the count meaningful as an install signal (migration `0008`):
+`app_version`, `arch`, `country`, `continent`, `hashed_ip`, `source`, `ref`, `referer`, and `user_agent`. D1 write is
+fire-and-forget via `waitUntil` + `.catch(() => {})`. Three things make the count meaningful as an install signal
+(migration `0008`):
 
 - **Bot/unfurler hits are dropped:** link-preview bots (Discord, Slack, etc.) and crawlers fetch the URL and would
   inflate the count, so a User-Agent denylist skips the D1 write (the 302 is still served). A missing UA is treated as a
@@ -332,6 +333,17 @@ status on transient Paddle outages instead of overwriting a valid "active" cache
   outside `[a-z0-9._:-]`, and caps at 120 chars, mirroring the website's normalization. Absent or sanitizes-to-empty →
   stored NULL (not `''`). Homebrew, direct links, and return visits in a later session carry no ref and stay NULL. The
   charset rule is the trust boundary — keep client and server in sync if either changes.
+
+- **`referer` and `user_agent` capture the hit's own HTTP metadata** (migration `0010`), the first-party signal that
+  illuminates the large `(none)` `ref` bucket. The website button sends `?ref=`, but a DIRECT hit to `/download` (a link
+  to `api.getcmdr.com` shared on AlternativeTo, a directory, GitHub, Reddit, a forum) carries no `ref` yet arrives with
+  a `Referer` header naming the page that linked it. Unlike `ref`, this is NOT client-supplied attribution (it's the raw
+  request header), so there's no website-side sanitizer to keep in sync. `sanitizeRefererHost` keeps the HOST only
+  (never path or query, so a referring page's query string can't leak in), lowercases, strips a leading `www.`, drops
+  anything outside `[a-z0-9.-]`, and caps at 120 chars; absent/unparseable/empty → NULL. `user_agent` is the raw UA
+  capped at 400 chars (separates a human browser from `curl`/Homebrew/CI inside the `other` bucket). Both sit beside the
+  daily-rotating `hashed_ip`, so neither adds a cross-day identifier. The dashboard rolls `referer` up into the
+  "Download referrers" breakdown (`funnel.ts` `downloadsByReferer`), parallel to the `ref`-based "Channels".
 
 **Update check tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `update_checks`). Counts active users (free +
 licensed) by proxying update checks through `GET /update-check/:version`. Each unique (date, hashed_ip, app_version,
