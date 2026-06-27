@@ -99,6 +99,36 @@ async function handleApi(req, res, pathname) {
       return
     }
 
+    if (
+      req.method === 'GET' &&
+      resource === 'posts' &&
+      entryId &&
+      parts[2] === 'assets' &&
+      parts[3] &&
+      parts.length === 4
+    ) {
+      await sendPostAsset(res, entryId, parts[3])
+      return
+    }
+
+    if (req.method === 'POST' && resource === 'posts' && entryId && parts[2] === 'assets' && parts.length === 3) {
+      const asset = await writePostAsset(entryId, await readJson(req, { maxBytes: maxAssetBodyBytes }))
+      sendJson(res, 200, asset)
+      return
+    }
+
+    if (req.method === 'PUT' && resource === 'posts' && entryId && parts.length === 2) {
+      const payload = normalizePayload(await readJson(req))
+      const filePath = await writePostInPlace(entryId, payload)
+      sendJson(res, 200, {
+        ok: true,
+        slug: entryId,
+        path: relativeToWebsite(filePath),
+        updatedAt: new Date().toISOString(),
+      })
+      return
+    }
+
     if (req.method === 'PUT' && resource === 'drafts' && entryId && parts.length === 2) {
       const payload = normalizePayload(await readJson(req))
       const filePath = await writeDraft(entryId, payload)
@@ -230,8 +260,21 @@ async function writePost(draftId, payload) {
   return filePath
 }
 
-async function writeDraftAsset(draftId, value) {
-  validateDraftId(draftId)
+// Edit a published post in place. The post folder is the editable source of truth, so this only ever
+// overwrites an existing post (never creates one); creation stays the Publish path. Referenced images
+// are already colocated (uploaded via writePostAsset), so no asset copy is needed here.
+async function writePostInPlace(slug, payload) {
+  validateSlug(slug)
+  const directory = entryDirectory(postRoot, slug)
+  if (!(await exists(directory))) {
+    throw new BlogEditorError(404, `Post ${slug} does not exist yet. Publish a draft to create it first.`)
+  }
+  const filePath = path.join(directory, 'index.md')
+  await writeFileAtomic(filePath, serializeMarkdownFile(payload, { includeSlug: false }))
+  return filePath
+}
+
+async function processUploadedImage(value) {
   if (!value || typeof value !== 'object') {
     throw new BlogEditorError(400, 'Expected an image upload JSON object.')
   }
@@ -266,6 +309,13 @@ async function writeDraftAsset(draftId, value) {
     throw new BlogEditorError(400, 'Image could not be processed. Try a PNG, JPEG, WebP, AVIF, or TIFF file.')
   }
 
+  return { originalName, output }
+}
+
+async function writeDraftAsset(draftId, value) {
+  validateDraftId(draftId)
+  const { originalName, output } = await processUploadedImage(value)
+
   const directory = assetDirectory(draftId)
   await mkdir(directory, { recursive: true })
   const filename = await uniqueAssetFilename(directory, originalName)
@@ -277,6 +327,46 @@ async function writeDraftAsset(draftId, value) {
     markdownPath: `./${filename}`,
     url: draftAssetUrl(draftId, filename),
     path: relativeToWebsite(filePath),
+  }
+}
+
+// Post images live colocated directly in the post folder (next to index.md), not in an assets/
+// subfolder like drafts: that matches the production content-collection layout.
+async function writePostAsset(slug, value) {
+  validateSlug(slug)
+  const directory = entryDirectory(postRoot, slug)
+  if (!(await exists(directory))) {
+    throw new BlogEditorError(404, `Post ${slug} does not exist yet. Publish a draft to create it first.`)
+  }
+  const { originalName, output } = await processUploadedImage(value)
+  const filename = await uniqueAssetFilename(directory, originalName)
+  const filePath = path.join(directory, filename)
+  await writeFileAtomic(filePath, output)
+
+  return {
+    filename,
+    markdownPath: `./${filename}`,
+    url: postAssetUrl(slug, filename),
+    path: relativeToWebsite(filePath),
+  }
+}
+
+async function sendPostAsset(res, slug, filename) {
+  validateSlug(slug)
+  validateAssetFilename(filename)
+  const filePath = path.join(entryDirectory(postRoot, slug), filename)
+  try {
+    const image = await readFile(filePath)
+    res.statusCode = 200
+    res.setHeader('content-type', 'image/webp')
+    res.setHeader('cache-control', 'no-store')
+    res.end(image)
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      sendJson(res, 404, { error: 'Post image not found.' })
+      return
+    }
+    throw error
   }
 }
 
@@ -512,6 +602,10 @@ function slugifyFilename(value) {
 
 function draftAssetUrl(draftId, filename) {
   return `/dev/blog/api/drafts/${encodeURIComponent(draftId)}/assets/${encodeURIComponent(filename)}`
+}
+
+function postAssetUrl(slug, filename) {
+  return `/dev/blog/api/posts/${encodeURIComponent(slug)}/assets/${encodeURIComponent(filename)}`
 }
 
 async function exists(filePath) {

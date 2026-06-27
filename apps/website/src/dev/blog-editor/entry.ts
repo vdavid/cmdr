@@ -121,7 +121,7 @@ function attachListeners() {
   })
 
   saveButton.addEventListener('click', () => {
-    void saveDraftNow()
+    void saveNow()
   })
 
   publishButton.addEventListener('click', () => {
@@ -232,7 +232,7 @@ function attachListeners() {
   window.addEventListener('keydown', (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
       event.preventDefault()
-      void saveDraftNow()
+      void saveNow()
     }
   })
 
@@ -299,7 +299,7 @@ async function loadSelectedEntry() {
   setStatus(
     kind === 'draft'
       ? `Loaded draft ${loaded.slug}.`
-      : `Loaded published post ${loaded.slug}. Edits autosave as a draft.`,
+      : `Loaded published post ${loaded.slug}. Edits autosave to the live post.`,
   )
 }
 
@@ -320,7 +320,7 @@ function applyEntry(nextEntry: BlogEntry, options: { markSaved: boolean; checkBa
     lastDiskHash = hash
   }
 
-  updateDeleteButton()
+  updateModeUi()
   void renderPreview()
   if (options.checkBackup) {
     checkBackup()
@@ -331,7 +331,7 @@ function markChanged(options: { immediate?: boolean } = {}) {
   writeBackup()
   void renderPreview()
   if (options.immediate) {
-    void saveDraftNow()
+    void saveNow()
     return
   }
   scheduleSave()
@@ -340,11 +340,11 @@ function markChanged(options: { immediate?: boolean } = {}) {
 function scheduleSave() {
   window.clearTimeout(saveTimer)
   saveTimer = window.setTimeout(() => {
-    void saveDraftNow()
+    void saveNow()
   }, autosaveDelayMs)
 }
 
-async function saveDraftNow() {
+async function saveNow() {
   window.clearTimeout(saveTimer)
 
   if (!canSaveToDisk()) {
@@ -367,9 +367,13 @@ async function saveDraftNow() {
   saveInFlight = true
   setStatus('Saving...')
 
+  // A loaded published post saves straight back to its own file in src/content/blog/; everything else
+  // is staged as a draft. The post is the source of truth, so editing it never forks a draft.
+  const editingPost = entry.kind === 'post'
+
   try {
-    const response = await fetchJson<{ id: string; path: string; updatedAt: string }>(
-      `/dev/blog/api/drafts/${snapshot.id}`,
+    const response = await fetchJson<{ id?: string; slug: string; path: string; updatedAt: string }>(
+      editingPost ? `/dev/blog/api/posts/${snapshot.slug}` : `/dev/blog/api/drafts/${snapshot.id}`,
       {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
@@ -379,19 +383,21 @@ async function saveDraftNow() {
 
     lastDiskHash = snapshotHash
     latestKnownDiskTime = new Date(response.updatedAt).getTime()
-    entry.kind = 'draft'
+    if (!editingPost) {
+      entry.kind = 'draft'
+    }
     clearBackupIfCurrent(snapshotHash)
     setStatus(`Saved ${formatTime(new Date())} to ${response.path}.`)
     await refreshEntryList()
-    entrySelect.value = `draft:${response.id}`
-    updateDeleteButton()
+    entrySelect.value = editingPost ? `post:${snapshot.slug}` : `draft:${response.id}`
+    updateModeUi()
   } catch (error) {
     setStatus(`Save failed: ${errorMessage(error)}`, 'error')
   } finally {
     saveInFlight = false
     if (saveAgain) {
       saveAgain = false
-      await saveDraftNow()
+      await saveNow()
     }
   }
 }
@@ -412,7 +418,8 @@ function flushSaveOnExit() {
     return
   }
 
-  void fetch(`/dev/blog/api/drafts/${payload.id}`, {
+  const url = entry.kind === 'post' ? `/dev/blog/api/posts/${payload.slug}` : `/dev/blog/api/drafts/${payload.id}`
+  void fetch(url, {
     method: 'PUT',
     headers: { 'content-type': 'application/json' },
     body,
@@ -426,18 +433,26 @@ async function publish() {
     return
   }
 
-  await saveDraftNow()
+  await saveNow()
   const payload = { ...toPayload(), overwrite: overwriteInput.checked }
   setStatus('Publishing...')
 
   try {
-    const response = await fetchJson<{ path: string }>(`/dev/blog/api/publish/${payload.id}`, {
+    const response = await fetchJson<{ slug: string; path: string }>(`/dev/blog/api/publish/${payload.id}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    setStatus(`Published to ${response.path}.`)
+
+    // The published post is now the editable source of truth, so retire the draft it came from (this is
+    // what stops duplicate draft + post pairs piling up) and switch the editor to the live post, where
+    // further edits autosave in place. Draft cleanup is best-effort: a publish that succeeded still counts.
+    await fetchJson(`/dev/blog/api/drafts/${payload.id}`, { method: 'DELETE' }).catch(() => {})
+    clearBackupForEntry(payload.id)
     await refreshEntryList()
+    entrySelect.value = `post:${response.slug}`
+    await loadSelectedEntry()
+    setStatus(`Published to ${response.path}. Now editing the live post; changes autosave.`)
   } catch (error) {
     setStatus(`Publish failed: ${errorMessage(error)}`, 'error')
   }
@@ -459,7 +474,7 @@ async function uploadAndInsertImages(files: File[]) {
 
     insertAtCursor(snippets.join('\n\n'))
     markChanged({ immediate: true })
-    setStatus(files.length === 1 ? 'Image inserted and saving draft...' : 'Images inserted and saving draft...')
+    setStatus(files.length === 1 ? 'Image inserted, saving...' : 'Images inserted, saving...')
   } catch (error) {
     setStatus(`Image upload failed: ${errorMessage(error)}`, 'error')
   }
@@ -471,14 +486,13 @@ async function uploadImage(file: File) {
   }
 
   const dataBase64 = arrayBufferToBase64(await file.arrayBuffer())
-  return fetchJson<{ filename: string; markdownPath: string; url: string; path: string }>(
-    `/dev/blog/api/drafts/${entry.id}/assets`,
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: file.name, mimeType: file.type, dataBase64 }),
-    },
-  )
+  const endpoint =
+    entry.kind === 'post' ? `/dev/blog/api/posts/${entry.slug}/assets` : `/dev/blog/api/drafts/${entry.id}/assets`
+  return fetchJson<{ filename: string; markdownPath: string; url: string; path: string }>(endpoint, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: file.name, mimeType: file.type, dataBase64 }),
+  })
 }
 
 function insertAtCursor(markdown: string) {
@@ -539,7 +553,7 @@ async function renderPreview() {
   if (revision === previewRevision) {
     const container = document.createElement('div')
     container.innerHTML = html
-    rewriteDraftImageSources(container)
+    rewritePreviewImageSources(container)
     expandBlogMedia(container)
     expandInlineIcons(container)
     previewBody.innerHTML = container.innerHTML
@@ -581,11 +595,11 @@ function iconSvgHtml(name: string): string {
   return `<span class="md-icon md-icon--${name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg></span>`
 }
 
-function rewriteDraftImageSources(container: HTMLElement) {
+function rewritePreviewImageSources(container: HTMLElement) {
   for (const image of Array.from(container.querySelectorAll('img'))) {
     const source = image.getAttribute('src') ?? ''
     if (/^\.\/[a-z0-9][a-z0-9.-]*\.webp$/.test(source)) {
-      image.src = draftAssetUrl(source.slice(2))
+      image.src = assetUrlFor(source.slice(2))
     }
   }
 }
@@ -1012,8 +1026,15 @@ function createDraftId() {
   return `draft-${Date.now().toString(36)}-${Array.from(bytes, (value) => value.toString(36)).join('-')}`
 }
 
-function updateDeleteButton() {
+function updateModeUi() {
+  const isPost = entry.kind === 'post'
   deleteDraftButton.disabled = entry.kind !== 'draft'
+  // A published post is its own editable source: its slug is its URL/folder, so lock the slug (renaming
+  // is a deliberate manual move, not a silent autosave fork) and hide the publish controls, since edits
+  // already autosave to the live file. Publish stays enabled for promoting a draft to a new post.
+  slugInput.disabled = isPost
+  publishButton.disabled = isPost
+  overwriteInput.disabled = isPost
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer) {
@@ -1034,8 +1055,12 @@ function altTextFromFilename(filename: string) {
     .trim()
 }
 
-function draftAssetUrl(filename: string) {
-  return `/dev/blog/api/drafts/${encodeURIComponent(entry.id)}/assets/${encodeURIComponent(filename)}`
+function assetUrlFor(filename: string) {
+  const encoded = encodeURIComponent(filename)
+  // Post images are colocated in the post folder; draft images live under the draft's assets/ subdir.
+  return entry.kind === 'post'
+    ? `/dev/blog/api/posts/${encodeURIComponent(entry.slug)}/assets/${encoded}`
+    : `/dev/blog/api/drafts/${encodeURIComponent(entry.id)}/assets/${encoded}`
 }
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {

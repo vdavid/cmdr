@@ -57,15 +57,29 @@ The website has a local-only Markdown editor at `/dev/blog` while the Astro dev 
 Vite dev middleware, not by an Astro page, so it is unavailable in production builds. Start it with `pnpm dev:website`,
 then open `http://localhost:4829/dev/blog`.
 
-Drafts autosave atomically to `apps/website/.blog-drafts/{draft-id}/index.md`, which is gitignored. Each draft has a
-stable internal ID, so editing the publish slug does not create duplicate drafts. The draft frontmatter stores `slug`;
-publishing writes the final plain blog post to `src/content/blog/{slug}/index.md`.
+The editor distinguishes two kinds of entry, and which one you have determines where autosave writes:
+
+- **Drafts** are unpublished work in progress, keyed by a stable internal ID, autosaving atomically to
+  `apps/website/.blog-drafts/{draft-id}/index.md` (gitignored). The draft frontmatter stores `slug`; editing the slug
+  does not fork a new draft. **Publish** writes the final plain blog post to `src/content/blog/{slug}/index.md`, then
+  retires the source draft (so you never accumulate a draft + post pair for the same article) and switches the editor to
+  editing the now-live post.
+- **Published posts** are the source of truth, so they are edited in place: selecting one from the dropdown loads it
+  with no draft fork, and autosave writes straight back to `src/content/blog/{slug}/index.md` (a `PUT /posts/{slug}`,
+  which only ever overwrites an existing post, never creates one). Because the slug is the post's folder and URL, the
+  slug field and the publish controls are disabled while editing a post. These edits churn the git-tracked working tree
+  by design; commit them when the post is ready.
+
+Decision/Why: posts are editable in place rather than always round-tripping through a draft, because the older
+draft-only model minted a fresh random draft on every reload-and-edit of a published post, piling up duplicate drafts of
+one article with no way to edit the post itself.
 
 Images can be added with the **Add image** button, pasted into the Markdown textarea, or dropped onto it. Uploaded
-images are processed through `sharp`, resized to fit within 1500x1500 without enlargement, converted to WebP, and stored
-under `apps/website/.blog-drafts/{draft-id}/assets/`. The editor inserts final-form Markdown like
-`![Alt text](./image.webp)` and rewrites those relative image URLs only for draft preview. Publishing copies referenced
-draft images to `src/content/blog/{slug}/`, matching the production colocated-image model.
+images are processed through `sharp`, resized to fit within 1500x1500 without enlargement, and converted to WebP. For a
+draft they go under `apps/website/.blog-drafts/{draft-id}/assets/`; for an in-place post edit they go colocated directly
+in `src/content/blog/{slug}/` (matching the production layout). The editor inserts final-form Markdown like
+`![Alt text](./image.webp)` and rewrites those relative URLs for preview only (to the draft- or post-asset endpoint per
+kind). Publishing a draft copies its referenced images next to the post.
 
 | File                                 | Purpose                                                               |
 | ------------------------------------ | --------------------------------------------------------------------- |

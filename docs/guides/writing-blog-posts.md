@@ -14,10 +14,14 @@ pnpm dev:website
 
 The editor has fields for title, slug, date, description, and excerpt (see "Blog-index blurb" below), plus a **Copy
 markdown** button that copies the whole post (frontmatter + body) to the clipboard, handy for pasting a draft to an
-agent for review. It autosaves drafts to `apps/website/.blog-drafts/` and only writes to the published blog collection
-when you click **Publish**. The draft directory is gitignored. Use **Add image**, paste, or drag/drop in the Markdown
-editor to add images; the editor stores draft images separately, inserts relative Markdown paths, and copies referenced
-images next to the post when publishing.
+agent for review. A new post autosaves as a draft to `apps/website/.blog-drafts/` (gitignored) and only reaches the
+published blog collection when you click **Publish**; publishing then retires the draft and leaves you editing the live
+post. Use **Add image**, paste, or drag/drop in the Markdown editor to add images; the editor stores draft images
+separately, inserts relative Markdown paths, and copies referenced images next to the post when publishing.
+
+To edit an already-published post, pick it from **Published posts** in the dropdown: it loads in place and autosaves
+straight to its `src/content/blog/{slug}/index.md` (no draft involved), so those edits show up as working-tree changes
+to commit when ready. The slug is locked while editing a post, since it's the post's folder and URL.
 
 The **Formatting help** button opens a cheat sheet covering everything below. In the body, description, and excerpt
 fields, <kbd>⌘</kbd><kbd>B</kbd> / <kbd>⌘</kbd><kbd>I</kbd> / <kbd>⌘</kbd><kbd>K</kbd> wrap the selection (or insert at
