@@ -37,7 +37,11 @@ func RunJscpdRust(ctx *CheckContext) (CheckResult, error) {
 		"--min-lines", "5",
 		"--min-tokens", "100",
 		"--threshold", "2",
-		"--ignore", "**/test*.rs,**/*_test.rs",
+		// Exclude test code: jscpd guards duplication in production Rust, not
+		// tests (which are intentionally repetitive). `*_test*.rs` covers every
+		// test-file convention in this repo: `*_test.rs`, `*_tests.rs`, and
+		// `*_test_support.rs` shared-fixture modules.
+		"--ignore", "**/test*.rs,**/*_test*.rs",
 		"--reporters", "console",
 	)
 	output, err := RunCommand(cmd, true)
