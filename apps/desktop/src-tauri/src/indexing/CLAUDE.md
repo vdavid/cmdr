@@ -7,7 +7,8 @@ Local disk, SMB shares, and MTP storages each get their own DB.
 
 Per-file roles: DETAILS § "Module structure" or `codegraph_search`. Groupings:
 
-- **Lifecycle / state**: `state.rs`, `routing.rs`, `queries.rs`, `manager.rs`.
+- **Lifecycle / state**: `state.rs`, `routing.rs`, `queries.rs`, `manager.rs` (coordinator, LOCAL scan, dispatch),
+  `network_scan.rs` (SMB/MTP scan).
 - **Write path**: `writer/`, `scanner/` (jwalk, LOCAL only), `volume_scanner.rs` (SMB/MTP), `aggregator/`,
   `reconciler.rs` + `event_loop.rs`.
 - **SMB / MTP / freshness**: `freshness.rs`, `smb_index.rs` / `mtp_index.rs`, `smb_watch.rs` / `mtp_watch.rs`.

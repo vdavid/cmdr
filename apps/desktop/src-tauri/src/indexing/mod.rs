@@ -16,6 +16,7 @@ pub mod expected_totals;
 pub mod firmlinks;
 pub mod freshness;
 mod manager;
+mod network_scan;
 mod partial_agg;
 mod progress_reporter;
 mod queries;
