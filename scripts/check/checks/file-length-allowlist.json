@@ -77,6 +77,7 @@
     "apps/desktop/src/routes/debug/DebugSmbDiagnosticsPanel.svelte": 892,
     "apps/desktop/src/routes/viewer/+page.svelte": 1442,
     "apps/desktop/test/e2e-playwright/mtp.spec.ts": 1124,
+    "apps/website/src/dev/blog-editor/entry.ts": 1096,
     "scripts/check/checks/desktop-rust-cfg-gate_test.go": 976
   }
 }
