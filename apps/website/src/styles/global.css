@@ -455,7 +455,7 @@ body {
 }
 
 .img-compare__lightbox-figure figcaption {
-  margin-top: 0.5rem;
+  margin-top: 1.75rem;
   color: var(--color-text-tertiary);
   font-size: 0.875rem;
   text-align: center;
