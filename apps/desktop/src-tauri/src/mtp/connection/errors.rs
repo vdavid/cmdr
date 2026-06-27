@@ -34,18 +34,7 @@ pub enum MtpConnectionError {
     StoreReadOnly {
         device_id: String,
     },
-    /// Linux: USB device file not accessible (missing udev rules).
-    ///
-    /// Constructed only under `#[cfg(target_os = "linux")]` (see `mod.rs`), but it
-    /// stays part of the cross-platform, serialized error contract the frontend
-    /// dialog matches on, so it's not gated out on other targets.
-    #[cfg_attr(
-        not(target_os = "linux"),
-        allow(
-            dead_code,
-            reason = "Constructed only on Linux, but stays in the cross-platform serialized error contract the frontend matches on"
-        )
-    )]
+    /// USB device file not accessible (Linux: missing udev rules; `EACCES`).
     PermissionDenied {
         device_id: String,
     },
@@ -160,6 +149,8 @@ pub(super) fn map_mtp_error(e: mtp_rs::Error, device_id: &str) -> MtpConnectionE
             device_id,
             blocking_process: None,
         },
+        // Missing udev permission (Linux `EACCES`), distinct from exclusive access.
+        E::PermissionDenied => MtpConnectionError::PermissionDenied { device_id },
         E::Busy => MtpConnectionError::DeviceBusy { device_id },
         E::StorageFull => MtpConnectionError::StorageFull { device_id },
         // Read-only storage and write-protected/denied objects all surface to the

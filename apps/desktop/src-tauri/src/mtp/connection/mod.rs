@@ -326,23 +326,13 @@ impl MtpConnectionManager {
 
                 // Check for permission errors (Linux: missing udev rules).
                 //
-                // The backend-neutral `mtp_rs::Error` no longer surfaces nusb's
-                // typed `ErrorKind`, so a missing-udev-rules denial arrives as a
-                // generic `Error::Io { message }`. Best-effort detect it from the
-                // message text. This is a known information loss from the neutral
-                // API; if it proves flaky, mtp-rs should grow a `PermissionDenied`
-                // variant (or an `is_permission_denied()` predicate).
+                // mtp-rs classifies a missing-udev-rules denial (`EACCES`) as the
+                // typed `Error::PermissionDenied`, distinct from `ExclusiveAccess`
+                // (`EBUSY` / macOS exclusive). Use the typed predicate rather than
+                // matching message text.
                 #[cfg(target_os = "linux")]
                 {
-                    let is_permission_denied = matches!(
-                        &e,
-                        mtp_rs::Error::Io { message }
-                            if {
-                                let m = message.to_lowercase();
-                                m.contains("permission denied") || m.contains("access denied")
-                            }
-                    );
-                    if is_permission_denied {
+                    if e.is_permission_denied() {
                         if let Some(app) = app {
                             let _ = MtpPermissionError {
                                 device_id: device_id.to_string(),
