@@ -96,6 +96,52 @@ func TestRunDocsDeadLinks_DirectoryTargetResolves(t *testing.T) {
 	}
 }
 
+func TestRunDocsDeadLinks_BlogSlugLinkResolves(t *testing.T) {
+	tmp := t.TempDir()
+	// A blog post linking a sibling post by its rendered /blog/<slug> URL must resolve
+	// to the sibling's content directory, not be flagged as a missing /blog dir.
+	writeDeadLinkFile(t, tmp, "apps/website/src/content/blog/post-a/index.md", "See [b](/blog/post-b) and [b-slash](/blog/post-b/).")
+	writeDeadLinkFile(t, tmp, "apps/website/src/content/blog/post-b/index.md", "Post B.")
+
+	result, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatalf("a /blog/<slug> cross-post link must resolve, got: %v", err)
+	}
+	if result.Code != ResultSuccess {
+		t.Errorf("expected success, got: %s", result.Message)
+	}
+}
+
+func TestRunDocsDeadLinks_BlogSlugLinkMissingFails(t *testing.T) {
+	tmp := t.TempDir()
+	writeDeadLinkFile(t, tmp, "apps/website/src/content/blog/post-a/index.md", "Dangling [gone](/blog/post-gone).")
+
+	_, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp})
+	if err == nil {
+		t.Fatal("expected an error for a /blog/<slug> link with no matching post")
+	}
+	if !strings.Contains(err.Error(), "/blog/post-gone") {
+		t.Errorf("expected the dead /blog link in the error, got: %v", err)
+	}
+}
+
+func TestBlogLinkCandidate(t *testing.T) {
+	cases := []struct {
+		srcDoc, target, want string
+	}{
+		{"apps/website/src/content/blog/a/index.md", "/blog/b", "apps/website/src/content/blog/b"},
+		{"apps/website/src/content/blog/a/index.md", "/blog/b/", "apps/website/src/content/blog/b"},
+		{"apps/website/src/content/blog/a/index.md", "/blog/b/c", ""}, // nested, not a post slug
+		{"apps/website/src/content/blog/a/index.md", "/other/b", ""},  // not a /blog route
+		{"docs/guides/writing-blog-posts.md", "/blog/b", ""},          // source isn't a blog post
+	}
+	for _, c := range cases {
+		if got := blogLinkCandidate(c.srcDoc, c.target); got != c.want {
+			t.Errorf("blogLinkCandidate(%q, %q) = %q, want %q", c.srcDoc, c.target, got, c.want)
+		}
+	}
+}
+
 func TestLocalLinkTarget(t *testing.T) {
 	cases := map[string]string{
 		"DETAILS.md":            "DETAILS.md",

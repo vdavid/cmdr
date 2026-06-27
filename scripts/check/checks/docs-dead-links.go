@@ -56,17 +56,49 @@ func localLinkTarget(raw string) string {
 	return strings.TrimSpace(t)
 }
 
+// blogContentDir is the Astro content-collection path whose posts render at the
+// site route /blog/<slug>.
+const blogContentDir = "src/content/blog/"
+
+// blogLinkCandidate maps a site-absolute /blog/<slug> link to the post's source
+// directory. A blog post that links to a sibling post should use the rendered URL
+// (the only form that's robust under Astro's trailingSlash:ignore, where the index
+// links posts without a trailing slash), but that URL doesn't name a file on disk.
+// So when the link lives in a blog post, resolve /blog/<slug> to that post's
+// content/blog dir + slug. Derived from the source doc's own path, so there's no
+// hardcoded app prefix. Returns "" when it doesn't apply.
+func blogLinkCandidate(srcDoc, target string) string {
+	const route = "/blog/"
+	if !strings.HasPrefix(target, route) {
+		return ""
+	}
+	slug := strings.Trim(target[len(route):], "/")
+	if slug == "" || strings.Contains(slug, "/") {
+		return ""
+	}
+	i := strings.Index(srcDoc, blogContentDir)
+	if i < 0 {
+		return ""
+	}
+	return path.Join(srcDoc[:i]+blogContentDir, slug)
+}
+
 // linkResolves reports whether a local link target names an existing file or
 // directory. It tries the target relative to the source doc's directory (standard
-// Markdown) and then repo-root-relative. checkable is false when every candidate
-// escapes the repo root (a `../`-heavy path we can't verify), so the caller skips
-// it rather than flagging a false positive.
+// Markdown), then repo-root-relative, then (for a blog post) as a /blog/<slug>
+// route. checkable is false when every candidate escapes the repo root (a
+// `../`-heavy path we can't verify), so the caller skips it rather than flagging a
+// false positive.
 func linkResolves(rootDir, srcDoc, target string) (resolved, checkable bool) {
 	srcDir := path.Dir(srcDoc)
-	for _, cand := range []string{
+	cands := []string{
 		path.Clean(path.Join(srcDir, target)),
 		path.Clean(target),
-	} {
+	}
+	if blogCand := blogLinkCandidate(srcDoc, target); blogCand != "" {
+		cands = append(cands, blogCand)
+	}
+	for _, cand := range cands {
 		if strings.HasPrefix(cand, "..") {
 			continue // escapes the repo root; not verifiable via this form
 		}
