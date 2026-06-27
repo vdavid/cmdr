@@ -44,6 +44,13 @@
   /* Semantic colors */
   --color-warning: #ff4d6d;
 
+  /* Inline markdown icon colors (`:yes:` etc., see src/plugins/blog-icons.mjs). Brand-adjacent and
+     legible on both surfaces; `no` reuses the semantic red so it tracks the theme. */
+  --color-icon-yes: #2ea043;
+  --color-icon-no: var(--color-warning);
+  --color-icon-warn: #e0a106;
+  --color-icon-soon: #4493f8;
+
   /* Fonts - Inter is self-hosted, monospace falls back to system */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;

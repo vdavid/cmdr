@@ -420,6 +420,35 @@ button:disabled {
   font-weight: 600;
 }
 
+/* Inline colored icons (`:yes:` etc., see src/plugins/blog-icons.mjs). */
+.blog-content .md-icon {
+  display: inline-flex;
+  width: 1.05em;
+  height: 1.05em;
+  vertical-align: -0.17em;
+}
+
+.blog-content .md-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.blog-content .md-icon--yes {
+  color: var(--color-icon-yes);
+}
+
+.blog-content .md-icon--no {
+  color: var(--color-icon-no);
+}
+
+.blog-content .md-icon--warn {
+  color: var(--color-icon-warn);
+}
+
+.blog-content .md-icon--soon {
+  color: var(--color-icon-soon);
+}
+
 /* Excerpt preview: what the blog index shows under the title. */
 .preview-excerpt {
   margin-bottom: 2rem;

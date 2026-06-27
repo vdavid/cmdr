@@ -129,6 +129,20 @@ Two conveniences plain markdown can't express, handled by the `rehypeBlogMedia` 
 The dev editor's preview mirrors these transforms in JS so you can see them while writing. The exact theme switch only
 happens on the built site.
 
+## Inline icons
+
+Write `:name:` to drop a small brand-colored Lucide icon inline — handy to prefix comparison-table cells for
+scannability. Available: `:yes:` (green check), `:no:` (red x), `:warn:` (amber warning), `:soon:` (blue hourglass).
+
+```markdown
+| Network drives | :no: No | :yes: Built-in |
+```
+
+There's no Markdown standard for inline colored icons, so this is a small controlled set (the `:name:` shortcode form,
+not a free-form `color="…"`) — concise to write and consistent in palette. Add an icon by extending the registry in
+`src/plugins/blog-icons.mjs` (one or more Lucide `<path d>` strings) and a `.md-icon--<name>` color in `global.css`.
+Icons are decorative (`aria-hidden`), so keep the cell's text for screen readers. They don't expand inside code spans.
+
 ## Tables
 
 GitHub-style tables render (Astro enables GFM by default); wide tables scroll horizontally. The dev editor preview

@@ -30,6 +30,8 @@
  * entry.ts `expandBlogMedia` / `activateCompareSliders`). Keep the two in sync.
  */
 
+import { INLINE_ICONS, inlineIconMatcher } from './blog-icons.mjs'
+
 const THEME_TOKEN = '{theme}'
 
 /** remark/rehype percent-encodes the `{` `}` in image URLs, so accept both `{theme}` and `%7Btheme%7D`. */
@@ -250,6 +252,44 @@ function buildComparisons(node) {
   }
 }
 
+/** An inline colored icon span for a `:name:` token (see blog-icons.mjs). */
+function iconSpan(name) {
+  return el('span', { className: ['md-icon', `md-icon--${name}`] }, [
+    icon(
+      'md-icon__svg',
+      INLINE_ICONS[name].paths.map((d) => el('path', { d })),
+    ),
+  ])
+}
+
+/** Replace `:name:` tokens in text nodes with icon spans, skipping code/pre. */
+function expandInlineIcons(node) {
+  if (node.tagName === 'code' || node.tagName === 'pre') return
+  const children = node.children
+  if (!children) return
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i]
+    if (child.type === 'text' && child.value.includes(':')) {
+      const matcher = inlineIconMatcher()
+      const parts = []
+      let last = 0
+      let m
+      while ((m = matcher.exec(child.value))) {
+        if (m.index > last) parts.push(text(child.value.slice(last, m.index)))
+        parts.push(iconSpan(m[1]))
+        last = m.index + m[0].length
+      }
+      if (parts.length > 0) {
+        if (last < child.value.length) parts.push(text(child.value.slice(last)))
+        children.splice(i, 1, ...parts)
+        i += parts.length - 1
+      }
+    } else if (child.type === 'element') {
+      expandInlineIcons(child)
+    }
+  }
+}
+
 /** Wrap each table in a horizontally scrollable container so wide tables don't overflow on mobile. */
 function wrapTables(node) {
   const children = node.children
@@ -270,5 +310,6 @@ export function rehypeBlogMedia() {
     expandThemeImages(tree)
     buildComparisons(tree)
     wrapTables(tree)
+    expandInlineIcons(tree)
   }
 }

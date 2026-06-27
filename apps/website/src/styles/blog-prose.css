@@ -156,3 +156,32 @@
 .blog-content :global(tbody tr:nth-child(even)) {
   background: color-mix(in srgb, var(--color-surface) 45%, transparent);
 }
+
+/* Inline colored icons (`:yes:` etc., see src/plugins/blog-icons.mjs). */
+.blog-content :global(.md-icon) {
+  display: inline-flex;
+  width: 1.05em;
+  height: 1.05em;
+  vertical-align: -0.17em;
+}
+
+.blog-content :global(.md-icon svg) {
+  width: 100%;
+  height: 100%;
+}
+
+.blog-content :global(.md-icon--yes) {
+  color: var(--color-icon-yes);
+}
+
+.blog-content :global(.md-icon--no) {
+  color: var(--color-icon-no);
+}
+
+.blog-content :global(.md-icon--warn) {
+  color: var(--color-icon-warn);
+}
+
+.blog-content :global(.md-icon--soon) {
+  color: var(--color-icon-soon);
+}

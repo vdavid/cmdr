@@ -1,5 +1,6 @@
 import { marked } from 'marked'
 import { serializeMarkdownFile } from './serialize.mjs'
+import { INLINE_ICONS, inlineIconMatcher } from '../../plugins/blog-icons.mjs'
 
 type EntryKind = 'draft' | 'post'
 
@@ -540,9 +541,44 @@ async function renderPreview() {
     container.innerHTML = html
     rewriteDraftImageSources(container)
     expandBlogMedia(container)
+    expandInlineIcons(container)
     previewBody.innerHTML = container.innerHTML
     activateCompareSliders(previewBody)
   }
+}
+
+/** Mirror of blog-media.mjs `expandInlineIcons`: replace `:name:` tokens with colored icon spans. */
+function expandInlineIcons(container: HTMLElement) {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+  const texts: Text[] = []
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const textNode = node as Text
+    if (textNode.parentElement?.closest('code, pre')) continue
+    if (textNode.data.includes(':')) texts.push(textNode)
+  }
+  for (const textNode of texts) {
+    const matcher = inlineIconMatcher()
+    const fragment = document.createDocumentFragment()
+    let last = 0
+    let matched = false
+    let match: RegExpExecArray | null
+    while ((match = matcher.exec(textNode.data))) {
+      matched = true
+      if (match.index > last) fragment.append(textNode.data.slice(last, match.index))
+      const holder = document.createElement('div')
+      holder.innerHTML = iconSvgHtml(match[1])
+      fragment.append(holder.firstChild as Node)
+      last = match.index + match[0].length
+    }
+    if (!matched) continue
+    if (last < textNode.data.length) fragment.append(textNode.data.slice(last))
+    textNode.replaceWith(fragment)
+  }
+}
+
+function iconSvgHtml(name: string): string {
+  const paths = INLINE_ICONS[name].paths.map((d) => `<path d="${d}"></path>`).join('')
+  return `<span class="md-icon md-icon--${name}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg></span>`
 }
 
 function rewriteDraftImageSources(container: HTMLElement) {
