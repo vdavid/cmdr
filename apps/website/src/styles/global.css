@@ -203,18 +203,22 @@ body {
   text-align: center;
 }
 
-/* Before/after comparison slider (see src/plugins/blog-media.mjs + BlogCompareSlider.astro). The two
-   images stack in the same box; the top one is clipped to a 20°-slanted edge at --reveal (0–100).
-   --slant is the wipe's half-width in % of the box; at the fixed 1500/990 aspect, 12% reads as ~20°,
-   matching the divider's rotate(20deg). */
+/* Before/after comparison slider (see src/plugins/blog-media.mjs + BlogCompareSlider.astro). The
+   images stack in the same box; the top one is clipped to a 20°-slanted edge at --reveal and the base
+   to the complementary region, so each shows on only its side (no see-through for any image pair).
+   --slant is the wipe's half-width in % of the box; at the box aspect, 12% reads as ~20°, matching the
+   divider's rotate(20deg). The screenshots are trimmed to their opaque window, so the frame supplies
+   the surface backing (rounded corners) and a card shadow that the trim removed. */
 .img-compare {
   position: relative;
   width: 100%;
-  aspect-ratio: 1500 / 969;
+  aspect-ratio: 1400 / 866;
   margin: 1.5rem 0;
   overflow: hidden;
   border: 1px solid var(--color-border-subtle);
-  border-radius: 0.5rem;
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.4);
   touch-action: none;
   user-select: none;
 }
@@ -247,6 +251,17 @@ body {
     calc((var(--reveal) + var(--slant)) * 1%) 0,
     calc((var(--reveal) - var(--slant)) * 1%) 100%,
     0 100%
+  );
+}
+
+/* Complement of the top clip: the base shows only to the right of the seam, so the two images never
+   overlap and a transparent or smaller top image can't reveal the base on its side. */
+.img-compare__base {
+  clip-path: polygon(
+    calc((var(--reveal) + var(--slant)) * 1%) 0,
+    100% 0,
+    100% 100%,
+    calc((var(--reveal) - var(--slant)) * 1%) 100%
   );
 }
 
@@ -411,14 +426,14 @@ body {
   width: 100%;
   height: auto;
   margin: 0;
-  border-radius: 0.5rem;
+  /* Restore the ClearShot drop shadow we trimmed off; drop-shadow follows the window's rounded shape
+     (the screenshots have transparent rounded corners), unlike box-shadow. */
+  filter: drop-shadow(0 12px 28px rgb(0 0 0 / 0.4));
 }
 
-/* The Cmdr image (the one we're selling) gets a subtle accent glow to set it apart. */
+/* The Cmdr image (the one we're selling) layers a subtle accent glow on top to set it apart. */
 .img-compare__lightbox-figure--feature img {
-  box-shadow:
-    0 0 0 1px var(--color-accent),
-    0 0 32px -6px var(--color-accent-glow);
+  filter: drop-shadow(0 12px 28px rgb(0 0 0 / 0.4)) drop-shadow(0 0 9px var(--color-accent));
 }
 
 .img-compare__lightbox-figure figcaption {
