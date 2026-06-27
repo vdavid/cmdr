@@ -46,6 +46,9 @@ pub(super) fn copy_config() -> DriverConfig {
         phase: WriteOperationPhase::Copying,
         conflict_resolution: ConflictResolution::Stop,
         pre_known_conflicts: Vec::new(),
+        // Driver unit tests use bare closures that emit no progress of their
+        // own, so they exercise the driver's per-source milestone path.
+        emit_per_source_milestone: true,
     }
 }
 

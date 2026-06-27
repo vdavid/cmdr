@@ -42,7 +42,7 @@ async fn stream_pipe_file_retries_once_on_stale_destination_handle() {
         &state,
         &CreatedPaths::default(),
         &|_, _| ControlFlow::Continue(()),
-        &|| {},
+        &|_| {},
         None,
     )
     .await

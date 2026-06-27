@@ -278,6 +278,8 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
         phase: WriteOperationPhase::Copying,
         conflict_resolution: config.conflict_resolution,
         pre_known_conflicts: config.pre_known_conflicts.clone(),
+        // Sync driver ignores this; `copy_single_item` owns its emits.
+        emit_per_source_milestone: false,
     };
 
     let mut file_iter = files_for_loop.iter();

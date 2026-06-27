@@ -56,7 +56,7 @@ async fn streaming_copy_parks_mid_file_while_paused_then_resumes() {
                 bytes_ref.store(bytes_done, Ordering::SeqCst);
                 ControlFlow::Continue(())
             },
-            &|| {},
+            &|_| {},
             None,
         )
         .await
@@ -142,7 +142,7 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
             Path::new("big.bin"),
             state_ref,
             &CreatedPaths::default(),
-            // Mirror the production per-file callback (`make_serial_per_file_progress`):
+            // Mirror the production per-file callback (`SerialLeafProgress::on_chunk`):
             // break on cancel so the backend's chunk loop tears down the partial.
             &|bytes_done, _total| {
                 bytes_ref.store(bytes_done, Ordering::SeqCst);
@@ -152,7 +152,7 @@ async fn streaming_copy_cancel_while_paused_mid_file_unblocks() {
                     ControlFlow::Continue(())
                 }
             },
-            &|| {},
+            &|_| {},
             None,
         )
         .await
@@ -226,7 +226,7 @@ async fn paused_mtp_copy_parks_in_place_then_resumes_byte_exact() {
                 bytes_ref.store(bytes_done, Ordering::SeqCst);
                 ControlFlow::Continue(())
             },
-            &|| {},
+            &|_| {},
             None,
         )
         .await
@@ -328,7 +328,7 @@ async fn paused_mtp_copy_cancel_while_paused_keeps_no_partial() {
                     ControlFlow::Continue(())
                 }
             },
-            &|| {},
+            &|_| {},
             None,
         )
         .await
@@ -391,7 +391,7 @@ async fn unpaused_mtp_copy_streams_straight_through() {
         &state,
         &CreatedPaths::default(),
         &|_, _| ControlFlow::Continue(()),
-        &|| {},
+        &|_| {},
         None,
     )
     .await

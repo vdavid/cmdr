@@ -41,7 +41,7 @@ async fn test_copy_single_path_local_to_local() {
         &state,
         &CreatedPaths::default(),
         &|_, _| ControlFlow::Continue(()),
-        &|| {},
+        &|_| {},
         None,
     )
     .await
@@ -83,7 +83,7 @@ async fn test_copy_single_path_cancelled() {
         &state,
         &CreatedPaths::default(),
         &|_, _| ControlFlow::Continue(()),
-        &|| {},
+        &|_| {},
         None,
     )
     .await;
@@ -119,7 +119,7 @@ async fn test_streaming_copy_single_file() {
         &state,
         &CreatedPaths::default(),
         &|_, _| ControlFlow::Continue(()),
-        &|| {},
+        &|_| {},
         None,
     )
     .await
@@ -159,7 +159,7 @@ async fn test_streaming_copy_large_file_with_progress() {
             assert_eq!(total, 200_000);
             ControlFlow::Continue(())
         },
-        &|| {
+        &|_| {
             file_complete_calls.fetch_add(1, Ordering::Relaxed);
         },
         None,
@@ -211,7 +211,7 @@ async fn test_streaming_copy_cancel_mid_file() {
                 ControlFlow::Continue(())
             }
         },
-        &|| {},
+        &|_| {},
         None,
     )
     .await;
@@ -238,7 +238,7 @@ async fn test_streaming_copy_empty_file() {
         &state,
         &CreatedPaths::default(),
         &|_, _| ControlFlow::Continue(()),
-        &|| {},
+        &|_| {},
         None,
     )
     .await
@@ -264,7 +264,7 @@ async fn test_streaming_copy_nonexistent_source_fails() {
         &state,
         &CreatedPaths::default(),
         &|_, _| ControlFlow::Continue(()),
-        &|| {},
+        &|_| {},
         None,
     )
     .await;
@@ -301,7 +301,7 @@ async fn test_streaming_copy_uses_streaming_for_non_local_volumes() {
         &state,
         &CreatedPaths::default(),
         &|_, _| ControlFlow::Continue(()),
-        &|| {
+        &|_| {
             file_complete.fetch_add(1, Ordering::Relaxed);
         },
         None,
@@ -344,7 +344,7 @@ async fn test_streaming_copy_directory_recursive() {
         &state,
         &CreatedPaths::default(),
         &|_, _| ControlFlow::Continue(()),
-        &|| {
+        &|_| {
             file_complete.fetch_add(1, Ordering::Relaxed);
         },
         None,

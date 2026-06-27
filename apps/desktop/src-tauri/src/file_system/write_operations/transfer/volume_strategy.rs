@@ -393,7 +393,7 @@ pub(super) async fn copy_single_path(
     state: &Arc<WriteOperationState>,
     created: &CreatedPaths,
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
-    on_file_complete: &(dyn Fn() + Sync),
+    on_file_complete: &(dyn Fn(u64) + Sync),
     // `Some` ⇒ deep clashes inside a merged directory honor the user's file
     // policy (Stop-wait, latch, conditional reduce, type mismatches). `None` ⇒
     // no per-child conflict resolution (the cross-volume move's copy phase,
@@ -437,7 +437,7 @@ pub(super) async fn copy_single_path(
             on_file_progress,
         )
         .await?;
-        on_file_complete();
+        on_file_complete(bytes);
         Ok(bytes)
     }
 }
@@ -585,7 +585,7 @@ async fn copy_directory_streaming(
     state: &Arc<WriteOperationState>,
     created: &CreatedPaths,
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
-    on_file_complete: &(dyn Fn() + Sync),
+    on_file_complete: &(dyn Fn(u64) + Sync),
     merge: Option<&MergeCtx<'_>>,
 ) -> Result<u64, VolumeError> {
     note_pending_for_local_dest(dest_volume, dest_path);
@@ -739,7 +739,7 @@ async fn copy_directory_streaming(
         };
         created.record_file(recorded);
         total_bytes += bytes;
-        on_file_complete();
+        on_file_complete(bytes);
     }
 
     Ok(total_bytes)

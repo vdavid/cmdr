@@ -36,8 +36,8 @@ use super::super::types::{
     WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::transfer_driver::{
-    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
-    build_pre_skip_set, drive_transfer_serial_async, make_concurrent_per_file_progress, make_serial_per_file_progress,
+    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
+    TransferOutcome, build_pre_skip_set, drive_transfer_serial_async, make_concurrent_per_file_progress,
 };
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_preflight::{SourceHint, scan_volume_sources};
@@ -926,7 +926,10 @@ pub(crate) async fn copy_volumes_with_progress(
                         Arc::clone(&last_prog_a),
                         progress_interval,
                     );
-                    let on_file_complete = || {
+                    // The byte count is rolled into the aggregate by the progress
+                    // callback's per-chunk delta (and the post-task compensation),
+                    // so this only advances the leaf-file axis.
+                    let on_file_complete = |_leaf_bytes: u64| {
                         files_done_a.fetch_add(1, Ordering::Relaxed);
                     };
                     let result = copy_single_path(
@@ -1161,6 +1164,8 @@ pub(crate) async fn copy_volumes_with_progress(
             phase: WriteOperationPhase::Copying,
             conflict_resolution: config.conflict_resolution,
             pre_known_conflicts: config.pre_known_conflicts.clone(),
+            // Streaming path: `SerialLeafProgress` owns leaf-granular milestones.
+            emit_per_source_milestone: false,
         };
         // The driver bounds its closures as
         // `for<'a> FnMut(...) -> Pin<Box<dyn Future + Send + 'a>>` — the
@@ -1183,6 +1188,11 @@ pub(crate) async fn copy_volumes_with_progress(
         let copied_paths_for_closure = Arc::clone(&copied_paths);
         let created_dirs_for_closure = Arc::clone(&created_dirs);
         let source_hints_arc: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(std::mem::take(&mut source_hints));
+        // Operation-wide leaf-file counter for the File progress bar (see the
+        // matching note in `volume_move`): the driver's `files_done` counts
+        // top-level sources, but the bar's denominator is the preflight LEAF
+        // count, so `SerialLeafProgress` bumps this once per inner file.
+        let leaf_files_done = Arc::new(AtomicUsize::new(bulk_skip_files));
 
         let outcome = drive_transfer_serial_async(
             &*events,
@@ -1309,6 +1319,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 let operation_id = operation_id_owned.clone();
                 let config_for_merge = config_owned.clone();
                 let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
+                let leaf_files_done = Arc::clone(&leaf_files_done);
                 move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                     let source_volume = Arc::clone(&source_volume);
                     let dest_volume = Arc::clone(&dest_volume);
@@ -1321,6 +1332,7 @@ pub(crate) async fn copy_volumes_with_progress(
                     let operation_id = operation_id.clone();
                     let config_for_merge = config_for_merge.clone();
                     let merge_apply_to_all = Arc::clone(&merge_apply_to_all);
+                    let leaf_files_done = Arc::clone(&leaf_files_done);
                     let source_path = ctx.source_path.to_path_buf();
                     let dest_item_path = ctx
                         .dest_path
@@ -1331,7 +1343,6 @@ pub(crate) async fn copy_volumes_with_progress(
                     // place (safe-replace for file→file Overwrite).
                     let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
                     let bytes_done_so_far = ctx.bytes_done_so_far;
-                    let files_done_so_far = ctx.files_done_so_far;
                     Box::pin(async move {
                         let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
                         log::debug!(
@@ -1349,20 +1360,27 @@ pub(crate) async fn copy_volumes_with_progress(
                         // a single iteration but the previous file's last-
                         // emit instant doesn't carry meaning across files).
                         let last_emit = Arc::new(std::sync::Mutex::new(Instant::now()));
-                        let on_file_progress = make_serial_per_file_progress(
+                        let leaf_progress = SerialLeafProgress::new(
                             Arc::clone(&events),
                             Arc::clone(&state),
                             operation_id.clone(),
                             WriteOperationType::Copy,
                             file_name.clone(),
-                            files_done_so_far,
                             bytes_done_so_far,
+                            Arc::clone(&leaf_files_done),
                             total_files,
                             total_bytes,
                             last_emit,
                             progress_interval,
                         );
-                        let on_file_complete = || {};
+                        let on_file_progress = {
+                            let leaf_progress = Arc::clone(&leaf_progress);
+                            move |file_bytes_done: u64, _file_bytes_total: u64| leaf_progress.on_chunk(file_bytes_done)
+                        };
+                        let on_file_complete = {
+                            let leaf_progress = Arc::clone(&leaf_progress);
+                            move |leaf_bytes: u64| leaf_progress.on_leaf_complete(leaf_bytes)
+                        };
 
                         // Per-source rollback ledger: the files this transfer
                         // streams and the dirs it newly creates inside a

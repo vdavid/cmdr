@@ -77,7 +77,7 @@ async fn auto_yield_parks_before_next_window_then_resumes_byte_exact() {
                         bytes_ref.store(bytes_done, Ordering::SeqCst);
                         ControlFlow::Continue(())
                     },
-                    &|| {},
+                    &|_| {},
                     None,
                 )
                 .await
@@ -186,7 +186,7 @@ async fn auto_yield_debounces_a_burst_into_one_park() {
                         bytes_ref.store(bytes_done, Ordering::SeqCst);
                         ControlFlow::Continue(())
                     },
-                    &|| {},
+                    &|_| {},
                     None,
                 )
                 .await
@@ -286,7 +286,7 @@ async fn auto_yield_min_progress_floor_prevents_starvation() {
                         bytes_ref.store(bytes_done, Ordering::SeqCst);
                         ControlFlow::Continue(())
                     },
-                    &|| {},
+                    &|_| {},
                     None,
                 )
                 .await
@@ -382,7 +382,7 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
                             ControlFlow::Continue(())
                         }
                     },
-                    &|| {},
+                    &|_| {},
                     None,
                 )
                 .await
@@ -455,7 +455,7 @@ async fn non_mtp_source_never_auto_yields_for_foreground() {
         &state,
         &CreatedPaths::default(),
         &|_, _| ControlFlow::Continue(()),
-        &|| {},
+        &|_| {},
         None,
     )
     .await
@@ -511,7 +511,7 @@ async fn yield_capable_source_with_no_foreground_pending_never_self_yields() {
                     &state_drv,
                     &CreatedPaths::default(),
                     &|_, _| ControlFlow::Continue(()),
-                    &|| {},
+                    &|_| {},
                     None,
                 )
                 .await

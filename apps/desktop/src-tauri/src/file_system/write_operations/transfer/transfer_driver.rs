@@ -310,63 +310,125 @@ pub(super) fn emit_progress_and_status(
 // Per-file progress callback builders
 // ============================================================================
 
-/// Builds a per-file `on_progress` callback for `copy_single_path` for
-/// **serial** transfer paths (one source in flight at a time).
+/// Leaf-granular progress accounting for the **serial** transfer paths
+/// (`volume_copy::copy_volumes_with_progress` serial path and
+/// `volume_move::move_volumes_with_progress`, one source in flight at a time).
 ///
-/// The returned closure is invoked per chunk by the destination volume's
-/// `write_from_stream`. On each call it:
-/// - Checks `state.intent`; returns `Break` to abort the write on cancel.
-/// - Throttles via `last_emit` (skip if the previous emit was less than
-///   `progress_interval` ago).
-/// - Emits a `WriteProgressEvent { phase: Copying, ... }` carrying the
-///   driver's per-iteration snapshots (`files_done_so_far`,
-///   `bytes_done_so_far`) plus the in-flight file's `file_bytes_done` as
-///   `bytes_done_so_far + file_bytes_done`.
+/// A single top-level source can expand to many leaf files (a directory copies
+/// its whole subtree through ONE `copy_single_path` call, reusing ONE
+/// `on_file_progress` / `on_file_complete` pair across every inner file). The
+/// progress bars are leaf-granular: `bytes_total` and `files_total` are the
+/// preflight LEAF counts, so the emitted `bytes_done` / `files_done` must climb
+/// across leaves too. This type owns that running tally so both bars advance
+/// smoothly through a directory instead of resetting at every inner file:
 ///
-/// Used by:
-/// - `volume_copy::copy_volumes_with_progress` serial path
-/// - `volume_move::move_volumes_with_progress` (cross-volume copy phase)
+/// - `byte_base` seeds from the driver's per-iteration `bytes_done_so_far`
+///   (cumulative bytes of all PRIOR top-level sources, including bulk-skipped
+///   ones) and `on_leaf_complete` adds each finished leaf's exact byte count.
+///   `on_chunk` then emits `byte_base + file_bytes_done` for the in-flight leaf,
+///   so the Size bar never sees a per-leaf reset.
+/// - `files_done` is the OPERATION-WIDE leaf counter (shared across every
+///   source via `Arc`), bumped once per completed leaf. The File bar climbs
+///   0 → N across the whole op, not 0 → (top-level source count).
 ///
-/// Captures everything by value (`Arc`-cloned), so the returned closure
-/// is `'static + Send + Sync` — safe to pass through `copy_single_path`'s
-/// `&dyn Fn(...)` parameter from inside an async move-block executed
-/// across `tokio::spawn` boundaries.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "matches WriteProgressEvent shape; bundling into a context struct adds ceremony without cleaning anything up"
-)]
-pub(super) fn make_serial_per_file_progress(
+/// Both closures built from it (see the call sites) are `'static + Send + Sync`
+/// — safe to pass through `copy_single_path`'s `&dyn Fn(...)` parameters from
+/// inside an async move-block executed across `tokio::spawn` boundaries.
+pub(super) struct SerialLeafProgress {
     events: Arc<dyn OperationEventSink>,
     state: Arc<WriteOperationState>,
     operation_id: String,
     operation_type: WriteOperationType,
     file_name: Option<String>,
-    files_done_so_far: usize,
-    bytes_done_so_far: u64,
+    /// Cumulative bytes already committed: prior top-level sources (seed) plus
+    /// every leaf of THIS source that `on_leaf_complete` has finished.
+    byte_base: AtomicU64,
+    /// Operation-wide completed-leaf counter, shared across all sources.
+    files_done: Arc<AtomicUsize>,
     total_files: usize,
     total_bytes: u64,
     last_emit: Arc<Mutex<Instant>>,
     progress_interval: Duration,
-) -> impl Fn(u64, u64) -> ControlFlow<()> + Send + Sync + 'static {
-    move |file_bytes_done: u64, _file_bytes_total: u64| -> ControlFlow<()> {
-        if is_cancelled(&state.intent) {
+}
+
+impl SerialLeafProgress {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "matches WriteProgressEvent shape; bundling into a context struct adds ceremony without cleaning anything up"
+    )]
+    pub(super) fn new(
+        events: Arc<dyn OperationEventSink>,
+        state: Arc<WriteOperationState>,
+        operation_id: String,
+        operation_type: WriteOperationType,
+        file_name: Option<String>,
+        bytes_done_so_far: u64,
+        files_done: Arc<AtomicUsize>,
+        total_files: usize,
+        total_bytes: u64,
+        last_emit: Arc<Mutex<Instant>>,
+        progress_interval: Duration,
+    ) -> Arc<Self> {
+        Arc::new(Self {
+            events,
+            state,
+            operation_id,
+            operation_type,
+            file_name,
+            byte_base: AtomicU64::new(bytes_done_so_far),
+            files_done,
+            total_files,
+            total_bytes,
+            last_emit,
+            progress_interval,
+        })
+    }
+
+    /// Per-chunk `on_file_progress` callback. `file_bytes_done` is the in-flight
+    /// leaf's running byte count (0 → leaf size). Throttled; returns `Break` to
+    /// abort the write on cancel.
+    pub(super) fn on_chunk(&self, file_bytes_done: u64) -> ControlFlow<()> {
+        if is_cancelled(&self.state.intent) {
             return ControlFlow::Break(());
         }
-        let current_total = bytes_done_so_far + file_bytes_done;
+        let current_total = self.byte_base.load(Ordering::Relaxed) + file_bytes_done;
         try_emit_throttled_progress(
-            &*events,
-            &state,
-            &operation_id,
-            operation_type,
-            file_name.clone(),
-            files_done_so_far,
-            total_files,
+            &*self.events,
+            &self.state,
+            &self.operation_id,
+            self.operation_type,
+            self.file_name.clone(),
+            self.files_done.load(Ordering::Relaxed),
+            self.total_files,
             current_total,
-            total_bytes,
-            &last_emit,
-            progress_interval,
+            self.total_bytes,
+            &self.last_emit,
+            self.progress_interval,
         );
         ControlFlow::Continue(())
+    }
+
+    /// Per-leaf `on_file_complete` callback: roll the finished leaf's exact byte
+    /// count into `byte_base` and bump the operation-wide leaf counter, then emit
+    /// a milestone that BYPASSES the throttle so the bumped `files_done` always
+    /// reaches the FE — chunked emits inside the file carry the pre-completion
+    /// counter, so without this a single large leaf would never cross `N/N`.
+    pub(super) fn on_leaf_complete(&self, leaf_bytes: u64) {
+        let new_total = self.byte_base.fetch_add(leaf_bytes, Ordering::Relaxed) + leaf_bytes;
+        let new_files = self.files_done.fetch_add(1, Ordering::Relaxed) + 1;
+        *self.last_emit.lock_ignore_poison() = Instant::now();
+        emit_progress_and_status(
+            &*self.events,
+            &self.state,
+            &self.operation_id,
+            self.operation_type,
+            WriteOperationPhase::Copying,
+            self.file_name.clone(),
+            new_files,
+            self.total_files,
+            new_total,
+            self.total_bytes,
+        );
     }
 }
 
@@ -492,6 +554,17 @@ pub(super) struct DriverConfig {
     /// is `Skip`).
     pub conflict_resolution: ConflictResolution,
     pub pre_known_conflicts: Vec<String>,
+    /// Whether the ASYNC driver emits a per-source milestone in its
+    /// `Transferred` arm (top-level-source granular). `true` for paths whose
+    /// `transfer_one` closure does NOT emit its own progress — the same-volume
+    /// rename-merge, which moves a whole source with one `rename` and no
+    /// streaming, so the driver milestone is its ONLY Copying event. `false`
+    /// for the streaming paths (cross-volume copy/move): their
+    /// `SerialLeafProgress::on_leaf_complete` already emits LEAF-granular
+    /// milestones, and a top-level-granular driver milestone would visibly
+    /// regress the File bar at the end of a directory source (e.g. 9/9 → 1/9).
+    /// Ignored by the sync driver, whose closure always owns its emits.
+    pub emit_per_source_milestone: bool,
 }
 
 // ============================================================================
@@ -986,25 +1059,28 @@ where
             Ok(TransferOutcome::Transferred { bytes }) => {
                 files_done += 1;
                 bytes_done += bytes;
-                // Per-file milestone emit. Bypasses the throttle because
-                // it's a per-file event (bounded by file count, not noisy)
-                // and the FE's files-done axis needs at least one Copying
-                // event with the bumped `files_done` — chunked emits inside
-                // `transfer_one` carry the pre-iteration snapshot, so for
-                // single-file ops the chunked path never crosses `N/N`.
-                last_progress_time = Instant::now();
-                emit_progress_and_status(
-                    events,
-                    state,
-                    operation_id,
-                    config.operation_type,
-                    config.phase,
-                    source_path.file_name().map(|n| n.to_string_lossy().to_string()),
-                    files_done,
-                    total_files,
-                    bytes_done,
-                    total_bytes,
-                );
+                // Per-source milestone, gated on `emit_per_source_milestone`.
+                // The streaming paths set it `false`: their closures emit
+                // LEAF-granular milestones via `SerialLeafProgress`, and a
+                // top-level-granular emit here would regress the File bar at the
+                // end of a directory source (9/9 → 1/9). The same-volume
+                // rename-merge sets it `true`: its `transfer_one` does a bare
+                // `rename` with no streaming, so this is its ONLY Copying event.
+                if config.emit_per_source_milestone {
+                    last_progress_time = Instant::now();
+                    emit_progress_and_status(
+                        events,
+                        state,
+                        operation_id,
+                        config.operation_type,
+                        config.phase,
+                        source_path.file_name().map(|n| n.to_string_lossy().to_string()),
+                        files_done,
+                        total_files,
+                        bytes_done,
+                        total_bytes,
+                    );
+                }
             }
             Ok(TransferOutcome::Skipped { bytes_accounted }) => {
                 files_done += 1;

@@ -24,7 +24,7 @@ lane's budget is a localized change.
 
 v1 parks pause at between-files boundaries. A single huge file can't be paused mid-transfer.
 
-- Gate at a chunk boundary inside the per-file copy loop (the `make_serial_per_file_progress` /
+- Gate at a chunk boundary inside the per-file copy loop (the `SerialLeafProgress::on_chunk` /
   `make_concurrent_per_file_progress` callbacks currently break only on cancel).
 - Keep the in-flight stream + `.cmdr-tmp-<uuid>` + the backend connection alive across the pause.
 - Decide resume semantics for a partially-written temp (continue the same temp vs restart the file).

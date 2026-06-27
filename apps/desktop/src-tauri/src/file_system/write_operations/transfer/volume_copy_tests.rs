@@ -493,6 +493,95 @@ async fn test_cross_volume_copy_serial_emits_intra_file_progress() {
     assert_eq!(complete[0].files_processed, 2);
 }
 
+/// Serial cross-volume copy of a single DIRECTORY source must report
+/// progress at LEAF-file granularity, not top-level-source granularity:
+/// `bytes_done` accumulates across the directory's inner files (the Size
+/// bar climbs smoothly 0 → total instead of resetting to 0 at each inner
+/// file), and `files_done` advances per inner file (the File bar climbs
+/// 0 → N instead of sitting at 0 until the whole folder finishes).
+///
+/// Regression guard for the directory-source progress bug: a single folder
+/// of N files was emitting every inner file's progress against a frozen
+/// `bytes_done_so_far = 0` / `files_done_so_far = 0` snapshot, so the Size
+/// bar sawtoothed back to 0 per inner file and the File bar never left 0.
+///
+/// One top-level source (`< 3`) forces the serial path. Three inner files
+/// (each large enough to emit several chunked progress events) so the
+/// crossing of inner-file boundaries is observable mid-stream.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_cross_volume_copy_directory_source_progress_is_leaf_granular() {
+    let (source, dest) = make_volumes();
+    source.create_directory(Path::new("/folder")).await.unwrap();
+    let one_mb: Vec<u8> = vec![0u8; 1_048_576];
+    source.create_file(Path::new("/folder/a.bin"), &one_mb).await.unwrap();
+    source.create_file(Path::new("/folder/b.bin"), &one_mb).await.unwrap();
+    source.create_file(Path::new("/folder/c.bin"), &one_mb).await.unwrap();
+    let one_file = one_mb.len() as u64;
+    let total_bytes = one_file * 3;
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(0)));
+    let config = VolumeCopyConfig {
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "op-copy-dir-leaf",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/folder")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let progress = events.progress.lock().unwrap();
+    let copying: Vec<_> = progress
+        .iter()
+        .filter(|p| p.phase == WriteOperationPhase::Copying)
+        .collect();
+
+    // Size bar: bytes_done is the running aggregate across ALL inner files,
+    // so it stays non-decreasing for the whole directory (no per-leaf reset).
+    for w in copying.windows(2) {
+        assert!(
+            w[0].bytes_done <= w[1].bytes_done,
+            "bytes_done must be non-decreasing across the directory's inner files, got {} then {} ({:?})",
+            w[0].bytes_done,
+            w[1].bytes_done,
+            copying.iter().map(|e| (e.files_done, e.bytes_done)).collect::<Vec<_>>(),
+        );
+    }
+    // The aggregate must cross BOTH inner-file boundaries: at least one event
+    // reports more than two inner files' worth of bytes. With the frozen
+    // snapshot bug, no event ever exceeds a single inner file's size.
+    let crossed_two_files = copying.iter().any(|p| p.bytes_done > one_file * 2);
+    assert!(
+        crossed_two_files,
+        "expected at least one Copying event past the second inner-file boundary ({}), got {:?}",
+        one_file * 2,
+        copying.iter().map(|e| (e.files_done, e.bytes_done)).collect::<Vec<_>>(),
+    );
+    // File bar: files_done advances per inner file. By the time the third
+    // inner file streams, two inner files are done. With the bug, files_done
+    // is pinned at 0 for the whole directory.
+    let saw_files_done_2 = copying.iter().any(|p| p.files_done >= 2);
+    assert!(
+        saw_files_done_2,
+        "expected at least one Copying event with files_done >= 2 (inner files complete), got {:?}",
+        copying.iter().map(|e| e.files_done).collect::<Vec<_>>(),
+    );
+    drop(progress);
+
+    // Cumulative correctness is pinned by the complete event.
+    let complete = events.complete.lock().unwrap();
+    assert_eq!(complete[0].bytes_processed, total_bytes);
+}
+
 /// Concurrent cross-volume copy of several large files emits multiple
 /// `Copying`-phase progress events as chunks stream through across
 /// in-flight tasks. Pins the contract before the per-task progress

@@ -10,6 +10,7 @@ use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
 use std::time::{Duration, Instant};
 use uuid::Uuid;
 
@@ -21,8 +22,8 @@ use super::super::types::{
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
 };
 use super::transfer_driver::{
-    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, TransferContext, TransferOutcome,
-    build_pre_skip_set, drive_transfer_serial_async, make_serial_per_file_progress,
+    ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
+    TransferOutcome, build_pre_skip_set, drive_transfer_serial_async,
 };
 use super::volume_conflict::resolve_volume_conflict;
 use super::volume_copy::{WriteFailure, delete_volume_path_recursive, map_volume_error, write_error_event_from};
@@ -286,6 +287,8 @@ pub(super) async fn move_volumes_with_progress(
         phase: WriteOperationPhase::Copying,
         conflict_resolution: config.conflict_resolution,
         pre_known_conflicts: config.pre_known_conflicts.clone(),
+        // Streaming path: `SerialLeafProgress` owns leaf-granular milestones.
+        emit_per_source_milestone: false,
     };
 
     // Per-source state shared with the driver's closures via interior
@@ -301,6 +304,13 @@ pub(super) async fn move_volumes_with_progress(
     // `volume_copy::copy_volumes_with_progress` for the full rationale.
     let config_owned: VolumeCopyConfig = config.clone();
     let operation_id_owned: String = operation_id.to_string();
+
+    // Operation-wide leaf-file counter for the File progress bar. The driver's
+    // own `files_done` counts TOP-LEVEL sources (one folder = 1), but the bar's
+    // denominator is the preflight LEAF count, so the bar reads from this shared
+    // counter, which `SerialLeafProgress::on_leaf_complete` bumps once per inner
+    // file. Seeded with the bulk-skipped leaves the driver credits up front.
+    let leaf_files_done = Arc::new(AtomicUsize::new(bulk_skip_files));
 
     let outcome = drive_transfer_serial_async(
         &*events,
@@ -411,6 +421,7 @@ pub(super) async fn move_volumes_with_progress(
             let config_for_merge = config_owned.clone();
             let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
+            let leaf_files_done = Arc::clone(&leaf_files_done);
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let source_volume = Arc::clone(&source_volume);
                 let dest_volume = Arc::clone(&dest_volume);
@@ -421,6 +432,7 @@ pub(super) async fn move_volumes_with_progress(
                 let config_for_merge = config_for_merge.clone();
                 let merge_apply_to_all = Arc::clone(&merge_apply_to_all);
                 let last_progress_time = Arc::clone(&last_progress_time);
+                let leaf_files_done = Arc::clone(&leaf_files_done);
                 let source_path = ctx.source_path.to_path_buf();
                 let dest_item_path = ctx
                     .dest_path
@@ -432,7 +444,6 @@ pub(super) async fn move_volumes_with_progress(
                 // the destination isn't fully in place).
                 let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
                 let bytes_done_so_far = ctx.bytes_done_so_far;
-                let files_done_so_far = ctx.files_done_so_far;
                 Box::pin(async move {
                     // Use the cached scan hint for type + size. Falls back to
                     // a per-source `is_directory` probe if the hint is missing
@@ -446,19 +457,27 @@ pub(super) async fn move_volumes_with_progress(
                     let source_size_hint = hint.and_then(|h| (!h.is_directory).then_some(h.size));
 
                     let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
-                    let on_file_progress = make_serial_per_file_progress(
+                    let leaf_progress = SerialLeafProgress::new(
                         Arc::clone(&events),
                         Arc::clone(&state),
                         operation_id.clone(),
                         WriteOperationType::Move,
                         file_name.clone(),
-                        files_done_so_far,
                         bytes_done_so_far,
+                        Arc::clone(&leaf_files_done),
                         total_files,
                         total_bytes,
                         Arc::clone(&last_progress_time),
                         progress_interval,
                     );
+                    let on_file_progress = {
+                        let leaf_progress = Arc::clone(&leaf_progress);
+                        move |file_bytes_done: u64, _file_bytes_total: u64| leaf_progress.on_chunk(file_bytes_done)
+                    };
+                    let on_file_complete = {
+                        let leaf_progress = Arc::clone(&leaf_progress);
+                        move |leaf_bytes: u64| leaf_progress.on_leaf_complete(leaf_bytes)
+                    };
                     // Cross-volume move's copy phase doesn't use the granular
                     // rollback ledger (move rollback reverses renames / cleans
                     // staging separately), so a throwaway ledger is fine here.
@@ -485,7 +504,7 @@ pub(super) async fn move_volumes_with_progress(
                         &state,
                         &created,
                         &on_file_progress,
-                        &|| {},
+                        &on_file_complete,
                         Some(&merge_ctx),
                     )
                     .await
@@ -774,6 +793,8 @@ pub(crate) async fn move_within_same_volume_with_progress(
         phase: WriteOperationPhase::Copying,
         conflict_resolution: config.conflict_resolution,
         pre_known_conflicts: config.pre_known_conflicts.clone(),
+        // Rename-merge: no streaming, so the driver milestone is the only emit.
+        emit_per_source_milestone: true,
     };
 
     // Interior mutability shapes the apply-to-all latch into a Mutex cell so

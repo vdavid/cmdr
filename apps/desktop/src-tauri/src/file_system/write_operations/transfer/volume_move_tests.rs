@@ -1144,6 +1144,77 @@ async fn cross_volume_move_emits_intra_file_progress() {
     assert_eq!(last.files_done, 1);
 }
 
+/// Cross-volume move of a single DIRECTORY source reports progress at
+/// LEAF-file granularity. This is the exact shape of the reported bug: moving
+/// a folder of large files from a USB stick to an SMB NAS showed the Size bar
+/// resetting to 0 at every inner file and the File bar frozen at 0 the whole
+/// time, because every inner file emitted against a frozen
+/// `bytes_done_so_far = 0` / `files_done_so_far = 0` snapshot.
+///
+/// Twin of `volume_copy::tests::test_cross_volume_copy_directory_source_progress_is_leaf_granular`,
+/// guarding the move path (`SerialLeafProgress` is shared, but the move wires
+/// it separately and sets `emit_per_source_milestone: false`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_directory_source_progress_is_leaf_granular() {
+    let (source, dest) = make_volumes();
+    source.create_directory(Path::new("/folder")).await.unwrap();
+    let one_mb: Vec<u8> = vec![0u8; 1_048_576];
+    source.create_file(Path::new("/folder/a.bin"), &one_mb).await.unwrap();
+    source.create_file(Path::new("/folder/b.bin"), &one_mb).await.unwrap();
+    source.create_file(Path::new("/folder/c.bin"), &one_mb).await.unwrap();
+    let one_file = one_mb.len() as u64;
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state_with_interval_ms(0);
+    let config = VolumeCopyConfig {
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-dir-leaf",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/folder")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let progress = events.progress.lock().unwrap();
+    let copying: Vec<_> = progress
+        .iter()
+        .filter(|p| p.phase == WriteOperationPhase::Copying)
+        .collect();
+
+    // Size bar: bytes_done climbs monotonically across all three inner files.
+    for w in copying.windows(2) {
+        assert!(
+            w[0].bytes_done <= w[1].bytes_done,
+            "bytes_done must be non-decreasing across the folder's inner files, got {} then {} ({:?})",
+            w[0].bytes_done,
+            w[1].bytes_done,
+            copying.iter().map(|e| (e.files_done, e.bytes_done)).collect::<Vec<_>>(),
+        );
+    }
+    // The aggregate crosses both inner-file boundaries (never true under the bug).
+    assert!(
+        copying.iter().any(|p| p.bytes_done > one_file * 2),
+        "expected a Copying event past the second inner-file boundary ({}), got {:?}",
+        one_file * 2,
+        copying.iter().map(|e| (e.files_done, e.bytes_done)).collect::<Vec<_>>(),
+    );
+    // File bar: files_done advances per inner file (pinned at 0 under the bug).
+    assert!(
+        copying.iter().any(|p| p.files_done >= 2),
+        "expected a Copying event with files_done >= 2, got {:?}",
+        copying.iter().map(|e| e.files_done).collect::<Vec<_>>(),
+    );
+}
+
 /// Wraps an `InMemoryVolume` destination whose `rename` ALWAYS fails: models a
 /// disconnect at the exact instant `finalize_safe_replace` swaps the
 /// fully-written temp over the original. Everything else delegates.
