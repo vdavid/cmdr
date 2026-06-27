@@ -113,6 +113,12 @@ worktree under `.claude/worktrees/<slug>`:
 
 - `cp -c ~/projects-git/vdavid/cmdr/target <worktree>/target`: instant on APFS; deps are fingerprinted on version +
   features + rustc + profile, so only the workspace members rebuild.
+  - **STALE-BUILD HAZARD (cost us repeatedly): the COW-cloned `target` makes a bare `cargo` / `cargo nextest` skip
+    recompiling edited files** — cargo's mtime fingerprint can think the cloned objects are current, so a "green"
+    bare-cargo run after editing `.rs` can be a FALSE green (tests run against stale code). Always
+    `find apps/desktop/src-tauri/src -name '*.rs' | xargs touch` before a bare cargo run in a worktree, or use
+    `pnpm check` (cache-aware, builds correctly). Don't trust a bare-cargo green right after edits. (Also: `pnpm check
+    rust` does NOT run docs-group checks like `pluralize-noun` — run full `pnpm check` before claiming green.)
 - CodeGraph (from `~/.claude/docs/codegraph-worktree.md`): `mkdir -p <worktree>/.codegraph`,
   `cp -c .codegraph/codegraph.db` and `cp .codegraph/config.json` into it, then `(cd <worktree> && codegraph sync)`.
   Without its own populated `.codegraph`, the worktree session deadlocks against the main repo's DB.
