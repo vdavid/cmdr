@@ -651,25 +651,73 @@ function buildSlider(before: HTMLElement, after: HTMLElement): HTMLElement {
   divider.className = 'img-compare__divider'
   divider.setAttribute('aria-hidden', 'true')
 
+  const both = beforeCap && afterCap ? `${beforeCap} and ${afterCap}` : 'the two images'
+
   const range = document.createElement('input')
   range.type = 'range'
   range.min = '0'
   range.max = '100'
   range.value = '50'
   range.className = 'img-compare__range'
-  range.setAttribute(
-    'aria-label',
-    beforeCap && afterCap ? `Drag to compare ${beforeCap} and ${afterCap}` : 'Drag to compare the two images',
-  )
+  range.setAttribute('aria-label', `Drag to compare ${both}`)
 
-  root.append(pane(after, 'base', afterCap, 'after'), pane(before, 'top', beforeCap, 'before'), divider, range)
+  const expand = document.createElement('button')
+  expand.type = 'button'
+  expand.className = 'img-compare__expand'
+  expand.dataset.imgCompareExpand = ''
+  expand.setAttribute('aria-haspopup', 'dialog')
+  expand.setAttribute('aria-label', `View ${both} full size`)
+  expand.innerHTML =
+    '<svg class="img-compare__expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>'
+
+  const lightbox = document.createElement('dialog')
+  lightbox.className = 'img-compare__lightbox'
+  lightbox.dataset.imgCompareLightbox = ''
+  lightbox.setAttribute('aria-label', `${both} compared`)
+  const lightboxClose = document.createElement('button')
+  lightboxClose.type = 'button'
+  lightboxClose.className = 'img-compare__lightbox-close'
+  lightboxClose.dataset.imgCompareClose = ''
+  lightboxClose.setAttribute('aria-label', 'Close')
+  lightboxClose.innerHTML =
+    '<svg class="img-compare__lightbox-close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
+  const grid = document.createElement('div')
+  grid.className = 'img-compare__lightbox-grid'
+  grid.append(lightboxFigure(before), lightboxFigure(after))
+  lightbox.append(lightboxClose, grid)
+
+  root.append(
+    pane(after, 'base', afterCap, 'after'),
+    pane(before, 'top', beforeCap, 'before'),
+    divider,
+    range,
+    expand,
+    lightbox,
+  )
   return root
+}
+
+function lightboxFigure(cell: HTMLElement): HTMLElement {
+  const figure = document.createElement('figure')
+  figure.className = 'img-compare__lightbox-figure'
+  figure.append(cell.cloneNode(true))
+  const caption = captionFor(cell)
+  if (caption) {
+    const figcaption = document.createElement('figcaption')
+    figcaption.textContent = caption
+    figure.append(figcaption)
+  }
+  return figure
 }
 
 /** Wire the preview's comparison sliders (mirrors BlogCompareSlider.astro). */
 function activateCompareSliders(root: HTMLElement) {
   root.querySelectorAll<HTMLElement>('[data-img-compare]').forEach((slider) => {
     const range = slider.querySelector<HTMLInputElement>('.img-compare__range')
+    const slant = parseFloat(getComputedStyle(slider).getPropertyValue('--slant')) || 0
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    let dragging = false
+
     const setReveal = (percent: number) => {
       const clamped = Math.max(0, Math.min(100, percent))
       slider.style.setProperty('--reveal', String(clamped))
@@ -677,15 +725,47 @@ function activateCompareSliders(root: HTMLElement) {
         range.value = String(Math.round(clamped))
       }
     }
-    const revealFromClientX = (clientX: number) => {
+    // Slanted divider: solve reveal so its edge passes through the cursor (see BlogCompareSlider.astro).
+    const revealFromPointer = (clientX: number, clientY: number) => {
       const rect = slider.getBoundingClientRect()
-      if (rect.width > 0) {
-        setReveal(((clientX - rect.left) / rect.width) * 100)
+      if (rect.width <= 0 || rect.height <= 0) {
+        return
       }
+      const cx = ((clientX - rect.left) / rect.width) * 100
+      const cy = (clientY - rect.top) / rect.height
+      setReveal(cx + slant * (2 * cy - 1))
     }
-    slider.addEventListener('pointermove', (event) => revealFromClientX(event.clientX))
-    slider.addEventListener('pointerdown', (event) => revealFromClientX(event.clientX))
+
+    slider.addEventListener('pointerdown', (event) => {
+      if ((event.target as HTMLElement).closest('.img-compare__expand, .img-compare__lightbox')) {
+        return
+      }
+      dragging = true
+      slider.setPointerCapture?.(event.pointerId)
+      revealFromPointer(event.clientX, event.clientY)
+    })
+    const endDrag = () => {
+      dragging = false
+    }
+    slider.addEventListener('pointerup', endDrag)
+    slider.addEventListener('pointercancel', endDrag)
+    slider.addEventListener('pointermove', (event) => {
+      if (!reduceMotion || dragging) {
+        revealFromPointer(event.clientX, event.clientY)
+      }
+    })
     range?.addEventListener('input', () => setReveal(Number(range.value)))
+
+    const expand = slider.querySelector<HTMLButtonElement>('[data-img-compare-expand]')
+    const lightbox = slider.querySelector<HTMLDialogElement>('[data-img-compare-lightbox]')
+    const close = slider.querySelector<HTMLButtonElement>('[data-img-compare-close]')
+    expand?.addEventListener('click', () => lightbox?.showModal())
+    close?.addEventListener('click', () => lightbox?.close())
+    lightbox?.addEventListener('click', (event) => {
+      if (event.target === lightbox) {
+        lightbox.close()
+      }
+    })
   })
 }
 

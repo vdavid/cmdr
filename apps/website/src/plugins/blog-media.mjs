@@ -108,14 +108,48 @@ function figureCell(cell) {
   ])
 }
 
+/** A line-art SVG icon (currentColor stroke), matching the site's Lucide style. */
+function icon(className, children) {
+  return el(
+    'svg',
+    {
+      className: [className],
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 2,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      ariaHidden: 'true',
+    },
+    children,
+  )
+}
+
+/** Deep-clone a hast node (plain JSON), so the lightbox can reuse a slider image without sharing it. */
+function deepClone(node) {
+  return JSON.parse(JSON.stringify(node))
+}
+
+function lightboxFigure(cell) {
+  const caption = captionOf(cell)
+  return el('figure', { className: ['img-compare__lightbox-figure'] }, [
+    deepClone(cell),
+    ...(caption ? [el('figcaption', {}, [text(caption)])] : []),
+  ])
+}
+
 /**
  * A draggable before/after slider with a 20°-slanted divider. The first image is the top (clipped)
- * layer, the second is the base revealed underneath; either may be a theme pair. The `data-img-compare`
- * hook is wired by BlogCompareSlider.astro; without JS it falls back to a static 50/50 split.
+ * layer, the second is the base revealed underneath; either may be a theme pair. An expand button
+ * opens an accessible lightbox (`<dialog>`) showing both images full-size. Wired by
+ * BlogCompareSlider.astro; without JS it falls back to a static 50/50 split (and the lightbox dialog
+ * still opens natively).
  */
 function buildSlider(beforeCell, afterCell) {
   const beforeCap = captionOf(beforeCell)
   const afterCap = captionOf(afterCell)
+  const both = beforeCap && afterCap ? `${beforeCap} and ${afterCap}` : 'the two images'
   const label = (caption, side) =>
     caption ? [el('span', { className: ['img-compare__label', `img-compare__label--${side}`] }, [text(caption)])] : []
   return el(
@@ -136,9 +170,52 @@ function buildSlider(beforeCell, afterCell) {
         max: '100',
         value: '50',
         className: ['img-compare__range'],
-        ariaLabel:
-          beforeCap && afterCap ? `Drag to compare ${beforeCap} and ${afterCap}` : 'Drag to compare the two images',
+        ariaLabel: `Drag to compare ${both}`,
       }),
+      el(
+        'button',
+        {
+          type: 'button',
+          className: ['img-compare__expand'],
+          'data-img-compare-expand': '',
+          ariaHaspopup: 'dialog',
+          ariaLabel: `View ${both} full size`,
+        },
+        [
+          // Lucide `maximize-2`.
+          icon('img-compare__expand-icon', [
+            el('polyline', { points: '15 3 21 3 21 9' }),
+            el('polyline', { points: '9 21 3 21 3 15' }),
+            el('line', { x1: '21', y1: '3', x2: '14', y2: '10' }),
+            el('line', { x1: '3', y1: '21', x2: '10', y2: '14' }),
+          ]),
+        ],
+      ),
+      el(
+        'dialog',
+        { className: ['img-compare__lightbox'], 'data-img-compare-lightbox': '', ariaLabel: `${both} compared` },
+        [
+          el(
+            'button',
+            {
+              type: 'button',
+              className: ['img-compare__lightbox-close'],
+              'data-img-compare-close': '',
+              ariaLabel: 'Close',
+            },
+            [
+              icon('img-compare__lightbox-close-icon', [
+                el('line', { x1: '18', y1: '6', x2: '6', y2: '18' }),
+                el('line', { x1: '6', y1: '6', x2: '18', y2: '18' }),
+              ]),
+            ],
+          ),
+          el('div', { className: ['img-compare__lightbox-grid'] }, [
+            lightboxFigure(beforeCell),
+            lightboxFigure(afterCell),
+          ]),
+        ],
+      ),
     ],
   )
 }

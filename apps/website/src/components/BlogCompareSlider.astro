@@ -1,6 +1,7 @@
 <!-- Drives the before/after comparison sliders emitted by rehypeBlogMedia (`.img-compare`). The
-     divider follows the pointer on hover and touch-drag, and the overlaid range input gives keyboard
-     control. Geometry (the 20° wipe) lives in global.css; this only moves --reveal. -->
+     divider follows the pointer (accounting for the 20° slant via the cursor's Y), the overlaid range
+     gives keyboard control, and an expand button opens the lightbox `<dialog>`. Geometry lives in
+     global.css; this moves --reveal and opens/closes the dialog. -->
 <script>
     document.addEventListener('astro:page-load', () => {
         document.querySelectorAll<HTMLElement>('[data-img-compare]').forEach((root) => {
@@ -8,6 +9,9 @@
             root.dataset.compareReady = '1'
 
             const range = root.querySelector<HTMLInputElement>('.img-compare__range')
+            const slant = parseFloat(getComputedStyle(root).getPropertyValue('--slant')) || 0
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            let dragging = false
 
             const setReveal = (percent: number) => {
                 const clamped = Math.max(0, Math.min(100, percent))
@@ -17,15 +21,42 @@
                 }
             }
 
-            const revealFromClientX = (clientX: number) => {
+            // The divider is slanted, so solve for the reveal whose slanted edge passes through the
+            // cursor: edge_x(cy) = reveal + slant - 2·slant·cy, set equal to cx.
+            const revealFromPointer = (clientX: number, clientY: number) => {
                 const rect = root.getBoundingClientRect()
-                if (rect.width > 0) setReveal(((clientX - rect.left) / rect.width) * 100)
+                if (rect.width <= 0 || rect.height <= 0) return
+                const cx = ((clientX - rect.left) / rect.width) * 100
+                const cy = (clientY - rect.top) / rect.height
+                setReveal(cx + slant * (2 * cy - 1))
             }
 
-            // Pointer move covers mouse hover and touch-drag; pointerdown handles a tap.
-            root.addEventListener('pointermove', (event) => revealFromClientX(event.clientX))
-            root.addEventListener('pointerdown', (event) => revealFromClientX(event.clientX))
+            root.addEventListener('pointerdown', (event) => {
+                if ((event.target as HTMLElement).closest('.img-compare__expand, .img-compare__lightbox')) return
+                dragging = true
+                root.setPointerCapture?.(event.pointerId)
+                revealFromPointer(event.clientX, event.clientY)
+            })
+            const endDrag = () => {
+                dragging = false
+            }
+            root.addEventListener('pointerup', endDrag)
+            root.addEventListener('pointercancel', endDrag)
+            // On a pointer device the divider follows hover; with reduced motion it only moves while dragging.
+            root.addEventListener('pointermove', (event) => {
+                if (!reduceMotion || dragging) revealFromPointer(event.clientX, event.clientY)
+            })
             range?.addEventListener('input', () => setReveal(Number(range.value)))
+
+            const expand = root.querySelector<HTMLButtonElement>('[data-img-compare-expand]')
+            const lightbox = root.querySelector<HTMLDialogElement>('[data-img-compare-lightbox]')
+            const close = root.querySelector<HTMLButtonElement>('[data-img-compare-close]')
+            expand?.addEventListener('click', () => lightbox?.showModal())
+            close?.addEventListener('click', () => lightbox?.close())
+            // Close on backdrop click (the dialog element itself, outside its content).
+            lightbox?.addEventListener('click', (event) => {
+                if (event.target === lightbox) lightbox.close()
+            })
         })
     })
 </script>

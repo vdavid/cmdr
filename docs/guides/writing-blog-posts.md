@@ -113,10 +113,13 @@ Two conveniences plain markdown can't express, handled by the `rehypeBlogMedia` 
   ```
 
 - **Before/after slider**: add a `[slider]` token right after exactly two images, in the same paragraph (no blank line
-  before it), for a draggable overlay with a 20°-slanted divider instead of a row. The divider follows the pointer on
-  hover and touch-drag, with an overlaid range for keyboard control. The first image is the top layer, the second shows
-  underneath; either can be a theme image, so auto light/dark survives. Give both images the same aspect ratio — the
-  slider crops to one box (`object-fit: cover`), so mismatched shapes lose edges.
+  before it), for a draggable overlay with a 20°-slanted divider instead of a row. The divider follows the pointer
+  (accounting for the slant via the cursor's Y), with an overlaid range for keyboard control and reduced-motion users.
+  An expand button opens an accessible lightbox (native `<dialog>`: focus trap, Esc, focus restore) showing both images
+  full size, side by side (stacked on mobile). The first image is the top layer, the second shows underneath; either can
+  be a theme image, so auto light/dark survives. Give both images the same aspect ratio — the slider crops to one box
+  (`object-fit: cover`), so mismatched shapes lose edges. Write descriptive `![alt]` text (screen readers can't see the
+  wipe) and keep the `"title"` short (it's the on-image label).
 
   ```markdown
   ![Total Commander on Windows](/blog/my-post/totalcmd.webp 'Total Commander on Windows')
