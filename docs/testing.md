@@ -198,6 +198,21 @@ human presence at the machine and vanish on idle hosts. Grep the involved window
 before blaming load. Legitimate rAF uses (animation, paint-coupled measurement like the drag-autoscroll loop) are fine —
 those want frames; readiness/lifecycle signals don't.
 
+### ❌ A no-op / empty fixture that passes for the wrong reason
+
+**The rule:** when a test asserts "nothing happened" (zero writes, no diff, no change), also assert that the code path
+actually **ran its work** — assert COVERAGE (every item was visited / stamped / considered), not just the absence of
+effects. An empty or already-converged fixture has zero effects whether the code did the right thing or nothing at all.
+
+**Why:** the two are indistinguishable from the outside, so a fixture chosen for "no-op" silently certifies a do-nothing
+bug. The reconcile-rescan `reconcile_noop_writes_zero_entry_rows` test green-lit a "descends nowhere" bug for two
+rounds: an unchanged tree has zero writes AND zero legitimate recursion targets, so a reconcile that stopped at the root
+passed it cleanly. The fix was a fixture with a real multi-level tree asserting every directory was re-listed (visited),
+not just that the row count held.
+
+**How to spot the next one:** if flipping the production logic to a `return;`/no-op would still pass the test, the test
+proves nothing. Pair every "writes nothing" assertion with a "visited everything" one.
+
 ## Sanctioned slow-test exceptions
 
 Most "raise the timeout" instincts are wrong (see the `retries: 1` and `sleep(N)` anti-patterns above): a flaky timeout
