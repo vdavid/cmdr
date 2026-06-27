@@ -541,6 +541,7 @@ async function renderPreview() {
     rewriteDraftImageSources(container)
     expandBlogMedia(container)
     previewBody.innerHTML = container.innerHTML
+    activateCompareSliders(previewBody)
   }
 }
 
@@ -589,28 +590,103 @@ function expandBlogMedia(container: HTMLElement) {
   }
 
   for (const paragraph of Array.from(container.querySelectorAll('p'))) {
-    const cells = Array.from(paragraph.childNodes).filter(isMeaningfulNode)
-    const images = cells.filter(isImageCell)
-    if (images.length < 2 || images.length !== cells.length) {
+    const meaningful = Array.from(paragraph.childNodes).filter(isMeaningfulNode)
+    const images = meaningful.filter(isImageCell)
+    if (images.length < 2) {
+      continue
+    }
+    const token = meaningful
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => (node.textContent ?? '').trim())
+      .join('')
+    if (images.length === 2 && token === '[slider]') {
+      paragraph.replaceWith(buildSlider(images[0], images[1]))
+      continue
+    }
+    if (images.length !== meaningful.length) {
       continue
     }
     paragraph.classList.add('blog-figure-row')
-    paragraph.replaceChildren(
-      ...images.map((cell) => {
-        const figure = document.createElement('span')
-        figure.className = 'blog-figure'
-        figure.append(cell)
-        const caption = captionFor(cell)
-        if (caption) {
-          const captionEl = document.createElement('span')
-          captionEl.className = 'blog-figure__cap'
-          captionEl.textContent = caption
-          figure.append(captionEl)
-        }
-        return figure
-      }),
-    )
+    paragraph.replaceChildren(...images.map(figureCell))
   }
+}
+
+function figureCell(cell: HTMLElement): HTMLElement {
+  const figure = document.createElement('span')
+  figure.className = 'blog-figure'
+  figure.append(cell)
+  const caption = captionFor(cell)
+  if (caption) {
+    const captionEl = document.createElement('span')
+    captionEl.className = 'blog-figure__cap'
+    captionEl.textContent = caption
+    figure.append(captionEl)
+  }
+  return figure
+}
+
+/** Build a comparison slider (mirrors `buildSlider` in src/plugins/blog-media.mjs). */
+function buildSlider(before: HTMLElement, after: HTMLElement): HTMLElement {
+  const beforeCap = captionFor(before)
+  const afterCap = captionFor(after)
+  const pane = (cell: HTMLElement, role: 'base' | 'top', caption: string, side: 'before' | 'after') => {
+    const span = document.createElement('span')
+    span.className = `img-compare__pane img-compare__${role}`
+    span.append(cell)
+    if (caption) {
+      const label = document.createElement('span')
+      label.className = `img-compare__label img-compare__label--${side}`
+      label.textContent = caption
+      span.append(label)
+    }
+    return span
+  }
+
+  const root = document.createElement('div')
+  root.className = 'img-compare'
+  root.dataset.imgCompare = ''
+  root.setAttribute('style', '--reveal: 50; --slant: 12;')
+
+  const divider = document.createElement('span')
+  divider.className = 'img-compare__divider'
+  divider.setAttribute('aria-hidden', 'true')
+
+  const range = document.createElement('input')
+  range.type = 'range'
+  range.min = '0'
+  range.max = '100'
+  range.value = '50'
+  range.className = 'img-compare__range'
+  range.setAttribute(
+    'aria-label',
+    beforeCap && afterCap ? `Drag to compare ${beforeCap} and ${afterCap}` : 'Drag to compare the two images',
+  )
+
+  root.append(pane(after, 'base', afterCap, 'after'), pane(before, 'top', beforeCap, 'before'), divider, range)
+  return root
+}
+
+/** Wire the preview's comparison sliders (mirrors BlogCompareSlider.astro). */
+function activateCompareSliders(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>('[data-img-compare]').forEach((slider) => {
+    const range = slider.querySelector<HTMLInputElement>('.img-compare__range')
+    const setReveal = (percent: number) => {
+      const clamped = Math.max(0, Math.min(100, percent))
+      slider.style.setProperty('--reveal', String(clamped))
+      if (range && Number(range.value) !== Math.round(clamped)) {
+        range.value = String(Math.round(clamped))
+      }
+    }
+    const revealFromClientX = (clientX: number) => {
+      const rect = slider.getBoundingClientRect()
+      if (rect.width > 0) {
+        setReveal(((clientX - rect.left) / rect.width) * 100)
+      }
+    }
+    slider.addEventListener('pointermove', (event) => revealFromClientX(event.clientX))
+    slider.addEventListener('pointerdown', (event) => revealFromClientX(event.clientX))
+    range?.addEventListener('input', () => setReveal(Number(range.value)))
+  })
 }
 
 function isMeaningfulNode(node: ChildNode): boolean {

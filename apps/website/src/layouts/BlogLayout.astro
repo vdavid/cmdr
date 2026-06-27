@@ -3,6 +3,7 @@ import Layout from './Layout.astro'
 import Header from '../components/Header.astro'
 import Footer from '../components/Footer.astro'
 import BlogImageClick from '../components/BlogImageClick.astro'
+import BlogCompareSlider from '../components/BlogCompareSlider.astro'
 
 interface Props {
     title: string
@@ -67,6 +68,7 @@ if (ogImage) {
 </Layout>
 
 <BlogImageClick />
+<BlogCompareSlider />
 
 <style>
     @import '../styles/blog-prose.css';

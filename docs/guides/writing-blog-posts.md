@@ -112,7 +112,18 @@ Two conveniences plain markdown can't express, handled by the `rehypeBlogMedia` 
   ![Cmdr on macOS](/blog/my-post/cmdr-{theme}.webp 'Cmdr · macOS')
   ```
 
-The dev editor's preview mirrors both transforms in JS so you can see them while writing. The exact theme switch only
+- **Before/after slider**: add a `[slider]` token right after exactly two images, in the same paragraph (no blank line
+  before it), for a draggable overlay with a 20°-slanted divider instead of a row. The divider follows the pointer on
+  hover and touch-drag, with an overlaid range for keyboard control. The first image is the top layer, the second shows
+  underneath; either can be a theme image, so auto light/dark survives. Give both images the same aspect ratio — the
+  slider crops to one box (`object-fit: cover`), so mismatched shapes lose edges.
+
+  ```markdown
+  ![Total Commander on Windows](/blog/my-post/totalcmd.webp 'Total Commander on Windows')
+  ![Cmdr on macOS](/blog/my-post/cmdr-{theme}.webp 'Cmdr on macOS') [slider]
+  ```
+
+The dev editor's preview mirrors these transforms in JS so you can see them while writing. The exact theme switch only
 happens on the built site.
 
 ## Tables

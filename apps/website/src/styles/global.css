@@ -152,27 +152,29 @@ body {
 
 /* Theme-aware blog images (see src/plugins/blog-media.mjs). Mirrors the Shiki dual-theme pattern:
    default to dark, switch to light via prefers-color-scheme or the data-theme override. Only the
-   active variant renders (display:none drops the other from the a11y tree). */
-.theme-image__light {
+   active variant renders (display:none drops the other from the a11y tree). Scoped under
+   `.blog-content` so these out-specific the `.blog-content img { display: block }` prose rule, which
+   would otherwise force both variants visible. */
+.blog-content .theme-image__light {
   display: none;
 }
-.theme-image__dark {
+.blog-content .theme-image__dark {
   display: block;
 }
 
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme='dark']) .theme-image__light {
+  :root:not([data-theme='dark']) .blog-content .theme-image__light {
     display: block;
   }
-  :root:not([data-theme='dark']) .theme-image__dark {
+  :root:not([data-theme='dark']) .blog-content .theme-image__dark {
     display: none;
   }
 }
 
-:root[data-theme='light'] .theme-image__light {
+:root[data-theme='light'] .blog-content .theme-image__light {
   display: block;
 }
-:root[data-theme='light'] .theme-image__dark {
+:root[data-theme='light'] .blog-content .theme-image__dark {
   display: none;
 }
 
@@ -198,6 +200,109 @@ body {
   color: var(--color-text-tertiary);
   font-size: 0.875rem;
   text-align: center;
+}
+
+/* Before/after comparison slider (see src/plugins/blog-media.mjs + BlogCompareSlider.astro). The two
+   images stack in the same box; the top one is clipped to a 20°-slanted edge at --reveal (0–100).
+   --slant is the wipe's half-width in % of the box; at the fixed 1500/990 aspect, 12% reads as ~20°,
+   matching the divider's rotate(20deg). */
+.img-compare {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1500 / 990;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0.5rem;
+  touch-action: none;
+  user-select: none;
+}
+
+.img-compare:focus-within {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.img-compare__pane {
+  position: absolute;
+  inset: 0;
+}
+
+.img-compare__pane img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  object-fit: cover;
+}
+
+.img-compare__top {
+  clip-path: polygon(
+    0 0,
+    calc((var(--reveal) + var(--slant)) * 1%) 0,
+    calc((var(--reveal) - var(--slant)) * 1%) 100%,
+    0 100%
+  );
+}
+
+.img-compare__divider {
+  position: absolute;
+  top: -10%;
+  left: calc(var(--reveal) * 1%);
+  width: 3px;
+  height: 120%;
+  background: var(--color-accent);
+  transform: translateX(-50%) rotate(20deg);
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.img-compare__divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-accent);
+  transform: translate(-50%, -50%) rotate(-20deg);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.img-compare__range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: ew-resize;
+  opacity: 0;
+}
+
+.img-compare__label {
+  position: absolute;
+  bottom: 0.6rem;
+  z-index: 1;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, #000 55%, transparent);
+  color: #fff;
+  font-size: 0.8125rem;
+  pointer-events: none;
+}
+
+.img-compare__label--before {
+  left: 0.6rem;
+}
+
+.img-compare__label--after {
+  right: 0.6rem;
 }
 
 /* Glow effect */

@@ -1,0 +1,31 @@
+<!-- Drives the before/after comparison sliders emitted by rehypeBlogMedia (`.img-compare`). The
+     divider follows the pointer on hover and touch-drag, and the overlaid range input gives keyboard
+     control. Geometry (the 20° wipe) lives in global.css; this only moves --reveal. -->
+<script>
+    document.addEventListener('astro:page-load', () => {
+        document.querySelectorAll<HTMLElement>('[data-img-compare]').forEach((root) => {
+            if (root.dataset.compareReady) return
+            root.dataset.compareReady = '1'
+
+            const range = root.querySelector<HTMLInputElement>('.img-compare__range')
+
+            const setReveal = (percent: number) => {
+                const clamped = Math.max(0, Math.min(100, percent))
+                root.style.setProperty('--reveal', String(clamped))
+                if (range && Number(range.value) !== Math.round(clamped)) {
+                    range.value = String(Math.round(clamped))
+                }
+            }
+
+            const revealFromClientX = (clientX: number) => {
+                const rect = root.getBoundingClientRect()
+                if (rect.width > 0) setReveal(((clientX - rect.left) / rect.width) * 100)
+            }
+
+            // Pointer move covers mouse hover and touch-drag; pointerdown handles a tap.
+            root.addEventListener('pointermove', (event) => revealFromClientX(event.clientX))
+            root.addEventListener('pointerdown', (event) => revealFromClientX(event.clientX))
+            range?.addEventListener('input', () => setReveal(Number(range.value)))
+        })
+    })
+</script>
