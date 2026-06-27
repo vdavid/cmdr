@@ -543,7 +543,7 @@ impl MtpConnectionManager {
         data_stream: S,
     ) -> Result<u64, MtpConnectionError>
     where
-        S: futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>> + Unpin + Send + 'static,
+        S: futures_util::Stream<Item = Result<bytes::Bytes, std::io::Error>> + Unpin + Send,
     {
         // Foreground priority for the whole upload: mtp-rs drains `data_stream`
         // within this call, so the guard covers the entire transfer (and the
