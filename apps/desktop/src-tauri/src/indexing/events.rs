@@ -201,6 +201,32 @@ impl std::fmt::Display for ActivityPhase {
     }
 }
 
+/// Emitted when a volume's top-level indexing phase changes (a step in the
+/// `Scanning → Aggregating → Reconciling → Live` pipeline, plus `Replaying` and
+/// `Idle`).
+///
+/// This is the PER-VOLUME counterpart to the global `DEBUG_STATS` phase timeline.
+/// `DEBUG_STATS.set_phase` records ONE app-wide journal for the debug window,
+/// which can't attribute a phase to a drive when two volumes index at once. This
+/// event carries the `volumeId`, so the frontend's per-volume step checklist can
+/// advance the right drive's steps. It's fired ALONGSIDE every `set_phase` call
+/// where a `volumeId` is in scope (via [`set_phase_for`]), never replacing the
+/// global record.
+///
+/// It fires only on TRANSITIONS, so a frontend that joins mid-scan (a window
+/// reload) can't learn the current phase from it. The FE backfills the observable
+/// steps from the scan/aggregation activity instead; the reconcile step is the one
+/// transition with no other signal, so it's briefly unobservable after a reload
+/// that lands mid-reconcile (an accepted, rare gap — see the frontend
+/// `indexing/DETAILS.md`).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-phase-changed")]
+#[serde(rename_all = "camelCase")]
+pub struct IndexPhaseChangedEvent {
+    pub volume_id: String,
+    pub phase: ActivityPhase,
+}
+
 /// A completed or in-progress phase in the indexing timeline.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -438,6 +464,24 @@ impl DebugStats {
 
 pub(crate) static DEBUG_STATS: LazyLock<DebugStats> = LazyLock::new(DebugStats::new);
 
+/// Record a top-level phase transition in BOTH the global debug timeline and the
+/// per-volume `index-phase-changed` event.
+///
+/// Call this instead of `DEBUG_STATS.set_phase` wherever a `volume_id` and an
+/// `AppHandle` are in scope, so the two never drift: the debug window keeps its
+/// app-wide journal, and the frontend's per-volume step checklist learns which
+/// drive changed to which phase. See [`IndexPhaseChangedEvent`] for why the
+/// per-volume event exists. The event is fire-and-forget (a missed UI update is
+/// harmless; the next transition or a status query reconciles it).
+pub(super) fn set_phase_for(app: &AppHandle, volume_id: &str, phase: ActivityPhase, trigger: &str) {
+    DEBUG_STATS.set_phase(phase.clone(), trigger);
+    let _ = IndexPhaseChangedEvent {
+        volume_id: volume_id.to_string(),
+        phase,
+    }
+    .emit(app);
+}
+
 #[cfg(test)]
 mod tests {
     //! ActivityPhase transition tests.
@@ -584,6 +628,48 @@ mod tests {
         assert_eq!(stats.must_scan_sub_dirs_count.load(Ordering::Relaxed), 0);
         assert_eq!(stats.live_event_count.load(Ordering::Relaxed), 0);
         assert!(!stats.watcher_active.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn activity_phase_serializes_to_snake_case_wire_values() {
+        // The per-volume `index-phase-changed` event ships the `ActivityPhase`
+        // variant verbatim; the frontend maps each wire string to a checklist
+        // step (no string-matching on labels). Pin the wire values so a rename
+        // can't silently break the FE step map.
+        use serde_json::json;
+        assert_eq!(
+            serde_json::to_value(ActivityPhase::Replaying).unwrap(),
+            json!("replaying")
+        );
+        assert_eq!(
+            serde_json::to_value(ActivityPhase::Scanning).unwrap(),
+            json!("scanning")
+        );
+        assert_eq!(
+            serde_json::to_value(ActivityPhase::Aggregating).unwrap(),
+            json!("aggregating")
+        );
+        assert_eq!(
+            serde_json::to_value(ActivityPhase::Reconciling).unwrap(),
+            json!("reconciling")
+        );
+        assert_eq!(serde_json::to_value(ActivityPhase::Live).unwrap(), json!("live"));
+        assert_eq!(serde_json::to_value(ActivityPhase::Idle).unwrap(), json!("idle"));
+    }
+
+    #[test]
+    fn index_phase_changed_event_serializes_volume_id_as_camel_case() {
+        // The payload crosses IPC as `{ volumeId, phase }`; the FE binding and
+        // `index-state` read exactly those keys.
+        use serde_json::json;
+        let ev = IndexPhaseChangedEvent {
+            volume_id: "smb-nas".to_string(),
+            phase: ActivityPhase::Reconciling,
+        };
+        assert_eq!(
+            serde_json::to_value(&ev).unwrap(),
+            json!({ "volumeId": "smb-nas", "phase": "reconciling" })
+        );
     }
 
     #[test]

@@ -63,8 +63,8 @@ use crate::file_system::write_operations::{OperationsChanged, VolumesBusyChanged
 use crate::indexing::writer::AggregationProgressEvent;
 use crate::indexing::{
     IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexFreshnessChangedEvent, IndexMemoryWarningEvent,
-    IndexReplayCompleteEvent, IndexReplayProgressEvent, IndexRescanNotificationEvent, IndexScanAbortedEvent,
-    IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent,
+    IndexPhaseChangedEvent, IndexReplayCompleteEvent, IndexReplayProgressEvent, IndexRescanNotificationEvent,
+    IndexScanAbortedEvent, IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent,
 };
 use crate::ipc_collectors::collect_all_types;
 use crate::mtp::{
@@ -701,6 +701,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             IndexScanProgressEvent,        // event_name = "index-scan-progress"
             IndexScanCompleteEvent,        // event_name = "index-scan-complete"
             IndexScanAbortedEvent,         // event_name = "index-scan-aborted"
+            IndexPhaseChangedEvent,        // event_name = "index-phase-changed"
             IndexDirUpdatedEvent,          // event_name = "index-dir-updated"
             IndexReplayProgressEvent,      // event_name = "index-replay-progress"
             IndexReplayCompleteEvent,      // event_name = "index-replay-complete"

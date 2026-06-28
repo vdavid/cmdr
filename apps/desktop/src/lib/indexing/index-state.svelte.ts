@@ -19,10 +19,11 @@
  */
 
 import { SvelteMap } from 'svelte/reactivity'
-import { commands } from '$lib/ipc/bindings'
+import { commands, type ActivityPhase } from '$lib/ipc/bindings'
 import {
   onIndexAggregationComplete,
   onIndexAggregationProgress,
+  onIndexPhaseChanged,
   onIndexReplayComplete,
   onIndexReplayProgress,
   onIndexRescanNotification,
@@ -120,6 +121,16 @@ const activity = new SvelteMap<string, VolumeIndexActivity>()
 // re-renders the corner hourglass and its tooltip.
 const aggregation = new SvelteMap<string, AggregationActivity>()
 
+// Per-volume top-level pipeline phase, keyed by volume id, fed by the
+// `index-phase-changed` event (the per-volume counterpart to the global debug
+// phase timeline). An entry exists only while a volume is mid-pipeline:
+// `scanning` | `aggregating` | `reconciling` | `replaying`. It's removed on the
+// terminal `live` / `idle` transitions and on a scan abort, so a present entry
+// always means "this volume is at this step right now". This is the authoritative
+// driver for the step checklist's reconcile step, which has no other event signal.
+// Reactive: reading it re-renders the consumer.
+const phase = new SvelteMap<string, ActivityPhase>()
+
 // Monotonic counter bumped by every scan/replay event. Prevents the
 // `get_index_status` IPC response (which can arrive late) from overwriting state
 // an event already set, for the `root` backfill below.
@@ -150,6 +161,14 @@ export function isAnyVolumeIndexing(): boolean {
  *  aggregating. Reactive. */
 export function getVolumeAggregation(volumeId: string): AggregationActivity | undefined {
   return aggregation.get(volumeId)
+}
+
+/** This volume's current top-level pipeline phase (`scanning` / `aggregating` /
+ *  `reconciling` / `replaying`), or `undefined` when it isn't mid-pipeline (idle,
+ *  done, or never started). Reactive. The step checklist (M4b) maps the typed
+ *  phase to the active step; it's the only signal for the reconcile step. */
+export function getVolumePhase(volumeId: string): ActivityPhase | undefined {
+  return phase.get(volumeId)
 }
 
 /** Every volume currently aggregating, in insertion order. Reactive. Lets the
@@ -247,8 +266,24 @@ export async function initIndexState(): Promise<void> {
     // handled separately by the manager's freshness subscription.
     activity.delete(payload.volumeId)
     aggregation.delete(payload.volumeId)
+    // The cancel/fail abort arm fires no phase event, so clear the phase here too,
+    // or a stale mid-pipeline phase would linger for the aborted volume.
+    phase.delete(payload.volumeId)
   })
   unlistenHandles.push(unlistenAborted)
+
+  const unlistenPhase = await onIndexPhaseChanged((payload) => {
+    // `live` / `idle` are terminal: the volume left the pipeline, so drop the
+    // entry (the row is unmounting anyway). Every other phase is an active step,
+    // so record it for the checklist. Branching on the typed `ActivityPhase`
+    // discriminant, never message wording.
+    if (payload.phase === 'live' || payload.phase === 'idle') {
+      phase.delete(payload.volumeId)
+    } else {
+      phase.set(payload.volumeId, payload.phase)
+    }
+  })
+  unlistenHandles.push(unlistenPhase)
 
   const unlistenAggregation = await onIndexAggregationProgress((payload) => {
     const { volumeId, phase, current, total } = payload
@@ -340,4 +375,5 @@ export function destroyIndexState(): void {
   unlistenHandles.length = 0
   activity.clear()
   aggregation.clear()
+  phase.clear()
 }

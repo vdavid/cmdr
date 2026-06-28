@@ -19,7 +19,7 @@ use tauri_specta::Event;
 
 use super::events::{
     ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
-    IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent,
+    IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent, set_phase_for,
 };
 use super::manager::{IndexManager, ScanCalibration};
 use super::state::IndexVolumeKind;
@@ -226,7 +226,7 @@ impl IndexManager {
             volume_used_bytes,
         }
         .emit(&self.app);
-        DEBUG_STATS.set_phase(ActivityPhase::Scanning, scan_trigger);
+        set_phase_for(&self.app, &self.volume_id, ActivityPhase::Scanning, scan_trigger);
 
         let progress = Arc::new(ScanProgress::new());
         let cancelled = Arc::new(AtomicBool::new(false));
@@ -347,7 +347,7 @@ impl IndexManager {
                             super::freshness::FreshnessEvent::ScanCompleted,
                         );
                     }
-                    DEBUG_STATS.set_phase(ActivityPhase::Live, "network scan complete");
+                    set_phase_for(&app, &volume_id, ActivityPhase::Live, "network scan complete");
 
                     // Tell the FE sizes are ready for this share's listings.
                     let _ = IndexDirUpdatedEvent {
@@ -386,7 +386,12 @@ impl IndexManager {
                         &volume_id,
                         super::freshness::FreshnessEvent::WatcherDied,
                     );
-                    DEBUG_STATS.set_phase(ActivityPhase::Idle, "network scan disconnected (honest partial kept)");
+                    set_phase_for(
+                        &app,
+                        &volume_id,
+                        ActivityPhase::Idle,
+                        "network scan disconnected (honest partial kept)",
+                    );
                     // Clear the FE's live activity: the scan ended without a
                     // completion event, so without this the corner indicator and
                     // the breadcrumb badge tooltip would keep a stuck "scanning"

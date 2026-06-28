@@ -10,8 +10,10 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type {
+  ActivityPhase,
   AggregationProgressEvent,
   IndexAggregationCompleteEvent,
+  IndexPhaseChangedEvent,
   IndexScanAbortedEvent,
   IndexScanProgressEvent,
 } from '$lib/ipc/bindings'
@@ -21,6 +23,7 @@ let aggProgressCb: ((p: AggregationProgressEvent) => void) | undefined
 let aggCompleteCb: ((p: IndexAggregationCompleteEvent) => void) | undefined
 let scanProgressCb: ((p: IndexScanProgressEvent) => void) | undefined
 let scanAbortedCb: ((p: IndexScanAbortedEvent) => void) | undefined
+let phaseCb: ((p: IndexPhaseChangedEvent) => void) | undefined
 
 const noopUnlisten = () => {}
 
@@ -34,6 +37,10 @@ vi.mock('$lib/tauri-commands', () => ({
   onIndexScanComplete: () => Promise.resolve(noopUnlisten),
   onIndexScanAborted: (cb: (p: IndexScanAbortedEvent) => void) => {
     scanAbortedCb = cb
+    return Promise.resolve(noopUnlisten)
+  },
+  onIndexPhaseChanged: (cb: (p: IndexPhaseChangedEvent) => void) => {
+    phaseCb = cb
     return Promise.resolve(noopUnlisten)
   },
   onIndexAggregationProgress: (cb: (p: AggregationProgressEvent) => void) => {
@@ -62,6 +69,7 @@ import {
   destroyIndexState,
   getVolumeAggregation,
   getVolumeActivity,
+  getVolumePhase,
   getAggregatingVolumeIds,
   isAggregating,
   isAnyVolumeIndexing,
@@ -94,6 +102,7 @@ describe('index-state per-volume aggregation', () => {
     aggCompleteCb = undefined
     scanProgressCb = undefined
     scanAbortedCb = undefined
+    phaseCb = undefined
     await initIndexState()
   })
 
@@ -182,5 +191,67 @@ describe('index-state per-volume aggregation', () => {
     emitProgress('root', 'writing', 0, 1000)
     expect(expectAggregation('root').startedAt).toBeGreaterThanOrEqual(firstStart)
     expect(expectAggregation('root').phase).toBe('writing')
+  })
+})
+
+describe('index-state per-volume pipeline phase', () => {
+  beforeEach(async () => {
+    destroyIndexState()
+    phaseCb = undefined
+    scanAbortedCb = undefined
+    await initIndexState()
+  })
+
+  function emitPhase(volumeId: string, phase: ActivityPhase): void {
+    if (!phaseCb) throw new Error('phase-changed callback not registered')
+    phaseCb({ volumeId, phase })
+  }
+
+  it('records the latest mid-pipeline phase per volume', () => {
+    emitPhase('root', 'scanning')
+    expect(getVolumePhase('root')).toBe('scanning')
+
+    // A later transition replaces it (the scan finished, aggregation began).
+    emitPhase('root', 'aggregating')
+    expect(getVolumePhase('root')).toBe('aggregating')
+
+    emitPhase('root', 'reconciling')
+    expect(getVolumePhase('root')).toBe('reconciling')
+  })
+
+  it("keeps each volume's phase independent", () => {
+    emitPhase('root', 'reconciling')
+    emitPhase('smb-nas', 'scanning')
+
+    expect(getVolumePhase('root')).toBe('reconciling')
+    expect(getVolumePhase('smb-nas')).toBe('scanning')
+  })
+
+  it('clears the phase on the terminal live transition', () => {
+    emitPhase('root', 'reconciling')
+    expect(getVolumePhase('root')).toBe('reconciling')
+
+    // `live` means the pipeline finished: no active step, so the entry is dropped.
+    emitPhase('root', 'live')
+    expect(getVolumePhase('root')).toBeUndefined()
+  })
+
+  it('clears the phase on idle (stop / shutdown / disconnect)', () => {
+    emitPhase('root', 'scanning')
+    emitPhase('root', 'idle')
+    expect(getVolumePhase('root')).toBeUndefined()
+  })
+
+  it('clears the phase when a network scan aborts (cancel/fail fires no phase event)', () => {
+    if (!scanAbortedCb) throw new Error('scan-aborted callback not registered')
+    emitPhase('smb-nas', 'scanning')
+    expect(getVolumePhase('smb-nas')).toBe('scanning')
+
+    scanAbortedCb({ volumeId: 'smb-nas' })
+    expect(getVolumePhase('smb-nas')).toBeUndefined()
+  })
+
+  it('reports undefined for a volume that never started a pipeline', () => {
+    expect(getVolumePhase('mtp-phone')).toBeUndefined()
   })
 })

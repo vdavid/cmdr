@@ -4,6 +4,7 @@ export {
   getEntriesScanned,
   getVolumeActivity,
   getVolumeAggregation,
+  getVolumePhase,
   initIndexState,
   destroyIndexState,
 } from './index-state.svelte'

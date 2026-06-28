@@ -14,7 +14,7 @@ use super::event_loop::{
 use super::events::{
     ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDebugStatusResponse, IndexDirUpdatedEvent,
     IndexScanCompleteEvent, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord, RescanReason,
-    emit_rescan_notification,
+    emit_rescan_notification, set_phase_for,
 };
 use super::local_reconcile;
 use super::progress_reporter::ScanProgressReporter;
@@ -326,7 +326,9 @@ impl IndexManager {
                 self.drive_watcher = Some(watcher);
                 DEBUG_STATS.watcher_active.store(true, Ordering::Relaxed);
                 let gap = current_id.saturating_sub(since_event_id);
-                DEBUG_STATS.set_phase(
+                set_phase_for(
+                    &self.app,
+                    &self.volume_id,
                     ActivityPhase::Replaying,
                     &format!("app launch, ~{}", pluralize(gap, "pending FSEvent")),
                 );
@@ -624,7 +626,7 @@ impl IndexManager {
         }
         .emit(&self.app);
 
-        DEBUG_STATS.set_phase(ActivityPhase::Scanning, scan_trigger);
+        set_phase_for(&self.app, &self.volume_id, ActivityPhase::Scanning, scan_trigger);
 
         // Freshness ⇒ Scanning (blue). For local `root` this also drives the
         // per-drive badge; the clean-completion handler flips it back
@@ -721,7 +723,7 @@ impl IndexManager {
                         ("dirs", summary.total_dirs.to_string()),
                         ("duration_s", format!("{:.1}", summary.duration_ms as f64 / 1000.0)),
                     ]);
-                    DEBUG_STATS.set_phase(ActivityPhase::Aggregating, "post-scan");
+                    set_phase_for(&app, &volume_id, ActivityPhase::Aggregating, "post-scan");
 
                     // Step 4: Reconcile buffered watcher events
                     let mut reconciler = EventReconciler::new();
@@ -801,7 +803,7 @@ impl IndexManager {
                     .emit(&app);
 
                     DEBUG_STATS.close_phase_with_stats(vec![]);
-                    DEBUG_STATS.set_phase(ActivityPhase::Reconciling, "post-scan");
+                    set_phase_for(&app, &volume_id, ActivityPhase::Reconciling, "post-scan");
 
                     // Tell the frontend to refresh all visible listings. Directory
                     // sizes are now available for the first time after a full scan.
@@ -898,7 +900,12 @@ impl IndexManager {
                     }
 
                     DEBUG_STATS.close_phase_with_stats(vec![("buffered_events", buffered_count.to_string())]);
-                    DEBUG_STATS.set_phase(ActivityPhase::Live, "post-scan reconciliation complete");
+                    set_phase_for(
+                        &app,
+                        &volume_id,
+                        ActivityPhase::Live,
+                        "post-scan reconciliation complete",
+                    );
 
                     // Step 5: Start live event processing loop
                     let writer_live = writer.clone();
@@ -957,7 +964,7 @@ impl IndexManager {
 
     /// Stop the active full scan and watcher.
     pub fn stop_scan(&mut self) {
-        DEBUG_STATS.set_phase(ActivityPhase::Idle, "stopped");
+        set_phase_for(&self.app, &self.volume_id, ActivityPhase::Idle, "stopped");
 
         if let Some(ref handle) = self.scan_handle {
             handle.cancel();
@@ -1081,7 +1088,7 @@ impl IndexManager {
     /// loop to drain its final batch and send `UpdateLastEventId` → shut down
     /// the writer. This ensures `last_event_id` is up-to-date on next restart.
     pub fn shutdown(&mut self) {
-        DEBUG_STATS.set_phase(ActivityPhase::Idle, "shutdown");
+        set_phase_for(&self.app, &self.volume_id, ActivityPhase::Idle, "shutdown");
 
         // 1. Cancel active scan (but don't abort event loop)
         if let Some(ref handle) = self.scan_handle {

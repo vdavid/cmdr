@@ -18,6 +18,12 @@ All invariants hold PER volume id; DETAILS has the why.
 - **`INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`) is the authority** (absent key = disabled, no
   `Disabled` phase). The mutex guards lifecycle ONLY; reads route through the per-volume `ReadPool`, never under it.
   Enrichment SKIPS when `get_read_pool_for` is `None`.
+- **Phase transitions go through `events::set_phase_for(app, volume_id, phase, trigger)`, not raw
+  `DEBUG_STATS.set_phase`.** It records the GLOBAL debug-window timeline AND emits the PER-volume `index-phase-changed`
+  event (the FE step checklist) in one call, so the two can't drift. `DEBUG_STATS` is an app-wide singleton (can't
+  attribute a phase to a drive under concurrent volumes); the event carries `volumeId`. Network (SMB/MTP) emits only
+  `Scanning → Live` — drive the "compute folder sizes" step off aggregation events, not a phase network never sends.
+  DETAILS § "Per-volume pipeline phase event".
 
 Writer + schema discipline (one writer thread per DB, bounded `sync_channel`):
 

@@ -11,6 +11,7 @@ import {
   type IndexDirUpdatedEvent,
   type IndexFreshnessChangedEvent,
   type IndexMemoryWarningEvent,
+  type IndexPhaseChangedEvent,
   type IndexReplayCompleteEvent,
   type IndexReplayProgressEvent,
   type IndexRescanNotificationEvent,
@@ -48,6 +49,18 @@ export function onIndexScanComplete(callback: (payload: IndexScanCompleteEvent) 
  */
 export function onIndexScanAborted(callback: (payload: IndexScanAbortedEvent) => void): Promise<UnlistenFn> {
   return events.indexScanAborted.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/**
+ * Fires when a volume's top-level indexing phase changes (a transition in the
+ * `Scanning → Aggregating → Reconciling → Live` pipeline, plus `Replaying` and
+ * `Idle`). Per-volume, unlike the global debug-window phase timeline. Drives the
+ * per-volume step checklist: the FE maps the typed `phase` to a step.
+ */
+export function onIndexPhaseChanged(callback: (payload: IndexPhaseChangedEvent) => void): Promise<UnlistenFn> {
+  return events.indexPhaseChanged.listen((event) => {
     callback(event.payload)
   })
 }

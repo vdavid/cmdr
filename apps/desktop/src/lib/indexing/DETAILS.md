@@ -18,8 +18,8 @@ entry an `AggregationActivity` (`phase`, `current`, `total`, `startedAt`).
 ### Public API (`index.ts`)
 
 The barrel exports the lifecycle + the cross-module reads: `isScanning` / `getEntriesScanned` (SearchDialog),
-`getVolumeActivity` / `getVolumeAggregation` (the breadcrumb badge's scanning tooltip, in `navigation/`), plus
-`initIndexState` / `destroyIndexState` / `initIndexEvents`. The indicator (same dir) imports the rest directly from
+`getVolumeActivity` / `getVolumeAggregation` (the breadcrumb badge's scanning tooltip, in `navigation/`),
+`getVolumePhase` (the per-volume step checklist), plus `initIndexState` / `destroyIndexState` / `initIndexEvents`. The indicator (same dir) imports the rest directly from
 `./index-state.svelte`:
 
 ```ts
@@ -28,6 +28,7 @@ getActiveIndexVolumes(): VolumeIndexActivity[]   // every scanning/replaying vol
 getVolumeActivity(volumeId): VolumeIndexActivity | undefined  // ONE volume's scan/replay activity (the breadcrumb badge)
 isAnyVolumeIndexing(): boolean                    // scan/replay map non-empty OR any volume aggregating (visibility gate)
 getVolumeAggregation(volumeId): AggregationActivity | undefined  // that volume's live aggregation, or undefined
+getVolumePhase(volumeId): ActivityPhase | undefined  // that volume's current mid-pipeline phase, or undefined (step checklist)
 getAggregatingVolumeIds(): string[]               // every volume currently aggregating
 isAggregating(): boolean                          // any volume aggregating
 // Backward-compatible scalars (other consumers):
@@ -41,8 +42,8 @@ initIndexEvents(onDirUpdated: (paths: string[]) => void): Promise<UnlistenFn>
 
 ## Scan-state events (`index-state.svelte.ts`)
 
-Nine Tauri events drive the state. All of them carry a `volumeId`: scan and replay key the live-`activity` map,
-aggregation keys its own `aggregation` map.
+Ten Tauri events drive the state. All of them carry a `volumeId`: scan and replay key the live-`activity` map,
+aggregation keys its own `aggregation` map, and the phase event keys its own `phase` map.
 
 - **`index-scan-started`** (`{ volumeId, priorTotalEntries, priorScanDurationMs, volumeUsedBytes }`): create/replace the
   volume's `activity` entry (`phase: 'scanning'`, `scanStartedAt = Date.now()`, stash the calibration).
@@ -61,6 +62,15 @@ aggregation keys its own `aggregation` map.
 - **`index-aggregation-progress`** (`{ volumeId, phase, current, total }`): upsert the volume's `aggregation` entry
   (phase/progress, plus a `startedAt` ETA clock reset on each phase change).
 - **`index-aggregation-complete`** (`{ volumeId }`): remove that volume's `aggregation` entry.
+- **`index-phase-changed`** (`{ volumeId, phase: ActivityPhase }`): the volume's top-level pipeline phase changed. Set
+  the `phase` map entry for the active steps (`scanning` / `aggregating` / `reconciling` / `replaying`); DELETE it on the
+  terminal `live` / `idle` transitions (the pipeline ended) and on `index-scan-aborted` (the cancel/fail abort arm fires
+  no phase event). So a present `phase` entry always means "this volume is at this step right now" — the spine of the M4b
+  step checklist, and the only signal for the reconcile step. Per-volume, unlike the global debug-window phase timeline.
+  Fires only on transitions, so after a mid-scan reload the current phase is unknown until the next transition; the
+  reconcile step is briefly unobservable then (accepted — `index-phase-changed` is transition-only and `VolumeIndexStatus`
+  carries no phase by design; see the backend `indexing/DETAILS.md`). Branch on the typed `ActivityPhase` variant, never
+  the wording.
 
 ### Aggregation is per-volume
 
@@ -158,7 +168,8 @@ stateful glue and stays in each `IndexingDriveRow` (so per-drive rates don't col
 - **`IndexingStatusBody.svelte.test.ts`**: the shared presentational body, mounted per mode from a fixture activity —
   scan tier-1 (bar + percent), tier-2 first scan (count + elapsed, NO progressbar), counter-only, aggregation, replay.
 - **`index-state.svelte.test.ts`**: per-volume aggregation attribution, plus `index-scan-aborted` clearing a volume's
-  activity + aggregation (the network-abort stuck-row regression).
+  activity + aggregation (the network-abort stuck-row regression), plus the per-volume `phase` map (`index-phase-changed`
+  sets the active phase, `live` / `idle` and an abort clear it, volumes stay independent).
 - **`elapsed.test.ts`**: `formatElapsedClock` (sub-second → `null`, `m:ss` formatting, zero-padding, flooring).
 
 The reactive event-driven glue in `index-state.svelte.ts` is allowlisted in `coverage-allowlist.json`. Manual end-to-end

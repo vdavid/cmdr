@@ -10,7 +10,9 @@ use tauri_specta::Event;
 
 use super::DEBUG_STATS;
 use super::enrichment::get_read_pool;
-use super::events::{IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification};
+use super::events::{
+    IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification, set_phase_for,
+};
 use super::firmlinks;
 use super::reconciler::{self, EventReconciler};
 use super::scanner;
@@ -839,7 +841,7 @@ pub(super) async fn run_replay_event_loop(
         ),
         ("affected_dirs", affected_paths.len().to_string()),
     ]);
-    DEBUG_STATS.set_phase(super::ActivityPhase::Live, "post-replay");
+    set_phase_for(&app, &volume_id, super::ActivityPhase::Live, "post-replay");
 
     // Replay done. Allow verifier to run and report scanning=false to frontend.
     scanning.store(false, Ordering::Relaxed);

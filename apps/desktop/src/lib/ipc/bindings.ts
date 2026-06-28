@@ -2582,6 +2582,7 @@ export const events = {
   indexDirUpdated: makeEvent<IndexDirUpdatedEvent>('index-dir-updated'),
   indexFreshnessChanged: makeEvent<IndexFreshnessChangedEvent>('index-freshness-changed'),
   indexMemoryWarning: makeEvent<IndexMemoryWarningEvent>('index-memory-warning'),
+  indexPhaseChanged: makeEvent<IndexPhaseChangedEvent>('index-phase-changed'),
   indexReplayComplete: makeEvent<IndexReplayCompleteEvent>('index-replay-complete'),
   indexReplayProgress: makeEvent<IndexReplayProgressEvent>('index-replay-progress'),
   indexRescanNotification: makeEvent<IndexRescanNotificationEvent>('index-rescan-notification'),
@@ -3737,6 +3738,31 @@ export type IndexMemoryWarningEvent = {
   residentGb: number
   // What the watchdog did. Currently always `"stopped_indexing"`.
   action: string
+}
+
+/**
+ *  Emitted when a volume's top-level indexing phase changes (a step in the
+ *  `Scanning → Aggregating → Reconciling → Live` pipeline, plus `Replaying` and
+ *  `Idle`).
+ *
+ *  This is the PER-VOLUME counterpart to the global `DEBUG_STATS` phase timeline.
+ *  `DEBUG_STATS.set_phase` records ONE app-wide journal for the debug window,
+ *  which can't attribute a phase to a drive when two volumes index at once. This
+ *  event carries the `volumeId`, so the frontend's per-volume step checklist can
+ *  advance the right drive's steps. It's fired ALONGSIDE every `set_phase` call
+ *  where a `volumeId` is in scope (via [`set_phase_for`]), never replacing the
+ *  global record.
+ *
+ *  It fires only on TRANSITIONS, so a frontend that joins mid-scan (a window
+ *  reload) can't learn the current phase from it. The FE backfills the observable
+ *  steps from the scan/aggregation activity instead; the reconcile step is the one
+ *  transition with no other signal, so it's briefly unobservable after a reload
+ *  that lands mid-reconcile (an accepted, rare gap — see the frontend
+ *  `indexing/DETAILS.md`).
+ */
+export type IndexPhaseChangedEvent = {
+  volumeId: string
+  phase: ActivityPhase
 }
 
 export type IndexReplayCompleteEvent = {

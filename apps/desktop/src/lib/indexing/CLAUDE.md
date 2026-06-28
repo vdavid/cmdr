@@ -6,8 +6,9 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
 ## Module map
 
 - **`index.ts`**: public API barrel.
-- **`index-state.svelte.ts`**: per-volume `SvelteMap` of activity (scan/replay) keyed by `volumeId` + a global
-  aggregation signal; reacts to the Tauri index events.
+- **`index-state.svelte.ts`**: per-volume `SvelteMap`s keyed by `volumeId` — activity (scan/replay), aggregation, and
+  the top-level pipeline `phase` (`getVolumePhase`, fed by `index-phase-changed`, for the step checklist); reacts to the
+  Tauri index events.
 - **`index-events.ts`**: listens for `index-dir-updated`, calls back with updated paths.
 - **`eta.ts`**: pure ETA helpers + `computeScanProgress` (two-tier scan fraction).
 - **`elapsed.ts`**: pure `formatElapsedClock` (`m:ss`, `null` under 1s) — the first-scan elapsed clock, used by the
