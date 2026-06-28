@@ -4,6 +4,11 @@ Spec docs and task lists for Cmdr developments, indexed so each stays discoverab
 this folder is and when it gets wiped. Shipped specs get wiped once their durable intent is captured in colocated
 `CLAUDE.md`/`DETAILS.md` (and git history); what remains here is deferred work under [`later/`](later/).
 
+## In progress
+
+- [ ] 2026-06-28 local-reconcile-rescan-plan.md - Reclaim index DB disk: recreate-on-schema-mismatch + port the
+      SMB/MTP reconcile-in-place rescan onto the local jwalk path (stale sizes stay visible, no freelist balloon)
+
 ## Later
 
 Deferred future work. Unchecked by default; the folder name is the status.
