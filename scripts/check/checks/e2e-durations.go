@@ -282,6 +282,60 @@ func analyzeE2EDurations(durations []e2eTestDuration, entries map[string]e2eDura
 // CI), and converts the passed-in Success result into a warning when there's
 // anything to surface. Failures of the analysis itself (missing/unparsable
 // report) never fail or warn the check: the E2E result stands, with a note.
+// slowTestsNote renders the warn line for over-budget, non-allowlisted tests
+// (empty when there are none).
+func slowTestsNote(slow []e2eTestDuration) string {
+	if len(slow) == 0 {
+		return ""
+	}
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "%d %s over the %.1fs budget (warn-only):",
+		len(slow), Pluralize(len(slow), "test", "tests"), float64(e2eSlowTestThresholdMs)/1000)
+	for _, d := range slow {
+		fmt.Fprintf(&sb, "\n  - %s (%.1fs)", formatE2ETestKey(d.key), float64(d.durMs)/1000)
+	}
+	sb.WriteString("\n  Speed the test up, or allowlist it with a reason in scripts/check/checks/e2e-duration-allowlist.json (new entries need David's OK).")
+	return sb.String()
+}
+
+// exceededCapNote renders the warn line for allowlisted tests that blew past
+// their raised `maxMs` cap (empty when there are none).
+func exceededCapNote(exceeded []e2eCapExceed) string {
+	if len(exceeded) == 0 {
+		return ""
+	}
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "%d allowlisted %s over the raised cap (speed it up, or raise the cap with David's OK):",
+		len(exceeded), Pluralize(len(exceeded), "test", "tests"))
+	for _, c := range exceeded {
+		fmt.Fprintf(&sb, "\n  - %s (%.1fs, cap %.1fs)", formatE2ETestKey(c.key), float64(c.durMs)/1000, float64(c.capMs)/1000)
+	}
+	return sb.String()
+}
+
+// pruneDeadE2EEntries removes allowlist entries whose test is gone (locally;
+// report-only in CI) and returns a note plus whether it rewrote the file. The
+// note is empty when there are no dead entries.
+func pruneDeadE2EEntries(ctx *CheckContext, allowlist e2eDurationAllowlist, deadEntries []string, platform string) (string, bool) {
+	if len(deadEntries) == 0 {
+		return "", false
+	}
+	formatted := strings.Join(formatE2ETestKeys(deadEntries), ", ")
+	if ctx.CI {
+		return fmt.Sprintf("dead allowlist entries (test gone; a local run removes them): %s", formatted), false
+	}
+	entries := allowlist.platformEntries(platform)
+	for _, key := range deadEntries {
+		delete(entries, key)
+	}
+	allowlist.setPlatformEntries(platform, entries)
+	if err := writeJSONAllowlist(e2eDurationAllowlistPath(ctx.RootDir), allowlist); err != nil {
+		return fmt.Sprintf("could not rewrite allowlist: %v", err), false
+	}
+	reformatWithOxfmt(ctx.RootDir, "scripts/check/checks/e2e-duration-allowlist.json")
+	return fmt.Sprintf("removed dead allowlist entries (test gone): %s", formatted), true
+}
+
 func applyE2EDurationWarnings(ctx *CheckContext, result CheckResult, reportPaths []string, platform string) CheckResult {
 	byKey := map[string]int{}
 	for _, path := range reportPaths {
@@ -306,48 +360,18 @@ func applyE2EDurationWarnings(ctx *CheckContext, result CheckResult, reportPaths
 	analysis := analyzeE2EDurations(durations, allowlist.platformEntries(platform))
 
 	var notes []string
-	if len(analysis.slow) > 0 {
-		var sb strings.Builder
-		fmt.Fprintf(&sb, "%d %s over the %.1fs budget (warn-only):",
-			len(analysis.slow), Pluralize(len(analysis.slow), "test", "tests"), float64(e2eSlowTestThresholdMs)/1000)
-		for _, d := range analysis.slow {
-			fmt.Fprintf(&sb, "\n  - %s (%.1fs)", formatE2ETestKey(d.key), float64(d.durMs)/1000)
+	for _, note := range []string{slowTestsNote(analysis.slow), exceededCapNote(analysis.exceededCap)} {
+		if note != "" {
+			notes = append(notes, note)
 		}
-		sb.WriteString("\n  Speed the test up, or allowlist it with a reason in scripts/check/checks/e2e-duration-allowlist.json (new entries need David's OK).")
-		notes = append(notes, sb.String())
-	}
-	if len(analysis.exceededCap) > 0 {
-		var sb strings.Builder
-		fmt.Fprintf(&sb, "%d allowlisted %s over the raised cap (speed it up, or raise the cap with David's OK):",
-			len(analysis.exceededCap), Pluralize(len(analysis.exceededCap), "test", "tests"))
-		for _, c := range analysis.exceededCap {
-			fmt.Fprintf(&sb, "\n  - %s (%.1fs, cap %.1fs)", formatE2ETestKey(c.key), float64(c.durMs)/1000, float64(c.capMs)/1000)
-		}
-		notes = append(notes, sb.String())
 	}
 	if len(analysis.staleCandidates) > 0 {
 		notes = append(notes, fmt.Sprintf("allowlist entries now well under the budget on %s (review the reason, remove if obsolete): %s",
 			platform, strings.Join(formatE2ETestKeys(analysis.staleCandidates), ", ")))
 	}
-	if len(analysis.deadEntries) > 0 {
-		if ctx.CI {
-			notes = append(notes, fmt.Sprintf("dead allowlist entries (test gone; a local run removes them): %s",
-				strings.Join(formatE2ETestKeys(analysis.deadEntries), ", ")))
-		} else {
-			entries := allowlist.platformEntries(platform)
-			for _, key := range analysis.deadEntries {
-				delete(entries, key)
-			}
-			allowlist.setPlatformEntries(platform, entries)
-			if err := writeJSONAllowlist(e2eDurationAllowlistPath(ctx.RootDir), allowlist); err == nil {
-				reformatWithOxfmt(ctx.RootDir, "scripts/check/checks/e2e-duration-allowlist.json")
-				result.MadeChanges = true
-				notes = append(notes, fmt.Sprintf("removed dead allowlist entries (test gone): %s",
-					strings.Join(formatE2ETestKeys(analysis.deadEntries), ", ")))
-			} else {
-				notes = append(notes, fmt.Sprintf("could not rewrite allowlist: %v", err))
-			}
-		}
+	if note, madeChanges := pruneDeadE2EEntries(ctx, allowlist, analysis.deadEntries, platform); note != "" {
+		notes = append(notes, note)
+		result.MadeChanges = result.MadeChanges || madeChanges
 	}
 
 	if len(notes) == 0 {
