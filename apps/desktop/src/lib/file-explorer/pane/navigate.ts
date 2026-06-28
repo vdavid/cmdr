@@ -112,12 +112,23 @@ import {
 import { isPathOnVolume } from '../navigation/path-navigation'
 import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
 import { tString } from '$lib/intl/messages.svelte'
+import type { Location } from '$lib/tauri-commands'
 
 /** Where a navigation originates. Drives focus + history-push behavior, never the destination. */
 export type NavigateSource = 'user' | 'mcp' | 'history' | 'correction' | 'cancel' | 'fallback' | 'mirror'
 
-/** The destination of a navigation: a volume/path change, a history walk, or a snapshot open. */
+/**
+ * The destination of a navigation: a `Location` (go somewhere), a deliberate
+ * volume (re)select, a history walk, or a snapshot open. `Location` is
+ * navigation's currency — a `(volumeId, path)` pair resolved at the four edges
+ * (⌘G, MCP `nav_to_path`, search-result activation, downloads reveal) via
+ * `navigation/resolve-location.ts`. `{ location }` routes itself: same volume →
+ * in-place arm, different volume → switch arm. `{ volumeId, path }` is the
+ * deliberate volume-(re)select intent that ALWAYS takes the switch arm (its
+ * callers legitimately pass the CURRENT volume id to re-select it).
+ */
 export type NavigateTo =
+  | { location: Location } // go to a location; volumeId mandatory, routes to the in-place or switch arm
   | { volumeId?: string; path: string } // volume change (volumeId set) OR in-place path nav (volumeId omitted ⇒ same volume)
   | { history: 'back' | 'forward' | 'parent' }
   | { snapshot: string } // search-results snapshot id; routes through the volume-change machinery
@@ -174,11 +185,8 @@ export interface NavigateCommit {
   networkHost?: HistoryEntry['networkHost']
 }
 
-/** Last-used-path record: `{volumeId, path}`. Fired through the persistence trigger. */
-export interface LastUsedPathRecord {
-  volumeId: string
-  path: string
-}
+/** Last-used-path record: a `Location` (volumeId + path). Fired through the persistence trigger. */
+export type LastUsedPathRecord = Location
 
 /**
  * Everything `navigate()` reads or writes, injected so the transaction is
@@ -497,7 +505,79 @@ export function navigate(intent: NavigateIntent, deps: NavigateDeps): NavigateRe
     return navigateSnapshot(deps, pane, to.snapshot)
   }
 
+  if ('location' in to) {
+    return navigateToLocation(deps, intent, to.location)
+  }
+
   return navigateToVolumeOrPath(deps, intent, to)
+}
+
+/**
+ * The `{ location }` arm: go to a fully-resolved `(volumeId, path)`. Routes
+ * itself — same volume as the pane → the in-place arm (commit-on-listing,
+ * pinned-tab fork at `commitPathFromListing`, `push-path`); a different volume →
+ * the switch arm (`commitVolumeSwitch`). The `=== current` test is safe HERE
+ * (every `{ location }` caller is a genuine path navigation); it is NOT safe for
+ * the volume-(re)select callers, which keep the always-switch `{ volumeId, path }`
+ * arm precisely because they pass the CURRENT volume id to re-select it.
+ */
+function navigateToLocation(deps: NavigateDeps, intent: NavigateIntent, location: Location): NavigateResult {
+  const { pane } = intent
+  if (location.volumeId === deps.getPaneVolumeId(pane)) {
+    return navigateInPlace(deps, intent, location.path)
+  }
+  return switchVolumeArm(deps, intent, location.volumeId, location.path)
+}
+
+/**
+ * The switch arm shared by `{ location }` (cross-volume) and `{ volumeId, path }`
+ * (deliberate volume-(re)select): mint a token, resolve the volume mount path,
+ * and commit the optimistic synchronous switch. `'fallback'` is the edge-flow
+ * recovery (MTP-fatal / retry / open-home / unmount): a terminal commit with no
+ * old-path pre-save and no correction. The unmount redirect additionally
+ * suppresses the history push (`pushHistory: false`).
+ */
+function switchVolumeArm(deps: NavigateDeps, intent: NavigateIntent, volumeId: string, path: string): NavigateResult {
+  const { pane, source } = intent
+  const token = mintToken(deps, pane)
+  const volumePath = deps.getVolumePathById(volumeId) ?? path
+  commitVolumeSwitch(deps, pane, token, volumeId, volumePath, path, {
+    shiftFocus: shiftsFocus(source),
+    terminal: source === 'fallback',
+    pushHistory: intent.pushHistory,
+  })
+  return { status: 'started', settled: SETTLED_NOOP }
+}
+
+/**
+ * The in-place path arm (same volume): the synchronous network / MTP refusals,
+ * then drive the FilePane primitive. The commit — AND the pinned-tab fork (L7) —
+ * land LATER, when the listing completes and the pane's `onPathChange` fires
+ * `commitPathFromListing` (P4 — in-place arm is NOT optimistic). The fork lives
+ * at the listing-completion landing, not here, because FilePane-INTERNAL
+ * navigation (Enter on a folder, breadcrumb click) bypasses `navigate()` and
+ * re-enters only through `onPathChange`; both entry paths must fork identically,
+ * so the single fork point is `commitPathFromListing`. `settled` is the FilePane
+ * promise. There is no cross-volume branch here: a `{ location }` whose volume
+ * differs from the pane's took the switch arm instead.
+ */
+function navigateInPlace(deps: NavigateDeps, intent: NavigateIntent, path: string): NavigateResult {
+  const { pane } = intent
+  const currentVolumeId = deps.getPaneVolumeId(pane)
+  const currentVolumeName = deps.getPaneVolumeName(pane)
+
+  // On-network-volume refusal (synchronous).
+  if (currentVolumeId === 'network') {
+    return { status: 'refused', reason: onNetworkRefusal(currentVolumeName ?? currentVolumeId) }
+  }
+
+  // MTP capability refusal (synchronous).
+  const mtpRefusal = validateMtpNavigation(path, currentVolumeId, currentVolumeName)
+  if (mtpRefusal) return { status: 'refused', reason: mtpRefusal }
+
+  const paneRef = deps.getPaneRef(pane)
+  if (!paneRef) return { status: 'refused', reason: PANE_UNAVAILABLE_REFUSAL }
+  return { status: 'started', settled: paneRef.navigateToPath(path, intent.selectName) }
 }
 
 /** The `{ volumeId?, path }` arm: volume switch (volumeId set) or in-place path nav (omitted). */
@@ -512,18 +592,7 @@ function navigateToVolumeOrPath(
 
   // --- Volume switch (volumeId present): truly optimistic, synchronous commit. ---
   if (to.volumeId !== undefined) {
-    const token = mintToken(deps, pane)
-    const volumePath = deps.getVolumePathById(to.volumeId) ?? to.path
-    commitVolumeSwitch(deps, pane, token, to.volumeId, volumePath, to.path, {
-      shiftFocus: shiftsFocus(source),
-      // `'fallback'` is an edge-flow recovery (MTP-fatal / retry / open-home /
-      // unmount): a terminal commit with no old-path pre-save and no correction
-      // (matches today's bespoke handlers). The unmount redirect additionally
-      // suppresses the history push (`pushHistory: false`); the other three push.
-      terminal: source === 'fallback',
-      pushHistory: intent.pushHistory,
-    })
-    return { status: 'started', settled: SETTLED_NOOP }
+    return switchVolumeArm(deps, intent, to.volumeId, to.path)
   }
 
   // --- In-place path nav (same volume). ---

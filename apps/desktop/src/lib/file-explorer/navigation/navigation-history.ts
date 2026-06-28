@@ -12,6 +12,7 @@
  */
 
 import type { NetworkHost } from '../types'
+import type { Location } from '$lib/tauri-commands'
 
 /**
  * Per-tab cap on the navigation stack. When `push()` would grow the stack past this
@@ -26,12 +27,13 @@ import type { NetworkHost } from '../types'
  */
 export const MAX_HISTORY_PER_TAB = 100
 
-/** A single entry in the navigation history */
-export interface HistoryEntry {
-  /** The volume ID (like 'root', 'network', '/Volumes/MyDrive') */
-  volumeId: string
-  /** The path within the volume (or 'smb://' for network root) */
-  path: string
+/**
+ * A single entry in the navigation history: a `Location` (volumeId + path) plus
+ * the network host the entry was browsing, when on the network volume.
+ * `HistoryEntry` is NOT persisted, so composing `Location` here has zero
+ * serialization impact (the `networkHost` stays out of `Location`).
+ */
+export type HistoryEntry = Location & {
   /** For network volume: the network host (if browsing shares) */
   networkHost?: NetworkHost
 }

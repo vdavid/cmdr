@@ -1,6 +1,7 @@
 import type { NavigationHistory } from '../navigation/navigation-history'
 import type { SortColumn, SortOrder } from '../types'
 import type { ViewMode } from '$lib/app-status-store'
+import type { Location } from '$lib/tauri-commands'
 
 export type TabId = string // crypto.randomUUID()
 
@@ -12,11 +13,9 @@ export interface UnreachableState {
   retrying: boolean
 }
 
-/** Full runtime state for one tab */
-export interface TabState {
+/** Full runtime state for one tab. Composes `Location` (the tab's volumeId + path). */
+export interface TabState extends Location {
   id: TabId
-  path: string
-  volumeId: string
   history: NavigationHistory
   sortBy: SortColumn
   sortOrder: SortOrder
@@ -28,11 +27,12 @@ export interface TabState {
   unreachable: UnreachableState | null
 }
 
-/** Stored in app-status.json per tab */
-export interface PersistedTab {
+/**
+ * Stored in app-status.json per tab. Composes `Location`, which keeps the
+ * `volumeId` + `path` field names byte-identical so persisted tabs round-trip.
+ */
+export interface PersistedTab extends Location {
   id: TabId
-  path: string
-  volumeId: string
   sortBy: SortColumn
   sortOrder: SortOrder
   viewMode: ViewMode

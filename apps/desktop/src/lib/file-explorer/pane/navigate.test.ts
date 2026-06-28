@@ -595,6 +595,101 @@ describe('same-token self-re-entry (parent-nav / walk-up completion)', () => {
   })
 })
 
+describe('{ location } arm — self-routing by volume', () => {
+  it('(the bug) volumeId ≠ current switches the volume and lands on the resolved volume', () => {
+    // Repro: pane sits on an SMB-like fake volume; navigating to a `root`
+    // location must SWITCH to root, not load the local path over the NAS.
+    h = makeHarness({ left: { path: '/naspi/share', volumeId: 'naspi' } })
+    const depthBefore = h.tab('left').history.stack.length
+
+    const result = navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/Library/x' } }, source: 'mcp' }, h.deps)
+
+    expect(result.status).toBe('started')
+    // Switch arm: optimistic synchronous commit, no listing needed.
+    expect(h.tab('left').volumeId).toBe('root')
+    expect(h.tab('left').path).toBe('/Library/x')
+    expect(h.tab('left').history.stack.length).toBe(depthBefore + 1)
+    expect(h.tab('left').history.stack.at(-1)).toMatchObject({ volumeId: 'root', path: '/Library/x' })
+    // It drove a volume switch, NOT the in-place FilePane primitive.
+    expect(h.paneState.left.paneRef?.navigateToPath).not.toHaveBeenCalled()
+  })
+
+  it('volumeId === current takes the in-place arm (NOT optimistic; commit lands via commitPathFromListing as push-path)', () => {
+    const result = navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' }, h.deps)
+
+    expect(result.status).toBe('started')
+    // In-place: drives the FilePane primitive; path has NOT advanced yet.
+    expect(h.paneState.left.paneRef?.navigateToPath).toHaveBeenCalledWith('/Users/me/sub', undefined)
+    expect(h.tab('left').path).toBe('/Users/me')
+
+    const depthBefore = h.tab('left').history.stack.length
+    const committed = commitPathFromListing(h.deps, 'left', '/Users/me/sub')
+    expect(committed).toBe(true)
+    expect(h.tab('left').path).toBe('/Users/me/sub')
+    expect(h.tab('left').history.stack.length).toBe(depthBefore + 1)
+    expect(h.lastUsedRecords).toContainEqual({ volumeId: 'root', path: '/Users/me/sub' })
+  })
+
+  it('a pinned tab forks a new unpinned tab on the { location } cross-volume switch', () => {
+    h = makeHarness({ left: { path: '/naspi/share', volumeId: 'naspi' } })
+    getActiveTab(h.mgr('left')).pinned = true
+    const pinnedId = getActiveTab(h.mgr('left')).id
+    const countBefore = h.mgr('left').tabs.length
+
+    navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/' } }, source: 'user' }, h.deps)
+
+    expect(h.mgr('left').tabs.length).toBe(countBefore + 1)
+    const active = getActiveTab(h.mgr('left'))
+    expect(active.id).not.toBe(pinnedId)
+    expect(active.pinned).toBe(false)
+    expect(active.volumeId).toBe('root')
+    expect(active.path).toBe('/')
+  })
+
+  it('in-place arm still refuses on the network volume (exact string), in order before driving the pane', () => {
+    h = makeHarness({ left: { path: 'smb://', volumeId: 'network' } })
+    const result = navigate({ pane: 'left', to: { location: { volumeId: 'network', path: 'smb://host/share' } }, source: 'mcp' }, h.deps)
+    expect(result).toEqual({
+      status: 'refused',
+      reason: {
+        kind: 'on-network-volume',
+        message: 'Pane is on the Network volume. Use select_volume to switch to a local volume first.',
+      },
+    })
+    expect(h.paneState.left.paneRef?.navigateToPath).not.toHaveBeenCalled()
+  })
+
+  it('in-place arm still refuses on an MTP volume (exact string)', () => {
+    h = makeHarness({ left: { path: 'mtp://dev/1/DCIM', volumeId: 'mtp-dev:1' } })
+    const result = navigate({ pane: 'left', to: { location: { volumeId: 'mtp-dev:1', path: '/Users/me/doc' } }, source: 'mcp' }, h.deps)
+    expect(result).toEqual({
+      status: 'refused',
+      reason: {
+        kind: 'mtp-unconnected',
+        message: 'Pane is on the mtp-dev:1 MTP volume. Use select_volume to switch to a local volume first.',
+      },
+    })
+  })
+})
+
+describe('{ volumeId, path } volume-(re)select — ALWAYS the switch arm (guards the C1 regression)', () => {
+  it('volumeId === current STILL switches (optimistic commit + history push), never the in-place/refusal path', () => {
+    h = makeHarness({ left: { path: '/Volumes/Ext', volumeId: 'ext' } })
+    const depthBefore = h.tab('left').history.stack.length
+
+    // A volume-(re)select passing the CURRENT volume id (network-restore-on-cancel,
+    // selectVolumeByIndex re-select, mirror, etc.) must take the switch arm.
+    const result = navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext/photos' }, source: 'user' }, h.deps)
+
+    expect(result.status).toBe('started')
+    expect(h.tab('left').volumeId).toBe('ext')
+    expect(h.tab('left').path).toBe('/Volumes/Ext/photos')
+    expect(h.tab('left').history.stack.length).toBe(depthBefore + 1)
+    // Switch arm, not in-place: the FilePane primitive was not driven.
+    expect(h.paneState.left.paneRef?.navigateToPath).not.toHaveBeenCalled()
+  })
+})
+
 describe('refusal strings (L12) — byte-for-byte contract', () => {
   it('network-volume pane returns the exact select_volume refusal string', () => {
     h = makeHarness({ left: { path: 'smb://', volumeId: 'network' } })
