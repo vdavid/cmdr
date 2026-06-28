@@ -5464,7 +5464,9 @@ dependencies = [
 
 [[package]]
 name = "mtp-rs"
-version = "0.22.0"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59742c620154e1ab6acec1a75f236115b4549e276c5f0a4a1b3a963e8efcd1f8"
 dependencies = [
  "async-trait",
  "bytes",
@@ -5475,6 +5477,7 @@ dependencies = [
  "nusb",
  "thiserror 2.0.18",
  "windows 0.62.2",
+ "windows-core 0.62.2",
 ]
 
 [[package]]
