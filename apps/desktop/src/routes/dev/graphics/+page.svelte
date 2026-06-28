@@ -6,6 +6,7 @@
     import StatusBadgesSection from './sections/StatusBadgesSection.svelte'
     import IllustrationsSection from './sections/IllustrationsSection.svelte'
     import AnimationsSection from './sections/AnimationsSection.svelte'
+    import IndexingStatusSection from './sections/IndexingStatusSection.svelte'
 
     interface Props {
         /** Optional sub-anchor (e.g. `'icons'`). Catalog scrolls to `#graphics-<anchor>` when this changes. */
@@ -21,7 +22,7 @@
     const { targetAnchor = null, onSectionInView }: Props = $props()
 
     /** Ordered sub-ids matching the sidebar order. Used for the IntersectionObserver wiring. */
-    const SUB_IDS = ['icons', 'spinners', 'status-badges', 'illustrations', 'animations'] as const
+    const SUB_IDS = ['icons', 'spinners', 'status-badges', 'illustrations', 'animations', 'drive-indexing'] as const
 
     let rootEl: HTMLElement | undefined = $state()
     let lastScrolledTo: string | null = null
@@ -125,6 +126,7 @@
         <StatusBadgesSection />
         <IllustrationsSection />
         <AnimationsSection />
+        <IndexingStatusSection />
     </div>
 {/if}
 

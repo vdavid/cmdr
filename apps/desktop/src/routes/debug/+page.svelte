@@ -49,6 +49,7 @@
         | 'graphics-status-badges'
         | 'graphics-illustrations'
         | 'graphics-animations'
+        | 'graphics-drive-indexing'
 
     interface Section {
         id: SectionId
@@ -100,6 +101,7 @@
                 { id: 'graphics-status-badges', label: 'Status badges' },
                 { id: 'graphics-illustrations', label: 'Illustrations' },
                 { id: 'graphics-animations', label: 'Animations' },
+                { id: 'graphics-drive-indexing', label: 'Drive indexing status' },
             ],
         },
     ]
