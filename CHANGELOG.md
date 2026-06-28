@@ -5,6 +5,80 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0] - 2026-06-28
+
+See folder sizes while indexing is going, browse your phone while a copy/move/delete is going, and get better
+mouse-driven navigation. Network drive rescans are also faster now.
+
+### Added
+
+- MTP: Browse a phone while a transfer runs ([06d1874d](https://github.com/vdavid/cmdr/commit/06d1874d),
+  [4a01ad7f](https://github.com/vdavid/cmdr/commit/4a01ad7f),
+  [f002606d](https://github.com/vdavid/cmdr/commit/f002606d),
+  [edc89aa2](https://github.com/vdavid/cmdr/commit/edc89aa2))
+- Navigate pane history with mouse's back/forward side buttons
+  ([fcf34143](https://github.com/vdavid/cmdr/commit/fcf34143))
+- Click breadcrumb segments to jump to any ancestor folder, double-click empty pane spce to go to parent
+  ([dcc5b2e7](https://github.com/vdavid/cmdr/commit/dcc5b2e7))
+- Explain why a phone's folders add up to less than its used space
+  ([caedb655](https://github.com/vdavid/cmdr/commit/caedb655))
+
+### Changed
+
+- Show folder sizes while indexing: ≥lower-bound when partially scanned, also unknown and stale
+  ([494849a9](https://github.com/vdavid/cmdr/commit/494849a9),
+  [d9dbf076](https://github.com/vdavid/cmdr/commit/d9dbf076),
+  [c4b20c96](https://github.com/vdavid/cmdr/commit/c4b20c96),
+  [fdadfc8f](https://github.com/vdavid/cmdr/commit/fdadfc8f),
+  [9f318e74](https://github.com/vdavid/cmdr/commit/9f318e74))
+- Speed up SMB and MTP rescans: update in place and keep last-known sizes visible while scanning
+  ([a6a2f586](https://github.com/vdavid/cmdr/commit/a6a2f586))
+- Stop showing indexing notif and free space for DMGs, and show the read-only lock for read-only mounts
+  ([889859c4](https://github.com/vdavid/cmdr/commit/889859c4),
+  [1ea48634](https://github.com/vdavid/cmdr/commit/1ea48634))
+
+### Fixed
+
+- Fix progress bars for cross-volume folder copy and move ([38c405ec](https://github.com/vdavid/cmdr/commit/38c405ec))
+- Fix a UI freeze when starting a manual rescan ([880688c9](https://github.com/vdavid/cmdr/commit/880688c9))
+- Fix enabling or rescanning an SMB share or MTP device indexing nothing
+  ([d4527575](https://github.com/vdavid/cmdr/commit/d4527575),
+  [a8007894](https://github.com/vdavid/cmdr/commit/a8007894))
+- Show the indexing indicator for SMB and MTP drives, not just the local disk
+  ([ef6005d4](https://github.com/vdavid/cmdr/commit/ef6005d4))
+- Keep an honest stale index when a drive disconnects mid-scan instead of marking it complete
+  ([4d66beb0](https://github.com/vdavid/cmdr/commit/4d66beb0))
+- Rebuild falsely-complete network indexes from earlier builds on upgrade, no manual action
+  ([3109ab69](https://github.com/vdavid/cmdr/commit/3109ab69))
+- Detect and explain Linux MTP permission denials from missing udev rules
+  ([51eee35d](https://github.com/vdavid/cmdr/commit/51eee35d))
+
+### Security
+
+- Patch quinn-proto (remote memory exhaustion) and memmap2 advisories
+  ([584aa27f](https://github.com/vdavid/cmdr/commit/584aa27f))
+
+### Non-app
+
+- Add a Total Commander vs Cmdr blog post ([f4ce564d](https://github.com/vdavid/cmdr/commit/f4ce564d),
+  [d744a380](https://github.com/vdavid/cmdr/commit/d744a380),
+  [8190a090](https://github.com/vdavid/cmdr/commit/8190a090),
+  [c0fdfd76](https://github.com/vdavid/cmdr/commit/c0fdfd76))
+- Surface the Homebrew install (`brew install --cask cmdr`) on the website and README
+  ([c2e4ed54](https://github.com/vdavid/cmdr/commit/c2e4ed54))
+- Attach a PII-free machine snapshot (model, RAM, disk headroom, index size) to error and crash reports
+  ([d148af1b](https://github.com/vdavid/cmdr/commit/d148af1b))
+- Migrate the MTP backend to the backend-neutral mtp-rs API for future Windows support
+  ([03f14279](https://github.com/vdavid/cmdr/commit/03f14279),
+  [08a5059a](https://github.com/vdavid/cmdr/commit/08a5059a),
+  [71b3d580](https://github.com/vdavid/cmdr/commit/71b3d580))
+- Split the transfer and indexing modules into focused submodules
+  ([2597038a](https://github.com/vdavid/cmdr/commit/2597038a),
+  [fe8b414d](https://github.com/vdavid/cmdr/commit/fe8b414d),
+  [4d65dcd0](https://github.com/vdavid/cmdr/commit/4d65dcd0),
+  [e5005ca9](https://github.com/vdavid/cmdr/commit/e5005ca9),
+  [194190fa](https://github.com/vdavid/cmdr/commit/194190fa))
+
 ## [0.29.0] - 2026-06-22
 
 Four big features: 1. Operations (copy, move, and delete) got pause/resume. 2. Operations can be queued. 3. Drive
