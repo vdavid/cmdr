@@ -16,6 +16,7 @@ use super::events::{
     IndexScanCompleteEvent, IndexScanStartedEvent, IndexStatusResponse, PhaseRecord, RescanReason,
     emit_rescan_notification,
 };
+use super::local_reconcile;
 use super::progress_reporter::ScanProgressReporter;
 use super::reconciler::{self, EventReconciler};
 use super::scanner::{self, ScanConfig};
@@ -136,6 +137,20 @@ fn rescan_scanner_for_kind(kind: IndexVolumeKind) -> RescanScanner {
     } else {
         RescanScanner::LocalJwalk
     }
+}
+
+/// Whether a LOCAL (re)scan should reconcile in place rather than truncate +
+/// rebuild. True once the index holds rows BEYOND the ROOT sentinel.
+///
+/// MUST be `> 1`, not `> 0`: `create_tables` → `ensure_root_sentinel` always
+/// inserts the ROOT row (id=1), and `TruncateData` re-inserts it, so a
+/// never-scanned DB has `entry_count == 1`. A `> 0` predicate would route a
+/// brand-new user's FIRST `/` scan to the slow serial reconcile instead of the
+/// fast parallel jwalk bulk build — the onboarding regression this guards against.
+/// Kept as a separate pure function so the `> 1` boundary is unit-testable without
+/// an `AppHandle`.
+fn local_rescan_reconciles(entry_count: u64) -> bool {
+    entry_count > 1
 }
 
 impl IndexManager {
@@ -542,15 +557,31 @@ impl IndexManager {
             log::warn!("Failed to send BumpCurrentEpoch: {e}");
         }
 
-        // Step 0b: Truncate entries + dir_stats so the scan inserts into an empty DB.
-        // Without this, INSERT OR REPLACE on a populated table with the `platform_case`
-        // collation is ~12x slower (30 min vs 2.5 min), and old rows with stale IDs
-        // accumulate as orphaned subtrees, bloating the DB 3-4x per scan cycle.
-        if let Err(e) = self.writer.send(WriteMessage::TruncateData) {
+        // Step 0a'': Reconcile vs truncate. A populated index (rows BEYOND the ROOT
+        // sentinel) is RESCANNED in place by `local_reconcile` (diff each dir, write
+        // only changes) so the last-good directory sizes stay visible (stale)
+        // throughout and no large freelist is minted. A first/empty scan keeps the
+        // fast parallel jwalk bulk build. Read the entry count from the live read
+        // connection BEFORE any truncate. (NOTE: the network predicate in
+        // `network_scan.rs` is intentionally left at `> 0` — changing shipped network
+        // behavior is handled separately.)
+        let reconcile = IndexStore::get_entry_count(self.store.read_conn())
+            .map(local_rescan_reconciles)
+            .unwrap_or(false);
+
+        // Step 0b: Truncate entries + dir_stats so a FRESH scan inserts into an empty
+        // DB. Without this, INSERT OR REPLACE on a populated table with the
+        // `platform_case` collation is ~12x slower (30 min vs 2.5 min), and old rows
+        // with stale IDs accumulate as orphaned subtrees, bloating the DB 3-4x per
+        // scan cycle. A RECONCILE skips ONLY the truncate (the whole point is to never
+        // blank the index); the `BumpCurrentEpoch` above and the flush below stay
+        // unconditional, so the walker reads the bumped `current_epoch` on its own
+        // read connection (else it stamps the stale epoch).
+        if !reconcile && let Err(e) = self.writer.send(WriteMessage::TruncateData) {
             log::warn!("Failed to send TruncateData: {e}");
         }
         if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
-            log::warn!("Failed to flush after TruncateData: {e}");
+            log::warn!("Failed to flush before scan: {e}");
         }
 
         // Step 1: Start the FSEvents watcher BEFORE the scan so we don't miss events
@@ -608,14 +639,26 @@ impl IndexManager {
             super::freshness::FreshnessEvent::ScanStarted,
         );
 
-        // Step 2: Start the full scan
-        let config = ScanConfig {
-            root: self.volume_root.clone(),
-            ..ScanConfig::default()
+        // Step 2: Start the walk. A reconcile rescan runs the serial full-tree
+        // `local_reconcile` walker (returns the SAME `(ScanHandle, JoinHandle)` shape
+        // as `scan_volume`, runs on a `std::thread`, does its marks + single aggregate
+        // in-thread), so the completion handler below is reused literally unchanged. A
+        // fresh scan runs the fast parallel jwalk `scan_volume`.
+        let (scan_handle, join_handle) = if reconcile {
+            log::info!("local scan: reconcile rescan for '{}' ({scan_trigger})", self.volume_id);
+            local_reconcile::start_local_reconcile(self.volume_root.clone(), &self.writer)
+                .map_err(|e| format!("Failed to start reconcile rescan: {e}"))?
+        } else {
+            log::info!(
+                "local scan: fresh scan (truncate) for '{}' ({scan_trigger})",
+                self.volume_id
+            );
+            let config = ScanConfig {
+                root: self.volume_root.clone(),
+                ..ScanConfig::default()
+            };
+            scanner::scan_volume(config, &self.writer).map_err(|e| format!("Failed to start scan: {e}"))?
         };
-
-        let (scan_handle, join_handle) =
-            scanner::scan_volume(config, &self.writer).map_err(|e| format!("Failed to start scan: {e}"))?;
 
         self.scanning.store(true, Ordering::Relaxed);
 
@@ -1126,6 +1169,30 @@ mod tests {
     /// over the network mount, walked nothing, and falsely marked the index
     /// complete. Pre-fix `force_scan` called `start_scan` unconditionally, so an
     /// SMB id wrongly mapped to `LocalJwalk`; this pins the correct mapping.
+    /// The reconcile-vs-truncate boundary: a sentinel-only DB (`entry_count == 1`,
+    /// the never-scanned state) takes the FRESH/truncate jwalk path; a populated DB
+    /// (`> 1`) reconciles. Pins `> 1`, not `> 0` — the latter would send a brand-new
+    /// user's first `/` scan down the slow serial reconcile (the onboarding bug). The
+    /// sentinel-makes-it-1 fact is verified directly against a fresh store below.
+    #[test]
+    fn local_rescan_reconciles_only_beyond_the_root_sentinel() {
+        assert!(!local_rescan_reconciles(0), "empty DB ⇒ fresh/truncate path");
+        assert!(
+            !local_rescan_reconciles(1),
+            "sentinel-only DB (never scanned) ⇒ fresh/truncate path, NOT reconcile"
+        );
+        assert!(local_rescan_reconciles(2), "populated DB ⇒ reconcile path");
+
+        // A fresh store has exactly the ROOT sentinel, so its entry_count is 1 and
+        // the predicate routes it to the fresh path — the onboarding guarantee.
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("sentinel.db");
+        let store = IndexStore::open(&db_path).expect("open store");
+        let count = IndexStore::get_entry_count(store.read_conn()).expect("count");
+        assert_eq!(count, 1, "a fresh DB holds only the ROOT sentinel");
+        assert!(!local_rescan_reconciles(count), "so a fresh DB takes the truncate path");
+    }
+
     #[test]
     fn force_rescan_routes_smb_and_mtp_to_the_trait_scanner_not_jwalk() {
         assert_eq!(

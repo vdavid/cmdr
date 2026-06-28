@@ -141,6 +141,15 @@ pub struct ScanSummary {
 pub enum ScanError {
     Io(std::io::Error),
     WriterSend(String),
+    /// The volume ROOT listing SUCCEEDED but returned zero children, so a
+    /// reconcile rescan would see an empty live tree and delete every existing
+    /// child (blanking the index). Surfaced by the LOCAL reconcile walker
+    /// (`local_reconcile`) before it diffs the root, so the completion handler
+    /// takes its `Err` arm and writes NO `scan_completed_at`: the prior
+    /// stale-but-real index is kept and heals on the next launch. Mirrors the
+    /// network path's `VolumeScanError::EmptyRoot`; see
+    /// `indexing/DETAILS.md` § "No completion marker on an empty root".
+    EmptyRoot,
 }
 
 impl std::fmt::Display for ScanError {
@@ -148,6 +157,7 @@ impl std::fmt::Display for ScanError {
         match self {
             ScanError::Io(e) => write!(f, "I/O error: {e}"),
             ScanError::WriterSend(msg) => write!(f, "Writer send failed: {msg}"),
+            ScanError::EmptyRoot => write!(f, "root listing returned no children (treating as a failed rescan)"),
         }
     }
 }

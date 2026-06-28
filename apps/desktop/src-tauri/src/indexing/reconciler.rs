@@ -800,11 +800,27 @@ pub(super) fn reconcile_subtree(
 }
 
 /// Read and filter filesystem children of a directory.
-fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::Metadata, bool)>> {
+///
+/// Shared by both local reconcile walks — the small-scope live `reconcile_subtree`
+/// and the full-tree [`local_reconcile`](crate::indexing::local_reconcile) rescan.
+/// Returns `None` when the directory itself can't be listed (a permission wall or a
+/// vanished dir), distinct from `Some(vec![])` for an empty-but-readable dir.
+///
+/// Applies the SAME two filters the jwalk fresh scan uses, so a reconcile converges
+/// to the identical DB the fresh scan would build:
+/// - `scanner::should_exclude` (system/virtual prefixes, `/Volumes/`, the E2E
+///   allowlist), and
+/// - `scanner::is_canonicalization_alias` — the macOS root symlinks `/tmp`, `/var`,
+///   `/etc` normalize to `/private/...`, so they're aliases of a real directory the
+///   fresh scan stored under the canonical path. The fresh scan skips the alias
+///   (`scanner::run_scan`); a reconcile that DIDN'T would find them absent from the
+///   DB and re-add them every pass, diverging from the fresh-scan tree (invariant
+///   I13). Skipping here keeps fresh and reconcile in lock-step.
+pub(super) fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::Metadata, bool)>> {
     let read_dir = match std::fs::read_dir(dir_path) {
         Ok(rd) => rd,
         Err(e) => {
-            log::debug!("reconcile_subtree: can't read {}: {e}", dir_path.display());
+            log::debug!("reconcile: can't read {}: {e}", dir_path.display());
             return None;
         }
     };
@@ -817,8 +833,15 @@ fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::Metadata, b
         };
         let name = entry.file_name().to_string_lossy().to_string();
         let child_path = dir_path.join(&name);
-        let normalized_child = firmlinks::normalize_path(&child_path.to_string_lossy());
+        let child_path_str = child_path.to_string_lossy();
+        let normalized_child = firmlinks::normalize_path(&child_path_str);
         if scanner::should_exclude(&normalized_child) {
+            continue;
+        }
+        // Skip the canonicalization-alias symlinks (/tmp, /var, /etc) so we don't
+        // re-add what the fresh scan deliberately stored under the canonical
+        // /private/... path (invariant I13).
+        if scanner::is_canonicalization_alias(&child_path_str, &normalized_child) {
             continue;
         }
         if let Ok(meta) = std::fs::symlink_metadata(&child_path) {

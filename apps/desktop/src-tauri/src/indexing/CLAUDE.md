@@ -9,8 +9,8 @@ Per-file roles: DETAILS § "Module structure" or `codegraph_search`. Groupings:
 
 - **Lifecycle / state**: `state.rs`, `routing.rs`, `queries.rs`, `manager.rs` (coordinator, LOCAL scan, dispatch),
   `network_scan.rs` (SMB/MTP scan).
-- **Write path**: `writer/`, `scanner/` (jwalk, LOCAL only), `volume_scanner.rs` (SMB/MTP), `aggregator/`,
-  `reconciler.rs` + `event_loop.rs`.
+- **Write path**: `writer/`, `scanner/` (jwalk, LOCAL fresh scan), `local_reconcile.rs` (LOCAL rescan),
+  `volume_scanner.rs` (SMB/MTP), `aggregator/`, `reconciler.rs` + `event_loop.rs`.
 - **SMB / MTP / freshness**: `freshness.rs`, `smb_index.rs` / `mtp_index.rs`, `smb_watch.rs` / `mtp_watch.rs`.
 - **Read path**: `enrichment.rs` (`ReadPool`), `store/`, `verifier.rs`, `expected_totals.rs`, `pending_sizes.rs`.
 - **Support**: `partial_agg.rs`, `progress_reporter.rs`, `watcher.rs`, `memory_watchdog.rs`, `events.rs`, plus
@@ -49,12 +49,15 @@ SMB/MTP indexing (read DETAILS before touching this area):
 
 - **Gated on a `direct` (smb2) connection; an `os_mount` upgrades first** (`start_indexing_for_smb` refuses with a
   TYPED `SmbIndexGateReason`); MTP has no smb2 gate.
-- **Manual rescan routes by TYPED kind:** `force_scan` → `start_volume_scan` for SMB/MTP, `start_scan` (jwalk) for
-  `Local` only. ❌ Don't call `start_scan` for a trait-scanned volume — jwalk over a network mount walks nothing and
-  falsely marks the index complete ("Rescan does nothing to the NAS" bug).
-- **Never write `scan_completed_at` for an empty root.** ROOT with ZERO children returns `VolumeScanError::EmptyRoot`
-  (not `Ok`) — else a transient empty root strands the index as falsely "complete" and refuses future rescans.
-  DETAILS § "No completion marker on an empty root".
+- **Manual rescan routes by TYPED kind:** `force_scan` → `start_volume_scan` for SMB/MTP, `start_scan` for `Local`. ❌
+  Don't call `start_scan` for a trait-scanned volume — jwalk over a network mount walks nothing and falsely marks the
+  index complete ("Rescan does nothing to the NAS" bug). LOCAL `start_scan` reconciles a populated index
+  (`local_reconcile.rs`), truncate+jwalk only a fresh one — predicate `entry_count > 1` NOT `> 0` (the sentinel makes a
+  fresh DB count 1); reconcile skips ONLY `TruncateData` and returns `scan_volume`'s shape (handler unchanged). DETAILS
+  § "LOCAL full rescan reconciles in place".
+- **Never write `scan_completed_at` for an empty root.** ROOT with ZERO children returns a typed `EmptyRoot` (network
+  `VolumeScanError`, local-reconcile `ScanError`), not `Ok`; the local reconcile bails BEFORE diffing the root so an
+  empty `/` can't blank the index. DETAILS § "No completion marker on an empty root".
 - **Freshness has ONE transition table (`freshness.rs`); don't branch elsewhere.** No journal ⇒ loads **Stale** on
   launch. Manager fires via `apply_freshness_event_on` (no registry re-lock), not `apply_freshness_event`.
 - **Live watch runs with NO pane open** (`apply_smb_change` hooks `notify_directory_changed` before the pane
