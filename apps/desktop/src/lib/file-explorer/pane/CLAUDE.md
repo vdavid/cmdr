@@ -32,8 +32,8 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
   `firstSelectedIndex(idxs, hasParent)`, which skips the `..` row. Don't use raw `idxs[0]`; it can be `..`.
 - **Snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false` (no `..`
   row, via `hasParentRow`) AND opening a real entry must LEAVE the snapshot volume — `FilePane.handleNavigate` (gated on
-  the `isSearchResultsView` capability) resolves the entry's `Location` and bubbles it via `onGoToLocation` → the
-  `{ location }` switch arm. Skip either → off-by-one selection, or `search-results` stuck on a real path.
+  `isSearchResultsView`) resolves the entry's `Location` and bubbles it via `onGoToLocation` → the switch arm. Skip
+  either → off-by-one selection, or `search-results` stuck on a real path.
 - **The MTP clipboard refusal gate keys on `caps.kind === 'mtp'`, not `!supportsSystemClipboard`** (network and
   search-results lack one too, so the MTP-worded toast would misfire).
 - **The focus guard (`DualPaneExplorer.handleFocusGuard`) must keep its `[role="dialog"], [role="alertdialog"]`
@@ -42,11 +42,10 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, invariant A5). Don't scatter
   `saveAppStatus` / `saveTabsForPaneSide` calls across nav paths: mutate the store and the subscriber reacts (exceptions
   in DETAILS).
-- **`navigate(intent, deps)` is the single coordinator-level pane-nav entry.** `{ location }` self-routes by volume;
-  `{ volumeId, path }` always switches; resolve bare paths to a `Location` at the edge
-  (`navigation/resolve-location.ts`), never feed a bare path in. Refusal `message` strings are byte-pinned contract (the
-  MCP adapter forwards them verbatim); don't make the in-place arm commit immediately; don't add `cd`-style heuristics
-  in `commitPathFromListing` (extend the explicit prefix branch for a new virtual namespace). DETAILS § "The navigate()
+- **`navigate(intent, deps)` is the single coordinator-level pane-nav entry.** `{ location }` self-routes by volume
+  (same → in-place, different → switch); `{ volumeId, path }` always switches; resolve bare paths to a `Location` at the
+  edge (`navigation/resolve-location.ts`), never feed a bare path in. Refusal `message` strings are byte-pinned (the MCP
+  adapter forwards them verbatim); don't make the in-place arm commit immediately. DETAILS § "The navigate()
   transaction".
 - **Self-drag drop builds from recorded app state, not the pasteboard** (`handleDrop` consumes
   `consumableSelfDragIdentity` only for an active self-drag from a registered backend-real volume). See
