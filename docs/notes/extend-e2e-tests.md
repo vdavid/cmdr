@@ -704,18 +704,10 @@ await closeScopedWindow(tauriPage, viewer, viewer.targetWindow!)
 
 For settings: `openSettingsWindowViaProd(tauriPage)` (label `settings`).
 
-**Dependency override**: while the upstream `@srsholmes/tauri-playwright` 0.3.0 + matching plugin crate aren't
-published, the repo points at the `vdavid/tauri-playwright` fork on the `multi-window` branch:
-
-- Rust: `apps/desktop/src-tauri/Cargo.toml` → git ref against the fork's `multi-window` branch. Cargo's git source
-  resolves the workspace member (`packages/plugin/`) automatically; the resolved commit hash is pinned in `Cargo.lock`.
-- npm: `apps/desktop/package.json` → `file:.../packages/test/srsholmes-tauri-playwright-0.3.0.tgz`. We can't use a
-  GitHub ref here because the fork's `packages/test/package.json` has no `prepare` script, so pnpm doesn't run the
-  `tsup` build after fetching from git, leaving `dist/` missing and the package broken at import time. The tarball is
-  pre-built and lives in the fork's tree. TODO: drop this once `@srsholmes/tauri-playwright@0.3.0` ships to npm.
-
-Revert both to crates.io / npm registry refs (with the appropriate `0.3.x` version) once the fork is merged upstream and
-published.
+**Dependencies**: both halves of `tauri-playwright` resolve from their published registries — the Rust plugin crate
+`tauri-plugin-playwright` from crates.io (`apps/desktop/src-tauri/Cargo.toml`) and the npm runner
+`@srsholmes/tauri-playwright` from npm (`apps/desktop/package.json`). The multi-window targeting and label-aware macOS
+native screenshots this migration relies on shipped upstream, so no fork or local-tarball override is needed.
 
 **Capability extension**: the auto-generated `playwright.json` capability (in `src-tauri/build.rs`) now targets
 `["main", "settings", "viewer-*"]` instead of just `["main"]`. Without this, the plugin's `pw_result` IPC callback would

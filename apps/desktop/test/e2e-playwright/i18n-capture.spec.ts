@@ -495,7 +495,7 @@ test.describe('i18n screenshot capture', () => {
     // grabs the main window's frame for the `shortcuts` label. So the
     // setSurface/rerender/dump capture flow (all eval-based) can't run here.
     // Reproduced in isolation (window opened first and alone). Root cause sits in
-    // the tauri-playwright fork's per-window eval/capture for this specific
+    // the tauri-playwright plugin's per-window eval/capture for this specific
     // window, which is out of scope to change here.
     //
     // Cost of skipping is low: this window renders only the `shortcuts.list.*`
