@@ -10,7 +10,8 @@
     "description": "Heading naming which drive a block in the indexing tooltip is about, always shown above that drive''s status so the user can tell which drive is indexing (e.g. 'Macintosh HD', 'Backups', a phone''s name). {name} is the drive''s display name; this is just the name on its own line, styled as a heading.",
     "placeholders": {
       "name": "the drive''s display name (e.g. Macintosh HD, Backups)"
-    }
+    },
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.scan.label": "Scanning your drive...",
@@ -26,7 +27,7 @@
       "entriesText": "number of files and folders scanned so far, already formatted (e.g. 12,345)",
       "dirsText": "number of folders found so far, already formatted (e.g. 678)"
     },
-    "screenshot": "indexing-status.png"
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
@@ -35,7 +36,8 @@
     "placeholders": {
       "counters": "the already-formatted entry/dir tally (e.g. '12,345 entries, 678 dirs')",
       "elapsed": "how long the scan has been running, as a clock (minutes:seconds, e.g. 2:34)"
-    }
+    },
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.scan.etaRough": "roughly {eta}",
@@ -48,23 +50,28 @@
 
   "indexing.step.findFiles": "Find files",
   "@indexing.step.findFiles": {
-    "description": "Checklist step label in the drive-indexing tooltip for the scan that walks the drive and finds every file and folder. The user sees it tick from waiting, to in progress (a spinner, with a live count under it), to done (a check). Short imperative label; sentence case; no trailing period or ellipsis (the spinner signals ongoing work, not the text)."
+    "description": "Checklist step label in the drive-indexing tooltip for the scan that walks the drive and finds every file and folder. The user sees it tick from waiting, to in progress (a spinner, with a live count under it), to done (a check). Short imperative label; sentence case; no trailing period or ellipsis (the spinner signals ongoing work, not the text).",
+    "screenshot": "indexing-checklist.png"
   },
   "indexing.step.saveFileList": "Save the file list",
   "@indexing.step.saveFileList": {
-    "description": "Checklist step label in the drive-indexing tooltip for writing the scanned file list into Cmdr''s index. Shown only for a local drive (network drives save as they scan, so this step doesn''t appear). Avoid the word ''entries'' (a database term) and ''build the index'' (the whole operation is indexing). Short, sentence case, no trailing period."
+    "description": "Checklist step label in the drive-indexing tooltip for writing the scanned file list into Cmdr''s index. Shown only for a local drive (network drives save as they scan, so this step doesn''t appear). Avoid the word ''entries'' (a database term) and ''build the index'' (the whole operation is indexing). Short, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
   },
   "indexing.step.computeFolderSizes": "Compute folder sizes",
   "@indexing.step.computeFolderSizes": {
-    "description": "Checklist step label in the drive-indexing tooltip for working out the total size of every folder from the index. Use ''folders'' (not ''directories'') to match the sub-phase lines under it. Short, sentence case, no trailing period."
+    "description": "Checklist step label in the drive-indexing tooltip for working out the total size of every folder from the index. Use ''folders'' (not ''directories'') to match the sub-phase lines under it. Short, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
   },
   "indexing.step.catchUp": "Catch up on recent changes",
   "@indexing.step.catchUp": {
-    "description": "Checklist step label in the drive-indexing tooltip for the final pass that applies file changes that happened while the scan was running. Shown only for a local drive. Avoid the jargon ''reconcile''. Short, friendly, sentence case, no trailing period."
+    "description": "Checklist step label in the drive-indexing tooltip for the final pass that applies file changes that happened while the scan was running. Shown only for a local drive. Avoid the jargon ''reconcile''. Short, friendly, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
   },
   "indexing.step.updateIndex": "Update index",
   "@indexing.step.updateIndex": {
-    "description": "Checklist step label in the drive-indexing tooltip when Cmdr is replaying recorded file changes to bring its index up to date (the lighter alternative to a full scan). This is the only step shown for that quicker update. ''index'' is established Cmdr vocabulary here. Short, sentence case, no trailing period."
+    "description": "Checklist step label in the drive-indexing tooltip when Cmdr is replaying recorded file changes to bring its index up to date (the lighter alternative to a full scan). This is the only step shown for that quicker update. ''index'' is established Cmdr vocabulary here. Short, sentence case, no trailing period.",
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.summary.found": "{countText} found",
@@ -72,45 +79,54 @@
     "description": "Compact progress metric for a SECONDARY drive in the indexing tooltip when several drives index at once (the primary drive shows the full checklist; the others collapse to one line: drive name + current step + this metric). Shown during a first scan that has no trustworthy percent yet, so it leads with the honest running count of files and folders found, e.g. ''171,607 found''. {countText} is already formatted; keep it terse.",
     "placeholders": {
       "countText": "number of files and folders found so far, already formatted (e.g. 171,607)"
-    }
+    },
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.step.findFilesFirstScan": "First scan, so this can take a while",
   "@indexing.step.findFilesFirstScan": {
-    "description": "Reassuring sub-line under the active ''Find files'' checklist step the very FIRST time Cmdr scans a drive (no prior scan, so there''s no trustworthy time estimate). Sets the expectation that a first scan is slow, so the climbing count and clock don''t read as stuck. Calm and friendly; sentence case; no trailing period."
+    "description": "Reassuring sub-line under the active ''Find files'' checklist step the very FIRST time Cmdr scans a drive (no prior scan, so there''s no trustworthy time estimate). Sets the expectation that a first scan is slow, so the climbing count and clock don''t read as stuck. Calm and friendly; sentence case; no trailing period.",
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.step.statusDone": "Done",
   "@indexing.step.statusDone": {
-    "description": "Visually-hidden status word a screen reader announces after a finished checklist step (e.g. ''Find files. Done.''). It conveys the checkmark to non-sighted users. Very short; sentence case; no period."
+    "description": "Visually-hidden status word a screen reader announces after a finished checklist step (e.g. ''Find files. Done.''). It conveys the checkmark to non-sighted users. Very short; sentence case; no period.",
+    "screenshot": "indexing-checklist.png"
   },
   "indexing.step.statusActive": "In progress",
   "@indexing.step.statusActive": {
-    "description": "Visually-hidden status phrase a screen reader announces after the checklist step that''s currently running (e.g. ''Compute folder sizes. In progress.''). It conveys the spinner to non-sighted users. Very short; sentence case; no period."
+    "description": "Visually-hidden status phrase a screen reader announces after the checklist step that''s currently running (e.g. ''Compute folder sizes. In progress.''). It conveys the spinner to non-sighted users. Very short; sentence case; no period.",
+    "screenshot": "indexing-checklist.png"
   },
   "indexing.step.statusPending": "Not started",
   "@indexing.step.statusPending": {
-    "description": "Visually-hidden status phrase a screen reader announces after a checklist step that hasn''t started yet (e.g. ''Catch up on recent changes. Not started.''). It conveys the empty marker to non-sighted users. Very short; sentence case; no period."
+    "description": "Visually-hidden status phrase a screen reader announces after a checklist step that hasn''t started yet (e.g. ''Catch up on recent changes. Not started.''). It conveys the empty marker to non-sighted users. Very short; sentence case; no period.",
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.aggregation.loading": "Loading folders...",
   "@indexing.aggregation.loading": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr loads folders from the index before sizing them. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it."
+    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr loads folders from the index before sizing them. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it.",
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.aggregation.sorting": "Sorting folders...",
   "@indexing.aggregation.sorting": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr sorts folders before sizing them. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it."
+    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr sorts folders before sizing them. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it.",
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.aggregation.computing": "Computing folder sizes...",
   "@indexing.aggregation.computing": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr adds up each folder''s total size. Also the fallback for any unrecognized compute sub-phase. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it."
+    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr adds up each folder''s total size. Also the fallback for any unrecognized compute sub-phase. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it.",
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.aggregation.writing": "Saving folder sizes...",
   "@indexing.aggregation.writing": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr writes the computed folder sizes back into its index. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it."
+    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr writes the computed folder sizes back into its index. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it.",
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.replay.detail": "{eventsText} events processed",
@@ -118,7 +134,8 @@
     "description": "Tooltip detail line under the 'Updating index' heading, e.g. '1,234 events processed'. 'events' means recorded filesystem changes.",
     "placeholders": {
       "eventsText": "number of change events processed so far, already formatted (e.g. 1,234)"
-    }
+    },
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.progress.percentEta": "{percent}%, {eta}",
@@ -128,13 +145,13 @@
       "percent": "whole-number percent complete, already formatted (e.g. 95)",
       "eta": "the formatted time-remaining phrase, e.g. 'roughly 8s left'"
     },
-    "screenshot": "indexing-status.png"
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.eta.almostDone": "Almost done",
   "@indexing.eta.almostDone": {
     "description": "Time-remaining phrase shown when an indexing operation has under two seconds left (a precise countdown there would be noise). Reassuring and terse.",
-    "screenshot": "indexing-status.png"
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.eta.secondsLeft": "{secondsText}s left",
@@ -142,7 +159,8 @@
     "description": "Estimated time remaining under a minute, e.g. '45s left'. The 's' is the abbreviation for seconds; keep this very short (it sits in a compact tooltip).",
     "placeholders": {
       "secondsText": "whole seconds remaining, already formatted (e.g. 45)"
-    }
+    },
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.eta.minutesLeft": "{minutesText}m left",
@@ -150,7 +168,8 @@
     "description": "Estimated time remaining of a minute or more, e.g. '3m left'. The 'm' is the abbreviation for minutes; keep this very short (it sits in a compact tooltip).",
     "placeholders": {
       "minutesText": "whole minutes remaining, already formatted (e.g. 3)"
-    }
+    },
+    "screenshot": "indexing-checklist.png"
   },
 
   "indexing.rescan.staleIndex": "Your drive index is outdated. It looks like the app hasn''t run for a while. Running a fresh scan to catch up.",

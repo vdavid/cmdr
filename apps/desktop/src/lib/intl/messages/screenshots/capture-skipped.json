@@ -5,8 +5,6 @@
   "ai-suggestion",
   "ai-cloud",
   "toast-index-rescan",
-  "indexing-aggregation",
-  "indexing-replay",
   "network-browser",
   "smb-reconnect",
   "crash-report",

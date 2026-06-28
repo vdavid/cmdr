@@ -64,6 +64,7 @@ import {
   captureOnboardingWizard,
   captureWhatsNew,
   captureIndexingStatus,
+  captureIndexingGallery,
 } from './i18n-capture-surfaces.js'
 import { captureMainDialogs, captureViewerSubsurfaces } from './i18n-capture-special.js'
 import { captureMainExplorerSurfaces } from './i18n-capture-surfaces-main.js'
@@ -377,7 +378,16 @@ test.describe('i18n screenshot capture', () => {
     // ── What's-new post-update popup ──────────────────────────────────────────
     await captureWhatsNew(main, report, failed)
 
-    // ── Drive-indexing status indicator ───────────────────────────────────────
+    // ── Drive-indexing status checklist (dev Graphics gallery) ─────────────────
+    // The shared per-volume checklist (`IndexingStatusBody`) in every state, from
+    // the dev gallery's fixtures (no live indexing needed). Runs BEFORE the live
+    // indicator below so the gallery — which actually SHOWS the checklist body —
+    // wins the shared `indexing.*` keys; the live indicator then owns only the
+    // hourglass's `indexing.status.ariaLabel`. Navigates the main window to
+    // `/dev/graphics` and back to `/`.
+    await captureIndexingGallery(main, report, failed)
+
+    // ── Drive-indexing status indicator (live hourglass) ───────────────────────
     await captureIndexingStatus(main, report, failed)
 
     // ── Mock-staged MAIN-pass surfaces ────────────────────────────────────────
@@ -413,9 +423,8 @@ test.describe('i18n screenshot capture', () => {
     //    provider, and an emitted suggestion.
     //  - indexing rescan-notification toast (`indexing.rescan.*`): a separate
     //    snapshot toast needing a typed rescan event with a reason discriminator.
-    //  - indexing aggregation/replay indicator states (`indexing.aggregation.*`,
-    //    `indexing.replay.*`): need their own event pairs; `indexing-status`
-    //    above covers the scan state only.
+    //    (The aggregation/replay checklist states ARE captured now, via the dev
+    //    gallery in `captureIndexingGallery` above.)
     //  - AI cloud connection / setup states (`ai.*` cloud, `cloudSetup.*`): need a
     //    real (or mocked) AI backend + configured provider; no frontend-stageable
     //    event reaches the connected/error cloud states here.
@@ -435,16 +444,14 @@ test.describe('i18n screenshot capture', () => {
       'ai-suggestion',
       'ai-cloud',
       'toast-index-rescan',
-      'indexing-aggregation',
-      'indexing-replay',
       'network-browser',
       'smb-reconnect',
     ]) {
       skipped.push(deferred)
     }
     console.warn(
-      `[i18n-capture] ${String(8)} surfaces SKIPPED (need backend events, a configured provider, or the SMB Docker stack): ` +
-        `low-disk toast, AI suggestion + cloud states, indexing rescan toast + aggregation/replay states, ` +
+      `[i18n-capture] ${String(6)} surfaces SKIPPED (need backend events, a configured provider, or the SMB Docker stack): ` +
+        `low-disk toast, AI suggestion + cloud states, indexing rescan toast, ` +
         `and the SMB network browser + reconnect (needs live containers).`,
     )
 

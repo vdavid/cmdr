@@ -1613,7 +1613,6 @@
       "fileExplorer.dirSize.dirPlaceholder",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.functionKeyBar.actionWithShortcut",
@@ -1716,7 +1715,6 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.functionKeyBar.actionWithShortcut",
@@ -2292,7 +2290,12 @@
       "fileExplorer.network.browser.refreshAriaLabel",
       "fileExplorer.network.browser.refreshHint",
       "fileExplorer.network.browser.status.connected",
+      "fileExplorer.network.browser.status.connectedStale",
       "fileExplorer.network.browser.status.guest",
+      "fileExplorer.network.browser.status.guestStale",
+      "fileExplorer.network.browser.status.loginNeeded",
+      "fileExplorer.network.browser.tooltip.requiresLogin",
+      "fileExplorer.network.browser.unknown",
       "fileExplorer.network.cancel",
       "fileExplorer.network.connect",
       "fileExplorer.network.connectDialog.addressAriaLabel",
@@ -2512,7 +2515,10 @@
   },
   "toast-tab": {
     "screenshot": "toast-tab.png",
-    "keys": ["commands.handler.noRecentlyClosedTabs", "ui.toast.dismissAria"]
+    "keys": [
+      "commands.handler.noRecentlyClosedTabs",
+      "ui.toast.dismissAria"
+    ]
   },
   "toast-zoom-in": {
     "screenshot": "toast-zoom-in.png",
@@ -2627,9 +2633,10 @@
       "fileExplorer.columns.size",
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.dirPlaceholder",
-      "fileExplorer.dirSize.fileCount",
+      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
+      "fileExplorer.dirSize.unknownTooltip",
       "fileExplorer.functionKeyBar.actionWithShortcut",
       "fileExplorer.functionKeyBar.copyAction",
       "fileExplorer.functionKeyBar.copyLabel",
@@ -2998,6 +3005,33 @@
       "whatsNew.dialog.title"
     ]
   },
+  "indexing-checklist": {
+    "screenshot": "indexing-checklist.png",
+    "keys": [
+      "indexing.aggregation.computing",
+      "indexing.aggregation.loading",
+      "indexing.aggregation.sorting",
+      "indexing.aggregation.writing",
+      "indexing.drive.heading",
+      "indexing.eta.almostDone",
+      "indexing.eta.minutesLeft",
+      "indexing.eta.secondsLeft",
+      "indexing.progress.percentEta",
+      "indexing.replay.detail",
+      "indexing.scan.counters",
+      "indexing.scan.countersElapsed",
+      "indexing.step.catchUp",
+      "indexing.step.computeFolderSizes",
+      "indexing.step.findFiles",
+      "indexing.step.findFilesFirstScan",
+      "indexing.step.saveFileList",
+      "indexing.step.statusActive",
+      "indexing.step.statusDone",
+      "indexing.step.statusPending",
+      "indexing.step.updateIndex",
+      "indexing.summary.found"
+    ]
+  },
   "indexing-status": {
     "screenshot": "indexing-status.png",
     "keys": [
@@ -3049,8 +3083,12 @@
       "fileExplorer.selectionInfo.nothingHere",
       "fileExplorer.tabBar.newTabAriaLabel",
       "fileExplorer.tabBar.paneTabsAriaLabel",
-      "indexing.scan.label",
-      "indexing.status.ariaLabel"
+      "indexing.drive.heading",
+      "indexing.status.ariaLabel",
+      "indexing.step.computeFolderSizes",
+      "indexing.step.findFiles",
+      "indexing.step.statusActive",
+      "indexing.step.statusPending"
     ]
   },
   "quick-look-hint": {
@@ -3062,6 +3100,7 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
+      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.quickLookHint.configurable",

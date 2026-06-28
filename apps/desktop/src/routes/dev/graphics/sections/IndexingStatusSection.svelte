@@ -115,6 +115,39 @@
             driveName: 'Macintosh HD',
         },
         {
+            id: 'compute-sorting',
+            caption: 'Local · compute folder sizes (sorting → indeterminate, spinner + sub-line)',
+            activity: scan({ entriesScanned: 1_400_000, dirsFound: 96_400 }),
+            aggregation: agg('sorting', 11_200, 16_101, 18),
+            phase: 'aggregating',
+            isNetwork: false,
+            windowedEta: null,
+            driveName: 'Macintosh HD',
+        },
+        {
+            id: 'compute-writing',
+            caption: 'Local · compute folder sizes (saving sizes → bar + ETA)',
+            activity: scan({ entriesScanned: 1_400_000, dirsFound: 96_400 }),
+            aggregation: agg('writing', 14_500, 16_101, 30),
+            phase: 'aggregating',
+            isNetwork: false,
+            windowedEta: null,
+            driveName: 'Macintosh HD',
+        },
+        {
+            // Near-complete computing run: the elapsed-extrapolated ETA drops under the
+            // 2s "Almost done" threshold (`formatEta`), so this exercises the
+            // `indexing.eta.almostDone` string the other tiles never reach.
+            id: 'compute-almost-done',
+            caption: 'Local · compute folder sizes (almost done → "Almost done" ETA)',
+            activity: scan({ entriesScanned: 1_400_000, dirsFound: 96_400 }),
+            aggregation: agg('computing', 15_950, 16_101, 40),
+            phase: 'aggregating',
+            isNetwork: false,
+            windowedEta: null,
+            driveName: 'Macintosh HD',
+        },
+        {
             id: 'catch-up',
             caption: 'Local · catch up on recent changes (reconcile → indeterminate, spinner only)',
             activity: scan({ entriesScanned: 1_400_000, dirsFound: 96_400 }),
@@ -169,12 +202,14 @@
     ]
 
     // The collapsed secondary-drive row the corner indicator shows for every
-    // active drive past the first (the primary expands to the full checklist).
+    // active drive past the first (the primary expands to the full checklist). A
+    // first-scan drive (no prior-scan calibration), so the one-line metric is the
+    // honest running count (`indexing.summary.found`) rather than a percent — the
+    // distinctive summary state, and the only place that string renders.
     const SUMMARY_ACTIVITY = scan({
         volumeId: 'tm',
         entriesScanned: 248_000,
         dirsFound: 19_400,
-        priorTotalEntries: 900_000,
         scanStartedAt: NOW - 40_000,
     })
 </script>

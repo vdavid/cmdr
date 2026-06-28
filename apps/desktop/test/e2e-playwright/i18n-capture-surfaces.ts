@@ -25,6 +25,7 @@ import {
   closeScopedWindow,
   dispatchMenuCommand,
   getFixtureRoot,
+  navigateToRoute,
   LOCAL_VOLUME_NAME,
   TRANSFER_DIALOG,
 } from './helpers.js'
@@ -38,6 +39,12 @@ import {
   captureSurface,
   captureToastSurface,
   focusWindow,
+  keysFor,
+  settlePaint,
+  scanForClipping,
+  screenshotsDir,
+  isOverflowPass,
+  overflowLocale,
 } from './i18n-capture-helpers.js'
 
 /**
@@ -699,4 +706,96 @@ export async function captureIndexingStatus(
       payload: { volumeId: 'i18n-capture', totalEntries: 100000, totalDirs: 3500, durationMs: 30000 }
     })`)
     .catch(() => {})
+}
+
+/**
+ * Captures the drive-indexing status CHECKLIST from the dev Graphics gallery
+ * (`routes/dev/graphics/sections/IndexingStatusSection.svelte`): the shared
+ * `IndexingStatusBody` in every state as fixed fixtures (no live indexing) plus the
+ * collapsed `IndexingDriveSummary` row. The capture build compiles the gallery in
+ * via the `__CMDR_I18N_CAPTURE__` gate, so we client-nav the main window to
+ * `/dev/graphics` (same JS context, the sink stays installed).
+ *
+ * ONE coupling surface (`indexing-checklist`): every tile mounts at once, so a
+ * single `rerender` re-resolves them ALL under the active surface — a key can't be
+ * attributed to one tile. So every checklist key (`indexing.step.*` / `scan.*` /
+ * `progress.*` / `aggregation.*` / `replay.*` / `eta.*` / `summary.*` /
+ * `drive.heading`) couples to ONE honest image: the `#graphics-drive-indexing`
+ * section scrolled to the top of the viewport, with the window sized to the section's
+ * height so the native window-frame capture frames exactly the checklist states (NOT
+ * the icons/spinners sections above it). `indexing.status.ariaLabel` lives on
+ * the live hourglass (not the body), so `captureIndexingStatus` keeps it — run this
+ * BEFORE that so the gallery wins the shared keys. Per-tile review PNGs
+ * (`indexing-tile-<id>.png`) are also written (not in the report) for human review.
+ */
+export async function captureIndexingGallery(
+  main: TauriPage,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+): Promise<void> {
+  const label = 'indexing-checklist'
+  const screenshot = `${label}.png`
+  // Mirrors the `#graphics-drive-indexing-<id>` anchors in `IndexingStatusSection.svelte`.
+  const tileIds = [
+    'find-files-first', 'find-files-calibrated', 'save-file-list', 'compute-loading',
+    'compute-computing', 'compute-sorting', 'compute-writing', 'compute-almost-done',
+    'catch-up', 'network-find-files', 'network-compute', 'replay', 'summary',
+  ]
+  const setSize = (w: number, h: number): Promise<unknown> =>
+    main
+      .evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_size', {
+        label: 'main', value: { Logical: { width: ${String(Math.round(w))}, height: ${String(Math.round(h))} } }
+      })`)
+      .catch(() => {})
+  try {
+    await ensureAppReady(main)
+    await navigateToRoute(main, '/dev/graphics')
+    await main.waitForSelector('#graphics-drive-indexing-find-files-first', 15000)
+    if (isOverflowPass) await captureCall(main, 'setLocale', overflowLocale)
+    await captureCall(main, 'reset')
+    await captureCall(main, 'setSurface', label)
+    await captureCall<boolean>(main, 'enable')
+    await captureCall(main, 'rerender')
+    // The drive-indexing section is the LAST catalog section, so a top-of-PAGE shot
+    // would frame the icons/spinners sections instead. Scroll `#graphics-drive-indexing`
+    // to the top of the viewport and size the window to the SECTION's own height, so the
+    // native window-frame capture frames exactly the checklist states. Re-scroll after
+    // the resize (it reflows the scroll position).
+    const orig = await main.evaluate<{ w: number; h: number }>(`({ w: window.innerWidth, h: window.innerHeight })`)
+    const scrollSectionToTop = `(function(){
+      var el = document.getElementById('graphics-drive-indexing');
+      if (!el) return 0;
+      el.scrollIntoView({ block: 'start', behavior: 'auto' });
+      return Math.ceil(el.getBoundingClientRect().height) + 32;
+    })()`
+    const sectionHeight = await main.evaluate<number>(scrollSectionToTop)
+    if (sectionHeight > orig.h) await setSize(orig.w, sectionHeight)
+    await main.evaluate(scrollSectionToTop)
+    await focusWindow(main, 'main').catch(() => {})
+    await settlePaint(main)
+    await main.screenshot({ path: join(screenshotsDir, screenshot) })
+    report[label] = { screenshot, keys: await keysFor(main, label) }
+    await scanForClipping(main, label)
+    console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
+    await setSize(orig.w, orig.h)
+    await settlePaint(main)
+    for (const id of tileIds) {
+      const present = await main.evaluate<boolean>(`(function(){
+        var el = document.querySelector('#graphics-drive-indexing-${id}');
+        if (!el) return false;
+        el.scrollIntoView({ block: 'start', behavior: 'auto' });
+        return true;
+      })()`)
+      if (!present) continue
+      await settlePaint(main)
+      await main.screenshot({ path: join(screenshotsDir, `indexing-tile-${id}.png`) })
+    }
+  } catch (err) {
+    failed.push(label)
+    console.warn(`[i18n-capture] surface ${label} FAILED: ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    await captureCall(main, 'disable').catch(() => {})
+    await navigateToRoute(main, '/').catch(() => {})
+    await main.waitForSelector('.file-entry', 10000).catch(() => {})
+  }
 }

@@ -106,7 +106,10 @@
     }
 </script>
 
-{#if import.meta.env.DEV}
+<!-- Renders in dev, and ALSO in the i18n screenshot-capture build (`__CMDR_I18N_CAPTURE__`,
+     a Vite define true only there, dead-code-eliminated in prod) so the capture driver can
+     screenshot the drive-indexing checklist tiles by their anchors. Zero shipping impact. -->
+{#if import.meta.env.DEV || __CMDR_I18N_CAPTURE__}
     <div bind:this={rootEl} class="catalog">
         <header class="catalog-header">
             <h2>Graphics</h2>
