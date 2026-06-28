@@ -4284,7 +4284,7 @@ export type MtpConnectionError =
   | { type: 'deviceBusy'; device_id: string }
   | { type: 'storageFull'; device_id: string }
   | { type: 'storeReadOnly'; device_id: string }
-  // Linux: USB device file not accessible (missing udev rules).
+  // USB device file not accessible (Linux: missing udev rules; `EACCES`).
   | { type: 'permissionDenied'; device_id: string }
   | { type: 'cancelled'; device_id: string; message: string }
   | { type: 'objectNotFound'; device_id: string; path: string }
