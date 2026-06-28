@@ -58,10 +58,40 @@ pub(super) fn start_local_reconcile(
     let writer = writer.clone();
     let thread_handle = std::thread::Builder::new()
         .name("index-local-reconcile".into())
-        .spawn(move || run_local_reconcile(&root, &writer, &progress, &cancelled))
+        .spawn(move || {
+            // Catch a panic INSIDE the walk and convert it to a typed
+            // `ScanError::Panicked` so the `JoinHandle` resolves to
+            // `Ok(Err(_))` (clean logged message + `ScanFailed` ⇒ Stale) rather
+            // than a raw thread panic that surfaces as the handler's opaque
+            // `Err(_)` "thread panicked" arm.
+            run_catching_panics(|| run_local_reconcile(&root, &writer, &progress, &cancelled))
+        })
         .map_err(ScanError::Io)?;
 
     Ok((handle, thread_handle))
+}
+
+/// Run a reconcile closure, converting any panic inside it into a typed
+/// [`ScanError::Panicked`] (carrying the panic message) instead of unwinding the
+/// scanner thread. See `start_local_reconcile` for why.
+fn run_catching_panics(f: impl FnOnce() -> Result<ScanSummary, ScanError>) -> Result<ScanSummary, ScanError> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+        Ok(inner) => inner,
+        Err(payload) => Err(ScanError::Panicked(panic_message(payload.as_ref()))),
+    }
+}
+
+/// Best-effort human-readable text from a panic payload. `panic!` / `assert!`
+/// produce either a `&'static str` or a formatted `String`; handle both, with a
+/// fallback for anything else.
+fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        (*s).to_string()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "unknown panic payload".to_string()
+    }
 }
 
 /// Normalize one directory's filesystem children into source-agnostic
@@ -401,6 +431,58 @@ mod tests {
     fn bump_epoch(h: &Harness) -> u64 {
         let wconn = IndexStore::open_write_connection(&h.db_path).unwrap();
         IndexStore::bump_current_epoch(&wconn).unwrap()
+    }
+
+    // ── catch_unwind wrapping ─────────────────────────────────────────────
+
+    #[test]
+    fn panic_in_walk_becomes_typed_scan_error() {
+        // A panicking walk is converted to the typed `Panicked` variant rather than
+        // a raw thread panic, for both panic-payload shapes. The variant is what
+        // the completion handler matches on; the message round-trip is checked
+        // separately in `panic_message_extracts_str_and_string_payloads` (asserting
+        // a panic message's content here would substring-match an error value,
+        // which the `error-string-match` check forbids).
+        let str_payload = run_catching_panics(|| panic!("boom in the walk"));
+        assert!(
+            matches!(str_payload, Err(ScanError::Panicked(_))),
+            "got: {str_payload:?}"
+        );
+
+        let string_payload = run_catching_panics(|| panic!("{}", String::from("formatted boom")));
+        assert!(
+            matches!(string_payload, Err(ScanError::Panicked(_))),
+            "got: {string_payload:?}"
+        );
+    }
+
+    /// The panic-payload downcast preserves the message for both the `&'static str`
+    /// (`panic!("literal")`) and `String` (`panic!("{}", s)`) payload shapes. Tests
+    /// the helper directly so the assertion is on a plain returned `String`, not on
+    /// a destructured error value.
+    #[test]
+    fn panic_message_extracts_str_and_string_payloads() {
+        let from_str = panic_message(&"literal payload" as &(dyn std::any::Any + Send));
+        assert_eq!(from_str, "literal payload");
+
+        let from_string = panic_message(&String::from("string payload") as &(dyn std::any::Any + Send));
+        assert_eq!(from_string, "string payload");
+    }
+
+    #[test]
+    fn no_panic_passes_the_result_through() {
+        let summary = ScanSummary {
+            total_entries: 7,
+            total_dirs: 2,
+            total_physical_bytes: 42,
+            duration_ms: 1,
+            was_cancelled: false,
+        };
+        let passed = run_catching_panics(|| Ok(summary.clone()));
+        assert!(matches!(passed, Ok(s) if s.total_entries == 7 && s.total_physical_bytes == 42));
+
+        let errored = run_catching_panics(|| Err(ScanError::EmptyRoot));
+        assert!(matches!(errored, Err(ScanError::EmptyRoot)));
     }
 
     /// Run the reconcile walk synchronously and flush. `cancel` pre-trips the cancel

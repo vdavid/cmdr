@@ -925,9 +925,28 @@ impl IndexManager {
                 }
                 Ok(Err(e)) => {
                     log::warn!("Volume scan failed: {e}");
+                    // The scan/reconcile bailed (e.g. `EmptyRoot`, or a
+                    // `catch_unwind`-converted reconcile-walk `Panicked`). The
+                    // prior index is untouched and stays visible, but `ScanStarted`
+                    // already moved freshness to Scanning, so reset it to Stale —
+                    // honest "rescan available" instead of a stuck spinner. Fire
+                    // through the cloned handle, never the registry (no re-lock).
+                    super::state::apply_freshness_event_on(
+                        &freshness,
+                        &volume_id,
+                        super::freshness::FreshnessEvent::ScanFailed,
+                    );
                 }
                 Err(_) => {
                     log::warn!("Volume scan thread panicked");
+                    // The walker thread itself panicked (the reconcile walk is
+                    // `catch_unwind`-wrapped, so this is the residual jwalk/thread
+                    // case). Same honest reset as the `Ok(Err(_))` arm above.
+                    super::state::apply_freshness_event_on(
+                        &freshness,
+                        &volume_id,
+                        super::freshness::FreshnessEvent::ScanFailed,
+                    );
                 }
             }
         });

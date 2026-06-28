@@ -25,9 +25,10 @@
 //! ## The transition table (this module is the single source of truth)
 //!
 //! [`Freshness::on`] is a pure function from `(current, event)` to the next
-//! state. Some transitions are scan-driven (`ScanStarted`, `ScanCompleted`);
-//! the watcher-driven ones (`WatcherDied`, `OverflowUnrecoverable`) are fired
-//! from the watcher-lifetime layer (`smb_index` / `mtp_index`), which just calls
+//! state. Some transitions are scan-driven (`ScanStarted`, `ScanCompleted`, and
+//! `ScanFailed` — fired by the scan completion handlers); the watcher-driven
+//! ones (`WatcherDied`, `OverflowUnrecoverable`) are fired from the
+//! watcher-lifetime layer (`smb_index` / `mtp_index`), which just calls
 //! `on(WatcherDied)` — the call sites live there, never in this state machine.
 //!
 //! ## Persistence
@@ -86,6 +87,15 @@ pub enum FreshnessEvent {
     /// watcher-lifetime layer decides overflow policy (rescan-subtree vs. signal
     /// Stale) and fires this only for the unrecoverable case.
     OverflowUnrecoverable,
+    /// A full scan/reconcile failed or panicked; the prior index stays visible
+    /// but is marked stale so the UI is honest and a rescan is offered. ⇒ `Stale`.
+    ///
+    /// Fired by the LOCAL completion handler (`manager::start_scan`) on both the
+    /// `Ok(Err(_))` (e.g. `ScanError::EmptyRoot`, or a `catch_unwind`-converted
+    /// reconcile-walk `ScanError::Panicked`) and the `Err(_)` (thread-join panic)
+    /// arms. Without it, `ScanStarted` having already moved the badge to
+    /// `Scanning` would strand it on a perpetual spinner until relaunch.
+    ScanFailed,
 }
 
 impl Freshness {
@@ -105,10 +115,14 @@ impl Freshness {
             FreshnessEvent::ScanStarted => Freshness::Scanning,
             // A clean scan completion is the only path to Fresh.
             FreshnessEvent::ScanCompleted => Freshness::Fresh,
-            // Continuity broke. From Scanning this is unusual (the scan path
-            // handles mid-scan disconnect by discarding to gray), but if a
-            // watcher death races in, Stale is the safe, honest answer.
-            FreshnessEvent::WatcherDied | FreshnessEvent::OverflowUnrecoverable => Freshness::Stale,
+            // Continuity broke, or a scan/reconcile failed. From Scanning a
+            // watcher death is unusual (the scan path handles mid-scan disconnect
+            // by discarding to gray), but a `ScanFailed` from Scanning is the
+            // normal failure exit — `ScanStarted` already moved us here, so
+            // landing Stale keeps the badge honest and offers a rescan.
+            FreshnessEvent::WatcherDied | FreshnessEvent::OverflowUnrecoverable | FreshnessEvent::ScanFailed => {
+                Freshness::Stale
+            }
         }
     }
 
@@ -183,6 +197,21 @@ mod tests {
             Freshness::Fresh.on(FreshnessEvent::OverflowUnrecoverable),
             Freshness::Stale
         );
+    }
+
+    #[test]
+    fn scan_failure_always_goes_to_stale() {
+        // A failed/panicked full scan or reconcile leaves the prior index visible
+        // but marks it Stale so the badge is honest and a rescan is offered — from
+        // any prior state. Critically Scanning→Stale: `ScanStarted` already moved
+        // the badge to Scanning, so without this it would stick on the spinner.
+        for from in [Freshness::Scanning, Freshness::Fresh, Freshness::Stale] {
+            assert_eq!(
+                from.on(FreshnessEvent::ScanFailed),
+                Freshness::Stale,
+                "a failed scan from {from:?} must land Stale"
+            );
+        }
     }
 
     #[test]

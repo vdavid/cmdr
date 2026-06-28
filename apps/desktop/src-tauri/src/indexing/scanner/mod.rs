@@ -150,6 +150,13 @@ pub enum ScanError {
     /// network path's `VolumeScanError::EmptyRoot`; see
     /// `indexing/DETAILS.md` § "No completion marker on an empty root".
     EmptyRoot,
+    /// The reconcile walk panicked. `local_reconcile::start_local_reconcile`
+    /// wraps the walk in `catch_unwind` and converts the panic payload into this
+    /// typed variant (carrying the panic message), so the thread's `JoinHandle`
+    /// resolves to `Ok(Err(ScanError::Panicked(_)))` instead of a raw thread
+    /// panic. That routes it through the completion handler's `Ok(Err(_))` arm,
+    /// which logs cleanly and fires `FreshnessEvent::ScanFailed` ⇒ Stale.
+    Panicked(String),
 }
 
 impl std::fmt::Display for ScanError {
@@ -158,6 +165,7 @@ impl std::fmt::Display for ScanError {
             ScanError::Io(e) => write!(f, "I/O error: {e}"),
             ScanError::WriterSend(msg) => write!(f, "Writer send failed: {msg}"),
             ScanError::EmptyRoot => write!(f, "root listing returned no children (treating as a failed rescan)"),
+            ScanError::Panicked(msg) => write!(f, "reconcile walk panicked: {msg}"),
         }
     }
 }
