@@ -171,6 +171,16 @@ pub fn resolve_path_volume(_path: String) -> PathVolumeResolution {
     }
 }
 
+/// Resolves a path to a `Location` (stub): never finds a volume.
+#[tauri::command]
+#[specta::specta]
+pub fn resolve_location(_path: String) -> crate::location::ResolveLocationResult {
+    crate::location::ResolveLocationResult {
+        location: None,
+        timed_out: false,
+    }
+}
+
 /// Stub for volume watcher - does nothing on Linux.
 /// Kept for API compatibility but not called on Linux.
 #[allow(dead_code, reason = "API compatibility with macOS implementation")]

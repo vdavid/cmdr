@@ -326,6 +326,7 @@ pub(super) fn collect_volume_types(types: &mut Types) -> Vec<Function> {
     collect_functions![
         crate::commands::volumes::list_volumes,
         crate::commands::volumes::resolve_path_volume,
+        crate::commands::volumes::resolve_location,
         crate::commands::volumes::get_default_volume_id,
         crate::commands::volumes::get_volume_space,
     ](types)
@@ -336,6 +337,7 @@ pub(super) fn collect_volume_types(types: &mut Types) -> Vec<Function> {
     collect_functions![
         crate::commands::volumes_linux::list_volumes,
         crate::commands::volumes_linux::resolve_path_volume,
+        crate::commands::volumes_linux::resolve_location,
         crate::commands::volumes_linux::get_default_volume_id,
         crate::commands::volumes_linux::get_volume_space,
     ](types)
@@ -346,6 +348,7 @@ pub(super) fn collect_volume_types(types: &mut Types) -> Vec<Function> {
     collect_functions![
         crate::stubs::volumes::list_volumes,
         crate::stubs::volumes::resolve_path_volume,
+        crate::stubs::volumes::resolve_location,
         crate::stubs::volumes::get_default_volume_id,
         crate::stubs::volumes::get_volume_space,
     ](types)

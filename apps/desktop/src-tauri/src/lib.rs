@@ -113,6 +113,7 @@ pub mod licensing;
 pub(crate) mod linux_distro;
 #[cfg(target_os = "linux")]
 mod linux_icons;
+mod location;
 #[cfg(target_os = "macos")]
 mod macos_icons;
 mod mcp;

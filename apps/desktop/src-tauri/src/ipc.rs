@@ -317,6 +317,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::volumes::get_volume_space,
         #[cfg(target_os = "macos")]
         crate::commands::volumes::resolve_path_volume,
+        #[cfg(target_os = "macos")]
+        crate::commands::volumes::resolve_location,
         #[cfg(target_os = "linux")]
         crate::commands::volumes_linux::list_volumes,
         #[cfg(target_os = "linux")]
@@ -325,6 +327,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::volumes_linux::get_volume_space,
         #[cfg(target_os = "linux")]
         crate::commands::volumes_linux::resolve_path_volume,
+        #[cfg(target_os = "linux")]
+        crate::commands::volumes_linux::resolve_location,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::volumes::list_volumes,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -333,6 +337,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::stubs::volumes::get_volume_space,
         #[cfg(not(any(target_os = "macos", target_os = "linux")))]
         crate::stubs::volumes::resolve_path_volume,
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        crate::stubs::volumes::resolve_location,
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         crate::commands::network::list_network_hosts,
         #[cfg(any(target_os = "macos", target_os = "linux"))]

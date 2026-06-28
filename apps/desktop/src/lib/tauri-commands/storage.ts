@@ -7,13 +7,18 @@ import { getAppLogger } from '$lib/logging/logger'
 import {
   commands,
   events,
+  type Location,
   type LowDiskSpacePayload,
+  type ResolveLocationResult,
   type VolumeContextAction,
   type VolumesBusyChanged,
   type VolumeSpaceChanged,
   type VolumeUnmounted,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
+import { withTimeout } from '$lib/utils/timing'
+
+export type { Location, ResolveLocationResult }
 
 const log = getAppLogger('storage')
 
@@ -78,6 +83,33 @@ export async function resolvePathVolume(path: string): Promise<PathVolumeResolut
   } catch {
     // Command not available, return no volume, not timed out
     return { volume: null, timedOut: false }
+  }
+}
+
+/** Frontend timeout for `resolveLocation`, the outer layer of the two-layer
+ * timeout defense (the backend already caps the statfs at 2s). Slightly above
+ * the backend cap so its honest `timedOut` flag wins when the filesystem hangs;
+ * this only fires if the IPC channel itself stalls. */
+const RESOLVE_LOCATION_TIMEOUT_MS = 3000
+
+/**
+ * Resolves a path into a `Location` (volume id + the path), the canonical
+ * path→volume resolver for navigation edges. Wraps `resolve_location`, which
+ * runs the full protocol dispatch (`mtp://` / `smb://` / local `statfs`), so it
+ * resolves Cmdr's virtual paths too. `location: null` means no volume contains
+ * the path; `timedOut: true` means the filesystem (or IPC) didn't respond.
+ * @param path - The path to resolve
+ * @returns The resolution result
+ */
+export async function resolveLocation(path: string): Promise<ResolveLocationResult> {
+  try {
+    return await withTimeout(commands.resolveLocation(path), RESOLVE_LOCATION_TIMEOUT_MS, {
+      location: null,
+      timedOut: true,
+    })
+  } catch {
+    // Command not available (non-macOS/Linux): no volume, not timed out.
+    return { location: null, timedOut: false }
   }
 }
 

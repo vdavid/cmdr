@@ -26,8 +26,17 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `clipboard.rs::read_clipboard_files`. `drag.rs`: native drag, self-drag overlay. `e2e_support.rs`: feature-gated
   E2E/debug commands.
 - **`volumes.rs`** (macOS): `list_volumes`, `get_default_volume_id`, `get_volume_space`, `resolve_path_volume`
-  (statfs-based, no volume enumeration).
-- **`volumes_linux.rs`** (Linux): same interface as `volumes.rs`, delegates to the `volumes_linux` module.
+  (statfs-based, no volume enumeration), `resolve_location`. The latter two share one `resolve_path_to_volume` body
+  (protocol dispatch for `mtp://` / `smb://` plus the local `statfs` branch), so a virtual path resolves the same way
+  for both; `resolve_path_volume` returns the `VolumeInfo`, `resolve_location` maps it to a `Location` (`volume_id` +
+  the input path). `resolve_location` is the canonical path→volume resolver for navigation edges: the `Location` type
+  lives in `crate::location` (shared across all three platform backends) and is the specta-export vehicle that lands
+  `Location` + `ResolveLocationResult` in `bindings.ts`. The frontend wraps it as `resolveLocation`
+  (`$lib/tauri-commands/storage.ts`, with the outer FE timeout layer) and
+  `lib/file-explorer/navigation/resolve-location.ts` maps it to a typed `{ ok }` outcome. Calling
+  `resolve_path_volume_fast` alone would return `None` for `smb://` / `mtp://` paths, so don't bypass the shared body.
+- **`volumes_linux.rs`** (Linux): same interface as `volumes.rs` (including `resolve_location`), delegates to the
+  `volumes_linux` module.
 - **`mtp.rs`**: full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan).
 - **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
   in-place reconnect (`reconnect_smb_volume`: backend single-flighted via `Volume::attempt_reconnect`;

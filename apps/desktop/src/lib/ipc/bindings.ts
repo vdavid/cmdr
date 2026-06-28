@@ -2046,6 +2046,15 @@ export const commands = {
    *  didn't respond within 2s.
    */
   resolvePathVolume: (path: string) => __TAURI_INVOKE<PathVolumeResolution>('resolve_path_volume', { path }),
+  /**
+   *  Resolves a path to a `Location` (`volume_id` + the path itself), the
+   *  canonical path→volume resolver for navigation edges. Shares the full
+   *  protocol dispatch with `resolve_path_volume`, so `mtp://` / `smb://` virtual
+   *  paths resolve correctly (calling `resolve_path_volume_fast` alone would
+   *  return `None` for them). `location: None` means no volume contains the path;
+   *  `timed_out: true` means the filesystem didn't respond.
+   */
+  resolveLocation: (path: string) => __TAURI_INVOKE<ResolveLocationResult>('resolve_location', { path }),
   // Gets the default volume ID (root filesystem).
   getDefaultVolumeId: () => __TAURI_INVOKE<string>('get_default_volume_id'),
   /**
@@ -4129,6 +4138,12 @@ export type LocalizedSystemStrings = {
   appearance: string
 }
 
+// A navigable destination: a path together with the volume it lives on.
+export type Location = {
+  volumeId: string
+  path: string
+}
+
 // Category of a location item.
 export type LocationCategory =
   | 'favorite'
@@ -4914,6 +4929,18 @@ export type RescanReason =
   | 'incomplete_previous_scan'
   // FSEvents channel overflowed: events were dropped.
   | 'watcher_channel_overflow'
+
+/**
+ *  Result of resolving a bare path into a `Location` via `resolve_location`.
+ *
+ *  `timed_out: true` means the filesystem didn't respond, so the volume is
+ *  genuinely unknown; that is distinct from `location: None` (we resolved, but
+ *  no volume contains the path). Callers must not collapse the two.
+ */
+export type ResolveLocationResult = {
+  location: Location | null
+  timedOut: boolean
+}
 
 // Result of re-sorting a directory listing.
 export type ResortResult = {

@@ -144,6 +144,7 @@ export {
   refreshVolumes,
   getDefaultVolumeId,
   resolvePathVolume,
+  resolveLocation,
   getVolumeSpace,
   ejectVolume,
   getBusyVolumeIds,
@@ -165,7 +166,7 @@ export {
   openSystemSettingsUrl,
   openAppearanceSettings,
 } from './storage'
-export type { PathVolumeResolution, VolumeSpaceInfo } from './storage'
+export type { Location, PathVolumeResolution, ResolveLocationResult, VolumeSpaceInfo } from './storage'
 
 // Networking (SMB, keychain, mounting)
 export {

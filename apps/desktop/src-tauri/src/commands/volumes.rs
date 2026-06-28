@@ -4,6 +4,7 @@ use serde::Serialize;
 use tokio::time::Duration;
 
 use super::util::{TimedOut, blocking_with_timeout_flag};
+use crate::location::{Location, ResolveLocationResult};
 use crate::volumes::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, VolumeSpaceInfo};
 
 /// Result of resolving a path to its containing volume.
@@ -58,19 +59,40 @@ pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>>
 #[tauri::command]
 #[specta::specta]
 pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
+    let (volume, timed_out) = resolve_path_to_volume(path).await;
+    PathVolumeResolution { volume, timed_out }
+}
+
+/// Resolves a path to a `Location` (`volume_id` + the path itself), the
+/// canonical path→volume resolver for navigation edges. Shares the full
+/// protocol dispatch with `resolve_path_volume`, so `mtp://` / `smb://` virtual
+/// paths resolve correctly (calling `resolve_path_volume_fast` alone would
+/// return `None` for them). `location: None` means no volume contains the path;
+/// `timed_out: true` means the filesystem didn't respond.
+#[tauri::command]
+#[specta::specta]
+pub async fn resolve_location(path: String) -> ResolveLocationResult {
+    let (volume, timed_out) = resolve_path_to_volume(path.clone()).await;
+    ResolveLocationResult {
+        location: volume.map(|v| Location { volume_id: v.id, path }),
+        timed_out,
+    }
+}
+
+/// Shared body for `resolve_path_volume` and `resolve_location`: resolves a path
+/// to its containing volume via protocol dispatch (`mtp://` → matching connected
+/// storage, `smb://` → the virtual `network` volume) or, for filesystem paths,
+/// `statfs` under a timeout. Returns the volume (if any) and whether it timed out.
+async fn resolve_path_to_volume(path: String) -> (Option<VolumeInfo>, bool) {
     // MTP protocol dispatch
     if path.starts_with("mtp://") {
-        let mtp_volume = find_mtp_volume_for_path(&path).await;
-        return PathVolumeResolution {
-            volume: mtp_volume,
-            timed_out: false,
-        };
+        return (find_mtp_volume_for_path(&path).await, false);
     }
 
     // SMB/network protocol paths → return the virtual network volume
     if path.starts_with("smb://") {
-        return PathVolumeResolution {
-            volume: Some(VolumeInfo {
+        return (
+            Some(VolumeInfo {
                 id: "network".to_string(),
                 name: "Network".to_string(),
                 path: "smb://".to_string(),
@@ -84,18 +106,14 @@ pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
                 smb_connection_state: None,
                 usb_speed: None,
             }),
-            timed_out: false,
-        };
+            false,
+        );
     }
 
     // Filesystem paths: resolve via statfs with timeout
     let result =
         blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || volumes::resolve_path_volume_fast(&path)).await;
-
-    PathVolumeResolution {
-        volume: result.data,
-        timed_out: result.timed_out,
-    }
+    (result.data, result.timed_out)
 }
 
 /// Finds the MTP volume matching a `mtp://device_id/storage_id/...` path.
@@ -163,4 +181,50 @@ async fn get_mtp_space_info(path: &str) -> Option<VolumeSpaceInfo> {
         total_bytes,
         available_bytes,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn resolve_location_local_dir_returns_root_volume() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let path = dir.path().to_string_lossy().to_string();
+
+        let result = resolve_location(path.clone()).await;
+
+        assert!(!result.timed_out);
+        let location = result.location.expect("local dir should resolve to a volume");
+        // The temp dir lives on the boot volume.
+        assert_eq!(location.volume_id, DEFAULT_VOLUME_ID);
+        // The resolved path is the input path (the dir the caller wants to land on).
+        assert_eq!(location.path, path);
+    }
+
+    #[tokio::test]
+    async fn resolve_location_local_file_returns_root_volume() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let file_path = dir.path().join("file.txt");
+        std::fs::write(&file_path, b"hi").expect("write temp file");
+        let path = file_path.to_string_lossy().to_string();
+
+        let result = resolve_location(path.clone()).await;
+
+        assert!(!result.timed_out);
+        let location = result.location.expect("local file should resolve to a volume");
+        assert_eq!(location.volume_id, DEFAULT_VOLUME_ID);
+        assert_eq!(location.path, path);
+    }
+
+    #[tokio::test]
+    async fn resolve_location_unresolvable_mtp_path_returns_none() {
+        // No MTP device is connected in tests, so the protocol-dispatch branch
+        // finds no matching storage and yields `location: None` (proving
+        // `resolve_location` runs the full dispatch, not just the local helper).
+        let result = resolve_location("mtp://no-such-device/1/folder".to_string()).await;
+
+        assert!(!result.timed_out);
+        assert!(result.location.is_none());
+    }
 }

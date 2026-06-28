@@ -4,6 +4,7 @@ use serde::Serialize;
 use tokio::time::Duration;
 
 use super::util::{TimedOut, blocking_with_timeout_flag};
+use crate::location::{Location, ResolveLocationResult};
 use crate::volumes_linux::{self, DEFAULT_VOLUME_ID, LocationCategory, VolumeInfo, VolumeSpaceInfo};
 
 const VOLUME_TIMEOUT: Duration = Duration::from_secs(2);
@@ -55,19 +56,40 @@ pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>>
 #[tauri::command]
 #[specta::specta]
 pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
+    let (volume, timed_out) = resolve_path_to_volume(path).await;
+    PathVolumeResolution { volume, timed_out }
+}
+
+/// Resolves a path to a `Location` (`volume_id` + the path itself), the
+/// canonical path→volume resolver for navigation edges. Shares the full
+/// protocol dispatch with `resolve_path_volume`, so `mtp://` / `smb://` virtual
+/// paths resolve correctly. `location: None` means no volume contains the path;
+/// `timed_out: true` means the filesystem didn't respond.
+#[tauri::command]
+#[specta::specta]
+pub async fn resolve_location(path: String) -> ResolveLocationResult {
+    let (volume, timed_out) = resolve_path_to_volume(path.clone()).await;
+    ResolveLocationResult {
+        location: volume.map(|v| Location { volume_id: v.id, path }),
+        timed_out,
+    }
+}
+
+/// Shared body for `resolve_path_volume` and `resolve_location`: resolves a path
+/// to its containing volume via protocol dispatch (`mtp://` → matching connected
+/// storage, `smb://` → the virtual `network` volume) or, for filesystem paths,
+/// `/proc/self/mountinfo` under a timeout. Returns the volume (if any) and
+/// whether it timed out.
+async fn resolve_path_to_volume(path: String) -> (Option<VolumeInfo>, bool) {
     // MTP protocol dispatch
     if path.starts_with("mtp://") {
-        let mtp_volume = find_mtp_volume_for_path(&path).await;
-        return PathVolumeResolution {
-            volume: mtp_volume,
-            timed_out: false,
-        };
+        return (find_mtp_volume_for_path(&path).await, false);
     }
 
     // SMB/network protocol paths
     if path.starts_with("smb://") {
-        return PathVolumeResolution {
-            volume: Some(VolumeInfo {
+        return (
+            Some(VolumeInfo {
                 id: "network".to_string(),
                 name: "Network".to_string(),
                 path: "smb://".to_string(),
@@ -81,8 +103,8 @@ pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
                 smb_connection_state: None,
                 usb_speed: None,
             }),
-            timed_out: false,
-        };
+            false,
+        );
     }
 
     // Filesystem paths: resolve via /proc/self/mountinfo with timeout
@@ -90,11 +112,7 @@ pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
         volumes_linux::resolve_path_volume_fast(&path)
     })
     .await;
-
-    PathVolumeResolution {
-        volume: result.data,
-        timed_out: result.timed_out,
-    }
+    (result.data, result.timed_out)
 }
 
 /// Finds the MTP volume matching a `mtp://device_id/storage_id/...` path.

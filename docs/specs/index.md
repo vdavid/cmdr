@@ -8,6 +8,8 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 - [ ] 2026-06-28 local-reconcile-rescan-plan.md - Reclaim index DB disk: recreate-on-schema-mismatch + port the SMB/MTP
       reconcile-in-place rescan onto the local jwalk path (stale sizes stay visible, no freelist balloon)
+- [ ] 2026-06-28 [location-type-nav-plan.md](location-type-nav-plan.md) - Make `(volumeId, path)` a first-class
+      `Location` and kill bare-path navigation (fixes cross-volume search/⌘G navigating over the wrong volume)
 
 ## Later
 
