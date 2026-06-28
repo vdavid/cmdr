@@ -125,6 +125,13 @@ export const commands = {
          *  Always true for legacy list_directory(), false for list_directory_core()
          */
         extendedMetadataLoaded: boolean
+        /**
+         *  macOS Finder tags (`com.apple.metadata:_kMDItemUserTags`). Empty in the
+         *  core listing; filled by the deferred, visible-range-first `enrich_tags`
+         *  pass (a `getxattr` per path, too costly to run inline over a 100k-dir).
+         *  Survives unrelated watcher re-stats via carry-forward (see `caching.rs`).
+         */
+        tags: TagRef[]
         // Recursive size in bytes (from drive index, None if not indexed)
         recursiveSize: number | null
         // Recursive physical size on disk in bytes (from drive index, None if not indexed)
@@ -270,6 +277,17 @@ export const commands = {
       }),
     ),
   getPathLimits: () => __TAURI_INVOKE<PathLimits>('get_path_limits'),
+  /**
+   *  Reads macOS Finder tags for the given paths and patches them into the cached
+   *  listing, emitting a coalesced `directory-diff` so the panes show the colored
+   *  dots. The frontend calls this for the VISIBLE range (and a background sweep
+   *  backfills the rest): a `getxattr` per path (~15 µs) is too costly to run
+   *  inline over a 100k-directory listing, so tag loading is deferred off the hot
+   *  path. Safe on any volume — a `getxattr` on a non-local or tagless path simply
+   *  yields no tags — and timeout-guarded so a hung mount can't stall the IPC thread.
+   */
+  enrichTags: (listingId: string, paths: string[]) =>
+    __TAURI_INVOKE<TimedOut<null>>('enrich_tags', { listingId, paths }),
   /**
    *  Returns `TimedOut<bool>` so the frontend can distinguish a real "doesn't exist"
    *  from "we couldn't tell" (timeout, or SMB volume in `Disconnected` state). Without this
@@ -3375,6 +3393,13 @@ export type FileEntry = {
    *  Always true for legacy list_directory(), false for list_directory_core()
    */
   extendedMetadataLoaded: boolean
+  /**
+   *  macOS Finder tags (`com.apple.metadata:_kMDItemUserTags`). Empty in the
+   *  core listing; filled by the deferred, visible-range-first `enrich_tags`
+   *  pass (a `getxattr` per path, too costly to run inline over a 100k-dir).
+   *  Survives unrelated watcher re-stats via carry-forward (see `caching.rs`).
+   */
+  tags: TagRef[]
   // Recursive size in bytes (from drive index, None if not indexed)
   recursiveSize: number | null
   // Recursive physical size on disk in bytes (from drive index, None if not indexed)
@@ -5604,6 +5629,20 @@ export type TabInfo = {
   path: string
   pinned: boolean
   active: boolean
+}
+
+/**
+ *  A Finder tag: a name plus a color index. Parsed from the per-file
+ *  `com.apple.metadata:_kMDItemUserTags` xattr, where each entry is `"Name\nN"`.
+ *
+ *  Color index: `0` = none (a named, dotless tag); `1` grey, `2` green,
+ *  `3` purple, `4` blue, `5` yellow, `6` red, `7` orange. The per-file xattr is
+ *  the display source of truth — Finder rewrites every file's xattr when a tag
+ *  is recolored, so we never consult the system tag registry.
+ */
+export type TagRef = {
+  name: string
+  color: number
 }
 
 /**

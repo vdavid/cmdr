@@ -3,11 +3,26 @@
 use std::path::PathBuf;
 
 use super::caching::{
-    CachedListing, LISTING_CACHE, ModifyResult, find_listings_for_path, find_listings_for_path_on_volume, has_entry,
-    insert_entry_sorted, notify_added, remove_entry_by_path, update_entry_sorted,
+    CachedListing, LISTING_CACHE, ModifyResult, apply_tags_to_listing, carry_forward_tags, find_listings_for_path,
+    find_listings_for_path_on_volume, has_entry, insert_entry_sorted, notify_added, remove_entry_by_path,
+    update_entry_sorted,
 };
-use super::metadata::FileEntry;
+use super::metadata::{FileEntry, TagRef};
 use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
+
+fn tag(name: &str, color: u8) -> TagRef {
+    TagRef {
+        name: name.to_string(),
+        color,
+    }
+}
+
+/// Reads the tags currently cached for `path` in listing `id`.
+fn cached_tags(id: &str, path: &str) -> Vec<TagRef> {
+    let cache = LISTING_CACHE.read().unwrap();
+    let listing = cache.get(id).unwrap();
+    listing.entries.iter().find(|e| e.path == path).unwrap().tags.clone()
+}
 
 /// Creates a minimal test entry.
 fn make_entry(name: &str, is_dir: bool, size: Option<u64>) -> FileEntry {
@@ -1165,4 +1180,125 @@ mod reaper_tests {
 
         remove_listing(&lid);
     }
+}
+
+// ============================================================================
+// Finder-tag enrichment + carry-forward tests
+// ============================================================================
+
+#[test]
+fn apply_tags_sets_tags_on_matching_entry() {
+    let id = insert_test_listing(
+        "tags_apply",
+        "/test",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![make_entry("a.txt", false, Some(1)), make_entry("b.txt", false, Some(2))],
+    );
+
+    apply_tags_to_listing(
+        "tags_apply",
+        vec![("/test/a.txt".to_string(), vec![tag("Red", 6), tag("Work", 0)])],
+    );
+
+    assert_eq!(
+        cached_tags("tags_apply", "/test/a.txt"),
+        vec![tag("Red", 6), tag("Work", 0)]
+    );
+    assert_eq!(cached_tags("tags_apply", "/test/b.txt"), Vec::<TagRef>::new());
+    cleanup_listing(&id);
+}
+
+#[test]
+fn apply_tags_clears_tags_on_external_removal() {
+    // A file that already has tags; an empty read must clear them (removal
+    // propagation — the counterpart to carry-forward).
+    let mut tagged = make_entry("a.txt", false, Some(1));
+    tagged.tags = vec![tag("Red", 6)];
+    let id = insert_test_listing(
+        "tags_clear",
+        "/test",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![tagged],
+    );
+
+    apply_tags_to_listing("tags_clear", vec![("/test/a.txt".to_string(), Vec::new())]);
+
+    assert_eq!(cached_tags("tags_clear", "/test/a.txt"), Vec::<TagRef>::new());
+    cleanup_listing(&id);
+}
+
+#[test]
+fn apply_tags_skips_unknown_paths() {
+    let id = insert_test_listing(
+        "tags_unknown",
+        "/test",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![make_entry("a.txt", false, Some(1))],
+    );
+
+    // Path not in the listing (scrolled away / removed): no panic, no change.
+    apply_tags_to_listing(
+        "tags_unknown",
+        vec![("/test/gone.txt".to_string(), vec![tag("Blue", 4)])],
+    );
+
+    assert_eq!(cached_tags("tags_unknown", "/test/a.txt"), Vec::<TagRef>::new());
+    cleanup_listing(&id);
+}
+
+#[test]
+fn carry_forward_restores_tags_on_empty_restat() {
+    // Simulates a watcher re-stat: the new entry has empty tags (get_single_entry
+    // reads no xattr), so carry-forward must restore the cached tags.
+    let mut tagged = make_entry("a.txt", false, Some(1));
+    tagged.tags = vec![tag("Green", 2)];
+    let id = insert_test_listing(
+        "tags_carry",
+        "/test",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![tagged],
+    );
+
+    let mut restat = make_entry("a.txt", false, Some(99)); // empty tags, like a fresh stat
+    carry_forward_tags("tags_carry", &mut restat);
+    assert_eq!(restat.tags, vec![tag("Green", 2)], "carry-forward restores cached tags");
+
+    // And after storing the re-stat through the modify path, the tags survive.
+    update_entry_sorted("tags_carry", restat);
+    assert_eq!(cached_tags("tags_carry", "/test/a.txt"), vec![tag("Green", 2)]);
+    cleanup_listing(&id);
+}
+
+#[test]
+fn carry_forward_does_not_overwrite_incoming_tags() {
+    // When the incoming entry already carries tags (the enrich path), carry-forward
+    // must leave them untouched so a real change isn't masked.
+    let mut tagged = make_entry("a.txt", false, Some(1));
+    tagged.tags = vec![tag("Red", 6)];
+    let id = insert_test_listing(
+        "tags_no_overwrite",
+        "/test",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![tagged],
+    );
+
+    let mut incoming = make_entry("a.txt", false, Some(1));
+    incoming.tags = vec![tag("Blue", 4)];
+    carry_forward_tags("tags_no_overwrite", &mut incoming);
+    assert_eq!(
+        incoming.tags,
+        vec![tag("Blue", 4)],
+        "carry-forward must not clobber incoming tags"
+    );
+    cleanup_listing(&id);
 }

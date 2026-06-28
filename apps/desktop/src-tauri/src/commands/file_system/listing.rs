@@ -17,12 +17,36 @@ use crate::file_system::{
 use std::path::{Path, PathBuf};
 use tokio::time::Duration;
 
-use crate::commands::util::{IpcError, TimedOut, blocking_result_with_timeout};
+use crate::commands::util::{IpcError, TimedOut, blocking_result_with_timeout, blocking_with_timeout_flag};
 use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
 
 use super::expand_tilde;
 
 const PATH_EXISTS_TIMEOUT: Duration = Duration::from_secs(2);
+const TAGS_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// Reads macOS Finder tags for the given paths and patches them into the cached
+/// listing, emitting a coalesced `directory-diff` so the panes show the colored
+/// dots. The frontend calls this for the VISIBLE range (and a background sweep
+/// backfills the rest): a `getxattr` per path (~15 µs) is too costly to run
+/// inline over a 100k-directory listing, so tag loading is deferred off the hot
+/// path. Safe on any volume — a `getxattr` on a non-local or tagless path simply
+/// yields no tags — and timeout-guarded so a hung mount can't stall the IPC thread.
+#[tauri::command]
+#[specta::specta]
+pub async fn enrich_tags(listing_id: String, paths: Vec<String>) -> TimedOut<()> {
+    blocking_with_timeout_flag(TAGS_TIMEOUT, (), move || {
+        let updates: Vec<(String, Vec<crate::file_system::listing::metadata::TagRef>)> = paths
+            .into_iter()
+            .map(|p| {
+                let tags = crate::file_system::tags::read_tags(Path::new(&p));
+                (p, tags)
+            })
+            .collect();
+        crate::file_system::listing::caching::apply_tags_to_listing(&listing_id, updates);
+    })
+    .await
+}
 
 #[derive(serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};
 use std::time::{Duration, Instant};
 
-use crate::file_system::listing::metadata::FileEntry;
+use crate::file_system::listing::metadata::{FileEntry, TagRef};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, entry_comparator};
 
 /// Describes a change to a directory's contents on a specific volume.
@@ -404,6 +404,75 @@ pub fn update_entry_sorted(listing_id: &str, new_entry: FileEntry) -> Option<Mod
     }
 }
 
+/// Fills `entry.tags` from the cached entry of the same path when `entry` carries
+/// none. A watcher re-stat builds entries via `get_single_entry`, which reads no
+/// xattr and so always yields empty tags; without this, any unrelated Modify
+/// event (a content edit, an mtime touch) would blank a file's tag dots until the
+/// next `enrich_tags` pass. Call this on a re-stat'd entry BEFORE it's stored and
+/// emitted, so the cache and the `directory-diff` payload stay consistent.
+///
+/// No-op when the incoming entry already has tags — the enrich path sets tags
+/// explicitly (including clearing to empty on an external removal), so it must
+/// never route through here.
+pub fn carry_forward_tags(listing_id: &str, entry: &mut FileEntry) {
+    if !entry.tags.is_empty() {
+        return;
+    }
+    let cache = match LISTING_CACHE.read() {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+    if let Some(listing) = cache.get(listing_id)
+        && let Some(old) = listing.entries.iter().find(|e| e.path == entry.path)
+        && !old.tags.is_empty()
+    {
+        entry.tags = old.tags.clone();
+    }
+}
+
+/// Applies freshly-read Finder tags to cached entries by path and enqueues ONE
+/// coalesced `modify` diff for the rows that actually changed. Drives the deferred
+/// `enrich_tags` pass.
+///
+/// Replaces tags **unconditionally** (including to empty), so an external removal
+/// (a user clearing all tags in Finder) propagates and clears the dots — this is
+/// the deliberate counterpart to `carry_forward_tags`, which only ever restores.
+/// Tags are sort-irrelevant, so entries are mutated in place (no reorder). Paths
+/// not present in the listing are skipped (scrolled away, or already removed).
+/// Emits a diff only for rows whose tags genuinely changed, so re-enriching an
+/// unchanged visible range is silent (no diff storm on every scroll).
+pub fn apply_tags_to_listing(listing_id: &str, updates: Vec<(String, Vec<TagRef>)>) {
+    use crate::file_system::listing::diff_emitter::enqueue_diff;
+    use crate::file_system::watcher::DiffChange;
+
+    let mut changes: Vec<DiffChange> = Vec::new();
+    {
+        let mut cache = match LISTING_CACHE.write() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        let Some(listing) = cache.get_mut(listing_id) else {
+            return;
+        };
+        listing.touch();
+        for (path, tags) in updates {
+            if let Some(idx) = listing.entries.iter().position(|e| e.path == path)
+                && listing.entries[idx].tags != tags
+            {
+                listing.entries[idx].tags = tags;
+                changes.push(DiffChange {
+                    change_type: "modify".to_string(),
+                    entry: listing.entries[idx].clone(),
+                    index: idx,
+                });
+            }
+        }
+    }
+    if !changes.is_empty() {
+        enqueue_diff(listing_id, changes);
+    }
+}
+
 /// Notifies the listing system that a directory's contents changed on a volume.
 ///
 /// Finds all active listings matching `volume_id` and `parent_path`, applies the
@@ -550,9 +619,12 @@ fn notify_removed(listing_id: &str, full_path: &Path) {
 }
 
 /// Updates an entry in the cache and queues a modify (or remove+add) change.
-fn notify_modified(listing_id: &str, entry: FileEntry) {
+fn notify_modified(listing_id: &str, mut entry: FileEntry) {
     use crate::file_system::listing::diff_emitter::enqueue_diff;
     use crate::file_system::watcher::DiffChange;
+
+    // Preserve already-loaded Finder tags across this re-stat (see `carry_forward_tags`).
+    carry_forward_tags(listing_id, &mut entry);
 
     let result = match update_entry_sorted(listing_id, entry.clone()) {
         Some(r) => r,

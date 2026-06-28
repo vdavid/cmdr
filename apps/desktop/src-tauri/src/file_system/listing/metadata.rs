@@ -130,6 +130,11 @@ pub struct FileEntry {
     /// Whether extended metadata (addedAt, openedAt) has been loaded
     /// Always true for legacy list_directory(), false for list_directory_core()
     pub extended_metadata_loaded: bool,
+    /// macOS Finder tags (`com.apple.metadata:_kMDItemUserTags`). Empty in the
+    /// core listing; filled by the deferred, visible-range-first `enrich_tags`
+    /// pass (a `getxattr` per path, too costly to run inline over a 100k-dir).
+    /// Survives unrelated watcher re-stats via carry-forward (see `caching.rs`).
+    pub tags: Vec<TagRef>,
     /// Recursive size in bytes (from drive index, None if not indexed)
     pub recursive_size: Option<u64>,
     /// Recursive physical size on disk in bytes (from drive index, None if not indexed)
@@ -197,6 +202,7 @@ impl FileEntry {
             owner: String::new(),
             group: String::new(),
             extended_metadata_loaded: false,
+            tags: Vec::new(),
             recursive_size: None,
             recursive_physical_size: None,
             recursive_file_count: None,
@@ -291,6 +297,20 @@ mod icon_id_tests {
             "ext:txt"
         );
     }
+}
+
+/// A Finder tag: a name plus a color index. Parsed from the per-file
+/// `com.apple.metadata:_kMDItemUserTags` xattr, where each entry is `"Name\nN"`.
+///
+/// Color index: `0` = none (a named, dotless tag); `1` grey, `2` green,
+/// `3` purple, `4` blue, `5` yellow, `6` red, `7` orange. The per-file xattr is
+/// the display source of truth — Finder rewrites every file's xattr when a tag
+/// is recolored, so we never consult the system tag registry.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TagRef {
+    pub name: String,
+    pub color: u8,
 }
 
 /// Extended metadata for a single file (macOS-specific fields).

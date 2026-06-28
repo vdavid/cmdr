@@ -48,3 +48,9 @@ catalogs, diff coalescing, metadata tiers): [DETAILS.md](DETAILS.md).
 - **Sequence counter lives on `CachedListing`, not `WatchedDirectory`.** SMB/MTP have no `WatchedDirectory`; keeping it
   there breaks `directory-diff` for those volumes.
 - **A sort change invalidates the frontend's cached range.** Bump `cacheGeneration` so the frontend re-fetches.
+- **Finder tags are deferred and must survive re-stats.** `list_directory_core` never reads tags (a `getxattr` is ~6×
+  an `lstat`; too costly inline — see [DETAILS.md](DETAILS.md)). The `enrich_tags` command fills them visible-range-first
+  via `apply_tags_to_listing` (replaces unconditionally, incl. clearing to empty so external removals propagate). Because
+  a watcher re-stat builds entries with empty tags, every modify path calls `carry_forward_tags` BEFORE storing/emitting,
+  or an unrelated change (mtime touch, chmod) would blank a file's dots. Don't route the enrich path through
+  `carry_forward_tags` (it would block real removals).

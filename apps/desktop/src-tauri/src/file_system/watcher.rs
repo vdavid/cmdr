@@ -310,7 +310,10 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
         }
     }
 
-    for entry in modifies {
+    for mut entry in modifies {
+        // Preserve already-loaded Finder tags across this re-stat: `get_single_entry`
+        // reads no xattr, so a bare modify would otherwise blank the file's dots.
+        crate::file_system::listing::caching::carry_forward_tags(listing_id, &mut entry);
         match update_entry_sorted(listing_id, entry.clone()) {
             Some(ModifyResult::UpdatedInPlace { index }) => {
                 changes.push(DiffChange {

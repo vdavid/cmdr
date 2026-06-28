@@ -132,6 +132,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::file_system::find_first_fuzzy_match,
         crate::commands::file_system::resort_listing,
         crate::commands::file_system::get_path_limits,
+        crate::commands::file_system::enrich_tags,
         crate::commands::file_system::path_exists,
         crate::commands::file_system::stat_paths_kinds,
         crate::commands::file_system::create_directory,

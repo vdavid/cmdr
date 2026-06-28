@@ -173,3 +173,28 @@ target) is ~1 μs and cacheable; Tier 3 (macOS Spotlight/NSURL metadata) costs ~
 macOS extended metadata (`addedAt`, `openedAt`) needs `listxattr()` / `getxattr()` beyond the fast
 `fs::read_dir()` + `metadata()` path. Available via `get_extended_metadata_batch()` but not wired into the streaming
 path yet.
+
+## Finder tags
+
+`FileEntry.tags` holds macOS Finder tags (`com.apple.metadata:_kMDItemUserTags`), parsed in
+[`file_system/tags.rs`](../tags.rs). Each tag is `(name, color)` where color `0` = none (a colorless named tag),
+`1` grey, `2` green, `3` purple, `4` blue, `5` yellow, `6` red, `7` orange. The per-file xattr is the display source of
+truth — Finder rewrites every file's xattr on a recolor, so we never read the system tag registry.
+
+**Why deferred, visible-range-first.** A `getxattr` for tags costs **~15 µs/file** (benchmarked 2026-06-28, synthetic
+200k-file dir, warm), ≈6× the per-entry `lstat` the core listing already pays (the `_kMDItemUserTags` namespace isn't
+free). So `list_directory_core` never touches tags; the frontend calls `enrich_tags(listing_id, paths)` for the visible
+range (mirroring the custom-folder-icon prefetch), and a background sweep backfills the rest. Visible range (~100 rows)
+≈ 1.5 ms; a full 200k sweep ≈ 3 s, off the render path.
+
+**Flow.** `enrich_tags` reads tags for the batch and calls `caching::apply_tags_to_listing`, which mutates entries in
+place (tags are sort-irrelevant — no reorder), replaces **unconditionally** (clearing to empty so an external removal
+propagates), and emits one coalesced `modify` diff for the rows that actually changed (so re-enriching an unchanged
+visible range is silent). It's timeout-guarded and degrades to empty on non-local/hung paths.
+
+**Carry-forward.** A watcher re-stat builds entries via `get_single_entry`, which reads no xattr (empty tags). Every
+modify path (`notify_modified`, the incremental watcher loop) calls `caching::carry_forward_tags` BEFORE storing and
+emitting, copying the cached entry's tags onto the re-stat'd one — otherwise any unrelated Modify event (content edit,
+mtime touch, chmod) would blank a file's dots until the next enrich. `carry_forward_tags` only ever restores (no-op when
+the incoming entry already has tags), so it never masks a real change; clearing flows solely through the enrich path's
+unconditional replace.

@@ -4,7 +4,8 @@ Core filesystem operations: directory listing, file writing, sync status, volume
 
 Submodule docs: [listing/](listing/CLAUDE.md), [write_operations/](write_operations/CLAUDE.md),
 [volume/](volume/CLAUDE.md). Top-level files of note: `cloud_actions.rs` (iCloud make-available-offline / remove-download),
-`open_with.rs` (candidate apps + launch), `watcher.rs` (FSEvents incremental listing updates), `sync_status.rs`.
+`open_with.rs` (candidate apps + launch), `watcher.rs` (FSEvents incremental listing updates), `sync_status.rs`,
+`tags.rs` (macOS Finder tag read: `_kMDItemUserTags` getxattr + bplist parse; deferred via the `enrich_tags` command).
 
 ## Gotchas
 
