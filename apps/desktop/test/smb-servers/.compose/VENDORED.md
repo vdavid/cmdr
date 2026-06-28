@@ -5,8 +5,8 @@ be lost the next time we re-vendor.**
 
 ## Source of truth
 
-`~/projects-git/vdavid/smb2/tests/docker/consumer/` (GitHub:
-https://github.com/vdavid/smb2/tree/main/tests/docker/consumer)
+`~/projects-git/vdavid/smb2/src/testing/fixtures/consumer/` (GitHub:
+https://github.com/vdavid/smb2/tree/main/src/testing/fixtures/consumer)
 
 ## Why vendored?
 
@@ -20,11 +20,11 @@ the Docker container where those deps aren't installed. Vendoring sidesteps the 
 2. Re-vendor the compose files, preserving this `VENDORED.md` (it lives only here, not upstream):
    ```bash
    rsync -a --delete --exclude=VENDORED.md \
-       ~/projects-git/vdavid/smb2/tests/docker/consumer/ \
+       ~/projects-git/vdavid/smb2/src/testing/fixtures/consumer/ \
        apps/desktop/test/smb-servers/.compose/
    ```
-   (Or the equivalent from a checkout of the new rev. The smb2 consumer containers live at `tests/docker/consumer/` in
-   the smb2 repo.)
+   (Or the equivalent from a checkout of the new rev. The smb2 consumer containers live at `src/testing/fixtures/consumer/`
+   in the smb2 repo — they moved there from `tests/docker/consumer/` in 0.11.4 so the published package excludes `tests/`.)
 3. Force-rebuild the changed containers so they pick up the new configs:
    ```bash
    docker compose -p smb-consumer -f apps/desktop/test/smb-servers/.compose/docker-compose.yml build --no-cache
