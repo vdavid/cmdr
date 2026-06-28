@@ -9,9 +9,9 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
 
 ## Module map
 
-- Local-FS: `copy.rs` (`CopyTransaction` rollback), `move_op.rs` (same-fs rename / cross-fs staging), `copy_strategy.rs`
-  + `{macos,linux,chunked}_copy.rs` (per-file strategy + backends).
-- Shared driver: `transfer_driver.rs` (`drive_transfer_serial_sync` + `_async`, per-file progress builders).
+- Local-FS: `copy/` (orchestration, per-file `single_item.rs`, `CopyTransaction` rollback), `move_op.rs` (same-fs
+  rename / cross-fs staging), `copy_strategy.rs` + `{macos,linux,chunked}_copy.rs` (per-file strategy + backends).
+- Shared driver: `transfer_driver/` (`drive_transfer_serial_sync` + `_async`, per-file progress builders).
 - Volume: `volume_{copy,move,preflight,rename_merge,conflict,strategy}.rs`.
 
 ## Must-knows (data-safety invariants)
@@ -58,4 +58,4 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
   debounce + min-progress floor prevent park thrash and starvation. DETAILS §§ "Pause … chunks", "Foreground
   auto-yield".
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here.
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read before non-trivial work here.
