@@ -328,9 +328,8 @@ Each real drive carries a small index-freshness dot (`DriveIndexBadge.svelte`) i
 the dropdown trigger (reflecting the ACTIVE drive), and per-row inside the dropdown. Both reuse the same colored-dot +
 `use:tooltip` shape as the SMB light and USB-speed ring. The four states map from the backend `VolumeIndexStatus`
 (`commands.getVolumeIndexStatusById`): gray = `disabled` (no live index, `enabled: false` or `freshness: null`), blue =
-`scanning`, green = `fresh`, yellow = `stale`. The mapping, the menu items per state, the "N min, S s" duration
-formatter, and the live "Indexing… N files · 0:42" scanning tooltip are the pure `drive-index-status.ts` (unit-tested).
-Blue pulses (gated behind `prefers-reduced-motion`).
+`scanning`, green = `fresh`, yellow = `stale`. The mapping, the menu items per state, and the "N min, S s" duration
+formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated behind `prefers-reduced-motion`).
 
 - **Eligibility is `isDriveRow(volume)`** (in `drive-index-manager.svelte.ts`): every entry except favorites, the
   synthetic `network` / `search-results` ids, and mounted disk images (`isDiskImage`). SMB shares
@@ -342,14 +341,17 @@ Blue pulses (gated behind `prefers-reduced-motion`).
   `index-freshness-changed`, `index-scan-started`, and `index-scan-complete`, refetching the named volume's status on
   each (the events alone don't carry the last-scan facts). The active-drive badge also refetches when the active drive
   changes; dropdown rows refetch on open.
-- **A scanning badge shows a LIVE count** ("Indexing… 12,345 files · 0:42") instead of a static label, so a long
-  NAS/phone scan reads as actively working. The manager also subscribes to the 500 ms `index-scan-progress` events and
-  keeps a per-volume `entriesScanned` + `scanStartedAt` map (`getScanProgress(volumeId)`), cleared on scan-complete or
-  when freshness flips away from `scanning`. The badge filters by its OWN `volumeId` (one drive's progress never bleeds
-  onto another's badge) and runs a 1 Hz clock only while scanning to advance the elapsed time. Count + elapsed only,
-  never a fabricated ETA (a first phone scan has no calibration). Before the first progress event, it falls back to the
-  static "Indexing this drive…" phrasing. The count is a preformatted `*Text` ICU string param + a raw `count` for
-  plural selection (catalog single-sources number formatting, per `$lib/intl/messages/CLAUDE.md`).
+- **A scanning badge shows the SHARED live status body**, not a bespoke string — the same `IndexingDriveRow` body the
+  corner indicator renders (heading off), so the two surfaces match exactly (count + elapsed for a first scan, or
+  bar+percent+ETA for a calibrated rescan; see `$lib/indexing` DETAILS § Status indicator tooltip content). The badge
+  reads ONLY its own volume's live activity from `index-state` via `getVolumeActivity(volumeId)` (+ `getVolumeAggregation`)
+  — `index-state` is the single live-activity source; the manager carries no progress map. For the `scanning` state the
+  tooltip switches from the text variant to the `contentEl` DOM tooltip: the body lives in a `<div hidden>` host and the
+  INNER element is handed to the tooltip as `contentEl` (an adopted element keeps its own `hidden`, so the host can't be
+  passed — mirrors `IndexingStatusIndicator`). Fallback: for a non-root (SMB/MTP) volume, `index-state` only hydrates on
+  the next ~500 ms progress tick, so in the window between the freshness flip to `scanning` and that tick there's no
+  activity — the badge then shows a static "Scanning your drive…" text tooltip (`indexing.scan.label`), never an empty
+  one. Non-scanning states (disabled/fresh/stale) keep their text tooltips.
 - **The badge is a focusable `<button>`** with an `aria-label` (state ariaLabel + the tooltip text) and
   `aria-haspopup="menu"`; clicking opens a small themed popover menu (NOT a native menu) anchored to the badge. Menu
   actions (`enable`/`rescan`/`disable`/`stop`) call back to `VolumeBreadcrumb`'s `handleDriveIndexAction`, which runs

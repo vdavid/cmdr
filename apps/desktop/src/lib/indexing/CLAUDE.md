@@ -10,10 +10,14 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
   aggregation signal; reacts to the Tauri index events.
 - **`index-events.ts`**: listens for `index-dir-updated`, calls back with updated paths.
 - **`eta.ts`**: pure ETA helpers + `computeScanProgress` (two-tier scan fraction).
-- **`elapsed.ts`**: pure `formatElapsedClock` (`m:ss`, `null` under 1s) — the shared elapsed clock for the first-scan
-  drive row here AND the breadcrumb `DriveIndexBadge` (one source, no duplicate).
-- **`IndexingStatusIndicator.svelte`** + **`IndexingDriveRow.svelte`**: top-right hourglass shown whenever ANY drive is
-  indexing; tooltip lists one row per active drive (each row owns its ETA window).
+- **`elapsed.ts`**: pure `formatElapsedClock` (`m:ss`, `null` under 1s) — the first-scan elapsed clock, used by the
+  shared `IndexingStatusBody` (so both the corner indicator and the badge tooltip show it from one source).
+- **`IndexingStatusIndicator.svelte`** + **`IndexingDriveRow.svelte`** + **`IndexingStatusBody.svelte`**: top-right
+  hourglass shown whenever ANY drive is indexing; tooltip lists one `IndexingDriveRow` per active drive.
+  `IndexingStatusBody` is the shared, PRESENTATIONAL status body (label / counters+elapsed / detail / bar+percent+ETA);
+  `IndexingDriveRow` is the thin WRAPPER (heading + body + its own ETA sliding windows + the 1 Hz tick). The breadcrumb
+  badge's scanning tooltip renders the SAME `IndexingDriveRow` (heading off) for its one volume, so both surfaces show
+  one representation.
 - **`drive-index-prefs.ts`**: FE-OWNED persisted prefs the backend never reads: per-drive "don't ask again" silences
   (D6) and the one-time stale-dialog flag (D2), stored as hidden settings.
 - **`first-connect-trigger.ts`** + **`FirstConnectIndexToastContent.svelte`**: the first-connect "index this drive?"
@@ -35,9 +39,17 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
 - **Scan progress has two tiers** (`computeScanProgress`). Each tier uses a specific counter as both the numerator and
   the ETA window sample — don't mix them (swapping counter and denominator ships wrong ETAs). Details and clamping
   values: DETAILS.md.
-- **The indicator tracks ALL drives** via a per-volume `activity` map keyed by `volumeId`; aggregation carries NO
-  `volumeId`, so it's attributed to the last scan to complete (default `root`). Don't assume aggregation is root's.
-  State model, attribution, and the API: [DETAILS.md](DETAILS.md).
+- **The indicator tracks ALL drives** via a per-volume `activity` map keyed by `volumeId`. Aggregation is per-volume
+  too (its own map). State model, attribution, and the API: [DETAILS.md](DETAILS.md).
+- **`index-state` is the SINGLE source of live activity** (scan/replay counters + aggregation), keyed by `volumeId`.
+  The breadcrumb badge reads its own volume's via `getVolumeActivity(volumeId)` to render the shared body; the badge's
+  `drive-index-manager` owns ONLY freshness/menu facts (the dot color, last-scan facts), never live progress. Don't
+  reintroduce a second live-count path.
+- **A keyed entry is cleared by a TERMINAL event**, never by freshness. Scan → `index-scan-complete`; replay →
+  `index-replay-complete`; aggregation → `index-aggregation-complete`. A network (SMB/MTP) scan that aborts
+  (disconnect/cancel/timeout) fires NO completion, so the backend emits `index-scan-aborted { volumeId }` and
+  `index-state` removes that volume's activity + aggregation on it — without it, an aborted network scan leaves a stuck
+  "scanning" row. Don't clear activity off `index-freshness-changed` (it's not subscribed here).
 - **Don't widen `getEntriesScanned` to "any volume"**: it reports `root` on purpose (SearchDialog reads it as local
   index-build progress). `isScanning`/`isAggregating` are the "any volume" booleans.
 - **The indicator is a focusable, hoverable icon** (`role="img"`, `tabindex="0"`), not `pointer-events: none`: the

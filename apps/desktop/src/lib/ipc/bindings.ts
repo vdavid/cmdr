@@ -2585,6 +2585,7 @@ export const events = {
   indexReplayComplete: makeEvent<IndexReplayCompleteEvent>('index-replay-complete'),
   indexReplayProgress: makeEvent<IndexReplayProgressEvent>('index-replay-progress'),
   indexRescanNotification: makeEvent<IndexRescanNotificationEvent>('index-rescan-notification'),
+  indexScanAborted: makeEvent<IndexScanAbortedEvent>('index-scan-aborted'),
   indexScanComplete: makeEvent<IndexScanCompleteEvent>('index-scan-complete'),
   indexScanProgress: makeEvent<IndexScanProgressEvent>('index-scan-progress'),
   indexScanStarted: makeEvent<IndexScanStartedEvent>('index-scan-started'),
@@ -3754,6 +3755,19 @@ export type IndexRescanNotificationEvent = {
   reason: RescanReason
   // Human-readable details for logs (not shown to user directly).
   details: string
+}
+
+/**
+ *  Emitted when a scan ends WITHOUT completing: a network (SMB/MTP) scan that
+ *  disconnected, was canceled, timed out, or otherwise aborted. Unlike
+ *  `index-scan-complete`, this writes no completion facts (the partial isn't a
+ *  finished index) — it exists purely so the frontend clears the volume's live
+ *  activity, so an aborted scan doesn't leave a stuck "scanning" row in the
+ *  corner indicator or the breadcrumb badge tooltip. Carries the `volume_id` so
+ *  only the aborted volume's activity is cleared.
+ */
+export type IndexScanAbortedEvent = {
+  volumeId: string
 }
 
 export type IndexScanCompleteEvent = {

@@ -18,8 +18,8 @@ use std::time::Duration;
 use tauri_specta::Event;
 
 use super::events::{
-    ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanCompleteEvent,
-    IndexScanProgressEvent, IndexScanStartedEvent,
+    ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
+    IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent,
 };
 use super::manager::{IndexManager, ScanCalibration};
 use super::state::IndexVolumeKind;
@@ -387,6 +387,15 @@ impl IndexManager {
                         super::freshness::FreshnessEvent::WatcherDied,
                     );
                     DEBUG_STATS.set_phase(ActivityPhase::Idle, "network scan disconnected (honest partial kept)");
+                    // Clear the FE's live activity: the scan ended without a
+                    // completion event, so without this the corner indicator and
+                    // the breadcrumb badge tooltip would keep a stuck "scanning"
+                    // row for this volume. The dot still flips to yellow (Stale)
+                    // via the freshness change above.
+                    let _ = IndexScanAbortedEvent {
+                        volume_id: volume_id.clone(),
+                    }
+                    .emit(&app);
                 }
                 other => {
                     // User cancel, timeout, or another genuine abort: the partial
@@ -398,6 +407,14 @@ impl IndexManager {
                     }
                     discard_buffered_changes_for_kind(kind, &volume_id);
                     super::state::reset_to_not_indexed(&volume_id);
+                    // Clear the FE's live activity (no completion event fired for
+                    // an aborted scan), so the corner indicator and badge tooltip
+                    // don't keep a stuck "scanning" row. The dot reverts to gray
+                    // (not-indexed) via the freshness reset above.
+                    let _ = IndexScanAbortedEvent {
+                        volume_id: volume_id.clone(),
+                    }
+                    .emit(&app);
                 }
             }
         });

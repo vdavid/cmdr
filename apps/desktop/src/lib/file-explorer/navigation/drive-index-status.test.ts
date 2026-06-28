@@ -6,7 +6,6 @@ import {
   driveIndexMenuActions,
   driveIndexMenuLabelKey,
   driveIndexDuration,
-  driveIndexScanProgress,
   hasLastScanFacts,
 } from './drive-index-status'
 
@@ -119,44 +118,5 @@ describe('hasLastScanFacts', () => {
     expect(hasLastScanFacts(makeStatus())).toBe(true)
     expect(hasLastScanFacts(makeStatus({ scanCompletedAt: null }))).toBe(false)
     expect(hasLastScanFacts(makeStatus({ scanDurationMs: null }))).toBe(false)
-  })
-})
-
-describe('driveIndexScanProgress', () => {
-  const started = 1_000_000
-
-  it('uses the count-only key before a full second has elapsed', () => {
-    const r = driveIndexScanProgress(42, started, started + 500)
-    expect(r.key).toBe('fileExplorer.navigation.driveIndex.tooltipScanningCount')
-    expect(r.params.count).toBe(42)
-    // countText is locale-formatted; just confirm it's a non-empty string.
-    expect(typeof r.params.countText).toBe('string')
-    expect(r.params.elapsed).toBeUndefined()
-  })
-
-  it('adds the elapsed clock once at least a second has elapsed', () => {
-    const r = driveIndexScanProgress(12_345, started, started + 42_000)
-    expect(r.key).toBe('fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed')
-    expect(r.params.count).toBe(12_345)
-    expect(r.params.elapsed).toBe('0:42')
-  })
-
-  it('formats minutes with zero-padded seconds', () => {
-    const r = driveIndexScanProgress(1, started, started + (12 * 60 + 5) * 1000)
-    expect(r.params.elapsed).toBe('12:05')
-  })
-
-  it('passes the raw count through for plural selection', () => {
-    expect(driveIndexScanProgress(1, started, started).params.count).toBe(1)
-    expect(driveIndexScanProgress(2, started, started).params.count).toBe(2)
-  })
-
-  it('falls back to count-only when the clock is non-finite or behind the start', () => {
-    expect(driveIndexScanProgress(5, started, started - 1000).key).toBe(
-      'fileExplorer.navigation.driveIndex.tooltipScanningCount',
-    )
-    expect(driveIndexScanProgress(5, started, Number.NaN).key).toBe(
-      'fileExplorer.navigation.driveIndex.tooltipScanningCount',
-    )
   })
 })

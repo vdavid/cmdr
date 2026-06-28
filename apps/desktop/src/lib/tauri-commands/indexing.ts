@@ -14,6 +14,7 @@ import {
   type IndexReplayCompleteEvent,
   type IndexReplayProgressEvent,
   type IndexRescanNotificationEvent,
+  type IndexScanAbortedEvent,
   type IndexScanCompleteEvent,
   type IndexScanProgressEvent,
   type IndexScanStartedEvent,
@@ -36,6 +37,17 @@ export function onIndexScanProgress(callback: (payload: IndexScanProgressEvent) 
 /** Fires when a full scan completes, carrying the final totals. */
 export function onIndexScanComplete(callback: (payload: IndexScanCompleteEvent) => void): Promise<UnlistenFn> {
   return events.indexScanComplete.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/**
+ * Fires when a network (SMB/MTP) scan ends WITHOUT completing (disconnected,
+ * canceled, timed out). Carries no completion facts — it just tells the FE to
+ * clear the volume's live activity so an aborted scan leaves no stuck row.
+ */
+export function onIndexScanAborted(callback: (payload: IndexScanAbortedEvent) => void): Promise<UnlistenFn> {
+  return events.indexScanAborted.listen((event) => {
     callback(event.payload)
   })
 }

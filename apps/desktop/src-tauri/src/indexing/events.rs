@@ -49,6 +49,20 @@ pub struct IndexScanCompleteEvent {
     pub duration_ms: u64,
 }
 
+/// Emitted when a scan ends WITHOUT completing: a network (SMB/MTP) scan that
+/// disconnected, was canceled, timed out, or otherwise aborted. Unlike
+/// `index-scan-complete`, this writes no completion facts (the partial isn't a
+/// finished index) — it exists purely so the frontend clears the volume's live
+/// activity, so an aborted scan doesn't leave a stuck "scanning" row in the
+/// corner indicator or the breadcrumb badge tooltip. Carries the `volume_id` so
+/// only the aborted volume's activity is cleared.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[tauri_specta(event_name = "index-scan-aborted")]
+#[serde(rename_all = "camelCase")]
+pub struct IndexScanAbortedEvent {
+    pub volume_id: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[tauri_specta(event_name = "index-dir-updated")]
 #[serde(rename_all = "camelCase")]

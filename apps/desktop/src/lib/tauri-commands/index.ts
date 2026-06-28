@@ -548,6 +548,7 @@ export {
   onIndexScanStarted,
   onIndexScanProgress,
   onIndexScanComplete,
+  onIndexScanAborted,
   onIndexAggregationProgress,
   onIndexAggregationComplete,
   onIndexRescanNotification,

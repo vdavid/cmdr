@@ -1798,27 +1798,6 @@
     "description": "Hover tooltip on the gray drive-index dot, shown when a drive isn''t indexed. Invites the user to turn indexing on for folder sizes and search.",
     "screenshot": "mtp-browse.png"
   },
-  "fileExplorer.navigation.driveIndex.tooltipScanning": "Indexing this drive…",
-  "@fileExplorer.navigation.driveIndex.tooltipScanning": {
-    "description": "Hover tooltip on the blue drive-index dot while a scan is running but no live file count has arrived yet (the scan just started). The ellipsis (…) signals ongoing work; keep it."
-  },
-  "fileExplorer.navigation.driveIndex.tooltipScanningCount": "Indexing… {countText} {count, plural, one {file} other {files}}",
-  "@fileExplorer.navigation.driveIndex.tooltipScanningCount": {
-    "description": "Hover tooltip on the blue drive-index dot while a scan is running, showing the live count of files indexed so far so a long scan reads as actively working. The ellipsis (…) signals ongoing work; keep it.",
-    "placeholders": {
-      "countText": "number of files indexed so far, ready to drop into the sentence (e.g. 12,345)",
-      "count": "the same number of files (decides whether the noun is singular or plural)"
-    }
-  },
-  "fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": "Indexing… {countText} {count, plural, one {file} other {files}} · {elapsed}",
-  "@fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": {
-    "description": "Hover tooltip on the blue drive-index dot while a scan is running, showing the live count of files indexed so far and how long the scan has been running. The ellipsis (…) signals ongoing work and the middle dot (·) is a separator; keep both.",
-    "placeholders": {
-      "countText": "number of files indexed so far, ready to drop into the sentence (e.g. 12,345)",
-      "count": "the same number of files (decides whether the noun is singular or plural)",
-      "elapsed": "how long the scan has been running, as a clock (minutes:seconds, e.g. 0:42)"
-    }
-  },
   "fileExplorer.navigation.driveIndex.tooltipFresh": "Indexed and up to date. Last indexed {date}, took {duration}.",
   "@fileExplorer.navigation.driveIndex.tooltipFresh": {
     "description": "Hover tooltip on the green drive-index dot when the drive''s index is current. Names when it was last indexed and how long that scan took.",

@@ -1220,18 +1220,6 @@
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
     "sourceHash": "61d11e9"
   },
-  "fileExplorer.navigation.driveIndex.tooltipScanning": "正在为此驱动器建立索引…",
-  "@fileExplorer.navigation.driveIndex.tooltipScanning": {
-    "sourceHash": "a17d737"
-  },
-  "fileExplorer.navigation.driveIndex.tooltipScanningCount": "正在建立索引… {countText} {count, plural, other {个文件}}",
-  "@fileExplorer.navigation.driveIndex.tooltipScanningCount": {
-    "sourceHash": "1449e6e"
-  },
-  "fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": "正在建立索引… {countText} {count, plural, other {个文件}} · {elapsed}",
-  "@fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": {
-    "sourceHash": "e4344e1"
-  },
   "fileExplorer.navigation.driveIndex.tooltipFresh": "索引已建立且为最新。上次建立索引于 {date}，用时 {duration}。",
   "@fileExplorer.navigation.driveIndex.tooltipFresh": {
     "sourceHash": "d036851"

@@ -9,19 +9,33 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { AggregationProgressEvent, IndexAggregationCompleteEvent } from '$lib/ipc/bindings'
+import type {
+  AggregationProgressEvent,
+  IndexAggregationCompleteEvent,
+  IndexScanAbortedEvent,
+  IndexScanProgressEvent,
+} from '$lib/ipc/bindings'
 
 // Captured callbacks the module registers via the wrappers below.
 let aggProgressCb: ((p: AggregationProgressEvent) => void) | undefined
 let aggCompleteCb: ((p: IndexAggregationCompleteEvent) => void) | undefined
+let scanProgressCb: ((p: IndexScanProgressEvent) => void) | undefined
+let scanAbortedCb: ((p: IndexScanAbortedEvent) => void) | undefined
 
 const noopUnlisten = () => {}
 
-// Mock the typed event wrappers: capture the aggregation ones, no-op the rest.
+// Mock the typed event wrappers: capture the ones the tests drive, no-op the rest.
 vi.mock('$lib/tauri-commands', () => ({
   onIndexScanStarted: () => Promise.resolve(noopUnlisten),
-  onIndexScanProgress: () => Promise.resolve(noopUnlisten),
+  onIndexScanProgress: (cb: (p: IndexScanProgressEvent) => void) => {
+    scanProgressCb = cb
+    return Promise.resolve(noopUnlisten)
+  },
   onIndexScanComplete: () => Promise.resolve(noopUnlisten),
+  onIndexScanAborted: (cb: (p: IndexScanAbortedEvent) => void) => {
+    scanAbortedCb = cb
+    return Promise.resolve(noopUnlisten)
+  },
   onIndexAggregationProgress: (cb: (p: AggregationProgressEvent) => void) => {
     aggProgressCb = cb
     return Promise.resolve(noopUnlisten)
@@ -47,6 +61,7 @@ import {
   initIndexState,
   destroyIndexState,
   getVolumeAggregation,
+  getVolumeActivity,
   getAggregatingVolumeIds,
   isAggregating,
   isAnyVolumeIndexing,
@@ -77,6 +92,8 @@ describe('index-state per-volume aggregation', () => {
     destroyIndexState()
     aggProgressCb = undefined
     aggCompleteCb = undefined
+    scanProgressCb = undefined
+    scanAbortedCb = undefined
     await initIndexState()
   })
 
@@ -117,6 +134,40 @@ describe('index-state per-volume aggregation', () => {
     emitComplete('smb-nas')
     expect(isAggregating()).toBe(false)
     expect(getAggregatingVolumeIds()).toEqual([])
+  })
+
+  it("clears a volume's live activity on an abort (no completion event fires)", () => {
+    if (!scanProgressCb) throw new Error('scan-progress callback not registered')
+    if (!scanAbortedCb) throw new Error('scan-aborted callback not registered')
+
+    // A network scan reports progress (seeds the activity entry), then aborts
+    // (disconnect/cancel) — which fires NO scan-complete, only scan-aborted.
+    scanProgressCb({ volumeId: 'smb-nas', entriesScanned: 1234, dirsFound: 56, bytesScanned: 7890 })
+    emitProgress('smb-nas', 'computing', 10, 100) // a partial aggregation entry too
+    expect(getVolumeActivity('smb-nas')).toBeDefined()
+    expect(getVolumeAggregation('smb-nas')).toBeDefined()
+    expect(isAnyVolumeIndexing()).toBe(true)
+
+    scanAbortedCb({ volumeId: 'smb-nas' })
+
+    // The stuck-row bug fix: the activity (and any partial aggregation) is gone,
+    // so the corner indicator and badge tooltip don't keep a "scanning" row.
+    expect(getVolumeActivity('smb-nas')).toBeUndefined()
+    expect(getVolumeAggregation('smb-nas')).toBeUndefined()
+    expect(isAnyVolumeIndexing()).toBe(false)
+  })
+
+  it('aborting one volume leaves another scanning volume untouched', () => {
+    if (!scanProgressCb) throw new Error('scan-progress callback not registered')
+    if (!scanAbortedCb) throw new Error('scan-aborted callback not registered')
+
+    scanProgressCb({ volumeId: 'smb-a', entriesScanned: 100, dirsFound: 1, bytesScanned: 0 })
+    scanProgressCb({ volumeId: 'mtp-phone', entriesScanned: 7, dirsFound: 1, bytesScanned: 0 })
+
+    scanAbortedCb({ volumeId: 'smb-a' })
+
+    expect(getVolumeActivity('smb-a')).toBeUndefined()
+    expect(getVolumeActivity('mtp-phone')?.entriesScanned).toBe(7)
   })
 
   it('resets the phase start clock on a phase change but keeps it within a phase', () => {

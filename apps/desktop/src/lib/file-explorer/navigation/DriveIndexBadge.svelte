@@ -21,12 +21,12 @@
         driveIndexMenuActions,
         driveIndexMenuLabelKey,
         driveIndexDuration,
-        driveIndexScanProgress,
         hasLastScanFacts,
         type DriveIndexMenuAction,
         type DriveIndexState,
     } from './drive-index-status'
-    import type { DriveScanProgress } from './drive-index-manager.svelte'
+    import { getVolumeActivity, getVolumeAggregation } from '$lib/indexing'
+    import IndexingDriveRow from '$lib/indexing/IndexingDriveRow.svelte'
 
     interface Props {
         /** The drive this badge describes. */
@@ -38,17 +38,13 @@
          * (matches the `.breadcrumb-smb-indicator` spacing). Off for dropdown rows.
          */
         breadcrumb?: boolean
-        /**
-         * Live in-flight scan progress for THIS badge's volume (entries scanned
-         * + start time), or `undefined` when it isn't scanning. When present and
-         * the badge is `scanning`, the tooltip shows a live count + elapsed clock.
-         */
-        scanProgress?: DriveScanProgress | undefined
+        /** This drive's display name, for the scanning tooltip's shared body. */
+        driveName: string
         /** The parent runs the actual IPC for a picked menu action. */
         onAction: (volumeId: string, action: DriveIndexMenuAction) => void
     }
 
-    const { volumeId, status, breadcrumb = false, scanProgress, onAction }: Props = $props()
+    const { volumeId, status, breadcrumb = false, driveName, onAction }: Props = $props()
 
     const badgeState = $derived<DriveIndexState>(driveIndexState(status))
 
@@ -64,35 +60,31 @@
     const duration = $derived(driveIndexDuration(status.scanDurationMs))
     const durationText = $derived(duration ? tString(duration.key, duration.params) : '')
 
-    // A 1 Hz clock that ticks ONLY while this badge is scanning, so the tooltip's
-    // elapsed time advances live (the count itself comes from 500 ms backend
-    // events). Idle badges never run a timer.
-    let now = $state(Date.now())
-    $effect(() => {
-        if (badgeState !== 'scanning') return
-        now = Date.now()
-        const id = setInterval(() => {
-            now = Date.now()
-        }, 1000)
-        return () => {
-            clearInterval(id)
-        }
-    })
+    // This volume's live scan/replay activity + aggregation, the SINGLE source of
+    // live indexing progress (`index-state`). The scanning tooltip renders the
+    // shared status body from it, so the badge and the corner indicator show the
+    // identical representation. `undefined` for a non-root (SMB/MTP) volume in
+    // the window between the freshness flip to `scanning` and the first ~500 ms
+    // progress tick (index-state's root-only backfill doesn't hydrate it) — then
+    // the static text fallback shows instead of an empty tooltip.
+    const activity = $derived(getVolumeActivity(volumeId))
+    const aggregation = $derived(getVolumeAggregation(volumeId))
 
-    // The live "Indexing… N files · 0:42" copy for a scanning badge. Falls back to
-    // the static phrasing before the first progress event arrives (no count yet).
-    const scanningTooltip = $derived.by(() => {
-        if (!scanProgress) return tString('fileExplorer.navigation.driveIndex.tooltipScanning')
-        const { key, params } = driveIndexScanProgress(scanProgress.entriesScanned, scanProgress.scanStartedAt, now)
-        return tString(key, params)
-    })
+    // The shared body lives in a hidden host; we hand its inner element to the
+    // tooltip as `contentEl`. Rich only once it's mounted (activity present), else
+    // the static fallback text. Mirrors the indicator's `contentEl` pattern.
+    let scanBodyEl = $state<HTMLDivElement>()
+    const useRichScanningTooltip = $derived(badgeState === 'scanning' && activity != null && scanBodyEl != null)
 
+    // The text tooltip per state. The `scanning` text is the static fallback for
+    // the no-activity-yet window (the rich body replaces it once activity lands);
+    // unified onto the `indexing.scan.*` family so both surfaces say the same.
     const tooltipText = $derived.by(() => {
         switch (badgeState) {
             case 'disabled':
                 return tString('fileExplorer.navigation.driveIndex.tooltipDisabled')
             case 'scanning':
-                return scanningTooltip
+                return tString('indexing.scan.label')
             case 'stale':
                 return tString('fileExplorer.navigation.driveIndex.tooltipStale')
             case 'fresh':
@@ -104,6 +96,11 @@
                     : tString('fileExplorer.navigation.driveIndex.tooltipFreshNoScan')
         }
     })
+
+    // The tooltip param: the rich DOM body while scanning with live activity,
+    // else the text tooltip for this state. The template blanks it while the
+    // menu is open.
+    const tooltipParam = $derived(useRichScanningTooltip ? { contentEl: scanBodyEl } : tooltipText)
 
     const menuActions = $derived(driveIndexMenuActions(badgeState))
     const showFooter = $derived(hasLastScanFacts(status))
@@ -155,9 +152,21 @@
     aria-label={`${tString('fileExplorer.navigation.driveIndex.ariaLabel')}: ${tooltipText}`}
     aria-haspopup="menu"
     aria-expanded={menuOpen}
-    use:tooltip={menuOpen ? '' : tooltipText}
+    use:tooltip={menuOpen ? '' : tooltipParam}
     onclick={toggleMenu}
 ></button>
+
+{#if badgeState === 'scanning' && activity}
+    <!-- The scanning tooltip's rich body. Lives in a hidden host; the tooltip
+         action adopts the INNER element (`scanBodyEl`) as `contentEl`, not the
+         hidden host (an adopted element keeps its own `hidden`, so a hidden host
+         would render an empty tooltip). Mirrors `IndexingStatusIndicator`. -->
+    <div hidden>
+        <div bind:this={scanBodyEl} class="scan-tooltip-body">
+            <IndexingDriveRow {activity} {aggregation} {driveName} showHeading={false} />
+        </div>
+    </div>
+{/if}
 
 {#if menuOpen}
     <div class="drive-index-menu" bind:this={menuRef} role="menu" onclick={(e: MouseEvent) => { e.stopPropagation() }}>
@@ -179,6 +188,14 @@
 {/if}
 
 <style>
+    /* Stable width for the scanning tooltip's shared body, so it doesn't jitter
+       as the live counters tick (the tooltip action measures once on show and
+       can't see later content growth). The counters wrap within the tooltip's
+       own `max-width` (on `.cmdr-tooltip`). Mirrors the corner indicator. */
+    .scan-tooltip-body {
+        min-width: 200px;
+    }
+
     /* The dot mirrors `.smb-indicator` / `.usb-speed-indicator`: same 10px round
        shape, same flex sizing, but as a focusable <button> (it opens a menu). */
     .drive-index-badge {

@@ -6,9 +6,7 @@
 // items, and footer copy — kept pure (no Svelte, no DOM) so the state→color and
 // state→copy contracts are unit-testable without mounting a component.
 
-import { formatElapsedClock } from '$lib/indexing/elapsed'
 import type { MessageKey } from '$lib/intl/keys.gen'
-import { formatInteger } from '$lib/intl/number-format'
 import type { Freshness, VolumeIndexStatus } from '$lib/ipc/bindings'
 
 /** The four visible badge states. `disabled` is gray (no live index). */
@@ -110,35 +108,4 @@ export function driveIndexDuration(
  */
 export function hasLastScanFacts(status: VolumeIndexStatus): boolean {
   return status.scanCompletedAt != null && status.scanDurationMs != null
-}
-
-/**
- * The live "Indexing… N files" tooltip for a scanning badge, as a key + params
- * the caller resolves with `t()`. Folds in elapsed time ("· 0:42") once the
- * scan has been running for at least a second; below that (or with no recorded
- * start) it's count-only, so the clock never flickers a misleading "0:00".
- *
- * Deliberately count + elapsed only, never an ETA: a phone's FIRST scan has no
- * prior calibration to seed one, and a fabricated estimate would mislead.
- *
- * `nowMs` is passed in (not read here) so a component's ticking clock drives the
- * elapsed value while this stays pure and testable.
- */
-export function driveIndexScanProgress(
-  entriesScanned: number,
-  scanStartedAt: number,
-  nowMs: number,
-): { key: MessageKey; params: Record<string, string | number> } {
-  const countText = formatInteger(entriesScanned)
-  const elapsed = formatElapsedClock(nowMs - scanStartedAt)
-  if (elapsed != null) {
-    return {
-      key: 'fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed',
-      params: { countText, count: entriesScanned, elapsed },
-    }
-  }
-  return {
-    key: 'fileExplorer.navigation.driveIndex.tooltipScanningCount',
-    params: { countText, count: entriesScanned },
-  }
 }

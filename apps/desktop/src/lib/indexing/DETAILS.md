@@ -17,13 +17,15 @@ entry an `AggregationActivity` (`phase`, `current`, `total`, `startedAt`).
 
 ### Public API (`index.ts`)
 
-The barrel exports only the lifecycle + the two cross-module reads (`isScanning`, `getEntriesScanned`, consumed by
-SearchDialog), plus `initIndexState` / `destroyIndexState` / `initIndexEvents`. The indicator imports the rest directly
-from `./index-state.svelte`:
+The barrel exports the lifecycle + the cross-module reads: `isScanning` / `getEntriesScanned` (SearchDialog),
+`getVolumeActivity` / `getVolumeAggregation` (the breadcrumb badge's scanning tooltip, in `navigation/`), plus
+`initIndexState` / `destroyIndexState` / `initIndexEvents`. The indicator (same dir) imports the rest directly from
+`./index-state.svelte`:
 
 ```ts
 // Multi-drive API (the indicator):
 getActiveIndexVolumes(): VolumeIndexActivity[]   // every scanning/replaying volume
+getVolumeActivity(volumeId): VolumeIndexActivity | undefined  // ONE volume's scan/replay activity (the breadcrumb badge)
 isAnyVolumeIndexing(): boolean                    // scan/replay map non-empty OR any volume aggregating (visibility gate)
 getVolumeAggregation(volumeId): AggregationActivity | undefined  // that volume's live aggregation, or undefined
 getAggregatingVolumeIds(): string[]               // every volume currently aggregating
@@ -39,7 +41,7 @@ initIndexEvents(onDirUpdated: (paths: string[]) => void): Promise<UnlistenFn>
 
 ## Scan-state events (`index-state.svelte.ts`)
 
-Eight Tauri events drive the state. All of them carry a `volumeId`: scan and replay key the live-`activity` map,
+Nine Tauri events drive the state. All of them carry a `volumeId`: scan and replay key the live-`activity` map,
 aggregation keys its own `aggregation` map.
 
 - **`index-scan-started`** (`{ volumeId, priorTotalEntries, priorScanDurationMs, volumeUsedBytes }`): create/replace the
@@ -47,6 +49,11 @@ aggregation keys its own `aggregation` map.
 - **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update that volume's counters
   (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
 - **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry.
+- **`index-scan-aborted`** (`{ volumeId }`): a network (SMB/MTP) scan ended WITHOUT completing (disconnect, cancel,
+  timeout), so no `index-scan-complete` fires. Remove the volume's `activity` AND `aggregation` entries — otherwise the
+  partial scan leaves a stuck "scanning" row in the corner and the badge tooltip. Carries no completion facts (it isn't a
+  finished index). The badge dot color is handled separately by the manager's freshness subscription. Emitted by
+  `network_scan.rs`'s disconnect (→ Stale) and cancel/fail (→ not-indexed) arms.
 - **`index-rescan-notification`** (`{ volumeId, reason, details }`): show an info toast with a reason-specific message.
 - **`index-replay-progress`** (`{ volumeId, eventsProcessed, estimatedTotal }`): create/replace the volume's `activity`
   entry as `phase: 'replaying'`, update counters.
@@ -76,9 +83,17 @@ it reads as a title (full-strength `--color-text-primary`, bold) above the statu
 content inside a `<div hidden>` host and passes the inner content div (not the hidden host) to the tooltip action via
 `contentEl`, so the adopted element doesn't carry `hidden` into the tooltip.
 
-Each `IndexingDriveRow` owns its own ETA sliding-window (so several drives indexing at once each get an independent rate
-estimate) and renders one of three modes (priority aggregation > scan > replay), reading from its `VolumeIndexActivity`
-plus its own `AggregationActivity | undefined` (this volume's aggregation, or `undefined` when it isn't aggregating):
+**Body / wrapper split.** `IndexingDriveRow` is a thin WRAPPER: it owns the stateful glue — this volume's two ETA
+sliding windows (scan + replay) and a 1 Hz `now` tick (gated on scanning/aggregating) — and renders the heading + a
+`IndexingStatusBody`. The body is PRESENTATIONAL: it takes the `activity`, `aggregation`, the injected `now`, and the
+wrapper's `windowedEta` (the scan/replay ETA string, which needs the window; aggregation's window-free ETA the body
+computes itself from `now`), and renders the label / detail / bar+percent. No `$effect`, no window state in the body, so
+two surfaces rendering the same volume can't collide on window state — each WRAPPER instance keeps its own window. Both
+surfaces (the corner indicator and the breadcrumb badge's scanning tooltip) render `IndexingDriveRow` (the badge with
+the heading off), so the representation is identical.
+
+Each row renders one of three modes (priority aggregation > scan > replay), reading from its `VolumeIndexActivity` plus
+its own `AggregationActivity | undefined` (this volume's aggregation, or `undefined` when it isn't aggregating):
 
 - **Scan**: a two-tier label, with the live entry/dir counters on their own detail line under it (the honest primary
   signal, always shown once the first progress event lands).
@@ -138,8 +153,12 @@ stateful glue and stays in each `IndexingDriveRow` (so per-drive rates don't col
   (counter-only, first-scan tier-2 count+elapsed with no bar, and calibrated-with-bar — each asserting the always-on
   drive heading), aggregating-with-progress, and multi-drive (a heading per drive). Mocks both `index-state.svelte` and
   the volume store's `getVolumes` (drive-name resolution).
-- **`IndexingDriveRow.a11y.test.ts`**: per-row axe checks for each mode, including the first-scan tier-2 row (count +
-  elapsed, no `progressbar` role).
+- **`IndexingDriveRow.a11y.test.ts`**: per-row axe checks for each mode (the wrapper), including the first-scan tier-2
+  row (count + elapsed, no `progressbar` role).
+- **`IndexingStatusBody.svelte.test.ts`**: the shared presentational body, mounted per mode from a fixture activity —
+  scan tier-1 (bar + percent), tier-2 first scan (count + elapsed, NO progressbar), counter-only, aggregation, replay.
+- **`index-state.svelte.test.ts`**: per-volume aggregation attribution, plus `index-scan-aborted` clearing a volume's
+  activity + aggregation (the network-abort stuck-row regression).
 - **`elapsed.test.ts`**: `formatElapsedClock` (sub-second → `null`, `m:ss` formatting, zero-padding, flooring).
 
 The reactive event-driven glue in `index-state.svelte.ts` is allowlisted in `coverage-allowlist.json`. Manual end-to-end

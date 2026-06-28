@@ -1,13 +1,43 @@
 /**
  * Component tests for `DriveIndexBadge.svelte`: the state→color mapping renders
- * the right class, and the click menu shows the right items + footer per state.
- * The pure mapping is covered separately in `drive-index-status.test.ts`; this
- * verifies the component honors it.
+ * the right class, the click menu shows the right items + footer per state, and
+ * the scanning tooltip renders the shared status body from `index-state` live
+ * activity (or the static fallback when there's no activity yet). The pure
+ * mapping is covered in `drive-index-status.test.ts`; this verifies the component
+ * honors it.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushSync } from 'svelte'
-import DriveIndexBadge from './DriveIndexBadge.svelte'
 import type { VolumeIndexStatus } from '$lib/ipc/bindings'
+import type { VolumeIndexActivity } from '$lib/indexing'
+
+// The badge reads its own volume's live activity from `index-state` (the single
+// live-activity source). Mock it so we can drive the scanning tooltip body.
+let badgeActivity: VolumeIndexActivity | undefined
+vi.mock('$lib/indexing', () => ({
+  getVolumeActivity: () => badgeActivity,
+  getVolumeAggregation: () => undefined,
+}))
+
+import DriveIndexBadge from './DriveIndexBadge.svelte'
+
+function scanActivity(overrides: Partial<VolumeIndexActivity> = {}): VolumeIndexActivity {
+  return {
+    volumeId: 'smb-test',
+    phase: 'scanning',
+    entriesScanned: 12_345,
+    dirsFound: 678,
+    bytesScanned: 1_000_000,
+    scanStartedAt: Date.now() - 4000,
+    priorTotalEntries: null,
+    priorScanDurationMs: null,
+    volumeUsedBytes: null,
+    replayEventsProcessed: 0,
+    replayEstimatedTotal: 0,
+    replayStartedAt: 0,
+    ...overrides,
+  }
+}
 
 /** Query an HTML element that must exist; fails the test loudly if it doesn't. */
 function must(root: ParentNode, selector: string): HTMLElement {
@@ -27,14 +57,13 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
   }
 }
 
-function render(
-  status: VolumeIndexStatus,
-  onAction = vi.fn(),
-  scanProgress?: { entriesScanned: number; scanStartedAt: number },
-) {
+function render(status: VolumeIndexStatus, onAction = vi.fn()) {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(DriveIndexBadge, { target, props: { volumeId: status.volumeId, status, scanProgress, onAction } })
+  mount(DriveIndexBadge, {
+    target,
+    props: { volumeId: status.volumeId, status, driveName: 'Backups', onAction },
+  })
   flushSync()
   return { target, onAction }
 }
@@ -43,6 +72,10 @@ function render(
 function ariaLabel(target: HTMLElement): string {
   return must(target, '.drive-index-badge').getAttribute('aria-label') ?? ''
 }
+
+beforeEach(() => {
+  badgeActivity = undefined
+})
 
 describe('DriveIndexBadge color class', () => {
   it('renders the gray class when disabled', () => {
@@ -114,38 +147,35 @@ describe('DriveIndexBadge menu', () => {
 })
 
 describe('DriveIndexBadge scanning tooltip', () => {
-  it('falls back to the static scanning phrasing before any progress arrives', () => {
+  it('falls back to the static scanning phrasing when there is no live activity yet', () => {
+    badgeActivity = undefined
     const { target } = render(makeStatus({ freshness: 'scanning' }))
-    expect(ariaLabel(target)).toContain('Indexing this drive')
+    // Unified onto the indexing.scan.* family; no rich body host rendered.
+    expect(ariaLabel(target)).toContain('Scanning your drive')
+    expect(target.querySelector('.scan-tooltip-body')).toBeNull()
   })
 
-  it('shows the live file count once progress has arrived', () => {
-    const { target } = render(makeStatus({ freshness: 'scanning' }), vi.fn(), {
-      entriesScanned: 12_345,
-      scanStartedAt: Date.now(),
-    })
-    const label = ariaLabel(target)
-    expect(label).toContain('Indexing…')
-    // Thousands-separated count (separator is locale-dependent; check both ends).
-    expect(label).toMatch(/12.345/)
-    expect(label).toContain('files')
+  it('renders the shared status body (count + elapsed) once live activity is present', () => {
+    badgeActivity = scanActivity({ volumeUsedBytes: 10_000_000 }) // rough first scan: count + elapsed, no bar
+    const { target } = render(makeStatus({ freshness: 'scanning' }))
+    const body = target.querySelector('.scan-tooltip-body')
+    expect(body).not.toBeNull()
+    expect(body?.textContent).toContain('Scanning your drive')
+    expect(body?.textContent).toContain('12,345')
+    // Rough first scan → no progress bar.
+    expect(body?.querySelector('[role="progressbar"]')).toBeNull()
   })
 
-  it('appends the elapsed clock once the scan has run for over a second', () => {
-    const { target } = render(makeStatus({ freshness: 'scanning' }), vi.fn(), {
-      entriesScanned: 7,
-      scanStartedAt: Date.now() - 42_000,
-    })
-    expect(ariaLabel(target)).toContain('0:42')
+  it('renders the calibrated bar when the scan has a prior-scan denominator', () => {
+    badgeActivity = scanActivity({ priorTotalEntries: 100_000 })
+    const { target } = render(makeStatus({ freshness: 'scanning' }))
+    const body = target.querySelector('.scan-tooltip-body')
+    expect(body?.querySelector('[role="progressbar"]')).not.toBeNull()
   })
 
-  it('ignores scan progress when the badge is not scanning', () => {
-    const { target } = render(makeStatus({ freshness: 'fresh' }), vi.fn(), {
-      entriesScanned: 999,
-      scanStartedAt: Date.now(),
-    })
-    const label = ariaLabel(target)
-    expect(label).not.toContain('Indexing…')
-    expect(label).not.toContain('999')
+  it('does not render the rich body when the badge is not scanning', () => {
+    badgeActivity = scanActivity()
+    const { target } = render(makeStatus({ freshness: 'fresh' }))
+    expect(target.querySelector('.scan-tooltip-body')).toBeNull()
   })
 })

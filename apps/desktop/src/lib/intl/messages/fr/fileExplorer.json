@@ -1227,18 +1227,6 @@
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
     "sourceHash": "61d11e9"
   },
-  "fileExplorer.navigation.driveIndex.tooltipScanning": "Indexation de ce disque…",
-  "@fileExplorer.navigation.driveIndex.tooltipScanning": {
-    "sourceHash": "a17d737"
-  },
-  "fileExplorer.navigation.driveIndex.tooltipScanningCount": "Indexation… {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}",
-  "@fileExplorer.navigation.driveIndex.tooltipScanningCount": {
-    "sourceHash": "1449e6e"
-  },
-  "fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": "Indexation… {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}} · {elapsed}",
-  "@fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": {
-    "sourceHash": "e4344e1"
-  },
   "fileExplorer.navigation.driveIndex.tooltipFresh": "Indexé et à jour. Dernière indexation {date}, a pris {duration}.",
   "@fileExplorer.navigation.driveIndex.tooltipFresh": {
     "sourceHash": "d036851"

@@ -776,7 +776,7 @@
             <DriveIndexBadge
                 volumeId={currentVolume.id}
                 status={activeIndexStatus}
-                scanProgress={driveIndex.getScanProgress(currentVolume.id)}
+                driveName={currentVolume.name}
                 breadcrumb
                 onAction={onDriveIndexAction}
             />
@@ -918,7 +918,7 @@
                                 <DriveIndexBadge
                                     volumeId={volume.id}
                                     status={rowIndexStatus}
-                                    scanProgress={driveIndex.getScanProgress(volume.id)}
+                                    driveName={volume.name}
                                     onAction={onDriveIndexAction}
                                 />
                             {/if}

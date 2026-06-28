@@ -1221,18 +1221,6 @@
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
     "sourceHash": "61d11e9"
   },
-  "fileExplorer.navigation.driveIndex.tooltipScanning": "A meghajtó indexelése…",
-  "@fileExplorer.navigation.driveIndex.tooltipScanning": {
-    "sourceHash": "a17d737"
-  },
-  "fileExplorer.navigation.driveIndex.tooltipScanningCount": "Indexelés… {countText} {count, plural, one {fájl} other {fájl}}",
-  "@fileExplorer.navigation.driveIndex.tooltipScanningCount": {
-    "sourceHash": "1449e6e"
-  },
-  "fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": "Indexelés… {countText} {count, plural, one {fájl} other {fájl}} · {elapsed}",
-  "@fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": {
-    "sourceHash": "e4344e1"
-  },
   "fileExplorer.navigation.driveIndex.tooltipFresh": "Indexelve és naprakész. Utolsó indexelés: {date}, időtartam: {duration}.",
   "@fileExplorer.navigation.driveIndex.tooltipFresh": {
     "sourceHash": "d036851"

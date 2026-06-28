@@ -26,6 +26,7 @@ import {
   onIndexReplayComplete,
   onIndexReplayProgress,
   onIndexRescanNotification,
+  onIndexScanAborted,
   onIndexScanComplete,
   onIndexScanProgress,
   onIndexScanStarted,
@@ -131,6 +132,14 @@ export function getActiveIndexVolumes(): VolumeIndexActivity[] {
   return [...activity.values()]
 }
 
+/** One volume's live scan/replay activity, or `undefined` when it isn't
+ *  scanning or replaying. Reactive. The breadcrumb badge reads its OWN volume's
+ *  activity through this to render the shared status body (the single live-activity
+ *  source; the badge manager owns only freshness/menu facts, not live progress). */
+export function getVolumeActivity(volumeId: string): VolumeIndexActivity | undefined {
+  return activity.get(volumeId)
+}
+
 /** Whether ANY drive is scanning, replaying, or aggregating. The corner
  *  hourglass's visibility gate. Reactive. */
 export function isAnyVolumeIndexing(): boolean {
@@ -228,6 +237,18 @@ export async function initIndexState(): Promise<void> {
     activity.delete(payload.volumeId)
   })
   unlistenHandles.push(unlistenComplete)
+
+  const unlistenAborted = await onIndexScanAborted((payload) => {
+    eventVersion++
+    // A network scan ended without completing (disconnect, cancel, timeout). No
+    // completion event fires for it, so clear this volume's live activity (and
+    // any partial aggregation) here, or the corner indicator and badge tooltip
+    // would keep a stuck "scanning" row. Freshness (the badge dot color) is
+    // handled separately by the manager's freshness subscription.
+    activity.delete(payload.volumeId)
+    aggregation.delete(payload.volumeId)
+  })
+  unlistenHandles.push(unlistenAborted)
 
   const unlistenAggregation = await onIndexAggregationProgress((payload) => {
     const { volumeId, phase, current, total } = payload

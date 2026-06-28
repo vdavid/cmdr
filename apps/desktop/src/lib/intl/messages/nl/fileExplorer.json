@@ -1229,18 +1229,6 @@
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
     "sourceHash": "61d11e9"
   },
-  "fileExplorer.navigation.driveIndex.tooltipScanning": "Deze schijf wordt geïndexeerd…",
-  "@fileExplorer.navigation.driveIndex.tooltipScanning": {
-    "sourceHash": "a17d737"
-  },
-  "fileExplorer.navigation.driveIndex.tooltipScanningCount": "Indexeren… {countText} {count, plural, one {bestand} other {bestanden}}",
-  "@fileExplorer.navigation.driveIndex.tooltipScanningCount": {
-    "sourceHash": "1449e6e"
-  },
-  "fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": "Indexeren… {countText} {count, plural, one {bestand} other {bestanden}} · {elapsed}",
-  "@fileExplorer.navigation.driveIndex.tooltipScanningCountElapsed": {
-    "sourceHash": "e4344e1"
-  },
   "fileExplorer.navigation.driveIndex.tooltipFresh": "Geïndexeerd en up-to-date. Laatst geïndexeerd op {date}, duurde {duration}.",
   "@fileExplorer.navigation.driveIndex.tooltipFresh": {
     "sourceHash": "d036851"
