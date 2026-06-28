@@ -6,8 +6,8 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
-- [ ] 2026-06-28 local-reconcile-rescan-plan.md - Reclaim index DB disk: recreate-on-schema-mismatch + port the
-      SMB/MTP reconcile-in-place rescan onto the local jwalk path (stale sizes stay visible, no freelist balloon)
+- [ ] 2026-06-28 local-reconcile-rescan-plan.md - Reclaim index DB disk: recreate-on-schema-mismatch + port the SMB/MTP
+      reconcile-in-place rescan onto the local jwalk path (stale sizes stay visible, no freelist balloon)
 
 ## Later
 
@@ -23,6 +23,8 @@ Deferred future work. Unchecked by default; the folder name is the status.
 - [ ] 2026-06-04 later/agent-spec.md - Persistent in-app agent proposing file operations
 - [ ] 2026-06-04 later/data-dir-rename-spec-draft.md - Rename data directories from bundle-id to plain names
 - [ ] 2026-06-10 later/codegraph-tauri-resolver.md - Teach CodeGraph to trace Cmdr's Tauri IPC boundary
+- [ ] 2026-06-28 later/index-vacuum-reader-pinning.md - Reclaim residual index-DB freelist that long-lived root
+      readers stop the incremental vacuum from returning to the OS (deferred: the big freelist sources are now fixed)
 - [ ] 2026-06-21 later/transfer-queue-v2-plan.md - Transfer queue/pause v2: per-lane budgets (FTP conns), mid-large-file
       pause, concurrent-path pause, connection keep-alive, queue reorder/persist
 - [ ] 2026-06-13 later/docs-single-source-sweep.md - Multi-agent sweep to de-duplicate mechanism docs (map points, one
