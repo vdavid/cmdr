@@ -100,7 +100,11 @@ fn build_live_children(
         } else {
             true
         };
-        let entry_physical = if counts_physical { snap.physical_size.unwrap_or(0) } else { 0 };
+        let entry_physical = if counts_physical {
+            snap.physical_size.unwrap_or(0)
+        } else {
+            0
+        };
         *total_physical_bytes += entry_physical;
         *total_entries += 1;
         progress.entries_scanned.fetch_add(1, Ordering::Relaxed);
