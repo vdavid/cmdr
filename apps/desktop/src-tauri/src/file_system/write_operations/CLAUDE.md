@@ -1,9 +1,7 @@
 # Write operations
 
 Copy, move, delete, and trash with streaming progress, cancellation, conflict resolution, and rollback. macOS and Linux.
-Documents the cross-cutting machinery both subdirs share: the operation manager (queue/lanes), the `OperationIntent`
-state machine, the caches, the `OperationEventSink` trait, scan/scan-preview, the `EtaEstimator`, and the settle
-contract.
+Documents the cross-cutting machinery both subdirs share (see the module map and must-knows below).
 
 ## Module map
 
@@ -17,7 +15,7 @@ contract.
   others (full inventory in DETAILS). Behavior modules depend on `types`, not the reverse.
 - Frontend counterpart: [`src/lib/file-operations/CLAUDE.md`](../../../../src/lib/file-operations/CLAUDE.md).
 
-## Must-knows (invariants and guardrails)
+## Must-knows
 
 - **Every write op spawns through `manager::spawn_managed`** (all five paths). An op holds a slot in each lane it
   touches (`Volume::lane_key()`, source AND dest), runs only when all are free (budget 1), else Queued. The next op
@@ -55,4 +53,4 @@ contract.
 - **Volume-aware ops must not emit `write-error` on `Cancelled`** (the inner handler already emitted `write-cancelled`);
   the outer wrapper matches `Cancelled` and skips.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read before non-trivial work here.

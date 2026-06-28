@@ -1,8 +1,8 @@
 # Transfer (copy and move)
 
-Frontend for copy (F5) and move (F6): destination picker, dry-run conflict scan, progress dialog with dual bars, rich
-error rendering. Parameterized by `operationType: 'copy' | 'move'` so one set of components serves both; the progress
-dialog is also reused by delete/trash (`operationType: 'delete' | 'trash'`).
+Frontend for copy (F5) and move (F6): destination picker, dry-run conflict scan, dual-bar progress dialog, error
+rendering. Parameterized by `operationType: 'copy' | 'move'` so one component set serves both; the progress dialog is
+reused by delete/trash too (`'delete' | 'trash'`).
 
 Backend:
 [`src-tauri/src/file_system/write_operations/transfer/CLAUDE.md`](../../../../src-tauri/src/file_system/write_operations/transfer/CLAUDE.md)
@@ -53,11 +53,10 @@ ETA/throughput, settle contract).
   signal E2E polls. Don't remove it.
 - **MTP move is interleaved copy + delete per file** (not copy-all-then-delete-all): on partial failure only the current
   file exists in both places. Rollback hidden during the delete phase.
-- **Progress-dialog Pause/Queue (full flow + auto-queue in DETAILS).** Pause/Resume + the "Paused" title follow the
+- **Progress-dialog Pause/Queue** (full flow + auto-queue in DETAILS). Pause/Resume + the "Paused" title follow the
   `operations-changed` snapshot status, never `is_running`. Queue + the dialog-scoped F2 are FRONTEND-ONLY: set
   `backgrounded`, open the queue window, unmount via `onQueue` WITHOUT cancelling. `backgrounded` also makes `onDestroy`
   skip its safety-net cancel — don't break that gate or a backgrounded op dies on unmount. F2 is scoped by
   `ModalDialog`'s overlay `stopPropagation` (stays global `file.rename` when closed); negative test pins it.
 
-Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
+Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read before non-trivial work here.

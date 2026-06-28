@@ -18,7 +18,7 @@ Per-file roles: DETAILS § "Module structure" or `codegraph_search`. Groupings:
 
 IPC in `commands/indexing.rs`; frontend in `src/lib/indexing/`; search in `src/search/`.
 
-## Must-knows (invariants and guardrails)
+## Must-knows
 
 All invariants hold PER volume id; DETAILS has the why.
 
@@ -64,4 +64,4 @@ SMB/MTP indexing (read DETAILS before touching this area):
   in `objc2::rc::autoreleasepool` (else multi-GB leaks). Use `tauri::async_runtime::spawn`; `tokio::spawn` panics from
   the sync `setup()` hook.
 
-Flows, decisions, and gotchas: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Flows, decisions, and gotchas: [DETAILS.md](DETAILS.md). Read before non-trivial work here.
