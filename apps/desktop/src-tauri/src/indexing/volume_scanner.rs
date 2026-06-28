@@ -199,6 +199,7 @@ pub(crate) async fn scan_volume_via_trait(
     // item is an absolute directory path; the root is already mapped to ROOT_ID.
     let mut queue: VecDeque<PathBuf> = VecDeque::new();
     queue.push_back(root.clone());
+    let mut last_progress_log = Instant::now();
 
     while let Some(dir_path) = queue.pop_front() {
         if cancelled.load(Ordering::Relaxed) {
@@ -288,6 +289,7 @@ pub(crate) async fn scan_volume_via_trait(
         // so an empty result still marks. A listing that ERRORED hit `continue`
         // above and never reaches this point, so it stays `listed_epoch=0`.
         listed_ids.push(parent_id);
+        log_scan_progress(&mut last_progress_log, "scanning", &dir_path, total_dirs, total_entries);
 
         for entry in entries {
             let is_dir = entry.is_directory;
@@ -296,10 +298,22 @@ pub(crate) async fn scan_volume_via_trait(
             let id = scan_ctx.alloc_id();
 
             if is_dir {
-                scan_ctx.register_dir(child_path.clone(), id);
-                queue.push_back(child_path);
                 total_dirs += 1;
                 progress.dirs_found.fetch_add(1, Ordering::Relaxed);
+                // Skip recursion into NAS snapshot/system dirs (@eaDir,
+                // @Recently-Snapshot, …): hardlinked/huge, and recursively sizing them
+                // stalled a real first-scan. The row is still indexed (visible,
+                // navigable); we just don't walk its subtree, so its size stays
+                // honestly unknown rather than a misleading roll-up. See `system_dirs`.
+                if crate::indexing::system_dirs::is_recursion_excluded_dir(&entry.name) {
+                    log::debug!(
+                        "volume_scanner: not descending into NAS system dir {}",
+                        child_path.display()
+                    );
+                } else {
+                    scan_ctx.register_dir(child_path.clone(), id);
+                    queue.push_back(child_path);
+                }
             }
 
             // SMB/MTP have no inode and no separate physical size; mirror the
@@ -429,6 +443,7 @@ pub(crate) async fn reconcile_volume_via_trait(
     // ids after a writer flush before we recurse into them.
     let mut queue: VecDeque<(PathBuf, i64)> = VecDeque::new();
     queue.push_back((root.clone(), ROOT_ID));
+    let mut last_progress_log = Instant::now();
     // New child dirs discovered this pass, drained after a level's flush. Each is
     // (parent dir path, parent DB id, child name): we resolve the freshly-written
     // child by `(parent_id, name)` rather than by absolute path, because the index
@@ -514,6 +529,13 @@ pub(crate) async fn reconcile_volume_via_trait(
 
         // This dir's listing succeeded — stamp it (incl. empty).
         listed_ids.push(dir_id);
+        log_scan_progress(
+            &mut last_progress_log,
+            "reconciling",
+            &dir_path,
+            total_dirs,
+            total_entries,
+        );
 
         // Normalize the live listing into source-agnostic `LiveChild`s.
         let mut live_children: Vec<LiveChild> = Vec::with_capacity(entries.len());
@@ -557,10 +579,18 @@ pub(crate) async fn reconcile_volume_via_trait(
         added += diff.added;
         removed += diff.removed;
         updated += diff.updated;
+        // Same NAS snapshot/system-dir exclusion as the fresh scan: keep the row
+        // (it's diffed in like any child) but don't recurse into its subtree.
         for (child_id, child_name) in diff.matched_child_dirs {
+            if crate::indexing::system_dirs::is_recursion_excluded_dir(&child_name) {
+                continue;
+            }
             queue.push_back((dir_path.join(child_name), child_id));
         }
         for child_name in diff.new_child_dir_names {
+            if crate::indexing::system_dirs::is_recursion_excluded_dir(&child_name) {
+                continue;
+            }
             new_dirs.push((dir_path.clone(), dir_id, child_name));
         }
 
@@ -718,6 +748,27 @@ fn flush_batch(batch: &mut Vec<EntryRow>, writer: &IndexWriter) -> Result<(), Vo
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
 }
 
+/// Minimum gap between scan-progress heartbeat log lines.
+const PROGRESS_LOG_INTERVAL: Duration = Duration::from_secs(1);
+
+/// Throttled scan-progress heartbeat (~1/s) at DEBUG. The per-listing
+/// `SmbVolume::list_directory` line is at TRACE (off by default), so on a long network
+/// scan this is what tells a triager reading an error report that the walk is ALIVE,
+/// WHERE it is, and how far along — without the per-directory flood. `phase` is
+/// `"scanning"` (fresh) or `"reconciling"`.
+fn log_scan_progress(last_log: &mut Instant, phase: &str, dir_path: &Path, total_dirs: u64, total_entries: u64) {
+    if last_log.elapsed() < PROGRESS_LOG_INTERVAL {
+        return;
+    }
+    *last_log = Instant::now();
+    log::debug!(
+        "volume_scanner: {phase}… {}, {}, current: {}",
+        crate::pluralize::pluralize(total_dirs, "dir"),
+        crate::pluralize::pluralize_with(total_entries, "entry", "entries"),
+        dir_path.display()
+    );
+}
+
 fn summary(entries: u64, dirs: u64, physical_bytes: u64, start: Instant, cancelled: bool) -> ScanSummary {
     ScanSummary {
         total_entries: entries,
@@ -807,6 +858,79 @@ mod tests {
         assert_eq!(sub_children.len(), 1);
         assert_eq!(sub_children[0].name, "leaf.txt");
         assert_eq!(sub_children[0].logical_size, Some(11));
+    }
+
+    /// The recursive size scan must NOT descend into NAS snapshot/system dirs
+    /// (`@eaDir`, `@Recently-Snapshot`, …): they're hardlinked/huge and recursively
+    /// sizing them stalled a real first-scan (`@Recently-Snapshot` alone reported 44 TB
+    /// on a 10 TB volume). The dir's OWN row stays indexed (listed + navigable), but its
+    /// subtree is never walked — at the share root AND nested inside a normal dir.
+    #[tokio::test]
+    async fn skips_recursion_into_nas_system_dirs() {
+        use crate::indexing::writer::IndexWriter;
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("vol-scan-skip.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        let vol = InMemoryVolume::with_entries(
+            "Test",
+            vec![
+                entry("photos", "/photos", true, None),
+                // Synology thumbnail sidecar nested inside a normal dir → skip recursion.
+                entry("@eaDir", "/photos/@eaDir", true, None),
+                entry("thumb.jpg", "/photos/@eaDir/thumb.jpg", false, Some(999)),
+                // Snapshot root at the share root → skip recursion.
+                entry("@Recently-Snapshot", "/@Recently-Snapshot", true, None),
+                entry(
+                    "full-copy.bin",
+                    "/@Recently-Snapshot/full-copy.bin",
+                    false,
+                    Some(44_000),
+                ),
+                entry("keep.txt", "/keep.txt", false, Some(5)),
+            ],
+        );
+        let vol: Arc<dyn Volume> = Arc::new(vol);
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
+            .await
+            .expect("scan should complete");
+
+        writer.flush().await.expect("flush");
+        writer.shutdown();
+
+        let store = IndexStore::open(&db_path).expect("reopen");
+
+        // The system dirs themselves ARE indexed (visible + navigable).
+        let root_children = store.list_children(ROOT_ID).expect("list root");
+        let snap = root_children
+            .iter()
+            .find(|e| e.name == "@Recently-Snapshot")
+            .expect("@Recently-Snapshot row present (visible, navigable)");
+        let photos = root_children
+            .iter()
+            .find(|e| e.name == "photos")
+            .expect("photos present");
+
+        // …but their subtrees are NOT walked.
+        assert_eq!(
+            store.list_children(snap.id).expect("list snapshot").len(),
+            0,
+            "snapshot subtree must not be indexed (no recursive descent)",
+        );
+        let photos_children = store.list_children(photos.id).expect("list photos");
+        let eadir = photos_children
+            .iter()
+            .find(|e| e.name == "@eaDir")
+            .expect("@eaDir row present under photos");
+        assert_eq!(
+            store.list_children(eadir.id).expect("list eaDir").len(),
+            0,
+            "@eaDir subtree must not be indexed even nested under a normal dir",
+        );
     }
 
     /// A test `Volume` that delegates to an inner `InMemoryVolume` but returns a

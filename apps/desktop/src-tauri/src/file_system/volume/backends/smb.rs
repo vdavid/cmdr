@@ -11,7 +11,7 @@ use super::{
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::listing::caching::try_get_watched_listing;
-use log::{debug, info, warn};
+use log::{debug, info, trace, warn};
 use smb2::client::tree::Tree;
 use smb2::{ClientConfig, SmbClient};
 use std::future::Future;
@@ -446,7 +446,11 @@ impl SmbVolume {
         let smb_path = self.to_smb_path(path);
         let display_path = self.to_display_path(&smb_path);
 
-        debug!(
+        // TRACE, not DEBUG: this fires per listing for both the live pane and the index
+        // scan, and was ~9% of normal file-log volume. The scan's own progress signal is
+        // the throttled `volume_scanner: scanning…` DEBUG heartbeat. Bump back with
+        // `RUST_LOG=cmdr_lib::file_system::volume::backends::smb=trace` when chasing a listing bug.
+        trace!(
             "SmbVolume::list_directory: share={}, input={:?}, smb_path={:?}",
             self.share_name, path, smb_path
         );
@@ -465,7 +469,7 @@ impl SmbVolume {
             .map(|e| directory_entry_to_file_entry(e, &display_path))
             .collect();
 
-        debug!(
+        trace!(
             "SmbVolume::list_directory: completed in {:?}, {} entries",
             start.elapsed(),
             entries.len()

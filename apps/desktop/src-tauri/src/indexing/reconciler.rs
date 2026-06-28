@@ -43,15 +43,17 @@ use crate::pluralize::pluralize;
 /// events is always safe.
 const MAX_BUFFER_CAPACITY: usize = 500_000;
 
-/// Aggregator for "removal for unknown path, skipping" events. The per-event line is
-/// at TRACE (off by default; file chain captures Debug+ only); this module emits a
-/// single DEBUG summary every ~5 s, so error report bundles still carry the
-/// existence-of-drift signal without the per-event noise.
+/// Aggregator for high-volume reconciler skip events. Each per-event line is at TRACE
+/// (off by default; file chain captures Debug+ only); this aggregator emits a single
+/// DEBUG summary every ~5 s, so error report bundles still carry the existence-of-drift
+/// signal without the per-event noise. Two instances cover the two skip classes that
+/// dominate normal log volume: [`UNKNOWN_PATH_SKIPS`] (removal for a path not in the DB)
+/// and [`STALE_PARENT_SKIPS`] (create/modify whose parent dir isn't in the DB).
 ///
 /// Most skips are harmless build-output churn, but a sustained rate (or a sample path
 /// in an unexpected tree) can flag real reconciler/index drift. Triagers: if you need
 /// the per-event detail, run with `RUST_LOG=cmdr_lib::indexing::reconciler=trace,debug`.
-mod unknown_path_skips {
+mod skip_aggregator {
     use std::sync::Mutex;
     use std::time::Instant;
 
@@ -69,47 +71,74 @@ mod unknown_path_skips {
         sample: Option<String>,
     }
 
-    static STATE: Mutex<Option<State>> = Mutex::new(None);
+    /// One skip category: its own rolling state plus the words for the summary line
+    /// (`"skipped {unit}s {reason} in …"`).
+    pub(super) struct SkipAggregator {
+        state: Mutex<Option<State>>,
+        /// Counted noun, e.g. `"removal"` → "skipped 3 removals".
+        unit: &'static str,
+        /// Reason phrase, e.g. `"for unknown paths"`.
+        reason: &'static str,
+    }
 
-    /// Increment the counter and emit a summary if the flush interval has elapsed.
-    /// Called on every skipped removal (cheap: one mutex acquisition, one branch).
-    pub(super) fn record(path: &str) {
-        let mut guard = match STATE.lock() {
-            Ok(g) => g,
-            Err(p) => p.into_inner(),
-        };
-        let state = guard.get_or_insert_with(|| State {
-            count_since_last_flush: 0,
-            total: 0,
-            last_flush: Instant::now(),
-            sample: None,
-        });
-        state.count_since_last_flush += 1;
-        state.total += 1;
-        if state.sample.is_none() {
-            let s = if path.len() > SAMPLE_LEN {
-                format!("{}…", &path[..SAMPLE_LEN])
-            } else {
-                path.to_string()
-            };
-            state.sample = Some(s);
+    impl SkipAggregator {
+        const fn new(unit: &'static str, reason: &'static str) -> Self {
+            Self {
+                state: Mutex::new(None),
+                unit,
+                reason,
+            }
         }
-        if state.last_flush.elapsed().as_secs() >= FLUSH_INTERVAL_SECS {
-            let count = state.count_since_last_flush;
-            let total = state.total;
-            let sample = state.sample.clone().unwrap_or_default();
-            let secs = state.last_flush.elapsed().as_secs_f64();
-            state.count_since_last_flush = 0;
-            state.last_flush = Instant::now();
-            state.sample = None;
-            // Drop the lock before logging so the message format won't reenter under it.
-            drop(guard);
-            log::debug!(
-                "Reconciler: skipped {} for unknown paths in {secs:.1}s [{total} total], sample: {sample}",
-                pluralize(count, "removal")
-            );
+
+        /// Increment the counter and emit a summary if the flush interval has elapsed.
+        /// Called on every skip (cheap: one mutex acquisition, one branch).
+        pub(super) fn record(&self, path: &str) {
+            let mut guard = match self.state.lock() {
+                Ok(g) => g,
+                Err(p) => p.into_inner(),
+            };
+            let state = guard.get_or_insert_with(|| State {
+                count_since_last_flush: 0,
+                total: 0,
+                last_flush: Instant::now(),
+                sample: None,
+            });
+            state.count_since_last_flush += 1;
+            state.total += 1;
+            if state.sample.is_none() {
+                // Truncate on a CHAR boundary, not a byte index: NAS paths carry accented
+                // names (e.g. "Külkeres síelés"), and `&path[..SAMPLE_LEN]` would panic
+                // when byte SAMPLE_LEN lands mid-codepoint.
+                let s = if path.chars().count() > SAMPLE_LEN {
+                    format!("{}…", path.chars().take(SAMPLE_LEN).collect::<String>())
+                } else {
+                    path.to_string()
+                };
+                state.sample = Some(s);
+            }
+            if state.last_flush.elapsed().as_secs() >= FLUSH_INTERVAL_SECS {
+                let count = state.count_since_last_flush;
+                let total = state.total;
+                let sample = state.sample.clone().unwrap_or_default();
+                let secs = state.last_flush.elapsed().as_secs_f64();
+                state.count_since_last_flush = 0;
+                state.last_flush = Instant::now();
+                state.sample = None;
+                let (unit, reason) = (self.unit, self.reason);
+                // Drop the lock before logging so the message format won't reenter under it.
+                drop(guard);
+                log::debug!(
+                    "Reconciler: skipped {} {reason} in {secs:.1}s [{total} total], sample: {sample}",
+                    pluralize(count, unit)
+                );
+            }
         }
     }
+
+    /// Removals for a path that isn't in the DB (mostly harmless build-output churn).
+    pub(super) static UNKNOWN_PATH_SKIPS: SkipAggregator = SkipAggregator::new("removal", "for unknown paths");
+    /// Create/modify events whose parent dir isn't in the DB (stale intermediate dir).
+    pub(super) static STALE_PARENT_SKIPS: SkipAggregator = SkipAggregator::new("event", "for missing parents");
 }
 
 /// Buffers FSEvents during the initial scan and replays them after the scan completes.
@@ -921,7 +950,7 @@ fn handle_removal(
             // genuinely harmless. The aggregate at DEBUG (below) gives the existence-of-
             // drift signal without flooding the file.
             log::trace!("Reconciler: removal for unknown path, skipping: {normalized}");
-            unknown_path_skips::record(normalized);
+            skip_aggregator::UNKNOWN_PATH_SKIPS.record(normalized);
             return Some(affected);
         }
         Err(e) => {
@@ -985,8 +1014,12 @@ fn handle_creation_or_modification(
     let parent_id = match store::resolve_path(conn, parent_path) {
         Ok(Some(id)) => id,
         Ok(None) => {
-            // Parent not in DB -- stale event (intermediate directory missing), skip
-            log::debug!("Reconciler: parent path not in DB, skipping event for {normalized} (parent: {parent_path})");
+            // Parent not in DB -- stale event (intermediate directory missing), skip.
+            // Per-event at TRACE; a DEBUG aggregate every ~5 s keeps the drift signal in
+            // error reports without the per-event flood (this was ~13% of normal log
+            // volume, almost all harmless build-output churn).
+            log::trace!("Reconciler: parent path not in DB, skipping event for {normalized} (parent: {parent_path})");
+            skip_aggregator::STALE_PARENT_SKIPS.record(normalized);
             return Some(affected.clone());
         }
         Err(e) => {

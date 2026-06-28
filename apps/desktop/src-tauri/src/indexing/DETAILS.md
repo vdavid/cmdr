@@ -149,6 +149,10 @@ Three disciplines for network round trips (plan rabbit hole #3), all in `list_on
 
 A sub-directory that fails to list (permission, transient) is skipped and the walk continues (like jwalk skipping errored entries); failing to list the ROOT is fatal (nothing to index) so the caller discards.
 
+#### NAS snapshot/system dirs aren't recursed (`system_dirs.rs`)
+
+The BFS does NOT descend into NAS snapshot/system pseudo-directories (`@eaDir`, `@Recently-Snapshot`, `@Recycle`, `#recycle`, `#snapshot`, `.snapshot`, `$RECYCLE.BIN`, `System Volume Information`, …; matched case-insensitively by `system_dirs::is_recursion_excluded_dir`). Both the fresh scan and the reconcile walk apply it: the dir's own row is still indexed (so it stays listed and navigable — a user can walk into `@Recycle` to restore a file), but its subtree is never walked, so it rolls up as honestly-unknown (`—`/`≥`) rather than a misleading total. **Decision/Why:** these dirs are hardlinked, huge, and re-walking them costs a full filesystem traversal *per snapshot* over serialized SMB — a real first-scan stalled near 50% grinding `@Recently-Snapshot`, which alone reported 44 TB on a 10 TB volume. Summing them is both ruinous and wrong (the bytes are deduped, not real consumed space). The names are reserved vendor conventions (`@`/`#`/`$` prefixes) that don't collide with user folders, so a name match is safe. **Guardrail:** don't remove the exclusion to "fill in" the missing sizes — that re-triggers the stall. Scope is the network scanner only (the home of these dirs); the local jwalk scanner has its own `should_exclude`. `FileEntry` carries no DOS hidden/system attribute today; if one is plumbed through, "hidden + system" would generalize this without the hardcoded list.
+
 ### Direct-smb2 gating (`smb_index.rs`, plan rabbit hole #13)
 
 Indexing an SMB share requires Cmdr's own smb2 (`direct`) session, NOT the macOS `os_mount`: `CHANGE_NOTIFY` watching runs over smb2 anyway, and smb2 parallelizes listing far better than per-`readdir` round trips through the kernel mount. An `os_mount` share is registered as a `LocalPosixVolume` on an `smbfs` mount (its `smb_connection_state()` is `None`; the FE enriches it to `OsMount`); a direct one is an `SmbVolume` returning `Some(Direct)`. `ensure_direct_smb` therefore: `Direct` → index now; `Disconnected` → refuse (reconnect first); `os_mount` → trigger/await `upgrade_to_smb_volume_inner`, then re-check. Every refusal is a TYPED `SmbIndexGateReason` (`NotRegistered` / `NotAnSmbVolume` / `UpgradeFailed` / `CredentialsNeeded` / `Disconnected`) that crosses IPC as a snake_case tag — never a message substring (`.claude/rules/no-string-matching.md`). FDA-independent: SMB paths aren't TCC-protected, so `start_indexing_for_smb` never routes through `should_auto_start_indexing` (rabbit hole #12).
@@ -499,16 +503,25 @@ The clamps differ by error band (constants live in `eta.ts`): tier 1 caps at 0.9
 
 ## Log levels
 
-Two high-volume per-event lines are at TRACE (off by default; file chain captures
-Debug+ only): `Writer: UpsertEntryV2 inserted "X"` and
-`Reconciler: removal for unknown path, skipping: X`. Together they were ~90% of normal
-log volume; the writer line is fully redundant with the existing `Writer: +N msgs (...)`
-aggregate, and the reconciler skip is mostly harmless build-output churn.
+High-volume per-event lines are at TRACE (off by default; file chain captures Debug+
+only) so the always-Debug file target doesn't drown in plumbing: `Writer: UpsertEntryV2
+inserted "X"`, the two reconciler skip lines (`removal for unknown path` and `parent path
+not in DB, skipping event`), and `SmbVolume::list_directory: …` (per listing, fires for
+both the live pane and the index scan). On a stuck NAS first-scan these dominated the log
+— a single rotated 50 MB file held only ~25 min, so a user's error report lost the
+relevant window. The writer line is redundant with the `Writer: +N msgs (...)` aggregate;
+the reconciler skips are mostly harmless build-output churn; `list_directory` is replaced
+as the scan signal by the heartbeat below.
 
-The reconciler emits a DEBUG aggregate every ~5s: `Reconciler: skipped N removals
-for unknown paths in Xs [total], sample: <path>`. Error reports retain the
-existence-of-drift signal. Live in `reconciler.rs::unknown_path_skips`. To get the
-per-event detail back: `RUST_LOG=cmdr_lib::indexing::reconciler=trace,cmdr_lib::indexing::writer=trace,debug`.
+The reconciler emits a DEBUG aggregate every ~5s per skip class via
+`reconciler.rs::skip_aggregator` (two instances, `UNKNOWN_PATH_SKIPS` and
+`STALE_PARENT_SKIPS`): `Reconciler: skipped N <removals|events> <reason> in Xs [total],
+sample: <path>`. The `volume_scanner` emits a throttled (~1/s) DEBUG heartbeat
+`volume_scanner: scanning|reconciling… N dirs, M entries, current: <path>`, so an error
+report still shows the scan is alive, where it is, and how far along — the signal a
+triager needs without the per-directory `list_directory` flood. Error reports retain the
+existence-of-drift and scan-progress signals. To get the per-event detail back:
+`RUST_LOG=cmdr_lib::indexing::reconciler=trace,cmdr_lib::indexing::writer=trace,cmdr_lib::file_system::volume::backends::smb=trace,debug`.
 
 The writer's SQLite busy retry logger (`stall_probe::sqlite_busy` in `writer/mod.rs::spawn`) logs
 per-attempt at DEBUG: brief contention is routine (WAL checkpoints, long-lived readers). It

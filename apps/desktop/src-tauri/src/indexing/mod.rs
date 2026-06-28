@@ -39,6 +39,7 @@ pub(crate) mod scanner;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod smb_index;
 mod smb_watch;
+mod system_dirs;
 mod verifier;
 pub(crate) mod volume_scanner;
 pub(crate) mod watcher;
