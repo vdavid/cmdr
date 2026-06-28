@@ -33,7 +33,7 @@ I used [Commander One](https://commander-one.com/) for a while between 2022 and 
 tested it in June 2026, it turned out that:
 
 - It doesn't satisfy my **keyboard-first** requirement. I think it was made to be used with a mouse. For example: how do you switch volumes (for example, to an SMB share) in ForkLift with the keyboard? I've found no quick way to do it.
-- It's **slow**: The UI starts lagging heavily even with just 20,000 files loaded
+- It's **slow**: the UI starts lagging heavily even with just 20,000 files loaded.
 - It has **no Brief mode**, which is my preferred mode in a file manager. I like to see many files in a folder at once.
 - The **left+right sidebars** are unnecessary to me and feel like bloat. I found no way to turn them off.
 - Its **UX** is not great. In my short testing, I've managed to get it to a weird "Access denied" state while it had all
@@ -78,8 +78,8 @@ was overall basic; [Double Commander](https://github.com/doublecmd/doublecmd), w
 
 - Both are **very fast** from the ground up
 - They share **shortcuts**: not just F3..F8, but all the nuanced ones as well.
-- **Dual-pane**, **keyboard-first** approach, full **clipboard** support, **tabs**, same shortcuts
-- **Full mode**, **Brief mode**, **sorting**, shared shortcuts for these.
+- **Dual-pane**, **keyboard-first** approach, full **clipboard** support, **tabs**
+- **Full mode**, **Brief mode**, **sorting**.
 - Both **work well with the mouse**, including in-app and cross-app **drag and drop**.
 - They are both fully **multilingual**, translated into many languages.
 - They both have a built-in **file viewer** (F3).
@@ -95,7 +95,7 @@ was overall basic; [Double Commander](https://github.com/doublecmd/doublecmd), w
 - Well, it's **available on macOS**. In addition, Cmdr is **cross-platform** from the ground up: its _first_ target is macOS, but it already builds fully for Linux (not yet a supported release), and it's not too hard to add Windows support.
 - Cmdr meets user expectations on macOS with **modern looks**, a command palette, and great, transparent UX.
 - Cmdr is written in **Rust**. It's not something visible, but it makes Cmdr really performant, solid, and safe.
-- Cmdr has **live drive indexing** which means that it shows the **sizes of all folders**, live, always. It also makes searches immediate, and unlocks features like live, quality context we can use for AI-initiated, human-supervised file organization.
+- Cmdr has **live drive indexing** which means that it shows the **sizes of all folders**, live, always. It also makes searches immediate, and unlocks features like great live context for AI-initiated, human-supervised file organization.
 - Cmdr has built-in **MTP** (Android, Kindle, cameras, etc.) support. This is actually quite unique on macOS.
 - Cmdr has built-in **Git** support: you can browse your git history, branches, and stash like folders.
 - A ton of (**optional** and **privacy-first**) **AI features** are coming to Cmdr, with some of them like **natural language search** and a built-in [MCP](https://modelcontextprotocol.io/) server already implemented. The _right_ use of an LLM built into the core of the app can make a lot of tasks a lot easier.
