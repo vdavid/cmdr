@@ -34,6 +34,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Apply D1 migrations BEFORE deploying. The new worker code may reference columns a migration adds,
+      # so the schema must be ready first. A deploy-then-migrate order silently drops every telemetry
+      # write (the D1 inserts are fire-and-forget) until the migration runs. `--remote` targets prod;
+      # wrangler auto-confirms in CI (non-interactive). Needs the CF token to have D1 edit permission.
+      - name: Apply D1 migrations
+        run: pnpm exec wrangler d1 migrations apply cmdr-telemetry --remote
+        working-directory: ./apps/api-server
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Deploy to Cloudflare Workers
         run: pnpm exec wrangler deploy
         working-directory: ./apps/api-server
