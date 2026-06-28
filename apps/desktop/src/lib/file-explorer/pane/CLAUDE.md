@@ -30,12 +30,10 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
   tint; never feed the `local` default into tinting.
 - **`FilePane.applyIndices` jumps the cursor on SELECT only** (deselect leaves it put), via
   `firstSelectedIndex(idxs, hasParent)`, which skips the `..` row. Don't use raw `idxs[0]`; it can be `..`.
-- **Snapshot pane (`volumeId === 'search-results'`) needs two things**: `computeHasParent` returns `false` (no `..` row,
-  via the `hasParentRow` capability), AND opening a real entry from the result rows must LEAVE the snapshot volume.
-  `FilePane.handleNavigate` gates that on the `isSearchResultsView` capability (NOT a raw id compare), resolves the
-  entry's `Location` (`resolveLocationOrToast`), and bubbles it via `onGoToLocation` → `navigate({ to: { location } })`,
-  whose switch arm changes volume. Skip the has-parent rule → off-by-one selection; skip the resolve+switch →
-  `search-results` stuck on a real path.
+- **Snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false` (no `..`
+  row, via `hasParentRow`) AND opening a real entry must LEAVE the snapshot volume — `FilePane.handleNavigate` (gated on
+  the `isSearchResultsView` capability) resolves the entry's `Location` and bubbles it via `onGoToLocation` → the
+  `{ location }` switch arm. Skip either → off-by-one selection, or `search-results` stuck on a real path.
 - **The MTP clipboard refusal gate keys on `caps.kind === 'mtp'`, not `!supportsSystemClipboard`** (network and
   search-results lack one too, so the MTP-worded toast would misfire).
 - **The focus guard (`DualPaneExplorer.handleFocusGuard`) must keep its `[role="dialog"], [role="alertdialog"]`
@@ -44,15 +42,12 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, invariant A5). Don't scatter
   `saveAppStatus` / `saveTabsForPaneSide` calls across nav paths: mutate the store and the subscriber reacts (exceptions
   in DETAILS).
-- **`navigate(intent, deps)` is the single coordinator-level pane-nav entry.** Two destination shapes: `{ location }`
-  (go to a `(volumeId, path)`; self-routes — same volume → in-place arm, different volume → switch arm) and
-  `{ volumeId, path }` (deliberate volume-(re)select; ALWAYS the switch arm, since callers pass the current id on
-  purpose). Plus `{ history }` / `{ snapshot }`. A bare path becomes a `Location` at the four edges (⌘G, MCP
-  `nav_to_path`, search-result activation, downloads reveal) via `navigation/resolve-location.ts` — never feed a bare
-  path into navigation. Its `NavigateResult` refusal `message` strings are an EXACT contract (pinned byte-for-byte; the
-  MCP adapter forwards them verbatim): don't reword without updating tests, and don't make the in-place arm commit
-  immediately. Don't add `cd`-style heuristics in `commitPathFromListing`; for a new virtual namespace, extend the
-  explicit prefix branch. DETAILS § "The navigate() transaction".
+- **`navigate(intent, deps)` is the single coordinator-level pane-nav entry.** `{ location }` self-routes by volume;
+  `{ volumeId, path }` always switches; resolve bare paths to a `Location` at the edge
+  (`navigation/resolve-location.ts`), never feed a bare path in. Refusal `message` strings are byte-pinned contract (the
+  MCP adapter forwards them verbatim); don't make the in-place arm commit immediately; don't add `cd`-style heuristics
+  in `commitPathFromListing` (extend the explicit prefix branch for a new virtual namespace). DETAILS § "The navigate()
+  transaction".
 - **Self-drag drop builds from recorded app state, not the pasteboard** (`handleDrop` consumes
   `consumableSelfDragIdentity` only for an active self-drag from a registered backend-real volume). See
   [`../drag/CLAUDE.md`](../drag/CLAUDE.md).

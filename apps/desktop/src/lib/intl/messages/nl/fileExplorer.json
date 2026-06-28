@@ -1116,6 +1116,10 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "1b16941"
   },
+  "fileExplorer.navigation.locationUnreachableToast": "Het station van die locatie was niet bereikbaar. Misschien is het niet verbonden.",
+  "@fileExplorer.navigation.locationUnreachableToast": {
+    "sourceHash": "20126a6"
+  },
   "fileExplorer.navigation.connectionTooltipDirect": "Direct verbonden voor snelle bestandsbewerkingen",
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"

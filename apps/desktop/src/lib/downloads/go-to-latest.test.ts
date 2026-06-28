@@ -21,7 +21,9 @@ const {
   addToastMock: vi.fn(() => 'toast-id'),
   openPrivacySettingsMock: vi.fn(() => Promise.resolve()),
   // The download's parent dir resolves to a `Location` on the `root` volume.
-  resolveLocationMock: vi.fn((path: string) => Promise.resolve({ ok: true as const, location: { volumeId: 'root', path } })),
+  resolveLocationMock: vi.fn((path: string) =>
+    Promise.resolve({ ok: true as const, location: { volumeId: 'root', path } }),
+  ),
   // `navigate()` returns a `NavigateResult`; default to a started no-op.
   navigateMock: vi.fn((): NavigateResult => ({ status: 'started', settled: Promise.resolve() })),
   moveCursorMock: vi.fn(() => Promise.resolve()),
@@ -117,7 +119,9 @@ describe('goToLatestDownload', () => {
     openPrivacySettingsMock.mockReset().mockResolvedValue(undefined)
     resolveLocationMock
       .mockReset()
-      .mockImplementation((path: string) => Promise.resolve({ ok: true as const, location: { volumeId: 'root', path } }))
+      .mockImplementation((path: string) =>
+        Promise.resolve({ ok: true as const, location: { volumeId: 'root', path } }),
+      )
     navigateMock.mockReset().mockReturnValue({ status: 'started', settled: Promise.resolve() })
     moveCursorMock.mockReset().mockResolvedValue(undefined)
     getFocusedPaneMock.mockReset().mockReturnValue('left')
@@ -138,7 +142,11 @@ describe('goToLatestDownload', () => {
 
     await goToLatestDownload(makeExplorerStub())
 
-    expect(navigateMock).toHaveBeenCalledWith({ pane: 'right', to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } }, source: 'user' })
+    expect(navigateMock).toHaveBeenCalledWith({
+      pane: 'right',
+      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      source: 'user',
+    })
     expect(moveCursorMock).toHaveBeenCalledWith('right', 'report.pdf')
     expect(addToastMock).not.toHaveBeenCalled()
   })
@@ -183,7 +191,11 @@ describe('goToLatestDownload', () => {
 
     await goToLatestDownload(makeExplorerStub())
 
-    expect(navigateMock).toHaveBeenCalledWith({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } }, source: 'user' })
+    expect(navigateMock).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      source: 'user',
+    })
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
     expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
   })
@@ -205,7 +217,11 @@ describe('goToLatestDownload', () => {
 
     await goToLatestDownload(makeExplorerStub())
 
-    expect(navigateMock).toHaveBeenCalledWith({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } }, source: 'user' })
+    expect(navigateMock).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      source: 'user',
+    })
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
     expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
   })
@@ -226,7 +242,11 @@ describe('goToLatestDownload', () => {
 
     await goToLatestDownload(makeExplorerStub())
 
-    expect(navigateMock).toHaveBeenCalledWith({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } }, source: 'user' })
+    expect(navigateMock).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      source: 'user',
+    })
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
   })
 
@@ -259,7 +279,11 @@ describe('goToLatestDownload', () => {
     // dir's volume first, so flush the microtasks before asserting).
     options.props?.onGoToDownloads()
     await flushMicrotasks()
-    expect(navigateMock).toHaveBeenCalledWith({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } }, source: 'user' })
+    expect(navigateMock).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      source: 'user',
+    })
     expect(moveCursorMock).not.toHaveBeenCalled()
   })
 
@@ -356,7 +380,9 @@ describe('goToDownload', () => {
     addToastMock.mockReset().mockReturnValue('toast-id')
     resolveLocationMock
       .mockReset()
-      .mockImplementation((path: string) => Promise.resolve({ ok: true as const, location: { volumeId: 'root', path } }))
+      .mockImplementation((path: string) =>
+        Promise.resolve({ ok: true as const, location: { volumeId: 'root', path } }),
+      )
     navigateMock.mockReset().mockReturnValue({ status: 'started', settled: Promise.resolve() })
     moveCursorMock.mockReset().mockResolvedValue(undefined)
     getFocusedPaneMock.mockReset().mockReturnValue('left')
@@ -367,7 +393,11 @@ describe('goToDownload', () => {
   it('navigates the focused pane to parentDir and selects the file when neither pane shows it', async () => {
     await goToDownload(makeExplorerStub(), '/Users/me/Downloads', 'report.pdf')
 
-    expect(navigateMock).toHaveBeenCalledWith({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } }, source: 'user' })
+    expect(navigateMock).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      source: 'user',
+    })
     expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
   })
 
@@ -397,7 +427,11 @@ describe('goToDownload', () => {
 
     await goToDownload(makeExplorerStub(), '/Users/me/Downloads', 'report.pdf')
 
-    expect(navigateMock).toHaveBeenCalledWith({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } }, source: 'user' })
+    expect(navigateMock).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      source: 'user',
+    })
     expect(moveCursorMock).not.toHaveBeenCalled()
   })
 })

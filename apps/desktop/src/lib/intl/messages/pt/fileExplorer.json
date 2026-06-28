@@ -1114,6 +1114,10 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "1b16941"
   },
+  "fileExplorer.navigation.locationUnreachableToast": "Não foi possível acessar a unidade desse local. Talvez esteja desconectada.",
+  "@fileExplorer.navigation.locationUnreachableToast": {
+    "sourceHash": "20126a6"
+  },
   "fileExplorer.navigation.connectionTooltipDirect": "Conectado diretamente para operações de arquivo rápidas",
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"

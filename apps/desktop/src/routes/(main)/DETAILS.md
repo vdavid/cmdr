@@ -82,9 +82,9 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (skip `pushViewMenuState`)
   (`resolveLocation` — the agent path can live on any volume), replying `ok: false` if it can't resolve, then calls
   `explorerRef.navigate({ pane, to: { location }, source: 'mcp' })` and branches on the typed `NavigateResult`: a
   `'refused'` result forwards `result.reason.message` byte-identically as the `mcp-response` error; a `'started'` result
-  awaits `result.settled` before replying `ok: true`. Resolving at the edge also narrows the on-network refusal — a local
-  target from a network pane now switches volumes instead of refusing; only an `smb://` target still refuses. The bus
-  dispatch is fire-and-forget and can't surface this round-trip.
+  awaits `result.settled` before replying `ok: true`. Resolving at the edge also narrows the on-network refusal — a
+  local target from a network pane now switches volumes instead of refusing; only an `smb://` target still refuses. The
+  bus dispatch is fire-and-forget and can't surface this round-trip.
 - **`mcp-response` round-trips** (`mcp-open-under-cursor`, `mcp-move-cursor`, `mcp-select`, `mcp-select-names`,
   `mcp-refresh`): the bus dispatches the `void`-returning intent; the adapter owns the `requestId` correlation and the
   `emit('mcp-response', { requestId, ok, error? })` reply. It awaits the dispatch's promise so the ack fires only after

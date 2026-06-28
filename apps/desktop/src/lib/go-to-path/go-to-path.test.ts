@@ -114,7 +114,12 @@ describe('goToPath handler', () => {
     okResolve({ kind: 'file', path: '/tmp/a.txt', parentDir: '/tmp', fileName: 'a.txt' })
     await goToPath(makeExplorerStub(), '/tmp/a.txt')
     expect(resolveLocationOrToastMock).toHaveBeenCalledWith('/tmp')
-    expect(navigateToFileMock).toHaveBeenCalledWith(expect.anything(), 'left', { volumeId: 'root', path: '/tmp' }, 'a.txt')
+    expect(navigateToFileMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'left',
+      { volumeId: 'root', path: '/tmp' },
+      'a.txt',
+    )
     expect(navigateToDirMock).not.toHaveBeenCalled()
     expect(addRecentPathStateMock).toHaveBeenCalledWith(expect.objectContaining({ path: '/tmp/a.txt' }))
   })

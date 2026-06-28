@@ -196,7 +196,10 @@ beforeEach(() => {
 
 describe('in-place path nav (P4 — NOT optimistic, commits at listing-complete)', () => {
   it('drives the FilePane primitive and returns its promise as `settled`; does NOT commit on call', () => {
-    const result = navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' }, h.deps)
+    const result = navigate(
+      { pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' },
+      h.deps,
+    )
 
     expect(result.status).toBe('started')
     // The FilePane primitive was driven; the path has NOT advanced yet (in-place
@@ -206,7 +209,15 @@ describe('in-place path nav (P4 — NOT optimistic, commits at listing-complete)
   })
 
   it('forwards `selectName` to the FilePane primitive', () => {
-    navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user', selectName: 'file.txt' }, h.deps)
+    navigate(
+      {
+        pane: 'left',
+        to: { location: { volumeId: 'root', path: '/Users/me/sub' } },
+        source: 'user',
+        selectName: 'file.txt',
+      },
+      h.deps,
+    )
     expect(h.paneState.left.paneRef?.navigateToPath).toHaveBeenCalledWith('/Users/me/sub', 'file.txt')
   })
 
@@ -572,7 +583,10 @@ describe('{ location } arm — self-routing by volume', () => {
     h = makeHarness({ left: { path: '/naspi/share', volumeId: 'naspi' } })
     const depthBefore = h.tab('left').history.stack.length
 
-    const result = navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/Library/x' } }, source: 'mcp' }, h.deps)
+    const result = navigate(
+      { pane: 'left', to: { location: { volumeId: 'root', path: '/Library/x' } }, source: 'mcp' },
+      h.deps,
+    )
 
     expect(result.status).toBe('started')
     // Switch arm: optimistic synchronous commit, no listing needed.
@@ -585,7 +599,10 @@ describe('{ location } arm — self-routing by volume', () => {
   })
 
   it('volumeId === current takes the in-place arm (NOT optimistic; commit lands via commitPathFromListing as push-path)', () => {
-    const result = navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' }, h.deps)
+    const result = navigate(
+      { pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' },
+      h.deps,
+    )
 
     expect(result.status).toBe('started')
     // In-place: drives the FilePane primitive; path has NOT advanced yet.
@@ -627,7 +644,10 @@ describe('{ volumeId, path } volume-(re)select — ALWAYS the switch arm (guards
 
     // A volume-(re)select passing the CURRENT volume id (network-restore-on-cancel,
     // selectVolumeByIndex re-select, mirror, etc.) must take the switch arm.
-    const result = navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext/photos' }, source: 'user' }, h.deps)
+    const result = navigate(
+      { pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext/photos' }, source: 'user' },
+      h.deps,
+    )
 
     expect(result.status).toBe('started')
     expect(h.tab('left').volumeId).toBe('ext')
@@ -643,7 +663,10 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
   // pane's current one (same-volume) routes in-place, where the refusals live.
   it('network-volume pane returns the exact select_volume refusal string', () => {
     h = makeHarness({ left: { path: 'smb://', volumeId: 'network' } })
-    const result = navigate({ pane: 'left', to: { location: { volumeId: 'network', path: '/Users/me/doc' } }, source: 'mcp' }, h.deps)
+    const result = navigate(
+      { pane: 'left', to: { location: { volumeId: 'network', path: '/Users/me/doc' } }, source: 'mcp' },
+      h.deps,
+    )
     expect(result).toEqual({
       status: 'refused',
       reason: {
@@ -654,7 +677,10 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
   })
 
   it('MTP path mismatch returns the exact "not on this MTP volume" string (note the em dash)', () => {
-    const result = navigate({ pane: 'left', to: { location: { volumeId: 'root', path: 'mtp://otherdev/2/DCIM' } }, source: 'mcp' }, h.deps)
+    const result = navigate(
+      { pane: 'left', to: { location: { volumeId: 'root', path: 'mtp://otherdev/2/DCIM' } }, source: 'mcp' },
+      h.deps,
+    )
     expect(result).toEqual({
       status: 'refused',
       reason: { kind: 'mtp-unconnected', message: 'Pane is not on this MTP volume — call select_volume first.' },
@@ -663,7 +689,10 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
 
   it('on-MTP-volume pane returns the exact "on the … MTP volume" string (volumeName falls back to id)', () => {
     h = makeHarness({ left: { path: 'mtp://dev/1/DCIM', volumeId: 'mtp-dev:1' } })
-    const result = navigate({ pane: 'left', to: { location: { volumeId: 'mtp-dev:1', path: '/Users/me/doc' } }, source: 'mcp' }, h.deps)
+    const result = navigate(
+      { pane: 'left', to: { location: { volumeId: 'mtp-dev:1', path: '/Users/me/doc' } }, source: 'mcp' },
+      h.deps,
+    )
     expect(result).toEqual({
       status: 'refused',
       reason: {
@@ -675,7 +704,10 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
 
   it('pane-unavailable returns the exact "Pane not available" string', () => {
     h = makeHarness({ suppressRef: ['left'] })
-    const result = navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/doc' } }, source: 'mcp' }, h.deps)
+    const result = navigate(
+      { pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/doc' } }, source: 'mcp' },
+      h.deps,
+    )
     expect(result).toEqual({ status: 'refused', reason: { kind: 'pane-unavailable', message: 'Pane not available' } })
   })
 })

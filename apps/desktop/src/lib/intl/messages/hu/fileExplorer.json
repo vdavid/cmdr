@@ -1109,6 +1109,10 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "1b16941"
   },
+  "fileExplorer.navigation.locationUnreachableToast": "Ennek a helynek a meghajtója nem volt elérhető. Talán nincs csatlakoztatva.",
+  "@fileExplorer.navigation.locationUnreachableToast": {
+    "sourceHash": "20126a6"
+  },
   "fileExplorer.navigation.connectionTooltipDirect": "Közvetlen kapcsolat a gyors fájlműveletekért",
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"

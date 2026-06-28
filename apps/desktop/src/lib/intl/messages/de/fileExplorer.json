@@ -1116,6 +1116,10 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "1b16941"
   },
+  "fileExplorer.navigation.locationUnreachableToast": "Das Laufwerk dieses Speicherorts war nicht erreichbar. Vielleicht ist es nicht verbunden.",
+  "@fileExplorer.navigation.locationUnreachableToast": {
+    "sourceHash": "20126a6"
+  },
   "fileExplorer.navigation.connectionTooltipDirect": "Direkt verbunden für schnelle Dateioperationen",
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"

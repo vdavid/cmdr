@@ -472,7 +472,11 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
     await tick()
 
     // Same-volume `{ location }` → the in-place arm, where the refusal fires.
-    const result = handle.navigate({ pane: 'left', to: { location: { volumeId: 'network', path: '/Users/me/doc' } }, source: 'mcp' })
+    const result = handle.navigate({
+      pane: 'left',
+      to: { location: { volumeId: 'network', path: '/Users/me/doc' } },
+      source: 'mcp',
+    })
     expect(result.status).toBe('refused')
     if (result.status === 'refused') {
       expect(result.reason.message).toBe(
@@ -489,7 +493,11 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
     tab.path = '/Users/me'
     await tick()
 
-    const result = handle.navigate({ pane: 'left', to: { location: { volumeId: 'root', path: 'mtp://otherdev/2/DCIM' } }, source: 'mcp' })
+    const result = handle.navigate({
+      pane: 'left',
+      to: { location: { volumeId: 'root', path: 'mtp://otherdev/2/DCIM' } },
+      source: 'mcp',
+    })
     expect(result.status).toBe('refused')
     if (result.status === 'refused') {
       expect(result.reason.message).toBe('Pane is not on this MTP volume — call select_volume first.')
@@ -504,7 +512,11 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
     tab.path = 'mtp://dev/1/DCIM'
     await tick()
 
-    const result = handle.navigate({ pane: 'left', to: { location: { volumeId: 'mtp-dev:1', path: '/Users/me/doc' } }, source: 'mcp' })
+    const result = handle.navigate({
+      pane: 'left',
+      to: { location: { volumeId: 'mtp-dev:1', path: '/Users/me/doc' } },
+      source: 'mcp',
+    })
     // volumeName is undefined for this id (not in the volume list) → falls back to the id.
     expect(result.status).toBe('refused')
     if (result.status === 'refused') {
@@ -524,7 +536,11 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
     tab.path = '/Users/me'
     await tick()
 
-    const result = handle.navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/doc' } }, source: 'mcp' })
+    const result = handle.navigate({
+      pane: 'left',
+      to: { location: { volumeId: 'root', path: '/Users/me/doc' } },
+      source: 'mcp',
+    })
     expect(result.status).toBe('refused')
     if (result.status === 'refused') {
       expect(result.reason.message).toBe('Pane not available')

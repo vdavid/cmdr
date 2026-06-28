@@ -1108,6 +1108,10 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "1b16941"
   },
+  "fileExplorer.navigation.locationUnreachableToast": "无法访问该位置所在的驱动器。它可能未连接。",
+  "@fileExplorer.navigation.locationUnreachableToast": {
+    "sourceHash": "20126a6"
+  },
   "fileExplorer.navigation.connectionTooltipDirect": "已直接连接，文件操作更快",
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"

@@ -121,9 +121,8 @@ describe('revealSearchResultInPane (the search "Go to file" edge)', () => {
 
     expect(navigate).not.toHaveBeenCalled()
     expect(moveCursor).not.toHaveBeenCalled()
-    expect(addToastMock).toHaveBeenCalledWith(
-      "Couldn't reach that location's drive. It might be disconnected.",
-      { level: 'info' },
-    )
+    expect(addToastMock).toHaveBeenCalledWith("Couldn't reach that location's drive. It might be disconnected.", {
+      level: 'info',
+    })
   })
 })

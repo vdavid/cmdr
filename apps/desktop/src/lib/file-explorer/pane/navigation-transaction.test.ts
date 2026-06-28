@@ -241,7 +241,11 @@ async function driveLeftLoad(handle: ExplorerHandle, path: string): Promise<stri
   // completion). Swallow that expected rejection so it doesn't surface as an
   // unhandled error.
   // Same-volume `{ location }` → the in-place arm (drives the FilePane primitive).
-  const result = handle.navigate({ pane: 'left', to: { location: { volumeId: leftTab().volumeId, path } }, source: 'user' })
+  const result = handle.navigate({
+    pane: 'left',
+    to: { location: { volumeId: leftTab().volumeId, path } },
+    source: 'user',
+  })
   if (result.status === 'started') void result.settled.catch(() => {})
   for (let i = 0; i < 5; i++) await tick()
   await new Promise((r2) => setTimeout(r2, 10))
@@ -393,7 +397,11 @@ describe('scenario 8: optimistic-commit ordering (P4)', () => {
 
     // Drive an in-place path navigation (same-volume `{ location }`). `navigate()`
     // calls the FilePane primitive, which mints a new listingId and starts loading.
-    const result = handle.navigate({ pane: 'left', to: { location: { volumeId: leftTab().volumeId, path: '/Users/me/sub' } }, source: 'user' })
+    const result = handle.navigate({
+      pane: 'left',
+      to: { location: { volumeId: leftTab().volumeId, path: '/Users/me/sub' } },
+      source: 'user',
+    })
     // The in-place arm STARTS (returns the FilePane settle promise), never refuses.
     expect(result.status).toBe('started')
     if (result.status === 'started') void result.settled.catch(() => {})

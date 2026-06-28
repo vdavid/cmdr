@@ -220,11 +220,10 @@ capability table is the "differently complicated" failure mode the refactor expl
   classifier — converting them would be circular.
 - **Namespace / path mechanics (which string scheme, not what's allowed).** `navigate.ts` (the on-network / on-MTP
   refusal sources + the `smb://` / `search-results://` drop-foreign-listings prefix + `validateMtpNavigation` path
-  parse), `clipboard-operations.ts:76`
-  (`pathScheme !== 'search-results'` — the snapshot-clip path resolver; reads the table but it's a scheme question),
-  `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the network-mirror / copy-path-between-panes
-  identity branches), `rename-flow.svelte.ts:166` (skip the Unix-`access()` permission check on MTP virtual paths — a
-  syscall-support mechanic, not a "may rename" capability).
+  parse), `clipboard-operations.ts:76` (`pathScheme !== 'search-results'` — the snapshot-clip path resolver; reads the
+  table but it's a scheme question), `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the
+  network-mirror / copy-path-between-panes identity branches), `rename-flow.svelte.ts:166` (skip the Unix-`access()`
+  permission check on MTP virtual paths — a syscall-support mechanic, not a "may rename" capability).
 - **Display / view selection.** `VolumeBreadcrumb.svelte` (the "Network" / "Search results" labels + the
   network-disabled gate), `FilePane.svelte` (`paneViewKind === 'network' | 'search-results'` in the `{#if}` chain — the
   kind-driven view choice, sourced off `caps.kind`; the `isNetworkView` / `isSearchResultsView` named deriveds; the MTP
@@ -390,17 +389,17 @@ entry — they're not pane-destination changes).
   switch arm. `{ volumeId, path }` is the deliberate volume-(re)select intent and ALWAYS takes the switch arm (its
   callers — network-restore-on-cancel, retry, `selectVolumeByIndex`, the mirror helper — pass the CURRENT volume id on
   purpose). `{ history: 'back' | 'forward' | 'parent' }` walks the stack (`parent` delegates to
-  `FilePane.navigateToParent`); `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery. The
-  pinned-tab fork (L7) lives in ONE place per arm: `commitPathFromListing` for the in-place landing, `commitVolumeSwitch`
-  for the switch.
+  `FilePane.navigateToParent`); `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery.
+  The pinned-tab fork (L7) lives in ONE place per arm: `commitPathFromListing` for the in-place landing,
+  `commitVolumeSwitch` for the switch.
 - **Per-arm optimism (P4).** The switch arm commits volumeId + path + history SYNCHRONOUSLY (truly optimistic). The
   in-place arm does NOT commit on call — it drives the FilePane primitive, and the commit lands when the listing
   completes and `onPathChange` re-enters `commitPathFromListing`. Don't "upgrade" the in-place arm to an immediate
   commit (it'd change when the breadcrumb updates relative to the listing).
 - **`settled` resolve point, per arm.** In-place arm: resolves on `listing-complete` (the FilePane promise). Switch arm:
-  resolves immediately (the optimistic commit is synchronous; the listing loads afterward) — callers that move the cursor
-  after (`navigate-and-select`, `revealSearchResultInPane`) bridge the gap via `moveCursor`'s internal `whenLoadSettles`.
-  History / edge flows: match the primitive they drive.
+  resolves immediately (the optimistic commit is synchronous; the listing loads afterward) — callers that move the
+  cursor after (`navigate-and-select`, `revealSearchResultInPane`) bridge the gap via `moveCursor`'s internal
+  `whenLoadSettles`. History / edge flows: match the primitive they drive.
 - **`NavigateResult` (L12).** `{ status: 'started', settled }` or `{ status: 'refused', reason }`. The refusal `message`
   strings (on-network, MTP-mismatch, on-MTP-volume, pane-unavailable) are EXACT contract — the MCP adapter forwards them
   verbatim as the `mcp-response` error; `navigate.test.ts` + the handler suite pin them byte-for-byte.
