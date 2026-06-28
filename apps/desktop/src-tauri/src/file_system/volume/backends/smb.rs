@@ -513,14 +513,18 @@ impl SmbVolume {
         let tree = self.tree_arc().await?;
         let ticket = CLIENT_LOCK_TICKET.fetch_add(1, Ordering::Relaxed);
         let start = std::time::Instant::now();
-        log::debug!(
+        // TRACE: per-SMB-op mutex telemetry. At DEBUG it's the dominant scan-log source
+        // (3 lines per listing). The stress-test `MutexCaptureLogger` still captures these
+        // for hung-test triage (it sets max-level Trace). Real lock contention escalates
+        // via `held_for`/`waited` at higher verbosity; bump with `RUST_LOG=…smb=trace`.
+        log::trace!(
             "client-mutex: waiting ticket={} caller=clone_session share={}",
             ticket,
             self.share_name
         );
         let conn = {
             let mut guard = self.client.lock().await;
-            log::debug!(
+            log::trace!(
                 "client-mutex: acquired ticket={} caller=clone_session share={} waited={:?}",
                 ticket,
                 self.share_name,
@@ -528,7 +532,7 @@ impl SmbVolume {
             );
             let acquired_at = std::time::Instant::now();
             let client = guard.as_mut().ok_or_else(|| {
-                log::debug!(
+                log::trace!(
                     "client-mutex: released ticket={} caller=clone_session held_for={:?} (no-session-bail)",
                     ticket,
                     acquired_at.elapsed()
@@ -536,7 +540,7 @@ impl SmbVolume {
                 VolumeError::DeviceDisconnected("SMB session not available".to_string())
             })?;
             let c = client.connection_mut().clone();
-            log::debug!(
+            log::trace!(
                 "client-mutex: released ticket={} caller=clone_session held_for={:?}",
                 ticket,
                 acquired_at.elapsed()

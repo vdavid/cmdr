@@ -580,15 +580,24 @@ pub(crate) async fn reconcile_volume_via_trait(
         removed += diff.removed;
         updated += diff.updated;
         // Same NAS snapshot/system-dir exclusion as the fresh scan: keep the row
-        // (it's diffed in like any child) but don't recurse into its subtree.
+        // (it's diffed in like any child) but don't recurse into its subtree. Logged
+        // (like the fresh-scan branch) so an error report visibly confirms the skip.
         for (child_id, child_name) in diff.matched_child_dirs {
             if crate::indexing::system_dirs::is_recursion_excluded_dir(&child_name) {
+                log::debug!(
+                    "volume_scanner: not descending into NAS system dir {}",
+                    dir_path.join(&child_name).display()
+                );
                 continue;
             }
             queue.push_back((dir_path.join(child_name), child_id));
         }
         for child_name in diff.new_child_dir_names {
             if crate::indexing::system_dirs::is_recursion_excluded_dir(&child_name) {
+                log::debug!(
+                    "volume_scanner: not descending into NAS system dir {}",
+                    dir_path.join(&child_name).display()
+                );
                 continue;
             }
             new_dirs.push((dir_path.clone(), dir_id, child_name));

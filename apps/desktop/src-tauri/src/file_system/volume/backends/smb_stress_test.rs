@@ -216,8 +216,15 @@ struct MutexCaptureLogger {
 }
 
 impl log::Log for MutexCaptureLogger {
-    fn enabled(&self, _md: &log::Metadata) -> bool {
-        true
+    fn enabled(&self, md: &log::Metadata) -> bool {
+        // Gate by target so only the streams that emit `client-mutex:` (cmdr SMB
+        // backend) and `recv:` (smb2) records reach `log()`. Both are TRACE in
+        // production, so the install runs at max-level Trace — but WITHOUT this gate the
+        // entire process-wide trace stream would flow through `log()` and get
+        // `format!`-ed per record, which bogged `concurrent_streaming_writes_no_deadlock`
+        // past its timeout. The prefix check in `log()` still does the final routing.
+        let t = md.target();
+        t.contains("file_system::volume::backends::smb") || t.starts_with("smb2")
     }
     fn log(&self, record: &log::Record) {
         let msg = format!("{}", record.args());
@@ -261,7 +268,11 @@ fn install_mutex_capture_logger() -> &'static MutexCaptureLogger {
     }));
     // Best-effort: if another logger is already installed, ignore.
     let _ = log::set_logger(leaked);
-    log::set_max_level(log::LevelFilter::Debug);
+    // Trace, not Debug: the captured `client-mutex:` / `recv:` lines log at TRACE in
+    // production (demoted to keep scan logs quiet); `log::set_max_level` gates the
+    // facade BEFORE the record reaches this logger, so Debug here would silently drop
+    // every line we mean to capture for hung-test triage.
+    log::set_max_level(log::LevelFilter::Trace);
     let _ = MUTEX_CAPTURE_LOGGER.set(leaked);
     leaked
 }
