@@ -19,7 +19,6 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
   shared PRESENTATIONAL per-volume step checklist; `IndexingDriveRow` the thin WRAPPER (heading + body + ETA windows +
   1 Hz tick). The corner expands the primary drive and collapses each secondary to a one-line `IndexingDriveSummary`;
   the breadcrumb badge renders the same `IndexingDriveRow`. One representation everywhere. DETAILS § Step checklist.
-- **`indexing-steps.ts`**: pure `deriveSteps` (the checklist's per-volume step states) + the step/sub-phase label maps.
 - **`drive-index-prefs.ts`**: FE-OWNED persisted prefs the backend never reads: per-drive "don't ask again" silences
   (D6) and the one-time stale-dialog flag (D2), stored as hidden settings.
 - **`first-connect-trigger.ts`** + **`FirstConnectIndexToastContent.svelte`**: the first-connect "index this drive?"

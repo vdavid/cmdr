@@ -25,7 +25,6 @@ describe('indexing catalog parity (en)', () => {
   it('resolves the scan labels and counters', () => {
     expect(tString('indexing.status.ariaLabel')).toBe('Drive indexing status')
     expect(tString('indexing.scan.label')).toBe('Scanning your drive...')
-    expect(tString('indexing.scan.labelFirst')).toBe('Scanning your drive (first scan)...')
     expect(tString('indexing.scan.counters', { entriesText: '12,345', dirsText: '678' })).toBe(
       '12,345 entries, 678 dirs',
     )
@@ -53,8 +52,7 @@ describe('indexing catalog parity (en)', () => {
     expect(tString('indexing.aggregation.writing')).toBe('Saving folder sizes...')
   })
 
-  it('resolves the replay labels and detail', () => {
-    expect(tString('indexing.replay.label')).toBe('Updating index...')
+  it('resolves the replay detail', () => {
     expect(tString('indexing.replay.detail', { eventsText: '1,234' })).toBe('1,234 events processed')
   })
 

@@ -12,10 +12,6 @@
   "@indexing.scan.label": {
     "sourceHash": "e7d6d6a"
   },
-  "indexing.scan.labelFirst": "Laufwerk wird durchsucht (erster Durchlauf) …",
-  "@indexing.scan.labelFirst": {
-    "sourceHash": "2431d85"
-  },
   "indexing.scan.counters": "{entriesText} Einträge, {dirsText} Ordner",
   "@indexing.scan.counters": {
     "sourceHash": "fd4d242"
@@ -84,10 +80,6 @@
   "indexing.aggregation.writing": "Ordnergrößen werden gesichert …",
   "@indexing.aggregation.writing": {
     "sourceHash": "9466e98"
-  },
-  "indexing.replay.label": "Index wird aktualisiert …",
-  "@indexing.replay.label": {
-    "sourceHash": "2920134"
   },
   "indexing.replay.detail": "{eventsText} Ereignisse verarbeitet",
   "@indexing.replay.detail": {

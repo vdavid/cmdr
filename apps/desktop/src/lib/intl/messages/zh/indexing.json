@@ -12,10 +12,6 @@
   "@indexing.scan.label": {
     "sourceHash": "e7d6d6a"
   },
-  "indexing.scan.labelFirst": "正在扫描你的驱动器（首次扫描）…",
-  "@indexing.scan.labelFirst": {
-    "sourceHash": "2431d85"
-  },
   "indexing.scan.counters": "{entriesText} 个条目，{dirsText} 个目录",
   "@indexing.scan.counters": {
     "sourceHash": "fd4d242"
@@ -84,10 +80,6 @@
   "indexing.aggregation.writing": "正在保存文件夹大小…",
   "@indexing.aggregation.writing": {
     "sourceHash": "9466e98"
-  },
-  "indexing.replay.label": "正在更新索引…",
-  "@indexing.replay.label": {
-    "sourceHash": "2920134"
   },
   "indexing.replay.detail": "已处理 {eventsText} 个事件",
   "@indexing.replay.detail": {

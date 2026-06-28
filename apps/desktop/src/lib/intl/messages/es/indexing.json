@@ -12,10 +12,6 @@
   "@indexing.scan.label": {
     "sourceHash": "e7d6d6a"
   },
-  "indexing.scan.labelFirst": "Analizando tu unidad (primer análisis)...",
-  "@indexing.scan.labelFirst": {
-    "sourceHash": "2431d85"
-  },
   "indexing.scan.counters": "{entriesText} ítems, {dirsText} dirs",
   "@indexing.scan.counters": {
     "sourceHash": "fd4d242"
@@ -84,10 +80,6 @@
   "indexing.aggregation.writing": "Guardando tamaños de carpetas...",
   "@indexing.aggregation.writing": {
     "sourceHash": "9466e98"
-  },
-  "indexing.replay.label": "Actualizando el índice...",
-  "@indexing.replay.label": {
-    "sourceHash": "2920134"
   },
   "indexing.replay.detail": "{eventsText} eventos procesados",
   "@indexing.replay.detail": {

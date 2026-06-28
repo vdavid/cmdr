@@ -12,10 +12,6 @@
   "@indexing.scan.label": {
     "sourceHash": "e7d6d6a"
   },
-  "indexing.scan.labelFirst": "Đang quét ổ đĩa của bạn (lần quét đầu tiên)...",
-  "@indexing.scan.labelFirst": {
-    "sourceHash": "2431d85"
-  },
   "indexing.scan.counters": "{entriesText} mục, {dirsText} thư mục",
   "@indexing.scan.counters": {
     "sourceHash": "fd4d242"
@@ -84,10 +80,6 @@
   "indexing.aggregation.writing": "Đang lưu kích thước thư mục...",
   "@indexing.aggregation.writing": {
     "sourceHash": "9466e98"
-  },
-  "indexing.replay.label": "Đang cập nhật chỉ mục...",
-  "@indexing.replay.label": {
-    "sourceHash": "2920134"
   },
   "indexing.replay.detail": "Đã xử lý {eventsText} sự kiện",
   "@indexing.replay.detail": {

@@ -130,7 +130,7 @@ step shows not-yet-active — but in that window the surface isn't rendered at a
 the badge's static "Scanning your drive…" text.
 
 **Two label maps, separate on purpose**: `indexing-steps.ts`'s `stepKindToLabelKey` keys the step labels off the typed
-`IndexStepKind`; `IndexingStatusBody`'s `phaseToLabelKey`-equivalent (`computeSubPhaseToLabelKey`) keys the compute
+`IndexStepKind`; its `computeSubPhaseToLabelKey` (imported by `IndexingStatusBody`) keys the compute
 step's folder-worded sub-line off the aggregation sub-phase string. Branch on the typed discriminants, never wording.
 
 **The active step's detail**, keyed off the active step (not a separate "mode"), so the synthetic activity behind an

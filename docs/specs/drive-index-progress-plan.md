@@ -14,7 +14,7 @@ This plan fixes four things, smallest-blast-radius first:
 2. **Lead with the most meaningful info** (the file count), and only show a percentage/ETA bar when the denominator is
    trustworthy — never a misleading stuck "0%".
 3. **Unify the two surfaces** onto one per-volume status model + one shared row component, so the breadcrumb badge
-   tooltip and the top-right tooltip render the *same* representation (the badge shows just its own volume; the corner
+   tooltip and the top-right tooltip render the _same_ representation (the badge shows just its own volume; the corner
    shows all active volumes).
 4. **Make the process legible**: a per-volume **step checklist** (unchecked → spinner → check) with the live detail
    (counters, bar, ETA) under the current step, so the user understands what indexing does, where it is, and roughly how
@@ -26,9 +26,9 @@ This plan fixes four things, smallest-blast-radius first:
   while 200k files have been found is dishonest. The count is honest; show it.
 - **Delightful UX** (principle 1): a clear checklist with real-time state is more reassuring than a mystery bar.
 - **Elegance above all** (principle 2): one status model, one row component, not two reimplementations. This is the
-  through-line — points 1 and 2 are partly *consequences* of the duplication in point 3.
-- **Smart backend / thin frontend**: phase/step truth comes from Rust as typed events; the FE renders. No string-matching
-  on phase labels (`.claude/rules/no-string-matching.md`) — branch on typed discriminators only.
+  through-line — points 1 and 2 are partly _consequences_ of the duplication in point 3.
+- **Smart backend / thin frontend**: phase/step truth comes from Rust as typed events; the FE renders. No
+  string-matching on phase labels (`.claude/rules/no-string-matching.md`) — branch on typed discriminators only.
 
 ## Current state (so the implementer has the map)
 
@@ -72,7 +72,7 @@ The core reframing behind M1+M2, and the thing the whole feature rotates around:
   real percent + ETA bar.
   - **Why not (b):** an indeterminate bar adds chrome without information; the elapsed clock already signals liveness,
     and the badge precedent (which the user explicitly preferred) is count + elapsed. Keep it quiet.
-  - **Be honest about what this gives up:** count + elapsed gives *liveness* but no sense of *how far along* a first
+  - **Be honest about what this gives up:** count + elapsed gives _liveness_ but no sense of _how far along_ a first
     scan is (a 30+ min NAS first scan shows a climbing count and a running clock, nothing else). That's unavoidable —
     there's no calibration to estimate against on a first scan. The deliberate partial answer to "how far / how long?"
     for first scans is **M4's step checklist** (you can see you're on "Scan files" of N steps), plus keeping the
@@ -83,23 +83,24 @@ The core reframing behind M1+M2, and the thing the whole feature rotates around:
 ## Milestones
 
 Sequential. M1 and M2 are independently shippable quick wins. M3 is the unification (and is what makes M1/M2 land on
-*both* surfaces from one place). M4 is the checklist and depends on M3's shared row + a new backend event.
+_both_ surfaces from one place). M4 is the checklist and depends on M3's shared row + a new backend event.
 
 ---
 
 ### M1 — Name the drive in the top-right tooltip
 
-**Intent:** the user must instantly see *which* drive is indexing, as a clear title — even when only one drive is active.
+**Intent:** the user must instantly see _which_ drive is indexing, as a clear title — even when only one drive is
+active.
 
-**Change:** in `IndexingStatusIndicator.svelte`, always render the per-drive heading (drop the `showHeadings =
-rows.length > 1` gate; pass `showHeading={true}` always). In `IndexingDriveRow.svelte`, promote `.drive-heading` to read
-as a real title (it's already `font-weight: 600`, `--color-text-secondary`; bump to `--color-text-primary` and verify it
-reads as a heading above the status line). The name already resolves via the volume store (`driveName(volumeId)`); the
-`indexing.drive.heading` key is a `{name}` passthrough — keep it.
+**Change:** in `IndexingStatusIndicator.svelte`, always render the per-drive heading (drop the
+`showHeadings = rows.length > 1` gate; pass `showHeading={true}` always). In `IndexingDriveRow.svelte`, promote
+`.drive-heading` to read as a real title (it's already `font-weight: 600`, `--color-text-secondary`; bump to
+`--color-text-primary` and verify it reads as a heading above the status line). The name already resolves via the volume
+store (`driveName(volumeId)`); the `indexing.drive.heading` key is a `{name}` passthrough — keep it.
 
-**Edge:** the synthetic aggregation-only row and the id-fallback (drive vanished mid-scan) still work — heading shows the
-resolved name or the id. No copy change needed beyond possibly relaxing the `@key` description (it currently says "shown
-when more than one drive is indexing"); update that description to match the new always-on behavior.
+**Edge:** the synthetic aggregation-only row and the id-fallback (drive vanished mid-scan) still work — heading shows
+the resolved name or the id. No copy change needed beyond possibly relaxing the `@key` description (it currently says
+"shown when more than one drive is indexing"); update that description to match the new always-on behavior.
 
 **Docs:** update `src/lib/indexing/DETAILS.md` "Status indicator tooltip content" (the "shows only when more than one
 drive is active" line is now false) and the `CLAUDE.md` if it references it.
@@ -139,11 +140,11 @@ calibrated rescans.
   flash zeros.
 
 **Why keep tier-2 math at all:** `scanProgressInfo.rough` is still needed to pick the "(first scan)" label and to decide
-the gate. We just stop *rendering* its fraction.
+the gate. We just stop _rendering_ its fraction.
 
 **Risk:** the a11y test asserts a "calibrated-with-bar" and "counter-only" case already — good, that maps cleanly. Make
-sure the `aria-label` on the (now sometimes-absent) progress bar and the `aria-describedby` live label still describe the
-count for screen readers when the bar is gone.
+sure the `aria-label` on the (now sometimes-absent) progress bar and the `aria-describedby` live label still describe
+the count for screen readers when the bar is gone.
 
 **Docs:** `DETAILS.md` "Two-tier scan progress" + "Status indicator tooltip content" — document that tier-2 renders
 count+elapsed, no bar.
@@ -174,21 +175,21 @@ place.
   becomes a thin wrapper (heading + body + its own ETA window). The breadcrumb badge's scanning tooltip renders the same
   body for its one volume.
 - **Badge tooltip goes rich (DOM), not string.** `DriveIndexBadge.svelte` currently uses `use:tooltip={tooltipText}`
-  (string). For the *scanning* state, switch to the `contentEl` DOM-tooltip variant (the indicator already uses it) so
+  (string). For the _scanning_ state, switch to the `contentEl` DOM-tooltip variant (the indicator already uses it) so
   it can host the shared body. Non-scanning states (disabled/fresh/stale) stay as the existing text tooltip — they're
   fine and don't need the body. Keep the menu, dot, and footer exactly as they are.
   - **Gotcha to preserve:** the indicator's `contentEl` pattern renders the body inside a `<div hidden>` host and passes
-    the *inner* div (not the hidden host) so `hidden` isn't adopted into the tooltip. Mirror that in the badge.
-  - **Preserve the "scanning, no activity yet" fallback.** The badge dot color comes from the *backend freshness*
+    the _inner_ div (not the hidden host) so `hidden` isn't adopted into the tooltip. Mirror that in the badge.
+  - **Preserve the "scanning, no activity yet" fallback.** The badge dot color comes from the _backend freshness_
     (`manager.statusMap`, `scanning`), but the rich body comes from `index-state` activity — which for a non-root
     (SMB/MTP) volume only hydrates on the next 500 ms progress tick (the root-only `getIndexStatus` backfill in
-    `index-state.svelte.ts` doesn't cover SMB/MTP). So there's a real window — mid-scan reload, or before the first tick —
-    where `freshness === 'scanning'` but there's no `VolumeIndexActivity` entry, and the body would render blank. The
+    `index-state.svelte.ts` doesn't cover SMB/MTP). So there's a real window — mid-scan reload, or before the first tick
+    — where `freshness === 'scanning'` but there's no `VolumeIndexActivity` entry, and the body would render blank. The
     badge MUST keep a static fallback ("Scanning your drive…") for that window, exactly as `DriveIndexBadge.svelte` does
     today via `tString('…tooltipScanning')` when `!scanProgress`. Don't let the tooltip go empty.
   - **Add a per-volume activity getter to `index-state`'s public API.** Today the barrel exposes
-    `getActiveIndexVolumes()` (all) but no "this one volume's activity" read. The badge needs `getVolumeActivity(volumeId)`
-    (returns `VolumeIndexActivity | undefined`) to render only its own volume. Add it.
+    `getActiveIndexVolumes()` (all) but no "this one volume's activity" read. The badge needs
+    `getVolumeActivity(volumeId)` (returns `VolumeIndexActivity | undefined`) to render only its own volume. Add it.
 - **ETA windows must not collide.** Each consumer that renders the body owns its own ETA sliding-window state (today
   that lives in `IndexingDriveRow`). When two surfaces render the same volume simultaneously (corner + that volume's
   open badge tooltip), they each keep an independent window — that's fine and already the per-row model. Keep the window
@@ -204,27 +205,29 @@ place.
   rather than deleting.
 
 **Risk / safety:** this touches the breadcrumb (high-traffic UI). The badge dot/menu/freshness must not regress. Keep
-`drive-index-status.ts` (state→color/menu) as-is; only the *scanning tooltip body* changes. The `DriveIndexBadge.svelte.test.ts`
-and `.a11y.test.ts` must stay green; extend them for the new DOM tooltip body.
+`drive-index-status.ts` (state→color/menu) as-is; only the _scanning tooltip body_ changes. The
+`DriveIndexBadge.svelte.test.ts` and `.a11y.test.ts` must stay green; extend them for the new DOM tooltip body.
 
 **Docs:** rewrite `src/lib/indexing/CLAUDE.md` + `DETAILS.md` and `navigation/CLAUDE.md`'s badge bullet to describe the
 single shared body + the manager-vs-index-state responsibility split. This is a structural change → update colocated
 docs in the same pass (`.claude/rules/docs.md`).
 
 **Tests:**
+
 - Unit: the shared body renders each mode (scan tier-1 with bar, scan tier-2 count+elapsed, aggregation, replay) from a
   fixture activity. Pure-ish; mount-test it.
 - a11y: badge scanning tooltip (new DOM body) passes axe; indicator unchanged.
 - Keep `index-state.svelte.test.ts` green; if `scanProgressMap` removal changes the manager's surface, update
   `DriveIndexBadge.svelte.test.ts` accordingly.
 
-**Checks:** `pnpm check desktop`. Manual: run the app, open the badge tooltip mid-scan and confirm it matches the corner.
+**Checks:** `pnpm check desktop`. Manual: run the app, open the badge tooltip mid-scan and confirm it matches the
+corner.
 
 ---
 
 ### M4 — Per-volume step checklist
 
-**Intent:** the user understands the *process*: what the steps are, which one is active (unchecked box → animated
+**Intent:** the user understands the _process_: what the steps are, which one is active (unchecked box → animated
 spinner → checked box), live detail + ETA under the active step, and a rough overall sense of remaining time. Works for
 full (re)scans and event-log roll-ons. Big tooltip is fine.
 
@@ -236,29 +239,29 @@ full (re)scans and event-log roll-ons. Big tooltip is fine.
   completion task captures `let volume_id = self.volume_id.clone()` at `manager.rs:640`), the Idle sites `:898/:1022`,
   `network_scan.rs:222` (`self.volume_id`), `:343/:382` (captured clone at `:256`), and `event_loop.rs:842` (inside
   `run_replay_event_loop(volume_id: String)`). Emit at the Idle sites too, so the FE can clear/complete the checklist.
-  The global debug timeline stays; this just *also* tells the FE, per volume. **No string-matching** — `ActivityPhase` is
-  already a typed serde enum exported to `bindings.ts`; the FE maps the variant to a step.
+  The global debug timeline stays; this just _also_ tells the FE, per volume. **No string-matching** — `ActivityPhase`
+  is already a typed serde enum exported to `bindings.ts`; the FE maps the variant to a step.
 - **Register the event in `collect_events!`** (see `indexing/DETAILS.md`). Without this registration `bindings:regen`
-  silently emits nothing for the new event. Then regenerate bindings (`pnpm bindings:regen`) and add the FE event wrapper
-  in `tauri-commands/indexing.ts` (`onIndexPhaseChanged`).
-- **Reload backfill (decide here, not "during execution"):** `index-phase-changed` fires only on *transitions*, so after
-  a mid-scan window reload the FE can't learn the *current* phase (the existing `getIndexStatus` is root-scan-only and
-  carries no phase; `IndexDebugStatusResponse.activityPhase` is the **global** singleton — wrong under concurrent volumes
-  and debug-only). The reconcile step is worst-hit (no progress events, only the phase event marks it). **Decision:**
-  derive checklist step-state primarily from the *presence* of `index-state` activity/aggregation entries (which DO
-  backfill scan counts and fire aggregation events for every volume), and treat the phase event as the authoritative
-  driver for the steps that have no other signal (reconcile). Accept that the **reconcile step is unobservable after a
-  reload that lands mid-reconcile** — it's a brief, rare, low-stakes window; the step simply shows as not-yet-active until
-  the next phase event or completion. If cheap, also add an optional per-volume current `ActivityPhase` to
-  `VolumeIndexStatus` (already fetched per-volume by the manager) so the checklist can hydrate the current step on
-  reload — prefer this if it's ~15 LoC, else accept the gap and document it.
+  silently emits nothing for the new event. Then regenerate bindings (`pnpm bindings:regen`) and add the FE event
+  wrapper in `tauri-commands/indexing.ts` (`onIndexPhaseChanged`).
+- **Reload backfill (decide here, not "during execution"):** `index-phase-changed` fires only on _transitions_, so after
+  a mid-scan window reload the FE can't learn the _current_ phase (the existing `getIndexStatus` is root-scan-only and
+  carries no phase; `IndexDebugStatusResponse.activityPhase` is the **global** singleton — wrong under concurrent
+  volumes and debug-only). The reconcile step is worst-hit (no progress events, only the phase event marks it).
+  **Decision:** derive checklist step-state primarily from the _presence_ of `index-state` activity/aggregation entries
+  (which DO backfill scan counts and fire aggregation events for every volume), and treat the phase event as the
+  authoritative driver for the steps that have no other signal (reconcile). Accept that the **reconcile step is
+  unobservable after a reload that lands mid-reconcile** — it's a brief, rare, low-stakes window; the step simply shows
+  as not-yet-active until the next phase event or completion. If cheap, also add an optional per-volume current
+  `ActivityPhase` to `VolumeIndexStatus` (already fetched per-volume by the manager) so the checklist can hydrate the
+  current step on reload — prefer this if it's ~15 LoC, else accept the gap and document it.
 - **Network-scan honesty (two steps differ for SMB/MTP — verified in review):**
   - SMB/MTP emit `Scanning → Live` with no distinct `Aggregating`/`Reconciling` phase, yet the per-volume aggregation
-    sub-phase events (`loading → sorting → computing → writing`) *do* fire (the writer is spawned per-volume and the
+    sub-phase events (`loading → sorting → computing → writing`) _do_ fire (the writer is spawned per-volume and the
     network path sends `ComputeAllAggregates`). So drive the "Compute folder sizes" step off the **aggregation events**,
     not off a top-level `Aggregating` phase that network never emits.
   - **The `saving_entries` sub-phase also never fires for SMB/MTP.** `set_expected_total_entries()` is local-only
-    (`manager.rs`); network volumes insert entries inline *during* the BFS walk, so there is no post-scan "save entries"
+    (`manager.rs`); network volumes insert entries inline _during_ the BFS walk, so there is no post-scan "save entries"
     drain. **Do NOT fake it** by calling `set_expected_total_entries` on the network path — that fabricates a phase that
     doesn't semantically exist. Instead, the step model is **event-driven and composed**: a step appears/activates only
     when its driving events fire. For network, the "Find files" and "Save the file list" steps effectively collapse into
@@ -270,31 +273,33 @@ full (re)scans and event-log roll-ons. Big tooltip is fine.
 
 **M4b — Frontend: the checklist UI.**
 
-- A per-volume checklist replaces/augments the single status line in the shared body (M3). **Steps are composed from
-  the events that fire for this volume** (not a fixed list — see M4a network honesty). User-facing labels (sentence
-  case, friendly, no jargon — these are final copy, put them through the style guide but these are the intended
-  meanings):
+- A per-volume checklist replaces/augments the single status line in the shared body (M3). **Steps are composed from the
+  events that fire for this volume** (not a fixed list — see M4a network honesty). User-facing labels (sentence case,
+  friendly, no jargon — these are final copy, put them through the style guide but these are the intended meanings):
   1. **Find files** — the scan. Detail: count + elapsed (+ bar+ETA if calibrated, per M2). On a first scan, keep the
      "first scan" context here (e.g. the label or a sub-line conveys "first scan — this takes a while").
   2. **Save the file list** — the `saving_entries` aggregation sub-phase (local only; for network it's part of "Find
      files", so this step simply doesn't appear). ❌ Not "Save entries" ("entries" is a DB term) and ❌ not "Build the
-     index" (collides with the feature name — the whole operation is "indexing", so a *step* called that reads as if the
+     index" (collides with the feature name — the whole operation is "indexing", so a _step_ called that reads as if the
      others don't build the index). "Save the file list" is concrete, distinct, and stays in the user's mental model.
   3. **Compute folder sizes** — `loading → sorting → computing → writing` (computing/writing have progress; loading/
      sorting are indeterminate — shown as the active-step spinner + a text sub-line, NOT a second nested spinner). Use
      "folders" not "directories" in this step AND in the sub-phase detail copy underneath, for one consistent word on
      one surface (the existing `indexing.aggregation.*` sub-phase strings say "directories" — reword them to "folders"
      here, or render folder-worded variants).
-  4. **Catch up on recent changes** — the post-scan reconcile. ❌ Not "Reconcile" (accounting/dev jargon). Indeterminate;
-     local only — for network it doesn't apply, so the step doesn't appear (don't show a permanently-unchecked step).
+  4. **Catch up on recent changes** — the post-scan reconcile. ❌ Not "Reconcile" (accounting/dev jargon).
+     Indeterminate; local only — for network it doesn't apply, so the step doesn't appear (don't show a
+     permanently-unchecked step).
 
   For an **event-log roll-on** (replay), the checklist collapses to a single **Update index** step (replay, with its
   blended ETA). "index" is established product vocabulary here (badge, menu, "rescan"), so it's fine. Don't show
   scan/build/compute steps that won't run.
+
 - **Step state** per item: `pending` (unchecked box) / `active` (spinner) / `done` (check). (No `canceled` visual — see
-  the stop/cancel note below; a stopped scan unmounts the row.) Derive from the phase event + which events have fired. Use `<Icon>` glyphs (checkbox, check) and `<Spinner>` (per
-  `src/CLAUDE.md` — no hand-rolled spinner). Active step shows the live detail underneath (the M3 body's per-mode
-  content). **No nested spinners** — the active step's spinner is the only one; sub-phases are text, not a second ring.
+  the stop/cancel note below; a stopped scan unmounts the row.) Derive from the phase event + which events have fired.
+  Use `<Icon>` glyphs (checkbox, check) and `<Spinner>` (per `src/CLAUDE.md` — no hand-rolled spinner). Active step
+  shows the live detail underneath (the M3 body's per-mode content). **No nested spinners** — the active step's spinner
+  is the only one; sub-phases are text, not a second ring.
 - **Stopped / canceled / failed (principle 3: everything cancelable) — handled by the row DISAPPEARING, not an
   in-checklist "stopped" visual.** Don't build a fourth `canceled` step-visual inside the checklist — there's no host
   for it: on a clean OR canceled stop the activity entry is removed from `index-state` (local `index-scan-complete`
@@ -307,8 +312,8 @@ full (re)scans and event-log roll-ons. Big tooltip is fine.
     freshness). So a canceled or disconnected network scan leaves a **stuck "scanning" corner row** — and M3/M4 lean
     harder on `index-state` as the single source, making it more visible. Emit a terminal clear (a scan-complete, or a
     dedicated `index-scan-aborted { volumeId }` that `index-state` treats as "remove this volume's activity") on those
-    abort arms so the row clears. This is a small, correct bug fix; do it in M3 (where the single-source reliance
-    lands) and add a regression test.
+    abort arms so the row clears. This is a small, correct bug fix; do it in M3 (where the single-source reliance lands)
+    and add a regression test.
 - **Phase→label map is NEW, not the existing one.** ❌ Don't "extend `phaseToLabelKey`" — that map (in
   `IndexingDriveRow.svelte`) keys aggregation **sub-phase** strings (`saving_entries`/`loading`/…), not `ActivityPhase`.
   Add a separate `ActivityPhase`→step-label-key map for the checklist steps.
@@ -321,15 +326,15 @@ full (re)scans and event-log roll-ons. Big tooltip is fine.
 - **Overall ETA — DEFERRED as one coherent unit with its calibration (honest-spine call).** An overall "~Xm left" is
   only honest if the not-yet-started steps have real estimates. Those require persisted **per-phase** priors — and the
   per-phase `duration_ms` the backend records today lives only in the in-memory `DEBUG_STATS` ring (capped at 20, reset
-  on restart, not per-volume-persisted). So a "rough overall ETA" built without them collapses to *just the active
-  step's ETA wearing an "overall" label* — which trips this plan's own honest-ETA spine. Rather than ship that, **defer
+  on restart, not per-volume-persisted). So a "rough overall ETA" built without them collapses to _just the active
+  step's ETA wearing an "overall" label_ — which trips this plan's own honest-ETA spine. Rather than ship that, **defer
   overall ETA together with the backend per-phase calibration** (a new per-volume meta-write of last scan's per-phase
   durations + a read to seed estimates). Capture it as the named follow-up in `docs/specs/`.
   - **What v1 ships for "how long?" instead, honestly:** (1) the **step-of-N structure** itself answers complaint #4's
     "step 3 of 3 or 3 of 10?" directly — you see every step and which is active; (2) the **active step shows its own
     ETA** where it has a trustworthy denominator (calibrated scan, computing/writing), which on a rescan is most of the
     wall-clock. That's a large, honest leap over today's single mystery bar without fabricating a total.
-- **Multi-volume stacking.** The corner tooltip shows *all* active volumes; a full multi-step checklist per volume means
+- **Multi-volume stacking.** The corner tooltip shows _all_ active volumes; a full multi-step checklist per volume means
   N stacked checklists. "Big tooltip is fine" doesn't cover four drives. **Collapse secondary volumes to a one-line
   summary** (name + current step + count/percent), and expand the full checklist only for the primary/active volume (or
   the first). The badge tooltip always shows just its own volume's full checklist. Keep it legible, not a wall.
@@ -348,6 +353,7 @@ which keys aggregation sub-phase strings — see the M4b note); keep the existin
 copy. Never branch on wording. Keep `indexing-i18n-parity.test.ts` green.
 
 **Tests:**
+
 - TDD (real red→green) for the step-state derivation (pure function: given phase + fired-events → per-step state). This
   is the risky logic; write it test-first.
 - a11y: the checklist tooltip passes axe; steps have accessible names/states (a checklist needs proper roles — verify
@@ -381,13 +387,13 @@ scaffolding, but even there the FE needs the regenerated binding — so just do 
 
 ## Definition of done
 
-- All four points visibly fixed: drive named, count-first honest progress, one shared representation on both surfaces,
-  a legible per-volume step checklist with current-step detail and per-step ETA. The step-of-N structure + active-step
-  ETA carry "how long?"; a true **overall** ETA (with its backend per-phase calibration) is an explicit, named follow-up
-  in `docs/specs/`, deliberately deferred to keep the ETA honest — not a blocker.
-- Friendly, jargon-free step labels (Find files / Save the file list / Compute folder sizes / Catch up on recent
-  changes / Update index), one word for folders, a stopped scan unmounts the row honestly (plus the network-abort
-  stuck-row bug fixed), multi-volume collapsed sensibly.
+- All four points visibly fixed: drive named, count-first honest progress, one shared representation on both surfaces, a
+  legible per-volume step checklist with current-step detail and per-step ETA. The step-of-N structure + active-step ETA
+  carry "how long?"; a true **overall** ETA (with its backend per-phase calibration) is an explicit, named follow-up in
+  `docs/specs/`, deliberately deferred to keep the ETA honest — not a blocker.
+- Friendly, jargon-free step labels (Find files / Save the file list / Compute folder sizes / Catch up on recent changes
+  / Update index), one word for folders, a stopped scan unmounts the row honestly (plus the network-abort stuck-row bug
+  fixed), multi-volume collapsed sensibly.
 - `pnpm check --include-slow` green (surface any unrelated failures).
 - Milestone tags stripped from touched code/docs.
 - Colocated docs updated in the same pass.

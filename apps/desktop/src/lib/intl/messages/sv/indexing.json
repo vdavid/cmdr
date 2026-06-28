@@ -12,10 +12,6 @@
   "@indexing.scan.label": {
     "sourceHash": "e7d6d6a"
   },
-  "indexing.scan.labelFirst": "Söker igenom din enhet (första genomsökningen)...",
-  "@indexing.scan.labelFirst": {
-    "sourceHash": "2431d85"
-  },
   "indexing.scan.counters": "{entriesText} poster, {dirsText} kat.",
   "@indexing.scan.counters": {
     "sourceHash": "fd4d242"
@@ -84,10 +80,6 @@
   "indexing.aggregation.writing": "Sparar mappstorlekar...",
   "@indexing.aggregation.writing": {
     "sourceHash": "9466e98"
-  },
-  "indexing.replay.label": "Uppdaterar index...",
-  "@indexing.replay.label": {
-    "sourceHash": "2920134"
   },
   "indexing.replay.detail": "{eventsText} händelser bearbetade",
   "@indexing.replay.detail": {
