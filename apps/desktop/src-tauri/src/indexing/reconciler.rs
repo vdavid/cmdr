@@ -577,7 +577,7 @@ pub(super) fn send_marks(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -
 /// successfully-listed dir's `listed_epoch` FIRST, then run a SINGLE
 /// `ComputeAllAggregates`.
 ///
-/// The mark-before-aggregate order is load-bearing (invariant I7): aggregating
+/// The mark-before-aggregate order is load-bearing: aggregating
 /// before the marks rolls the whole tree to `min_subtree_epoch = 0` (incomplete);
 /// a mark queued after the aggregate drags that dir's ancestors to incomplete. The
 /// single in-order writer guarantees the order once sequenced here.
@@ -814,8 +814,8 @@ pub(super) fn reconcile_subtree(
 ///   `/etc` normalize to `/private/...`, so they're aliases of a real directory the
 ///   fresh scan stored under the canonical path. The fresh scan skips the alias
 ///   (`scanner::run_scan`); a reconcile that DIDN'T would find them absent from the
-///   DB and re-add them every pass, diverging from the fresh-scan tree (invariant
-///   I13). Skipping here keeps fresh and reconcile in lock-step.
+///   DB and re-add them every pass, diverging from the fresh-scan tree.
+///   Skipping here keeps fresh and reconcile in lock-step.
 pub(super) fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::Metadata, bool)>> {
     let read_dir = match std::fs::read_dir(dir_path) {
         Ok(rd) => rd,
@@ -840,7 +840,7 @@ pub(super) fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::
         }
         // Skip the canonicalization-alias symlinks (/tmp, /var, /etc) so we don't
         // re-add what the fresh scan deliberately stored under the canonical
-        // /private/... path (invariant I13).
+        // /private/... path.
         if scanner::is_canonicalization_alias(&child_path_str, &normalized_child) {
             continue;
         }

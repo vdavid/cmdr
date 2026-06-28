@@ -111,10 +111,10 @@ fn summary(entries: u64, dirs: u64, physical_bytes: u64, start: Instant, cancell
 ///
 /// Serial BFS from the volume root over `std::fs::read_dir`, diffing each dir
 /// against the DB ([`reconciler::diff_dir_against_db`]) and writing only changes,
-/// then the shared finish (marks → one `ComputeAllAggregates`, I1/I7). Honors the
-/// cancel flag (I12), the empty-root guard (I8), the read-only connection (I11),
-/// the `(parent_id, name)` new-dir resolution + shared id counter (I6/I10), and the
-/// recurse-into-every-matched-child-dir rule (I5). Keeps the read connection in
+/// then the shared finish (marks before the single `ComputeAllAggregates`). Honors
+/// the cancel flag, the empty-root guard, the read-only connection, the
+/// `(parent_id, name)` new-dir resolution + shared id counter, and the
+/// recurse-into-every-matched-child-dir rule. Keeps the read connection in
 /// autocommit (no long-lived `BEGIN` read txn) so post-flush new-dir resolves see
 /// fresh rows.
 fn run_local_reconcile(
@@ -126,7 +126,7 @@ fn run_local_reconcile(
     let start = Instant::now();
     let db_path = writer.db_path();
 
-    // I11: a READ connection. A write-mode connection's pragmas can `SQLITE_BUSY`
+    // A READ connection. A write-mode connection's pragmas can `SQLITE_BUSY`
     // and silently kill live indexing.
     let conn = IndexStore::open_read_connection(&db_path).map_err(|e| ScanError::WriterSend(e.to_string()))?;
     // `start_scan` already bumped + flushed `current_epoch` before spawning this
@@ -157,12 +157,12 @@ fn run_local_reconcile(
     let mut queue: VecDeque<(PathBuf, i64)> = VecDeque::new();
     queue.push_back((root.to_path_buf(), root_id));
     // (parent dir path, parent DB id, child name): resolved by `(parent_id, name)`
-    // after a level's flush, never by absolute path (I6).
+    // after a level's flush, never by absolute path.
     let mut new_dirs: Vec<(PathBuf, i64, String)> = Vec::new();
 
     while let Some((dir_path, dir_id)) = queue.pop_front() {
         if cancelled.load(Ordering::Relaxed) {
-            // Cancel (I12): leave the prior index intact (no truncate ran) and send
+            // Cancel: leave the prior index intact (no truncate ran) and send
             // NO marks/aggregate. Any partial entry writes already applied stay
             // size-consistent (`UpsertEntryV2`/`Delete*` auto-propagate dir_stats);
             // with no `scan_completed_at`, the next launch re-reconciles.
@@ -186,7 +186,7 @@ fn run_local_reconcile(
             }
         };
 
-        // Empty-root guard (I8): if the VOLUME ROOT lists empty, bail BEFORE diffing
+        // Empty-root guard: if the VOLUME ROOT lists empty, bail BEFORE diffing
         // it — otherwise the diff sees an empty live listing and DELETES every
         // existing child, blanking the index. A reconcile only runs over an
         // already-populated index, so an empty root is a transient half-dead `/`,
@@ -217,7 +217,7 @@ fn run_local_reconcile(
         added += diff.added;
         removed += diff.removed;
         updated += diff.updated;
-        // I5: recurse into EVERY matched child dir (changed or not).
+        // Recurse into EVERY matched child dir (changed or not).
         for (child_id, child_name) in diff.matched_child_dirs {
             queue.push_back((dir_path.join(child_name), child_id));
         }
@@ -235,7 +235,7 @@ fn run_local_reconcile(
             }
             for (parent_path, parent_id, child_name) in new_dirs.drain(..) {
                 let child_path = parent_path.join(&child_name);
-                // Resolve by `(parent_id, name)` (I6): single-component lookup under
+                // Resolve by `(parent_id, name)`: single-component lookup under
                 // the id we already hold, robust to any root.
                 match IndexStore::resolve_component(&conn, parent_id, &child_name) {
                     Ok(Some(id)) => queue.push_back((child_path, id)),
@@ -252,7 +252,7 @@ fn run_local_reconcile(
         }
     }
 
-    // Clean finish (I1/I7): stamp every re-listed dir, then ONE `ComputeAllAggregates`
+    // Clean finish: stamp every re-listed dir (marks before the single aggregate), then ONE `ComputeAllAggregates`
     // (never per-dir propagation), then trim the post-rescan WAL spike.
     reconciler::finish_reconcile(&listed_ids, epoch, writer).map_err(|e| ScanError::WriterSend(e.to_string()))?;
     writer
@@ -382,7 +382,7 @@ mod tests {
         result
     }
 
-    /// I5: a reconcile must descend into existing child dirs whose own metadata
+    /// A reconcile must descend into existing child dirs whose own metadata
     /// did NOT change — recursion is decoupled from the write decision. Pinned by
     /// re-listing every dir to the new epoch on a no-change rescan.
     #[test]
@@ -408,7 +408,7 @@ mod tests {
         assert_eq!(
             listed_epoch(&h, deep),
             Some(2),
-            "unchanged child dir must still be re-listed (I5)"
+            "unchanged child dir must still be re-listed"
         );
     }
 
@@ -477,7 +477,7 @@ mod tests {
         assert_eq!(size1, bigger.len() as u64, "ancestor size equals the new file size");
     }
 
-    /// Empty-root guard (I8, data-safety): when the volume root lists empty, the
+    /// Empty-root guard (data-safety): when the volume root lists empty, the
     /// reconcile returns `EmptyRoot` and does NOT blank the prior index. The
     /// completion handler maps `Err` to "no scan_completed_at" (unchanged manager
     /// logic), so the index heals on the next launch.
@@ -569,7 +569,7 @@ mod tests {
         .collect()
     }
 
-    /// M2c convergence guard (the headline cross-check): a LOCAL reconcile run
+    /// Convergence guard (the headline cross-check): a LOCAL reconcile run
     /// immediately after a REAL jwalk scan of the SAME unchanged on-disk tree is a
     /// NO-OP. This pins that the two independent code paths — jwalk's parallel
     /// `run_scan` (metadata via `extract_metadata`, exclusion + canonicalization-alias
@@ -673,7 +673,7 @@ mod tests {
             "reconcile-after-jwalk must leave every subtree dir's recursive aggregates unchanged"
         );
 
-        // 3. Full coverage / recursion (I5): every dir from the root down advanced to
+        // 3. Full coverage / recursion: every dir from the root down advanced to
         //    the new epoch, proving the reconcile re-listed the whole tree.
         for (label, id) in [("root", rp_id), ("a", a), ("a/deep", deep), ("b", b)] {
             assert_eq!(
@@ -684,7 +684,7 @@ mod tests {
         }
     }
 
-    /// Cancel (I12, data-safety): a cancelled reconcile returns `was_cancelled`
+    /// Cancel (data-safety): a cancelled reconcile returns `was_cancelled`
     /// (so the completion handler writes no scan_completed_at) and sends no
     /// marks/aggregate, leaving the prior index intact and un-restamped.
     #[test]
