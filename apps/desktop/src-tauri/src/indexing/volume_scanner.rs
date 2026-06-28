@@ -51,6 +51,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
+use futures_util::StreamExt;
+use futures_util::stream::FuturesUnordered;
+
 use crate::file_system::volume::Volume;
 use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
@@ -64,6 +67,14 @@ const LIST_TIMEOUT: Duration = Duration::from_secs(120);
 
 /// Batch size for `InsertEntriesV2` sends — matches the jwalk scanner's default.
 const BATCH_SIZE: usize = 2000;
+
+/// How many `list_directory` round trips run concurrently during a walk. Directory
+/// listing is latency-bound (each dir is open+query+close network round trips over an
+/// otherwise-idle link), so keeping many in flight is a near-linear speedup until the
+/// server's SMB credits saturate. Only the network I/O is concurrent; results are
+/// processed serially on the walk task, so `ScanContext` id allocation and the writer
+/// stay single-owner. 32 keeps a NAS busy without flooding it.
+const SCAN_CONCURRENCY: usize = 32;
 
 /// Consecutive-failure backstop. A whole-volume disconnect that doesn't map to
 /// the typed `DeviceDisconnected`/`Disconnected` variant (e.g. a generic
@@ -194,44 +205,66 @@ pub(crate) async fn scan_volume_via_trait(
     // on every successful listing; the backstop trips at `CONSECUTIVE_FAILURE_ABORT`.
     let mut consecutive_failures: usize = 0;
 
-    // Breadth-first so a directory's id is always registered in the context
-    // before we list its children (their parent lookup must hit). Each queue
-    // item is an absolute directory path; the root is already mapped to ROOT_ID.
+    // Breadth-first, with up to SCAN_CONCURRENCY listings in flight at once. A dir's id
+    // is registered in `ScanContext` when its PARENT's listing is processed (serially,
+    // on this task), BEFORE the child is enqueued — so the "parent id registered before
+    // we list the child" invariant holds even though the network listings overlap. Only
+    // the I/O overlaps; result processing (id alloc, batching) stays single-owner, so no
+    // locking. Each queue item is an absolute directory path; the root maps to ROOT_ID.
     let mut queue: VecDeque<PathBuf> = VecDeque::new();
     queue.push_back(root.clone());
     let mut last_progress_log = Instant::now();
+    let mut inflight = FuturesUnordered::new();
 
-    while let Some(dir_path) = queue.pop_front() {
+    loop {
         if cancelled.load(Ordering::Relaxed) {
+            // In-flight listings are dropped here; the smb2/MTP backends tolerate a
+            // dropped request waiter. Flush what we batched and report the cancel.
             flush_batch(&mut batch, &writer)?;
             return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
         }
 
-        // One directory per iteration, timeout- and autoreleasepool-wrapped.
-        // Goes through `list_directory_for_scan` so a backend that shares a
-        // serialized resource with foreground work (MTP's single USB pipe)
-        // releases it between bounded units and yields to pending foreground ops,
-        // rather than pinning it for the whole (possibly huge) directory.
-        let entries = match list_one_directory(volume.as_ref(), &dir_path, &cancelled).await {
+        // Keep the pipe full: launch listings until the concurrency cap or the queue
+        // drains. Each future owns its clones (self-contained) and returns the dir path
+        // alongside the result so the processor can resolve its parent id. Goes through
+        // `list_directory_for_scan` (inside `list_one_directory`) so a backend sharing a
+        // serialized resource with foreground work (MTP's single USB pipe) yields it
+        // between bounded units rather than pinning it for the whole directory.
+        while inflight.len() < SCAN_CONCURRENCY {
+            let Some(dir) = queue.pop_front() else { break };
+            let vol = Arc::clone(&volume);
+            let cancel = Arc::clone(&cancelled);
+            inflight.push(async move {
+                let r = list_one_directory(vol.as_ref(), &dir, &cancel).await;
+                (dir, r)
+            });
+        }
+
+        // Nothing queued and nothing in flight ⇒ the walk is done.
+        let Some((dir_path, result)) = inflight.next().await else {
+            break;
+        };
+
+        let entries = match result {
             Ok(e) => {
                 consecutive_failures = 0;
                 e
             }
             // TERMINAL disconnect: the whole volume went away mid-walk. Matched
             // by the TYPED variant (never a message substring,
-            // `.claude/rules/no-string-matching.md`). Stop the walk immediately —
-            // do NOT churn the still-queued dirs into silently-empty rows (the
-            // reported prod bug). Write the partial-preserving sequence in ONE
-            // place (flush + marks + aggregate, NO scan_completed_at) so the kept
-            // partial is honest, then surface the typed error to the completion
+            // `.claude/rules/no-string-matching.md`). Stop topping up and drop the
+            // in-flight listings rather than churning the still-queued dirs into
+            // silently-empty rows (the reported prod bug). Write the partial-preserving
+            // sequence in ONE place (flush + marks + aggregate, NO scan_completed_at) so
+            // the kept partial is honest, then surface the typed error to the completion
             // handler.
             Err(VolumeScanError::Volume(e)) if is_typed_disconnect(&e) => {
                 log::warn!(
                     "volume_scanner: device disconnected listing {}: {e}; \
-                     keeping honest partial ({} listed, {} queued unscanned)",
+                     keeping honest partial ({} listed, {} queued/in-flight unscanned)",
                     dir_path.display(),
                     crate::pluralize::pluralize(total_dirs, "dir"),
-                    crate::pluralize::pluralize(queue.len() as u64, "dir"),
+                    crate::pluralize::pluralize((queue.len() + inflight.len()) as u64, "dir"),
                 );
                 finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
                 return Err(VolumeScanError::Volume(e));
@@ -248,8 +281,11 @@ pub(crate) async fn scan_volume_via_trait(
                 // variant. Skip it and keep walking the rest, like the jwalk
                 // scanner skips errored entries — BUT count consecutive failures.
                 // A vanished volume that surfaces as an untyped error makes EVERY
-                // remaining listing fail back-to-back, so the backstop aborts the
-                // walk (terminal) instead of fabricating empties for the rest.
+                // listing fail, so the backstop aborts the walk (terminal) instead of
+                // fabricating empties. Concurrency loosens "consecutive" (up to
+                // SCAN_CONCURRENCY failures can be in flight at once), but a real
+                // disconnect piles failures with no successes to reset the counter, so
+                // it still trips; an isolated bad dir is reset by its many healthy peers.
                 consecutive_failures += 1;
                 log::debug!(
                     "volume_scanner: skipping unlistable dir {} (consecutive_failures={consecutive_failures}): {err}",
@@ -259,9 +295,9 @@ pub(crate) async fn scan_volume_via_trait(
                     log::warn!(
                         "volume_scanner: {consecutive_failures} consecutive listing failures \
                          (looks like a disconnect); aborting walk and keeping honest partial \
-                         ({} listed, {} queued unscanned)",
+                         ({} listed, {} queued/in-flight unscanned)",
                         crate::pluralize::pluralize(total_dirs, "dir"),
-                        crate::pluralize::pluralize(queue.len() as u64, "dir"),
+                        crate::pluralize::pluralize((queue.len() + inflight.len()) as u64, "dir"),
                     );
                     finish_partial_scan(&mut batch, &listed_ids, epoch, &writer)?;
                     return Err(VolumeScanError::ConsecutiveFailures {
@@ -444,40 +480,91 @@ pub(crate) async fn reconcile_volume_via_trait(
     let mut queue: VecDeque<(PathBuf, i64)> = VecDeque::new();
     queue.push_back((root.clone(), ROOT_ID));
     let mut last_progress_log = Instant::now();
-    // New child dirs discovered this pass, drained after a level's flush. Each is
-    // (parent dir path, parent DB id, child name): we resolve the freshly-written
-    // child by `(parent_id, name)` rather than by absolute path, because the index
-    // root is the VOLUME root (mapped to ROOT_ID), not `/`. An absolute-path walk
-    // from ROOT_ID would fail for any non-`/` root (e.g. `/Volumes/naspi`), which
-    // is exactly the SMB/MTP case — that bug left a post-Forget enable resolving
-    // zero new dirs, so the reconcile stopped at the root and falsely completed.
-    // See `indexing/DETAILS.md` § "Non-destructive rescan".
+    let mut inflight = FuturesUnordered::new();
+    // New child dirs discovered this pass, drained after a WAVE's flush (when nothing
+    // is queued or in flight). Each is (parent dir path, parent DB id, child name): we
+    // resolve the freshly-written child by `(parent_id, name)` rather than by absolute
+    // path, because the index root is the VOLUME root (mapped to ROOT_ID), not `/`. An
+    // absolute-path walk from ROOT_ID would fail for any non-`/` root (e.g.
+    // `/Volumes/naspi`), which is exactly the SMB/MTP case — that bug left a post-Forget
+    // enable resolving zero new dirs, so the reconcile stopped at the root and falsely
+    // completed. See `indexing/DETAILS.md` § "Non-destructive rescan".
     let mut new_dirs: Vec<(PathBuf, i64, String)> = Vec::new();
 
-    while let Some((dir_path, dir_id)) = queue.pop_front() {
+    loop {
         if cancelled.load(Ordering::Relaxed) {
             // User cancel: stop, but leave the prior index intact (no truncate ran).
             // Mirror the fresh-scan cancel contract (no marks/aggregate on cancel).
+            // In-flight listings are dropped (backends tolerate a dropped waiter).
             return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
         }
 
-        let entries = match list_one_directory(volume.as_ref(), &dir_path, &cancelled).await {
+        // Keep up to SCAN_CONCURRENCY listings in flight — matched (existing) child dirs
+        // whose ids we already hold. Same overlap-the-latency-bound-I/O win as the fresh
+        // scan; processing (diff, writes) stays serial on this task and the DB read conn.
+        while inflight.len() < SCAN_CONCURRENCY {
+            let Some((dir, id)) = queue.pop_front() else { break };
+            let vol = Arc::clone(&volume);
+            let cancel = Arc::clone(&cancelled);
+            inflight.push(async move {
+                let r = list_one_directory(vol.as_ref(), &dir, &cancel).await;
+                ((dir, id), r)
+            });
+        }
+
+        // Wave boundary: nothing queued and nothing in flight. If new dirs were
+        // discovered this wave, flush so the read connection can resolve their
+        // freshly-written ids, then queue them for the next wave. Otherwise we're done.
+        if inflight.is_empty() {
+            if new_dirs.is_empty() {
+                break;
+            }
+            writer
+                .flush()
+                .await
+                .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
+            for (parent_path, parent_id, child_name) in new_dirs.drain(..) {
+                let child_path = parent_path.join(&child_name);
+                // Resolve by (parent_id, name), NOT by absolute path: the index root is
+                // the volume root (ROOT_ID), so an absolute-path walk from ROOT_ID only
+                // works when the root is `/`. We hold the parent's DB id, so a
+                // single-component lookup is both correct for any root AND cheaper.
+                match IndexStore::resolve_component(&conn, parent_id, &child_name) {
+                    Ok(Some(id)) => queue.push_back((child_path, id)),
+                    Ok(None) => log::debug!(
+                        "volume_scanner: reconcile couldn't resolve new dir after flush: {}",
+                        child_path.display()
+                    ),
+                    Err(e) => log::warn!(
+                        "volume_scanner: reconcile resolve_component failed for {}: {e}",
+                        child_path.display()
+                    ),
+                }
+            }
+            continue;
+        }
+
+        let ((dir_path, dir_id), result) = match inflight.next().await {
+            Some(v) => v,
+            None => break,
+        };
+
+        let entries = match result {
             Ok(e) => {
                 consecutive_failures = 0;
                 e
             }
-            // TERMINAL disconnect: stop immediately and keep the prior index
-            // intact. There's no partial to roll up (we never truncated), but we
-            // still stamp the dirs we DID re-list this pass and run the aggregate,
-            // so reconciled subtrees flip fresh and the rest stays as it was
-            // (stale). Then surface the typed error.
+            // TERMINAL disconnect: stop topping up and keep the prior index intact.
+            // There's no partial to roll up (we never truncated), but we still stamp the
+            // dirs we DID re-list this pass and run the aggregate, so reconciled subtrees
+            // flip fresh and the rest stays as it was (stale). Then surface the typed error.
             Err(VolumeScanError::Volume(e)) if is_typed_disconnect(&e) => {
                 log::warn!(
                     "volume_scanner: device disconnected reconciling {}: {e}; \
-                     keeping prior index ({} re-listed, {} queued unreached)",
+                     keeping prior index ({} re-listed, {} queued/in-flight unreached)",
                     dir_path.display(),
                     crate::pluralize::pluralize(total_dirs, "dir"),
-                    crate::pluralize::pluralize(queue.len() as u64, "dir"),
+                    crate::pluralize::pluralize((queue.len() + inflight.len() + new_dirs.len()) as u64, "dir"),
                 );
                 finish_reconcile(&listed_ids, epoch, &writer)?;
                 return Err(VolumeScanError::Volume(e));
@@ -497,9 +584,9 @@ pub(crate) async fn reconcile_volume_via_trait(
                     log::warn!(
                         "volume_scanner: {consecutive_failures} consecutive listing failures during reconcile \
                          (looks like a disconnect); aborting and keeping prior index \
-                         ({} re-listed, {} queued unreached)",
+                         ({} re-listed, {} queued/in-flight unreached)",
                         crate::pluralize::pluralize(total_dirs, "dir"),
-                        crate::pluralize::pluralize(queue.len() as u64, "dir"),
+                        crate::pluralize::pluralize((queue.len() + inflight.len() + new_dirs.len()) as u64, "dir"),
                     );
                     finish_reconcile(&listed_ids, epoch, &writer)?;
                     return Err(VolumeScanError::ConsecutiveFailures {
@@ -601,35 +688,6 @@ pub(crate) async fn reconcile_volume_via_trait(
                 continue;
             }
             new_dirs.push((dir_path.clone(), dir_id, child_name));
-        }
-
-        // When the current BFS level is drained and new dirs were created, flush so
-        // the read connection can resolve their freshly-assigned ids, then queue
-        // them for recursion.
-        if !new_dirs.is_empty() && queue.is_empty() {
-            writer
-                .flush()
-                .await
-                .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
-            for (parent_path, parent_id, child_name) in new_dirs.drain(..) {
-                let child_path = parent_path.join(&child_name);
-                // Resolve by (parent_id, name), NOT by absolute path: the index
-                // root is the volume root (ROOT_ID), so an absolute-path walk from
-                // ROOT_ID only works when the root is `/`. We already hold the
-                // parent's DB id, so a single-component lookup is both correct for
-                // any root AND cheaper than re-walking the whole path.
-                match IndexStore::resolve_component(&conn, parent_id, &child_name) {
-                    Ok(Some(id)) => queue.push_back((child_path, id)),
-                    Ok(None) => log::debug!(
-                        "volume_scanner: reconcile couldn't resolve new dir after flush: {}",
-                        child_path.display()
-                    ),
-                    Err(e) => log::warn!(
-                        "volume_scanner: reconcile resolve_component failed for {}: {e}",
-                        child_path.display()
-                    ),
-                }
-            }
         }
     }
 
@@ -1141,10 +1199,11 @@ mod tests {
         let _store = IndexStore::open(&db_path).expect("open store");
         let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
 
-        // Root + 100 empty subdirs. BFS: list root (call 1) discovers 100 dirs,
-        // then lists them (calls 2, 3, ...). Disconnect on the 4th call, i.e.
-        // after the root and 2 subdirs listed successfully → 97 still queued.
-        let n_subdirs = 100;
+        // Root + 200 empty subdirs (≫ SCAN_CONCURRENCY). BFS: list root (call 1)
+        // discovers 200 dirs, then lists them concurrently (up to SCAN_CONCURRENCY in
+        // flight). The 4th list call returns a typed disconnect. The walk must stop
+        // topping up and drop the in-flight listings rather than churning all 200.
+        let n_subdirs = 200;
         let fail_after_calls = 4;
         let calls = Arc::new(AtomicU64::new(0));
         let vol: Arc<dyn Volume> = Arc::new(CountingDisconnectVolume {
@@ -1164,14 +1223,18 @@ mod tests {
             other => panic!("expected typed DeviceDisconnected terminal error, got {other:?}"),
         }
 
-        // Prompt stop: the walk did NOT attempt the remaining ~97 dirs. It made
-        // exactly `fail_after_calls` calls (the failing one included) and bailed.
+        // Prompt stop: the walk bailed within ~one concurrency window of the disconnect
+        // and did NOT churn the remaining queued dirs. With concurrency the count is no
+        // longer exactly `fail_after_calls` (up to SCAN_CONCURRENCY listings were already
+        // in flight), but it's bounded well below the full `n_subdirs`.
         let made = calls.load(Ordering::Relaxed) as usize;
-        assert_eq!(
-            made,
-            fail_after_calls,
-            "walk must stop at the disconnect, not churn the {} still-queued dirs",
-            n_subdirs - (fail_after_calls - 1),
+        assert!(
+            made < n_subdirs,
+            "walk must stop at the disconnect, not churn all {n_subdirs} queued dirs (made {made})",
+        );
+        assert!(
+            made <= 1 + SCAN_CONCURRENCY + fail_after_calls,
+            "walk must stop within ~one concurrency window of the disconnect (made {made})",
         );
 
         writer.flush().await.expect("flush");
@@ -1192,9 +1255,9 @@ mod tests {
         let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
 
         // Enough subdirs that the backstop (N consecutive) trips well before the
-        // queue drains. Root lists fine (call 1), then every subdir listing fails
-        // with an untyped IoError starting at call 2.
-        let n_subdirs = CONSECUTIVE_FAILURE_ABORT * 4;
+        // queue drains, even with up to SCAN_CONCURRENCY listings in flight. Root lists
+        // fine (call 1), then every subdir listing fails with an untyped IoError.
+        let n_subdirs = CONSECUTIVE_FAILURE_ABORT * 6;
         let calls = Arc::new(AtomicU64::new(0));
         let vol: Arc<dyn Volume> = Arc::new(CountingDisconnectVolume {
             inner: wide_tree(n_subdirs),
@@ -1213,13 +1276,17 @@ mod tests {
             other => panic!("expected ConsecutiveFailures backstop abort, got {other:?}"),
         }
 
-        // Stopped after: 1 (root) + N (the consecutive failures) calls. The
-        // remaining dirs were never attempted.
+        // Bounded stop: the backstop aborts after ~root + one concurrency window +
+        // N failures (concurrency means some listings were already in flight), and the
+        // remaining dirs were never attempted — well short of the full queue.
         let made = calls.load(Ordering::Relaxed) as usize;
-        assert_eq!(
-            made,
-            1 + CONSECUTIVE_FAILURE_ABORT,
-            "backstop stops after the root plus N consecutive failures",
+        assert!(
+            made < n_subdirs,
+            "backstop must stop well short of churning the whole {n_subdirs}-dir queue (made {made})",
+        );
+        assert!(
+            made <= 1 + SCAN_CONCURRENCY + CONSECUTIVE_FAILURE_ABORT,
+            "backstop stops within ~one concurrency window of the threshold (made {made})",
         );
 
         writer.flush().await.expect("flush");
@@ -1262,6 +1329,91 @@ mod tests {
 
         writer.flush().await.expect("flush");
         writer.shutdown();
+    }
+
+    /// A `Volume` wrapper that records the maximum number of `list_directory` calls in
+    /// flight at once. The `yield_now` lets sibling listings launched in the same
+    /// `FuturesUnordered` batch coexist before any resolves, so the recorded max
+    /// reflects real concurrency rather than instantly-ready mock timing.
+    struct ConcurrencyTrackingVolume {
+        inner: InMemoryVolume,
+        in_flight: Arc<AtomicU64>,
+        max_in_flight: Arc<AtomicU64>,
+    }
+
+    impl Volume for ConcurrencyTrackingVolume {
+        fn name(&self) -> &str {
+            self.inner.name()
+        }
+        fn root(&self) -> &Path {
+            self.inner.root()
+        }
+        fn as_any(&self) -> &dyn std::any::Any {
+            self
+        }
+        fn list_directory<'a>(
+            &'a self,
+            path: &'a Path,
+            on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+        ) -> ListFut<'a, Vec<FileEntry>> {
+            Box::pin(async move {
+                let now = self.in_flight.fetch_add(1, Ordering::SeqCst) + 1;
+                self.max_in_flight.fetch_max(now, Ordering::SeqCst);
+                tokio::task::yield_now().await;
+                let r = self.inner.list_directory(path, on_progress).await;
+                self.in_flight.fetch_sub(1, Ordering::SeqCst);
+                r
+            })
+        }
+        fn get_metadata<'a>(&'a self, path: &'a Path) -> ListFut<'a, FileEntry> {
+            self.inner.get_metadata(path)
+        }
+        fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+            self.inner.exists(path)
+        }
+        fn is_directory<'a>(&'a self, path: &'a Path) -> ListFut<'a, bool> {
+            self.inner.is_directory(path)
+        }
+    }
+
+    /// THE speedup regression guard: the walk lists directories CONCURRENTLY, capped at
+    /// `SCAN_CONCURRENCY`. With many sibling dirs queued, multiple `list_directory` round
+    /// trips are in flight at once — a revert to a serial walk would record a max of 1.
+    #[tokio::test]
+    async fn walk_lists_directories_concurrently() {
+        use crate::indexing::writer::IndexWriter;
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("vol-scan-concurrency.db");
+        let _store = IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+
+        // Root with many empty subdirs (≫ SCAN_CONCURRENCY): the root listing discovers
+        // them all, then they list concurrently up to the cap.
+        let in_flight = Arc::new(AtomicU64::new(0));
+        let max_in_flight = Arc::new(AtomicU64::new(0));
+        let vol: Arc<dyn Volume> = Arc::new(ConcurrencyTrackingVolume {
+            inner: wide_tree(SCAN_CONCURRENCY * 2),
+            in_flight: Arc::clone(&in_flight),
+            max_in_flight: Arc::clone(&max_in_flight),
+        });
+
+        let cancelled = Arc::new(AtomicBool::new(false));
+        scan_volume_via_trait(vol, PathBuf::from("/"), writer.clone(), progress(), cancelled)
+            .await
+            .expect("scan completes");
+        writer.flush().await.expect("flush");
+        writer.shutdown();
+
+        let max = max_in_flight.load(Ordering::SeqCst) as usize;
+        assert!(
+            max > 1,
+            "the walk must list concurrently, not serially (max in flight = {max})"
+        );
+        assert!(
+            max <= SCAN_CONCURRENCY,
+            "concurrency must stay capped at SCAN_CONCURRENCY (max in flight = {max})",
+        );
     }
 
     /// `is_terminal_disconnect` routes the completion handler: true for a typed
