@@ -30,7 +30,7 @@ use crate::indexing::DEBUG_STATS;
 use crate::indexing::firmlinks;
 use crate::indexing::metadata::extract_metadata;
 use crate::indexing::scanner;
-use crate::indexing::store::{self, IndexStore};
+use crate::indexing::store::{self, IndexStore, IndexStoreError};
 use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::pluralize::pluralize;
@@ -549,6 +549,49 @@ pub(super) fn diff_dir_against_db(
         matched_child_dirs,
         new_child_dir_names,
     }
+}
+
+// ── Full-rescan finish (shared) ──────────────────────────────────────
+
+/// Number of dir ids per `MarkDirsListed` message. Bounds each message's size;
+/// the writer-side `IndexStore::mark_dirs_listed` chunks the SQL `UPDATE` further
+/// (at 900, under SQLite's bound-parameter ceiling) inside a savepoint, so this is
+/// only message-level batching — never load-bearing for SQL correctness.
+const MARK_CHUNK: usize = 10_000;
+
+/// Emit `MarkDirsListed` for every successfully-listed dir id, chunked. A no-op
+/// when empty. The only failure is a writer send (the writer thread is gone); the
+/// caller maps that into its own error type.
+pub(super) fn send_marks(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), IndexStoreError> {
+    for chunk in listed_ids.chunks(MARK_CHUNK) {
+        writer.send(WriteMessage::MarkDirsListed {
+            ids: chunk.to_vec(),
+            epoch,
+        })?;
+    }
+    Ok(())
+}
+
+/// The full-rescan FINISH, in ONE place so the network and (future) local
+/// full-tree reconcile can't drift on the ordering invariant: stamp every
+/// successfully-listed dir's `listed_epoch` FIRST, then run a SINGLE
+/// `ComputeAllAggregates`.
+///
+/// The mark-before-aggregate order is load-bearing (invariant I7): aggregating
+/// before the marks rolls the whole tree to `min_subtree_epoch = 0` (incomplete);
+/// a mark queued after the aggregate drags that dir's ancestors to incomplete. The
+/// single in-order writer guarantees the order once sequenced here.
+///
+/// This is the single-aggregate coverage refresh the full-rescan path uses, NOT
+/// the per-dir `PropagateMinSubtreeEpoch` propagation `reconcile_subtree` runs (a
+/// ~2.4x regression at full scale; that stays the small-scope live path). A no-op
+/// reconcile still runs the aggregate (cheap O(dirs) bulk SQL since no
+/// `InsertEntriesV2` ran) so coverage re-stamps to the new epoch; it writes no
+/// entry rows. The only failure is a writer send; the caller maps it.
+pub(super) fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), IndexStoreError> {
+    send_marks(listed_ids, epoch, writer)?;
+    writer.send(WriteMessage::ComputeAllAggregates)?;
+    Ok(())
 }
 
 /// Reconcile a subtree by diffing the filesystem against the DB directory-by-directory.

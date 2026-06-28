@@ -610,16 +610,14 @@ pub(crate) async fn reconcile_volume_via_trait(
     Ok(summary(total_entries, total_dirs, total_physical_bytes, start, false))
 }
 
-/// Stamp the reconciled dirs' `listed_epoch`, then run ONE `ComputeAllAggregates`.
-/// The single-aggregate coverage refresh the full-rescan path uses: NOT
-/// per-dir propagation. A no-op reconcile still runs the aggregate (cheap O(dirs)
-/// bulk SQL) so coverage re-stamps to the new epoch; it writes no entry rows.
+/// Network-path adapter over the shared [`reconciler::finish_reconcile`] (stamp
+/// every listed dir, then ONE `ComputeAllAggregates`), mapping its writer-send
+/// error into `VolumeScanError`. The finish logic — and the marks-before-aggregate
+/// ordering invariant — lives once in `reconciler`, shared with the local
+/// reconcile walk, so the two paths can't drift.
 fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), VolumeScanError> {
-    send_marks(listed_ids, epoch, writer)?;
-    writer
-        .send(WriteMessage::ComputeAllAggregates)
-        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
-    Ok(())
+    crate::indexing::reconciler::finish_reconcile(listed_ids, epoch, writer)
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))
 }
 
 /// List one directory over the `Volume` trait, wrapped in a timeout and (macOS)
@@ -699,29 +697,14 @@ fn finish_partial_scan(
     // the marks' PK-keyed UPDATE and the aggregate run.
     flush_batch(batch, writer)?;
     // (b) Stamp every successfully-listed dir (ordering invariant: marks precede
-    // the final aggregate; the single in-order writer guarantees it).
-    send_marks(listed_ids, epoch, writer)?;
+    // the final aggregate; the single in-order writer guarantees it). Shared with
+    // the reconcile finish so both paths stamp identically.
+    crate::indexing::reconciler::send_marks(listed_ids, epoch, writer)
+        .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
     // (c) Aggregate over what's present.
     writer
         .send(WriteMessage::ComputeAllAggregates)
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
-    Ok(())
-}
-
-/// Number of dir ids per `MarkDirsListed` message. Bounds each message's size;
-/// the writer's `mark_dirs_listed` chunks the SQL `UPDATE` further if needed.
-const MARK_CHUNK: usize = 10_000;
-
-/// Emit `MarkDirsListed` for the accumulated dir ids, chunked. A no-op when empty.
-fn send_marks(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), VolumeScanError> {
-    for chunk in listed_ids.chunks(MARK_CHUNK) {
-        writer
-            .send(WriteMessage::MarkDirsListed {
-                ids: chunk.to_vec(),
-                epoch,
-            })
-            .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
-    }
     Ok(())
 }
 
