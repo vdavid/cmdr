@@ -29,6 +29,8 @@ But I'll never forget Norton Commander which, I feel, was kinda one of the _plac
 
 ## Total Commander
 
+(Note: If you're also coming from Total Commander, I wrote about [how Cmdr compares](/blog/total-commander-for-macos).)
+
 After spending years in Windows 3.1, Windows 95 appeared, and with it, file names that could be more than 8+3 chars, and
 soon enough, seeing all the `PROGRA~1` dirs made Norton Commander (NC) less fun. That was the time when **Windows
 Commander** (WC) got huge. It [looked](https://www.youtube.com/watch?v=V5ciEKKdQOk) pretty much like what Total
