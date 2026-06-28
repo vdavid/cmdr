@@ -33,19 +33,61 @@ const (
 	e2eDurationStaleMarginPct = 25
 )
 
+// e2eDurationEntry is one allowlist entry's value. Two on-disk forms:
+//
+//   - A bare JSON string is the LEGACY form: a reason, with no enforced ceiling.
+//     The test is suppressed at any duration over the global threshold. Use it
+//     for tests whose cost is inherent and unbounded (axe audits, the virtual
+//     MTP protocol) where pinning a hard ms cap would only cause churn.
+//   - An object `{ "maxMs": N, "reason": "..." }` RAISES this test's budget to
+//     N ms: it's suppressed only at or under N, and warns again past N. Use it
+//     to grant a specific test contention headroom (e.g. 3000) while still
+//     catching a real regression that blows past that headroom.
+//
+// MaxMs == 0 means the legacy unbounded form; it round-trips back to a bare
+// string so untouched entries keep their compact shape.
+type e2eDurationEntry struct {
+	MaxMs  int    `json:"maxMs,omitempty"`
+	Reason string `json:"reason"`
+}
+
+func (e *e2eDurationEntry) UnmarshalJSON(data []byte) error {
+	var reason string
+	if err := json.Unmarshal(data, &reason); err == nil {
+		e.MaxMs = 0
+		e.Reason = reason
+		return nil
+	}
+	type rawEntry e2eDurationEntry
+	var raw rawEntry
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	*e = e2eDurationEntry(raw)
+	return nil
+}
+
+func (e e2eDurationEntry) MarshalJSON() ([]byte, error) {
+	if e.MaxMs == 0 {
+		return json.Marshal(e.Reason)
+	}
+	type rawEntry e2eDurationEntry
+	return json.Marshal(rawEntry(e))
+}
+
 // e2eDurationAllowlist is the on-disk shape of e2e-duration-allowlist.json.
-// Entries map a test key (`<spec file>::<describe chain>::<title>`) to a
-// reason. Sections are per platform because the same test can be slow on
-// Linux Docker but fine on macOS (or vice versa); each E2E check judges only
-// its own section, so a macOS run never reports a Linux-only entry as stale.
+// Entries map a test key (`<spec file>::<describe chain>::<title>`) to an
+// [e2eDurationEntry]. Sections are per platform because the same test can be
+// slow on Linux Docker but fine on macOS (or vice versa); each E2E check judges
+// only its own section, so a macOS run never reports a Linux-only entry as stale.
 type e2eDurationAllowlist struct {
-	Comment string            `json:"$comment,omitempty"`
-	Macos   map[string]string `json:"macos,omitempty"`
-	Linux   map[string]string `json:"linux,omitempty"`
+	Comment string                      `json:"$comment,omitempty"`
+	Macos   map[string]e2eDurationEntry `json:"macos,omitempty"`
+	Linux   map[string]e2eDurationEntry `json:"linux,omitempty"`
 }
 
 // platformEntries returns the section for "macos" or "linux".
-func (a *e2eDurationAllowlist) platformEntries(platform string) map[string]string {
+func (a *e2eDurationAllowlist) platformEntries(platform string) map[string]e2eDurationEntry {
 	if platform == "linux" {
 		return a.Linux
 	}
@@ -53,7 +95,7 @@ func (a *e2eDurationAllowlist) platformEntries(platform string) map[string]strin
 }
 
 // setPlatformEntries replaces the section for "macos" or "linux".
-func (a *e2eDurationAllowlist) setPlatformEntries(platform string, entries map[string]string) {
+func (a *e2eDurationAllowlist) setPlatformEntries(platform string, entries map[string]e2eDurationEntry) {
 	if platform == "linux" {
 		a.Linux = entries
 	} else {
@@ -166,11 +208,21 @@ func collectSuiteDurations(s e2eJSONSuite, file string, describe []string, byKey
 	}
 }
 
+// e2eCapExceed is an allowlisted test that blew past its raised `maxMs` budget.
+type e2eCapExceed struct {
+	key   string
+	durMs int
+	capMs int
+}
+
 // e2eDurationAnalysis is the verdict over one run's durations.
 type e2eDurationAnalysis struct {
 	totalTests int
 	// slow holds tests over the threshold and not allowlisted, slowest first.
 	slow []e2eTestDuration
+	// exceededCap holds allowlisted tests that ran past their raised `maxMs`
+	// ceiling (a regression beyond their agreed contention headroom).
+	exceededCap []e2eCapExceed
 	// allowlisted counts tests over the threshold that an entry suppressed.
 	allowlisted int
 	// staleCandidates are entries whose test now runs comfortably under the
@@ -185,20 +237,30 @@ type e2eDurationAnalysis struct {
 
 // analyzeE2EDurations applies the threshold and one platform's allowlist
 // section to a run's durations.
-func analyzeE2EDurations(durations []e2eTestDuration, entries map[string]string) e2eDurationAnalysis {
+func analyzeE2EDurations(durations []e2eTestDuration, entries map[string]e2eDurationEntry) e2eDurationAnalysis {
 	analysis := e2eDurationAnalysis{totalTests: len(durations)}
 	staleCeilingMs := e2eSlowTestThresholdMs * (100 - e2eDurationStaleMarginPct) / 100
 
 	seen := map[string]int{}
 	for _, d := range durations {
 		seen[d.key] = d.durMs
-		_, allowlisted := entries[d.key]
+		entry, allowlisted := entries[d.key]
+		// A raised `maxMs` cap suppresses only at or under the cap; past it, the
+		// test warns as a regression beyond its agreed headroom. A legacy entry
+		// (MaxMs == 0) suppresses unbounded.
+		overCap := entry.MaxMs > 0 && d.durMs > entry.MaxMs
 		switch {
+		case d.durMs > e2eSlowTestThresholdMs && allowlisted && overCap:
+			analysis.exceededCap = append(analysis.exceededCap,
+				e2eCapExceed{key: d.key, durMs: d.durMs, capMs: entry.MaxMs})
 		case d.durMs > e2eSlowTestThresholdMs && allowlisted:
 			analysis.allowlisted++
 		case d.durMs > e2eSlowTestThresholdMs:
 			analysis.slow = append(analysis.slow, d)
 		case allowlisted && d.durMs < staleCeilingMs:
+			// Stale is measured against the global threshold, not the raised cap:
+			// the entry exists to suppress the 2s warn, so it's obsolete only once
+			// the test drops comfortably back under 2s.
 			analysis.staleCandidates = append(analysis.staleCandidates, d.key)
 		}
 	}
@@ -209,6 +271,7 @@ func analyzeE2EDurations(durations []e2eTestDuration, entries map[string]string)
 	}
 
 	sort.SliceStable(analysis.slow, func(i, j int) bool { return analysis.slow[i].durMs > analysis.slow[j].durMs })
+	sort.SliceStable(analysis.exceededCap, func(i, j int) bool { return analysis.exceededCap[i].durMs > analysis.exceededCap[j].durMs })
 	sort.Strings(analysis.staleCandidates)
 	return analysis
 }
@@ -251,6 +314,15 @@ func applyE2EDurationWarnings(ctx *CheckContext, result CheckResult, reportPaths
 			fmt.Fprintf(&sb, "\n  - %s (%.1fs)", formatE2ETestKey(d.key), float64(d.durMs)/1000)
 		}
 		sb.WriteString("\n  Speed the test up, or allowlist it with a reason in scripts/check/checks/e2e-duration-allowlist.json (new entries need David's OK).")
+		notes = append(notes, sb.String())
+	}
+	if len(analysis.exceededCap) > 0 {
+		var sb strings.Builder
+		fmt.Fprintf(&sb, "%d allowlisted %s over the raised cap (speed it up, or raise the cap with David's OK):",
+			len(analysis.exceededCap), Pluralize(len(analysis.exceededCap), "test", "tests"))
+		for _, c := range analysis.exceededCap {
+			fmt.Fprintf(&sb, "\n  - %s (%.1fs, cap %.1fs)", formatE2ETestKey(c.key), float64(c.durMs)/1000, float64(c.capMs)/1000)
+		}
 		notes = append(notes, sb.String())
 	}
 	if len(analysis.staleCandidates) > 0 {

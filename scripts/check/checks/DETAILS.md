@@ -41,8 +41,12 @@ freestyle.sh remote execution), see [`../CLAUDE.md`](../CLAUDE.md).
 - **`e2e-durations.go`**: E2E test duration flagger (warn-only): parses the Playwright JSON reports after each E2E run
   and flags tests over the 2 s budget. Embedded in both E2E checks, not a registry check. See § E2E test duration
   flagger.
-- **`e2e-duration-allowlist.json`**: Per-platform (`macos` / `linux`) allowlist for the duration flagger:
-  `{ "<spec>::<describe chain>::<title>": reason }`. Entries need a reason; new entries need David's OK.
+- **`e2e-duration-allowlist.json`**: Per-platform (`macos` / `linux`) allowlist for the duration flagger. Each value is
+  either a bare reason string (legacy: suppressed at any duration over the 2 s budget — for inherently-unbounded costs
+  like axe audits or the virtual MTP protocol) or an object `{ "maxMs": N, "reason": "..." }` that raises that one
+  test's budget to N ms (suppressed at or under N, warns again past N as a regression beyond its agreed headroom). Use
+  the capped form to grant contention headroom (e.g. 3000) while still catching real blow-ups. Entries need a reason;
+  adding an entry or raising a cap needs David's OK.
 - **`website-bundle-size.go`**: Warn-only website `dist/` size budget: warns when the total grows >10% over the
   committed baseline. Self-skips without `dist/`. See § Website bundle-size baseline.
 - **`website-bundle-size-baseline.json`**: Committed baseline for `website-bundle-size`: total bytes + hash-normalized
@@ -309,6 +313,12 @@ means zero new CI-contract surface (both E2E checks already carry `NotInCI` reas
 - Sections are per platform (`macos` / `linux`) because the same test can be slow only on Docker; each check judges only
   its own section, so a macOS run never flags a Linux-only entry as stale.
 - Key format: `<spec file>::<describe chain joined with " › ">::<title>`; duplicate titles collapse to the slowest.
+- **Value form**: a bare reason string suppresses the test at any duration over the 2 s budget (legacy, unbounded — for
+  inherently-heavy tests). An object `{ "maxMs": N, "reason": "..." }` raises that test's budget to N ms: suppressed at
+  or under N, re-flagged past N (a separate "over the raised cap" warn). The cap form grants contention headroom (the
+  `--include-slow` lane runs every E2E shard + Linux Docker + Linux Rust at once, inflating wall-clock) without going
+  fully unbounded. `MaxMs == 0` round-trips back to the bare-string form, so untouched legacy entries keep their shape.
+  Staleness is still judged against the 2 s budget, not the raised cap (the entry exists to suppress the 2 s warn).
 - **Dead entries** (key absent from the run — the report enumerates the full suite, skipped tests included):
   auto-removed locally, report-only in CI. Skipped when any report failed to parse, so a missing shard report can't
   mass-remove entries.

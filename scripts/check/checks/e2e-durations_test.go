@@ -135,25 +135,36 @@ func TestAnalyzeE2EDurations(t *testing.T) {
 		{key: "a.spec.ts::::borderline", durMs: 2000},          // exactly at threshold: not flagged
 		{key: "a.spec.ts::::allowlisted in band", durMs: 1900}, // under threshold but within the stale margin
 		{key: "a.spec.ts::::allowlisted now fast", durMs: 300}, // way under threshold: stale candidate
+		{key: "a.spec.ts::::capped within", durMs: 2800},       // over 2s but under its raised 3s cap: suppressed
+		{key: "a.spec.ts::::capped over", durMs: 3200},         // past its raised 3s cap: flagged separately
 	}
-	entries := map[string]string{
-		"a.spec.ts::::allowlisted slow":     "MTP protocol overhead",
-		"a.spec.ts::::allowlisted in band":  "hovers around 2s",
-		"a.spec.ts::::allowlisted now fast": "was slow once",
-		"a.spec.ts::::gone":                 "test was deleted",
+	entries := map[string]e2eDurationEntry{
+		"a.spec.ts::::allowlisted slow":     {Reason: "MTP protocol overhead"},
+		"a.spec.ts::::allowlisted in band":  {Reason: "hovers around 2s"},
+		"a.spec.ts::::allowlisted now fast": {Reason: "was slow once"},
+		"a.spec.ts::::gone":                 {Reason: "test was deleted"},
+		"a.spec.ts::::capped within":        {MaxMs: 3000, Reason: "contention headroom"},
+		"a.spec.ts::::capped over":          {MaxMs: 3000, Reason: "contention headroom"},
 	}
 
 	analysis := analyzeE2EDurations(durations, entries)
 
-	if analysis.totalTests != 6 {
-		t.Errorf("totalTests: got %d, want 6", analysis.totalTests)
+	if analysis.totalTests != 8 {
+		t.Errorf("totalTests: got %d, want 8", analysis.totalTests)
 	}
 	if len(analysis.slow) != 1 || analysis.slow[0].key != "a.spec.ts::::slow" {
 		t.Errorf("slow: got %v, want exactly [a.spec.ts::::slow]", analysis.slow)
 	}
-	if analysis.allowlisted != 1 {
-		// Only entries actually over the threshold count as suppressed warnings.
-		t.Errorf("allowlisted: got %d, want 1", analysis.allowlisted)
+	if analysis.allowlisted != 2 {
+		// Over-threshold and suppressed: the legacy "allowlisted slow" plus the
+		// "capped within" test that stays under its raised 3s cap.
+		t.Errorf("allowlisted: got %d, want 2", analysis.allowlisted)
+	}
+	if len(analysis.exceededCap) != 1 || analysis.exceededCap[0].key != "a.spec.ts::::capped over" {
+		t.Errorf("exceededCap: got %v, want [a.spec.ts::::capped over]", analysis.exceededCap)
+	}
+	if len(analysis.exceededCap) == 1 && analysis.exceededCap[0].capMs != 3000 {
+		t.Errorf("exceededCap cap: got %d, want 3000", analysis.exceededCap[0].capMs)
 	}
 	if len(analysis.staleCandidates) != 1 || analysis.staleCandidates[0] != "a.spec.ts::::allowlisted now fast" {
 		t.Errorf("staleCandidates: got %v, want [a.spec.ts::::allowlisted now fast]", analysis.staleCandidates)
@@ -163,10 +174,43 @@ func TestAnalyzeE2EDurations(t *testing.T) {
 	}
 }
 
+func TestE2EDurationEntryRoundTrip(t *testing.T) {
+	// Legacy bare-string entries stay bare strings; capped entries serialize as
+	// objects. This keeps untouched entries' diffs clean.
+	list := e2eDurationAllowlist{
+		Macos: map[string]e2eDurationEntry{
+			"legacy.spec.ts::::heavy": {Reason: "inherently slow"},
+			"capped.spec.ts::::roomy": {MaxMs: 3000, Reason: "contention headroom"},
+		},
+	}
+	data, err := json.Marshal(list)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	got := string(data)
+	if !strings.Contains(got, `"legacy.spec.ts::::heavy":"inherently slow"`) {
+		t.Errorf("legacy entry should marshal as a bare string, got: %s", got)
+	}
+	if !strings.Contains(got, `"maxMs":3000`) {
+		t.Errorf("capped entry should marshal as an object with maxMs, got: %s", got)
+	}
+
+	var back e2eDurationAllowlist
+	if err := json.Unmarshal(data, &back); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if e := back.Macos["legacy.spec.ts::::heavy"]; e.MaxMs != 0 || e.Reason != "inherently slow" {
+		t.Errorf("legacy round-trip: got %+v", e)
+	}
+	if e := back.Macos["capped.spec.ts::::roomy"]; e.MaxMs != 3000 || e.Reason != "contention headroom" {
+		t.Errorf("capped round-trip: got %+v", e)
+	}
+}
+
 func TestApplyE2EDurationWarningsConvertsSuccessToWarn(t *testing.T) {
 	rootDir := t.TempDir()
 	mustWriteE2EAllowlist(t, rootDir, e2eDurationAllowlist{
-		Macos: map[string]string{"slow.spec.ts::::takes ages": "known heavy axe audit"},
+		Macos: map[string]e2eDurationEntry{"slow.spec.ts::::takes ages": {Reason: "known heavy axe audit"}},
 	})
 	reportPath := writeSyntheticReport(t, syntheticPlaywrightReport)
 
@@ -214,8 +258,8 @@ func TestApplyE2EDurationWarningsAllFastStaysSuccess(t *testing.T) {
 func TestApplyE2EDurationWarningsRemovesDeadEntriesLocally(t *testing.T) {
 	rootDir := t.TempDir()
 	mustWriteE2EAllowlist(t, rootDir, e2eDurationAllowlist{
-		Linux: map[string]string{"deleted.spec.ts::::gone test": "was slow"},
-		Macos: map[string]string{"deleted.spec.ts::::gone test": "untouched: other platform's section"},
+		Linux: map[string]e2eDurationEntry{"deleted.spec.ts::::gone test": {Reason: "was slow"}},
+		Macos: map[string]e2eDurationEntry{"deleted.spec.ts::::gone test": {Reason: "untouched: other platform's section"}},
 	})
 	report := `{
 	  "suites": [
@@ -247,7 +291,7 @@ func TestApplyE2EDurationWarningsRemovesDeadEntriesLocally(t *testing.T) {
 
 func TestApplyE2EDurationWarningsCIDoesNotWrite(t *testing.T) {
 	rootDir := t.TempDir()
-	list := e2eDurationAllowlist{Linux: map[string]string{"deleted.spec.ts::::gone test": "was slow"}}
+	list := e2eDurationAllowlist{Linux: map[string]e2eDurationEntry{"deleted.spec.ts::::gone test": {Reason: "was slow"}}}
 	mustWriteE2EAllowlist(t, rootDir, list)
 	report := `{
 	  "suites": [

@@ -1,5 +1,5 @@
 {
-  "$comment": "Allowlist for the E2E test duration flagger (e2e-durations.go, threshold 2s, warn-only). Key format: `<spec file>::<describe chain joined with ' › '>::<test title>`. Per-platform sections because Linux Docker and macOS speeds differ. Every entry needs a reason; adding an entry or keeping a newly-slow test needs David's OK. Dead entries (test gone) are auto-removed on local E2E runs; entries whose test drops well under the budget are reported for review.",
+  "$comment": "Allowlist for the E2E test duration flagger (e2e-durations.go, threshold 2s, warn-only). Key format: `<spec file>::<describe chain joined with ’ › ’>::<test title>`. A value is either a bare reason string (legacy: suppressed at any duration over 2s) or an object `{ \"maxMs\": N, \"reason\": \"...\" }` that raises this test’s budget to N ms (suppressed at or under N, warns again past N). Per-platform sections because Linux Docker and macOS speeds differ. Every entry needs a reason; adding an entry, raising a cap, or keeping a newly-slow test needs David’s OK. Dead entries (test gone) are auto-removed on local E2E runs; entries whose test drops well under 2s are reported for review.",
   "macos": {
     "accessibility.spec.ts::dark mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.5s at flagger introduction)",
     "accessibility.spec.ts::light mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.5s at flagger introduction)",
@@ -18,7 +18,67 @@
     "mtp.spec.ts::MTP file watching::detects externally added file in MTP backing dir": "waits for the real MTP watcher to pick up an external FS change (2.3s at flagger introduction)",
     "mtp.spec.ts::MTP large file transfer::copies 50 MB file from MTP to local": "50 MB payload through the virtual MTP protocol (2.3s at flagger introduction)",
     "search-open-in-pane.spec.ts::Search dialog: Open in pane::⌘[ leaves the snapshot view, ⌘] returns to it": "navigates out of and back into the search snapshot volume, two full pane loads (3.2s at flagger introduction)",
-    "viewer-wordwrap-persistence.spec.ts::Viewer word-wrap persistence::word wrap toggled in one viewer session is on in the next": "opens the viewer window twice to assert persistence across sessions (2.3s at flagger introduction)"
+    "viewer-wordwrap-persistence.spec.ts::Viewer word-wrap persistence::word wrap toggled in one viewer session is on in the next": "opens the viewer window twice to assert persistence across sessions (2.3s at flagger introduction)",
+    "mtp.spec.ts::MTP file operations::copies file from local to MTP": {
+      "maxMs": 3000,
+      "reason": "virtual MTP per-operation protocol overhead; ~2.7s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "mtp.spec.ts::MTP cross-storage move::moves file from local to MTP": {
+      "maxMs": 3000,
+      "reason": "virtual MTP per-operation protocol overhead; ~2.6s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "conflict-dialog-matrix.spec.ts::Bucket spread: normal-first → file→folder::Overwrite all smaller does NOT carry normal → file→folder": {
+      "maxMs": 3000,
+      "reason": "multi-clash conflict-dialog matrix; ~2.5s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "viewer.spec.ts::File viewer::shows file size in status bar": {
+      "maxMs": 3000,
+      "reason": "opens the viewer window; ~2.5s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "conflict-dialog-matrix.spec.ts::Single clash: file→folder (existing folder, incoming file — destructive)::file→folder Overwrite swaps folder for file": {
+      "maxMs": 3000,
+      "reason": "cross-type conflict resolution + filesystem swap; ~2.5s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "conflict-dialog-matrix.spec.ts::Cross-type Overwrite atomicity::file→folder Overwrite leaves no temp artifacts": {
+      "maxMs": 3000,
+      "reason": "cross-type overwrite atomicity assertions; ~2.5s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "viewer-wordwrap-scroll.spec.ts::Viewer word-wrap scrolling::with wrap on, scrolling to the bottom shows the end of a short-first-line file": {
+      "maxMs": 3000,
+      "reason": "opens the viewer window + scroll assertions; ~2.4s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "viewer.spec.ts::File viewer search::finds matches in file content": {
+      "maxMs": 3000,
+      "reason": "opens the viewer window + search; ~2.3s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "conflict-dialog-matrix.spec.ts::Single clash: file→folder (existing folder, incoming file — destructive)::file→folder Skip all latches file_to_folder": {
+      "maxMs": 3000,
+      "reason": "cross-type conflict resolution + latch assertions; ~2.3s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "viewer.spec.ts::File viewer search::shows \"No matches\" status for a query with no hits": {
+      "maxMs": 3000,
+      "reason": "opens the viewer window + search; ~2.2s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "whats-new.spec.ts::What's new popup::auto-shows on update, opts out, and stamps the running version": {
+      "maxMs": 3000,
+      "reason": "update flow drives a version stamp + popup lifecycle; ~2.2s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "mtp.spec.ts::MTP navigation::browses MTP files and navigates back": {
+      "maxMs": 3000,
+      "reason": "virtual MTP per-operation protocol overhead; ~2.1s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "mtp.spec.ts::MTP large file transfer::copies 50 MB file from local to MTP": {
+      "maxMs": 3000,
+      "reason": "50 MB payload through the virtual MTP protocol; ~2.1s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "mtp.spec.ts::MTP file operations::copies file from MTP to local": {
+      "maxMs": 3000,
+      "reason": "virtual MTP per-operation protocol overhead; ~2.1s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "conflict-edge-cases.spec.ts::Edge cases::Sequential copy triggers conflict on second attempt": {
+      "maxMs": 3000,
+      "reason": "two sequential copy operations + conflict detection; ~2.0s under --include-slow contention on 2026-06-28, cap 3s"
+    }
   },
   "linux": {
     "accessibility.spec.ts::dark mode::Settings: all sections": "axe audits every settings section in one test; inherently heavy (3.5s at flagger introduction)",
@@ -29,6 +89,30 @@
     "mtp.spec.ts::MTP file operations::moves file between MTP directories": "virtual MTP per-operation protocol overhead (2.8s at flagger introduction)",
     "mtp.spec.ts::MTP file watching::detects externally added file in MTP backing dir": "waits for the real MTP watcher to pick up an external FS change (2.1s at flagger introduction)",
     "search-open-in-pane.spec.ts::Search dialog: Open in pane::⌘[ leaves the snapshot view, ⌘] returns to it": "navigates out of and back into the search snapshot volume, two full pane loads (3.3s at flagger introduction)",
-    "viewer-wordwrap-persistence.spec.ts::Viewer word-wrap persistence::word wrap toggled in one viewer session is on in the next": "opens the viewer window twice to assert persistence across sessions (2.3s at flagger introduction)"
+    "viewer-wordwrap-persistence.spec.ts::Viewer word-wrap persistence::word wrap toggled in one viewer session is on in the next": "opens the viewer window twice to assert persistence across sessions (2.3s at flagger introduction)",
+    "brief-cursor-visibility.spec.ts::Brief view cursor visibility::cursor stays in view under arrow nav, Home/End, PageUp/PageDown, and resize": {
+      "maxMs": 3000,
+      "reason": "one test drives many nav + window-resize cycles; ~2.9s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "mtp.spec.ts::MTP cross-storage move::moves file from MTP to local": {
+      "maxMs": 3000,
+      "reason": "virtual MTP per-operation protocol overhead; ~2.8s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "mtp-conflicts.spec.ts::MTP same-volume move conflicts::same-volume MTP move with skip preserves both files": {
+      "maxMs": 3000,
+      "reason": "virtual MTP per-operation protocol overhead; ~2.5s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "mtp-delete-no-double-scan.spec.ts::MTP delete reuses scan preview (no double scan)::F8 progresses Scanning -> Deleting exactly once and counts never go backwards": {
+      "maxMs": 3000,
+      "reason": "virtual MTP per-operation protocol overhead; ~2.3s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "mtp.spec.ts::MTP file operations::deletes multiple selected files on MTP": {
+      "maxMs": 3000,
+      "reason": "virtual MTP per-operation protocol overhead; ~2.3s under --include-slow contention on 2026-06-28, cap 3s"
+    },
+    "mtp.spec.ts::MTP large file transfer::copies 50 MB file from MTP to local": {
+      "maxMs": 3000,
+      "reason": "50 MB payload through the virtual MTP protocol; ~2.0s under --include-slow contention on 2026-06-28, cap 3s"
+    }
   }
 }
