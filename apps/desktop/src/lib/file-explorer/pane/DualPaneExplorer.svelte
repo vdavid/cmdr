@@ -18,6 +18,7 @@
         getDefaultVolumeId,
         resolvePathVolume,
         resortListing,
+        type Location,
         type UnlistenFn,
         updateFocusedPane,
         updatePaneTabs,
@@ -1596,16 +1597,16 @@
     /** Helper: mirror a {volumeId, path} state to a target pane without shifting focus. */
     function mirrorLocalStateToPane(target: 'left' | 'right', volumeId: string, path: string): void {
         const originalFocused = focusedPane
-        const targetVolumeId = getPaneVolumeId(target)
-        if (targetVolumeId !== volumeId) {
-            // `source: 'mirror'` keeps focus on the source pane (no focus shift, L1).
-            navigateIntent({ pane: target, to: { volumeId, path }, source: 'mirror' })
-        } else if (getPanePath(target) === path) {
-            // Already on the same volume and path; nothing to do.
-        } else {
-            // Same volume, different path: in-place nav (commit lands at listing-complete).
-            navigateIntent({ pane: target, to: { path }, source: 'mirror' })
+        // Keep the same-volume same-path no-op: routing it through `{ location }`
+        // would `navigateToPath(samePath)` — a redundant listing reload with
+        // cursor/selection churn. The `{ location }` arm subsumes the other two
+        // branches (cross-volume → switch, same-volume different path → in-place).
+        if (getPaneVolumeId(target) === volumeId && getPanePath(target) === path) {
+            restoreFocus(originalFocused)
+            return
         }
+        // `source: 'mirror'` keeps focus on the source pane (no focus shift, L1).
+        navigateIntent({ pane: target, to: { location: { volumeId, path } }, source: 'mirror' })
         restoreFocus(originalFocused)
     }
 
@@ -1892,6 +1893,13 @@
                 }}
                 onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) => {
                     navigateIntent({ pane: paneId, to: { volumeId, path: targetPath }, source: 'user' })
+                }}
+                onGoToLocation={(location: Location) => {
+                    // A search-results row opening a real entry: `{ location }` routes
+                    // itself (cross-volume → switch arm), landing on the entry's real
+                    // volume. `onVolumeChange` is the other intent (deliberate volume
+                    // (re)select); they map to the two destination shapes.
+                    navigateIntent({ pane: paneId, to: { location }, source: 'user' })
                 }}
                 onRequestFocus={() => {
                     handleFocus(paneId)

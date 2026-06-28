@@ -33,14 +33,14 @@
         onVolumeSpaceChanged,
         openFile,
         refreshListingIndexSizes,
-        resolvePathVolume,
         showFileContextMenu,
         showParentRowContextMenu,
         trackEvent,
+        type Location,
         type UnlistenFn,
         updateMenuContext,
     } from '$lib/tauri-commands'
-    import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
+    import { resolveLocationOrToast } from '../navigation/navigate-and-select'
     import { renderListingError } from '$lib/errors/listing-error'
     import { updateIndexSizesInPlace } from '../views/file-list-utils'
     import { evictPerPathIconsForDir } from '$lib/icon-cache'
@@ -146,6 +146,15 @@
         directorySortMode?: DirectorySortMode
         onPathChange?: (path: string) => void
         onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
+        /**
+         * Go to an already-resolved `Location` (volume id + path). Used when a row
+         * on the search-results pane opens a real entry: the pane resolves the
+         * entry's volume, then bubbles it here so `navigate()` switches volumes and
+         * lands on the right one. Distinct from `onVolumeChange` (deliberate volume
+         * (re)select): `onGoToLocation` is the go-to-a-location intent and carries
+         * no `volumePath` (the switch arm resolves it via `getVolumePathById`).
+         */
+        onGoToLocation?: (location: Location) => void
         onSortChange?: (column: SortColumn) => void
         onRequestFocus?: () => void
         /** Called when active network host changes (for history tracking) */
@@ -183,6 +192,7 @@
         directorySortMode = 'likeFiles',
         onPathChange,
         onVolumeChange,
+        onGoToLocation,
         onSortChange,
         onRequestFocus,
         onNetworkHostChange,
@@ -1841,11 +1851,13 @@
         // `redirectToPath` is set by the backend on virtual entries that
         // should open elsewhere (worktree and submodule working dirs).
         if (entry.redirectToPath) {
-            // R4: same cross-volume bug as the main directory branch below. If a
-            // redirect from a snapshot pane lands on a real path, switch volume
-            // first; don't leave `volumeId === 'search-results'` with a real path.
-            if (isCrossVolumeNavigation(volumeId, entry.redirectToPath)) {
-                await switchVolumeForRealPath(entry.redirectToPath)
+            // On the search-results pane, opening a real entry must switch to the
+            // entry's real volume FIRST (resolve a `Location`, route through
+            // `navigate()`). Otherwise the pane keeps `volumeId === 'search-results'`
+            // with a real `path` and `SearchResultsView` shows "Search results no
+            // longer available" (the path doesn't start with `search-results://`).
+            if (isSearchResultsView) {
+                await goToRealEntry(entry.redirectToPath)
                 return
             }
             currentPath = entry.redirectToPath
@@ -1853,16 +1865,10 @@
             return
         }
         if (entry.isDirectory) {
-            // R4: if we're on the snapshot volume and the user opens a real
-            // directory from the result rows, route through the volume-change
-            // machinery so the pane switches to the directory's real volume
-            // FIRST. Without this, the pane ends up `volumeId === 'search-results'`
-            // with a real `path`, and `SearchResultsView` shows
-            // "Search results no longer available" (because the path doesn't
-            // start with `search-results://` so the snapshot id resolution
-            // returns null).
-            if (isCrossVolumeNavigation(volumeId, entry.path)) {
-                await switchVolumeForRealPath(entry.path)
+            // Same as the redirect branch: a real directory opened from the
+            // search-results rows switches to its real volume first.
+            if (isSearchResultsView) {
+                await goToRealEntry(entry.path)
                 return
             }
             // When navigating to parent (..), remember current folder name to select it
@@ -1883,23 +1889,16 @@
     }
 
     /**
-     * R4: resolve the real volume for `realPath` and route through the
-     * `onVolumeChange` callback so the pane is reconfigured BEFORE it tries
-     * to load a real path. Used only when transitioning out of a snapshot
-     * pane (`isCrossVolumeNavigation` returned true).
+     * Leave the search-results pane for a real entry: resolve `realPath` to a
+     * `Location` (volume id + path), then bubble it via `onGoToLocation` so
+     * `navigate()` switches to the real volume before loading the path. An
+     * unresolvable path (its drive is gone) shows the shared friendly toast rather
+     * than navigating to the wrong volume.
      */
-    async function switchVolumeForRealPath(realPath: string): Promise<void> {
-        try {
-            const result = await resolvePathVolume(realPath)
-            const volume = result.volume
-            if (!volume) {
-                log.warn(`switchVolumeForRealPath: no volume resolved for ${realPath}; aborting`)
-                return
-            }
-            onVolumeChange?.(volume.id, volume.path, realPath)
-        } catch (err) {
-            log.error(`switchVolumeForRealPath: resolvePathVolume failed for ${realPath}: ${String(err)}`)
-        }
+    async function goToRealEntry(realPath: string): Promise<void> {
+        const location = await resolveLocationOrToast(realPath)
+        if (!location) return
+        onGoToLocation?.(location)
     }
 
     function handlePaneClick() {

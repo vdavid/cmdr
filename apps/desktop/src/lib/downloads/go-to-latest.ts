@@ -13,7 +13,11 @@
 import { commands } from '$lib/ipc/bindings'
 import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
-import { revealFileInBestPane, navigateToDirInBestPane } from '$lib/file-explorer/navigation/navigate-and-select'
+import {
+  revealFileInBestPane,
+  navigateToDirInBestPane,
+  resolveLocationOrToast,
+} from '$lib/file-explorer/navigation/navigate-and-select'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
 import LatestDownloadEmptyToastContent from './LatestDownloadEmptyToastContent.svelte'
@@ -47,7 +51,7 @@ export async function goToLatestDownload(explorer: ExplorerAPI | undefined): Pro
 
   const result = await commands.goToLatestDownload()
   if (result.status === 'ok') {
-    await revealFileInBestPane(explorer, result.data.parentDir, result.data.fileName)
+    await revealDownloadInBestPane(explorer, result.data.parentDir, result.data.fileName)
     return
   }
 
@@ -87,7 +91,19 @@ export async function goToDownload(
     log.debug('goToDownload: no explorer; skipping (HMR or pre-mount)')
     return
   }
-  await revealFileInBestPane(explorer, parentDir, fileName)
+  await revealDownloadInBestPane(explorer, parentDir, fileName)
+}
+
+/**
+ * Resolve the download's parent dir to a `Location` (volume id + path), then
+ * reveal the file in the best pane. A download is local, so this resolves to a
+ * real local volume; if it can't (drive gone), show the shared
+ * "couldn't reach that location's drive" toast instead of navigating wrong.
+ */
+async function revealDownloadInBestPane(explorer: ExplorerAPI, parentDir: string, fileName: string): Promise<void> {
+  const location = await resolveLocationOrToast(parentDir)
+  if (!location) return
+  await revealFileInBestPane(explorer, location, fileName)
 }
 
 async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
@@ -104,7 +120,13 @@ async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
       log.warn('Go to Downloads pressed but Downloads dir is unresolved; no action')
       return
     }
-    void navigateToDirInBestPane(explorer, downloadsDir)
+    void (async () => {
+      // Resolve the Downloads dir's volume at click time (its drive could have
+      // changed while the toast sat there), then navigate to the best pane.
+      const location = await resolveLocationOrToast(downloadsDir)
+      if (!location) return
+      await navigateToDirInBestPane(explorer, location)
+    })()
   }
   addToast(LatestDownloadEmptyToastContent, {
     id: LATEST_DOWNLOAD_EMPTY_TOAST_ID,

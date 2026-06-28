@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // factories AND from the test body.
 const {
   resolveGoToPathMock,
+  resolveLocationOrToastMock,
   addRecentPathStateMock,
   addToastMock,
   getEffectiveShortcutsMock,
@@ -14,6 +15,7 @@ const {
   getFocusedPanePathMock,
 } = vi.hoisted(() => ({
   resolveGoToPathMock: vi.fn(),
+  resolveLocationOrToastMock: vi.fn(),
   addRecentPathStateMock: vi.fn(() => Promise.resolve()),
   addToastMock: vi.fn(() => 'toast-id'),
   getEffectiveShortcutsMock: vi.fn(() => ['⌘[']),
@@ -22,6 +24,11 @@ const {
   getFocusedPaneMock: vi.fn(() => 'left'),
   getFocusedPanePathMock: vi.fn(() => '/home/me'),
 }))
+
+/** A resolved `Location` echoing the dir onto the `root` volume (the shared resolve-or-toast). */
+function okLocation(path: string) {
+  return { volumeId: 'root', path }
+}
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
@@ -40,6 +47,7 @@ vi.mock('$lib/shortcuts', () => ({
 vi.mock('$lib/file-explorer/navigation/navigate-and-select', () => ({
   navigateToDirInPane: navigateToDirMock,
   navigateToFileInPane: navigateToFileMock,
+  resolveLocationOrToast: resolveLocationOrToastMock,
 }))
 
 vi.mock('./recent-paths-state.svelte', () => ({
@@ -76,6 +84,8 @@ function okResolve(data: GoToPathResolution) {
 describe('goToPath handler', () => {
   beforeEach(() => {
     resolveGoToPathMock.mockReset()
+    // By default every dir resolves to a `Location` on the `root` volume.
+    resolveLocationOrToastMock.mockReset().mockImplementation((path: string) => Promise.resolve(okLocation(path)))
     addRecentPathStateMock.mockReset().mockResolvedValue(undefined)
     addToastMock.mockReset().mockReturnValue('toast-id')
     getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘['])
@@ -91,18 +101,20 @@ describe('goToPath handler', () => {
     expect(resolveGoToPathMock).toHaveBeenCalledWith('/tmp', '/home/me')
   })
 
-  it('directory → navigateToDirInPane + records the dir', async () => {
+  it('directory → resolves the dir volume + navigateToDirInPane + records the dir', async () => {
     okResolve({ kind: 'directory', path: '/tmp/here' })
     await goToPath(makeExplorerStub(), '/tmp/here')
-    expect(navigateToDirMock).toHaveBeenCalledWith(expect.anything(), 'left', '/tmp/here')
+    expect(resolveLocationOrToastMock).toHaveBeenCalledWith('/tmp/here')
+    expect(navigateToDirMock).toHaveBeenCalledWith(expect.anything(), 'left', { volumeId: 'root', path: '/tmp/here' })
     expect(navigateToFileMock).not.toHaveBeenCalled()
     expect(addRecentPathStateMock).toHaveBeenCalledWith(expect.objectContaining({ path: '/tmp/here' }))
   })
 
-  it('file → navigateToFileInPane + records the backend-authoritative path', async () => {
+  it('file → resolves the parent volume + navigateToFileInPane + records the backend-authoritative path', async () => {
     okResolve({ kind: 'file', path: '/tmp/a.txt', parentDir: '/tmp', fileName: 'a.txt' })
     await goToPath(makeExplorerStub(), '/tmp/a.txt')
-    expect(navigateToFileMock).toHaveBeenCalledWith(expect.anything(), 'left', '/tmp', 'a.txt')
+    expect(resolveLocationOrToastMock).toHaveBeenCalledWith('/tmp')
+    expect(navigateToFileMock).toHaveBeenCalledWith(expect.anything(), 'left', { volumeId: 'root', path: '/tmp' }, 'a.txt')
     expect(navigateToDirMock).not.toHaveBeenCalled()
     expect(addRecentPathStateMock).toHaveBeenCalledWith(expect.objectContaining({ path: '/tmp/a.txt' }))
   })
@@ -110,8 +122,17 @@ describe('goToPath handler', () => {
   it('nearestAncestor → navigates to the ancestor + records the ancestor', async () => {
     okResolve({ kind: 'nearestAncestor', requested: '/tmp/nope/a.txt', ancestorDir: '/tmp' })
     await goToPath(makeExplorerStub(), '/tmp/nope/a.txt')
-    expect(navigateToDirMock).toHaveBeenCalledWith(expect.anything(), 'left', '/tmp')
+    expect(navigateToDirMock).toHaveBeenCalledWith(expect.anything(), 'left', { volumeId: 'root', path: '/tmp' })
     expect(addRecentPathStateMock).toHaveBeenCalledWith(expect.objectContaining({ path: '/tmp' }))
+  })
+
+  it('unresolvable volume → no navigation, no recents (the shared helper owns the toast)', async () => {
+    okResolve({ kind: 'directory', path: '/Volumes/Gone/dir' })
+    resolveLocationOrToastMock.mockResolvedValue(null)
+    await goToPath(makeExplorerStub(), '/Volumes/Gone/dir')
+    expect(navigateToDirMock).not.toHaveBeenCalled()
+    expect(navigateToFileMock).not.toHaveBeenCalled()
+    expect(addRecentPathStateMock).not.toHaveBeenCalled()
   })
 
   it('nearestAncestor → builds the toast with the SNAPSHOTTED nav.back shortcut', async () => {

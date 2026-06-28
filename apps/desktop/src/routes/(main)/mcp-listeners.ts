@@ -32,6 +32,8 @@ import type {
   SortColumn,
 } from '$lib/commands'
 import { applySearchPrefill, type SearchPrefill, type SearchMode } from '$lib/search/search-state.svelte'
+import { resolveLocation } from '$lib/file-explorer/navigation/resolve-location'
+import { tString } from '$lib/intl/messages.svelte'
 import type { ExplorerAPI } from './explorer-api'
 
 /**
@@ -270,9 +272,17 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     // STAYS OFF THE BUS (master § Bus interplay). `navigate()` returns a typed
     // `NavigateResult` value the fire-and-forget `dispatch` can't surface, so the
     // adapter calls `navigate()` directly and forwards the refusal `message`
-    // verbatim as the `mcp-response` error (L12 — byte-identical to the old
-    // `typeof result === 'string'` branch). The `requestId` round-trip + `emit`
-    // stay adapter-local.
+    // verbatim as the `mcp-response` error (L12 — refusal strings byte-identical
+    // to the old `typeof result === 'string'` branch). The `requestId` round-trip
+    // + `emit` stay adapter-local.
+    //
+    // The bare path resolves to a `Location` at the edge first: the agent path can
+    // live on ANY volume, so an unresolvable path (drive gone) is an honest typed
+    // refusal, not a wrong-volume listing. This also NARROWS the on-network
+    // refusal: a LOCAL target from a network pane now resolves to `root` ≠ the
+    // network volume → the switch arm switches and navigates; only an `smb://`
+    // target (which `resolve_location` maps back to the virtual `network` id)
+    // still hits the in-place on-network refusal.
     const raw = asRecord(event.payload)
     const pane = parsePane(raw.pane)
     const path = typeof raw.path === 'string' ? raw.path : undefined
@@ -281,26 +291,34 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const explorerRef = getExplorer()
     // explorerRef may be null during HMR; skip silently, let the backend timeout handle it
     if (!explorerRef) return
-    const result = explorerRef.navigate({ pane, to: { path }, source: 'mcp' })
-    if (requestId) {
-      void (async () => {
+    void (async () => {
+      const reply = async (body: { ok: true } | { ok: false; error: string }): Promise<void> => {
+        if (requestId === undefined) return
         const { emit } = await import('@tauri-apps/api/event')
-        if (result.status === 'refused') {
-          // Synchronous refusal (pane not available, wrong volume, etc.) — forward
-          // the exact refusal string the user / agent reads.
-          await emit('mcp-response', { requestId, ok: false, error: result.reason.message })
-        } else {
-          // Started: wait for the navigation to settle (the listing completes).
-          try {
-            await result.settled
-            await emit('mcp-response', { requestId, ok: true })
-          } catch (e) {
-            const error = e instanceof Error ? e.message : String(e)
-            await emit('mcp-response', { requestId, ok: false, error })
-          }
-        }
-      })()
-    }
+        await emit('mcp-response', { requestId, ...body })
+      }
+
+      const outcome = await resolveLocation(path)
+      if (!outcome.ok) {
+        await reply({ ok: false, error: tString('fileExplorer.navigation.locationUnreachableToast') })
+        return
+      }
+      const result = explorerRef.navigate({ pane, to: { location: outcome.location }, source: 'mcp' })
+      if (result.status === 'refused') {
+        // Synchronous refusal (pane not available, on the network volume for an
+        // smb:// target, etc.) — forward the exact refusal string the agent reads.
+        await reply({ ok: false, error: result.reason.message })
+        return
+      }
+      // Started: wait for the navigation to settle (the listing completes).
+      try {
+        await result.settled
+        await reply({ ok: true })
+      } catch (e) {
+        const error = e instanceof Error ? e.message : String(e)
+        await reply({ ok: false, error })
+      }
+    })()
   })
 
   // Round-trip for open-under-cursor: backend can't infer outcome from state pushes

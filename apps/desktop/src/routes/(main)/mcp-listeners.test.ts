@@ -25,6 +25,11 @@ import {
   setupMcpListeners,
   type CommandDispatch,
 } from './mcp-listeners'
+import type { ExplorerAPI } from './explorer-api'
+import type { NavigateResult } from '$lib/file-explorer/pane/navigate'
+
+const { resolveLocationMock } = vi.hoisted(() => ({ resolveLocationMock: vi.fn() }))
+vi.mock('$lib/file-explorer/navigation/resolve-location', () => ({ resolveLocation: resolveLocationMock }))
 
 describe('parsePane', () => {
   it('accepts left/right', () => {
@@ -229,5 +234,90 @@ describe('mcp-refresh listener (round-trip)', () => {
 
     expect(dispatch).not.toHaveBeenCalled()
     expect(emit).not.toHaveBeenCalled()
+  })
+})
+
+// === mcp-nav-to-path round-trip ===
+// `nav_to_path` resolves the bare path to a `Location` at the edge first (the
+// agent path can live on any volume), then routes a `{ location }` navigation.
+// An unresolvable path is an honest `ok: false`, not a wrong-volume listing; a
+// synchronous navigate refusal forwards its exact message verbatim (L12).
+
+describe('mcp-nav-to-path listener', () => {
+  beforeEach(() => {
+    vi.mocked(emit).mockClear()
+    resolveLocationMock.mockReset()
+  })
+
+  async function setupWithExplorer(navigate: () => NavigateResult): Promise<Map<string, TauriEventHandler>> {
+    const handlers = new Map<string, TauriEventHandler>()
+    await setupMcpListeners({
+      getExplorer: () => ({ navigate }) as unknown as ExplorerAPI,
+      dispatch: vi.fn(),
+      listenTauri: (event, handler) => {
+        handlers.set(event, handler)
+        return Promise.resolve()
+      },
+      isAiEnabled: () => false,
+    })
+    return handlers
+  }
+
+  it('resolves the path, navigates with the resolved location, and replies ok', async () => {
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'root', path: '/Library' } })
+    const navigate = vi.fn((): NavigateResult => ({ status: 'started', settled: Promise.resolve() }))
+    const handlers = await setupWithExplorer(navigate)
+
+    getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'left', path: '/Library', requestId: 'req-1' } })
+    await flushAsyncWork()
+
+    expect(resolveLocationMock).toHaveBeenCalledWith('/Library')
+    expect(navigate).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { location: { volumeId: 'root', path: '/Library' } },
+      source: 'mcp',
+    })
+    expect(emit).toHaveBeenCalledWith('mcp-response', { requestId: 'req-1', ok: true })
+  })
+
+  it('replies ok:false WITHOUT navigating when the path cannot be resolved', async () => {
+    resolveLocationMock.mockResolvedValue({ ok: false, reason: 'no-volume' })
+    const navigate = vi.fn((): NavigateResult => ({ status: 'started', settled: Promise.resolve() }))
+    const handlers = await setupWithExplorer(navigate)
+
+    getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'left', path: '/Volumes/Gone/x', requestId: 'req-2' } })
+    await flushAsyncWork()
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-2',
+      ok: false,
+      error: "Couldn't reach that location's drive. It might be disconnected.",
+    })
+  })
+
+  it('forwards a synchronous navigate refusal message verbatim (the narrowed on-network refusal)', async () => {
+    // An smb:// target maps back to the virtual `network` id, so a network pane
+    // still refuses it — and the exact string is the byte-for-byte contract.
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'network', path: 'smb://h/s' } })
+    const navigate = vi.fn(
+      (): NavigateResult => ({
+        status: 'refused',
+        reason: {
+          kind: 'on-network-volume',
+          message: 'Pane is on the Network volume. Use select_volume to switch to a local volume first.',
+        },
+      }),
+    )
+    const handlers = await setupWithExplorer(navigate)
+
+    getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'left', path: 'smb://h/s', requestId: 'req-3' } })
+    await flushAsyncWork()
+
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-3',
+      ok: false,
+      error: 'Pane is on the Network volume. Use select_volume to switch to a local volume first.',
+    })
   })
 })

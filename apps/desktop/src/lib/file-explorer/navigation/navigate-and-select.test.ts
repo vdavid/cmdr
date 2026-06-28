@@ -1,7 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { navigateToDirInPane, navigateToFileInPane } from './navigate-and-select'
+
+const { resolveLocationMock, addToastMock } = vi.hoisted(() => ({
+  resolveLocationMock: vi.fn(),
+  addToastMock: vi.fn(() => 'toast-id'),
+}))
+vi.mock('./resolve-location', () => ({ resolveLocation: resolveLocationMock }))
+vi.mock('$lib/ui/toast', () => ({ addToast: addToastMock }))
+
+import { navigateToDirInPane, navigateToFileInPane, revealSearchResultInPane } from './navigate-and-select'
 import type { ExplorerAPI } from '../../../routes/(main)/explorer-api'
 import type { NavigateResult } from '../pane/navigate'
+import type { Location } from '$lib/tauri-commands'
+
+/** A `Location` (volume id + path) — the resolved input these helpers now take. */
+function loc(path: string, volumeId = 'root'): Location {
+  return { volumeId, path }
+}
 
 /** A `started` result whose `settled` is the given promise (defaults to resolved). */
 function started(settled: Promise<void> = Promise.resolve()): NavigateResult {
@@ -21,16 +35,16 @@ function makeExplorer(navResult: NavigateResult) {
 }
 
 describe('navigateToDirInPane', () => {
-  it('navigates to the dir and never moves the cursor', async () => {
+  it('navigates to the dir location and never moves the cursor', async () => {
     const { explorer, navigate, moveCursor } = makeExplorer(started())
-    await navigateToDirInPane(explorer, 'left', '/tmp/here')
-    expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { path: '/tmp/here' }, source: 'user' })
+    await navigateToDirInPane(explorer, 'left', loc('/tmp/here'))
+    expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { location: loc('/tmp/here') }, source: 'user' })
     expect(moveCursor).not.toHaveBeenCalled()
   })
 
   it('bails on a refusal without throwing', async () => {
     const { explorer, moveCursor } = makeExplorer(refused('snapshot pane on a missing volume'))
-    await expect(navigateToDirInPane(explorer, 'right', '/tmp')).resolves.toBeUndefined()
+    await expect(navigateToDirInPane(explorer, 'right', loc('/tmp'))).resolves.toBeUndefined()
     expect(moveCursor).not.toHaveBeenCalled()
   })
 })
@@ -42,10 +56,10 @@ describe('navigateToFileInPane', () => {
     moveCursorCalls = []
   })
 
-  it('navigates to the parent, then moves the cursor onto the file', async () => {
+  it('navigates to the parent location, then moves the cursor onto the file', async () => {
     const { explorer, navigate, moveCursor } = makeExplorer(started())
-    await navigateToFileInPane(explorer, 'left', '/tmp', 'a.txt')
-    expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { path: '/tmp' }, source: 'user' })
+    await navigateToFileInPane(explorer, 'left', loc('/tmp'), 'a.txt')
+    expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { location: loc('/tmp') }, source: 'user' })
     expect(moveCursor).toHaveBeenCalledWith('left', 'a.txt')
   })
 
@@ -61,7 +75,7 @@ describe('navigateToFileInPane', () => {
     })
     const explorer = { navigate, moveCursor } as unknown as ExplorerAPI
 
-    const promise = navigateToFileInPane(explorer, 'left', '/tmp', 'a.txt')
+    const promise = navigateToFileInPane(explorer, 'left', loc('/tmp'), 'a.txt')
     // Cursor must NOT move before the navigation settles.
     expect(moveCursorCalls).toHaveLength(0)
     resolveListing()
@@ -71,7 +85,45 @@ describe('navigateToFileInPane', () => {
 
   it('bails on a refusal and never moves the cursor', async () => {
     const { explorer, moveCursor } = makeExplorer(refused('cannot start'))
-    await navigateToFileInPane(explorer, 'left', '/tmp', 'a.txt')
+    await navigateToFileInPane(explorer, 'left', loc('/tmp'), 'a.txt')
     expect(moveCursor).not.toHaveBeenCalled()
+  })
+})
+
+describe('revealSearchResultInPane (the search "Go to file" edge)', () => {
+  beforeEach(() => {
+    resolveLocationMock.mockReset()
+    addToastMock.mockReset().mockReturnValue('toast-id')
+  })
+
+  it("resolves the result's PARENT dir, navigates with that location, then moves the cursor onto the file", async () => {
+    resolveLocationMock.mockResolvedValue({ ok: true, location: loc('/Volumes/Nas/docs', 'nas') })
+    const { explorer, navigate, moveCursor } = makeExplorer(started())
+
+    await revealSearchResultInPane(explorer, 'left', '/Volumes/Nas/docs/report.pdf')
+
+    // It resolves the parent dir, not the file path.
+    expect(resolveLocationMock).toHaveBeenCalledWith('/Volumes/Nas/docs')
+    expect(navigate).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { location: loc('/Volumes/Nas/docs', 'nas') },
+      source: 'user',
+    })
+    expect(moveCursor).toHaveBeenCalledWith('left', 'report.pdf')
+    expect(addToastMock).not.toHaveBeenCalled()
+  })
+
+  it('shows the friendly toast and does NOT navigate when the parent volume is unresolvable', async () => {
+    resolveLocationMock.mockResolvedValue({ ok: false, reason: 'no-volume' })
+    const { explorer, navigate, moveCursor } = makeExplorer(started())
+
+    await revealSearchResultInPane(explorer, 'left', '/Volumes/Gone/docs/report.pdf')
+
+    expect(navigate).not.toHaveBeenCalled()
+    expect(moveCursor).not.toHaveBeenCalled()
+    expect(addToastMock).toHaveBeenCalledWith(
+      "Couldn't reach that location's drive. It might be disconnected.",
+      { level: 'info' },
+    )
   })
 })

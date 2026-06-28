@@ -13,7 +13,11 @@ import { commands, type GoToPathResolution, type RecentPathEntry } from '$lib/ip
 import { addToast } from '$lib/ui/toast'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
-import { navigateToDirInPane, navigateToFileInPane } from '$lib/file-explorer/navigation/navigate-and-select'
+import {
+  navigateToDirInPane,
+  navigateToFileInPane,
+  resolveLocationOrToast,
+} from '$lib/file-explorer/navigation/navigate-and-select'
 import { getFocusedPanePath } from '$lib/file-explorer/pane/focused-pane-reads'
 import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 
@@ -62,18 +66,29 @@ export async function goToPath(
   const pane = explorer.getFocusedPane()
 
   // Exhaustive switch on the typed enum. Never branch on a message string —
-  // the `kind` discriminator is the contract.
+  // the `kind` discriminator is the contract. Each jump resolves its target dir
+  // to a `Location` (volume id + path) on the FE at jump time — `resolve_go_to_path`
+  // stays pure (two consumers, incl. a per-keystroke preview), so the volume
+  // `statfs` happens here, once, only when the user actually jumps.
   switch (resolution.kind) {
-    case 'directory':
-      await navigateToDirInPane(explorer, pane, resolution.path)
+    case 'directory': {
+      const location = await resolveLocationOrToast(resolution.path)
+      if (!location) return resolution
+      await navigateToDirInPane(explorer, pane, location)
       await recordRecent(resolution.path)
       return resolution
-    case 'file':
-      await navigateToFileInPane(explorer, pane, resolution.parentDir, resolution.fileName)
+    }
+    case 'file': {
+      const location = await resolveLocationOrToast(resolution.parentDir)
+      if (!location) return resolution
+      await navigateToFileInPane(explorer, pane, location, resolution.fileName)
       await recordRecent(resolution.path)
       return resolution
+    }
     case 'nearestAncestor': {
-      await navigateToDirInPane(explorer, pane, resolution.ancestorDir)
+      const location = await resolveLocationOrToast(resolution.ancestorDir)
+      if (!location) return resolution
+      await navigateToDirInPane(explorer, pane, location)
       // Snapshot the back-shortcut at toast-creation time so a later rebind
       // doesn't rewrite a visible toast (matches the downloads snapshot rule).
       const backShortcut = getEffectiveShortcuts('nav.back')[0] ?? ''

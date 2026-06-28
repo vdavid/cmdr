@@ -18,12 +18,49 @@
  */
 
 import { getAppLogger } from '$lib/logging/logger'
+import { addToast } from '$lib/ui/toast'
+import { tString } from '$lib/intl/messages.svelte'
 import { isPathOnVolume } from './path-navigation'
+import { resolveLocation } from './resolve-location'
 import type { ExplorerAPI } from '../../../routes/(main)/explorer-api'
+import type { Location } from '$lib/tauri-commands'
 
 const log = getAppLogger('navigation')
 
 type Pane = 'left' | 'right'
+
+/**
+ * Resolve a directory path to a `Location` (volume id + path) at navigation's
+ * edge, or show the shared "couldn't reach that location's drive" toast and
+ * return `null`. The single resolve-or-toast used by the ⌘G, search-result, and
+ * downloads edges (MCP returns a typed `ok: false` instead of toasting, so it
+ * calls `resolveLocation` directly). `ResolveLocationResult` can't tell unmounted
+ * from nonexistent, and the no-string-matching rule forbids sniffing, so every
+ * failure shows the one generic toast.
+ */
+export async function resolveLocationOrToast(dir: string): Promise<Location | null> {
+  const outcome = await resolveLocation(dir)
+  if (!outcome.ok) {
+    addToast(tString('fileExplorer.navigation.locationUnreachableToast'), { level: 'info' })
+    return null
+  }
+  return outcome.location
+}
+
+/**
+ * Reveal a search result's file in `pane`: resolve its parent dir to a `Location`
+ * (the index isn't scoped to the pane's volume, so the result can live anywhere),
+ * navigate there, then move the cursor onto the file. An unresolvable parent
+ * shows the shared toast and skips navigation.
+ */
+export async function revealSearchResultInPane(explorer: ExplorerAPI, pane: Pane, filePath: string): Promise<void> {
+  const lastSlash = filePath.lastIndexOf('/')
+  const parentDir = lastSlash > 0 ? filePath.slice(0, lastSlash) : '/'
+  const fileName = filePath.slice(lastSlash + 1)
+  const location = await resolveLocationOrToast(parentDir)
+  if (!location) return
+  await navigateToFileInPane(explorer, pane, location, fileName)
+}
 
 /**
  * True when `pane`'s active tab already shows `dir` on a REAL local volume.
@@ -42,15 +79,17 @@ function paneShowsLocalDir(explorer: ExplorerAPI, pane: Pane, dir: string): bool
 }
 
 /**
- * Navigate `pane` to a directory. No cursor move — the directory's own normal
- * navigation lands the cursor on the 0th row (`..`).
+ * Navigate `pane` to a directory `Location`. No cursor move — the directory's
+ * own normal navigation lands the cursor on the 0th row (`..`). The caller has
+ * already resolved the dir's volume (the edge resolver), so `navigate()` lands on
+ * the right volume whether or not it matches the pane's current one.
  */
-export async function navigateToDirInPane(explorer: ExplorerAPI, pane: Pane, dir: string): Promise<void> {
-  const result = explorer.navigate({ pane, to: { path: dir }, source: 'user' })
+export async function navigateToDirInPane(explorer: ExplorerAPI, pane: Pane, location: Location): Promise<void> {
+  const result = explorer.navigate({ pane, to: { location }, source: 'user' })
   if (result.status === 'refused') {
     log.warn('navigateToDirInPane: navigate refused {pane} {dir}: {reason}', {
       pane,
-      dir,
+      dir: location.path,
       reason: result.reason.message,
     })
     return
@@ -59,20 +98,20 @@ export async function navigateToDirInPane(explorer: ExplorerAPI, pane: Pane, dir
 }
 
 /**
- * Navigate `pane` to `parentDir`, then move the cursor onto `fileName` so the
- * file is revealed/selected (we do NOT open it).
+ * Navigate `pane` to a parent-dir `Location`, then move the cursor onto
+ * `fileName` so the file is revealed/selected (we do NOT open it).
  */
 export async function navigateToFileInPane(
   explorer: ExplorerAPI,
   pane: Pane,
-  parentDir: string,
+  location: Location,
   fileName: string,
 ): Promise<void> {
-  const result = explorer.navigate({ pane, to: { path: parentDir }, source: 'user' })
+  const result = explorer.navigate({ pane, to: { location }, source: 'user' })
   if (result.status === 'refused') {
     log.warn('navigateToFileInPane: navigate refused {pane} {parentDir}: {reason}', {
       pane,
-      parentDir,
+      parentDir: location.path,
       reason: result.reason.message,
     })
     return
@@ -112,21 +151,22 @@ function focusPaneShowing(explorer: ExplorerAPI, dir: string): Pane | null {
  * The shared `navigateToFileInPane` primitive keeps its always-navigate-the-given-
  * pane contract for "Go to path" (⌘G); only the downloads flow reuses panes.
  */
-export async function revealFileInBestPane(explorer: ExplorerAPI, parentDir: string, fileName: string): Promise<void> {
-  const reused = focusPaneShowing(explorer, parentDir)
+export async function revealFileInBestPane(explorer: ExplorerAPI, location: Location, fileName: string): Promise<void> {
+  const reused = focusPaneShowing(explorer, location.path)
   if (reused) {
     await explorer.moveCursor(reused, fileName)
     return
   }
-  await navigateToFileInPane(explorer, explorer.getFocusedPane(), parentDir, fileName)
+  await navigateToFileInPane(explorer, explorer.getFocusedPane(), location, fileName)
 }
 
 /**
- * Go to `dir`, reusing a pane that already shows it (same pane-pick as
- * `revealFileInBestPane`, minus the cursor move — a bare directory has no file
- * target). Used by the empty-Downloads toast's "Go to Downloads" action.
+ * Go to a directory `Location`, reusing a pane that already shows it (same
+ * pane-pick as `revealFileInBestPane`, minus the cursor move — a bare directory
+ * has no file target). Used by the empty-Downloads toast's "Go to Downloads"
+ * action.
  */
-export async function navigateToDirInBestPane(explorer: ExplorerAPI, dir: string): Promise<void> {
-  if (focusPaneShowing(explorer, dir)) return
-  await navigateToDirInPane(explorer, explorer.getFocusedPane(), dir)
+export async function navigateToDirInBestPane(explorer: ExplorerAPI, location: Location): Promise<void> {
+  if (focusPaneShowing(explorer, location.path)) return
+  await navigateToDirInPane(explorer, explorer.getFocusedPane(), location)
 }

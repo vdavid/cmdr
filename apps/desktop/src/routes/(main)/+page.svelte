@@ -53,6 +53,7 @@
     import { startGlobalShortcutBridge } from '$lib/downloads/global-shortcut-bridge.svelte'
     import { startLowDiskSpaceEventBridge } from '$lib/low-disk-space/event-bridge.svelte'
     import { startDragOutEventBridge } from '$lib/file-explorer/drag/drag-out-event-bridge'
+    import { revealSearchResultInPane } from '$lib/file-explorer/navigation/navigate-and-select'
     import {
         handleCommandExecute as dispatchCommand,
         type CommandDispatchContext,
@@ -649,18 +650,12 @@
 
     function handleSearchNavigate(path: string) {
         showSearchDialog = false
-        // Navigate the focused pane to the file's parent directory, then move cursor to the file
-        const lastSlash = path.lastIndexOf('/')
-        const parentDir = lastSlash > 0 ? path.slice(0, lastSlash) : '/'
-        const fileName = path.slice(lastSlash + 1)
-        const pane = explorerRef?.getFocusedPane() ?? 'left'
-        const result = explorerRef?.navigate({ pane, to: { path: parentDir }, source: 'user' })
-        // On a started navigation, await `settled` then move the cursor onto the
-        // file. `moveCursor`'s own `whenLoadSettles` bridges the cross-volume arm,
-        // where `settled` resolves before the listing loads (L2-adjacent).
-        if (result?.status === 'started') {
-            void result.settled.then(() => explorerRef?.moveCursor(pane, fileName))
-        }
+        // Reveal the result's file in the focused pane: the shared edge helper
+        // resolves the parent dir's volume (the index isn't scoped to the pane's
+        // volume), navigates there, then moves the cursor onto the file.
+        const explorer = explorerRef
+        if (!explorer) return
+        void revealSearchResultInPane(explorer, explorer.getFocusedPane(), path)
     }
 
     /**

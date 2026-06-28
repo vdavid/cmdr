@@ -1666,6 +1666,11 @@
     "description": "Error toast when reordering favorites did not work, inviting the user to retry."
   },
 
+  "fileExplorer.navigation.locationUnreachableToast": "Couldn''t reach that location''s drive. It might be disconnected.",
+  "@fileExplorer.navigation.locationUnreachableToast": {
+    "description": "Toast shown when the app can't figure out which drive (volume) a place lives on, so it can't navigate there. Happens when going to a search result, a typed path, or a downloaded file whose drive is unplugged or no longer present. \"Drive\" means a storage volume like a hard disk or USB stick."
+  },
+
   "fileExplorer.navigation.connectionTooltipDirect": "Connected directly for fast file operations",
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "description": "Hover tooltip on the connection indicator of a network volume that is connected directly (the fast path)."

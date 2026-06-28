@@ -821,6 +821,7 @@ export type MessageKey =
   | 'fileExplorer.navigation.groupMobile'
   | 'fileExplorer.navigation.groupNetwork'
   | 'fileExplorer.navigation.groupVolumes'
+  | 'fileExplorer.navigation.locationUnreachableToast'
   | 'fileExplorer.navigation.networkVolume'
   | 'fileExplorer.navigation.networkVolumeDisabled'
   | 'fileExplorer.navigation.readOnlyTooltip'
