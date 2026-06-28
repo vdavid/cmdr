@@ -29,25 +29,61 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.aggregation.savingEntries": "Einträge werden gesichert …",
-  "@indexing.aggregation.savingEntries": {
-    "sourceHash": "16fa321"
+  "indexing.step.findFiles": "Dateien finden",
+  "@indexing.step.findFiles": {
+    "sourceHash": "15d12bc"
+  },
+  "indexing.step.saveFileList": "Dateiliste speichern",
+  "@indexing.step.saveFileList": {
+    "sourceHash": "92af072"
+  },
+  "indexing.step.computeFolderSizes": "Ordnergrößen berechnen",
+  "@indexing.step.computeFolderSizes": {
+    "sourceHash": "65c86f6"
+  },
+  "indexing.step.catchUp": "Neueste Änderungen nachholen",
+  "@indexing.step.catchUp": {
+    "sourceHash": "ef74b56"
+  },
+  "indexing.step.updateIndex": "Index aktualisieren",
+  "@indexing.step.updateIndex": {
+    "sourceHash": "494e5b8"
+  },
+  "indexing.summary.found": "{countText} gefunden",
+  "@indexing.summary.found": {
+    "sourceHash": "fe3038e"
+  },
+  "indexing.step.findFilesFirstScan": "Erster Durchlauf, das kann eine Weile dauern",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
+  },
+  "indexing.step.statusDone": "Fertig",
+  "@indexing.step.statusDone": {
+    "sourceHash": "11a6767"
+  },
+  "indexing.step.statusActive": "Läuft",
+  "@indexing.step.statusActive": {
+    "sourceHash": "c1f88e9"
+  },
+  "indexing.step.statusPending": "Ausstehend",
+  "@indexing.step.statusPending": {
+    "sourceHash": "ba35f0c"
   },
   "indexing.aggregation.loading": "Ordner werden geladen …",
   "@indexing.aggregation.loading": {
-    "sourceHash": "37b34d4"
+    "sourceHash": "f553c87"
   },
   "indexing.aggregation.sorting": "Ordner werden sortiert …",
   "@indexing.aggregation.sorting": {
-    "sourceHash": "9018980"
+    "sourceHash": "3a7c827"
   },
   "indexing.aggregation.computing": "Ordnergrößen werden berechnet …",
   "@indexing.aggregation.computing": {
-    "sourceHash": "ee6ba9a"
+    "sourceHash": "19f54fc"
   },
   "indexing.aggregation.writing": "Ordnergrößen werden gesichert …",
   "@indexing.aggregation.writing": {
-    "sourceHash": "ff59fa5"
+    "sourceHash": "9466e98"
   },
   "indexing.replay.label": "Index wird aktualisiert …",
   "@indexing.replay.label": {

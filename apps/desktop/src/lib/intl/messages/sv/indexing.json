@@ -29,25 +29,61 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.aggregation.savingEntries": "Sparar poster...",
-  "@indexing.aggregation.savingEntries": {
-    "sourceHash": "16fa321"
+  "indexing.step.findFiles": "Hitta filer",
+  "@indexing.step.findFiles": {
+    "sourceHash": "15d12bc"
   },
-  "indexing.aggregation.loading": "Läser in kataloger...",
+  "indexing.step.saveFileList": "Spara fillistan",
+  "@indexing.step.saveFileList": {
+    "sourceHash": "92af072"
+  },
+  "indexing.step.computeFolderSizes": "Beräkna mappstorlekar",
+  "@indexing.step.computeFolderSizes": {
+    "sourceHash": "65c86f6"
+  },
+  "indexing.step.catchUp": "Komma ikapp med senaste ändringarna",
+  "@indexing.step.catchUp": {
+    "sourceHash": "ef74b56"
+  },
+  "indexing.step.updateIndex": "Uppdatera index",
+  "@indexing.step.updateIndex": {
+    "sourceHash": "494e5b8"
+  },
+  "indexing.summary.found": "{countText} hittade",
+  "@indexing.summary.found": {
+    "sourceHash": "fe3038e"
+  },
+  "indexing.step.findFilesFirstScan": "Första genomsökningen, det kan ta en stund",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
+  },
+  "indexing.step.statusDone": "Klar",
+  "@indexing.step.statusDone": {
+    "sourceHash": "11a6767"
+  },
+  "indexing.step.statusActive": "Pågår",
+  "@indexing.step.statusActive": {
+    "sourceHash": "c1f88e9"
+  },
+  "indexing.step.statusPending": "Inte påbörjad",
+  "@indexing.step.statusPending": {
+    "sourceHash": "ba35f0c"
+  },
+  "indexing.aggregation.loading": "Läser in mappar...",
   "@indexing.aggregation.loading": {
-    "sourceHash": "37b34d4"
+    "sourceHash": "f553c87"
   },
-  "indexing.aggregation.sorting": "Sorterar kataloger...",
+  "indexing.aggregation.sorting": "Sorterar mappar...",
   "@indexing.aggregation.sorting": {
-    "sourceHash": "9018980"
+    "sourceHash": "3a7c827"
   },
-  "indexing.aggregation.computing": "Beräknar katalogstorlekar...",
+  "indexing.aggregation.computing": "Beräknar mappstorlekar...",
   "@indexing.aggregation.computing": {
-    "sourceHash": "ee6ba9a"
+    "sourceHash": "19f54fc"
   },
-  "indexing.aggregation.writing": "Sparar katalogstorlekar...",
+  "indexing.aggregation.writing": "Sparar mappstorlekar...",
   "@indexing.aggregation.writing": {
-    "sourceHash": "ff59fa5"
+    "sourceHash": "9466e98"
   },
   "indexing.replay.label": "Uppdaterar index...",
   "@indexing.replay.label": {

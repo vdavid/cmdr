@@ -11,14 +11,15 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
   Tauri index events.
 - **`index-events.ts`**: listens for `index-dir-updated`, calls back with updated paths.
 - **`eta.ts`**: pure ETA helpers + `computeScanProgress` (two-tier scan fraction).
+- **`indexing-steps.ts`**: pure, unit-tested step-checklist derivation (`deriveSteps`) + the step/sub-phase label maps.
 - **`elapsed.ts`**: pure `formatElapsedClock` (`m:ss`, `null` under 1s) — the first-scan elapsed clock, used by the
   shared `IndexingStatusBody` (so both the corner indicator and the badge tooltip show it from one source).
-- **`IndexingStatusIndicator.svelte`** + **`IndexingDriveRow.svelte`** + **`IndexingStatusBody.svelte`**: top-right
-  hourglass shown whenever ANY drive is indexing; tooltip lists one `IndexingDriveRow` per active drive.
-  `IndexingStatusBody` is the shared, PRESENTATIONAL status body (label / counters+elapsed / detail / bar+percent+ETA);
-  `IndexingDriveRow` is the thin WRAPPER (heading + body + its own ETA sliding windows + the 1 Hz tick). The breadcrumb
-  badge's scanning tooltip renders the SAME `IndexingDriveRow` (heading off) for its one volume, so both surfaces show
-  one representation.
+- **The status surface** (`IndexingStatusIndicator` / `IndexingDriveRow` / `IndexingStatusBody` /
+  `IndexingDriveSummary`): the top-right hourglass shown whenever ANY drive is indexing. `IndexingStatusBody` is the
+  shared PRESENTATIONAL per-volume step checklist; `IndexingDriveRow` the thin WRAPPER (heading + body + ETA windows +
+  1 Hz tick). The corner expands the primary drive and collapses each secondary to a one-line `IndexingDriveSummary`;
+  the breadcrumb badge renders the same `IndexingDriveRow`. One representation everywhere. DETAILS § Step checklist.
+- **`indexing-steps.ts`**: pure `deriveSteps` (the checklist's per-volume step states) + the step/sub-phase label maps.
 - **`drive-index-prefs.ts`**: FE-OWNED persisted prefs the backend never reads: per-drive "don't ask again" silences
   (D6) and the one-time stale-dialog flag (D2), stored as hidden settings.
 - **`first-connect-trigger.ts`** + **`FirstConnectIndexToastContent.svelte`**: the first-connect "index this drive?"
@@ -40,12 +41,18 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
 - **Scan progress has two tiers** (`computeScanProgress`). Each tier uses a specific counter as both the numerator and
   the ETA window sample — don't mix them (swapping counter and denominator ships wrong ETAs). Details and clamping
   values: DETAILS.md.
-- **The indicator tracks ALL drives** via a per-volume `activity` map keyed by `volumeId`. Aggregation is per-volume
-  too (its own map). State model, attribution, and the API: [DETAILS.md](DETAILS.md).
-- **`index-state` is the SINGLE source of live activity** (scan/replay counters + aggregation), keyed by `volumeId`.
-  The breadcrumb badge reads its own volume's via `getVolumeActivity(volumeId)` to render the shared body; the badge's
+- **The indicator tracks ALL drives** via a per-volume `activity` map keyed by `volumeId`. Aggregation is per-volume too
+  (its own map). State model, attribution, and the API: [DETAILS.md](DETAILS.md).
+- **`index-state` is the SINGLE source of live activity** (scan/replay counters + aggregation), keyed by `volumeId`. The
+  breadcrumb badge reads its own volume's via `getVolumeActivity(volumeId)` to render the shared body; the badge's
   `drive-index-manager` owns ONLY freshness/menu facts (the dot color, last-scan facts), never live progress. Don't
   reintroduce a second live-count path.
+- **Checklist STEPS are composed from the events that fire for THIS volume** (`deriveSteps`), never a fixed list: a
+  network (SMB/MTP) scan omits Save and Catch-up; a roll-on collapses to one Update step. Branch on typed discriminants
+  only. Per-step ETA only; NO overall ETA by design (deferred — `docs/specs/later/drive-index-overall-eta.md`). The
+  catch-up (reconcile) step has ONLY the `phase` event, so the visibility gate (`isAnyVolumeIndexing`) and the
+  indicator/badge must include `phase`-only volumes (`getActivePhaseVolumeIds`) or the surface vanishes the moment
+  aggregation completes and the step never shows. Full step model + composition: DETAILS § Step checklist.
 - **A keyed entry is cleared by a TERMINAL event**, never by freshness. Scan → `index-scan-complete`; replay →
   `index-replay-complete`; aggregation → `index-aggregation-complete`. A network (SMB/MTP) scan that aborts
   (disconnect/cancel/timeout) fires NO completion, so the backend emits `index-scan-aborted { volumeId }` and
@@ -66,5 +73,6 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
   `getDirSizeDisplayState` (`views/full-list-utils.ts`) is the single source of truth, consumed in lockstep by
   `FullList` / `SelectionInfo` / `measure-column-widths`. Rendering + sort: [DETAILS.md](DETAILS.md).
 
-Full public API, the eight-event table, tooltip content per state, ETA blending, dependencies, and tests:
-[DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Full public API, the ten-event table, the step model + per-volume composition, tooltip content per state, ETA blending,
+dependencies, and tests: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

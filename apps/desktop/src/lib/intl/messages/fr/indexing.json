@@ -29,25 +29,61 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.aggregation.savingEntries": "Enregistrement des éléments...",
-  "@indexing.aggregation.savingEntries": {
-    "sourceHash": "16fa321"
+  "indexing.step.findFiles": "Trouver les fichiers",
+  "@indexing.step.findFiles": {
+    "sourceHash": "15d12bc"
   },
-  "indexing.aggregation.loading": "Chargement des répertoires...",
+  "indexing.step.saveFileList": "Enregistrer la liste des fichiers",
+  "@indexing.step.saveFileList": {
+    "sourceHash": "92af072"
+  },
+  "indexing.step.computeFolderSizes": "Calculer la taille des dossiers",
+  "@indexing.step.computeFolderSizes": {
+    "sourceHash": "65c86f6"
+  },
+  "indexing.step.catchUp": "Rattraper les changements récents",
+  "@indexing.step.catchUp": {
+    "sourceHash": "ef74b56"
+  },
+  "indexing.step.updateIndex": "Mettre à jour l''index",
+  "@indexing.step.updateIndex": {
+    "sourceHash": "494e5b8"
+  },
+  "indexing.summary.found": "{countText} trouvés",
+  "@indexing.summary.found": {
+    "sourceHash": "fe3038e"
+  },
+  "indexing.step.findFilesFirstScan": "Première analyse, cela peut prendre un moment",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
+  },
+  "indexing.step.statusDone": "Terminé",
+  "@indexing.step.statusDone": {
+    "sourceHash": "11a6767"
+  },
+  "indexing.step.statusActive": "En cours",
+  "@indexing.step.statusActive": {
+    "sourceHash": "c1f88e9"
+  },
+  "indexing.step.statusPending": "En attente",
+  "@indexing.step.statusPending": {
+    "sourceHash": "ba35f0c"
+  },
+  "indexing.aggregation.loading": "Chargement des dossiers...",
   "@indexing.aggregation.loading": {
-    "sourceHash": "37b34d4"
+    "sourceHash": "f553c87"
   },
-  "indexing.aggregation.sorting": "Tri des répertoires...",
+  "indexing.aggregation.sorting": "Tri des dossiers...",
   "@indexing.aggregation.sorting": {
-    "sourceHash": "9018980"
+    "sourceHash": "3a7c827"
   },
-  "indexing.aggregation.computing": "Calcul de la taille des répertoires...",
+  "indexing.aggregation.computing": "Calcul de la taille des dossiers...",
   "@indexing.aggregation.computing": {
-    "sourceHash": "ee6ba9a"
+    "sourceHash": "19f54fc"
   },
-  "indexing.aggregation.writing": "Enregistrement de la taille des répertoires...",
+  "indexing.aggregation.writing": "Enregistrement de la taille des dossiers...",
   "@indexing.aggregation.writing": {
-    "sourceHash": "ff59fa5"
+    "sourceHash": "9466e98"
   },
   "indexing.replay.label": "Mise à jour de l''index...",
   "@indexing.replay.label": {

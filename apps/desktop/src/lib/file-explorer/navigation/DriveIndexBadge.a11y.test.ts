@@ -8,12 +8,27 @@ import { mount, flushSync, tick } from 'svelte'
 import type { Freshness, VolumeIndexStatus } from '$lib/ipc/bindings'
 import type { VolumeIndexActivity } from '$lib/indexing'
 
-// The badge reads its own volume's live activity from `index-state`; mock it so
-// we can exercise the scanning tooltip's rich DOM body.
+// The badge reads its own volume's live activity + phase from `index-state`; mock
+// it so we can exercise the scanning tooltip's rich DOM checklist body.
 let badgeActivity: VolumeIndexActivity | undefined
 vi.mock('$lib/indexing', () => ({
   getVolumeActivity: () => badgeActivity,
   getVolumeAggregation: () => undefined,
+  getVolumePhase: () => undefined,
+  placeholderActivity: (volumeId: string): VolumeIndexActivity => ({
+    volumeId,
+    phase: 'scanning',
+    entriesScanned: 0,
+    dirsFound: 0,
+    bytesScanned: 0,
+    scanStartedAt: 0,
+    priorTotalEntries: null,
+    priorScanDurationMs: null,
+    volumeUsedBytes: null,
+    replayEventsProcessed: 0,
+    replayEstimatedTotal: 0,
+    replayStartedAt: 0,
+  }),
 }))
 
 import DriveIndexBadge from './DriveIndexBadge.svelte'
@@ -32,7 +47,10 @@ function makeStatus(freshness: Freshness | null, enabled = freshness != null): V
 async function mountBadge(status: VolumeIndexStatus) {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(DriveIndexBadge, { target, props: { volumeId: status.volumeId, status, driveName: 'Backups', onAction: () => {} } })
+  mount(DriveIndexBadge, {
+    target,
+    props: { volumeId: status.volumeId, status, driveName: 'Backups', onAction: () => {} },
+  })
   await tick()
   return target
 }

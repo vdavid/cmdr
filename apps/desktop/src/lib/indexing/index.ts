@@ -5,6 +5,7 @@ export {
   getVolumeActivity,
   getVolumeAggregation,
   getVolumePhase,
+  placeholderActivity,
   initIndexState,
   destroyIndexState,
 } from './index-state.svelte'

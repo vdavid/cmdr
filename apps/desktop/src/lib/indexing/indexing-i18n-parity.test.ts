@@ -33,12 +33,24 @@ describe('indexing catalog parity (en)', () => {
     expect(tString('indexing.drive.heading', { name: 'Macintosh HD' })).toBe('Macintosh HD')
   })
 
-  it('resolves the aggregation phase labels', () => {
-    expect(tString('indexing.aggregation.savingEntries')).toBe('Saving entries...')
-    expect(tString('indexing.aggregation.loading')).toBe('Loading directories...')
-    expect(tString('indexing.aggregation.sorting')).toBe('Sorting directories...')
-    expect(tString('indexing.aggregation.computing')).toBe('Computing directory sizes...')
-    expect(tString('indexing.aggregation.writing')).toBe('Saving directory sizes...')
+  it('resolves the checklist step labels', () => {
+    expect(tString('indexing.step.findFiles')).toBe('Find files')
+    expect(tString('indexing.step.saveFileList')).toBe('Save the file list')
+    expect(tString('indexing.step.computeFolderSizes')).toBe('Compute folder sizes')
+    expect(tString('indexing.step.catchUp')).toBe('Catch up on recent changes')
+    expect(tString('indexing.step.updateIndex')).toBe('Update index')
+    expect(tString('indexing.step.findFilesFirstScan')).toBe('First scan, so this can take a while')
+    expect(tString('indexing.step.statusDone')).toBe('Done')
+    expect(tString('indexing.step.statusActive')).toBe('In progress')
+    expect(tString('indexing.step.statusPending')).toBe('Not started')
+    expect(tString('indexing.summary.found', { countText: '171,607' })).toBe('171,607 found')
+  })
+
+  it('resolves the compute-step sub-phase labels (folder-worded)', () => {
+    expect(tString('indexing.aggregation.loading')).toBe('Loading folders...')
+    expect(tString('indexing.aggregation.sorting')).toBe('Sorting folders...')
+    expect(tString('indexing.aggregation.computing')).toBe('Computing folder sizes...')
+    expect(tString('indexing.aggregation.writing')).toBe('Saving folder sizes...')
   })
 
   it('resolves the replay labels and detail', () => {

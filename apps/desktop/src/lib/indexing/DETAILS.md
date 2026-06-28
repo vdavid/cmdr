@@ -19,8 +19,8 @@ entry an `AggregationActivity` (`phase`, `current`, `total`, `startedAt`).
 
 The barrel exports the lifecycle + the cross-module reads: `isScanning` / `getEntriesScanned` (SearchDialog),
 `getVolumeActivity` / `getVolumeAggregation` (the breadcrumb badge's scanning tooltip, in `navigation/`),
-`getVolumePhase` (the per-volume step checklist), plus `initIndexState` / `destroyIndexState` / `initIndexEvents`. The indicator (same dir) imports the rest directly from
-`./index-state.svelte`:
+`getVolumePhase` (the per-volume step checklist), plus `initIndexState` / `destroyIndexState` / `initIndexEvents`. The
+indicator (same dir) imports the rest directly from `./index-state.svelte`:
 
 ```ts
 // Multi-drive API (the indicator):
@@ -30,6 +30,9 @@ isAnyVolumeIndexing(): boolean                    // scan/replay map non-empty O
 getVolumeAggregation(volumeId): AggregationActivity | undefined  // that volume's live aggregation, or undefined
 getVolumePhase(volumeId): ActivityPhase | undefined  // that volume's current mid-pipeline phase, or undefined (step checklist)
 getAggregatingVolumeIds(): string[]               // every volume currently aggregating
+getActivePhaseVolumeIds(): string[]               // every volume with a live phase (incl. reconcile, no scan/agg entry)
+placeholderActivity(volumeId): VolumeIndexActivity  // a zero-valued activity for an aggregation-/reconcile-only row
+ROOT_VOLUME_ID: 'root'                             // the local volume id; everything else is a network (SMB/MTP) drive
 isAggregating(): boolean                          // any volume aggregating
 // Backward-compatible scalars (other consumers):
 isScanning(): boolean                // any volume scanning (size-updating hourglass, search-unavailable)
@@ -52,8 +55,8 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
 - **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry.
 - **`index-scan-aborted`** (`{ volumeId }`): a network (SMB/MTP) scan ended WITHOUT completing (disconnect, cancel,
   timeout), so no `index-scan-complete` fires. Remove the volume's `activity` AND `aggregation` entries — otherwise the
-  partial scan leaves a stuck "scanning" row in the corner and the badge tooltip. Carries no completion facts (it isn't a
-  finished index). The badge dot color is handled separately by the manager's freshness subscription. Emitted by
+  partial scan leaves a stuck "scanning" row in the corner and the badge tooltip. Carries no completion facts (it isn't
+  a finished index). The badge dot color is handled separately by the manager's freshness subscription. Emitted by
   `network_scan.rs`'s disconnect (→ Stale) and cancel/fail (→ not-indexed) arms.
 - **`index-rescan-notification`** (`{ volumeId, reason, details }`): show an info toast with a reason-specific message.
 - **`index-replay-progress`** (`{ volumeId, eventsProcessed, estimatedTotal }`): create/replace the volume's `activity`
@@ -63,14 +66,14 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
   (phase/progress, plus a `startedAt` ETA clock reset on each phase change).
 - **`index-aggregation-complete`** (`{ volumeId }`): remove that volume's `aggregation` entry.
 - **`index-phase-changed`** (`{ volumeId, phase: ActivityPhase }`): the volume's top-level pipeline phase changed. Set
-  the `phase` map entry for the active steps (`scanning` / `aggregating` / `reconciling` / `replaying`); DELETE it on the
-  terminal `live` / `idle` transitions (the pipeline ended) and on `index-scan-aborted` (the cancel/fail abort arm fires
-  no phase event). So a present `phase` entry always means "this volume is at this step right now" — the spine of the M4b
-  step checklist, and the only signal for the reconcile step. Per-volume, unlike the global debug-window phase timeline.
-  Fires only on transitions, so after a mid-scan reload the current phase is unknown until the next transition; the
-  reconcile step is briefly unobservable then (accepted — `index-phase-changed` is transition-only and `VolumeIndexStatus`
-  carries no phase by design; see the backend `indexing/DETAILS.md`). Branch on the typed `ActivityPhase` variant, never
-  the wording.
+  the `phase` map entry for the active steps (`scanning` / `aggregating` / `reconciling` / `replaying`); DELETE it on
+  the terminal `live` / `idle` transitions (the pipeline ended) and on `index-scan-aborted` (the cancel/fail abort arm
+  fires no phase event). So a present `phase` entry always means "this volume is at this step right now" — the spine of
+  the step checklist, and the only signal for the reconcile step. Per-volume, unlike the global debug-window phase
+  timeline. Fires only on transitions, so after a mid-scan reload the current phase is unknown until the next
+  transition; the reconcile step is briefly unobservable then (accepted — `index-phase-changed` is transition-only and
+  `VolumeIndexStatus` carries no phase by design; see the backend `indexing/DETAILS.md`). Branch on the typed
+  `ActivityPhase` variant, never the wording.
 
 ### Aggregation is per-volume
 
@@ -94,35 +97,76 @@ content inside a `<div hidden>` host and passes the inner content div (not the h
 `contentEl`, so the adopted element doesn't carry `hidden` into the tooltip.
 
 **Body / wrapper split.** `IndexingDriveRow` is a thin WRAPPER: it owns the stateful glue — this volume's two ETA
-sliding windows (scan + replay) and a 1 Hz `now` tick (gated on scanning/aggregating) — and renders the heading + a
-`IndexingStatusBody`. The body is PRESENTATIONAL: it takes the `activity`, `aggregation`, the injected `now`, and the
-wrapper's `windowedEta` (the scan/replay ETA string, which needs the window; aggregation's window-free ETA the body
-computes itself from `now`), and renders the label / detail / bar+percent. No `$effect`, no window state in the body, so
-two surfaces rendering the same volume can't collide on window state — each WRAPPER instance keeps its own window. Both
-surfaces (the corner indicator and the breadcrumb badge's scanning tooltip) render `IndexingDriveRow` (the badge with
-the heading off), so the representation is identical.
+sliding windows (scan + replay) and a 1 Hz `now` tick (gated on scanning/aggregating) — plus the reactive reads
+`getVolumePhase(volumeId)` and `isNetwork` (`volumeId !== ROOT_VOLUME_ID`), and renders the heading + a
+`IndexingStatusBody`. The body is PRESENTATIONAL: it takes the `activity`, `aggregation`, `now`, `windowedEta`, `phase`,
+and `isNetwork`, and renders the step checklist. No `$effect`, no window state in the body, so two surfaces rendering
+the same volume can't collide on window state — each WRAPPER instance keeps its own window. Both surfaces (the corner
+indicator and the breadcrumb badge's scanning tooltip) render `IndexingDriveRow` (the badge with the heading off), so
+the representation is identical.
 
-Each row renders one of three modes (priority aggregation > scan > replay), reading from its `VolumeIndexActivity` plus
-its own `AggregationActivity | undefined` (this volume's aggregation, or `undefined` when it isn't aggregating):
+## Step checklist
 
-- **Scan**: a two-tier label, with the live entry/dir counters on their own detail line under it (the honest primary
-  signal, always shown once the first progress event lands).
-  - **Tier 1 (calibrated)**: "Scanning your drive..." + "42,000 entries, 1,200 dirs" + a `ProgressBar` with "42%, 1m 20s
-    left". The trustworthy prior-scan denominator earns the bar + percent + ETA.
-  - **Tier 2 (first scan, rough)**: "Scanning your drive (first scan)..." + "42,000 entries, 1,200 dirs · 2:34" — count +
-    an **elapsed clock**, and NO bar and NO percent. The byte-ratio denominator is unreliable early (sits near 0 on a big
-    volume), so showing a precise percent there would lie; the count + elapsed clock give honest liveness instead. This is
-    a render-gate (`scanRough` suppresses the bar), not a math change — `computeScanProgress` still computes the rough
-    fraction (used only to pick the "(first scan)" label and the gate). The elapsed clock advances off a 1 Hz `$state`
-    tick gated on scanning (`Date.now()` in a `$derived` isn't reactive, so without the tick the clock would freeze when
-    progress stalls — the reported NAS first-scan case); `formatElapsedClock` (shared `./elapsed.ts`, also used by the
-    breadcrumb badge) returns `null` under a second, so before the first counters arrive the row falls back to the bare
-    label with no "0 entries · 0:00" flash.
-  - **Neither denominator** (`computeScanProgress` null): the same counter-only label, no bar.
-- **Aggregation**: phase label ("Saving entries...", "Loading directories...", "Sorting directories...", "Computing
-  directory sizes...", "Saving directory sizes...") + `ProgressBar` + percent + ETA for the phases that have progress
-  (`saving_entries`, `computing`, `writing`).
-- **Replay**: "Updating index..." + "N events processed" + `ProgressBar` + blended ETA.
+The body renders a per-volume CHECKLIST (`<ul>`/`<li>`): every step shows its state — waiting (a hollow `circle`), in
+progress (a `<Spinner>`), or done (a `circle-check`) — and the ACTIVE step carries the live detail beneath its label. A
+visually-hidden status word ("Done" / "In progress" / "Not started") conveys state to screen readers (the markers are
+decorative `aria-hidden`); the active step's bar takes the step label as its `aria-label`.
+
+**Steps are composed from the events that fire for THIS volume** by the pure `deriveSteps` (`indexing-steps.ts`), never
+a fixed list. The run kind picks the ordered list:
+
+- **local** (the `root` volume): Find files → Save the file list → Compute folder sizes → Catch up on recent changes.
+- **network** (SMB/MTP): Find files → Compute folder sizes. The Save and Catch-up steps don't appear: a network scan
+  inserts entries inline during the walk (no `saving_entries` sub-phase) and emits no top-level Aggregating/Reconciling
+  phase (Scanning → Live directly), so those steps never run. Compute is driven off the aggregation SUB-phase events,
+  which DO fire for network.
+- **replay** (an event-log roll-on): a single Update index step.
+
+State comes from a "furthest reached" index across the signals (the typed `ActivityPhase` from `getVolumePhase` + the
+live aggregation sub-phase), so steps stay monotonic (everything before the active one done, everything after pending)
+and survive a mid-scan reload: when the transition-only phase event is gone, the aggregation sub-phase still proves how
+far we are. The accepted gap: after a reload landing mid-RECONCILE (no scan, no aggregation, no phase), the catch-up
+step shows not-yet-active — but in that window the surface isn't rendered at all (no live entry), so it falls back to
+the badge's static "Scanning your drive…" text.
+
+**Two label maps, separate on purpose**: `indexing-steps.ts`'s `stepKindToLabelKey` keys the step labels off the typed
+`IndexStepKind`; `IndexingStatusBody`'s `phaseToLabelKey`-equivalent (`computeSubPhaseToLabelKey`) keys the compute
+step's folder-worded sub-line off the aggregation sub-phase string. Branch on the typed discriminants, never wording.
+
+**The active step's detail**, keyed off the active step (not a separate "mode"), so the synthetic activity behind an
+aggregation-only or reconcile-only row never leaks scan zeros:
+
+- **Find files**: the count-first scan detail. Tier 1 (calibrated, prior-scan denominator) → counters + a
+  `ProgressBar` with "42%, 1m left". Tier 2 (rough first scan) → a "First scan, so this can take a while" sub-line +
+  "42,000 entries, 1,200 dirs · 2:34" (count + an **elapsed clock**), NO bar (the byte-ratio sits near 0 early, so a
+  precise percent would lie). The clock advances off the wrapper's 1 Hz tick (`Date.now()` in a `$derived` isn't
+  reactive, so it'd freeze on a stall — the reported NAS case); `formatElapsedClock` returns `null` under a second so it
+  never flashes "0:00".
+- **Save the file list** (`saving_entries`): a `ProgressBar` + percent + ETA. No sub-line (the step label says it).
+- **Compute folder sizes** (`loading → sorting → computing → writing`): a folder-worded sub-line ("Loading folders…",
+  "Sorting folders…", "Computing folder sizes…", "Saving folder sizes…") + a bar for the determinate sub-phases
+  (`computing`, `writing`); `loading`/`sorting` are indeterminate (the step spinner + sub-line convey liveness, NO
+  nested second spinner). Aggregation's window-free ETA is computed in the body from `now`.
+- **Catch up on recent changes** (the `reconciling` phase): indeterminate, no detail — just the spinner + label.
+- **Update index** (replay): "N events processed" + a bar + the blended replay ETA.
+
+**Per-step ETA, no overall ETA.** Only the active step's own ETA shows, where its denominator is trustworthy. A true
+overall "~Xm left" is deliberately deferred with its backend per-phase calibration (the step-of-N structure carries "how
+far" honestly without it): see
+[`docs/specs/later/drive-index-overall-eta.md`](../../../../../docs/specs/later/drive-index-overall-eta.md).
+
+**Reconcile visibility.** The catch-up step has no scan/aggregation entry — only the `phase` event marks it — so
+`isAnyVolumeIndexing` and the indicator/badge include `phase`-only volumes (`getActivePhaseVolumeIds`, a
+`placeholderActivity` for the row). Without that the surface would vanish the instant aggregation completes.
+
+**Multi-volume collapse.** The corner expands the PRIMARY (first) drive's full `IndexingDriveRow` checklist and
+collapses each secondary drive to a one-line `IndexingDriveSummary` (heading + active step label + a compact metric: a
+percent where the denominator is trustworthy, else the running count via `indexing.summary.found`). The badge always
+shows its own volume's full checklist.
+
+**Height stability.** ALL steps render up-front so the tooltip's height stays stable as steps tick (the tooltip action
+measures once on show and doesn't re-measure as the adopted body's content grows; see `IndexingStatusIndicator`'s
+`min-width` comment). Only the per-step marker and the single active detail line change.
 
 The percent and ETA render as one span joined through `indexing.progress.percentEta` (`"{percent}%, {eta}"`), so the
 comma separator is translatable per locale (e.g. a full-width comma in `zh`, a space before `%` in `de`/`fr`); without
@@ -159,17 +203,24 @@ stateful glue and stays in each `IndexingDriveRow` (so per-drive rates don't col
 - **`eta.test.ts`**: the pure ETA helpers (thresholds, elapsed + window estimation, blending, snapshot pruning), plus
   `computeScanProgress` (tier selection, both clamps, null/zero-denominator fallbacks) and the `formatEta` non-finite
   pin.
+- **`indexing-steps.test.ts`**: the pure `deriveSteps` (TDD'd red→green) — local full scan through all four steps,
+  network (no Save/Catch-up), replay (one step), the aggregation-sub-phase-alone derivation after a reload, and the
+  accepted reconcile-after-reload gap (catch-up stays pending).
 - **`IndexingStatusIndicator.a11y.test.ts`**: tier-3 axe checks for idle (renders nothing), single-drive scanning
-  (counter-only, first-scan tier-2 count+elapsed with no bar, and calibrated-with-bar — each asserting the always-on
-  drive heading), aggregating-with-progress, and multi-drive (a heading per drive). Mocks both `index-state.svelte` and
-  the volume store's `getVolumes` (drive-name resolution).
-- **`IndexingDriveRow.a11y.test.ts`**: per-row axe checks for each mode (the wrapper), including the first-scan tier-2
-  row (count + elapsed, no `progressbar` role).
-- **`IndexingStatusBody.svelte.test.ts`**: the shared presentational body, mounted per mode from a fixture activity —
-  scan tier-1 (bar + percent), tier-2 first scan (count + elapsed, NO progressbar), counter-only, aggregation, replay.
+  (counter-only, first-scan tier-2, calibrated-with-bar — each asserting the always-on drive heading), aggregating, the
+  primary-expands-secondary-collapses multi-drive case, and a phase-only mid-reconcile volume (visible, catch-up
+  active). Mocks both `index-state.svelte` (incl. `getVolumePhase` / `getActivePhaseVolumeIds` / `placeholderActivity` /
+  `ROOT_VOLUME_ID`) and the volume store's `getVolumes`.
+- **`IndexingDriveRow.a11y.test.ts`**: per-row axe checks for the wrapper, including the first-scan tier-2 row (count +
+  elapsed, no `progressbar` role).
+- **`IndexingStatusBody.svelte.test.ts`** + **`IndexingStatusBody.a11y.test.ts`**: the shared checklist body, mounted
+  per scenario from a fixture — the four local steps with state, tier-1 bar, tier-2 first scan (count + elapsed +
+  first-scan hint, NO progressbar), counter-only, the compute step (sub-phase line + bar), the reconcile step (catch-up
+  active, no detail), network (no Save/Catch-up), and replay (one step). The a11y test pins the `<ul>`/`<li>` roles +
+  the visually-hidden status words.
 - **`index-state.svelte.test.ts`**: per-volume aggregation attribution, plus `index-scan-aborted` clearing a volume's
-  activity + aggregation (the network-abort stuck-row regression), plus the per-volume `phase` map (`index-phase-changed`
-  sets the active phase, `live` / `idle` and an abort clear it, volumes stay independent).
+  activity + aggregation (the network-abort stuck-row regression), plus the per-volume `phase` map
+  (`index-phase-changed` sets the active phase, `live` / `idle` and an abort clear it, volumes stay independent).
 - **`elapsed.test.ts`**: `formatElapsedClock` (sub-second → `null`, `m:ss` formatting, zero-padding, flooring).
 
 The reactive event-driven glue in `index-state.svelte.ts` is allowlisted in `coverage-allowlist.json`. Manual end-to-end
@@ -190,10 +241,10 @@ testing runs the Rust indexer via `pnpm dev`.
 
 All user-facing copy here lives in `$lib/intl/messages/en/indexing.json` (prefix `indexing.*`), resolved via `tString()`
 from `$lib/intl`; `cmdr/no-raw-user-facing-string` is enforced on `lib/indexing/`. Don't hardcode copy. The backend's
-typed rescan-reason and aggregation-phase discriminators map to catalog KEYS (`rescanReasonToMessageKey` /
-`phaseToLabelKey`), resolved at render time — branch on the typed enum, never on wording. The `'bytes'` / `'entries'`
-scan-unit tags and `'scan'`/`'aggregation'`/`'replay'` mode strings are internal discriminators, not copy. Base-en
-output is parity-pinned by `indexing-i18n-parity.test.ts`.
+typed discriminators map to catalog KEYS (`rescanReasonToMessageKey`; the checklist's `stepKindToLabelKey` /
+`computeSubPhaseToLabelKey` in `indexing-steps.ts`), resolved at render time — branch on the typed enum, never on
+wording. The `'bytes'` / `'entries'` scan-unit tags and `'scan'`/`'aggregation'`/`'replay'` mode strings are internal
+discriminators, not copy. Base-en output is parity-pinned by `indexing-i18n-parity.test.ts`.
 
 ## Honest size rendering
 

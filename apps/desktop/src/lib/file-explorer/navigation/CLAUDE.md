@@ -38,9 +38,9 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   single live-activity source), read per-volume via `getVolumeActivity` — don't reintroduce a manager-side progress map.
   The `scanning` badge tooltip switches from a text tooltip to the `contentEl` DOM tooltip and renders the SHARED
   `IndexingDriveRow` body (heading off) for its volume, so it matches the corner indicator; it falls back to a static
-  "Scanning your drive…" text when activity hasn't hydrated yet (the SMB/MTP first-tick window). Non-scanning states keep
-  the text tooltip. The badge is a `<button>` (axe rejects `role="img"`). Refused enable/rescan is classified by typed
-  `SmbIndexGateReason`, never text. Full contract: DETAILS § Drive index freshness badge.
+  "Scanning your drive…" text when activity hasn't hydrated yet (the SMB/MTP first-tick window). Non-scanning states
+  keep the text tooltip. The badge is a `<button>` (axe rejects `role="img"`). Refused enable/rescan is classified by
+  typed `SmbIndexGateReason`, never text. Full contract: DETAILS § Drive index freshness badge.
 - **Favorites: mutate ONLY via the `commands.*` wrappers, ALWAYS stripping the `fav-` prefix** (the switcher id is
   `fav-<favoriteId>`; the commands take the bare id via `stripFavoritePrefix`). The `volume-grouping.ts` favorites group
   always renders even when empty (the placeholder row), so don't tidy it into a hide-when-empty branch. "Add to

@@ -344,14 +344,14 @@ formatter are the pure `drive-index-status.ts` (unit-tested). Blue pulses (gated
 - **A scanning badge shows the SHARED live status body**, not a bespoke string — the same `IndexingDriveRow` body the
   corner indicator renders (heading off), so the two surfaces match exactly (count + elapsed for a first scan, or
   bar+percent+ETA for a calibrated rescan; see `$lib/indexing` DETAILS § Status indicator tooltip content). The badge
-  reads ONLY its own volume's live activity from `index-state` via `getVolumeActivity(volumeId)` (+ `getVolumeAggregation`)
-  — `index-state` is the single live-activity source; the manager carries no progress map. For the `scanning` state the
-  tooltip switches from the text variant to the `contentEl` DOM tooltip: the body lives in a `<div hidden>` host and the
-  INNER element is handed to the tooltip as `contentEl` (an adopted element keeps its own `hidden`, so the host can't be
-  passed — mirrors `IndexingStatusIndicator`). Fallback: for a non-root (SMB/MTP) volume, `index-state` only hydrates on
-  the next ~500 ms progress tick, so in the window between the freshness flip to `scanning` and that tick there's no
-  activity — the badge then shows a static "Scanning your drive…" text tooltip (`indexing.scan.label`), never an empty
-  one. Non-scanning states (disabled/fresh/stale) keep their text tooltips.
+  reads ONLY its own volume's live activity from `index-state` via `getVolumeActivity(volumeId)` (+
+  `getVolumeAggregation`) — `index-state` is the single live-activity source; the manager carries no progress map. For
+  the `scanning` state the tooltip switches from the text variant to the `contentEl` DOM tooltip: the body lives in a
+  `<div hidden>` host and the INNER element is handed to the tooltip as `contentEl` (an adopted element keeps its own
+  `hidden`, so the host can't be passed — mirrors `IndexingStatusIndicator`). Fallback: for a non-root (SMB/MTP) volume,
+  `index-state` only hydrates on the next ~500 ms progress tick, so in the window between the freshness flip to
+  `scanning` and that tick there's no activity — the badge then shows a static "Scanning your drive…" text tooltip
+  (`indexing.scan.label`), never an empty one. Non-scanning states (disabled/fresh/stale) keep their text tooltips.
 - **The badge is a focusable `<button>`** with an `aria-label` (state ariaLabel + the tooltip text) and
   `aria-haspopup="menu"`; clicking opens a small themed popover menu (NOT a native menu) anchored to the badge. Menu
   actions (`enable`/`rescan`/`disable`/`stop`) call back to `VolumeBreadcrumb`'s `handleDriveIndexAction`, which runs

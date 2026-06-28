@@ -19,7 +19,12 @@
         computeScanProgress,
         type EtaSnapshot,
     } from './eta'
-    import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
+    import {
+        getVolumePhase,
+        ROOT_VOLUME_ID,
+        type VolumeIndexActivity,
+        type AggregationActivity,
+    } from './index-state.svelte'
     import IndexingStatusBody from './IndexingStatusBody.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -166,13 +171,20 @@
     // The windowed ETA for the body: scan or replay (aggregation computes its own
     // window-free ETA inside the body from `now`).
     const windowedEta = $derived(aggregating ? null : scanning ? scanEtaDisplay : replaying ? replayEta : null)
+
+    // This volume's top-level pipeline phase (the checklist's authoritative driver
+    // for the catch-up step) and whether it's a network drive (which skips the
+    // Save and Catch-up steps). Read here in the stateful wrapper; the body stays
+    // presentational, taking both as props.
+    const phase = $derived(getVolumePhase(activity.volumeId))
+    const isNetwork = $derived(activity.volumeId !== ROOT_VOLUME_ID)
 </script>
 
 <div class="drive-row">
     {#if showHeading}
         <span class="drive-heading">{tString('indexing.drive.heading', { name: driveName })}</span>
     {/if}
-    <IndexingStatusBody {activity} {aggregation} {now} {windowedEta} />
+    <IndexingStatusBody {activity} {aggregation} {now} {windowedEta} {phase} {isNetwork} />
 </div>
 
 <style>

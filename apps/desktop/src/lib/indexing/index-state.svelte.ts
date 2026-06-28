@@ -37,8 +37,10 @@ import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
 
-/** The local volume's id (mirrors `DEFAULT_VOLUME_ID` in `tauri-commands/storage`). */
-const ROOT_VOLUME_ID = 'root'
+/** The local volume's id (mirrors `DEFAULT_VOLUME_ID` in `tauri-commands/storage`).
+ *  Exported so the checklist can tell a local scan (all four steps) from a
+ *  network one (SMB/MTP: no Save/Catch-up step) without reaching into `storage`. */
+export const ROOT_VOLUME_ID = 'root'
 
 /** Which live activity a volume is currently doing. Aggregation is tracked
  *  separately (its own per-volume map), folded into the row by the consumer. */
@@ -84,6 +86,28 @@ function newScanActivity(volumeId: string): VolumeIndexActivity {
     dirsFound: 0,
     bytesScanned: 0,
     scanStartedAt: Date.now(),
+    priorTotalEntries: null,
+    priorScanDurationMs: null,
+    volumeUsedBytes: null,
+    replayEventsProcessed: 0,
+    replayEstimatedTotal: 0,
+    replayStartedAt: 0,
+  }
+}
+
+/** A zero-valued activity for a volume with no live scan/replay entry but still
+ *  mid-pipeline (aggregating, or reconciling). The checklist derives its state
+ *  from the volume's phase + aggregation, not from these fields, so they stay at
+ *  zero and the active step (compute or catch-up) shows no scan detail. Shared by
+ *  the corner indicator and the breadcrumb badge so both render those rows alike. */
+export function placeholderActivity(volumeId: string): VolumeIndexActivity {
+  return {
+    volumeId,
+    phase: 'scanning',
+    entriesScanned: 0,
+    dirsFound: 0,
+    bytesScanned: 0,
+    scanStartedAt: 0,
     priorTotalEntries: null,
     priorScanDurationMs: null,
     volumeUsedBytes: null,
@@ -151,10 +175,14 @@ export function getVolumeActivity(volumeId: string): VolumeIndexActivity | undef
   return activity.get(volumeId)
 }
 
-/** Whether ANY drive is scanning, replaying, or aggregating. The corner
- *  hourglass's visibility gate. Reactive. */
+/** Whether ANY drive is scanning, replaying, or aggregating, OR is mid-pipeline
+ *  in a phase with no live scan/aggregation entry (the reconcile step: scan and
+ *  aggregation have both finished, only the phase event marks it). The corner
+ *  hourglass's visibility gate. Including the `phase` map keeps the checklist —
+ *  and its catch-up step — on screen through reconcile, instead of the surface
+ *  vanishing the moment aggregation completes. Reactive. */
 export function isAnyVolumeIndexing(): boolean {
-  return activity.size > 0 || aggregation.size > 0
+  return activity.size > 0 || aggregation.size > 0 || phase.size > 0
 }
 
 /** This volume's live aggregation progress, or `undefined` when it isn't
@@ -165,7 +193,7 @@ export function getVolumeAggregation(volumeId: string): AggregationActivity | un
 
 /** This volume's current top-level pipeline phase (`scanning` / `aggregating` /
  *  `reconciling` / `replaying`), or `undefined` when it isn't mid-pipeline (idle,
- *  done, or never started). Reactive. The step checklist (M4b) maps the typed
+ *  done, or never started). Reactive. The step checklist maps the typed
  *  phase to the active step; it's the only signal for the reconcile step. */
 export function getVolumePhase(volumeId: string): ActivityPhase | undefined {
   return phase.get(volumeId)
@@ -176,6 +204,14 @@ export function getVolumePhase(volumeId: string): ActivityPhase | undefined {
  *  entry (its scan already finished). */
 export function getAggregatingVolumeIds(): string[] {
   return [...aggregation.keys()]
+}
+
+/** Every volume with a live top-level phase, in insertion order. Reactive. Lets
+ *  the indicator add a row for a volume that's mid-pipeline with no live scan or
+ *  aggregation entry (the reconcile step), so the checklist's catch-up step stays
+ *  visible after aggregation completes. */
+export function getActivePhaseVolumeIds(): string[] {
+  return [...phase.keys()]
 }
 
 // ── Backward-compatible scalar getters ───────────────────────────────

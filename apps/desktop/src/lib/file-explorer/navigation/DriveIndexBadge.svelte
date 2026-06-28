@@ -25,7 +25,7 @@
         type DriveIndexMenuAction,
         type DriveIndexState,
     } from './drive-index-status'
-    import { getVolumeActivity, getVolumeAggregation } from '$lib/indexing'
+    import { getVolumeActivity, getVolumeAggregation, getVolumePhase, placeholderActivity } from '$lib/indexing'
     import IndexingDriveRow from '$lib/indexing/IndexingDriveRow.svelte'
 
     interface Props {
@@ -69,12 +69,19 @@
     // the static text fallback shows instead of an empty tooltip.
     const activity = $derived(getVolumeActivity(volumeId))
     const aggregation = $derived(getVolumeAggregation(volumeId))
+    // This volume's top-level phase, so the checklist stays visible through the
+    // reconcile step (scan + aggregation both done, only the phase event marks it):
+    // there's no live `activity` then, so fall back to a placeholder the checklist
+    // reads its state from via the phase. `undefined` until the first signal lands.
+    const phase = $derived(getVolumePhase(volumeId))
+    const bodyActivity = $derived(activity ?? (phase != null ? placeholderActivity(volumeId) : undefined))
 
     // The shared body lives in a hidden host; we hand its inner element to the
-    // tooltip as `contentEl`. Rich only once it's mounted (activity present), else
-    // the static fallback text. Mirrors the indicator's `contentEl` pattern.
+    // tooltip as `contentEl`. Rich only once there's something to show (live
+    // activity, or a phase mid-pipeline), else the static fallback text. Mirrors
+    // the indicator's `contentEl` pattern.
     let scanBodyEl = $state<HTMLDivElement>()
-    const useRichScanningTooltip = $derived(badgeState === 'scanning' && activity != null && scanBodyEl != null)
+    const useRichScanningTooltip = $derived(badgeState === 'scanning' && bodyActivity != null && scanBodyEl != null)
 
     // The text tooltip per state. The `scanning` text is the static fallback for
     // the no-activity-yet window (the rich body replaces it once activity lands);
@@ -156,14 +163,14 @@
     onclick={toggleMenu}
 ></button>
 
-{#if badgeState === 'scanning' && activity}
+{#if badgeState === 'scanning' && bodyActivity}
     <!-- The scanning tooltip's rich body. Lives in a hidden host; the tooltip
          action adopts the INNER element (`scanBodyEl`) as `contentEl`, not the
          hidden host (an adopted element keeps its own `hidden`, so a hidden host
          would render an empty tooltip). Mirrors `IndexingStatusIndicator`. -->
     <div hidden>
         <div bind:this={scanBodyEl} class="scan-tooltip-body">
-            <IndexingDriveRow {activity} {aggregation} {driveName} showHeading={false} />
+            <IndexingDriveRow activity={bodyActivity} {aggregation} {driveName} showHeading={false} />
         </div>
     </div>
 {/if}

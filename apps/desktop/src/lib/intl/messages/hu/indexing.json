@@ -29,25 +29,61 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.aggregation.savingEntries": "Bejegyzések mentése…",
-  "@indexing.aggregation.savingEntries": {
-    "sourceHash": "16fa321"
+  "indexing.step.findFiles": "Fájlok keresése",
+  "@indexing.step.findFiles": {
+    "sourceHash": "15d12bc"
+  },
+  "indexing.step.saveFileList": "Fájllista mentése",
+  "@indexing.step.saveFileList": {
+    "sourceHash": "92af072"
+  },
+  "indexing.step.computeFolderSizes": "Mappaméretek kiszámítása",
+  "@indexing.step.computeFolderSizes": {
+    "sourceHash": "65c86f6"
+  },
+  "indexing.step.catchUp": "Legutóbbi változások pótlása",
+  "@indexing.step.catchUp": {
+    "sourceHash": "ef74b56"
+  },
+  "indexing.step.updateIndex": "Index frissítése",
+  "@indexing.step.updateIndex": {
+    "sourceHash": "494e5b8"
+  },
+  "indexing.summary.found": "{countText} megtalálva",
+  "@indexing.summary.found": {
+    "sourceHash": "fe3038e"
+  },
+  "indexing.step.findFilesFirstScan": "Első átvizsgálás, ez eltarthat egy ideig",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
+  },
+  "indexing.step.statusDone": "Kész",
+  "@indexing.step.statusDone": {
+    "sourceHash": "11a6767"
+  },
+  "indexing.step.statusActive": "Folyamatban",
+  "@indexing.step.statusActive": {
+    "sourceHash": "c1f88e9"
+  },
+  "indexing.step.statusPending": "Várakozik",
+  "@indexing.step.statusPending": {
+    "sourceHash": "ba35f0c"
   },
   "indexing.aggregation.loading": "Mappák betöltése…",
   "@indexing.aggregation.loading": {
-    "sourceHash": "37b34d4"
+    "sourceHash": "f553c87"
   },
   "indexing.aggregation.sorting": "Mappák rendezése…",
   "@indexing.aggregation.sorting": {
-    "sourceHash": "9018980"
+    "sourceHash": "3a7c827"
   },
   "indexing.aggregation.computing": "Mappaméretek számítása…",
   "@indexing.aggregation.computing": {
-    "sourceHash": "ee6ba9a"
+    "sourceHash": "19f54fc"
   },
   "indexing.aggregation.writing": "Mappaméretek mentése…",
   "@indexing.aggregation.writing": {
-    "sourceHash": "ff59fa5"
+    "sourceHash": "9466e98"
   },
   "indexing.replay.label": "Index frissítése…",
   "@indexing.replay.label": {

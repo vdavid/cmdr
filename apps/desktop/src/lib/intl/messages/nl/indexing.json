@@ -29,25 +29,61 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.aggregation.savingEntries": "Onderdelen bewaren...",
-  "@indexing.aggregation.savingEntries": {
-    "sourceHash": "16fa321"
+  "indexing.step.findFiles": "Bestanden zoeken",
+  "@indexing.step.findFiles": {
+    "sourceHash": "15d12bc"
+  },
+  "indexing.step.saveFileList": "Bestandenlijst opslaan",
+  "@indexing.step.saveFileList": {
+    "sourceHash": "92af072"
+  },
+  "indexing.step.computeFolderSizes": "Mapgroottes berekenen",
+  "@indexing.step.computeFolderSizes": {
+    "sourceHash": "65c86f6"
+  },
+  "indexing.step.catchUp": "Recente wijzigingen inhalen",
+  "@indexing.step.catchUp": {
+    "sourceHash": "ef74b56"
+  },
+  "indexing.step.updateIndex": "Index bijwerken",
+  "@indexing.step.updateIndex": {
+    "sourceHash": "494e5b8"
+  },
+  "indexing.summary.found": "{countText} gevonden",
+  "@indexing.summary.found": {
+    "sourceHash": "fe3038e"
+  },
+  "indexing.step.findFilesFirstScan": "Eerste scan, dit kan even duren",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
+  },
+  "indexing.step.statusDone": "Klaar",
+  "@indexing.step.statusDone": {
+    "sourceHash": "11a6767"
+  },
+  "indexing.step.statusActive": "Bezig",
+  "@indexing.step.statusActive": {
+    "sourceHash": "c1f88e9"
+  },
+  "indexing.step.statusPending": "Nog niet gestart",
+  "@indexing.step.statusPending": {
+    "sourceHash": "ba35f0c"
   },
   "indexing.aggregation.loading": "Mappen laden...",
   "@indexing.aggregation.loading": {
-    "sourceHash": "37b34d4"
+    "sourceHash": "f553c87"
   },
   "indexing.aggregation.sorting": "Mappen sorteren...",
   "@indexing.aggregation.sorting": {
-    "sourceHash": "9018980"
+    "sourceHash": "3a7c827"
   },
   "indexing.aggregation.computing": "Mapgroottes berekenen...",
   "@indexing.aggregation.computing": {
-    "sourceHash": "ee6ba9a"
+    "sourceHash": "19f54fc"
   },
   "indexing.aggregation.writing": "Mapgroottes bewaren...",
   "@indexing.aggregation.writing": {
-    "sourceHash": "ff59fa5"
+    "sourceHash": "9466e98"
   },
   "indexing.replay.label": "Index bijwerken...",
   "@indexing.replay.label": {

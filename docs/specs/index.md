@@ -11,6 +11,8 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 - [ ] 2026-06-28 [location-type-nav-plan.md](location-type-nav-plan.md) - Make `(volumeId, path)` a first-class
       `Location` and kill bare-path navigation (fixes cross-volume search/⌘G navigating over the wrong volume)
 - [ ] 2026-06-28 colorful-tags-plan.md - macOS Finder tags: read + show colored dots (Phase 1), context-menu assign (Phase 2)
+- [ ] 2026-06-29 [drive-index-progress-plan.md](drive-index-progress-plan.md) - Clearer, unified drive-indexing progress:
+      name the drive, count-first honest progress, one shared status model, and a per-volume step checklist.
 
 ## Later
 
@@ -32,3 +34,5 @@ Deferred future work. Unchecked by default; the folder name is the status.
       pause, concurrent-path pause, connection keep-alive, queue reorder/persist
 - [ ] 2026-06-13 later/docs-single-source-sweep.md - Multi-agent sweep to de-duplicate mechanism docs (map points, one
       canonical home)
+- [ ] 2026-06-28 later/drive-index-overall-eta.md - Overall indexing ETA across remaining steps, with the backend
+      per-phase calibration it needs to stay honest (the step checklist ships per-step ETA only)

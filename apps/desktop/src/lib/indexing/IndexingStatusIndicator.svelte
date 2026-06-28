@@ -9,10 +9,13 @@
         isAnyVolumeIndexing,
         getVolumeAggregation,
         getAggregatingVolumeIds,
+        getActivePhaseVolumeIds,
+        placeholderActivity,
         type VolumeIndexActivity,
         type AggregationActivity,
     } from './index-state.svelte'
     import IndexingDriveRow from './IndexingDriveRow.svelte'
+    import IndexingDriveSummary from './IndexingDriveSummary.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
@@ -20,6 +23,7 @@
     const visible = $derived(isAnyVolumeIndexing())
     const activeVolumes = $derived(getActiveIndexVolumes())
     const aggregatingVolumeIds = $derived(getAggregatingVolumeIds())
+    const phaseVolumeIds = $derived(getActivePhaseVolumeIds())
     const volumes = $derived(getVolumes())
 
     // Resolve a volume id to a human display name from the shared volume store.
@@ -29,11 +33,11 @@
         return volumes.find((v) => v.id === volumeId)?.name ?? volumeId
     }
 
-    // The rows to render: every actively scanning/replaying volume (with its
-    // aggregation folded in when that same volume is aggregating), plus a
-    // synthetic row for any volume that's aggregating with no live scan/replay
-    // entry (its scan already finished). Each volume's aggregation is its own,
-    // keyed by volumeId, so two drives aggregating at once stay separate.
+    // The rows to render, in this order: every actively scanning/replaying volume
+    // (its aggregation folded in), then any volume aggregating with no live scan/
+    // replay entry (its scan already finished), then any volume mid-pipeline in a
+    // phase with no live entry at all (the reconcile step). Each volume's
+    // aggregation is its own, keyed by volumeId, so two drives stay separate.
     interface DriveRow {
         activity: VolumeIndexActivity
         aggregation: AggregationActivity | undefined
@@ -44,38 +48,24 @@
             activity,
             aggregation: getVolumeAggregation(activity.volumeId),
         }))
-        // A volume aggregating with no live scan/replay row: add a synthetic
-        // aggregation-only row so its phase stays visible.
+        const seen = result.map((r) => r.activity.volumeId)
+        // Aggregating with no live scan/replay row: a synthetic aggregation-only row.
         for (const volumeId of aggregatingVolumeIds) {
-            if (!activeVolumes.some((a) => a.volumeId === volumeId)) {
-                result.push({
-                    activity: aggregationOnlyActivity(volumeId),
-                    aggregation: getVolumeAggregation(volumeId),
-                })
+            if (!seen.includes(volumeId)) {
+                result.push({ activity: placeholderActivity(volumeId), aggregation: getVolumeAggregation(volumeId) })
+                seen.push(volumeId)
+            }
+        }
+        // Mid-pipeline with no live scan/aggregation entry (reconcile): a phase-only
+        // row, so the checklist's catch-up step stays visible.
+        for (const volumeId of phaseVolumeIds) {
+            if (!seen.includes(volumeId)) {
+                result.push({ activity: placeholderActivity(volumeId), aggregation: undefined })
+                seen.push(volumeId)
             }
         }
         return result
     })
-
-    // A placeholder activity for an aggregation-only row (no live scan/replay).
-    // The row reads only `phase`/`volumeId` from it when aggregating; the scan/
-    // replay fields stay at zero and aren't shown.
-    function aggregationOnlyActivity(volumeId: string): VolumeIndexActivity {
-        return {
-            volumeId,
-            phase: 'scanning',
-            entriesScanned: 0,
-            dirsFound: 0,
-            bytesScanned: 0,
-            scanStartedAt: 0,
-            priorTotalEntries: null,
-            priorScanDurationMs: null,
-            volumeUsedBytes: null,
-            replayEventsProcessed: 0,
-            replayEstimatedTotal: 0,
-            replayStartedAt: 0,
-        }
-    }
 
     // The tooltip action adopts `tooltipContent` (not the hidden wrapper) so it
     // renders visibly inside the tooltip: an adopted element keeps its own
@@ -97,13 +87,24 @@
 
     <div hidden>
         <div bind:this={tooltipContent} class="tooltip-content">
-            {#each rows as row (row.activity.volumeId)}
-                <IndexingDriveRow
-                    activity={row.activity}
-                    driveName={driveName(row.activity.volumeId)}
-                    showHeading={true}
-                    aggregation={row.aggregation}
-                />
+            {#each rows as row, i (row.activity.volumeId)}
+                {#if i === 0}
+                    <!-- The primary (first) drive expands to its full checklist. -->
+                    <IndexingDriveRow
+                        activity={row.activity}
+                        driveName={driveName(row.activity.volumeId)}
+                        showHeading={true}
+                        aggregation={row.aggregation}
+                    />
+                {:else}
+                    <!-- Secondary drives collapse to one line, so N drives don't
+                         stack into N checklists. -->
+                    <IndexingDriveSummary
+                        activity={row.activity}
+                        aggregation={row.aggregation}
+                        driveName={driveName(row.activity.volumeId)}
+                    />
+                {/if}
             {/each}
         </div>
     </div>

@@ -29,25 +29,61 @@
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"
   },
-  "indexing.aggregation.savingEntries": "正在保存条目…",
-  "@indexing.aggregation.savingEntries": {
-    "sourceHash": "16fa321"
+  "indexing.step.findFiles": "查找文件",
+  "@indexing.step.findFiles": {
+    "sourceHash": "15d12bc"
   },
-  "indexing.aggregation.loading": "正在加载目录…",
+  "indexing.step.saveFileList": "保存文件列表",
+  "@indexing.step.saveFileList": {
+    "sourceHash": "92af072"
+  },
+  "indexing.step.computeFolderSizes": "计算文件夹大小",
+  "@indexing.step.computeFolderSizes": {
+    "sourceHash": "65c86f6"
+  },
+  "indexing.step.catchUp": "同步最近的更改",
+  "@indexing.step.catchUp": {
+    "sourceHash": "ef74b56"
+  },
+  "indexing.step.updateIndex": "更新索引",
+  "@indexing.step.updateIndex": {
+    "sourceHash": "494e5b8"
+  },
+  "indexing.summary.found": "已找到 {countText}",
+  "@indexing.summary.found": {
+    "sourceHash": "fe3038e"
+  },
+  "indexing.step.findFilesFirstScan": "首次扫描，可能需要一些时间",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
+  },
+  "indexing.step.statusDone": "完成",
+  "@indexing.step.statusDone": {
+    "sourceHash": "11a6767"
+  },
+  "indexing.step.statusActive": "进行中",
+  "@indexing.step.statusActive": {
+    "sourceHash": "c1f88e9"
+  },
+  "indexing.step.statusPending": "未开始",
+  "@indexing.step.statusPending": {
+    "sourceHash": "ba35f0c"
+  },
+  "indexing.aggregation.loading": "正在加载文件夹…",
   "@indexing.aggregation.loading": {
-    "sourceHash": "37b34d4"
+    "sourceHash": "f553c87"
   },
-  "indexing.aggregation.sorting": "正在排序目录…",
+  "indexing.aggregation.sorting": "正在排序文件夹…",
   "@indexing.aggregation.sorting": {
-    "sourceHash": "9018980"
+    "sourceHash": "3a7c827"
   },
-  "indexing.aggregation.computing": "正在计算目录大小…",
+  "indexing.aggregation.computing": "正在计算文件夹大小…",
   "@indexing.aggregation.computing": {
-    "sourceHash": "ee6ba9a"
+    "sourceHash": "19f54fc"
   },
-  "indexing.aggregation.writing": "正在保存目录大小…",
+  "indexing.aggregation.writing": "正在保存文件夹大小…",
   "@indexing.aggregation.writing": {
-    "sourceHash": "ff59fa5"
+    "sourceHash": "9466e98"
   },
   "indexing.replay.label": "正在更新索引…",
   "@indexing.replay.label": {

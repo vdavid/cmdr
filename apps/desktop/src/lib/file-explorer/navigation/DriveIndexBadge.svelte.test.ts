@@ -8,15 +8,31 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushSync } from 'svelte'
-import type { VolumeIndexStatus } from '$lib/ipc/bindings'
+import type { ActivityPhase, VolumeIndexStatus } from '$lib/ipc/bindings'
 import type { VolumeIndexActivity } from '$lib/indexing'
 
-// The badge reads its own volume's live activity from `index-state` (the single
-// live-activity source). Mock it so we can drive the scanning tooltip body.
+// The badge reads its own volume's live activity + phase from `index-state` (the
+// single live-activity source). Mock it so we can drive the scanning tooltip body.
 let badgeActivity: VolumeIndexActivity | undefined
+let badgePhase: ActivityPhase | undefined
 vi.mock('$lib/indexing', () => ({
   getVolumeActivity: () => badgeActivity,
   getVolumeAggregation: () => undefined,
+  getVolumePhase: () => badgePhase,
+  placeholderActivity: (volumeId: string): VolumeIndexActivity => ({
+    volumeId,
+    phase: 'scanning',
+    entriesScanned: 0,
+    dirsFound: 0,
+    bytesScanned: 0,
+    scanStartedAt: 0,
+    priorTotalEntries: null,
+    priorScanDurationMs: null,
+    volumeUsedBytes: null,
+    replayEventsProcessed: 0,
+    replayEstimatedTotal: 0,
+    replayStartedAt: 0,
+  }),
 }))
 
 import DriveIndexBadge from './DriveIndexBadge.svelte'
@@ -75,6 +91,7 @@ function ariaLabel(target: HTMLElement): string {
 
 beforeEach(() => {
   badgeActivity = undefined
+  badgePhase = undefined
 })
 
 describe('DriveIndexBadge color class', () => {
@@ -155,12 +172,13 @@ describe('DriveIndexBadge scanning tooltip', () => {
     expect(target.querySelector('.scan-tooltip-body')).toBeNull()
   })
 
-  it('renders the shared status body (count + elapsed) once live activity is present', () => {
+  it('renders the shared checklist body (count + elapsed) once live activity is present', () => {
     badgeActivity = scanActivity({ volumeUsedBytes: 10_000_000 }) // rough first scan: count + elapsed, no bar
     const { target } = render(makeStatus({ freshness: 'scanning' }))
     const body = target.querySelector('.scan-tooltip-body')
     expect(body).not.toBeNull()
-    expect(body?.textContent).toContain('Scanning your drive')
+    // The checklist's first step (a network drive: Find files, then Compute folder sizes).
+    expect(body?.textContent).toContain('Find files')
     expect(body?.textContent).toContain('12,345')
     // Rough first scan → no progress bar.
     expect(body?.querySelector('[role="progressbar"]')).toBeNull()
@@ -171,6 +189,16 @@ describe('DriveIndexBadge scanning tooltip', () => {
     const { target } = render(makeStatus({ freshness: 'scanning' }))
     const body = target.querySelector('.scan-tooltip-body')
     expect(body?.querySelector('[role="progressbar"]')).not.toBeNull()
+  })
+
+  it('renders the checklist from the phase alone when there is no live activity (reconcile / pre-tick)', () => {
+    badgeActivity = undefined
+    badgePhase = 'scanning'
+    const { target } = render(makeStatus({ freshness: 'scanning' }))
+    // A phase but no activity yet: the body still renders (off a placeholder), so
+    // the checklist stays visible instead of falling back to the static phrase.
+    expect(target.querySelector('.scan-tooltip-body')).not.toBeNull()
+    expect(target.querySelector('.scan-tooltip-body')?.textContent).toContain('Find files')
   })
 
   it('does not render the rich body when the badge is not scanning', () => {

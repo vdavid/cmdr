@@ -70,6 +70,7 @@ import {
   getVolumeAggregation,
   getVolumeActivity,
   getVolumePhase,
+  getActivePhaseVolumeIds,
   getAggregatingVolumeIds,
   isAggregating,
   isAnyVolumeIndexing,
@@ -253,5 +254,17 @@ describe('index-state per-volume pipeline phase', () => {
 
   it('reports undefined for a volume that never started a pipeline', () => {
     expect(getVolumePhase('mtp-phone')).toBeUndefined()
+  })
+
+  it('keeps the surface visible through a phase-only step (reconcile, no live entry)', () => {
+    // Scan + aggregation both finished (no live entry), only the phase event marks
+    // the reconcile. The hourglass must stay up so the catch-up step is visible.
+    emitPhase('root', 'reconciling')
+    expect(isAnyVolumeIndexing()).toBe(true)
+    expect(getActivePhaseVolumeIds()).toEqual(['root'])
+
+    emitPhase('root', 'live')
+    expect(isAnyVolumeIndexing()).toBe(false)
+    expect(getActivePhaseVolumeIds()).toEqual([])
   })
 })
