@@ -204,7 +204,7 @@ import type { NavigateResult } from './navigate'
 type ExplorerHandle = {
   navigate: (intent: {
     pane: 'left' | 'right'
-    to: { location: { volumeId: string; path: string } } | { volumeId: string; path: string }
+    to: { goTo: { volumeId: string; path: string } } | { selectVolume: { volumeId: string; path: string } }
     source: 'user' | 'mcp'
   }) => NavigateResult
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
@@ -243,7 +243,7 @@ async function driveLeftLoad(handle: ExplorerHandle, path: string): Promise<stri
   // Same-volume `{ location }` → the in-place arm (drives the FilePane primitive).
   const result = handle.navigate({
     pane: 'left',
-    to: { location: { volumeId: leftTab().volumeId, path } },
+    to: { goTo: { volumeId: leftTab().volumeId, path } },
     source: 'user',
   })
   if (result.status === 'started') void result.settled.catch(() => {})
@@ -399,7 +399,7 @@ describe('scenario 8: optimistic-commit ordering (P4)', () => {
     // calls the FilePane primitive, which mints a new listingId and starts loading.
     const result = handle.navigate({
       pane: 'left',
-      to: { location: { volumeId: leftTab().volumeId, path: '/Users/me/sub' } },
+      to: { goTo: { volumeId: leftTab().volumeId, path: '/Users/me/sub' } },
       source: 'user',
     })
     // The in-place arm STARTS (returns the FilePane settle promise), never refuses.

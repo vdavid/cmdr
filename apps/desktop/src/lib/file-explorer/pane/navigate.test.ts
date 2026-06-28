@@ -197,7 +197,7 @@ beforeEach(() => {
 describe('in-place path nav (P4 — NOT optimistic, commits at listing-complete)', () => {
   it('drives the FilePane primitive and returns its promise as `settled`; does NOT commit on call', () => {
     const result = navigate(
-      { pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' },
+      { pane: 'left', to: { goTo: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' },
       h.deps,
     )
 
@@ -212,7 +212,7 @@ describe('in-place path nav (P4 — NOT optimistic, commits at listing-complete)
     navigate(
       {
         pane: 'left',
-        to: { location: { volumeId: 'root', path: '/Users/me/sub' } },
+        to: { goTo: { volumeId: 'root', path: '/Users/me/sub' } },
         source: 'user',
         selectName: 'file.txt',
       },
@@ -223,7 +223,7 @@ describe('in-place path nav (P4 — NOT optimistic, commits at listing-complete)
 
   it('commitPathFromListing commits the path + pushes one history entry + records last-used', () => {
     // Drive the in-place nav, then land its completion.
-    navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { goTo: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' }, h.deps)
     const depthBefore = h.tab('left').history.stack.length
 
     const committed = commitPathFromListing(h.deps, 'left', '/Users/me/sub')
@@ -239,7 +239,7 @@ describe('in-place path nav (P4 — NOT optimistic, commits at listing-complete)
 describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
   it('commits volumeId + path + history SYNCHRONOUSLY, before any listing', () => {
     const depthBefore = h.tab('left').history.stack.length
-    navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
 
     // Committed immediately (no await, no listing event).
     expect(h.tab('left').volumeId).toBe('ext')
@@ -249,23 +249,23 @@ describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
   })
 
   it("records the OLD path as the old volume's last-used before the swap", () => {
-    navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
     // The pre-save of the OLD path under the OLD volume (DPE:615).
     expect(h.lastUsedRecords[0]).toEqual({ volumeId: 'root', path: '/Users/me' })
   })
 
   it("shifts focus to the navigated pane for a 'user' source", () => {
-    navigate({ pane: 'right', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    navigate({ pane: 'right', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
     expect(h.setFocusedPane).toHaveBeenCalledWith('right')
   })
 
   it("does NOT shift focus for a 'mirror' source (L1 restoreFocus semantics)", () => {
-    navigate({ pane: 'right', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'mirror' }, h.deps)
+    navigate({ pane: 'right', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'mirror' }, h.deps)
     expect(h.setFocusedPane).not.toHaveBeenCalled()
   })
 
   it('uses the volume mount path for the background correction lookup', () => {
-    navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
     expect(h.determineNavigationPath).toHaveBeenCalledWith('ext', '/Volumes/Ext', '/Volumes/Ext', expect.anything())
   })
 })
@@ -273,7 +273,7 @@ describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
 describe('background correction (global correctionGen, the old volumeChangeGeneration)', () => {
   it('applies a better path when the correction is still the latest', async () => {
     h.determineNavigationPath.mockResolvedValue('/Volumes/Ext/photos')
-    navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
     await flush()
 
     expect(h.tab('left').path).toBe('/Volumes/Ext/photos')
@@ -287,11 +287,11 @@ describe('background correction (global correctionGen, the old volumeChangeGener
       resolveFirst = r
     })
     h.determineNavigationPath.mockReturnValueOnce(slowCorrection)
-    navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
 
     // A newer navigate() bumps the global correctionGen before the first resolves.
     h.determineNavigationPath.mockResolvedValueOnce('/')
-    navigate({ pane: 'left', to: { volumeId: 'root', path: '/' }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'root', path: '/' } }, source: 'user' }, h.deps)
     await flush()
     expect(h.tab('left').volumeId).toBe('root')
     expect(h.tab('left').path).toBe('/')
@@ -314,12 +314,12 @@ describe('background correction (global correctionGen, the old volumeChangeGener
       resolveLeft = r
     })
     h.determineNavigationPath.mockReturnValueOnce(slowLeft)
-    navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
     const leftPathAfterSwitch = h.tab('left').path
 
     // The RIGHT pane switches volumes — this bumps the GLOBAL correctionGen.
     h.determineNavigationPath.mockResolvedValueOnce('/Volumes/Ext')
-    navigate({ pane: 'right', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    navigate({ pane: 'right', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
     await flush()
 
     // The left correction resolves late — dropped because the right switch bumped
@@ -343,7 +343,7 @@ describe('pinned-tab fork (L7 — unified, both arms)', () => {
     const countBefore = h.mgr('left').tabs.length
 
     // The in-place arm drives the FilePane; the fork happens when the listing lands.
-    navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/docs' } }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { goTo: { volumeId: 'root', path: '/Users/me/docs' } }, source: 'user' }, h.deps)
     expect(h.paneState.left.paneRef?.navigateToPath).toHaveBeenCalledWith('/Users/me/docs', undefined)
     const committed = commitPathFromListing(h.deps, 'left', '/Users/me/docs')
 
@@ -363,7 +363,7 @@ describe('pinned-tab fork (L7 — unified, both arms)', () => {
     const pinnedId = getActiveTab(h.mgr('left')).id
     const countBefore = h.mgr('left').tabs.length
 
-    navigate({ pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext' }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
 
     expect(h.mgr('left').tabs.length).toBe(countBefore + 1)
     const active = getActiveTab(h.mgr('left'))
@@ -428,7 +428,7 @@ describe("edge-flow fallback (source: 'fallback') — terminal commit + history-
 
   it('MTP-fatal / retry / open-home style: commits the recovery target AND pushes a history entry', () => {
     const depthBefore = h.tab('left').history.stack.length
-    navigate({ pane: 'left', to: { volumeId: 'root', path: '/' }, source: 'fallback' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'root', path: '/' } }, source: 'fallback' }, h.deps)
 
     expect(h.tab('left').volumeId).toBe('root')
     expect(h.tab('left').path).toBe('/')
@@ -439,7 +439,7 @@ describe("edge-flow fallback (source: 'fallback') — terminal commit + history-
 
   it('unmount style (pushHistory: false): commits the redirect WITHOUT growing a Back target', () => {
     const depthBefore = h.tab('left').history.stack.length
-    navigate({ pane: 'left', to: { volumeId: 'root', path: '~' }, source: 'fallback', pushHistory: false }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'root', path: '~' } }, source: 'fallback', pushHistory: false }, h.deps)
 
     expect(h.tab('left').volumeId).toBe('root')
     expect(h.tab('left').path).toBe('~')
@@ -448,7 +448,7 @@ describe("edge-flow fallback (source: 'fallback') — terminal commit + history-
   })
 
   it('is terminal: no OLD-path pre-save and no background correction', () => {
-    navigate({ pane: 'left', to: { volumeId: 'root', path: '/' }, source: 'fallback' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'root', path: '/' } }, source: 'fallback' }, h.deps)
 
     // No last-used-path pre-save of the (broken/gone) old volume.
     expect(h.lastUsedRecords).toEqual([])
@@ -457,7 +457,7 @@ describe("edge-flow fallback (source: 'fallback') — terminal commit + history-
   })
 
   it('does NOT shift the focused pane (L1: fallbacks re-anchor DOM focus, not the focused pane)', () => {
-    navigate({ pane: 'left', to: { volumeId: 'root', path: '/' }, source: 'fallback' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'root', path: '/' } }, source: 'fallback' }, h.deps)
     expect(h.setFocusedPane).not.toHaveBeenCalled()
   })
 
@@ -466,7 +466,7 @@ describe("edge-flow fallback (source: 'fallback') — terminal commit + history-
     const pinnedId = getActiveTab(h.mgr('left')).id
     const countBefore = h.mgr('left').tabs.length
 
-    navigate({ pane: 'left', to: { volumeId: 'root', path: '/' }, source: 'fallback' }, h.deps)
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'root', path: '/' } }, source: 'fallback' }, h.deps)
 
     // No new tab — the recovery commits on the active (pinned) tab itself.
     expect(h.mgr('left').tabs.length).toBe(countBefore)
@@ -584,7 +584,7 @@ describe('{ location } arm — self-routing by volume', () => {
     const depthBefore = h.tab('left').history.stack.length
 
     const result = navigate(
-      { pane: 'left', to: { location: { volumeId: 'root', path: '/Library/x' } }, source: 'mcp' },
+      { pane: 'left', to: { goTo: { volumeId: 'root', path: '/Library/x' } }, source: 'mcp' },
       h.deps,
     )
 
@@ -600,7 +600,7 @@ describe('{ location } arm — self-routing by volume', () => {
 
   it('volumeId === current takes the in-place arm (NOT optimistic; commit lands via commitPathFromListing as push-path)', () => {
     const result = navigate(
-      { pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' },
+      { pane: 'left', to: { goTo: { volumeId: 'root', path: '/Users/me/sub' } }, source: 'user' },
       h.deps,
     )
 
@@ -623,7 +623,7 @@ describe('{ location } arm — self-routing by volume', () => {
     const pinnedId = getActiveTab(h.mgr('left')).id
     const countBefore = h.mgr('left').tabs.length
 
-    navigate({ pane: 'left', to: { location: { volumeId: 'root', path: '/' } }, source: 'user' }, h.deps)
+    navigate({ pane: 'left', to: { goTo: { volumeId: 'root', path: '/' } }, source: 'user' }, h.deps)
 
     expect(h.mgr('left').tabs.length).toBe(countBefore + 1)
     const active = getActiveTab(h.mgr('left'))
@@ -645,7 +645,7 @@ describe('{ volumeId, path } volume-(re)select — ALWAYS the switch arm (guards
     // A volume-(re)select passing the CURRENT volume id (network-restore-on-cancel,
     // selectVolumeByIndex re-select, mirror, etc.) must take the switch arm.
     const result = navigate(
-      { pane: 'left', to: { volumeId: 'ext', path: '/Volumes/Ext/photos' }, source: 'user' },
+      { pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext/photos' } }, source: 'user' },
       h.deps,
     )
 
@@ -664,7 +664,7 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
   it('network-volume pane returns the exact select_volume refusal string', () => {
     h = makeHarness({ left: { path: 'smb://', volumeId: 'network' } })
     const result = navigate(
-      { pane: 'left', to: { location: { volumeId: 'network', path: '/Users/me/doc' } }, source: 'mcp' },
+      { pane: 'left', to: { goTo: { volumeId: 'network', path: '/Users/me/doc' } }, source: 'mcp' },
       h.deps,
     )
     expect(result).toEqual({
@@ -678,7 +678,7 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
 
   it('MTP path mismatch returns the exact "not on this MTP volume" string (note the em dash)', () => {
     const result = navigate(
-      { pane: 'left', to: { location: { volumeId: 'root', path: 'mtp://otherdev/2/DCIM' } }, source: 'mcp' },
+      { pane: 'left', to: { goTo: { volumeId: 'root', path: 'mtp://otherdev/2/DCIM' } }, source: 'mcp' },
       h.deps,
     )
     expect(result).toEqual({
@@ -690,7 +690,7 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
   it('on-MTP-volume pane returns the exact "on the … MTP volume" string (volumeName falls back to id)', () => {
     h = makeHarness({ left: { path: 'mtp://dev/1/DCIM', volumeId: 'mtp-dev:1' } })
     const result = navigate(
-      { pane: 'left', to: { location: { volumeId: 'mtp-dev:1', path: '/Users/me/doc' } }, source: 'mcp' },
+      { pane: 'left', to: { goTo: { volumeId: 'mtp-dev:1', path: '/Users/me/doc' } }, source: 'mcp' },
       h.deps,
     )
     expect(result).toEqual({
@@ -705,7 +705,7 @@ describe('refusal strings (L12) — byte-for-byte contract', () => {
   it('pane-unavailable returns the exact "Pane not available" string', () => {
     h = makeHarness({ suppressRef: ['left'] })
     const result = navigate(
-      { pane: 'left', to: { location: { volumeId: 'root', path: '/Users/me/doc' } }, source: 'mcp' },
+      { pane: 'left', to: { goTo: { volumeId: 'root', path: '/Users/me/doc' } }, source: 'mcp' },
       h.deps,
     )
     expect(result).toEqual({ status: 'refused', reason: { kind: 'pane-unavailable', message: 'Pane not available' } })

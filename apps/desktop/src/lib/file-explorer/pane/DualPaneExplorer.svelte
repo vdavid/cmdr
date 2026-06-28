@@ -632,7 +632,7 @@
             // already current). The subscriber persists the store mutation.
             navigateIntent({
                 pane,
-                to: { volumeId: 'network', path: entry.path },
+                to: { selectVolume: { volumeId: 'network', path: entry.path } },
                 source: 'fallback',
                 pushHistory: false,
             })
@@ -664,7 +664,7 @@
                 // subscriber persists the store mutation.
                 navigateIntent({
                     pane,
-                    to: { volumeId: isOutsideVolume ? 'root' : getPaneVolumeId(pane), path: target },
+                    to: { selectVolume: { volumeId: isOutsideVolume ? 'root' : getPaneVolumeId(pane), path: target } },
                     source: 'fallback',
                     pushHistory: false,
                 })
@@ -687,7 +687,7 @@
 
         // Fallback to the default volume, pushing a history entry. The subscriber
         // persists the store mutation `navigate()`'s commit makes.
-        navigateIntent({ pane, to: { volumeId: defaultVolumeId, path: defaultPath }, source: 'fallback' })
+        navigateIntent({ pane, to: { selectVolume: { volumeId: defaultVolumeId, path: defaultPath } }, source: 'fallback' })
     }
 
     async function handleRetryUnreachable(pane: 'left' | 'right') {
@@ -707,7 +707,7 @@
         // preserved). Let FilePane try to load the directory directly: even if
         // volume resolution timed out, the directory itself may be reachable.
         tab.unreachable = null
-        navigateIntent({ pane, to: { volumeId, path: originalPath }, source: 'fallback' })
+        navigateIntent({ pane, to: { selectVolume: { volumeId, path: originalPath } }, source: 'fallback' })
 
         // Sync the volume selector; retry may have fixed a mount that was stale.
         requestVolumeRefresh()
@@ -724,7 +724,7 @@
 
         const defaultId = await getDefaultVolumeId()
         const homePath = '~'
-        navigateIntent({ pane, to: { volumeId: defaultId, path: homePath }, source: 'fallback' })
+        navigateIntent({ pane, to: { selectVolume: { volumeId: defaultId, path: homePath } }, source: 'fallback' })
         log.info('Unreachable tab opened home folder for {pane} pane', { pane })
     }
 
@@ -966,7 +966,7 @@
             if (getPaneVolumeId(pane) === unmountedId) {
                 navigateIntent({
                     pane,
-                    to: { volumeId: defaultVolumeId, path: homePath },
+                    to: { selectVolume: { volumeId: defaultVolumeId, path: homePath } },
                     source: 'fallback',
                     pushHistory: false,
                 })
@@ -1439,10 +1439,10 @@
             // For favorites, navigate to the favorite's path on its containing volume.
             const { volume: containingVolume } = await resolvePathVolume(volume.path)
             const volumeId = containingVolume?.id ?? 'root'
-            navigateIntent({ pane, to: { volumeId, path: volume.path }, source: 'user' })
+            navigateIntent({ pane, to: { selectVolume: { volumeId, path: volume.path } }, source: 'user' })
         } else {
             // For actual volumes, navigate to the volume's root.
-            navigateIntent({ pane, to: { volumeId: volume.id, path: volume.path }, source: 'user' })
+            navigateIntent({ pane, to: { selectVolume: { volumeId: volume.id, path: volume.path } }, source: 'user' })
         }
 
         return true
@@ -1534,7 +1534,7 @@
     export async function selectVolumeByName(pane: 'left' | 'right', name: string): Promise<boolean> {
         // "Network" is a virtual volume not in the volumes list
         if (name === 'Network') {
-            navigateIntent({ pane, to: { volumeId: 'network', path: 'smb://' }, source: 'user' })
+            navigateIntent({ pane, to: { selectVolume: { volumeId: 'network', path: 'smb://' } }, source: 'user' })
             return true
         }
 
@@ -1605,7 +1605,7 @@
             return
         }
         // `source: 'mirror'` keeps focus on the source pane (no focus shift, L1).
-        navigateIntent({ pane: target, to: { location: { volumeId, path } }, source: 'mirror' })
+        navigateIntent({ pane: target, to: { goTo: { volumeId, path } }, source: 'mirror' })
         restoreFocus(originalFocused)
     }
 
@@ -1618,7 +1618,7 @@
         const originalFocused = focusedPane
         const targetPaneRef = getPaneRef(target)
         if (getPaneVolumeId(target) !== 'network') {
-            navigateIntent({ pane: target, to: { volumeId: 'network', path: 'smb://' }, source: 'mirror' })
+            navigateIntent({ pane: target, to: { selectVolume: { volumeId: 'network', path: 'smb://' } }, source: 'mirror' })
         }
         targetPaneRef?.setNetworkHost(host)
         setPaneHistory(
@@ -1891,14 +1891,14 @@
                     handlePathCommitted(paneId, path)
                 }}
                 onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) => {
-                    navigateIntent({ pane: paneId, to: { volumeId, path: targetPath }, source: 'user' })
+                    navigateIntent({ pane: paneId, to: { selectVolume: { volumeId, path: targetPath } }, source: 'user' })
                 }}
                 onGoToLocation={(location: Location) => {
                     // A search-results row opening a real entry: `{ location }` routes
                     // itself (cross-volume → switch arm), landing on the entry's real
                     // volume. `onVolumeChange` is the other intent (deliberate volume
                     // (re)select); they map to the two destination shapes.
-                    navigateIntent({ pane: paneId, to: { location }, source: 'user' })
+                    navigateIntent({ pane: paneId, to: { goTo: location }, source: 'user' })
                 }}
                 onRequestFocus={() => {
                     handleFocus(paneId)

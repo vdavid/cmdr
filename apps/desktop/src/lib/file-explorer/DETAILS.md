@@ -220,7 +220,7 @@ Navigation:
 Leaving a snapshot pane for a real entry (the R4 cross-volume case): when the user activates a real folder from a
 snapshot pane (or the search dialog's "Go to file" exit, or a search-results row), the navigation MUST switch to the
 entry's real volume FIRST. The entry's volume is resolved to a `Location` at the edge (`resolveLocationOrToast`), then
-routed through `navigate({ to: { location } })`, whose switch arm changes volume (a different volume than
+routed through `navigate({ to: { goTo } })`, whose switch arm changes volume (a different volume than
 `search-results`). `FilePane.handleNavigate` gates this on the `isSearchResultsView` capability and bubbles the
 `Location` via the `onGoToLocation` callback; the search dialog and MCP `nav_to_path` resolve at their own edges.
 Without the switch, the pane ends up with `volumeId === 'search-results'` while `path` points at a real filesystem

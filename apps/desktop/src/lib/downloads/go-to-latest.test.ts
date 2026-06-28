@@ -144,7 +144,7 @@ describe('goToLatestDownload', () => {
 
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'right',
-      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      to: { goTo: { volumeId: 'root', path: '/Users/me/Downloads' } },
       source: 'user',
     })
     expect(moveCursorMock).toHaveBeenCalledWith('right', 'report.pdf')
@@ -193,7 +193,7 @@ describe('goToLatestDownload', () => {
 
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'left',
-      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      to: { goTo: { volumeId: 'root', path: '/Users/me/Downloads' } },
       source: 'user',
     })
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
@@ -219,7 +219,7 @@ describe('goToLatestDownload', () => {
 
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'left',
-      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      to: { goTo: { volumeId: 'root', path: '/Users/me/Downloads' } },
       source: 'user',
     })
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
@@ -244,7 +244,7 @@ describe('goToLatestDownload', () => {
 
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'left',
-      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      to: { goTo: { volumeId: 'root', path: '/Users/me/Downloads' } },
       source: 'user',
     })
     expect(setFocusedPaneMock).not.toHaveBeenCalled()
@@ -281,7 +281,7 @@ describe('goToLatestDownload', () => {
     await flushMicrotasks()
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'left',
-      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      to: { goTo: { volumeId: 'root', path: '/Users/me/Downloads' } },
       source: 'user',
     })
     expect(moveCursorMock).not.toHaveBeenCalled()
@@ -395,7 +395,7 @@ describe('goToDownload', () => {
 
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'left',
-      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      to: { goTo: { volumeId: 'root', path: '/Users/me/Downloads' } },
       source: 'user',
     })
     expect(moveCursorMock).toHaveBeenCalledWith('left', 'report.pdf')
@@ -429,7 +429,7 @@ describe('goToDownload', () => {
 
     expect(navigateMock).toHaveBeenCalledWith({
       pane: 'left',
-      to: { location: { volumeId: 'root', path: '/Users/me/Downloads' } },
+      to: { goTo: { volumeId: 'root', path: '/Users/me/Downloads' } },
       source: 'user',
     })
     expect(moveCursorMock).not.toHaveBeenCalled()

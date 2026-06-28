@@ -12,13 +12,15 @@
  *
  * ## Destination shapes — `Location` is navigation's currency
  *
- * A navigation's destination is one of four `NavigateTo` shapes:
- * - **`{ location: Location }`** — go to a `(volumeId, path)`. It self-routes:
- *   `location.volumeId === currentVolumeId` → the in-place arm; otherwise the
- *   switch arm. This shape makes the volumeId/path-mismatch bug unrepresentable.
- * - **`{ volumeId, path }`** — the deliberate volume-(re)select intent, ALWAYS the
- *   switch arm (its callers legitimately pass the CURRENT volume id to re-select
- *   it: network-restore-on-cancel, retry, `selectVolumeByIndex`, mirror).
+ * A navigation's destination is one of four `NavigateTo` shapes. Both path-bearing
+ * shapes carry a uniform `Location`; the KEY names the operation:
+ * - **`{ goTo: Location }`** — navigate to a `(volumeId, path)`. It self-routes:
+ *   `goTo.volumeId === currentVolumeId` → the in-place arm; otherwise the switch
+ *   arm. This shape makes the volumeId/path-mismatch bug unrepresentable.
+ * - **`{ selectVolume: Location }`** — deliberately (re)activate a volume, ALWAYS
+ *   the switch arm (its callers legitimately pass the CURRENT volume id to
+ *   re-select it: network-restore-on-cancel, retry, `selectVolumeByIndex`). Same
+ *   payload as `goTo`, different behavior on the same-volume case — hence two names.
  * - **`{ history }`** / **`{ snapshot }`** — the back/forward/parent walk and the
  *   search-results snapshot open.
  *
@@ -138,14 +140,14 @@ export type NavigateSource = 'user' | 'mcp' | 'history' | 'correction' | 'cancel
  * volume (re)select, a history walk, or a snapshot open. `Location` is
  * navigation's currency — a `(volumeId, path)` pair resolved at the four edges
  * (⌘G, MCP `nav_to_path`, search-result activation, downloads reveal) via
- * `navigation/resolve-location.ts`. `{ location }` routes itself: same volume →
- * in-place arm, different volume → switch arm. `{ volumeId, path }` is the
+ * `navigation/resolve-location.ts`. `{ goTo }` routes itself: same volume →
+ * in-place arm, different volume → switch arm. `{ selectVolume }` is the
  * deliberate volume-(re)select intent that ALWAYS takes the switch arm (its
  * callers legitimately pass the CURRENT volume id to re-select it).
  */
 export type NavigateTo =
-  | { location: Location } // go to a location; routes to the in-place arm (same volume) or switch arm (different volume)
-  | { volumeId: string; path: string } // deliberate volume-(re)select; ALWAYS the switch arm
+  | { goTo: Location } // navigate to a location; in-place arm (same volume) or switch arm (different volume)
+  | { selectVolume: Location } // deliberately (re)activate a volume; ALWAYS the switch arm, even if already current
   | { history: 'back' | 'forward' | 'parent' }
   | { snapshot: string } // search-results snapshot id; routes through the volume-change machinery
 
@@ -514,25 +516,25 @@ export function navigate(intent: NavigateIntent, deps: NavigateDeps): NavigateRe
     return navigateSnapshot(deps, pane, to.snapshot)
   }
 
-  if ('location' in to) {
-    return navigateToLocation(deps, intent, to.location)
+  if ('goTo' in to) {
+    return navigateToLocation(deps, intent, to.goTo)
   }
 
-  // `{ volumeId, path }`: the deliberate volume-(re)select intent — ALWAYS the
-  // switch arm, even when `volumeId` equals the pane's current one (the
-  // network-restore-on-cancel, retry, `selectVolumeByIndex` re-select, and mirror
-  // callers all pass the current id on purpose).
-  return switchVolumeArm(deps, intent, to.volumeId, to.path)
+  // `{ selectVolume }`: the deliberate volume-(re)select intent — ALWAYS the
+  // switch arm, even when the volume equals the pane's current one (the
+  // network-restore-on-cancel, retry, and `selectVolumeByIndex` re-select callers
+  // all pass the current id on purpose).
+  return switchVolumeArm(deps, intent, to.selectVolume.volumeId, to.selectVolume.path)
 }
 
 /**
- * The `{ location }` arm: go to a fully-resolved `(volumeId, path)`. Routes
- * itself — same volume as the pane → the in-place arm (commit-on-listing,
- * pinned-tab fork at `commitPathFromListing`, `push-path`); a different volume →
- * the switch arm (`commitVolumeSwitch`). The `=== current` test is safe HERE
- * (every `{ location }` caller is a genuine path navigation); it is NOT safe for
- * the volume-(re)select callers, which keep the always-switch `{ volumeId, path }`
- * arm precisely because they pass the CURRENT volume id to re-select it.
+ * The `{ goTo }` arm: go to a fully-resolved `(volumeId, path)`. Routes itself —
+ * same volume as the pane → the in-place arm (commit-on-listing, pinned-tab fork
+ * at `commitPathFromListing`, `push-path`); a different volume → the switch arm
+ * (`commitVolumeSwitch`). The `=== current` test is safe HERE (every `{ goTo }`
+ * caller is a genuine path navigation); it is NOT safe for the volume-(re)select
+ * callers, which keep the always-switch `{ selectVolume }` arm precisely because
+ * they pass the CURRENT volume id to re-select it.
  */
 function navigateToLocation(deps: NavigateDeps, intent: NavigateIntent, location: Location): NavigateResult {
   const { pane } = intent

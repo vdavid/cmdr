@@ -85,7 +85,7 @@ function paneShowsLocalDir(explorer: ExplorerAPI, pane: Pane, dir: string): bool
  * the right volume whether or not it matches the pane's current one.
  */
 export async function navigateToDirInPane(explorer: ExplorerAPI, pane: Pane, location: Location): Promise<void> {
-  const result = explorer.navigate({ pane, to: { location }, source: 'user' })
+  const result = explorer.navigate({ pane, to: { goTo: location }, source: 'user' })
   if (result.status === 'refused') {
     log.warn('navigateToDirInPane: navigate refused {pane} {dir}: {reason}', {
       pane,
@@ -107,7 +107,7 @@ export async function navigateToFileInPane(
   location: Location,
   fileName: string,
 ): Promise<void> {
-  const result = explorer.navigate({ pane, to: { location }, source: 'user' })
+  const result = explorer.navigate({ pane, to: { goTo: location }, source: 'user' })
   if (result.status === 'refused') {
     log.warn('navigateToFileInPane: navigate refused {pane} {parentDir}: {reason}', {
       pane,

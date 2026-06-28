@@ -80,7 +80,7 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (skip `pushViewMenuState`)
 
 - **`mcp-nav-to-path`** bypasses the bus entirely. The adapter resolves the bare path to a `Location` at the edge first
   (`resolveLocation` — the agent path can live on any volume), replying `ok: false` if it can't resolve, then calls
-  `explorerRef.navigate({ pane, to: { location }, source: 'mcp' })` and branches on the typed `NavigateResult`: a
+  `explorerRef.navigate({ pane, to: { goTo }, source: 'mcp' })` and branches on the typed `NavigateResult`: a
   `'refused'` result forwards `result.reason.message` byte-identically as the `mcp-response` error; a `'started'` result
   awaits `result.settled` before replying `ok: true`. Resolving at the edge also narrows the on-network refusal — a
   local target from a network pane now switches volumes instead of refusing; only an `smb://` target still refuses. The

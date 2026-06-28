@@ -274,7 +274,7 @@ describe('mcp-nav-to-path listener', () => {
     expect(resolveLocationMock).toHaveBeenCalledWith('/Library')
     expect(navigate).toHaveBeenCalledWith({
       pane: 'left',
-      to: { location: { volumeId: 'root', path: '/Library' } },
+      to: { goTo: { volumeId: 'root', path: '/Library' } },
       source: 'mcp',
     })
     expect(emit).toHaveBeenCalledWith('mcp-response', { requestId: 'req-1', ok: true })

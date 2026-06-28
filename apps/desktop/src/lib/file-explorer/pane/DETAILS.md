@@ -63,7 +63,7 @@ list).
 - **`sorting-handlers.ts`**: `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)
 - **`index-events.ts`**: Throttled `index-dir-updated` handler with `/private/` symlink resolution
 - **`navigate.ts`**: `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry. `Location` is
-  navigation's currency (`{ location }` self-routes by volume; `{ volumeId, path }` always switches) — its module doc is
+  navigation's currency (`{ goTo }` self-routes by volume; `{ selectVolume }` always switches) — its module doc is
   the canonical home for the destination shapes and the four edge resolvers.
 - **`has-parent.ts`**: `computeHasParent({ hasParentRow, currentPath, effectiveVolumeRoot })`
 - **`first-selected-index.ts`**: `firstSelectedIndex(idxs, hasParent)` (post-select cursor-jump target, skips the `..`
@@ -142,7 +142,7 @@ returns `false` (no `..` row, via the `hasParentRow` capability), and opening a 
 the snapshot volume. `FilePane.handleNavigate` gates the latter on the `isSearchResultsView` capability (A6 — the
 `caps.kind === 'search-results'` classifier, never a raw id compare), resolves the entry's `Location`
 (`resolveLocationOrToast`, shared with the other nav edges), and bubbles it via the `onGoToLocation` callback →
-`navigate({ to: { location } })`, whose switch arm changes volume (a different volume than `search-results`). An
+`navigate({ to: { goTo } })`, whose switch arm changes volume (a different volume than `search-results`). An
 unresolvable entry shows the shared friendly toast. Skipping the has-parent rule breaks selection (off-by-one); skipping
 the resolve+switch poisons the pane with `volumeId === 'search-results'` + a real path. `onGoToLocation` (go to a
 location) and `onVolumeChange` (deliberate volume-(re)select) are the two distinct intents — `Location` carries no
@@ -385,9 +385,9 @@ entry — they're not pane-destination changes).
   `navigate()` is called. `navigate()` itself never resolves a volume; it receives a fully-formed destination. An
   unresolvable path is a friendly toast (shared `resolveLocationOrToast`) or a typed MCP `ok: false`, never a
   wrong-volume listing. The canonical description of the shapes + edges lives in `navigate.ts`'s module doc.
-- **Intent arms.** `{ location }` self-routes: same volume as the pane → the in-place arm, a different volume → the
-  switch arm. `{ volumeId, path }` is the deliberate volume-(re)select intent and ALWAYS takes the switch arm (its
-  callers — network-restore-on-cancel, retry, `selectVolumeByIndex`, the mirror helper — pass the CURRENT volume id on
+- **Intent arms.** `{ goTo }` self-routes: same volume as the pane → the in-place arm, a different volume → the
+  switch arm. `{ selectVolume }` is the deliberate volume-(re)select intent and ALWAYS takes the switch arm (its
+  callers — network-restore-on-cancel, retry, `selectVolumeByIndex` — pass the CURRENT volume id on
   purpose). `{ history: 'back' | 'forward' | 'parent' }` walks the stack (`parent` delegates to
   `FilePane.navigateToParent`); `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery.
   The pinned-tab fork (L7) lives in ONE place per arm: `commitPathFromListing` for the in-place landing,

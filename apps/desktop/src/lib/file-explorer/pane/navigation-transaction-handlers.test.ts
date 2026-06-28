@@ -194,7 +194,7 @@ import type { NavigateResult } from './navigate'
 type ExplorerHandle = {
   navigate: (intent: {
     pane: 'left' | 'right'
-    to: { location: { volumeId: string; path: string } } | { volumeId: string; path: string }
+    to: { goTo: { volumeId: string; path: string } } | { selectVolume: { volumeId: string; path: string } }
     source: 'user' | 'mcp'
   }) => NavigateResult
   openSearchSnapshotInPane: (snapshotId: string, pane?: 'left' | 'right') => void
@@ -331,7 +331,7 @@ describe('scenario 2: a resolved real-path `{ location }` switches a snapshot pa
     // at the edge, then routes `{ location }`. A different volume → the switch arm.
     const result = handle.navigate({
       pane: 'left',
-      to: { location: { volumeId: 'root', path: '/Library/Preferences' } },
+      to: { goTo: { volumeId: 'root', path: '/Library/Preferences' } },
       source: 'mcp',
     })
     expect(result.status).toBe('started')
@@ -474,7 +474,7 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
     // Same-volume `{ location }` → the in-place arm, where the refusal fires.
     const result = handle.navigate({
       pane: 'left',
-      to: { location: { volumeId: 'network', path: '/Users/me/doc' } },
+      to: { goTo: { volumeId: 'network', path: '/Users/me/doc' } },
       source: 'mcp',
     })
     expect(result.status).toBe('refused')
@@ -495,7 +495,7 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
 
     const result = handle.navigate({
       pane: 'left',
-      to: { location: { volumeId: 'root', path: 'mtp://otherdev/2/DCIM' } },
+      to: { goTo: { volumeId: 'root', path: 'mtp://otherdev/2/DCIM' } },
       source: 'mcp',
     })
     expect(result.status).toBe('refused')
@@ -514,7 +514,7 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
 
     const result = handle.navigate({
       pane: 'left',
-      to: { location: { volumeId: 'mtp-dev:1', path: '/Users/me/doc' } },
+      to: { goTo: { volumeId: 'mtp-dev:1', path: '/Users/me/doc' } },
       source: 'mcp',
     })
     // volumeName is undefined for this id (not in the volume list) → falls back to the id.
@@ -538,7 +538,7 @@ describe('scenario 7: refusal strings (L12) — byte-for-byte contract', () => {
 
     const result = handle.navigate({
       pane: 'left',
-      to: { location: { volumeId: 'root', path: '/Users/me/doc' } },
+      to: { goTo: { volumeId: 'root', path: '/Users/me/doc' } },
       source: 'mcp',
     })
     expect(result.status).toBe('refused')

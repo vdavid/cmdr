@@ -303,7 +303,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
         await reply({ ok: false, error: tString('fileExplorer.navigation.locationUnreachableToast') })
         return
       }
-      const result = explorerRef.navigate({ pane, to: { location: outcome.location }, source: 'mcp' })
+      const result = explorerRef.navigate({ pane, to: { goTo: outcome.location }, source: 'mcp' })
       if (result.status === 'refused') {
         // Synchronous refusal (pane not available, on the network volume for an
         // smb:// target, etc.) — forward the exact refusal string the agent reads.

@@ -38,7 +38,7 @@ describe('navigateToDirInPane', () => {
   it('navigates to the dir location and never moves the cursor', async () => {
     const { explorer, navigate, moveCursor } = makeExplorer(started())
     await navigateToDirInPane(explorer, 'left', loc('/tmp/here'))
-    expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { location: loc('/tmp/here') }, source: 'user' })
+    expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { goTo: loc('/tmp/here') }, source: 'user' })
     expect(moveCursor).not.toHaveBeenCalled()
   })
 
@@ -59,7 +59,7 @@ describe('navigateToFileInPane', () => {
   it('navigates to the parent location, then moves the cursor onto the file', async () => {
     const { explorer, navigate, moveCursor } = makeExplorer(started())
     await navigateToFileInPane(explorer, 'left', loc('/tmp'), 'a.txt')
-    expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { location: loc('/tmp') }, source: 'user' })
+    expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { goTo: loc('/tmp') }, source: 'user' })
     expect(moveCursor).toHaveBeenCalledWith('left', 'a.txt')
   })
 
@@ -106,7 +106,7 @@ describe('revealSearchResultInPane (the search "Go to file" edge)', () => {
     expect(resolveLocationMock).toHaveBeenCalledWith('/Volumes/Nas/docs')
     expect(navigate).toHaveBeenCalledWith({
       pane: 'left',
-      to: { location: loc('/Volumes/Nas/docs', 'nas') },
+      to: { goTo: loc('/Volumes/Nas/docs', 'nas') },
       source: 'user',
     })
     expect(moveCursor).toHaveBeenCalledWith('left', 'report.pdf')
