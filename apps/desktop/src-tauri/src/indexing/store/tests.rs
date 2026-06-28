@@ -185,7 +185,7 @@ fn recompute_min_subtree_epoch_cases() {
     );
 }
 
-/// A schema-version mismatch drops + rebuilds; the rebuilt DB still has the
+/// A schema-version mismatch recreates the DB file; the rebuilt DB still has the
 /// new v13 columns (a write/read round-trip through them succeeds).
 #[test]
 fn schema_bump_rebuild_has_new_columns() {
@@ -494,7 +494,7 @@ fn clear_all_resets_schema() {
 }
 
 #[test]
-fn schema_mismatch_triggers_reset() {
+fn schema_mismatch_recreates_to_current_version() {
     let dir = tempfile::tempdir().unwrap();
     let db_path = dir.path().join("mismatch.db");
 
@@ -505,10 +505,57 @@ fn schema_mismatch_triggers_reset() {
         IndexStore::update_meta(&write_conn, "schema_version", "0").unwrap();
     }
 
-    // Re-open: should detect mismatch and reset
+    // Re-open: should detect the mismatch and recreate the file at the current version
     let store = IndexStore::open(&db_path).unwrap();
     let status = store.get_index_status().unwrap();
     assert_eq!(status.schema_version.as_deref(), Some(SCHEMA_VERSION));
+}
+
+/// A schema-version mismatch recreates the DB as a fresh, zero-freelist FILE
+/// (delete + recreate), rather than DROP-ing tables on the live file (which
+/// leaves the freed pages stranded on the freelist). The reclaim is the whole
+/// point, so this asserts `freelist_count == 0` after reopen.
+#[test]
+fn schema_mismatch_recreates_file_reclaiming_freelist() {
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("bloat.db");
+
+    {
+        let store = IndexStore::open(&db_path).unwrap();
+        let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+
+        // Bloat the file so DROP-ing the tables strands many pages on the
+        // freelist (auto_vacuum = INCREMENTAL never returns them on its own).
+        conn.execute_batch("BEGIN").unwrap();
+        for i in 0..5000 {
+            insert_entry(&conn, ROOT_ID, &format!("entry-{i}"), false, Some(i));
+        }
+        conn.execute_batch("COMMIT").unwrap();
+
+        // Stamp an OLD schema version, then DROP entries + dir_stats but KEEP
+        // `meta` intact. If we dropped `meta`, the reopen would read version
+        // `None`, treat the DB as fresh, and never recreate -> false pass.
+        IndexStore::update_meta(&conn, "schema_version", "1").unwrap();
+        conn.execute_batch("DROP TABLE entries; DROP TABLE dir_stats;").unwrap();
+
+        let (_pages, freelist) = IndexStore::db_page_stats(&conn).unwrap();
+        assert!(freelist > 0, "expected a non-zero freelist after DROP, got {freelist}");
+    }
+
+    // Reopen: the schema mismatch must recreate the file fresh, not DROP on it.
+    let store = IndexStore::open(&db_path).unwrap();
+
+    assert_eq!(
+        store.get_index_status().unwrap().schema_version.as_deref(),
+        Some(SCHEMA_VERSION),
+        "schema version should be re-stamped to current"
+    );
+    assert!(
+        store.list_children(ROOT_ID).unwrap().is_empty(),
+        "recreated DB should hold only the ROOT sentinel"
+    );
+    let (_pages, freelist) = IndexStore::db_page_stats(store.read_conn()).unwrap();
+    assert_eq!(freelist, 0, "recreated file must have zero freelist (disk reclaimed)");
 }
 
 #[test]

@@ -7,11 +7,19 @@ impl IndexStore {
     /// Open (or create) the index database at `db_path`.
     ///
     /// Registers the `platform_case` collation, runs WAL pragmas, creates tables
-    /// if missing, and checks the schema version. On version mismatch or corruption
-    /// the DB file is deleted and recreated.
+    /// if missing, and checks the schema version. On a schema-version mismatch
+    /// (a clean upgrade) or corruption (an unexpected failure) the DB file is
+    /// deleted and recreated fresh, reclaiming disk with zero freelist.
     pub fn open(db_path: &Path) -> Result<Self, IndexStoreError> {
         match Self::try_open(db_path) {
             Ok(store) => Ok(store),
+            // A schema bump is an expected, clean upgrade, not a failure. Recreate
+            // the file fresh (the disposable cache has no migrations) and log it as
+            // an upgrade so it reads distinctly from the corruption path below.
+            Err(IndexStoreError::SchemaMismatch { found, expected }) => {
+                log::info!("Index DB schema version changed (found {found}, expected {expected}), recreating index DB");
+                Self::delete_and_recreate(db_path)
+            }
             Err(e) => {
                 log::warn!("Index DB open failed ({e}), deleting and recreating");
                 Self::delete_and_recreate(db_path)
@@ -31,8 +39,14 @@ impl IndexStore {
         match version {
             Some(v) if v == SCHEMA_VERSION => { /* all good */ }
             Some(v) => {
-                log::warn!("Schema version mismatch (expected {SCHEMA_VERSION}, found {v}), resetting");
-                reset_schema(&conn)?;
+                // Hand back to `open`, which deletes + recreates the file fresh
+                // (zero freelist) rather than DROP-ing tables on the live file
+                // and stranding the freed pages. `conn` is local here and drops
+                // before `delete_and_recreate` opens its own connection.
+                return Err(IndexStoreError::SchemaMismatch {
+                    found: v,
+                    expected: SCHEMA_VERSION,
+                });
             }
             None => {
                 // Fresh DB, stamp the version

@@ -39,8 +39,9 @@ Writer + schema discipline (one writer thread per DB, bounded `sync_channel`):
   fails — use `index-query`). Don't drop `UNIQUE (parent_id, name_folded)` (multi-TB ghost-size hazard) nor
   `name_folded`. Scanner uses `INSERT OR IGNORE`, never `INSERT OR REPLACE` (reassigns IDs, orphans children).
 - **Mid-scan partial aggregation has four easy-to-break rules** (else ships wrong sizes) — DETAILS § "Key decisions".
-- **The index is a disposable cache**: schema mismatch / corruption → drop + rebuild; no migrations or user-facing DB
-  errors. Gate only `scan_completed_at` writes (absence ⇒ heal to rescan).
+- **The index is a disposable cache**: schema mismatch / corruption → delete the DB file + recreate fresh (reclaims
+  disk, no DROP-TABLE freelist), then rebuild; no migrations or user-facing DB errors. Gate only `scan_completed_at`
+  writes (absence ⇒ heal to rescan).
 - **Defer `root` auto-start until FDA is decided** (`should_auto_start_indexing`): scanning from `/` stacks TCC
   popups over the FDA modal. FDA gates ONLY `root` — don't route SMB/MTP through it.
 

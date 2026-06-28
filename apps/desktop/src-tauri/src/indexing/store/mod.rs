@@ -17,8 +17,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-// Bump to invalidate on-disk indexes (the cache is disposable: a mismatch drops +
-// rebuilds, no migration). v14 is a forced rebuild, not a schema change: earlier
+// Bump to invalidate on-disk indexes (the cache is disposable: a mismatch deletes
+// the DB file + recreates it fresh, no migration). v14 is a forced rebuild, not a schema change: earlier
 // builds' reconcile could falsely mark a partial network scan `scan_completed_at`,
 // stranding SMB/MTP indexes as "complete" so they'd never rescan. Dropping every
 // index on upgrade heals testers to a clean, fully-scanned state with no manual
@@ -241,6 +241,16 @@ pub struct ScanCalibration {
 pub enum IndexStoreError {
     Sqlite(rusqlite::Error),
     Io(std::io::Error),
+    /// The on-disk DB carries a different `schema_version` than this build. The
+    /// cache is disposable, so `IndexStore::open` recreates the file fresh
+    /// (delete + recreate, reclaiming disk) rather than migrating. Carries the
+    /// found vs expected versions for a clean upgrade log (not a corruption
+    /// warning). Raised by `try_open` before the store is constructed, so its
+    /// connection drops before `delete_and_recreate` opens a new one.
+    SchemaMismatch {
+        found: String,
+        expected: &'static str,
+    },
 }
 
 impl From<rusqlite::Error> for IndexStoreError {
@@ -260,6 +270,9 @@ impl std::fmt::Display for IndexStoreError {
         match self {
             IndexStoreError::Sqlite(e) => write!(f, "SQLite error: {e}"),
             IndexStoreError::Io(e) => write!(f, "I/O error: {e}"),
+            IndexStoreError::SchemaMismatch { found, expected } => {
+                write!(f, "schema version mismatch (found {found}, expected {expected})")
+            }
         }
     }
 }
@@ -382,6 +395,11 @@ fn create_tables(conn: &Connection) -> Result<(), IndexStoreError> {
 }
 
 /// Drop all index tables and recreate them from scratch.
+///
+/// Test-only: the live schema-mismatch path recreates the DB FILE (zero
+/// freelist) via `IndexStore::delete_and_recreate`, not a DROP on the live file.
+/// This stays only for the `#[cfg(test)]` `clear_all` helper.
+#[cfg(test)]
 fn reset_schema(conn: &Connection) -> Result<(), IndexStoreError> {
     conn.execute_batch(
         "DROP TABLE IF EXISTS entries;
