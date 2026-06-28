@@ -13,8 +13,7 @@
  * `hasParentRow` folds ONLY the snapshot rule; it is NOT a complete has-parent
  * answer. The two PATH comparisons stay here: a `local` pane at `/`, or any pane
  * sitting on its volume root, has no `..` despite `hasParentRow: true`. The real
- * answer is `hasParentRow && currentPath !== '/' && currentPath !== root` (L5 —
- * this stays coupled to `isCrossVolumeNavigation`, the snapshot no-`..` rule).
+ * answer is `hasParentRow && currentPath !== '/' && currentPath !== root` (L5).
  */
 export interface HasParentInput {
   /**

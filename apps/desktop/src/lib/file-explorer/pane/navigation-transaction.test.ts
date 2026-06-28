@@ -204,7 +204,7 @@ import type { NavigateResult } from './navigate'
 type ExplorerHandle = {
   navigate: (intent: {
     pane: 'left' | 'right'
-    to: { volumeId?: string; path: string }
+    to: { location: { volumeId: string; path: string } } | { volumeId: string; path: string }
     source: 'user' | 'mcp'
   }) => NavigateResult
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<boolean>
@@ -240,7 +240,8 @@ async function driveLeftLoad(handle: ExplorerHandle, path: string): Promise<stri
   // happens in every test that drives a second load or unmounts before firing
   // completion). Swallow that expected rejection so it doesn't surface as an
   // unhandled error.
-  const result = handle.navigate({ pane: 'left', to: { path }, source: 'user' })
+  // Same-volume `{ location }` → the in-place arm (drives the FilePane primitive).
+  const result = handle.navigate({ pane: 'left', to: { location: { volumeId: leftTab().volumeId, path } }, source: 'user' })
   if (result.status === 'started') void result.settled.catch(() => {})
   for (let i = 0; i < 5; i++) await tick()
   await new Promise((r2) => setTimeout(r2, 10))
@@ -390,9 +391,9 @@ describe('scenario 8: optimistic-commit ordering (P4)', () => {
 
     listDirectoryStartMock.mockClear()
 
-    // Drive an in-place path navigation. `navigate()` calls the FilePane
-    // primitive, which mints a new listingId and starts loading.
-    const result = handle.navigate({ pane: 'left', to: { path: '/Users/me/sub' }, source: 'user' })
+    // Drive an in-place path navigation (same-volume `{ location }`). `navigate()`
+    // calls the FilePane primitive, which mints a new listingId and starts loading.
+    const result = handle.navigate({ pane: 'left', to: { location: { volumeId: leftTab().volumeId, path: '/Users/me/sub' } }, source: 'user' })
     // The in-place arm STARTS (returns the FilePane settle promise), never refuses.
     expect(result.status).toBe('started')
     if (result.status === 'started') void result.settled.catch(() => {})

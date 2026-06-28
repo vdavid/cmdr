@@ -217,15 +217,16 @@ Navigation:
   the underlying path. ⌘[ returns to the snapshot view; the snapshot's still pinned by the history entry, so the view
   re-renders from memory with no re-query.
 
-R4 cross-volume bug fix (`pane/snapshot-pane-navigation.ts::isCrossVolumeNavigation`): when the user activates a real
-folder from a snapshot pane (or the search dialog's "Go to file" exit lands on a real path while the active pane is
-still on the snapshot volume), the navigation MUST route through the volume-change machinery. Two call sites:
-`FilePane.handleNavigate` (Enter / double-click on a row) calls `resolvePathVolume` and then `onVolumeChange`;
-`navigate()`'s in-place path arm (the dialog's exit + MCP `nav_to_path`) detects the same `isCrossVolumeNavigation` case
-and routes through `resolveVolume` + the volume-switch commit. Without this, the pane ends up with
-`volumeId === 'search-results'` while `path` points at a real filesystem location, and `SearchResultsView` shows "Search
-results no longer available" (the snapshot-id extractor returns null because the path doesn't start with
-`search-results://`).
+Leaving a snapshot pane for a real entry (the R4 cross-volume case): when the user activates a real folder from a
+snapshot pane (or the search dialog's "Go to file" exit, or a search-results row), the navigation MUST switch to the
+entry's real volume FIRST. The entry's volume is resolved to a `Location` at the edge (`resolveLocationOrToast`), then
+routed through `navigate({ to: { location } })`, whose switch arm changes volume (a different volume than
+`search-results`). `FilePane.handleNavigate` gates this on the `isSearchResultsView` capability and bubbles the
+`Location` via the `onGoToLocation` callback; the search dialog and MCP `nav_to_path` resolve at their own edges. Without
+the switch, the pane ends up with `volumeId === 'search-results'` while `path` points at a real filesystem location, and
+`SearchResultsView` shows "Search results no longer available" (the snapshot-id extractor returns null because the path
+doesn't start with `search-results://`). The `navigate()` destination shapes and the four edge resolvers are documented
+canonically in `pane/navigate.ts`.
 
 Navigation routing:
 

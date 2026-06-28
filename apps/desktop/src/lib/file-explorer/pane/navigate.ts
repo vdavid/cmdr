@@ -10,6 +10,25 @@
  * `NavigateDeps` from its store + FilePane handles and wraps this as its
  * `navigate` export; tests pass fakes.
  *
+ * ## Destination shapes — `Location` is navigation's currency
+ *
+ * A navigation's destination is one of four `NavigateTo` shapes:
+ * - **`{ location: Location }`** — go to a `(volumeId, path)`. It self-routes:
+ *   `location.volumeId === currentVolumeId` → the in-place arm; otherwise the
+ *   switch arm. This shape makes the volumeId/path-mismatch bug unrepresentable.
+ * - **`{ volumeId, path }`** — the deliberate volume-(re)select intent, ALWAYS the
+ *   switch arm (its callers legitimately pass the CURRENT volume id to re-select
+ *   it: network-restore-on-cancel, retry, `selectVolumeByIndex`, mirror).
+ * - **`{ history }`** / **`{ snapshot }`** — the back/forward/parent walk and the
+ *   search-results snapshot open.
+ *
+ * A bare path becomes a `Location` at exactly FOUR edges, each resolving once via
+ * `navigation/resolve-location.ts` before navigating: ⌘G "Go to path", MCP
+ * `nav_to_path`, search-result activation (dialog "Go to file" + a search-results
+ * row), and the downloads reveal (⌘J). An unresolvable path is honest UX (a
+ * friendly toast, or a typed MCP `ok: false`), never a wrong-volume listing. This
+ * is the single canonical description of that mechanism.
+ *
  * ## What `navigate()` owns vs. what stays pane-owned
  *
  * `navigate()` decides INTENT (volume/path/history/snapshot/edge), commits pane
@@ -33,11 +52,10 @@
  *
  * `navigate()` mints a monotonic `txToken` per call and stores it as the pane's
  * current transaction (`deps.tokens`, a `Map<'left'|'right', number>` the caller
- * owns so it survives across `navigate()` calls). The token gates the per-pane
- * cross-volume resolve bail (a slow `resolveVolume` whose pane got re-navigated is
- * dropped). The in-place `onPathChange` re-entry (`commitPathFromListing`) drops a
- * stale listing by the foreign-path policy (L6, the FE twin of the banned
- * `error-string-match`) — NOT by the token. The background
+ * owns so it survives across `navigate()` calls). The in-place `onPathChange`
+ * re-entry (`commitPathFromListing`) drops a stale listing by the foreign-path
+ * policy (L6, the FE twin of the banned `error-string-match`) — NOT by the token;
+ * the token's live role is the same-token self-re-entry rule below. The background
  * `determineNavigationPath` correction (folding `applyVolumePathCorrection`) is
  * gated by `deps.correctionGen`, a SINGLE GLOBAL counter shared by both panes
  * (exactly the old `volumeChangeGeneration`): a later volume change on EITHER pane
@@ -66,31 +84,30 @@
  * ## Per-arm optimism (P4)
  *
  * Optimism is PER ARM — the navigation-transaction regression tests pin the split:
- * - **Volume switch** (`{ volumeId, path }` with `volumeId` set) commits
- *   volumeId + path + history SYNCHRONOUSLY before any listing (truly optimistic).
- * - **In-place path nav** (`{ path }`, same volume) does NOT commit on call: it
- *   drives `FilePane.navigateToPath`, and the pane's `onPathChange` at
+ * - **Switch arm** (`{ volumeId, path }`, or `{ location }` to a different volume)
+ *   commits volumeId + path + history SYNCHRONOUSLY before any listing (truly
+ *   optimistic).
+ * - **In-place arm** (`{ location }` to the SAME volume) does NOT commit on call:
+ *   it drives `FilePane.navigateToPath`, and the pane's `onPathChange` at
  *   `listing-complete` lands the commit via `commitPathFromListing`. `navigate()`
  *   must NOT "upgrade" it to an immediate commit (that would change when the
  *   path/breadcrumb updates relative to the listing — a PR3 violation).
  *
  * What P4 forbids in BOTH arms: a new synchronous validate-then-commit gate. The
  * only synchronous work before each arm's commit is the capability/refusal checks
- * that are already synchronous today (the `network` refusal, the MTP refusal).
- * The cross-volume snapshot resolution (`resolveVolume`) stays
- * async-then-volume-switch, exactly as today.
+ * that are already synchronous (the `network` refusal, the MTP refusal). Edge
+ * resolution (a bare path → `Location`) happens at the EDGE, before `navigate()`
+ * is called, so the arms themselves do no async resolve.
  *
  * ## `settled` resolve point, PER INTENT ARM (caller-observable timing, PR3)
  *
- * - **In-place path nav + volume switch on a real volume**: `settled` is the
- *   FilePane `navigateToPath` promise — resolves on `listing-complete`.
- * - **Cross-volume snapshot arm**: `settled` resolves when the volume-switch
- *   commit is DONE, BEFORE the new listing loads (today's async IIFE resolves
- *   when fire-and-forget `handleVolumeChange` returns). `navigate-and-select` /
- *   `handleSearchNavigate` bridge the gap themselves via `moveCursor`'s internal
- *   `whenLoadSettles` (L2-adjacent); don't "fix" this to await the listing.
- * - **Network / no-volume-resolved / state-restore-only branches**: `settled`
- *   resolves immediately (a resolved no-op), matching today's no-load branches.
+ * - **In-place arm**: `settled` is the FilePane `navigateToPath` promise —
+ *   resolves on `listing-complete`.
+ * - **Switch arm**: `settled` resolves immediately (a resolved no-op) — the
+ *   optimistic commit is synchronous and the listing loads afterward.
+ *   `navigate-and-select` / `revealSearchResultInPane` bridge the gap to the
+ *   cursor move themselves via `moveCursor`'s internal `whenLoadSettles`
+ *   (L2-adjacent); don't "fix" this to await the listing.
  * - **History / edge flows**: match whichever primitive they drive.
  */
 
@@ -110,7 +127,6 @@ import {
   type HistoryEntry,
 } from '../navigation/navigation-history'
 import { isPathOnVolume } from '../navigation/path-navigation'
-import { isCrossVolumeNavigation } from './snapshot-pane-navigation'
 import { tString } from '$lib/intl/messages.svelte'
 import type { Location } from '$lib/tauri-commands'
 
@@ -128,8 +144,8 @@ export type NavigateSource = 'user' | 'mcp' | 'history' | 'correction' | 'cancel
  * callers legitimately pass the CURRENT volume id to re-select it).
  */
 export type NavigateTo =
-  | { location: Location } // go to a location; volumeId mandatory, routes to the in-place or switch arm
-  | { volumeId?: string; path: string } // volume change (volumeId set) OR in-place path nav (volumeId omitted ⇒ same volume)
+  | { location: Location } // go to a location; routes to the in-place arm (same volume) or switch arm (different volume)
+  | { volumeId: string; path: string } // deliberate volume-(re)select; ALWAYS the switch arm
   | { history: 'back' | 'forward' | 'parent' }
   | { snapshot: string } // search-results snapshot id; routes through the volume-change machinery
 
@@ -216,8 +232,6 @@ export interface NavigateDeps {
   getPaneRef: (pane: 'left' | 'right') => FilePaneAPI | undefined
 
   // --- volume resolution + defaults ---
-  /** `resolvePathVolume` — resolves a real path to its containing volume. Injectable for tests. */
-  resolveVolume: (path: string) => Promise<{ volume: { id: string; path: string } | null }>
   /** The volume's mount path by id, or undefined when not in the live list. */
   getVolumePathById: (volumeId: string) => string | undefined
   /** Background "best path" resolver (`determineNavigationPath`), gated by the token. */
@@ -301,11 +315,6 @@ function mintToken(deps: NavigateDeps, pane: 'left' | 'right'): number {
   const next = (deps.tokens.get(pane) ?? 0) + 1
   deps.tokens.set(pane, next)
   return next
-}
-
-/** True while `token` is still the pane's active transaction (not superseded by a newer `navigate()`). */
-function tokenLive(deps: NavigateDeps, pane: 'left' | 'right', token: number): boolean {
-  return deps.tokens.get(pane) === token
 }
 
 /**
@@ -425,8 +434,8 @@ function scheduleVolumePathCorrection(
       // panes' corrections run after a simultaneous two-pane reset (the E2E
       // `ensureAppReady` double `mcp-volume-select`), which re-enters the
       // listing/onPathChange cycle on both panes at once and freezes the
-      // webview. The cross-volume resolve bail stays per-pane (`token`); only
-      // the correction supersede is global.
+      // webview. The per-pane `token` governs only the same-token self-re-entry
+      // rule (commitPathFromListing); this correction supersede is global.
       if (correctionGen !== deps.correctionGen.value) return
       if (betterPath !== targetPath && betterPath !== deps.getPanePath(pane)) {
         deps.setPanePath(pane, betterPath)
@@ -509,7 +518,11 @@ export function navigate(intent: NavigateIntent, deps: NavigateDeps): NavigateRe
     return navigateToLocation(deps, intent, to.location)
   }
 
-  return navigateToVolumeOrPath(deps, intent, to)
+  // `{ volumeId, path }`: the deliberate volume-(re)select intent — ALWAYS the
+  // switch arm, even when `volumeId` equals the pane's current one (the
+  // network-restore-on-cancel, retry, `selectVolumeByIndex` re-select, and mirror
+  // callers all pass the current id on purpose).
+  return switchVolumeArm(deps, intent, to.volumeId, to.path)
 }
 
 /**
@@ -578,73 +591,6 @@ function navigateInPlace(deps: NavigateDeps, intent: NavigateIntent, path: strin
   const paneRef = deps.getPaneRef(pane)
   if (!paneRef) return { status: 'refused', reason: PANE_UNAVAILABLE_REFUSAL }
   return { status: 'started', settled: paneRef.navigateToPath(path, intent.selectName) }
-}
-
-/** The `{ volumeId?, path }` arm: volume switch (volumeId set) or in-place path nav (omitted). */
-function navigateToVolumeOrPath(
-  deps: NavigateDeps,
-  intent: NavigateIntent,
-  to: { volumeId?: string; path: string },
-): NavigateResult {
-  const { pane, source } = intent
-  const currentVolumeId = deps.getPaneVolumeId(pane)
-  const currentVolumeName = deps.getPaneVolumeName(pane)
-
-  // --- Volume switch (volumeId present): truly optimistic, synchronous commit. ---
-  if (to.volumeId !== undefined) {
-    return switchVolumeArm(deps, intent, to.volumeId, to.path)
-  }
-
-  // --- In-place path nav (same volume). ---
-
-  // On-network-volume refusal (synchronous, today's DPE:1560).
-  if (currentVolumeId === 'network') {
-    return { status: 'refused', reason: onNetworkRefusal(currentVolumeName ?? currentVolumeId) }
-  }
-
-  // Snapshot-pane exit: a real path while on the search-results volume routes
-  // through the volume-change machinery (L5 — must match FilePane.handleNavigate).
-  if (isCrossVolumeNavigation(currentVolumeId, to.path)) {
-    const token = mintToken(deps, pane)
-    const settled = (async () => {
-      // Swallow a `resolveVolume` rejection into a no-op, exactly as the old
-      // `navigateToPath` cross-volume arm did with its try/catch. Without this,
-      // a rejected resolve surfaces as an UNHANDLED promise rejection for the
-      // fire-and-forget `mcp-nav-to-path` callers that never await `settled`
-      // (e.g. the E2E `ensureAppReady` reset), which can freeze the webview.
-      let result: { volume: { id: string; path: string } | null }
-      try {
-        result = await deps.resolveVolume(to.path)
-      } catch {
-        return
-      }
-      const volume = result.volume
-      if (!volume) {
-        // no-volume-resolved: today this logs + returns undefined (a no-op), NOT
-        // a refusal. The MCP round-trip sees ok:true with no nav. Preserve that.
-        return
-      }
-      if (!tokenLive(deps, pane, token)) return
-      commitVolumeSwitch(deps, pane, token, volume.id, volume.path, to.path, { shiftFocus: shiftsFocus(source) })
-    })()
-    return { status: 'started', settled }
-  }
-
-  // MTP capability refusal (synchronous).
-  const mtpRefusal = validateMtpNavigation(to.path, currentVolumeId, currentVolumeName)
-  if (mtpRefusal) return { status: 'refused', reason: mtpRefusal }
-
-  // In-place: drive the FilePane primitive. The commit — AND the pinned-tab fork
-  // (L7) — land LATER, when the listing completes and the pane's onPathChange
-  // fires `commitPathFromListing` (P4 — in-place arm is NOT optimistic). The fork
-  // lives at the listing-completion landing, not here, because FilePane-INTERNAL
-  // navigation (Enter on a folder, breadcrumb click) bypasses `navigate()` and
-  // re-enters only through `onPathChange`; both entry paths must fork identically,
-  // so the single fork point is `commitPathFromListing`. `settled` is the FilePane
-  // promise.
-  const paneRef = deps.getPaneRef(pane)
-  if (!paneRef) return { status: 'refused', reason: PANE_UNAVAILABLE_REFUSAL }
-  return { status: 'started', settled: paneRef.navigateToPath(to.path, intent.selectName) }
 }
 
 /**

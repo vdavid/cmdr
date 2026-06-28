@@ -373,7 +373,6 @@
             explorerState.setFocusedPane(pane)
         },
         getPaneRef,
-        resolveVolume: (path) => resolvePathVolume(path),
         getVolumePathById: (volumeId) => volumes.find((v) => v.id === volumeId)?.path,
         determineNavigationPath: (volumeId, volumePath, targetPath, other) =>
             determineNavigationPath(volumeId, volumePath, targetPath, other),

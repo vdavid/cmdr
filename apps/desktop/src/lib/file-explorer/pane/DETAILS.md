@@ -62,9 +62,10 @@ list).
 - **`transfer-entry.ts`**: Shared transfer entry seam: `checkTransferDestinationGuard` + `resolveSourceVolumeId`
 - **`sorting-handlers.ts`**: `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)
 - **`index-events.ts`**: Throttled `index-dir-updated` handler with `/private/` symlink resolution
-- **`navigate.ts`**: `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry
-- **`snapshot-pane-navigation.ts`**: `isCrossVolumeNavigation` (snapshot-volume → real-path triggers volume switch)
-- **`has-parent.ts`**: `computeHasParent({ isSearchResultsView, currentPath, effectiveVolumeRoot })`
+- **`navigate.ts`**: `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry. `Location` is
+  navigation's currency (`{ location }` self-routes by volume; `{ volumeId, path }` always switches) — its module doc is
+  the canonical home for the destination shapes and the four edge resolvers.
+- **`has-parent.ts`**: `computeHasParent({ hasParentRow, currentPath, effectiveVolumeRoot })`
 - **`first-selected-index.ts`**: `firstSelectedIndex(idxs, hasParent)` (post-select cursor-jump target, skips the `..`
   row)
 - **`volume-capabilities.ts`**: `VolumeKind` + frozen per-kind `VolumeCapabilities` table + `volumeKindOf` /
@@ -137,9 +138,15 @@ grandparent, `⌘↓` → double-open). `⌘Backspace` is deliberately excluded 
 `file.delete` (`⌘⌫` = move to trash, alongside `F8`).
 
 **Snapshot pane (`volumeId === 'search-results'`).** Two integration points that MUST stay coupled: `computeHasParent`
-returns `false` (no `..` row), and `isCrossVolumeNavigation` routes any navigation to a real path through the
-volume-change machinery (`onVolumeChange` / `handleVolumeChange`). Skipping either breaks selection (off-by-one) or
-poisons the pane with `volumeId === 'search-results'` + real path.
+returns `false` (no `..` row, via the `hasParentRow` capability), and opening a real entry from the result rows leaves
+the snapshot volume. `FilePane.handleNavigate` gates the latter on the `isSearchResultsView` capability (A6 — the
+`caps.kind === 'search-results'` classifier, never a raw id compare), resolves the entry's `Location`
+(`resolveLocationOrToast`, shared with the other nav edges), and bubbles it via the `onGoToLocation` callback →
+`navigate({ to: { location } })`, whose switch arm changes volume (a different volume than `search-results`). An
+unresolvable entry shows the shared friendly toast. Skipping the has-parent rule breaks selection (off-by-one); skipping
+the resolve+switch poisons the pane with `volumeId === 'search-results'` + a real path. `onGoToLocation` (go to a
+location) and `onVolumeChange` (deliberate volume-(re)select) are the two distinct intents — `Location` carries no
+`volumePath`, so the location-only callback is the clean seam.
 
 **Volume capabilities (`volume-capabilities.ts`).** The single FE source of truth for "what can a pane on a given volume
 KIND do" (invariant A6 — guard logic branches on capabilities, never on volume-id strings). A closed `VolumeKind`
@@ -186,7 +193,7 @@ string. The guards:
 - **MCP sync** (`pane-mcp-sync.svelte.ts`): the network/search skip off `!syncsToMcp`. The deps interface carries a
   single `getSyncsToMcp()` accessor (FilePane supplies it from its derived caps); the two `getIs*View()` deps retired.
 - **`has-parent.ts`**: `computeHasParent` folds ONLY the snapshot rule via `hasParentRow`; the two PATH comparisons
-  (`=== '/'`, `=== root`) stay, and the rule stays coupled to `isCrossVolumeNavigation` (L5).
+  (`=== '/'`, `=== root`) stay (L5).
 - **FilePane alt-view chain** (`FilePane.svelte`): the kind-structural view selection resolves through a `paneViewKind`
   derived discriminant (`'network' | 'search-results' | 'mtp-connect' | 'normal'`) off `caps.kind` (+ the MTP
   device-only connection sub-state, which the table doesn't carry — it's a runtime connection state, not a kind). The
@@ -213,7 +220,7 @@ capability table is the "differently complicated" failure mode the refactor expl
   classifier — converting them would be circular.
 - **Namespace / path mechanics (which string scheme, not what's allowed).** `navigate.ts` (the on-network / on-MTP
   refusal sources + the `smb://` / `search-results://` drop-foreign-listings prefix + `validateMtpNavigation` path
-  parse), `snapshot-pane-navigation.ts` (the cross-volume trigger), `clipboard-operations.ts:76`
+  parse), `clipboard-operations.ts:76`
   (`pathScheme !== 'search-results'` — the snapshot-clip path resolver; reads the table but it's a scheme question),
   `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the network-mirror / copy-path-between-panes
   identity branches), `rename-flow.svelte.ts:166` (skip the Unix-`access()` permission check on MTP virtual paths — a
@@ -366,34 +373,42 @@ registration.
 
 **The `navigate()` transaction (`navigate.ts`).** Every coordinator-level pane navigation goes through one
 `navigate(intent, deps)` entry. `DualPaneExplorer` builds the `NavigateDeps` (store getters/mutators + the FilePane
-handle + `resolveVolume` + the persistence trigger + the side-keyed token map) and wraps `navigate()` as its `navigate`
-export; the bus, the MCP adapter, the four external write-callers, and the FilePane render-prop shims all call it. It
-sits ON TOP of the FilePane listing primitives (`navigateToPath` / `navigateToParent`); listing mechanics stay
-pane-owned. The only callers of `setPaneVolumeId` / `setPanePath` / `setPaneHistory` are `navigate()`'s internal
-`commit` plus the two orthogonal network-host pushes (`handleNetworkHostChange`, `mirrorNetworkStateToPane`, which carry
-an SMB host onto the history entry — they're not pane-destination changes).
+handle + the persistence trigger + the side-keyed token map) and wraps `navigate()` as its `navigate` export; the bus,
+the MCP adapter, the four external write-callers, and the FilePane render-prop shims all call it. It sits ON TOP of the
+FilePane listing primitives (`navigateToPath` / `navigateToParent`); listing mechanics stay pane-owned. The only callers
+of `setPaneVolumeId` / `setPanePath` / `setPaneHistory` are `navigate()`'s internal `commit` plus the two orthogonal
+network-host pushes (`handleNetworkHostChange`, `mirrorNetworkStateToPane`, which carry an SMB host onto the history
+entry — they're not pane-destination changes).
 
-- **Intent arms.** `{ volumeId?, path }` is a volume switch (volumeId set) or in-place path nav (omitted);
-  `{ history: 'back' | 'forward' | 'parent' }` walks the stack (`parent` delegates to `FilePane.navigateToParent`);
-  `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery. The pinned-tab fork (L7) lives
-  in ONE place per arm: `commitPathFromListing` for the in-place landing, `commitVolumeSwitch` for the switch.
-- **Per-arm optimism (P4).** The volume switch commits volumeId + path + history SYNCHRONOUSLY (truly optimistic). The
-  in-place path nav does NOT commit on call — it drives the FilePane primitive, and the commit lands when the listing
+- **`Location` is navigation's currency; resolution happens at the edge.** A bare path becomes a `Location`
+  (`{ volumeId, path }`) at exactly four edges — ⌘G "Go to path", MCP `nav_to_path`, search-result activation (dialog
+  "Go to file" + a search-results row), downloads reveal (⌘J) — each via `navigation/resolve-location.ts`, before
+  `navigate()` is called. `navigate()` itself never resolves a volume; it receives a fully-formed destination. An
+  unresolvable path is a friendly toast (shared `resolveLocationOrToast`) or a typed MCP `ok: false`, never a
+  wrong-volume listing. The canonical description of the shapes + edges lives in `navigate.ts`'s module doc.
+- **Intent arms.** `{ location }` self-routes: same volume as the pane → the in-place arm, a different volume → the
+  switch arm. `{ volumeId, path }` is the deliberate volume-(re)select intent and ALWAYS takes the switch arm (its
+  callers — network-restore-on-cancel, retry, `selectVolumeByIndex`, the mirror helper — pass the CURRENT volume id on
+  purpose). `{ history: 'back' | 'forward' | 'parent' }` walks the stack (`parent` delegates to
+  `FilePane.navigateToParent`); `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery. The
+  pinned-tab fork (L7) lives in ONE place per arm: `commitPathFromListing` for the in-place landing, `commitVolumeSwitch`
+  for the switch.
+- **Per-arm optimism (P4).** The switch arm commits volumeId + path + history SYNCHRONOUSLY (truly optimistic). The
+  in-place arm does NOT commit on call — it drives the FilePane primitive, and the commit lands when the listing
   completes and `onPathChange` re-enters `commitPathFromListing`. Don't "upgrade" the in-place arm to an immediate
   commit (it'd change when the breadcrumb updates relative to the listing).
-- **`settled` resolve point, per arm.** In-place + real-volume switch: resolves on `listing-complete` (the FilePane
-  promise). Cross-volume snapshot exit: resolves when the volume-switch commit is DONE, BEFORE the new listing loads
-  (callers that move the cursor after — `navigate-and-select`, `handleSearchNavigate` — bridge the gap via
-  `moveCursor`'s internal `whenLoadSettles`). Network / no-volume-resolved / state-restore branches: resolve
-  immediately.
+- **`settled` resolve point, per arm.** In-place arm: resolves on `listing-complete` (the FilePane promise). Switch arm:
+  resolves immediately (the optimistic commit is synchronous; the listing loads afterward) — callers that move the cursor
+  after (`navigate-and-select`, `revealSearchResultInPane`) bridge the gap via `moveCursor`'s internal `whenLoadSettles`.
+  History / edge flows: match the primitive they drive.
 - **`NavigateResult` (L12).** `{ status: 'started', settled }` or `{ status: 'refused', reason }`. The refusal `message`
   strings (on-network, MTP-mismatch, on-MTP-volume, pane-unavailable) are EXACT contract — the MCP adapter forwards them
   verbatim as the `mcp-response` error; `navigate.test.ts` + the handler suite pin them byte-for-byte.
-- **Token model (the staleness mechanism).** A per-pane `txToken` (caller-owned `Map`) gates the cross-volume resolve
-  bail; a single GLOBAL `correctionGen` (the old `volumeChangeGeneration`, shared by both panes) gates the background
-  `determineNavigationPath` correction. A same-token self-re-entry (parent-nav / walk-up completion via `onPathChange`)
-  is NOT dropped — only a fresh `navigate()` advances the token. The drop-foreign-listings policy (next note) is what
-  drops a genuinely stale listing.
+- **Token model (the staleness mechanism).** A per-pane `txToken` (caller-owned `Map`) governs the same-token
+  self-re-entry rule: a parent-nav / walk-up completion re-entering via `onPathChange` carries the SAME token and so
+  commits (not dropped); only a fresh `navigate()` advances the token. A single GLOBAL `correctionGen` (the old
+  `volumeChangeGeneration`, shared by both panes) gates the background `determineNavigationPath` correction. The
+  drop-foreign-listings policy (next note) is what drops a genuinely stale listing.
 
 **Don't add `cd`-style heuristics in `commitPathFromListing`.** Stale `onPathChange` from a slow listing is dropped by
 the drop-foreign-listings policy in `navigate.ts::commitPathFromListing` (`smb://` prefix for `network`,
