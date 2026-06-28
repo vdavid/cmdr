@@ -83,12 +83,40 @@ func blogLinkCandidate(srcDoc, target string) string {
 	return path.Join(srcDoc[:i]+blogContentDir, slug)
 }
 
+// pageRouteCandidates maps a site-absolute link (`/pricing`, `/roadmap`) in a
+// website doc to the Astro page source that renders it: `src/pages/<route>.astro`
+// or `src/pages/<route>/index.astro`. Astro page routes have no file at the URL
+// path, so a Markdown doc must link the rendered URL (the form that's also right in
+// rendered HTML) even though it doesn't name a file on disk: same situation as
+// blogLinkCandidate, resolved the same way. The site's `src/` root is derived from
+// the doc's own content-collection path, so there's no hardcoded app prefix.
+// Returns nil when it doesn't apply.
+func pageRouteCandidates(srcDoc, target string) []string {
+	if !strings.HasPrefix(target, "/") {
+		return nil
+	}
+	route := strings.Trim(target, "/")
+	if route == "" {
+		return nil // bare "/" is the site root, not a page file
+	}
+	const contentMarker = "src/content/"
+	i := strings.Index(srcDoc, contentMarker)
+	if i < 0 {
+		return nil // not a doc under the Astro site's content tree
+	}
+	pagesDir := srcDoc[:i] + "src/pages"
+	return []string{
+		path.Join(pagesDir, route+".astro"),
+		path.Join(pagesDir, route, "index.astro"),
+	}
+}
+
 // linkResolves reports whether a local link target names an existing file or
 // directory. It tries the target relative to the source doc's directory (standard
 // Markdown), then repo-root-relative, then (for a blog post) as a /blog/<slug>
-// route. checkable is false when every candidate escapes the repo root (a
-// `../`-heavy path we can't verify), so the caller skips it rather than flagging a
-// false positive.
+// route, then as an Astro page route. checkable is false when every candidate
+// escapes the repo root (a `../`-heavy path we can't verify), so the caller skips
+// it rather than flagging a false positive.
 func linkResolves(rootDir, srcDoc, target string) (resolved, checkable bool) {
 	srcDir := path.Dir(srcDoc)
 	cands := []string{
@@ -98,6 +126,7 @@ func linkResolves(rootDir, srcDoc, target string) (resolved, checkable bool) {
 	if blogCand := blogLinkCandidate(srcDoc, target); blogCand != "" {
 		cands = append(cands, blogCand)
 	}
+	cands = append(cands, pageRouteCandidates(srcDoc, target)...)
 	for _, cand := range cands {
 		if strings.HasPrefix(cand, "..") {
 			continue // escapes the repo root; not verifiable via this form

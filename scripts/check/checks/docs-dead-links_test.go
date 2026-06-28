@@ -125,6 +125,67 @@ func TestRunDocsDeadLinks_BlogSlugLinkMissingFails(t *testing.T) {
 	}
 }
 
+func TestRunDocsDeadLinks_PageRouteLinkResolves(t *testing.T) {
+	tmp := t.TempDir()
+	// A blog post linking a site-absolute Astro page route (/pricing, /roadmap, with
+	// or without an anchor) must resolve to the page source, not be flagged as a
+	// missing repo-root path. /features as a directory-style route resolves to
+	// pages/features/index.astro.
+	writeDeadLinkFile(t, tmp, "apps/website/src/content/blog/post-a/index.md",
+		"See [price](/pricing), [plans](/roadmap#very-soon), and [feat](/features).")
+	writeDeadLinkFile(t, tmp, "apps/website/src/pages/pricing.astro", "Pricing page.")
+	writeDeadLinkFile(t, tmp, "apps/website/src/pages/roadmap.astro", "Roadmap page.")
+	writeDeadLinkFile(t, tmp, "apps/website/src/pages/features/index.astro", "Features page.")
+
+	result, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatalf("a site-absolute page-route link must resolve, got: %v", err)
+	}
+	if result.Code != ResultSuccess {
+		t.Errorf("expected success, got: %s", result.Message)
+	}
+}
+
+func TestRunDocsDeadLinks_PageRouteLinkMissingFails(t *testing.T) {
+	tmp := t.TempDir()
+	writeDeadLinkFile(t, tmp, "apps/website/src/content/blog/post-a/index.md", "Dangling [gone](/no-such-page).")
+
+	_, err := RunDocsDeadLinks(&CheckContext{RootDir: tmp})
+	if err == nil {
+		t.Fatal("expected an error for a site-absolute link with no matching page")
+	}
+	if !strings.Contains(err.Error(), "/no-such-page") {
+		t.Errorf("expected the dead page-route link in the error, got: %v", err)
+	}
+}
+
+func TestPageRouteCandidates(t *testing.T) {
+	cases := []struct {
+		srcDoc, target string
+		want           []string
+	}{
+		{"apps/website/src/content/blog/a/index.md", "/pricing",
+			[]string{"apps/website/src/pages/pricing.astro", "apps/website/src/pages/pricing/index.astro"}},
+		{"apps/website/src/content/blog/a/index.md", "/blog/b",
+			[]string{"apps/website/src/pages/blog/b.astro", "apps/website/src/pages/blog/b/index.astro"}},
+		{"apps/website/src/content/blog/a/index.md", "/", nil},           // site root, no page file
+		{"apps/website/src/content/blog/a/index.md", "relative.md", nil}, // not site-absolute
+		{"docs/guides/thing.md", "/pricing", nil},                        // source not under a content tree
+	}
+	for _, c := range cases {
+		got := pageRouteCandidates(c.srcDoc, c.target)
+		if len(got) != len(c.want) {
+			t.Errorf("pageRouteCandidates(%q, %q) = %v, want %v", c.srcDoc, c.target, got, c.want)
+			continue
+		}
+		for i := range got {
+			if got[i] != c.want[i] {
+				t.Errorf("pageRouteCandidates(%q, %q)[%d] = %q, want %q", c.srcDoc, c.target, i, got[i], c.want[i])
+			}
+		}
+	}
+}
+
 func TestBlogLinkCandidate(t *testing.T) {
 	cases := []struct {
 		srcDoc, target, want string
