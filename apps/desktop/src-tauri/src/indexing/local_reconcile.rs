@@ -29,7 +29,7 @@
 //! `ComputeAllAggregates`) runs IN-THREAD, exactly as `scan_volume` does its
 //! marks + aggregate before the thread joins.
 
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -67,8 +67,23 @@ pub(super) fn start_local_reconcile(
 /// Normalize one directory's filesystem children into source-agnostic
 /// [`LiveChild`]s, accumulating the live counters the progress bar reads (so a
 /// multi-minute reconcile doesn't show a frozen bar) and the summary totals.
+///
+/// `seen_inodes` is the SINGLE set threaded across the whole BFS (NOT per-dir),
+/// mirroring jwalk's one global `seen_inodes` in `run_scan`: it dedups hardlinks
+/// so each inode's physical bytes land in `total_physical_bytes` / `bytes_scanned`
+/// exactly ONCE, keeping the reconcile's `ScanSummary` byte totals identical to a
+/// fresh scan of the same tree. Files with `nlink == 1` skip the set entirely.
+///
+/// ❌ Don't also zero the `LiveChild` snapshot's sizes here (the way `run_scan`
+/// zeroes its `EntryRow`). The PERSISTED entries are deduped one layer down, by the
+/// writer's `UpsertEntryV2` (`has_sized_entry_for_inode`); zeroing here would race
+/// that dedup. The reconcile's first-seen-keeps choice is independent of which
+/// occurrence the DB currently sizes, so on a mismatch the diff would send
+/// `Upsert(old-null, S)` + `Upsert(old-sized, None)` and the writer could null BOTH,
+/// UNDER-counting the inode. So the snapshot stays raw and only the totals dedup.
 fn build_live_children(
     fs_children: &[(String, std::fs::Metadata, bool)],
+    seen_inodes: &mut HashSet<u64>,
     total_entries: &mut u64,
     total_dirs: &mut u64,
     total_physical_bytes: &mut u64,
@@ -78,7 +93,14 @@ fn build_live_children(
     for (name, meta, is_symlink) in fs_children {
         let is_dir = meta.is_dir();
         let snap = extract_metadata(meta, is_dir, *is_symlink);
-        let entry_physical = snap.physical_size.unwrap_or(0);
+        // Hardlink dedup for the byte totals, matching `run_scan`: count each inode's
+        // physical bytes once. `insert` returns false on a repeat inode → contributes 0.
+        let counts_physical = if !is_dir && !*is_symlink && matches!(snap.nlink, Some(n) if n > 1) {
+            seen_inodes.insert(snap.inode.unwrap_or(0))
+        } else {
+            true
+        };
+        let entry_physical = if counts_physical { snap.physical_size.unwrap_or(0) } else { 0 };
         *total_physical_bytes += entry_physical;
         *total_entries += 1;
         progress.entries_scanned.fetch_add(1, Ordering::Relaxed);
@@ -147,6 +169,10 @@ fn run_local_reconcile(
     };
 
     let mut listed_ids: Vec<i64> = Vec::new();
+    // ONE set for the whole walk (NOT per-dir), exactly like jwalk's single
+    // `seen_inodes` in `run_scan`: dedups hardlinks across the entire tree so an
+    // inode's bytes hit the summary totals once. See `build_live_children`.
+    let mut seen_inodes: HashSet<u64> = HashSet::new();
     let mut total_entries = 0u64;
     let mut total_dirs = 0u64;
     let mut total_physical_bytes = 0u64;
@@ -207,6 +233,7 @@ fn run_local_reconcile(
             IndexStore::list_children_on(dir_id, &conn).map_err(|e| ScanError::WriterSend(e.to_string()))?;
         let live_children = build_live_children(
             &fs_children,
+            &mut seen_inodes,
             &mut total_entries,
             &mut total_dirs,
             &mut total_physical_bytes,
@@ -633,7 +660,7 @@ mod tests {
         // an artifact of this test's deep root (in prod the reconcile root is `/` =
         // `ROOT_ID`, no ancestors). The convergence claim is about the dirs BOTH
         // paths actually walked: the subtree.
-        let subtree_dirs: std::collections::HashSet<i64> = [rp_id, a, deep, b].into_iter().collect();
+        let subtree_dirs: HashSet<i64> = [rp_id, a, deep, b].into_iter().collect();
         let scoped_dir_stats = |h: &Harness| -> Vec<DirStatsSnap> {
             dir_stats_snapshot(h)
                 .into_iter()
@@ -682,6 +709,82 @@ mod tests {
                 "{label} must be re-listed at the reconcile epoch (full coverage)"
             );
         }
+    }
+
+    /// Hardlink dedup convergence (data-safety): a reconcile of an unchanged tree
+    /// containing a hardlinked inode must agree with jwalk on the deduped byte totals.
+    ///
+    /// jwalk's fresh `run_scan` counts each inode's physical bytes ONCE (zeroes the
+    /// 2nd+ occurrence). The reconcile's `build_live_children` must accumulate
+    /// `total_physical_bytes` the same way, else `ScanSummary.total_physical_bytes`
+    /// (and the live `bytes_scanned` progress) inflates by every hardlink's size — a
+    /// fresh scan and a reconcile of the SAME tree would report different totals.
+    ///
+    /// We assert the order-independent TOTAL (the summary's `total_physical_bytes`),
+    /// which is invariant to which of the two hardlink names jwalk vs the reconcile
+    /// happens to size. (The PERSISTED entries are kept one-per-inode by the writer's
+    /// own `UpsertEntryV2` dedup, asserted as a guard via the root's recursive sizes.)
+    #[test]
+    fn reconcile_after_jwalk_does_not_double_count_hardlinks() {
+        use crate::indexing::scanner::scan_subtree;
+
+        let h = setup();
+        let root = tree_root();
+        let rp = root.path();
+        ensure_path_in_db(&h, &norm(rp));
+
+        // A real tree with a HARDLINK: `link.txt` and `orig.txt` share one inode.
+        std::fs::write(rp.join("orig.txt"), b"hardlinked-body").unwrap(); // 15 bytes
+        std::fs::hard_link(rp.join("orig.txt"), rp.join("link.txt")).expect("hard_link");
+        std::fs::write(rp.join("plain.txt"), b"plain").unwrap(); // 5 bytes
+
+        // Verify the hardlink actually shares an inode (sandboxes occasionally fall
+        // back to a copy). If not, STOP rather than test nothing.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::MetadataExt;
+            let i1 = std::fs::metadata(rp.join("orig.txt")).unwrap().ino();
+            let i2 = std::fs::metadata(rp.join("link.txt")).unwrap().ino();
+            assert_eq!(i1, i2, "hard_link must share an inode for this test to mean anything");
+            assert!(
+                std::fs::metadata(rp.join("orig.txt")).unwrap().nlink() > 1,
+                "hardlinked inode must report nlink > 1"
+            );
+        }
+
+        // Build the index with the REAL jwalk scanner (which dedups hardlinks).
+        let cancelled = AtomicBool::new(false);
+        let jwalk_summary = scan_subtree(rp, &h.writer, &cancelled).expect("jwalk scan");
+        h.writer.flush_blocking().unwrap();
+
+        let rp_id = resolve(&h, rp).expect("root resolved");
+        let physical_before = dir_stats(&h, rp_id)
+            .expect("root stats after jwalk")
+            .recursive_physical_size;
+
+        // Reconcile the SAME, UNCHANGED tree.
+        bump_epoch(&h);
+        let reconcile_summary = run_reconcile(&h, rp, false).expect("reconcile after jwalk");
+
+        // Primary claim: the reconcile's deduped total matches jwalk's. RED before the
+        // fix (the reconcile counts the hardlink's bytes twice), GREEN after.
+        assert_eq!(
+            reconcile_summary.total_physical_bytes, jwalk_summary.total_physical_bytes,
+            "reconcile must dedup hardlinks in total_physical_bytes exactly like jwalk \
+             (jwalk={}, reconcile={})",
+            jwalk_summary.total_physical_bytes, reconcile_summary.total_physical_bytes
+        );
+
+        // Guard: the persisted aggregate is one-per-inode (the writer's UpsertEntryV2
+        // dedup keeps this true regardless), so the root's recursive size is unchanged.
+        let physical_after = dir_stats(&h, rp_id)
+            .expect("root stats after reconcile")
+            .recursive_physical_size;
+        assert_eq!(
+            physical_after, physical_before,
+            "reconcile must not change the root's recursive physical size \
+             ({physical_before} -> {physical_after})"
+        );
     }
 
     /// Cancel (data-safety): a cancelled reconcile returns `was_cancelled`
