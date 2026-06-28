@@ -162,13 +162,20 @@ impl IndexManager {
         // Reconcile vs truncate: an already-populated index is RESCANNED in place
         // (diff each dir, write only changes) so the last-good data stays visible
         // (stale) throughout and a mid-rescan disconnect leaves it intact. A first
-        // scan (empty DB) truncates and bulk-builds (faster on empty). The
-        // predicate is "the entries table already has data" — which is true for
-        // both a prior COMPLETED index and a persisted PARTIAL (from a prior
-        // mid-scan disconnect), so a persisted partial survives relaunch shown stale instead
-        // of being truncated. See `indexing/DETAILS.md` § "Non-destructive rescan".
+        // scan (DB holds only the ROOT sentinel) truncates and bulk-builds (faster
+        // on empty). The predicate is "the entries table has rows BEYOND the ROOT
+        // sentinel" — true for both a prior COMPLETED index and a persisted PARTIAL
+        // (from a prior mid-scan disconnect), so a persisted partial survives
+        // relaunch shown stale instead of being truncated. See `indexing/DETAILS.md`
+        // § "Non-destructive rescan".
+        //
+        // MUST be `> 1`, not `> 0`: `ensure_root_sentinel` always inserts the ROOT
+        // row (id=1) and `TruncateData` re-inserts it, so a never-scanned DB has
+        // `entry_count == 1`. With `> 0`, a first connect would run the per-entry
+        // reconcile against the 1-row sentinel DB instead of the faster bulk build.
+        // (Same `> 1` rule as the LOCAL path's `local_rescan_reconciles`.)
         let reconcile = IndexStore::get_entry_count(self.store.read_conn())
-            .map(|n| n > 0)
+            .map(|n| n > 1)
             .unwrap_or(false);
 
         // Clear the prior completion marker (so an interrupted rescan heals — no
