@@ -63,7 +63,7 @@ describe('IndexingStatusIndicator a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  it('scanning (counter-only, no denominator) shows the icon with no a11y violations', async () => {
+  it('single-drive scanning (counter-only, no denominator) names the drive and shows no bar', async () => {
     activeVolumes = [scanActivity('root', { priorTotalEntries: null, volumeUsedBytes: null })]
     aggregationByVolume = {}
     const target = document.createElement('div')
@@ -71,11 +71,34 @@ describe('IndexingStatusIndicator a11y', () => {
     mount(IndexingStatusIndicator, { target, props: {} })
     await tick()
     expect(target.querySelector('.indexing-status')).not.toBeNull()
+    // The drive-name heading now shows even for a single drive (M1).
+    expect(target.querySelector('.drive-heading')?.textContent).toBe('Macintosh HD')
     expect(target.querySelector('.tooltip-progress')).toBeNull()
     await expectNoA11yViolations(target)
   })
 
-  it('scanning with calibrated progress shows the bar with no a11y violations', async () => {
+  it('single-drive first scan (tier 2) shows count + elapsed and NO progress bar', async () => {
+    // A rough first scan: a byte denominator but no prior-scan calibration, so
+    // there's no trustworthy percent — count + elapsed only, no bar.
+    activeVolumes = [scanActivity('root', { priorTotalEntries: null, volumeUsedBytes: 10_000_000 })]
+    aggregationByVolume = {}
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(IndexingStatusIndicator, { target, props: {} })
+    await tick()
+    expect(target.querySelector('.indexing-status')).not.toBeNull()
+    expect(target.querySelector('.drive-heading')?.textContent).toBe('Macintosh HD')
+    // No bar and no progressbar role for the rough first scan.
+    expect(target.querySelector('.tooltip-progress')).toBeNull()
+    expect(target.querySelector('[role="progressbar"]')).toBeNull()
+    // The count is still present (the live label screen readers announce).
+    expect(target.querySelector('.tooltip-detail')?.textContent).toContain('42,000')
+    // Elapsed clock present (scanStartedAt is 4 s ago).
+    expect(target.querySelector('.tooltip-detail')?.textContent).toMatch(/·\s*\d+:\d{2}/)
+    await expectNoA11yViolations(target)
+  })
+
+  it('single-drive scanning with calibrated progress names the drive and shows the bar', async () => {
     activeVolumes = [scanActivity('root', { priorTotalEntries: 100000 })]
     aggregationByVolume = {}
     const target = document.createElement('div')
@@ -83,7 +106,9 @@ describe('IndexingStatusIndicator a11y', () => {
     mount(IndexingStatusIndicator, { target, props: {} })
     await tick()
     expect(target.querySelector('.indexing-status')).not.toBeNull()
+    expect(target.querySelector('.drive-heading')?.textContent).toBe('Macintosh HD')
     expect(target.querySelector('.tooltip-progress')).not.toBeNull()
+    expect(target.querySelector('[role="progressbar"]')).not.toBeNull()
     await expectNoA11yViolations(target)
   })
 

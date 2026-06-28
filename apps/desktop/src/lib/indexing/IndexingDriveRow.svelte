@@ -14,6 +14,7 @@
         computeScanProgress,
         type EtaSnapshot,
     } from './eta'
+    import { formatElapsedClock } from './elapsed'
     import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
@@ -53,13 +54,16 @@
     const priorScanDurationMs = $derived(activity.priorScanDurationMs)
     const volumeUsedBytes = $derived(activity.volumeUsedBytes)
 
+    // The live entry/dir tally on its own detail line under the label (always
+    // shown once the first progress event lands — the honest primary signal),
+    // empty before then so the row falls back to the bare label, never "0
+    // entries, 0 dirs".
     const scanCounters = $derived(
         entriesScanned > 0
-            ? ' ' +
-                  tString('indexing.scan.counters', {
-                      entriesText: formatNumber(entriesScanned),
-                      dirsText: formatNumber(dirsFound),
-                  })
+            ? tString('indexing.scan.counters', {
+                  entriesText: formatNumber(entriesScanned),
+                  dirsText: formatNumber(dirsFound),
+              })
             : '',
     )
 
@@ -69,9 +73,41 @@
     const scanProgress = $derived(scanProgressInfo?.fraction ?? null)
     const scanRough = $derived(scanProgressInfo?.rough ?? false)
 
-    const scanLabel = $derived(
-        tString(scanRough ? 'indexing.scan.labelFirst' : 'indexing.scan.label') + scanCounters,
-    )
+    const scanLabel = $derived(tString(scanRough ? 'indexing.scan.labelFirst' : 'indexing.scan.label'))
+
+    // A 1 Hz clock that ticks ONLY while this drive is scanning, so the rough
+    // first-scan's elapsed time advances live even when progress events stall
+    // (the count itself comes from ~500 ms backend events). `Date.now()` in a
+    // `$derived` isn't reactive, so without this tick the clock would freeze on
+    // a stalled scan. Idle/replaying rows run no timer.
+    let now = $state(Date.now())
+    $effect(() => {
+        if (!scanning) return
+        now = Date.now()
+        const id = setInterval(() => {
+            now = Date.now()
+        }, 1000)
+        return () => {
+            clearInterval(id)
+        }
+    })
+
+    // The rough first scan has no trustworthy percent (the byte-ratio sits near
+    // 0 on a big volume), so it shows count + elapsed instead of a bar — honest
+    // liveness without a misleading number. `null` under a second so the clock
+    // never flashes "0:00".
+    const scanElapsed = $derived(scanStartedAt > 0 ? formatElapsedClock(now - scanStartedAt) : null)
+
+    // The scan detail line: the counters, plus the elapsed clock for the rough
+    // first-scan tier (a calibrated rescan shows its percent + ETA on the bar
+    // instead). Empty counters (pre-first-event) → no detail line at all.
+    const scanDetail = $derived.by(() => {
+        if (scanCounters === '') return null
+        if (scanRough && scanElapsed != null) {
+            return tString('indexing.scan.countersElapsed', { counters: scanCounters, elapsed: scanElapsed })
+        }
+        return scanCounters
+    })
 
     const scanUnit = $derived(scanRough ? 'bytes' : 'entries')
     const scanProcessed = $derived(scanRough ? bytesScanned : entriesScanned)
@@ -192,8 +228,13 @@
     const label = $derived(
         mode === 'aggregation' ? aggLabel : mode === 'scan' ? scanLabel : tString('indexing.replay.label'),
     )
-    const detail = $derived(mode === 'replay' ? replayDetail : null)
-    const progress = $derived(mode === 'aggregation' ? aggProgress : mode === 'scan' ? scanProgress : replayProgress)
+    const detail = $derived(mode === 'scan' ? scanDetail : mode === 'replay' ? replayDetail : null)
+    // The scan bar/percent shows ONLY for the calibrated tier (`!scanRough`):
+    // the rough first scan leads with count + elapsed and no fabricated percent.
+    const scanBarProgress = $derived(scanRough ? null : scanProgress)
+    const progress = $derived(
+        mode === 'aggregation' ? aggProgress : mode === 'scan' ? scanBarProgress : replayProgress,
+    )
     const eta = $derived(mode === 'aggregation' ? aggEta : mode === 'scan' ? scanEtaDisplay : replayEta)
 
     const percent = $derived(progress != null ? Math.min(100, Math.round(progress * 100)) : null)
@@ -230,17 +271,20 @@
         gap: var(--spacing-xxs);
     }
 
-    /* The drive-name heading, shown only when several drives index at once so
-       each block is attributable. Slightly emphasized over the status line. */
+    /* The drive-name heading, always shown so each block names its drive. Reads
+       as a real title above the status line: full-strength primary text, bolder
+       than the secondary/tertiary status and detail lines under it. */
     .drive-heading {
         font-weight: 600;
-        color: var(--color-text-secondary);
+        color: var(--color-text-primary);
     }
 
-    /* The scan label carries the live entry/dir counters, which grow without
-       bound. No `white-space: nowrap`: it wraps within the tooltip's own
-       `max-width` (on `.cmdr-tooltip`) instead of overflowing past the
-       right-anchored, viewport-clamped box and clipping off the window edge. */
+    /* The detail line under the label: the scan's live entry/dir counters (plus
+       a "· M:SS" elapsed clock on a first scan) or replay's event count. The
+       counters grow without bound, so no `white-space: nowrap`: the line wraps
+       within the tooltip's own `max-width` (on `.cmdr-tooltip`) instead of
+       overflowing past the right-anchored, viewport-clamped box and clipping
+       off the window edge. */
     .tooltip-detail {
         color: var(--color-text-tertiary);
     }

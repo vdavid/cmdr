@@ -1213,6 +1213,7 @@ export type MessageKey =
   | 'indexing.rescan.watcherChannelOverflow'
   | 'indexing.rescan.watcherStartFailed'
   | 'indexing.scan.counters'
+  | 'indexing.scan.countersElapsed'
   | 'indexing.scan.etaRough'
   | 'indexing.scan.label'
   | 'indexing.scan.labelFirst'

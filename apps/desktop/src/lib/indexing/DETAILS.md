@@ -71,18 +71,29 @@ aggregating with no live scan/replay entry (its scan already finished) gets a sy
 tooltip that renders one `IndexingDriveRow` per active drive (from `getActiveIndexVolumes()`, plus a synthetic row for
 any aggregating volume with no live entry, from `getAggregatingVolumeIds()`). It resolves each `volumeId` to a display
 name via the volume store's `getVolumes()` (falling back to the id). The per-drive heading (`indexing.drive.heading`, a
-`{name}` passthrough) shows only when more than one drive is active, so the common single-drive case is as terse as
-before. The component renders the content inside a `<div hidden>` host and passes the inner content div (not the hidden
-host) to the tooltip action via `contentEl`, so the adopted element doesn't carry `hidden` into the tooltip.
+`{name}` passthrough) is ALWAYS shown — even for a single drive — so the user can always tell which drive is indexing;
+it reads as a title (full-strength `--color-text-primary`, bold) above the status line. The component renders the
+content inside a `<div hidden>` host and passes the inner content div (not the hidden host) to the tooltip action via
+`contentEl`, so the adopted element doesn't carry `hidden` into the tooltip.
 
 Each `IndexingDriveRow` owns its own ETA sliding-window (so several drives indexing at once each get an independent rate
 estimate) and renders one of three modes (priority aggregation > scan > replay), reading from its `VolumeIndexActivity`
 plus its own `AggregationActivity | undefined` (this volume's aggregation, or `undefined` when it isn't aggregating):
 
-- **Scan**: a two-tier label + counters, plus `ProgressBar` + percent + ETA when a denominator exists. Tier 1
-  (calibrated): "Scanning your drive... 42,000 entries, 1,200 dirs" with "42%, 1m 20s left". Tier 2 (first scan, rough):
-  "Scanning your drive (first scan)... ..." with "36%, roughly 19m left". `computeScanProgress` null → the counter-only
-  label.
+- **Scan**: a two-tier label, with the live entry/dir counters on their own detail line under it (the honest primary
+  signal, always shown once the first progress event lands).
+  - **Tier 1 (calibrated)**: "Scanning your drive..." + "42,000 entries, 1,200 dirs" + a `ProgressBar` with "42%, 1m 20s
+    left". The trustworthy prior-scan denominator earns the bar + percent + ETA.
+  - **Tier 2 (first scan, rough)**: "Scanning your drive (first scan)..." + "42,000 entries, 1,200 dirs · 2:34" — count +
+    an **elapsed clock**, and NO bar and NO percent. The byte-ratio denominator is unreliable early (sits near 0 on a big
+    volume), so showing a precise percent there would lie; the count + elapsed clock give honest liveness instead. This is
+    a render-gate (`scanRough` suppresses the bar), not a math change — `computeScanProgress` still computes the rough
+    fraction (used only to pick the "(first scan)" label and the gate). The elapsed clock advances off a 1 Hz `$state`
+    tick gated on scanning (`Date.now()` in a `$derived` isn't reactive, so without the tick the clock would freeze when
+    progress stalls — the reported NAS first-scan case); `formatElapsedClock` (shared `./elapsed.ts`, also used by the
+    breadcrumb badge) returns `null` under a second, so before the first counters arrive the row falls back to the bare
+    label with no "0 entries · 0:00" flash.
+  - **Neither denominator** (`computeScanProgress` null): the same counter-only label, no bar.
 - **Aggregation**: phase label ("Saving entries...", "Loading directories...", "Sorting directories...", "Computing
   directory sizes...", "Saving directory sizes...") + `ProgressBar` + percent + ETA for the phases that have progress
   (`saving_entries`, `computing`, `writing`).
@@ -104,8 +115,10 @@ The hourglass is a ~14px `<Icon>` (the same icon as the size-column stale indica
   statfs denominator), flagged `rough`.
 - **Neither** → `null` (counter-only, no bar).
 
-The ETA window samples the SAME counter the tier divides by (entries for tier 1, bytes for tier 2) — don't mix them.
-`formatEta` carries a `Number.isFinite` guard so a dropped null gate can't surface "Infinitym left".
+`rough` is computed but its fraction is NOT rendered as a bar/percent: the row shows count + an elapsed clock for the
+first-scan tier instead (see "Status indicator tooltip content" above). The flag still drives the "(first scan)" label
+and the render-gate. The ETA window samples the SAME counter the tier divides by (entries for tier 1, bytes for tier 2)
+— don't mix them. `formatEta` carries a `Number.isFinite` guard so a dropped null gate can't surface "Infinitym left".
 
 ## ETA mechanics (`eta.ts`)
 
@@ -122,8 +135,12 @@ stateful glue and stays in each `IndexingDriveRow` (so per-drive rates don't col
   `computeScanProgress` (tier selection, both clamps, null/zero-denominator fallbacks) and the `formatEta` non-finite
   pin.
 - **`IndexingStatusIndicator.a11y.test.ts`**: tier-3 axe checks for idle (renders nothing), single-drive scanning
-  (counter-only and calibrated-with-bar), aggregating-with-progress, and multi-drive (a heading per drive). Mocks both
-  `index-state.svelte` and the volume store's `getVolumes` (drive-name resolution).
+  (counter-only, first-scan tier-2 count+elapsed with no bar, and calibrated-with-bar — each asserting the always-on
+  drive heading), aggregating-with-progress, and multi-drive (a heading per drive). Mocks both `index-state.svelte` and
+  the volume store's `getVolumes` (drive-name resolution).
+- **`IndexingDriveRow.a11y.test.ts`**: per-row axe checks for each mode, including the first-scan tier-2 row (count +
+  elapsed, no `progressbar` role).
+- **`elapsed.test.ts`**: `formatElapsedClock` (sub-second → `null`, `m:ss` formatting, zero-padding, flooring).
 
 The reactive event-driven glue in `index-state.svelte.ts` is allowlisted in `coverage-allowlist.json`. Manual end-to-end
 testing runs the Rust indexer via `pnpm dev`.

@@ -75,6 +75,20 @@ describe('IndexingDriveRow a11y', () => {
     target.remove()
   })
 
+  it('scanning, first scan (tier 2) shows count + elapsed and no progress bar', async () => {
+    // A byte denominator but no prior calibration → rough first scan: count +
+    // elapsed clock, no bar and no progressbar role.
+    const target = await mountRow({
+      activity: scanActivity({ priorTotalEntries: null, volumeUsedBytes: 10_000_000 }),
+    })
+    expect(target.querySelector('.tooltip-progress')).toBeNull()
+    expect(target.querySelector('[role="progressbar"]')).toBeNull()
+    expect(target.querySelector('.tooltip-detail')?.textContent).toContain('42,000')
+    expect(target.querySelector('.tooltip-detail')?.textContent).toMatch(/·\s*\d+:\d{2}/)
+    await expectNoA11yViolations(target)
+    target.remove()
+  })
+
   it('scanning with a calibrated progress bar has no a11y violations', async () => {
     const target = await mountRow({ activity: scanActivity({ priorTotalEntries: 100000 }) })
     expect(target.querySelector('.tooltip-progress')).not.toBeNull()

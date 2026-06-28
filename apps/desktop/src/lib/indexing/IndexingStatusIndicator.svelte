@@ -77,10 +77,6 @@
         }
     }
 
-    // Show the per-drive heading only when more than one drive is indexing, so
-    // the common single-drive case stays as terse as before.
-    const showHeadings = $derived(rows.length > 1)
-
     // The tooltip action adopts `tooltipContent` (not the hidden wrapper) so it
     // renders visibly inside the tooltip: an adopted element keeps its own
     // `hidden` attribute, so a hidden host passed as `contentEl` would render
@@ -105,7 +101,7 @@
                 <IndexingDriveRow
                     activity={row.activity}
                     driveName={driveName(row.activity.volumeId)}
-                    showHeading={showHeadings}
+                    showHeading={true}
                     aggregation={row.aggregation}
                 />
             {/each}

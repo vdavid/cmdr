@@ -7,7 +7,7 @@
 
   "indexing.drive.heading": "{name}",
   "@indexing.drive.heading": {
-    "description": "Heading naming which drive a block in the indexing tooltip is about, shown when more than one drive is indexing at once (e.g. 'Macintosh HD', 'Backups', a phone's name). {name} is the drive''s display name; this is just the name on its own line, styled as a heading.",
+    "description": "Heading naming which drive a block in the indexing tooltip is about, always shown above that drive''s status so the user can tell which drive is indexing (e.g. 'Macintosh HD', 'Backups', a phone''s name). {name} is the drive''s display name; this is just the name on its own line, styled as a heading.",
     "placeholders": {
       "name": "the drive''s display name (e.g. Macintosh HD, Backups)"
     }
@@ -32,6 +32,15 @@
       "dirsText": "number of folders found so far, already formatted (e.g. 678)"
     },
     "screenshot": "indexing-status.png"
+  },
+
+  "indexing.scan.countersElapsed": "{counters} · {elapsed}",
+  "@indexing.scan.countersElapsed": {
+    "description": "Detail line under the heading during a drive''s FIRST scan, joining the running entry/dir tally with how long the scan has been running, e.g. '12,345 entries, 678 dirs · 2:34'. There''s no trustworthy percent on a first scan, so this count + elapsed clock is the honest progress signal instead of a bar. The middle dot (·) is a separator; keep it. {counters} and {elapsed} are already formatted (don''t translate inside them); place the separator idiomatically for your language.",
+    "placeholders": {
+      "counters": "the already-formatted entry/dir tally (e.g. '12,345 entries, 678 dirs')",
+      "elapsed": "how long the scan has been running, as a clock (minutes:seconds, e.g. 2:34)"
+    }
   },
 
   "indexing.scan.etaRough": "roughly {eta}",

@@ -10,6 +10,8 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
   aggregation signal; reacts to the Tauri index events.
 - **`index-events.ts`**: listens for `index-dir-updated`, calls back with updated paths.
 - **`eta.ts`**: pure ETA helpers + `computeScanProgress` (two-tier scan fraction).
+- **`elapsed.ts`**: pure `formatElapsedClock` (`m:ss`, `null` under 1s) — the shared elapsed clock for the first-scan
+  drive row here AND the breadcrumb `DriveIndexBadge` (one source, no duplicate).
 - **`IndexingStatusIndicator.svelte`** + **`IndexingDriveRow.svelte`**: top-right hourglass shown whenever ANY drive is
   indexing; tooltip lists one row per active drive (each row owns its ETA window).
 - **`drive-index-prefs.ts`**: FE-OWNED persisted prefs the backend never reads: per-drive "don't ask again" silences

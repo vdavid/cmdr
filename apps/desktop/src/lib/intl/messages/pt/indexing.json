@@ -20,6 +20,11 @@
   "@indexing.scan.counters": {
     "sourceHash": "fd4d242"
   },
+  "indexing.scan.countersElapsed": "{counters} · {elapsed}",
+  "@indexing.scan.countersElapsed": {
+    "sourceHash": "aeb0b57",
+    "sameAsSourceJustification": "Punctuation-only joiner: two preformatted placeholders ({counters}, {elapsed}) joined by a middle dot, no translatable prose. Every locale uses the same \" · \" separator (matches driveIndex.tooltipScanningCountElapsed)."
+  },
   "indexing.scan.etaRough": "cerca de {eta}",
   "@indexing.scan.etaRough": {
     "sourceHash": "6f92820"

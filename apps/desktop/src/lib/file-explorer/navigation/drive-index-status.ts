@@ -6,6 +6,7 @@
 // items, and footer copy — kept pure (no Svelte, no DOM) so the state→color and
 // state→copy contracts are unit-testable without mounting a component.
 
+import { formatElapsedClock } from '$lib/indexing/elapsed'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import { formatInteger } from '$lib/intl/number-format'
 import type { Freshness, VolumeIndexStatus } from '$lib/ipc/bindings'
@@ -140,18 +141,4 @@ export function driveIndexScanProgress(
     key: 'fileExplorer.navigation.driveIndex.tooltipScanningCount',
     params: { countText, count: entriesScanned },
   }
-}
-
-/**
- * Format an elapsed duration as a clock (`m:ss`, e.g. `0:42`, `12:05`), or
- * `null` when there's under a second to show (so the caller falls back to the
- * count-only phrasing). A clock, not a localized number, so it's built here
- * rather than routed through `$lib/intl` number formatting.
- */
-function formatElapsedClock(elapsedMs: number): string | null {
-  if (!Number.isFinite(elapsedMs) || elapsedMs < 1000) return null
-  const totalSeconds = Math.floor(elapsedMs / 1000)
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${String(minutes)}:${String(seconds).padStart(2, '0')}`
 }
