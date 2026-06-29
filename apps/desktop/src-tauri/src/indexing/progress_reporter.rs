@@ -1,16 +1,19 @@
 //! `ScanProgressReporter`: the 500 ms progress + mid-scan partial-aggregation
-//! tick loop for a full local (jwalk) scan.
+//! tick loop, shared by EVERY scan path (local jwalk fresh/reconcile, SMB/MTP
+//! trait fresh/reconcile).
 //!
-//! `IndexManager::start_scan` spawns one of these alongside the scan thread so
-//! the coordinator reads as "dispatch scanner → await completion → spawn live
-//! loop" without an inlined polling loop. Each 500 ms tick emits an
+//! Each scan path spawns one of these alongside its scan thread so the
+//! coordinator reads as "dispatch scanner → await completion → spawn live loop"
+//! without an inlined polling loop. Each 500 ms tick emits an
 //! `index-scan-progress` event and, on every `PARTIAL_AGG_TICK_INTERVAL`-th tick
 //! (and only while the writer isn't backed up), asks the writer to compute a
 //! bounded subset of partial directory sizes so visible listings show growing
-//! numbers during the scan. The send-decision and hot-path math live in
-//! [`super::partial_agg`]; this is the dumb caller. The loop ends when the
-//! completion handler sets `scan_done`, so partial passes are structurally scoped
-//! to the full-scan window.
+//! numbers during the scan. The partial-aggregation `source` is chosen by the
+//! caller per scan kind (`Maps` for a fresh scan whose accumulator maps are
+//! populated, `Sql` for a reconcile rescan where they're empty). The
+//! send-decision and hot-path math live in [`super::partial_agg`]; this is the
+//! dumb caller. The loop ends when the completion handler sets `scan_done`, so
+//! partial passes are structurally scoped to the full-scan window.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -22,13 +25,14 @@ use tauri_specta::Event;
 
 use super::events::IndexScanProgressEvent;
 use super::partial_agg;
+use super::routing;
 use super::scanner::ScanProgress;
 use super::writer::{IndexWriter, PartialAggSource, WriteMessage};
 use crate::file_system::listing::caching;
 
 /// Drives the periodic scan-progress events and mid-scan partial aggregation for
-/// one full local scan. Construct with [`ScanProgressReporter::new`], then
-/// [`spawn`](ScanProgressReporter::spawn) the background loop.
+/// one full scan, on any scan path. Construct with [`ScanProgressReporter::new`],
+/// then [`spawn`](ScanProgressReporter::spawn) the background loop.
 ///
 /// The handles are kept by value (cloned in by the caller) so the spawned loop is
 /// fully self-contained. `AppHandle` stays here rather than being abstracted
@@ -45,6 +49,11 @@ pub(super) struct ScanProgressReporter {
     app: AppHandle,
     /// The scanned volume's id: rides every event payload and filters hot paths.
     volume_id: String,
+    /// Which source mid-scan partial aggregation computes from, chosen by the
+    /// caller per scan kind: `Maps` for a fresh scan (accumulator maps populated
+    /// by `InsertEntriesV2`), `Sql` for a reconcile rescan (maps empty, recompute
+    /// from committed rows).
+    partial_agg_source: PartialAggSource,
     /// Tick counter; gates partial-aggregation passes via `partial_agg`.
     tick: u64,
 }
@@ -52,12 +61,21 @@ pub(super) struct ScanProgressReporter {
 impl ScanProgressReporter {
     /// Create a reporter for a scan of `volume_id`. The writer and app handles are
     /// cloned in by the caller so the spawned loop owns everything it needs.
-    pub(super) fn new(progress: Arc<ScanProgress>, writer: IndexWriter, app: AppHandle, volume_id: String) -> Self {
+    /// `partial_agg_source` picks the mid-scan partial-aggregation source by scan
+    /// kind (`Maps` fresh / `Sql` reconcile).
+    pub(super) fn new(
+        progress: Arc<ScanProgress>,
+        writer: IndexWriter,
+        app: AppHandle,
+        volume_id: String,
+        partial_agg_source: PartialAggSource,
+    ) -> Self {
         Self {
             progress,
             writer,
             app,
             volume_id,
+            partial_agg_source,
             tick: 0,
         }
     }
@@ -89,11 +107,22 @@ impl ScanProgressReporter {
             // normalization.
             let listings = caching::snapshot_listings();
             let hot_paths = partial_agg::collect_hot_paths(&listings, &self.volume_id);
+            // Map the firmlink-normalized absolute hot paths into the volume's
+            // index-relative space so the writer's `resolve_path_under(ROOT_ID, ..)`
+            // resolves them: a pass-through for the local `root` (its index is
+            // rooted at `/`), a mount-relative strip for SMB, and a scheme strip
+            // for MTP. Reuses `routing::index_read_path` — the SAME transform
+            // enrichment and the dir-stats queries use (single-source), so a
+            // network hot path resolves identically here and on the read side. A
+            // path that doesn't map (unknown volume, outside the mount) is dropped,
+            // exactly like an unindexed listing.
+            let hot_paths: Vec<String> = hot_paths
+                .iter()
+                .filter_map(|abs| routing::index_read_path(&self.volume_id, abs))
+                .collect();
             match self.writer.try_send(WriteMessage::ComputePartialAggregates {
                 hot_paths,
-                // This local-jwalk timer keeps the maps source; the Sql source
-                // wiring (reconcile/network) is a later change.
-                source: PartialAggSource::Maps,
+                source: self.partial_agg_source,
             }) {
                 Ok(true) => {}
                 Ok(false) => log::debug!("Partial aggregation pass dropped: writer channel full"),

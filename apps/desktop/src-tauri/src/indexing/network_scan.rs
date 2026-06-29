@@ -13,18 +13,18 @@
 
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::time::Duration;
 
 use tauri_specta::Event;
 
 use super::events::{
     ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
-    IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent, set_phase_for,
+    IndexScanCompleteEvent, IndexScanStartedEvent, set_phase_for,
 };
 use super::manager::{IndexManager, ScanCalibration};
+use super::progress_reporter::ScanProgressReporter;
 use super::state::IndexVolumeKind;
 use super::store::IndexStore;
-use super::writer::WriteMessage;
+use super::writer::{PartialAggSource, WriteMessage};
 
 /// Replay the changes the live watcher buffered during a `Volume`-trait scan,
 /// dispatching to the right per-backend buffer (SMB `CHANGE_NOTIFY` vs. MTP PTP
@@ -233,28 +233,29 @@ impl IndexManager {
         self.scan_handle = Some(ScanHandle::new(Arc::clone(&progress), Arc::clone(&cancelled)));
         // `scanning` was already set true above (pre-arm before truncate).
 
-        // Progress reporter (500 ms), stops when the scan signals done.
+        // Progress + mid-scan partial-aggregation reporter (500 ms), stops when the
+        // scan signals done. The SAME generalized `ScanProgressReporter` the local
+        // jwalk path uses: it emits the identical `index-scan-progress` event AND
+        // drives mid-scan partial aggregation (which the bespoke inline loop never
+        // did), so network fresh/reconcile and MTP fresh/reconcile all get growing
+        // sizes through one path. Source by scan kind: a RECONCILE rescan leaves the
+        // accumulator maps empty, so it recomputes from committed rows (`Sql`); a
+        // FRESH `scan_volume_via_trait` populates the maps via `InsertEntriesV2`
+        // (`Maps`).
         let scan_done = Arc::new(AtomicBool::new(false));
-        let progress_report = Arc::clone(&progress);
-        let volume_id_progress = self.volume_id.clone();
-        let app_progress = self.app.clone();
-        let scan_done_progress = Arc::clone(&scan_done);
-        tauri::async_runtime::spawn(async move {
-            loop {
-                tokio::time::sleep(Duration::from_millis(500)).await;
-                if scan_done_progress.load(Ordering::Relaxed) {
-                    break;
-                }
-                let snap = progress_report.snapshot();
-                let _ = IndexScanProgressEvent {
-                    volume_id: volume_id_progress.clone(),
-                    entries_scanned: snap.entries_scanned,
-                    dirs_found: snap.dirs_found,
-                    bytes_scanned: snap.bytes_scanned,
-                }
-                .emit(&app_progress);
-            }
-        });
+        let partial_agg_source = if reconcile {
+            PartialAggSource::Sql
+        } else {
+            PartialAggSource::Maps
+        };
+        ScanProgressReporter::new(
+            Arc::clone(&progress),
+            self.writer.clone(),
+            self.app.clone(),
+            self.volume_id.clone(),
+            partial_agg_source,
+        )
+        .spawn(Arc::clone(&scan_done));
 
         // The walk + completion handler. Runs as a tokio task because the
         // `Volume` API is async. The writer is `Send` and shared by `Arc`.

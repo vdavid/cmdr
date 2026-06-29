@@ -10,8 +10,8 @@ use std::collections::HashMap;
 
 use rusqlite::Connection;
 
-use crate::indexing::store::{DirStatsById, EntryRow};
-use crate::indexing::writer::{PartialAggSource, WriteMessage};
+use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, ROOT_ID, resolve_path};
+use crate::indexing::writer::{IndexWriter, PartialAggSource, WriteMessage};
 
 use super::stress_test_helpers::{
     build_synthetic_tree_with_symlinks_and_hardlinks, check_db_consistency, check_recursive_has_symlinks, setup_writer,
@@ -86,7 +86,7 @@ fn dir_ids(entries: &[EntryRow]) -> Vec<i64> {
     let mut ids: Vec<i64> = entries.iter().filter(|e| e.is_directory).map(|e| e.id).collect();
     // The synthetic root sentinel (ROOT_ID) isn't in the entry list; the scanner
     // marks it too, so include it.
-    ids.push(crate::indexing::store::ROOT_ID);
+    ids.push(ROOT_ID);
     ids
 }
 
@@ -180,6 +180,202 @@ fn partial_passes_never_change_final_state() {
     assert_dir_stats_equal(&stats_a, &stats_b);
 
     writer.shutdown();
+}
+
+/// Upsert one entry by parent path (reconcile-style `UpsertEntryV2`) and block
+/// until it's committed, so a follow-up `resolve_path` on the read connection
+/// sees it.
+fn upsert(
+    writer: &IndexWriter,
+    read_conn: &Connection,
+    parent_path: &str,
+    name: &str,
+    is_dir: bool,
+    size: Option<u64>,
+) {
+    let parent_id = resolve_path(read_conn, parent_path)
+        .unwrap()
+        .unwrap_or_else(|| panic!("parent path '{parent_path}' resolves"));
+    writer
+        .send(WriteMessage::UpsertEntryV2 {
+            parent_id,
+            name: name.into(),
+            is_directory: is_dir,
+            is_symlink: false,
+            logical_size: size,
+            physical_size: size,
+            modified_at: None,
+            inode: None,
+            nlink: None,
+        })
+        .unwrap();
+    writer.flush_blocking().unwrap();
+}
+
+/// Recursive size of a directory by path (0 if it has no `dir_stats` row yet).
+fn recursive_size(read_conn: &Connection, path: &str) -> u64 {
+    let id = resolve_path(read_conn, path)
+        .unwrap()
+        .unwrap_or_else(|| panic!("'{path}' resolves"));
+    IndexStore::get_dir_stats_by_id(read_conn, id)
+        .unwrap()
+        .map(|s| s.recursive_logical_size)
+        .unwrap_or(0)
+}
+
+/// `min_subtree_epoch` of a directory by path (panics if it has no row).
+fn min_epoch(read_conn: &Connection, path: &str) -> u64 {
+    let id = resolve_path(read_conn, path)
+        .unwrap()
+        .unwrap_or_else(|| panic!("'{path}' resolves"));
+    IndexStore::get_dir_stats_by_id(read_conn, id)
+        .unwrap()
+        .unwrap_or_else(|| panic!("dir_stats exists for '{path}'"))
+        .min_subtree_epoch
+}
+
+/// Every directory entry id (for `MarkDirsListed`), including the ROOT sentinel.
+fn all_dir_ids(read_conn: &Connection) -> Vec<i64> {
+    let mut stmt = read_conn
+        .prepare("SELECT id FROM entries WHERE is_directory = 1")
+        .unwrap();
+    stmt.query_map([], |row| row.get::<_, i64>(0))
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect()
+}
+
+/// THE reconcile-with-large-ADD-delta differential test — the regression this
+/// whole unified-partials work fixes.
+///
+/// A reconcile rescan builds the tree with `UpsertEntryV2` under
+/// `SetDeltaPropagation(false)` (the `BulkReconcileGuard` reality), so the
+/// writer's accumulator maps stay EMPTY the whole walk. Before this change the
+/// only mid-scan partial source was `Maps`, which no-ops on empty maps — so a
+/// reconcile that GAINS thousands of entries showed flat placeholder sizes for
+/// the entire (multi-minute) walk, every size popping in at the final aggregate.
+/// The `Sql` source (the timer now sends on a reconcile) recomputes from
+/// committed rows, so the hot dir's size GROWS pass over pass.
+///
+/// Drives `ComputePartialAggregates { source: Sql }` directly, mimicking the
+/// timer. The hot path is index-relative (`/a/b`); for the local `root` volume
+/// that's the absolute path unchanged, and `compute_partial_aggregates_sql`
+/// resolves it under `ROOT_ID` — exactly what a network volume gets after
+/// `routing::index_read_path` strips its mount root.
+///
+/// Asserts:
+/// (a) the hot dir `/a/b` recursive size APPEARS and strictly GROWS across the
+///     mid-scan partial passes (flat → fails without the wiring),
+/// (b) a genuinely-new subtree reads `min_subtree_epoch == 0` mid-scan (the
+///     "≥ X" render — nothing is marked listed until the final reconcile),
+/// (c) after the final `MarkDirsListed` + `ComputeAllAggregates`, the result is
+///     byte-identical to the SAME reconcile run WITHOUT any partial passes, with
+///     the independent recompute-from-`entries` oracle confirming the partials
+///     never corrupted the final state.
+#[test]
+fn sql_partial_passes_grow_sizes_mid_reconcile_without_corrupting_final() {
+    /// Rounds of "add a new subdir + files under the hot dir", matching a
+    /// reconcile that discovers new directories one walk-step at a time.
+    const ROUNDS: usize = 6;
+    const FILES_PER_ROUND: u64 = 4;
+    const FILE_SIZE: u64 = 1000;
+    /// The epoch the final reconcile stamps onto every listed dir.
+    const LISTED_EPOCH: u64 = 9;
+
+    // Run one reconcile arm. With `run_partials`, fire a `Sql` partial pass after
+    // each round and record the hot dir's size (to prove growth). Returns the
+    // final `dir_stats` snapshot and the per-round size samples.
+    let run_arm = |run_partials: bool| -> (HashMap<i64, DirStatsById>, Vec<u64>) {
+        let (writer, read_conn, _dir) = setup_writer();
+        // Reconcile bracket: no per-entry propagation, maps stay empty.
+        writer.send(WriteMessage::SetDeltaPropagation(false)).unwrap();
+
+        // The hot dir a pane is showing throughout the rescan.
+        upsert(&writer, &read_conn, "/", "a", true, None);
+        upsert(&writer, &read_conn, "/a", "b", true, None);
+
+        let mut samples = Vec::new();
+        for r in 0..ROUNDS {
+            let sub = format!("sub_{r}");
+            upsert(&writer, &read_conn, "/a/b", &sub, true, None);
+            for f in 0..FILES_PER_ROUND {
+                upsert(
+                    &writer,
+                    &read_conn,
+                    &format!("/a/b/{sub}"),
+                    &format!("f{f}.dat"),
+                    false,
+                    Some(FILE_SIZE),
+                );
+            }
+
+            if run_partials {
+                writer
+                    .send(WriteMessage::ComputePartialAggregates {
+                        hot_paths: vec!["/a/b".to_string()],
+                        source: PartialAggSource::Sql,
+                    })
+                    .unwrap();
+                writer.flush_blocking().unwrap();
+                samples.push(recursive_size(&read_conn, "/a/b"));
+
+                // (b) Mid-scan, before any `MarkDirsListed`, a freshly-added
+                // subtree is uncovered: its `min_subtree_epoch` is 0, which the FE
+                // renders as "≥ X". The `Sql` pass writes the hot dir's direct
+                // children, so this row exists.
+                assert_eq!(
+                    min_epoch(&read_conn, &format!("/a/b/{sub}")),
+                    0,
+                    "a genuinely-new subtree reads min_subtree_epoch == 0 mid-scan"
+                );
+            }
+        }
+
+        // Final reconcile: stamp coverage, then the single bulk aggregate.
+        let mut listed = all_dir_ids(&read_conn);
+        listed.push(ROOT_ID); // harmless if already present; mirrors the scanner.
+        writer
+            .send(WriteMessage::MarkDirsListed {
+                ids: listed,
+                epoch: LISTED_EPOCH,
+            })
+            .unwrap();
+        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer.flush_blocking().unwrap();
+
+        let snap = snapshot_dir_stats(&read_conn);
+        if run_partials {
+            // Primary oracle: ground-truth recompute on the partial-pass arm.
+            check_db_consistency(&read_conn);
+        }
+        writer.shutdown();
+        (snap, samples)
+    };
+
+    // Arm without partials (baseline) and with partials (under test).
+    let (stats_no_partials, _) = run_arm(false);
+    let (stats_with_partials, samples) = run_arm(true);
+
+    // (a) The hot dir's size appeared and strictly grew across the passes. This
+    // is the regression: with the old `Maps`-only timer on a reconcile, every
+    // sample would be 0 (empty maps no-op) and this would fail.
+    assert_eq!(samples.len(), ROUNDS, "one sample per round");
+    assert!(samples[0] > 0, "the hot dir size appears on the first partial pass");
+    for w in samples.windows(2) {
+        assert!(
+            w[1] > w[0],
+            "the hot dir recursive size must GROW across passes, got {samples:?}"
+        );
+    }
+    // Sanity: the final sample equals the full delta (every file under /a/b).
+    assert_eq!(
+        *samples.last().unwrap(),
+        ROUNDS as u64 * FILES_PER_ROUND * FILE_SIZE,
+        "the last partial pass sees the whole hot subtree"
+    );
+
+    // (c) Byte-identical final state with vs without the partial passes.
+    assert_dir_stats_equal(&stats_no_partials, &stats_with_partials);
 }
 
 /// Two consecutive partial passes with no inserts between produce identical rows.

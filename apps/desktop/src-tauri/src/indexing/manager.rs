@@ -23,7 +23,7 @@ use super::scanner::{self, ScanConfig};
 use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
 use super::store::IndexStore;
 use super::watcher::{self, DriveWatcher};
-use super::writer::{IndexWriter, WriteMessage};
+use super::writer::{IndexWriter, PartialAggSource, WriteMessage};
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
@@ -696,11 +696,20 @@ impl IndexManager {
         // Spawn the 500 ms progress reporter: it emits `index-scan-progress` events
         // and drives mid-scan partial aggregation, running until `scan_done` is set
         // by the completion handler. The tick loop lives in `progress_reporter`.
+        // Source by scan kind: a RECONCILE rescan leaves the accumulator maps empty
+        // (it's all `UpsertEntryV2`), so it must recompute partial sizes from
+        // committed rows (`Sql`); a FRESH jwalk scan populates the maps (`Maps`).
+        let partial_agg_source = if reconcile {
+            PartialAggSource::Sql
+        } else {
+            PartialAggSource::Maps
+        };
         ScanProgressReporter::new(
             Arc::clone(&scan_handle.progress),
             self.writer.clone(),
             self.app.clone(),
             self.volume_id.clone(),
+            partial_agg_source,
         )
         .spawn(Arc::clone(&scan_done));
 
