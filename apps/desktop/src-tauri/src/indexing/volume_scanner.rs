@@ -73,8 +73,13 @@ const BATCH_SIZE: usize = 2000;
 /// otherwise-idle link), so keeping many in flight is a near-linear speedup until the
 /// server's SMB credits saturate. Only the network I/O is concurrent; results are
 /// processed serially on the walk task, so `ScanContext` id allocation and the writer
-/// stay single-owner. 32 keeps a NAS busy without flooding it.
-const SCAN_CONCURRENCY: usize = 32;
+/// stay single-owner. 64 is a deliberate balance: it captures essentially all the
+/// concurrency win, while staying gentle on a NAS that's also serving other load. Past
+/// it there's little to gain — on a real raidz1-HDD QNAP a fresh scan became bound by
+/// the single SQLite writer (its queue spiked into the thousands during big-directory
+/// bursts), NOT by listing parallelism: the disks sat ~15% busy (ZFS ARC served most
+/// metadata) and the NAS was never the ceiling. See DETAILS § "Bounded-concurrency walk".
+const SCAN_CONCURRENCY: usize = 64;
 
 /// Consecutive-failure backstop. A whole-volume disconnect that doesn't map to
 /// the typed `DeviceDisconnected`/`Disconnected` variant (e.g. a generic
