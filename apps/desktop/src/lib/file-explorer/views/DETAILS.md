@@ -141,13 +141,13 @@ away is re-detected next time it's shown.
 **Decision**: Finder tag dots (`TagDots.svelte`) ride the same visible-range pass as custom-folder icons, and reserve
 their cluster width in the column math **Why**: Tags (`com.apple.metadata:_kMDItemUserTags`) are a per-file `getxattr`,
 too costly to read inline in the bulk listing (~6× an `lstat`), so the backend defers them. `fetchVisibleRange` calls
-`commands.enrichTags(listingId, visiblePaths)` right beside `prefetchCustomFolderIcons` (gated by the
-`listing.showTags` setting); the backend patches the cache and emits a coalesced `directory-diff`, which re-fetches the
-range and re-renders the dots. `FilePane.handleListingComplete` additionally kicks off a low-priority **background
-sweep** (`sweepTagsForListing`, 500-path chunks) so off-screen rows get tags too; it's cancelable — each chunk re-checks
-the pane wasn't destroyed and the listing is still current (`loadGeneration` / `listingId`). The dots cluster at the
-right edge of the Name cell: in **Full** mode the Name column is `1fr`, so flexbox gives the dynamic-space behavior for
-free (name `flex: 1; min-width: 0` truncates, `TagDots` is `flex-shrink: 0`); in **Brief** mode columns are
+`commands.enrichTags(listingId, visiblePaths)` right beside `prefetchCustomFolderIcons` (gated by the `listing.showTags`
+setting); the backend patches the cache and emits a coalesced `directory-diff`, which re-fetches the range and
+re-renders the dots. `FilePane.handleListingComplete` additionally kicks off a low-priority **background sweep**
+(`sweepTagsForListing`, 500-path chunks) so off-screen rows get tags too; it's cancelable — each chunk re-checks the
+pane wasn't destroyed and the listing is still current (`loadGeneration` / `listingId`). The dots cluster at the right
+edge of the Name cell: in **Full** mode the Name column is `1fr`, so flexbox gives the dynamic-space behavior for free
+(name `flex: 1; min-width: 0` truncates, `TagDots` is `flex-shrink: 0`); in **Brief** mode columns are
 width-constrained, so `brief_columns.rs` adds a per-row `tag_cluster_width` suffix (a pure function of the colored-tag
 count, mirroring `tagClusterWidthPx` in `tag-dots-utils.ts` — keep the two in sync) before taking the per-column max, or
 the dots would clip the next column. Tags arrive after first paint, so the column grows once when the tag batch lands:

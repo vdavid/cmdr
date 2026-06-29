@@ -12,36 +12,37 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 1489 / 2217 keys have a screenshot (67%):** 870 direct (39%) and 619 representative (28%). 728 remain uncoupled.
+**Total: 1489 / 2217 keys have a screenshot (67%):** 870 direct (39%) and 619 representative (28%). 728 remain
+uncoupled.
 
-| Area | Direct | Representative | Uncoupled | Total | Any % |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| ai | 0 | 100 | 0 | 100 | 100% |
-| commandPalette | 3 | 0 | 3 | 6 | 50% |
-| commands | 121 | 0 | 31 | 152 | 80% |
-| common | 0 | 0 | 1 | 1 | 0% |
-| crashReporter | 0 | 15 | 0 | 15 | 100% |
-| downloads | 10 | 0 | 24 | 34 | 29% |
-| errorReporter | 10 | 0 | 25 | 35 | 29% |
-| errors | 3 | 338 | 0 | 341 | 100% |
-| feedback | 7 | 0 | 7 | 14 | 50% |
-| fileExplorer | 98 | 89 | 131 | 318 | 59% |
-| fileOperations | 67 | 0 | 72 | 139 | 48% |
-| goToPath | 5 | 0 | 5 | 10 | 50% |
-| indexing | 23 | 0 | 20 | 43 | 53% |
-| licensing | 37 | 0 | 60 | 97 | 38% |
-| lowDiskSpace | 0 | 0 | 5 | 5 | 0% |
-| main | 0 | 0 | 2 | 2 | 0% |
-| mtp | 5 | 17 | 0 | 22 | 100% |
-| notifications | 0 | 0 | 1 | 1 | 0% |
-| onboarding | 77 | 32 | 16 | 125 | 87% |
-| queryUi | 49 | 0 | 103 | 152 | 32% |
-| queue | 0 | 0 | 19 | 19 | 0% |
-| search | 8 | 0 | 5 | 13 | 62% |
-| settings | 277 | 0 | 106 | 383 | 72% |
-| shortcuts | 26 | 28 | 0 | 54 | 100% |
-| transfer | 2 | 0 | 8 | 10 | 20% |
-| ui | 7 | 0 | 12 | 19 | 37% |
-| updates | 0 | 0 | 10 | 10 | 0% |
-| viewer | 31 | 0 | 60 | 91 | 34% |
-| whatsNew | 4 | 0 | 2 | 6 | 67% |
+| Area           | Direct | Representative | Uncoupled | Total | Any % |
+| -------------- | -----: | -------------: | --------: | ----: | ----: |
+| ai             |      0 |            100 |         0 |   100 |  100% |
+| commandPalette |      3 |              0 |         3 |     6 |   50% |
+| commands       |    121 |              0 |        31 |   152 |   80% |
+| common         |      0 |              0 |         1 |     1 |    0% |
+| crashReporter  |      0 |             15 |         0 |    15 |  100% |
+| downloads      |     10 |              0 |        24 |    34 |   29% |
+| errorReporter  |     10 |              0 |        25 |    35 |   29% |
+| errors         |      3 |            338 |         0 |   341 |  100% |
+| feedback       |      7 |              0 |         7 |    14 |   50% |
+| fileExplorer   |     98 |             89 |       131 |   318 |   59% |
+| fileOperations |     67 |              0 |        72 |   139 |   48% |
+| goToPath       |      5 |              0 |         5 |    10 |   50% |
+| indexing       |     23 |              0 |        20 |    43 |   53% |
+| licensing      |     37 |              0 |        60 |    97 |   38% |
+| lowDiskSpace   |      0 |              0 |         5 |     5 |    0% |
+| main           |      0 |              0 |         2 |     2 |    0% |
+| mtp            |      5 |             17 |         0 |    22 |  100% |
+| notifications  |      0 |              0 |         1 |     1 |    0% |
+| onboarding     |     77 |             32 |        16 |   125 |   87% |
+| queryUi        |     49 |              0 |       103 |   152 |   32% |
+| queue          |      0 |              0 |        19 |    19 |    0% |
+| search         |      8 |              0 |         5 |    13 |   62% |
+| settings       |    277 |              0 |       106 |   383 |   72% |
+| shortcuts      |     26 |             28 |         0 |    54 |  100% |
+| transfer       |      2 |              0 |         8 |    10 |   20% |
+| ui             |      7 |              0 |        12 |    19 |   37% |
+| updates        |      0 |              0 |        10 |    10 |    0% |
+| viewer         |     31 |              0 |        60 |    91 |   34% |
+| whatsNew       |      4 |              0 |         2 |     6 |   67% |

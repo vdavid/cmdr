@@ -42,9 +42,9 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, invariant A5). Don't scatter
   `saveAppStatus` / `saveTabsForPaneSide` calls across nav paths: mutate the store and the subscriber reacts (exceptions
   in DETAILS).
-- **`navigate(intent, deps)` is the single coordinator-level pane-nav entry.** `{ goTo }` self-routes by volume
-  (same → in-place, different → switch); `{ selectVolume }` always switches; resolve bare paths to a `Location` at the
-  edge (`navigation/resolve-location.ts`), never feed a bare path in. Refusal `message` strings are byte-pinned (the MCP
+- **`navigate(intent, deps)` is the single coordinator-level pane-nav entry.** `{ goTo }` self-routes by volume (same →
+  in-place, different → switch); `{ selectVolume }` always switches; resolve bare paths to a `Location` at the edge
+  (`navigation/resolve-location.ts`), never feed a bare path in. Refusal `message` strings are byte-pinned (the MCP
   adapter forwards them verbatim); don't make the in-place arm commit immediately. DETAILS § "The navigate()
   transaction".
 - **Self-drag drop builds from recorded app state, not the pasteboard** (`handleDrop` consumes

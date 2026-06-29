@@ -32,8 +32,8 @@ Depth for the status-bar / header components. `CLAUDE.md` holds the must-knows.
 
 ## `TagDots.svelte` + `tag-dots-utils.ts`
 
-The colored Finder-tag cluster shown at the right edge of the Name cell in both views (and gated by the `listing.showTags`
-setting). `TagDots.svelte` is pure presentational; all logic is in `tag-dots-utils.ts`:
+The colored Finder-tag cluster shown at the right edge of the Name cell in both views (and gated by the
+`listing.showTags` setting). `TagDots.svelte` is pure presentational; all logic is in `tag-dots-utils.ts`:
 
 - `tagDotsModel(tags)` → `{ dots, overflowCount, label }`. Drops colourless tags (color 0) from the dots but keeps every
   tag name in `label` (the cluster's `aria-label` / `title`). Up to three colored tags show that many dots; beyond that,
@@ -64,9 +64,9 @@ Stale-size hourglass detail: in `file-info` mode the shared
 `getDirSizeDisplayState(recursiveSize, complete, stale, updating)` drives it, where `complete`/`stale` come from the
 entry's `recursiveSizeComplete`/`recursiveSizeStale` and
 `updating = isVolumeScanning(volumeId) || isVolumeAggregating(volumeId) || recursiveSizePending`, scoped to the pane's
-own `volumeId` (a scan on another drive must not flag this pane's folders). An unindexed or never-listed dir shows the unknown
-state; a partially-scanned one is a lower bound (`≥`), and the `updating` flag adds the "Size not ready yet" hourglass
-on top. The per-folder `recursiveSizePending` flag lives only on `DirStats` (not `get_file_range`), so
+own `volumeId` (a scan on another drive must not flag this pane's folders). An unindexed or never-listed dir shows the
+unknown state; a partially-scanned one is a lower bound (`≥`), and the `updating` flag adds the "Size not ready yet"
+hourglass on top. The per-folder `recursiveSizePending` flag lives only on `DirStats` (not `get_file_range`), so
 `FilePane.fetchEntryUnderCursor` overlays it onto the cursor entry via `updateIndexSizesInPlace([entry])` (skipping
 `..`, whose entry path is the parent folder) and re-runs on `index-dir-updated` so the hourglass tracks a storm live.
 

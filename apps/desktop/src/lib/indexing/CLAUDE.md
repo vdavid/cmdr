@@ -16,9 +16,9 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
   shared `IndexingStatusBody` (so both the corner indicator and the badge tooltip show it from one source).
 - **The status surface** (`IndexingStatusIndicator` / `IndexingDriveRow` / `IndexingStatusBody` /
   `IndexingDriveSummary`): the top-right hourglass shown whenever ANY drive is indexing. `IndexingStatusBody` is the
-  shared PRESENTATIONAL per-volume step checklist; `IndexingDriveRow` the thin WRAPPER (heading + body + ETA windows +
-  1 Hz tick). The corner expands the primary drive and collapses each secondary to a one-line `IndexingDriveSummary`;
-  the breadcrumb badge renders the same `IndexingDriveRow`. One representation everywhere. DETAILS § Step checklist.
+  shared PRESENTATIONAL per-volume step checklist; `IndexingDriveRow` the thin WRAPPER (heading + body + ETA windows + 1
+  Hz tick). The corner expands the primary drive and collapses each secondary to a one-line `IndexingDriveSummary`; the
+  breadcrumb badge renders the same `IndexingDriveRow`. One representation everywhere. DETAILS § Step checklist.
 - **`drive-index-prefs.ts`**: FE-OWNED persisted prefs the backend never reads: per-drive "don't ask again" silences
   (D6) and the one-time stale-dialog flag (D2), stored as hidden settings.
 - **`first-connect-trigger.ts`** + **`FirstConnectIndexToastContent.svelte`**: the first-connect "index this drive?"

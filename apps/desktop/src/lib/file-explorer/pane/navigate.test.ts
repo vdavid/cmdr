@@ -260,7 +260,10 @@ describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
   })
 
   it("does NOT shift focus for a 'mirror' source (L1 restoreFocus semantics)", () => {
-    navigate({ pane: 'right', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'mirror' }, h.deps)
+    navigate(
+      { pane: 'right', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'mirror' },
+      h.deps,
+    )
     expect(h.setFocusedPane).not.toHaveBeenCalled()
   })
 
@@ -439,7 +442,10 @@ describe("edge-flow fallback (source: 'fallback') — terminal commit + history-
 
   it('unmount style (pushHistory: false): commits the redirect WITHOUT growing a Back target', () => {
     const depthBefore = h.tab('left').history.stack.length
-    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'root', path: '~' } }, source: 'fallback', pushHistory: false }, h.deps)
+    navigate(
+      { pane: 'left', to: { selectVolume: { volumeId: 'root', path: '~' } }, source: 'fallback', pushHistory: false },
+      h.deps,
+    )
 
     expect(h.tab('left').volumeId).toBe('root')
     expect(h.tab('left').path).toBe('~')

@@ -39,8 +39,8 @@ lives in `FilePane.svelte` as a `Set<number>`).
   Hovering the unfocused pane's header shows the command name only; clicking still sorts that pane. Pinned by
   `SortableHeader.svelte.test.ts`.
 - **`FileIcon` fallback is the bundled macOS default icon, not an emoji.** Shown only on cache miss (cold launch, or
-  after a theme/accent change clears the cache); it swaps to the live accent-tinted OS icon once `get_icons` repopulates,
-  re-rendering via `$iconCacheVersion`.
+  after a theme/accent change clears the cache); it swaps to the live accent-tinted OS icon once `get_icons`
+  repopulates, re-rendering via `$iconCacheVersion`.
 
 ## Status-bar hints (`SelectionInfo`)
 

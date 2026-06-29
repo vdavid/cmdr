@@ -14,11 +14,25 @@ function toggleTag(color: number, { explorerRef }: CommandHandlerContext): void 
 }
 
 export const tagHandlers = {
-  'tags.toggleGrey': (h) => { toggleTag(1, h); },
-  'tags.toggleGreen': (h) => { toggleTag(2, h); },
-  'tags.togglePurple': (h) => { toggleTag(3, h); },
-  'tags.toggleBlue': (h) => { toggleTag(4, h); },
-  'tags.toggleYellow': (h) => { toggleTag(5, h); },
-  'tags.toggleRed': (h) => { toggleTag(6, h); },
-  'tags.toggleOrange': (h) => { toggleTag(7, h); },
+  'tags.toggleGrey': (h) => {
+    toggleTag(1, h)
+  },
+  'tags.toggleGreen': (h) => {
+    toggleTag(2, h)
+  },
+  'tags.togglePurple': (h) => {
+    toggleTag(3, h)
+  },
+  'tags.toggleBlue': (h) => {
+    toggleTag(4, h)
+  },
+  'tags.toggleYellow': (h) => {
+    toggleTag(5, h)
+  },
+  'tags.toggleRed': (h) => {
+    toggleTag(6, h)
+  },
+  'tags.toggleOrange': (h) => {
+    toggleTag(7, h)
+  },
 } satisfies Partial<CommandHandlerRecord>

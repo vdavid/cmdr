@@ -63,8 +63,8 @@ list).
 - **`sorting-handlers.ts`**: `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)
 - **`index-events.ts`**: Throttled `index-dir-updated` handler with `/private/` symlink resolution
 - **`navigate.ts`**: `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry. `Location` is
-  navigation's currency (`{ goTo }` self-routes by volume; `{ selectVolume }` always switches) — its module doc is
-  the canonical home for the destination shapes and the four edge resolvers.
+  navigation's currency (`{ goTo }` self-routes by volume; `{ selectVolume }` always switches) — its module doc is the
+  canonical home for the destination shapes and the four edge resolvers.
 - **`has-parent.ts`**: `computeHasParent({ hasParentRow, currentPath, effectiveVolumeRoot })`
 - **`first-selected-index.ts`**: `firstSelectedIndex(idxs, hasParent)` (post-select cursor-jump target, skips the `..`
   row)
@@ -385,13 +385,12 @@ entry — they're not pane-destination changes).
   `navigate()` is called. `navigate()` itself never resolves a volume; it receives a fully-formed destination. An
   unresolvable path is a friendly toast (shared `resolveLocationOrToast`) or a typed MCP `ok: false`, never a
   wrong-volume listing. The canonical description of the shapes + edges lives in `navigate.ts`'s module doc.
-- **Intent arms.** `{ goTo }` self-routes: same volume as the pane → the in-place arm, a different volume → the
-  switch arm. `{ selectVolume }` is the deliberate volume-(re)select intent and ALWAYS takes the switch arm (its
-  callers — network-restore-on-cancel, retry, `selectVolumeByIndex` — pass the CURRENT volume id on
-  purpose). `{ history: 'back' | 'forward' | 'parent' }` walks the stack (`parent` delegates to
-  `FilePane.navigateToParent`); `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery.
-  The pinned-tab fork (L7) lives in ONE place per arm: `commitPathFromListing` for the in-place landing,
-  `commitVolumeSwitch` for the switch.
+- **Intent arms.** `{ goTo }` self-routes: same volume as the pane → the in-place arm, a different volume → the switch
+  arm. `{ selectVolume }` is the deliberate volume-(re)select intent and ALWAYS takes the switch arm (its callers —
+  network-restore-on-cancel, retry, `selectVolumeByIndex` — pass the CURRENT volume id on purpose).
+  `{ history: 'back' | 'forward' | 'parent' }` walks the stack (`parent` delegates to `FilePane.navigateToParent`);
+  `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery. The pinned-tab fork (L7) lives
+  in ONE place per arm: `commitPathFromListing` for the in-place landing, `commitVolumeSwitch` for the switch.
 - **Per-arm optimism (P4).** The switch arm commits volumeId + path + history SYNCHRONOUSLY (truly optimistic). The
   in-place arm does NOT commit on call — it drives the FilePane primitive, and the commit lands when the listing
   completes and `onPathChange` re-enters `commitPathFromListing`. Don't "upgrade" the in-place arm to an immediate

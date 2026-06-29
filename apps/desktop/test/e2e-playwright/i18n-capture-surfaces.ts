@@ -737,9 +737,19 @@ export async function captureIndexingGallery(
   const screenshot = `${label}.png`
   // Mirrors the `#graphics-drive-indexing-<id>` anchors in `IndexingStatusSection.svelte`.
   const tileIds = [
-    'find-files-first', 'find-files-calibrated', 'save-file-list', 'compute-loading',
-    'compute-computing', 'compute-sorting', 'compute-writing', 'compute-almost-done',
-    'catch-up', 'network-find-files', 'network-compute', 'replay', 'summary',
+    'find-files-first',
+    'find-files-calibrated',
+    'save-file-list',
+    'compute-loading',
+    'compute-computing',
+    'compute-sorting',
+    'compute-writing',
+    'compute-almost-done',
+    'catch-up',
+    'network-find-files',
+    'network-compute',
+    'replay',
+    'summary',
   ]
   const setSize = (w: number, h: number): Promise<unknown> =>
     main

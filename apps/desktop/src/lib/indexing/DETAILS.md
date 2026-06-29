@@ -27,10 +27,10 @@ value directly).
 
 ### Public API (`index.ts`)
 
-The barrel exports the lifecycle + the cross-module reads: `isVolumeScanning` / `getEntriesScanned` / `ROOT_VOLUME_ID` (SearchDialog),
-`getVolumeActivity` / `getVolumeAggregation` (the breadcrumb badge's scanning tooltip, in `navigation/`),
-`getVolumePhase` (the per-volume step checklist), plus `initIndexState` / `destroyIndexState` / `initIndexEvents`. The
-indicator (same dir) imports the rest directly from `./index-state.svelte`:
+The barrel exports the lifecycle + the cross-module reads: `isVolumeScanning` / `getEntriesScanned` / `ROOT_VOLUME_ID`
+(SearchDialog), `getVolumeActivity` / `getVolumeAggregation` (the breadcrumb badge's scanning tooltip, in
+`navigation/`), `getVolumePhase` (the per-volume step checklist), plus `initIndexState` / `destroyIndexState` /
+`initIndexEvents`. The indicator (same dir) imports the rest directly from `./index-state.svelte`:
 
 ```ts
 // Multi-drive API (the indicator):
@@ -140,18 +140,18 @@ step shows not-yet-active — but in that window the surface isn't rendered at a
 the badge's static "Scanning your drive…" text.
 
 **Two label maps, separate on purpose**: `indexing-steps.ts`'s `stepKindToLabelKey` keys the step labels off the typed
-`IndexStepKind`; its `computeSubPhaseToLabelKey` (imported by `IndexingStatusBody`) keys the compute
-step's folder-worded sub-line off the aggregation sub-phase string. Branch on the typed discriminants, never wording.
+`IndexStepKind`; its `computeSubPhaseToLabelKey` (imported by `IndexingStatusBody`) keys the compute step's
+folder-worded sub-line off the aggregation sub-phase string. Branch on the typed discriminants, never wording.
 
 **The active step's detail**, keyed off the active step (not a separate "mode"), so the synthetic activity behind an
 aggregation-only or reconcile-only row never leaks scan zeros:
 
-- **Find files**: the count-first scan detail. Tier 1 (calibrated, prior-scan denominator) → counters + a
-  `ProgressBar` with "42%, 1m left". Tier 2 (rough first scan) → a "First scan, so this can take a while" sub-line +
-  "42,000 entries, 1,200 dirs · 2:34" (count + an **elapsed clock**), NO bar (the byte-ratio sits near 0 early, so a
-  precise percent would lie). The clock advances off the wrapper's 1 Hz tick (`Date.now()` in a `$derived` isn't
-  reactive, so it'd freeze on a stall — the reported NAS case); `formatElapsedClock` returns `null` under a second so it
-  never flashes "0:00".
+- **Find files**: the count-first scan detail. Tier 1 (calibrated, prior-scan denominator) → counters + a `ProgressBar`
+  with "42%, 1m left". Tier 2 (rough first scan) → a "First scan, so this can take a while" sub-line + "42,000 entries,
+  1,200 dirs · 2:34" (count + an **elapsed clock**), NO bar (the byte-ratio sits near 0 early, so a precise percent
+  would lie). The clock advances off the wrapper's 1 Hz tick (`Date.now()` in a `$derived` isn't reactive, so it'd
+  freeze on a stall — the reported NAS case); `formatElapsedClock` returns `null` under a second so it never flashes
+  "0:00".
 - **Save the file list** (`saving_entries`): a `ProgressBar` + percent + ETA. No sub-line (the step label says it).
 - **Compute folder sizes** (`loading → sorting → computing → writing`): a folder-worded sub-line ("Loading folders…",
   "Sorting folders…", "Computing folder sizes…", "Saving folder sizes…") + a bar for the determinate sub-phases
