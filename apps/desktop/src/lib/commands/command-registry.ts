@@ -764,6 +764,67 @@ const commandSources: CommandSource[] = [
   },
 
   // ============================================================================
+  // File list - Finder tag colors (macOS). Toggle a system color tag on the
+  // focused selection. No default shortcut; the user binds one in Settings.
+  // ============================================================================
+  {
+    id: 'tags.toggleGrey',
+    nameKey: 'commands.tagsToggleGrey.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    descriptionKey: 'commands.tagsToggleGrey.description',
+  },
+  {
+    id: 'tags.toggleGreen',
+    nameKey: 'commands.tagsToggleGreen.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    descriptionKey: 'commands.tagsToggleGreen.description',
+  },
+  {
+    id: 'tags.togglePurple',
+    nameKey: 'commands.tagsTogglePurple.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    descriptionKey: 'commands.tagsTogglePurple.description',
+  },
+  {
+    id: 'tags.toggleBlue',
+    nameKey: 'commands.tagsToggleBlue.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    descriptionKey: 'commands.tagsToggleBlue.description',
+  },
+  {
+    id: 'tags.toggleYellow',
+    nameKey: 'commands.tagsToggleYellow.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    descriptionKey: 'commands.tagsToggleYellow.description',
+  },
+  {
+    id: 'tags.toggleRed',
+    nameKey: 'commands.tagsToggleRed.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    descriptionKey: 'commands.tagsToggleRed.description',
+  },
+  {
+    id: 'tags.toggleOrange',
+    nameKey: 'commands.tagsToggleOrange.label',
+    scope: 'Main window/File list',
+    showInPalette: isMacOS(),
+    shortcuts: [],
+    descriptionKey: 'commands.tagsToggleOrange.description',
+  },
+
+  // ============================================================================
   // File list - Selection commands
   // ============================================================================
   {

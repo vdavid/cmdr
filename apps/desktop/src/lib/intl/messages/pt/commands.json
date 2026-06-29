@@ -463,6 +463,62 @@
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
+  "commands.tagsToggleGrey.label": "Alternar etiqueta Cinza",
+  "@commands.tagsToggleGrey.label": {
+    "sourceHash": "1309c09"
+  },
+  "commands.tagsToggleGrey.description": "Adiciona ou remove a etiqueta Cinza do Finder nos arquivos selecionados",
+  "@commands.tagsToggleGrey.description": {
+    "sourceHash": "ca38860"
+  },
+  "commands.tagsToggleGreen.label": "Alternar etiqueta Verde",
+  "@commands.tagsToggleGreen.label": {
+    "sourceHash": "397b880"
+  },
+  "commands.tagsToggleGreen.description": "Adiciona ou remove a etiqueta Verde do Finder nos arquivos selecionados",
+  "@commands.tagsToggleGreen.description": {
+    "sourceHash": "fa8396b"
+  },
+  "commands.tagsTogglePurple.label": "Alternar etiqueta Roxo",
+  "@commands.tagsTogglePurple.label": {
+    "sourceHash": "ee137d2"
+  },
+  "commands.tagsTogglePurple.description": "Adiciona ou remove a etiqueta Roxo do Finder nos arquivos selecionados",
+  "@commands.tagsTogglePurple.description": {
+    "sourceHash": "c6872a8"
+  },
+  "commands.tagsToggleBlue.label": "Alternar etiqueta Azul",
+  "@commands.tagsToggleBlue.label": {
+    "sourceHash": "11ba925"
+  },
+  "commands.tagsToggleBlue.description": "Adiciona ou remove a etiqueta Azul do Finder nos arquivos selecionados",
+  "@commands.tagsToggleBlue.description": {
+    "sourceHash": "7a21c5f"
+  },
+  "commands.tagsToggleYellow.label": "Alternar etiqueta Amarelo",
+  "@commands.tagsToggleYellow.label": {
+    "sourceHash": "2afc261"
+  },
+  "commands.tagsToggleYellow.description": "Adiciona ou remove a etiqueta Amarelo do Finder nos arquivos selecionados",
+  "@commands.tagsToggleYellow.description": {
+    "sourceHash": "16a2608"
+  },
+  "commands.tagsToggleRed.label": "Alternar etiqueta Vermelho",
+  "@commands.tagsToggleRed.label": {
+    "sourceHash": "f2d314d"
+  },
+  "commands.tagsToggleRed.description": "Adiciona ou remove a etiqueta Vermelho do Finder nos arquivos selecionados",
+  "@commands.tagsToggleRed.description": {
+    "sourceHash": "c6e0bee"
+  },
+  "commands.tagsToggleOrange.label": "Alternar etiqueta Laranja",
+  "@commands.tagsToggleOrange.label": {
+    "sourceHash": "d0c0702"
+  },
+  "commands.tagsToggleOrange.description": "Adiciona ou remove a etiqueta Laranja do Finder nos arquivos selecionados",
+  "@commands.tagsToggleOrange.description": {
+    "sourceHash": "79e5c97"
+  },
   "commands.selectionToggle.label": "Alternar seleção",
   "@commands.selectionToggle.label": {
     "sourceHash": "6cb5515"

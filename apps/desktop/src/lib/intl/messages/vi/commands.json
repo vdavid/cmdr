@@ -463,6 +463,62 @@
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
+  "commands.tagsToggleGrey.label": "Bật/tắt thẻ Xám",
+  "@commands.tagsToggleGrey.label": {
+    "sourceHash": "1309c09"
+  },
+  "commands.tagsToggleGrey.description": "Thêm hoặc xóa thẻ Finder Xám trên các tệp đã chọn",
+  "@commands.tagsToggleGrey.description": {
+    "sourceHash": "ca38860"
+  },
+  "commands.tagsToggleGreen.label": "Bật/tắt thẻ Xanh lá",
+  "@commands.tagsToggleGreen.label": {
+    "sourceHash": "397b880"
+  },
+  "commands.tagsToggleGreen.description": "Thêm hoặc xóa thẻ Finder Xanh lá trên các tệp đã chọn",
+  "@commands.tagsToggleGreen.description": {
+    "sourceHash": "fa8396b"
+  },
+  "commands.tagsTogglePurple.label": "Bật/tắt thẻ Tím",
+  "@commands.tagsTogglePurple.label": {
+    "sourceHash": "ee137d2"
+  },
+  "commands.tagsTogglePurple.description": "Thêm hoặc xóa thẻ Finder Tím trên các tệp đã chọn",
+  "@commands.tagsTogglePurple.description": {
+    "sourceHash": "c6872a8"
+  },
+  "commands.tagsToggleBlue.label": "Bật/tắt thẻ Xanh dương",
+  "@commands.tagsToggleBlue.label": {
+    "sourceHash": "11ba925"
+  },
+  "commands.tagsToggleBlue.description": "Thêm hoặc xóa thẻ Finder Xanh dương trên các tệp đã chọn",
+  "@commands.tagsToggleBlue.description": {
+    "sourceHash": "7a21c5f"
+  },
+  "commands.tagsToggleYellow.label": "Bật/tắt thẻ Vàng",
+  "@commands.tagsToggleYellow.label": {
+    "sourceHash": "2afc261"
+  },
+  "commands.tagsToggleYellow.description": "Thêm hoặc xóa thẻ Finder Vàng trên các tệp đã chọn",
+  "@commands.tagsToggleYellow.description": {
+    "sourceHash": "16a2608"
+  },
+  "commands.tagsToggleRed.label": "Bật/tắt thẻ Đỏ",
+  "@commands.tagsToggleRed.label": {
+    "sourceHash": "f2d314d"
+  },
+  "commands.tagsToggleRed.description": "Thêm hoặc xóa thẻ Finder Đỏ trên các tệp đã chọn",
+  "@commands.tagsToggleRed.description": {
+    "sourceHash": "c6e0bee"
+  },
+  "commands.tagsToggleOrange.label": "Bật/tắt thẻ Cam",
+  "@commands.tagsToggleOrange.label": {
+    "sourceHash": "d0c0702"
+  },
+  "commands.tagsToggleOrange.description": "Thêm hoặc xóa thẻ Finder Cam trên các tệp đã chọn",
+  "@commands.tagsToggleOrange.description": {
+    "sourceHash": "79e5c97"
+  },
   "commands.selectionToggle.label": "Bật/tắt lựa chọn",
   "@commands.selectionToggle.label": {
     "sourceHash": "6cb5515"

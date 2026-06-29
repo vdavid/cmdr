@@ -199,3 +199,27 @@ emitting, copying the cached entry's tags onto the re-stat'd one — otherwise a
 mtime touch, chmod) would blank a file's dots until the next enrich. `carry_forward_tags` only ever restores (no-op when
 the incoming entry already has tags), so it never masks a real change; clearing flows solely through the enrich path's
 unconditional replace.
+
+**Write path (Phase 2).** `tags.rs::set_tags(path, &[TagRef])` encodes the full desired set as a **binary** plist
+(`plist::Value::to_writer_binary` — `plist` defaults to XML, which is NOT Finder-compatible) of `"Name\nN"` strings
+(always with the `\nN` suffix, even color 0, matching Finder), and `xattr::set`s it. An empty set REMOVES the xattr
+(matching Finder clearing all tags), guarded so an already-untagged file doesn't surface a spurious ENOATTR. The
+encode↔decode round-trip is verified **semantically** (re-`read_tags` equals the input), not byte-for-byte against a
+Finder reference — valid bplists differ in object-table ordering/dedup.
+
+`tags.rs::toggle_color(paths, color)` is the higher-level op behind both triggers: it reads each path's current tags,
+applies Finder's multi-file rule (if EVERY path already carries the color, remove it from all; otherwise add the
+canonical system tag — `Red\n6`, …, `Gray\n1` — to every path that lacks it), preserves all other tags, skips rewriting
+files already in the target state, and returns the new per-path sets. The `toggle_tags(listing_id, paths, color)` IPC
+command wraps it in the 5 s write-timeout tier and feeds the result to `apply_tags_to_listing` so the panes refresh
+immediately. A same-color *custom* tag counts as "applied" (no duplicate system tag is added; removing strips every tag
+of that color).
+
+**D11 — never touch `com.apple.FinderInfo`.** The write path touches ONLY `_kMDItemUserTags`. That 32-byte
+`FinderInfo` blob carries `kHasCustomIcon` (`0x0400` at offset 8, see `icons/per_path.rs`) plus type/creator codes;
+zeroing it would destroy custom folder icons and break `has_custom_folder_icon`. Modern Finder reads tags straight from
+`_kMDItemUserTags`, so the dot/color shows without the legacy label bits — verified to survive in
+`tags.rs::write_tests::tagging_preserves_finder_info_custom_icon_flag`. `setxattr` is atomic per attribute, so a single
+file is never half-written; a multi-file toggle that fails mid-loop leaves earlier files updated and propagates the
+error (the IPC command logs it rather than surfacing a hard failure — tags are low-stakes and the panes still reflect
+what's on disk).

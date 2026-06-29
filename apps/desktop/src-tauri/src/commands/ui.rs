@@ -36,6 +36,7 @@ pub fn show_file_context_menu<R: Runtime>(
     is_directory: bool,
     paths: Vec<String>,
     restrict_destination_actions: bool,
+    listing_id: String,
 ) -> Result<(), String> {
     let app = window.app_handle();
 
@@ -61,6 +62,7 @@ pub fn show_file_context_menu<R: Runtime>(
         context.path = path.clone();
         context.filename = filename.clone();
         context.paths = context_paths;
+        context.tags_listing_id = listing_id;
         #[cfg(target_os = "macos")]
         {
             // Filled in from build_context_menu's return value below.
@@ -105,10 +107,20 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String]) -> FileCont
 
     let open_with = compute_open_with_choices(all_paths.iter().map(PathBuf::from).collect());
 
+    // Which color tags the WHOLE selection already carries (drives the checked circle).
+    // Read each path's tags once; `applied_colors` marks a color only when every path
+    // has it.
+    let per_path_tags: Vec<Vec<crate::file_system::listing::metadata::TagRef>> = all_paths
+        .iter()
+        .map(|p| crate::file_system::tags::read_tags(&PathBuf::from(p)))
+        .collect();
+    let applied_tag_colors = crate::file_system::tags::applied_colors(&per_path_tags);
+
     FileContextInfo {
         sync_status,
         is_icloud_drive,
         open_with,
+        applied_tag_colors,
     }
 }
 

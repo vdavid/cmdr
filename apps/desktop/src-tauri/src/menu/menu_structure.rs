@@ -49,6 +49,11 @@ pub struct FileContextInfo {
     /// support iCloud (not third-party File Providers). See `cloud_actions.rs` for why.
     pub is_icloud_drive: bool,
     pub open_with: OpenWithChoices,
+    /// Which of the seven Finder color tags (index 1..=7) the selection already carries.
+    /// "Applied" = EVERY selected path has a tag of that color, so the menu shows a
+    /// checked (checkmark-composited) circle and the click toggles it off. Index 0 is
+    /// unused (colorless). Computed by reading each path's tags once at menu-build time.
+    pub applied_tag_colors: [bool; 8],
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -130,6 +135,11 @@ pub fn build_context_menu<R: Runtime>(
     let toggle_selection_item = MenuItem::with_id(app, TOGGLE_SELECTION_ID, "Toggle selection", true, Some("Space"))?;
     menu.append(&toggle_selection_item)?;
     menu.append(&PredefinedMenuItem::separator(app)?)?;
+
+    // Finder tag colors (macOS): seven circles that toggle the system color tags on the
+    // selection. Shown for files and folders (Finder tags both).
+    #[cfg(target_os = "macos")]
+    append_tag_color_group(app, &menu, info)?;
 
     // Copy / Move / Rename group. Rename is omitted on the search-results virtual
     // pane: the underlying file CAN be renamed, but doing it from the snapshot view
@@ -235,6 +245,42 @@ pub fn build_context_menu<R: Runtime>(
         #[cfg(target_os = "macos")]
         open_with_apps,
     })
+}
+
+/// Appends the seven Finder-tag color items (macOS) plus a trailing separator.
+///
+/// Each item is an `IconMenuItem` showing its color circle (open_with.rs pattern); the
+/// "applied" colors (every selected file already carries them) get the checkmark-
+/// composited variant. IDs are `tag-color:<index>`, prefix-routed in
+/// `handle_menu_event`. Colors run in Finder's order (Red … Gray). Labels are the
+/// English color names so the items stay accessible (screen readers read the text;
+/// the circle is the icon). macOS-only — Linux menus carry no icons.
+#[cfg(target_os = "macos")]
+fn append_tag_color_group<R: Runtime>(app: &AppHandle<R>, menu: &Menu<R>, info: &FileContextInfo) -> tauri::Result<()> {
+    use tauri::menu::IconMenuItem;
+
+    // (color index, English system name), in Finder's color-row order.
+    const COLORS: [(u8, &str); 7] = [
+        (6, "Red"),
+        (7, "Orange"),
+        (5, "Yellow"),
+        (2, "Green"),
+        (4, "Blue"),
+        (3, "Purple"),
+        (1, "Gray"),
+    ];
+
+    for (color, name) in COLORS {
+        let id = format!("{}{}", super::TAG_COLOR_ID_PREFIX, color);
+        let checked = info.applied_tag_colors[color as usize];
+        // `IconMenuItem` with `Some(image)` falls back to a text-only item if the image
+        // build fails, so the menu still works without the circle.
+        let icon = super::tag_icons::tag_circle_image(color, checked);
+        let item = IconMenuItem::with_id(app, &id, name, true, icon, None::<&str>)?;
+        menu.append(&item)?;
+    }
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    Ok(())
 }
 
 /// Builds the minimal context menu for the `..` parent row: a single "Add to favorites" item that

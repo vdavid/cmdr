@@ -289,6 +289,18 @@ export const commands = {
   enrichTags: (listingId: string, paths: string[]) =>
     __TAURI_INVOKE<TimedOut<null>>('enrich_tags', { listingId, paths }),
   /**
+   *  Toggles a Finder color tag (`color` 1..=7) across `paths`, then patches the
+   *  resulting tags into the cached listing so the panes re-render immediately.
+   *
+   *  Read-modify-write that PRESERVES every other tag on each file (see
+   *  `tags::toggle_color` for the multi-file all-have/some-have semantics). The
+   *  frontend supplies `listing_id` so the cache refresh targets the right pane; an
+   *  empty / unknown id still writes to disk but skips the in-place refresh (the dots
+   *  then update on the next visible-range enrich). Off macOS this is a no-op.
+   */
+  toggleTags: (listingId: string, paths: string[], color: number) =>
+    __TAURI_INVOKE<TimedOut<null>>('toggle_tags', { listingId, paths, color }),
+  /**
    *  Returns `TimedOut<bool>` so the frontend can distinguish a real "doesn't exist"
    *  from "we couldn't tell" (timeout, or SMB volume in `Disconnected` state). Without this
    *  distinction, the directory-eviction poll in `FilePane.svelte` evicts users from a

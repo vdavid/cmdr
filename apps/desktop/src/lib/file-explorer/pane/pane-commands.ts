@@ -1,4 +1,5 @@
-import { findFileIndex, findFileIndices, refreshListing } from '$lib/tauri-commands'
+import { findFileIndex, findFileIndices, refreshListing, getPathsAtIndices } from '$lib/tauri-commands'
+import { commands } from '$lib/ipc/bindings'
 import type { McpSelectMode, ConfirmDialogType } from '$lib/commands'
 import { isPrintableJumpContinuation, isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
 import { capabilitiesFor } from './volume-capabilities'
@@ -72,6 +73,42 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     }
     const currentPath = access.getPanePath(access.getFocusedPane())
     return { path: `${currentPath}/${filename}`, filename }
+  }
+
+  /**
+   * Toggle a Finder system color tag (index 1..=7) on the focused pane's selection,
+   * or on the cursor entry when nothing is selected (mirrors how the file F-key ops
+   * fall back to the cursor). Resolves selected indices → paths via the backend
+   * (which handles the `..` offset), then calls the `toggle_tags` IPC — it writes the
+   * tags and refreshes the cached listing, so the dots update without extra work here.
+   * Best-effort: a write failure is logged backend-side and surfaces as no visible
+   * change, never a thrown dispatch.
+   */
+  async function toggleTagOnFocusedSelection(color: number): Promise<void> {
+    const paneRef = access.getPaneRef(access.getFocusedPane())
+    if (!paneRef) return
+    const listingId = paneRef.getListingId()
+    if (!listingId) return
+
+    const includeHidden = access.getShowHiddenFiles()
+    const hasParent = paneRef.hasParentEntry()
+    const selectedIndices = paneRef.getSelectedIndices()
+
+    let paths: string[]
+    if (selectedIndices.length > 0) {
+      try {
+        paths = await getPathsAtIndices(listingId, selectedIndices, includeHidden, hasParent)
+      } catch {
+        return
+      }
+    } else {
+      const cursorPath = paneRef.getPathUnderCursor()
+      const filename = paneRef.getFilenameUnderCursor()
+      if (!cursorPath || !filename || filename === '..') return
+      paths = [cursorPath]
+    }
+    if (paths.length === 0) return
+    await commands.toggleTags(listingId, paths, color)
   }
 
   /**
@@ -434,6 +471,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     openVolumeChooser,
     closeVolumeChooser,
     getFileAndPathUnderCursor,
+    toggleTagOnFocusedSelection,
     sendKeyToFocusedPane,
     openItemUnderCursor,
     getFocusedPane,

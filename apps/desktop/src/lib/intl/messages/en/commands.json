@@ -654,6 +654,76 @@
     "description": "Longer help text for the \"Remove download\" command, shown as a secondary line in the command palette."
   },
 
+  "commands.tagsToggleGrey.label": "Toggle gray tag",
+  "@commands.tagsToggleGrey.label": {
+    "description": "Command name that adds or removes the gray macOS Finder color tag on the selected files. \"Gray\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.tagsToggleGrey.description": "Adds or removes the gray Finder tag on the selected files",
+  "@commands.tagsToggleGrey.description": {
+    "description": "Longer help text for the \"Toggle gray tag\" command, shown as a secondary line in the command palette."
+  },
+
+  "commands.tagsToggleGreen.label": "Toggle green tag",
+  "@commands.tagsToggleGreen.label": {
+    "description": "Command name that adds or removes the green macOS Finder color tag on the selected files. \"Green\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.tagsToggleGreen.description": "Adds or removes the green Finder tag on the selected files",
+  "@commands.tagsToggleGreen.description": {
+    "description": "Longer help text for the \"Toggle green tag\" command, shown as a secondary line in the command palette."
+  },
+
+  "commands.tagsTogglePurple.label": "Toggle purple tag",
+  "@commands.tagsTogglePurple.label": {
+    "description": "Command name that adds or removes the purple macOS Finder color tag on the selected files. \"Purple\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.tagsTogglePurple.description": "Adds or removes the purple Finder tag on the selected files",
+  "@commands.tagsTogglePurple.description": {
+    "description": "Longer help text for the \"Toggle purple tag\" command, shown as a secondary line in the command palette."
+  },
+
+  "commands.tagsToggleBlue.label": "Toggle blue tag",
+  "@commands.tagsToggleBlue.label": {
+    "description": "Command name that adds or removes the blue macOS Finder color tag on the selected files. \"Blue\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.tagsToggleBlue.description": "Adds or removes the blue Finder tag on the selected files",
+  "@commands.tagsToggleBlue.description": {
+    "description": "Longer help text for the \"Toggle blue tag\" command, shown as a secondary line in the command palette."
+  },
+
+  "commands.tagsToggleYellow.label": "Toggle yellow tag",
+  "@commands.tagsToggleYellow.label": {
+    "description": "Command name that adds or removes the yellow macOS Finder color tag on the selected files. \"Yellow\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.tagsToggleYellow.description": "Adds or removes the yellow Finder tag on the selected files",
+  "@commands.tagsToggleYellow.description": {
+    "description": "Longer help text for the \"Toggle yellow tag\" command, shown as a secondary line in the command palette."
+  },
+
+  "commands.tagsToggleRed.label": "Toggle red tag",
+  "@commands.tagsToggleRed.label": {
+    "description": "Command name that adds or removes the red macOS Finder color tag on the selected files. \"Red\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.tagsToggleRed.description": "Adds or removes the red Finder tag on the selected files",
+  "@commands.tagsToggleRed.description": {
+    "description": "Longer help text for the \"Toggle red tag\" command, shown as a secondary line in the command palette."
+  },
+
+  "commands.tagsToggleOrange.label": "Toggle orange tag",
+  "@commands.tagsToggleOrange.label": {
+    "description": "Command name that adds or removes the orange macOS Finder color tag on the selected files. \"Orange\" is the macOS system color-tag name; keep it matching what Finder calls this color in the user''s language. Appears in the command palette and the keyboard-shortcuts settings.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.tagsToggleOrange.description": "Adds or removes the orange Finder tag on the selected files",
+  "@commands.tagsToggleOrange.description": {
+    "description": "Longer help text for the \"Toggle orange tag\" command, shown as a secondary line in the command palette."
+  },
+
   "commands.selectionToggle.label": "Toggle selection",
   "@commands.selectionToggle.label": {
     "description": "Command name that selects or deselects the file under the cursor. Appears in the command palette.",

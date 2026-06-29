@@ -463,6 +463,62 @@
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
+  "commands.tagsToggleGrey.label": "Tag „Grau“ umschalten",
+  "@commands.tagsToggleGrey.label": {
+    "sourceHash": "1309c09"
+  },
+  "commands.tagsToggleGrey.description": "Fügt den Finder-Tag „Grau“ zu den ausgewählten Dateien hinzu oder entfernt ihn",
+  "@commands.tagsToggleGrey.description": {
+    "sourceHash": "ca38860"
+  },
+  "commands.tagsToggleGreen.label": "Tag „Grün“ umschalten",
+  "@commands.tagsToggleGreen.label": {
+    "sourceHash": "397b880"
+  },
+  "commands.tagsToggleGreen.description": "Fügt den Finder-Tag „Grün“ zu den ausgewählten Dateien hinzu oder entfernt ihn",
+  "@commands.tagsToggleGreen.description": {
+    "sourceHash": "fa8396b"
+  },
+  "commands.tagsTogglePurple.label": "Tag „Lila“ umschalten",
+  "@commands.tagsTogglePurple.label": {
+    "sourceHash": "ee137d2"
+  },
+  "commands.tagsTogglePurple.description": "Fügt den Finder-Tag „Lila“ zu den ausgewählten Dateien hinzu oder entfernt ihn",
+  "@commands.tagsTogglePurple.description": {
+    "sourceHash": "c6872a8"
+  },
+  "commands.tagsToggleBlue.label": "Tag „Blau“ umschalten",
+  "@commands.tagsToggleBlue.label": {
+    "sourceHash": "11ba925"
+  },
+  "commands.tagsToggleBlue.description": "Fügt den Finder-Tag „Blau“ zu den ausgewählten Dateien hinzu oder entfernt ihn",
+  "@commands.tagsToggleBlue.description": {
+    "sourceHash": "7a21c5f"
+  },
+  "commands.tagsToggleYellow.label": "Tag „Gelb“ umschalten",
+  "@commands.tagsToggleYellow.label": {
+    "sourceHash": "2afc261"
+  },
+  "commands.tagsToggleYellow.description": "Fügt den Finder-Tag „Gelb“ zu den ausgewählten Dateien hinzu oder entfernt ihn",
+  "@commands.tagsToggleYellow.description": {
+    "sourceHash": "16a2608"
+  },
+  "commands.tagsToggleRed.label": "Tag „Rot“ umschalten",
+  "@commands.tagsToggleRed.label": {
+    "sourceHash": "f2d314d"
+  },
+  "commands.tagsToggleRed.description": "Fügt den Finder-Tag „Rot“ zu den ausgewählten Dateien hinzu oder entfernt ihn",
+  "@commands.tagsToggleRed.description": {
+    "sourceHash": "c6e0bee"
+  },
+  "commands.tagsToggleOrange.label": "Tag „Orange“ umschalten",
+  "@commands.tagsToggleOrange.label": {
+    "sourceHash": "d0c0702"
+  },
+  "commands.tagsToggleOrange.description": "Fügt den Finder-Tag „Orange“ zu den ausgewählten Dateien hinzu oder entfernt ihn",
+  "@commands.tagsToggleOrange.description": {
+    "sourceHash": "79e5c97"
+  },
   "commands.selectionToggle.label": "Auswahl umschalten",
   "@commands.selectionToggle.label": {
     "sourceHash": "6cb5515"

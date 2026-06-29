@@ -101,6 +101,7 @@ export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
     'openViewerForCursor',
     'startRename',
     'getFileAndPathUnderCursor',
+    'toggleTagOnFocusedSelection',
     'openCopyDialog',
     'openMoveDialog',
     'openNewFolderDialog',

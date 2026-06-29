@@ -50,6 +50,14 @@ export interface ExplorerAPI {
    */
   navigate: (intent: NavigateIntent) => NavigateResult
   getFileAndPathUnderCursor: () => { path: string; filename: string } | null
+  /**
+   * Toggles a Finder system color tag (index 1..=7, grey…orange) on the focused
+   * pane's selection, or on the cursor entry when nothing is selected. Resolves the
+   * paths + the pane's listing id and calls the `toggle_tags` IPC, which writes and
+   * refreshes the cache. macOS-only in effect (the backend no-ops elsewhere). The
+   * context-menu circles use a separate Rust-side path on the right-clicked set.
+   */
+  toggleTagOnFocusedSelection: (color: number) => Promise<void>
   sendKeyToFocusedPane: (key: string) => void
   /**
    * Routes a key event received from the native Quick Look panel back into the

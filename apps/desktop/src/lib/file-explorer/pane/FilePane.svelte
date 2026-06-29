@@ -1863,7 +1863,7 @@
                 // Selection lookup failed: fall back to single-file action.
             }
         }
-        await showFileContextMenu(entry.path, entry.name, entry.isDirectory, paths)
+        await showFileContextMenu(entry.path, entry.name, entry.isDirectory, paths, false, listingId)
     }
 
     async function handleNavigate(entry: FileEntry) {

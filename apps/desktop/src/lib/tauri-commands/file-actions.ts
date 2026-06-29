@@ -33,6 +33,9 @@ export async function openExternalUrl(url: string): Promise<void> {
  *                from the menu. Pass `true` for right-clicks inside a virtual pane that
  *                isn't a real directory (currently: the search-results snapshot pane;
  *                see `apps/desktop/src/lib/search/capabilities.ts`).
+ * @param listingId - Optional. The pane's listing id, so a Finder-tag color click can
+ *                refresh that listing's cache after writing. Omit (default `''`) for
+ *                virtual panes with no normal listing; the tag still writes to disk.
  */
 export async function showFileContextMenu(
   path: string,
@@ -40,6 +43,7 @@ export async function showFileContextMenu(
   isDirectory: boolean,
   paths: string[],
   restrictDestinationActions = false,
+  listingId = '',
 ): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from specta bindings (see ipc_collectors.rs)
   await invoke('show_file_context_menu', {
@@ -48,6 +52,7 @@ export async function showFileContextMenu(
     isDirectory,
     paths,
     restrictDestinationActions,
+    listingId,
   })
 }
 

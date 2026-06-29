@@ -639,6 +639,37 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
+    // === Tag color items: prefix-routed straight to the tag write (like open-with) ===
+    // `tag-color:<index>` toggles that system color on the RIGHT-CLICKED selection
+    // (`MenuState.context.paths`), then refreshes the stashed listing's cache. It acts on
+    // the right-clicked set, not the focused-pane selection, so it can't route through
+    // `execute-command` + a frontend command (those read the focused selection — wrong
+    // when the right-click landed on an unselected row). The keyboard `tags.toggle*`
+    // commands handle the focused-selection case separately.
+    #[cfg(target_os = "macos")]
+    if let Some(rest) = id.strip_prefix(super::TAG_COLOR_ID_PREFIX) {
+        if let Ok(color) = rest.parse::<u8>() {
+            let menu_state = app.state::<MenuState<tauri::Wry>>();
+            let ctx = menu_state.context.lock_ignore_poison();
+            let paths = ctx.paths.clone();
+            let listing_id = ctx.tags_listing_id.clone();
+            drop(ctx);
+            if !paths.is_empty() {
+                // `setxattr` is blocking I/O; keep it off the main (menu) thread.
+                tauri::async_runtime::spawn_blocking(move || {
+                    match crate::file_system::tags::toggle_color(&paths, color) {
+                        Ok(updates) if !updates.is_empty() => {
+                            crate::file_system::listing::caching::apply_tags_to_listing(&listing_id, updates);
+                        }
+                        Ok(_) => {}
+                        Err(e) => log::warn!(target: "tags", "context-menu tag toggle failed (color={color}): {e}"),
+                    }
+                });
+            }
+        }
+        return;
+    }
+
     // === Unified dispatch: look up command ID from the mapping ===
     if let Some((command_id, scope)) = menu_id_to_command(id) {
         if scope == CommandScope::FileScoped {

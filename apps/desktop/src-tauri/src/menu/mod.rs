@@ -26,6 +26,8 @@ mod menu_items;
 mod menu_structure;
 #[cfg(target_os = "macos")]
 pub mod open_with;
+#[cfg(target_os = "macos")]
+mod tag_icons;
 
 use std::collections::HashMap;
 #[cfg(target_os = "macos")]
@@ -125,6 +127,14 @@ pub const TOGGLE_SELECTION_ID: &str = "toggle_selection";
 /// Menu item IDs for cloud actions (macOS File Provider).
 pub const CLOUD_MAKE_OFFLINE_ID: &str = "cloud_make_offline";
 pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";
+
+/// Menu item ID prefix for the seven Finder-tag color items in the file context menu
+/// (macOS). Followed by the color index (1..=7), e.g. `tag-color:6`. Prefix-routed in
+/// `handle_menu_event` (like `open-with:`) straight to the tag write, NOT through
+/// `menu_id_to_command` — the click acts on the right-clicked selection in
+/// `MenuState.context`, not the focused-pane selection a command would use.
+#[cfg(target_os = "macos")]
+pub const TAG_COLOR_ID_PREFIX: &str = "tag-color:";
 
 /// Menu item IDs for clipboard operations (Edit menu).
 pub const EDIT_CUT_ID: &str = "edit_cut";
@@ -481,6 +491,10 @@ pub struct MenuContext {
     /// `open-with:<bundle-id>` item.
     #[cfg(target_os = "macos")]
     pub open_with_apps: HashMap<String, PathBuf>,
+    /// The focused pane's `listing_id` at the time the menu was shown, so a
+    /// `tag-color:N` click can refresh that listing's cache after writing tags.
+    /// Empty when the caller has no listing to refresh (the tag still writes to disk).
+    pub tags_listing_id: String,
 }
 
 /// Context for the network host context menu (stored so on_menu_event can emit it).

@@ -465,6 +465,62 @@
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
+  "commands.tagsToggleGrey.label": "Tag ''Grijs'' in-/uitschakelen",
+  "@commands.tagsToggleGrey.label": {
+    "sourceHash": "1309c09"
+  },
+  "commands.tagsToggleGrey.description": "Voegt de Finder-tag ''Grijs'' toe aan de geselecteerde bestanden of verwijdert deze",
+  "@commands.tagsToggleGrey.description": {
+    "sourceHash": "ca38860"
+  },
+  "commands.tagsToggleGreen.label": "Tag ''Groen'' in-/uitschakelen",
+  "@commands.tagsToggleGreen.label": {
+    "sourceHash": "397b880"
+  },
+  "commands.tagsToggleGreen.description": "Voegt de Finder-tag ''Groen'' toe aan de geselecteerde bestanden of verwijdert deze",
+  "@commands.tagsToggleGreen.description": {
+    "sourceHash": "fa8396b"
+  },
+  "commands.tagsTogglePurple.label": "Tag ''Paars'' in-/uitschakelen",
+  "@commands.tagsTogglePurple.label": {
+    "sourceHash": "ee137d2"
+  },
+  "commands.tagsTogglePurple.description": "Voegt de Finder-tag ''Paars'' toe aan de geselecteerde bestanden of verwijdert deze",
+  "@commands.tagsTogglePurple.description": {
+    "sourceHash": "c6872a8"
+  },
+  "commands.tagsToggleBlue.label": "Tag ''Blauw'' in-/uitschakelen",
+  "@commands.tagsToggleBlue.label": {
+    "sourceHash": "11ba925"
+  },
+  "commands.tagsToggleBlue.description": "Voegt de Finder-tag ''Blauw'' toe aan de geselecteerde bestanden of verwijdert deze",
+  "@commands.tagsToggleBlue.description": {
+    "sourceHash": "7a21c5f"
+  },
+  "commands.tagsToggleYellow.label": "Tag ''Geel'' in-/uitschakelen",
+  "@commands.tagsToggleYellow.label": {
+    "sourceHash": "2afc261"
+  },
+  "commands.tagsToggleYellow.description": "Voegt de Finder-tag ''Geel'' toe aan de geselecteerde bestanden of verwijdert deze",
+  "@commands.tagsToggleYellow.description": {
+    "sourceHash": "16a2608"
+  },
+  "commands.tagsToggleRed.label": "Tag ''Rood'' in-/uitschakelen",
+  "@commands.tagsToggleRed.label": {
+    "sourceHash": "f2d314d"
+  },
+  "commands.tagsToggleRed.description": "Voegt de Finder-tag ''Rood'' toe aan de geselecteerde bestanden of verwijdert deze",
+  "@commands.tagsToggleRed.description": {
+    "sourceHash": "c6e0bee"
+  },
+  "commands.tagsToggleOrange.label": "Tag ''Oranje'' in-/uitschakelen",
+  "@commands.tagsToggleOrange.label": {
+    "sourceHash": "d0c0702"
+  },
+  "commands.tagsToggleOrange.description": "Voegt de Finder-tag ''Oranje'' toe aan de geselecteerde bestanden of verwijdert deze",
+  "@commands.tagsToggleOrange.description": {
+    "sourceHash": "79e5c97"
+  },
   "commands.selectionToggle.label": "Selectie aan/uit",
   "@commands.selectionToggle.label": {
     "sourceHash": "6cb5515"

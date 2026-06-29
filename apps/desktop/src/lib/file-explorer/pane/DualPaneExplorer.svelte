@@ -1322,6 +1322,10 @@
         return paneCommands.getFileAndPathUnderCursor()
     }
 
+    export function toggleTagOnFocusedSelection(color: number): Promise<void> {
+        return paneCommands.toggleTagOnFocusedSelection(color)
+    }
+
     export function sendKeyToFocusedPane(key: string) {
         paneCommands.sendKeyToFocusedPane(key)
     }

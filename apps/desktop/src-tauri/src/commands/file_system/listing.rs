@@ -24,6 +24,10 @@ use super::expand_tilde;
 
 const PATH_EXISTS_TIMEOUT: Duration = Duration::from_secs(2);
 const TAGS_TIMEOUT: Duration = Duration::from_secs(2);
+/// Tag writes are the 5 s "write" tier per `commands/CLAUDE.md`. A `setxattr` on a
+/// hung mount can block; the timeout keeps it off the IPC thread (the blocking task
+/// runs to completion, but the IPC handler returns).
+const TAGS_WRITE_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Reads macOS Finder tags for the given paths and patches them into the cached
 /// listing, emitting a coalesced `directory-diff` so the panes show the colored
@@ -44,6 +48,35 @@ pub async fn enrich_tags(listing_id: String, paths: Vec<String>) -> TimedOut<()>
             })
             .collect();
         crate::file_system::listing::caching::apply_tags_to_listing(&listing_id, updates);
+    })
+    .await
+}
+
+/// Toggles a Finder color tag (`color` 1..=7) across `paths`, then patches the
+/// resulting tags into the cached listing so the panes re-render immediately.
+///
+/// Read-modify-write that PRESERVES every other tag on each file (see
+/// `tags::toggle_color` for the multi-file all-have/some-have semantics). The
+/// frontend supplies `listing_id` so the cache refresh targets the right pane; an
+/// empty / unknown id still writes to disk but skips the in-place refresh (the dots
+/// then update on the next visible-range enrich). Off macOS this is a no-op.
+#[tauri::command]
+#[specta::specta]
+pub async fn toggle_tags(listing_id: String, paths: Vec<String>, color: u8) -> TimedOut<()> {
+    blocking_with_timeout_flag(TAGS_WRITE_TIMEOUT, (), move || {
+        match crate::file_system::tags::toggle_color(&paths, color) {
+            Ok(updates) => {
+                if !updates.is_empty() {
+                    crate::file_system::listing::caching::apply_tags_to_listing(&listing_id, updates);
+                }
+            }
+            // A write failure (permission, dead mount) is logged, not surfaced as a
+            // hard error: tags are low-stakes, each `setxattr` is atomic, and the
+            // panes stay correct (they reflect what's actually on disk on next read).
+            Err(e) => {
+                log::warn!(target: "tags", "toggle_tags failed (color={color}): {e}");
+            }
+        }
     })
     .await
 }

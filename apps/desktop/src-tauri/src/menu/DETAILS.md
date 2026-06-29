@@ -61,6 +61,26 @@ Exceptions that do NOT use `"execute-command"`:
   `MenuState.context.open_with_apps[bundle_id]` and the launch paths via
   `MenuState.context.paths`. The "Other..." entry shows an `NSOpenPanel` filtered to `.app`
   bundles and launches the chosen app the same way.
+- **Finder tag colors** (macOS): the file context menu carries seven `IconMenuItem` circles
+  (`menu_structure.rs::append_tag_color_group`, shown for files AND folders), IDs `tag-color:<1..=7>`,
+  built with bitmaps from `menu/tag_icons.rs`. Like "Open with", they're prefix-routed
+  (`on_menu_event` matches `tag-color:`) — NOT in `menu_id_to_command` — and call
+  `file_system::tags::toggle_color` on the RIGHT-CLICKED selection (`MenuState.context.paths`),
+  then `apply_tags_to_listing(MenuState.context.tags_listing_id, …)`. Acting on the right-clicked set
+  is why they can't route through `execute-command`: a frontend command reads the *focused-pane*
+  selection, which differs when the right-click lands on an unselected row. The xattr write runs on
+  `spawn_blocking` (off the main/menu thread). The keyboard-assignable `tags.toggle*` commands cover
+  the focused-selection case via the frontend (`pane-commands.ts::toggleTagOnFocusedSelection` →
+  `toggle_tags` IPC); no default shortcut.
+  - **Checked state = applied tag** (D7): muda's `IconMenuItem` has no native gutter checkmark (a fork
+    would be a two-repo muda+Tauri patch), so the "applied" circle composites a white check INTO the
+    bitmap. A color is "applied" when EVERY selected path already carries it
+    (`FileContextInfo.applied_tag_colors`, computed from `tags::applied_colors` at menu-build time);
+    `toggle_color` then removes it (all-have) or adds it (some/none have). Circles render at 36 px
+    (2× the 18 pt logical menu-icon size) with a baked 1 px darkened-edge border so a pale fill
+    (yellow) reads on light/dark menus; colors mirror the light-mode `--color-tag-*` tokens. The 14
+    bitmaps (7 colors × {normal, checked}) are cached once in a `LazyLock`. macOS-only — Linux menus
+    carry no icons.
 
 ### MenuState
 

@@ -162,6 +162,17 @@ export const COMMAND_IDS = [
   'cloud.makeOffline',
   'cloud.removeDownload',
 
+  // Finder tag colors (macOS): toggle a system color tag on the focused selection.
+  // No default shortcut; the user can bind one. The context-menu circles route
+  // separately (Rust-side, on the right-clicked set).
+  'tags.toggleGrey',
+  'tags.toggleGreen',
+  'tags.togglePurple',
+  'tags.toggleBlue',
+  'tags.toggleYellow',
+  'tags.toggleRed',
+  'tags.toggleOrange',
+
   // Selection commands
   'selection.toggle',
   'selection.toggleAndDown',

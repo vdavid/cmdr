@@ -5,10 +5,16 @@ Core filesystem operations: directory listing, file writing, sync status, volume
 Submodule docs: [listing/](listing/CLAUDE.md), [write_operations/](write_operations/CLAUDE.md),
 [volume/](volume/CLAUDE.md). Top-level files of note: `cloud_actions.rs` (iCloud make-available-offline / remove-download),
 `open_with.rs` (candidate apps + launch), `watcher.rs` (FSEvents incremental listing updates), `sync_status.rs`,
-`tags.rs` (macOS Finder tag read: `_kMDItemUserTags` getxattr + bplist parse; deferred via the `enrich_tags` command).
+`tags.rs` (macOS Finder tags: `_kMDItemUserTags` getxattr + bplist read/write; read deferred via `enrich_tags`, write
+via `set_tags` / `toggle_color` behind the `toggle_tags` command).
 
 ## Gotchas
 
+- **Tag writes (`tags.rs`) must touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo` (D11).** That 32-byte blob
+  carries `kHasCustomIcon` (`0x0400` at offset 8) plus type/creator codes; zeroing it destroys custom folder icons and
+  breaks `icons/per_path.rs::has_custom_folder_icon`. Modern Finder reads tags straight from `_kMDItemUserTags`, so the
+  dot shows without the legacy label bits. Encode the **binary** plist (`to_writer_binary` — `plist` defaults to XML).
+  Pinned by `tags::write_tests::tagging_preserves_finder_info_custom_icon_flag`.
 - **Never use rayon (or any constrained-stack thread pool) for calls into macOS frameworks.** NSURL resource lookups,
   FileProvider queries, and similar Objective-C APIs make synchronous XPC round-trips to system daemons that can descend
   through FileProvider override chains (iCloud, Dropbox) and blow rayon's default 2 MB worker stack. Use dedicated OS
