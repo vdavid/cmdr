@@ -117,6 +117,7 @@ pub(super) fn handle_upsert_entry_v2(
     nlink: Option<u64>,
     next_id: &AtomicI64,
     mutation_tracker: &MutationTracker,
+    propagate_deltas: bool,
 ) {
     // Hardlink dedup: if this file has nlink > 1, check whether another entry
     // for the same inode already has non-NULL sizes. If so, override sizes to
@@ -124,9 +125,11 @@ pub(super) fn handle_upsert_entry_v2(
     let should_dedup = inode.is_some() && matches!(nlink, Some(n) if n > 1) && logical_size.is_some();
 
     // Check if an entry already exists at (parent_id, name).
-    // Auto-propagates size deltas to ancestor dir_stats on both
-    // insert and update, so callers never need a separate
-    // PropagateDeltaById for upserted entries.
+    // Auto-propagates size deltas to ancestor dir_stats on both insert and update
+    // (when `propagate_deltas`), so callers never need a separate
+    // PropagateDeltaById for upserted entries. The full reconcile passes
+    // `propagate_deltas = false` to skip the ancestor walk; its final
+    // `ComputeAllAggregates` recomputes every dir's stats instead.
     match IndexStore::resolve_component(conn, parent_id, &name) {
         Ok(Some(existing_id)) => {
             // Type change (file↔dir): delete old entry and insert fresh so
@@ -142,9 +145,9 @@ pub(super) fn handle_upsert_entry_v2(
                     old.is_directory
                 );
                 if old.is_directory {
-                    handle_delete_subtree_by_id(conn, existing_id, mutation_tracker);
+                    handle_delete_subtree_by_id(conn, existing_id, propagate_deltas, mutation_tracker);
                 } else {
-                    handle_delete_entry_by_id(conn, existing_id, mutation_tracker);
+                    handle_delete_entry_by_id(conn, existing_id, propagate_deltas, mutation_tracker);
                 }
                 upsert_insert_new(
                     conn,
@@ -158,6 +161,7 @@ pub(super) fn handle_upsert_entry_v2(
                     inode,
                     should_dedup,
                     next_id,
+                    propagate_deltas,
                 );
                 return;
             }
@@ -174,6 +178,7 @@ pub(super) fn handle_upsert_entry_v2(
                 inode,
                 should_dedup,
                 old_entry,
+                propagate_deltas,
             );
         }
         Ok(None) => {
@@ -189,6 +194,7 @@ pub(super) fn handle_upsert_entry_v2(
                 inode,
                 should_dedup,
                 next_id,
+                propagate_deltas,
             );
         }
         Err(e) => {
@@ -215,6 +221,7 @@ fn upsert_update_existing(
     inode: Option<u64>,
     should_dedup: bool,
     old_entry: Option<EntryRow>,
+    propagate_deltas: bool,
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
     let (logical_size, physical_size) = if should_dedup
@@ -240,8 +247,12 @@ fn upsert_update_existing(
         inode,
     ) {
         log::warn!("Index writer: update_entry failed for id={existing_id}: {e}");
-    } else if let Some(old) = old_entry {
-        // Propagate size delta if anything changed
+    } else if let Some(old) = old_entry
+        && propagate_deltas
+    {
+        // Propagate size delta if anything changed. Skipped under a bulk reconcile
+        // (`propagate_deltas == false`): the final ComputeAllAggregates recomputes
+        // ancestor stats from scratch, so this ancestor walk would be wasted work.
         let old_logical = old.logical_size.unwrap_or(0) as i64;
         let new_logical = logical_size.unwrap_or(0) as i64;
         let old_physical = old.physical_size.unwrap_or(0) as i64;
@@ -272,6 +283,7 @@ fn upsert_insert_new(
     inode: Option<u64>,
     should_dedup: bool,
     next_id: &AtomicI64,
+    propagate_deltas: bool,
 ) {
     // Dedup: override sizes if another entry already has sizes for this inode
     let (logical_size, physical_size) = if should_dedup
@@ -322,22 +334,32 @@ fn upsert_insert_new(
                 ) {
                     log::warn!("Writer: init dir_stats for new dir id={new_id} failed: {e}");
                 }
-                propagate_delta_by_id(conn, parent_id, 0, 0, 0, 1);
-                // The new dir is unlisted (`min_subtree_epoch = 0`), so a new
-                // incomplete subtree now exists: drop every ancestor's coverage
-                // to 0. A later verifier/reconcile scan stamps it and lifts
-                // coverage back. Fire from the parent so the dir's own (correct)
-                // 0 propagates up the chain.
-                propagate_min_subtree_epoch(conn, parent_id);
-            } else {
-                let logical = logical_size.unwrap_or(0) as i64;
-                let physical = physical_size.unwrap_or(0) as i64;
-                propagate_delta_by_id(conn, parent_id, logical, physical, 1, 0);
             }
-            // New symlink: walk the parent chain and OR in the flag.
-            // We start at parent_id so the parent's stats include this symlink.
-            if is_symlink {
-                propagate_recursive_has_symlinks(conn, parent_id);
+            // Ancestor propagation. Skipped under a bulk reconcile
+            // (`propagate_deltas == false`): the final ComputeAllAggregates
+            // recomputes every dir's `dir_stats` from the entries table, so these
+            // O(depth) walks per entry would be wasted work. The new-dir
+            // zero-valued `dir_stats` row above is still written either way, so
+            // enrichment always has a row to read during the walk.
+            if propagate_deltas {
+                if is_directory {
+                    propagate_delta_by_id(conn, parent_id, 0, 0, 0, 1);
+                    // The new dir is unlisted (`min_subtree_epoch = 0`), so a new
+                    // incomplete subtree now exists: drop every ancestor's coverage
+                    // to 0. A later verifier/reconcile scan stamps it and lifts
+                    // coverage back. Fire from the parent so the dir's own (correct)
+                    // 0 propagates up the chain.
+                    propagate_min_subtree_epoch(conn, parent_id);
+                } else {
+                    let logical = logical_size.unwrap_or(0) as i64;
+                    let physical = physical_size.unwrap_or(0) as i64;
+                    propagate_delta_by_id(conn, parent_id, logical, physical, 1, 0);
+                }
+                // New symlink: walk the parent chain and OR in the flag.
+                // We start at parent_id so the parent's stats include this symlink.
+                if is_symlink {
+                    propagate_recursive_has_symlinks(conn, parent_id);
+                }
             }
         }
         Err(e) => {
@@ -411,10 +433,12 @@ pub(super) fn handle_move_entry_v2(
                 .flatten()
                 .map(|e| e.is_directory)
                 .unwrap_or(false);
+            // Move is a live-only message (never part of a bulk reconcile, which
+            // emits only Upsert/Delete), so its internal deletes always propagate.
             if conflicting_is_dir {
-                handle_delete_subtree_by_id(conn, conflicting_id, mutation_tracker);
+                handle_delete_subtree_by_id(conn, conflicting_id, true, mutation_tracker);
             } else {
-                handle_delete_entry_by_id(conn, conflicting_id, mutation_tracker);
+                handle_delete_entry_by_id(conn, conflicting_id, true, mutation_tracker);
             }
         }
         Ok(_) => {}
@@ -522,6 +546,7 @@ pub(super) fn handle_move_entry_v2(
 pub(super) fn handle_delete_entry_by_id(
     conn: &rusqlite::Connection,
     entry_id: i64,
+    propagate_deltas: bool,
     mutation_tracker: &MutationTracker,
 ) {
     // Read old entry before deleting to get accurate delta
@@ -529,8 +554,12 @@ pub(super) fn handle_delete_entry_by_id(
     if let Err(e) = IndexStore::delete_entry_by_id(conn, entry_id) {
         log::warn!("Index writer: delete_entry_by_id failed for id={entry_id}: {e}");
     }
-    // Auto-propagate accurate negative delta via parent_id chain
-    if let Some(entry) = old_entry {
+    // Auto-propagate accurate negative delta via parent_id chain. Skipped under a
+    // bulk reconcile (`propagate_deltas == false`): the final ComputeAllAggregates
+    // recomputes ancestor stats from the entries table, so this walk is wasted.
+    if let Some(entry) = old_entry
+        && propagate_deltas
+    {
         let (logical_delta, physical_delta, file_delta, dir_delta) = if entry.is_directory {
             (0i64, 0i64, 0i32, -1i32)
         } else {
@@ -567,6 +596,7 @@ pub(super) fn handle_delete_entry_by_id(
 pub(super) fn handle_delete_subtree_by_id(
     conn: &rusqlite::Connection,
     root_id: i64,
+    propagate_deltas: bool,
     mutation_tracker: &MutationTracker,
 ) {
     // Read subtree totals before deleting to get accurate delta
@@ -596,8 +626,12 @@ pub(super) fn handle_delete_subtree_by_id(
     if let Err(e) = IndexStore::delete_subtree_by_id(conn, root_id) {
         log::warn!("Index writer: delete_subtree_by_id failed for id={root_id}: {e}");
     }
-    // Auto-propagate accurate negative delta via parent_id chain
-    if let (Some((logical_size, physical_size, file_count, dir_count)), Some(pid)) = (totals, parent_id) {
+    // Auto-propagate accurate negative delta via parent_id chain. Skipped under a
+    // bulk reconcile (`propagate_deltas == false`): the final ComputeAllAggregates
+    // recomputes ancestor stats from the entries table, so this walk is wasted.
+    if let (Some((logical_size, physical_size, file_count, dir_count)), Some(pid)) = (totals, parent_id)
+        && propagate_deltas
+    {
         propagate_delta_by_id(
             conn,
             pid,
@@ -2639,6 +2673,154 @@ mod tests {
             after > before,
             "writer's mutation counter should bump after a real move"
         );
+
+        writer.shutdown();
+    }
+
+    // ── Bulk-reconcile delta-propagation suppression ─────────────────────
+
+    /// Large-delta regression guard (the test the original wedge needed):
+    ///
+    /// The FULL reconcile sends thousands of `UpsertEntryV2` per pass. The bug was
+    /// that EACH one walked the ancestor `dir_stats` chain (O(entries × depth)),
+    /// wedging the writer for hours on a 270k→6M delta. `SetDeltaPropagation(false)`
+    /// suppresses that per-entry walk; the reconcile's single `ComputeAllAggregates`
+    /// recomputes every dir from the entries table instead.
+    ///
+    /// This drives the writer with the SAME message stream a reconcile emits — bulk
+    /// mode ON, then thousands of `UpsertEntryV2`, then one `ComputeAllAggregates` —
+    /// and asserts BOTH halves of the contract on its OWN db (so it's immune to
+    /// other concurrent test writers, unlike a global counter would be):
+    ///
+    /// 1. MID-WALK (after every upsert is flushed, BEFORE the aggregate) every dir's
+    ///    `dir_stats` is still its zero-valued init row: the per-entry propagation did
+    ///    NOT run. With propagation left ON this is where it FAILS — each dir would
+    ///    already read its `FILES_PER_DIR` files (RED).
+    /// 2. POST-AGGREGATE the recomputed `dir_stats` are exactly correct, proving the
+    ///    suppression is invisible to the final result (and that skipping the
+    ///    aggregate would leave them wrong — the other RED).
+    #[test]
+    fn bulk_reconcile_suppresses_per_entry_propagation_until_final_aggregate() {
+        const DIR_COUNT: i64 = 30;
+        const FILES_PER_DIR: i64 = 100;
+        const FILE_SIZE: u64 = 100;
+
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Enter bulk-reconcile mode: per-entry ancestor propagation is now OFF.
+        writer.send(WriteMessage::SetDeltaPropagation(false)).unwrap();
+
+        // Wave 1: create DIR_COUNT directories directly under ROOT. Their ids aren't
+        // known yet (UpsertEntryV2 lets the writer allocate), so flush + resolve.
+        for i in 0..DIR_COUNT {
+            writer
+                .send(WriteMessage::UpsertEntryV2 {
+                    parent_id: ROOT_ID,
+                    name: format!("dir{i}"),
+                    is_directory: true,
+                    is_symlink: false,
+                    logical_size: None,
+                    physical_size: None,
+                    modified_at: None,
+                    inode: None,
+                    nlink: None,
+                })
+                .unwrap();
+        }
+        writer.flush_blocking().unwrap();
+
+        let dir_ids: Vec<i64> = {
+            let conn = IndexStore::open_read_connection(&db_path).unwrap();
+            (0..DIR_COUNT)
+                .map(|i| {
+                    IndexStore::resolve_component(&conn, ROOT_ID, &format!("dir{i}"))
+                        .unwrap()
+                        .expect("dir resolved")
+                })
+                .collect()
+        };
+
+        // Wave 2: FILES_PER_DIR files in each directory — the bulk of the delta.
+        for &dir_id in &dir_ids {
+            for f in 0..FILES_PER_DIR {
+                writer
+                    .send(WriteMessage::UpsertEntryV2 {
+                        parent_id: dir_id,
+                        name: format!("f{f}.dat"),
+                        is_directory: false,
+                        is_symlink: false,
+                        logical_size: Some(FILE_SIZE),
+                        physical_size: Some(FILE_SIZE),
+                        modified_at: None,
+                        inode: None,
+                        nlink: None,
+                    })
+                    .unwrap();
+            }
+        }
+        writer.flush_blocking().unwrap();
+
+        // 1. MID-WALK: propagation suppressed, so every dir still shows its
+        //    zero-valued init row despite holding FILES_PER_DIR files. (RED here if
+        //    propagation is left on: each dir would read FILES_PER_DIR.)
+        {
+            let conn = IndexStore::open_read_connection(&db_path).unwrap();
+            for &dir_id in &dir_ids {
+                let stats = IndexStore::get_dir_stats_by_id(&conn, dir_id).unwrap().unwrap();
+                assert_eq!(
+                    stats.recursive_file_count, 0,
+                    "bulk mode must NOT propagate the files into dir {dir_id}'s dir_stats"
+                );
+                assert_eq!(
+                    stats.recursive_logical_size, 0,
+                    "bulk mode must NOT propagate file sizes into dir {dir_id}'s dir_stats"
+                );
+            }
+            // ROOT was never touched by propagation either.
+            let root = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID).unwrap();
+            assert!(
+                root.map(|s| s.recursive_file_count).unwrap_or(0) == 0,
+                "bulk mode must NOT propagate anything into ROOT's dir_stats"
+            );
+        }
+
+        // 2. The single final aggregate recomputes everything correctly.
+        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer.flush_blocking().unwrap();
+        writer.send(WriteMessage::SetDeltaPropagation(true)).unwrap();
+        writer.flush_blocking().unwrap();
+
+        {
+            let conn = IndexStore::open_read_connection(&db_path).unwrap();
+            for &dir_id in &dir_ids {
+                let stats = IndexStore::get_dir_stats_by_id(&conn, dir_id).unwrap().unwrap();
+                assert_eq!(
+                    stats.recursive_file_count, FILES_PER_DIR as u64,
+                    "aggregate must fill dir {dir_id}'s file count"
+                );
+                assert_eq!(
+                    stats.recursive_logical_size,
+                    FILE_SIZE * FILES_PER_DIR as u64,
+                    "aggregate must fill dir {dir_id}'s recursive size"
+                );
+            }
+            let root = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID).unwrap().unwrap();
+            assert_eq!(
+                root.recursive_file_count,
+                (DIR_COUNT * FILES_PER_DIR) as u64,
+                "ROOT must total every file across every dir"
+            );
+            assert_eq!(
+                root.recursive_dir_count, DIR_COUNT as u64,
+                "ROOT must count every directory"
+            );
+            assert_eq!(
+                root.recursive_logical_size,
+                FILE_SIZE * (DIR_COUNT * FILES_PER_DIR) as u64,
+                "ROOT must total every file's size"
+            );
+        }
 
         writer.shutdown();
     }

@@ -220,6 +220,13 @@ fn run_local_reconcile(
     // after a level's flush, never by absolute path.
     let mut new_dirs: Vec<(PathBuf, i64, String)> = Vec::new();
 
+    // Suppress per-entry ancestor propagation for the bulk walk; the guard restores
+    // it on EVERY exit (clean finish, cancel, empty-root, error). The shared finish
+    // recomputes all dir_stats via one `ComputeAllAggregates`, so the per-entry walk
+    // would be redundant O(entries × depth) work that wedges the writer on a large
+    // delta. See `reconciler::BulkReconcileGuard`.
+    let _bulk_guard = reconciler::BulkReconcileGuard::begin(writer);
+
     while let Some((dir_path, dir_id)) = queue.pop_front() {
         if cancelled.load(Ordering::Relaxed) {
             // Cancel: leave the prior index intact (no truncate ran) and send
@@ -871,6 +878,52 @@ mod tests {
             "reconcile must not change the root's recursive physical size \
              ({physical_before} -> {physical_after})"
         );
+    }
+
+    /// End-to-end correctness on a large ADD delta through the real
+    /// `run_local_reconcile` path (which now brackets its walk with
+    /// `SetDeltaPropagation(false/true)`): reconciling a populated on-disk tree into
+    /// an index that holds ONLY the root (every entry is new) must complete and
+    /// produce correct recursive `dir_stats`.
+    ///
+    /// This proves the bulk-mode suppression is invisible to the final result: the
+    /// per-entry ancestor propagation is skipped for the whole walk, yet the single
+    /// `ComputeAllAggregates` in `finish_reconcile` recomputes every dir's stats
+    /// exactly. (The `_no_op` convergence test pins the unchanged-tree case; this
+    /// pins the add-everything case the wedge actually hit.)
+    #[test]
+    fn reconcile_from_empty_index_builds_correct_aggregates() {
+        let h = setup();
+        let root = tree_root();
+        let rp = root.path();
+        // Seed ONLY the root dir (no contents): the reconcile adds the whole tree.
+        ensure_path_in_db(&h, &norm(rp));
+
+        // Tree with known totals: 5 files (150 bytes), 3 dirs (a, a/deep, b).
+        std::fs::create_dir_all(rp.join("a/deep")).unwrap();
+        std::fs::create_dir(rp.join("b")).unwrap();
+        std::fs::write(rp.join("a/f1.txt"), vec![b'x'; 10]).unwrap();
+        std::fs::write(rp.join("a/f2.txt"), vec![b'x'; 20]).unwrap();
+        std::fs::write(rp.join("a/deep/f3.txt"), vec![b'x'; 30]).unwrap();
+        std::fs::write(rp.join("b/f4.txt"), vec![b'x'; 40]).unwrap();
+        std::fs::write(rp.join("top.txt"), vec![b'x'; 50]).unwrap();
+
+        let summary = run_reconcile(&h, rp, false).expect("reconcile from empty");
+        assert!(!summary.was_cancelled, "the reconcile must complete, not cancel");
+
+        // Root aggregates: every file and dir, deduped sizes summed.
+        let root_id = resolve(&h, rp).expect("root resolved");
+        let root_stats = dir_stats(&h, root_id).expect("root stats");
+        assert_eq!(root_stats.recursive_file_count, 5, "root must count all 5 files");
+        assert_eq!(root_stats.recursive_dir_count, 3, "root must count a, a/deep, b");
+        assert_eq!(root_stats.recursive_logical_size, 150, "root must sum all file sizes");
+
+        // A sub-aggregate (a holds f1, f2, and a/deep/f3 = 60 bytes, 3 files, 1 dir).
+        let a = resolve(&h, &rp.join("a")).expect("a resolved");
+        let a_stats = dir_stats(&h, a).expect("a stats");
+        assert_eq!(a_stats.recursive_file_count, 3, "a must count f1, f2, deep/f3");
+        assert_eq!(a_stats.recursive_dir_count, 1, "a must count deep");
+        assert_eq!(a_stats.recursive_logical_size, 60, "a must sum 10 + 20 + 30");
     }
 
     /// Cancel (data-safety): a cancelled reconcile returns `was_cancelled`

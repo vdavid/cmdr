@@ -623,6 +623,43 @@ pub(super) fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWri
     Ok(())
 }
 
+/// RAII bracket for a FULL reconcile's bulk walk: tells the writer to STOP
+/// per-entry ancestor `dir_stats` propagation for the walk's duration, then
+/// RESTORES it on EVERY scope exit (clean finish, cancel, empty-root, error, or
+/// panic) so the shared, long-lived writer is never left non-propagating for the
+/// LIVE event loop that runs afterwards.
+///
+/// Why suppress: the full reconcile emits thousands of `UpsertEntryV2` / `Delete*`;
+/// letting each one walk the ancestor chain
+/// (`propagate_delta_by_id` / `propagate_min_subtree_epoch` /
+/// `propagate_recursive_has_symlinks`) is O(entries × tree-depth) and wedges the
+/// writer for hours on a large delta. It's also pure waste: `finish_reconcile`'s
+/// single `ComputeAllAggregates` recomputes every dir's stats from the entries
+/// table, overwriting whatever per-entry propagation produced. The LIVE path
+/// (`reconcile_subtree`, FSEvents) has NO final aggregate, so it MUST keep
+/// propagating — which is exactly why this guard restores the default on exit.
+///
+/// Both sends are best-effort: on a hard writer-gone error the restore send fails
+/// and is ignored, matching how the surrounding walk already treats writer sends.
+pub(super) struct BulkReconcileGuard {
+    writer: IndexWriter,
+}
+
+impl BulkReconcileGuard {
+    /// Begin the bracket: disable per-entry propagation on the writer.
+    pub(super) fn begin(writer: &IndexWriter) -> Self {
+        let _ = writer.send(WriteMessage::SetDeltaPropagation(false));
+        Self { writer: writer.clone() }
+    }
+}
+
+impl Drop for BulkReconcileGuard {
+    fn drop(&mut self) {
+        // Re-enable per-entry propagation for the subsequent live path.
+        let _ = self.writer.send(WriteMessage::SetDeltaPropagation(true));
+    }
+}
+
 /// Reconcile a subtree by diffing the filesystem against the DB directory-by-directory.
 ///
 /// Unlike `scanner::scan_subtree` which deletes all descendants then re-inserts,

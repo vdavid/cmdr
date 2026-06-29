@@ -233,6 +233,28 @@ pub enum WriteMessage {
     /// Truncate `entries` and `dir_stats` tables, preserving `meta`.
     /// Used before a full rescan so the scan starts from a clean slate.
     TruncateData,
+    /// Toggle per-entry ancestor `dir_stats` propagation on the writer thread.
+    ///
+    /// The FULL reconcile (local `run_local_reconcile` + network
+    /// `reconcile_volume_via_trait`) sets this `false` before its BFS walk so the
+    /// thousands of `UpsertEntryV2` / `Delete*` it sends DON'T each walk the
+    /// ancestor chain (`propagate_delta_by_id` / `propagate_min_subtree_epoch` /
+    /// `propagate_recursive_has_symlinks`). That per-entry propagation is
+    /// O(entries × tree-depth) and, on a large delta, wedges the writer for hours.
+    /// It's also pure wasted work here: the reconcile's `finish_reconcile` runs
+    /// ONE `ComputeAllAggregates` that recomputes EVERY dir's `dir_stats` from the
+    /// entries table, overwriting whatever the per-entry propagation produced.
+    ///
+    /// The reconcile re-enables it (`true`) on EVERY exit path (success, cancel,
+    /// empty-root, error) so the subsequent LIVE event loop — which has NO final
+    /// aggregate and relies on per-entry propagation — works normally again.
+    /// Default is `true`; only the full-reconcile brackets flip it, and the live
+    /// `reconcile_subtree` / FSEvents path never touches it.
+    ///
+    /// Only the ancestor PROPAGATION is suppressed. Entry insert/update/delete,
+    /// hardlink dedup, and the new-directory zero-valued `dir_stats` row init all
+    /// still run (enrichment needs that row mid-walk; the final aggregate fills it).
+    SetDeltaPropagation(bool),
     /// Begin an explicit SQLite transaction.
     /// All subsequent writes are batched until `CommitTransaction`.
     /// Dramatically reduces fsync overhead for bulk operations (replay).
@@ -738,6 +760,10 @@ fn writer_loop(
     log::debug!("Writer: thread started");
     let mut stats = WriterStats::new();
     let mut accumulator = AccumulatorMaps::new();
+    // Whether per-entry mutations propagate size/count/coverage deltas up the
+    // ancestor `dir_stats` chain. Default `true` (the live path needs it); the
+    // FULL reconcile flips it off around its bulk walk via `SetDeltaPropagation`.
+    let mut propagate_deltas = true;
 
     // Phase 1 instrumentation: time split between recv() (idle waiting),
     // processing (handlers), and commit (txn commits, tracked via wrapper).
@@ -786,6 +812,7 @@ fn writer_loop(
                 &next_id,
                 &mutation_tracker,
                 &mut probe,
+                &mut propagate_deltas,
             )
         });
         #[cfg(not(target_os = "macos"))]
@@ -800,6 +827,7 @@ fn writer_loop(
             &next_id,
             &mutation_tracker,
             &mut probe,
+            &mut propagate_deltas,
         );
         probe.time_in_processing += proc_start.elapsed();
         probe.messages_processed += 1;
@@ -889,6 +917,7 @@ fn process_message(
     next_id: &AtomicI64,
     mutation_tracker: &MutationTracker,
     probe: &mut ProbeStats,
+    propagate_deltas: &mut bool,
 ) -> bool {
     match msg {
         // ── Integer-keyed variants ───────────────────────────────────
@@ -927,6 +956,7 @@ fn process_message(
                 nlink,
                 next_id,
                 mutation_tracker,
+                *propagate_deltas,
             );
         }
         WriteMessage::MoveEntryV2 {
@@ -937,10 +967,10 @@ fn process_message(
             handle_move_entry_v2(conn, entry_id, new_parent_id, new_name, mutation_tracker);
         }
         WriteMessage::DeleteEntryById(entry_id) => {
-            handle_delete_entry_by_id(conn, entry_id, mutation_tracker);
+            handle_delete_entry_by_id(conn, entry_id, *propagate_deltas, mutation_tracker);
         }
         WriteMessage::DeleteSubtreeById(root_id) => {
-            handle_delete_subtree_by_id(conn, root_id, mutation_tracker);
+            handle_delete_subtree_by_id(conn, root_id, *propagate_deltas, mutation_tracker);
         }
         WriteMessage::DeleteDescendantsById(root_id) => {
             // No delta propagation: the subtree will be immediately re-scanned and
@@ -1026,6 +1056,12 @@ fn process_message(
             );
             // All prior messages have been processed; signal the caller
             let _ = reply.send(());
+        }
+        WriteMessage::SetDeltaPropagation(enabled) => {
+            // A control message, not a mutation: it only flips ambient writer
+            // state, so no `MutationTracker::bump()` and nothing search cares about.
+            log::debug!("Writer: SetDeltaPropagation({enabled})");
+            *propagate_deltas = enabled;
         }
         WriteMessage::BeginTransaction => {
             log::debug!("Writer: BEGIN IMMEDIATE transaction");

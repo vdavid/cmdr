@@ -496,6 +496,13 @@ pub(crate) async fn reconcile_volume_via_trait(
     // completed. See `indexing/DETAILS.md` § "Non-destructive rescan".
     let mut new_dirs: Vec<(PathBuf, i64, String)> = Vec::new();
 
+    // Suppress per-entry ancestor propagation for the bulk walk; the guard restores
+    // it on EVERY exit (clean finish, cancel, empty-root, disconnect, error). The
+    // shared finish recomputes all dir_stats via one `ComputeAllAggregates`, so the
+    // per-entry walk would be redundant O(entries × depth) work. See
+    // `reconciler::BulkReconcileGuard`.
+    let _bulk_guard = reconciler::BulkReconcileGuard::begin(&writer);
+
     loop {
         if cancelled.load(Ordering::Relaxed) {
             // User cancel: stop, but leave the prior index intact (no truncate ran).
