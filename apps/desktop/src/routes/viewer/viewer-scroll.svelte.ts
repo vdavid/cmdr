@@ -162,7 +162,11 @@ export function createViewerScroll(deps: ScrollDeps) {
       const totalLines = deps.getTotalLines()
       const supportsLineSeek = totalLines !== null
       const seekType = supportsLineSeek ? 'line' : 'fraction'
-      const seekValue = supportsLineSeek ? fetchFrom : fetchFrom / estimatedTotalLines()
+      // A 0 estimate would make the fraction division NaN (0/0) or Infinity (>0/0); both
+      // serialize to JSON null, which the Rust f64 `targetValue` rejects. With no line count
+      // to go on, seek to the start of the file (fraction 0).
+      const estimated = estimatedTotalLines()
+      const seekValue = supportsLineSeek ? fetchFrom : estimated > 0 ? fetchFrom / estimated : 0
 
       log.debug('fetchLines[{fetchId}]: requesting {seekType}={seekValue} count={fetchCount}', {
         fetchId,
