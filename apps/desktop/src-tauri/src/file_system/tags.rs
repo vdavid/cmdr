@@ -13,7 +13,9 @@ use crate::file_system::listing::metadata::TagRef;
 #[cfg(target_os = "macos")]
 use std::path::Path;
 
-/// The extended-attribute name Finder stores tags under.
+/// The extended-attribute name Finder stores tags under. macOS-only: the only
+/// readers/writers are the macOS tag functions.
+#[cfg(target_os = "macos")]
 pub const TAGS_XATTR: &str = "com.apple.metadata:_kMDItemUserTags";
 
 /// Reads and parses a path's Finder tags. Returns an empty vec when the xattr is
@@ -40,6 +42,11 @@ pub fn read_tags(_path: &std::path::Path) -> Vec<TagRef> {
 /// Decodes a raw `_kMDItemUserTags` binary-plist buffer into tags. Pure (no I/O),
 /// so it's unit-testable against captured Finder fixtures. Returns empty on any
 /// decode failure or a non-array root — never panics on malformed input.
+///
+/// macOS-only: the `plist` crate is a macOS-only dependency. The non-macOS
+/// `read_tags` returns empty without ever decoding a buffer, so this never runs
+/// off macOS.
+#[cfg(target_os = "macos")]
 pub fn parse_tags_plist(bytes: &[u8]) -> Vec<TagRef> {
     let value = match plist::Value::from_reader(std::io::Cursor::new(bytes)) {
         Ok(v) => v,
@@ -58,6 +65,9 @@ pub fn parse_tags_plist(bytes: &[u8]) -> Vec<TagRef> {
 /// Splits one `"Name\nN"` tag string into a `TagRef`. Splits on the FINAL newline
 /// so a name may itself contain newlines; if the trailing token isn't a `0..=7`
 /// color, the whole string is the name with color `0` (a colorless named tag).
+///
+/// macOS-only: its sole caller is the macOS-only `parse_tags_plist`.
+#[cfg(target_os = "macos")]
 fn parse_tag_string(s: &str) -> TagRef {
     if let Some((name, color_str)) = s.rsplit_once('\n')
         && let Ok(color) = color_str.parse::<u8>()
@@ -100,6 +110,9 @@ fn system_color_name(color: u8) -> Option<&'static str> {
 /// EVERY file already carries — the "applied" set that drives the context menu's
 /// checked circles and `toggle_color`'s all-have→remove decision. Pure, so it's
 /// unit-testable without touching the filesystem. An empty selection → none applied.
+///
+/// macOS-only: its sole caller builds the macOS file context menu.
+#[cfg(target_os = "macos")]
 pub fn applied_colors(per_file_tags: &[Vec<TagRef>]) -> [bool; 8] {
     let mut applied = [false; 8];
     for color in 1u8..=7 {
@@ -114,6 +127,10 @@ pub fn applied_colors(per_file_tags: &[Vec<TagRef>]) -> [bool; 8] {
 /// even a colorless tag is `"Name\n0"`). Pure (no I/O), so the encode↔decode
 /// round-trip is unit-testable. `plist` defaults to XML, so we MUST call
 /// `to_writer_binary` here — an XML body would not be Finder-compatible.
+///
+/// macOS-only: the `plist` crate is a macOS-only dependency, and the only caller
+/// (`set_tags`) is itself macOS-only.
+#[cfg(target_os = "macos")]
 pub fn encode_tags_plist(tags: &[TagRef]) -> std::io::Result<Vec<u8>> {
     let array: Vec<plist::Value> = tags
         .iter()
@@ -147,13 +164,6 @@ pub fn set_tags(path: &Path, tags: &[TagRef]) -> std::io::Result<()> {
     }
     let bytes = encode_tags_plist(tags)?;
     xattr::set(path, TAGS_XATTR, &bytes)
-}
-
-/// Non-macOS: Finder tags don't exist, so writing is a no-op. Keeps callers
-/// `#[cfg]`-free.
-#[cfg(not(target_os = "macos"))]
-pub fn set_tags(_path: &std::path::Path, _tags: &[TagRef]) -> std::io::Result<()> {
-    Ok(())
 }
 
 /// Toggles one system color tag across a (possibly multi-file) selection, preserving
@@ -215,7 +225,12 @@ pub fn toggle_color(_paths: &[String], _color: u8) -> std::io::Result<Vec<(Strin
     Ok(Vec::new())
 }
 
-#[cfg(test)]
+// macOS-only: every test here exercises tag parsing/encoding/applied-colors logic
+// that depends on the macOS-only `plist` crate (`parse_tags_plist`,
+// `encode_tags_plist`, `parse_tag_string`). The applied-colors model is pure, but
+// the tags feature is macOS-only, so all coverage runs on macOS (matching
+// `write_tests` and `macos_fs_tests` below).
+#[cfg(all(test, target_os = "macos"))]
 mod tests {
     use super::*;
 
