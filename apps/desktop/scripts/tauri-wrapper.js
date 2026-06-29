@@ -25,6 +25,7 @@ import { join } from 'path'
 import {
   extractWorktreeFlag,
   resolveInstanceId,
+  resolveWorktreeLabel,
   deriveInstance,
   pickEphemeralPort,
   writePortFile,
@@ -43,7 +44,8 @@ const isBuild = args.includes('build')
 // `build` is exempt (CI release builds run in the main checkout). Override with
 // --allow-main / -m.
 const allowMain = args.includes('--allow-main') || args.includes('-m')
-if (isDev && !allowMain && isMainWorkingTree()) {
+const inMainWorkingTree = isMainWorkingTree()
+if (isDev && !allowMain && inMainWorkingTree) {
   console.error(
     'Refusing to run dev in the main clone.\n' +
       'Dev runs in a worktree — use `pnpm dev --worktree <slug>` from a worktree, ' +
@@ -74,6 +76,18 @@ function isMainWorkingTree() {
   }
 }
 
+// Basename of the current working tree's toplevel, e.g. "colorful-tags" for a worktree at
+// `.claude/worktrees/colorful-tags`. Used as the dev-title label for a plain `pnpm dev` from
+// a worktree (no `--worktree` slug). Returns null when git is absent / not a repo.
+function worktreeDirName() {
+  try {
+    const top = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim()
+    return top.length > 0 ? (top.split('/').pop() ?? null) : null
+  } catch {
+    return null
+  }
+}
+
 // Dev-only virtual MTP opt-in. `CMDR_VIRTUAL_MTP=1 pnpm dev` (or `=<dir>` for a custom
 // backing dir) registers a fake Android device so MTP flows (drag&drop, transfers,
 // conflict dialogs) are testable without real hardware. The Rust side is feature-gated
@@ -100,6 +114,21 @@ if (wantsVirtualMtp && !forwardedArgs.includes('virtual-mtp')) {
 }
 
 const env = { ...process.env }
+
+// Dev-only: label which working tree this session runs against, so the dev-mode title bar
+// can mark side-by-side worktree windows apart (e.g. "(colorful-tags) DEV MODE - …"). Vite
+// bakes it into the frontend as `__CMDR_WORKTREE_LABEL__`. Skipped under E2E (CMDR_E2E_MODE)
+// so E2E window titles stay as-is, and never set for prod builds. An explicit env value wins.
+if (isDev && env.CMDR_E2E_MODE !== '1' && !env.CMDR_WORKTREE_LABEL) {
+  const label = resolveWorktreeLabel({
+    isDev,
+    worktreeSlug: rawWorktreeSlug,
+    isMainWorkingTree: inMainWorkingTree,
+    worktreeDirName: worktreeDirName(),
+  })
+  if (label) env.CMDR_WORKTREE_LABEL = label
+}
+
 /** @type {string | null} */
 let instanceTmpDir = null
 /** Path to the per-instance data dir we wrote the tauri-mcp port file into. */

@@ -27,6 +27,7 @@ import {
   initAppMode,
   getAppMode,
   decorateChildWindowTitle,
+  decorateMainWindowTitle,
   orderChildWindowToBackInE2e,
   _resetForTests,
 } from './app-mode'
@@ -107,6 +108,31 @@ describe('app-mode', () => {
       const win = fakeWindow('shortcuts')
       await expect(orderChildWindowToBackInE2e(win)).resolves.toBeUndefined()
       expect(warnSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe('decorateMainWindowTitle', () => {
+    it('leaves the title untouched in prod', () => {
+      expect(decorateMainWindowTitle('Cmdr', 'prod', '')).toBe('Cmdr')
+      // A stray label never leaks into a prod title.
+      expect(decorateMainWindowTitle('Cmdr', 'prod', 'colorful-tags')).toBe('Cmdr')
+    })
+
+    it('wraps the worktree label around the dev marker', () => {
+      expect(decorateMainWindowTitle('Cmdr', 'dev', 'colorful-tags')).toBe(
+        '(colorful-tags) DEV MODE - Cmdr - DEV MODE (colorful-tags)',
+      )
+      expect(decorateMainWindowTitle('Cmdr – Personal use only', 'dev', 'main')).toBe(
+        '(main) DEV MODE - Cmdr – Personal use only - DEV MODE (main)',
+      )
+    })
+
+    it('omits the label parens in dev when no label is set', () => {
+      expect(decorateMainWindowTitle('Cmdr', 'dev', '')).toBe('DEV MODE - Cmdr - DEV MODE')
+    })
+
+    it('marks E2E without a label (E2E sessions carry none)', () => {
+      expect(decorateMainWindowTitle('Cmdr', 'e2e', '')).toBe('E2E MODE - Cmdr - E2E MODE')
     })
   })
 })

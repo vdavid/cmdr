@@ -46,6 +46,34 @@ export function decorateChildWindowTitle(title: string): string {
 }
 
 /**
+ * The worktree/clone label for this dev session ("colorful-tags", "main", …), baked into the
+ * frontend at dev-server start by `scripts/tauri-wrapper.js` → Vite `define`. Empty string in
+ * prod, E2E, and unit tests.
+ */
+export function getWorktreeLabel(): string {
+  return __CMDR_WORKTREE_LABEL__
+}
+
+/**
+ * Decorates the MAIN window's title-bar text with the run-mode marker, and — in dev — the
+ * worktree label so side-by-side worktree windows are tellable apart, e.g.
+ * `(colorful-tags) DEV MODE - Cmdr - DEV MODE (colorful-tags)`. Prod returns the title
+ * unchanged. The label wraps both modes but is empty outside a labeled dev session, so E2E
+ * stays `E2E MODE - … - E2E MODE`. Pure (mode + label injectable) so it's unit-testable.
+ */
+export function decorateMainWindowTitle(
+  title: string,
+  mode: AppMode = getAppMode(),
+  label: string = getWorktreeLabel(),
+): string {
+  const marker = mode === 'dev' ? 'DEV MODE' : mode === 'e2e' ? 'E2E MODE' : null
+  if (marker === null) return title
+  const prefix = label ? `(${label}) ` : ''
+  const suffix = label ? ` (${label})` : ''
+  return `${prefix}${marker} - ${title} - ${marker}${suffix}`
+}
+
+/**
  * E2E-only: orders a freshly created child window behind everything without
  * focusing it, so a test run's windows (Settings, file viewer, shortcuts) don't
  * pop in front of the developer's work. A no-op outside E2E.

@@ -24,11 +24,19 @@ const port = envPort ? Number(envPort) : 1420
 // `src/lib/intl/messages.svelte.ts` and `docs/specs/i18n-screenshots-plan.md`.
 const i18nCaptureBuild = process.env.CMDR_I18N_CAPTURE_BUILD === '1'
 
+// Dev-only label of which working tree this session runs against (worktree slug, "main", or
+// the worktree directory name), set by the wrapper (scripts/tauri-wrapper.js). The dev-mode
+// title bar wraps it around the window title so side-by-side worktree windows are tellable
+// apart. Empty for prod builds and plain `vite dev` outside the wrapper. See
+// `src/lib/app-mode.ts`.
+const worktreeLabel = process.env.CMDR_WORKTREE_LABEL ?? ''
+
 export default defineConfig(async () => ({
   plugins: [Icons({ compiler: 'svelte' }), sveltekit()],
 
   define: {
     __CMDR_I18N_CAPTURE__: JSON.stringify(i18nCaptureBuild),
+    __CMDR_WORKTREE_LABEL__: JSON.stringify(worktreeLabel),
   },
 
   build: {

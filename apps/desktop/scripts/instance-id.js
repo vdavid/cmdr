@@ -73,6 +73,36 @@ export function resolveInstanceId({ isDev, envInstanceId, worktreeSlug }) {
 }
 
 /**
+ * Human label of which working tree a dev session runs against, shown in the dev-mode
+ * title bar (baked into the frontend via `__CMDR_WORKTREE_LABEL__`) so side-by-side
+ * worktree windows are tellable apart. Mirrors how the session was launched:
+ *   - `--worktree <slug>`                     → that slug (sanitized, same as the instance ID)
+ *   - `-m` / main clone, no slug              → "main"
+ *   - plain dev launch from a linked worktree → the worktree directory name
+ *
+ * Returns null when there's nothing meaningful to show (prod, or no info available), so the
+ * caller leaves `CMDR_WORKTREE_LABEL` unset.
+ *
+ * @param {object} opts
+ * @param {boolean} opts.isDev
+ * @param {string|null|undefined} opts.worktreeSlug  raw --worktree argument (pre-sanitization)
+ * @param {boolean} opts.isMainWorkingTree  cwd is the repo's main clone, not a linked worktree
+ * @param {string|null|undefined} opts.worktreeDirName  basename of the worktree toplevel (linked worktrees)
+ * @returns {string|null}
+ */
+export function resolveWorktreeLabel({ isDev, worktreeSlug, isMainWorkingTree, worktreeDirName }) {
+  if (!isDev) return null
+  if (worktreeSlug != null) {
+    // Show the sanitized slug so the label matches the actual instance identity (data dir,
+    // Dock name). Returns null for an unsanitizable slug; the wrapper then bails anyway when
+    // resolveInstanceId throws on the same input, so no label is the harmless interim state.
+    return sanitizeWorktreeSlug(worktreeSlug)
+  }
+  if (isMainWorkingTree) return 'main'
+  return worktreeDirName != null && worktreeDirName.length > 0 ? worktreeDirName : null
+}
+
+/**
  * Compute the Tauri-equivalent app_data_dir for an identifier on this OS. Mirrors the
  * platform branches in resolved_app_data_dir on the Rust side and the legacy block this
  * file replaces in tauri-wrapper.js.

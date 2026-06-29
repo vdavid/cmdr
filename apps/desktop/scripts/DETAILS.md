@@ -23,6 +23,13 @@ stay testable. For `pnpm dev`, the wrapper resolves an instance ID (from `--work
   orchestration. Touching either side without breaking the other is the goal.
 - **Generated `tauri.instance.json` lives in `$TMPDIR`, not the repo.** A crashed wrapper leaves the file behind;
   tracked space is sacred and `/tmp` self-prunes on macOS, so `.gitignore` needs no entry.
+- **The dev-title worktree label rides a Vite `define`, not IPC.** For dev launches the wrapper exports
+  `CMDR_WORKTREE_LABEL` (the `--worktree` slug, `"main"` for a `-m` main-clone run, or the worktree directory name for a
+  plain dev launch from a worktree); `resolveWorktreeLabel` in `instance-id.js` is the pure resolver. `vite.config.js`
+  bakes it into the `__CMDR_WORKTREE_LABEL__` compile-time constant (mirroring `__CMDR_I18N_CAPTURE__`), and
+  `src/lib/app-mode.ts`'s `decorateMainWindowTitle` wraps it around the dev title bar, e.g.
+  `(colorful-tags) DEV MODE - … - DEV MODE (colorful-tags)`. Skipped under E2E (so E2E titles stay unmarked by a label)
+  and never set for prod. A dev-only cosmetic, so no Rust/IPC surface.
 - **Ephemeral Vite + tauri-MCP ports are picked by the wrapper** via `net.createServer().listen(0)`, NOT by the
   consumers, because the wrapper knows the data dir and can write the port file BEFORE the consumer spawns. The race
   window (close → spawn → bind) is mitigated per-consumer: Vite uses `strictPort: true` so any collision is loud, and

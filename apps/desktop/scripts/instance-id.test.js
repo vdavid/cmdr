@@ -5,6 +5,7 @@ import { join } from 'path'
 import {
   sanitizeWorktreeSlug,
   resolveInstanceId,
+  resolveWorktreeLabel,
   computeAppDataDir,
   bundleIdentifier,
   productName,
@@ -95,6 +96,60 @@ describe('resolveInstanceId', () => {
 
   it('ignores --worktree outside dev mode (returns null)', () => {
     expect(resolveInstanceId({ isDev: false, envInstanceId: undefined, worktreeSlug: 'foo' })).toBeNull()
+  })
+})
+
+describe('resolveWorktreeLabel', () => {
+  it('returns null in prod (not dev)', () => {
+    expect(
+      resolveWorktreeLabel({ isDev: false, worktreeSlug: 'foo', isMainWorkingTree: false, worktreeDirName: 'foo' }),
+    ).toBeNull()
+  })
+
+  it('returns the sanitized --worktree slug when set', () => {
+    expect(
+      resolveWorktreeLabel({
+        isDev: true,
+        worktreeSlug: 'colorful-tags',
+        isMainWorkingTree: false,
+        worktreeDirName: 'ignored',
+      }),
+    ).toBe('colorful-tags')
+    expect(
+      resolveWorktreeLabel({ isDev: true, worktreeSlug: 'Feature/X', isMainWorkingTree: false, worktreeDirName: null }),
+    ).toBe('feature-x')
+  })
+
+  it('returns "main" for the main clone with no slug (the -m path)', () => {
+    expect(
+      resolveWorktreeLabel({ isDev: true, worktreeSlug: null, isMainWorkingTree: true, worktreeDirName: null }),
+    ).toBe('main')
+  })
+
+  it('falls back to the worktree directory name for a plain dev launch from a worktree', () => {
+    expect(
+      resolveWorktreeLabel({
+        isDev: true,
+        worktreeSlug: null,
+        isMainWorkingTree: false,
+        worktreeDirName: 'colorful-tags',
+      }),
+    ).toBe('colorful-tags')
+  })
+
+  it('returns null when no slug, not main, and the dir name is unavailable', () => {
+    expect(
+      resolveWorktreeLabel({ isDev: true, worktreeSlug: null, isMainWorkingTree: false, worktreeDirName: null }),
+    ).toBeNull()
+    expect(
+      resolveWorktreeLabel({ isDev: true, worktreeSlug: null, isMainWorkingTree: false, worktreeDirName: '' }),
+    ).toBeNull()
+  })
+
+  it('prefers an explicit slug over the main-clone check', () => {
+    expect(
+      resolveWorktreeLabel({ isDev: true, worktreeSlug: 'foo', isMainWorkingTree: true, worktreeDirName: null }),
+    ).toBe('foo')
   })
 })
 

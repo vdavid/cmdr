@@ -11,6 +11,9 @@ export default defineConfig({
   // dedicated capture build); here it's always on so the tests run.
   define: {
     __CMDR_I18N_CAPTURE__: 'true',
+    // Empty in unit tests; the worktree-label decoration is exercised in `app-mode.test.ts`
+    // by passing the label explicitly rather than relying on this baked-in constant.
+    __CMDR_WORKTREE_LABEL__: '""',
   },
   test: {
     include: [

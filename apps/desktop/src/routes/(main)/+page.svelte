@@ -61,7 +61,7 @@
     import { type CommandId, type CommandDispatchArgs } from '$lib/commands'
     import { setupMcpListeners } from './mcp-listeners'
     import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
-    import { initAppMode, getAppMode, type AppMode } from '$lib/app-mode'
+    import { initAppMode, getAppMode, decorateMainWindowTitle, type AppMode } from '$lib/app-mode'
     import {
         hideExpirationModal,
         loadLicenseStatus,
@@ -753,8 +753,8 @@
                  (mousedown target) — without it on the span, mousedowns on
                  the title text don't initiate a window drag. -->
             <span class="title-text" data-tauri-drag-region>
-                <!-- eslint-disable-next-line cmdr/no-raw-user-facing-string -- dev/E2E-only title-bar markers, not shipped user copy; they only render under non-default app modes. -->
-                {#if appMode === 'dev'}DEV MODE - {windowTitle} - DEV MODE{:else if appMode === 'e2e'}E2E MODE - {windowTitle} - E2E MODE{:else}{windowTitle}{/if}
+                <!-- eslint-disable-next-line cmdr/no-raw-user-facing-string -- dev/E2E-only title-bar markers (incl. the worktree label), not shipped user copy; they only render under non-default app modes. -->
+                {decorateMainWindowTitle(windowTitle, appMode)}
             </span>
         </header>
     {/if}
