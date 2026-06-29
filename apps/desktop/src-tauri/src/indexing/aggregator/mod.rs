@@ -12,7 +12,7 @@ use std::collections::HashMap;
 
 use rusqlite::Connection;
 
-use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError, resolve_path};
+use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError, ROOT_ID, resolve_path, resolve_path_under};
 use crate::pluralize::pluralize_with;
 
 mod readers;
@@ -343,8 +343,6 @@ pub fn compute_partial_aggregates(
 ) -> Result<PartialAggStats, IndexStoreError> {
     use std::collections::HashSet;
 
-    use crate::indexing::store::ROOT_ID;
-
     // Derive the directory list from the maps. Every scanned directory appears
     // exactly once as a value in `child_dirs` (pushed when its row was inserted
     // under its parent). The scan root (ROOT_ID) has no parent in any map, so
@@ -476,57 +474,57 @@ fn depth_of(start: i64, parent_of: &HashMap<i64, i64>, depths: &mut HashMap<i64,
     *depths.get(&start).unwrap_or(&usize::MAX)
 }
 
+/// Bottom-up compute over the subtree rooted at `root_id`, returning the computed
+/// `dir_stats` per directory WITHOUT writing anything.
+///
+/// The reusable scoped primitive shared by `compute_subtree_aggregates` (which
+/// writes the whole result) and `compute_partial_aggregates_sql` (which writes
+/// only a bounded slice of it). Uses the scoped recursive-CTE readers, so it's
+/// O(subtree_size) regardless of total DB size. An empty subtree yields an empty
+/// map. `min_subtree_epoch` falls out of `compute_bottom_up` naturally: the
+/// scoped `listed_epochs` are read for exactly the dirs in the subtree, and the
+/// 0-absorbing rollup makes a never-listed dir drag its ancestors to `0`.
+fn compute_subtree_map(conn: &Connection, root_id: i64) -> Result<HashMap<i64, DirStatsById>, IndexStoreError> {
+    let dir_entries = load_subtree_directory_ids(conn, root_id)?;
+    if dir_entries.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let direct_stats = scoped_get_children_stats_by_id(conn, root_id)?;
+    let child_dirs_map = scoped_get_child_dir_ids(conn, root_id)?;
+    let listed_epochs = scoped_get_listed_epochs(conn, root_id)?;
+
+    let sorted = topological_sort_bottom_up(&dir_entries);
+    Ok(compute_bottom_up(
+        &sorted,
+        &direct_stats,
+        &child_dirs_map,
+        &listed_epochs,
+        None,
+        |_| {},
+    ))
+}
+
 /// Compute `dir_stats` for directories under `root` only (bottom-up).
 ///
 /// Called after a subtree scan completes. Resolves the root path to an entry ID,
-/// uses a recursive CTE to collect subtree directory IDs, then computes stats
-/// bottom-up. Returns the number of directories processed.
+/// computes stats bottom-up over the scoped subtree, then writes EVERY computed
+/// row. Returns the number of directories processed.
 pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, IndexStoreError> {
     let root_id = match resolve_path(conn, root)? {
         Some(id) => id,
         None => return Ok(0),
     };
 
-    let dir_entries = load_subtree_directory_ids(conn, root_id)?;
-    if dir_entries.is_empty() {
+    let start = std::time::Instant::now();
+    let computed = compute_subtree_map(conn, root_id)?;
+    if computed.is_empty() {
         return Ok(0);
     }
 
-    let start = std::time::Instant::now();
-    let dir_count = dir_entries.len();
-    log::debug!(
-        "Subtree aggregation: starting bottom-up computation for {} under {root}",
-        pluralize_with(dir_count as u64, "directory", "directories")
-    );
-
-    // Load direct children stats scoped to this subtree via recursive CTE
-    let direct_stats = scoped_get_children_stats_by_id(conn, root_id)?;
-    log::debug!(
-        "Subtree aggregation: loaded stats for {} parent IDs in {:.1}ms",
-        direct_stats.len(),
-        start.elapsed().as_secs_f64() * 1000.0,
-    );
-
-    let child_dirs_map = scoped_get_child_dir_ids(conn, root_id)?;
-    log::debug!(
-        "Subtree aggregation: loaded child dirs for {} parent IDs in {:.1}ms",
-        child_dirs_map.len(),
-        start.elapsed().as_secs_f64() * 1000.0,
-    );
-
-    let listed_epochs = scoped_get_listed_epochs(conn, root_id)?;
-
-    // Topological sort: leaves first
-    let sorted = topological_sort_bottom_up(&dir_entries);
-    let computed = compute_bottom_up(&sorted, &direct_stats, &child_dirs_map, &listed_epochs, None, |_| {});
-
-    // Batch-write all computed stats
-    log::debug!(
-        "Subtree aggregation: writing {} dir_stats rows to DB...",
-        computed.len()
-    );
     let all_stats: Vec<DirStatsById> = computed.into_values().collect();
     let count = all_stats.len() as u64;
+    log::debug!("Subtree aggregation: writing {} dir_stats rows under {root}...", count);
 
     for chunk in all_stats.chunks(1000) {
         IndexStore::upsert_dir_stats_by_id(conn, chunk)?;
@@ -539,6 +537,147 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
     );
 
     Ok(count)
+}
+
+/// SQL-sourced mid-scan partial aggregation: recompute partial recursive sizes
+/// for the directories a pane is currently showing (`hot_paths`) straight from
+/// the committed `entries` / `dir_stats` rows, and write a bounded slice of
+/// `dir_stats` so those listings show growing sizes during the scan.
+///
+/// This is the unified-partials counterpart to [`compute_partial_aggregates`]
+/// (which reads the writer's in-memory accumulator maps). The maps are only
+/// populated by `InsertEntriesV2` (fresh jwalk scans), so the maps path is silent
+/// on the reconcile / network paths (`UpsertEntryV2`, maps empty). This path
+/// reads committed SQL instead, so it works for ALL write paths.
+///
+/// `hot_paths` are index-relative (volume-root-stripped) paths: for a `root`
+/// (local-disk) index that's just the absolute path, for a network/MTP index
+/// they're the mount-relative form produced by
+/// [`crate::indexing::routing::index_read_path`]. Each resolves to a dir id via
+/// [`resolve_path_under`] from `ROOT_ID`.
+///
+/// For each resolved hot dir it runs a SCOPED bottom-up aggregate over the hot
+/// dir's subtree (reusing [`compute_subtree_map`]) and writes ONLY the hot dir
+/// plus its DIRECT CHILDREN (the rows actually on screen) — never the whole
+/// scoped subtree. This mirrors the maps path's hot-path write set.
+///
+/// **Conservative cap (the stability guard):** before scoping a hot dir, it
+/// cheaply reads that dir's CURRENT `dir_stats` recursive counts; if the subtree
+/// already exceeds `cap`, the dir is SKIPPED (the final `ComputeAllAggregates`
+/// fills it). This keeps a near-volume-root hot path from triggering a
+/// near-whole-tree recursive CTE that would stall the single writer thread. A hot
+/// dir with no `dir_stats` row yet (freshly created, hence tiny) is not skipped.
+///
+/// **Late-race safe / idempotent:** every value is recomputed from committed
+/// rows, and `upsert_dir_stats_by_id` REPLACES rows, so a pass that lands after
+/// the final `ComputeAllAggregates` recomputes the SAME exact values from the
+/// SAME committed rows (no double count, no zeroed subset). Unlike the maps path
+/// there's no empty-maps no-op to lean on, but none is needed: a late SQL pass is
+/// a self-consistent recompute, not a depth-capped subset of stale maps.
+///
+/// `min_subtree_epoch` is left to fall out of `compute_bottom_up` +
+/// `absorbing_min_epoch` (a never-listed subtree reads as "≥ X"); it is not
+/// special-cased.
+pub fn compute_partial_aggregates_sql(
+    conn: &Connection,
+    hot_paths: &[String],
+    cap: u64,
+) -> Result<PartialAggStats, IndexStoreError> {
+    use std::collections::HashSet;
+
+    // Collapse a pane's parent+child to the DEEPEST hot path: if `/a` and
+    // `/a/b/c` are both visible, scoping `/a` would compute the whole `/a`
+    // subtree (expensive, and likely cap-skipped) while only `/a/b/c`'s own
+    // scope serves the deep pane. Dropping the ancestor minimizes the scoped CTE
+    // cost — the stability lever. Pure string work (component-aware prefix), done
+    // before any DB hit.
+    let deepest: Vec<&String> = hot_paths
+        .iter()
+        .filter(|candidate| !hot_paths.iter().any(|other| is_proper_path_ancestor(candidate, other)))
+        .collect();
+
+    // Resolve survivors to dir ids and dedup (two paths can resolve to the same
+    // id via a symlink/firmlink alias).
+    let mut hot_dir_ids: Vec<i64> = Vec::new();
+    let mut seen_ids: HashSet<i64> = HashSet::new();
+    let mut hot_paths_resolved: u64 = 0;
+    for path in deepest {
+        let Some(dir_id) = resolve_path_under(conn, ROOT_ID, path)? else {
+            continue; // Not scanned yet (or excluded): skip silently, retry next pass.
+        };
+        hot_paths_resolved += 1;
+        if seen_ids.insert(dir_id) {
+            hot_dir_ids.push(dir_id);
+        }
+    }
+
+    let mut dirs_computed: u64 = 0;
+    let mut write_set: HashSet<i64> = HashSet::new();
+    let mut rows: Vec<DirStatsById> = Vec::new();
+
+    for hot_dir_id in hot_dir_ids {
+        // Cheap conservative cap: skip a hot dir whose committed subtree already
+        // exceeds `cap` (final pass will fill it). A dir without a `dir_stats` row
+        // is freshly created and tiny — proceed.
+        if let Some(existing) = IndexStore::get_dir_stats_by_id(conn, hot_dir_id)? {
+            let subtree_size = existing
+                .recursive_file_count
+                .saturating_add(existing.recursive_dir_count);
+            if subtree_size > cap {
+                log::debug!(
+                    "compute_partial_aggregates_sql: skipping hot dir id={hot_dir_id} \
+                     (subtree ~{subtree_size} > cap {cap}); final aggregate will fill it"
+                );
+                continue;
+            }
+        }
+
+        let computed = compute_subtree_map(conn, hot_dir_id)?;
+        dirs_computed += computed.len() as u64;
+
+        // Write set for this hot dir: the dir itself + its DIRECT CHILDREN only
+        // (the rows actually on screen). Direct children come from a cheap direct
+        // query; their recursive sizes are already correct in `computed`.
+        let mut to_write: HashSet<i64> = HashSet::new();
+        to_write.insert(hot_dir_id);
+        for (child_id, _name) in IndexStore::list_child_dir_ids_and_names(conn, hot_dir_id)? {
+            to_write.insert(child_id);
+        }
+        for id in to_write {
+            if write_set.insert(id)
+                && let Some(stats) = computed.get(&id)
+            {
+                rows.push(stats.clone());
+            }
+        }
+    }
+
+    let rows_written = rows.len() as u64;
+    for chunk in rows.chunks(1000) {
+        IndexStore::upsert_dir_stats_by_id(conn, chunk)?;
+    }
+
+    Ok(PartialAggStats {
+        dirs_computed,
+        rows_written,
+        hot_paths_resolved,
+    })
+}
+
+/// Component-aware proper-ancestor test for two index-relative paths.
+///
+/// `true` iff `ancestor` is a strict path-prefix of `descendant` at a component
+/// boundary (`/a` is a proper ancestor of `/a/b`, but not of `/ab` or of itself).
+/// `/` (or `""`) is a proper ancestor of every non-root path. Pure string work.
+fn is_proper_path_ancestor(ancestor: &str, descendant: &str) -> bool {
+    if ancestor == descendant {
+        return false;
+    }
+    let a = ancestor.strip_suffix('/').unwrap_or(ancestor);
+    match descendant.strip_prefix(a) {
+        Some(rest) => rest.starts_with('/'),
+        None => false,
+    }
 }
 
 /// Backfill `dir_stats` for directories that have entries but no stats row.

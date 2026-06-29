@@ -603,7 +603,10 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
     ];
     writer.send(writer::WriteMessage::InsertEntriesV2(batch1)).unwrap();
     writer
-        .send(writer::WriteMessage::ComputePartialAggregates { hot_paths: vec![] })
+        .send(writer::WriteMessage::ComputePartialAggregates {
+            hot_paths: vec![],
+            source: writer::PartialAggSource::Maps,
+        })
         .unwrap();
     writer.flush_blocking().unwrap();
 
@@ -632,7 +635,10 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
     }];
     writer.send(writer::WriteMessage::InsertEntriesV2(batch2)).unwrap();
     writer
-        .send(writer::WriteMessage::ComputePartialAggregates { hot_paths: vec![] })
+        .send(writer::WriteMessage::ComputePartialAggregates {
+            hot_paths: vec![],
+            source: writer::PartialAggSource::Maps,
+        })
         .unwrap();
     writer.flush_blocking().unwrap();
 

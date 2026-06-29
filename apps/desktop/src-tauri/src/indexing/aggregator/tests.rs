@@ -538,6 +538,149 @@ fn topological_sort_produces_bottom_up_order() {
     assert!(pos_2 < pos_1);
 }
 
+// ── compute_partial_aggregates_sql tests ─────────────────────────
+//
+// The SQL-sourced partial path reads committed `entries` / `dir_stats` rows
+// (no accumulator maps), so these build the tree with a direct
+// `insert_entries_v2_batch` — which leaves `dir_stats` empty exactly like a
+// reconcile before the final aggregate.
+
+/// A hot path writes ONLY the hot dir + its DIRECT CHILDREN, with correct
+/// partial recursive sizes; deeper / unrelated / ancestor dirs get no rows; and a
+/// subsequent full aggregate fills everything to byte-exact totals.
+#[test]
+fn sql_partial_writes_hot_dir_and_direct_children_only() {
+    let (conn, _dir) = open_temp_conn();
+
+    // /a/b/{c -> f1(100), deep -> f2(200)}, plus an unrelated /x/y -> f3(500).
+    insert_entries(
+        &conn,
+        &[
+            make_dir(10, ROOT_ID, "a"),
+            make_dir(11, 10, "b"),
+            make_dir(12, 11, "c"),
+            make_file(13, 12, "f1.dat", 100),
+            make_dir(14, 11, "deep"),
+            make_file(15, 14, "f2.dat", 200),
+            make_dir(16, ROOT_ID, "x"),
+            make_dir(17, 16, "y"),
+            make_file(18, 17, "f3.dat", 500),
+        ],
+    );
+
+    let stats = compute_partial_aggregates_sql(&conn, &["/a/b".to_string()], 100_000).unwrap();
+    assert_eq!(stats.hot_paths_resolved, 1);
+    assert_eq!(stats.rows_written, 3, "hot dir /a/b plus its two direct child dirs");
+
+    // Hot dir /a/b: recursive over its whole subtree.
+    let b = get_stats(&conn, 11).expect("hot dir gets a row");
+    assert_eq!(b.recursive_logical_size, 300);
+    assert_eq!(b.recursive_file_count, 2);
+    assert_eq!(b.recursive_dir_count, 2, "/a/b has /c and /deep beneath it");
+    // Direct children get rows with their own subtree totals.
+    assert_eq!(
+        get_stats(&conn, 12).expect("direct child /c").recursive_logical_size,
+        100
+    );
+    assert_eq!(
+        get_stats(&conn, 14).expect("direct child /deep").recursive_logical_size,
+        200
+    );
+
+    // The hot dir's ANCESTOR /a is not a direct child, so it gets no row.
+    assert!(get_stats(&conn, 10).is_none(), "ancestor /a must not be written");
+    // Unrelated dirs (siblings and deeper) get no rows.
+    assert!(get_stats(&conn, 16).is_none(), "unrelated /x must not be written");
+    assert!(get_stats(&conn, 17).is_none(), "unrelated /x/y must not be written");
+
+    // The final full aggregate fills every dir with byte-exact totals.
+    compute_all_aggregates(&conn).unwrap();
+    let a = get_stats(&conn, 10).expect("final pass writes /a");
+    assert_eq!(a.recursive_logical_size, 300);
+    assert_eq!(a.recursive_file_count, 2);
+    assert_eq!(a.recursive_dir_count, 3, "/a has b, c, deep beneath it");
+    let x = get_stats(&conn, 16).expect("final pass writes /x");
+    assert_eq!(x.recursive_logical_size, 500);
+    // The hot dir's partial total already matched the final total (idempotent).
+    assert_eq!(get_stats(&conn, 11).unwrap().recursive_logical_size, 300);
+}
+
+/// The conservative cap skips a hot dir whose CURRENT `dir_stats` subtree counts
+/// exceed `cap` (the final aggregate fills it later); a small subtree is scoped
+/// normally. Pins the writer-thread stability guard.
+#[test]
+fn sql_partial_cap_skips_oversized_subtree() {
+    let (conn, _dir) = open_temp_conn();
+
+    // /a/b with one 50-byte file. /a/b is the hot dir.
+    insert_entries(
+        &conn,
+        &[
+            make_dir(10, ROOT_ID, "a"),
+            make_dir(11, 10, "b"),
+            make_file(12, 11, "f.dat", 50),
+        ],
+    );
+
+    // Stand in for a prior scan's stats on /a/b: a large recursive_file_count, so
+    // the cheap cap check sees an "oversized" subtree.
+    IndexStore::upsert_dir_stats_by_id(
+        &conn,
+        &[DirStatsById {
+            entry_id: 11,
+            recursive_logical_size: 0,
+            recursive_file_count: 50,
+            recursive_dir_count: 0,
+            ..Default::default()
+        }],
+    )
+    .unwrap();
+
+    // cap = 10 < 50: the hot dir is skipped, its stale row untouched.
+    let skipped = compute_partial_aggregates_sql(&conn, &["/a/b".to_string()], 10).unwrap();
+    assert_eq!(skipped.hot_paths_resolved, 1, "the path still resolved");
+    assert_eq!(skipped.rows_written, 0, "an oversized hot dir writes nothing");
+    let stale = get_stats(&conn, 11).unwrap();
+    assert_eq!(stale.recursive_file_count, 50, "the stale row is left as-is");
+    assert_eq!(stale.recursive_logical_size, 0, "not recomputed");
+
+    // cap = 1000 > 50: the small subtree is scoped and the row recomputed.
+    let scoped = compute_partial_aggregates_sql(&conn, &["/a/b".to_string()], 1_000).unwrap();
+    assert!(scoped.rows_written >= 1, "a within-cap hot dir is written");
+    let fresh = get_stats(&conn, 11).unwrap();
+    assert_eq!(fresh.recursive_file_count, 1, "recomputed from committed entries");
+    assert_eq!(fresh.recursive_logical_size, 50);
+}
+
+/// When a pane's parent AND child are both hot, only the DEEPEST is scoped: the
+/// ancestor is dropped so its (potentially whole-tree) subtree CTE never runs.
+#[test]
+fn sql_partial_collapses_parent_and_child_to_deepest() {
+    let (conn, _dir) = open_temp_conn();
+
+    // /a/b/c with a file under c. Both /a and /a/b/c are "visible".
+    insert_entries(
+        &conn,
+        &[
+            make_dir(10, ROOT_ID, "a"),
+            make_dir(11, 10, "b"),
+            make_dir(12, 11, "c"),
+            make_file(13, 12, "f.dat", 70),
+        ],
+    );
+
+    let stats = compute_partial_aggregates_sql(&conn, &["/a".to_string(), "/a/b/c".to_string()], 100_000).unwrap();
+    // Only the deepest path (`/a/b/c`) is scoped; `/a` is dropped as an ancestor.
+    assert_eq!(stats.hot_paths_resolved, 1, "only the deepest hot path resolves");
+    let c = get_stats(&conn, 12).expect("the deepest hot dir is written");
+    assert_eq!(c.recursive_logical_size, 70);
+    // The dropped ancestor /a is NOT written (its big subtree CTE never ran).
+    assert!(
+        get_stats(&conn, 10).is_none(),
+        "the ancestor hot path is collapsed away"
+    );
+}
+
 // ── Property-based tests ─────────────────────────────────────────
 //
 // The function takes a slice of `(id, parent_id)` pairs and returns a

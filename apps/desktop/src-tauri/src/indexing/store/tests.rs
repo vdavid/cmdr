@@ -693,6 +693,43 @@ fn resolve_path_basic() {
     assert_eq!(resolve_path(&conn, "/Users/nonexistent").unwrap(), None);
 }
 
+/// `resolve_path_under` walks from an ARBITRARY root id, not just `ROOT_ID`.
+///
+/// This is the network/MTP case: the index is rooted at the volume root, so a
+/// deep dir must resolve relative to a non-`/` root. The tree here mimics a share
+/// whose mount root is `share` (id `share_id`); `sub/deep` resolves under it, a
+/// leading-slash variant resolves identically, an empty path resolves to the root
+/// itself, and a missing component returns `None`.
+#[test]
+fn resolve_path_under_walks_from_a_non_root_id() {
+    let (_store, dir) = open_temp_store();
+    let db_path = dir.path().join("test-index.db");
+    let conn = IndexStore::open_write_connection(&db_path).unwrap();
+
+    // /share/sub/deep, plus a sibling /share/other to prove we don't wander.
+    let share_id = insert_entry(&conn, ROOT_ID, "share", true, None);
+    let sub_id = insert_entry(&conn, share_id, "sub", true, None);
+    let deep_id = insert_entry(&conn, sub_id, "deep", true, None);
+    insert_entry(&conn, share_id, "other", true, None);
+
+    // Resolve a deep dir RELATIVE to `share_id` (the index's volume root would be
+    // `share_id` for a non-`/`-rooted index).
+    assert_eq!(resolve_path_under(&conn, share_id, "sub/deep").unwrap(), Some(deep_id));
+    // A leading slash is relative to the given root, not the index root.
+    assert_eq!(resolve_path_under(&conn, share_id, "/sub/deep").unwrap(), Some(deep_id));
+    // The empty path and "/" resolve to the root id itself.
+    assert_eq!(resolve_path_under(&conn, share_id, "").unwrap(), Some(share_id));
+    assert_eq!(resolve_path_under(&conn, share_id, "/").unwrap(), Some(share_id));
+    // One level under the root resolves.
+    assert_eq!(resolve_path_under(&conn, share_id, "sub").unwrap(), Some(sub_id));
+    // A missing component returns None.
+    assert_eq!(resolve_path_under(&conn, share_id, "sub/missing").unwrap(), None);
+    // The absolute path that `resolve_path` would use FAILS at the first
+    // component (the volume root isn't `/`), which is exactly the gap
+    // `resolve_path_under` closes.
+    assert_eq!(resolve_path(&conn, "/sub/deep").unwrap(), None);
+}
+
 #[test]
 fn resolve_path_trailing_slash() {
     let (_store, dir) = open_temp_store();

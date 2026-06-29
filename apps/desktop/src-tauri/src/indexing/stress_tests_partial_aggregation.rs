@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use rusqlite::Connection;
 
 use crate::indexing::store::{DirStatsById, EntryRow};
-use crate::indexing::writer::WriteMessage;
+use crate::indexing::writer::{PartialAggSource, WriteMessage};
 
 use super::stress_test_helpers::{
     build_synthetic_tree_with_symlinks_and_hardlinks, check_db_consistency, check_recursive_has_symlinks, setup_writer,
@@ -158,6 +158,7 @@ fn partial_passes_never_change_final_state() {
         writer
             .send(WriteMessage::ComputePartialAggregates {
                 hot_paths: hot_paths.clone(),
+                source: PartialAggSource::Maps,
             })
             .unwrap();
     }
@@ -189,13 +190,19 @@ fn partial_passes_are_idempotent() {
 
     writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
     writer
-        .send(WriteMessage::ComputePartialAggregates { hot_paths: vec![] })
+        .send(WriteMessage::ComputePartialAggregates {
+            hot_paths: vec![],
+            source: PartialAggSource::Maps,
+        })
         .unwrap();
     writer.flush_blocking().unwrap();
     let first = snapshot_dir_stats(&read_conn);
 
     writer
-        .send(WriteMessage::ComputePartialAggregates { hot_paths: vec![] })
+        .send(WriteMessage::ComputePartialAggregates {
+            hot_paths: vec![],
+            source: PartialAggSource::Maps,
+        })
         .unwrap();
     writer.flush_blocking().unwrap();
     let second = snapshot_dir_stats(&read_conn);
@@ -215,7 +222,10 @@ fn partial_pass_after_truncate_is_no_op() {
         let (writer, read_conn, _dir) = setup_writer();
         writer.send(WriteMessage::TruncateData).unwrap();
         writer
-            .send(WriteMessage::ComputePartialAggregates { hot_paths: vec![] })
+            .send(WriteMessage::ComputePartialAggregates {
+                hot_paths: vec![],
+                source: PartialAggSource::Maps,
+            })
             .unwrap();
         writer.flush_blocking().unwrap();
         let count: i64 = read_conn
@@ -232,7 +242,10 @@ fn partial_pass_after_truncate_is_no_op() {
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
         writer.send(WriteMessage::TruncateData).unwrap();
         writer
-            .send(WriteMessage::ComputePartialAggregates { hot_paths: vec![] })
+            .send(WriteMessage::ComputePartialAggregates {
+                hot_paths: vec![],
+                source: PartialAggSource::Maps,
+            })
             .unwrap();
         writer.flush_blocking().unwrap();
         let count: i64 = read_conn

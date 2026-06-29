@@ -23,7 +23,7 @@ use tauri_specta::Event;
 use super::events::IndexScanProgressEvent;
 use super::partial_agg;
 use super::scanner::ScanProgress;
-use super::writer::{IndexWriter, WriteMessage};
+use super::writer::{IndexWriter, PartialAggSource, WriteMessage};
 use crate::file_system::listing::caching;
 
 /// Drives the periodic scan-progress events and mid-scan partial aggregation for
@@ -89,10 +89,12 @@ impl ScanProgressReporter {
             // normalization.
             let listings = caching::snapshot_listings();
             let hot_paths = partial_agg::collect_hot_paths(&listings, &self.volume_id);
-            match self
-                .writer
-                .try_send(WriteMessage::ComputePartialAggregates { hot_paths })
-            {
+            match self.writer.try_send(WriteMessage::ComputePartialAggregates {
+                hot_paths,
+                // This local-jwalk timer keeps the maps source; the Sql source
+                // wiring (reconcile/network) is a later change.
+                source: PartialAggSource::Maps,
+            }) {
                 Ok(true) => {}
                 Ok(false) => log::debug!("Partial aggregation pass dropped: writer channel full"),
                 Err(e) => log::debug!("Partial aggregation send failed (writer gone): {e}"),

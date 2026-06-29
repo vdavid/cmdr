@@ -444,19 +444,39 @@ fn reconstruct_path(conn: &Connection, entry_id: i64) -> Result<String, IndexSto
     Ok(format!("/{}", components.join("/")))
 }
 
-/// Resolve a path string to an entry ID by walking component-by-component.
+/// Resolve a path string to an entry ID by walking component-by-component from
+/// the index root (`ROOT_ID`).
 ///
-/// Returns `None` if any component along the path doesn't exist.
-/// The path must be absolute (starting with `/`).
+/// Returns `None` if any component along the path doesn't exist. The path must be
+/// absolute (starting with `/`). For a `root` (local-disk) index `ROOT_ID` is `/`,
+/// so an absolute filesystem path resolves directly. For a network/MTP index
+/// `ROOT_ID` is the volume root, so a mount-absolute path must be mapped into the
+/// volume's index path space first (see [`crate::indexing::routing::index_read_path`]).
 pub fn resolve_path(conn: &Connection, path: &str) -> Result<Option<i64>, IndexStoreError> {
-    if path == "/" {
-        return Ok(Some(ROOT_ID));
-    }
+    resolve_path_under(conn, ROOT_ID, path)
+}
 
-    let path = path.strip_suffix('/').unwrap_or(path);
+/// Resolve a path RELATIVE to a given root entry id by walking
+/// component-by-component from `root_id`.
+///
+/// Returns `None` if any component doesn't exist under that root. A leading `/`
+/// on `relative_path` is treated as relative to `root_id` (NOT the index root),
+/// and an empty path (`""` or `"/"`) resolves to `root_id` itself.
+///
+/// This is the root-relative generalization of [`resolve_path`] (which is just
+/// `resolve_path_under(conn, ROOT_ID, path)`). It exists because a network/MTP
+/// index is rooted at the VOLUME root rather than `/`: once a mount-absolute hot
+/// path has had its volume-root prefix stripped to a relative remainder, this
+/// walks that remainder from the index's `ROOT_ID`.
+pub fn resolve_path_under(
+    conn: &Connection,
+    root_id: i64,
+    relative_path: &str,
+) -> Result<Option<i64>, IndexStoreError> {
+    let trimmed = relative_path.strip_suffix('/').unwrap_or(relative_path);
 
-    let mut current_id = ROOT_ID;
-    for component in path.strip_prefix('/').unwrap_or(path).split('/') {
+    let mut current_id = root_id;
+    for component in trimmed.strip_prefix('/').unwrap_or(trimmed).split('/') {
         if component.is_empty() {
             continue;
         }

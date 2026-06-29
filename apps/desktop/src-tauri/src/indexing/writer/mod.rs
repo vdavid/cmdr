@@ -127,6 +127,22 @@ impl MutationTracker {
 /// providing natural backpressure instead of unbounded memory growth.
 const WRITER_CHANNEL_CAPACITY: usize = 20_000;
 
+/// Which source a `ComputePartialAggregates` pass computes its sizes from.
+///
+/// The source is carried on the message (NOT sniffed from `propagate_deltas` or
+/// map emptiness) so the handler routes deterministically:
+///
+/// - `Maps`: the writer's in-memory accumulator maps, populated only by
+///   `InsertEntriesV2`. Correct for fresh jwalk scans; the maps are empty on the
+///   reconcile / network paths, where this source is a no-op by design.
+/// - `Sql`: the committed `entries` / `dir_stats` rows, scoped to the hot dirs.
+///   Works for ALL write paths (jwalk, `UpsertEntryV2` reconcile, network).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PartialAggSource {
+    Maps,
+    Sql,
+}
+
 /// Messages sent to the writer thread via a bounded mpsc channel.
 pub enum WriteMessage {
     /// Full scan: batch of entries with pre-assigned integer IDs.
@@ -179,18 +195,23 @@ pub enum WriteMessage {
     PropagateMinSubtreeEpoch(i64),
     /// Full scan complete: trigger bottom-up aggregation for all directories.
     ComputeAllAggregates,
-    /// Mid-scan: compute partial recursive sizes from the accumulator maps as
-    /// they stand, and write a bounded subset of dir_stats rows so visible
-    /// listings can show growing sizes during the scan. Borrows the maps
-    /// read-only; MUST NOT clear or mutate them (the final ComputeAllAggregates
-    /// depends on them). No SQL fallback when maps are empty: empty maps mid-scan
-    /// mean "nothing scanned yet", so the correct action is a no-op (unlike
-    /// ComputeAllAggregates, whose SQL fallback exists for the maps-lost edge case).
+    /// Mid-scan: compute partial recursive sizes and write a bounded subset of
+    /// dir_stats rows so visible listings can show growing sizes during the scan.
+    ///
+    /// `source` selects where the sizes come from (see [`PartialAggSource`]):
+    /// `Maps` borrows the in-memory accumulator maps read-only (MUST NOT clear or
+    /// mutate them — the final ComputeAllAggregates depends on them; no SQL
+    /// fallback on empty maps), `Sql` recomputes from committed rows scoped to the
+    /// hot dirs (works on reconcile/network where the maps are empty).
     ComputePartialAggregates {
-        /// Directories whose children should be written regardless of depth,
-        /// because a pane is currently showing them ("hot" paths). Already
-        /// firmlink-normalized by the sender.
+        /// Directories whose `dir_stats` should be written, because a pane is
+        /// currently showing them ("hot" paths). Already firmlink-normalized by
+        /// the sender; for the `Sql` source they're index-relative
+        /// (volume-root-stripped).
         hot_paths: Vec<String>,
+        /// Which source to compute from. `Maps` preserves today's behavior
+        /// byte-for-byte; `Sql` is the unified path.
+        source: PartialAggSource,
     },
     /// Subtree scan complete: trigger aggregation for a subtree only.
     ComputeSubtreeAggregates { root: String },
@@ -1004,8 +1025,8 @@ fn process_message(
         WriteMessage::ComputeAllAggregates => {
             handle_compute_all_aggregates(conn, accumulator, app_handle, volume_id, expected_total_entries);
         }
-        WriteMessage::ComputePartialAggregates { hot_paths } => {
-            handle_compute_partial_aggregates(conn, accumulator, app_handle, hot_paths);
+        WriteMessage::ComputePartialAggregates { hot_paths, source } => {
+            handle_compute_partial_aggregates(conn, accumulator, app_handle, hot_paths, source);
         }
         WriteMessage::ComputeSubtreeAggregates { root } => {
             handle_compute_subtree_aggregates(conn, &root);

@@ -489,7 +489,10 @@ fn try_send_enqueues_and_tracks_queue_depth() {
     let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
     let sent = writer
-        .try_send(WriteMessage::ComputePartialAggregates { hot_paths: vec![] })
+        .try_send(WriteMessage::ComputePartialAggregates {
+            hot_paths: vec![],
+            source: PartialAggSource::Maps,
+        })
         .expect("try_send on a live writer should not error");
     assert!(sent, "try_send into an empty channel should enqueue (Ok(true))");
 
@@ -518,7 +521,10 @@ fn try_send_after_shutdown_errors_and_undoes_depth() {
     writer.shutdown();
 
     let depth_before = writer.queue_depth();
-    let result = writer.try_send(WriteMessage::ComputePartialAggregates { hot_paths: vec![] });
+    let result = writer.try_send(WriteMessage::ComputePartialAggregates {
+        hot_paths: vec![],
+        source: PartialAggSource::Maps,
+    });
     assert!(
         result.is_err(),
         "try_send to a disconnected writer should be Err, got {result:?}"
@@ -542,7 +548,10 @@ fn try_send_with_depth_undoes_bump_on_full() {
     let first = try_send_with_depth(
         &sender,
         &depth,
-        WriteMessage::ComputePartialAggregates { hot_paths: vec![] },
+        WriteMessage::ComputePartialAggregates {
+            hot_paths: vec![],
+            source: PartialAggSource::Maps,
+        },
     )
     .expect("first send into an open channel should not error");
     assert!(first, "first send fills the single slot (Ok(true))");
@@ -551,7 +560,10 @@ fn try_send_with_depth_undoes_bump_on_full() {
     let second = try_send_with_depth(
         &sender,
         &depth,
-        WriteMessage::ComputePartialAggregates { hot_paths: vec![] },
+        WriteMessage::ComputePartialAggregates {
+            hot_paths: vec![],
+            source: PartialAggSource::Maps,
+        },
     )
     .expect("a full channel is Ok(false), not Err");
     assert!(!second, "second send finds the channel full (Ok(false))");
