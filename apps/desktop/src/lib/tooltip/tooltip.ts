@@ -29,39 +29,6 @@ let tooltipContainer: HTMLDivElement | null = null
 let adoptedContentEl: HTMLElement | null = null
 let adoptedContentHost: ParentNode | null = null
 
-/**
- * Watches an adopted `contentEl` whose size can change while shown (the indexing tooltip grows as a
- * second drive starts scanning and counters tick), so we re-anchor instead of measuring once on show
- * and overflowing the viewport bottom. Only the rich (`contentEl`) path resizes; a static text/html
- * tooltip never does, so it's never observed.
- */
-let contentResizeObserver: ResizeObserver | null = null
-
-function disconnectContentResizeObserver(): void {
-  if (contentResizeObserver) {
-    contentResizeObserver.disconnect()
-    contentResizeObserver = null
-  }
-}
-
-/**
- * Observe the currently adopted content element and reposition on its resize while this trigger's
- * tooltip is showing. Reconnects from scratch each call (so a live `update()` swapping content
- * re-targets the new element), and no-ops to a plain disconnect when there's no adopted element or
- * `ResizeObserver` is unavailable.
- */
-function observeContentResize(triggerEl: HTMLElement): void {
-  disconnectContentResizeObserver()
-  if (!adoptedContentEl || typeof ResizeObserver === 'undefined') return
-  contentResizeObserver = new ResizeObserver(() => {
-    // Guard against a stale callback after this tooltip hid or another trigger stole the singleton.
-    if (activeElement === triggerEl && adoptedContentEl) {
-      positionTooltip(triggerEl)
-    }
-  })
-  contentResizeObserver.observe(adoptedContentEl)
-}
-
 function ensureTooltipContainer(): HTMLDivElement {
   // Self-heal if the cached container got detached from the document (so the next show actually
   // renders). The container normally lives for the whole app lifetime, but staying defensive keeps a
@@ -133,10 +100,6 @@ function setTooltipContent(el: HTMLDivElement, param: TooltipParam): void {
   if (adoptedContentEl && nextContentEl !== adoptedContentEl) {
     returnAdoptedContentEl()
   }
-
-  // Mark the rich (adopted-content) variant so it can scroll its overflow when it hits max-height
-  // (plain text/html tooltips stay `pointer-events: none`, no scroll — they're never that tall).
-  el.classList.toggle('cmdr-tooltip-rich', Boolean(nextContentEl))
 
   if (nextContentEl) {
     // Adopt the caller's live element: record its current parent (the hidden host) so we can return it
@@ -211,14 +174,6 @@ function positionTooltip(triggerEl: HTMLElement): void {
     top = triggerRect.top - tipRect.height - OFFSET_BELOW
   }
 
-  // Clamp vertically so the tooltip never sits off-screen. A trigger at the very top of the window
-  // (the indexing hourglass) makes the flip-above branch push the tooltip off the TOP, and a live
-  // `contentEl` can grow taller than the viewport after show. When the tooltip is taller than the
-  // available height this resolves to `VIEWPORT_MARGIN`, anchoring it at the top so the START of the
-  // content (the primary drive — the most important part) stays visible; `.cmdr-tooltip`'s max-height
-  // then scrolls the overflow for the rich variant.
-  top = Math.max(VIEWPORT_MARGIN, Math.min(top, window.innerHeight - tipRect.height - VIEWPORT_MARGIN))
-
   // Clamp horizontal to viewport edges
   left = Math.max(VIEWPORT_MARGIN, Math.min(left, window.innerWidth - tipRect.width - VIEWPORT_MARGIN))
 
@@ -243,15 +198,10 @@ function showTooltip(triggerEl: HTMLElement, param: TooltipParam): void {
   positionTooltip(triggerEl)
 
   activeElement = triggerEl
-
-  // Re-anchor as the rich content grows/shrinks after show (no-op for plain text/html tooltips).
-  observeContentResize(triggerEl)
 }
 
 function hideTooltip(): void {
   cancelTimer()
-  // Stop watching the rich content for resize before it goes back to its host.
-  disconnectContentResizeObserver()
   // Return any adopted rich content to its host so Svelte keeps updating it in place for the next show.
   returnAdoptedContentEl()
   if (tooltipEl) {
@@ -342,9 +292,6 @@ export function tooltip(node: HTMLElement, param: TooltipParam): ActionReturn<To
         } else {
           setTooltipContent(tooltipEl, currentParam)
           positionTooltip(node)
-          // Re-target the resize observer in case the param swapped which element is adopted (or
-          // swapped from rich content to plain text, which disconnects it).
-          observeContentResize(node)
         }
       }
     },
