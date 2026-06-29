@@ -11,11 +11,11 @@
  * aggregation is tracked in its own map entry. Two drives aggregating at once
  * each get their own progress. See § "Aggregation" in DETAILS.md.
  *
- * Backward-compatible scalar getters (`isScanning`, `getEntriesScanned`, …) are
- * retained for the other consumers: `isScanning`/`isAggregating`/`isReplaying`
- * report "any volume active" (what the size-updating hourglass and search-unavailable
- * state want), while the scan-counter getters report the `root` volume (what
- * SearchDialog's index-build progress reads).
+ * Per-volume predicates (`isVolumeScanning`, `isVolumeAggregating`) answer "is
+ * THIS volume scanning / aggregating right now", so a per-folder consumer scopes
+ * its size-updating hourglass to the folder's own volume. The scan-counter getter
+ * (`getEntriesScanned`) reports the `root` volume only (what SearchDialog's local
+ * index-build progress reads).
  */
 
 import { SvelteMap } from 'svelte/reactivity'
@@ -214,33 +214,33 @@ export function getActivePhaseVolumeIds(): string[] {
   return [...phase.keys()]
 }
 
-// ── Backward-compatible scalar getters ───────────────────────────────
+// ── Per-volume predicates + root-only scan counter ───────────────────
 //
-// `isScanning`/`isAggregating`/`isReplaying` report "any volume active" (the
-// size-updating hourglass and search-unavailable consumers want global truth).
-// The scan-counter getters report the `root` volume (SearchDialog's index-build
+// `isVolumeScanning`/`isVolumeAggregating` answer "is THIS volume scanning /
+// aggregating", so a per-folder size-updating hourglass scopes to the folder's
+// own volume (a scan on volume B must not light up folders on volume A). The
+// scan-counter getter reports the `root` volume (SearchDialog's index-build
 // progress is root-only).
 
 function root(): VolumeIndexActivity | undefined {
   return activity.get(ROOT_VOLUME_ID)
 }
 
-export function isScanning(): boolean {
-  for (const a of activity.values()) {
-    if (a.phase === 'scanning') return true
-  }
-  return false
+/** Whether this volume is currently scanning (NOT replaying). Reactive. The
+ *  per-folder size hourglass keys on the folder's own volume through this. */
+export function isVolumeScanning(volumeId: string): boolean {
+  return activity.get(volumeId)?.phase === 'scanning'
+}
+
+/** Whether this volume is currently aggregating (sizes aren't ready until its
+ *  aggregation finishes). Reactive. */
+export function isVolumeAggregating(volumeId: string): boolean {
+  return aggregation.has(volumeId)
 }
 
 export function getEntriesScanned(): number {
   const r = root()
   return r?.phase === 'scanning' ? r.entriesScanned : 0
-}
-
-/** Whether ANY drive is aggregating (the size-updating hourglass and
- *  search-unavailable consumers want global truth). Reactive. */
-export function isAggregating(): boolean {
-  return aggregation.size > 0
 }
 
 // Maps the backend's typed rescan-reason discriminator to its catalog message

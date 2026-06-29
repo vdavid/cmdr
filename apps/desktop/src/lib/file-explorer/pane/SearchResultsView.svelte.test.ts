@@ -46,8 +46,8 @@ vi.mock('$lib/system-strings.svelte', () => ({
   restrictedFolderTooltip: () => 'restricted',
 }))
 vi.mock('$lib/indexing/index-state.svelte', () => ({
-  isScanning: () => false,
-  isAggregating: () => false,
+  isVolumeScanning: () => false,
+  isVolumeAggregating: () => false,
 }))
 vi.mock('../git/status-column', () => ({
   fetchStatusMap: () => Promise.resolve(null),

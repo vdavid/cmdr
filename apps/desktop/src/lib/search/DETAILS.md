@@ -430,7 +430,8 @@ state.
   `parseSearchScope`, `getRecentSearches`, `addRecentSearch`, `removeRecentSearch`, `clearRecentSearches`,
   `applyRecentSearchesMaxCount`, `showFileContextMenu`, `showInFinder`
 - `$lib/shortcuts/key-capture` -- `isMacOS()` for the footer action's macOS/Linux label fork
-- `$lib/indexing` -- `isScanning`, `getEntriesScanned` (scan progress for unavailable state)
+- `$lib/indexing` -- `isVolumeScanning(ROOT_VOLUME_ID)`, `getEntriesScanned` (LOCAL index-build progress for the
+  unavailable state; keyed to `root` so a network scan doesn't flip the label while root's count stays 0)
 - `$lib/settings` -- `getSetting('ai.provider')` (AI chip visibility, ⌘ shortcut numbering)
 - Shared primitives from [`lib/query-ui/`](../query-ui/CLAUDE.md)
 - CSS variables from `app.css`

@@ -30,7 +30,7 @@
     } from './file-list-utils'
     import { getDirStatsBatch } from '$lib/tauri-commands'
     import { formatSizeForDisplay, formatNumber } from '../selection/selection-info-utils'
-    import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
+    import { isVolumeScanning, isVolumeAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
     const RESTRICTED_FOLDER_TOOLTIP = $derived(restrictedFolderTooltip())
@@ -220,8 +220,11 @@
         format: getFileSizeFormat(),
     })
 
-    // Drive index state: show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
-    const indexing = $derived(isScanning() || isAggregating())
+    // Drive index state for THIS pane's volume: show the size hourglass while its
+    // own drive is scanning OR aggregating (sizes aren't ready until aggregation
+    // finishes). Scoped to `volumeId` so a scan on another drive doesn't light up
+    // this pane's folders.
+    const indexing = $derived(isVolumeScanning(volumeId) || isVolumeAggregating(volumeId))
 
     // Column widths are declared after the virtual window, which gates parent-row inclusion.
     let columnWidths = $state({ ext: 60, size: 115, date: 80 })

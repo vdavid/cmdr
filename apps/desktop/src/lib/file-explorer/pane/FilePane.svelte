@@ -3025,6 +3025,7 @@
     {#if paneViewKind === 'normal' && !friendlyError && !error && !unreachable}
         <SelectionInfo
             {viewMode}
+            {volumeId}
             entry={entryUnderCursor}
             currentDirModifiedAt={undefined}
             stats={listingStats}

@@ -57,8 +57,10 @@ indicator. Rust counterpart: `apps/desktop/src-tauri/src/indexing/`.
   (disconnect/cancel/timeout) fires NO completion, so the backend emits `index-scan-aborted { volumeId }` and
   `index-state` removes that volume's activity + aggregation on it — without it, an aborted network scan leaves a stuck
   "scanning" row. Don't clear activity off `index-freshness-changed` (it's not subscribed here).
-- **Don't widen `getEntriesScanned` to "any volume"**: it reports `root` on purpose (SearchDialog reads it as local
-  index-build progress). `isScanning`/`isAggregating` are the "any volume" booleans.
+- **`getEntriesScanned` stays `root`-only** (SearchDialog reads it as local index-build progress). The per-folder size
+  hourglass is PER-VOLUME — `isVolumeScanning(volumeId)` / `isVolumeAggregating(volumeId)` on the folder's own volume,
+  so a scan on drive B never flags drive A. No global scanning boolean exists; only the corner hourglass is global
+  (`isAnyVolumeIndexing()`). Don't reintroduce a global `isScanning()`.
 - **The indicator is a focusable, hoverable icon** (`role="img"`, `tabindex="0"`), not `pointer-events: none`: the
   detail lives in a tooltip reached by hover or focus. Don't use `role="status"` (a live region — wrong for a focusable
   hover target); the tooltip carries the live label + ETA via `aria-describedby`.

@@ -27,7 +27,7 @@ value directly).
 
 ### Public API (`index.ts`)
 
-The barrel exports the lifecycle + the cross-module reads: `isScanning` / `getEntriesScanned` (SearchDialog),
+The barrel exports the lifecycle + the cross-module reads: `isVolumeScanning` / `getEntriesScanned` / `ROOT_VOLUME_ID` (SearchDialog),
 `getVolumeActivity` / `getVolumeAggregation` (the breadcrumb badge's scanning tooltip, in `navigation/`),
 `getVolumePhase` (the per-volume step checklist), plus `initIndexState` / `destroyIndexState` / `initIndexEvents`. The
 indicator (same dir) imports the rest directly from `./index-state.svelte`:
@@ -43,9 +43,9 @@ getAggregatingVolumeIds(): string[]               // every volume currently aggr
 getActivePhaseVolumeIds(): string[]               // every volume with a live phase (incl. reconcile, no scan/agg entry)
 placeholderActivity(volumeId): VolumeIndexActivity  // a zero-valued activity for an aggregation-/reconcile-only row
 ROOT_VOLUME_ID: 'root'                             // the local volume id; everything else is a network (SMB/MTP) drive
-isAggregating(): boolean                          // any volume aggregating
-// Backward-compatible scalars (other consumers):
-isScanning(): boolean                // any volume scanning (size-updating hourglass, search-unavailable)
+// Per-volume predicates (per-folder size hourglass scopes to the folder's own volume):
+isVolumeScanning(volumeId): boolean  // is THIS volume scanning (NOT replaying) right now
+isVolumeAggregating(volumeId): boolean  // is THIS volume aggregating right now
 getEntriesScanned(): number          // the ROOT volume's live count (SearchDialog index-build progress)
 // Lifecycle:
 initIndexState(): Promise<void>      // call once at app mount

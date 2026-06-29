@@ -63,7 +63,8 @@ Four `$derived displayMode` values, each with its condition:
 Stale-size hourglass detail: in `file-info` mode the shared
 `getDirSizeDisplayState(recursiveSize, complete, stale, updating)` drives it, where `complete`/`stale` come from the
 entry's `recursiveSizeComplete`/`recursiveSizeStale` and
-`updating = isScanning() || isAggregating() || recursiveSizePending`. An unindexed or never-listed dir shows the unknown
+`updating = isVolumeScanning(volumeId) || isVolumeAggregating(volumeId) || recursiveSizePending`, scoped to the pane's
+own `volumeId` (a scan on another drive must not flag this pane's folders). An unindexed or never-listed dir shows the unknown
 state; a partially-scanned one is a lower bound (`≥`), and the `updating` flag adds the "Size not ready yet" hourglass
 on top. The per-folder `recursiveSizePending` flag lives only on `DirStats` (not `get_file_range`), so
 `FilePane.fetchEntryUnderCursor` overlays it onto the cursor entry via `updateIndexSizesInPlace([entry])` (skipping
@@ -131,4 +132,4 @@ live-updates so a focus flip or rebind mid-hover is reflected immediately.
 - `../views/full-list-utils`: `measureDateColumnWidth`.
 - `$lib/icon-cache`: `getCachedIcon`, `iconCacheVersion`.
 - `$lib/settings/reactive-settings.svelte`: `formatFileSize`, `formatDateTime`.
-- `$lib/indexing/index-state.svelte`: `isScanning`.
+- `$lib/indexing/index-state.svelte`: `isVolumeScanning`, `isVolumeAggregating` (keyed on the pane's `volumeId`).

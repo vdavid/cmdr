@@ -47,9 +47,9 @@ lives in `FilePane.svelte` as a `Set<number>`).
 - **Phone-storage hint (MTP)** tooltips the free-space readout on `caps.kind === 'mtp'` volumes (`mtpSpaceHint` from
   `FilePane`), explaining the folders-vs-used-space gap. See [DETAILS.md](DETAILS.md).
 - **Stale (hourglass) indicator** appears when directory sizes may be incomplete: in `selection-summary` mode while
-  `isScanning()` and dirs are selected, and in `file-info` mode via the shared `getDirSizeDisplayState(...)` (the same
-  decider FullList uses, so Brief's status bar matches Full's size column). Only directory sizes get the hint; file
-  sizes from metadata are always accurate.
+  `isVolumeScanning(volumeId)` and dirs are selected, and in `file-info` mode via shared `getDirSizeDisplayState(...)`
+  (one decider with FullList, so Brief matches Full's size column). Both key on the pane's `volumeId`. Only directory
+  sizes get the hint; file sizes are always accurate.
 - **Symlink hint (info glyph)** appears next to a directory's size in `file-info` mode when
   `entry.recursiveHasSymlinks === true`. Explains why a folder of symlinks may show `0 bytes`: Cmdr deliberately matches
   `du`/Finder by not double-counting symlinked content. The flag is computed by indexing (`recursive_has_symlinks` on

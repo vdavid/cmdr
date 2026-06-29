@@ -88,8 +88,9 @@ function setAutoApplyForTest(value: boolean): void {
 }
 
 vi.mock('$lib/indexing', () => ({
-  isScanning: vi.fn(() => false),
+  isVolumeScanning: vi.fn(() => false),
   getEntriesScanned: vi.fn(() => 0),
+  ROOT_VOLUME_ID: 'root',
 }))
 
 vi.mock('$lib/icon-cache', () => ({

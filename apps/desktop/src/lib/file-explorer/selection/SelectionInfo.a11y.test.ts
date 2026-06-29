@@ -12,8 +12,8 @@ import SelectionInfo from './SelectionInfo.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 vi.mock('$lib/indexing/index-state.svelte', () => ({
-  isScanning: () => false,
-  isAggregating: () => false,
+  isVolumeScanning: () => false,
+  isVolumeAggregating: () => false,
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
@@ -62,6 +62,7 @@ describe('SelectionInfo a11y', () => {
     mount(SelectionInfo, {
       target,
       props: {
+        volumeId: 'root',
         viewMode: 'full',
         entry: null,
         stats: {
@@ -87,6 +88,7 @@ describe('SelectionInfo a11y', () => {
     mount(SelectionInfo, {
       target,
       props: {
+        volumeId: 'root',
         viewMode: 'full',
         entry: null,
         stats: {
@@ -112,6 +114,7 @@ describe('SelectionInfo a11y', () => {
     mount(SelectionInfo, {
       target,
       props: {
+        volumeId: 'root',
         viewMode: 'brief',
         entry,
         stats: {
@@ -137,6 +140,7 @@ describe('SelectionInfo a11y', () => {
     mount(SelectionInfo, {
       target,
       props: {
+        volumeId: 'root',
         viewMode: 'full',
         entry: null,
         stats: {

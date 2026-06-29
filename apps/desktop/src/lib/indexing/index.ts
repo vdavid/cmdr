@@ -1,6 +1,8 @@
 /** Public API for the indexing module. */
 export {
-  isScanning,
+  ROOT_VOLUME_ID,
+  isVolumeScanning,
+  isVolumeAggregating,
   getEntriesScanned,
   getVolumeActivity,
   getVolumeAggregation,

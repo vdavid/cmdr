@@ -31,8 +31,8 @@ vi.mock('$lib/icon-cache', async () => {
 })
 
 vi.mock('$lib/indexing/index-state.svelte', () => ({
-  isScanning: () => false,
-  isAggregating: () => false,
+  isVolumeScanning: () => false,
+  isVolumeAggregating: () => false,
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({

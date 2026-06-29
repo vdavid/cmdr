@@ -12,8 +12,8 @@ import { mount, tick } from 'svelte'
 import SelectionInfo from './SelectionInfo.svelte'
 
 vi.mock('$lib/indexing/index-state.svelte', () => ({
-  isScanning: () => false,
-  isAggregating: () => false,
+  isVolumeScanning: () => false,
+  isVolumeAggregating: () => false,
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
@@ -69,6 +69,7 @@ describe('SelectionInfo symlink hint', () => {
     mount(SelectionInfo, {
       target,
       props: {
+        volumeId: 'root',
         viewMode: 'brief',
         entry: makeDir({ recursiveHasSymlinks: true }),
         stats: {
@@ -96,6 +97,7 @@ describe('SelectionInfo symlink hint', () => {
     mount(SelectionInfo, {
       target,
       props: {
+        volumeId: 'root',
         viewMode: 'brief',
         entry: makeDir({ recursiveHasSymlinks: false }),
         stats: {
@@ -121,6 +123,7 @@ describe('SelectionInfo symlink hint', () => {
     mount(SelectionInfo, {
       target,
       props: {
+        volumeId: 'root',
         viewMode: 'brief',
         // Files don't get the flag, but guard against future regressions
         entry: makeDir({ isDirectory: false, size: 1024, recursiveHasSymlinks: true }),

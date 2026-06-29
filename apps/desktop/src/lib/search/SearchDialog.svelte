@@ -47,7 +47,7 @@
     } from '$lib/tauri-commands'
     import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import { tString } from '$lib/intl/messages.svelte'
-    import { isScanning, getEntriesScanned } from '$lib/indexing'
+    import { isVolumeScanning, getEntriesScanned, ROOT_VOLUME_ID } from '$lib/indexing'
     import {
         searchQueryState,
         clearSearchState,
@@ -153,7 +153,10 @@
     const isIndexReady = $derived(getIsIndexReady())
     const indexEntryCount = $derived(getIndexEntryCount())
     const isIndexAvailable = $derived(getIsIndexAvailable())
-    const scanning = $derived(isScanning())
+    // Search reads the LOCAL index, so its "building index" state keys on `root`
+    // only — a network (SMB/MTP) scan must not flip the label while root's
+    // `entriesScanned` stays 0.
+    const scanning = $derived(isVolumeScanning(ROOT_VOLUME_ID))
     const entriesScanned = $derived(getEntriesScanned())
     const aiEnabled = $derived(aiProvider !== 'off' && isIndexAvailable)
     const inputsDisabled = $derived(!isIndexAvailable)

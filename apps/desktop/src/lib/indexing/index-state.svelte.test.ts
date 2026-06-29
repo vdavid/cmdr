@@ -79,7 +79,8 @@ import {
   getVolumePhase,
   getActivePhaseVolumeIds,
   getAggregatingVolumeIds,
-  isAggregating,
+  isVolumeScanning,
+  isVolumeAggregating,
   isAnyVolumeIndexing,
   type AggregationActivity,
 } from './index-state.svelte'
@@ -122,7 +123,10 @@ describe('index-state per-volume aggregation', () => {
     expect(getVolumeAggregation('smb-nas')).toMatchObject({ phase: 'writing', current: 40, total: 50 })
     // Each is attributed to its own volume — not conflated into one signal.
     expect(getAggregatingVolumeIds().sort()).toEqual(['root', 'smb-nas'])
-    expect(isAggregating()).toBe(true)
+    expect(isVolumeAggregating('root')).toBe(true)
+    expect(isVolumeAggregating('smb-nas')).toBe(true)
+    // A volume with no aggregation entry reads false (the per-volume scoping).
+    expect(isVolumeAggregating('mtp-phone')).toBe(false)
     expect(isAnyVolumeIndexing()).toBe(true)
   })
 
@@ -146,10 +150,11 @@ describe('index-state per-volume aggregation', () => {
     expect(getVolumeAggregation('root')).toBeUndefined()
     expect(getVolumeAggregation('smb-nas')).toMatchObject({ phase: 'writing' })
     expect(getAggregatingVolumeIds()).toEqual(['smb-nas'])
-    expect(isAggregating()).toBe(true)
+    expect(isVolumeAggregating('root')).toBe(false)
+    expect(isVolumeAggregating('smb-nas')).toBe(true)
 
     emitComplete('smb-nas')
-    expect(isAggregating()).toBe(false)
+    expect(isVolumeAggregating('smb-nas')).toBe(false)
     expect(getAggregatingVolumeIds()).toEqual([])
   })
 
@@ -185,6 +190,26 @@ describe('index-state per-volume aggregation', () => {
 
     expect(getVolumeActivity('smb-a')).toBeUndefined()
     expect(getVolumeActivity('mtp-phone')?.entriesScanned).toBe(7)
+  })
+
+  it('scopes isVolumeScanning to the scanning volume only', () => {
+    if (!scanProgressCb) throw new Error('scan-progress callback not registered')
+
+    // Only smb-b is scanning. A per-folder hourglass on volume A (root) must NOT
+    // light up — the bug the global `isScanning()` caused.
+    scanProgressCb({ volumeId: 'smb-b', entriesScanned: 100, dirsFound: 1, bytesScanned: 0 })
+    expect(isVolumeScanning('smb-b')).toBe(true)
+    expect(isVolumeScanning('root')).toBe(false)
+    expect(isVolumeScanning('mtp-phone')).toBe(false)
+  })
+
+  it('reports isVolumeScanning false for a replaying (not scanning) volume', () => {
+    if (!replayProgressCb) throw new Error('replay-progress callback not registered')
+
+    // Replay is live activity but NOT a scan; the scan-only hourglass stays off.
+    replayProgressCb({ volumeId: 'root', eventsProcessed: 10, estimatedTotal: 100 })
+    expect(getVolumeActivity('root')?.phase).toBe('replaying')
+    expect(isVolumeScanning('root')).toBe(false)
   })
 
   it('resets the phase start clock on a phase change but keeps it within a phase', () => {

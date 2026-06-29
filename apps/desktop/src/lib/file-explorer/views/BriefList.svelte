@@ -43,7 +43,7 @@
     import { onDebouncedScaleChange } from '$lib/text-size.svelte'
     import { getSetting } from '$lib/settings/settings-store'
     import { formatNumber } from '../selection/selection-info-utils'
-    import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
+    import { isVolumeScanning, isVolumeAggregating } from '$lib/indexing/index-state.svelte'
     import { isRestricted } from '$lib/stores/restricted-paths-store.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
     import Icon from '$lib/ui/Icon.svelte'
@@ -141,8 +141,11 @@
     // Recursive stats for the CURRENT directory (shown on the ".." row so that space isn't wasted).
     let parentDirStats = $state<DirStats | null>(null)
 
-    // Drive index state: show spinner while scanning OR aggregating (sizes aren't ready until aggregation finishes)
-    const indexing = $derived(isScanning() || isAggregating())
+    // Drive index state for THIS pane's volume: show the size hourglass while its
+    // own drive is scanning OR aggregating (sizes aren't ready until aggregation
+    // finishes). Scoped to `volumeId` so a scan on another drive doesn't light up
+    // this pane's folders.
+    const indexing = $derived(isVolumeScanning(volumeId) || isVolumeAggregating(volumeId))
 
     // ==== Layout constants ====
     // Row height is reactive based on UI density setting

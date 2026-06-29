@@ -30,7 +30,7 @@
         buildDirSizeTooltip,
         buildSelectionSizeTooltip,
     } from '../views/full-list-utils'
-    import { isScanning, isAggregating } from '$lib/indexing/index-state.svelte'
+    import { isVolumeScanning, isVolumeAggregating } from '$lib/indexing/index-state.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { VolumeSpaceInfo } from '$lib/tauri-commands'
@@ -46,6 +46,9 @@
     interface Props {
         /** View mode: 'brief' or 'full' */
         viewMode: 'brief' | 'full'
+        /** Volume id of the host pane, so the directory-size hourglass scopes to
+         *  THIS pane's drive (a scan on another drive must not light it up). */
+        volumeId: string
         /** Entry under cursor (for Brief mode without selection) */
         entry: FileEntry | null
         /** Modified timestamp of the current directory (for ".." entry) */
@@ -64,7 +67,7 @@
         mtpSpaceHint?: string
     }
 
-    const { viewMode, entry, currentDirModifiedAt, stats, selectedCount, volumeSpace, mtpSpaceHint }: Props = $props()
+    const { viewMode, volumeId, entry, currentDirModifiedAt, stats, selectedCount, volumeSpace, mtpSpaceHint }: Props = $props()
 
     // ========================================================================
     // Display mode determination
@@ -96,11 +99,12 @@
     // File info mode (Brief mode without selection)
     // ========================================================================
 
-    // Drive index scanning state (used for the selection-summary stale indicator).
-    const scanning = $derived(isScanning())
+    // This pane's drive scanning state (used for the selection-summary stale
+    // indicator). Scoped to `volumeId` so another drive's scan doesn't flag it.
+    const scanning = $derived(isVolumeScanning(volumeId))
     // Full index activity (scan OR aggregation) for the per-folder file-info
     // readout, matching FullList. `scanning` alone misses the aggregation phase.
-    const indexing = $derived(isScanning() || isAggregating())
+    const indexing = $derived(isVolumeScanning(volumeId) || isVolumeAggregating(volumeId))
 
     const sizeDisplayMode = $derived(getSizeDisplayMode())
     const sizeFormatOpts = $derived({
