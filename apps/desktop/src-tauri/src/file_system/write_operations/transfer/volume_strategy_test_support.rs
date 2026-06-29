@@ -213,9 +213,15 @@ pub(super) struct RelLog {
 /// absolute position `p` is `(p % 256) as u8`, so the assembled destination can
 /// be checked against that pattern regardless of where reopens happened.
 pub(super) struct ReleasingStream {
+    // `log` and `released` ARE read — in `cancel_and_release` below, reachable via the
+    // `dyn VolumeReadStream` vtable (stable compiles them as used). The nightly
+    // `cargo-udeps` build mis-flags fields read only inside a boxed async trait-method
+    // body as dead, so allow it here rather than fail CI on a toolchain quirk.
+    #[allow(dead_code, reason = "read in cancel_and_release; nightly cargo-udeps false positive")]
     pub(super) log: Arc<StdMutex<RelLog>>,
     pub(super) pos: u64, // absolute position of the next byte to emit
     pub(super) emitted_here: u64,
+    #[allow(dead_code, reason = "read in cancel_and_release; nightly cargo-udeps false positive")]
     pub(super) released: bool,
 }
 
