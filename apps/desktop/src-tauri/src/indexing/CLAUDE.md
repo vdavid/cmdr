@@ -51,8 +51,9 @@ SMB/MTP indexing (read DETAILS before touching this area):
 - **Manual rescan routes by TYPED kind:** `force_scan` → `start_volume_scan` for SMB/MTP, `start_scan` for `Local`. ❌
   Don't call `start_scan` for a trait-scanned volume — jwalk over a network mount walks nothing and falsely completes
   ("Rescan does nothing to the NAS" bug). LOCAL `start_scan` reconciles a populated index
-  (`local_reconcile.rs`), truncate+jwalk only a fresh one — predicate `entry_count > 1` NOT `> 0` (the sentinel makes a
-  fresh DB count 1). DETAILS § "LOCAL full rescan reconciles in place".
+  (`local_reconcile.rs`), truncate+jwalk a fresh OR never-completed one — predicate `entry_count > 1 && prior scan
+  completed` (sentinel makes a fresh DB count 1; a tiny partial's add-everything delta wedges the serial walk). DETAILS
+  § "LOCAL full rescan reconciles in place".
 - **Never write `scan_completed_at` for an empty root.** ROOT with ZERO children returns a typed `EmptyRoot`, not `Ok`;
   the local reconcile bails BEFORE diffing the root so an empty `/` can't blank the index. DETAILS § "No completion
   marker on an empty root".

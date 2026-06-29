@@ -140,17 +140,31 @@ fn rescan_scanner_for_kind(kind: IndexVolumeKind) -> RescanScanner {
 }
 
 /// Whether a LOCAL (re)scan should reconcile in place rather than truncate +
-/// rebuild. True once the index holds rows BEYOND the ROOT sentinel.
+/// rebuild. True only when the index holds rows BEYOND the ROOT sentinel AND the
+/// prior scan actually COMPLETED.
 ///
-/// MUST be `> 1`, not `> 0`: `create_tables` → `ensure_root_sentinel` always
+/// `entry_count > 1`, not `> 0`: `create_tables` → `ensure_root_sentinel` always
 /// inserts the ROOT row (id=1), and `TruncateData` re-inserts it, so a
 /// never-scanned DB has `entry_count == 1`. A `> 0` predicate would route a
-/// brand-new user's FIRST `/` scan to the slow serial reconcile instead of the
-/// fast parallel jwalk bulk build — the onboarding regression this guards against.
-/// Kept as a separate pure function so the `> 1` boundary is unit-testable without
-/// an `AppHandle`.
-fn local_rescan_reconciles(entry_count: u64) -> bool {
-    entry_count > 1
+/// brand-new user's FIRST `/` scan to the serial reconcile instead of the fast
+/// parallel jwalk bulk build.
+///
+/// `prior_scan_completed` (the completeness gate): reconcile ONLY a previously
+/// COMPLETED index (`scan_completed_at` was present at scan start). A partial that
+/// never finished (first scan interrupted, or repeated mid-scan quits) takes the
+/// fast truncate + parallel-jwalk rebuild instead. Reason: reconcile's per-dir
+/// serial walk plus its add-everything delta is far slower than a parallel bulk
+/// rebuild when the existing index is only a small fraction complete — a 4%-complete
+/// partial made the app look hung for ~15 min on a real `/`. Reconcile is the right
+/// call only when the index is substantially complete (a rescan with a small delta:
+/// sizes stay visible, no freelist). A tiny partial is mostly `<dir>` anyway, so
+/// keeping it "visible" buys little, and jwalk is fast. (LOCAL-only; the network
+/// predicate stays unchanged — a NAS rescan is slow, so keeping the partial visible
+/// is worth more there, and network partials are small.)
+///
+/// Pure so the boundary is unit-testable without an `AppHandle`.
+fn local_rescan_reconciles(entry_count: u64, prior_scan_completed: bool) -> bool {
+    entry_count > 1 && prior_scan_completed
 }
 
 impl IndexManager {
@@ -511,6 +525,17 @@ impl IndexManager {
             super::store::ScanCalibration::default()
         });
 
+        // The completeness gate for reconcile-vs-truncate (see `local_rescan_reconciles`):
+        // snapshot whether the prior scan COMPLETED, read BEFORE `DeleteMeta` clears
+        // `scan_completed_at` below. A partial that never finished must NOT reconcile
+        // (its add-everything delta wedges the serial walk); it takes the fast jwalk
+        // rebuild instead.
+        let prior_scan_completed = self
+            .store
+            .get_index_status()
+            .map(|s| s.scan_completed_at.is_some())
+            .unwrap_or(false);
+
         // Fetch the scanned volume's used bytes ONCE (tier-2 denominator). The call
         // does disk I/O — an NSURL XPC round-trip on macOS, `statvfs` on Linux — and
         // `start_scan` runs in async contexts (the auto-start spawn, async Tauri
@@ -559,16 +584,16 @@ impl IndexManager {
             log::warn!("Failed to send BumpCurrentEpoch: {e}");
         }
 
-        // Step 0a'': Reconcile vs truncate. A populated index (rows BEYOND the ROOT
-        // sentinel) is RESCANNED in place by `local_reconcile` (diff each dir, write
-        // only changes) so the last-good directory sizes stay visible (stale)
-        // throughout and no large freelist is minted. A first/empty scan keeps the
-        // fast parallel jwalk bulk build. Read the entry count from the live read
-        // connection BEFORE any truncate. (NOTE: the network predicate in
-        // `network_scan.rs` is intentionally left at `> 0` — changing shipped network
-        // behavior is handled separately.)
+        // Step 0a'': Reconcile vs truncate. A previously-COMPLETED, populated index
+        // (rows beyond the ROOT sentinel) is RESCANNED in place by `local_reconcile`
+        // (diff each dir, write only changes) so the last-good directory sizes stay
+        // visible (stale) throughout and no large freelist is minted. A first/empty
+        // scan OR a never-completed partial keeps the fast parallel jwalk bulk build
+        // (see `local_rescan_reconciles` for the completeness gate). Read the entry
+        // count from the live read connection BEFORE any truncate. (NOTE: the network
+        // predicate in `network_scan.rs` is intentionally left unchanged.)
         let reconcile = IndexStore::get_entry_count(self.store.read_conn())
-            .map(local_rescan_reconciles)
+            .map(|n| local_rescan_reconciles(n, prior_scan_completed))
             .unwrap_or(false);
 
         // Step 0b: Truncate entries + dir_stats so a FRESH scan inserts into an empty
@@ -1195,19 +1220,31 @@ mod tests {
     /// over the network mount, walked nothing, and falsely marked the index
     /// complete. Pre-fix `force_scan` called `start_scan` unconditionally, so an
     /// SMB id wrongly mapped to `LocalJwalk`; this pins the correct mapping.
-    /// The reconcile-vs-truncate boundary: a sentinel-only DB (`entry_count == 1`,
-    /// the never-scanned state) takes the FRESH/truncate jwalk path; a populated DB
-    /// (`> 1`) reconciles. Pins `> 1`, not `> 0` — the latter would send a brand-new
-    /// user's first `/` scan down the slow serial reconcile (the onboarding bug). The
-    /// sentinel-makes-it-1 fact is verified directly against a fresh store below.
+    /// The reconcile-vs-truncate boundary: reconcile ONLY a previously-completed,
+    /// populated index. A sentinel-only DB (`entry_count == 1`, never scanned) takes
+    /// FRESH/truncate jwalk. `> 1` not `> 0` — the latter would send a brand-new
+    /// user's first `/` scan down the serial reconcile (the onboarding bug). AND the
+    /// completeness gate: a populated-but-never-completed partial (`scan_completed_at`
+    /// absent) also takes the fast jwalk rebuild, because reconciling its
+    /// add-everything delta wedges the serial walk (the ~15-min "looks hung" bug on a
+    /// real `/`). The sentinel-makes-it-1 fact is verified against a fresh store below.
     #[test]
     fn local_rescan_reconciles_only_beyond_the_root_sentinel() {
-        assert!(!local_rescan_reconciles(0), "empty DB ⇒ fresh/truncate path");
+        // Completeness gate: even a populated DB does NOT reconcile if the prior scan
+        // never completed.
+        assert!(!local_rescan_reconciles(0, true), "empty DB ⇒ fresh/truncate path");
         assert!(
-            !local_rescan_reconciles(1),
+            !local_rescan_reconciles(1, true),
             "sentinel-only DB (never scanned) ⇒ fresh/truncate path, NOT reconcile"
         );
-        assert!(local_rescan_reconciles(2), "populated DB ⇒ reconcile path");
+        assert!(
+            local_rescan_reconciles(2, true),
+            "populated AND prior-completed ⇒ reconcile path"
+        );
+        assert!(
+            !local_rescan_reconciles(2, false),
+            "populated but never-completed partial ⇒ fast jwalk rebuild, NOT reconcile"
+        );
 
         // A fresh store has exactly the ROOT sentinel, so its entry_count is 1 and
         // the predicate routes it to the fresh path — the onboarding guarantee.
@@ -1216,7 +1253,10 @@ mod tests {
         let store = IndexStore::open(&db_path).expect("open store");
         let count = IndexStore::get_entry_count(store.read_conn()).expect("count");
         assert_eq!(count, 1, "a fresh DB holds only the ROOT sentinel");
-        assert!(!local_rescan_reconciles(count), "so a fresh DB takes the truncate path");
+        assert!(
+            !local_rescan_reconciles(count, true),
+            "so a fresh DB takes the truncate path"
+        );
     }
 
     #[test]
