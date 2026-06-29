@@ -1,6 +1,17 @@
 # Colorful tags (macOS Finder tags) — implementation plan
 
-**Status:** planning · **Branch:** `colorful-tags` · **Created:** 2026-06-28
+**Status:** implemented (M0–M3), `pnpm check desktop` green · **Branch:** `colorful-tags` · **Created:** 2026-06-28
+
+## Implementation status
+
+All milestones built, tested, and committed on `colorful-tags` (4 commits: plan, M0, M1, M2+M3). David's decisions: DP1 tags only for now (no `added_at`/`opened_at` revival); DP2 visible-range enrich + cancelable background full sweep; DP3 self-heals via carry-forward + enrich-on-visible-fetch; DP4 `listing.showTags` setting, ON by default; DP5 one bordered circle set. Write path verified Finder-compatible (macOS's own `NSURLTagNamesKey` reads Cmdr's writes) and FinderInfo-safe (custom-icon regression test).
+
+**Known follow-ups (non-blocking):**
+- **Quiet backfill (D4).** The background sweep reuses the diff-emitting `apply_tags_to_listing`, so off-screen tagged rows emit (coalesced) diffs. Negligible in practice (tagged files are rare), but a `quiet` variant that updates the cache without emitting for off-screen rows would honor D4 fully. Defer until it matters.
+- **Menu group shows on all volumes.** The seven-color group appears on macOS regardless of backend; tagging a virtual MTP/SMB path fails harmlessly (logged). Gate to local volumes if it feels wrong.
+- **Search-results panes** pass an empty `listing_id`, so tag writes there land on disk but the dots refresh on next navigation rather than in place.
+- **Machine-translated locale strings** (settings + command copy) want a native-speaker pass.
+- **Manual QA (David):** the colored dots' look, the menu circles, and a real Cmdr→Finder→Cmdr tag round-trip (incl. that a custom-icon folder keeps its icon after tagging).
 
 Read [`docs/design-principles.md`](../design-principles.md) and [`apps/desktop/src-tauri/src/file_system/listing/CLAUDE.md`](../../apps/desktop/src-tauri/src/file_system/listing/CLAUDE.md) (+ its `DETAILS.md`) before executing.
 
