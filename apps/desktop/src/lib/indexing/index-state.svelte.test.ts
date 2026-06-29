@@ -9,11 +9,13 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { flushSync } from 'svelte'
 import type {
   ActivityPhase,
   AggregationProgressEvent,
   IndexAggregationCompleteEvent,
   IndexPhaseChangedEvent,
+  IndexReplayProgressEvent,
   IndexScanAbortedEvent,
   IndexScanProgressEvent,
 } from '$lib/ipc/bindings'
@@ -24,6 +26,7 @@ let aggCompleteCb: ((p: IndexAggregationCompleteEvent) => void) | undefined
 let scanProgressCb: ((p: IndexScanProgressEvent) => void) | undefined
 let scanAbortedCb: ((p: IndexScanAbortedEvent) => void) | undefined
 let phaseCb: ((p: IndexPhaseChangedEvent) => void) | undefined
+let replayProgressCb: ((p: IndexReplayProgressEvent) => void) | undefined
 
 const noopUnlisten = () => {}
 
@@ -52,7 +55,10 @@ vi.mock('$lib/tauri-commands', () => ({
     return Promise.resolve(noopUnlisten)
   },
   onIndexRescanNotification: () => Promise.resolve(noopUnlisten),
-  onIndexReplayProgress: () => Promise.resolve(noopUnlisten),
+  onIndexReplayProgress: (cb: (p: IndexReplayProgressEvent) => void) => {
+    replayProgressCb = cb
+    return Promise.resolve(noopUnlisten)
+  },
   onIndexReplayComplete: () => Promise.resolve(noopUnlisten),
 }))
 
@@ -69,6 +75,7 @@ import {
   destroyIndexState,
   getVolumeAggregation,
   getVolumeActivity,
+  getEntriesScanned,
   getVolumePhase,
   getActivePhaseVolumeIds,
   getAggregatingVolumeIds,
@@ -266,5 +273,65 @@ describe('index-state per-volume pipeline phase', () => {
     emitPhase('root', 'live')
     expect(isAnyVolumeIndexing()).toBe(false)
     expect(getActivePhaseVolumeIds()).toEqual([])
+  })
+})
+
+// These guard the live-counter REACTIVITY, not just the data. The getter tests
+// above read the stored value directly, so they pass even when a `SvelteMap.set`
+// re-sets the SAME mutated object reference (which `SvelteMap` treats as a no-op
+// and never notifies). Here we run a real `$effect` over the getter and assert it
+// re-fires on the SECOND progress event — the notification the frozen-counter bug
+// dropped. See the fresh-object gotcha in DETAILS § "State model".
+describe('index-state scan-progress reactivity', () => {
+  beforeEach(async () => {
+    destroyIndexState()
+    scanProgressCb = undefined
+    replayProgressCb = undefined
+    await initIndexState()
+  })
+
+  it('re-fires reactive consumers on every scan-progress tick (root entriesScanned)', () => {
+    if (!scanProgressCb) throw new Error('scan-progress callback not registered')
+
+    const seen: number[] = []
+    const cleanup = $effect.root(() => {
+      $effect(() => {
+        seen.push(getEntriesScanned())
+      })
+    })
+
+    flushSync() // initial effect run: 0 (no root activity yet)
+    scanProgressCb({ volumeId: 'root', entriesScanned: 40_000, dirsFound: 100, bytesScanned: 1_000 })
+    flushSync()
+    scanProgressCb({ volumeId: 'root', entriesScanned: 2_000_000, dirsFound: 5_000, bytesScanned: 99_999 })
+    flushSync()
+
+    cleanup()
+
+    // Pre-fix this stops at [0, 40000]: the second set re-uses the same object
+    // reference, so SvelteMap never notifies and the effect never sees 2M.
+    expect(seen).toEqual([0, 40_000, 2_000_000])
+  })
+
+  it('re-fires reactive consumers on every replay-progress tick', () => {
+    if (!replayProgressCb) throw new Error('replay-progress callback not registered')
+
+    const seen: number[] = []
+    const cleanup = $effect.root(() => {
+      $effect(() => {
+        seen.push(getVolumeActivity('root')?.replayEventsProcessed ?? -1)
+      })
+    })
+
+    flushSync() // initial: -1 (no activity)
+    replayProgressCb({ volumeId: 'root', eventsProcessed: 500, estimatedTotal: 10_000 })
+    flushSync()
+    replayProgressCb({ volumeId: 'root', eventsProcessed: 9_500, estimatedTotal: 10_000 })
+    flushSync()
+
+    cleanup()
+
+    // Pre-fix this stops at [-1, 500]: the second set re-uses the same reference.
+    expect(seen).toEqual([-1, 500, 9_500])
   })
 })

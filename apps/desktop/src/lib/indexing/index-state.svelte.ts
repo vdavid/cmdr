@@ -276,12 +276,18 @@ export async function initIndexState(): Promise<void> {
     // A progress tick can arrive before the started event (a scan already
     // running at app start, missed on a mid-scan reload). Seed an entry so the
     // hourglass still shows; the started fields stay at their defaults.
-    const a = activity.get(payload.volumeId) ?? newScanActivity(payload.volumeId)
-    a.phase = 'scanning'
-    a.entriesScanned = payload.entriesScanned
-    a.dirsFound = payload.dirsFound
-    a.bytesScanned = payload.bytesScanned
-    activity.set(payload.volumeId, a)
+    const prev = activity.get(payload.volumeId) ?? newScanActivity(payload.volumeId)
+    // Store a FRESH object every tick: `SvelteMap.set` only notifies when the
+    // stored reference changes, so mutating `prev` in place and re-setting it
+    // would leave reactive consumers (the live scan counter) frozen after the
+    // first render. See the fresh-object gotcha in DETAILS § "State model".
+    activity.set(payload.volumeId, {
+      ...prev,
+      phase: 'scanning',
+      entriesScanned: payload.entriesScanned,
+      dirsFound: payload.dirsFound,
+      bytesScanned: payload.bytesScanned,
+    })
   })
   unlistenHandles.push(unlistenProgress)
 
@@ -344,11 +350,15 @@ export async function initIndexState(): Promise<void> {
 
   const unlistenReplayProgress = await onIndexReplayProgress((payload) => {
     const existing = activity.get(payload.volumeId)
-    const a = existing?.phase === 'replaying' ? existing : newReplayActivity(payload.volumeId)
-    a.phase = 'replaying'
-    a.replayEventsProcessed = payload.eventsProcessed
-    a.replayEstimatedTotal = payload.estimatedTotal ?? 0
-    activity.set(payload.volumeId, a)
+    const prev = existing?.phase === 'replaying' ? existing : newReplayActivity(payload.volumeId)
+    // Fresh object every tick so `SvelteMap.set` notifies (same rationale as the
+    // scan-progress handler above): mutating in place freezes the replay counter.
+    activity.set(payload.volumeId, {
+      ...prev,
+      phase: 'replaying',
+      replayEventsProcessed: payload.eventsProcessed,
+      replayEstimatedTotal: payload.estimatedTotal ?? 0,
+    })
   })
   unlistenHandles.push(unlistenReplayProgress)
 

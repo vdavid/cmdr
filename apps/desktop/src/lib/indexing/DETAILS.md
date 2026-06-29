@@ -15,6 +15,16 @@ directly — that's what makes the indicator track local + SMB + MTP, not just r
 Aggregation carries its own `volumeId` too (see below), so it lives in a second per-volume map keyed by `volumeId`, each
 entry an `AggregationActivity` (`phase`, `current`, `total`, `startedAt`).
 
+**Gotcha — store a FRESH object on every progress tick, never mutate-in-place + re-set.** `SvelteMap.set` bumps its
+per-key reactive source only when the stored value REFERENCE changes; re-setting the same (just-mutated) object is a
+no-op to its reactivity. So the scan-progress and replay-progress handlers build a new object literal each tick
+(`activity.set(id, { ...prev, entriesScanned, ... })`), exactly as the aggregation handler does. Mutating `prev` in
+place and re-setting it instead leaves `$derived`/`$effect` consumers (the live scan/replay counter in
+`IndexingStatusBody`) frozen at the first value while the backend scans on — the data is correct, only the reactive
+notification is lost. The reactivity regression test in `index-state.svelte.test.ts` runs a real `$effect` over the
+getter and asserts it re-fires on the second tick (the getter-only tests can't catch this, since they read the stored
+value directly).
+
 ### Public API (`index.ts`)
 
 The barrel exports the lifecycle + the cross-module reads: `isScanning` / `getEntriesScanned` (SearchDialog),
