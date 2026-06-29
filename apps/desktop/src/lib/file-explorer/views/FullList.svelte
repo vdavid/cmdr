@@ -13,6 +13,7 @@
     import { startClickToRename, cancelClickToRename } from '../rename/rename-activation'
     import SortableHeader from '../selection/SortableHeader.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
+    import TagDots from '../selection/TagDots.svelte'
     import InlineRenameEditor from '../rename/InlineRenameEditor.svelte'
     import { fetchStatusMap, glyphFor, labelFor, type EntryStatusCode } from '../git/status-column'
     import {
@@ -60,6 +61,7 @@
         getFileSizeUnit,
         getFileSizeFormat,
         getShowExtensionInName,
+        getShowTags,
     } from '$lib/settings/reactive-settings.svelte'
     import { iconCacheCleared } from '$lib/icon-cache'
     import { onDebouncedScaleChange, getEffectiveScale } from '$lib/text-size.svelte'
@@ -207,6 +209,10 @@
     // When on, the Name column shows the full filename and the Ext column (header
     // included) is hidden. When off (default), Name and Ext split the filename.
     const showExtensionInName = $derived(getShowExtensionInName())
+
+    // When on (default), colored Finder-tag dots render at the right edge of the
+    // Name cell. Gates both the render and the `enrich_tags` visible-range pass.
+    const showTags = $derived(getShowTags())
 
     // Size column rendering: user-picked unit (dynamic / bytes / kB / MB / GB) × binary/SI base.
     const sizeFormatOpts = $derived({
@@ -952,7 +958,7 @@
                                     class="restricted-indicator"
                                     aria-hidden="true"
                                     use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
-                                ><Icon name="info" size={12} /></span>{/if}</span>
+                                ><Icon name="info" size={12} /></span>{/if}{#if showTags}<TagDots tags={file.tags} />{/if}</span>
                             {#if gitColumnVisible}
                                 {@const status = gitStatusFor(file)}
                                 <span

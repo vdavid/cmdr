@@ -23,6 +23,7 @@
     const fnKeyBarDef = getSettingDefinition('appearance.showFunctionKeyBar') ?? { label: '', description: '' }
     const dirSortDef = getSettingDefinition('listing.directorySortMode') ?? { label: '', description: '' }
     const showExtInNameDef = getSettingDefinition('listing.showExtensionInName') ?? { label: '', description: '' }
+    const showTagsDef = getSettingDefinition('listing.showTags') ?? { label: '', description: '' }
     const briefWidthModeDef = getSettingDefinition('listing.briefColumnWidthMode') ?? { label: '', description: '' }
 
     // Read the setting directly and subscribe in-window. `reactive-settings.svelte.ts` is only
@@ -38,7 +39,7 @@
 </script>
 
 <SettingsSection title={tString('settings.section.listing')}>
-    {#if anyVisible(shouldShow, 'appearance.useAppIconsForDocuments', 'appearance.showFunctionKeyBar', 'listing.directorySortMode', 'listing.showExtensionInName')}
+    {#if anyVisible(shouldShow, 'appearance.useAppIconsForDocuments', 'appearance.showFunctionKeyBar', 'listing.directorySortMode', 'listing.showExtensionInName', 'listing.showTags')}
         <SectionCard label={tString('settings.appearance.card.namesAndIcons')}>
             {#if shouldShow('appearance.useAppIconsForDocuments')}
                 <SettingRow
@@ -78,6 +79,16 @@
                     {searchQuery}
                 >
                     <SettingSwitch id="listing.showExtensionInName" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('listing.showTags')}
+                <SettingRow
+                    id="listing.showTags"
+                    label={showTagsDef.label}
+                    description={showTagsDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="listing.showTags" />
                 </SettingRow>
             {/if}
         </SectionCard>

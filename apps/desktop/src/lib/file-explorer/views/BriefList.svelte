@@ -13,6 +13,7 @@
     import SortableHeader from '../selection/SortableHeader.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import FileIcon from '../selection/FileIcon.svelte'
+    import TagDots from '../selection/TagDots.svelte'
     import InlineRenameEditor from '../rename/InlineRenameEditor.svelte'
     import {
         getSyncIconPath,
@@ -37,6 +38,7 @@
         getStripedRows,
         getBriefColumnWidthMode,
         getBriefColumnWidthMaxPx,
+        getShowTags,
     } from '$lib/settings/reactive-settings.svelte'
     import { onDebouncedScaleChange } from '$lib/text-size.svelte'
     import { getSetting } from '$lib/settings/settings-store'
@@ -760,6 +762,9 @@
     // Striped rows setting
     const stripedRows = $derived(getStripedRows())
 
+    // Colored Finder-tag dots after the name (default on). Gates render + enrich.
+    const showTags = $derived(getShowTags())
+
     /** Build tooltip for a directory entry showing recursive size info. */
     function buildDirTooltip(file: FileEntry): string | { html: string } | undefined {
         if (!file.isDirectory) return undefined
@@ -931,6 +936,7 @@
                                                 aria-hidden="true"
                                                 use:tooltip={RESTRICTED_FOLDER_TOOLTIP}
                                             ><Icon name="info" size={12} /></span>{/if}</span>
+                                    {#if showTags}<TagDots tags={file.tags} />{/if}
                                 {/if}
                             </div>
                         {/each}
@@ -1078,6 +1084,9 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        /* Let the name shrink (and ellipsize) so the trailing tag-dot cluster
+           stays visible when the column is width-capped. */
+        min-width: 0;
         /* Soften the selection color flip. */
         transition: color 50ms ease;
     }

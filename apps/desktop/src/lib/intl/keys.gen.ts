@@ -1875,6 +1875,8 @@ export type MessageKey =
   | 'settings.listing.directorySortMode.opt.likeFiles'
   | 'settings.listing.showExtensionInName.description'
   | 'settings.listing.showExtensionInName.label'
+  | 'settings.listing.showTags.description'
+  | 'settings.listing.showTags.label'
   | 'settings.listing.sizeDisplay.description'
   | 'settings.listing.sizeDisplay.label'
   | 'settings.listing.sizeDisplay.opt.logical'

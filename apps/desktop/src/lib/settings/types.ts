@@ -217,6 +217,7 @@ export interface SettingsValues {
   'listing.sizeMismatchWarning': boolean
   'listing.stripedRows': boolean
   'listing.showExtensionInName': boolean
+  'listing.showTags': boolean
   'listing.briefColumnWidthMode': BriefColumnWidthMode
   'listing.briefColumnWidthMaxPx': number
 

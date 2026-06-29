@@ -214,7 +214,7 @@ export const commands = {
    *  Returns the widest filename's text-only width (in px) per Brief-mode column.
    *
    *  Pure read path: takes a snapshot of `LISTING_CACHE` for `listing_id` and
-   *  measures each column's widest filename with `font_metrics::calculate_max_width`.
+   *  measures each column's widest filename with `font_metrics::calculate_max_width_with_suffixes`.
    *  The FE applies chrome + clamp on top.
    *
    *  Error mapping (consumed by the FE):

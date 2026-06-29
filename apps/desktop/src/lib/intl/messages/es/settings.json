@@ -300,6 +300,14 @@
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
+  "settings.listing.showTags.label": "Mostrar etiquetas",
+  "@settings.listing.showTags.label": {
+    "sourceHash": "e352cad"
+  },
+  "settings.listing.showTags.description": "Muestra puntos de colores junto a los nombres de archivos y carpetas que tienen etiquetas del Finder de macOS.",
+  "@settings.listing.showTags.description": {
+    "sourceHash": "005f3b0"
+  },
   "settings.listing.directorySortMode.label": "Ordenar carpetas",
   "@settings.listing.directorySortMode.label": {
     "sourceHash": "7f0a1e4"

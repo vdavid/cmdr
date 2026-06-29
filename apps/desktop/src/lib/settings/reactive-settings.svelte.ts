@@ -38,6 +38,7 @@ let sizeUnit = $state<FileSizeUnit>('dynamic')
 let sizeMismatchWarning = $state<boolean>(true)
 let stripedRows = $state<boolean>(false)
 let showExtensionInName = $state<boolean>(false)
+let showTags = $state<boolean>(true)
 let briefColumnWidthMode = $state<BriefColumnWidthMode>('paneWidth')
 let briefColumnWidthMaxPx = $state<number>(400)
 let networkEnabled = $state<boolean>(true)
@@ -71,6 +72,7 @@ export async function initReactiveSettings(): Promise<void> {
     sizeMismatchWarning = getSetting('listing.sizeMismatchWarning')
     stripedRows = getSetting('listing.stripedRows')
     showExtensionInName = getSetting('listing.showExtensionInName')
+    showTags = getSetting('listing.showTags')
     briefColumnWidthMode = getSetting('listing.briefColumnWidthMode')
     briefColumnWidthMaxPx = getSetting('listing.briefColumnWidthMaxPx')
     networkEnabled = getSetting('network.enabled')
@@ -140,6 +142,9 @@ function applySettingChange(id: string, value: unknown): void {
       break
     case 'listing.showExtensionInName':
       showExtensionInName = value as boolean
+      break
+    case 'listing.showTags':
+      showTags = value as boolean
       break
     case 'listing.briefColumnWidthMode':
       briefColumnWidthMode = value as BriefColumnWidthMode
@@ -258,6 +263,15 @@ export function getStripedRows(): boolean {
  */
 export function getShowExtensionInName(): boolean {
   return showExtensionInName
+}
+
+/**
+ * Whether colored macOS Finder-tag dots render at the right edge of the Name
+ * cell (default on). When off, the views skip `TagDots` and don't trigger the
+ * `enrich_tags` getxattr pass or the post-load background tag sweep.
+ */
+export function getShowTags(): boolean {
+  return showTags
 }
 
 /** Get the Brief mode column-width mode: 'paneWidth' lets columns fill the pane; 'limited' caps them at `getBriefColumnWidthMaxPx`. */

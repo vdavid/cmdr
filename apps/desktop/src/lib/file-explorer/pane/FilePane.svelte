@@ -41,6 +41,7 @@
         updateMenuContext,
     } from '$lib/tauri-commands'
     import { resolveLocationOrToast } from '../navigation/navigate-and-select'
+    import { sweepListingTags } from './tag-sweep'
     import { renderListingError } from '$lib/errors/listing-error'
     import { updateIndexSizesInPlace } from '../views/file-list-utils'
     import { evictPerPathIconsForDir } from '$lib/icon-cache'
@@ -1261,6 +1262,9 @@
 
     // Track the current load operation to cancel outdated ones
     let loadGeneration = 0
+    // Set on unmount so the background Finder-tag sweep stops (it's a detached
+    // async loop the listing-cancel machinery doesn't reach).
+    let isDestroyed = false
     // Track last sequence for file watcher diffs
     let lastSequence = 0
     // Streaming event listeners
@@ -1671,6 +1675,21 @@
 
         // Sync state to MCP for context tools
         debouncedSyncMcp.call()
+
+        // Backfill Finder tags for the WHOLE listing (not just the visible range)
+        // so scrolling shows dots instantly and a future sort/filter sees them.
+        // Cancelable via `isStale`: stops on unmount, a newer load, or a listing
+        // swap. The detached loop's logic lives in `tag-sweep.ts` (testable).
+        if (getSetting('listing.showTags') && caps.hasBackendListing) {
+            const sweepGen = loadGeneration
+            const sweepListingId = listingId
+            void sweepListingTags({
+                listingId: sweepListingId,
+                totalCount: payload.totalCount,
+                includeHidden,
+                isStale: () => isDestroyed || sweepGen !== loadGeneration || sweepListingId !== listingId,
+            })
+        }
 
         // Scroll to cursor after DOM updates
         void tick().then(() => {
@@ -2777,6 +2796,8 @@
     })
 
     onDestroy(() => {
+        // Stop the background Finder-tag sweep if one is mid-flight.
+        isDestroyed = true
         // Clean up listing
         if (listingId) {
             void cancelListing(listingId)

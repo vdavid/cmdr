@@ -64,6 +64,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getSizeMismatchWarning: () => false,
   getStripedRows: () => false,
   getShowExtensionInName: () => false,
+  getShowTags: () => false,
   getFileSizeUnit: () => 'bytes',
   getFileSizeFormat: () => 'binary',
   getUseAppIconsForDocuments: () => false,

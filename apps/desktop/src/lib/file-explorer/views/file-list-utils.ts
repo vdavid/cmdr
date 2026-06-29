@@ -4,6 +4,7 @@
 
 import type { FileEntry, SyncStatus } from '../types'
 import { getFileRange, getDirStatsBatch, type DirStats } from '$lib/tauri-commands'
+import { commands } from '$lib/ipc/bindings'
 import { prefetchIcons, prefetchCustomFolderIcons } from '$lib/icon-cache'
 import { getUseAppIconsForDocuments } from '$lib/settings/reactive-settings.svelte'
 import { getSetting } from '$lib/settings/settings-store'
@@ -180,6 +181,17 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
   // Request sync status for visible paths
   const paths = entries.map((e) => e.path)
   onSyncStatusRequest?.(paths)
+
+  // Enrich Finder tags for the visible range, mirroring the custom-folder-icon
+  // getxattr prefetch above. The backend defers the tag getxattr off the bulk
+  // listing hot path, no-ops on non-local backends and already-correct ranges,
+  // and emits a coalesced `directory-diff` only for rows that changed. Gated by
+  // the show-tags setting so it doesn't run when dots are hidden.
+  if (getSetting('listing.showTags')) {
+    // Fire-and-forget; swallow rejections so a transient IPC failure (or a test
+    // without the Tauri bridge) can't surface as an unhandled rejection.
+    void commands.enrichTags(listingId, paths).catch(() => {})
+  }
 
   return {
     entries,

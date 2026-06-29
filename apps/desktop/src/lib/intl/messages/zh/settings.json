@@ -297,6 +297,14 @@
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
+  "settings.listing.showTags.label": "显示标签",
+  "@settings.listing.showTags.label": {
+    "sourceHash": "e352cad"
+  },
+  "settings.listing.showTags.description": "在带有 macOS Finder 标签的文件和文件夹名称旁显示彩色圆点。",
+  "@settings.listing.showTags.description": {
+    "sourceHash": "005f3b0"
+  },
   "settings.listing.directorySortMode.label": "目录排序",
   "@settings.listing.directorySortMode.label": {
     "sourceHash": "7f0a1e4"

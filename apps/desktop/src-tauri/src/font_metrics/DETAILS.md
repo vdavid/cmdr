@@ -21,7 +21,7 @@ overhead. bincode compresses this to ~26 KB and deserializes in microseconds vs.
 only by Rust, so readability doesn't matter.
 
 **Decision**: `RwLock` for the metrics cache instead of `Mutex`.
-**Why**: `calculate_max_width` runs on every Brief-mode render for every visible column, and multiple Tauri command
+**Why**: `calculate_max_width_with_suffixes` runs on every Brief-mode render for every visible column, and multiple Tauri command
 threads may read metrics concurrently. `RwLock` allows unlimited parallel reads; a `Mutex` would serialize all column
 width calculations and add latency to listing renders.
 

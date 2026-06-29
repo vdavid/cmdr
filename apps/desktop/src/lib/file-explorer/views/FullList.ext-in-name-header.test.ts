@@ -51,6 +51,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getStripedRows: () => false,
   // The flag under test:
   getShowExtensionInName: () => true,
+  getShowTags: () => false,
   getFileSizeUnit: () => 'bytes',
   getFileSizeFormat: () => 'binary',
 }))

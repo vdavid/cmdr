@@ -423,6 +423,17 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    id: 'listing.showTags',
+    section: ['Appearance', 'Listing'],
+    labelKey: 'settings.listing.showTags.label',
+    descriptionKey: 'settings.listing.showTags.description',
+    cardKey: 'settings.appearance.card.namesAndIcons',
+    keywords: ['tag', 'tags', 'finder', 'label', 'labels', 'color', 'colour', 'dot', 'dots'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
     id: 'listing.directorySortMode',
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.directorySortMode.label',

@@ -73,14 +73,19 @@ pub fn has_metrics(font_id: &str) -> bool {
         .unwrap_or(false)
 }
 
-/// Calculates the maximum width among multiple text strings
-pub fn calculate_max_width(texts: &[&str], font_id: &str) -> Option<f32> {
+/// Calculates the maximum width among text strings, each carrying a trailing
+/// pixel suffix (a non-text decoration rendered after it, e.g. the Finder
+/// tag-dot cluster) added to that text's own width before taking the max. A
+/// suffix of `0.0` is the plain widest-string case. Lets a single Brief column
+/// reserve room for a wide-name row and a tagged-but-short-name row
+/// independently. `None` when the font ID isn't cached.
+pub fn calculate_max_width_with_suffixes(items: &[(&str, f32)], font_id: &str) -> Option<f32> {
     let cache = METRICS_CACHE.read().ok()?;
     let metrics = cache.get(font_id)?;
 
-    texts
+    items
         .iter()
-        .map(|text| metrics.calculate_text_width(text))
+        .map(|(text, suffix)| metrics.calculate_text_width(text) + suffix)
         .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
 }
 

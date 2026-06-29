@@ -298,6 +298,14 @@
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
+  "settings.listing.showTags.label": "Afficher les tags",
+  "@settings.listing.showTags.label": {
+    "sourceHash": "e352cad"
+  },
+  "settings.listing.showTags.description": "Affiche des pastilles colorées à côté du nom des fichiers et dossiers portant des tags du Finder de macOS.",
+  "@settings.listing.showTags.description": {
+    "sourceHash": "005f3b0"
+  },
   "settings.listing.directorySortMode.label": "Trier les dossiers",
   "@settings.listing.directorySortMode.label": {
     "sourceHash": "7f0a1e4"

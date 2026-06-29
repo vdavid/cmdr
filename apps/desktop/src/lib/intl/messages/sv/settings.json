@@ -299,6 +299,14 @@
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
+  "settings.listing.showTags.label": "Visa taggar",
+  "@settings.listing.showTags.label": {
+    "sourceHash": "e352cad"
+  },
+  "settings.listing.showTags.description": "Visa färgade prickar bredvid namnen på filer och mappar som har macOS Finder-taggar.",
+  "@settings.listing.showTags.description": {
+    "sourceHash": "005f3b0"
+  },
   "settings.listing.directorySortMode.label": "Sortera kataloger",
   "@settings.listing.directorySortMode.label": {
     "sourceHash": "7f0a1e4"

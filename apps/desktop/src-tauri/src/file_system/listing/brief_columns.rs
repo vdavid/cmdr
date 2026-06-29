@@ -25,7 +25,7 @@ use crate::file_system::listing::metadata::FileEntry;
 /// the IPC command wrapper maps these to `IpcError` for the wire.
 #[derive(Debug, Clone, PartialEq)]
 pub enum BriefColumnsError {
-    /// `calculate_max_width` returned `None` for at least one column:
+    /// `calculate_max_width_with_suffixes` returned `None` for at least one column:
     /// the font metrics cache doesn't yet hold the requested `font_id`.
     /// Callers retry after `ensureFontMetricsLoaded` resolves.
     FontMetricsNotReady,
@@ -40,6 +40,32 @@ pub enum BriefColumnsError {
 /// Returns true if the entry is not a hidden dotfile.
 fn is_visible(entry: &FileEntry) -> bool {
     !entry.name.starts_with('.')
+}
+
+/// Colored tags (color index 1-7) on an entry; color 0 (colourless) is dotless.
+fn colored_tag_count(entry: &FileEntry) -> usize {
+    entry.tags.iter().filter(|t| (1..=7).contains(&t.color)).count()
+}
+
+/// Pixel width the Finder tag-dot cluster reserves to the right of a filename,
+/// as a pure function of the colored-tag count. Mirrors `tagClusterWidthPx` in
+/// `src/lib/file-explorer/selection/tag-dots-utils.ts` (gap + overlapping dot
+/// slots + optional `+N` chip); keep the constants in lockstep or a reserved
+/// Brief column clips or over-pads the cluster. Returns 0 for an untagged row,
+/// so a listing whose tags were never enriched (feature off) reserves nothing.
+fn tag_cluster_width(colored_count: usize) -> f32 {
+    if colored_count == 0 {
+        return 0.0;
+    }
+    const DOT_SIZE: f32 = 10.0;
+    const OVERLAP_OFFSET: f32 = 5.0;
+    const CHIP_EXTRA: f32 = 8.0;
+    const CLUSTER_GAP: f32 = 5.0;
+    const MAX_DOTS: usize = 3;
+    let slots = colored_count.min(MAX_DOTS);
+    let has_chip = colored_count > MAX_DOTS;
+    let base = DOT_SIZE + (slots - 1) as f32 * OVERLAP_OFFSET + if has_chip { CHIP_EXTRA } else { 0.0 };
+    CLUSTER_GAP + base
 }
 
 /// Computes the widest filename's text-only width per Brief-mode column.
@@ -109,18 +135,21 @@ pub fn compute_brief_column_text_widths(
             (start.min(visible.len()), end, false)
         };
 
-        // Build the slice of names for this column. We allocate per column;
-        // typical column count is < 1000 even for huge directories, so this is
-        // negligible compared to the text-width computation itself.
-        let mut names: Vec<&str> = Vec::with_capacity(end_idx.saturating_sub(start_idx) + 1);
+        // Build (name, tag-cluster-suffix) pairs for this column. The suffix
+        // reserves room for the trailing Finder tag dots so a short-named but
+        // tagged row doesn't get its dots clipped by the next column. We
+        // allocate per column; typical column count is < 1000 even for huge
+        // directories, so this is negligible next to the width computation.
+        let mut items: Vec<(&str, f32)> = Vec::with_capacity(end_idx.saturating_sub(start_idx) + 1);
         if include_parent_literal {
-            names.push("..");
+            // The ".." literal carries no tags.
+            items.push(("..", 0.0));
         }
         for entry in &visible[start_idx..end_idx] {
-            names.push(entry.name.as_str());
+            items.push((entry.name.as_str(), tag_cluster_width(colored_tag_count(entry))));
         }
 
-        let width = crate::font_metrics::calculate_max_width(&names, font_id).ok_or_else(|| {
+        let width = crate::font_metrics::calculate_max_width_with_suffixes(&items, font_id).ok_or_else(|| {
             log::warn!(
                 target: "brief_columns",
                 "Font metrics not ready for font_id='{}' (listing={}, col={})",
@@ -132,7 +161,7 @@ pub fn compute_brief_column_text_widths(
         })?;
 
         // Guarantee finite values so FE prefix-sums (Float64Array) stay valid.
-        // `calculate_max_width` returns sums over per-char widths from the cached
+        // `calculate_max_width_with_suffixes` returns sums over per-char widths from the cached
         // HashMap<u32, f32>; in practice all stored widths are finite, but a
         // belt-and-braces clamp here is cheap insurance and documents intent.
         let width = if width.is_finite() { width.max(0.0) } else { 0.0 };
@@ -151,4 +180,24 @@ pub fn compute_brief_column_text_widths(
     }
 
     Ok(widths)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::tag_cluster_width;
+
+    // Mirrors `tagClusterWidthPx` in `tag-dots-utils.ts`; keep the two in sync.
+    #[test]
+    fn cluster_width_matches_fe_geometry() {
+        // No colored tags reserves nothing.
+        assert_eq!(tag_cluster_width(0), 0.0);
+        // gap(5) + dot(10) + (slots-1)*overlap(5).
+        assert_eq!(tag_cluster_width(1), 15.0);
+        assert_eq!(tag_cluster_width(2), 20.0);
+        assert_eq!(tag_cluster_width(3), 25.0);
+        // 4+ overflows: 3 slots + chip extra(8).
+        assert_eq!(tag_cluster_width(4), 33.0);
+        // Plateaus past the cap regardless of count.
+        assert_eq!(tag_cluster_width(42), tag_cluster_width(4));
+    }
 }

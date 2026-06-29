@@ -1,3 +1,5 @@
+import type { TagRef } from '$lib/ipc/bindings'
+
 export interface FileEntry {
   name: string
   path: string
@@ -79,6 +81,14 @@ export interface FileEntry {
    * pane; absent for entries fetched from the backend listing cache.
    */
   parentPath?: string
+  /**
+   * macOS Finder tags (`com.apple.metadata:_kMDItemUserTags`). Empty in the
+   * core listing; filled by the deferred, visible-range-first `enrich_tags`
+   * pass and the post-load background sweep. Optional here so synthetic
+   * entries (the `..` row, search-results adapters) don't have to set it;
+   * `TagDots` treats absent as none.
+   */
+  tags?: TagRef[]
 }
 
 /** Cloud sync status for files in Dropbox/iCloud/etc. folders */

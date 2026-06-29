@@ -238,6 +238,22 @@
   --color-git-portal-text: #0a5d68;
   --color-git-portal-subtle: color-mix(in oklch, var(--color-git-portal), transparent 85%);
 
+  /* === Finder tag dots ===
+     * On-brand, slightly muted takes on Finder's seven label colors (index 1-7:
+     * grey, green, purple, blue, yellow, red, orange). Each dot draws a 1px
+     * `--color-tag-border` ring so a pale fill (yellow) still reads on white and
+     * the cluster stays legible over the selection highlight. Light-mode values
+     * lean a touch deeper than Finder's so they hold contrast on white rows; the
+     * dark override below brightens them for dark rows. */
+  --color-tag-grey: #9a9a9e;
+  --color-tag-green: #5aa84f;
+  --color-tag-purple: #a86fd0;
+  --color-tag-blue: #4b8fe0;
+  --color-tag-yellow: #e6b93f;
+  --color-tag-red: #df5b56;
+  --color-tag-orange: #e08a3c;
+  --color-tag-border: rgba(0, 0, 0, 0.22);
+
   /* === Overlays === */
   --color-overlay: color-mix(in srgb, black, transparent 50%);
   --color-overlay-light: color-mix(in srgb, black, transparent 60%);
@@ -663,6 +679,19 @@
     --color-git-portal: #4dd0e1;
     --color-git-portal-text: #80deea;
     --color-git-portal-subtle: color-mix(in oklch, var(--color-git-portal), transparent 85%);
+
+    /* === Finder tag dots (dark) === see light mode for the rationale.
+       Brighter, slightly desaturated fills so the dots stay vivid against the
+       dark rows; the border flips to a faint white ring so a dark fill (grey,
+       purple) still separates from the row background. */
+    --color-tag-grey: #a8a8ad;
+    --color-tag-green: #6fc463;
+    --color-tag-purple: #bd86e0;
+    --color-tag-blue: #5ea0ee;
+    --color-tag-yellow: #f0c54e;
+    --color-tag-red: #ef6f6a;
+    --color-tag-orange: #f09a4c;
+    --color-tag-border: rgba(255, 255, 255, 0.28);
 
     /* === Striped rows (dark) ===
        Faint white overlay (~4% alpha). Same translucent-on-tint

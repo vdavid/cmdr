@@ -9,6 +9,7 @@ lives in `FilePane.svelte` as a `Set<number>`).
 - **`SelectionInfo.svelte`**: status bar below each pane. Four display modes derived from props.
 - **`FileIcon.svelte`**: 16x16 icon with a bundled macOS-default fallback and overlay badges.
 - **`SortableHeader.svelte`**: clickable column header with sort-direction triangle and shortcut tooltip.
+- **`TagDots.svelte`** + **`tag-dots-utils.ts`**: Finder-tag dot cluster (Name cell, right edge); logic in the util.
 
 ## Must-knows
 
@@ -37,9 +38,9 @@ lives in `FilePane.svelte` as a `Set<number>`).
 - **`SortableHeader`'s shortcut shows only when `isFocused` is true** (the `sort.by*` commands act on the focused pane).
   Hovering the unfocused pane's header shows the command name only; clicking still sorts that pane. Pinned by
   `SortableHeader.svelte.test.ts`.
-- **`FileIcon` fallback is the bundled macOS default icon, not an emoji.** It shows only on cache miss (cold launch, or
-  briefly after a theme/accent change clears the cache) and swaps seamlessly to the live accent-tinted OS icon once
-  `get_icons` populates the cache. The component subscribes to `$iconCacheVersion` to re-render then.
+- **`FileIcon` fallback is the bundled macOS default icon, not an emoji.** Shown only on cache miss (cold launch, or
+  after a theme/accent change clears the cache); it swaps to the live accent-tinted OS icon once `get_icons` repopulates,
+  re-rendering via `$iconCacheVersion`.
 
 ## Status-bar hints (`SelectionInfo`)
 
@@ -47,8 +48,8 @@ lives in `FilePane.svelte` as a `Set<number>`).
   `FilePane`), explaining the folders-vs-used-space gap. See [DETAILS.md](DETAILS.md).
 - **Stale (hourglass) indicator** appears when directory sizes may be incomplete: in `selection-summary` mode while
   `isScanning()` and dirs are selected, and in `file-info` mode via the shared `getDirSizeDisplayState(...)` (the same
-  decider FullList uses, so Brief's status bar matches Full's size column). File sizes come from metadata and are always
-  accurate, so the hint targets only directory sizes during scanning/aggregation.
+  decider FullList uses, so Brief's status bar matches Full's size column). Only directory sizes get the hint; file
+  sizes from metadata are always accurate.
 - **Symlink hint (info glyph)** appears next to a directory's size in `file-info` mode when
   `entry.recursiveHasSymlinks === true`. Explains why a folder of symlinks may show `0 bytes`: Cmdr deliberately matches
   `du`/Finder by not double-counting symlinked content. The flag is computed by indexing (`recursive_has_symlinks` on

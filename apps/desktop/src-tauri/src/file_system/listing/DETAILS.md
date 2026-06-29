@@ -79,8 +79,9 @@ so touching there could keep a truly-orphaned listing alive indefinitely.
   `include_hidden: bool` and filter during `get_file_range()` iteration.
 - **Font metrics in a Rust binary cache, not frontend canvas measurement**: measuring 50k filenames in JS is slow. The
   frontend measures each code point's width once via Canvas and ships the table to Rust; later text-width queries are
-  hash lookups in the cached `.bin` table. `calculate_max_width()` is the entry point, used by
-  `brief_columns::compute_brief_column_text_widths` to size each Brief column to its widest filename.
+  hash lookups in the cached `.bin` table. `calculate_max_width_with_suffixes()` is the entry point, used by
+  `brief_columns::compute_brief_column_text_widths` to size each Brief column to its widest filename (plus a per-row
+  trailing suffix that reserves room for the Finder tag-dot cluster).
 - **Sequence counter on `CachedListing`, not `WatchedDirectory`**: SMB and MTP volumes don't use FSEvents
   (`supports_watching() == false`), so they have no `WatchedDirectory`. With the sequence on the watcher,
   `increment_sequence` returned `None` and `directory-diff` events never fired for those volumes. The `AtomicU64` on

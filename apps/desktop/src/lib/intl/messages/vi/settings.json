@@ -295,6 +295,14 @@
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
+  "settings.listing.showTags.label": "Hiển thị thẻ",
+  "@settings.listing.showTags.label": {
+    "sourceHash": "e352cad"
+  },
+  "settings.listing.showTags.description": "Hiển thị các chấm màu bên cạnh tên của tệp và thư mục có thẻ Finder của macOS.",
+  "@settings.listing.showTags.description": {
+    "sourceHash": "005f3b0"
+  },
   "settings.listing.directorySortMode.label": "Sắp xếp thư mục",
   "@settings.listing.directorySortMode.label": {
     "sourceHash": "7f0a1e4"

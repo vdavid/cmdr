@@ -301,6 +301,14 @@
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
+  "settings.listing.showTags.label": "Tags tonen",
+  "@settings.listing.showTags.label": {
+    "sourceHash": "e352cad"
+  },
+  "settings.listing.showTags.description": "Toon gekleurde stippen naast de namen van bestanden en mappen met macOS Finder-tags.",
+  "@settings.listing.showTags.description": {
+    "sourceHash": "005f3b0"
+  },
   "settings.listing.directorySortMode.label": "Mappen sorteren",
   "@settings.listing.directorySortMode.label": {
     "sourceHash": "7f0a1e4"

@@ -30,6 +30,25 @@ Depth for the status-bar / header components. `CLAUDE.md` holds the must-knows.
 - `sizeTierClasses`: `['size-bytes', 'size-kb', 'size-mb', 'size-gb', 'size-tb']`. CSS rules for these live in the
   consuming view, not here.
 
+## `TagDots.svelte` + `tag-dots-utils.ts`
+
+The colored Finder-tag cluster shown at the right edge of the Name cell in both views (and gated by the `listing.showTags`
+setting). `TagDots.svelte` is pure presentational; all logic is in `tag-dots-utils.ts`:
+
+- `tagDotsModel(tags)` → `{ dots, overflowCount, label }`. Drops colourless tags (color 0) from the dots but keeps every
+  tag name in `label` (the cluster's `aria-label` / `title`). Up to three colored tags show that many dots; beyond that,
+  two dots plus a `+N` chip (`N = colored − 2`).
+- `tagColorVar(color)` maps index 1-7 to the `var(--color-tag-*)` token (`app.css`, light + dark); each dot draws a 1px
+  `--color-tag-border` ring so a pale fill (yellow) reads on white and the cluster survives the selection highlight.
+- `tagClusterWidthPx(coloredCount)` is the reserved pixel width (gap + overlapping dot slots + optional chip), a pure
+  function of the colored count. Brief mode is width-constrained, so `brief_columns.rs::tag_cluster_width` mirrors these
+  constants to reserve room per row; Full mode needs no width math (Name is `1fr`). **Keep the two in sync.** The
+  geometry constants (`TAG_DOT_SIZE`, `TAG_DOT_OVERLAP_OFFSET`, `TAG_CHIP_EXTRA`, `TAG_CLUSTER_GAP`) are exported and
+  duplicated in the CSS literally; the dots overlap via negative margin, leftmost on top via descending inline z-index.
+
+The dots are decorative (`aria-hidden`, `pointer-events: none`); the cluster carries the accessible label. Data flow and
+the enrich/sweep wiring live in [`../views/DETAILS.md`](../views/DETAILS.md) (the Finder-tags decision).
+
 ## `SelectionInfo.svelte` display modes
 
 Four `$derived displayMode` values, each with its condition:

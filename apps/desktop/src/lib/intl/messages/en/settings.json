@@ -378,6 +378,17 @@
     "screenshot": "settings-appearance-listing.png"
   },
 
+  "settings.listing.showTags.label": "Show tags",
+  "@settings.listing.showTags.label": {
+    "description": "Label for the toggle that shows colored macOS Finder tag dots next to file names. In Settings > Appearance > Listing.",
+    "screenshot": "settings-appearance-listing.png"
+  },
+  "settings.listing.showTags.description": "Show colored dots next to names for files and folders that carry macOS Finder tags.",
+  "@settings.listing.showTags.description": {
+    "description": "Help text for the show-tags toggle. \"Finder tags\" are macOS's colored file labels; keep \"Finder\" as the macOS app name.",
+    "screenshot": "settings-appearance-listing.png"
+  },
+
   "settings.listing.directorySortMode.label": "Sort directories",
   "@settings.listing.directorySortMode.label": {
     "description": "Label for the picker controlling how folders sort relative to files. In Settings > Appearance > Listing.",

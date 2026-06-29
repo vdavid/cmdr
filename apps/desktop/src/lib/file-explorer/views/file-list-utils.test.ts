@@ -25,6 +25,9 @@ vi.mock('$lib/icon-cache', () => ({
   prefetchIcons: vi.fn(),
   prefetchCustomFolderIcons: vi.fn().mockResolvedValue(undefined),
 }))
+vi.mock('$lib/ipc/bindings', () => ({
+  commands: { enrichTags: vi.fn().mockResolvedValue({ status: 'ok', data: null }) },
+}))
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getUseAppIconsForDocuments: vi.fn().mockReturnValue(true),
 }))

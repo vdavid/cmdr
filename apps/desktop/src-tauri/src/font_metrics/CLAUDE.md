@@ -3,14 +3,16 @@
 Binary font metrics cache and text width calculation for Brief mode column sizing. Rust can't access system fonts, so
 the frontend measures character widths via the Canvas API and ships them to Rust over IPC.
 
-The whole module is `mod.rs` (plus `mod_test.rs`). `calculate_max_width` is the basis for per-column text widths in
+The whole module is `mod.rs` (plus `mod_test.rs`). `calculate_max_width_with_suffixes` is the basis for per-column text widths in
 Brief mode via `file_system::listing::brief_columns` (which powers the `get_brief_column_text_widths` IPC).
 
 ## Public API
 
 - **`store_metrics(font_id, widths)`**: store a `HashMap<u32 code point, f32 px width>` into the in-memory cache.
 - **`has_metrics(font_id)`**: is this font ID cached?
-- **`calculate_max_width(texts, font_id)`**: widest string from a slice; `None` if the font ID isn't cached. Primary
+- **`calculate_max_width_with_suffixes(items, font_id)`**: widest of `(text, trailing-px-suffix)` pairs (suffix `0.0`
+  is the plain widest-string case; the Brief tag-dot reservation passes a per-row cluster width); `None` if the font ID
+  isn't cached. Primary
   width entry point (`FontMetrics::calculate_text_width` is the per-string method used internally).
 - **`load_from_disk` / `save_to_disk`**: read/write `{font_id}.bin` (bincode2) under `~/…/font-metrics/`.
 - **`init_font_metrics(app, font_id)`**: startup load of one font ID from disk if its file exists. Idempotent.
