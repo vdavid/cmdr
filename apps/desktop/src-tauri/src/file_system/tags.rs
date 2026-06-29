@@ -623,7 +623,7 @@ mod macos_fs_tests {
         let ns_path = NSString::from_str(file.to_str().unwrap());
         let url = NSURL::fileURLWithPath(&ns_path);
         let key = NSString::from_str("NSURLTagNamesKey");
-        let mut value: Option<Retained<objc2::runtime::AnyObject>> = None;
+        let mut value: Option<Retained<AnyObject>> = None;
         // SAFETY: `url` is a valid NSURL, `key` a valid NSString, and `&mut value` a
         // valid `&mut Option<Retained<_>>` out-param; on success objc2 stores an
         // already-retained object there per its out-param convention.
@@ -646,8 +646,14 @@ mod macos_fs_tests {
             })
             .collect();
 
-        assert!(names.contains(&"Red".to_string()), "macOS reads Cmdr's Red tag: {names:?}");
-        assert!(names.contains(&"Work".to_string()), "macOS reads Cmdr's colorless Work tag: {names:?}");
+        assert!(
+            names.contains(&"Red".to_string()),
+            "macOS reads Cmdr's Red tag: {names:?}"
+        );
+        assert!(
+            names.contains(&"Work".to_string()),
+            "macOS reads Cmdr's colorless Work tag: {names:?}"
+        );
 
         let _ = std::fs::remove_dir_all(&dir);
     }
