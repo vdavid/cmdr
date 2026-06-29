@@ -236,4 +236,168 @@ describe('tooltip', () => {
       expect(host.hidden).toBe(true)
     })
   })
+
+  // The indexing hourglass sits at the very top-right of the window and feeds a live `contentEl` that
+  // grows after show (a second drive starts scanning, counts tick). Two guards keep its tall tooltip
+  // on-screen: a viewport clamp on `top`, and a ResizeObserver that re-anchors as the content grows.
+  describe('viewport clamping and resize-driven repositioning', () => {
+    /** Captured callbacks of every constructed observer, so a test can fire a "resize" manually. */
+    let resizeCallbacks: ResizeObserverCallback[]
+    let observeCount: number
+    let disconnectCount: number
+
+    beforeEach(() => {
+      resizeCallbacks = []
+      observeCount = 0
+      disconnectCount = 0
+      // happy-dom's ResizeObserver never fires on its own (no layout), so stub a controllable one.
+      class MockResizeObserver {
+        constructor(cb: ResizeObserverCallback) {
+          resizeCallbacks.push(cb)
+        }
+        observe(): void {
+          observeCount++
+        }
+        unobserve(): void {}
+        disconnect(): void {
+          disconnectCount++
+        }
+      }
+      vi.stubGlobal('ResizeObserver', MockResizeObserver)
+      // window.innerHeight drives the clamp math; pin it so the test is deterministic.
+      vi.stubGlobal('innerHeight', 768)
+    })
+
+    afterEach(() => {
+      // Restore the singleton tip's getBoundingClientRect spy so a tall mock doesn't leak to later tests.
+      vi.restoreAllMocks()
+      vi.unstubAllGlobals()
+    })
+
+    /** A trigger pinned at the very top of the window, like the indexing hourglass. */
+    function makeTopTrigger(): HTMLElement {
+      const el = document.createElement('div')
+      document.body.appendChild(el)
+      vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+        left: 1200,
+        top: 0,
+        right: 1216,
+        bottom: 16,
+        width: 16,
+        height: 16,
+        x: 1200,
+        y: 0,
+        toJSON: () => ({}),
+      })
+      return el
+    }
+
+    /** Force the singleton tooltip element to report a given height for the positioning math. */
+    function mockTipHeight(height: number): void {
+      const tip = document.querySelector('.cmdr-tooltip') as HTMLElement
+      vi.spyOn(tip, 'getBoundingClientRect').mockReturnValue({
+        left: 0,
+        top: 0,
+        right: 300,
+        bottom: height,
+        width: 300,
+        height,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      })
+    }
+
+    it('clamps a tooltip taller than the viewport to the top margin (start of content visible)', () => {
+      const el = makeTopTrigger()
+      const { content } = makeContentHost('Scanning drive 1...')
+      tooltip(el, { contentEl: content })
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+
+      // The content grows past the viewport height; re-measure and reposition via the resize callback.
+      mockTipHeight(2000)
+      resizeCallbacks.forEach((cb) => { cb([], {} as ResizeObserver); })
+
+      const tip = document.querySelector('.cmdr-tooltip.visible') as HTMLElement
+      // Anchored at the top margin (8px), never flipped off the top of the window.
+      expect(tip.style.top).toBe('8px')
+      expect(parseFloat(tip.style.top)).toBeGreaterThanOrEqual(8)
+    })
+
+    it('clamps a moderately tall tooltip so its bottom stays within the viewport', () => {
+      const el = makeTopTrigger()
+      const { content } = makeContentHost('Scanning...')
+      tooltip(el, { contentEl: content })
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+
+      // 700px tall in a 768px window: it fits, but only if clamped (below-anchor would overflow).
+      mockTipHeight(700)
+      resizeCallbacks.forEach((cb) => { cb([], {} as ResizeObserver); })
+
+      const tip = document.querySelector('.cmdr-tooltip.visible') as HTMLElement
+      const top = parseFloat(tip.style.top)
+      expect(top).toBeGreaterThanOrEqual(8)
+      // Bottom edge stays inside the viewport (768 - 8 margin).
+      expect(top + 700).toBeLessThanOrEqual(768 - 8)
+    })
+
+    it('repositions when the adopted content resizes while shown', () => {
+      const el = makeTopTrigger()
+      const { content } = makeContentHost('Scanning...')
+      tooltip(el, { contentEl: content })
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+
+      const tip = document.querySelector('.cmdr-tooltip.visible') as HTMLElement
+      const before = tip.style.top
+      expect(observeCount).toBeGreaterThan(0)
+
+      // Content grew tall; the resize callback must re-run positioning and move the tooltip.
+      mockTipHeight(2000)
+      resizeCallbacks.forEach((cb) => { cb([], {} as ResizeObserver); })
+
+      expect(tip.style.top).not.toBe(before)
+      expect(tip.style.top).toBe('8px')
+    })
+
+    it('disconnects the resize observer on hide', () => {
+      const el = makeTopTrigger()
+      const { content } = makeContentHost('Scanning...')
+      tooltip(el, { contentEl: content })
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      expect(observeCount).toBe(1)
+
+      el.dispatchEvent(new MouseEvent('mouseleave'))
+      expect(disconnectCount).toBeGreaterThan(0)
+    })
+
+    it('marks rich tooltips with the scroll-enabling class but not plain ones', () => {
+      const richTrigger = makeTopTrigger()
+      const { content } = makeContentHost('Scanning...')
+      tooltip(richTrigger, { contentEl: content })
+      richTrigger.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      expect(document.querySelector('.cmdr-tooltip')?.classList.contains('cmdr-tooltip-rich')).toBe(true)
+
+      richTrigger.dispatchEvent(new MouseEvent('mouseleave'))
+
+      // A plain-text tooltip reusing the singleton must shed the rich (scrollable) marker.
+      const plainTrigger = makeTrigger()
+      tooltip(plainTrigger, 'Plain text')
+      plainTrigger.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      expect(document.querySelector('.cmdr-tooltip')?.classList.contains('cmdr-tooltip-rich')).toBe(false)
+    })
+
+    it('does not observe resize for a plain text tooltip', () => {
+      const el = makeTrigger()
+      tooltip(el, 'Plain text')
+      el.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      expect(observeCount).toBe(0)
+    })
+  })
 })

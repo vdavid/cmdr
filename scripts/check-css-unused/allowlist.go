@@ -40,9 +40,10 @@ var allowedUnusedClasses = map[string]bool{
 	"icon-warning": true,
 	"icon-error":   true,
 	// Tooltip - singleton DOM node created/managed by tooltip.ts action, not in Svelte templates
-	"cmdr-tooltip":     true,
-	"cmdr-tooltip-kbd": true,
-	"visible":          true,
+	"cmdr-tooltip":      true,
+	"cmdr-tooltip-kbd":  true,
+	"cmdr-tooltip-rich": true,
+	"visible":           true,
 	// PathPills.svelte - hidden-pill markup is built as an HTML string and injected
 	// into the singleton tooltip DOM via the tooltip action. Static analysis only sees
 	// the `:global` rules in `PathPills.svelte`, not the matching markup.

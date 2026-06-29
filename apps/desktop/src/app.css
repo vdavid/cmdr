@@ -1216,6 +1216,10 @@ body {
   z-index: var(--z-tooltip);
   pointer-events: none;
   max-width: 320px;
+  /* Never taller than the viewport (matches `VIEWPORT_MARGIN` = 8px in `tooltip.ts`), so an extreme
+     live `contentEl` can't exceed it. The rich variant below scrolls the overflow; plain tooltips are
+     never this tall. */
+  max-height: calc(100vh - 2 * var(--spacing-sm));
   white-space: pre-line;
   overflow-wrap: anywhere;
 
@@ -1247,6 +1251,14 @@ body {
 .cmdr-tooltip.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Rich (adopted `contentEl`) tooltips can hit `max-height`, so let them scroll. Plain text/html
+   tooltips keep `pointer-events: none` and never scroll (they're short). The action adds this class
+   whenever a `contentEl` param is rendered. */
+.cmdr-tooltip-rich {
+  pointer-events: auto;
+  overflow-y: auto;
 }
 
 /* Reduced transparency: the `--color-bg-glass` token already flips to opaque above;
