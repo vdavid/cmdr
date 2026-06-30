@@ -41,3 +41,7 @@ Deferred future work. Unchecked by default; the folder name is the status.
       archives as folders: `ArchiveVolume` (rc-zip sans-IO read) + batch `ArchiveEditOperation` on the existing op
       manager, transparent `/foo.zip/inner` paths, temp+rename mutation in v1 with in-place append as a fast-follow.
       Reviewed across 3 adversarial rounds, ready to execute. Supersedes the research in `later/totalcmd-plugin-analysis.md`.
+- [ ] 2026-06-30 [later/media-ml-index-plan.md](later/media-ml-index-plan.md) - Searchable image index (OCR, tags,
+      faces, text→image) as an ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation
+      Models), vectors in SQLite not Postgres, on-device by default with faces/cloud as separate opt-ins. Plan reviewed
+      + the Core ML/Rust path spike-verified; backed by `docs/notes/clip-coreml-rust-spike.md`.
