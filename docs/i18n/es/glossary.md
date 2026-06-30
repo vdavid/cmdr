@@ -408,3 +408,4 @@ AppKit + SystemSettings, 2026-06-21).
 - "go up a folder" (shorter "go to parent") → subir a la carpeta superior · same destination as "go up to the parent
   folder"; reuses settled "carpeta superior". Label reworded to the imperative "Haz doble clic en el fondo del panel
   para subir a la carpeta superior" · high
+- preset (value in a settings-picker dropdown) → preajuste; "back to presets" → "Volver a los preajustes". Note: the standalone "Back" button is the adverb "Atrás" (backArrow), but "Back to X" needs the verb "Volver a X" (pile: "volver a la versión anterior") · Double Commander es ("Preajustes"; "El preajuste «%s» ya existe") · high

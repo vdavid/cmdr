@@ -510,7 +510,7 @@
   },
   "fileExplorer.network.share.backArrow": "Atrás",
   "@fileExplorer.network.share.backArrow": {
-    "sourceHash": "aceb696"
+    "sourceHash": "76900f1"
   },
   "fileExplorer.network.share.forgetPasswordTooltip": "Quitar la contraseña guardada del Llavero",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
@@ -518,7 +518,7 @@
   },
   "fileExplorer.network.share.forgetPassword": "Olvidar la contraseña guardada",
   "@fileExplorer.network.share.forgetPassword": {
-    "sourceHash": "aa3dca3"
+    "sourceHash": "ed68566"
   },
   "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} recurso compartido} many {{countText} recursos compartidos} other {{countText} recursos compartidos}}",
   "@fileExplorer.network.share.shareCount": {

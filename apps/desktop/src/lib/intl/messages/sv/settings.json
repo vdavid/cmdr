@@ -21,16 +21,16 @@
   },
   "settings.theme.mode.opt.light": "Ljust",
   "@settings.theme.mode.opt.light": {
-    "sourceHash": "89c7766"
+    "sourceHash": "dbcd5e7"
   },
   "settings.theme.mode.opt.dark": "Mörkt",
   "@settings.theme.mode.opt.dark": {
-    "sourceHash": "93362ff"
+    "sourceHash": "60acc53"
   },
   "settings.theme.mode.opt.system": "System",
   "@settings.theme.mode.opt.system": {
-    "sourceHash": "0c12227",
-    "sameAsSourceJustification": "'System' is the same word in Swedish - Apple Swedish uses 'System' standalone for the follow-system appearance (verified in pile macOS). Leading emoji is decorative. Deliberately identical."
+    "sourceHash": "6725e7b",
+    "sameAsSourceJustification": "'System' is the same word in Swedish - Apple Swedish uses 'System' standalone for the follow-system appearance (verified in pile macOS). Deliberately identical."
   },
   "settings.appearance.appColor.label": "Appfärg",
   "@settings.appearance.appColor.label": {
@@ -1197,6 +1197,10 @@
   "settings.control.customPrefix": "Anpassat: {value}",
   "@settings.control.customPrefix": {
     "sourceHash": "58c3782"
+  },
+  "settings.control.backToPresetsAriaLabel": "Tillbaka till förinställningar",
+  "@settings.control.backToPresetsAriaLabel": {
+    "sourceHash": "1579f3f"
   },
   "settings.sidebar.searchPlaceholder": "Sök inställningar...",
   "@settings.sidebar.searchPlaceholder": {

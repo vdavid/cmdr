@@ -8,6 +8,7 @@ import IconCircle from '~icons/lucide/circle'
 import IconCircleAlert from '~icons/lucide/circle-alert'
 import IconCircleCheck from '~icons/lucide/circle-check'
 import IconCopy from '~icons/lucide/copy'
+import IconCornerDownLeft from '~icons/lucide/corner-down-left'
 import IconEye from '~icons/lucide/eye'
 import IconEyeOff from '~icons/lucide/eye-off'
 import IconFile from '~icons/lucide/file'
@@ -62,6 +63,7 @@ export const ICON_COMPONENTS = {
   'circle-alert': IconCircleAlert,
   'circle-check': IconCircleCheck,
   copy: IconCopy,
+  'corner-down-left': IconCornerDownLeft,
   eject: EjectIcon,
   eye: IconEye,
   'eye-off': IconEyeOff,

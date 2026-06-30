@@ -513,7 +513,7 @@
   },
   "fileExplorer.network.share.backArrow": "Terug",
   "@fileExplorer.network.share.backArrow": {
-    "sourceHash": "aceb696"
+    "sourceHash": "76900f1"
   },
   "fileExplorer.network.share.forgetPasswordTooltip": "Verwijder opgeslagen wachtwoord uit Sleutelhanger",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
@@ -521,7 +521,7 @@
   },
   "fileExplorer.network.share.forgetPassword": "Vergeet opgeslagen wachtwoord",
   "@fileExplorer.network.share.forgetPassword": {
-    "sourceHash": "aa3dca3"
+    "sourceHash": "ed68566"
   },
   "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} gedeelde map} other {{countText} gedeelde mappen}}",
   "@fileExplorer.network.share.shareCount": {

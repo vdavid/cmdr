@@ -452,3 +452,4 @@ pile source):
   `bạn`. `tentative`.
 - **"This navigates to the parent folder" (hint body) → `Thao tác này đưa bạn đến thư mục cha`** · `đưa bạn đến` (takes
   you to) for a friendly, concrete rendering. `tentative`.
+- preset (value in a settings-picker dropdown) → đặt trước, rendered as "tùy chọn đặt trước" (preset options); "back to presets" → "Quay lại tùy chọn đặt trước" · Microsoft terminology (preset → "đặt trước", e.g. "khung thời gian đặt trước"); "tùy chọn" (options) heavily attested. "đặt trước" can also read as "reserved", so pairing it with "tùy chọn" disambiguates · tentative

@@ -510,7 +510,7 @@
   },
   "fileExplorer.network.share.backArrow": "Quay lại",
   "@fileExplorer.network.share.backArrow": {
-    "sourceHash": "aceb696"
+    "sourceHash": "76900f1"
   },
   "fileExplorer.network.share.forgetPasswordTooltip": "Xóa mật khẩu đã lưu khỏi chuỗi khóa",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
@@ -518,7 +518,7 @@
   },
   "fileExplorer.network.share.forgetPassword": "Quên mật khẩu đã lưu",
   "@fileExplorer.network.share.forgetPassword": {
-    "sourceHash": "aa3dca3"
+    "sourceHash": "ed68566"
   },
   "fileExplorer.network.share.shareCount": "{count, plural, other {{countText} mục chia sẻ}}",
   "@fileExplorer.network.share.shareCount": {

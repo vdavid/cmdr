@@ -21,15 +21,15 @@
   },
   "settings.theme.mode.opt.light": "Claro",
   "@settings.theme.mode.opt.light": {
-    "sourceHash": "89c7766"
+    "sourceHash": "dbcd5e7"
   },
   "settings.theme.mode.opt.dark": "Escuro",
   "@settings.theme.mode.opt.dark": {
-    "sourceHash": "93362ff"
+    "sourceHash": "60acc53"
   },
   "settings.theme.mode.opt.system": "Sistema",
   "@settings.theme.mode.opt.system": {
-    "sourceHash": "0c12227"
+    "sourceHash": "6725e7b"
   },
   "settings.appearance.appColor.label": "Cor do app",
   "@settings.appearance.appColor.label": {
@@ -1193,6 +1193,10 @@
   "settings.control.customPrefix": "Personalizado: {value}",
   "@settings.control.customPrefix": {
     "sourceHash": "58c3782"
+  },
+  "settings.control.backToPresetsAriaLabel": "Voltar às predefinições",
+  "@settings.control.backToPresetsAriaLabel": {
+    "sourceHash": "1579f3f"
   },
   "settings.sidebar.searchPlaceholder": "Buscar ajustes...",
   "@settings.sidebar.searchPlaceholder": {

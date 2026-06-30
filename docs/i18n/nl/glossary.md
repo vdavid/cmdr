@@ -528,3 +528,4 @@ rulings stay single-sourced and don't drift again:
   "Instellingen > Sneltoetsen" ↔ `settings.section.keyboardShortcuts`; "Instellingen > Updates" (crashReporter) vs
   "Instellingen > Updates en privacy" (whatsNew) are deliberately distinct, each tracking its own EN source and the
   glossary section names. Menu-path separators (`>` vs `→`) mirror EN per key.
+- preset (value in a settings-picker dropdown) → voorinstelling; "back to presets" → "Terug naar voorinstellingen" · Double Commander nl ("voorinstelling": "gewijzigde voorinstelling") · high

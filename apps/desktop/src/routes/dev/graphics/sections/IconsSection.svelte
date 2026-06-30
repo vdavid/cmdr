@@ -16,6 +16,7 @@
         'circle-alert': 'Serious-error marker in the error pane, the transfer error dialog, inline error rows, and the SMB share-list error state.',
         'circle-check': 'Done step marker in the drive-indexing checklist.',
         copy: 'Type marker for a copy operation row in the transfer queue window.',
+        'corner-down-left': 'Back-to-presets button in the settings custom-value input (returns to the preset dropdown).',
         eject: 'Eject control for removable and network volumes in the volume breadcrumb.',
         eye: 'Reveal-password toggle in settings password fields.',
         'eye-off': 'Hide-password toggle in settings password fields.',

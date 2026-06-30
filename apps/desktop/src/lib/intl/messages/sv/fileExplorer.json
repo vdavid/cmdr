@@ -511,7 +511,7 @@
   },
   "fileExplorer.network.share.backArrow": "Tillbaka",
   "@fileExplorer.network.share.backArrow": {
-    "sourceHash": "aceb696"
+    "sourceHash": "76900f1"
   },
   "fileExplorer.network.share.forgetPasswordTooltip": "Ta bort sparat lösenord från nyckelringen",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
@@ -519,7 +519,7 @@
   },
   "fileExplorer.network.share.forgetPassword": "Glöm sparat lösenord",
   "@fileExplorer.network.share.forgetPassword": {
-    "sourceHash": "aa3dca3"
+    "sourceHash": "ed68566"
   },
   "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} delning} other {{countText} delningar}}",
   "@fileExplorer.network.share.shareCount": {

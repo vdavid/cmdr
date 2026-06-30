@@ -21,15 +21,15 @@
   },
   "settings.theme.mode.opt.light": "Sáng",
   "@settings.theme.mode.opt.light": {
-    "sourceHash": "89c7766"
+    "sourceHash": "dbcd5e7"
   },
   "settings.theme.mode.opt.dark": "Tối",
   "@settings.theme.mode.opt.dark": {
-    "sourceHash": "93362ff"
+    "sourceHash": "60acc53"
   },
   "settings.theme.mode.opt.system": "Hệ thống",
   "@settings.theme.mode.opt.system": {
-    "sourceHash": "0c12227"
+    "sourceHash": "6725e7b"
   },
   "settings.appearance.appColor.label": "Màu ứng dụng",
   "@settings.appearance.appColor.label": {
@@ -1188,6 +1188,10 @@
   "settings.control.customPrefix": "Tùy chỉnh: {value}",
   "@settings.control.customPrefix": {
     "sourceHash": "58c3782"
+  },
+  "settings.control.backToPresetsAriaLabel": "Quay lại tùy chọn đặt trước",
+  "@settings.control.backToPresetsAriaLabel": {
+    "sourceHash": "1579f3f"
   },
   "settings.sidebar.searchPlaceholder": "Tìm trong cài đặt...",
   "@settings.sidebar.searchPlaceholder": {

@@ -1514,6 +1514,10 @@
       "value": "the custom value the user entered, e.g. \"42\" or \"90s\""
     }
   },
+  "settings.control.backToPresetsAriaLabel": "Back to presets",
+  "@settings.control.backToPresetsAriaLabel": {
+    "description": "Accessibility label and tooltip for the small icon-only button that leaves the custom-value text input and returns to the preset dropdown in a settings picker. Shown as a back-arrow (corner-down-left) icon; keep it short."
+  },
 
   "settings.sidebar.searchPlaceholder": "Search settings...",
   "@settings.sidebar.searchPlaceholder": {

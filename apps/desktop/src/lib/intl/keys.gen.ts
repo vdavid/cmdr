@@ -1821,6 +1821,7 @@ export type MessageKey =
   | 'settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.opt.off'
   | 'settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description'
   | 'settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label'
+  | 'settings.control.backToPresetsAriaLabel'
   | 'settings.control.customOption'
   | 'settings.control.customPrefix'
   | 'settings.control.customValuePlaceholder'

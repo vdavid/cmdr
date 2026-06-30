@@ -384,3 +384,4 @@ re-checked against `sv/macOS/`. New term:
   runt fillistan, inte en filrad." (reuses settled `tomma ytan` + `fillista` → definite `fillistan`). `high`.
 - **What just happened? (one-time hint title): `Vad hände nyss?`**; notification body "This navigates to the parent
   folder" → "Det tar dig till den överordnade mappen" (warmer notification voice). `high`.
+- preset (value in a settings-picker dropdown) → förinställning; "back to presets" → "Tillbaka till förinställningar" · pile adjective "förinställd/förinställda" (shared root), macOS SV print dialog "Förinställningar" · high

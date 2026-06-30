@@ -21,16 +21,16 @@
   },
   "settings.theme.mode.opt.light": "Hell",
   "@settings.theme.mode.opt.light": {
-    "sourceHash": "89c7766"
+    "sourceHash": "dbcd5e7"
   },
   "settings.theme.mode.opt.dark": "Dunkel",
   "@settings.theme.mode.opt.dark": {
-    "sourceHash": "93362ff"
+    "sourceHash": "60acc53"
   },
   "settings.theme.mode.opt.system": "System",
   "@settings.theme.mode.opt.system": {
-    "sourceHash": "0c12227",
-    "sameAsSourceJustification": "'System' is a real German word, same spelling; the leading laptop emoji is decorative and kept. macOS DE uses 'System'."
+    "sourceHash": "6725e7b",
+    "sameAsSourceJustification": "'System' is a real German word, same spelling; macOS DE uses 'System'."
   },
   "settings.appearance.appColor.label": "App-Farbe",
   "@settings.appearance.appColor.label": {
@@ -1197,6 +1197,10 @@
   "settings.control.customPrefix": "Eigenes: {value}",
   "@settings.control.customPrefix": {
     "sourceHash": "58c3782"
+  },
+  "settings.control.backToPresetsAriaLabel": "Zurück zu den Voreinstellungen",
+  "@settings.control.backToPresetsAriaLabel": {
+    "sourceHash": "1579f3f"
   },
   "settings.sidebar.searchPlaceholder": "Einstellungen durchsuchen …",
   "@settings.sidebar.searchPlaceholder": {

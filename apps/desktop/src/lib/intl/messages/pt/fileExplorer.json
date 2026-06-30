@@ -511,7 +511,7 @@
   },
   "fileExplorer.network.share.backArrow": "Voltar",
   "@fileExplorer.network.share.backArrow": {
-    "sourceHash": "aceb696"
+    "sourceHash": "76900f1"
   },
   "fileExplorer.network.share.forgetPasswordTooltip": "Remover a senha salva do Acesso às Chaves",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
@@ -519,7 +519,7 @@
   },
   "fileExplorer.network.share.forgetPassword": "Esquecer senha salva",
   "@fileExplorer.network.share.forgetPassword": {
-    "sourceHash": "aa3dca3"
+    "sourceHash": "ed68566"
   },
   "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} compartilhamento} many {{countText} compartilhamentos} other {{countText} compartilhamentos}}",
   "@fileExplorer.network.share.shareCount": {

@@ -9,6 +9,8 @@
     } from '$lib/settings'
     import type { EnumOption } from '$lib/settings/types'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { onMount } from 'svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -156,7 +158,15 @@
                 max={definition?.constraints?.customMax}
                 {disabled}
             />
-            <button class="back-to-select" onclick={() => (showCustomInput = false)} type="button"> ↩ </button>
+            <button
+                class="back-to-select"
+                onclick={() => (showCustomInput = false)}
+                type="button"
+                aria-label={tString('settings.control.backToPresetsAriaLabel')}
+                use:tooltip={tString('settings.control.backToPresetsAriaLabel')}
+            >
+                <Icon name="corner-down-left" size={14} aria-hidden="true" />
+            </button>
         </div>
     {:else}
         <Select
@@ -211,6 +221,9 @@
     }
 
     .back-to-select {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         padding: var(--spacing-xs) var(--spacing-sm);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);

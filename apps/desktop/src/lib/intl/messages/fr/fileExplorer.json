@@ -510,7 +510,7 @@
   },
   "fileExplorer.network.share.backArrow": "Retour",
   "@fileExplorer.network.share.backArrow": {
-    "sourceHash": "aceb696"
+    "sourceHash": "76900f1"
   },
   "fileExplorer.network.share.forgetPasswordTooltip": "Retirer le mot de passe enregistré du trousseau",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
@@ -518,7 +518,7 @@
   },
   "fileExplorer.network.share.forgetPassword": "Oublier le mot de passe enregistré",
   "@fileExplorer.network.share.forgetPassword": {
-    "sourceHash": "aa3dca3"
+    "sourceHash": "ed68566"
   },
   "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} partage} many {{countText} partages} other {{countText} partages}}",
   "@fileExplorer.network.share.shareCount": {
