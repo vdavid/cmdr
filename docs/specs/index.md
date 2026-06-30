@@ -37,3 +37,7 @@ Deferred future work. Unchecked by default; the folder name is the status.
       canonical home)
 - [ ] 2026-06-28 later/drive-index-overall-eta.md - Overall indexing ETA across remaining steps, with the backend
       per-phase calibration it needs to stay honest (the step checklist ships per-step ETA only)
+- [ ] 2026-06-30 [archive-browsing-plan.md](later/archive-browsing-plan.md) - Browse + edit zip (and read-only tar/7z)
+      archives as folders: `ArchiveVolume` (rc-zip sans-IO read) + batch `ArchiveEditOperation` on the existing op
+      manager, transparent `/foo.zip/inner` paths, temp+rename mutation in v1 with in-place append as a fast-follow.
+      Reviewed across 3 adversarial rounds, ready to execute. Supersedes the research in `later/totalcmd-plugin-analysis.md`.
