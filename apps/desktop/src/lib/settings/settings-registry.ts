@@ -126,9 +126,9 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     component: 'toggle-group',
     constraints: {
       options: [
-        { value: 'light', labelKey: 'settings.theme.mode.opt.light' },
-        { value: 'dark', labelKey: 'settings.theme.mode.opt.dark' },
-        { value: 'system', labelKey: 'settings.theme.mode.opt.system' },
+        { value: 'light', labelKey: 'settings.theme.mode.opt.light', icon: 'sun' },
+        { value: 'dark', labelKey: 'settings.theme.mode.opt.dark', icon: 'moon' },
+        { value: 'system', labelKey: 'settings.theme.mode.opt.system', icon: 'monitor' },
       ],
     },
   },
@@ -1517,6 +1517,7 @@ function resolveOption(opt: EnumOptionSource | EnumOption): EnumOption {
       return tString(opt.labelKey)
     },
   }
+  if (opt.icon !== undefined) out.icon = opt.icon
   if (opt.descriptionKey !== undefined) {
     const descKey = opt.descriptionKey
     Object.defineProperty(out, 'description', { enumerable: true, get: () => tString(descKey) })

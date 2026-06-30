@@ -5,6 +5,7 @@
      */
     import { onMount } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
     import CommandBox from '$lib/ui/CommandBox.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import type { AuthMode, NetworkHost, ShareInfo, ShareListError } from '../types'
@@ -544,7 +545,7 @@
         </div>
     {:else if error && !showLoginForm}
         <div class="error-state">
-            <div class="error-icon">❌</div>
+            <div class="error-icon"><Icon name="circle-alert" size={32} aria-hidden="true" /></div>
             <div class="error-title">{tString('fileExplorer.network.share.connectFailedTitle', { hostName: host.name })}</div>
             <div class="error-message">{error.message || error.type}</div>
             {#if error.type === 'missing_dependency' && error.installCommand}
@@ -565,7 +566,7 @@
         </div>
     {:else if sortedShares.length === 0}
         <div class="empty-state">
-            <div class="empty-icon">📁</div>
+            <div class="empty-icon"><Icon name="folder" size={32} aria-hidden="true" /></div>
             <div class="empty-title">{tString('fileExplorer.network.share.noSharesTitle')}</div>
             <div class="empty-message">{tString('fileExplorer.network.share.noSharesMessage')}</div>
             <div class="error-actions">
@@ -577,9 +578,12 @@
         </div>
     {:else}
         <div class="header-row">
-            <Button variant="secondary" size="mini" onclick={onBack}
-                >{tString('fileExplorer.network.share.backArrow')}</Button
-            >
+            <Button variant="secondary" size="mini" onclick={onBack}>
+                <span class="btn-icon-label">
+                    <Icon name="arrow-left" size={14} aria-hidden="true" />
+                    {tString('fileExplorer.network.share.backArrow')}
+                </span>
+            </Button>
             <span class="host-name">{host.name}</span>
             {#if authenticatedCredentials}
                 <button
@@ -587,6 +591,7 @@
                     onclick={handleForgetPassword}
                     use:tooltip={tString('fileExplorer.network.share.forgetPasswordTooltip')}
                 >
+                    <Icon name="key" size={12} aria-hidden="true" />
                     {tString('fileExplorer.network.share.forgetPassword')}
                 </button>
             {/if}
@@ -613,7 +618,7 @@
                     }}
                     onkeydown={() => {}}
                 >
-                    <span class="share-icon">📁</span>
+                    <span class="share-icon"><Icon name="folder" size={16} aria-hidden="true" /></span>
                     <span class="share-name">{share.name}</span>
                     {#if share.comment}
                         <span class="share-comment">{share.comment}</span>
@@ -648,7 +653,15 @@
 
     .error-icon,
     .empty-icon {
-        font-size: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .error-icon {
+        color: var(--color-error);
+    }
+    .empty-icon {
+        color: var(--color-text-tertiary);
     }
 
     .error-title,
@@ -678,6 +691,11 @@
         padding: var(--spacing-sm) var(--spacing-md);
         background-color: var(--color-bg-secondary);
         border-bottom: 1px solid var(--color-border-strong);
+    }
+    .btn-icon-label {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
     }
 
     .host-name {
@@ -732,7 +750,9 @@
     }
 
     .share-icon {
-        font-size: var(--font-size-lg);
+        display: inline-flex;
+        align-items: center;
+        color: var(--color-text-secondary);
     }
 
     .share-name {

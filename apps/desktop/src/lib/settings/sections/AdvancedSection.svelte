@@ -14,6 +14,7 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
     import { Switch } from '@ark-ui/svelte/switch'
     import { NumberInput, type NumberInputValueChangeDetails } from '@ark-ui/svelte/number-input'
     import {
@@ -106,7 +107,7 @@
 
 <SettingsSection title={tString('settings.section.advanced')}>
     <div class="warning-banner">
-        <span class="warning-icon">⚠️</span>
+        <span class="warning-icon"><Icon name="triangle-alert" size={18} aria-hidden="true" /></span>
         <span>
             {tString('settings.advanced.warningBanner')}
         </span>
@@ -239,7 +240,9 @@
     }
 
     .warning-icon {
-        font-size: var(--font-size-lg);
+        display: inline-flex;
+        align-items: center;
+        color: var(--color-warning-text);
     }
 
     .header-actions {

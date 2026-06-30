@@ -52,6 +52,7 @@
             return {
                 value: key,
                 label: labelOverrides?.[key] ?? opt.label,
+                icon: opt.icon,
             }
         }),
     )

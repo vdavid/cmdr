@@ -74,10 +74,19 @@ describe('settings registry label/description parity (en)', () => {
 })
 
 describe('settings enum-option label parity (en)', () => {
-  it('resolves theme-mode option labels (with emoji)', () => {
-    expect(optionLabel('theme.mode', 'light')).toBe('☀️ Light')
-    expect(optionLabel('theme.mode', 'dark')).toBe('🌙 Dark')
-    expect(optionLabel('theme.mode', 'system')).toBe('💻 System')
+  it('resolves theme-mode option labels (text-only; the glyph is a Lucide icon)', () => {
+    expect(optionLabel('theme.mode', 'light')).toBe('Light')
+    expect(optionLabel('theme.mode', 'dark')).toBe('Dark')
+    expect(optionLabel('theme.mode', 'system')).toBe('System')
+  })
+
+  it('carries a Lucide icon per theme-mode option', () => {
+    const def = getSettingDefinition('theme.mode')
+    const iconFor = (value: string) =>
+      def?.constraints?.options?.find((o) => o.value === value)?.icon
+    expect(iconFor('light')).toBe('sun')
+    expect(iconFor('dark')).toBe('moon')
+    expect(iconFor('system')).toBe('monitor')
   })
 
   it('resolves option labels with embedded descriptions', () => {

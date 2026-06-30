@@ -122,7 +122,7 @@
                 {#each items as item (item.value)}
                     <Combobox.Item {item} class="combobox-item">
                         <Combobox.ItemText>{item.label}</Combobox.ItemText>
-                        <Combobox.ItemIndicator class="combobox-item-indicator">✓</Combobox.ItemIndicator>
+                        <Combobox.ItemIndicator class="combobox-item-indicator"><Icon name="check" size={14} aria-hidden="true" /></Combobox.ItemIndicator>
                     </Combobox.Item>
                 {/each}
                 {#if items.length === 0}
@@ -254,8 +254,10 @@
     }
 
     :global(.combobox-item-indicator) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         min-width: 1em;
-        text-align: center;
         visibility: hidden;
     }
 

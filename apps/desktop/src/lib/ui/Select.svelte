@@ -131,7 +131,7 @@
                                         <span class="option-description"> — {item.description}</span>
                                     {/if}
                                 </Select.ItemText>
-                                <Select.ItemIndicator class="item-indicator">✓</Select.ItemIndicator>
+                                <Select.ItemIndicator class="item-indicator"><Icon name="check" size={14} aria-hidden="true" /></Select.ItemIndicator>
                             </Select.Item>
                         {/each}
                     </Select.ItemGroup>
@@ -145,7 +145,7 @@
                                 <span class="option-description"> — {item.description}</span>
                             {/if}
                         </Select.ItemText>
-                        <Select.ItemIndicator class="item-indicator">✓</Select.ItemIndicator>
+                        <Select.ItemIndicator class="item-indicator"><Icon name="check" size={14} aria-hidden="true" /></Select.ItemIndicator>
                     </Select.Item>
                 {/each}
             {/if}
@@ -257,8 +257,10 @@
 
     :global(.item-indicator) {
         /* Always reserve space for the checkmark to prevent layout shift. */
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         min-width: 1em;
-        text-align: center;
         color: var(--color-accent-text);
         visibility: hidden;
     }

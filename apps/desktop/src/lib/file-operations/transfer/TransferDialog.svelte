@@ -498,7 +498,7 @@
         {#if isScanning}
             <Spinner size="sm" />
         {:else if scanComplete}
-            <span class="scan-checkmark">✓</span>
+            <span class="scan-checkmark"><Icon name="check" size={16} aria-hidden="true" /></span>
         {/if}
     </div>
 
@@ -702,9 +702,9 @@
     }
 
     .scan-checkmark {
+        display: inline-flex;
+        align-items: center;
         color: var(--color-allow);
-        font-size: var(--font-size-md);
-        font-weight: 600;
         margin-left: var(--spacing-xs);
     }
 

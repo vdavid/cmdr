@@ -3,6 +3,7 @@
     import { connect as connectMtpDevice } from '$lib/mtp/mtp-store.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import Button from '$lib/ui/Button.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -167,7 +168,7 @@
             </div>
         {:else if mtpConnectionError}
             <div class="mtp-error">
-                <span class="error-icon">⚠</span>
+                <span class="error-icon"><Icon name="triangle-alert" size={32} aria-hidden="true" /></span>
                 <span class="error-message">{mtpConnectionError}</span>
                 <Button variant="secondary" onclick={handleRetry}>{tString('fileExplorer.mtp.tryAgain')}</Button>
             </div>
@@ -204,7 +205,9 @@
     }
 
     .mtp-error .error-icon {
-        font-size: 32px;
+        display: inline-flex;
+        align-items: center;
+        color: var(--color-error);
     }
 
     .mtp-error .error-message {

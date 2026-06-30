@@ -508,7 +508,7 @@
   "@fileExplorer.network.share.noSharesMessage": {
     "sourceHash": "6633416"
   },
-  "fileExplorer.network.share.backArrow": "← Atrás",
+  "fileExplorer.network.share.backArrow": "Atrás",
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "aceb696"
   },
@@ -516,7 +516,7 @@
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
-  "fileExplorer.network.share.forgetPassword": "🔑 Olvidar la contraseña guardada",
+  "fileExplorer.network.share.forgetPassword": "Olvidar la contraseña guardada",
   "@fileExplorer.network.share.forgetPassword": {
     "sourceHash": "aa3dca3"
   },

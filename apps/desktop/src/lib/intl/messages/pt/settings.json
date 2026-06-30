@@ -19,15 +19,15 @@
   "@settings.theme.mode.description": {
     "sourceHash": "42b18b9"
   },
-  "settings.theme.mode.opt.light": "☀️ Claro",
+  "settings.theme.mode.opt.light": "Claro",
   "@settings.theme.mode.opt.light": {
     "sourceHash": "89c7766"
   },
-  "settings.theme.mode.opt.dark": "🌙 Escuro",
+  "settings.theme.mode.opt.dark": "Escuro",
   "@settings.theme.mode.opt.dark": {
     "sourceHash": "93362ff"
   },
-  "settings.theme.mode.opt.system": "💻 Sistema",
+  "settings.theme.mode.opt.system": "Sistema",
   "@settings.theme.mode.opt.system": {
     "sourceHash": "0c12227"
   },

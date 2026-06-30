@@ -813,9 +813,9 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
-  "fileExplorer.network.share.backArrow": "← Back",
+  "fileExplorer.network.share.backArrow": "Back",
   "@fileExplorer.network.share.backArrow": {
-    "description": "Compact back button in the share-list header that returns to the host list. The arrow is decorative; keep it leading the word.",
+    "description": "Compact back button in the share-list header that returns to the host list. The UI renders a back-arrow icon before this label; the label itself is text-only.",
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
@@ -825,9 +825,9 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
-  "fileExplorer.network.share.forgetPassword": "🔑 Forget saved password",
+  "fileExplorer.network.share.forgetPassword": "Forget saved password",
   "@fileExplorer.network.share.forgetPassword": {
-    "description": "Button in the share-list header that deletes this host''s saved password from the Keychain. The key emoji prefix is part of the label.",
+    "description": "Button in the share-list header that deletes this host''s saved password from the Keychain. The UI renders a key icon before this label; the label itself is text-only.",
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },

@@ -17,6 +17,7 @@
      */
     import { tick } from 'svelte'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
+    import Icon from '$lib/ui/Icon.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { tString } from '$lib/intl/messages.svelte'
     import type { SearchResultEntry } from '$lib/tauri-commands'
@@ -266,9 +267,9 @@
                     {#if getIconUrl(entry.iconId)}
                         <img class="icon-img" src={getIconUrl(entry.iconId)} alt="" width="16" height="16" />
                     {:else if entry.isDirectory}
-                        <span class="icon-emoji">📁</span>
+                        <span class="icon-fallback"><Icon name="folder" size={16} aria-hidden="true" /></span>
                     {:else}
-                        <span class="icon-emoji">📄</span>
+                        <span class="icon-fallback"><Icon name="file" size={16} aria-hidden="true" /></span>
                     {/if}
                 </span>
                 <!-- Mid-truncating name. `useShortenMiddle` measures with pretext
@@ -481,9 +482,11 @@
         object-fit: contain;
     }
 
-    .icon-emoji {
-        font-size: var(--font-size-md);
-        line-height: 1;
+    .icon-fallback {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text-secondary);
     }
 
     /* Name column: mid-truncation handled by `useShortenMiddle`; we just keep

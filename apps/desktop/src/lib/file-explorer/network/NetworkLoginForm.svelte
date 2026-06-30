@@ -5,6 +5,7 @@
      */
     import { onMount } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import type { AuthMode, ConnectionMode, KnownNetworkShare, NetworkHost } from '../types'
     import { getUsernameHints, getKnownShareByName } from '$lib/tauri-commands'
@@ -143,14 +144,14 @@
 >
     <div class="login-card">
         <h2 id="login-title" class="login-title">
-            <span class="lock-icon">🔒</span>
+            <span class="lock-icon"><Icon name="lock" size={20} aria-hidden="true" /></span>
             {title}
         </h2>
 
         {#if authOptionsChanged()}
             <div class="auth-changed-message">
                 {#if authOptionsChanged() === 'guest_can_now_auth'}
-                    <span class="info-icon">ℹ️</span>
+                    <span class="info-icon"><Icon name="info" size={14} aria-hidden="true" /></span>
                     {tString('fileExplorer.network.login.guestNowAuth')}
                 {/if}
             </div>
@@ -158,7 +159,7 @@
 
         {#if errorMessage}
             <div class="error-message" role="alert">
-                <span class="error-icon">⚠️</span>
+                <span class="error-icon"><Icon name="triangle-alert" size={16} aria-hidden="true" /></span>
                 {errorMessage}
             </div>
         {/if}
@@ -281,7 +282,8 @@
     }
 
     .lock-icon {
-        font-size: var(--font-size-xl);
+        display: inline-flex;
+        align-items: center;
     }
 
     .auth-changed-message {
@@ -298,6 +300,8 @@
     }
 
     .info-icon {
+        display: inline-flex;
+        align-items: center;
         flex-shrink: 0;
     }
 
@@ -315,6 +319,8 @@
     }
 
     .error-icon {
+        display: inline-flex;
+        align-items: center;
         flex-shrink: 0;
     }
 

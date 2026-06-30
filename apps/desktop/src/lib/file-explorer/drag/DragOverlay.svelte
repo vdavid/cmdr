@@ -1,4 +1,5 @@
 <script lang="ts">
+    import Icon from '$lib/ui/Icon.svelte'
     import {
         getOverlayVisible,
         getOverlayX,
@@ -41,7 +42,7 @@
                         {#if line.iconUrl}
                             <img class="name-icon" src={line.iconUrl} alt="" width="12" height="12" />
                         {:else}
-                            <span class="name-icon-emoji">{line.isDirectory ? '\uD83D\uDCC1' : '\uD83D\uDCC4'}</span>
+                            <span class="name-icon-emoji"><Icon name={line.isDirectory ? 'folder' : 'file'} size={12} aria-hidden="true" /></span>
                         {/if}
                     {/if}
                     <span class="name-text">{line.text}</span>
@@ -110,9 +111,10 @@
     }
 
     .name-icon-emoji {
-        font-size: var(--font-size-xs);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: 12px;
-        text-align: center;
         flex-shrink: 0;
     }
 

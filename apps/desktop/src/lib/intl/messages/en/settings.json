@@ -25,19 +25,19 @@
     "description": "Help text under the theme-mode label in Settings > Appearance. Explains the three choices below it.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.theme.mode.opt.light": "☀️ Light",
+  "settings.theme.mode.opt.light": "Light",
   "@settings.theme.mode.opt.light": {
-    "description": "Theme-mode option: always-light appearance. The leading ☀️ emoji is decorative; keep it. Short toggle-button label, keep it brief.",
+    "description": "Theme-mode option: always-light appearance. The UI renders a sun icon before this label; the label itself is text-only. Short toggle-button label, keep it brief.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.theme.mode.opt.dark": "🌙 Dark",
+  "settings.theme.mode.opt.dark": "Dark",
   "@settings.theme.mode.opt.dark": {
-    "description": "Theme-mode option: always-dark appearance. The leading 🌙 emoji is decorative; keep it. Short toggle-button label, keep it brief.",
+    "description": "Theme-mode option: always-dark appearance. The UI renders a moon icon before this label; the label itself is text-only. Short toggle-button label, keep it brief.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.theme.mode.opt.system": "💻 System",
+  "settings.theme.mode.opt.system": "System",
   "@settings.theme.mode.opt.system": {
-    "description": "Theme-mode option: follow the macOS system appearance. The leading 💻 emoji is decorative; keep it. Short toggle-button label, keep it brief.",
+    "description": "Theme-mode option: follow the macOS system appearance. The UI renders a monitor icon before this label; the label itself is text-only. Short toggle-button label, keep it brief.",
     "screenshot": "settings-appearance.png"
   },
 

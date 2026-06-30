@@ -6,6 +6,7 @@
      */
     import { onMount, onDestroy } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import {
         getNetworkHosts,
@@ -599,7 +600,7 @@
                 onkeydown={() => {}}
             >
                 <span class="col-name">
-                    <span class="host-icon">🖥️</span>
+                    <span class="host-icon"><Icon name="monitor" size={16} aria-hidden="true" /></span>
                     {host.name}
                 </span>
                 <span class="col-ip" class:is-fetching={isHostResolving(host.id) && !host.ipAddress}
@@ -751,7 +752,9 @@
     }
 
     .host-icon {
-        font-size: var(--font-size-md);
+        display: inline-flex;
+        align-items: center;
+        color: var(--color-text-secondary);
     }
 
     .connect-row .connect-label {

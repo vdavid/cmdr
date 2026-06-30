@@ -507,7 +507,7 @@
   "@fileExplorer.network.share.noSharesMessage": {
     "sourceHash": "6633416"
   },
-  "fileExplorer.network.share.backArrow": "← 返回",
+  "fileExplorer.network.share.backArrow": "返回",
   "@fileExplorer.network.share.backArrow": {
     "sourceHash": "aceb696"
   },
@@ -515,7 +515,7 @@
   "@fileExplorer.network.share.forgetPasswordTooltip": {
     "sourceHash": "f067186"
   },
-  "fileExplorer.network.share.forgetPassword": "🔑 清除保存的密码",
+  "fileExplorer.network.share.forgetPassword": "清除保存的密码",
   "@fileExplorer.network.share.forgetPassword": {
     "sourceHash": "aa3dca3"
   },

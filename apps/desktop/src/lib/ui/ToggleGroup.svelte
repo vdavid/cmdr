@@ -1,7 +1,12 @@
 <script lang="ts" module>
+    import type { IconName } from './icons/icon-map'
+
     /**
      * Option for the `ToggleGroup` primitive.
      *
+     * `icon` renders a Lucide glyph before the label (for example `sun` on the theme-mode toggle). It
+     *   inherits the cell's `currentColor`, so it stays legible in both the resting and accent-filled
+     *   active states.
      * `badge` renders a small uppercase pill before the label (for example `AI` on the search mode chip).
      * `hint` renders inline tertiary mono text after the label (for example `⌥A` to surface a keyboard hint).
      * `disabled` blocks activation. Combined with `tooltip`, this is the "visible-disabled with tooltip"
@@ -13,6 +18,7 @@
     export interface ToggleGroupOption {
         value: string
         label: string
+        icon?: IconName
         badge?: string
         hint?: string
         disabled?: boolean
@@ -40,6 +46,7 @@
      */
     import { ToggleGroup as ArkToggleGroup } from '@ark-ui/svelte/toggle-group'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import Icon from './Icon.svelte'
 
     interface Props {
         semantics: 'tabs' | 'toggles'
@@ -143,6 +150,9 @@
                 }}
                 use:tooltip={option.tooltip ?? ''}
             >
+                {#if option.icon}
+                    <Icon name={option.icon} size={14} aria-hidden="true" />
+                {/if}
                 {#if option.badge}
                     <span class="tg-badge">{option.badge}</span>
                 {/if}
@@ -169,6 +179,9 @@
                 aria-label={option.ariaLabel}
             >
                 <span class="tg-item-inner" use:tooltip={option.tooltip ?? ''}>
+                    {#if option.icon}
+                        <Icon name={option.icon} size={14} aria-hidden="true" />
+                    {/if}
                     {#if option.badge}
                         <span class="tg-badge">{option.badge}</span>
                     {/if}

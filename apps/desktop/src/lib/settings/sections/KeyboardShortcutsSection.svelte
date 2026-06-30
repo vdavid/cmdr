@@ -3,6 +3,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import SettingsSection from '../components/SettingsSection.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
     import {
         getEffectiveShortcuts,
         isShortcutModified,
@@ -164,7 +165,7 @@
         {@const conflictWarning = controller.conflictWarning}
         {@const conflict = conflictWarning.conflict}
         <div class="conflict-warning">
-            <span class="warning-icon">⚠️</span>
+            <span class="warning-icon"><Icon name="triangle-alert" size={18} aria-hidden="true" /></span>
             {#if conflict.kind === 'native'}
                 <!-- macOS owns this combo: it can never reach Cmdr, so we don't offer
                      "Remove from other" or "Keep both" (both would be a lie). -->
@@ -253,7 +254,7 @@
                             {/if}
                             {#if hasConflicts}
                                 <span class="conflict-icon" use:tooltip={tString('shortcuts.section.hasConflictsTooltip')}
-                                    >⚠️</span
+                                    ><Icon name="triangle-alert" size={14} aria-hidden="true" /></span
                                 >
                             {/if}
                             <span class="command-name">{command.name}</span>
@@ -360,7 +361,7 @@
                                         controller.handleResetShortcut(command.id)
                                     }}
                                 >
-                                    ↩
+                                    <Icon name="rotate-ccw" size={14} aria-hidden="true" />
                                 </button>
                             {/if}
                             {/if}
@@ -487,7 +488,9 @@
     }
 
     .warning-icon {
-        font-size: var(--font-size-lg);
+        display: inline-flex;
+        align-items: center;
+        color: var(--color-warning-text);
     }
 
     .warning-text {
@@ -607,7 +610,9 @@
     }
 
     .conflict-icon {
-        font-size: var(--font-size-sm);
+        display: inline-flex;
+        align-items: center;
+        color: var(--color-warning);
     }
 
     .command-name {

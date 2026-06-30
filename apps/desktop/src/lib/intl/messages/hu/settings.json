@@ -19,15 +19,15 @@
   "@settings.theme.mode.description": {
     "sourceHash": "42b18b9"
   },
-  "settings.theme.mode.opt.light": "☀️ Világos",
+  "settings.theme.mode.opt.light": "Világos",
   "@settings.theme.mode.opt.light": {
     "sourceHash": "89c7766"
   },
-  "settings.theme.mode.opt.dark": "🌙 Sötét",
+  "settings.theme.mode.opt.dark": "Sötét",
   "@settings.theme.mode.opt.dark": {
     "sourceHash": "93362ff"
   },
-  "settings.theme.mode.opt.system": "💻 Rendszer",
+  "settings.theme.mode.opt.system": "Rendszer",
   "@settings.theme.mode.opt.system": {
     "sourceHash": "0c12227"
   },

@@ -19,15 +19,15 @@
   "@settings.theme.mode.description": {
     "sourceHash": "42b18b9"
   },
-  "settings.theme.mode.opt.light": "☀️ Hell",
+  "settings.theme.mode.opt.light": "Hell",
   "@settings.theme.mode.opt.light": {
     "sourceHash": "89c7766"
   },
-  "settings.theme.mode.opt.dark": "🌙 Dunkel",
+  "settings.theme.mode.opt.dark": "Dunkel",
   "@settings.theme.mode.opt.dark": {
     "sourceHash": "93362ff"
   },
-  "settings.theme.mode.opt.system": "💻 System",
+  "settings.theme.mode.opt.system": "System",
   "@settings.theme.mode.opt.system": {
     "sourceHash": "0c12227",
     "sameAsSourceJustification": "'System' is a real German word, same spelling; the leading laptop emoji is decorative and kept. macOS DE uses 'System'."

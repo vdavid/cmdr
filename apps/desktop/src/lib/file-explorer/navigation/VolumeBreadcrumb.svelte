@@ -716,13 +716,13 @@
         {:else if currentVolumeIcon}
             <img class="icon" src={currentVolumeIcon} alt="" />
         {:else if volumeId === 'network'}
-            <span class="icon-emoji">🌐</span>
+            <span class="icon-emoji"><Icon name="globe" size={16} aria-hidden="true" /></span>
         {:else if dirIconFallback}
             <img class="icon" src={dirIconFallback} alt="" />
         {/if}
         {currentVolumeName}
         {#if currentVolume?.isReadOnly}
-            <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}>🔒</span>
+            <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}><Icon name="lock" size={14} aria-hidden="true" /></span>
         {/if}
         <span class="chevron"></span>
     </span>
@@ -855,7 +855,7 @@
                         }}
                     >
                         {#if shouldShowCheckmark(volume, containingVolumeId)}
-                            <span class="checkmark">✓</span>
+                            <span class="checkmark"><Icon name="check" size={14} aria-hidden="true" /></span>
                         {:else}
                             <span class="checkmark-placeholder"></span>
                         {/if}
@@ -864,7 +864,7 @@
                         {:else if volume.category === 'mobile_device'}
                             <img class="volume-icon" src="/icons/mobile-device.svg" alt="" />
                         {:else if volume.category === 'network'}
-                            <span class="volume-icon-placeholder">🌐</span>
+                            <span class="volume-icon-placeholder"><Icon name="globe" size={16} aria-hidden="true" /></span>
                         {:else if isRestricted(volume.path) && dirIconFallback}
                             <!-- TCC-denied paths: `NSWorkspace.iconForFile` returns a confusing "no
                                  access" placeholder. Use the generic Aqua folder icon instead. -->
@@ -874,7 +874,7 @@
                         {:else if dirIconFallback}
                             <img class="volume-icon" src={dirIconFallback} alt="" />
                         {:else}
-                            <span class="volume-icon-placeholder">📁</span>
+                            <span class="volume-icon-placeholder"><Icon name="folder" size={16} aria-hidden="true" /></span>
                         {/if}
                         {#if fav.renamingFavoriteId === volume.id}
                             <input
@@ -895,7 +895,7 @@
                             </span>
                         {/if}
                         {#if volume.isReadOnly}
-                            <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}>🔒</span>
+                            <span class="read-only-indicator" use:tooltip={tString('fileExplorer.navigation.readOnlyTooltip')}><Icon name="lock" size={14} aria-hidden="true" /></span>
                         {/if}
                         {#if volume.smbConnectionState}
                             <span
@@ -1015,7 +1015,7 @@
                             requestVolumeRefresh()
                         }}
                     >
-                        <span class="timeout-retry-icon" class:is-retrying={volumesRefreshing}>↻</span>
+                        <span class="timeout-retry-icon" class:is-retrying={volumesRefreshing}><Icon name="rotate-cw" size={14} aria-hidden="true" /></span>
                     </button>
                 </div>
             {/if}
@@ -1088,8 +1088,9 @@
     }
 
     .icon-emoji {
-        font-size: var(--font-size-md);
-        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        color: var(--color-text-secondary);
     }
 
     .chevron {
@@ -1177,10 +1178,12 @@
     }
 
     .volume-icon-placeholder {
-        font-size: var(--font-size-md);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: var(--spacing-icon-size);
-        text-align: center;
         flex-shrink: 0;
+        color: var(--color-text-secondary);
     }
 
     .volume-label {
@@ -1253,8 +1256,10 @@
     }
 
     .checkmark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: calc(14px * var(--font-scale));
-        font-size: var(--font-size-sm);
         flex-shrink: 0;
     }
 
@@ -1264,7 +1269,8 @@
     }
 
     .read-only-indicator {
-        font-size: var(--font-size-sm);
+        display: inline-flex;
+        align-items: center;
         margin-left: auto;
         opacity: 0.7;
     }
@@ -1380,9 +1386,14 @@
         cursor: not-allowed;
     }
 
+    .timeout-retry-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     /*noinspection CssUnusedSymbol*/
     .timeout-retry-icon.is-retrying {
-        display: inline-block;
         animation: spin 0.8s linear infinite;
     }
 

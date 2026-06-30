@@ -3,6 +3,7 @@
  */
 
 import type { MessageKey } from '$lib/intl/keys.gen'
+import type { IconName } from '$lib/ui/icons/icon-map'
 
 // ============================================================================
 // Core Types
@@ -16,6 +17,8 @@ export interface EnumOption {
   value: string | number
   label: string
   description?: string
+  /** Optional Lucide glyph rendered before the label (toggle-group options only). */
+  icon?: IconName
 }
 
 // ============================================================================
@@ -33,6 +36,8 @@ export interface EnumOptionSource {
   value: string | number
   labelKey: MessageKey
   descriptionKey?: MessageKey
+  /** Optional Lucide glyph rendered before the label (toggle-group options only). */
+  icon?: IconName
 }
 
 /**
