@@ -139,7 +139,7 @@ export const REPRESENTATIVE_SCREENSHOTS = [
     screenshot: 'connect-to-server.png',
     note:
       'Network (SMB) connection flow. This shows the "Connect to server" surface; your string appears here or on the ' +
-      'closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is.',
+      'closely-related browsing/sign-in/reconnect states reached from it.',
   },
   {
     prefix: 'fileExplorer.smbReconnect.',
