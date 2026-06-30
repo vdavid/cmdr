@@ -43,22 +43,18 @@
         containerStyle="max-width: 480px"
     >
         {#snippet title()}
-            <h2 id="viewer-copy-confirm-title" class="copy-dialog-title">
-                {#if bytes === -1}
-                    {tString('viewer.copyDialog.confirmTitleUnknown')}
-                {:else}
-                    {tString('viewer.copyDialog.confirmTitleKnown', { size: formatBytes(bytes) })}
-                {/if}
-            </h2>
+            {#if bytes === -1}
+                {tString('viewer.copyDialog.confirmTitleUnknown')}
+            {:else}
+                {tString('viewer.copyDialog.confirmTitleKnown', { size: formatBytes(bytes) })}
+            {/if}
         {/snippet}
-        <div class="copy-dialog-body-wrap">
-            <p class="copy-dialog-body">{tString('viewer.copyDialog.confirmBody')}</p>
-            <div class="copy-dialog-actions">
-                <Button variant="secondary" onclick={onCancelConfirm}>{tString('viewer.copyDialog.cancel')}</Button>
-                <Button variant="secondary" onclick={onSaveAs}>{tString('viewer.copyDialog.saveAsFile')}</Button>
-                <Button variant="primary" autoFocus onclick={onProceedConfirm}>{tString('viewer.copyDialog.copy')}</Button>
-            </div>
-        </div>
+        <p class="copy-dialog-body">{tString('viewer.copyDialog.confirmBody')}</p>
+        {#snippet footer()}
+            <Button variant="secondary" onclick={onCancelConfirm}>{tString('viewer.copyDialog.cancel')}</Button>
+            <Button variant="secondary" onclick={onSaveAs}>{tString('viewer.copyDialog.saveAsFile')}</Button>
+            <Button variant="primary" autoFocus onclick={onProceedConfirm}>{tString('viewer.copyDialog.copy')}</Button>
+        {/snippet}
     </ModalDialog>
 {/if}
 
@@ -71,45 +67,24 @@
         containerStyle="max-width: 480px"
     >
         {#snippet title()}
-            <h2 id="viewer-copy-refuse-title" class="copy-dialog-title">
-                {tString('viewer.copyDialog.confirmTitleKnown', { size: formatBytes(bytes) })}
-            </h2>
+            {tString('viewer.copyDialog.confirmTitleKnown', { size: formatBytes(bytes) })}
         {/snippet}
-        <div class="copy-dialog-body-wrap">
-            <p class="copy-dialog-body">
-                {tString('viewer.copyDialog.refuseBody')}
-            </p>
-            <div class="copy-dialog-actions">
-                <Button variant="secondary" onclick={onDismissRefuse}>{tString('viewer.copyDialog.cancel')}</Button>
-                <Button variant="primary" autoFocus onclick={onSaveAs}>{tString('viewer.copyDialog.saveAsFile')}</Button>
-            </div>
-        </div>
+        <p class="copy-dialog-body">
+            {tString('viewer.copyDialog.refuseBody')}
+        </p>
+        {#snippet footer()}
+            <Button variant="secondary" onclick={onDismissRefuse}>{tString('viewer.copyDialog.cancel')}</Button>
+            <Button variant="primary" autoFocus onclick={onSaveAs}>{tString('viewer.copyDialog.saveAsFile')}</Button>
+        {/snippet}
     </ModalDialog>
 {/if}
 
 <style>
-    .copy-dialog-title {
-        font-size: var(--font-size-lg);
-        font-weight: 600;
-        text-align: center;
-        margin: 0;
-    }
-
-    /* Matches the AlertDialog body wrapper: design-system § Dialogs body padding 0 24px 24px. */
-    .copy-dialog-body-wrap {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
-    }
-
     .copy-dialog-body {
+        padding: 0 var(--spacing-xl);
         font-size: var(--font-size-md);
         line-height: 1.4;
         color: var(--color-text-secondary);
-        margin: 0 0 var(--spacing-xl);
-    }
-
-    .copy-dialog-actions {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: flex-end;
+        margin: 0;
     }
 </style>

@@ -305,28 +305,27 @@
                 {/if}
             </div>
         {/if}
-
-        <div class="button-row">
-            <Button variant="secondary" onclick={onCancel}>{tString('fileOperations.button.cancel')}</Button>
-            <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}
-                >{tString('fileOperations.button.ok')}</Button
-            >
-        </div>
     </div>
+
+    {#snippet footer()}
+        <Button variant="secondary" onclick={onCancel}>{tString('fileOperations.button.cancel')}</Button>
+        <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || isChecking}
+            >{tString('fileOperations.button.ok')}</Button
+        >
+    {/snippet}
 </ModalDialog>
 
 {#snippet dir(children: import('svelte').Snippet)}<span class="dir-name">{@render children()}</span>{/snippet}
 
 <style>
     .dialog-body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
+        padding: 0 var(--spacing-xl);
     }
 
     .subtitle {
         margin: 0 0 var(--spacing-lg);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        text-align: center;
     }
 
     .dir-name {
@@ -392,12 +391,6 @@
         display: flex;
         gap: var(--spacing-sm);
         justify-content: flex-end;
-    }
-
-    .button-row {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: center;
     }
 
     .ai-suggestions {

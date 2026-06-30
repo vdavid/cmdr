@@ -584,11 +584,10 @@
         </div>
     {/if}
 
-    <!-- Buttons (centered) -->
-    <div class="button-row">
+    {#snippet footer()}
         <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
         <Button variant="primary" onclick={handleConfirm} disabled={!!pathError}>{confirmLabel}</Button>
-    </div>
+    {/snippet}
 </ModalDialog>
 
 {#snippet written(children: import('svelte').Snippet)}<Size bytes={bytesFound} />{@render children()}{/snippet}
@@ -665,18 +664,11 @@
         border-radius: var(--radius-sm);
     }
 
-    .button-row {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: center;
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
-    }
-
     /* Scan stats */
     .scan-stats {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         gap: var(--spacing-sm);
         padding: 0 var(--spacing-xl) var(--spacing-lg);
         font-size: var(--font-size-sm);
@@ -720,7 +712,7 @@
     .conflicts-checking {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         gap: var(--spacing-sm);
         padding: 0 var(--spacing-xl) var(--spacing-md);
         font-size: var(--font-size-sm);
@@ -742,7 +734,6 @@
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-md);
         color: var(--color-warning);
-        text-align: center;
         font-weight: 500;
     }
 
@@ -752,7 +743,6 @@
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-        text-align: center;
     }
 
     /* Cross-type "Overwrite all" guardrail. Mirrors the per-file dialog's red
@@ -783,7 +773,7 @@
     .conflict-policy {
         display: flex;
         flex-wrap: wrap;
-        justify-content: center;
+        justify-content: flex-start;
         column-gap: var(--spacing-lg);
         row-gap: var(--spacing-sm);
     }
@@ -807,7 +797,7 @@
     /* Copy/Move segmented control */
     .operation-toggle {
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
         gap: 0;
         padding: 0 var(--spacing-xl) var(--spacing-md);
     }

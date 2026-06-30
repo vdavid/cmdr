@@ -23,21 +23,17 @@
 
 <div class="direction-indicator">
     {#if direction === 'right'}
-        <span class="folder-name left-side source" use:tooltip={{ text: sourcePath, overflowOnly: true }}
-            >{sourceName}</span
-        >
+        <span class="folder-name source" use:tooltip={{ text: sourcePath, overflowOnly: true }}>{sourceName}</span>
         <span class="arrow">&#x2192;</span>
-        <span class="folder-name right-side destination" use:tooltip={{ text: destinationPath, overflowOnly: true }}
+        <span class="folder-name destination" use:tooltip={{ text: destinationPath, overflowOnly: true }}
             >{destinationName}</span
         >
     {:else}
-        <span class="folder-name left-side destination" use:tooltip={{ text: destinationPath, overflowOnly: true }}
+        <span class="folder-name destination" use:tooltip={{ text: destinationPath, overflowOnly: true }}
             >{destinationName}</span
         >
         <span class="arrow">&#x2190;</span>
-        <span class="folder-name right-side source" use:tooltip={{ text: sourcePath, overflowOnly: true }}
-            >{sourceName}</span
-        >
+        <span class="folder-name source" use:tooltip={{ text: sourcePath, overflowOnly: true }}>{sourceName}</span>
     {/if}
 </div>
 
@@ -45,29 +41,22 @@
     .direction-indicator {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         gap: var(--spacing-md);
         padding: var(--spacing-sm) var(--spacing-lg);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
     }
 
+    /* Content-width so the source → destination group reads left-aligned; each name
+       shrinks with an ellipsis when the row is tight, rather than padding out to fill. */
     .folder-name {
-        flex: 1;
+        flex: 0 1 auto;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         font-weight: 500;
-    }
-
-    /* Position-based alignment to keep arrow centered */
-    .folder-name.left-side {
-        text-align: right;
-    }
-
-    .folder-name.right-side {
-        text-align: left;
     }
 
     /* Color based on source/destination */

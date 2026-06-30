@@ -128,22 +128,21 @@
                 <span>{t('crashReporter.dialog.attachEmail', { email: contactEmail })}</span>
             </label>
         {/if}
-
-        <!-- Actions -->
-        <div class="button-row">
-            <Button variant="secondary" onclick={handleDismiss} disabled={sending}
-                >{tString('crashReporter.dialog.dismiss')}</Button
-            >
-            <Button variant="primary" onclick={() => void handleSend()} disabled={sending}>
-                {sending ? tString('crashReporter.dialog.sending') : tString('crashReporter.dialog.send')}
-            </Button>
-        </div>
     </div>
+
+    {#snippet footer()}
+        <Button variant="secondary" onclick={handleDismiss} disabled={sending}
+            >{tString('crashReporter.dialog.dismiss')}</Button
+        >
+        <Button variant="primary" onclick={() => void handleSend()} disabled={sending}>
+            {sending ? tString('crashReporter.dialog.sending') : tString('crashReporter.dialog.send')}
+        </Button>
+    {/snippet}
 </ModalDialog>
 
 <style>
     .body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
+        padding: 0 var(--spacing-xl);
     }
 
     .description {
@@ -251,11 +250,5 @@
 
     .always-send input[type='checkbox'] {
         accent-color: var(--color-accent);
-    }
-
-    .button-row {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: center;
     }
 </style>

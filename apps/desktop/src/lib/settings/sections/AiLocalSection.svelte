@@ -553,15 +553,15 @@
                     {t('ai.local.deleteConfirmMessage', { modelSize: status?.modelSizeFormatted ?? '2.0 GB' })}
                 </p>
             {/if}
-            <div class="confirm-buttons">
-                <Button variant="secondary" disabled={isDeleting} onclick={() => (showDeleteConfirm = false)}
-                    >{tString('ai.local.cancel')}</Button
-                >
-                <Button variant="danger" disabled={isDeleting} onclick={() => void handleDeleteModel()}>
-                    {isDeleting ? tString('ai.local.deleteButtonDeleting') : tString('ai.local.deleteButton')}
-                </Button>
-            </div>
         </div>
+        {#snippet footer()}
+            <Button variant="secondary" disabled={isDeleting} onclick={() => (showDeleteConfirm = false)}
+                >{tString('ai.local.cancel')}</Button
+            >
+            <Button variant="danger" disabled={isDeleting} onclick={() => void handleDeleteModel()}>
+                {isDeleting ? tString('ai.local.deleteButtonDeleting') : tString('ai.local.deleteButton')}
+            </Button>
+        {/snippet}
     </ModalDialog>
 {/if}
 
@@ -754,21 +754,14 @@
 
     /* Delete confirmation dialog */
     .confirm-body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
+        padding: 0 var(--spacing-xl);
     }
 
     .confirm-message {
-        margin: 0 0 var(--spacing-lg);
+        margin: 0;
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        text-align: center;
         line-height: 1.4;
-    }
-
-    .confirm-buttons {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: flex-end;
     }
 
     .deleting-status {

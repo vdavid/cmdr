@@ -44,17 +44,17 @@
         </div>
 
         <p class="help-text">{tString('mtp.permissionDialog.helpText')}</p>
-
-        <div class="actions">
-            <Button variant="secondary" onclick={onClose}>{tString('mtp.permissionDialog.close')}</Button>
-            <Button variant="primary" onclick={onRetry}>{tString('mtp.permissionDialog.retry')}</Button>
-        </div>
     </div>
+
+    {#snippet footer()}
+        <Button variant="secondary" onclick={onClose}>{tString('mtp.permissionDialog.close')}</Button>
+        <Button variant="primary" onclick={onRetry}>{tString('mtp.permissionDialog.retry')}</Button>
+    {/snippet}
 </ModalDialog>
 
 <style>
     .dialog-body {
-        padding: 0 var(--spacing-2xl) var(--spacing-xl);
+        padding: 0 var(--spacing-xl);
     }
 
     .description {
@@ -80,11 +80,5 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         line-height: 1.5;
-    }
-
-    .actions {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: flex-end;
     }
 </style>

@@ -102,19 +102,19 @@
         {/if}
     </div>
 
-    <div class="button-row">
+    {#snippet footer()}
         {#if onRetry && showRetry}
             <Button variant="secondary" onclick={onRetry}>{tString('fileOperations.errorDialog.retry')}</Button>
         {/if}
         <Button variant="primary" onclick={onClose}>{tString('fileOperations.errorDialog.close')}</Button>
-    </div>
+    {/snippet}
 </ModalDialog>
 
 <style>
     .error-title-content {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         gap: var(--spacing-md);
     }
 
@@ -201,12 +201,5 @@
     .details-text:focus {
         outline: none;
         border-color: var(--color-accent);
-    }
-
-    .button-row {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: center;
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
     }
 </style>

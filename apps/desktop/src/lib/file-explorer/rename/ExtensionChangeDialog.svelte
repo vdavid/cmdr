@@ -50,10 +50,10 @@
         <span>{tString('fileExplorer.extensionChange.alwaysAllow')}</span>
     </label>
 
-    <div class="button-row">
+    {#snippet footer()}
         <Button variant="secondary" onclick={onKeepOld}>{tString('fileExplorer.extensionChange.keepOld', { oldExt: oldExtension })}</Button>
         <Button variant="primary" onclick={handleUseNew}>{tString('fileExplorer.extensionChange.useNew', { newExt: newExtension })}</Button>
-    </div>
+    {/snippet}
 </ModalDialog>
 
 <style>
@@ -78,12 +78,5 @@
     .always-allow input[type='checkbox'] {
         margin: 0;
         cursor: default;
-    }
-
-    .button-row {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: center;
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
     }
 </style>

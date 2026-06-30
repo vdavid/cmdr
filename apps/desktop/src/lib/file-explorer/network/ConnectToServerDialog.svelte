@@ -89,23 +89,24 @@
             {/if}
         </div>
 
-        <div class="button-row">
-            <Button variant="secondary" onclick={onClose}>{tString('fileExplorer.network.cancel')}</Button>
-            <Button variant="primary" onclick={() => void handleSubmit()} disabled={!canSubmit}>
-                {#if dialogState === 'connecting'}
-                    <Spinner size="sm" />
-                    {tString('fileExplorer.network.connecting')}
-                {:else}
-                    {tString('fileExplorer.network.connect')}
-                {/if}
-            </Button>
-        </div>
     </div>
+
+    {#snippet footer()}
+        <Button variant="secondary" onclick={onClose}>{tString('fileExplorer.network.cancel')}</Button>
+        <Button variant="primary" onclick={() => void handleSubmit()} disabled={!canSubmit}>
+            {#if dialogState === 'connecting'}
+                <Spinner size="sm" />
+                {tString('fileExplorer.network.connecting')}
+            {:else}
+                {tString('fileExplorer.network.connect')}
+            {/if}
+        </Button>
+    {/snippet}
 </ModalDialog>
 
 <style>
     .dialog-body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
+        padding: 0 var(--spacing-xl);
     }
 
     .input-group {
@@ -155,11 +156,5 @@
         margin: var(--spacing-sm) 0 0;
         font-size: var(--font-size-sm);
         color: var(--color-error);
-    }
-
-    .button-row {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: center;
     }
 </style>

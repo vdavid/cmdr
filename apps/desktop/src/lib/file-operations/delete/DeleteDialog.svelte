@@ -349,11 +349,10 @@
         <div class="scan-current-dir" use:useShortenMiddle={{ text: currentDir, preferBreakAt: '/' }}></div>
     {/if}
 
-    <!-- Buttons -->
-    <div class="button-row">
+    {#snippet footer()}
         <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
         <Button variant={confirmVariant} onclick={handleConfirm}>{confirmLabel}</Button>
-    </div>
+    {/snippet}
 </ModalDialog>
 
 {#snippet size(children: import('svelte').Snippet)}<Size bytes={bytesPerSec ?? 0} />{@render children()}{/snippet}
@@ -364,7 +363,6 @@
         margin-bottom: var(--spacing-md);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
-        text-align: center;
     }
 
     /* No-trash warning banner */
@@ -445,7 +443,6 @@
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
         font-style: italic;
-        text-align: center;
     }
 
     /* Symlink notice */
@@ -469,7 +466,7 @@
     .scan-stats {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         gap: var(--spacing-sm);
         padding: 0 var(--spacing-xl) var(--spacing-lg);
         font-size: var(--font-size-sm);
@@ -504,7 +501,7 @@
 
     .scan-throughput {
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
         gap: var(--spacing-xs);
         padding: 0 var(--spacing-xl);
         margin-bottom: var(--spacing-sm);
@@ -531,18 +528,10 @@
         border-radius: var(--radius-sm);
     }
 
-    /* Buttons */
-    .button-row {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: center;
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
-    }
-
     /* Trash/Delete segmented control */
     .operation-toggle {
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
         gap: 0;
         padding: 0 var(--spacing-xl) var(--spacing-md);
     }

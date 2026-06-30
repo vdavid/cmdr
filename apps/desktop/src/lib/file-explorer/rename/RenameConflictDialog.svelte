@@ -184,7 +184,7 @@
     .button-row {
         display: flex;
         gap: var(--spacing-md);
-        justify-content: center;
+        justify-content: flex-end;
         padding: 0 var(--spacing-xl) var(--spacing-sm);
     }
 

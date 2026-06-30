@@ -52,14 +52,24 @@ Props:
 | Prop             | Type                          | Notes                                                                 |
 | ---------------- | ----------------------------- | --------------------------------------------------------------------- |
 | `titleId`        | `string`                      | Used for `aria-labelledby`                                            |
-| `title`          | Snippet                       | Rendered as `<h2>` in the title bar                                   |
+| `title`          | Snippet                       | Rendered as `<h2>` in the title bar (left-aligned)                    |
 | `children`       | Snippet                       | Dialog body                                                           |
+| `footer`         | Snippet?                      | Action buttons, rendered in a right-aligned `.modal-footer`           |
 | `dialogId`       | `SoftDialogId?`               | Auto-calls `notifyDialogOpened`/`notifyDialogClosed` on mount/destroy |
 | `onclose`        | `() => void`?                 | Renders × button; also called on Escape                               |
 | `draggable`      | `boolean`                     | Default `true`. Title bar drag moves the dialog.                      |
 | `blur`           | `boolean`                     | `true` → 0.6 opacity + `backdrop-filter: blur(4px)` overlay           |
 | `containerStyle` | `string`                      | Inline style appended to the dialog element (for sizing, colors)      |
 | `role`           | `'dialog'` \| `'alertdialog'` | Default `'dialog'`                                                    |
+
+**Layout convention (macOS-style).** Title and body text are LEFT-aligned; action buttons are RIGHT-aligned with the
+primary action last (rightmost). Pass buttons via the `footer` snippet — `ModalDialog` renders them in a `.modal-footer`
+that owns the right-alignment, gap, and the dialog's bottom padding, so callers don't hand-roll a button-row. The title
+bar's top padding matches the footer's bottom padding (`--spacing-xl`) for vertical balance; bodies use `0
+var(--spacing-xl)` side padding so title, body, and buttons line up flush at the same left inset. A dialog with a custom
+button layout (multiple rows, a left-side helper, equal-width buttons) keeps its buttons in `children` and right-aligns
+them itself; genuinely centered content (spinners, progress bars, numeric readouts, hero panels like `AboutWindow`)
+stays centered.
 
 The overlay element receives `tabindex="-1"` and is focused on mount so Escape/keydown events are captured without a
 visible focus ring on the scrim. The overlay also carries `use:trapFocus={{ onEscape: onclose }}` (see § "Focus

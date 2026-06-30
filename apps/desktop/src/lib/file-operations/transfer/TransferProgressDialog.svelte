@@ -457,7 +457,7 @@
              both buttons during the MIN_DISPLAY_MS hold-open window. Without this, the user can
              click Rollback after the copy completed and silently get nothing. -->
         <div class="button-row">
-            <!-- Manage controls (left): Pause/Resume keeps the op alive but parked;
+            <!-- Manage controls: Pause/Resume keeps the op alive but parked;
                  Queue sends it to the background and opens the queue window (also
                  F2 while this dialog is focused). Both show only during the active
                  copy/move/delete phases (`canPauseOrQueue`). -->
@@ -654,13 +654,12 @@
         color: var(--color-warning-text);
         background: var(--color-warning-bg);
         border-radius: var(--radius-sm);
-        text-align: center;
     }
 
     .button-row {
         display: flex;
         gap: var(--spacing-md);
-        justify-content: center;
+        justify-content: flex-end;
         flex-wrap: wrap;
         padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
     }

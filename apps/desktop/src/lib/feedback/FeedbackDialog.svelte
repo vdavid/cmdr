@@ -173,26 +173,19 @@
         {#if sendFailedMessage}
             <p class="status status-error" role="alert">{sendFailedMessage}</p>
         {/if}
-
-        <div class="button-row">
-            <span class="spacer"></span>
-            <Button variant="secondary" onclick={handleClose} disabled={sending}
-                >{tString('feedback.dialog.cancel')}</Button
-            >
-            <Button
-                variant="primary"
-                onclick={() => void handleSend()}
-                disabled={sending || isEmpty || overLimit}
-            >
-                {sending ? tString('feedback.dialog.sending') : tString('feedback.dialog.send')}
-            </Button>
-        </div>
     </div>
+
+    {#snippet footer()}
+        <Button variant="secondary" onclick={handleClose} disabled={sending}>{tString('feedback.dialog.cancel')}</Button>
+        <Button variant="primary" onclick={() => void handleSend()} disabled={sending || isEmpty || overLimit}>
+            {sending ? tString('feedback.dialog.sending') : tString('feedback.dialog.send')}
+        </Button>
+    {/snippet}
 </ModalDialog>
 
 <style>
     .body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
+        padding: 0 var(--spacing-xl);
     }
 
     .description {
@@ -272,15 +265,5 @@
 
     .status-error {
         color: var(--color-error);
-    }
-
-    .button-row {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-md);
-    }
-
-    .spacer {
-        flex: 1;
     }
 </style>

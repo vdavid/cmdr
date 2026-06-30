@@ -31,29 +31,19 @@
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
-    <div class="alert-body">
-        <p id="alert-dialog-message" class="message">{message}</p>
-        <div class="button-row">
-            <Button variant="primary" onclick={onClose}>{resolvedButtonText}</Button>
-        </div>
-    </div>
+    <p id="alert-dialog-message" class="message">{message}</p>
+
+    {#snippet footer()}
+        <Button variant="primary" onclick={onClose}>{resolvedButtonText}</Button>
+    {/snippet}
 </ModalDialog>
 
 <style>
-    .alert-body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
-    }
-
     .message {
-        margin: 0 0 var(--spacing-lg);
+        margin: 0;
+        padding: 0 var(--spacing-xl);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        text-align: center;
         line-height: 1.5;
-    }
-
-    .button-row {
-        display: flex;
-        justify-content: center;
     }
 </style>

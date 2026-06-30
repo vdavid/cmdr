@@ -211,7 +211,7 @@
     .footer {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-end;
         gap: var(--spacing-md);
         margin-top: var(--spacing-lg);
         padding-top: var(--spacing-md);

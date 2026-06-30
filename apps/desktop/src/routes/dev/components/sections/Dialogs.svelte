@@ -67,7 +67,7 @@
                     </div>
                     <div class="dp-body">
                         <p class="dp-message">The settings file is read-only. Check folder permissions.</p>
-                        <div class="dp-button-row dp-center">
+                        <div class="dp-button-row">
                             <span class="dp-stub-btn dp-stub-primary">OK</span>
                         </div>
                     </div>
@@ -97,17 +97,17 @@
         {#snippet title()}Modal dialog preview{/snippet}
         <div class="real-body">
             <p>This is the real ModalDialog mounted on demand.</p>
-            <div class="real-button-row">
-                <Button
-                    variant="primary"
-                    onclick={() => {
-                        modalOpen = false
-                    }}
-                >
-                    Close
-                </Button>
-            </div>
         </div>
+        {#snippet footer()}
+            <Button
+                variant="primary"
+                onclick={() => {
+                    modalOpen = false
+                }}
+            >
+                Close
+            </Button>
+        {/snippet}
     </ModalDialog>
 {/if}
 
@@ -123,17 +123,17 @@
         {#snippet title()}Modal dialog with blur{/snippet}
         <div class="real-body">
             <p>Backdrop uses `backdrop-filter: blur(4px)`.</p>
-            <div class="real-button-row">
-                <Button
-                    variant="primary"
-                    onclick={() => {
-                        modalBlurOpen = false
-                    }}
-                >
-                    Close
-                </Button>
-            </div>
         </div>
+        {#snippet footer()}
+            <Button
+                variant="primary"
+                onclick={() => {
+                    modalBlurOpen = false
+                }}
+            >
+                Close
+            </Button>
+        {/snippet}
     </ModalDialog>
 {/if}
 
@@ -187,7 +187,7 @@
     }
 
     .dp-titlebar {
-        padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-sm);
+        padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-md);
     }
 
     .dp-title {
@@ -195,7 +195,7 @@
         font-size: var(--font-size-lg);
         font-weight: 600;
         color: var(--color-text-primary);
-        text-align: center;
+        text-align: left;
     }
 
     .dp-body {
@@ -206,7 +206,6 @@
         margin: 0 0 var(--spacing-lg);
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        text-align: center;
         line-height: 1.5;
     }
 
@@ -214,10 +213,6 @@
         display: flex;
         gap: var(--spacing-sm);
         justify-content: flex-end;
-    }
-
-    .dp-center {
-        justify-content: center;
     }
 
     /* Decorative button stubs inside the static preview (not real buttons,
@@ -243,18 +238,12 @@
     }
 
     .real-body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
+        padding: 0 var(--spacing-xl);
     }
 
     .real-body p {
-        margin: 0 0 var(--spacing-lg);
+        margin: 0;
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
-        text-align: center;
-    }
-
-    .real-button-row {
-        display: flex;
-        justify-content: center;
     }
 </style>

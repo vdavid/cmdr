@@ -258,19 +258,19 @@
                 {/each}
             </ul>
         {/if}
-
-        <div class="button-row">
-            <Button variant="secondary" onclick={onCancel}>{tString('goToPath.dialog.cancel')}</Button>
-            <Button variant="primary" onclick={() => void confirmGo()} disabled={!canGo || isGoing}
-                >{tString('goToPath.dialog.confirm')}</Button
-            >
-        </div>
     </div>
+
+    {#snippet footer()}
+        <Button variant="secondary" onclick={onCancel}>{tString('goToPath.dialog.cancel')}</Button>
+        <Button variant="primary" onclick={() => void confirmGo()} disabled={!canGo || isGoing}
+            >{tString('goToPath.dialog.confirm')}</Button
+        >
+    {/snippet}
 </ModalDialog>
 
 <style>
     .dialog-body {
-        padding: 0 var(--spacing-xl) var(--spacing-xl);
+        padding: 0 var(--spacing-xl);
     }
 
     .input-group {
@@ -391,11 +391,5 @@
     .remove-button:focus-visible {
         outline: none;
         box-shadow: var(--shadow-focus);
-    }
-
-    .button-row {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: flex-end;
     }
 </style>

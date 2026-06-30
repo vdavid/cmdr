@@ -391,7 +391,7 @@
                 {/if}
             </div>
 
-            <div class="button-row details-buttons">
+            <div class="button-row">
                 <Button variant="secondary" onclick={() => (isConfirmingReset = true)}
                     >{tString('licensing.dialog.useDifferentKey')}</Button
                 >
@@ -622,10 +622,6 @@
     .button-row {
         display: flex;
         gap: var(--spacing-md);
-        justify-content: center;
-    }
-
-    .button-row.details-buttons {
-        justify-content: center;
+        justify-content: flex-end;
     }
 </style>

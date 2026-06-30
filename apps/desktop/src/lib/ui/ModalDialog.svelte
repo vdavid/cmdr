@@ -11,6 +11,12 @@
         onkeydown?: (event: KeyboardEvent) => void
         title: Snippet
         children: Snippet
+        /**
+         * Action buttons, rendered in a right-aligned footer to match macOS.
+         * Put the primary action last (rightmost). When omitted, no footer renders
+         * (dialogs that own a custom button layout still place buttons in `children`).
+         */
+        footer?: Snippet
         /** MCP dialog tracking: sends notifyDialogOpened/Closed on mount/destroy */
         dialogId?: SoftDialogId
         role?: 'dialog' | 'alertdialog'
@@ -29,6 +35,7 @@
         onkeydown,
         title,
         children,
+        footer,
         dialogId,
         role = 'dialog',
         draggable = true,
@@ -149,6 +156,11 @@
             </h2>
         </div>
         {@render children()}
+        {#if footer}
+            <div class="modal-footer">
+                {@render footer()}
+            </div>
+        {/if}
     </div>
 </div>
 
@@ -209,8 +221,11 @@
         cursor: move;
     }
 
+    /* Top padding matches the footer's bottom padding (`--spacing-xl`) so the dialog
+       is vertically balanced; `--spacing-md` below the title gives it ~half a line of
+       breathing room before the body. */
     .dialog-title-bar {
-        padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-sm);
+        padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-md);
         user-select: none;
     }
 
@@ -223,6 +238,15 @@
         font-size: var(--font-size-lg);
         font-weight: 600;
         color: var(--color-text-primary);
-        text-align: center;
+        text-align: left;
+    }
+
+    /* Right-aligned action footer (macOS convention: primary action rightmost).
+       Owns the dialog's bottom padding so callers don't repeat per-dialog button-row CSS. */
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md) var(--spacing-xl) var(--spacing-xl);
     }
 </style>

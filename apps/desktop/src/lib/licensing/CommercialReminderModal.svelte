@@ -53,7 +53,7 @@
 
 <style>
     .modal-body {
-        padding: var(--spacing-md) var(--spacing-2xl) var(--spacing-xl);
+        padding: 0 var(--spacing-xl) var(--spacing-xl);
     }
 
     .message {

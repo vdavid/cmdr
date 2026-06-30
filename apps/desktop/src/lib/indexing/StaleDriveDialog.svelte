@@ -73,22 +73,22 @@
             <p id="drive-index-stale-body" class="description">
                 {t('indexing.staleDialog.body', { name: staleVolumeName })}
             </p>
-
-            <div class="button-row">
-                <Button variant="secondary" onclick={neverShowAgain}>
-                    {tString('indexing.staleDialog.neverShowAgain')}
-                </Button>
-                <Button variant="primary" autoFocus onclick={close}>
-                    {tString('indexing.staleDialog.close')}
-                </Button>
-            </div>
         </div>
+
+        {#snippet footer()}
+            <Button variant="secondary" onclick={neverShowAgain}>
+                {tString('indexing.staleDialog.neverShowAgain')}
+            </Button>
+            <Button variant="primary" autoFocus onclick={close}>
+                {tString('indexing.staleDialog.close')}
+            </Button>
+        {/snippet}
     </ModalDialog>
 {/if}
 
 <style>
     .body {
-        padding: var(--spacing-md);
+        padding: 0 var(--spacing-xl);
     }
 
     .description {
@@ -96,11 +96,5 @@
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         line-height: 1.5;
-    }
-
-    .button-row {
-        display: flex;
-        justify-content: flex-end;
-        gap: var(--spacing-sm);
     }
 </style>
