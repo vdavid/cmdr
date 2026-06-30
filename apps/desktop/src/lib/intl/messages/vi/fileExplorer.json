@@ -312,53 +312,41 @@
   "@fileExplorer.network.browser.status.notChecked": {
     "sourceHash": "d16948e"
   },
-  "fileExplorer.network.browser.status.loggedIn": "🔑 Đã đăng nhập{infoIcon}",
+  "fileExplorer.network.browser.status.loggedIn": "Đã đăng nhập",
   "@fileExplorer.network.browser.status.loggedIn": {
-    "sourceHash": "1e386ce"
+    "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loginFailed": "⚠️ Đăng nhập không thành công{infoIcon}",
+  "fileExplorer.network.browser.status.loginFailed": "Đăng nhập không thành công",
   "@fileExplorer.network.browser.status.loginFailed": {
-    "sourceHash": "1659c9c"
+    "sourceHash": "5a96e84"
   },
-  "fileExplorer.network.browser.status.loginNeeded": "🔒 Cần đăng nhập{infoIcon}",
+  "fileExplorer.network.browser.status.loginNeeded": "Cần đăng nhập",
   "@fileExplorer.network.browser.status.loginNeeded": {
-    "sourceHash": "bd7375e"
+    "sourceHash": "de0b59e"
   },
-  "fileExplorer.network.browser.status.timeout": "⏱️ Hết thời gian chờ{infoIcon}",
+  "fileExplorer.network.browser.status.timeout": "Hết thời gian chờ",
   "@fileExplorer.network.browser.status.timeout": {
-    "sourceHash": "3673628"
+    "sourceHash": "70594d9"
   },
-  "fileExplorer.network.browser.status.unreachable": "❌ Không kết nối được{infoIcon}",
+  "fileExplorer.network.browser.status.unreachable": "Không kết nối được",
   "@fileExplorer.network.browser.status.unreachable": {
-    "sourceHash": "1198fd4"
+    "sourceHash": "abaa46a"
   },
-  "fileExplorer.network.browser.status.error": "⚠️ Sự cố{infoIcon}",
+  "fileExplorer.network.browser.status.error": "Sự cố",
   "@fileExplorer.network.browser.status.error": {
-    "sourceHash": "de7c260"
+    "sourceHash": "54a0e8c"
   },
-  "fileExplorer.network.browser.status.loggedInOk": "✓ Đã đăng nhập",
+  "fileExplorer.network.browser.status.loggedInOk": "Đã đăng nhập",
   "@fileExplorer.network.browser.status.loggedInOk": {
-    "sourceHash": "205adc9"
+    "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loggedInOkStale": "✓ Đã đăng nhập 🔄",
-  "@fileExplorer.network.browser.status.loggedInOkStale": {
-    "sourceHash": "f83f6a1"
-  },
-  "fileExplorer.network.browser.status.guest": "✓ Khách",
+  "fileExplorer.network.browser.status.guest": "Khách",
   "@fileExplorer.network.browser.status.guest": {
-    "sourceHash": "aaa35d1"
+    "sourceHash": "5ed8944"
   },
-  "fileExplorer.network.browser.status.guestStale": "✓ Khách 🔄",
-  "@fileExplorer.network.browser.status.guestStale": {
-    "sourceHash": "1e2b875"
-  },
-  "fileExplorer.network.browser.status.connected": "✓ Đã kết nối",
+  "fileExplorer.network.browser.status.connected": "Đã kết nối",
   "@fileExplorer.network.browser.status.connected": {
-    "sourceHash": "c8c8815"
-  },
-  "fileExplorer.network.browser.status.connectedStale": "✓ Đã kết nối 🔄",
-  "@fileExplorer.network.browser.status.connectedStale": {
-    "sourceHash": "0cf4d3d"
+    "sourceHash": "2296556"
   },
   "fileExplorer.network.browser.tooltip.resolving": "Đang phân giải tên máy chủ và địa chỉ IP...",
   "@fileExplorer.network.browser.tooltip.resolving": {

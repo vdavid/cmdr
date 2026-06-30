@@ -7,6 +7,7 @@
     import { onMount, onDestroy } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
+    import type { IconName } from '$lib/ui/icons/icon-map'
     import Spinner from '$lib/ui/Spinner.svelte'
     import {
         getNetworkHosts,
@@ -41,6 +42,7 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import { triggerNetworkDiscovery } from './lazy-trigger'
     import { tString } from '$lib/intl/messages.svelte'
+    import type { MessageKey } from '$lib/intl/keys.gen'
     import Trans from '$lib/intl/Trans.svelte'
     import { formatInteger } from '$lib/intl/number-format'
 
@@ -131,7 +133,8 @@
                 const ip = getIpDisplay(host)
                 const hostname = getHostnameDisplay(host)
                 const shares = getSharesDisplay(host)
-                const status = getStatusDisplay(host)
+                // Stable, locale-independent status token (not the localized UI label).
+                const status = STATUS_MCP_LABEL[getHostStatus(host).kind]
                 return {
                     name: `${host.name}  ip=${ip}  hostname=${hostname}  source=${host.source ?? 'discovered'}  shares=${shares}  status="${status}"`,
                     path: `smb://${host.ipAddress ?? host.name}`,
@@ -367,39 +370,119 @@
         return isShareDataStale(host.id) && getShareCount(host.id) !== undefined
     }
 
-    // Helper to get error status display with icon
-    function getErrorStatusDisplay(errorType: string, hostName: string, infoIcon: string): string {
-        // Auth required - check if we have stored credentials
-        if (errorType === 'auth_required' || errorType === 'signing_required') {
-            const credStatus = getCredentialStatus(hostName)
-            if (credStatus === 'has_creds') return tString('fileExplorer.network.browser.status.loggedIn', { infoIcon })
-            if (credStatus === 'failed') return tString('fileExplorer.network.browser.status.loginFailed', { infoIcon })
-            return tString('fileExplorer.network.browser.status.loginNeeded', { infoIcon })
-        }
-        if (errorType === 'auth_failed') return tString('fileExplorer.network.browser.status.loginFailed', { infoIcon })
-        if (errorType === 'timeout') return tString('fileExplorer.network.browser.status.timeout', { infoIcon })
-        if (errorType === 'host_unreachable')
-            return tString('fileExplorer.network.browser.status.unreachable', { infoIcon })
-        return tString('fileExplorer.network.browser.status.error', { infoIcon })
+    /**
+     * One host's status as a TYPED descriptor, not a pre-rendered string. The visible cell
+     * renders an icon + localized text from `kind`; the MCP host-name encoding uses a stable
+     * locale-independent token. `stale` adds a refresh glyph on a loaded-but-stale row;
+     * `hasInfo` adds an info glyph when a tooltip explains an error state. Keeping status typed
+     * is what lets one source feed both the icon-bearing UI and the plain-text MCP feed without
+     * an emoji lowest-common-denominator (AGENTS.md § no-string-matching).
+     */
+    type HostStatusKind =
+        | 'resolving'
+        | 'waitingForNetwork'
+        | 'notChecked'
+        | 'connecting'
+        | 'loginNeeded'
+        | 'loginFailed'
+        | 'timeout'
+        | 'unreachable'
+        | 'error'
+        | 'loggedIn'
+        | 'loggedInOk'
+        | 'guest'
+        | 'connected'
+
+    interface HostStatus {
+        kind: HostStatusKind
+        stale: boolean
+        hasInfo: boolean
     }
 
-    // Helper to get status display - shows credential-aware status
-    function getStatusDisplay(host: NetworkHost): string {
+    const STATUS_TEXT_KEY: Record<HostStatusKind, MessageKey> = {
+        resolving: 'fileExplorer.network.browser.status.resolving',
+        waitingForNetwork: 'fileExplorer.network.browser.status.waitingForNetwork',
+        notChecked: 'fileExplorer.network.browser.status.notChecked',
+        connecting: 'fileExplorer.network.connecting',
+        loginNeeded: 'fileExplorer.network.browser.status.loginNeeded',
+        loginFailed: 'fileExplorer.network.browser.status.loginFailed',
+        timeout: 'fileExplorer.network.browser.status.timeout',
+        unreachable: 'fileExplorer.network.browser.status.unreachable',
+        error: 'fileExplorer.network.browser.status.error',
+        loggedIn: 'fileExplorer.network.browser.status.loggedIn',
+        loggedInOk: 'fileExplorer.network.browser.status.loggedInOk',
+        guest: 'fileExplorer.network.browser.status.guest',
+        connected: 'fileExplorer.network.browser.status.connected',
+    }
+
+    // Lucide glyph per status (null = transient/neutral states show text only).
+    const STATUS_ICON: Record<HostStatusKind, IconName | null> = {
+        resolving: null,
+        waitingForNetwork: null,
+        notChecked: null,
+        connecting: null,
+        loginNeeded: 'lock',
+        loginFailed: 'triangle-alert',
+        timeout: 'clock',
+        unreachable: 'circle-x',
+        error: 'triangle-alert',
+        loggedIn: 'key',
+        loggedInOk: 'check',
+        guest: 'check',
+        connected: 'check',
+    }
+
+    // Stable, locale-independent token for the MCP host-name encoding (agents read this token,
+    // never the localized label, so the encoding doesn't drift with the UI language).
+    const STATUS_MCP_LABEL: Record<HostStatusKind, string> = {
+        resolving: 'resolving',
+        waitingForNetwork: 'waiting_for_network',
+        notChecked: 'not_checked',
+        connecting: 'connecting',
+        loginNeeded: 'login_needed',
+        loginFailed: 'login_failed',
+        timeout: 'timeout',
+        unreachable: 'unreachable',
+        error: 'error',
+        loggedIn: 'logged_in',
+        loggedInOk: 'logged_in',
+        guest: 'guest',
+        connected: 'connected',
+    }
+
+    function errorStatusKind(errorType: string, hostName: string): HostStatusKind {
+        // Auth required - distinguish by whether we have stored credentials.
+        if (errorType === 'auth_required' || errorType === 'signing_required') {
+            const credStatus = getCredentialStatus(hostName)
+            if (credStatus === 'has_creds') return 'loggedIn'
+            if (credStatus === 'failed') return 'loginFailed'
+            return 'loginNeeded'
+        }
+        if (errorType === 'auth_failed') return 'loginFailed'
+        if (errorType === 'timeout') return 'timeout'
+        if (errorType === 'host_unreachable') return 'unreachable'
+        return 'error'
+    }
+
+    // Credential-aware status as a typed descriptor (see HostStatus).
+    function getHostStatus(host: NetworkHost): HostStatus {
         const state = getShareState(host.id)
 
         // No state yet - show helpful status
         if (!state) {
-            if (isHostResolving(host.id)) return tString('fileExplorer.network.browser.status.resolving')
-            if (!host.hostname) return tString('fileExplorer.network.browser.status.waitingForNetwork')
-            return tString('fileExplorer.network.browser.status.notChecked')
+            if (isHostResolving(host.id)) return { kind: 'resolving', stale: false, hasInfo: false }
+            if (!host.hostname) return { kind: 'waitingForNetwork', stale: false, hasInfo: false }
+            return { kind: 'notChecked', stale: false, hasInfo: false }
         }
 
-        if (state.status === 'loading') return tString('fileExplorer.network.connecting')
+        if (state.status === 'loading') return { kind: 'connecting', stale: false, hasInfo: false }
 
         if (state.status === 'error') {
-            const hasTooltip = !!getStatusTooltip(host)
-            const infoIcon = hasTooltip ? ' ℹ️' : ''
-            return getErrorStatusDisplay(state.error.type, host.name, infoIcon)
+            return {
+                kind: errorStatusKind(state.error.type, host.name),
+                stale: false,
+                hasInfo: !!getStatusTooltip(host),
+            }
         }
 
         // status === 'loaded'
@@ -407,21 +490,10 @@
         const credStatus = getCredentialStatus(host.name)
 
         // If we have credentials stored, show "Logged in" regardless of auth mode
-        if (credStatus === 'has_creds') {
-            return stale
-                ? tString('fileExplorer.network.browser.status.loggedInOkStale')
-                : tString('fileExplorer.network.browser.status.loggedInOk')
-        }
-
+        if (credStatus === 'has_creds') return { kind: 'loggedInOk', stale, hasInfo: false }
         // Guest access (no stored credentials)
-        if (state.result.authMode === 'guest_allowed') {
-            return stale
-                ? tString('fileExplorer.network.browser.status.guestStale')
-                : tString('fileExplorer.network.browser.status.guest')
-        }
-        return stale
-            ? tString('fileExplorer.network.browser.status.connectedStale')
-            : tString('fileExplorer.network.browser.status.connected')
+        if (state.result.authMode === 'guest_allowed') return { kind: 'guest', stale, hasInfo: false }
+        return { kind: 'connected', stale, hasInfo: false }
     }
 
     // Helper to check if status should be styled as an error
@@ -582,6 +654,8 @@
     </div>
     <div class="host-list" bind:this={listContainer} bind:clientHeight={containerHeight}>
         {#each hosts as host, index (host.id)}
+            {@const hostStatus = getHostStatus(host)}
+            {@const statusIcon = STATUS_ICON[hostStatus.kind]}
             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
             <div
                 class="host-row"
@@ -618,8 +692,13 @@
                     class="col-status"
                     class:is-error={isStatusError(host)}
                     class:needs-login={!isStatusError(host) && getShareState(host.id)?.status === 'error'}
-                    use:tooltip={getStatusTooltip(host)}>{getStatusDisplay(host)}</span
+                    use:tooltip={getStatusTooltip(host)}
                 >
+                    {#if statusIcon}<Icon name={statusIcon} size={13} aria-hidden="true" />{/if}
+                    <span class="status-text">{tString(STATUS_TEXT_KEY[hostStatus.kind])}</span>
+                    {#if hostStatus.stale}<Icon name="rotate-cw" size={12} aria-hidden="true" />{/if}
+                    {#if hostStatus.hasInfo}<Icon name="info" size={12} aria-hidden="true" />{/if}
+                </span>
             </div>
         {/each}
 
@@ -747,8 +826,11 @@
 
     .col-status {
         flex: 2.5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-xxs);
         color: var(--color-text-tertiary);
-        text-align: center;
     }
 
     .host-icon {

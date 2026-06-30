@@ -15,6 +15,8 @@
         circle: 'Waiting (not-started) step marker in the drive-indexing checklist.',
         'circle-alert': 'Serious-error marker in the error pane, the transfer error dialog, inline error rows, and the SMB share-list error state.',
         'circle-check': 'Done step marker in the drive-indexing checklist.',
+        'circle-x': 'Unreachable-host status marker in the network (SMB) browser.',
+        clock: 'Timed-out-host status marker in the network (SMB) browser.',
         copy: 'Type marker for a copy operation row in the transfer queue window.',
         'corner-down-left': 'Back-to-presets button in the settings custom-value input (returns to the preset dropdown).',
         eject: 'Eject control for removable and network volumes in the volume breadcrumb.',

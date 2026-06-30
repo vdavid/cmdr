@@ -8,6 +8,8 @@ import IconChevronsUpDown from '~icons/lucide/chevrons-up-down'
 import IconCircle from '~icons/lucide/circle'
 import IconCircleAlert from '~icons/lucide/circle-alert'
 import IconCircleCheck from '~icons/lucide/circle-check'
+import IconCircleX from '~icons/lucide/circle-x'
+import IconClock from '~icons/lucide/clock'
 import IconCopy from '~icons/lucide/copy'
 import IconCornerDownLeft from '~icons/lucide/corner-down-left'
 import IconEye from '~icons/lucide/eye'
@@ -64,6 +66,8 @@ export const ICON_COMPONENTS = {
   circle: IconCircle,
   'circle-alert': IconCircleAlert,
   'circle-check': IconCircleCheck,
+  'circle-x': IconCircleX,
+  clock: IconClock,
   copy: IconCopy,
   'corner-down-left': IconCornerDownLeft,
   eject: EjectIcon,

@@ -313,53 +313,41 @@
   "@fileExplorer.network.browser.status.notChecked": {
     "sourceHash": "d16948e"
   },
-  "fileExplorer.network.browser.status.loggedIn": "🔑 Sessão iniciada{infoIcon}",
+  "fileExplorer.network.browser.status.loggedIn": "Sessão iniciada",
   "@fileExplorer.network.browser.status.loggedIn": {
-    "sourceHash": "1e386ce"
+    "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loginFailed": "⚠️ Não foi possível iniciar a sessão{infoIcon}",
+  "fileExplorer.network.browser.status.loginFailed": "Não foi possível iniciar a sessão",
   "@fileExplorer.network.browser.status.loginFailed": {
-    "sourceHash": "1659c9c"
+    "sourceHash": "5a96e84"
   },
-  "fileExplorer.network.browser.status.loginNeeded": "🔒 Sessão necessária{infoIcon}",
+  "fileExplorer.network.browser.status.loginNeeded": "Sessão necessária",
   "@fileExplorer.network.browser.status.loginNeeded": {
-    "sourceHash": "bd7375e"
+    "sourceHash": "de0b59e"
   },
-  "fileExplorer.network.browser.status.timeout": "⏱️ Tempo esgotado{infoIcon}",
+  "fileExplorer.network.browser.status.timeout": "Tempo esgotado",
   "@fileExplorer.network.browser.status.timeout": {
-    "sourceHash": "3673628"
+    "sourceHash": "70594d9"
   },
-  "fileExplorer.network.browser.status.unreachable": "❌ Inacessível{infoIcon}",
+  "fileExplorer.network.browser.status.unreachable": "Inacessível",
   "@fileExplorer.network.browser.status.unreachable": {
-    "sourceHash": "1198fd4"
+    "sourceHash": "abaa46a"
   },
-  "fileExplorer.network.browser.status.error": "⚠️ Problema{infoIcon}",
+  "fileExplorer.network.browser.status.error": "Problema",
   "@fileExplorer.network.browser.status.error": {
-    "sourceHash": "de7c260"
+    "sourceHash": "54a0e8c"
   },
-  "fileExplorer.network.browser.status.loggedInOk": "✓ Sessão iniciada",
+  "fileExplorer.network.browser.status.loggedInOk": "Sessão iniciada",
   "@fileExplorer.network.browser.status.loggedInOk": {
-    "sourceHash": "205adc9"
+    "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loggedInOkStale": "✓ Sessão iniciada 🔄",
-  "@fileExplorer.network.browser.status.loggedInOkStale": {
-    "sourceHash": "f83f6a1"
-  },
-  "fileExplorer.network.browser.status.guest": "✓ Convidado",
+  "fileExplorer.network.browser.status.guest": "Convidado",
   "@fileExplorer.network.browser.status.guest": {
-    "sourceHash": "aaa35d1"
+    "sourceHash": "5ed8944"
   },
-  "fileExplorer.network.browser.status.guestStale": "✓ Convidado 🔄",
-  "@fileExplorer.network.browser.status.guestStale": {
-    "sourceHash": "1e2b875"
-  },
-  "fileExplorer.network.browser.status.connected": "✓ Conectado",
+  "fileExplorer.network.browser.status.connected": "Conectado",
   "@fileExplorer.network.browser.status.connected": {
-    "sourceHash": "c8c8815"
-  },
-  "fileExplorer.network.browser.status.connectedStale": "✓ Conectado 🔄",
-  "@fileExplorer.network.browser.status.connectedStale": {
-    "sourceHash": "0cf4d3d"
+    "sourceHash": "2296556"
   },
   "fileExplorer.network.browser.tooltip.resolving": "Resolvendo nome do host e endereço IP...",
   "@fileExplorer.network.browser.tooltip.resolving": {

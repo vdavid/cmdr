@@ -312,53 +312,41 @@
   "@fileExplorer.network.browser.status.notChecked": {
     "sourceHash": "d16948e"
   },
-  "fileExplorer.network.browser.status.loggedIn": "🔑 Bejelentkezve{infoIcon}",
+  "fileExplorer.network.browser.status.loggedIn": "Bejelentkezve",
   "@fileExplorer.network.browser.status.loggedIn": {
-    "sourceHash": "1e386ce"
+    "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loginFailed": "⚠️ A bejelentkezés nem sikerült{infoIcon}",
+  "fileExplorer.network.browser.status.loginFailed": "A bejelentkezés nem sikerült",
   "@fileExplorer.network.browser.status.loginFailed": {
-    "sourceHash": "1659c9c"
+    "sourceHash": "5a96e84"
   },
-  "fileExplorer.network.browser.status.loginNeeded": "🔒 Bejelentkezés szükséges{infoIcon}",
+  "fileExplorer.network.browser.status.loginNeeded": "Bejelentkezés szükséges",
   "@fileExplorer.network.browser.status.loginNeeded": {
-    "sourceHash": "bd7375e"
+    "sourceHash": "de0b59e"
   },
-  "fileExplorer.network.browser.status.timeout": "⏱️ Időtúllépés{infoIcon}",
+  "fileExplorer.network.browser.status.timeout": "Időtúllépés",
   "@fileExplorer.network.browser.status.timeout": {
-    "sourceHash": "3673628"
+    "sourceHash": "70594d9"
   },
-  "fileExplorer.network.browser.status.unreachable": "❌ Nem elérhető{infoIcon}",
+  "fileExplorer.network.browser.status.unreachable": "Nem elérhető",
   "@fileExplorer.network.browser.status.unreachable": {
-    "sourceHash": "1198fd4"
+    "sourceHash": "abaa46a"
   },
-  "fileExplorer.network.browser.status.error": "⚠️ Probléma{infoIcon}",
+  "fileExplorer.network.browser.status.error": "Probléma",
   "@fileExplorer.network.browser.status.error": {
-    "sourceHash": "de7c260"
+    "sourceHash": "54a0e8c"
   },
-  "fileExplorer.network.browser.status.loggedInOk": "✓ Bejelentkezve",
+  "fileExplorer.network.browser.status.loggedInOk": "Bejelentkezve",
   "@fileExplorer.network.browser.status.loggedInOk": {
-    "sourceHash": "205adc9"
+    "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loggedInOkStale": "✓ Bejelentkezve 🔄",
-  "@fileExplorer.network.browser.status.loggedInOkStale": {
-    "sourceHash": "f83f6a1"
-  },
-  "fileExplorer.network.browser.status.guest": "✓ Vendég",
+  "fileExplorer.network.browser.status.guest": "Vendég",
   "@fileExplorer.network.browser.status.guest": {
-    "sourceHash": "aaa35d1"
+    "sourceHash": "5ed8944"
   },
-  "fileExplorer.network.browser.status.guestStale": "✓ Vendég 🔄",
-  "@fileExplorer.network.browser.status.guestStale": {
-    "sourceHash": "1e2b875"
-  },
-  "fileExplorer.network.browser.status.connected": "✓ Csatlakozva",
+  "fileExplorer.network.browser.status.connected": "Csatlakozva",
   "@fileExplorer.network.browser.status.connected": {
-    "sourceHash": "c8c8815"
-  },
-  "fileExplorer.network.browser.status.connectedStale": "✓ Csatlakozva 🔄",
-  "@fileExplorer.network.browser.status.connectedStale": {
-    "sourceHash": "0cf4d3d"
+    "sourceHash": "2296556"
   },
   "fileExplorer.network.browser.tooltip.resolving": "Gépnév és IP-cím feloldása…",
   "@fileExplorer.network.browser.tooltip.resolving": {

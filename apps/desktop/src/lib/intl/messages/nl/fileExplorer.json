@@ -315,53 +315,41 @@
   "@fileExplorer.network.browser.status.notChecked": {
     "sourceHash": "d16948e"
   },
-  "fileExplorer.network.browser.status.loggedIn": "🔑 Ingelogd{infoIcon}",
+  "fileExplorer.network.browser.status.loggedIn": "Ingelogd",
   "@fileExplorer.network.browser.status.loggedIn": {
-    "sourceHash": "1e386ce"
+    "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loginFailed": "⚠️ Inloggen lukte niet{infoIcon}",
+  "fileExplorer.network.browser.status.loginFailed": "Inloggen lukte niet",
   "@fileExplorer.network.browser.status.loginFailed": {
-    "sourceHash": "1659c9c"
+    "sourceHash": "5a96e84"
   },
-  "fileExplorer.network.browser.status.loginNeeded": "🔒 Inloggen vereist{infoIcon}",
+  "fileExplorer.network.browser.status.loginNeeded": "Inloggen vereist",
   "@fileExplorer.network.browser.status.loginNeeded": {
-    "sourceHash": "bd7375e"
+    "sourceHash": "de0b59e"
   },
-  "fileExplorer.network.browser.status.timeout": "⏱️ Time-out{infoIcon}",
+  "fileExplorer.network.browser.status.timeout": "Time-out",
   "@fileExplorer.network.browser.status.timeout": {
-    "sourceHash": "3673628"
+    "sourceHash": "70594d9"
   },
-  "fileExplorer.network.browser.status.unreachable": "❌ Onbereikbaar{infoIcon}",
+  "fileExplorer.network.browser.status.unreachable": "Onbereikbaar",
   "@fileExplorer.network.browser.status.unreachable": {
-    "sourceHash": "1198fd4"
+    "sourceHash": "abaa46a"
   },
-  "fileExplorer.network.browser.status.error": "⚠️ Probleem{infoIcon}",
+  "fileExplorer.network.browser.status.error": "Probleem",
   "@fileExplorer.network.browser.status.error": {
-    "sourceHash": "de7c260"
+    "sourceHash": "54a0e8c"
   },
-  "fileExplorer.network.browser.status.loggedInOk": "✓ Ingelogd",
+  "fileExplorer.network.browser.status.loggedInOk": "Ingelogd",
   "@fileExplorer.network.browser.status.loggedInOk": {
-    "sourceHash": "205adc9"
+    "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loggedInOkStale": "✓ Ingelogd 🔄",
-  "@fileExplorer.network.browser.status.loggedInOkStale": {
-    "sourceHash": "f83f6a1"
-  },
-  "fileExplorer.network.browser.status.guest": "✓ Gast",
+  "fileExplorer.network.browser.status.guest": "Gast",
   "@fileExplorer.network.browser.status.guest": {
-    "sourceHash": "aaa35d1"
+    "sourceHash": "5ed8944"
   },
-  "fileExplorer.network.browser.status.guestStale": "✓ Gast 🔄",
-  "@fileExplorer.network.browser.status.guestStale": {
-    "sourceHash": "1e2b875"
-  },
-  "fileExplorer.network.browser.status.connected": "✓ Verbonden",
+  "fileExplorer.network.browser.status.connected": "Verbonden",
   "@fileExplorer.network.browser.status.connected": {
-    "sourceHash": "c8c8815"
-  },
-  "fileExplorer.network.browser.status.connectedStale": "✓ Verbonden 🔄",
-  "@fileExplorer.network.browser.status.connectedStale": {
-    "sourceHash": "0cf4d3d"
+    "sourceHash": "2296556"
   },
   "fileExplorer.network.browser.tooltip.resolving": "Hostnaam en IP-adres omzetten...",
   "@fileExplorer.network.browser.tooltip.resolving": {

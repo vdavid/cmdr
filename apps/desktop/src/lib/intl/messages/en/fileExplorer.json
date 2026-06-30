@@ -463,89 +463,55 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
-  "fileExplorer.network.browser.status.loggedIn": "🔑 Logged in{infoIcon}",
+  "fileExplorer.network.browser.status.loggedIn": "Logged in",
   "@fileExplorer.network.browser.status.loggedIn": {
-    "description": "Status cell when stored credentials exist for a host that needs login. The key emoji prefix is part of the status. {infoIcon} is an optional trailing info marker (an emoji or empty).",
-    "placeholders": {
-      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    },
+    "description": "Status cell when stored credentials exist for a host that needs login.",
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
-  "fileExplorer.network.browser.status.loginFailed": "⚠️ Login failed{infoIcon}",
+  "fileExplorer.network.browser.status.loginFailed": "Login failed",
   "@fileExplorer.network.browser.status.loginFailed": {
-    "description": "Status cell when a login attempt to the host failed. The warning emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
-    "placeholders": {
-      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    },
+    "description": "Status cell when a login attempt to the host failed.",
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
-  "fileExplorer.network.browser.status.loginNeeded": "🔒 Login needed{infoIcon}",
+  "fileExplorer.network.browser.status.loginNeeded": "Login needed",
   "@fileExplorer.network.browser.status.loginNeeded": {
-    "description": "Status cell when the host requires login and no credentials are stored. The lock emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
-    "placeholders": {
-      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    },
+    "description": "Status cell when the host requires login and no credentials are stored.",
     "screenshot": "connect-to-server.png"
   },
-  "fileExplorer.network.browser.status.timeout": "⏱️ Timeout{infoIcon}",
+  "fileExplorer.network.browser.status.timeout": "Timeout",
   "@fileExplorer.network.browser.status.timeout": {
-    "description": "Status cell when contacting the host timed out. The timer emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
-    "placeholders": {
-      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    },
+    "description": "Status cell when contacting the host timed out.",
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
-  "fileExplorer.network.browser.status.unreachable": "❌ Unreachable{infoIcon}",
+  "fileExplorer.network.browser.status.unreachable": "Unreachable",
   "@fileExplorer.network.browser.status.unreachable": {
-    "description": "Status cell when the host could not be reached. The cross emoji prefix is part of the status. {infoIcon} is an optional trailing info marker.",
-    "placeholders": {
-      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    },
+    "description": "Status cell when the host could not be reached.",
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
-  "fileExplorer.network.browser.status.error": "⚠️ Error{infoIcon}",
+  "fileExplorer.network.browser.status.error": "Error",
   "@fileExplorer.network.browser.status.error": {
-    "description": "Generic fallback status cell for an unclassified host problem. The warning emoji prefix is part of the status. {infoIcon} is an optional trailing info marker. Avoid the literal word for \"error\" in languages with a friendlier alternative if your style guide prefers it.",
-    "placeholders": {
-      "infoIcon": "an optional trailing info-icon marker (an emoji glyph or empty string); do not translate"
-    },
+    "description": "Generic fallback status cell for an unclassified host problem. Avoid the literal word for \"error\" in languages with a friendlier alternative if your style guide prefers it.",
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
-  "fileExplorer.network.browser.status.loggedInOk": "✓ Logged in",
+  "fileExplorer.network.browser.status.loggedInOk": "Logged in",
   "@fileExplorer.network.browser.status.loggedInOk": {
-    "description": "Status cell when connected to a host using stored credentials. The check mark prefix is part of the status.",
+    "description": "Status cell when connected to a host using stored credentials.",
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
   },
-  "fileExplorer.network.browser.status.loggedInOkStale": "✓ Logged in 🔄",
-  "@fileExplorer.network.browser.status.loggedInOkStale": {
-    "description": "Same as the logged-in status, but with a refresh emoji showing the share data is stale and being refreshed.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it. Keep status glyphs (🔑, ⚠️) and the {infoIcon} token as-is."
-  },
-  "fileExplorer.network.browser.status.guest": "✓ Guest",
+  "fileExplorer.network.browser.status.guest": "Guest",
   "@fileExplorer.network.browser.status.guest": {
-    "description": "Status cell when connected to a host as a guest (no credentials). The check mark prefix is part of the status.",
+    "description": "Status cell when connected to a host as a guest (no credentials).",
     "screenshot": "connect-to-server.png"
   },
-  "fileExplorer.network.browser.status.guestStale": "✓ Guest 🔄",
-  "@fileExplorer.network.browser.status.guestStale": {
-    "description": "Same as the guest status, but with a refresh emoji showing the share data is stale and being refreshed.",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.status.connected": "✓ Connected",
+  "fileExplorer.network.browser.status.connected": "Connected",
   "@fileExplorer.network.browser.status.connected": {
-    "description": "Status cell when connected to a host (generic, neither explicitly credentialed nor guest). The check mark prefix is part of the status.",
-    "screenshot": "connect-to-server.png"
-  },
-  "fileExplorer.network.browser.status.connectedStale": "✓ Connected 🔄",
-  "@fileExplorer.network.browser.status.connectedStale": {
-    "description": "Same as the connected status, but with a refresh emoji showing the share data is stale and being refreshed.",
+    "description": "Status cell when connected to a host (generic, neither explicitly credentialed nor guest).",
     "screenshot": "connect-to-server.png"
   },
 

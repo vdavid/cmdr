@@ -311,53 +311,41 @@
   "@fileExplorer.network.browser.status.notChecked": {
     "sourceHash": "d16948e"
   },
-  "fileExplorer.network.browser.status.loggedIn": "🔑 已登录{infoIcon}",
+  "fileExplorer.network.browser.status.loggedIn": "已登录",
   "@fileExplorer.network.browser.status.loggedIn": {
-    "sourceHash": "1e386ce"
+    "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loginFailed": "⚠️ 无法登录{infoIcon}",
+  "fileExplorer.network.browser.status.loginFailed": "无法登录",
   "@fileExplorer.network.browser.status.loginFailed": {
-    "sourceHash": "1659c9c"
+    "sourceHash": "5a96e84"
   },
-  "fileExplorer.network.browser.status.loginNeeded": "🔒 需要登录{infoIcon}",
+  "fileExplorer.network.browser.status.loginNeeded": "需要登录",
   "@fileExplorer.network.browser.status.loginNeeded": {
-    "sourceHash": "bd7375e"
+    "sourceHash": "de0b59e"
   },
-  "fileExplorer.network.browser.status.timeout": "⏱️ 超时{infoIcon}",
+  "fileExplorer.network.browser.status.timeout": "超时",
   "@fileExplorer.network.browser.status.timeout": {
-    "sourceHash": "3673628"
+    "sourceHash": "70594d9"
   },
-  "fileExplorer.network.browser.status.unreachable": "❌ 无法连接{infoIcon}",
+  "fileExplorer.network.browser.status.unreachable": "无法连接",
   "@fileExplorer.network.browser.status.unreachable": {
-    "sourceHash": "1198fd4"
+    "sourceHash": "abaa46a"
   },
-  "fileExplorer.network.browser.status.error": "⚠️ 出现问题{infoIcon}",
+  "fileExplorer.network.browser.status.error": "出现问题",
   "@fileExplorer.network.browser.status.error": {
-    "sourceHash": "de7c260"
+    "sourceHash": "54a0e8c"
   },
-  "fileExplorer.network.browser.status.loggedInOk": "✓ 已登录",
+  "fileExplorer.network.browser.status.loggedInOk": "已登录",
   "@fileExplorer.network.browser.status.loggedInOk": {
-    "sourceHash": "205adc9"
+    "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loggedInOkStale": "✓ 已登录 🔄",
-  "@fileExplorer.network.browser.status.loggedInOkStale": {
-    "sourceHash": "f83f6a1"
-  },
-  "fileExplorer.network.browser.status.guest": "✓ 来宾",
+  "fileExplorer.network.browser.status.guest": "来宾",
   "@fileExplorer.network.browser.status.guest": {
-    "sourceHash": "aaa35d1"
+    "sourceHash": "5ed8944"
   },
-  "fileExplorer.network.browser.status.guestStale": "✓ 来宾 🔄",
-  "@fileExplorer.network.browser.status.guestStale": {
-    "sourceHash": "1e2b875"
-  },
-  "fileExplorer.network.browser.status.connected": "✓ 已连接",
+  "fileExplorer.network.browser.status.connected": "已连接",
   "@fileExplorer.network.browser.status.connected": {
-    "sourceHash": "c8c8815"
-  },
-  "fileExplorer.network.browser.status.connectedStale": "✓ 已连接 🔄",
-  "@fileExplorer.network.browser.status.connectedStale": {
-    "sourceHash": "0cf4d3d"
+    "sourceHash": "2296556"
   },
   "fileExplorer.network.browser.tooltip.resolving": "正在解析主机名和 IP 地址…",
   "@fileExplorer.network.browser.tooltip.resolving": {
