@@ -42,3 +42,42 @@ export function aggregateChannels(rows: { downloadsByRef: Record<string, number>
 export function aggregateReferers(rows: { downloadsByReferer: Record<string, number> | null }[]): ChannelCount[] {
   return rankCounts(rows.map((r) => r.downloadsByReferer))
 }
+
+/** Per-day download split by User-Agent family, as the worker classifies it. See the api-server `classifyUaFamily`. */
+export interface UaFamilyCounts {
+  human: number
+  bot: number
+  unknown: number
+}
+
+/** Window totals of the UA-family download split, plus the derived human-installs headline. */
+export interface UaFamilyTotals extends UaFamilyCounts {
+  /** All classified downloads in the window (`human + bot + unknown`). */
+  total: number
+  /**
+   * Downloads minus the provably-impossible `bot` (non-macOS UA) hits, i.e. `human + unknown`. The
+   * honest install signal: it drops only the clearly-fake downloads (a Windows/Linux/Android client
+   * can't run a macOS `.dmg`) and keeps every ambiguous one, so it never overclaims.
+   */
+  humanInstalls: number
+}
+
+/**
+ * Sum the per-day `downloadsByUaFamily` splits into window totals and derive `humanInstalls`. Days whose
+ * worker data was unavailable (`null`) contribute nothing. Cmdr is macOS-only, so `bot` (a non-macOS UA)
+ * is the one high-confidence exclusion; `unknown` (no/unrecognized UA) stays counted because we can't
+ * tell. The scraper spoofs Mac browser UAs, so `human` is "could be a real install", not proof of one.
+ */
+export function aggregateUaFamilies(rows: { downloadsByUaFamily: UaFamilyCounts | null }[]): UaFamilyTotals {
+  let human = 0
+  let bot = 0
+  let unknown = 0
+  for (const row of rows) {
+    const f = row.downloadsByUaFamily
+    if (!f) continue
+    human += f.human
+    bot += f.bot
+    unknown += f.unknown
+  }
+  return { human, bot, unknown, total: human + bot + unknown, humanInstalls: human + unknown }
+}

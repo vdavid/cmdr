@@ -42,6 +42,20 @@ export interface FunnelDay {
    * referrer-policy strip, Homebrew/curl, and rows before migration 0010) are keyed under `"(none)"`.
    */
   downloadsByReferer: Record<string, number>
+  /**
+   * Server downloads split by User-Agent family for that day. Cmdr is macOS-only, so a non-macOS client
+   * fetching the `.dmg` cannot be a real install. `human` = a Mac browser, Homebrew, or curl/wget (a
+   * possible install); `bot` = a Windows/Android/Linux/X11 UA (provably impossible, excluded from
+   * `humanInstalls`); `unknown` = anything else, including a NULL UA on pre-capture rows (we can't tell,
+   * so it stays counted). See `classifyUaFamily`. Note: the scraper spoofs Mac browser UAs too, so
+   * `human` is "could be a real install", not "is one"; only `bot` is the high-confidence exclusion.
+   */
+  downloadsByUaFamily: { human: number; bot: number; unknown: number }
+  /**
+   * Downloads minus the provably-impossible `bot` (non-macOS UA) hits, i.e. `human + unknown`. A
+   * conservative install signal that drops only the clearly-fake downloads and keeps every ambiguous one.
+   */
+  humanInstalls: number
   /** Installs whose very first heartbeat ever landed that day (a true new-install count). */
   newInstalls: number
   /** Distinct install ids that beat at all that day (true DAU from the heartbeat). */
@@ -70,6 +84,50 @@ interface DownloadByRefererRow {
   date: string
   referer: string
   count: number
+}
+
+interface DownloadByUaRow {
+  date: string
+  userAgent: string | null
+  count: number
+}
+
+/** The User-Agent family a download is classified into. See `classifyUaFamily`. */
+export type UaFamily = 'human' | 'bot' | 'unknown'
+
+/**
+ * Classify a stored `/download` `user_agent` into a coarse install-plausibility family. Cmdr is
+ * macOS-only, which is the whole basis: a `.dmg` fetched by a non-macOS client cannot be a real install.
+ *
+ * - `human` (a possible install): the UA names a Mac browser (`Macintosh` / `Mac OS`), Homebrew, or a CLI
+ *   downloader (`curl` / `wget`, which is how casks and manual installs fetch). Checked first, so a UA
+ *   that claims to be a Mac is never excluded.
+ * - `bot` (provably impossible): the UA names a non-macOS OS (`Windows`, `Android`, `Linux`, or `X11`).
+ *   This is the one high-confidence exclusion — such a client literally can't install the macOS build.
+ * - `unknown`: anything else, including a NULL/empty UA on rows captured before migration 0010. We can't
+ *   tell, so callers must NOT exclude it from anything; they only exclude `bot`.
+ *
+ * Deliberately conservative: the scraper spoofs Mac browser UAs (lots of `Mozilla/5.0 (Macintosh; Intel
+ * Mac OS X 10_15_7)` from China), so those land in `human` too. We do NOT try to catch spoofed-Mac bots
+ * by UA, and we never exclude by country: only the provably-impossible non-macOS UAs are dropped. Pure
+ * (no I/O) so it's unit-testable.
+ */
+export function classifyUaFamily(userAgent: string | null | undefined): UaFamily {
+  if (!userAgent) return 'unknown'
+  const ua = userAgent.toLowerCase()
+  if (
+    ua.includes('macintosh') ||
+    ua.includes('mac os') ||
+    ua.includes('homebrew') ||
+    ua.includes('curl') ||
+    ua.includes('wget')
+  ) {
+    return 'human'
+  }
+  if (ua.includes('windows') || ua.includes('android') || ua.includes('linux') || ua.includes('x11')) {
+    return 'bot'
+  }
+  return 'unknown'
 }
 
 interface InstallDayRow {
@@ -157,6 +215,26 @@ async function queryDownloadsByReferer(db: D1Database, sinceDate: string): Promi
     )
     .bind(sinceDate)
     .all<DownloadByRefererRow>()
+  return results
+}
+
+/**
+ * Per-day server downloads, split by the raw stored `user_agent` of the `/download` hit. We group on the
+ * stored UA (NULL for pre-migration-0010 rows) and let `classifyUaFamily` bucket each value into a family
+ * in `assembleFunnel`, rather than encoding the UA rules in SQL: that keeps the classifier a single pure,
+ * unit-tested function and the only place the macOS-only logic lives. Cardinality is low (one row per
+ * distinct UA per day over a few hundred downloads), so pulling the grouped rows is cheap.
+ */
+async function queryDownloadsByUa(db: D1Database, sinceDate: string): Promise<DownloadByUaRow[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT date(created_at) AS date, user_agent AS userAgent, COUNT(*) AS count
+         FROM downloads
+         WHERE date(created_at) >= ?1
+         GROUP BY date, user_agent`,
+    )
+    .bind(sinceDate)
+    .all<DownloadByUaRow>()
   return results
 }
 
@@ -294,6 +372,7 @@ export function assembleFunnel(
   downloadsBySource: DownloadBySourceRow[],
   downloadsByRef: DownloadByRefRow[],
   downloadsByReferer: DownloadByRefererRow[],
+  downloadsByUa: DownloadByUaRow[],
   newInstalls: InstallDayRow[],
   dau: DauRow[],
   d7Retained: D7Row[],
@@ -320,6 +399,12 @@ export function assembleFunnel(
     entry[row.referer] = (entry[row.referer] ?? 0) + row.count
     refererMap.set(row.date, entry)
   }
+  const uaFamilyMap = new Map<string, { human: number; bot: number; unknown: number }>()
+  for (const row of downloadsByUa) {
+    const entry = uaFamilyMap.get(row.date) ?? { human: 0, bot: 0, unknown: 0 }
+    entry[classifyUaFamily(row.userAgent)] += row.count
+    uaFamilyMap.set(row.date, entry)
+  }
   const newInstallsMap = new Map(newInstalls.map((r) => [r.date, r.newInstalls]))
   const dauMap = new Map(dau.map((r) => [r.date, r.dau]))
   const d7Map = new Map(d7Retained.map((r) => [r.cohortDate, r.retained]))
@@ -329,6 +414,7 @@ export function assembleFunnel(
   return dates.map((date) => {
     const bySource = downloadsMap.get(date) ?? { website: 0, homebrew: 0, other: 0 }
     const downloads = bySource.website + bySource.homebrew + bySource.other
+    const uaFamily = uaFamilyMap.get(date) ?? { human: 0, bot: 0, unknown: 0 }
     const installs = newInstallsMap.get(date) ?? 0
 
     // D7 retention is knowable only when BOTH (a) the [day+7, day+8) window has fully passed (cohort day
@@ -346,6 +432,8 @@ export function assembleFunnel(
       downloadsBySource: bySource,
       downloadsByRef: refMap.get(date) ?? {},
       downloadsByReferer: refererMap.get(date) ?? {},
+      downloadsByUaFamily: uaFamily,
+      humanInstalls: uaFamily.human + uaFamily.unknown,
       newInstalls: installs,
       dau: dauMap.get(date) ?? 0,
       d7Retention,
@@ -377,14 +465,16 @@ funnel.get('/admin/funnel', async (c) => {
   const sinceDate = dates[0]
 
   const db = c.env.TELEMETRY_DB
-  const [downloadsBySource, downloadsByRef, downloadsByReferer, newInstalls, dau, d7Retained] = await Promise.all([
-    queryDownloadsBySource(db, sinceDate),
-    queryDownloadsByRef(db, sinceDate),
-    queryDownloadsByReferer(db, sinceDate),
-    queryNewInstalls(db, sinceDate),
-    queryDau(db, sinceDate),
-    queryD7Retained(db, sinceDate),
-  ])
+  const [downloadsBySource, downloadsByRef, downloadsByReferer, downloadsByUa, newInstalls, dau, d7Retained] =
+    await Promise.all([
+      queryDownloadsBySource(db, sinceDate),
+      queryDownloadsByRef(db, sinceDate),
+      queryDownloadsByReferer(db, sinceDate),
+      queryDownloadsByUa(db, sinceDate),
+      queryNewInstalls(db, sinceDate),
+      queryDau(db, sinceDate),
+      queryD7Retained(db, sinceDate),
+    ])
 
   // Listmonk is best-effort: a failure or missing config makes signups `null`, never breaks the funnel.
   let signupsByDay: Map<string, number> | null = null
@@ -403,6 +493,7 @@ funnel.get('/admin/funnel', async (c) => {
     downloadsBySource,
     downloadsByRef,
     downloadsByReferer,
+    downloadsByUa,
     newInstalls,
     dau,
     d7Retained,

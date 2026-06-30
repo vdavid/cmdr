@@ -6,7 +6,7 @@
 <script lang="ts">
     import type { SourceResult } from '$lib/server/types.js'
     import type { FunnelData } from '$lib/server/sources/funnel.js'
-    import { aggregateChannels, aggregateReferers } from '$lib/funnel.js'
+    import { aggregateChannels, aggregateReferers, aggregateUaFamilies } from '$lib/funnel.js'
     import { formatNumber } from '$lib/format.js'
     import ErrorState from './ErrorState.svelte'
     import MetricTable from './MetricTable.svelte'
@@ -152,6 +152,41 @@
                 <MetricTable
                     items={referers.map((r) => ({ x: r.ref === '(none)' ? '(none / unknown)' : r.ref, y: r.count }))}
                     colLabel="Referrer"
+                    colValue="Downloads"
+                />
+            {/if}
+        </div>
+
+        <!-- Downloads by client: the /download User-Agent family. Cmdr is macOS-only, so a non-macOS UA
+             can't be a real install; "Human installs" excludes only those, keeping the ambiguous ones. -->
+        {@const ua = aggregateUaFamilies(rows)}
+        <div class="mt-6 border-t border-border-subtle pt-4">
+            <h3 class="mb-1 text-sm font-medium text-text-secondary">Downloads by client (last 30 days)</h3>
+            <SectionDescription
+                insight={'Cmdr is macOS-only, so a non-macOS client downloading the .dmg literally cannot install it. ' +
+                    '"Human installs" is the raw server downloads minus those provably-impossible bot hits, so the ' +
+                    'headline stops reading as half noise. It keeps every ambiguous download (we only drop the ' +
+                    'clearly-fake ones).'}
+                caveat={'The scraper spoofs Mac browser UAs too (many from China), so "human" means "could be a real ' +
+                    'install", not proof of one, and is NOT a clean count. "unknown" (no or unrecognized UA, including ' +
+                    'rows before UA capture) stays counted because we can\'t tell. Only the bot row is the ' +
+                    'high-confidence exclusion. All days UTC.'}
+            />
+            {#if ua.total === 0}
+                <p class="text-sm text-text-tertiary">No downloads to classify yet.</p>
+            {:else}
+                <p class="mb-2 text-sm text-text-secondary">
+                    Human installs:
+                    <span class="font-semibold tabular-nums text-text-primary">{formatNumber(ua.humanInstalls)}</span>
+                    <span class="text-text-tertiary">of {formatNumber(ua.total)} raw server downloads</span>
+                </p>
+                <MetricTable
+                    items={[
+                        { x: 'human (Mac, Homebrew, curl/wget)', y: ua.human },
+                        { x: 'bot / impossible (Windows, Android, Linux, X11)', y: ua.bot },
+                        { x: 'unknown (no / unrecognized UA)', y: ua.unknown },
+                    ]}
+                    colLabel="Client"
                     colValue="Downloads"
                 />
             {/if}

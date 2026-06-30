@@ -345,6 +345,25 @@ fire-and-forget via `waitUntil` + `.catch(() => {})`. Three things make the coun
   daily-rotating `hashed_ip`, so neither adds a cross-day identifier. The dashboard rolls `referer` up into the
   "Download referrers" breakdown (`funnel.ts` `downloadsByReferer`), parallel to the `ref`-based "Channels".
 
+- **User-Agent family classification + `humanInstalls` (read side only, no migration):** the raw download count
+  over-reads as an install signal because a large share of `/download` hits are scrapers and non-macOS clients. Cmdr is
+  macOS-only, which is the whole basis: a Windows/Android/Linux/X11 client fetching the `.dmg` literally cannot install
+  it. So at query time `/admin/funnel` classifies each stored `user_agent` with the pure, unit-tested `classifyUaFamily`
+  (`funnel.ts`) into one of three families and returns a per-day `downloadsByUaFamily { human, bot, unknown }` plus a
+  `humanInstalls` count:
+  - **`human`** (a possible install, checked first so a Mac-claiming UA is never excluded): UA contains `Macintosh` or
+    `Mac OS` (a Mac browser), `Homebrew`, or `curl`/`wget` (cask and manual CLI installs).
+  - **`bot` / impossible install** (the one high-confidence exclusion): UA contains `Windows`, `Android`, `Linux`, or
+    `X11` — a non-macOS client, so not a real install.
+  - **`unknown`**: anything else, including a NULL UA on rows captured before `user_agent` existed. We can't tell, so it
+    is NEVER excluded.
+  - **`humanInstalls` = `human + unknown`** (downloads minus the `bot` ones). Deliberately conservative: it drops only
+    the provably-impossible downloads and keeps every ambiguous one, so it never overclaims. Crucially, the scraper
+    spoofs Mac browser UAs too (lots of `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)`, often from China), so those
+    land in `human` and `human` is NOT a clean count — only the `bot` exclusion is high-confidence. We do not exclude by
+    country. The dashboard surfaces this as the "Downloads by client" panel and the "Human installs" headline next to
+    the raw download count (`funnel.ts` `aggregateUaFamilies`).
+
 **Update check tracking:** Uses D1 (binding: `TELEMETRY_DB`, table: `update_checks`). Counts active users (free +
 licensed) by proxying update checks through `GET /update-check/:version`. Each unique (date, hashed_ip, app_version,
 arch) combo gets one row (`INSERT OR IGNORE` with a UNIQUE constraint handles deduplication for free). IP is hashed with

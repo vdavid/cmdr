@@ -3,7 +3,7 @@ import type { DashboardData } from '$lib/server/fetch-all.js'
 import type { DownloadRow } from '$lib/server/sources/cloudflare.js'
 import { fetchDashboardData } from '$lib/server/fetch-all.js'
 import { countFeedbackWithReplyTo, tallyErrorReportsByField, errorReportsByDay } from '$lib/feedback-and-errors.js'
-import { aggregateChannels, aggregateReferers } from '$lib/funnel.js'
+import { aggregateChannels, aggregateReferers, aggregateUaFamilies } from '$lib/funnel.js'
 
 const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
 
@@ -103,6 +103,19 @@ function formatReport(data: DashboardData): string {
       blank()
       line("Download referrers (last 30 days), by the /download hit's Referer host:")
       for (const r of referers) line(`- ${r.ref}: ${num(r.count)}`)
+    }
+    // Downloads by client: the /download User-Agent family. Cmdr is macOS-only, so a non-macOS UA can't be
+    // a real install. "Human installs" drops only those provably-impossible bot hits and keeps the
+    // ambiguous ones, so the headline stops reading as half noise. Note the scraper spoofs Mac browser
+    // UAs, so "human" is "could be real", not proof; "unknown" (no/odd UA) stays counted, never excluded.
+    const ua = aggregateUaFamilies(data.funnel.data.rows)
+    if (ua.total > 0) {
+      blank()
+      line('Downloads by client (last 30 days), by User-Agent family:')
+      line(`- Human installs: ${num(ua.humanInstalls)} (of ${num(ua.total)} raw server downloads)`)
+      line(`- human (Mac browser, Homebrew, or curl/wget): ${num(ua.human)}`)
+      line(`- bot / impossible install (Windows, Android, Linux, or X11 UA, excluded): ${num(ua.bot)}`)
+      line(`- unknown (no or unrecognized UA, kept in the count): ${num(ua.unknown)}`)
     }
   }
   blank()

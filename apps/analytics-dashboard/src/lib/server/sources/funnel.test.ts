@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { aggregateChannels, aggregateReferers, assembleFunnelRows, buildFunnelDateList } from './funnel.js'
+import {
+  aggregateChannels,
+  aggregateReferers,
+  aggregateUaFamilies,
+  assembleFunnelRows,
+  buildFunnelDateList,
+} from './funnel.js'
+import type { UaFamilyCounts } from './funnel.js'
 
 interface WorkerDay {
   date: string
@@ -133,5 +140,27 @@ describe('aggregateReferers', () => {
       { ref: 'github.com', count: 5 },
       { ref: '(none)', count: 4 },
     ])
+  })
+})
+
+describe('aggregateUaFamilies', () => {
+  it('sums the per-day UA-family split and derives humanInstalls = human + unknown (bots excluded)', () => {
+    const rows: { downloadsByUaFamily: UaFamilyCounts | null }[] = [
+      { downloadsByUaFamily: { human: 4, bot: 6, unknown: 2 } },
+      { downloadsByUaFamily: { human: 3, bot: 5, unknown: 1 } },
+      { downloadsByUaFamily: null }, // worker unavailable that day -> contributes nothing
+    ]
+    expect(aggregateUaFamilies(rows)).toEqual({
+      human: 7,
+      bot: 11,
+      unknown: 3,
+      total: 21,
+      humanInstalls: 10, // 7 human + 3 unknown; the 11 non-mac-UA bots are excluded
+    })
+  })
+
+  it('returns all-zero totals when no day has UA data', () => {
+    const rows: { downloadsByUaFamily: UaFamilyCounts | null }[] = [{ downloadsByUaFamily: null }]
+    expect(aggregateUaFamilies(rows)).toEqual({ human: 0, bot: 0, unknown: 0, total: 0, humanInstalls: 0 })
   })
 })

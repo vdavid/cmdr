@@ -1,4 +1,5 @@
 import type { SourceResult } from '../types.js'
+import type { UaFamilyCounts } from '../../funnel.js'
 import { cacheGet, cacheSet } from '../cache.js'
 import { fetchWorkerEndpoint } from './worker-endpoint.js'
 import { authenticateUmami, fetchUmamiDailySeries, fetchUmamiDailyEventSeries } from './umami.js'
@@ -37,6 +38,17 @@ export interface FunnelRow {
    * `null` when the worker is unavailable, `{}` for a present worker source on a day with no downloads.
    */
   downloadsByReferer: Record<string, number> | null
+  /**
+   * That day's server downloads split by User-Agent family (`human` / `bot` / `unknown`), as the worker
+   * classifies them. Cmdr is macOS-only, so `bot` (a non-macOS UA) can't be a real install. `null` when
+   * the worker is unavailable, all-zeros for a present worker source on a day with no downloads.
+   */
+  downloadsByUaFamily: UaFamilyCounts | null
+  /**
+   * That day's downloads minus the provably-impossible `bot` (non-macOS UA) hits (`human + unknown`). A
+   * conservative install signal next to the raw `serverDownloads`. `null` when the worker is unavailable.
+   */
+  humanInstalls: number | null
   /** Installs whose first-ever heartbeat landed that day (api-server). `null` when the worker is unavailable. */
   newInstalls: number | null
   /** D7 retention fraction (0..1) for this cohort, or `null` when too young / worker unavailable. */
@@ -60,6 +72,9 @@ interface WorkerFunnelDay {
   downloadsByRef: Record<string, number>
   // Optional so the dashboard still maps a response from a worker deployed before migration 0010.
   downloadsByReferer?: Record<string, number>
+  // Optional so the dashboard still maps a response from a worker deployed before the UA-family read side.
+  downloadsByUaFamily?: UaFamilyCounts
+  humanInstalls?: number
   newInstalls: number
   d7Retention: number | null
   d7Retained: number | null
@@ -69,7 +84,14 @@ interface WorkerFunnelDay {
 // The ranked-channel helper and its type are client-safe (the page renders them), so they live in
 // `$lib/funnel.ts` outside `$lib/server`. Re-exported here so server-side callers and the existing
 // tests can keep importing from this module.
-export { aggregateChannels, aggregateReferers, type ChannelCount } from '../../funnel.js'
+export {
+  aggregateChannels,
+  aggregateReferers,
+  aggregateUaFamilies,
+  type ChannelCount,
+  type UaFamilyCounts,
+  type UaFamilyTotals,
+} from '../../funnel.js'
 
 interface FunnelEnv {
   LICENSE_SERVER_ADMIN_TOKEN: string
@@ -117,6 +139,8 @@ export function assembleFunnelRows(
       // A present worker source with no row that day means a real empty breakdown (`{}`), not unknown.
       downloadsByRef: workerByDay ? (worker?.downloadsByRef ?? {}) : null,
       downloadsByReferer: workerByDay ? (worker?.downloadsByReferer ?? {}) : null,
+      downloadsByUaFamily: workerByDay ? (worker?.downloadsByUaFamily ?? { human: 0, bot: 0, unknown: 0 }) : null,
+      humanInstalls: workerByDay ? (worker?.humanInstalls ?? 0) : null,
       newInstalls: workerByDay ? (worker?.newInstalls ?? 0) : null,
       // D7 and signups can be null even when the worker responded (young cohort / Listmonk down), so
       // read them straight off the worker row and default a missing day to null, not 0.
