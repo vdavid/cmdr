@@ -340,9 +340,24 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 - "and N more files" (trailing line under a truncated file list) → "und {countText} weitere {count, plural, one {Datei}
   other {Dateien}}" · GNOME Nautilus ("%'d weitere Objekte ausgewählt" / "%'d weiteres Objekt …"); feminine "weitere" is
   invariant across DE one/other for Datei/Dateien · high
-- preset (value in a settings-picker dropdown; opposite of the custom-value option) → Voreinstellung; "back to presets" → "Zurück zu den Voreinstellungen" · Microsoft terminology ("indexing preset" → "Indizierungsvoreinstellung"), macOS DE print dialog "Voreinstellungen" · high
-- action (generic "Action:" field label before a Copy/Move or Trash/Delete segmented control) → Aktion ("Aktion:") · macOS ("Aktion" appears as a bare label, 6× in the pile; "Diese Aktion …") · high
-- route ("Route:" label before a source → destination line in the copy/move dialog) → Route (kept; identical to English) · no transfer-label source (TC/DC phrase it in full as "von X nach Y", not a label); "die Route" is a genuine German noun for a path between two points, fits the FROM→TO arrow and keeps the compact, evocative English register · high. Recorded as sameAsSourceJustification in the catalog
-- "Scanning…" (spinner tooltip while the dialog counts selected items) → "Wird durchsucht …" · aligns with the settled scan → durchsuchen term and the existing `transferProgress.stageScanning` "Wird durchsucht"; progress-line space-before-ellipsis per style guide · high
-- "Scan complete" (checkmark tooltip once counting finished) → "Durchsuchen abgeschlossen" · scan → durchsuchen + complete → abgeschlossen (matches the catalog pattern "Löschen abgeschlossen"/"Kopieren abgeschlossen") · high
-- "This folder doesn't exist yet. Cmdr will create it during the copy/move." (yellow warning under the dest-path box when the typed folder is missing) → "Diesen Ordner gibt es noch nicht. Cmdr erstellt ihn beim Kopieren." / "… beim Bewegen." · folder → Ordner (masc., so accusative "diesen Ordner" / pronoun "ihn"); existence via the catalog's settled "gibt es" idiom (matches `conflictExistsFolder` "In diesem Ordner gibt es bereits …"); active present "Cmdr erstellt ihn" preferred over macOS's passive "wird erstellt" per the active-voice rule; "during the X" → verb-preferred "beim Kopieren/Bewegen" (style guide: verb over verbal noun; copy→Kopieren, move→Bewegen settled). DC confirms create→erstellen ("Verzeichnis erstellen") and non-existence ("existiert nicht") · high
+- preset (value in a settings-picker dropdown; opposite of the custom-value option) → Voreinstellung; "back to presets"
+  → "Zurück zu den Voreinstellungen" · Microsoft terminology ("indexing preset" → "Indizierungsvoreinstellung"), macOS
+  DE print dialog "Voreinstellungen" · high
+- action (generic "Action:" field label before a Copy/Move or Trash/Delete segmented control) → Aktion ("Aktion:") ·
+  macOS ("Aktion" appears as a bare label, 6× in the pile; "Diese Aktion …") · high
+- route ("Route:" label before a source → destination line in the copy/move dialog) → Route (kept; identical to English)
+  · no transfer-label source (TC/DC phrase it in full as "von X nach Y", not a label); "die Route" is a genuine German
+  noun for a path between two points, fits the FROM→TO arrow and keeps the compact, evocative English register · high.
+  Recorded as sameAsSourceJustification in the catalog
+- "Scanning…" (spinner tooltip while the dialog counts selected items) → "Wird durchsucht …" · aligns with the settled
+  scan → durchsuchen term and the existing `transferProgress.stageScanning` "Wird durchsucht"; progress-line
+  space-before-ellipsis per style guide · high
+- "Scan complete" (checkmark tooltip once counting finished) → "Durchsuchen abgeschlossen" · scan → durchsuchen +
+  complete → abgeschlossen (matches the catalog pattern "Löschen abgeschlossen"/"Kopieren abgeschlossen") · high
+- "This folder doesn't exist yet. Cmdr will create it during the copy/move." (yellow warning under the dest-path box
+  when the typed folder is missing) → "Diesen Ordner gibt es noch nicht. Cmdr erstellt ihn beim Kopieren." / "… beim
+  Bewegen." · folder → Ordner (masc., so accusative "diesen Ordner" / pronoun "ihn"); existence via the catalog's
+  settled "gibt es" idiom (matches `conflictExistsFolder` "In diesem Ordner gibt es bereits …"); active present "Cmdr
+  erstellt ihn" preferred over macOS's passive "wird erstellt" per the active-voice rule; "during the X" →
+  verb-preferred "beim Kopieren/Bewegen" (style guide: verb over verbal noun; copy→Kopieren, move→Bewegen settled). DC
+  confirms create→erstellen ("Verzeichnis erstellen") and non-existence ("existiert nicht") · high

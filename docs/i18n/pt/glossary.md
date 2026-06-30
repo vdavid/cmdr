@@ -224,16 +224,23 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - preset (value in a settings-picker dropdown) → predefinição; "back to presets" → "Voltar às predefinições" · Microsoft
   terminology pt-BR ("indexing preset" → "predefinição da indexação"), macOS pt-BR print dialog "Predefinições" · high
 - scan / scanning (counting/sizing items before a transfer or delete) · **Analisar** / **Analisando** (in progress);
-  scan complete → **Análise concluída** · matches the shipped `fileOperations.transferProgress.stageScanning` ("Scanning"
-  → "Analisando"); "concluída" is the macOS Finder term for complete/concluded ("não pode ser concluída", "Download
-  concluído"). Used in the shared `fileOperations.shared.scanningTooltip` / `scanCompleteTooltip` spinner+checkmark. ·
-  high. Distinct from the conflict-check sense, which stays **Verificando** (see verify/check).
-- Action (field label) · **Ação** · macOS Finder (6 hits), MS terminology (BRA) · confirmed. `fileOperations.shared.actionLabel`
-  "Action:" → "Ação:" (label before the Copy/Move or Trash/Delete segmented control).
+  scan complete → **Análise concluída** · matches the shipped `fileOperations.transferProgress.stageScanning`
+  ("Scanning" → "Analisando"); "concluída" is the macOS Finder term for complete/concluded ("não pode ser concluída",
+  "Download concluído"). Used in the shared `fileOperations.shared.scanningTooltip` / `scanCompleteTooltip`
+  spinner+checkmark. · high. Distinct from the conflict-check sense, which stays **Verificando** (see verify/check).
+- Action (field label) · **Ação** · macOS Finder (6 hits), MS terminology (BRA) · confirmed.
+  `fileOperations.shared.actionLabel` "Action:" → "Ação:" (label before the Copy/Move or Trash/Delete segmented
+  control).
 - Route (transfer source→destination field label) · **Rota** · MS terminology (BRA, route→rota); no macOS/file-manager
   source (Finder has no such label) · high. `fileOperations.transferDialog.routeLabel` "Route:" → "Rota:" before the
   "source → destination" line. The word is the direct pt-BR cognate and reads as a compact label; the UI usage itself is
   Cmdr-specific.
-- preset (value in a settings-picker dropdown) → predefinição; "back to presets" → "Voltar às predefinições" · Microsoft terminology pt-BR ("indexing preset" → "predefinição da indexação"), macOS pt-BR print dialog "Predefinições" · high
-- "doesn't exist yet" (destination not-yet-created warning) · **ainda não existe** · standard pt-BR; pile has "A pasta de destino não existe!" (file-manager) and "não existe. Deseja criá-lo?" · high. `fileOperations.transferDialog.targetWillBeCreated{Copy,Move}`
-- "will create it during the copy/move" (auto-create reassurance) · **vai criá-la durante a {cópia/movimentação}** · subject is **O Cmdr** (running-text pattern across the pt catalog, e.g. "O Cmdr cuida da cópia automaticamente"); copy noun = **cópia**, move noun = **movimentação** (matches `transferProgress.rollbackUnavailableTooltip` "movimentações no mesmo volume") · high. The two keys stay literal (operation-specific noun), no ICU select.
+- preset (value in a settings-picker dropdown) → predefinição; "back to presets" → "Voltar às predefinições" · Microsoft
+  terminology pt-BR ("indexing preset" → "predefinição da indexação"), macOS pt-BR print dialog "Predefinições" · high
+- "doesn't exist yet" (destination not-yet-created warning) · **ainda não existe** · standard pt-BR; pile has "A pasta
+  de destino não existe!" (file-manager) and "não existe. Deseja criá-lo?" · high.
+  `fileOperations.transferDialog.targetWillBeCreated{Copy,Move}`
+- "will create it during the copy/move" (auto-create reassurance) · **vai criá-la durante a {cópia/movimentação}** ·
+  subject is **O Cmdr** (running-text pattern across the pt catalog, e.g. "O Cmdr cuida da cópia automaticamente"); copy
+  noun = **cópia**, move noun = **movimentação** (matches `transferProgress.rollbackUnavailableTooltip` "movimentações
+  no mesmo volume") · high. The two keys stay literal (operation-specific noun), no ICU select.

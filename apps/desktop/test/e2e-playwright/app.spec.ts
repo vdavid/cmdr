@@ -594,13 +594,9 @@ test.describe('Transfer dialogs', () => {
 
   test('Cancel button closes the new folder dialog without creating anything', async ({ tauriPage }) => {
     // F7 + Cancel covers the negative case: the dialog must close cleanly and
-    // the listing must stay unchanged. This was previously covered only via
+    // the folder must not be created. This was previously covered only via
     // Escape, missing the explicit-Cancel-button path through ModalDialog.
     await ensureAppReady(tauriPage)
-
-    const initialCount = await tauriPage.evaluate<number>(
-      `document.querySelectorAll('.file-pane.is-focused .file-entry').length`,
-    )
 
     await tauriPage.keyboard.press('F7')
     await tauriPage.waitForSelector(MKDIR_DIALOG, 5000)
@@ -613,11 +609,14 @@ test.describe('Transfer dialogs', () => {
     await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 3000 }).toBeTruthy()
     expect(await tauriPage.isVisible('.modal-overlay')).toBe(false)
 
-    // File listing must not have grown; Cancel must not create the folder.
-    const finalCount = await tauriPage.evaluate<number>(
-      `document.querySelectorAll('.file-pane.is-focused .file-entry').length`,
+    // Cancel must not create the folder. Assert the specific name is absent
+    // rather than comparing raw entry counts: the fixture's `bulk/` large files
+    // stream into the listing in the background, so a count snapshot races that
+    // load and isn't a stable baseline (a stray +N is a load, not a creation).
+    const created = await tauriPage.evaluate<boolean>(
+      `!!document.querySelector('[data-filename="unused-cancel-folder"]')`,
     )
-    expect(finalCount).toBe(initialCount)
+    expect(created).toBe(false)
   })
 })
 

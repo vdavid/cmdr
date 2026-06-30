@@ -202,7 +202,7 @@ const command = 'brew tap vdavid/tap && brew trust --cask vdavid/tap/cmdr && bre
         textarea.style.opacity = '0'
         document.body.appendChild(textarea)
         textarea.select()
-        let copied = false
+        let copied: boolean
         try {
             copied = document.execCommand('copy')
         } catch {

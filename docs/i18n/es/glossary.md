@@ -431,13 +431,30 @@ AppKit + SystemSettings, 2026-06-21).
 - "no such limit" → "no tiene ese límite" · standard · high
 - drive (in this error) → unidad · reaffirms the existing glossary entry (drive → unidad); kept over macOS's
   context-specific "disco"/"volumen" for catalog consistency · high
-- preset (value in a settings-picker dropdown) → preajuste; "back to presets" → "Volver a los preajustes". Note: the standalone "Back" button is the adverb "Atrás" (backArrow), but "Back to X" needs the verb "Volver a X" (pile: "volver a la versión anterior") · Double Commander es ("Preajustes"; "El preajuste «%s» ya existe") · high
+- preset (value in a settings-picker dropdown) → preajuste; "back to presets" → "Volver a los preajustes". Note: the
+  standalone "Back" button is the adverb "Atrás" (backArrow), but "Back to X" needs the verb "Volver a X" (pile: "volver
+  a la versión anterior") · Double Commander es ("Preajustes"; "El preajuste «%s» ya existe") · high
 
 ### Settled during the copy/delete dialog-polish pass (Action/Route field labels + scan tooltips; macOS Finder/AppKit + MS terminology, 2026-06-30)
 
-- "Action:" (field label before the Copy/Move or Trash/Delete segmented control) → Acción: · macOS ("Action"→"Acción", e.g. Finder TL26/SP95, AppKit 200/201.title) · high. Keep the trailing colon.
-- "Route:" (field label before the source→destination line in the copy/move dialog) → Ruta: · MS terminology ("route" noun → "ruta", id 181744/181745, all regions incl. ESP/419). "Ruta" carries the route/itinerary sense, which fits the from→to line better than English "Route". Note the collision with path→ruta (glossary), accepted: the visible label is short and the destination-path strings qualify themselves ("Ruta de destino"); the English author likewise reused a path-ish word distinct from "Path" · high
-- "Scanning…" (spinner tooltip while counting items) → Analizando… · reuses the settled scan/scanning→analizar/Analizando choice; matches this file''s `transferProgress.stageScanning` = "Analizando". Source uses a Unicode ellipsis (U+2026), so the value does too · high
-- "Scan complete" (checkmark tooltip after counting) → Análisis completado · "análisis" (masc.) for the scan noun + "completado" agreeing (macOS "completado/completada" for complete, e.g. "Sincronización … completada", "Porcentaje completado"); parallels the transfer-toast "Copia completada"/"Movimiento completado" pattern · high
-- "This folder doesn''t exist yet" (destination-not-found warning) → Esta carpeta todavía no existe · "carpeta" = folder (glossary); "todavía no existe" for "doesn''t exist yet" (macOS uses both "aún no" e.g. "iCloud aún no tiene…" and "ya no existe" for the negative-existence sense; "todavía no" reads natural and friendly) · high
-- "Cmdr will create it during the copy/move" (same warning, op-specific) → Cmdr la creará durante la copia / Cmdr la creará durante el movimiento · "crear la carpeta" = create the folder (macOS Finder "Crear una carpeta llamada…", "No se ha podido crear la carpeta"); "la creará" agrees with fem. "carpeta"; "durante la copia" / "durante el movimiento" reuse the settled copy→Copia / move→Movimiento nouns (transfer-toast pattern). Two literal sentences, no ICU select, per the op-specific keys · high
+- "Action:" (field label before the Copy/Move or Trash/Delete segmented control) → Acción: · macOS ("Action"→"Acción",
+  e.g. Finder TL26/SP95, AppKit 200/201.title) · high. Keep the trailing colon.
+- "Route:" (field label before the source→destination line in the copy/move dialog) → Ruta: · MS terminology ("route"
+  noun → "ruta", id 181744/181745, all regions incl. ESP/419). "Ruta" carries the route/itinerary sense, which fits the
+  from→to line better than English "Route". Note the collision with path→ruta (glossary), accepted: the visible label is
+  short and the destination-path strings qualify themselves ("Ruta de destino"); the English author likewise reused a
+  path-ish word distinct from "Path" · high
+- "Scanning…" (spinner tooltip while counting items) → Analizando… · reuses the settled
+  scan/scanning→analizar/Analizando choice; matches this file''s `transferProgress.stageScanning` = "Analizando". Source
+  uses a Unicode ellipsis (U+2026), so the value does too · high
+- "Scan complete" (checkmark tooltip after counting) → Análisis completado · "análisis" (masc.) for the scan noun +
+  "completado" agreeing (macOS "completado/completada" for complete, e.g. "Sincronización … completada", "Porcentaje
+  completado"); parallels the transfer-toast "Copia completada"/"Movimiento completado" pattern · high
+- "This folder doesn''t exist yet" (destination-not-found warning) → Esta carpeta todavía no existe · "carpeta" = folder
+  (glossary); "todavía no existe" for "doesn''t exist yet" (macOS uses both "aún no" e.g. "iCloud aún no tiene…" and "ya
+  no existe" for the negative-existence sense; "todavía no" reads natural and friendly) · high
+- "Cmdr will create it during the copy/move" (same warning, op-specific) → Cmdr la creará durante la copia / Cmdr la
+  creará durante el movimiento · "crear la carpeta" = create the folder (macOS Finder "Crear una carpeta llamada…", "No
+  se ha podido crear la carpeta"); "la creará" agrees with fem. "carpeta"; "durante la copia" / "durante el movimiento"
+  reuse the settled copy→Copia / move→Movimiento nouns (transfer-toast pattern). Two literal sentences, no ICU select,
+  per the op-specific keys · high

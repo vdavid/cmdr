@@ -232,6 +232,16 @@ fn test_ensure_destination_dir_rejects_a_file() {
 fn test_ensure_destination_dir_surfaces_create_failure() {
     use super::ensure_destination_dir;
 
+    // Skip if running as root (root bypasses permission checks, so the read-only
+    // parent below would still accept the create). The CI Linux suite runs as
+    // root in Docker; this mirrors the geteuid==0 guard the other permission
+    // tests in this file use.
+    // SAFETY: (test) `geteuid` takes no arguments, shares no memory, and can't fail — it just
+    // returns the caller's effective uid. We compare the returned integer to 0 to detect root.
+    if unsafe { libc::geteuid() } == 0 {
+        return;
+    }
+
     let temp_dir = create_temp_dir("ensure_dest_create_fails");
     // Make the parent read-only so creating a child fails honestly (surfaced as a
     // typed error), rather than being silently swallowed.

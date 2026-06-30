@@ -450,13 +450,25 @@ macOS Finder zh-CN Tier 1 (`PE4.5` = the same "too large for the volume's format
 - **"and N more files" (trailing line under a too-large list)** · `另有 {countText} 个文件` · `另有` = "in addition
   there are" (the "more" sense); measure word `个` per the `{count} 个项目` glossary pattern; Chinese plural collapses
   to a single `other` branch holding `文件` · `high`
-- preset (value in a settings-picker dropdown) → 预设; "back to presets" → "返回预设" · Microsoft terminology ("indexing preset" → "索引预设"); 预设 dominates the corpus over 预置 (~30:1) · high
+- preset (value in a settings-picker dropdown) → 预设; "back to presets" → "返回预设" · Microsoft terminology ("indexing
+  preset" → "索引预设"); 预设 dominates the corpus over 预置 (~30:1) · high
 
 ### Copy/delete dialog field labels + scan spinner (dialog-polish pass)
 
-- **Action: (field label before a Copy/Move or Trash/Delete two-option picker)** · `操作：` · Microsoft TBX (`action` → `操作`); matches result-column `操作` from the search pass. Full-width colon per style.md punctuation rule (matches sibling labels `来自：`, `AI 建议：`) · `high`
-- **Route: (field label before a "source → destination" line in the copy/move dialog)** · `路线：` · no reference-pile source for this metaphorical "route" label; `路线` (route/itinerary) carries the en journey metaphor and avoids the file-path collision of `路径`. Full-width colon · `tentative`
-- **Scanning… (spinner tooltip while counting selected items)** · `正在扫描…` · reused from the search pass (`正在扫描`); the locale-wide `正在…` in-progress pattern + single full-width `…` ellipsis normalization · `high`
-- **Scan complete (checkmark tooltip once counting finished)** · `扫描完成` · macOS `完成` is the standard "complete/done" word (`完成` / `已完成`); `扫描` from the scan term · `high`
-- **"doesn''t exist yet" (destination folder, yellow inline warning)** · `还不存在` · macOS Finder PE131 (`doesn''t exist anymore` → `不再存在`) + Nautilus (`does not exist` → `不存在`); `还` carries the "yet" nuance · `high`
-- **"Cmdr will create it during the copy/move" (auto-create reassurance)** · `Cmdr 会在拷贝时自动创建它` / `Cmdr 会在移动时自动创建它` · `创建` reused from this file''s `创建文件夹` (mkdir); `拷贝`/`移动` settled verbs; `自动` carries the "automatically" reassurance from the @key description; brand `Cmdr` kept verbatim with surrounding space · `high`
+- **Action: (field label before a Copy/Move or Trash/Delete two-option picker)** · `操作：` · Microsoft TBX (`action` →
+  `操作`); matches result-column `操作` from the search pass. Full-width colon per style.md punctuation rule (matches
+  sibling labels `来自：`, `AI 建议：`) · `high`
+- **Route: (field label before a "source → destination" line in the copy/move dialog)** · `路线：` · no reference-pile
+  source for this metaphorical "route" label; `路线` (route/itinerary) carries the en journey metaphor and avoids the
+  file-path collision of `路径`. Full-width colon · `tentative`
+- **Scanning… (spinner tooltip while counting selected items)** · `正在扫描…` · reused from the search pass
+  (`正在扫描`); the locale-wide `正在…` in-progress pattern + single full-width `…` ellipsis normalization · `high`
+- **Scan complete (checkmark tooltip once counting finished)** · `扫描完成` · macOS `完成` is the standard
+  "complete/done" word (`完成` / `已完成`); `扫描` from the scan term · `high`
+- **"doesn''t exist yet" (destination folder, yellow inline warning)** · `还不存在` · macOS Finder PE131
+  (`doesn''t exist anymore` → `不再存在`) + Nautilus (`does not exist` → `不存在`); `还` carries the "yet" nuance ·
+  `high`
+- **"Cmdr will create it during the copy/move" (auto-create reassurance)** · `Cmdr 会在拷贝时自动创建它` /
+  `Cmdr 会在移动时自动创建它` · `创建` reused from this file''s `创建文件夹` (mkdir); `拷贝`/`移动` settled verbs;
+  `自动` carries the "automatically" reassurance from the @key description; brand `Cmdr` kept verbatim with surrounding
+  space · `high`

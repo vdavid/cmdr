@@ -405,12 +405,30 @@ From the FAT32-size-guard pass (`errors.write.filesTooLargeForFilesystem.*` +
 - **and N more (files) (trailing "+N" line under a truncated list): `och ytterligare {countText} {fil/filer}`** ·
   composed natural Swedish; `ytterligare` = additional/more, front-loaded so no trailing word is needed. ICU plural
   one→`fil`, other→`filer`. `high` (compound by convention; low risk).
-- preset (value in a settings-picker dropdown) → förinställning; "back to presets" → "Tillbaka till förinställningar" · pile adjective "förinställd/förinställda" (shared root), macOS SV print dialog "Förinställningar" · high
+- preset (value in a settings-picker dropdown) → förinställning; "back to presets" → "Tillbaka till förinställningar" ·
+  pile adjective "förinställd/förinställda" (shared root), macOS SV print dialog "Förinställningar" · high
 
-From the dialog-polish pass (2026-06-30; new `fileOperations.json` field labels + scan-spinner tooltips). Reuses scan/genomsökning terms above; new ones:
+From the dialog-polish pass (2026-06-30; new `fileOperations.json` field labels + scan-spinner tooltips). Reuses
+scan/genomsökning terms above; new ones:
 
-- **Action (field label before the Copy/Move · Trash/Delete segmented control): `Åtgärd:`** · macOS Finder ("Åtgärd", standalone label) and MS terminology both render action → "åtgärd"; matches the glossary's `åtgärden {verb}` framing. Keep the trailing colon. `high`.
-- **Route (field label before the `source → destination` line in the copy/move dialog): `Rutt:`** · Cmdr-coined label with no direct source. EN deliberately chose "Route" over "Path" to convey the from→to of a transfer, so kept distinct from `sökväg` (= path; MS renders the filesystem-route sense of "route" as "sökväg", but that collides with the path term). "Rutt" is the cognate that reads as a from-A-to-B route and stays distinct. Keep the trailing colon. `tentative` (Cmdr-coined; review).
-- **Scanning… (tooltip + SR label on the counting spinner): `Söker igenom…`** · matches this file's `transferProgress.stageScanning` ("Söker igenom") and the glossary `genomsökning` / `söker igenom` scan-pass entries. Unicode ellipsis mirrors the EN source per the ellipsis rule. `high`.
-- **Scan complete (tooltip + SR label on the done checkmark): `Genomsökning klar`** · scan noun `genomsökning` (glossary) + macOS "Klar" (done/complete, 12 pile hits). Pairs with `Söker igenom…`; mirrors EN's gerund→noun form shift. `high`.
-- **"doesn''t exist yet … will create it during the copy/move" (yellow inline warning under the destination box): `finns inte än` + `Cmdr skapar den under {kopieringen|flytten}`** · "doesn''t exist" → `finns inte` (Total Commander "Katalogen … finns inte. Vill du skapa den?"), warmed with `än` (yet); created actively (`Cmdr skapar den`, active voice over the pile's passive `skapas`). The operation noun is definite: `under kopieringen` (attested copy-noun, pile) for copy, `under flytten` (definite of this file's settled `flytt` move-noun) for move. Two literal sentences, no ICU select, per the operation-specific keys. `high` (move-noun definite `flytten` regular but not directly attested; `flyttningen` is the pile alt).
+- **Action (field label before the Copy/Move · Trash/Delete segmented control): `Åtgärd:`** · macOS Finder ("Åtgärd",
+  standalone label) and MS terminology both render action → "åtgärd"; matches the glossary's `åtgärden {verb}` framing.
+  Keep the trailing colon. `high`.
+- **Route (field label before the `source → destination` line in the copy/move dialog): `Rutt:`** · Cmdr-coined label
+  with no direct source. EN deliberately chose "Route" over "Path" to convey the from→to of a transfer, so kept distinct
+  from `sökväg` (= path; MS renders the filesystem-route sense of "route" as "sökväg", but that collides with the path
+  term). "Rutt" is the cognate that reads as a from-A-to-B route and stays distinct. Keep the trailing colon.
+  `tentative` (Cmdr-coined; review).
+- **Scanning… (tooltip + SR label on the counting spinner): `Söker igenom…`** · matches this file's
+  `transferProgress.stageScanning` ("Söker igenom") and the glossary `genomsökning` / `söker igenom` scan-pass entries.
+  Unicode ellipsis mirrors the EN source per the ellipsis rule. `high`.
+- **Scan complete (tooltip + SR label on the done checkmark): `Genomsökning klar`** · scan noun `genomsökning`
+  (glossary) + macOS "Klar" (done/complete, 12 pile hits). Pairs with `Söker igenom…`; mirrors EN's gerund→noun form
+  shift. `high`.
+- **"doesn''t exist yet … will create it during the copy/move" (yellow inline warning under the destination box):
+  `finns inte än` + `Cmdr skapar den under {kopieringen|flytten}`** · "doesn''t exist" → `finns inte` (Total Commander
+  "Katalogen … finns inte. Vill du skapa den?"), warmed with `än` (yet); created actively (`Cmdr skapar den`, active
+  voice over the pile's passive `skapas`). The operation noun is definite: `under kopieringen` (attested copy-noun,
+  pile) for copy, `under flytten` (definite of this file's settled `flytt` move-noun) for move. Two literal sentences,
+  no ICU select, per the operation-specific keys. `high` (move-noun definite `flytten` regular but not directly
+  attested; `flyttningen` is the pile alt).

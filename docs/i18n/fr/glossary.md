@@ -499,12 +499,32 @@ RAW `errors.*` strings use single apostrophes; the `fileOperations.*` ICU string
   Finder Tier-1 pattern "et ^0 de plus" (`LocalizableMerged.json` N141.3 "\n\tet ^0 de plus.") for the "and N more"
   shape; the file/files plural reuses the catalog''s settled `one {fichier} many {fichiers} other {fichiers}` fragment
   (FR CLDR `one`/`many`/`other`, `many` identical to `other` per the parity check) · high
-- preset (value in a settings-picker dropdown) → présélection; "back to presets" → "Retour aux présélections" · Microsoft terminology ("indexing preset" → "présélection d’indexation"), Double Commander fr ("Présélections"). macOS print uses "Préréglages" but that bundle is not in the pile · high
+- preset (value in a settings-picker dropdown) → présélection; "back to presets" → "Retour aux présélections" ·
+  Microsoft terminology ("indexing preset" → "présélection d’indexation"), Double Commander fr ("Présélections"). macOS
+  print uses "Préréglages" but that bundle is not in the pile · high
 
-Settled during the `dialog-polish` copy/delete-dialog field-label pass (2026-06-30). ICU values, so single apostrophes doubled below to match this doc's convention:
+Settled during the `dialog-polish` copy/delete-dialog field-label pass (2026-06-30). ICU values, so single apostrophes
+doubled below to match this doc's convention:
 
-- Action (field label before the Copy/Move or Trash/Delete segmented control) → "Action :" · "Action" is a genuine French word (identical spelling), pile-pervasive as a UI noun (macOS Finder/AppKit "Action", MS terminology FRA "action"); the FR rendering differs from EN only by the catalog-wide ASCII space before the colon, so it's NOT identical-to-English (no justification needed) · high
-- Route (field label before the "source → destination" line in the copy/move dialog) → "Trajet :" · NO settled pile term — in the references "route" is networking-only (MS terminology "routeur"/"route" = router/network route; macOS has no source-to-destination label). "Trajet" is the natural FR for the from-A-to-B movement of a transfer (a journey/route you travel), fitting the metaphor better than the filesystem-path "Chemin" (already used for `destPathAria` "Chemin de destination") or the heavier "Itinéraire". ASCII space before the colon per the catalog-wide spacing rule · tentative (Cmdr coinage, no pile source; matches the EN's own metaphorical "Route")
-- "Scanning…" (spinner tooltip + SR label while the dialog counts selected items) → "Analyse…" · reuses the settled `scanning (transfer stage) → analyse` term (`transferProgress.stageScanning` = "Analyse"); the single … char kept verbatim (EN uses one … glyph, not three dots) · high
-- "Scan complete" (checkmark tooltip + SR label once counting finished) → "Analyse terminée" · "analyse" is feminine, so the past participle agrees "terminée"; matches the settled `Done → Terminé` pattern · high
-- "This folder doesn''t exist yet. Cmdr will create it during the copy/move." (yellow inline warning under the destination box when the typed target folder is missing) → "Ce dossier n''existe pas encore. Cmdr le créera lors de la copie." / "… lors du déplacement." · "doesn''t exist (yet)" → "n''existe pas (encore)" (pile: Double Commander "Le répertoire « %s » n''existe pas. Voulez-vous le créer ?"); "Cmdr will create it" rendered ACTIVE per the style guide as "Cmdr le créera" ("le" = the masculine "dossier"; not the passive "sera créé" the pile shows in Thunar); "during the copy/move" → "lors de la copie" / "lors du déplacement" (pile-attested "lors de la copie"; reuses the settled `copy → copie` / `move → déplacement` nouns). Two literal sentences, operation-specific verb, no ICU select · high
+- Action (field label before the Copy/Move or Trash/Delete segmented control) → "Action :" · "Action" is a genuine
+  French word (identical spelling), pile-pervasive as a UI noun (macOS Finder/AppKit "Action", MS terminology FRA
+  "action"); the FR rendering differs from EN only by the catalog-wide ASCII space before the colon, so it's NOT
+  identical-to-English (no justification needed) · high
+- Route (field label before the "source → destination" line in the copy/move dialog) → "Trajet :" · NO settled pile term
+  — in the references "route" is networking-only (MS terminology "routeur"/"route" = router/network route; macOS has no
+  source-to-destination label). "Trajet" is the natural FR for the from-A-to-B movement of a transfer (a journey/route
+  you travel), fitting the metaphor better than the filesystem-path "Chemin" (already used for `destPathAria` "Chemin de
+  destination") or the heavier "Itinéraire". ASCII space before the colon per the catalog-wide spacing rule · tentative
+  (Cmdr coinage, no pile source; matches the EN's own metaphorical "Route")
+- "Scanning…" (spinner tooltip + SR label while the dialog counts selected items) → "Analyse…" · reuses the settled
+  `scanning (transfer stage) → analyse` term (`transferProgress.stageScanning` = "Analyse"); the single … char kept
+  verbatim (EN uses one … glyph, not three dots) · high
+- "Scan complete" (checkmark tooltip + SR label once counting finished) → "Analyse terminée" · "analyse" is feminine, so
+  the past participle agrees "terminée"; matches the settled `Done → Terminé` pattern · high
+- "This folder doesn''t exist yet. Cmdr will create it during the copy/move." (yellow inline warning under the
+  destination box when the typed target folder is missing) → "Ce dossier n''existe pas encore. Cmdr le créera lors de la
+  copie." / "… lors du déplacement." · "doesn''t exist (yet)" → "n''existe pas (encore)" (pile: Double Commander "Le
+  répertoire « %s » n''existe pas. Voulez-vous le créer ?"); "Cmdr will create it" rendered ACTIVE per the style guide
+  as "Cmdr le créera" ("le" = the masculine "dossier"; not the passive "sera créé" the pile shows in Thunar); "during
+  the copy/move" → "lors de la copie" / "lors du déplacement" (pile-attested "lors de la copie"; reuses the settled
+  `copy → copie` / `move → déplacement` nouns). Two literal sentences, operation-specific verb, no ICU select · high

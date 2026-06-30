@@ -477,7 +477,10 @@ prior terms (tệp, ổ đĩa = drive, không thể = can''t). New terms below, 
 - **"files this large": `các tệp lớn cỡ này`** · `cỡ này` (of this size) — casual, everyday rendering. `tentative`.
 - **"and N more files" (overflow count line): `và thêm {countText} tệp nữa`** · `và thêm … nữa` = "and … more"; noun
   uninflected (vi has one plural category, `other`). `high`.
-- preset (value in a settings-picker dropdown) → đặt trước, rendered as "tùy chọn đặt trước" (preset options); "back to presets" → "Quay lại tùy chọn đặt trước" · Microsoft terminology (preset → "đặt trước", e.g. "khung thời gian đặt trước"); "tùy chọn" (options) heavily attested. "đặt trước" can also read as "reserved", so pairing it with "tùy chọn" disambiguates · tentative
+- preset (value in a settings-picker dropdown) → đặt trước, rendered as "tùy chọn đặt trước" (preset options); "back to
+  presets" → "Quay lại tùy chọn đặt trước" · Microsoft terminology (preset → "đặt trước", e.g. "khung thời gian đặt
+  trước"); "tùy chọn" (options) heavily attested. "đặt trước" can also read as "reserved", so pairing it with "tùy chọn"
+  disambiguates · tentative
 
 Added during the dialog-polish pass (2026-06-30): four short field labels / tooltips in `fileOperations.json` (the
 copy/move + delete dialogs). Reuses prior terms (scan/scanning → `quét`/`đang quét`, source → `nguồn`, destination →
@@ -493,13 +496,13 @@ copy/move + delete dialogs). Reuses prior terms (scan/scanning → `quét`/`đan
   this UI sense; networking source rejected).
 - **"Scanning…" (spinner tooltip / SR label while counting): `Đang quét…`** · reuses the glossary''s "scan in progress"
   → `Đang quét`; ellipsis `…` kept. `high`.
-- **"Scan complete" (checkmark tooltip / SR label once counting finished): `Đã quét xong`** · `đã…xong` completed aspect,
-  parallel to `Đang quét` (in-progress) ↔ `Đã quét xong` (done). MS/macOS "complete/completed" → `hoàn tất`/`xong`; the
-  concise completed-aspect form fits a tooltip. `high`.
+- **"Scan complete" (checkmark tooltip / SR label once counting finished): `Đã quét xong`** · `đã…xong` completed
+  aspect, parallel to `Đang quét` (in-progress) ↔ `Đã quét xong` (done). MS/macOS "complete/completed" →
+  `hoàn tất`/`xong`; the concise completed-aspect form fits a tooltip. `high`.
 - **"This folder doesn''t exist yet. Cmdr will create it during the copy/move." (yellow inline warning under the
   destination box): `Thư mục này chưa tồn tại. Cmdr sẽ tạo nó khi sao chép.` / `… khi di chuyển.`** · `chưa tồn tại`
   (not-yet-exist) is the precise "doesn''t exist yet" counterpart to the catalog''s `đã tồn tại` (already exists); GNOME
   Nautilus attests plain `không tồn tại` ("đích đến là "%s" không tồn tại") and `chưa` for "not yet". `tạo nó` (create
-  it, inanimate pronoun) is attested in the pile (Nautilus "không có quyền tạo nó ở đích đến"); `khi sao chép`/`khi di
-  chuyển` (when copying/moving) renders "during the copy/move" concisely. Two literal sentences per the en `@key` (no
-  ICU select; the verb is operation-specific). `high`.
+  it, inanimate pronoun) is attested in the pile (Nautilus "không có quyền tạo nó ở đích đến");
+  `khi sao chép`/`khi di chuyển` (when copying/moving) renders "during the copy/move" concisely. Two literal sentences
+  per the en `@key` (no ICU select; the verb is operation-specific). `high`.
