@@ -473,4 +473,6 @@ Phrasing notes for this pass:
     de la liste de fichiers, pas une ligne de fichier." ("That''s" → concise friendly "C''est", referring back to the
     pane background named in the label; settled `espace vide` + `liste de fichiers`; "around" → "autour de";
     `ligne de fichier` per the new row term).
-- preset (value in a settings-picker dropdown) → présélection; "back to presets" → "Retour aux présélections" · Microsoft terminology ("indexing preset" → "présélection d’indexation"), Double Commander fr ("Présélections"). macOS print uses "Préréglages" but that bundle is not in the pile · high
+- preset (value in a settings-picker dropdown) → présélection; "back to presets" → "Retour aux présélections" ·
+  Microsoft terminology ("indexing preset" → "présélection d’indexation"), Double Commander fr ("Présélections"). macOS
+  print uses "Préréglages" but that bundle is not in the pile · high

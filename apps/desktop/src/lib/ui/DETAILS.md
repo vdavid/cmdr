@@ -65,11 +65,11 @@ Props:
 **Layout convention (macOS-style).** Title and body text are LEFT-aligned; action buttons are RIGHT-aligned with the
 primary action last (rightmost). Pass buttons via the `footer` snippet — `ModalDialog` renders them in a `.modal-footer`
 that owns the right-alignment, gap, and the dialog's bottom padding, so callers don't hand-roll a button-row. The title
-bar's top padding matches the footer's bottom padding (`--spacing-xl`) for vertical balance; bodies use `0
-var(--spacing-xl)` side padding so title, body, and buttons line up flush at the same left inset. A dialog with a custom
-button layout (multiple rows, a left-side helper, equal-width buttons) keeps its buttons in `children` and right-aligns
-them itself; genuinely centered content (spinners, progress bars, numeric readouts, hero panels like `AboutWindow`)
-stays centered.
+bar's top padding matches the footer's bottom padding (`--spacing-xl`) for vertical balance; bodies use
+`0 var(--spacing-xl)` side padding so title, body, and buttons line up flush at the same left inset. A dialog with a
+custom button layout (multiple rows, a left-side helper, equal-width buttons) keeps its buttons in `children` and
+right-aligns them itself; genuinely centered content (spinners, progress bars, numeric readouts, hero panels like
+`AboutWindow`) stays centered.
 
 The overlay element receives `tabindex="-1"` and is focused on mount so Escape/keydown events are captured without a
 visible focus ring on the scrim. The overlay also carries `use:trapFocus={{ onEscape: onclose }}` (see § "Focus
@@ -249,23 +249,24 @@ The checkmark marks the current value on the LEFT (`.select-item-text` is the fl
 follows the keyboard / pointer highlight (`[data-highlighted]`), so a checked-but-not-highlighted row is plain with just
 its checkmark — matching macOS, and distinct from the old "checked = accent bg" behavior.
 
-**macOS overlap positioning (the menu opens *over* the trigger).** Zag positions the *positioner* just below the trigger
-(`bottom-start`, `gutter: 0`, `flip: false`, `slide: true`); we then translate the *content* (a child of the positioner,
+**macOS overlap positioning (the menu opens _over_ the trigger).** Zag positions the _positioner_ just below the trigger
+(`bottom-start`, `gutter: 0`, `flip: false`, `slide: true`); we then translate the _content_ (a child of the positioner,
 so the transform never fights zag's own) to land the checked row's label on the trigger's value text, clamped to the
 viewport so it stays on screen. The shift is an inline `transform` on the content (`contentStyle`), which does NOT
 trigger a zag reposition, so there's no feedback loop. The geometry is the pure, unit-tested `computeOverlapShift`
 (`select-positioning.ts`); `Select.svelte` only measures rects and applies the result.
 
 The reveal is driven by the open state through an `$effect` on `isOpen` (set from `onOpenChange`), NOT zag's
-`onPositioned` — that callback never fires in this zag version (1.41.x), which is why an earlier `onPositioned`-only wiring
-left the menu stuck at `opacity: 0`. The effect retries the measurement across a few `requestAnimationFrame`s (content
-mounts and zag places it asynchronously after open) and a `setTimeout` fallback guarantees the content can never stay
-invisible if rAF is throttled (unfocused window) or the rows aren't found. The measurement is self-correcting (it folds
-the residual gap into the already-applied shift). Content is `opacity: 0` until the first measurement lands, so it never
-flashes at the default below-trigger spot. The measurement reads the trigger value via `rootEl.querySelector` (always in
-the subtree) and the content via its own `bind:ref` (`contentEl`), so it works whether or not the menu is portaled.
+`onPositioned` — that callback never fires in this zag version (1.41.x), which is why an earlier `onPositioned`-only
+wiring left the menu stuck at `opacity: 0`. The effect retries the measurement across a few `requestAnimationFrame`s
+(content mounts and zag places it asynchronously after open) and a `setTimeout` fallback guarantees the content can
+never stay invisible if rAF is throttled (unfocused window) or the rows aren't found. The measurement is self-correcting
+(it folds the residual gap into the already-applied shift). Content is `opacity: 0` until the first measurement lands,
+so it never flashes at the default below-trigger spot. The measurement reads the trigger value via
+`rootEl.querySelector` (always in the subtree) and the content via its own `bind:ref` (`contentEl`), so it works whether
+or not the menu is portaled.
 
-**Portal (`portal` prop).** Because the menu opens *over* the trigger, a bottom-of-list selection pushes the top rows
+**Portal (`portal` prop).** Because the menu opens _over_ the trigger, a bottom-of-list selection pushes the top rows
 well above the trigger — into whatever chrome sits there. When the menu isn't portaled it's a descendant of its scroll
 container, so an ancestor `overflow` clips it and, worse, an ancestor `mask-image` fades its top rows regardless of
 z-index (no z-index escapes an ancestor mask). The settings page's `.settings-content-wrapper` has both, which left the
@@ -279,8 +280,8 @@ for the same reason.
 `.option-description`. `SettingSelect`'s `handleCustomSubmit` focuses `.select-trigger` via `querySelector`, and the
 a11y-contrast checker (`scripts/check-a11y-contrast/dropdown_states.go`) keys on the literal
 `.select-item[data-highlighted] .option-description` selector + the `--color-accent` / `--color-accent-fg` tokens. The
-highlighted item colors must stay on those accent tokens or the contrast matrix breaks. No entrance animation; any future
-polish anim must gate behind `prefers-reduced-motion`.
+highlighted item colors must stay on those accent tokens or the contrast matrix breaks. No entrance animation; any
+future polish anim must gate behind `prefers-reduced-motion`.
 
 ## Combobox
 

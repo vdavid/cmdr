@@ -424,4 +424,7 @@ New EN "Double-click the pane background to go up a folder" →
 "That''s the empty space around the file list, not a file row." →
 `Ez a fájllista körüli üres terület, nem pedig egy fájlsor.` (`Ez` refers back to the pane background named in the
 label; reuses `fájllista` + the new `fájlsor`).
-- preset (value in a settings-picker dropdown) → előbeállítás; "back to presets" → "Vissza az előbeállításokhoz" (allative -hoz, vowel-harmonized) · Double Commander hu ("előbeállítás": "módosított előbeállítással", "a … előbeállítást") · high
+
+- preset (value in a settings-picker dropdown) → előbeállítás; "back to presets" → "Vissza az előbeállításokhoz"
+  (allative -hoz, vowel-harmonized) · Double Commander hu ("előbeállítás": "módosított előbeállítással", "a …
+  előbeállítást") · high

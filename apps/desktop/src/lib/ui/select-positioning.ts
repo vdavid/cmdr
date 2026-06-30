@@ -7,33 +7,33 @@
 
 /** The subset of `DOMRect` the overlap math reads. */
 export interface ShiftRect {
-    left: number
-    right: number
-    top: number
-    bottom: number
-    height: number
+  left: number
+  right: number
+  top: number
+  bottom: number
+  height: number
 }
 
 export interface OverlapShiftInput {
-    /** The trigger's value text (`.select-value`). */
-    trigger: ShiftRect
-    /** The checked row's label cell (`.select-item-text`). */
-    item: ShiftRect
-    /** The menu content (`.select-content`). */
-    content: ShiftRect
-    /** The shift currently applied to the content (rects already reflect it). */
-    shiftX: number
-    shiftY: number
-    viewportWidth: number
-    viewportHeight: number
-    /** Minimum gap to keep between the content and the viewport edges. */
-    pad: number
+  /** The trigger's value text (`.select-value`). */
+  trigger: ShiftRect
+  /** The checked row's label cell (`.select-item-text`). */
+  item: ShiftRect
+  /** The menu content (`.select-content`). */
+  content: ShiftRect
+  /** The shift currently applied to the content (rects already reflect it). */
+  shiftX: number
+  shiftY: number
+  viewportWidth: number
+  viewportHeight: number
+  /** Minimum gap to keep between the content and the viewport edges. */
+  pad: number
 }
 
 function clamp(n: number, min: number, max: number): number {
-    // A content taller / wider than the viewport gives min > max; pin to min (top / left edge).
-    if (min > max) return min
-    return Math.max(min, Math.min(max, n))
+  // A content taller / wider than the viewport gives min > max; pin to min (top / left edge).
+  if (min > max) return min
+  return Math.max(min, Math.min(max, n))
 }
 
 /**
@@ -45,18 +45,18 @@ function clamp(n: number, min: number, max: number): number {
  * without drift.
  */
 export function computeOverlapShift(input: OverlapShiftInput): { x: number; y: number } {
-    const { trigger, item, content, shiftX, shiftY, viewportWidth, viewportHeight, pad } = input
+  const { trigger, item, content, shiftX, shiftY, viewportWidth, viewportHeight, pad } = input
 
-    let dx = shiftX + (trigger.left - item.left)
-    let dy = shiftY + (trigger.top + trigger.height / 2 - (item.top + item.height / 2))
+  let dx = shiftX + (trigger.left - item.left)
+  let dy = shiftY + (trigger.top + trigger.height / 2 - (item.top + item.height / 2))
 
-    // base* = the content's position with no shift applied, so the clamp reasons about the final spot.
-    const baseLeft = content.left - shiftX
-    const baseRight = content.right - shiftX
-    const baseTop = content.top - shiftY
-    const baseBottom = content.bottom - shiftY
-    dx = clamp(dx, pad - baseLeft, viewportWidth - pad - baseRight)
-    dy = clamp(dy, pad - baseTop, viewportHeight - pad - baseBottom)
+  // base* = the content's position with no shift applied, so the clamp reasons about the final spot.
+  const baseLeft = content.left - shiftX
+  const baseRight = content.right - shiftX
+  const baseTop = content.top - shiftY
+  const baseBottom = content.bottom - shiftY
+  dx = clamp(dx, pad - baseLeft, viewportWidth - pad - baseRight)
+  dy = clamp(dy, pad - baseTop, viewportHeight - pad - baseBottom)
 
-    return { x: Math.round(dx), y: Math.round(dy) }
+  return { x: Math.round(dx), y: Math.round(dy) }
 }

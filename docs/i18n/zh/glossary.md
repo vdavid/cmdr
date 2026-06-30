@@ -427,4 +427,5 @@ macOS Finder zh-CN Tier 1, Double Commander zh-CN (the exact two-pane feature) +
   `正在取消…`). This is a deliberate, locale-wide normalization (not source-faithful byte-copying): the whole zh catalog
   is consistent on the single `…`. (The doubled literary `……` is NOT used here, even in prose tooltips, to keep one
   ellipsis form across the UI.)
-- preset (value in a settings-picker dropdown) → 预设; "back to presets" → "返回预设" · Microsoft terminology ("indexing preset" → "索引预设"); 预设 dominates the corpus over 预置 (~30:1) · high
+- preset (value in a settings-picker dropdown) → 预设; "back to presets" → "返回预设" · Microsoft terminology ("indexing
+  preset" → "索引预设"); 预设 dominates the corpus over 预置 (~30:1) · high

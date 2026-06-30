@@ -6,13 +6,13 @@ coremltools 9.0. Independently license-verified against Apple's own `LICENSE_MOD
 ## Verdict
 
 The macOS-native **CLIP-text-encoder-via-Core-ML, called from Rust** path is **technically proven end-to-end** — a
-minimal `objc2-core-ml` Rust spike loaded a compiled model, ran a prediction, and returned an embedding **bit-identical**
-to the Python `coremltools` reference. Native Core ML adds **zero binary weight** (system framework).
+minimal `objc2-core-ml` Rust spike loaded a compiled model, ran a prediction, and returned an embedding
+**bit-identical** to the Python `coremltools` reference. Native Core ML adds **zero binary weight** (system framework).
 
-**But Apple's MobileCLIP/MobileCLIP2 weights are NOT shippable in Cmdr.** Per Apple's `ml-mobileclip`
-`LICENSE_MODELS`, the weights are under the **Apple ML Research Model Terms of Use** (code is MIT, data CC-BY-NC-ND) —
-research-only, excluding commercial product use. The pre-converted Core ML towers (`apple/coreml-mobileclip`) carry the
-same restriction. Cmdr is a commercial product, so it cannot ship these weights.
+**But Apple's MobileCLIP/MobileCLIP2 weights are NOT shippable in Cmdr.** Per Apple's `ml-mobileclip` `LICENSE_MODELS`,
+the weights are under the **Apple ML Research Model Terms of Use** (code is MIT, data CC-BY-NC-ND) — research-only,
+excluding commercial product use. The pre-converted Core ML towers (`apple/coreml-mobileclip`) carry the same
+restriction. Cmdr is a commercial product, so it cannot ship these weights.
 
 **Resolution (no architecture change):** keep the proven, **model-agnostic** Core ML + `objc2-core-ml` plumbing; swap
 the weights for a **commercially-licensed CLIP** — OpenAI CLIP (MIT) or SigLIP 2 (Apache-2.0) — convert once with
@@ -29,13 +29,13 @@ needs only `coremltools + numpy + pillow + transformers` (~164 MB venv, no torch
 
 **B — text→image alignment works on-device** (Core ML text tower, ANE, `MLComputeUnits::All`, S0, 12 benign local test
 images + 12 prompts, cosine). Correct top-1: "a child" → child (0.141); "a person on a scooter" → scooter (0.210);
-"seagulls flying" → seagulls (0.130); "a portrait of a woman" → portrait (0.170); "a video game screenshot" →
-game screenshot (0.274); "a duolingo streak" → that screenshot (0.383); "a screenshot of statistics" → all 3 stats
+"seagulls flying" → seagulls (0.130); "a portrait of a woman" → portrait (0.170); "a video game screenshot" → game
+screenshot (0.274); "a duolingo streak" → that screenshot (0.383); "a screenshot of statistics" → all 3 stats
 screenshots in the top-3. Misses (beach/dog/mountain/food) were correct null results — the set has no such subject.
 Latency (S0, warm, incl. Python/IPC): image 1.5 ms, text 2.1 ms per encode. Cold model load ~1 s (S0) / ~2.3 s (S2).
 
-**C — Rust FFI proven.** Crates (crates.io-verified): `objc2-core-ml` 0.3.2, `objc2` 0.6.4, `objc2-foundation` 0.3.2.
-It exposes everything: `MLModel` (`modelWithContentsOfURL_configuration_error`, `predictionFromFeatures_error`),
+**C — Rust FFI proven.** Crates (crates.io-verified): `objc2-core-ml` 0.3.2, `objc2` 0.6.4, `objc2-foundation` 0.3.2. It
+exposes everything: `MLModel` (`modelWithContentsOfURL_configuration_error`, `predictionFromFeatures_error`),
 `MLModelConfiguration` (`setComputeUnits`), `MLMultiArray` (`initWithShape_dataType_error`, `dataPointer`, `count`),
 `MLFeatureValue`, `MLDictionaryFeatureProvider`, `MLFeatureProvider`. The spike built an int32 `[1,77]` `MLMultiArray`,
 ran one prediction, read `[1,512]` into `Vec<f32>` — bit-identical to the coremltools reference (L2 9.7594; first6

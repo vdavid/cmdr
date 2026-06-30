@@ -6,12 +6,12 @@ verified) and all decisions resolved. Buildable, ready to execute. Owner: David.
 
 ## What we're building
 
-Press Enter on a `foo.zip` and step inside it as if it were a folder. The path bar reads
-`/path/to/foo.zip/inner-dir`, transparently, with no scheme prefix and no separator glyph. The containing drive stays
-the selected volume. Full two-way file ops work on zips: copy/move/delete files out of, into, and within an archive,
-with the **same** cancellation, pause/resume, queueing, and progress/ETA the app already gives local, MTP, and SMB
-transfers. Live-watch the archive file so external edits refresh the view. Stay pure-Rust on the backend, and keep it
-fast where the format allows.
+Press Enter on a `foo.zip` and step inside it as if it were a folder. The path bar reads `/path/to/foo.zip/inner-dir`,
+transparently, with no scheme prefix and no separator glyph. The containing drive stays the selected volume. Full
+two-way file ops work on zips: copy/move/delete files out of, into, and within an archive, with the **same**
+cancellation, pause/resume, queueing, and progress/ETA the app already gives local, MTP, and SMB transfers. Live-watch
+the archive file so external edits refresh the view. Stay pure-Rust on the backend, and keep it fast where the format
+allows.
 
 Large, so it's milestoned. M1 (read + extract-out, incl. previewing files inside) is independently shippable and
 delivers most of the value; mutation (M4) is the second big lift. Each milestone ends green and demoable.
@@ -19,6 +19,7 @@ delivers most of the value; mutation (M4) is the second big lift. Each milestone
 ## Scope (locked with David)
 
 In scope:
+
 - **Formats**: ZIP first-class (browse + extract + mutate). `tar`/`tar.gz`/`tar.xz`/`tar.bz2`/`tar.zst` and `7z`
   read-only (browse + extract). All pure-Rust.
 - **Transparent path**: `/path/to/foo.zip/inner`, archive renders exactly like a folder. No volume-selector entry.
@@ -27,8 +28,8 @@ In scope:
 - **Mutation (zip only)**: add/delete/rename via temp+rename safe-overwrite (see Piece 3 — the in-place append method is
   a later optimization, not the default). Cancellation (no rollback needed), pause/resume, queueing, progress/ETA — all
   via the existing operation manager.
-- **Remote-backed archives**: a zip on SMB or MTP is browsed/edited through the same `Volume` abstraction as a local
-  one ("even if slower"). MTP in-place editing is a stretch (M6).
+- **Remote-backed archives**: a zip on SMB or MTP is browsed/edited through the same `Volume` abstraction as a local one
+  ("even if slower"). MTP in-place editing is a stretch (M6).
 - **Compaction**: moot under temp+rename (each edit already rewrites compactly, no dead space). Returns with M-append
   (the fast in-place path that produces dead space): a checkbox on transfer dialogs + a Behavior › File ops slider
   (0–100%, 5% steps, default 20%).
@@ -41,6 +42,7 @@ only), 7z/tar mutation, encrypted archives (detect + reject), in-archive search/
 
 The first plan made three "for free" claims that are false against the actual code; all are now fixed in the design
 below. Recorded here so the rationale isn't lost:
+
 1. **Append-incremental is not crash/cancel-safe with `zip` 8.6** (empirically: `ZipWriter::new_append` overwrites the
    old central directory; truncating before the new EOCD yields "Could not find EOCD" — the archive is unreadable, the
    original does NOT survive). → Default mutation is the app's temp+rename safe-overwrite. Append-past-EOF is a later,
@@ -109,8 +111,8 @@ changeset `{ add, delete, rename }` applied in a single pass by a new `ArchiveEd
   bespoke inline ceremony (UUID, state, `ManagedTaskGuard`, `WriteSettledGuard`, terminal match, `on_settled`); the
   manager provides only queue/lanes/busy-set/settle. Cancel/pause/conflict are re-implemented per driver by convention.
   Budget a new driver of that size.
-- **Plugs into `manager::spawn_managed`** via a `DeferredStart` — confirmed generic, no scheduler change. Inherits
-  queue (parent lane), busy-volumes, and the `write-settled` contract.
+- **Plugs into `manager::spawn_managed`** via a `DeferredStart` — confirmed generic, no scheduler change. Inherits queue
+  (parent lane), busy-volumes, and the `write-settled` contract.
 - **Pause/cancel** wired in the driver: `PauseGate` checks between entries (and between chunks while streaming an added
   file's bytes, like `CheckpointStream`); `OperationIntent` for cancel. With temp+rename, cancel = abandon the temp,
   original intact (clean, no rollback ledger).
@@ -118,8 +120,8 @@ changeset `{ add, delete, rename }` applied in a single pass by a new `ArchiveEd
   an O_EXCL placeholder for `find_unique_name`), so it can't consult a zip index — exactly why MTP/SMB have a parallel
   `transfer/volume_conflict.rs`. In-archive conflicts need a THIRD resolver that reuses only the pure `ApplyToAll`
   latch + the oneshot prompt plumbing, consulting the archive index for "name exists".
-- **`WriteOperationType` fan-out**: adding `ArchiveEdit` touches the closed enum (`types.rs`), the wildcard-less match in
-  `analytics.rs` (compile error otherwise — the only exhaustive Rust match), `bindings.ts` (regen), and **two**
+- **`WriteOperationType` fan-out**: adding `ArchiveEdit` touches the closed enum (`types.rs`), the wildcard-less match
+  in `analytics.rs` (compile error otherwise — the only exhaustive Rust match), `bindings.ts` (regen), and **two**
   hand-written FE string unions in `src/lib/file-explorer/types.ts` (`WriteOperationType` AND `TransferOperationType`,
   both `'copy'|'move'|'delete'|'trash'` — the second is easy to miss). List these in M4.
 - **Progress/ETA**: every edit is an O(archive) `raw_copy_file` of all retained entries (deleting one file from a 10 GB
@@ -135,14 +137,15 @@ changeset `{ add, delete, rename }` applied in a single pass by a new `ArchiveEd
 the app's mandated safe-overwrite (AGENTS.md principle 4). Retained entries are copied with the `zip` crate's
 `raw_copy_file` (verified: no decompress/recompress, preserves entries byte-for-byte); only newly added entries are
 compressed. This is:
-- **Cancel/crash-safe by construction**: the original is untouched until the final rename; cancel abandons the temp. This
-  is what makes the cancellation David wants actually work (naive in-place append corrupts on cancel — verified).
+
+- **Cancel/crash-safe by construction**: the original is untouched until the final rename; cancel abandons the temp.
+  This is what makes the cancellation David wants actually work (naive in-place append corrupts on cancel — verified).
 - **Mostly-uniform across backends**: local edits the source in place — open it as a `zip::ZipArchive<File>` (cheap
-  local `Read+Seek`), `raw_copy_file` retained entries into the temp, add new ones, rename. **Remote (M5) first pulls the
-  old archive to a local temp**, because `zip`'s `raw_copy_file` consumes a `zip::ZipArchive<R: Read+Seek>` and cannot
-  ingest arbitrary bytes — so the retained-entry copy must run over a local file; then `write_from_stream` uploads the
-  result and swaps (same as MTP). So it's a shared local-build path with a remote pull-first prologue, not literally one
-  path — the remote pull is the "even if slower" cost.
+  local `Read+Seek`), `raw_copy_file` retained entries into the temp, add new ones, rename. **Remote (M5) first pulls
+  the old archive to a local temp**, because `zip`'s `raw_copy_file` consumes a `zip::ZipArchive<R: Read+Seek>` and
+  cannot ingest arbitrary bytes — so the retained-entry copy must run over a local file; then `write_from_stream`
+  uploads the result and swaps (same as MTP). So it's a shared local-build path with a remote pull-first prologue, not
+  literally one path — the remote pull is the "even if slower" cost.
 - **Honest cost**: O(archive) per edit (a raw byte copy, no recompress). Fast locally (~1 s/GB), slower remote — the
   "even if slower" David accepted. A near-instant delete is NOT achievable this way; see the optimization below.
 
@@ -159,6 +162,7 @@ adapter: build the new archive in a **local** seekable temp, then `write_from_st
 (same path as MTP). The only place a remote random-access **write** adapter is needed is M-append's true in-place path.
 
 Data-safety invariants temp+rename must inherit (the app already enforces these for file overwrites):
+
 - **Temp is a same-directory sibling** of the `.zip` (`foo.zip.cmdr-tmp-<uuid>`), so the final rename is atomic on one
   filesystem — never an OS-temp-dir build + cross-device move. The startup `.cmdr-` reaper covers leftovers.
 - **Preserve the original zip's own metadata**: a rewrite yields a fresh inode, so copy the original's mode, mtimes, and
@@ -178,8 +182,9 @@ currently does `VolumeManager::get(volume_id)` then `volume.method(path)` — ~1
 
 **No-`volume_id` commands need their own archive-aware patch** (these bypass VolumeManager entirely): `viewer_open` /
 `viewer_open_as_text` / `viewer_write_range_to_file` (raw path — **previewing a file inside an archive is unrouted
-today; required for M1 to be useful**), `stat_paths_kinds`, the local `copy_files`/`move_files`/`delete_files`/`trash_files`
-fast-paths, the `rename_file` root branch, and `go_to_path::resolve`.
+today; required for M1 to be useful**), `stat_paths_kinds`, the local
+`copy_files`/`move_files`/`delete_files`/`trash_files` fast-paths, the `rename_file` root branch, and
+`go_to_path::resolve`.
 
 **Layer into the existing resolve flow, don't add a fourth resolver.** `commands/volumes.rs::resolve_path_volume` /
 `resolve_location` (backend) and `resolvePathVolume` (FE) already map paths→volumes; fold archive detection into them
@@ -199,18 +204,19 @@ existing analog for path-based routing.
    the drop-foreign-listing branch / tint / the selector pill / `getPaneVolumePath` / `getPaneLocation` / MCP sync /
    `swapDualPaneState`, AND a persistence fix: **persist the parent drive + zip path and re-derive the archive lazily**
    (else quitting inside an archive persists `archive-<hash>` + an unresolvable path → unreachable banner on restart).
-   **The reader set is ~2x the "~10" sketch and must be enumerated and bucketed routing|display before building** (derive
-   from the two getters `getPaneVolumeId`/`getFocusedPaneVolumeId`). Routing consumers (take the archive id): the backend
-   `listDirectoryStart(volumeId,…)`, the git-repo subscription gate, `watchVolumeSpace`, the SMB reconnect manager, rename
-   routing (`rename-flow.svelte.ts`), transfer/conflict-scan source+dest ids (`file-operation-commands.ts`), drag-drop
-   dest, clipboard gating, `isDiskImageVolume`. Display consumers (take the parent drive): tint, breadcrumb, selector
-   pill, persistence. Mis-bucketing one silently routes I/O to the wrong volume or mislabels the pane.
-   **Restore re-derivation hook**: `resolveVolumeId` (`initialization.ts`) already ignores the stored `volumeId` and calls
-   `resolvePathVolume(path)` with a trusted `'network'` special-case — add an archive-aware branch there (and make
-   `resolvePathVolume` re-derive the archive from a `…/foo.zip/…` path), in lockstep with the backend resolver.
-   **Refcount vs persist use two id forms, by design**: in-session history/panes carry `archive-<hash>` (drives the
-   refcount/eviction; history isn't persisted), while persistence stores parent drive + zip path (drives restore). The
-   mount hook increments; the search-results `droppedEntries`/`snapshotIdFromEntry` release is the eviction template.
+   **The reader set is ~2x the "~10" sketch and must be enumerated and bucketed routing|display before building**
+   (derive from the two getters `getPaneVolumeId`/`getFocusedPaneVolumeId`). Routing consumers (take the archive id):
+   the backend `listDirectoryStart(volumeId,…)`, the git-repo subscription gate, `watchVolumeSpace`, the SMB reconnect
+   manager, rename routing (`rename-flow.svelte.ts`), transfer/conflict-scan source+dest ids
+   (`file-operation-commands.ts`), drag-drop dest, clipboard gating, `isDiskImageVolume`. Display consumers (take the
+   parent drive): tint, breadcrumb, selector pill, persistence. Mis-bucketing one silently routes I/O to the wrong
+   volume or mislabels the pane. **Restore re-derivation hook**: `resolveVolumeId` (`initialization.ts`) already ignores
+   the stored `volumeId` and calls `resolvePathVolume(path)` with a trusted `'network'` special-case — add an
+   archive-aware branch there (and make `resolvePathVolume` re-derive the archive from a `…/foo.zip/…` path), in
+   lockstep with the backend resolver. **Refcount vs persist use two id forms, by design**: in-session history/panes
+   carry `archive-<hash>` (drives the refcount/eviction; history isn't persisted), while persistence stores parent
+   drive + zip path (drives restore). The mount hook increments; the search-results
+   `droppedEntries`/`snapshotIdFromEntry` release is the eviction template.
 2. **RESOLVED — bundles (`.app`/`.bundle`/`.framework`) default to Ask.** Nothing silently changes vs today's
    browse-into behavior; both options are offered.
 3. **Mutation strategy — needs one explicit confirmation (reverses my earlier pitch).** My earlier "near-instant
@@ -263,13 +269,14 @@ Fully parallelizable with M1b until they meet at the resolver seam.
 - `handleNavigate` fork (`FilePane.svelte`): a file with `is_archive` routes to archive-open via the switch arm
   (`onGoToLocation` → `Location { volumeId: archiveId, path: innerPath }`) — the established "entry on another volume"
   pattern (mirrors search-results `goToRealEntry`). M1b enters directly (no Ask menu yet — M2).
-- `navigateToParent` boundary: at the archive root, a custom branch bubbles `onGoToLocation(containingDrive,
-  zipParentDir)` to exit (the root-equality guard otherwise blocks it).
+- `navigateToParent` boundary: at the archive root, a custom branch bubbles
+  `onGoToLocation(containingDrive, zipParentDir)` to exit (the root-equality guard otherwise blocks it).
 - Path bar: `breadcrumbDisplayPath` and `breadcrumb-navigation.ts` need archive-aware branches (the routing volume's
   mount prefix is stripped today, so the path bar would show `/inner` not `…/foo.zip/inner`); the FE must know the zip's
   real containing path. The archive must register as an FE `VolumeInfo` with `path` = the parent mount so
-  `getPaneVolumePath` resolves it (else it falls back to `'/'`, breaking prefix stripping and `enrichBreadcrumbSegments`'s
-  base) — WITHOUT surfacing as a selector pill (search-results is the precedent for a path-resolvable, non-pill volume).
+  `getPaneVolumePath` resolves it (else it falls back to `'/'`, breaking prefix stripping and
+  `enrichBreadcrumbSegments`'s base) — WITHOUT surfacing as a selector pill (search-results is the precedent for a
+  path-resolvable, non-pill volume).
 - Put new logic in `*.svelte.ts`/`*.ts` helpers (FilePane.svelte is ~3000 lines, file-length-flagged).
 - Tests: boundary detection (path with `foo.zip` mid-string vs a real dir literally named `foo.zip` — real dir wins);
   navigate in/out; path-bar round-trip; **preview a file inside the zip**; copy a file out. E2E via Playwright +
@@ -318,8 +325,9 @@ Nice-to-have; can follow M4 if mutation is the priority.
 - Tests (TDD red→green, data-safety critical): round-trip add/delete/rename → re-read; **cancel mid-add leaves the
   original fully readable** (temp+rename makes this true — the headline safety property); merge invariant (an edit never
   drops an untouched sibling); two zips on **different mounts** edit in parallel while **same-mount (incl. same-zip)**
-  serialize (existing per-device write-serialization, parent lane); pause/resume an add; in-archive name conflict prompt. Re-run data-safety tests yourself before merge; `cargo mutants` on new
-  write-side files. Checks: full `pnpm check --include-slow`, `bindings:regen`.
+  serialize (existing per-device write-serialization, parent lane); pause/resume an add; in-archive name conflict
+  prompt. Re-run data-safety tests yourself before merge; `cargo mutants` on new write-side files. Checks: full
+  `pnpm check --include-slow`, `bindings:regen`.
 
 (Compaction checkbox + dead-space slider deferred to M-append — temp+rename produces no dead space.)
 
@@ -385,25 +393,27 @@ editing on the device); otherwise the temp+rename whole-object path already work
 after. Shortlist: **`rc-zip` + `rc-zip-tokio`** (sans-IO zip READ — browse/extract, local + remote; enable the `deflate`
 default + any codec feature in-scope archives use — `bzip2`/`lzma`/`zstd` — or extract errors) + **`positioned-io`**
 (ranged-read cursor over the local File), **`zip`** (zip WRITE — temp+rename via `raw_copy_file`/`ZipWriter`; pure-Rust
-codec backends — `miniz_oxide`, not zlib-ng), `tar`,
-`flate2` (`rust_backend`), `lzma-rs`, `bzip2-rs`, `ruzstd`, `sevenz-rust2`. M6 touches `mtp-rs` (first-party).
+codec backends — `miniz_oxide`, not zlib-ng), `tar`, `flate2` (`rust_backend`), `lzma-rs`, `bzip2-rs`, `ruzstd`,
+`sevenz-rust2`. M6 touches `mtp-rs` (first-party).
 
 **Evaluated and rejected: `async_zip` (Majored/rs-async-zip) as a single read+write replacement.** Read its source
 (v0.0.18). It's pure-Rust for Stored+Deflate (via `async-compression`→`flate2`→`miniz_oxide`; bzip2/lzma/zstd/xz pull C,
-same as everyone), does async read+write in one crate, and has no-recompress *writes*
-(`write_entry_*_precompressed`). But: (1) its reader has NO raw-compressed-bytes API (`CompressedReader` always decodes
-per the entry's method), so the one thing that could justify it — streaming a remote raw-entry copy without a full local
-pull — would still be hand-rolled; (2) it's pre-1.0 single-maintainer, and we won't bet the data-safety-critical write
-path on that when `zip` is mature; (3) for reads, `rc-zip`'s sans-IO (read-at-offset) fits `Volume` ranged reads better
-than async_zip's `AsyncRead + AsyncSeek`. **Revisit only if it reaches 1.0 with a raw-entry-read API** (then it could
-unify read+write and enable streaming remote edits).
+same as everyone), does async read+write in one crate, and has no-recompress _writes_ (`write_entry_*_precompressed`).
+But: (1) its reader has NO raw-compressed-bytes API (`CompressedReader` always decodes per the entry's method), so the
+one thing that could justify it — streaming a remote raw-entry copy without a full local pull — would still be
+hand-rolled; (2) it's pre-1.0 single-maintainer, and we won't bet the data-safety-critical write path on that when `zip`
+is mature; (3) for reads, `rc-zip`'s sans-IO (read-at-offset) fits `Volume` ranged reads better than async_zip's
+`AsyncRead + AsyncSeek`. **Revisit only if it reaches 1.0 with a raw-entry-read API** (then it could unify read+write
+and enable streaming remote edits).
 
 ## Cross-cutting risks (carry through every milestone)
 
 - **Lifecycle/eviction**: refcount ArchiveVolumes by panes/tabs/history entries; unregister on last release (mirror the
   search-results snapshot release); LRU backstop. Without it, browsing many zips leaks unboundedly.
-- **Read-only space semantics**: `get_space_info` must not read as "disk full"/block paste; `space_poll_interval = None`.
-- **Restore-from-persistence**: persist parent drive + zip path, re-derive the archive lazily (else restart → unreachable).
+- **Read-only space semantics**: `get_space_info` must not read as "disk full"/block paste;
+  `space_poll_interval = None`.
+- **Restore-from-persistence**: persist parent drive + zip path, re-derive the archive lazily (else restart →
+  unreachable).
 - **Concurrency vs the crates**: `rc-zip` reads are sans-IO (concurrent reads via independent ranged-read cursors, no
   shared `&mut`); the `zip` `ZipWriter` (writes) is `&mut`, one handle per edit; decompression runs on a CPU pool /
   `spawn_blocking`, off the async executor.

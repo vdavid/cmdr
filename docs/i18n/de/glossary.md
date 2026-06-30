@@ -323,4 +323,6 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
   Apple/social-standard for "like" · high
 - "Never do this again" (turn the gesture off) → Das nie wieder tun · standard DE; turns the behavior off (not just
   hides the notice), so the literal "tun" phrasing fits better than macOS's notice-hiding "Nicht mehr anzeigen" · high
-- preset (value in a settings-picker dropdown; opposite of the custom-value option) → Voreinstellung; "back to presets" → "Zurück zu den Voreinstellungen" · Microsoft terminology ("indexing preset" → "Indizierungsvoreinstellung"), macOS DE print dialog "Voreinstellungen" · high
+- preset (value in a settings-picker dropdown; opposite of the custom-value option) → Voreinstellung; "back to presets"
+  → "Zurück zu den Voreinstellungen" · Microsoft terminology ("indexing preset" → "Indizierungsvoreinstellung"), macOS
+  DE print dialog "Voreinstellungen" · high

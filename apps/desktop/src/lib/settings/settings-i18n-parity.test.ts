@@ -82,8 +82,7 @@ describe('settings enum-option label parity (en)', () => {
 
   it('carries a Lucide icon per theme-mode option', () => {
     const def = getSettingDefinition('theme.mode')
-    const iconFor = (value: string) =>
-      def?.constraints?.options?.find((o) => o.value === value)?.icon
+    const iconFor = (value: string) => def?.constraints?.options?.find((o) => o.value === value)?.icon
     expect(iconFor('light')).toBe('sun')
     expect(iconFor('dark')).toBe('moon')
     expect(iconFor('system')).toBe('monitor')

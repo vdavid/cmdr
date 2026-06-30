@@ -2,35 +2,35 @@
 
 ## Why this exists
 
-We want the user's images (across local disk, and opt-in on SMB/MTP) to be **searchable by their content**: type
-"beach sunset" and find the photo, search the text printed inside a screenshot, find every shot of a named person, or
-filter by auto-detected tags. This is the "AI-native file manager" promise applied to photos.
+We want the user's images (across local disk, and opt-in on SMB/MTP) to be **searchable by their content**: type "beach
+sunset" and find the photo, search the text printed inside a screenshot, find every shot of a named person, or filter by
+auto-detected tags. This is the "AI-native file manager" promise applied to photos.
 
-The research that motivated this plan (Immich teardown + 2026 macOS/Rust landscape, verified 2026-06-29) landed one
-big reframe:
+The research that motivated this plan (Immich teardown + 2026 macOS/Rust landscape, verified 2026-06-29) landed one big
+reframe:
 
 > In 2026, macOS ships OCR, face **detection**, scene tagging, image-similarity embeddings, and a free on-device LLM
 > (reportedly multimodal) — all on-device, Neural-Engine-accelerated, zero model download. The only real gaps we must
 > fill ourselves are **face identity** (Apple exposes detection but deliberately not recognition) and **text→image
 > natural-language search** (Apple's image feature print has no text encoder). So this is a "fill two gaps + glue"
-> effort, not a "build the whole ML stack like Immich" effort — **but see Decision 1's verification gates: the "glue"
-> is real `unsafe` Core ML FFI, and three external claims must be proven before we lean on them.**
+> effort, not a "build the whole ML stack like Immich" effort — **but see Decision 1's verification gates: the "glue" is
+> real `unsafe` Core ML FFI, and three external claims must be proven before we lean on them.**
 
 Immich's own architecture (separate Python ML service + Postgres/pgvector + HTTP) is **multi-user server overhead we
 must not copy**. A single-user desktop app does all of it in-process, on-device, and stores vectors in SQLite.
 
 This plan deliberately scopes **out** the discovery / metadata / thumbnail layers (file walk, EXIF, mtime change
-detection) — those already exist in `indexing/`, and David is explicitly less interested in them here. We build the
-**ML enrichment + search** layer on top of the existing drive index.
+detection) — those already exist in `indexing/`, and David is explicitly less interested in them here. We build the **ML
+enrichment + search** layer on top of the existing drive index.
 
 ### Product values in play (from `docs/design-principles.md` and `AGENTS.md` § Principles)
 
 - **Protect the user's data + privacy.** Everything defaults to **on-device** (no image leaves the machine). Faces are
   sensitive: explicit opt-in, clear copy, all-local, and **never silently mis-labeled** (see Decision 4). The single
   cloud path (LLM captions) is a separate, explicit, BYOK opt-in.
-- **Respect the user's resources (CPU, RAM, disk, wallet).** Near-free by default: the only downloads are two small
-  Core ML models (face + CLIP), both ANE-accelerated. Enrichment is throttled, cancelable, low-priority, and runs after
-  the base index is live, under an explicit shared memory ceiling. Slow volumes (SMB/MTP) are opt-in and conservative.
+- **Respect the user's resources (CPU, RAM, disk, wallet).** Near-free by default: the only downloads are two small Core
+  ML models (face + CLIP), both ANE-accelerated. Enrichment is throttled, cancelable, low-priority, and runs after the
+  base index is live, under an explicit shared memory ceiling. Slow volumes (SMB/MTP) are opt-in and conservative.
 - **Rock solid + everything cancelable.** Enrichment is a background, resumable, cancelable pass that never blocks the
   UI and survives crashes mid-run. `media.db` is a disposable cache; the only human work that must survive a wipe lives
   in a separate durable store, hardened against silent corruption.
@@ -57,7 +57,7 @@ below were verified against the code on 2026-06-29 (file refs may drift — conf
     renames/moves** in the live loop (`find_entry_by_inode`); inode is unstable on copy and unreliable on SMB/MTP, so
     it's a rename hint, not an identity. **We key on path, exactly as the index itself does.** (Decision 3.)
   - **Phase events are frontend-only (verified):** `set_phase_for` does one outward thing — `.emit(app)` a Tauri event
-    *to the webview*. There is **no in-process backend pub/sub** a Rust subsystem can subscribe to. Network volumes emit
+    _to the webview_. There is **no in-process backend pub/sub** a Rust subsystem can subscribe to. Network volumes emit
     only `Scanning → Live` (no Aggregating/Reconciling). (Drives Decision 7.)
 - **`src-tauri/src/ai/`** — on-device model **download** infra. Verified reality: `download.rs` is a generic resumable
   HTTP GET (**genuinely reusable**); `install.rs` is **GGUF/llama-server-specific** orchestration; `extract.rs` only
@@ -65,10 +65,10 @@ below were verified against the code on 2026-06-29 (file refs may drift — conf
   checksum. We reuse `download.rs`; the rest of the model-install path is **new code** (Decision 9). Also: the cloud
   BYOK client (`client.rs`, `genai`) and the `is_local_ai_supported()` Apple-Silicon gate shape.
 - **`src-tauri/src/search/`** — read-only, one-way consumer of `indexing/` via a defined read surface (`ReadPool`,
-  `IndexStore`); in-memory filename index; **pure** `engine.rs` (no I/O); NL→`SearchQuery` AI translation (`search/ai/`).
-  Image search is a **new query path** (vectors + FTS), and it must reach `media.db` **through a `media_index` read API
-  that mirrors the `ReadPool`/`IndexStore` boundary — never a raw `rusqlite` dependency** (Decision 8). It surfaces
-  through the same `query-ui` primitives.
+  `IndexStore`); in-memory filename index; **pure** `engine.rs` (no I/O); NL→`SearchQuery` AI translation
+  (`search/ai/`). Image search is a **new query path** (vectors + FTS), and it must reach `media.db` **through a
+  `media_index` read API that mirrors the `ReadPool`/`IndexStore` boundary — never a raw `rusqlite` dependency**
+  (Decision 8). It surfaces through the same `query-ui` primitives.
 
 macOS FFI precedent already in the codebase: `objc2` + Cocoa/ObjC threads with autoreleasepools, `NSWorkspace`,
 `QLPreviewPanel`, swizzling, `security-framework`. Vision/Core ML via `objc2-vision` / `objc2-core-ml` fit this — but
@@ -79,20 +79,21 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
 1. **macOS-native inference, with a pre-validated `ort` fallback and explicit verification gates.** Use Apple **Vision**
    (OCR, face detection, scene tags, image feature print) and **Core ML** (MobileCLIP, ArcFace) through `objc2-vision` /
    `objc2-core-ml`, and **Foundation Models** (Swift bridge) for the optional caption path.
-   - *Why:* macOS-only app → native frameworks give ANE acceleration and the smallest binary (no bundled ONNX Runtime
+   - _Why:_ macOS-only app → native frameworks give ANE acceleration and the smallest binary (no bundled ONNX Runtime
      native lib). "Ideal over cheap" + "rely on macOS where reasonable."
-   - **Gates (a) + (c) RESOLVED by spike** (2026-06-30; [`docs/notes/clip-coreml-rust-spike.md`](../../notes/clip-coreml-rust-spike.md)).
-     The Core ML text encoder and the Rust round-trip both work: a minimal `objc2-core-ml` 0.3.2 spike loaded a compiled
-     model, predicted, and returned an embedding **bit-identical** to the `coremltools` reference; text→image alignment
-     runs correctly on-device (ANE); native Core ML adds **zero binary weight**; the `unsafe` surface is ~12–15
-     mechanical objc2 calls behind a ~150–250 line safe wrapper (`encode_text`/`encode_image`). **The real constraint is
-     licensing, not capability:** Apple's MobileCLIP/MobileCLIP2 weights are **research-only** (Apple ML Research Model
-     Terms of Use — verified against Apple's `LICENSE_MODELS`), so a commercial product can't ship them. **Resolution,
-     no architecture change: use a commercially-licensed CLIP** (OpenAI CLIP = MIT, or SigLIP 2 = Apache-2.0), converted
-     once with `coremltools` and shipped pre-converted — the plumbing is model-agnostic. Trade-off: heavier than
-     MobileCLIP-S0, still fine on the ANE.
+   - **Gates (a) + (c) RESOLVED by spike** (2026-06-30;
+     [`docs/notes/clip-coreml-rust-spike.md`](../../notes/clip-coreml-rust-spike.md)). The Core ML text encoder and the
+     Rust round-trip both work: a minimal `objc2-core-ml` 0.3.2 spike loaded a compiled model, predicted, and returned
+     an embedding **bit-identical** to the `coremltools` reference; text→image alignment runs correctly on-device (ANE);
+     native Core ML adds **zero binary weight**; the `unsafe` surface is ~12–15 mechanical objc2 calls behind a ~150–250
+     line safe wrapper (`encode_text`/`encode_image`). **The real constraint is licensing, not capability:** Apple's
+     MobileCLIP/MobileCLIP2 weights are **research-only** (Apple ML Research Model Terms of Use — verified against
+     Apple's `LICENSE_MODELS`), so a commercial product can't ship them. **Resolution, no architecture change: use a
+     commercially-licensed CLIP** (OpenAI CLIP = MIT, or SigLIP 2 = Apache-2.0), converted once with `coremltools` and
+     shipped pre-converted — the plumbing is model-agnostic. Trade-off: heavier than MobileCLIP-S0, still fine on the
+     ANE.
    - (b) "Foundation Models is multimodal (image input) as of macOS 26" — still unverified; gate at M5 (optional).
-   - **Bounded fallback:** if the chosen CLIP won't cleanly convert to Core ML (or loses accuracy), run *that one model*
+   - **Bounded fallback:** if the chosen CLIP won't cleanly convert to Core ML (or loses accuracy), run _that one model_
      via `ort` + CoreML execution provider — but that costs **~25–35 MB of native binary** (`libonnxruntime.dylib` +
      ONNX artifacts; `ort` is pre-1.0) the native path avoids. Per-model last resort, not the default.
 
@@ -103,37 +104,37 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
    build+signing project, not a flag flip** — adopt it only if a real library crosses the threshold, behind the same
    vector-store trait. **FTS5 is expected-fine** (rusqlite `bundled` almost certainly compiles it in) but the whole M1
    OCR headline rests on it, so **gate it with a `CREATE VIRTUAL TABLE … USING fts5` smoke at M1 start** — if absent it
-   needs a `libsqlite3-sys` build flag, which isn't free. *Why:* a single user's library is small; Postgres+pgvector is
+   needs a `libsqlite3-sys` build flag, which isn't free. _Why:_ a single user's library is small; Postgres+pgvector is
    multi-user server overhead. Kills the "ship/download Postgres" question entirely.
 
 3. **A separate per-volume media DB (`media.db`), keyed on PATH identity.** Don't add ML tables to the index DB.
-   - *Why separate DB:* respects "one writer thread per DB" (no contention with the size-index writer), independent
+   - _Why separate DB:_ respects "one writer thread per DB" (no contention with the size-index writer), independent
      disposable lifecycle, mirrors the per-volume registry pattern (SMB/MTP slot in naturally).
-   - *Why path-keyed:* there is no stable cross-rebuild entry id (see Current state). `media.db` rows key on the **same
+   - _Why path-keyed:_ there is no stable cross-rebuild entry id (see Current state). `media.db` rows key on the **same
      path identity the index uses** (parent chain + `name_folded`, or a normalized full-path hash with `platform_case`
      folding). A rebuild of either DB re-joins by path. **The staleness key is `(path, mtime[, size])` from the index
      row, not the entry id.** This corrects the v1 "stable id" error that invalidated the whole rebuild story.
-   - *Rename/move = delete+add (recompute), no inode fast path.* The index preserves its entry id across an inode-matched
-     rename but the **path changes**; `media_index` only subscribes to the lifecycle bus (no per-entry move events), so
-     it sees a rename as the old path vanishing + a new path appearing and re-enriches. Derived data is cheap to
-     recompute; don't chase an inode "follow" optimization that isn't wired.
+   - _Rename/move = delete+add (recompute), no inode fast path._ The index preserves its entry id across an
+     inode-matched rename but the **path changes**; `media_index` only subscribes to the lifecycle bus (no per-entry
+     move events), so it sees a rename as the old path vanishing + a new path appearing and re-enriches. Derived data is
+     cheap to recompute; don't chase an inode "follow" optimization that isn't wired.
    - **GC must be deletion-driven, never absence-during-a-rescan (data-safety).** A true full rescan **truncates**
-     `entries` and repopulates, so mid-scan *every* path transiently "vanishes." GC keyed on "absent from the index
+     `entries` and repopulates, so mid-scan _every_ path transiently "vanishes." GC keyed on "absent from the index
      tree" would then delete media rows for files that still exist and force full re-enrichment. So GC reacts to the
      reconciler's actual delete of a **known** entry (the index "deletes only a known entry"), and/or runs **only
      against a completed/Fresh scan** — never while a volume is `Scanning`. (LOCAL rescans of a populated index
      reconcile in place via `local_reconcile.rs`; the hazard is specifically the truncate path.)
 
 4. **Disposable derived data vs durable human work — split the stores, and harden the durable side.** Detections,
-   embeddings, tags, OCR text, and *computed* clusters are **disposable** (`media.db`, regenerable). **Human work**
+   embeddings, tags, OCR text, and _computed_ clusters are **disposable** (`media.db`, regenerable). **Human work**
    survives a wipe in a separate app-data store modeled on `favorites/` (atomic JSON, seed-once, pure versioned core).
    Human work is **not just names** — it includes **merge/split/"not this person" corrections**. The durable store
    holds, per named/curated identity: the assigned name, the corrections, and one or more **embedding centroids tagged
    with the embedding model's id+version**.
    - **Re-attach after a wipe is conservative, not silently automatic** (this is the data-safety crux):
      - If `media.db` survived (the common case — a crash, not a schema wipe), the face rows and their identity links
-       survived too; nothing to re-attach. (Identity links by `face_id`, not by path — don't rebind faces by path,
-       which is wrong for multi-face photos.)
+       survived too; nothing to re-attach. (Identity links by `face_id`, not by path — don't rebind faces by path, which
+       is wrong for multi-face photos.)
      - On a true face-embedding regenerate, re-attach candidates by centroid cosine **only when the centroid's model
        id+version matches** the current model. **Model mismatch ⇒ do NOT cosine-match across incompatible spaces** (it
        would mislabel); instead mark identities "needs re-confirm" and re-surface them in the People UI.
@@ -141,18 +142,18 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
        removed from "Dóri" ("not this person") will, after a regenerate, again be cosine-nearest to Dóri's centroid — so
        a purely positive matcher would silently re-introduce the exact mislabel the user fixed. Any candidate suppressed
        by a durable negative is **never auto-attached**, only offered as "needs re-confirm." Likewise re-clustering must
-       honor durable cannot-link/must-link, or a manual split silently re-merges. **Cannot-link is the hard constraint:**
-       when a transitive must-link closure (a–b, b–c) would force a cannot-link violation (a–c), the must-link is dropped
-       and flagged, never silently applied. (This is the hole positive-only re-attach leaves; the M4b tests target it
-       explicitly, including the transitive-conflict case.)
+       honor durable cannot-link/must-link, or a manual split silently re-merges. **Cannot-link is the hard
+       constraint:** when a transitive must-link closure (a–b, b–c) would force a cannot-link violation (a–c), the
+       must-link is dropped and flagged, never silently applied. (This is the hole positive-only re-attach leaves; the
+       M4b tests target it explicitly, including the transitive-conflict case.)
      - Even on a clean match, a **high threshold** plus a lightweight "Still <name>?" confirmation for low-confidence
        re-attaches — a silent false attribution is worse than asking. Mis-attach is a first-class failure mode here, not
        just "failed to attach."
-   - *Why:* the index is explicitly throwaway; we must never silently lose or corrupt the human labeling/curation. This
+   - _Why:_ the index is explicitly throwaway; we must never silently lose or corrupt the human labeling/curation. This
      is the single most important data-safety decision in the plan, and the M4 red→green tests target exactly it.
 
 5. **Feed a downscaled in-memory decode to the models, never the original.** Decode via ImageIO/CoreGraphics (native;
-   HEIC/RAW), downscale to model input (~224–512 px), feed the `CGImage`. No thumbnail *files*. *Why:* CLIP/OCR need
+   HEIC/RAW), downscale to model input (~224–512 px), feed the `CGImage`. No thumbnail _files_. _Why:_ CLIP/OCR need
    small inputs; decoding originals twice is the dominant cost.
 
 6. **Opt-in, gated, conservative by default.** Whole feature off until enabled; **faces a separate opt-in** with privacy
@@ -177,7 +178,7 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
      `ScanCompleted` can both target one volume — a pass already running or queued sets a re-run flag instead of
      enqueuing a second (single-writer + the `(path, mtime, size)` predicate make the duplicate a near-no-op anyway, but
      don't rely on that for correctness). Cover with a coalescing test in M1.
-   - *Why this shape:* satisfies "subscribe, don't poll" **without** making `indexing/` depend on `media_index` (which
+   - _Why this shape:_ satisfies "subscribe, don't poll" **without** making `indexing/` depend on `media_index` (which
      would reverse the clean one-way direction). The bus is a neutral publish surface, not a back-reference.
    - **Network caveat:** SMB/MTP emit only `Scanning → Live` at the phase layer, but **both kinds fire
      `FreshnessEvent::ScanCompleted`** (and `IndexAggregationCompleteEvent`) — drive "ready to enrich" off that, not off
@@ -193,7 +194,7 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
    install gate distinct from the GGUF two-flag gate. Don't describe this as "reuse the install infra."
 
 10. **The cloud is opt-in and only for premium captions** (M5), through the existing `ai/` BYOK client, behind a
-    *distinct* explicit egress consent. On-device captions (Foundation Models) are the default for that feature.
+    _distinct_ explicit egress consent. On-device captions (Foundation Models) are the default for that feature.
 
 ## Architecture
 
@@ -248,17 +249,17 @@ and the Core ML-adjacent Vision FFI) is proven before any ML model lands.
   `docs/architecture.md`; note the new search read-API boundary in `search/DETAILS.md`; document the lifecycle bus in
   `indexing/DETAILS.md`; new settings string in the i18n catalog.
 - **Tests:**
-  - *Smoke first:* an FTS5 availability check (`CREATE VIRTUAL TABLE … USING fts5`) before building on it (Decision 2).
-  - *TDD red→green (pure/risky):* the **path-keyed staleness predicate** (stale vs `(path, mtime, size)`); the **GC
-    reconcile is deletion-driven** (a *known* entry deleted ⇒ rows gone) **and must NOT fire during an in-progress
+  - _Smoke first:_ an FTS5 availability check (`CREATE VIRTUAL TABLE … USING fts5`) before building on it (Decision 2).
+  - _TDD red→green (pure/risky):_ the **path-keyed staleness predicate** (stale vs `(path, mtime, size)`); the **GC
+    reconcile is deletion-driven** (a _known_ entry deleted ⇒ rows gone) **and must NOT fire during an in-progress
     rescan** (transient truncate absence ⇒ rows kept) — this is a data-safety test, not a nicety; the **scheduler
     throttle/cancel decision**; and **FTS query building** — fail first for the right reason, then implement
     (`tdd-red-green`).
-  - *After:* scheduler integration test using the **fake `VisionBackend`** over a synthetic index (no FFI); a macOS-
+  - _After:_ scheduler integration test using the **fake `VisionBackend`** over a synthetic index (no FFI); a macOS-
     gated integration test running real Vision OCR on a committed fixture image (asserts known words); a bus test that a
     volume reaching the completion signal wakes the scheduler; **a "volume Fresh-at-launch with no new scan still gets
     scheduled" test** (the registry-sweep path, Decision 7).
-  - *E2E:* a Playwright smoke that the settings toggle persists (this IS the one small E2E for M1).
+  - _E2E:_ a Playwright smoke that the settings toggle persists (this IS the one small E2E for M1).
 - **Checks:** `pnpm check --fast` iterating; full `pnpm check` at end (clippy, rust tests, i18n-coverage,
   `claude-md-details-sibling`, `docs-reachable`, file-length). Smoke-test the scheduler on 1–2 images first
   (`test-infra-smoke-first`).
@@ -269,31 +270,33 @@ and the Core ML-adjacent Vision FFI) is proven before any ML model lands.
   searchable. Vision `VNGenerateImageFeaturePrintRequest` → `media_embedding` (image↔image only).
 - The **vector-store trait** lands here: brute-force cosine impl first (no `sqlite-vec`); "Find similar images" + dedup
   grouping.
-- **Docs:** `media_index/DETAILS.md` — note Vision's fixed tag taxonomy and **anchor the count** (`~1,303 on
-  <macOS version>, verified <date>`) per `docs.md`; architecture note for "find similar".
-- **Tests:** *TDD red→green:* cosine/top-k ranking, dedup threshold, tag-score filtering. *After:* fake-backend
-  scheduler extended to tags + feature prints. *E2E:* "Find similar" from a result.
+- **Docs:** `media_index/DETAILS.md` — note Vision's fixed tag taxonomy and **anchor the count**
+  (`~1,303 on <macOS version>, verified <date>`) per `docs.md`; architecture note for "find similar".
+- **Tests:** _TDD red→green:_ cosine/top-k ranking, dedup threshold, tag-score filtering. _After:_ fake-backend
+  scheduler extended to tags + feature prints. _E2E:_ "Find similar" from a result.
 - **Checks:** as M1 + `--include-slow` before wrapping (vector paths).
 
 ### M3 — Natural-language semantic search (first model: MobileCLIP via Core ML)
 
 - **Gate RESOLVED (spike, 2026-06-30):** the Core ML text encoder + `objc2-core-ml` round-trip work (bit-identical to
   the `coremltools` reference), so the native path stands. **Use a commercially-licensed CLIP — NOT Apple's MobileCLIP**
-  (research-only weights, can't ship; see Decision 1 and [`docs/notes/clip-coreml-rust-spike.md`](../../notes/clip-coreml-rust-spike.md)).
-  Candidates: OpenAI CLIP (MIT) or SigLIP 2 (Apache-2.0); convert once with `coremltools` on a dev box, ship the
-  pre-converted `.mlpackage` (image + text towers). **Verify the chosen model's license + Core ML conversion fidelity at
-  impl time.**
+  (research-only weights, can't ship; see Decision 1 and
+  [`docs/notes/clip-coreml-rust-spike.md`](../../notes/clip-coreml-rust-spike.md)). Candidates: OpenAI CLIP (MIT) or
+  SigLIP 2 (Apache-2.0); convert once with `coremltools` on a dev box, ship the pre-converted `.mlpackage` (image + text
+  towers). **Verify the chosen model's license + Core ML conversion fidelity at impl time.**
 - Wrap the `objc2-core-ml` calls in a safe `encode_text`/`encode_image` API (~150–250 lines, per-block `// SAFETY:`).
-  **Compile the `.mlpackage` to `.mlmodelc` on-device at first run and cache** (`.mlmodelc` is OS-version-specific — don't
-  bundle a prebuilt one); ship the `.mlpackage`.
-- New model-install path (Decision 9): generic archive unpack + **checksum** verify, on-demand download via `download.rs`.
+  **Compile the `.mlpackage` to `.mlmodelc` on-device at first run and cache** (`.mlmodelc` is OS-version-specific —
+  don't bundle a prebuilt one); ship the `.mlpackage`.
+- New model-install path (Decision 9): generic archive unpack + **checksum** verify, on-demand download via
+  `download.rs`.
 - Image embeddings → `media_embedding`; **query-time text encode runs async/off the IPC thread** (Decision: never on the
   synchronous IPC handler — it would block the app per `src-tauri/CLAUDE.md`), with the same autoreleasepool discipline.
   Text vector → vec search, wired into `search/` + `query-ui` as the headline "search photos by description".
 - Settle brute-force vs `sqlite-vec` cutover on a real library; record in `docs/notes/`.
-- **Docs:** `media_index/DETAILS.md` model section (evidence-anchored: id, size, source, license, date); architecture map.
-- **Tests:** *TDD red→green:* text-query → vector-search with a fake encoder (deterministic vectors); the brute-force↔
-  store selection boundary. *After:* macOS-gated embed-a-fixture + text-query asserts the right image ranks top. *E2E:*
+- **Docs:** `media_index/DETAILS.md` model section (evidence-anchored: id, size, source, license, date); architecture
+  map.
+- **Tests:** _TDD red→green:_ text-query → vector-search with a fake encoder (deterministic vectors); the brute-force↔
+  store selection boundary. _After:_ macOS-gated embed-a-fixture + text-query asserts the right image ranks top. _E2E:_
   type a description, get the photo.
 - **Checks:** full `--include-slow`; `cargo deny` + ≥14-day version for any new crate (`use-latest-dep-versions`).
 
@@ -308,9 +311,9 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
   names) to prove the pipeline end-to-end. **Separate faces opt-in + privacy copy** lands here.
 - **Docs:** `media_index/DETAILS.md` faces pipeline; architecture map; `docs/security.md` on on-device face data +
   consent; i18n strings for the opt-in.
-- **Tests:** *TDD red→green:* cluster **merge/split** correctness; clustering honors **durable must-link/cannot-link**
-  (forward ref to the store M4b adds — stub the store in M4a). *After:* fake-backend faces pipeline; macOS-gated
-  detect+embed on a fixture with known faces. *E2E:* faces detected, cluster-id search returns the right photos.
+- **Tests:** _TDD red→green:_ cluster **merge/split** correctness; clustering honors **durable must-link/cannot-link**
+  (forward ref to the store M4b adds — stub the store in M4a). _After:_ fake-backend faces pipeline; macOS-gated
+  detect+embed on a fixture with known faces. _E2E:_ faces detected, cluster-id search returns the right photos.
 - **Checks:** full incl. `--include-slow`.
 
 ### M4b — Naming + durable identity store + conservative re-attach + People UI (the data-safety core)
@@ -324,12 +327,12 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
 - **Docs:** `media_index/DETAILS.md` durable-store + re-attach rationale; frontend `people/CLAUDE.md`+`DETAILS.md`;
   update `docs/security.md`; i18n strings.
 - **Tests (data-safety critical — re-run yourself, don't trust delegation, per `verify-delegated-work`):**
-  - *TDD red→green:* **names+corrections re-attach after a simulated `media.db` wipe** (must re-bind); **refuse to
+  - _TDD red→green:_ **names+corrections re-attach after a simulated `media.db` wipe** (must re-bind); **refuse to
     cross-space match** on model-version mismatch (assert no mislabel); **a face with a durable "not this person: X"
     veto must NOT re-attach to X after a regenerate, even when X's centroid is cosine-nearest** (the C-NEW-1 hole); the
     centroid-match threshold and the "needs re-confirm" path.
-  - *After:* fake-backend identity-store round trips.
-  - *E2E:* name a cluster, search the name, find photos; rename/merge; remove a face then regenerate and assert it does
+  - _After:_ fake-backend identity-store round trips.
+  - _E2E:_ name a cluster, search the name, find photos; rename/merge; remove a face then regenerate and assert it does
     NOT snap back; simulate a model-version bump and assert the UI asks to re-confirm rather than silently relabeling.
 - **Checks:** full incl. `--include-slow`; a11y on the People UI (AA+ contrast, screen reader).
 
@@ -339,10 +342,10 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
   build subproject** (Foundation Models is Swift-only; no Rust bindings) — a linked Swift static lib/framework or a
   sidecar, called over FFI. Spike the bridge early (can run in parallel as research); keep it isolated.
 - Captions feed the FTS index. **Optional cloud route** (frontier VLM) via the existing `ai/` BYOK client, behind a
-  *distinct* explicit egress consent — never default.
+  _distinct_ explicit egress consent — never default.
 - **Docs:** the Swift-bridge build wiring (own `docs/guides/` doc); consent + privacy copy; `ai/DETAILS.md`.
-- **Tests:** *TDD red→green:* provider-selection + consent gate (on-device vs cloud vs off); **verify the cloud gate
-  blocks egress when off** (security-critical, re-run yourself). *After:* Swift-bridge smoke (gated). *E2E:* enable
+- **Tests:** _TDD red→green:_ provider-selection + consent gate (on-device vs cloud vs off); **verify the cloud gate
+  blocks egress when off** (security-critical, re-run yourself). _After:_ Swift-bridge smoke (gated). _E2E:_ enable
   captions, search a described scene.
 - **Checks:** full suite.
 
@@ -350,15 +353,15 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
 
 - **Resources + memory ceiling.** Enrichment runs on dedicated low-priority OS threads (not rayon), bounded concurrency,
   cancel token, starts only after the base index signals ready, yields to foreground. The existing watchdog already
-  measures **process-wide** resident memory but only stops *indexing* — so **hook `media_index` cancellation into that
+  measures **process-wide** resident memory but only stops _indexing_ — so **hook `media_index` cancellation into that
   same watchdog's stop action**, rather than standing up a second independent 16 GB ceiling (two ceilings over one
   shared resident pool each see headroom and can sum to ~2×). Decode of full-res HEIC/RAW + Core ML can spike RAM, so
   this must be **wired**, not asserted.
 - **Query-time vector residency.** Brute-force cosine is cheap, but loading ~200 MB of embedding BLOBs from `media.db`
   per text query is not — and it's real work that must run **off the synchronous IPC thread** (alongside the text
   encode, not just it). Mirror `search/`'s warm in-memory arena (`SEARCH_INDEX`): keep a **resident vector cache**
-  (load-once, invalidated on writes), counted against the same watchdog budget. Embedding storage on disk is small
-  (512 floats ≈ 2 KB/image; int8 if huge).
+  (load-once, invalidated on writes), counted against the same watchdog budget. Embedding storage on disk is small (512
+  floats ≈ 2 KB/image; int8 if huge).
 - **Cancellation + crash-safety.** Every pass is resumable from path-keyed `media_status`; a crash resumes. `media.db`
   is disposable; only the durable identity store must survive (separate atomic, versioned).
 - **Deletion/GC.** `media_index` reconciles against index deletions (file vanished ⇒ media rows, face crops, embeddings
@@ -391,7 +394,8 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
 - **No human work is silently lost or mis-attributed across an index wipe or a model change** (proven by M4b tests,
   including the model-version-mismatch refuse-to-mislabel case AND the negative-veto "doesn't snap back" case). No image
   leaves the device unless the user opts into cloud captions.
-- The only downloads are two small Core ML models, fetched on demand and **checksum-verified**. No Postgres. Binary lean.
+- The only downloads are two small Core ML models, fetched on demand and **checksum-verified**. No Postgres. Binary
+  lean.
 - Enrichment is throttled, cancelable, crash-resumable, GC'd against deletions, and under an explicit memory ceiling;
   SMB/MTP are conservative opt-ins.
 - Full `pnpm check --include-slow` green; new subsystem has `CLAUDE.md`+`DETAILS.md`; architecture map + lifecycle bus
@@ -404,7 +408,8 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
   Apple MobileCLIP, research-only) and confirm its Core ML conversion fidelity. Foundation Models multimodal (1b) stays
   an M5 (optional) gate.
 - **Path identity edge cases:** case folding (`platform_case`), normalization (NFD on APFS), and rename/move following
-  via inode where inode is reliable — and the SMB/MTP cases where it isn't. Get this right in M1; every M1 test rides it.
+  via inode where inode is reliable — and the SMB/MTP cases where it isn't. Get this right in M1; every M1 test rides
+  it.
 - **Core ML conversion fidelity** for ArcFace/MobileCLIP vs the ONNX original; `ort` fallback per model if it degrades.
 - **Clustering + re-attach thresholds** on real libraries — measure, record in `docs/notes/`, never hardcode blind; the
   re-attach threshold is privacy-sensitive (mis-attach > miss).
@@ -416,5 +421,5 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
   mid-pass. Specify incremental/append cache update, or accept eventual consistency until the pass completes (perf, not
   correctness).
 - **Late-registering volumes on the lifecycle bus** (SMB/MTP milestone, not M1): the per-volume `watch` needs a way to
-  subscribe to a volume that registers *after* startup (a share mounted later). Moot for M1 (local `root` only); a
+  subscribe to a volume that registers _after_ startup (a share mounted later). Moot for M1 (local `root` only); a
   latent design point for when SMB/MTP enrichment lands.
