@@ -109,6 +109,10 @@ func main() {
 
 	hasViolations := Report(violations, warnings, rootDir, *verbose)
 
+	// Advisory APCA second opinion over every evaluated pair. Report-only: it
+	// prints but never changes the exit code (WCAG 2 stays the gate). See apca.go.
+	ReportAPCA(allFindings, rootDir)
+
 	summary := Summary(fileCount, analyzer.RulesEvaluated, len(allFindings), len(violations))
 	if hasViolations {
 		fmt.Printf("%s❌ %s%s\n", colorRed, summary, colorReset)
