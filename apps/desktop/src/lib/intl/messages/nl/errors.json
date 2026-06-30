@@ -1313,6 +1313,26 @@
   "@errors.write.insufficientSpace.suggestion": {
     "sourceHash": "257f1d9"
   },
+  "errors.write.filesTooLargeForFilesystem.title.one": "Bestand te groot voor deze schijf",
+  "@errors.write.filesTooLargeForFilesystem.title.one": {
+    "sourceHash": "d8e95aa"
+  },
+  "errors.write.filesTooLargeForFilesystem.title.many": "Sommige bestanden zijn te groot voor deze schijf",
+  "@errors.write.filesTooLargeForFilesystem.title.many": {
+    "sourceHash": "6b148d5"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.one": "{name} is {size}, maar deze schijf is geformatteerd als FAT32 en kan geen bestanden bewaren die groter zijn dan {maxSize}.",
+  "@errors.write.filesTooLargeForFilesystem.message.one": {
+    "sourceHash": "2993e08"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.many": "{count} bestanden zijn te groot voor deze schijf, die geformatteerd is als FAT32 en geen bestanden kan bewaren die groter zijn dan {maxSize}.",
+  "@errors.write.filesTooLargeForFilesystem.message.many": {
+    "sourceHash": "1aac250"
+  },
+  "errors.write.filesTooLargeForFilesystem.suggestion": "Gebruik een schijf die geformatteerd is als exFAT om zulke grote bestanden te bewaren; die heeft zo'n beperking niet.",
+  "@errors.write.filesTooLargeForFilesystem.suggestion": {
+    "sourceHash": "bb4ac05"
+  },
   "errors.write.readOnlyDevice.title": "Alleen-lezenapparaat",
   "@errors.write.readOnlyDevice.title": {
     "sourceHash": "3f79690"

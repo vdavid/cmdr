@@ -530,3 +530,20 @@ rulings stay single-sourced and don't drift again:
   glossary section names. Menu-path separators (`>` vs `→`) mirror EN per key.
 - preset (value in a settings-picker dropdown) → voorinstelling; "back to presets" → "Terug naar voorinstellingen" ·
   Double Commander nl ("voorinstelling": "gewijzigde voorinstelling") · high
+
+From the `filesTooLargeForFilesystem` pass (FAT32 file-size-cap error; mined `_ignored/i18n/nl/`, 2026-06-30):
+
+- too large (file vs drive) → te groot · standard NL ("te groot" for size; "te lang" is reserved for over-long names) ·
+  high
+- format / formatted as (disk) → geformatteerd als · Microsoft terminology ("format"→"formatteren", Verb, NLD/BEL);
+  Apple's Disk Utility labels the format field "Structuur:" but the verb form "geformatteerd als FAT32/exFAT" is the
+  natural sentence form · high
+- store (files on a drive) → bewaren · macOS Finder ("Store … in iCloud"→"Bewaar … in iCloud"); same verb as save
+  (glossary save→bewaren, NOT opslaan) · high
+- larger than → groter dan · Microsoft terminology ("larger than"→"groter dan") · high
+- FAT32 / exFAT (filesystem format names) → kept verbatim · Apple keeps "ExFAT"/"MS-DOS (FAT)" in Dutch macOS;
+  filesystem-format names, do-not-translate · high
+- limit (file-size cap) → beperking · Microsoft terminology ("restriction/limit"→"beperking"); "die heeft zo'n beperking
+  niet" for "has no such limit" · high
+- "and N more files" (trailing list line) → "en nog {countText} bestand(en)" · "nog" carries the "more/additional"
+  sense; plural one/other → bestand/bestanden · high

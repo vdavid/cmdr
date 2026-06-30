@@ -512,6 +512,10 @@
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
   },
+  "fileOperations.errorDialog.tooLargeAndMore": "y {countText} {count, plural, one {archivo} many {archivos} other {archivos}} más",
+  "@fileOperations.errorDialog.tooLargeAndMore": {
+    "sourceHash": "ff109f8"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {El nombre de la carpeta no puede contener “/” ni caracteres nulos} other {El nombre del archivo no puede contener “/” ni caracteres nulos}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

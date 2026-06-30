@@ -513,6 +513,10 @@
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
   },
+  "fileOperations.errorDialog.tooLargeAndMore": "och ytterligare {countText} {count, plural, one {fil} other {filer}}",
+  "@fileOperations.errorDialog.tooLargeAndMore": {
+    "sourceHash": "ff109f8"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Mappnamn får inte innehålla ”/” eller nolltecken} other {Filnamn får inte innehålla ”/” eller nolltecken}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

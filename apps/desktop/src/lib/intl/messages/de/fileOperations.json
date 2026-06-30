@@ -515,6 +515,10 @@
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
   },
+  "fileOperations.errorDialog.tooLargeAndMore": "und {countText} weitere {count, plural, one {Datei} other {Dateien}}",
+  "@fileOperations.errorDialog.tooLargeAndMore": {
+    "sourceHash": "ff109f8"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Der Ordnername darf kein „/“ und keine Nullzeichen enthalten} other {Der Dateiname darf kein „/“ und keine Nullzeichen enthalten}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

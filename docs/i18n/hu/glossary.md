@@ -428,3 +428,30 @@ label; reuses `fájllista` + the new `fájlsor`).
 - preset (value in a settings-picker dropdown) → előbeállítás; "back to presets" → "Vissza az előbeállításokhoz"
   (allative -hoz, vowel-harmonized) · Double Commander hu ("előbeállítás": "módosított előbeállítással", "a …
   előbeállítást") · high
+
+Settled while translating the FAT32-file-too-large keys (`errors.write.filesTooLargeForFilesystem.*` +
+`fileOperations.errorDialog.tooLargeAndMore`, 2026-06-30):
+
+- "too large for [destination]" (the over-the-filesystem-limit error) → `túl nagy ehhez a meghajtóhoz` · mac Finder
+  (Tier 1) directly: `A fájl túl nagy a célhoz` (the file-too-large-for-destination title) and
+  `…nem másolható, mert túl nagy a kötet formátumához képest` (the copy-blocked-by-volume-format message), also Total
+  Commander (`A(z) "%s" fájl mérete túl nagy a cél fájlrendszer számára!`) and Double Commander
+  (`Ez túl nagy a céleszközön…`) · high. macOS uses `a célhoz` (the destination); Cmdr's EN says "this drive" so we
+  render `ehhez a meghajtóhoz` (drive = `meghajtó`, settled). `túl nagy` is the unanimous pile rendering of "too large".
+- "formatted as FAT32 / drive formatted as exFAT" → `FAT32 formátumú` / `exFAT formátumú meghajtó` · the `…formátumú`
+  ("of … format") construction is pile-attested (`ismeretlen formátumú`, `rossz formátumú` in the corpora) and parallels
+  mac Finder's `a kötet formátumához` · high. `FAT32`/`exFAT` kept verbatim (filesystem-format names, per the en `@key`
+  note).
+- "larger than {maxSize}" → `{maxSize}-nál nagyobb` (comparative `-nál` suffix on the size placeholder). Normally the
+  style guide forbids suffixing a placeholder (vowel harmony with an unknown value), but here the value domain is
+  CONSTRAINED to a formatted byte size whose unit is always back-vowel when pronounced (B = bájt, kB = kilobájt, MB =
+  megabájt, GB = gigabájt, TB = terabájt), so `-nál` (never `-nél`) is always the correct harmony. The suffix renders
+  just after the colorized size span (`…GB</span>-nál`), uncolored, which is the wanted typography. Double Commander's
+  `nagyobb mint 4GB` confirms users see inline size comparisons. · high.
+- limit (the filesystem size limit) → `korlát`; "has no such limit" → `amelynek nincs ilyen korlátja` · mac/ms (`korlát`
+  16×, possessive `méretkorlátja`/`összegkorlátja` attest the `-ja` possessive form) · high.
+- "and {countText} more {file/files}" (trailing over-limit-list line) →
+  `és {countText} további {count, plural, one {fájl} other {fájl}}` · mac Finder directly:
+  `…a(z) „^1” és ^0 további elem…` ("…„^1” and ^0 more items…") — same `és {count} további {noun}` shape, count BEFORE
+  `további`, and the noun stays SINGULAR after the number (no-pluralize rule), so both ICU plural branches are `fájl` ·
+  high.

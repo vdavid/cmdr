@@ -513,6 +513,10 @@
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
   },
+  "fileOperations.errorDialog.tooLargeAndMore": "en nog {countText} {count, plural, one {bestand} other {bestanden}}",
+  "@fileOperations.errorDialog.tooLargeAndMore": {
+    "sourceHash": "ff109f8"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Een mapnaam mag geen ‘/’ of null-tekens bevatten} other {Een bestandsnaam mag geen ‘/’ of null-tekens bevatten}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

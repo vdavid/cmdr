@@ -511,6 +511,10 @@
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
   },
+  "fileOperations.errorDialog.tooLargeAndMore": "另有 {countText} 个{count, plural, other {文件}}",
+  "@fileOperations.errorDialog.tooLargeAndMore": {
+    "sourceHash": "ff109f8"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {文件夹名中不能包含“/”或空字符} other {文件名中不能包含“/”或空字符}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

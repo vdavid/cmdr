@@ -411,3 +411,23 @@ AppKit + SystemSettings, 2026-06-21).
 - preset (value in a settings-picker dropdown) → preajuste; "back to presets" → "Volver a los preajustes". Note: the
   standalone "Back" button is the adverb "Atrás" (backArrow), but "Back to X" needs the verb "Volver a X" (pile: "volver
   a la versión anterior") · Double Commander es ("Preajustes"; "El preajuste «%s» ya existe") · high
+
+### Settled during the FAT32-too-large filesystem-guard pass (copy/move error when a file exceeds the FAT32 4 GB cap; macOS Finder greps, 2026-06-30)
+
+- too large (for a drive/format) → demasiado grande · macOS Finder, exact-concept hits: PE4.5 "El ítem «^0» no puede
+  copiarse porque es demasiado grande para el formato del volumen" (file-too-large-for-format, our scenario) and NE77
+  "«^0» es demasiado grande y no cabe en el disco" · high
+- formatted as X / drive format (filesystem) → "tiene formato X" / "con formato X" · macOS uses the noun "formato"
+  ("formato del volumen", PE4.5); the "tiene/con formato FAT32" framing avoids the participle gender agreement of
+  "formateada" and reads cleanly · high
+- FAT32 / exFAT → kept verbatim · filesystem-format names; the en `@key` says keep as-is. (macOS Disk Utility labels
+  them "MS-DOS (FAT)" and "ExFAT", but Cmdr's source uses FAT32/exFAT, so those stay) · confirmed (prompt)
+- store (files) → almacenar · standard verb for holding data; macOS uses "Capacidad del soporte" for capacity. "can''t
+  store files larger than X" → "no puede almacenar archivos de más de X" · high
+- "files larger than X" / "files this large" → "archivos de más de X" / "archivos tan grandes" · standard comparative
+  phrasing · high
+- file size statement "{name} is {size}" → "{name} ocupa {size}" · "ocupar" is the natural verb for how much space a
+  file takes ("este archivo ocupa 5 GB"); macOS states sizes plainly (IN_G5_V2) · high
+- "no such limit" → "no tiene ese límite" · standard · high
+- drive (in this error) → unidad · reaffirms the existing glossary entry (drive → unidad); kept over macOS's
+  context-specific "disco"/"volumen" for catalog consistency · high

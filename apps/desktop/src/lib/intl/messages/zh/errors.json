@@ -1313,6 +1313,26 @@
   "@errors.write.insufficientSpace.suggestion": {
     "sourceHash": "257f1d9"
   },
+  "errors.write.filesTooLargeForFilesystem.title.one": "文件太大，无法存入这个驱动器",
+  "@errors.write.filesTooLargeForFilesystem.title.one": {
+    "sourceHash": "d8e95aa"
+  },
+  "errors.write.filesTooLargeForFilesystem.title.many": "部分文件太大，无法存入这个驱动器",
+  "@errors.write.filesTooLargeForFilesystem.title.many": {
+    "sourceHash": "6b148d5"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.one": "{name} 大小为 {size}，但这个驱动器采用 FAT32 格式，无法存储大于 {maxSize} 的文件。",
+  "@errors.write.filesTooLargeForFilesystem.message.one": {
+    "sourceHash": "2993e08"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.many": "有 {count} 个文件太大，无法存入这个驱动器。驱动器采用 FAT32 格式，无法存储大于 {maxSize} 的文件。",
+  "@errors.write.filesTooLargeForFilesystem.message.many": {
+    "sourceHash": "1aac250"
+  },
+  "errors.write.filesTooLargeForFilesystem.suggestion": "若要存储这么大的文件，请改用 exFAT 格式的驱动器，它没有这个限制。",
+  "@errors.write.filesTooLargeForFilesystem.suggestion": {
+    "sourceHash": "bb4ac05"
+  },
   "errors.write.readOnlyDevice.title": "只读设备",
   "@errors.write.readOnlyDevice.title": {
     "sourceHash": "3f79690"

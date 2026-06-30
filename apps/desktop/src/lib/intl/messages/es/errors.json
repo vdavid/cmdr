@@ -1313,6 +1313,26 @@
   "@errors.write.insufficientSpace.suggestion": {
     "sourceHash": "257f1d9"
   },
+  "errors.write.filesTooLargeForFilesystem.title.one": "Archivo demasiado grande para esta unidad",
+  "@errors.write.filesTooLargeForFilesystem.title.one": {
+    "sourceHash": "d8e95aa"
+  },
+  "errors.write.filesTooLargeForFilesystem.title.many": "Algunos archivos son demasiado grandes para esta unidad",
+  "@errors.write.filesTooLargeForFilesystem.title.many": {
+    "sourceHash": "6b148d5"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.one": "{name} ocupa {size}, pero esta unidad tiene formato FAT32, que no puede almacenar archivos de más de {maxSize}.",
+  "@errors.write.filesTooLargeForFilesystem.message.one": {
+    "sourceHash": "2993e08"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.many": "{count} archivos son demasiado grandes para esta unidad, que tiene formato FAT32 y no puede almacenar archivos de más de {maxSize}.",
+  "@errors.write.filesTooLargeForFilesystem.message.many": {
+    "sourceHash": "1aac250"
+  },
+  "errors.write.filesTooLargeForFilesystem.suggestion": "Para almacenar archivos tan grandes, usa una unidad con formato exFAT, que no tiene ese límite.",
+  "@errors.write.filesTooLargeForFilesystem.suggestion": {
+    "sourceHash": "bb4ac05"
+  },
   "errors.write.readOnlyDevice.title": "Dispositivo de solo lectura",
   "@errors.write.readOnlyDevice.title": {
     "sourceHash": "3f79690"

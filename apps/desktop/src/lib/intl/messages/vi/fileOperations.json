@@ -512,6 +512,10 @@
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
   },
+  "fileOperations.errorDialog.tooLargeAndMore": "và thêm {countText} {count, plural, other {tệp}} nữa",
+  "@fileOperations.errorDialog.tooLargeAndMore": {
+    "sourceHash": "ff109f8"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Tên thư mục không được chứa \"/\" hoặc ký tự null} other {Tên tệp không được chứa \"/\" hoặc ký tự null}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

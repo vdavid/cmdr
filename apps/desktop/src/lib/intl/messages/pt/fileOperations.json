@@ -513,6 +513,10 @@
   "@fileOperations.errorDialog.close": {
     "sourceHash": "7d9eb7a"
   },
+  "fileOperations.errorDialog.tooLargeAndMore": "e mais {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}}",
+  "@fileOperations.errorDialog.tooLargeAndMore": {
+    "sourceHash": "ff109f8"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {O nome da pasta não pode conter \"/\" nem caracteres nulos} other {O nome do arquivo não pode conter \"/\" nem caracteres nulos}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

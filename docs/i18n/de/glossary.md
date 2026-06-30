@@ -326,3 +326,17 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 - preset (value in a settings-picker dropdown; opposite of the custom-value option) → Voreinstellung; "back to presets"
   → "Zurück zu den Voreinstellungen" · Microsoft terminology ("indexing preset" → "Indizierungsvoreinstellung"), macOS
   DE print dialog "Voreinstellungen" · high
+- FAT32 / exFAT (filesystem-format names) → kept verbatim · macOS DE Finder keeps "FAT32" and "exFAT" untranslated
+  ("ExFAT" → "exFAT", "MS-DOS (FAT)" → "MS-DOS-Dateisystem (FAT)"); MS terminology keeps "FAT32"; the en @key flags both
+  as do-not-translate format names · high
+- formatted as (a drive's filesystem) → "mit … formatiert" ("mit FAT32 formatiert", "mit exFAT formatiert") · macOS DE
+  keeps the noun "Format"/"Format:" for the format field; "formatieren"/"formatiert" is the standard DE verb for
+  formatting a disk (MS terminology "format" noun → "Format"). The "mit X formatiert" frame reads natural and keeps the
+  format name verbatim · high
+- too large (a file for a filesystem) → "zu groß" ("Datei zu groß für dieses Laufwerk") · standard DE; pairs with
+  drive→Laufwerk · high
+- limit (filesystem size cap) → Begrenzung ("keine solche Begrenzung") · KDE Dolphin ("No limit" → "Keine Begrenzung"),
+  MS terminology (Begrenzung) · high
+- "and N more files" (trailing line under a truncated file list) → "und {countText} weitere {count, plural, one {Datei}
+  other {Dateien}}" · GNOME Nautilus ("%'d weitere Objekte ausgewählt" / "%'d weiteres Objekt …"); feminine "weitere" is
+  invariant across DE one/other for Datei/Dateien · high

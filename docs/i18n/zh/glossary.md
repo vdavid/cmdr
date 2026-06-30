@@ -429,3 +429,24 @@ macOS Finder zh-CN Tier 1, Double Commander zh-CN (the exact two-pane feature) +
   ellipsis form across the UI.)
 - preset (value in a settings-picker dropdown) → 预设; "back to presets" → "返回预设" · Microsoft terminology ("indexing
   preset" → "索引预设"); 预设 dominates the corpus over 预置 (~30:1) · high
+
+### FAT32 too-large-file error (2026-06-30)
+
+macOS Finder zh-CN Tier 1 (`PE4.5` = the same "too large for the volume's format" error:
+`相对于宗卷的格式，项目"^0"太大，无法拷贝。`), Microsoft zh-Hans TBX cross-check.
+
+- **drive (removable/USB/SD disk, the FAT32 error context)** · `驱动器` · reused settled glossary term (`驱动器`,
+  macOS/Microsoft); the en deliberately says "drive" (friendly) not "disk", and `驱动器` is the established equivalent.
+  macOS Finder's `外置磁盘` (external disk) uses 磁盘 for the "disk" sense; kept `驱动器` for catalog consistency ·
+  `high`
+- **too large (file exceeds a limit)** · `太大` · macOS Finder `PE4.5` (`…太大，无法拷贝`) · `high`
+- **format (a filesystem's format, noun) / formatted as X** · `格式` / `采用 X 格式` · macOS Finder `PE4.5`
+  (`宗卷的格式`); Microsoft TBX `format` (noun) → 格式. "formatted as FAT32" rendered `采用 FAT32 格式` (uses FAT32
+  format) · `high`
+- **store (files on a disk)** · `存储` · Microsoft TBX `store` (verb, CHN) → 存储. "store into a drive" rendered `存入`
+  (存入这个驱动器); "store files larger than X" → `存储大于 X 的文件` · `high`
+- **FAT32 / exFAT (filesystem-format names)** · `FAT32` / `exFAT` · kept verbatim (Apple Finder keeps `ExFAT`,
+  `MS-DOS (FAT)` verbatim in zh-CN; do-not-translate format names) · `confirmed`
+- **"and N more files" (trailing line under a too-large list)** · `另有 {countText} 个文件` · `另有` = "in addition
+  there are" (the "more" sense); measure word `个` per the `{count} 个项目` glossary pattern; Chinese plural collapses
+  to a single `other` branch holding `文件` · `high`

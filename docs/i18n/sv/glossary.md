@@ -386,3 +386,22 @@ re-checked against `sv/macOS/`. New term:
   folder" → "Det tar dig till den överordnade mappen" (warmer notification voice). `high`.
 - preset (value in a settings-picker dropdown) → förinställning; "back to presets" → "Tillbaka till förinställningar" ·
   pile adjective "förinställd/förinställda" (shared root), macOS SV print dialog "Förinställningar" · high
+
+From the FAT32-size-guard pass (`errors.write.filesTooLargeForFilesystem.*` +
+`fileOperations.errorDialog.tooLargeAndMore`). The copy/move error when a file exceeds a FAT32 drive's ~4 GB cap. Reuses
+`enhet` (drive), `fil/filer`. New ones:
+
+- **too large (for a drive): `för stor` / `för stora`** · macOS ("för stor"/"för stora", pile). Agrees with the noun:
+  "Filen är för stor", "Vissa filer är för stora". `high`.
+- **formatted as/with (a filesystem): `formaterad med {format}`** · this file's own precedent
+  (`errors.listing.notSupportedErrno.suggestion`: "kan den vara formaterad med ett filsystem som har begränsningar …
+  FAT32 inte lagra filer större än 4 GB") + macOS Disk Utility (Skivverktyg) "Formatera"/"formaterad"; FAT32 and exFAT
+  are filesystem-format names kept verbatim (task + the format-menu list in `sv/macOS`). Chose `med` over `som` to match
+  the existing in-file phrasing. `high`.
+- **larger than: `större än`** · macOS Spotlight criteria ("är större än", pile, 8 hits). "lagra filer större än
+  {maxSize}" reuses the exact `notSupportedErrno` phrasing already in this file. `high`.
+- **no such limit: `ingen sådan gräns`** · `gräns` = limit (style.md/MS); natural Swedish. "som inte har någon sådan
+  gräns". `high`.
+- **and N more (files) (trailing "+N" line under a truncated list): `och ytterligare {countText} {fil/filer}`** ·
+  composed natural Swedish; `ytterligare` = additional/more, front-loaded so no trailing word is needed. ICU plural
+  one→`fil`, other→`filer`. `high` (compound by convention; low risk).

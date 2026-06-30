@@ -1313,6 +1313,26 @@
   "@errors.write.insufficientSpace.suggestion": {
     "sourceHash": "257f1d9"
   },
+  "errors.write.filesTooLargeForFilesystem.title.one": "Fichier trop volumineux pour ce disque",
+  "@errors.write.filesTooLargeForFilesystem.title.one": {
+    "sourceHash": "d8e95aa"
+  },
+  "errors.write.filesTooLargeForFilesystem.title.many": "Certains fichiers sont trop volumineux pour ce disque",
+  "@errors.write.filesTooLargeForFilesystem.title.many": {
+    "sourceHash": "6b148d5"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.one": "{name} fait {size}, mais ce disque est formaté en FAT32, qui ne peut pas stocker de fichiers de plus de {maxSize}.",
+  "@errors.write.filesTooLargeForFilesystem.message.one": {
+    "sourceHash": "2993e08"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.many": "{count} fichiers sont trop volumineux pour ce disque, qui est formaté en FAT32 et ne peut pas stocker de fichiers de plus de {maxSize}.",
+  "@errors.write.filesTooLargeForFilesystem.message.many": {
+    "sourceHash": "1aac250"
+  },
+  "errors.write.filesTooLargeForFilesystem.suggestion": "Pour stocker des fichiers de cette taille, utilisez un disque formaté en exFAT, qui n'a pas cette limite.",
+  "@errors.write.filesTooLargeForFilesystem.suggestion": {
+    "sourceHash": "bb4ac05"
+  },
   "errors.write.readOnlyDevice.title": "Appareil en lecture seule",
   "@errors.write.readOnlyDevice.title": {
     "sourceHash": "3f79690"

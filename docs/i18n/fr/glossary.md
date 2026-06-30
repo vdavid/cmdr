@@ -476,3 +476,26 @@ Phrasing notes for this pass:
 - preset (value in a settings-picker dropdown) → présélection; "back to presets" → "Retour aux présélections" ·
   Microsoft terminology ("indexing preset" → "présélection d’indexation"), Double Commander fr ("Présélections"). macOS
   print uses "Préréglages" but that bundle is not in the pile · high
+
+Settled during the `filesystem-size-guard` pass (FAT32-too-large write error + "and N more" overflow line, 2026-06-30).
+RAW `errors.*` strings use single apostrophes; the `fileOperations.*` ICU string doubles them (none occur here):
+
+- too large (a file exceeds a size/capacity limit) → trop volumineux · macOS Finder ("Cet élément est trop volumineux
+  pour ce système.", "Impossible de copier « ^0 » car cet élément est trop volumineux pour le format du volume.", "Le
+  contenu de « ^0 » est trop volumineux pour tenir sur le disque." — `LocalizableMerged.json` NE29/PE4.5/NE77), GNOME
+  Nautilus ("Fichier trop volumineux pour la destination") · high — the `.title.one` "File too large for this drive" →
+  "Fichier trop volumineux pour ce disque" tracks the Nautilus title almost verbatim (destination → "ce disque"); use
+  "trop volumineux" (NOT "trop grand", which the pile reserves for image dimensions).
+- formatted as <fs-format> → formaté en <fs-format> · standard FR construction ("formaté en FAT32", "formaté en exFAT");
+  macOS frames it as "le format du volume" (PE4.5) and the in-catalog `errors.listing.notSupportedErrno.suggestion`
+  already uses "formaté avec un système de fichiers", but when NAMING a concrete format "formaté en X" is the idiomatic
+  fit · high
+- can''t store files larger than X → ne peut pas stocker de fichiers de plus de X · reuses the exact in-catalog
+  precedent at `errors.listing.notSupportedErrno.suggestion` ("FAT32 ne peut pas stocker de fichiers de plus de 4 Go",
+  line 274) for consistency · high
+- FAT32 / exFAT (filesystem-format names) → kept verbatim · do-not-translate (format names); the EN `@key` marks both as
+  "keep as-is" · high
+- "and {countText} more {file/files}" (overflow trailing line) → "et {countText} {…fichier/fichiers} de plus" · macOS
+  Finder Tier-1 pattern "et ^0 de plus" (`LocalizableMerged.json` N141.3 "\n\tet ^0 de plus.") for the "and N more"
+  shape; the file/files plural reuses the catalog''s settled `one {fichier} many {fichiers} other {fichiers}` fragment
+  (FR CLDR `one`/`many`/`other`, `many` identical to `other` per the parity check) · high

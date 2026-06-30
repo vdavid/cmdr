@@ -456,3 +456,24 @@ pile source):
   presets" → "Quay lại tùy chọn đặt trước" · Microsoft terminology (preset → "đặt trước", e.g. "khung thời gian đặt
   trước"); "tùy chọn" (options) heavily attested. "đặt trước" can also read as "reserved", so pairing it with "tùy chọn"
   disambiguates · tentative
+
+Added during the filesystem-size-guard pass (2026-06-30): the FAT32 file-too-large error
+(`errors.write.filesTooLargeForFilesystem.*`) + the `fileOperations.errorDialog.tooLargeAndMore` count line. Reuses
+prior terms (tệp, ổ đĩa = drive, không thể = can''t). New terms below, each mined from `_ignored/i18n/vi/`:
+
+- **too large (for X): `quá lớn (đối với X)`** · GNOME Nautilus ("Tập tin quá lớn đối với vị trí dán" = "File too large
+  for the paste location"), a near-exact structural parallel. `đối với` = "for / with respect to". `high`.
+- **format (filesystem format, noun): `định dạng`; "formatted as FAT32": `được định dạng FAT32`** · macOS Finder Get
+  Info ("Định dạng:" = "Format:"). The passive state "is formatted as" → `được định dạng` (no "as" word needed). `high`.
+- **FAT32 / exFAT: kept verbatim** · filesystem-format names; not translated (per the en `@key` note). `high`.
+- **limit (size/quota limit): `giới hạn`; "no such limit": `không có giới hạn như vậy`** · GNOME/Xfce/MS terminology
+  ("Không giới hạn" = "No limit", "không có giới hạn"). `high`.
+- **store / hold (a drive holding files): `chứa`** · `chứa` (contain/hold) for a drive storing files; "can''t store
+  files larger than X" → `không thể chứa các tệp lớn hơn {maxSize}`. Reads more natural than `lưu trữ` (archive) for a
+  drive''s capacity. `tentative` (no single pile source; natural rendering).
+- **larger than: `lớn hơn`** · standard comparative; `lớn` (large) + `hơn` (more/than). `high`.
+- **"{name} is {size}" (size statement): `{name} có dung lượng {size}`** · `có dung lượng` (has a size of), matching
+  macOS Get Info "Dung lượng:" (Size:). `high`.
+- **"files this large": `các tệp lớn cỡ này`** · `cỡ này` (of this size) — casual, everyday rendering. `tentative`.
+- **"and N more files" (overflow count line): `và thêm {countText} tệp nữa`** · `và thêm … nữa` = "and … more"; noun
+  uninflected (vi has one plural category, `other`). `high`.

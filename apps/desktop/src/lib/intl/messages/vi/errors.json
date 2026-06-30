@@ -1313,6 +1313,26 @@
   "@errors.write.insufficientSpace.suggestion": {
     "sourceHash": "257f1d9"
   },
+  "errors.write.filesTooLargeForFilesystem.title.one": "Tệp quá lớn đối với ổ đĩa này",
+  "@errors.write.filesTooLargeForFilesystem.title.one": {
+    "sourceHash": "d8e95aa"
+  },
+  "errors.write.filesTooLargeForFilesystem.title.many": "Một số tệp quá lớn đối với ổ đĩa này",
+  "@errors.write.filesTooLargeForFilesystem.title.many": {
+    "sourceHash": "6b148d5"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.one": "{name} có dung lượng {size}, nhưng ổ đĩa này được định dạng FAT32 nên không thể chứa các tệp lớn hơn {maxSize}.",
+  "@errors.write.filesTooLargeForFilesystem.message.one": {
+    "sourceHash": "2993e08"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.many": "{count} tệp quá lớn đối với ổ đĩa này, vốn được định dạng FAT32 và không thể chứa các tệp lớn hơn {maxSize}.",
+  "@errors.write.filesTooLargeForFilesystem.message.many": {
+    "sourceHash": "1aac250"
+  },
+  "errors.write.filesTooLargeForFilesystem.suggestion": "Để chứa các tệp lớn cỡ này, hãy dùng một ổ đĩa được định dạng exFAT, vốn không có giới hạn như vậy.",
+  "@errors.write.filesTooLargeForFilesystem.suggestion": {
+    "sourceHash": "bb4ac05"
+  },
   "errors.write.readOnlyDevice.title": "Thiết bị chỉ đọc",
   "@errors.write.readOnlyDevice.title": {
     "sourceHash": "3f79690"

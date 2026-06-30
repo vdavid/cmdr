@@ -1313,6 +1313,26 @@
   "@errors.write.insufficientSpace.suggestion": {
     "sourceHash": "257f1d9"
   },
+  "errors.write.filesTooLargeForFilesystem.title.one": "A fájl túl nagy ehhez a meghajtóhoz",
+  "@errors.write.filesTooLargeForFilesystem.title.one": {
+    "sourceHash": "d8e95aa"
+  },
+  "errors.write.filesTooLargeForFilesystem.title.many": "Néhány fájl túl nagy ehhez a meghajtóhoz",
+  "@errors.write.filesTooLargeForFilesystem.title.many": {
+    "sourceHash": "6b148d5"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.one": "A(z) {name} mérete {size}, de ez a meghajtó FAT32 formátumú, amely nem tud {maxSize}-nál nagyobb fájlokat tárolni.",
+  "@errors.write.filesTooLargeForFilesystem.message.one": {
+    "sourceHash": "2993e08"
+  },
+  "errors.write.filesTooLargeForFilesystem.message.many": "{count} fájl túl nagy ehhez a meghajtóhoz, amely FAT32 formátumú, és nem tud {maxSize}-nál nagyobb fájlokat tárolni.",
+  "@errors.write.filesTooLargeForFilesystem.message.many": {
+    "sourceHash": "1aac250"
+  },
+  "errors.write.filesTooLargeForFilesystem.suggestion": "Ilyen nagy fájlok tárolásához használj exFAT formátumú meghajtót, amelynek nincs ilyen korlátja.",
+  "@errors.write.filesTooLargeForFilesystem.suggestion": {
+    "sourceHash": "bb4ac05"
+  },
   "errors.write.readOnlyDevice.title": "Csak olvasható eszköz",
   "@errors.write.readOnlyDevice.title": {
     "sourceHash": "3f79690"

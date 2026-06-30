@@ -178,6 +178,20 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
 - row / file row · **linha** ("file row" → **linha de arquivo**) · MS terminology (BRA "row"→"linha"), Xfce Thunar ("by
   one row"→"uma linha") · high. Used in `doubleClickPaneNavigatesToParent.description` ("not a file row"→"não uma linha
   de arquivo") to contrast the pane background with a clickable file row.
+- too large (for destination) · **muito grande** ("File too large for this drive"→"Arquivo muito grande para este
+  disco"; plural "muito grandes") · GNOME Nautilus pt-BR ("File too Large for Destination"→"Arquivo muito grande para
+  destino"), and "muito grande" outnumbers "grande demais" 10:1 in the pile · high. Used in
+  `errors.write.filesTooLargeForFilesystem.*`.
+- larger than (size comparison) · **maior(es) que** · GNOME Nautilus pt-BR ("Files bigger than 4.3 GB cannot be copied
+  onto a FAT filesystem."→"Arquivos maiores que 4,3 GB não podem ser copiados num sistema de arquivos FAT.") · high
+- formatted as (filesystem) · **formatado como** · standard pt-BR; macOS Disk Utility uses the noun "Formato"/"Formato:"
+  for the format field; the verb phrase "formatado como FAT32" is the natural rendering · high.
+  `errors.write.filesTooLargeForFilesystem.message.*`
+- store (files) · **armazenar** · macOS Finder ("Store your Desktop & Documents folders…"→"Armazene as pastas…") · high.
+  Used for "can't store files larger than" → "não pode armazenar arquivos maiores que".
+- FAT32 / exFAT (filesystem formats) · **FAT32** / **exFAT** (kept verbatim) · macOS Finder + MS terminology both keep
+  them verbatim (MS tbx term ids 153889/153903 = "FAT32"; Finder "ExFAT") · confirmed. Don't translate; source EN
+  capitalization ("FAT32", "exFAT") is preserved.
 
 ### Reconciliation notes
 
