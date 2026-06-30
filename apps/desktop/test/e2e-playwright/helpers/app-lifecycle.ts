@@ -178,19 +178,35 @@ export async function ensureAppReady(
   // helper's specific error.
   await tauriPage.waitForSelector('.file-pane .file-entry.is-under-cursor', 6000)
 
-  // Confirm focus actually landed inside the explorer so the container-level
-  // keydown handler reaches keys like Tab and ArrowDown. (Document-level F-key
-  // dispatch doesn't depend on focus, but cursor-driven tests do.)
+  // Confirm focus landed inside the explorer AND the LEFT pane is the active
+  // pane, so the container-level keydown handler reaches keys like Tab and
+  // ArrowDown AND cursor-driven helpers (moveCursorToFile, F7-create, the
+  // hidden-files toggle) read the left pane, which `ensureAppReady` just
+  // navigated to `left/`. (Document-level F-key dispatch doesn't depend on
+  // focus, but cursor-driven tests do.)
   //
-  // Poll-and-recover instead of a one-shot waitForFunction: a late-mounting
-  // ModalDialog (CrashReportDialog from `+layout.svelte`, PtpcameradDialog,
-  // ExpirationModal, etc.) calls `overlayElement?.focus()` on mount, which
-  // can steal focus from `.dual-pane-explorer` in the small window between
-  // our `explorer.focus()` above and the assertion below. The explorer's
-  // `onfocusin` guard cannot reclaim focus from an out-of-tree overlay.
+  // Two effects fight for focus here, so we poll-and-recover instead of a
+  // one-shot wait:
   //
-  // On every iteration we dismiss any new modal overlay (Escape), re-focus
-  // the explorer, then check. Either focus already landed, or we recovered.
+  // 1. A late-mounting `ModalDialog` (CrashReportDialog from `+layout.svelte`,
+  //    PtpcameradDialog, ExpirationModal, ...) calls `overlayElement?.focus()`
+  //    on mount, stealing DOM focus from `.dual-pane-explorer`. The explorer's
+  //    `onfocusin` guard can't reclaim it from an out-of-tree overlay.
+  // 2. The two `mcp-nav-to-path` events above navigate BOTH panes, and a direct
+  //    `source: 'mcp'` navigation SHIFTS the focused pane to whichever pane it
+  //    navigated (`navigate.ts` L1, `shiftFocus`). We navigate left then RIGHT,
+  //    and each pane's focus-shift fires on its async listing-complete, so the
+  //    right pane's shift can land AFTER our `entry.click()` above — leaving the
+  //    RIGHT (empty) pane focused. A prior test that ended on the right pane
+  //    (e.g. Copy's `Tab`) makes this the default, not the exception. macOS
+  //    timing usually lets the click win; Linux Xvfb + WebKitGTK consistently
+  //    lets the late right-pane shift win, which silently pointed every
+  //    cursor-driven op at the wrong pane.
+  //
+  // On every iteration we dismiss any new modal overlay (Escape), re-request
+  // left-pane focus by clicking the left `.file-pane` (its `onclick` →
+  // `handleFocus('left')`), re-focus the explorer container, then check both
+  // invariants. Re-clicking each pass outlasts the late right-pane focus-shift.
   const focusOk = await pollUntil(
     tauriPage,
     async () => {
@@ -199,13 +215,20 @@ export async function ensureAppReady(
                 if (overlay) {
                     overlay.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
                 }
+                var leftPane = document.querySelectorAll('.file-pane')[0];
+                if (leftPane && !leftPane.classList.contains('is-focused')) {
+                    // handlePaneClick -> onRequestFocus -> handleFocus('left').
+                    leftPane.click();
+                }
                 var ae = document.activeElement;
                 if (!ae || !ae.closest || ae.closest('.dual-pane-explorer') === null) {
                     var explorer = document.querySelector('.dual-pane-explorer');
                     if (explorer) explorer.focus();
                     ae = document.activeElement;
                 }
-                return !!(ae && ae.closest && ae.closest('.dual-pane-explorer') !== null);
+                var focusInExplorer = !!(ae && ae.closest && ae.closest('.dual-pane-explorer') !== null);
+                var leftFocused = !!(leftPane && leftPane.classList.contains('is-focused'));
+                return focusInExplorer && leftFocused;
             })()`)
     },
     6000,
@@ -213,16 +236,17 @@ export async function ensureAppReady(
   if (!focusOk) {
     const diag = await tauriPage.evaluate<string>(`(function() {
             var ae = document.activeElement;
-            if (!ae) return 'null';
+            var panes = document.querySelectorAll('.file-pane');
             return JSON.stringify({
-                tag: ae.tagName, id: ae.id,
-                cls: ae.className && ae.className.toString ? ae.className.toString() : '',
-                isBody: ae === document.body,
+                active: ae ? { tag: ae.tagName, id: ae.id, cls: ae.className && ae.className.toString ? ae.className.toString() : '', isBody: ae === document.body } : 'null',
+                focusedPaneIndex: Array.from(panes).findIndex(function(p){ return p.classList.contains('is-focused'); }),
                 explorerExists: !!document.querySelector('.dual-pane-explorer'),
                 appReady: document.querySelector('.dual-pane-explorer') ? document.querySelector('.dual-pane-explorer').dataset.appReady : 'no-explorer',
                 overlays: Array.from(document.querySelectorAll('.modal-overlay, [role="dialog"], [role="alertdialog"]')).map(function(e){return {cls: e.className.toString(), id: e.id, dialogId: e.dataset && e.dataset.dialogId, visible: !!e.offsetParent};})
             });
         })()`)
-    throw new Error(`ensureAppReady: focus did not land inside .dual-pane-explorer after 6s. State: ${diag}`)
+    throw new Error(
+      `ensureAppReady: focus did not land inside .dual-pane-explorer with the left pane active after 6s. State: ${diag}`,
+    )
   }
 }

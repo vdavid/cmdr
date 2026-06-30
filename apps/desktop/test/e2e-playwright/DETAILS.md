@@ -470,22 +470,36 @@ wrapper gated on the same `playwright-e2e` feature so the prod surface stays unc
 
 ## `ensureAppReady` focus contract
 
-By the time `ensureAppReady` returns, `document.activeElement` is inside `.dual-pane-explorer`. Tests that rely on
-container-level keyboard handlers (Tab, ArrowDown, etc., as opposed to document-level F-key dispatch) can rely on this
-invariant.
+By the time `ensureAppReady` returns, two invariants hold: `document.activeElement` is inside `.dual-pane-explorer`, AND
+the LEFT pane is the active (`.is-focused`) pane. Tests that rely on container-level keyboard handlers (Tab, ArrowDown,
+etc., as opposed to document-level F-key dispatch) can rely on the first; cursor-driven helpers (`moveCursorToFile`,
+F7-create, the hidden-files toggle) read the focused pane and rely on the second — `ensureAppReady` navigates the left
+pane to `left/`, so the left pane is where the next op should land.
 
-The helper enforces it with a poll-and-recover loop instead of a one-shot `waitForFunction`. Any `ModalDialog`-based
-component (`CrashReportDialog`, `PtpcameradDialog`, `MtpPermissionDialog`, `ExpirationModal`, `CommercialReminderModal`,
-`ErrorReportDialog`) calls `overlayElement?.focus()` in its `onMount`. The `(main)/+layout.svelte` onMount chain
-(settings init → AI config → crash-report check → updater → AI state) runs in parallel with `(main)/+page.svelte` and
-can mount one of these overlays _after_ `data-app-ready === 'true'`, stealing focus from the explorer. The explorer's
-own `onfocusin` focus-guard can't reclaim it: the overlay sits outside `.dual-pane-explorer`, so the bubbling event
-never reaches the guard.
+The helper enforces both with one poll-and-recover loop instead of a one-shot `waitForFunction`. Two effects fight for
+focus here:
 
-On each poll iteration the helper dismisses any visible `.modal-overlay` via synthetic Escape, re-issues
-`explorer.focus()`, then re-checks. The 99 % path costs one extra `evaluate()` over the old one-shot wait. On timeout
-the helper throws with a snapshot of `activeElement` plus visible overlays so a future regression names the culprit
-directly.
+1. **Auto-mounted modals steal DOM focus.** Any `ModalDialog`-based component (`CrashReportDialog`, `PtpcameradDialog`,
+   `MtpPermissionDialog`, `ExpirationModal`, `CommercialReminderModal`, `ErrorReportDialog`) calls
+   `overlayElement?.focus()` in its `onMount`. The `(main)/+layout.svelte` onMount chain (settings init → AI config →
+   crash-report check → updater → AI state) runs in parallel with `(main)/+page.svelte` and can mount one of these
+   overlays _after_ `data-app-ready === 'true'`, stealing focus from the explorer. The explorer's own `onfocusin`
+   focus-guard can't reclaim it: the overlay sits outside `.dual-pane-explorer`, so the bubbling event never reaches the
+   guard.
+2. **Navigating a pane shifts the focused pane to it.** A direct `source: 'mcp'` `navigate()` shifts the focused pane to
+   whichever pane it navigated (`pane/navigate.ts`, `shiftFocus`). `ensureAppReady` emits `mcp-nav-to-path` for both
+   panes (left then RIGHT), and each pane's focus-shift fires on its async listing-complete, so the right pane's shift
+   can land _after_ the helper's one-shot `entry.click()`, leaving the RIGHT (empty) pane focused. A prior test that
+   ended on the right pane (e.g. Copy's `Tab`) makes that the default. macOS timing usually lets the click win; Linux
+   Xvfb + WebKitGTK consistently lets the late right-pane shift win, which silently pointed every cursor-driven op at
+   the wrong pane (the file-operations Move/Rename/Create/Hidden/Empty regression). The right-pane shift isn't wrong —
+   it's the same focus-follows-navigation behavior production uses — so the fix lives in the test reset, not the app.
+
+On each poll iteration the helper dismisses any visible `.modal-overlay` via synthetic Escape, re-clicks the left
+`.file-pane` (its `onclick` → `handleFocus('left')`) when it isn't already focused, re-issues `explorer.focus()`, then
+re-checks both invariants. Re-clicking each pass outlasts the late right-pane focus-shift. The 99 % path costs one extra
+`evaluate()` over the old one-shot wait. On timeout the helper throws with a snapshot of `activeElement`, the focused
+pane index, and visible overlays so a future regression names the culprit directly.
 
 **If you add a new auto-mounted modal** in `(main)/+layout.svelte` or anywhere that can flip a render to a `ModalDialog`
 after onboarding finishes, the recovery loop covers you. Consider whether the dialog should be gated on a user gesture

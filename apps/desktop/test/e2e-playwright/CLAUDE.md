@@ -39,7 +39,8 @@ run on macOS (native) and Linux (Docker); platform differences (Ctrl vs Meta) ri
 - **`ensureAppReady()` resets route, volume, AND directories, in that order.** The volume reset is required:
   `navigateToPath` rejects `mcp-nav-to-path` for non-local panes (pane state persists across tests), so without it nav
   silently no-ops and the readiness poll times out on an empty pane. By return, `document.activeElement` is inside
-  `.dual-pane-explorer` (focus reclaimed from auto-mounted modals; DETAILS.md).
+  `.dual-pane-explorer` AND the LEFT pane is active (`.is-focused`), reclaimed from auto-mounted modals and late
+  navigation focus-shifts (DETAILS.md § focus contract).
 - **File-op specs must recreate fixtures** (`recreateFixtures()` from `../e2e-shared/fixtures.js` in `test.beforeEach`):
   copy/move/rename/create mutate the shared tree, and stale artifacts break later tests.
 - **The clipboard is mocked, not real** under the `playwright-e2e` feature: `Cmd+C/X/V` go through the same IPC but the
