@@ -8,10 +8,10 @@
     const USAGE: Record<IconName, string> = {
         'arrow-left': 'Back button in the onboarding wizard.',
         check: 'Selected-state check in onboarding cloud-provider rows, the settings checkbox, the select and combobox dropdowns, the breadcrumb volume menu, and the transfer scan-complete marker.',
-        'chevron-down':
-            'Closed-state indicator on the select and combobox triggers, and the expand toggle in the download toast.',
+        'chevron-down': 'Closed-state indicator on the combobox trigger, and the expand toggle in the download toast.',
         'chevron-right': 'Expand toggle for the per-file error list in the transfer error dialog.',
         'chevron-up': 'Collapse toggle in the expanded download toast.',
+        'chevrons-up-down': 'macOS pop-up-button chevron stepper on the select trigger.',
         circle: 'Waiting (not-started) step marker in the drive-indexing checklist.',
         'circle-alert': 'Serious-error marker in the error pane, the transfer error dialog, inline error rows, and the SMB share-list error state.',
         'circle-check': 'Done step marker in the drive-indexing checklist.',

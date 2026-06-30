@@ -240,17 +240,47 @@ Props:
 - `disabled?`, `placeholder?` (default `Select...`), `ariaLabel` (lands on the trigger).
 - `contentClass?: string` — extra class on the `.select-content` element (`SettingSelect` sets `custom-highlighted` to
   suppress the checked state on other items while its "Custom…" row is highlighted).
+- `portal?: boolean` (default `false`) — teleport the open menu to `document.body`. See "Portal" below.
+
+**macOS pop-up-button look.** The trigger is borderless and hugs its content: value text + a rounded chevron square
+(`chevrons-up-down`), not a full-width bezel. The menu is a frosted-glass surface (shared `--color-bg-glass` /
+`--color-border-glass` tokens with tooltips and filter-chip popovers; blur dropped under `html.reduce-transparency`).
+The checkmark marks the current value on the LEFT (`.select-item-text` is the flex label cell after it); the accent fill
+follows the keyboard / pointer highlight (`[data-highlighted]`), so a checked-but-not-highlighted row is plain with just
+its checkmark — matching macOS, and distinct from the old "checked = accent bg" behavior.
+
+**macOS overlap positioning (the menu opens *over* the trigger).** Zag positions the *positioner* just below the trigger
+(`bottom-start`, `gutter: 0`, `flip: false`, `slide: true`); we then translate the *content* (a child of the positioner,
+so the transform never fights zag's own) to land the checked row's label on the trigger's value text, clamped to the
+viewport so it stays on screen. The shift is an inline `transform` on the content (`contentStyle`), which does NOT
+trigger a zag reposition, so there's no feedback loop. The geometry is the pure, unit-tested `computeOverlapShift`
+(`select-positioning.ts`); `Select.svelte` only measures rects and applies the result.
+
+The reveal is driven by the open state through an `$effect` on `isOpen` (set from `onOpenChange`), NOT zag's
+`onPositioned` — that callback never fires in this zag version (1.41.x), which is why an earlier `onPositioned`-only wiring
+left the menu stuck at `opacity: 0`. The effect retries the measurement across a few `requestAnimationFrame`s (content
+mounts and zag places it asynchronously after open) and a `setTimeout` fallback guarantees the content can never stay
+invisible if rAF is throttled (unfocused window) or the rows aren't found. The measurement is self-correcting (it folds
+the residual gap into the already-applied shift). Content is `opacity: 0` until the first measurement lands, so it never
+flashes at the default below-trigger spot. The measurement reads the trigger value via `rootEl.querySelector` (always in
+the subtree) and the content via its own `bind:ref` (`contentEl`), so it works whether or not the menu is portaled.
+
+**Portal (`portal` prop).** Because the menu opens *over* the trigger, a bottom-of-list selection pushes the top rows
+well above the trigger — into whatever chrome sits there. When the menu isn't portaled it's a descendant of its scroll
+container, so an ancestor `overflow` clips it and, worse, an ancestor `mask-image` fades its top rows regardless of
+z-index (no z-index escapes an ancestor mask). The settings page's `.settings-content-wrapper` has both, which left the
+top rows shaded and un-clickable. `portal` teleports the `Positioner` (via Ark's `Portal`) to `document.body` so the
+menu floats above all of it, macOS-style; zag still anchors to the trigger, and the design tokens live on `:root` so
+body-level content keeps full theming. `SettingSelect` sets `portal`. **Leave it `false` in the viewer window**, whose
+restricted capability set assumes no portal-to-body (`ViewModePicker` / `EncodingPicker`); `Combobox` is non-portaled
+for the same reason.
 
 **Stable class contract (load-bearing, don't rename):** `.select-trigger`, `.select-item`, `.select-content`,
 `.option-description`. `SettingSelect`'s `handleCustomSubmit` focuses `.select-trigger` via `querySelector`, and the
 a11y-contrast checker (`scripts/check-a11y-contrast/dropdown_states.go`) keys on the literal
 `.select-item[data-highlighted] .option-description` selector + the `--color-accent` / `--color-accent-fg` tokens. The
-highlighted / checked item colors must stay on those accent tokens or the contrast matrix breaks. The styling moved here
-verbatim from `SettingSelect`.
-
-Standardized Lucide `chevron-down` indicator (16px, real hit-area) replaces the old tiny `▼` glyph. No `Portal` (the
-viewer's restricted capability set depends on no portal-to-body). No entrance animation (matches the old `SettingSelect`
-behavior); any future polish anim must gate behind `prefers-reduced-motion`.
+highlighted item colors must stay on those accent tokens or the contrast matrix breaks. No entrance animation; any future
+polish anim must gate behind `prefers-reduced-motion`.
 
 ## Combobox
 

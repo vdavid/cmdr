@@ -4,6 +4,7 @@ import IconCheck from '~icons/lucide/check'
 import IconChevronDown from '~icons/lucide/chevron-down'
 import IconChevronRight from '~icons/lucide/chevron-right'
 import IconChevronUp from '~icons/lucide/chevron-up'
+import IconChevronsUpDown from '~icons/lucide/chevrons-up-down'
 import IconCircle from '~icons/lucide/circle'
 import IconCircleAlert from '~icons/lucide/circle-alert'
 import IconCircleCheck from '~icons/lucide/circle-check'
@@ -59,6 +60,7 @@ export const ICON_COMPONENTS = {
   'chevron-down': IconChevronDown,
   'chevron-right': IconChevronRight,
   'chevron-up': IconChevronUp,
+  'chevrons-up-down': IconChevronsUpDown,
   circle: IconCircle,
   'circle-alert': IconCircleAlert,
   'circle-check': IconCircleCheck,

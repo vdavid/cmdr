@@ -176,6 +176,7 @@
             onHighlightChange={handleHighlightChange}
             contentClass={customHighlighted ? 'custom-highlighted' : ''}
             ariaLabel={label}
+            portal
             {disabled}
         />
     {/if}
