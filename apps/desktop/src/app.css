@@ -897,7 +897,7 @@
 
     /* === Text === */
     --color-text-primary: #e8e8e8;
-    --color-text-secondary: #b0b0b0;
+    --color-text-secondary: #c4c4c4;
     --color-text-tertiary: #a0a0a0;
 
     /* === Interactive States (fallbacks; see light-mode comment above) === */
@@ -966,8 +966,8 @@
        In dark mode we also paint a slightly darker bg on selected rows and a
        faint hairline between consecutive selected rows; the tokens default
        to transparent in light so they're effectively dark-mode-only. */
-    --color-selection-fg-primary: #ff4040;
-    --color-selection-fg-cursor: #ff8c8c;
+    --color-selection-fg-primary: #ffa0a0;
+    --color-selection-fg-cursor: #ffb3b3;
     --color-selection-fg-fallback: var(--color-text-primary);
     --color-selection-bg: #141414;
     --color-selection-border: rgba(255, 255, 255, 0.025);
