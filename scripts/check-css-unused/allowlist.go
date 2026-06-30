@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 // Allowlists for CSS classes and variables that can't be detected by static analysis.
 // Add entries here with a comment explaining why they're needed.
 
@@ -103,6 +105,30 @@ var allowedUnusedVariables = map[string]bool{
 	// volume-tint.svelte.ts and overridden by the prefers-contrast: more media query.
 	"pane-tint-bg-pct": true,
 	"pane-tint-fg-pct": true,
+}
+
+// allowedUnusedVariablePrefixes lists `--color-<prefix>` families kept whole on
+// purpose, where most steps stay unreferenced by design. The full Tailwind
+// color scale (https://tailwindcss.com/docs/colors) lives in app.css so any
+// hue/step is available to pull from; only a handful drive the accent system
+// and a few decorative marks today. Don't enumerate 280 individual steps.
+var allowedUnusedVariablePrefixes = []string{
+	"color-red-", "color-orange-", "color-amber-", "color-yellow-", "color-lime-",
+	"color-green-", "color-emerald-", "color-teal-", "color-cyan-", "color-sky-",
+	"color-blue-", "color-indigo-", "color-violet-", "color-purple-", "color-fuchsia-",
+	"color-pink-", "color-rose-", "color-slate-", "color-gray-", "color-zinc-",
+	"color-neutral-", "color-stone-", "color-mauve-", "color-olive-", "color-mist-", "color-taupe-",
+}
+
+// isAllowedUnusedVarPrefix reports whether a variable belongs to an
+// intentionally-whole palette family (see allowedUnusedVariablePrefixes).
+func isAllowedUnusedVarPrefix(varName string) bool {
+	for _, prefix := range allowedUnusedVariablePrefixes {
+		if strings.HasPrefix(varName, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // allowedUndefinedClasses lists classes used in templates that don't need CSS definitions

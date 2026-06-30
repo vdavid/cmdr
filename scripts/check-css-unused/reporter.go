@@ -35,7 +35,7 @@ func AnalyzeResults(result *ScanResult) *Issues {
 
 	// Find unused variables (defined but not used)
 	for varName := range result.VarDefs {
-		if !result.VarUses[varName] && !allowedUnusedVariables[varName] {
+		if !result.VarUses[varName] && !allowedUnusedVariables[varName] && !isAllowedUnusedVarPrefix(varName) {
 			issues.UnusedVars = append(issues.UnusedVars, varName)
 		}
 	}
