@@ -5,7 +5,7 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.31.0] - 2026-06-30
 
 See/set macOS Finder colored tags. Nicer Drive indexing UI, live folder sizes during scans, plus network and phone scans
 finish several times faster than before.
@@ -51,6 +51,8 @@ finish several times faster than before.
   [f6e93c23](https://github.com/vdavid/cmdr/commit/f6e93c23))
 - Stop the file index wasting disk space after a version upgrade
   ([1536d307](https://github.com/vdavid/cmdr/commit/1536d307))
+- Fix the file viewer failing to load lines when a file's line count is still unknown
+  ([83ad3ceb](https://github.com/vdavid/cmdr/commit/83ad3ceb))
 
 ### Non-app
 
