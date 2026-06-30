@@ -152,10 +152,10 @@ func withAccentOverride(v *VarTable, variant AccentVariant) *VarTable {
 		}
 		bucket["color-accent-hover"] = mixSrgbHex(accentHex, hoverTowards, hoverPct)
 		// Text-on-bg: light mixes 65% black; dark lightens dark accents by
-		// 35% toward white so Apple Purple (the dimmest system accent)
-		// clears AA on `--color-bg-primary` (#1e1e1e).
+		// 45% toward white so Apple Purple (the dimmest system accent)
+		// clears WCAG AA and the APCA Lc-45 floor for accent-text.
 		if mode == ModeDark {
-			bucket["color-accent-text"] = mixSrgbHex(accentHex, "#ffffff", 0.35)
+			bucket["color-accent-text"] = mixSrgbHex(accentHex, "#ffffff", 0.45)
 		} else {
 			bucket["color-accent-text"] = mixSrgbHex(accentHex, "#000000", 0.65)
 		}

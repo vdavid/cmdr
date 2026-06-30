@@ -433,7 +433,7 @@
     /* Text-only danger button (for less prominent cancel) */
     .danger-text {
         background: transparent;
-        color: var(--color-error);
+        color: var(--color-error-text);
         border: none;
         font-size: var(--font-size-sm);
         font-weight: 500;

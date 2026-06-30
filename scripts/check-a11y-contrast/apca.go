@@ -6,20 +6,23 @@ import (
 	"sort"
 )
 
-// APCA (Accessible Perceptual Contrast Algorithm) — advisory, report-only.
+// APCA (Accessible Perceptual Contrast Algorithm) — a perceptual second opinion
+// alongside the WCAG 2.2 gate, plus an enforced Lc-45 floor.
 //
-// This is a SECOND opinion alongside the WCAG 2.2 gate, not a replacement.
-// WCAG 2 stays the pass/fail contract (it's the ratified, legally-recognized
-// standard); APCA is the better perceptual predictor of real readability
-// (polarity-aware, font-size/weight-aware). We print its verdict so we can see
-// where the two disagree, without affecting the exit code.
+// WCAG 2 stays the primary pass/fail contract (the ratified, legally-recognized
+// standard). APCA is the better perceptual predictor of real readability
+// (polarity-aware, font-size/weight-aware), so on top of WCAG we ENFORCE one
+// conservative APCA bar: no text pair below Lc 45 ("the absolute minimum for any
+// text"). Everything else APCA reports (the |Lc| distribution, blast radius,
+// zoom sweep, per-pair shortfalls vs the size-aware target) stays advisory and
+// prints only with -verbose.
 //
 // Status note (verified 2026-06-30): APCA was REMOVED from the WCAG 3 working
 // draft (July 2023); the April 2026 WCAG 3 editor's draft says the contrast
 // algorithm is "yet to be determined". APCA now develops independently (ARC,
 // Inclusive Reading Technologies). The CORE MATH below has been stable since
-// 2022 (apca-w3 0.1.9), but its thresholds/role may still change — which is
-// exactly why this is advisory only.
+// 2022 (apca-w3 0.1.9), which is why we're comfortable enforcing a single
+// conservative floor while keeping the rest advisory.
 //
 // Math: the canonical apca-w3 0.1.9 "W3" constants (revision 2022-07-03),
 // https://github.com/Myndex/apca-w3. Output is Lc ("lightness contrast"),
@@ -44,6 +47,12 @@ const (
 	apcaLoClip  = 0.1   // contrasts below this collapse to 0
 	apcaDeltaY  = 0.0005
 )
+
+// apcaFloor is the ENFORCED minimum |Lc| for any text pair — APCA's "absolute
+// minimum for any text". Below this fails the check (alongside WCAG). The 45–60
+// band (intentionally de-emphasized text: placeholders, hints, disabled) stays
+// advisory; we don't force every label to content-level contrast.
+const apcaFloor = 45.0
 
 // apcaY converts an opaque sRGB color to APCA screen luminance.
 func apcaY(c RGBA) float64 {
@@ -88,13 +97,29 @@ func APCALc(txt, bg RGBA) float64 {
 	return out * 100
 }
 
-// apcaTargetLc returns the minimum |Lc| APCA asks for at a given font size and
-// weight — the "minimum readability" reading of the published ladder
-// (https://git.apcacontrast.com/documentation/APCA_in_a_Nutshell.html). It's a
-// conservative interpretation: 14px/400 body lands in the Lc 90 band (the
-// Nutshell lists Lc 75 minimums only from 18px/400 and 14px/700), so ordinary
-// small body text is held to the strict bar. Returns 0 only for sizes we don't
-// classify (treated as "no APCA opinion"). Font px assumes ~0.52 x-height.
+// apcaSizeTier is one "px ≥ pxMin and weight in [wMin,wMax] → required Lc" rule.
+// First match in apcaTiers (ordered most-lenient first) wins; no match → Lc 90.
+type apcaSizeTier struct {
+	pxMin      float64
+	wMin, wMax int
+	lc         float64
+}
+
+// apcaTiers encodes APCA's published font-size/weight → minimum-Lc ladder
+// (https://git.apcacontrast.com/documentation/APCA_in_a_Nutshell.html), the
+// conservative "minimum readability" reading. 14px/400 body matches nothing and
+// falls through to Lc 90 (the Nutshell lists Lc 75 minimums only from 18px/400
+// and 14px/700), so ordinary small body text is held to the strict bar. Font px
+// assumes ~0.52 x-height.
+var apcaTiers = []apcaSizeTier{
+	{36, 0, 400, 45}, {24, 700, 1000, 45}, // large / heavy headlines
+	{24, 400, 1000, 60}, {21, 500, 1000, 60}, {18, 600, 1000, 60}, {16, 700, 1000, 60}, // content text
+	{18, 400, 1000, 75}, {16, 500, 1000, 75}, {14, 700, 1000, 75}, // body minimum
+}
+
+// apcaTargetLc returns the minimum |Lc| APCA asks for at a font size and weight.
+// This drives the ADVISORY shortfall counts only; the enforced gate is the flat
+// apcaFloor.
 func apcaTargetLc(px float64, weight int) float64 {
 	if weight <= 0 {
 		weight = 400
@@ -102,46 +127,43 @@ func apcaTargetLc(px float64, weight int) float64 {
 	if px <= 0 {
 		px = 14 // unresolved size: assume small body text
 	}
-	switch {
-	case (px >= 36 && weight <= 400) || (px >= 24 && weight >= 700):
-		return 45 // large / heavy headlines
-	case (px >= 24 && weight >= 400) || (px >= 21 && weight >= 500) ||
-		(px >= 18 && weight >= 600) || (px >= 16 && weight >= 700):
-		return 60 // content text
-	case (px >= 18 && weight >= 400) || (px >= 16 && weight >= 500) ||
-		(px >= 14 && weight >= 700):
-		return 75 // body minimum
-	default:
-		return 90 // small/normal body (e.g. 14px/400) — strict band
+	for _, t := range apcaTiers {
+		if px >= t.pxMin && weight >= t.wMin && weight <= t.wMax {
+			return t.lc
+		}
 	}
+	return 90 // small/normal body (e.g. 14px/400) — strict band
 }
 
-// apcaShortfall is one pair whose |Lc| is below its font-aware target.
+// apcaLite is the (|Lc|, px, weight) of one evaluated pair, for the zoom sweep.
+type apcaLite struct {
+	lc     float64
+	px     float64
+	weight int
+}
+
+// apcaShortfall is one pair whose |Lc| is below a target (the size-aware target,
+// or the flat floor).
 type apcaShortfall struct {
 	f      Finding
 	lc     float64
 	target float64
 }
 
-// ReportAPCA prints the advisory APCA section over every evaluated pair. It
-// NEVER affects the exit code — it's a second opinion, printed so we can see
-// where APCA and WCAG 2 disagree and size the blast radius before deciding
-// whether any of it should ever become a gate.
-func ReportAPCA(findings []Finding, rootDir string) {
+// ReportAPCA prints the APCA second opinion over every evaluated pair and
+// enforces the Lc-45 floor. The advisory detail (distribution, blast radius,
+// zoom sweep, per-pair shortfalls) prints only with verbose; the floor result
+// always prints. Returns true if any pair is below the floor (a failure).
+func ReportAPCA(findings []Finding, rootDir string, verbose bool) bool {
 	if len(findings) == 0 {
-		return
+		return false
 	}
 
 	// |Lc| distribution buckets.
 	var b90, b75, b60, b45, b30, bLow int
 	var shortfalls []apcaShortfall
-	// Per-pair (|Lc|, px, weight) for the zoom sweep below.
-	type lite struct {
-		lc     float64
-		px     float64
-		weight int
-	}
-	var pairs []lite
+	var floorViols []apcaShortfall
+	var pairs []apcaLite // per-pair (|Lc|, px, weight) for the zoom sweep
 	// Dedup identical pairs (same file:line:selector:mode) so counts mean
 	// "distinct evaluated pairs", matching how the WCAG report reads.
 	seen := map[string]bool{}
@@ -154,7 +176,7 @@ func ReportAPCA(findings []Finding, rootDir string) {
 		seen[key] = true
 
 		lc := math.Abs(APCALc(f.FG, f.BG))
-		pairs = append(pairs, lite{lc: lc, px: f.FontPx, weight: f.FontWeight})
+		pairs = append(pairs, apcaLite{lc: lc, px: f.FontPx, weight: f.FontWeight})
 		switch {
 		case lc >= 90:
 			b90++
@@ -169,103 +191,88 @@ func ReportAPCA(findings []Finding, rootDir string) {
 		default:
 			bLow++
 		}
-		target := apcaTargetLc(f.FontPx, f.FontWeight)
-		if lc < target {
+		if target := apcaTargetLc(f.FontPx, f.FontWeight); lc < target {
 			shortfalls = append(shortfalls, apcaShortfall{f: f, lc: lc, target: target})
+		}
+		if lc < apcaFloor {
+			floorViols = append(floorViols, apcaShortfall{f: f, lc: lc, target: apcaFloor})
 		}
 	}
 	total := len(seen)
 
-	fmt.Printf("\n%s=== APCA (advisory, report-only — does NOT affect pass/fail) ===%s\n", colorYellow, colorReset)
-	fmt.Printf("%sAPCA 0.1.9 (W3) second opinion alongside the WCAG 2.2 gate. %d distinct pairs.%s\n", colorDim, total, colorReset)
-	fmt.Printf("%s|Lc| distribution:%s\n", colorDim, colorReset)
-	fmt.Printf("    %s≥90  body preferred : %d%s\n", colorDim, b90, colorReset)
-	fmt.Printf("    %s75–90 body minimum  : %d%s\n", colorDim, b75, colorReset)
-	fmt.Printf("    %s60–75 large/content : %d%s\n", colorDim, b60, colorReset)
-	fmt.Printf("    %s45–60 headline only : %d%s\n", colorDim, b45, colorReset)
-	fmt.Printf("    %s30–45 weak          : %d%s\n", colorDim, b30, colorReset)
-	fmt.Printf("    %s<30   sub-minimum   : %d%s\n", colorRed, bLow, colorReset)
+	if verbose {
+		printAPCAAdvisory(total, apcaBuckets{b90, b75, b60, b45, b30, bLow}, pairs, shortfalls, rootDir)
+	} else {
+		fmt.Printf("%sAPCA (advisory): %d pairs, %d in the Lc 45–60 muted band (run with -verbose for detail)%s\n",
+			colorDim, total, b45, colorReset)
+	}
+	return printAPCAFloor(floorViols, rootDir)
+}
 
-	// Cumulative "below a fixed bar" — the target-independent blast radius at
-	// each strictness, far more honest than the single font-aware number
-	// (which our 14px/400 base body text dominates by demanding Lc 90).
+// apcaBuckets holds the |Lc| distribution counts (≥90, 75–90, 60–75, 45–60, 30–45, <30).
+type apcaBuckets struct{ b90, b75, b60, b45, b30, bLow int }
+
+// printAPCAAdvisory prints the (verbose-only) perceptual detail: distribution,
+// fixed-bar blast radius, the zoom sweep, and every per-pair shortfall.
+func printAPCAAdvisory(total int, b apcaBuckets, pairs []apcaLite, shortfalls []apcaShortfall, rootDir string) {
 	pct := func(n int) float64 { return 100 * float64(n) / float64(total) }
-	fmt.Printf("%sPairs below a fixed Lc bar (blast radius if that bar were the gate):%s\n", colorDim, colorReset)
-	fmt.Printf("    %s< Lc 90 (body preferred): %d (%.0f%%)%s\n", colorDim, b75+b60+b45+b30+bLow, pct(b75+b60+b45+b30+bLow), colorReset)
-	fmt.Printf("    %s< Lc 75 (body minimum)  : %d (%.0f%%)%s\n", colorDim, b60+b45+b30+bLow, pct(b60+b45+b30+bLow), colorReset)
-	fmt.Printf("    %s< Lc 60 (content/UI)    : %d (%.0f%%)%s\n", colorDim, b45+b30+bLow, pct(b45+b30+bLow), colorReset)
-	fmt.Printf("    %s< Lc 45 (headline only) : %d (%.0f%%)%s\n", colorDim, b30+bLow, pct(b30+bLow), colorReset)
-	fmt.Printf("    %s< Lc 30 (any text fails): %d (%.0f%%)%s\n", colorDim, bLow, pct(bLow), colorReset)
-
-	// Zoom sweep. Zoom doesn't change Lc (contrast); it enlarges the rendered
-	// text, which lowers the size-based APCA target each element must clear. So
-	// bumping the app's default zoom is a legitimate way to lift our APCA
-	// standing without recoloring anything. Count font-aware shortfalls at a
-	// few default-zoom levels (each pair's px scaled, target re-looked-up).
-	shortfallAtZoom := func(zoom float64) int {
-		n := 0
-		for _, p := range pairs {
-			if p.lc < apcaTargetLc(p.px*zoom, p.weight) {
-				n++
-			}
-		}
-		return n
-	}
-	fmt.Printf("%sFont-aware shortfalls vs default zoom (Lc unchanged; only the size-based target relaxes):%s\n", colorDim, colorReset)
-	for _, z := range []float64{1.0, 1.10, 1.25, 1.50} {
-		n := shortfallAtZoom(z)
-		fmt.Printf("    %s%3.0f%%: %d (%.0f%%)%s\n", colorDim, z*100, n, pct(n), colorReset)
-	}
-	// Why zoom helps so little: split the 100%-zoom shortfalls into the ones a
-	// bigger render could ever rescue (|Lc| ≥ 60, so a large-text target would
-	// pass) vs the contrast-bound ones (|Lc| < 60, below even the most lenient
-	// content target — no amount of zoom fixes them; only recoloring does).
-	var sizeBound, contrastBound int
-	for _, p := range pairs {
-		if p.lc < apcaTargetLc(p.px, p.weight) {
-			if p.lc >= 60 {
-				sizeBound++
-			} else {
-				contrastBound++
-			}
-		}
-	}
-	fmt.Printf("    %sof the 100%% shortfalls: %d are size-fixable (|Lc|≥60), %d are contrast-bound (|Lc|<60 — zoom can't fix, only recolor)%s\n",
-		colorDim, sizeBound, contrastBound, colorReset)
-
-	// Sort shortfalls by how far below target (largest gap first).
+	below60 := b.b45 + b.b30 + b.bLow
+	fmt.Printf("\n%s=== APCA (advisory) — perceptual second opinion ===%s\n", colorYellow, colorReset)
+	fmt.Printf("%sAPCA 0.1.9 (W3). %d distinct pairs.%s\n", colorDim, total, colorReset)
+	fmt.Printf("%s|Lc| distribution: ≥90:%d  75–90:%d  60–75:%d  45–60:%d  30–45:%d  <30:%d%s\n",
+		colorDim, b.b90, b.b75, b.b60, b.b45, b.b30, b.bLow, colorReset)
+	fmt.Printf("%sBelow a fixed bar: <60:%d (%.0f%%)  <45:%d  <30:%d%s\n",
+		colorDim, below60, pct(below60), b.b30+b.bLow, b.bLow, colorReset)
+	fmt.Printf("%sFont-aware shortfalls vs default zoom (Lc fixed; only the target relaxes): 100%%:%d 110%%:%d 125%%:%d 150%%:%d%s\n",
+		colorDim, apcaShortfallAtZoom(pairs, 1.0), apcaShortfallAtZoom(pairs, 1.10), apcaShortfallAtZoom(pairs, 1.25), apcaShortfallAtZoom(pairs, 1.50), colorReset)
 	sort.Slice(shortfalls, func(i, j int) bool {
 		return (shortfalls[i].target - shortfalls[i].lc) > (shortfalls[j].target - shortfalls[j].lc)
 	})
-
-	fmt.Printf("%sFont-aware shortfalls (|Lc| below the APCA target for the element's size/weight): %s%d of %d%s\n",
-		colorDim, colorRed, len(shortfalls), total, colorReset)
-
-	const maxShown = 30
-	shown := shortfalls
-	if len(shown) > maxShown {
-		shown = shown[:maxShown]
-	}
-	for _, s := range shown {
+	fmt.Printf("%sFont-aware shortfalls (below the size/weight target): %d of %d%s\n", colorDim, len(shortfalls), total, colorReset)
+	for _, s := range shortfalls {
 		px := s.f.FontPx
 		if px <= 0 {
 			px = 14
 		}
-		variant := ""
-		if s.f.AccentVariant != "" {
-			variant = fmt.Sprintf(" accent=%s", s.f.AccentVariant)
-		}
-		fmt.Printf("    %s%s:%d%s  %s%s%s  %s  %.0fpx/%d%s  Lc %.0f  need %.0f  (short %.0f)\n",
+		fmt.Printf("    %s%s:%d  %s  %s  %.0fpx/%d%s  Lc %.0f need %.0f%s\n",
+			colorDim, RelPath(rootDir, s.f.File), s.f.Line, s.f.Selector,
+			s.f.Mode, px, weightOr400(s.f.FontWeight), apcaVariantTag(s.f), s.lc, s.target, colorReset)
+	}
+	fmt.Printf("%sNote: 14px/400 body sits in the Lc 90 band (APCA's preferred, not the floor).%s\n", colorDim, colorReset)
+}
+
+// printAPCAFloor prints the enforced Lc-45 floor result and returns true on any
+// violation (a check failure, alongside the WCAG gate).
+func printAPCAFloor(floorViols []apcaShortfall, rootDir string) bool {
+	if len(floorViols) == 0 {
+		fmt.Printf("%s✅ APCA Lc-45 floor: every text pair ≥ Lc 45%s\n", colorGreen, colorReset)
+		return false
+	}
+	sort.Slice(floorViols, func(i, j int) bool { return floorViols[i].lc < floorViols[j].lc })
+	fmt.Printf("%s❌ APCA Lc-45 floor: %d pair(s) below Lc 45%s\n", colorRed, len(floorViols), colorReset)
+	for _, s := range floorViols {
+		fmt.Printf("    %s%s:%d%s  %s%s%s  %s%s  Lc %.1f (need %.0f)\n",
 			colorRed, RelPath(rootDir, s.f.File), s.f.Line, colorReset,
-			colorDim, s.f.Selector, colorReset,
-			s.f.Mode, px, weightOr400(s.f.FontWeight), variant,
-			s.lc, s.target, s.target-s.lc)
+			colorDim, s.f.Selector, colorReset, s.f.Mode, apcaVariantTag(s.f), s.lc, apcaFloor)
 	}
-	if len(shortfalls) > maxShown {
-		fmt.Printf("    %s… and %d more%s\n", colorDim, len(shortfalls)-maxShown, colorReset)
+	return true
+}
+
+func apcaShortfallAtZoom(pairs []apcaLite, zoom float64) int {
+	n := 0
+	for _, p := range pairs {
+		if p.lc < apcaTargetLc(p.px*zoom, p.weight) {
+			n++
+		}
 	}
-	fmt.Printf("%sNote: target ladder is APCA's MINIMUM reading; 14px/400 body sits in the Lc 90 band.%s\n", colorDim, colorReset)
-	fmt.Printf("%sNote: accent pairs use the worst-WCAG accent variant, so their Lc is indicative, not an APCA sweep.%s\n", colorDim, colorReset)
+	return n
+}
+
+func apcaVariantTag(f Finding) string {
+	if f.AccentVariant == "" {
+		return ""
+	}
+	return fmt.Sprintf(" accent=%s", f.AccentVariant)
 }
 
 func weightOr400(w int) int {

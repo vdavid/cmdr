@@ -898,7 +898,7 @@
     /* === Text === */
     --color-text-primary: #e8e8e8;
     --color-text-secondary: #c4c4c4;
-    --color-text-tertiary: #a0a0a0;
+    --color-text-tertiary: #aaaaaa;
 
     /* === Interactive States (fallbacks; see light-mode comment above) === */
     --color-accent: #ffc206;

@@ -96,10 +96,11 @@ function applyDerivedAccentTokens(): void {
   //   - dark mode used to pass the raw accent through, which works for the
   //     bright Cmdr gold (#ffc206) and the brighter Apple accents, but
   //     Apple Purple (#a54fa7) on `#1e1e1e` is only 3.4:1. Lightening
-  //     dark accents by 35% toward white lifts them above AA in dark mode
-  //     while leaving the already-bright accents readable. Stays gold-ish
+  //     dark accents by 45% toward white lifts them above AA in dark mode
+  //     (and clears the APCA Lc-45 floor for purple accent-text), while
+  //     leaving the already-bright accents readable. Stays gold-ish
   //     for gold, paler-but-still-purple for purple, etc.
-  root.setProperty('--color-accent-text', dark ? mixSrgb(accent, '#ffffff', 0.35) : mixSrgb(accent, '#000000', 0.65))
+  root.setProperty('--color-accent-text', dark ? mixSrgb(accent, '#ffffff', 0.45) : mixSrgb(accent, '#000000', 0.65))
 }
 
 function applyAccentForCurrentSetting(): void {

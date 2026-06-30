@@ -467,8 +467,8 @@
     }
 
     .conflict-badge {
-        background: var(--color-warning);
-        color: var(--color-accent-fg);
+        background: var(--color-warning-bg-solid);
+        color: var(--color-warning-text);
         font-size: var(--font-size-xs);
         padding: 1px 5px;
         border-radius: var(--radius-lg);

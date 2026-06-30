@@ -1434,8 +1434,8 @@
         font-weight: 500;
         line-height: 1;
         border-radius: var(--radius-sm);
-        background: var(--color-warning);
-        color: var(--color-accent-fg);
+        background: var(--color-warning-bg-solid);
+        color: var(--color-warning-text);
         border: none;
         transition: all var(--transition-base);
     }

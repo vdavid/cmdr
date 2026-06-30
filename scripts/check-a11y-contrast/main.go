@@ -109,12 +109,12 @@ func main() {
 
 	hasViolations := Report(violations, warnings, rootDir, *verbose)
 
-	// Advisory APCA second opinion over every evaluated pair. Report-only: it
-	// prints but never changes the exit code (WCAG 2 stays the gate). See apca.go.
-	ReportAPCA(allFindings, rootDir)
+	// APCA: print the perceptual second opinion (detail under -verbose) and
+	// enforce the Lc-45 floor alongside the WCAG gate. See apca.go.
+	apcaFloorFail := ReportAPCA(allFindings, rootDir, *verbose)
 
 	summary := Summary(fileCount, analyzer.RulesEvaluated, len(allFindings), len(violations))
-	if hasViolations {
+	if hasViolations || apcaFloorFail {
 		fmt.Printf("%s❌ %s%s\n", colorRed, summary, colorReset)
 		os.Exit(1)
 	}
