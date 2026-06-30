@@ -262,6 +262,64 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
+    /// Recursively creates `path` and any missing ancestor directories, like
+    /// `mkdir -p`. Idempotent: a path (or ancestor) that already exists is a
+    /// no-op, so re-running against an existing destination succeeds.
+    ///
+    /// This is the volume-aware transfer pipelines' destination gate: a copy or
+    /// move into a not-yet-existing folder creates it on EVERY backend (local,
+    /// SMB, MTP, in-memory), matching the local-FS `ensure_destination_dir`.
+    ///
+    /// The default walks `path`'s ancestors leaf→root, stopping at the first one
+    /// that already `exists()` (or at the volume root), then creates the missing
+    /// ones shallowest-first via `create_directory`. Probing existence per
+    /// ancestor before creating means it never calls `create_directory` on a dir
+    /// that's already there, so backends whose `create_directory` can't signal a
+    /// collision (`MtpVolume`, `create_directory_errors_on_existing_dir() ==
+    /// false`) never make a duplicate sibling. An `AlreadyExists` from
+    /// `create_directory` (a concurrent op won a race) is also treated as
+    /// success. These are network/IPC round-trips, so the leaf-first walk keeps
+    /// them minimal: when the parent already exists (the common "new folder name
+    /// under an existing dir" case), it's one `exists()` plus one
+    /// `create_directory`.
+    ///
+    /// Backends override only if they have a cheaper native recursive mkdir;
+    /// SMB and MTP don't, so the per-component loop is the right shape there.
+    fn create_directory_all<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // Collect the missing ancestors, walking leaf→root until we reach
+            // one that already exists (or run out). A component with no file
+            // name (the volume root `/`, an empty path, or `.`) has nothing to
+            // create above it — the root always exists — so it stops the walk.
+            let mut missing: Vec<PathBuf> = Vec::new();
+            for ancestor in path.ancestors() {
+                if ancestor.file_name().is_none() {
+                    break;
+                }
+                if self.exists(ancestor).await {
+                    break;
+                }
+                missing.push(ancestor.to_path_buf());
+            }
+
+            // `ancestors()` yields leaf→root, so create shallowest-first: a
+            // child can't be created before its parent.
+            for dir in missing.iter().rev() {
+                match self.create_directory(dir).await {
+                    Ok(()) => {}
+                    // A concurrent op created it between our `exists()` check and
+                    // this call. Treat as success to keep the create idempotent.
+                    Err(VolumeError::AlreadyExists(_)) => {}
+                    Err(e) => return Err(e),
+                }
+            }
+            Ok(())
+        })
+    }
+
     /// Deletes a single file or **empty** directory.
     ///
     /// **Strict contract: must NOT recurse.** If `path` is a non-empty directory,

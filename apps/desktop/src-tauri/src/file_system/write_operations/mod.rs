@@ -62,7 +62,7 @@ use transfer::move_op::move_files_with_progress;
 use trash::trash_files_with_progress;
 #[cfg(not(test))]
 use validation::{
-    validate_destination, validate_destination_not_inside_source, validate_destination_writable,
+    ensure_destination_dir, validate_destination_not_inside_source, validate_destination_writable,
     validate_not_same_location, validate_sources,
 };
 
@@ -104,7 +104,7 @@ pub(crate) use state::{CopyTransaction, OperationIntent, WriteOperationState, is
 #[cfg(test)]
 #[allow(unused_imports, reason = "Re-exports for test modules in file_system")]
 pub(crate) use validation::{
-    is_same_file, is_same_filesystem, validate_destination, validate_destination_not_inside_source,
+    ensure_destination_dir, is_same_file, is_same_filesystem, validate_destination_not_inside_source,
     validate_destination_writable, validate_disk_space, validate_not_same_location, validate_path_length,
     validate_sources,
 };
@@ -302,10 +302,15 @@ pub async fn copy_files_start(
         summary,
         move |app, op_id, state| {
             validate_sources(&sources)?;
-            validate_destination(&destination)?;
+            // Guard against copying a folder into itself BEFORE creating anything:
+            // the dest may not exist yet, and the guard resolves it via its nearest
+            // existing ancestor.
+            validate_destination_not_inside_source(&sources, &destination)?;
+            // Create the destination folder (and any missing ancestors) when it
+            // doesn't exist, so a copy into a brand-new folder just works.
+            ensure_destination_dir(&destination)?;
             validate_destination_writable(&destination)?;
             validate_not_same_location(&sources, &destination)?;
-            validate_destination_not_inside_source(&sources, &destination)?;
             let events = types::TauriEventSink::new(app.clone());
             copy_files_with_progress_inner(&events, &op_id, &state, &sources, &destination, &config)
         },
@@ -343,10 +348,15 @@ pub async fn move_files_start(
         summary,
         move |app, op_id, state| {
             validate_sources(&sources)?;
-            validate_destination(&destination)?;
+            // Guard against moving a folder into itself BEFORE creating anything:
+            // the dest may not exist yet, and the guard resolves it via its nearest
+            // existing ancestor.
+            validate_destination_not_inside_source(&sources, &destination)?;
+            // Create the destination folder (and any missing ancestors) when it
+            // doesn't exist, so a move into a brand-new folder just works.
+            ensure_destination_dir(&destination)?;
             validate_destination_writable(&destination)?;
             validate_not_same_location(&sources, &destination)?;
-            validate_destination_not_inside_source(&sources, &destination)?;
             move_files_with_progress(&app, &op_id, &state, &sources, &destination, &config)
         },
     )

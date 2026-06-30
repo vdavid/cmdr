@@ -23,20 +23,36 @@ pub(crate) fn validate_sources(sources: &[PathBuf]) -> Result<(), WriteOperation
     Ok(())
 }
 
-pub(crate) fn validate_destination(destination: &Path) -> Result<(), WriteOperationError> {
-    // Destination must exist and be a directory
-    if !destination.exists() {
-        return Err(WriteOperationError::SourceNotFound {
-            path: destination.display().to_string(),
-        });
-    }
-    if !destination.is_dir() {
-        return Err(WriteOperationError::IoError {
+/// Ensures the destination exists as a directory, creating it (and any missing
+/// ancestors) when absent. This is the local copy/move paths' destination gate:
+/// a transfer into a not-yet-existing folder creates it first, matching the
+/// dialog's "this folder will be created" preview. A path that exists but isn't a
+/// directory is rejected (we won't transfer into a file). Symlinks are followed,
+/// so a symlink to a real directory is a valid destination.
+pub(crate) fn ensure_destination_dir(destination: &Path) -> Result<(), WriteOperationError> {
+    match fs::metadata(destination) {
+        Ok(meta) if meta.is_dir() => Ok(()),
+        Ok(_) => Err(WriteOperationError::IoError {
             path: destination.display().to_string(),
             message: "Destination must be a directory".to_string(),
-        });
+        }),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            fs::create_dir_all(destination).map_err(|e| match e.kind() {
+                std::io::ErrorKind::PermissionDenied => WriteOperationError::PermissionDenied {
+                    path: destination.display().to_string(),
+                    message: "Couldn't create the destination folder. Check folder permissions in Finder.".to_string(),
+                },
+                _ => WriteOperationError::IoError {
+                    path: destination.display().to_string(),
+                    message: format!("Couldn't create the destination folder: {e}"),
+                },
+            })
+        }
+        Err(e) => Err(WriteOperationError::IoError {
+            path: destination.display().to_string(),
+            message: format!("Couldn't access the destination folder: {e}"),
+        }),
     }
-    Ok(())
 }
 
 pub(crate) fn validate_not_same_location(sources: &[PathBuf], destination: &Path) -> Result<(), WriteOperationError> {
@@ -65,7 +81,7 @@ pub(crate) fn validate_destination_not_inside_source(
     // a `dest` that lexically doesn't start with `source` but canonically
     // does (symlink shenanigans) would pass the check and the copy would
     // recurse into itself until disk-full. Fail closed instead.
-    let canonical_dest = canonicalize_or_parent(destination).map_err(|e| WriteOperationError::IoError {
+    let canonical_dest = canonicalize_or_nearest_ancestor(destination).map_err(|e| WriteOperationError::IoError {
         path: destination.display().to_string(),
         message: format!("Couldn't resolve destination path: {e}"),
     })?;
@@ -87,23 +103,44 @@ pub(crate) fn validate_destination_not_inside_source(
     Ok(())
 }
 
-/// Canonicalizes `path`, falling back to canonicalizing its parent and
-/// re-appending the trailing segment when the path doesn't exist yet (the
-/// only legitimate case for `canonicalize` to fail on the destination during
-/// a write op). Any other I/O error propagates so the caller can fail closed.
-fn canonicalize_or_parent(path: &Path) -> std::io::Result<PathBuf> {
+/// Canonicalizes `path`. When the path doesn't exist yet (the legitimate case for
+/// a not-yet-created destination), it walks up to the NEAREST existing ancestor,
+/// canonicalizes that, and re-appends the missing trailing segments. This lets the
+/// destination-inside-source guard resolve symlinks and `..` segments on a dest the
+/// op is about to create, even when several levels of it don't exist yet. Any
+/// non-NotFound I/O error propagates so the caller can fail closed.
+fn canonicalize_or_nearest_ancestor(path: &Path) -> std::io::Result<PathBuf> {
     match path.canonicalize() {
-        Ok(canonical) => Ok(canonical),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            let parent = path.parent().ok_or(e)?;
-            let canonical_parent = parent.canonicalize()?;
-            match path.file_name() {
-                Some(name) => Ok(canonical_parent.join(name)),
-                // Path was just `..` / `.` / empty — refuse to fall back.
-                None => Ok(canonical_parent),
+        Ok(canonical) => return Ok(canonical),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => return Err(e),
+    }
+
+    let mut missing_tail: Vec<std::ffi::OsString> = Vec::new();
+    let mut current = path;
+    loop {
+        // Refuse to fall back on a trailing `..` / `.` / empty segment.
+        let name = current
+            .file_name()
+            .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))?;
+        missing_tail.push(name.to_os_string());
+
+        let parent = current
+            .parent()
+            .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))?;
+        match parent.canonicalize() {
+            Ok(canonical_parent) => {
+                let mut result = canonical_parent;
+                for seg in missing_tail.iter().rev() {
+                    result.push(seg);
+                }
+                return Ok(result);
             }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                current = parent;
+            }
+            Err(e) => return Err(e),
         }
-        Err(e) => Err(e),
     }
 }
 

@@ -180,7 +180,11 @@ export function validateDirectoryPath(path: string): ValidationResult {
     return { severity: 'error', message: tString('fileOperations.validation.pathEmpty') }
   }
 
-  if (!trimmed.startsWith('/')) {
+  // Accept absolute paths (`/…`) and the home shortcut (`~` or `~/…`). `~` is the
+  // app's internal stand-in for the user's home dir, expanded to an absolute path
+  // by the backend. A bare `~foo` (no slash) isn't a home shortcut, so it stays
+  // rejected as relative.
+  if (!trimmed.startsWith('/') && trimmed !== '~' && !trimmed.startsWith('~/')) {
     return { severity: 'error', message: tString('fileOperations.validation.pathNotAbsolute') }
   }
 

@@ -1375,3 +1375,92 @@ async fn cross_volume_move_preserves_new_data_on_finalize_failure() {
         "source must stay when the move's finalize fails"
     );
 }
+
+// ============================================================================
+// Volume-aware destination auto-create on the move paths (recursive
+// `create_directory_all`). Parity with copy and the local-FS path.
+// ============================================================================
+
+/// Cross-volume move into a not-yet-existing nested dest creates the folder
+/// (and ancestors) on the dest volume, then lands the files.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_creates_missing_nested_dest() {
+    let (source, dest) = make_volumes();
+    source.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
+    source.create_file(Path::new("/b.txt"), b"bravo").await.unwrap();
+    assert!(!dest.exists(Path::new("/incoming")).await);
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = VolumeCopyConfig::default();
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        "op-move-mkdir",
+        &state,
+        Arc::clone(&source),
+        &[PathBuf::from("/a.txt"), PathBuf::from("/b.txt")],
+        Arc::clone(&dest),
+        Path::new("/incoming/2026/trip"),
+        &config,
+    )
+    .await;
+
+    assert!(
+        result.is_ok(),
+        "move into a missing nested dest should succeed: {:?}",
+        result
+    );
+
+    for dir in ["/incoming", "/incoming/2026", "/incoming/2026/trip"] {
+        assert!(
+            dest.is_directory(Path::new(dir)).await.expect("ancestor statable"),
+            "{dir} should be a directory"
+        );
+    }
+    // Sources gone, files landed in the freshly-created dest.
+    assert!(!source.exists(Path::new("/a.txt")).await);
+    assert!(!source.exists(Path::new("/b.txt")).await);
+    assert!(dest.exists(Path::new("/incoming/2026/trip/a.txt")).await);
+    assert!(dest.exists(Path::new("/incoming/2026/trip/b.txt")).await);
+}
+
+/// Same-volume rename into a not-yet-existing nested dest creates the dest
+/// directory first, so the rename lands. The server-side-rename fast path is
+/// preserved (a create into an existing dest is a no-op).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn same_volume_move_creates_missing_nested_dest() {
+    let volume: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("V").with_space_info(10_000_000, 10_000_000));
+    volume.create_file(Path::new("/a.txt"), b"alpha").await.unwrap();
+    assert!(!volume.exists(Path::new("/archive")).await);
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+
+    let result = move_within_same_volume_with_progress(
+        events.clone(),
+        "op-same-move-mkdir",
+        &state,
+        Arc::clone(&volume),
+        &[PathBuf::from("/a.txt")],
+        Path::new("/archive/2026"),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+
+    assert!(
+        result.is_ok(),
+        "same-volume move into a missing nested dest should succeed: {:?}",
+        result
+    );
+
+    for dir in ["/archive", "/archive/2026"] {
+        assert!(
+            volume.is_directory(Path::new(dir)).await.expect("ancestor statable"),
+            "{dir} should be a directory"
+        );
+    }
+    assert!(!volume.exists(Path::new("/a.txt")).await, "source renamed away");
+    let mut a = volume.open_read_stream(Path::new("/archive/2026/a.txt")).await.unwrap();
+    assert_eq!(a.next_chunk().await.unwrap().unwrap(), b"alpha");
+}

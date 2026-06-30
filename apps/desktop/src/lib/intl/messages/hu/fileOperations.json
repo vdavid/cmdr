@@ -153,6 +153,18 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
+  "fileOperations.shared.actionLabel": "Művelet:",
+  "@fileOperations.shared.actionLabel": {
+    "sourceHash": "7d9fda4"
+  },
+  "fileOperations.shared.scanningTooltip": "Átvizsgálás…",
+  "@fileOperations.shared.scanningTooltip": {
+    "sourceHash": "38d96da"
+  },
+  "fileOperations.shared.scanCompleteTooltip": "Átvizsgálás kész",
+  "@fileOperations.shared.scanCompleteTooltip": {
+    "sourceHash": "bd35a52"
+  },
   "fileOperations.transferDialog.toggleCopy": "Másolás",
   "@fileOperations.transferDialog.toggleCopy": {
     "sourceHash": "e21f935"
@@ -160,6 +172,10 @@
   "fileOperations.transferDialog.toggleMove": "Áthelyezés",
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.routeLabel": "Útvonal:",
+  "@fileOperations.transferDialog.routeLabel": {
+    "sourceHash": "8ccda30"
   },
   "fileOperations.transferDialog.destVolumeAria": "Célkötet",
   "@fileOperations.transferDialog.destVolumeAria": {
@@ -176,6 +192,14 @@
   "fileOperations.transferDialog.smbNativeNote": "Ez a megosztás a rendszerkapcsolatot használja. A megszakítás késhet. A gyorsabb átvitelhez és a megbízható megszakításhoz használd a kötetválasztóban a „Közvetlen csatlakozás” lehetőséget.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "Ez a mappa még nem létezik. A Cmdr létrehozza a másolás során.",
+  "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
+    "sourceHash": "025f3dc"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "Ez a mappa még nem létezik. A Cmdr létrehozza az áthelyezés során.",
+  "@fileOperations.transferDialog.targetWillBeCreatedMove": {
+    "sourceHash": "976edd2"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, one {fájl} other {fájl}}",
   "@fileOperations.transferDialog.scanFile": {

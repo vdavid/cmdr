@@ -316,3 +316,85 @@ async fn smb_integration_same_share_nonconflicting_move_no_subtree_walk() {
 
     ensure_clean(&smb_vol, &base).await;
 }
+
+/// DESTINATION AUTO-CREATE on a real SMB server: a copy into a not-yet-existing
+/// nested destination folder creates the folder (and every missing ancestor) on
+/// the share via `create_directory_all`, then lands the files. Pins the
+/// volume-aware parity with the local-FS `ensure_destination_dir`: recursive
+/// dest-create now works for SMB, not just local. SMB's `create_directory`
+/// errors on an existing dir (`create_directory_errors_on_existing_dir() ==
+/// true`), but the recursive helper pre-checks existence per component, so it
+/// creates only the missing levels.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_copy_creates_missing_nested_dest() {
+    use crate::file_system::write_operations::{
+        CollectorEventSink, VolumeCopyConfig, WriteOperationState, copy_volumes_with_progress,
+    };
+    use std::time::Duration;
+
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+    let dest_vol: Arc<dyn Volume> = smb_vol.clone();
+
+    // Only `base` exists; the nested dest `base/incoming/2026/trip` does NOT.
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    let dest = format!("{base}/incoming/2026/trip");
+    assert!(!smb_vol.exists(Path::new(&format!("{base}/incoming"))).await);
+
+    // Local source: two plain files.
+    let local_dir = tempfile::TempDir::new().expect("create TempDir");
+    std::fs::write(local_dir.path().join("a.txt"), b"alpha").unwrap();
+    std::fs::write(local_dir.path().join("b.txt"), b"bravo").unwrap();
+    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+        "src",
+        local_dir.path().to_path_buf(),
+    ));
+
+    let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
+    let events = Arc::new(CollectorEventSink::new());
+    let config = VolumeCopyConfig::default();
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "test-op-smb-mkdir-dest",
+        &state,
+        Arc::clone(&source_vol),
+        &[PathBuf::from("a.txt"), PathBuf::from("b.txt")],
+        Arc::clone(&dest_vol),
+        Path::new(&dest),
+        &config,
+    )
+    .await;
+    assert!(
+        result.is_ok(),
+        "copy into a missing nested SMB dest should succeed: {result:?}"
+    );
+
+    // Every missing ancestor was created as a directory on the share.
+    for dir in [
+        format!("{base}/incoming"),
+        format!("{base}/incoming/2026"),
+        dest.clone(),
+    ] {
+        assert!(
+            smb_vol.is_directory(Path::new(&dir)).await.unwrap_or(false),
+            "{dir} should be a directory on the share"
+        );
+    }
+
+    // Both files landed in the freshly-created dest.
+    async fn read_smb(vol: &Arc<dyn Volume>, path: &str) -> Vec<u8> {
+        let mut s = vol.open_read_stream(Path::new(path)).await.unwrap();
+        let mut out = Vec::new();
+        while let Some(Ok(chunk)) = s.next_chunk().await {
+            out.extend_from_slice(&chunk);
+        }
+        out
+    }
+    assert_eq!(read_smb(&dest_vol, &format!("{dest}/a.txt")).await, b"alpha");
+    assert_eq!(read_smb(&dest_vol, &format!("{dest}/b.txt")).await, b"bravo");
+
+    ensure_clean(&smb_vol, &base).await;
+}

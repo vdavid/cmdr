@@ -239,6 +239,17 @@ pub(super) async fn move_volumes_with_progress(
     dest_path: &Path,
     config: &VolumeCopyConfig,
 ) -> Result<(), WriteFailure> {
+    // Phase 0: Ensure the destination directory exists, creating it and any
+    // missing ancestors on the dest volume (local, SMB, MTP, in-memory), so a
+    // cross-volume move into a not-yet-existing folder just works on every
+    // backend (parity with the local-FS `ensure_destination_dir`). Source and
+    // dest are different volumes here, so the dest-inside-source guard doesn't
+    // apply. A move into an already-existing dest is a no-op create.
+    dest_volume
+        .create_directory_all(dest_path)
+        .await
+        .map_err(|e| WriteFailure::from_volume(dest_path, e))?;
+
     // Phase 1: Preflight scan. Same helper the copy pipeline uses; we need
     // it for `total_bytes` (so the FE's Size progress bar isn't pinned at
     // zero) and for per-source `is_directory` / `size` hints (which save an
@@ -757,6 +768,17 @@ pub(crate) async fn move_within_same_volume_with_progress(
             });
         }
     }
+
+    // Ensure the destination directory exists before the rename. Each item is
+    // renamed to `dest_path.join(name)`, so `dest_path` itself must be a real
+    // directory; creating it (and any missing ancestors) recursively lets a
+    // same-volume move into a brand-new folder just work, matching copy and the
+    // local-FS path. A merge into an existing dest is a no-op create, so the
+    // server-side-rename fast path is untouched when the dest already exists.
+    volume
+        .create_directory_all(dest_path)
+        .await
+        .map_err(|e| map_volume_error(&dest_path.display().to_string(), e))?;
 
     // Top-level hints, NOT a deep pre-flight scan. A same-volume move is a
     // rename — it transfers zero bytes, so there's no Size bar to feed (the FE

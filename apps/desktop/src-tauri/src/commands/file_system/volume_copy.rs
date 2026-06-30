@@ -1,14 +1,28 @@
 //! Tauri commands for cross-volume copy/move operations.
 
+use crate::file_system::Volume;
 use crate::file_system::{
     ScanConflict, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationError, WriteOperationStartResult,
     copy_between_volumes as ops_copy_between_volumes, get_volume_manager,
     move_between_volumes as ops_move_between_volumes, scan_for_volume_copy as ops_scan_for_volume_copy,
 };
 use std::path::PathBuf;
+use std::sync::Arc;
 use tokio::time::Duration;
 
 use crate::commands::util::IpcError;
+
+/// Expands a leading `~` in the destination path when the destination is a local
+/// volume. The transfer dialog accepts the home shortcut (`~`, `~/…`) in its
+/// destination box; MTP and network volumes never use `~`, so their paths pass
+/// through untouched (per the "never tilde-expand MTP/network paths" rule).
+fn expand_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: String) -> PathBuf {
+    if dest_volume.local_path().is_some() {
+        PathBuf::from(super::expand_tilde(&dest_path))
+    } else {
+        PathBuf::from(dest_path)
+    }
+}
 
 /// Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.
 #[tauri::command]
@@ -36,7 +50,7 @@ pub async fn copy_between_volumes(
         })?;
 
     let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
-    let dest_path = PathBuf::from(dest_path);
+    let dest_path = expand_local_dest(&dest_volume, dest_path);
     let config = config.unwrap_or_default();
 
     ops_copy_between_volumes(
@@ -80,7 +94,7 @@ pub async fn move_between_volumes(
         })?;
 
     let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
-    let dest_path = PathBuf::from(dest_path);
+    let dest_path = expand_local_dest(&dest_volume, dest_path);
     let config = config.unwrap_or_default();
 
     ops_move_between_volumes(

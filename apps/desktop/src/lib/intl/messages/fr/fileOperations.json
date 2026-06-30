@@ -153,6 +153,18 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
+  "fileOperations.shared.actionLabel": "Action :",
+  "@fileOperations.shared.actionLabel": {
+    "sourceHash": "7d9fda4"
+  },
+  "fileOperations.shared.scanningTooltip": "Analyse…",
+  "@fileOperations.shared.scanningTooltip": {
+    "sourceHash": "38d96da"
+  },
+  "fileOperations.shared.scanCompleteTooltip": "Analyse terminée",
+  "@fileOperations.shared.scanCompleteTooltip": {
+    "sourceHash": "bd35a52"
+  },
   "fileOperations.transferDialog.toggleCopy": "Copier",
   "@fileOperations.transferDialog.toggleCopy": {
     "sourceHash": "e21f935"
@@ -160,6 +172,10 @@
   "fileOperations.transferDialog.toggleMove": "Déplacer",
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.routeLabel": "Trajet :",
+  "@fileOperations.transferDialog.routeLabel": {
+    "sourceHash": "8ccda30"
   },
   "fileOperations.transferDialog.destVolumeAria": "Volume de destination",
   "@fileOperations.transferDialog.destVolumeAria": {
@@ -176,6 +192,14 @@
   "fileOperations.transferDialog.smbNativeNote": "Ce partage utilise la connexion système. L''annulation peut être retardée. Utilisez « Se connecter directement » dans le sélecteur de volume pour des transferts plus rapides et une annulation fiable.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "Ce dossier n''existe pas encore. Cmdr le créera lors de la copie.",
+  "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
+    "sourceHash": "025f3dc"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "Ce dossier n''existe pas encore. Cmdr le créera lors du déplacement.",
+  "@fileOperations.transferDialog.targetWillBeCreatedMove": {
+    "sourceHash": "976edd2"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, one {fichier} many {fichiers} other {fichiers}}",
   "@fileOperations.transferDialog.scanFile": {

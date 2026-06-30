@@ -153,6 +153,18 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
+  "fileOperations.shared.actionLabel": "Bewerking:",
+  "@fileOperations.shared.actionLabel": {
+    "sourceHash": "7d9fda4"
+  },
+  "fileOperations.shared.scanningTooltip": "Doorzoeken…",
+  "@fileOperations.shared.scanningTooltip": {
+    "sourceHash": "38d96da"
+  },
+  "fileOperations.shared.scanCompleteTooltip": "Doorzoeken voltooid",
+  "@fileOperations.shared.scanCompleteTooltip": {
+    "sourceHash": "bd35a52"
+  },
   "fileOperations.transferDialog.toggleCopy": "Kopieer",
   "@fileOperations.transferDialog.toggleCopy": {
     "sourceHash": "e21f935"
@@ -160,6 +172,11 @@
   "fileOperations.transferDialog.toggleMove": "Verplaats",
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.routeLabel": "Route:",
+  "@fileOperations.transferDialog.routeLabel": {
+    "sourceHash": "8ccda30",
+    "sameAsSourceJustification": "'route' is a native Dutch word (de route) meaning the path from a source to a destination, identical in spelling and sense to English; reads naturally as the label for the source -> destination line (MS terminology corroborates the root: 'routering', 'gerouteerde gebeurtenis')."
   },
   "fileOperations.transferDialog.destVolumeAria": "Bestemmingsvolume",
   "@fileOperations.transferDialog.destVolumeAria": {
@@ -176,6 +193,14 @@
   "fileOperations.transferDialog.smbNativeNote": "Deze share gebruikt de systeemverbinding. Annuleren kan vertraagd zijn. Gebruik ‘Verbind direct’ in de volumekiezer voor snellere overdrachten en betrouwbaar annuleren.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "Deze map bestaat nog niet. Cmdr maakt hem aan tijdens het kopiëren.",
+  "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
+    "sourceHash": "025f3dc"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "Deze map bestaat nog niet. Cmdr maakt hem aan tijdens het verplaatsen.",
+  "@fileOperations.transferDialog.targetWillBeCreatedMove": {
+    "sourceHash": "976edd2"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, one {bestand} other {bestanden}}",
   "@fileOperations.transferDialog.scanFile": {

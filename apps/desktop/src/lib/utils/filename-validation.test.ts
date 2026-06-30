@@ -155,6 +155,20 @@ describe('validateDirectoryPath', () => {
     expect(validateDirectoryPath('/').severity).toBe('ok')
   })
 
+  it('allows the bare home shortcut', () => {
+    expect(validateDirectoryPath('~').severity).toBe('ok')
+  })
+
+  it('allows a home-rooted path', () => {
+    expect(validateDirectoryPath('~/Documents/folder').severity).toBe('ok')
+  })
+
+  it('rejects a tilde not followed by a slash as relative', () => {
+    const result = validateDirectoryPath('~foo')
+    expect(result.severity).toBe('error')
+    expect(result.message).toBe('Path must be absolute (start with /)')
+  })
+
   it('handles trailing slashes', () => {
     expect(validateDirectoryPath('/Users/test/').severity).toBe('ok')
   })

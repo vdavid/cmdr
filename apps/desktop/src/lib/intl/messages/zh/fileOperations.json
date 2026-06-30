@@ -151,6 +151,18 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
+  "fileOperations.shared.actionLabel": "操作：",
+  "@fileOperations.shared.actionLabel": {
+    "sourceHash": "7d9fda4"
+  },
+  "fileOperations.shared.scanningTooltip": "正在扫描…",
+  "@fileOperations.shared.scanningTooltip": {
+    "sourceHash": "38d96da"
+  },
+  "fileOperations.shared.scanCompleteTooltip": "扫描完成",
+  "@fileOperations.shared.scanCompleteTooltip": {
+    "sourceHash": "bd35a52"
+  },
   "fileOperations.transferDialog.toggleCopy": "拷贝",
   "@fileOperations.transferDialog.toggleCopy": {
     "sourceHash": "e21f935"
@@ -158,6 +170,10 @@
   "fileOperations.transferDialog.toggleMove": "移动",
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.routeLabel": "路线：",
+  "@fileOperations.transferDialog.routeLabel": {
+    "sourceHash": "8ccda30"
   },
   "fileOperations.transferDialog.destVolumeAria": "目标宗卷",
   "@fileOperations.transferDialog.destVolumeAria": {
@@ -174,6 +190,14 @@
   "fileOperations.transferDialog.smbNativeNote": "这个共享使用系统连接。取消可能会有延迟。在宗卷选择器中选择“直接连接”可获得更快的传输速度和可靠的取消。",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "这个文件夹还不存在。Cmdr 会在拷贝时自动创建它。",
+  "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
+    "sourceHash": "025f3dc"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "这个文件夹还不存在。Cmdr 会在移动时自动创建它。",
+  "@fileOperations.transferDialog.targetWillBeCreatedMove": {
+    "sourceHash": "976edd2"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, other {个文件}}",
   "@fileOperations.transferDialog.scanFile": {

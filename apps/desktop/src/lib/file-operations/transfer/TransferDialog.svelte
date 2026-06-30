@@ -1,17 +1,10 @@
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte'
-    import {
-        getVolumeSpace,
-        DEFAULT_VOLUME_ID,
-        type VolumeSpaceInfo,
-    } from '$lib/tauri-commands'
-    import type {
-        SortColumn,
-        SortOrder,
-        ConflictResolution,
-        TransferOperationType,
-    } from '$lib/file-explorer/types'
+    import { homeDir } from '@tauri-apps/api/path'
+    import { getVolumeSpace, DEFAULT_VOLUME_ID, type VolumeSpaceInfo } from '$lib/tauri-commands'
+    import type { SortColumn, SortOrder, ConflictResolution, TransferOperationType } from '$lib/file-explorer/types'
     import { validateDirectoryPath } from '$lib/utils/filename-validation'
+    import { createTransferDestExistsCheck } from './transfer-dest-exists.svelte'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -33,6 +26,7 @@
     import { getAppLogger } from '$lib/logging/logger'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import Trans from '$lib/intl/Trans.svelte'
     import { t, tString } from '$lib/intl/messages.svelte'
 
@@ -102,11 +96,21 @@
     // so look up the volume path directly from the props.
     const initialVolumePath = volumes.find((v) => v.id === currentVolumeId)?.path ?? '/'
     let editedPath = $state(toVolumeRelativePath(destinationPath, initialVolumePath))
-    log.debug('Initial path resolution: destinationPath={destinationPath}, currentVolumeId={currentVolumeId}, initialVolumePath={initialVolumePath}, editedPath={editedPath}', {
-        destinationPath, currentVolumeId, initialVolumePath, editedPath,
-    })
+    log.debug(
+        'Initial path resolution: destinationPath={destinationPath}, currentVolumeId={currentVolumeId}, initialVolumePath={initialVolumePath}, editedPath={editedPath}',
+        {
+            destinationPath,
+            currentVolumeId,
+            initialVolumePath,
+            editedPath,
+        },
+    )
     let selectedVolumeId = $state(currentVolumeId)
     let pathInputRef: HTMLInputElement | undefined = $state()
+
+    // The user's home dir as an absolute path (no trailing slash), resolved on
+    // mount. Used to show home as its long form instead of a bare `~`.
+    let userHomePath = $state('')
 
     // Volume space info
     let volumeSpace = $state<VolumeSpaceInfo | null>(null)
@@ -124,9 +128,7 @@
         overwrite_all_older: 'overwrite_older',
     }
     let conflictPolicy = $state<ConflictResolution>(
-        autoConfirm && autoConfirmOnConflict
-            ? autoConfirmConflictMap[autoConfirmOnConflict] ?? 'skip'
-            : 'stop',
+        autoConfirm && autoConfirmOnConflict ? (autoConfirmConflictMap[autoConfirmOnConflict] ?? 'skip') : 'stop',
     ) // Default to "ask for each" unless auto-confirming
 
     // Filter to only actual volumes (not favorites)
@@ -145,8 +147,19 @@
     const sourceLabel = $derived(
         deriveTransferLabel(sourceFolderPath, sourceVolume?.path ?? '/', sourceVolume?.name ?? ''),
     )
+    // Live destination path, reconstructed from the editable path box so the
+    // direction header's destination name + tooltip track what the user types
+    // (the static `destinationPath` prop is only the initial value). `editedPath`
+    // is volume-relative; rejoin it with the selected volume root for the label's
+    // at-root detection (a `://` or `/` root means it's already absolute-enough).
+    const liveDestinationPath = $derived.by(() => {
+        const volPath = selectedVolume?.path ?? '/'
+        if (volPath === '/' || volPath.includes('://')) return editedPath
+        const root = volPath.endsWith('/') ? volPath.slice(0, -1) : volPath
+        return root + editedPath
+    })
     const destinationLabel = $derived(
-        deriveTransferLabel(destinationPath, selectedVolume?.path ?? '/', selectedVolume?.name ?? ''),
+        deriveTransferLabel(liveDestinationPath, selectedVolume?.path ?? '/', selectedVolume?.name ?? ''),
     )
 
     /** A same-volume move: the source and destination are the SAME NON-DEFAULT
@@ -165,9 +178,7 @@
      *  same guard in `TransferProgressDialog`'s `isSameVolumeMove`. Derived from
      *  what the dialog already knows (no extra prop). */
     const isSameVolumeMove = $derived(
-        activeOperationType === 'move' &&
-            sourceVolumeId !== DEFAULT_VOLUME_ID &&
-            sourceVolumeId === selectedVolumeId,
+        activeOperationType === 'move' && sourceVolumeId !== DEFAULT_VOLUME_ID && sourceVolumeId === selectedVolumeId,
     )
 
     // Deep scan-preview orchestration (Size bar + file/dir tallies). The factory
@@ -247,8 +258,33 @@
         return getPathValidationError(sourcePaths, editedPath, activeOperationType)
     })
 
+    // Destination-existence check (debounced, async) behind the yellow "will be
+    // created" warning. Created synchronously here (component init) so its internal
+    // `$effect` lands in the effect-tracking context, matching the scan/conflict
+    // factories above.
+    const destExists = createTransferDestExistsCheck({
+        getEditedPath: () => editedPath,
+        getSelectedVolumeId: () => selectedVolumeId,
+        getDestroyed: () => destroyed,
+        log,
+    })
+
+    // Yellow "this folder doesn't exist yet, we'll create it" warning. A red
+    // structural/path error always wins: we never show both, and a path we can't
+    // even parse shouldn't claim it'll be created. Shown for every destination:
+    // the backend's volume-aware transfer auto-creates a missing destination
+    // folder (and its ancestors) on every backend via `create_directory_all`.
+    const showTargetWarning = $derived(!pathError && destExists.targetMissing)
+    const targetWarningText = $derived(
+        activeOperationType === 'copy'
+            ? tString('fileOperations.transferDialog.targetWillBeCreatedCopy')
+            : tString('fileOperations.transferDialog.targetWillBeCreatedMove'),
+    )
+
     // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
-    const spaceInfoText = $derived(formatSpaceInfo(volumeSpace, (bytes) => formatFileSizeWithFormat(bytes, getFileSizeFormat())))
+    const spaceInfoText = $derived(
+        formatSpaceInfo(volumeSpace, (bytes) => formatFileSizeWithFormat(bytes, getFileSizeFormat())),
+    )
 
     // Load volume space when volume changes
     async function loadVolumeSpace() {
@@ -295,6 +331,21 @@
     let conflictCheckPromise: Promise<void> | null = $state(null)
 
     onMount(async () => {
+        // Resolve the user's home dir, then show a destination that's exactly home
+        // as its long absolute form (`/Users/me`) rather than a bare `~`, which
+        // reads as a glitch. A `~/sub` path keeps its short form; the backend
+        // expands `~` on execution. Done before the scan/conflict check so they
+        // run against the absolute path.
+        try {
+            const home = await homeDir()
+            userHomePath = home.endsWith('/') ? home.slice(0, -1) : home
+        } catch (err) {
+            log.warn('Could not resolve home dir for the destination box: {error}', { error: err })
+        }
+        if (editedPath === '~' && userHomePath) {
+            editedPath = userHomePath
+        }
+
         // Focus and select the path input
         await tick()
         pathInputRef?.focus()
@@ -326,6 +377,7 @@
 
     onDestroy(() => {
         destroyed = true
+        destExists.cancel()
         // Free the scan preview unless the user confirmed (then the
         // TransferProgressDialog / the started op takes over the same scan and
         // consumes the cached result). We call this regardless of `isScanning`:
@@ -355,7 +407,15 @@
             if (conflictCheckPromise) {
                 await conflictCheckPromise
             }
-            onConfirm(editedPath, selectedVolumeId, null, conflictPolicy, activeOperationType, false, conflicts.conflictNames)
+            onConfirm(
+                editedPath,
+                selectedVolumeId,
+                null,
+                conflictPolicy,
+                activeOperationType,
+                false,
+                conflicts.conflictNames,
+            )
             return
         }
         // Wait for startScanPreview IPC to return so previewId is set. Without this,
@@ -414,175 +474,212 @@
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
-    <!-- Copy/Move toggle -->
-    <div class="operation-toggle">
-        <button
-            class="toggle-option"
-            class:active={activeOperationType === 'copy'}
-            onclick={() => (activeOperationType = 'copy')}>{tString('fileOperations.transferDialog.toggleCopy')}</button
-        >
-        <button
-            class="toggle-option"
-            class:active={activeOperationType === 'move'}
-            onclick={() => (activeOperationType = 'move')}>{tString('fileOperations.transferDialog.toggleMove')}</button
-        >
-    </div>
-
-    <!-- Direction indicator -->
-    <DirectionIndicator
-        sourcePath={sourceFolderPath}
-        {destinationPath}
-        {direction}
-        {sourceLabel}
-        {destinationLabel}
-    />
-
-    <!-- Volume selector -->
-    <div class="volume-selector">
-        <div class="volume-select">
-            <Select
-                items={volumeItems}
-                value={selectedVolumeId}
-                ariaLabel={tString('fileOperations.transferDialog.destVolumeAria')}
-                onChange={(id: string) => {
-                    selectedVolumeId = id
-                }}
-            />
+    <div class="dialog-body">
+        <!-- Action: Copy / Move -->
+        <div class="field">
+            <span class="field-label">{tString('fileOperations.shared.actionLabel')}</span>
+            <div class="operation-toggle">
+                <button
+                    class="toggle-option"
+                    class:active={activeOperationType === 'copy'}
+                    onclick={() => (activeOperationType = 'copy')}
+                    >{tString('fileOperations.transferDialog.toggleCopy')}</button
+                >
+                <button
+                    class="toggle-option"
+                    class:active={activeOperationType === 'move'}
+                    onclick={() => (activeOperationType = 'move')}
+                    >{tString('fileOperations.transferDialog.toggleMove')}</button
+                >
+            </div>
         </div>
-        {#if volumeSpace}
-            <span class="space-info">{spaceInfoText}</span>
-        {/if}
-    </div>
 
-    {#if selectedVolume?.smbConnectionState === 'os_mount'}
-        <p class="smb-native-note">
-            {tString('fileOperations.transferDialog.smbNativeNote')}
-        </p>
-    {/if}
-
-    <!-- Path input -->
-    <div class="path-input-group">
-        <input
-            bind:this={pathInputRef}
-            bind:value={editedPath}
-            type="text"
-            class="path-input"
-            class:has-error={!!pathError}
-            aria-label={tString('fileOperations.transferDialog.destPathAria')}
-            aria-describedby={pathError ? 'transfer-path-error' : undefined}
-            aria-invalid={!!pathError}
-            spellcheck="false"
-            autocomplete="off"
-            onkeydown={handleInputKeydown}
+        <!-- Direction indicator (source → destination); destination tracks the path box -->
+        <DirectionIndicator
+            sourcePath={sourceFolderPath}
+            destinationPath={liveDestinationPath}
+            {direction}
+            {sourceLabel}
+            {destinationLabel}
+            label={tString('fileOperations.transferDialog.routeLabel')}
         />
-        {#if pathError}
-            <p id="transfer-path-error" class="path-error" role="alert">{pathError}</p>
-        {/if}
-    </div>
 
-    <!-- Scan stats (live counting) -->
-    <div class="scan-stats" data-scan-state={scanState}>
-        <div class="scan-stat">
-            <span class="scan-value"><Size bytes={bytesFound} /></span>
+        <!-- Volume selector -->
+        <div class="volume-selector">
+            <div class="volume-select">
+                <Select
+                    items={volumeItems}
+                    value={selectedVolumeId}
+                    ariaLabel={tString('fileOperations.transferDialog.destVolumeAria')}
+                    onChange={(id: string) => {
+                        selectedVolumeId = id
+                    }}
+                />
+            </div>
+            {#if volumeSpace}
+                <span class="space-info">{spaceInfoText}</span>
+            {/if}
         </div>
-        <span class="scan-divider">/</span>
-        <div class="scan-stat">
-            <span class="scan-value">{formatNumber(filesFound)}</span>
-            <span class="scan-label">{t('fileOperations.transferDialog.scanFile', { count: filesFound })}</span>
-        </div>
-        <span class="scan-divider">/</span>
-        <div class="scan-stat">
-            <span class="scan-value">{formatNumber(dirsFound)}</span>
-            <span class="scan-label">{t('fileOperations.transferDialog.scanDir', { count: dirsFound })}</span>
-        </div>
-        {#if isScanning}
-            <Spinner size="sm" />
-        {:else if scanComplete}
-            <span class="scan-checkmark"><Icon name="check" size={16} aria-hidden="true" /></span>
-        {/if}
-    </div>
 
-    <!-- Hardlink note: copy writes every hardlink as a full file, so the bytes
+        {#if selectedVolume?.smbConnectionState === 'os_mount'}
+            <p class="smb-native-note">
+                {tString('fileOperations.transferDialog.smbNativeNote')}
+            </p>
+        {/if}
+
+        <!-- Path input -->
+        <div class="path-input-group">
+            <input
+                bind:this={pathInputRef}
+                bind:value={editedPath}
+                type="text"
+                class="path-input"
+                class:has-error={!!pathError}
+                class:has-warning={showTargetWarning}
+                aria-label={tString('fileOperations.transferDialog.destPathAria')}
+                aria-describedby={pathError
+                    ? 'transfer-path-error'
+                    : showTargetWarning
+                      ? 'transfer-path-warning'
+                      : undefined}
+                aria-invalid={!!pathError}
+                spellcheck="false"
+                autocomplete="off"
+                onkeydown={handleInputKeydown}
+            />
+            {#if pathError}
+                <p id="transfer-path-error" class="path-error" role="alert">{pathError}</p>
+            {:else if showTargetWarning}
+                <p id="transfer-path-warning" class="path-warning">{targetWarningText}</p>
+            {/if}
+        </div>
+
+        <!-- Scan stats (live counting) -->
+        <div class="scan-stats" data-scan-state={scanState}>
+            <div class="scan-stat">
+                <span class="scan-value"><Size bytes={bytesFound} /></span>
+            </div>
+            <span class="scan-divider">/</span>
+            <div class="scan-stat">
+                <span class="scan-value">{formatNumber(filesFound)}</span>
+                <span class="scan-label">{t('fileOperations.transferDialog.scanFile', { count: filesFound })}</span>
+            </div>
+            <span class="scan-divider">/</span>
+            <div class="scan-stat">
+                <span class="scan-value">{formatNumber(dirsFound)}</span>
+                <span class="scan-label">{t('fileOperations.transferDialog.scanDir', { count: dirsFound })}</span>
+            </div>
+            {#if isScanning}
+                <span
+                    class="scan-status"
+                    role="img"
+                    aria-label={tString('fileOperations.shared.scanningTooltip')}
+                    use:tooltip={{ text: tString('fileOperations.shared.scanningTooltip') }}
+                >
+                    <Spinner size="sm" />
+                </span>
+            {:else if scanComplete}
+                <span
+                    class="scan-checkmark"
+                    role="img"
+                    aria-label={tString('fileOperations.shared.scanCompleteTooltip')}
+                    use:tooltip={{ text: tString('fileOperations.shared.scanCompleteTooltip') }}
+                >
+                    <Icon name="check" size={16} aria-hidden="true" />
+                </span>
+            {/if}
+        </div>
+
+        <!-- Hardlink note: copy writes every hardlink as a full file, so the bytes
          written exceed the source's on-disk size. Clarify the gap so the
          headline size doesn't look wrong against Finder's number. Copy-only:
          a same-filesystem move renames in place and writes nothing. -->
-    {#if showHardlinkNote}
-        <p class="hardlink-note">
-            <Trans key="fileOperations.transferDialog.hardlinkNote" snippets={{ written, ondisk }} />
-        </p>
-    {/if}
+        {#if showHardlinkNote}
+            <p class="hardlink-note">
+                <Trans key="fileOperations.transferDialog.hardlinkNote" snippets={{ written, ondisk }} />
+            </p>
+        {/if}
 
-    <!-- Conflicts section -->
-    {#if isCheckingConflicts}
-        <div class="conflicts-checking">
-            <Spinner size="sm" />
-            <span class="conflicts-checking-text">{tString('fileOperations.transferDialog.checkingConflicts')}</span>
-        </div>
-    {:else if totalConflictCount > 0 || mergeFolderCount > 0}
-        <div class="conflicts-section">
-            <!-- Folder merges are informational, never a question: same-named
+        <!-- Conflicts section -->
+        {#if isCheckingConflicts}
+            <div class="conflicts-checking">
+                <Spinner size="sm" />
+                <span class="conflicts-checking-text">{tString('fileOperations.transferDialog.checkingConflicts')}</span
+                >
+            </div>
+        {:else if totalConflictCount > 0 || mergeFolderCount > 0}
+            <div class="conflicts-section">
+                <!-- Folder merges are informational, never a question: same-named
                  folders always merge silently. Surfaced so a user who didn't
                  expect a same-named folder at the dest gets a visible cue. -->
-            {#if mergeFolderCount > 0}
-                <p class="merge-info">
-                    {mergeFolderCount === 1
-                        ? tString('fileOperations.transferDialog.mergeInfoSingle')
-                        : tString('fileOperations.transferDialog.mergeInfoMany', {
-                              countText: formatNumber(mergeFolderCount),
-                          })}
-                </p>
-            {/if}
-            {#if totalConflictCount > 0}
-                <p class="conflicts-summary">
-                    {t('fileOperations.transferDialog.conflictsSummary', {
-                        countText: String(totalConflictCount),
-                        count: totalConflictCount,
-                    })}
-                </p>
-            {/if}
-            <!-- The file policy radios show whenever there's a file conflict OR
+                {#if mergeFolderCount > 0}
+                    <p class="merge-info">
+                        {mergeFolderCount === 1
+                            ? tString('fileOperations.transferDialog.mergeInfoSingle')
+                            : tString('fileOperations.transferDialog.mergeInfoMany', {
+                                  countText: formatNumber(mergeFolderCount),
+                              })}
+                    </p>
+                {/if}
+                {#if totalConflictCount > 0}
+                    <p class="conflicts-summary">
+                        {t('fileOperations.transferDialog.conflictsSummary', {
+                            countText: String(totalConflictCount),
+                            count: totalConflictCount,
+                        })}
+                    </p>
+                {/if}
+                <!-- The file policy radios show whenever there's a file conflict OR
                  a folder merge: a merge can surface file clashes mid-operation
                  the upfront check can't see, and the radios pre-answer them. -->
-            <div class="conflict-policy">
-                <label class="policy-option">
-                    <input type="radio" bind:group={conflictPolicy} value="skip" />
-                    <span>{t('fileOperations.transferDialog.policySkip', { count: totalConflictCount })}</span>
-                </label>
-                <label class="policy-option">
-                    <input type="radio" bind:group={conflictPolicy} value="overwrite" />
-                    <span>{t('fileOperations.transferDialog.policyOverwrite', { count: totalConflictCount })}</span>
-                </label>
-                <label class="policy-option">
-                    <input type="radio" bind:group={conflictPolicy} value="overwrite_smaller" />
-                    <span>{t('fileOperations.transferDialog.policyOverwriteSmaller', { count: totalConflictCount })}</span
-                    >
-                </label>
-                <label class="policy-option">
-                    <input type="radio" bind:group={conflictPolicy} value="overwrite_older" />
-                    <span>{t('fileOperations.transferDialog.policyOverwriteOlder', { count: totalConflictCount })}</span>
-                </label>
-                <label class="policy-option">
-                    <input type="radio" bind:group={conflictPolicy} value="stop" />
-                    <span>{t('fileOperations.transferDialog.policyStop', { count: totalConflictCount })}</span>
-                </label>
-            </div>
+                <div class="conflict-policy">
+                    <label class="policy-option">
+                        <input type="radio" bind:group={conflictPolicy} value="skip" />
+                        <span>{t('fileOperations.transferDialog.policySkip', { count: totalConflictCount })}</span>
+                    </label>
+                    <label class="policy-option">
+                        <input type="radio" bind:group={conflictPolicy} value="overwrite" />
+                        <span>{t('fileOperations.transferDialog.policyOverwrite', { count: totalConflictCount })}</span>
+                    </label>
+                    <label class="policy-option">
+                        <input type="radio" bind:group={conflictPolicy} value="overwrite_smaller" />
+                        <span
+                            >{t('fileOperations.transferDialog.policyOverwriteSmaller', {
+                                count: totalConflictCount,
+                            })}</span
+                        >
+                    </label>
+                    <label class="policy-option">
+                        <input type="radio" bind:group={conflictPolicy} value="overwrite_older" />
+                        <span
+                            >{t('fileOperations.transferDialog.policyOverwriteOlder', {
+                                count: totalConflictCount,
+                            })}</span
+                        >
+                    </label>
+                    <label class="policy-option">
+                        <input type="radio" bind:group={conflictPolicy} value="stop" />
+                        <span>{t('fileOperations.transferDialog.policyStop', { count: totalConflictCount })}</span>
+                    </label>
+                </div>
 
-            <!-- Cross-type guardrail: when a clash mixes a file and a same-named
+                <!-- Cross-type guardrail: when a clash mixes a file and a same-named
                  folder, "Overwrite all" replaces items of a different type and
                  deletes folder contents. The per-file dialog already warns on
                  this; the bulk path must not be quieter. -->
-            {#if hasTypeMismatchConflict && conflictPolicy === 'overwrite'}
-                <p class="conflict-warning" role="alert">
-                    <span class="conflict-warning-icon" aria-hidden="true">
-                        <Icon name="triangle-alert" size={16} />
-                    </span>
-                    <span>
-                        {tString('fileOperations.transferDialog.typeMismatchWarning')}
-                    </span>
-                </p>
-            {/if}
-        </div>
-    {/if}
+                {#if hasTypeMismatchConflict && conflictPolicy === 'overwrite'}
+                    <p class="conflict-warning" role="alert">
+                        <span class="conflict-warning-icon" aria-hidden="true">
+                            <Icon name="triangle-alert" size={16} />
+                        </span>
+                        <span>
+                            {tString('fileOperations.transferDialog.typeMismatchWarning')}
+                        </span>
+                    </p>
+                {/if}
+            </div>
+        {/if}
+    </div>
 
     {#snippet footer()}
         <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
@@ -594,12 +691,34 @@
 {#snippet ondisk(children: import('svelte').Snippet)}<Size bytes={dedupBytesFound} />{@render children()}{/snippet}
 
 <style>
+    /* Uniform vertical rhythm: every top-level section is a flex-column child, so a
+       single `gap` sets equal spacing between all of them. Each section keeps its own
+       `--spacing-xl` side inset (matching the title bar and footer). */
+    .dialog-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-lg);
+    }
+
+    /* A labeled row: a muted field label followed by its control. */
+    .field {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        padding: 0 var(--spacing-xl);
+    }
+
+    .field-label {
+        flex: 0 0 auto;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+    }
+
     .volume-selector {
         display: flex;
         align-items: center;
         gap: var(--spacing-md);
         padding: 0 var(--spacing-xl);
-        margin-bottom: var(--spacing-md);
     }
 
     /* Wrapper that bounds the `ui/Select` trigger (its trigger is width: 100%)
@@ -617,7 +736,6 @@
 
     .path-input-group {
         padding: 0 var(--spacing-xl);
-        margin-bottom: var(--spacing-lg);
     }
 
     .path-input {
@@ -655,6 +773,25 @@
         color: var(--color-error);
     }
 
+    /* Yellow "folder will be created" warning: mirrors the red error treatment
+       (outlined input + message line) in the warning color. The error state takes
+       precedence, so the two never show at once. `--color-warning-text` is the
+       AA-safe text token (the brand `--color-warning` is reserved for the border
+       and fills). */
+    .path-input.has-warning {
+        border-color: var(--color-warning);
+    }
+
+    .path-input.has-warning:focus {
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning), transparent 85%);
+    }
+
+    .path-warning {
+        margin: var(--spacing-sm) 0 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-warning-text);
+    }
+
     .smb-native-note {
         margin: 0;
         padding: var(--spacing-xs) var(--spacing-sm);
@@ -670,7 +807,7 @@
         align-items: center;
         justify-content: flex-start;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-xl) var(--spacing-lg);
+        padding: 0 var(--spacing-xl);
         font-size: var(--font-size-sm);
     }
 
@@ -701,6 +838,11 @@
         color: var(--color-text-tertiary);
     }
 
+    .scan-status {
+        display: inline-flex;
+        align-items: center;
+    }
+
     .scan-checkmark {
         display: inline-flex;
         align-items: center;
@@ -714,7 +856,7 @@
         align-items: center;
         justify-content: flex-start;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-xl) var(--spacing-md);
+        padding: 0 var(--spacing-xl);
         font-size: var(--font-size-sm);
     }
 
@@ -794,12 +936,11 @@
         color: var(--color-text-primary);
     }
 
-    /* Copy/Move segmented control */
+    /* Copy/Move segmented control. Side inset comes from the parent `.field`. */
     .operation-toggle {
         display: flex;
         justify-content: flex-start;
         gap: 0;
-        padding: 0 var(--spacing-xl) var(--spacing-md);
     }
 
     .toggle-option {

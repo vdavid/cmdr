@@ -47,7 +47,8 @@ Small stateless utility functions. Pure, no Svelte state, safe to import from pl
   warnings): `validateNotEmpty` → `validateDisallowedChars` (`/` or `\0`) → `validateNameLength` → `validatePathLength`
   → `validateExtensionChange` → `validateConflict`. Inline rename UI has space for one message.
 - **`validateDirectoryPath(path)` validates full paths, not filenames** (empty, must-be-absolute, null byte, total
-  length, per-component length). Used by TransferDialog; composable in NewFolderDialog.
+  length, per-component length). "Absolute" accepts a leading `/` or the home shortcut (`~`, `~/…`); a bare `~foo` stays
+  rejected. Used by TransferDialog; composable in NewFolderDialog.
 - **`'ask'` extension setting returns `ok` at validation time**; the save dialog handles the confirmation separately.
 - **`createDebounce` exposes `flush()`** (for `beforeunload` cleanup, e.g. the log bridge) and `createThrottle`
   guarantees a trailing call. Both are hand-rolled (<35 lines each) deliberately, not lodash.

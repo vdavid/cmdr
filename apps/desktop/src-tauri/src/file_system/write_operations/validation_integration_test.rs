@@ -167,43 +167,89 @@ fn test_validate_sources_with_broken_symlink() {
 }
 
 #[test]
-fn test_validate_destination_with_existing_dir() {
-    use super::validate_destination;
+fn test_ensure_destination_dir_with_existing_dir() {
+    use super::ensure_destination_dir;
 
-    let temp_dir = create_temp_dir("validate_dest_dir");
+    let temp_dir = create_temp_dir("ensure_dest_dir");
     let dest = temp_dir.join("dest");
     fs::create_dir_all(&dest).unwrap();
 
-    let result = validate_destination(&dest);
+    let result = ensure_destination_dir(&dest);
     assert!(result.is_ok());
+    assert!(dest.is_dir());
 
     cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
-fn test_validate_destination_with_missing_dir() {
-    use super::validate_destination;
+fn test_ensure_destination_dir_creates_missing_dir() {
+    use super::ensure_destination_dir;
 
-    let temp_dir = create_temp_dir("validate_dest_missing");
+    let temp_dir = create_temp_dir("ensure_dest_missing");
     let dest = temp_dir.join("missing");
+    assert!(!dest.exists());
 
-    let result = validate_destination(&dest);
-    assert!(matches!(result, Err(WriteOperationError::SourceNotFound { .. })));
+    let result = ensure_destination_dir(&dest);
+    assert!(result.is_ok());
+    assert!(dest.is_dir(), "the missing destination should have been created");
 
     cleanup_temp_dir(&temp_dir);
 }
 
 #[test]
-fn test_validate_destination_with_file() {
-    use super::validate_destination;
+fn test_ensure_destination_dir_creates_nested_missing_dirs() {
+    use super::ensure_destination_dir;
 
-    let temp_dir = create_temp_dir("validate_dest_file");
+    let temp_dir = create_temp_dir("ensure_dest_nested");
+    let dest = temp_dir.join("a").join("b").join("c");
+    assert!(!temp_dir.join("a").exists());
+
+    let result = ensure_destination_dir(&dest);
+    assert!(result.is_ok());
+    assert!(dest.is_dir(), "all missing ancestors should have been created");
+
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[test]
+fn test_ensure_destination_dir_rejects_a_file() {
+    use super::ensure_destination_dir;
+
+    let temp_dir = create_temp_dir("ensure_dest_file");
     let dest = temp_dir.join("file.txt");
     fs::write(&dest, "content").unwrap();
 
-    let result = validate_destination(&dest);
+    let result = ensure_destination_dir(&dest);
     assert!(matches!(result, Err(WriteOperationError::IoError { .. })));
+    // The file must be left untouched.
+    assert!(dest.is_file());
 
+    cleanup_temp_dir(&temp_dir);
+}
+
+#[cfg(unix)]
+#[test]
+fn test_ensure_destination_dir_surfaces_create_failure() {
+    use super::ensure_destination_dir;
+
+    let temp_dir = create_temp_dir("ensure_dest_create_fails");
+    // Make the parent read-only so creating a child fails honestly (surfaced as a
+    // typed error), rather than being silently swallowed.
+    let parent = temp_dir.join("locked");
+    fs::create_dir_all(&parent).unwrap();
+    let mut perms = fs::metadata(&parent).unwrap().permissions();
+    perms.set_mode(0o500); // r-x, no write
+    fs::set_permissions(&parent, perms).unwrap();
+
+    let dest = parent.join("child");
+    let result = ensure_destination_dir(&dest);
+    assert!(result.is_err(), "a create failure must surface as an error");
+    assert!(!dest.exists());
+
+    // Restore perms so cleanup can remove the tree.
+    let mut perms = fs::metadata(&parent).unwrap().permissions();
+    perms.set_mode(0o700);
+    fs::set_permissions(&parent, perms).unwrap();
     cleanup_temp_dir(&temp_dir);
 }
 

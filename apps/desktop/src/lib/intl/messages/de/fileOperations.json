@@ -153,6 +153,18 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
+  "fileOperations.shared.actionLabel": "Aktion:",
+  "@fileOperations.shared.actionLabel": {
+    "sourceHash": "7d9fda4"
+  },
+  "fileOperations.shared.scanningTooltip": "Wird durchsucht …",
+  "@fileOperations.shared.scanningTooltip": {
+    "sourceHash": "38d96da"
+  },
+  "fileOperations.shared.scanCompleteTooltip": "Durchsuchen abgeschlossen",
+  "@fileOperations.shared.scanCompleteTooltip": {
+    "sourceHash": "bd35a52"
+  },
   "fileOperations.transferDialog.toggleCopy": "Kopieren",
   "@fileOperations.transferDialog.toggleCopy": {
     "sourceHash": "e21f935"
@@ -160,6 +172,11 @@
   "fileOperations.transferDialog.toggleMove": "Bewegen",
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.routeLabel": "Route:",
+  "@fileOperations.transferDialog.routeLabel": {
+    "sourceHash": "8ccda30",
+    "sameAsSourceJustification": "'Route' is a genuine German noun ('die Route'), the path/route between two points — it fits the source → destination line with its arrow and preserves the compact, slightly evocative register of the English label. No reference source offers a fitting transfer-label term (Total/Double Commander phrase it in full as 'von X nach Y', not as a label), so the shared word is the best fit, like German keeping 'Server'."
   },
   "fileOperations.transferDialog.destVolumeAria": "Zielvolume",
   "@fileOperations.transferDialog.destVolumeAria": {
@@ -176,6 +193,14 @@
   "fileOperations.transferDialog.smbNativeNote": "Diese Freigabe nutzt die Systemverbindung. Das Abbrechen kann sich verzögern. Nutze „Direkt verbinden“ im Volume-Auswähler für schnellere Übertragungen und zuverlässiges Abbrechen.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "Diesen Ordner gibt es noch nicht. Cmdr erstellt ihn beim Kopieren.",
+  "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
+    "sourceHash": "025f3dc"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "Diesen Ordner gibt es noch nicht. Cmdr erstellt ihn beim Bewegen.",
+  "@fileOperations.transferDialog.targetWillBeCreatedMove": {
+    "sourceHash": "976edd2"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, one {Datei} other {Dateien}}",
   "@fileOperations.transferDialog.scanFile": {

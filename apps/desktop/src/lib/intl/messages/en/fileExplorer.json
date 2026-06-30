@@ -385,8 +385,7 @@
   "fileExplorer.network.browser.fetching": "fetching...",
   "@fileExplorer.network.browser.fetching": {
     "description": "Placeholder shown in the network host list''s IP or hostname cell while that value is still being resolved. Lowercase, matching the quiet inline style.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.unknown": "(unknown)",
   "@fileExplorer.network.browser.unknown": {
@@ -396,8 +395,7 @@
   "fileExplorer.network.browser.searching": "Searching...",
   "@fileExplorer.network.browser.searching": {
     "description": "Status shown while the app is still discovering network hosts (mDNS browsing in progress).",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.connectToServerRow": "Connect to server...",
   "@fileExplorer.network.browser.connectToServerRow": {
@@ -407,20 +405,17 @@
   "fileExplorer.network.browser.noHostsTitle": "No network hosts found",
   "@fileExplorer.network.browser.noHostsTitle": {
     "description": "Empty-state title in the network browser when no SMB hosts were discovered on the network.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.noHostsMessage": "Make sure you''re on a network with SMB-capable devices.",
   "@fileExplorer.network.browser.noHostsMessage": {
     "description": "Empty-state body in the network browser advising the user to check their network. \"SMB\" is the file-sharing protocol name; do not translate it.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.refresh": "Refresh",
   "@fileExplorer.network.browser.refresh": {
     "description": "Button in the empty network browser that re-scans the network for hosts.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.refreshAriaLabel": "Refresh network hosts",
   "@fileExplorer.network.browser.refreshAriaLabel": {
@@ -448,8 +443,7 @@
   "fileExplorer.network.browser.status.resolving": "Resolving...",
   "@fileExplorer.network.browser.status.resolving": {
     "description": "Status cell in the network host list while the host''s name and IP are still being resolved.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.waitingForNetwork": "Waiting for network...",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
@@ -460,8 +454,7 @@
   "fileExplorer.network.browser.status.notChecked": "Not checked",
   "@fileExplorer.network.browser.status.notChecked": {
     "description": "Status cell for a host that has not been contacted yet (the user has not tried connecting).",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.status.loggedIn": "Logged in",
   "@fileExplorer.network.browser.status.loggedIn": {
@@ -478,7 +471,8 @@
   "fileExplorer.network.browser.status.loginNeeded": "Login needed",
   "@fileExplorer.network.browser.status.loginNeeded": {
     "description": "Status cell when the host requires login and no credentials are stored.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
   "fileExplorer.network.browser.status.timeout": "Timeout",
   "@fileExplorer.network.browser.status.timeout": {
@@ -512,14 +506,14 @@
   "fileExplorer.network.browser.status.connected": "Connected",
   "@fileExplorer.network.browser.status.connected": {
     "description": "Status cell when connected to a host (generic, neither explicitly credentialed nor guest).",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
 
   "fileExplorer.network.browser.tooltip.resolving": "Resolving hostname and IP address...",
   "@fileExplorer.network.browser.tooltip.resolving": {
     "description": "Hover tooltip on a host row explaining that its name and IP are still being resolved.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Waiting for network name resolution",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -530,8 +524,7 @@
   "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Double-click to connect and view shares",
   "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
     "description": "Hover tooltip on a not-yet-contacted host row inviting the user to double-click to connect.",
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
+    "screenshot": "connect-to-server.png"
   },
   "fileExplorer.network.browser.tooltip.credsStored": "Credentials stored. Double-click to connect.",
   "@fileExplorer.network.browser.tooltip.credsStored": {
@@ -548,7 +541,8 @@
   "fileExplorer.network.browser.tooltip.requiresLogin": "This host requires login. Double-click to enter credentials.",
   "@fileExplorer.network.browser.tooltip.requiresLogin": {
     "description": "Hover tooltip on a host row that needs login and has no stored credentials.",
-    "screenshot": "connect-to-server.png"
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
   "fileExplorer.network.browser.tooltip.authFailed": "Authentication failed. Check your credentials and try again.",
   "@fileExplorer.network.browser.tooltip.authFailed": {

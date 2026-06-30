@@ -24,6 +24,7 @@
     import Size from '$lib/ui/Size.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
     import { ScanThroughput } from '../scan-throughput'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
@@ -240,114 +241,138 @@
 >
     {#snippet title()}{dialogTitle}{/snippet}
 
-    <!-- Source path -->
-    <div class="source-path">
-        {tString('fileOperations.delete.fromPath', { path: abbreviatedPath })}
-    </div>
-
-    <!-- No-trash warning banner -->
-    {#if !supportsTrash}
-        <div class="warning-banner" role="alert">
-            <span class="warning-icon" aria-hidden="true">
-                <Icon name="triangle-alert" size={18} />
-            </span>
-            <p id="delete-warning-text">
-                <strong>{tString('fileOperations.delete.noTrashWarningStrong')}</strong> {tString(
-                    'fileOperations.delete.noTrashWarningRest',
-                )}
-            </p>
+    <div class="dialog-body">
+        <!-- Source path -->
+        <div class="source-path">
+            {tString('fileOperations.delete.fromPath', { path: abbreviatedPath })}
         </div>
-    {/if}
 
-    <!-- Trash/Delete toggle -->
-    {#if supportsTrash}
-        <div class="operation-toggle">
-            <button class="toggle-option" class:active={!isPermanent} onclick={() => (isPermanent = false)}
-                >{tString('fileOperations.delete.toggleTrash')}</button
-            >
-            <button
-                class="toggle-option toggle-option-danger"
-                class:active={isPermanent}
-                onclick={() => (isPermanent = true)}>{tString('fileOperations.delete.toggleDelete')}</button
-            >
+        <!-- No-trash warning banner -->
+        {#if !supportsTrash}
+            <div class="warning-banner" role="alert">
+                <span class="warning-icon" aria-hidden="true">
+                    <Icon name="triangle-alert" size={18} />
+                </span>
+                <p id="delete-warning-text">
+                    <strong>{tString('fileOperations.delete.noTrashWarningStrong')}</strong>
+                    {tString('fileOperations.delete.noTrashWarningRest')}
+                </p>
+            </div>
+        {/if}
+
+        <!-- Action: Trash / Delete -->
+        {#if supportsTrash}
+            <div class="field">
+                <span class="field-label">{tString('fileOperations.shared.actionLabel')}</span>
+                <div class="operation-toggle">
+                    <button class="toggle-option" class:active={!isPermanent} onclick={() => (isPermanent = false)}
+                        >{tString('fileOperations.delete.toggleTrash')}</button
+                    >
+                    <button
+                        class="toggle-option toggle-option-danger"
+                        class:active={isPermanent}
+                        onclick={() => (isPermanent = true)}>{tString('fileOperations.delete.toggleDelete')}</button
+                    >
+                </div>
+            </div>
+        {/if}
+
+        <!-- Scrollable file list -->
+        <div class="file-list-container">
+            <div class="file-list" role="list">
+                {#each visibleItems as item (item.name)}
+                    <div class="file-list-item" role="listitem">
+                        <span class="item-icon" aria-hidden="true">
+                            <Icon name={item.isDirectory ? 'folder' : 'file'} size={14} />
+                        </span>
+                        <span class="item-name">{item.name}</span>
+                        <span class="item-size">
+                            {#if itemSizeBytes(item) != null}<Size bytes={itemSizeBytes(item)} />{/if}
+                            {#if itemFileCountLabel(item)}{#if itemSizeBytes(item) != null}&nbsp;&nbsp;&nbsp;{/if}{itemFileCountLabel(
+                                    item,
+                                )}{/if}
+                        </span>
+                    </div>
+                {/each}
+                {#if overflowCount > 0}
+                    <div class="file-list-overflow" role="listitem">
+                        {t('fileOperations.delete.overflowMore', {
+                            countText: formatNumber(overflowCount),
+                            count: overflowCount,
+                        })}
+                    </div>
+                {/if}
+            </div>
         </div>
-    {/if}
 
-    <!-- Scrollable file list -->
-    <div class="file-list-container">
-        <div class="file-list" role="list">
-            {#each visibleItems as item (item.name)}
-                <div class="file-list-item" role="listitem">
-                    <span class="item-icon" aria-hidden="true">{item.isDirectory ? '\u25B8' : ''}</span>
-                    <span class="item-name">{item.name}</span>
-                    <span class="item-size">
-                        {#if itemSizeBytes(item) != null}<Size bytes={itemSizeBytes(item)} />{/if}
-                        {#if itemFileCountLabel(item)}{#if itemSizeBytes(item) != null}&nbsp;&nbsp;&nbsp;{/if}{itemFileCountLabel(item)}{/if}
-                    </span>
-                </div>
-            {/each}
-            {#if overflowCount > 0}
-                <div class="file-list-overflow" role="listitem">
-                    {t('fileOperations.delete.overflowMore', {
-                        countText: formatNumber(overflowCount),
-                        count: overflowCount,
-                    })}
-                </div>
+        <!-- Symlink notice -->
+        {#if symlinkNotice}
+            <div class="symlink-notice">
+                <span class="symlink-icon" aria-hidden="true">
+                    <Icon name="triangle-alert" size={14} />
+                </span>
+                <span>{symlinkNotice}</span>
+            </div>
+        {/if}
+
+        <!-- Scan stats (live counting) -->
+        <div class="scan-stats">
+            <div class="scan-stat">
+                <span class="scan-value"><Size bytes={bytesFound} /></span>
+            </div>
+            <span class="scan-divider">/</span>
+            <div class="scan-stat">
+                <span class="scan-value">{formatNumber(filesFound)}</span>
+                <span class="scan-label">{t('fileOperations.delete.scanFile', { count: filesFound })}</span>
+            </div>
+            <span class="scan-divider">/</span>
+            <div class="scan-stat">
+                <span class="scan-value">{formatNumber(dirsFound)}</span>
+                <span class="scan-label">{t('fileOperations.delete.scanDir', { count: dirsFound })}</span>
+            </div>
+            {#if isScanning}
+                <span
+                    class="scan-status"
+                    role="img"
+                    aria-label={tString('fileOperations.shared.scanningTooltip')}
+                    use:tooltip={{ text: tString('fileOperations.shared.scanningTooltip') }}
+                >
+                    <Spinner size="sm" />
+                </span>
+            {:else if scanComplete}
+                <span
+                    class="scan-checkmark"
+                    role="img"
+                    aria-label={tString('fileOperations.shared.scanCompleteTooltip')}
+                    use:tooltip={{ text: tString('fileOperations.shared.scanCompleteTooltip') }}
+                >
+                    <Icon name="check" size={16} aria-hidden="true" />
+                </span>
             {/if}
         </div>
-    </div>
 
-    <!-- Symlink notice -->
-    {#if symlinkNotice}
-        <div class="symlink-notice">
-            <span class="symlink-icon" aria-hidden="true">
-                <Icon name="triangle-alert" size={14} />
-            </span>
-            <span>{symlinkNotice}</span>
-        </div>
-    {/if}
+        <!-- Throughput -->
+        {#if isScanning && filesPerSec !== null && filesPerSec > 0}
+            <div class="scan-throughput">
+                <span class="scan-throughput-value"
+                    >{tString('fileOperations.delete.throughputFiles', {
+                        rateText: formatNumber(Math.round(filesPerSec)),
+                    })}</span
+                >
+                {#if bytesPerSec !== null && bytesPerSec > 0}
+                    <span class="scan-throughput-sep">·</span>
+                    <span class="scan-throughput-value"
+                        ><Trans key="fileOperations.shared.byteRate" snippets={{ size }} /></span
+                    >
+                {/if}
+            </div>
+        {/if}
 
-    <!-- Scan stats (live counting) -->
-    <div class="scan-stats">
-        <div class="scan-stat">
-            <span class="scan-value"><Size bytes={bytesFound} /></span>
-        </div>
-        <span class="scan-divider">/</span>
-        <div class="scan-stat">
-            <span class="scan-value">{formatNumber(filesFound)}</span>
-            <span class="scan-label">{t('fileOperations.delete.scanFile', { count: filesFound })}</span>
-        </div>
-        <span class="scan-divider">/</span>
-        <div class="scan-stat">
-            <span class="scan-value">{formatNumber(dirsFound)}</span>
-            <span class="scan-label">{t('fileOperations.delete.scanDir', { count: dirsFound })}</span>
-        </div>
-        {#if isScanning}
-            <Spinner size="sm" />
-        {:else if scanComplete}
-            <span class="scan-checkmark">&#10003;</span>
+        <!-- Current directory being scanned -->
+        {#if isScanning && currentDir}
+            <div class="scan-current-dir" use:useShortenMiddle={{ text: currentDir, preferBreakAt: '/' }}></div>
         {/if}
     </div>
-
-    <!-- Throughput -->
-    {#if isScanning && filesPerSec !== null && filesPerSec > 0}
-        <div class="scan-throughput">
-            <span class="scan-throughput-value"
-                >{tString('fileOperations.delete.throughputFiles', {
-                    rateText: formatNumber(Math.round(filesPerSec)),
-                })}</span
-            >
-            {#if bytesPerSec !== null && bytesPerSec > 0}
-                <span class="scan-throughput-sep">·</span>
-                <span class="scan-throughput-value"><Trans key="fileOperations.shared.byteRate" snippets={{ size }} /></span>
-            {/if}
-        </div>
-    {/if}
-
-    <!-- Current directory being scanned -->
-    {#if isScanning && currentDir}
-        <div class="scan-current-dir" use:useShortenMiddle={{ text: currentDir, preferBreakAt: '/' }}></div>
-    {/if}
 
     {#snippet footer()}
         <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
@@ -358,9 +383,31 @@
 {#snippet size(children: import('svelte').Snippet)}<Size bytes={bytesPerSec ?? 0} />{@render children()}{/snippet}
 
 <style>
+    /* Uniform vertical rhythm: every section is a flex-column child, so a single
+       `gap` sets equal spacing between all of them. Each keeps its own `--spacing-xl`
+       side inset (matching the title bar and footer). */
+    .dialog-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    /* A labeled row: a muted field label followed by its control. */
+    .field {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        padding: 0 var(--spacing-xl);
+    }
+
+    .field-label {
+        flex: 0 0 auto;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+    }
+
     .source-path {
         padding: 0 var(--spacing-xl);
-        margin-bottom: var(--spacing-md);
         font-size: var(--font-size-sm);
         color: var(--color-text-tertiary);
     }
@@ -370,7 +417,7 @@
         display: flex;
         align-items: flex-start;
         gap: var(--spacing-sm);
-        margin: 0 var(--spacing-xl) var(--spacing-md);
+        margin: 0 var(--spacing-xl);
         padding: var(--spacing-sm) var(--spacing-md);
         background: var(--color-warning-bg);
         border: 1px solid var(--color-warning);
@@ -392,7 +439,7 @@
 
     /* Scrollable file list */
     .file-list-container {
-        margin: 0 var(--spacing-xl) var(--spacing-md);
+        margin: 0 var(--spacing-xl);
         border: 1px solid var(--color-border-strong);
         border-radius: var(--radius-md);
         overflow: hidden;
@@ -405,7 +452,7 @@
 
     .file-list-item {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         gap: var(--spacing-sm);
         padding: var(--spacing-xs) var(--spacing-md);
         font-size: var(--font-size-sm);
@@ -418,9 +465,11 @@
 
     .item-icon {
         flex-shrink: 0;
-        width: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-sm);
     }
 
     .item-name {
@@ -451,7 +500,6 @@
         align-items: flex-start;
         gap: var(--spacing-sm);
         padding: 0 var(--spacing-xl);
-        margin-bottom: var(--spacing-md);
         font-size: var(--font-size-sm);
         color: var(--color-warning);
         line-height: 1.4;
@@ -468,7 +516,7 @@
         align-items: center;
         justify-content: flex-start;
         gap: var(--spacing-sm);
-        padding: 0 var(--spacing-xl) var(--spacing-lg);
+        padding: 0 var(--spacing-xl);
         font-size: var(--font-size-sm);
     }
 
@@ -492,10 +540,15 @@
         color: var(--color-text-tertiary);
     }
 
+    .scan-status {
+        display: inline-flex;
+        align-items: center;
+    }
+
     .scan-checkmark {
+        display: inline-flex;
+        align-items: center;
         color: var(--color-allow);
-        font-size: var(--font-size-md);
-        font-weight: 600;
         margin-left: var(--spacing-xs);
     }
 
@@ -504,7 +557,6 @@
         justify-content: flex-start;
         gap: var(--spacing-xs);
         padding: 0 var(--spacing-xl);
-        margin-bottom: var(--spacing-sm);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
     }
@@ -519,7 +571,7 @@
 
     .scan-current-dir {
         padding: var(--spacing-xs) var(--spacing-md);
-        margin: 0 var(--spacing-xl) var(--spacing-md);
+        margin: 0 var(--spacing-xl);
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
         overflow: hidden;
@@ -533,7 +585,7 @@
         display: flex;
         justify-content: flex-start;
         gap: 0;
-        padding: 0 var(--spacing-xl) var(--spacing-md);
+        padding: 0 var(--spacing-xl);
     }
 
     .toggle-option {

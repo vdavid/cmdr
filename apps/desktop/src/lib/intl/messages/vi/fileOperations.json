@@ -152,6 +152,18 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
+  "fileOperations.shared.actionLabel": "Thao tác:",
+  "@fileOperations.shared.actionLabel": {
+    "sourceHash": "7d9fda4"
+  },
+  "fileOperations.shared.scanningTooltip": "Đang quét…",
+  "@fileOperations.shared.scanningTooltip": {
+    "sourceHash": "38d96da"
+  },
+  "fileOperations.shared.scanCompleteTooltip": "Đã quét xong",
+  "@fileOperations.shared.scanCompleteTooltip": {
+    "sourceHash": "bd35a52"
+  },
   "fileOperations.transferDialog.toggleCopy": "Sao chép",
   "@fileOperations.transferDialog.toggleCopy": {
     "sourceHash": "e21f935"
@@ -159,6 +171,10 @@
   "fileOperations.transferDialog.toggleMove": "Di chuyển",
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.routeLabel": "Lộ trình:",
+  "@fileOperations.transferDialog.routeLabel": {
+    "sourceHash": "8ccda30"
   },
   "fileOperations.transferDialog.destVolumeAria": "Ổ đĩa đích",
   "@fileOperations.transferDialog.destVolumeAria": {
@@ -175,6 +191,14 @@
   "fileOperations.transferDialog.smbNativeNote": "Chia sẻ này dùng kết nối hệ thống. Việc hủy có thể bị trễ. Dùng \"Kết nối trực tiếp\" trong bộ chọn ổ đĩa để truyền nhanh hơn và hủy đáng tin cậy.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "Thư mục này chưa tồn tại. Cmdr sẽ tạo nó khi sao chép.",
+  "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
+    "sourceHash": "025f3dc"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "Thư mục này chưa tồn tại. Cmdr sẽ tạo nó khi di chuyển.",
+  "@fileOperations.transferDialog.targetWillBeCreatedMove": {
+    "sourceHash": "976edd2"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, other {tệp}}",
   "@fileOperations.transferDialog.scanFile": {

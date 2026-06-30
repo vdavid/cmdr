@@ -44,6 +44,17 @@ const scanVolumeForConflictsMock = vi.fn<
   ) => Promise<VolumeConflictInfo[]>
 >(() => Promise.resolve([]))
 
+// Destination-existence probe behind the "this folder will be created" warning.
+// Defaults to "exists" so most tests see no warning; a test overrides it.
+const pathExistsCheckedMock = vi.fn<(path: string, volumeId?: string) => Promise<{ data: boolean; timedOut: boolean }>>(
+  () => Promise.resolve({ data: true, timedOut: false }),
+)
+
+// Home dir resolution for the long-form display of a bare `~` destination.
+vi.mock('@tauri-apps/api/path', () => ({
+  homeDir: () => Promise.resolve('/Users/test'),
+}))
+
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
@@ -68,6 +79,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onScanPreviewCancelled: vi.fn(() => Promise.resolve(() => {})),
   scanVolumeForConflicts: (...args: Parameters<typeof scanVolumeForConflictsMock>) =>
     scanVolumeForConflictsMock(...args),
+  pathExistsChecked: (...args: Parameters<typeof pathExistsCheckedMock>) => pathExistsCheckedMock(...args),
   DEFAULT_VOLUME_ID: 'root',
 }))
 
@@ -85,6 +97,13 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
       path: '/mtp-20-5/65538',
       category: 'mobile_device',
       isEjectable: true,
+    },
+    {
+      id: 'smb://nas.local/public',
+      name: 'NAS share',
+      path: 'smb://nas.local/public',
+      category: 'network',
+      isEjectable: false,
     },
   ],
 }))
@@ -179,6 +198,8 @@ beforeEach(() => {
   scanCompleteCb = null
   scanVolumeForConflictsMock.mockReset()
   scanVolumeForConflictsMock.mockResolvedValue([])
+  pathExistsCheckedMock.mockReset()
+  pathExistsCheckedMock.mockResolvedValue({ data: true, timedOut: false })
   startScanPreviewMock.mockClear()
   startScanPreviewMock.mockResolvedValue({ previewId: 'preview-1' })
   cancelScanPreviewMock.mockClear()
@@ -657,5 +678,104 @@ describe('TransferDialog direction-header label', () => {
 
     const source = target.querySelector('.folder-name.source')?.textContent.trim() ?? ''
     expect(source).toBe('photos')
+  })
+})
+
+/* ------------------------------------------------------------------------- */
+/* Destination path: home long-form + "will be created" warning             */
+/* ------------------------------------------------------------------------- */
+
+function pathInput(target: HTMLElement): HTMLInputElement {
+  const input = target.querySelector<HTMLInputElement>('.path-input')
+  if (!input) throw new Error('path input not found')
+  return input
+}
+
+/** Waits past the destination-existence debounce (300 ms) and flushes. */
+async function settleExistsCheck(): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, 350))
+  await flushMicrotasks()
+}
+
+describe('TransferDialog destination path', () => {
+  it('shows the home dir as its absolute long form when the destination is exactly ~', async () => {
+    const target = mountDialog({ destinationPath: '~', currentVolumeId: 'root' })
+    await flushMicrotasks()
+
+    // A bare `~` is replaced with the resolved absolute home, not left as `~`.
+    expect(pathInput(target).value).toBe('/Users/test')
+  })
+
+  it('keeps a ~/sub destination in its short form', async () => {
+    const target = mountDialog({ destinationPath: '~/Documents', currentVolumeId: 'root' })
+    await flushMicrotasks()
+
+    expect(pathInput(target).value).toBe('~/Documents')
+  })
+
+  it('warns that a non-existent destination folder will be created', async () => {
+    pathExistsCheckedMock.mockResolvedValue({ data: false, timedOut: false })
+    const target = mountDialog({ operationType: 'copy', destinationPath: '/Users/test/brand-new' })
+    await settleExistsCheck()
+
+    const warning = target.querySelector('.path-warning')
+    expect(warning).not.toBeNull()
+    expect(warning?.textContent).toContain('will create it during the copy')
+    // No red error alongside the yellow warning.
+    expect(target.querySelector('.path-error')).toBeNull()
+    expect(pathInput(target).classList.contains('has-warning')).toBe(true)
+  })
+
+  it('uses the move-specific copy for the create warning when moving', async () => {
+    pathExistsCheckedMock.mockResolvedValue({ data: false, timedOut: false })
+    const target = mountDialog({ operationType: 'move', destinationPath: '/Users/test/brand-new' })
+    await settleExistsCheck()
+
+    expect(target.querySelector('.path-warning')?.textContent).toContain('will create it during the move')
+  })
+
+  it('warns for a non-local (SMB) destination too, since the backend now creates it on every volume', async () => {
+    // Pre-fix this warning was gated to local destinations (the backend's
+    // recursive create was local-FS only). Now `create_directory_all` makes the
+    // dest on every backend, so the yellow "will be created" warning shows
+    // honestly for an SMB/MTP destination as well.
+    pathExistsCheckedMock.mockResolvedValue({ data: false, timedOut: false })
+    const target = mountDialog({
+      operationType: 'copy',
+      currentVolumeId: 'smb://nas.local/public',
+      destinationPath: 'smb://nas.local/public/brand-new',
+    })
+    await settleExistsCheck()
+
+    const warning = target.querySelector('.path-warning')
+    expect(warning).not.toBeNull()
+    expect(warning?.textContent).toContain('will create it during the copy')
+  })
+
+  it('does not warn when the destination folder already exists', async () => {
+    pathExistsCheckedMock.mockResolvedValue({ data: true, timedOut: false })
+    const target = mountDialog({ destinationPath: '/Users/test/dest' })
+    await settleExistsCheck()
+
+    expect(target.querySelector('.path-warning')).toBeNull()
+    expect(pathInput(target).classList.contains('has-warning')).toBe(false)
+  })
+
+  it('stays quiet when the existence check times out (inconclusive)', async () => {
+    pathExistsCheckedMock.mockResolvedValue({ data: false, timedOut: true })
+    const target = mountDialog({ destinationPath: '/Users/test/maybe' })
+    await settleExistsCheck()
+
+    expect(target.querySelector('.path-warning')).toBeNull()
+  })
+
+  it('lets the red error win over the yellow warning for an invalid path', async () => {
+    pathExistsCheckedMock.mockResolvedValue({ data: false, timedOut: false })
+    const target = mountDialog({ destinationPath: 'relative/path' })
+    await settleExistsCheck()
+
+    // Structurally invalid → red error shows, yellow warning suppressed.
+    expect(target.querySelector('.path-error')).not.toBeNull()
+    expect(target.querySelector('.path-warning')).toBeNull()
   })
 })

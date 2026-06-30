@@ -547,3 +547,13 @@ From the `filesTooLargeForFilesystem` pass (FAT32 file-size-cap error; mined `_i
   niet" for "has no such limit" · high
 - "and N more files" (trailing list line) → "en nog {countText} bestand(en)" · "nog" carries the "more/additional"
   sense; plural one/other → bestand/bestanden · high
+- preset (value in a settings-picker dropdown) → voorinstelling; "back to presets" → "Terug naar voorinstellingen" · Double Commander nl ("voorinstelling": "gewijzigde voorinstelling") · high
+
+From the dialog-polish pass (4 new `fileOperations` keys; mined `_ignored/i18n/nl/`, 2026-06-30):
+
+- action (operation-picker field label "Action:") → Bewerking: · macOS AppKit ("This action cannot be performed"→"Deze bewerking kan niet worden uitgevoerd"); matches glossary "File operations"→"Bestandsbewerkingen". macOS "bewerking" (Tier 1) over Double Commander "actie" (DC: "The action cannot be completed"→"De actie kan niet worden voltooid"). Keeps the trailing colon like macOS labels "Naam:"/"Opties:" · high
+- route (field label "Route:" before a source → destination line) → Route: · kept identical: "route" (de route) is a native Dutch word for the path from source to destination, same spelling/sense as EN; MS terminology corroborates the root ("routering", "gerouteerde gebeurtenis"). Recorded via `sameAsSourceJustification` · high
+- scanning (spinner tooltip/SR label while counting items, "Scanning…") → Doorzoeken… · Double Commander ("Scanning"→"Doorzoeken"); matches the existing `transferProgress.stageScanning` "Doorzoeken" in this file. Ellipsis kept · high
+- scan complete (checkmark tooltip/SR label once counting finished, "Scan complete") → Doorzoeken voltooid · "Doorzoeken" (DC scanning) + "voltooid" (macOS/DC for completed, cf. DC "Exporteren … voltooid"); parallels the in-progress "Doorzoeken…" so spinner→checkmark reads cohesively · high
+- create (a folder) → aanmaken (maakt … aan) · macOS Finder ("Create a folder named …"→"Maak … een map aan", "Could not create the folder."→"De map kon niet worden aangemaakt."); matches the existing in-file "dat de map is aangemaakt" (mkdir.timeoutMessage). Separable verb: "Cmdr maakt hem aan" · high
+- "doesn''t exist yet / will be created" (destination-folder warning) → "Deze map bestaat nog niet. Cmdr maakt hem aan tijdens het {kopiëren/verplaatsen}." · negative of macOS Finder "bestaat al" (→"bestaat nog niet"); "hem" pronoun for de-word "map" (cf. in-file "Vind hem in de overdrachtswachtrij"); operation verb "het kopiëren"/"het verplaatsen" matches in-file scanTitle/scanPhase usage. No ICU apostrophe needed (Dutch has none) · high

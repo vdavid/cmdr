@@ -249,6 +249,24 @@
     }
   },
 
+  "fileOperations.shared.actionLabel": "Action:",
+  "@fileOperations.shared.actionLabel": {
+    "description": "Field label shown before the Copy/Move (copy dialog) or Trash/Delete (delete dialog) segmented control. Keep the trailing colon.",
+    "screenshot": "delete-confirm.png"
+  },
+
+  "fileOperations.shared.scanningTooltip": "Scanning…",
+  "@fileOperations.shared.scanningTooltip": {
+    "description": "Tooltip and screen-reader label for the spinner shown while the dialog counts the selected items (files, folders, total size).",
+    "screenshot": "delete-confirm.png"
+  },
+
+  "fileOperations.shared.scanCompleteTooltip": "Scan complete",
+  "@fileOperations.shared.scanCompleteTooltip": {
+    "description": "Tooltip and screen-reader label for the checkmark shown once the dialog has finished counting the selected items.",
+    "screenshot": "delete-confirm.png"
+  },
+
   "fileOperations.transferDialog.toggleCopy": "Copy",
   "@fileOperations.transferDialog.toggleCopy": {
     "description": "Label of the segmented-control option that sets the operation to copy. Short control label, sits next to Move.",
@@ -258,6 +276,12 @@
   "fileOperations.transferDialog.toggleMove": "Move",
   "@fileOperations.transferDialog.toggleMove": {
     "description": "Label of the segmented-control option that sets the operation to move. Short control label, sits next to Copy.",
+    "screenshot": "conflict-dialog.png"
+  },
+
+  "fileOperations.transferDialog.routeLabel": "Route:",
+  "@fileOperations.transferDialog.routeLabel": {
+    "description": "Field label shown before the source-to-destination line (e.g. ''Downloads -> Home'') in the copy/move dialog. Keep the trailing colon.",
     "screenshot": "conflict-dialog.png"
   },
 
@@ -286,6 +310,16 @@
   "fileOperations.transferDialog.smbNativeNote": "This share uses the system connection. Cancellation may be delayed. Use \"Connect directly\" in the volume picker for faster transfers and reliable cancel.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "description": "Note shown when the destination is an SMB share mounted by the operating system rather than connected directly by Cmdr. Warns that cancelling a transfer may lag. Keep the quoted \"Connect directly\" matching that picker action's label."
+  },
+
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "This folder doesn''t exist yet. Cmdr will create it during the copy.",
+  "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
+    "description": "Yellow inline warning beneath the destination path box in the Copy/Move dialog, shown when the typed destination folder doesn''t exist yet and the Copy action is selected. Reassures the user the folder will be made automatically. Active voice, friendly. Keep the product name 'Cmdr' as-is. There''s a separate '...Move' variant for the Move action."
+  },
+
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "This folder doesn''t exist yet. Cmdr will create it during the move.",
+  "@fileOperations.transferDialog.targetWillBeCreatedMove": {
+    "description": "Yellow inline warning beneath the destination path box in the Copy/Move dialog, shown when the typed destination folder doesn''t exist yet and the Move action is selected. Reassures the user the folder will be made automatically. Active voice, friendly. Keep the product name 'Cmdr' as-is. There''s a separate '...Copy' variant for the Copy action."
   },
 
   "fileOperations.transferDialog.scanFile": "{count, plural, one {file} other {files}}",

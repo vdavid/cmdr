@@ -252,6 +252,32 @@ the counter line, so an assertion never fires against a partial in-flight tally.
 Pinned by `TransferDialog.test.ts` § "data-scan-state marker" (counting → done, the skipped fast path, and the counting
 → skipped toggle).
 
+### Destination path: home shortcut, long-form display, and "will be created" warning
+
+The destination box (`editedPath`) accepts the home shortcut as well as absolute paths: `validateDirectoryPath` passes
+a leading `/`, a bare `~`, or `~/…`. `~` is the app's internal stand-in for the home dir; the backend expands it on
+execution (the local `copy_files`/`move_files` commands always did, and `copy_between_volumes`/`move_between_volumes`
+now expand a leading `~` for a LOCAL destination via `expand_local_dest`).
+
+Two niceties on top:
+
+- **Home shows as its long form.** On mount the dialog resolves `homeDir()` and, when `editedPath` is exactly `~`
+  (the destination pane sitting at home root), replaces it with the absolute path (`/Users/me`) — a bare `~` in the box
+  reads as a glitch. A `~/sub` path keeps its short form; only the exact-home case expands. Done before the scan and
+  conflict check so they run against the absolute path.
+- **Yellow "this folder will be created" warning.** A debounced (`createDebounce`, 300 ms) `pathExistsChecked` probe of
+  the resolved destination flips `targetMissing`. When the path is structurally valid (no red `pathError`) but the
+  folder doesn't exist, the box gets a yellow outline (`.path-input.has-warning`) and a yellow message line
+  (`.path-warning`, keys `targetWillBeCreated{Copy,Move}`). The red error always wins — the two never show at once. A
+  timeout is inconclusive (hung mount), so it stays quiet rather than over-promising. A monotonic `existsCheckSeq`
+  drops a stale probe that lands after a newer keystroke.
+
+Backend counterpart: every transfer path creates a missing destination (and ancestors) before transferring — the local
+copy/move paths via `ensure_destination_dir` (`write_operations/validation.rs`), and the cross-volume + same-volume-rename
+pipelines via `Volume::create_directory_all` (recursive mkdir on the dest volume, works on local, SMB, MTP, in-memory).
+So the warning is honest for EVERY destination type, which is why it's no longer gated to local destinations (there's no
+`isLocalDestination` check — `showTargetWarning` keys only off `targetMissing` + no `pathError`).
+
 ### Index conversion for ".." entry
 
 When the directory has a parent entry shown at index 0, frontend indices are offset by +1 from backend:

@@ -153,6 +153,18 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
+  "fileOperations.shared.actionLabel": "Åtgärd:",
+  "@fileOperations.shared.actionLabel": {
+    "sourceHash": "7d9fda4"
+  },
+  "fileOperations.shared.scanningTooltip": "Söker igenom…",
+  "@fileOperations.shared.scanningTooltip": {
+    "sourceHash": "38d96da"
+  },
+  "fileOperations.shared.scanCompleteTooltip": "Genomsökning klar",
+  "@fileOperations.shared.scanCompleteTooltip": {
+    "sourceHash": "bd35a52"
+  },
   "fileOperations.transferDialog.toggleCopy": "Kopiera",
   "@fileOperations.transferDialog.toggleCopy": {
     "sourceHash": "e21f935"
@@ -160,6 +172,10 @@
   "fileOperations.transferDialog.toggleMove": "Flytta",
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.routeLabel": "Rutt:",
+  "@fileOperations.transferDialog.routeLabel": {
+    "sourceHash": "8ccda30"
   },
   "fileOperations.transferDialog.destVolumeAria": "Målvolym",
   "@fileOperations.transferDialog.destVolumeAria": {
@@ -176,6 +192,14 @@
   "fileOperations.transferDialog.smbNativeNote": "Den här delade mappen använder systemanslutningen. Avbrytning kan fördröjas. Använd ”Anslut direkt” i volymväljaren för snabbare överföringar och tillförlitlig avbrytning.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "Den här mappen finns inte än. Cmdr skapar den under kopieringen.",
+  "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
+    "sourceHash": "025f3dc"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "Den här mappen finns inte än. Cmdr skapar den under flytten.",
+  "@fileOperations.transferDialog.targetWillBeCreatedMove": {
+    "sourceHash": "976edd2"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, one {fil} other {filer}}",
   "@fileOperations.transferDialog.scanFile": {

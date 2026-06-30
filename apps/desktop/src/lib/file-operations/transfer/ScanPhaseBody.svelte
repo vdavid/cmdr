@@ -1,6 +1,7 @@
 <script lang="ts">
     import Size from '$lib/ui/Size.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import Trans from '$lib/intl/Trans.svelte'
@@ -50,7 +51,14 @@
         <span class="scan-value">{formatNumber(scanDirsFound)}</span>
         <span class="scan-label">{t('fileOperations.scanPhase.scanDir', { count: scanDirsFound })}</span>
     </div>
-    <Spinner size="sm" />
+    <span
+        class="scan-status"
+        role="img"
+        aria-label={tString('fileOperations.shared.scanningTooltip')}
+        use:tooltip={{ text: tString('fileOperations.shared.scanningTooltip') }}
+    >
+        <Spinner size="sm" />
+    </span>
 </div>
 
 <!-- Throughput -->
@@ -63,7 +71,8 @@
         >
         {#if scanBytesPerSec !== null && scanBytesPerSec > 0}
             <span class="scan-throughput-sep">·</span>
-            <span class="scan-throughput-value"><Trans key="fileOperations.shared.byteRate" snippets={{ size }} /></span>
+            <span class="scan-throughput-value"><Trans key="fileOperations.shared.byteRate" snippets={{ size }} /></span
+            >
         {/if}
     </div>
 {/if}
@@ -106,6 +115,11 @@
         justify-content: center;
         gap: var(--spacing-sm);
         font-size: var(--font-size-sm);
+    }
+
+    .scan-status {
+        display: inline-flex;
+        align-items: center;
     }
 
     .scan-throughput {

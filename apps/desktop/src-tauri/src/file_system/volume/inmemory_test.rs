@@ -328,3 +328,246 @@ fn test_streaming_entries_are_sorted() {
     assert_eq!(entries[3].name, "zebra.txt");
     assert!(!entries[3].is_directory);
 }
+
+// ============================================================================
+// `Volume::create_directory_all` (recursive mkdir -p) trait-default tests.
+//
+// `create_directory_all` is the volume-aware transfer pipelines' destination
+// gate: a copy/move into a not-yet-existing folder creates it (and ancestors)
+// on every backend. The default impl walks ancestors leaf→root until one
+// already exists, then creates the missing ones shallowest-first, pre-checking
+// existence so it never re-creates (or, on MTP, duplicates) an existing level.
+// ============================================================================
+
+use super::{ListingProgress, VolumeError};
+use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
+use std::collections::HashSet;
+use std::future::Future;
+use std::path::PathBuf;
+use std::pin::Pin;
+use std::sync::Mutex;
+use std::sync::RwLock as StdRwLock;
+
+#[tokio::test]
+async fn create_directory_all_creates_deeply_nested_missing_dest() {
+    let volume = InMemoryVolume::new("Dest");
+
+    volume
+        .create_directory_all(Path::new("/a/b/c/d"))
+        .await
+        .expect("recursive create should land a deeply-nested missing dest");
+
+    // Every ancestor now exists as a real directory.
+    for dir in ["/a", "/a/b", "/a/b/c", "/a/b/c/d"] {
+        assert!(volume.exists(Path::new(dir)).await, "{dir} should exist");
+        assert!(
+            volume
+                .is_directory(Path::new(dir))
+                .await
+                .expect("ancestor should be statable"),
+            "{dir} should be a directory"
+        );
+    }
+
+    // A file can be written into the freshly-created leaf.
+    volume
+        .create_file(Path::new("/a/b/c/d/file.txt"), b"hi")
+        .await
+        .expect("file should land in the created dest");
+    assert!(volume.exists(Path::new("/a/b/c/d/file.txt")).await);
+}
+
+#[tokio::test]
+async fn create_directory_all_is_idempotent_on_existing_dest() {
+    let volume = InMemoryVolume::new("Dest");
+
+    volume
+        .create_directory_all(Path::new("/x/y"))
+        .await
+        .expect("first create");
+
+    // Re-running against an already-existing dest is a no-op, never an error
+    // (a merge into an existing folder must not fail the gate).
+    volume
+        .create_directory_all(Path::new("/x/y"))
+        .await
+        .expect("re-running against an existing dest is a no-op");
+
+    assert!(
+        volume
+            .is_directory(Path::new("/x/y"))
+            .await
+            .expect("dest should be statable")
+    );
+}
+
+#[tokio::test]
+async fn create_directory_all_only_creates_the_missing_tail() {
+    let volume = InMemoryVolume::new("Dest");
+    // Pre-existing ancestors (a merge target).
+    volume.create_directory(Path::new("/a")).await.unwrap();
+    volume.create_directory(Path::new("/a/b")).await.unwrap();
+
+    // Only `/a/b/c` and `/a/b/c/d` are missing; the existing levels are left
+    // alone (InMemory's `create_directory` would have errored `AlreadyExists`
+    // had the helper blindly re-created them).
+    volume
+        .create_directory_all(Path::new("/a/b/c/d"))
+        .await
+        .expect("should create only the missing tail");
+
+    assert!(
+        volume
+            .is_directory(Path::new("/a/b/c"))
+            .await
+            .expect("created level should be statable")
+    );
+    assert!(
+        volume
+            .is_directory(Path::new("/a/b/c/d"))
+            .await
+            .expect("created level should be statable")
+    );
+}
+
+#[tokio::test]
+async fn create_directory_all_surfaces_create_failure_as_typed_error() {
+    // A backend whose `create_directory` fails at a specific level: the helper
+    // must surface the typed `VolumeError`, never silently swallow it.
+    let volume = MockDirVolume::new(/* errors_on_existing */ true);
+    volume.fail_create_at(Path::new("/a/b"));
+
+    let err = volume
+        .create_directory_all(Path::new("/a/b/c"))
+        .await
+        .expect_err("a create failure mid-walk must surface");
+    assert!(matches!(err, VolumeError::IoError { .. }), "got {err:?}");
+}
+
+#[tokio::test]
+async fn create_directory_all_pre_checks_existence_on_mtp_like_backend() {
+    // MTP-shaped backend: `create_directory` does NOT error on an existing dir
+    // (it would make a duplicate sibling), and `create_directory_errors_on_existing_dir()`
+    // is false. The helper must pre-check existence and call `create_directory`
+    // ONLY for the truly-missing levels, so a pre-existing ancestor is never
+    // duplicated.
+    let volume = MockDirVolume::new(/* errors_on_existing */ false);
+    // `/photos` already on the device.
+    volume.seed_existing(Path::new("/photos"));
+
+    volume
+        .create_directory_all(Path::new("/photos/2026/trip"))
+        .await
+        .expect("recursive create over a partially-existing MTP tree");
+
+    // `create_directory` ran for exactly the two missing levels, never for the
+    // pre-existing `/photos` (which would have duplicated it on MTP).
+    let calls = volume.create_calls();
+    assert_eq!(
+        calls,
+        vec![PathBuf::from("/photos/2026"), PathBuf::from("/photos/2026/trip")],
+        "must create only the missing levels, in shallowest-first order"
+    );
+}
+
+/// Minimal `Volume` double for the recursive-create tests. Tracks a set of
+/// existing directory paths and records every `create_directory` call, so a
+/// test can assert WHICH levels the helper created. `errors_on_existing`
+/// toggles between the LocalPosix/SMB/InMemory semantics (error on a re-create)
+/// and the MTP semantics (silently duplicate). `fail_create_at` forces a typed
+/// failure at one level.
+struct MockDirVolume {
+    errors_on_existing: bool,
+    existing: StdRwLock<HashSet<PathBuf>>,
+    create_calls: Mutex<Vec<PathBuf>>,
+    fail_at: Mutex<Option<PathBuf>>,
+}
+
+impl MockDirVolume {
+    fn new(errors_on_existing: bool) -> Self {
+        Self {
+            errors_on_existing,
+            existing: StdRwLock::new(HashSet::new()),
+            create_calls: Mutex::new(Vec::new()),
+            fail_at: Mutex::new(None),
+        }
+    }
+
+    fn seed_existing(&self, path: &Path) {
+        self.existing.write_ignore_poison().insert(path.to_path_buf());
+    }
+
+    fn fail_create_at(&self, path: &Path) {
+        *self.fail_at.lock_ignore_poison() = Some(path.to_path_buf());
+    }
+
+    fn create_calls(&self) -> Vec<PathBuf> {
+        self.create_calls.lock_ignore_poison().clone()
+    }
+}
+
+impl Volume for MockDirVolume {
+    fn name(&self) -> &str {
+        "mock-dir"
+    }
+    fn root(&self) -> &Path {
+        Path::new("/")
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn list_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+        _on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Ok(Vec::new()) })
+    }
+    fn get_metadata<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move { self.existing.read_ignore_poison().contains(path) })
+    }
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            if self.existing.read_ignore_poison().contains(path) {
+                Ok(true)
+            } else {
+                Err(VolumeError::NotFound(path.display().to_string()))
+            }
+        })
+    }
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            self.create_calls.lock_ignore_poison().push(path.to_path_buf());
+            if self.fail_at.lock_ignore_poison().as_deref() == Some(path) {
+                return Err(VolumeError::IoError {
+                    message: "injected create failure".to_string(),
+                    raw_os_error: None,
+                });
+            }
+            let mut existing = self.existing.write_ignore_poison();
+            if existing.contains(path) && self.errors_on_existing {
+                return Err(VolumeError::AlreadyExists(path.display().to_string()));
+            }
+            // MTP-like backend (errors_on_existing == false) inserts idempotently;
+            // a real one would make a DUPLICATE sibling, which the helper avoids
+            // by pre-checking existence.
+            existing.insert(path.to_path_buf());
+            Ok(())
+        })
+    }
+    fn create_directory_errors_on_existing_dir(&self) -> bool {
+        self.errors_on_existing
+    }
+}

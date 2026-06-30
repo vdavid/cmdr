@@ -511,6 +511,17 @@ pub(crate) async fn copy_volumes_with_progress(
         }
     }
 
+    // Phase 0.5: Ensure the destination directory exists, creating it and any
+    // missing ancestors on the dest volume (local, SMB, MTP, in-memory). This
+    // mirrors the local-FS `ensure_destination_dir` so a copy into a
+    // not-yet-existing folder just works on every backend. It runs AFTER the
+    // dest-inside-source guard above so we never create a folder inside a
+    // source. A merge into an already-existing dest is a no-op create.
+    dest_volume
+        .create_directory_all(dest_path)
+        .await
+        .map_err(|e| WriteFailure::from_volume(dest_path, e))?;
+
     // Phase 1: Preflight scan (reuses the dialog's cached preview when one is
     // available). Populates `total_files`, `total_bytes`, and per-source
     // `is_directory` / `size` hints so the copy loop doesn't have to re-probe

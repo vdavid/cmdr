@@ -152,6 +152,18 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
+  "fileOperations.shared.actionLabel": "Acción:",
+  "@fileOperations.shared.actionLabel": {
+    "sourceHash": "7d9fda4"
+  },
+  "fileOperations.shared.scanningTooltip": "Analizando…",
+  "@fileOperations.shared.scanningTooltip": {
+    "sourceHash": "38d96da"
+  },
+  "fileOperations.shared.scanCompleteTooltip": "Análisis completado",
+  "@fileOperations.shared.scanCompleteTooltip": {
+    "sourceHash": "bd35a52"
+  },
   "fileOperations.transferDialog.toggleCopy": "Copiar",
   "@fileOperations.transferDialog.toggleCopy": {
     "sourceHash": "e21f935"
@@ -159,6 +171,10 @@
   "fileOperations.transferDialog.toggleMove": "Mover",
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.routeLabel": "Ruta:",
+  "@fileOperations.transferDialog.routeLabel": {
+    "sourceHash": "8ccda30"
   },
   "fileOperations.transferDialog.destVolumeAria": "Volumen de destino",
   "@fileOperations.transferDialog.destVolumeAria": {
@@ -175,6 +191,14 @@
   "fileOperations.transferDialog.smbNativeNote": "Este recurso compartido usa la conexión del sistema. La cancelación puede tardar. Usa \"Conectar directamente\" en el selector de volumen para transferencias más rápidas y una cancelación fiable.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "Esta carpeta todavía no existe. Cmdr la creará durante la copia.",
+  "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
+    "sourceHash": "025f3dc"
+  },
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "Esta carpeta todavía no existe. Cmdr la creará durante el movimiento.",
+  "@fileOperations.transferDialog.targetWillBeCreatedMove": {
+    "sourceHash": "976edd2"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, one {archivo} many {archivos} other {archivos}}",
   "@fileOperations.transferDialog.scanFile": {

@@ -80,6 +80,43 @@ fn test_copy_directory_recursive() {
     cleanup_temp_dir(&temp_dir);
 }
 
+/// Mirrors the copy flow's destination gate: `ensure_destination_dir` creates a
+/// non-existent nested destination, then a file copied into it lands. Proves the
+/// "transfer into a brand-new folder just works" behavior at the filesystem level
+/// (the full `copy_files_start` path needs a Tauri `AppHandle`, so this exercises
+/// the gate + a native copy directly).
+#[test]
+fn test_copy_into_nonexistent_nested_dest_creates_it_and_lands_files() {
+    use super::super::ensure_destination_dir;
+
+    let temp_dir = create_temp_dir("copy_into_new_nested_dest");
+    let src_dir = temp_dir.join("src");
+    fs::create_dir_all(&src_dir).unwrap();
+    let src_file = src_dir.join("file.txt");
+    fs::write(&src_file, "Hello, new folder!").unwrap();
+
+    // A destination several levels deep, none of which exist yet.
+    let dst_dir = temp_dir.join("new").join("nested").join("dest");
+    assert!(!temp_dir.join("new").exists());
+
+    // The gate creates the whole chain.
+    ensure_destination_dir(&dst_dir).expect("ensure_destination_dir should create the nested dest");
+    assert!(dst_dir.is_dir(), "the nested destination should now exist");
+
+    // And a copy into it lands the file.
+    #[cfg(target_os = "macos")]
+    {
+        use super::macos_copy::copy_single_file_native;
+
+        let dst_file = dst_dir.join("file.txt");
+        let result = copy_single_file_native(&src_file, &dst_file, false, None);
+        assert!(result.is_ok());
+        assert_eq!(fs::read_to_string(&dst_file).unwrap(), "Hello, new folder!");
+    }
+
+    cleanup_temp_dir(&temp_dir);
+}
+
 #[test]
 fn test_copy_preserves_permissions() {
     let temp_dir = create_temp_dir("copy_permissions");
