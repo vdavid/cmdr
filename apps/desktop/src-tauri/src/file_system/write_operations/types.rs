@@ -429,11 +429,35 @@ pub enum WriteOperationError {
     DeletePending {
         path: String,
     },
+    /// One or more files exceed the destination filesystem's per-file size
+    /// limit (FAT32's 4 GiB cap). Detected during the pre-copy scan, before any
+    /// bytes are written, so the whole operation is blocked all-or-nothing
+    /// rather than failing partway through.
+    FilesTooLargeForFilesystem {
+        /// The destination filesystem, so the message can name it ("FAT32").
+        filesystem: crate::file_system::filesystem_kind::FilesystemKind,
+        /// The per-file ceiling in bytes (FAT32: 4 GiB − 1).
+        max_size: u64,
+        /// Up to 10 offending files (name + size), largest first.
+        files: Vec<OversizedFile>,
+        /// Total number of offending files (may exceed `files.len()`).
+        total_count: usize,
+    },
     /// Catch-all for genuinely unexpected IO errors.
     IoError {
         path: String,
         message: String,
     },
+}
+
+/// A file that exceeds the destination filesystem's per-file size limit.
+/// Carried by [`WriteOperationError::FilesTooLargeForFilesystem`] so the dialog
+/// can list the offenders.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct OversizedFile {
+    pub name: String,
+    pub size: u64,
 }
 
 // ============================================================================

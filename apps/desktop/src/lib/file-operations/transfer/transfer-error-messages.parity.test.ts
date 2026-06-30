@@ -31,6 +31,12 @@ const AVAILABLE = 536870912
 const requiredSize = colorizeSizeString(formatBytes(REQUIRED))
 const availableSize = colorizeSizeString(formatBytes(AVAILABLE))
 
+// files_too_large_for_filesystem also interpolates colorized, formatted sizes.
+const FAT_MAX = 4294967295
+const BIG_FILE = 5368709120
+const fatMaxSize = colorizeSizeString(formatBytes(FAT_MAX))
+const bigFileSize = colorizeSizeString(formatBytes(BIG_FILE))
+
 // `trash_not_supported` interpolates the live `file.deletePermanently` binding.
 // Pin it so the suggestion is deterministic across platforms.
 vi.mock('$lib/shortcuts', async (orig) => {
@@ -515,6 +521,40 @@ const cases: Case[] = [
       title: 'Move to trash failed',
       message: 'An unexpected error occurred while moving to trash.',
       suggestion: 'Try again, or check the technical details below for more information.',
+    },
+  },
+  {
+    name: 'files_too_large_for_filesystem (one)',
+    error: {
+      type: 'files_too_large_for_filesystem',
+      filesystem: 'fat32',
+      maxSize: FAT_MAX,
+      files: [{ name: 'movie.mkv', size: BIG_FILE }],
+      totalCount: 1,
+    },
+    expected: {
+      title: 'File too large for this drive',
+      message: `movie.mkv is ${bigFileSize}, but this drive is formatted as FAT32, which can't store files larger than ${fatMaxSize}.`,
+      suggestion: 'To store files this large, use a drive formatted as exFAT, which has no such limit.',
+    },
+  },
+  {
+    name: 'files_too_large_for_filesystem (many)',
+    error: {
+      type: 'files_too_large_for_filesystem',
+      filesystem: 'fat32',
+      maxSize: FAT_MAX,
+      files: [
+        { name: 'a.mkv', size: BIG_FILE },
+        { name: 'b.mkv', size: BIG_FILE },
+        { name: 'c.mkv', size: BIG_FILE },
+      ],
+      totalCount: 3,
+    },
+    expected: {
+      title: 'Some files are too large for this drive',
+      message: `3 files are too large for this drive, which is formatted as FAT32 and can't store files larger than ${fatMaxSize}.`,
+      suggestion: 'To store files this large, use a drive formatted as exFAT, which has no such limit.',
     },
   },
 ]

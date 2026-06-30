@@ -3473,6 +3473,37 @@ export type FileEntry = {
   displaySizeTooltip: string | null
 }
 
+/**
+ *  What a destination filesystem is. A factual classification used for the
+ *  volume-picker label and to derive the per-file size limit. `Other` carries
+ *  no detail of its own; the raw OS type string travels alongside in
+ *  [`FilesystemInfo::raw_type`].
+ */
+export type FilesystemKind =
+  | 'apfs'
+  | 'hfs_plus'
+  | 'ext4'
+  | 'btrfs'
+  | 'xfs'
+  | 'zfs'
+  | 'ntfs'
+  | 'ex_fat'
+  // FAT32 (and FAT16): the only common format with a hard 4 GiB per-file cap.
+  | 'fat32'
+  /**
+   *  SMB share whose backing filesystem we can't see (an OS-mounted
+   *  `smbfs`/`cifs` mount). Direct smb2 sessions could later resolve the real
+   *  backing format; until then this stays `Unknown` for the size guard.
+   */
+  | 'smb'
+  // MTP device. No queryable POSIX filesystem; large files stream fine.
+  | 'mtp'
+  /**
+   *  Recognized nothing. The raw type string is kept in `FilesystemInfo` for
+   *  display and diagnostics.
+   */
+  | 'other'
+
 // `focus-about`: ensure the (soft, main-window-overlay) about dialog is visible.
 export type FocusAbout = null
 
@@ -4707,6 +4738,16 @@ export type OperationSummary = {
  */
 export type OperationsChanged = {
   operations: OperationSnapshot[]
+}
+
+/**
+ *  A file that exceeds the destination filesystem's per-file size limit.
+ *  Carried by [`WriteOperationError::FilesTooLargeForFilesystem`] so the dialog
+ *  can list the offenders.
+ */
+export type OversizedFile = {
+  name: string
+  size: number
 }
 
 // Represents a file entry in a pane (simplified subset of the main FileEntry).
@@ -6256,6 +6297,23 @@ export type WriteOperationError =
    *  last handle closes. SMB-only today.
    */
   | { type: 'delete_pending'; path: string }
+  /**
+   *  One or more files exceed the destination filesystem's per-file size
+   *  limit (FAT32's 4 GiB cap). Detected during the pre-copy scan, before any
+   *  bytes are written, so the whole operation is blocked all-or-nothing
+   *  rather than failing partway through.
+   */
+  | {
+      type: 'files_too_large_for_filesystem'
+      // The destination filesystem, so the message can name it ("FAT32").
+      filesystem: FilesystemKind
+      // The per-file ceiling in bytes (FAT32: 4 GiB − 1).
+      maxSize: number
+      // Up to 10 offending files (name + size), largest first.
+      files: OversizedFile[]
+      // Total number of offending files (may exceed `files.len()`).
+      totalCount: number
+    }
   // Catch-all for genuinely unexpected IO errors.
   | { type: 'io_error'; path: string; message: string }
 

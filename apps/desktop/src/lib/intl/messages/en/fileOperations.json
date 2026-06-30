@@ -825,6 +825,15 @@
     "description": "Button that dismisses the transfer-error dialog. Short control label."
   },
 
+  "fileOperations.errorDialog.tooLargeAndMore": "and {countText} more {count, plural, one {file} other {files}}",
+  "@fileOperations.errorDialog.tooLargeAndMore": {
+    "description": "Trailing line under the list of files that are too large for the destination drive, when more files are over the limit than the list shows. For example \"and 3 more files\".",
+    "placeholders": {
+      "countText": "the preformatted count of additional over-limit files not shown in the list (e.g. \"3\")",
+      "count": "the same count as a plain integer, used only to choose file/files"
+    }
+  },
+
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Folder name can''t contain \"/\" or null characters} other {Filename can''t contain \"/\" or null characters}}",
   "@fileOperations.validation.disallowedChars": {
     "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the name includes a slash or a null character (both forbidden on the file system). The \"/\" is a literal slash character and must stay as-is. Write each branch as a complete, natural sentence for a file versus a folder (the noun and its agreement differ across languages).",

@@ -211,6 +211,60 @@ pub(crate) fn validate_disk_space(_destination: &Path, _required_bytes: u64) -> 
     Ok(())
 }
 
+/// Maximum number of offending files to name in the error (the rest are
+/// summarized as a count). Keeps the dialog readable on a tree of many big files.
+const MAX_OVERSIZED_FILES_TO_REPORT: usize = 10;
+
+/// Blocks the operation when any scanned file exceeds the destination
+/// filesystem's per-file size limit (FAT32's 4 GiB cap). All-or-nothing: returns
+/// the first such failure carrying up to [`MAX_OVERSIZED_FILES_TO_REPORT`]
+/// offenders (largest first) plus the true total count.
+///
+/// A no-op for any destination without a known cap — the common case (APFS,
+/// exFAT, NTFS, ext4, ...) and anything we can't classify — so it never raises a
+/// false alarm. Run after the scan and before the first byte is written, so a
+/// 5 GB file buried under one of several selected folders is caught up front
+/// instead of failing the copy partway through.
+pub(crate) fn validate_file_sizes_for_filesystem(
+    destination: &Path,
+    files: &[super::state::FileInfo],
+) -> Result<(), WriteOperationError> {
+    use crate::file_system::filesystem_kind::{MaxFileSize, detect_filesystem_for_path};
+
+    let filesystem = detect_filesystem_for_path(destination);
+    let MaxFileSize::Limited { bytes: max_size } = filesystem.kind.max_file_size() else {
+        return Ok(());
+    };
+
+    let mut offenders: Vec<&super::state::FileInfo> = files.iter().filter(|f| f.size > max_size).collect();
+    if offenders.is_empty() {
+        return Ok(());
+    }
+    // Largest first, so the dialog leads with the worst offender.
+    offenders.sort_by_key(|f| std::cmp::Reverse(f.size));
+
+    let total_count = offenders.len();
+    let reported = offenders
+        .iter()
+        .take(MAX_OVERSIZED_FILES_TO_REPORT)
+        .map(|f| super::types::OversizedFile {
+            name: f
+                .path
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default(),
+            size: f.size,
+        })
+        .collect();
+
+    Err(WriteOperationError::FilesTooLargeForFilesystem {
+        filesystem: filesystem.kind,
+        max_size,
+        files: reported,
+        total_count,
+    })
+}
+
 /// Checks if source and destination resolve to the same file (same inode + device).
 /// This prevents data loss when copying a file over itself via a symlink.
 #[cfg(unix)]

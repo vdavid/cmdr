@@ -25,7 +25,7 @@ use super::super::types::{
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
-use super::super::validation::validate_disk_space;
+use super::super::validation::{validate_disk_space, validate_file_sizes_for_filesystem};
 use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};
 
 mod rollback;
@@ -183,6 +183,11 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
         "copy_files_with_progress: disk space check complete for operation_id={}",
         operation_id
     );
+
+    // Pre-flight filesystem-limit check: block before writing a byte if any file
+    // is too large for the destination filesystem (FAT32's 4 GiB cap). No-op for
+    // filesystems with no known limit.
+    validate_file_sizes_for_filesystem(destination, &scan_result.files)?;
 
     // Phase 2: Copy files in sorted order with rollback support
     let mut transaction = CopyTransaction::new();

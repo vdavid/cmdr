@@ -172,10 +172,44 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   trash_not_supported: { category: 'needs_action', retryHint: false },
   name_too_long: { category: 'needs_action', retryHint: false },
   invalid_name: { category: 'needs_action', retryHint: false },
+  files_too_large_for_filesystem: { category: 'needs_action', retryHint: false },
 }
 
 export function getErrorDisplayMeta(error: WriteOperationError): ErrorDisplayMeta {
   return errorDisplayMetaMap[error.type]
+}
+
+/**
+ * Builds the message for the too-large-for-filesystem error. Only FAT32 produces
+ * it (the one common format with a hard 4 GiB per-file cap), so the prose names
+ * FAT32 directly; the offending files are listed separately by
+ * `FallbackErrorContent` from `error.files`. Split out to keep
+ * `getUserFriendlyMessage` under the complexity ceiling.
+ */
+function tooLargeForFilesystemMessage(
+  error: Extract<WriteOperationError, { type: 'files_too_large_for_filesystem' }>,
+): FriendlyErrorMessage {
+  const maxSize = colorizeSizeString(formatBytes(error.maxSize))
+  if (error.totalCount === 1) {
+    const file = error.files[0]
+    return {
+      title: w('filesTooLargeForFilesystem.title.one'),
+      message: w('filesTooLargeForFilesystem.message.one', {
+        name: escapeHtml(file.name),
+        size: colorizeSizeString(formatBytes(file.size)),
+        maxSize,
+      }),
+      suggestion: w('filesTooLargeForFilesystem.suggestion'),
+    }
+  }
+  return {
+    title: w('filesTooLargeForFilesystem.title.many'),
+    message: w('filesTooLargeForFilesystem.message.many', {
+      count: String(error.totalCount),
+      maxSize,
+    }),
+    suggestion: w('filesTooLargeForFilesystem.suggestion'),
+  }
 }
 
 /**
@@ -234,6 +268,8 @@ export function getUserFriendlyMessage(
         message: w('deletePending.message'),
         suggestion: w('deletePending.suggestion'),
       }
+    case 'files_too_large_for_filesystem':
+      return tooLargeForFilesystemMessage(error)
     default:
       return {
         title: w(`fallback.title.${operationType}`),
@@ -289,6 +325,13 @@ export function getTechnicalDetails(error: WriteOperationError): string {
   } else if (error.type === 'destination_inside_source') {
     lines.push(`Source: ${error.source}`)
     lines.push(`Destination: ${error.destination}`)
+  } else if (error.type === 'files_too_large_for_filesystem') {
+    lines.push(`Filesystem: ${error.filesystem}`)
+    lines.push(`Max file size: ${formatBytes(error.maxSize)}`)
+    lines.push(`Files over the limit: ${String(error.totalCount)}`)
+    for (const file of error.files) {
+      lines.push(`  ${file.name} (${formatBytes(file.size)})`)
+    }
   } else if (error.type === 'cancelled') {
     if (error.message) lines.push(`Details: ${error.message}`)
   }

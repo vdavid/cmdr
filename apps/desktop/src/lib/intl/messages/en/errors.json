@@ -2016,6 +2016,46 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
 
+  "errors.write.filesTooLargeForFilesystem.title.one": "File too large for this drive",
+  "errors.write.filesTooLargeForFilesystem.title.many": "Some files are too large for this drive",
+  "errors.write.filesTooLargeForFilesystem.message.one": "{name} is {size}, but this drive is formatted as FAT32, which can't store files larger than {maxSize}.",
+  "errors.write.filesTooLargeForFilesystem.message.many": "{count} files are too large for this drive, which is formatted as FAT32 and can't store files larger than {maxSize}.",
+  "errors.write.filesTooLargeForFilesystem.suggestion": "To store files this large, use a drive formatted as exFAT, which has no such limit.",
+  "@errors.write.filesTooLargeForFilesystem.title.one": {
+    "description": "Title of the copy/move error dialog when exactly one file is too large for the destination's FAT32 filesystem. Plain text. FAT32 is a filesystem-format name; keep it as-is.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.filesTooLargeForFilesystem.title.many": {
+    "description": "Title of the copy/move error dialog when several files are too large for the destination's FAT32 filesystem. Plain text. FAT32 is a filesystem-format name; keep it as-is.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.filesTooLargeForFilesystem.message.one": {
+    "description": "Body of the copy/move error dialog when one file is too large for the destination's FAT32 filesystem. Plain text with interpolated HTML size markup. FAT32 is a filesystem-format name; keep it as-is.",
+    "placeholders": {
+      "name": "the file's name (HTML-escaped); leads the sentence",
+      "size": "the file's formatted size, colorized HTML markup (e.g. a span wrapping \"5.0 GB\"); do NOT translate the markup or the size",
+      "maxSize": "the filesystem's maximum file size, colorized HTML markup (e.g. a span wrapping \"4.0 GB\"); do NOT translate the markup or the size"
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.filesTooLargeForFilesystem.message.many": {
+    "description": "Body of the copy/move error dialog when several files are too large for the destination's FAT32 filesystem. Plain text with an interpolated count and HTML size markup. FAT32 is a filesystem-format name; keep it as-is.",
+    "placeholders": {
+      "count": "the number of files that are too large (a plain integer)",
+      "maxSize": "the filesystem's maximum file size, colorized HTML markup (e.g. a span wrapping \"4.0 GB\"); do NOT translate the markup or the size"
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.filesTooLargeForFilesystem.suggestion": {
+    "description": "Recovery suggestion when files are too large for the destination's FAT32 filesystem. Plain text. exFAT is a filesystem-format name; keep it as-is.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+
   "errors.write.readOnlyDevice.title": "Read-only device",
   "errors.write.readOnlyDevice.message": "{deviceName} is read-only. You can copy files from it, but not to it.",
   "errors.write.readOnlyDevice.suggestion": "Choose a different destination that supports writing.",

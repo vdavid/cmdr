@@ -18,7 +18,7 @@ use super::super::types::{
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
     WriteSourceItemDoneEvent,
 };
-use super::super::validation::{is_same_filesystem, path_exists_or_is_symlink};
+use super::super::validation::{is_same_filesystem, path_exists_or_is_symlink, validate_file_sizes_for_filesystem};
 use super::copy::copy_single_item;
 
 // ============================================================================
@@ -481,6 +481,12 @@ fn move_with_staging(
             config.sort_order,
         )?
     };
+
+    // Pre-flight filesystem-limit check: a cross-FS move stages a full copy, so
+    // the destination's per-file cap (FAT32's 4 GiB) applies. Block before
+    // creating the staging dir or writing a byte. No-op for filesystems with no
+    // known limit. (Same-FS moves rename in place and never reach here.)
+    validate_file_sizes_for_filesystem(destination, &scan_result.files)?;
 
     // Create staging directory
     let staging_dir = destination.join(format!(".cmdr-staging-{}", operation_id));
