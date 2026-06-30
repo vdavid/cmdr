@@ -5,7 +5,7 @@
   "timezone": "Europe/Budapest",
   "automerge": true,
   "platformAutomerge": true,
-  "minimumReleaseAge": "14 days",
+  "minimumReleaseAge": "3 days",
   "packageRules": [
     {
       "description": "Group all non-major updates into one weekly PR",
@@ -28,7 +28,7 @@
       "groupName": null
     },
     {
-      "description": "First-party crates (David's own). Stricter pre-release gate than the 14-day window protects against; bypass so cmdr pulls fixes immediately.",
+      "description": "First-party crates (David's own). Stricter pre-release gate than the 3-day window protects against; bypass so cmdr pulls fixes immediately.",
       "matchPackageNames": ["smb2", "mtp-rs"],
       "minimumReleaseAge": "0 days",
       "schedule": ["at any time"],

@@ -9,14 +9,15 @@ confirmModulesPurge: false
 # Project-side belt-and-suspenders so anyone cloning Cmdr gets the same
 # install-side guarantees even without the matching keys in their `~/.npmrc`.
 # Read alongside `.claude/rules/use-latest-dep-versions.md` — Renovate already
-# enforces a 14-day cooldown at PR-open time; this is the install-side
+# enforces a 3-day cooldown at PR-open time; this is the install-side
 # guardrail for anything that bypasses Renovate (manual `pnpm add`, a fresh
 # clone, a contributor without our Renovate config).
 
-# Block installs of versions published less than 14 days ago. pnpm 11 ships
-# with a 1440 min (1 day) default; we tighten it. Value is minutes. Use
-# `minimumReleaseAgeExclude` to bypass per-package for hot-fix CVE patches.
-minimumReleaseAge: 20160
+# Block installs of versions published less than 3 days ago. pnpm 11 ships
+# with a 1440 min (1 day) default; we tighten it. Value is minutes (4320 = 3
+# days). Use `minimumReleaseAgeExclude` to bypass per-package for hot-fix CVE
+# patches.
+minimumReleaseAge: 4320
 
 # Refuse to install a package whose trust level has dropped since the last
 # successful resolve (publisher loses verified status, package transferred to
