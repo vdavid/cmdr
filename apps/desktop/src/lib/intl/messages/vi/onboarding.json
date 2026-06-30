@@ -151,9 +151,9 @@
   "@onboarding.stepAi.bannerTitle.stuck": {
     "sourceHash": "88c9c19"
   },
-  "onboarding.stepAi.bannerBody.stuck": "Bạn nói rằng muốn bật quyền truy cập toàn bộ đĩa, nhưng Cmdr có vẻ chưa nhận được. Bạn có thể cần khởi động lại ứng dụng (làm ngay đi, chúng ta sẽ tiếp tục từ đây!), hoặc vào <settingsLink>{systemSettings} &gt; Quyền riêng tư &amp; Bảo mật &gt; Truy cập toàn bộ đĩa</settingsLink> và tìm Cmdr, hoặc thêm thủ công bằng nút \"+\" nhỏ ở dưới cùng.",
+  "onboarding.stepAi.bannerBody.stuck": "Bạn nói rằng muốn bật quyền truy cập toàn bộ đĩa, nhưng Cmdr có vẻ chưa nhận được. Bạn có thể cần khởi động lại ứng dụng (làm ngay đi, chúng ta sẽ tiếp tục từ đây!), hoặc vào <settingsLink>{systemSettings} > Quyền riêng tư & Bảo mật > Truy cập toàn bộ đĩa</settingsLink> và tìm Cmdr, hoặc thêm thủ công bằng nút \"+\" nhỏ ở dưới cùng.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "9b83d53"
+    "sourceHash": "79d5765"
   },
   "onboarding.stepAi.welcomeLinux.title": "Chào mừng bạn đến với Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -303,13 +303,13 @@
   "@onboarding.stepBeta.feedbackIntro": {
     "sourceHash": "4e238dd"
   },
-  "onboarding.stepBeta.feedback.inAppBound": "<strong>Trong ứng dụng:</strong> Xem <strong>Trợ giúp &gt; Gửi phản hồi…</strong> trong trình đơn, hoặc tìm nó trong bảng lệnh bằng <chip></chip>.",
+  "onboarding.stepBeta.feedback.inAppBound": "<strong>Trong ứng dụng:</strong> Xem <strong>Trợ giúp > Gửi phản hồi…</strong> trong trình đơn, hoặc tìm nó trong bảng lệnh bằng <chip></chip>.",
   "@onboarding.stepBeta.feedback.inAppBound": {
-    "sourceHash": "88ec070"
+    "sourceHash": "8fabdee"
   },
-  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>Trong ứng dụng:</strong> Xem <strong>Trợ giúp &gt; Gửi phản hồi…</strong> trong trình đơn, hoặc tìm nó trong bảng lệnh.",
+  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>Trong ứng dụng:</strong> Xem <strong>Trợ giúp > Gửi phản hồi…</strong> trong trình đơn, hoặc tìm nó trong bảng lệnh.",
   "@onboarding.stepBeta.feedback.inAppUnbound": {
-    "sourceHash": "b7f7fb3"
+    "sourceHash": "26447c9"
   },
   "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Thêm vấn đề, bình chọn cho vấn đề.",
   "@onboarding.stepBeta.feedback.github": {
@@ -323,9 +323,9 @@
   "@onboarding.stepBeta.feedback.call": {
     "sourceHash": "5e198ee"
   },
-  "onboarding.stepBeta.star": "Và một cách rất quan trọng nữa mà bạn có thể giúp trong một phút: gắn sao, theo dõi, và fork repo <github>tại đây trên GitHub</github>. Homebrew muốn mình đạt 225 sao, 50 fork, và 50 lượt theo dõi để bật <code>brew install cmdr</code>.",
+  "onboarding.stepBeta.star": "Và một cách rất quan trọng nữa mà bạn có thể giúp trong một phút: gắn sao, theo dõi, và fork repo <github>tại đây trên GitHub</github>. Homebrew muốn mình đạt 225 sao, 90 fork, và 90 lượt theo dõi để bật <code>brew install cmdr</code>.",
   "@onboarding.stepBeta.star": {
-    "sourceHash": "6e978a7"
+    "sourceHash": "d88a7e2"
   },
   "onboarding.stepBeta.analyticsLede": "Để biết điều gì hiệu quả và điều gì không, trong giai đoạn open beta Cmdr gửi số liệu sử dụng ẩn danh: tính năng nào được dùng và dùng bao nhiêu lần, không bao giờ gửi bất cứ thứ gì từ các tệp của bạn. Nó đang bật, và bạn có thể tắt bất cứ lúc nào.",
   "@onboarding.stepBeta.analyticsLede": {

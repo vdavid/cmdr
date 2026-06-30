@@ -2,8 +2,14 @@
 
 How Cmdr ships through Homebrew, and how the cask stays current.
 
-Users install with `brew tap vdavid/tap && brew install --cask cmdr`. The live cask lives in the personal tap repo
-[`vdavid/homebrew-tap`](https://github.com/vdavid/homebrew-tap) (as `Casks/cmdr.rb`).
+Users install with `brew tap vdavid/tap && brew trust --cask vdavid/tap/cmdr && brew install --cask cmdr`. The live cask
+lives in the personal tap repo [`vdavid/homebrew-tap`](https://github.com/vdavid/homebrew-tap) (as `Casks/cmdr.rb`).
+
+The `brew trust` step is required as of Homebrew 6.0.0 (2026-06-11): Homebrew now refuses to load a cask from any
+third-party tap until the user explicitly trusts it (`brew trust --cask <tap>/<cask>`), since a tap is arbitrary Ruby
+that runs with the user's privileges. It's a client-side consent gate with no publisher-side opt-out — there's nothing
+the tap can do to pre-bless itself. Landing the cask in `Homebrew/homebrew-cask` (the notability path below) is what
+removes both the tap and the trust step, since the official taps are trusted by default.
 
 The cask file in this repo, [`apps/desktop/packaging/homebrew/cmdr.rb`](../../apps/desktop/packaging/homebrew/cmdr.rb),
 is the source of truth for the cask's **shape**: the `url`, `livecheck`, `depends_on`, `app`, and `zap` blocks. The tap

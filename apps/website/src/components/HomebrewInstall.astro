@@ -2,7 +2,7 @@
 // Secondary install path shown under the main "Download for macOS" button: the Homebrew command in a
 // monospace box with a copy-to-clipboard button. The command stays visible and selectable with JS
 // disabled; the button is a progressive enhancement.
-const command = 'brew tap vdavid/tap && brew install --cask cmdr'
+const command = 'brew tap vdavid/tap && brew trust --cask vdavid/tap/cmdr && brew install --cask cmdr'
 ---
 
 <div class="brew" id="homebrew">
@@ -44,6 +44,7 @@ const command = 'brew tap vdavid/tap && brew install --cask cmdr'
         </button>
         <span class="sr-only" aria-live="polite" data-brew-status></span>
     </div>
+    <p class="brew__note">The <code>brew trust</code> step is Homebrew 6's one-time okay for third-party taps.</p>
 </div>
 
 <style>
@@ -76,6 +77,19 @@ const command = 'brew tap vdavid/tap && brew install --cask cmdr'
         font-size: 0.875rem;
         color: var(--color-text-tertiary);
         text-align: center;
+    }
+
+    .brew__note {
+        margin-top: 0.5rem;
+        font-size: 0.8125rem;
+        line-height: 1.5;
+        color: var(--color-text-tertiary);
+        text-align: center;
+    }
+
+    .brew__note code {
+        font-family: var(--font-mono);
+        font-size: 0.9em;
     }
 
     .brew__box {

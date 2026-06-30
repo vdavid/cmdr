@@ -238,9 +238,9 @@
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
 
-  "onboarding.stepAi.bannerBody.stuck": "You said you wanted to enable full disk access, but Cmdr doesn''t seem to have gotten it. You might need to restart the app (do it now, we''ll continue from here!), or go to your <settingsLink>{systemSettings} &gt; Privacy &amp; Security &gt; Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little \"+\" button at the bottom.",
+  "onboarding.stepAi.bannerBody.stuck": "You said you wanted to enable full disk access, but Cmdr doesn''t seem to have gotten it. You might need to restart the app (do it now, we''ll continue from here!), or go to your <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little \"+\" button at the bottom.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "description": "Body of the warning banner when Full Disk Access didn't take: suggests restarting or opening the exact System Settings pane. <settingsLink> wraps the clickable text that opens that pane; keep the breadcrumb path inside it. {systemSettings} is the localized macOS \"System Settings\" app name supplied by the OS, so don't translate or alter it. \"Privacy & Security\" and \"Full Disk Access\" are the macOS settings pane names (use the exact macOS wording in your locale). The literal \"&gt;\" and \"&amp;\" are HTML entities for \">\" and \"&\" and must stay as written. \"Cmdr\" is the product name. Keep the literal \"+\" character.",
+    "description": "Body of the warning banner when Full Disk Access didn't take: suggests restarting or opening the exact System Settings pane. <settingsLink> wraps the clickable text that opens that pane; keep the breadcrumb path inside it. {systemSettings} is the localized macOS \"System Settings\" app name supplied by the OS, so don't translate or alter it. \"Privacy & Security\" and \"Full Disk Access\" are the macOS settings pane names (use the exact macOS wording in your locale). Use literal \">\" and \"&\" characters in the breadcrumb (not HTML entities). \"Cmdr\" is the product name. Keep the literal \"+\" character.",
     "placeholders": {
       "systemSettings": "the macOS System Settings app name, already localized by the OS (for example \"System Settings\")"
     },
@@ -477,15 +477,15 @@
     "screenshot": "onboarding-beta.png"
   },
 
-  "onboarding.stepBeta.feedback.inAppBound": "<strong>In-app:</strong> See <strong>Help &gt; Send feedback…</strong> in the menu, or find it in the command palette with <chip></chip>.",
+  "onboarding.stepBeta.feedback.inAppBound": "<strong>In-app:</strong> See <strong>Help > Send feedback…</strong> in the menu, or find it in the command palette with <chip></chip>.",
   "@onboarding.stepBeta.feedback.inAppBound": {
-    "description": "Feedback-channel item describing the in-app feedback option, shown when the command-palette shortcut is bound. <strong> bolds the leading \"In-app:\" label and the menu path. <chip> wraps the visual key-shortcut chip for the command palette (no inner text; leave it empty). \"Help > Send feedback…\" is the menu path (keep the trailing ellipsis); the literal \"&gt;\" is the HTML entity for \">\" and must stay as written. \"command palette\" is the app's searchable command list.",
+    "description": "Feedback-channel item describing the in-app feedback option, shown when the command-palette shortcut is bound. <strong> bolds the leading \"In-app:\" label and the menu path. <chip> wraps the visual key-shortcut chip for the command palette (no inner text; leave it empty). \"Help > Send feedback…\" is the menu path (keep the trailing ellipsis); it uses a literal \">\" separator (not an HTML entity). \"command palette\" is the app's searchable command list.",
     "screenshot": "onboarding-beta.png"
   },
 
-  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>In-app:</strong> See <strong>Help &gt; Send feedback…</strong> in the menu, or find it in the command palette.",
+  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>In-app:</strong> See <strong>Help > Send feedback…</strong> in the menu, or find it in the command palette.",
   "@onboarding.stepBeta.feedback.inAppUnbound": {
-    "description": "Feedback-channel item describing the in-app feedback option, shown when no command-palette shortcut is bound (so no key chip is mentioned). <strong> bolds the leading \"In-app:\" label and the menu path. \"Help > Send feedback…\" is the menu path (keep the trailing ellipsis); the literal \"&gt;\" is the HTML entity for \">\" and must stay as written. \"command palette\" is the app's searchable command list."
+    "description": "Feedback-channel item describing the in-app feedback option, shown when no command-palette shortcut is bound (so no key chip is mentioned). <strong> bolds the leading \"In-app:\" label and the menu path. \"Help > Send feedback…\" is the menu path (keep the trailing ellipsis); it uses a literal \">\" separator (not an HTML entity). \"command palette\" is the app's searchable command list."
   },
 
   "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Add issues, vote on issues.",
@@ -506,9 +506,9 @@
     "screenshot": "onboarding-beta.png"
   },
 
-  "onboarding.stepBeta.star": "And one more very important way you can help in one minute: star, watch, and fork the repo <github>here on GitHub</github>. Homebrew wants me to present 225 stars, 50 forks, and 50 watches to enable <code>brew install cmdr</code>.",
+  "onboarding.stepBeta.star": "And one more very important way you can help in one minute: star, watch, and fork the repo <github>here on GitHub</github>. Homebrew wants me to present 225 stars, 90 forks, and 90 watches to enable <code>brew install cmdr</code>.",
   "@onboarding.stepBeta.star": {
-    "description": "Asks the user to star, watch, and fork the GitHub repository to help reach Homebrew's thresholds. <github> wraps the repo link. <code> wraps the literal install command, which must NOT be translated. \"star\", \"watch\", and \"fork\" are GitHub actions; \"repo\" is the code repository; \"Homebrew\" and \"GitHub\" are brand names; all stay untranslated. The numbers 225, 50, and 50 are Homebrew's required thresholds.",
+    "description": "Asks the user to star, watch, and fork the GitHub repository to help reach Homebrew's thresholds. <github> wraps the repo link. <code> wraps the literal install command, which must NOT be translated. \"star\", \"watch\", and \"fork\" are GitHub actions; \"repo\" is the code repository; \"Homebrew\" and \"GitHub\" are brand names; all stay untranslated. The numbers 225, 90, and 90 are Homebrew's required thresholds.",
     "screenshot": "onboarding-beta.png"
   },
 

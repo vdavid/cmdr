@@ -153,9 +153,9 @@
   "@onboarding.stepAi.bannerTitle.stuck": {
     "sourceHash": "88c9c19"
   },
-  "onboarding.stepAi.bannerBody.stuck": "Je gaf aan volledige schijftoegang in te willen schakelen, maar Cmdr lijkt die niet te hebben gekregen. Misschien moet je de app opnieuw starten (doe het nu, we gaan hier verder!), of ga naar je <settingsLink>{systemSettings} &gt; Privacy &amp; Security &gt; Full Disk Access</settingsLink> en zoek Cmdr, of voeg het handmatig toe met de kleine knop ‘+’ onderaan.",
+  "onboarding.stepAi.bannerBody.stuck": "Je gaf aan volledige schijftoegang in te willen schakelen, maar Cmdr lijkt die niet te hebben gekregen. Misschien moet je de app opnieuw starten (doe het nu, we gaan hier verder!), of ga naar je <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> en zoek Cmdr, of voeg het handmatig toe met de kleine knop ‘+’ onderaan.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "9b83d53"
+    "sourceHash": "79d5765"
   },
   "onboarding.stepAi.welcomeLinux.title": "Welkom bij Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -305,13 +305,13 @@
   "@onboarding.stepBeta.feedbackIntro": {
     "sourceHash": "4e238dd"
   },
-  "onboarding.stepBeta.feedback.inAppBound": "<strong>In de app:</strong> Zie <strong>Help &gt; Stuur feedback…</strong> in het menu, of vind het in het opdrachtenpalet met <chip></chip>.",
+  "onboarding.stepBeta.feedback.inAppBound": "<strong>In de app:</strong> Zie <strong>Help > Stuur feedback…</strong> in het menu, of vind het in het opdrachtenpalet met <chip></chip>.",
   "@onboarding.stepBeta.feedback.inAppBound": {
-    "sourceHash": "88ec070"
+    "sourceHash": "8fabdee"
   },
-  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>In de app:</strong> Zie <strong>Help &gt; Stuur feedback…</strong> in het menu, of vind het in het opdrachtenpalet.",
+  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>In de app:</strong> Zie <strong>Help > Stuur feedback…</strong> in het menu, of vind het in het opdrachtenpalet.",
   "@onboarding.stepBeta.feedback.inAppUnbound": {
-    "sourceHash": "b7f7fb3"
+    "sourceHash": "26447c9"
   },
   "onboarding.stepBeta.feedback.github": "<github>GitHub</github>: Voeg issues toe, stem op issues.",
   "@onboarding.stepBeta.feedback.github": {
@@ -325,9 +325,9 @@
   "@onboarding.stepBeta.feedback.call": {
     "sourceHash": "5e198ee"
   },
-  "onboarding.stepBeta.star": "En nog een heel belangrijke manier om in één minuut te helpen: ster, volg en fork de repo <github>hier op GitHub</github>. Homebrew wil dat ik 225 sterren, 50 forks en 50 volgers laat zien om <code>brew install cmdr</code> mogelijk te maken.",
+  "onboarding.stepBeta.star": "En nog een heel belangrijke manier om in één minuut te helpen: ster, volg en fork de repo <github>hier op GitHub</github>. Homebrew wil dat ik 225 sterren, 90 forks en 90 volgers laat zien om <code>brew install cmdr</code> mogelijk te maken.",
   "@onboarding.stepBeta.star": {
-    "sourceHash": "6e978a7"
+    "sourceHash": "d88a7e2"
   },
   "onboarding.stepBeta.analyticsLede": "Om te leren wat wel en niet werkt, stuurt Cmdr tijdens de open bèta anonieme gebruiksstatistieken: welke functies worden gebruikt en hoe vaak, nooit iets uit je bestanden. Het staat nu aan en je kunt het op elk moment uitzetten.",
   "@onboarding.stepBeta.analyticsLede": {

@@ -151,9 +151,9 @@
   "@onboarding.stepAi.bannerTitle.stuck": {
     "sourceHash": "88c9c19"
   },
-  "onboarding.stepAi.bannerBody.stuck": "你说想开启完全磁盘访问权限，但 Cmdr 似乎还没拿到。你可能需要重启应用（现在就重启吧，我们会从这里继续！），或者前往你的 <settingsLink>{systemSettings} &gt; 隐私与安全性 &gt; 完全磁盘访问权限</settingsLink> 找到 Cmdr，或者用底部那个小小的“+”按钮手动添加它。",
+  "onboarding.stepAi.bannerBody.stuck": "你说想开启完全磁盘访问权限，但 Cmdr 似乎还没拿到。你可能需要重启应用（现在就重启吧，我们会从这里继续！），或者前往你的 <settingsLink>{systemSettings} > 隐私与安全性 > 完全磁盘访问权限</settingsLink> 找到 Cmdr，或者用底部那个小小的“+”按钮手动添加它。",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "9b83d53"
+    "sourceHash": "79d5765"
   },
   "onboarding.stepAi.welcomeLinux.title": "欢迎使用 Cmdr！",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -303,13 +303,13 @@
   "@onboarding.stepBeta.feedbackIntro": {
     "sourceHash": "4e238dd"
   },
-  "onboarding.stepBeta.feedback.inAppBound": "<strong>应用内：</strong>在菜单中找到 <strong>帮助 &gt; 发送反馈…</strong>，或在命令面板中用 <chip></chip> 找到它。",
+  "onboarding.stepBeta.feedback.inAppBound": "<strong>应用内：</strong>在菜单中找到 <strong>帮助 > 发送反馈…</strong>，或在命令面板中用 <chip></chip> 找到它。",
   "@onboarding.stepBeta.feedback.inAppBound": {
-    "sourceHash": "88ec070"
+    "sourceHash": "8fabdee"
   },
-  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>应用内：</strong>在菜单中找到 <strong>帮助 &gt; 发送反馈…</strong>，或在命令面板中找到它。",
+  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>应用内：</strong>在菜单中找到 <strong>帮助 > 发送反馈…</strong>，或在命令面板中找到它。",
   "@onboarding.stepBeta.feedback.inAppUnbound": {
-    "sourceHash": "b7f7fb3"
+    "sourceHash": "26447c9"
   },
   "onboarding.stepBeta.feedback.github": "<github>GitHub</github>：提交 issue，为 issue 投票。",
   "@onboarding.stepBeta.feedback.github": {
@@ -323,9 +323,9 @@
   "@onboarding.stepBeta.feedback.call": {
     "sourceHash": "5e198ee"
   },
-  "onboarding.stepBeta.star": "还有一个非常重要、一分钟就能帮上忙的方式：在 <github>GitHub 上这里</github> 给仓库点 star、watch 和 fork。Homebrew 要求我拿出 225 个 star、50 个 fork 和 50 个 watch，才能启用 <code>brew install cmdr</code>。",
+  "onboarding.stepBeta.star": "还有一个非常重要、一分钟就能帮上忙的方式：在 <github>GitHub 上这里</github> 给仓库点 star、watch 和 fork。Homebrew 要求我拿出 225 个 star、90 个 fork 和 90 个 watch，才能启用 <code>brew install cmdr</code>。",
   "@onboarding.stepBeta.star": {
-    "sourceHash": "6e978a7"
+    "sourceHash": "d88a7e2"
   },
   "onboarding.stepBeta.analyticsLede": "为了了解哪些有效、哪些无效，在公开测试期间 Cmdr 会发送匿名使用统计：哪些功能被用到、用得多频繁，绝不包含你文件里的任何内容。它现在是开启的，你随时可以关掉。",
   "@onboarding.stepBeta.analyticsLede": {

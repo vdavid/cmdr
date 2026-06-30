@@ -11,11 +11,14 @@ Commander, but on macOS.
 Give it a try: [download for macOS](https://getcmdr.com), or install with Homebrew:
 
 ```bash
-brew tap vdavid/tap && brew install --cask cmdr
+brew tap vdavid/tap && brew trust --cask vdavid/tap/cmdr && brew install --cask cmdr
 ```
 
+The `brew trust` step is new in Homebrew 6: it asks you to okay any third-party tap once before it runs. Cmdr's tap is
+one of those for now.
+
 **Note:** If you'd love a nice short `brew install --cask cmdr`, **star**, **watch**, and **fork** this repo! Homebrew
-needs 225 stars, 50 watchers, and 50 forks before it allows apps to its main tap.
+needs 225 stars, 90 watchers, and 90 forks before it allows apps to its main tap.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="brand/screenshots/app-main-dark.png" />
@@ -45,11 +48,12 @@ Core features:
 Download it from [getcmdr.com](https://getcmdr.com), or install with Homebrew:
 
 ```bash
-brew tap vdavid/tap && brew install --cask cmdr
+brew tap vdavid/tap && brew trust --cask vdavid/tap/cmdr && brew install --cask cmdr
 ```
 
+The `brew trust` step is Homebrew 6's new safety gate: it has you okay a third-party tap once before it runs any code.
 A star, watch, or fork on [the repo](https://github.com/vdavid/cmdr) helps Cmdr reach Homebrew's notability bar (225
-stars), which unlocks a tap-free `brew install --cask cmdr`.
+stars), which unlocks a tap-free, trust-free `brew install --cask cmdr`.
 
 Windows and Linux users: sorry, you'll need to wait. The Rust+Tauri stack allows for cross-platform deployment, but the
 app uses OS-specific features by nature, so I've only had time to write and test it on macOS for now.

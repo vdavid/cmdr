@@ -175,7 +175,7 @@ describe('onboarding step 2 (AI) parity (en)', () => {
     )
     expect(tString('onboarding.stepAi.bannerTitle.stuck')).toBe("Cmdr doesn't seem to have full disk access yet")
     expect(renderRich('onboarding.stepAi.bannerBody.stuck', ['settingsLink'], { systemSettings: SYS_SETTINGS })).toBe(
-      'You said you wanted to enable full disk access, but Cmdr doesn\'t seem to have gotten it. You might need to restart the app (do it now, we\'ll continue from here!), or go to your <settingsLink>System Settings &gt; Privacy &amp; Security &gt; Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little "+" button at the bottom.',
+      'You said you wanted to enable full disk access, but Cmdr doesn\'t seem to have gotten it. You might need to restart the app (do it now, we\'ll continue from here!), or go to your <settingsLink>System Settings > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little "+" button at the bottom.',
     )
   })
 
@@ -259,10 +259,10 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
       'Your feedback helps me spot bugs and prioritize features. Here is how you can engage:',
     )
     expect(renderRich('onboarding.stepBeta.feedback.inAppBound', ['strong', 'chip'])).toBe(
-      '<strong>In-app:</strong> See <strong>Help &gt; Send feedback…</strong> in the menu, or find it in the command palette with <chip></chip>.',
+      '<strong>In-app:</strong> See <strong>Help > Send feedback…</strong> in the menu, or find it in the command palette with <chip></chip>.',
     )
     expect(renderRich('onboarding.stepBeta.feedback.inAppUnbound', ['strong'])).toBe(
-      '<strong>In-app:</strong> See <strong>Help &gt; Send feedback…</strong> in the menu, or find it in the command palette.',
+      '<strong>In-app:</strong> See <strong>Help > Send feedback…</strong> in the menu, or find it in the command palette.',
     )
     expect(renderRich('onboarding.stepBeta.feedback.github', ['github'])).toBe(
       '<github>GitHub</github>: Add issues, vote on issues.',
@@ -274,7 +274,7 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
       "<call>Schedule a call with me</call>: I won't be doing this for very long, but while Cmdr is an open beta, I'd love to talk to you about your files!",
     )
     expect(renderRich('onboarding.stepBeta.star', ['github', 'code'])).toBe(
-      'And one more very important way you can help in one minute: star, watch, and fork the repo <github>here on GitHub</github>. Homebrew wants me to present 225 stars, 50 forks, and 50 watches to enable <code>brew install cmdr</code>.',
+      'And one more very important way you can help in one minute: star, watch, and fork the repo <github>here on GitHub</github>. Homebrew wants me to present 225 stars, 90 forks, and 90 watches to enable <code>brew install cmdr</code>.',
     )
   })
 

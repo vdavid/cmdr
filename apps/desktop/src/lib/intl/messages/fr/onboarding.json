@@ -151,9 +151,9 @@
   "@onboarding.stepAi.bannerTitle.stuck": {
     "sourceHash": "88c9c19"
   },
-  "onboarding.stepAi.bannerBody.stuck": "Vous avez dit vouloir activer l''accès complet au disque, mais Cmdr ne semble pas l''avoir obtenu. Vous devrez peut-être redémarrer l''app (faites-le maintenant, nous continuerons d''ici !), ou aller dans vos <settingsLink>{systemSettings} &gt; Privacy &amp; Security &gt; Full Disk Access</settingsLink> et trouver Cmdr, ou l''ajouter manuellement avec le petit bouton « + » en bas.",
+  "onboarding.stepAi.bannerBody.stuck": "Vous avez dit vouloir activer l''accès complet au disque, mais Cmdr ne semble pas l''avoir obtenu. Vous devrez peut-être redémarrer l''app (faites-le maintenant, nous continuerons d''ici !), ou aller dans vos <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> et trouver Cmdr, ou l''ajouter manuellement avec le petit bouton « + » en bas.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "9b83d53"
+    "sourceHash": "79d5765"
   },
   "onboarding.stepAi.welcomeLinux.title": "Bienvenue dans Cmdr !",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -303,13 +303,13 @@
   "@onboarding.stepBeta.feedbackIntro": {
     "sourceHash": "4e238dd"
   },
-  "onboarding.stepBeta.feedback.inAppBound": "<strong>Dans l''app :</strong> voyez <strong>Aide &gt; Envoyer un retour…</strong> dans le menu, ou trouvez-la dans la palette de commandes avec <chip></chip>.",
+  "onboarding.stepBeta.feedback.inAppBound": "<strong>Dans l''app :</strong> voyez <strong>Aide > Envoyer un retour…</strong> dans le menu, ou trouvez-la dans la palette de commandes avec <chip></chip>.",
   "@onboarding.stepBeta.feedback.inAppBound": {
-    "sourceHash": "88ec070"
+    "sourceHash": "8fabdee"
   },
-  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>Dans l''app :</strong> voyez <strong>Aide &gt; Envoyer un retour…</strong> dans le menu, ou trouvez-la dans la palette de commandes.",
+  "onboarding.stepBeta.feedback.inAppUnbound": "<strong>Dans l''app :</strong> voyez <strong>Aide > Envoyer un retour…</strong> dans le menu, ou trouvez-la dans la palette de commandes.",
   "@onboarding.stepBeta.feedback.inAppUnbound": {
-    "sourceHash": "b7f7fb3"
+    "sourceHash": "26447c9"
   },
   "onboarding.stepBeta.feedback.github": "<github>GitHub</github> : ajoutez des tickets, votez sur les tickets.",
   "@onboarding.stepBeta.feedback.github": {
@@ -323,9 +323,9 @@
   "@onboarding.stepBeta.feedback.call": {
     "sourceHash": "5e198ee"
   },
-  "onboarding.stepBeta.star": "Et une autre façon très importante de m''aider en une minute : ajoutez une étoile, suivez et forkez le dépôt <github>ici sur GitHub</github>. Homebrew me demande de présenter 225 étoiles, 50 forks et 50 suiveurs pour activer <code>brew install cmdr</code>.",
+  "onboarding.stepBeta.star": "Et une autre façon très importante de m''aider en une minute : ajoutez une étoile, suivez et forkez le dépôt <github>ici sur GitHub</github>. Homebrew me demande de présenter 225 étoiles, 90 forks et 90 suiveurs pour activer <code>brew install cmdr</code>.",
   "@onboarding.stepBeta.star": {
-    "sourceHash": "6e978a7"
+    "sourceHash": "d88a7e2"
   },
   "onboarding.stepBeta.analyticsLede": "Pour savoir ce qui fonctionne et ce qui ne fonctionne pas, pendant la bêta ouverte Cmdr envoie des statistiques d''usage anonymes : quelles fonctionnalités sont utilisées et à quelle fréquence, jamais rien provenant de vos fichiers. C''est activé pour le moment, et vous pouvez le désactiver à tout moment.",
   "@onboarding.stepBeta.analyticsLede": {
