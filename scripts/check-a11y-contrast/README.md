@@ -1,6 +1,7 @@
 # check-a11y-contrast
 
-Design-time WCAG 2.2 contrast checker for the Cmdr desktop app.
+Design-time contrast checker for the Cmdr desktop app: WCAG 2.2 AA (the primary gate) plus an enforced APCA Lc-45
+perceptual floor.
 
 ## Why
 
@@ -23,11 +24,11 @@ go run ./scripts/check-a11y-contrast
 # Via check runner
 pnpm check a11y-contrast
 
-# Verbose (show warnings from unresolvable values)
+# Verbose (warnings from unresolvable values + the full APCA advisory detail)
 go run ./scripts/check-a11y-contrast -- --verbose
 ```
 
-Exit code 0 on clean, 1 on any violation.
+Exit code 0 on clean, 1 on any violation (a WCAG pair below threshold OR an APCA pair below the Lc-45 floor).
 
 ## What it checks
 
@@ -70,6 +71,24 @@ stripped (those carry old-WebKit hex fallbacks that would otherwise overwrite th
 **every** `@media (prefers-color-scheme: dark)` block is descended into rather than only the first (the codebase has
 more than one — for example a small block carrying the selection-fg fallback rule sits before the main dark token
 table).
+
+## APCA floor (perceptual second opinion)
+
+On top of the WCAG gate, the tool runs every evaluated pair through APCA (the Accessible Perceptual Contrast Algorithm,
+the method explored for WCAG 3), using the canonical `apca-w3` 0.1.9 (W3) constants. APCA predicts real readability
+better than WCAG 2: it's polarity-aware (dark-on-light and light-on-dark differ, which WCAG 2 treats as identical) and
+accounts for font size and weight. Output is `Lc` ("lightness contrast"), signed, |Lc| ~0..108. See `apca.go`.
+
+- **Enforced**: any pair below **APCA Lc 45** (APCA's "absolute minimum for any text") fails the check, alongside WCAG.
+- **Advisory** (printed only with `-verbose`): the full `|Lc|` distribution, a "blast radius if bar X were the gate"
+  table, a zoom sweep (zoom relaxes the size-based target; it does not change `Lc`), and every pair below its
+  font-size/weight-aware target. Non-verbose runs print a one-line summary plus the floor verdict.
+- **Why a floor, not the full APCA ladder**: APCA's preferred body level (Lc 75–90) would flag most of the app's
+  14px/400 text — that 45–60 band is design intent (de-emphasized placeholders, hints, disabled), not a bug. We gate
+  only the hard floor and keep the muted band advisory.
+- **Status** (verified 2026-06-30): APCA was removed from the WCAG 3 draft (2023) and now develops independently (ARC);
+  its core math has been stable since 2022, which is why we enforce one conservative bar and keep the rest advisory.
+  WCAG 2.2 AA stays the primary, legally-recognized gate.
 
 ## Output
 
@@ -117,7 +136,9 @@ analyzer.go          Walks parsed rules per mode, tracks cascade state by
                      compound class set, emits Finding per (selector, mode) pair.
                      Uses `evaluateAt` to run worst-case across accent variants
                      when the pair is accent-sensitive.
-reporter.go          Pretty prints violations and optional warnings.
+reporter.go          Pretty prints WCAG violations and optional warnings.
+apca.go              APCA 0.1.9 (W3) Lc math, the font-size/weight target
+                     ladder, the enforced Lc-45 floor, and the advisory report.
 accent_matrix.go     Runtime accent variants (the 8 macOS system accents +
                      Cmdr gold) and the per-variant VarTable override.
 size_tiers.go        `.size-*` utility classes × known container bgs, since
@@ -140,6 +161,8 @@ Tests:
 - `parser_test.go`: app.css + Svelte parsing, selector extraction.
 - `analyzer_test.go`: cascade inheritance, known false-positive cases.
 - `accent_matrix_test.go`: variant sweep + per-variant resolution.
+- `apca_test.go`: APCA reference values (black-on-white ≈ Lc 106, white-on-black ≈ −108), polarity asymmetry, target
+  ladder.
 
 Diagnostic helpers (skipped by default; gated on env vars):
 
@@ -163,7 +186,8 @@ Edit `namedColors` map in `contrast.go`.
 
 ### Tune thresholds
 
-WCAG AA (current) uses 4.5:1 / 3:1. For AAA, change the constants in `analyzer.evaluate` (7:1 / 4.5:1).
+WCAG AA (current) uses 4.5:1 / 3:1. For AAA, change the constants in `analyzer.evaluate` (7:1 / 4.5:1). The enforced
+APCA floor is `apcaFloor` in `apca.go` (Lc 45); the advisory size/weight target ladder is `apcaTiers` there.
 
 ### Add an allowlist for intentional violations
 

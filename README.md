@@ -42,6 +42,8 @@ Core features:
 - **Keyboard-first**: do anything without touching your mouse, using your familiar shortcuts.
 - **Blazing fast file operations**: copy, move, rename, and delete with a few keystrokes.
 - **Optional, privacy-first AI**: search and select with natural language, all on your Mac.
+- **Easy on the eyes**: real dark and light modes, and every text color is verified against both WCAG 2.2 AA and APCA,
+  the modern perceptual contrast method, so nothing falls below APCA Lc 45.
 
 ## Installation
 
