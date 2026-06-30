@@ -30,6 +30,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { describeUsbSpeed, type VolumeInfo } from '../types'
+    import { filesystemLabel } from './filesystem-label'
     import { isVolumeEjectable } from './eject-predicate'
     import { buildFavoriteTooltip } from './favorite-tooltip'
     import { tString } from '$lib/intl/messages.svelte'
@@ -170,6 +171,8 @@
      * volume slot, empty path).
      */
     const currentVolumeName = $derived(currentVolume?.name ?? tString('fileExplorer.navigation.volumeFallback'))
+    /** Filesystem name for the closed-picker tooltip; null for non-real-FS volumes (shown as no tooltip). */
+    const currentVolumeFsLabel = $derived(currentVolume ? filesystemLabel(currentVolume) : null)
     const currentVolumeIcon = $derived(getIconForVolume(currentVolume))
 
     // Generic macOS folder icon used as fallback when a volume has no icon (for example,
@@ -708,7 +711,7 @@
 <div class="volume-breadcrumb" bind:this={dropdownRef}>
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <span class="volume-name" class:is-open={isOpen} onclick={handleToggle}>
+    <span class="volume-name" class:is-open={isOpen} use:tooltip={currentVolumeFsLabel ?? ''} onclick={handleToggle}>
         {#if currentVolume && isRestricted(currentVolume.path) && dirIconFallback}
             <!-- TCC-denied paths: `NSWorkspace.iconForFile` returns a confusing "no
                  access" placeholder. Use the generic Aqua folder icon instead. -->
@@ -817,6 +820,7 @@
                 {#each group.items as volume (volume.id)}
                     {@const isFavorite = volume.category === 'favorite'}
                     {@const favIndex = isFavorite ? favorites.findIndex((f) => f.id === volume.id) : -1}
+                    {@const fsLabel = filesystemLabel(volume)}
                     <!-- svelte-ignore a11y_mouse_events_have_key_events -->
                     <div
                         class="volume-item"
@@ -888,6 +892,9 @@
                             />
                         {:else}
                             <span class="volume-label">{volume.name}</span>
+                        {/if}
+                        {#if fsLabel}
+                            <span class="volume-fs">{fsLabel}</span>
                         {/if}
                         {#if isRestricted(volume.path)}
                             <span class="restricted-indicator" aria-hidden="true">
@@ -1190,6 +1197,16 @@
         flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Filesystem name tag, sitting just right of the volume name. Quiet
+       secondary text so it reads as metadata, not a second title. */
+    .volume-fs {
+        flex-shrink: 0;
+        margin-left: var(--spacing-sm);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
         white-space: nowrap;
     }
 
