@@ -2,7 +2,10 @@
     import { onDestroy, onMount, tick } from 'svelte'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { trackOwnRect } from '$lib/window-positioning'
+    import { initializeSettings } from '$lib/settings'
+    import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
+    import { getAppLogger } from '$lib/logging/logger'
     import DebugAppearancePanel from './DebugAppearancePanel.svelte'
     import DebugClosedTabsPanel from './DebugClosedTabsPanel.svelte'
     import DebugDriveIndexPanel from './DebugDriveIndexPanel.svelte'
@@ -106,6 +109,8 @@
         },
     ]
 
+    const log = getAppLogger('debug')
+
     let pageElement: HTMLElement | undefined = $state()
     let selected: SectionId = $state('appearance')
     let unlistenRectTracking: (() => void) | undefined
@@ -147,7 +152,17 @@
         if (loadingScreen) loadingScreen.style.display = 'none'
         void tick().then(() => pageElement?.focus())
 
-        await initReduceTransparency()
+        try {
+            // Load settings before the accent init reads `appearance.appColor`, so the
+            // window follows the app-wide accent (system color or Cmdr gold) and tracks
+            // it live, instead of resting on the Cmdr-gold CSS fallback. Light/dark/system
+            // mode already applies app-wide via Tauri's `setTheme`, so it needs no work here.
+            await initializeSettings()
+            await initAccentColor()
+            await initReduceTransparency()
+        } catch (error) {
+            log.error('Failed to initialize debug window appearance: {error}', { error })
+        }
 
         // Save position/size while open so reopening lands in the same spot
         // (in-memory cache, reset on app start).
@@ -156,6 +171,7 @@
 
     onDestroy(() => {
         unlistenRectTracking?.()
+        cleanupAccentColor()
         cleanupReduceTransparency()
     })
 
