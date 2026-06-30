@@ -5,6 +5,64 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+See/set macOS Finder colored tags. Nicer Drive indexing UI, live folder sizes during scans, plus network and phone scans
+finish several times faster than before.
+
+### Added
+
+- Add macOS Finder colored tags ([86a9ca38](https://github.com/vdavid/cmdr/commit/86a9ca38),
+  [6039e1a6](https://github.com/vdavid/cmdr/commit/6039e1a6),
+  [4d87d4ec](https://github.com/vdavid/cmdr/commit/4d87d4ec))
+- Show a per-drive indexing checklist (find files, save list, compute sizes, catch up) with live counts and a per-step
+  ETA ([4a74312f](https://github.com/vdavid/cmdr/commit/4a74312f),
+  [a92f9cdb](https://github.com/vdavid/cmdr/commit/a92f9cdb),
+  [138bdfa8](https://github.com/vdavid/cmdr/commit/138bdfa8),
+  [519a27ea](https://github.com/vdavid/cmdr/commit/519a27ea))
+
+### Changed
+
+- Show folder sizes growing live during a network drive or phone scan, not only on the local disk
+  ([5a86abaf](https://github.com/vdavid/cmdr/commit/5a86abaf),
+  [ee9ee757](https://github.com/vdavid/cmdr/commit/ee9ee757))
+- Speed up network and phone drive scans by listing directories concurrently, dropping long scans from minutes to
+  seconds ([a003f004](https://github.com/vdavid/cmdr/commit/a003f004),
+  [6518b565](https://github.com/vdavid/cmdr/commit/6518b565))
+
+### Fixed
+
+- Fix the indexing progress counter freezing mid-scan, making a healthy scan look stuck
+  ([7568931c](https://github.com/vdavid/cmdr/commit/7568931c))
+- Fix one drive's scan lighting the size-updating hourglass on folders of every drive
+  ([d4105d98](https://github.com/vdavid/cmdr/commit/d4105d98))
+- Fix a failed local scan sticking on a spinner instead of offering a rescan
+  ([61c66a0c](https://github.com/vdavid/cmdr/commit/61c66a0c))
+- Fix a network first scan stalling for hours on NAS snapshot folders
+  ([bb64ad38](https://github.com/vdavid/cmdr/commit/bb64ad38))
+- Fix a reindex wedging on a large set of changes ([12e98e52](https://github.com/vdavid/cmdr/commit/12e98e52),
+  [e4e13ed9](https://github.com/vdavid/cmdr/commit/e4e13ed9))
+- Fix folder size totals double-counting hardlinked files during a rescan
+  ([ca4151e6](https://github.com/vdavid/cmdr/commit/ca4151e6))
+- Fix search, Go to path, and AI navigation sometimes opening a path on the wrong drive
+  ([3024839e](https://github.com/vdavid/cmdr/commit/3024839e),
+  [b029c435](https://github.com/vdavid/cmdr/commit/b029c435),
+  [ab44a722](https://github.com/vdavid/cmdr/commit/ab44a722),
+  [f6e93c23](https://github.com/vdavid/cmdr/commit/f6e93c23))
+- Stop the file index wasting disk space after a version upgrade
+  ([1536d307](https://github.com/vdavid/cmdr/commit/1536d307))
+
+### Non-app
+
+- Refactor navigation onto a first-class (volume, path) Location type, deleting bare-path navigation
+  ([bb6ef69c](https://github.com/vdavid/cmdr/commit/bb6ef69c),
+  [3eabcec5](https://github.com/vdavid/cmdr/commit/3eabcec5),
+  [e2f4e601](https://github.com/vdavid/cmdr/commit/e2f4e601),
+  [0d189b23](https://github.com/vdavid/cmdr/commit/0d189b23))
+- Bump smb2 to 0.11.4, demoting per-frame SMB protocol logs to TRACE
+  ([676e24b9](https://github.com/vdavid/cmdr/commit/676e24b9),
+  [5e6d163e](https://github.com/vdavid/cmdr/commit/5e6d163e))
+
 ## [0.30.0] - 2026-06-28
 
 See folder sizes while indexing is going, browse your phone while a copy/move/delete is going, and get better

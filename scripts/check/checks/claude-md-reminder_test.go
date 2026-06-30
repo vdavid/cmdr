@@ -73,7 +73,7 @@ func TestReminder_SourceChangeWithoutDocUpdate_Warns(t *testing.T) {
 	if !strings.Contains(res.Message, "apps/desktop/") {
 		t.Errorf("expected message to mention apps/desktop/, got: %s", res.Message)
 	}
-	if !strings.Contains(res.Message, "Just a friendly reminder") {
+	if !strings.Contains(res.Message, "Friendly reminder") {
 		t.Errorf("expected friendly tone, got: %s", res.Message)
 	}
 }

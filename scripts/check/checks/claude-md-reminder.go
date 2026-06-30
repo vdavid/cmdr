@@ -94,7 +94,7 @@ func RunClaudeMdReminder(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	msg := fmt.Sprintf("%d %s with source changes but no CLAUDE.md or DETAILS.md update:\n%s"+
-		"Just a friendly reminder: if your changes affect the documented architecture, decisions, or gotchas, consider updating these (must-knows → CLAUDE.md, depth → DETAILS.md).",
+		"Friendly reminder: if your changes affect the documented architecture, decisions, or gotchas, updating D.md (default) or C.md (must knows)",
 		len(misses),
 		Pluralize(len(misses), "directory", "directories"),
 		sb.String(),
