@@ -5,14 +5,15 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.32.0] - 2026-07-01
 
 Design tweaks: colors, icons, dropdown design, and text alignment. Detect and display file systems, disallow copying
 4GB+ files to FAT32 volumes.
 
 ### Added
 
-- Block copying or moving a file too large for the destination drive ([f177b604](https://github.com/vdavid/cmdr/commit/f177b604),
+- Block copying or moving a file too large for the destination drive
+  ([f177b604](https://github.com/vdavid/cmdr/commit/f177b604),
   [e0450ca8](https://github.com/vdavid/cmdr/commit/e0450ca8))
 - Show each real volume's filesystem (APFS, exFAT, FAT32, ext4, etc.) in the volume picker
   ([c34d10de](https://github.com/vdavid/cmdr/commit/c34d10de))
