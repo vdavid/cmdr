@@ -5,6 +5,52 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Design tweaks: colors, icons, dropdown design, and text alignment. Detect and display file systems, disallow copying
+4GB+ files to FAT32 volumes.
+
+### Added
+
+- Block copying or moving a file too large for the destination drive ([f177b604](https://github.com/vdavid/cmdr/commit/f177b604),
+  [e0450ca8](https://github.com/vdavid/cmdr/commit/e0450ca8))
+- Show each real volume's filesystem (APFS, exFAT, FAT32, ext4, etc.) in the volume picker
+  ([c34d10de](https://github.com/vdavid/cmdr/commit/c34d10de))
+
+### Changed
+
+- Redesign every modal dialog to the macOS layout: left-aligned titles and text, right-aligned buttons, labeled Action
+  and Route rows, folder and file icons, and tooltips on the scan status icons
+  ([95191e2e](https://github.com/vdavid/cmdr/commit/95191e2e),
+  [b19ccb45](https://github.com/vdavid/cmdr/commit/b19ccb45))
+- Make the Copy/Move destination box forgiving: accept `~` and `~/…`, show the home folder in full, and create a missing
+  destination folder on confirm on every drive ([b19ccb45](https://github.com/vdavid/cmdr/commit/b19ccb45))
+- Replace UI emoji with themeable Lucide icons across dialogs, menus, settings, and the network browser for sharper
+  contrast in light and dark ([ffd03c90](https://github.com/vdavid/cmdr/commit/ffd03c90),
+  [5baba851](https://github.com/vdavid/cmdr/commit/5baba851),
+  [48f3561f](https://github.com/vdavid/cmdr/commit/48f3561f))
+- Redesign the Select dropdown as a native macOS pop-up button with a frosted-glass menu that opens over the trigger
+  ([643f4200](https://github.com/vdavid/cmdr/commit/643f4200))
+- Brighten dark-mode secondary text and the selection red for clearer readability
+  ([bbe29581](https://github.com/vdavid/cmdr/commit/bbe29581))
+
+### Fixed
+
+- Fix the Homebrew install silently failing for new users on Homebrew 6 (now runs the required tap-trust step), and stop
+  onboarding text showing literal `&gt;` and `&amp;` ([dbceea71](https://github.com/vdavid/cmdr/commit/dbceea71))
+
+### Non-app
+
+- Enforce an APCA Lc-45 contrast floor alongside WCAG 2.2 AA, clearing the last low-contrast spots so every text pair
+  passes both ([f6ccc188](https://github.com/vdavid/cmdr/commit/f6ccc188),
+  [e28b9a0e](https://github.com/vdavid/cmdr/commit/e28b9a0e),
+  [cf33ac82](https://github.com/vdavid/cmdr/commit/cf33ac82))
+- Add the full Tailwind v4 OKLCH color scale as reusable design tokens
+  ([3a2809b2](https://github.com/vdavid/cmdr/commit/3a2809b2))
+- Upgrade the Node toolchain to 26 and relax the dependency cooldown to 3 days
+  ([4c5ef483](https://github.com/vdavid/cmdr/commit/4c5ef483),
+  [714caeae](https://github.com/vdavid/cmdr/commit/714caeae))
+
 ## [0.31.0] - 2026-06-30
 
 See/set macOS Finder colored tags. Nicer Drive indexing UI, live folder sizes during scans, plus network and phone scans
