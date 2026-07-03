@@ -43,6 +43,11 @@ pub(super) fn emit_completion_analytics(event: &WriteCompleteEvent) {
             let trashed = event.operation_type == WriteOperationType::Trash;
             crate::analytics::posthog::capture("delete_used", json!({ "trashed": trashed, "item_count": bucket }));
         }
+        // Instant metadata ops (`manager::run_instant`) emit no completion
+        // analytics — they're transient and don't produce a `WriteCompleteEvent`.
+        // Explicit no-op arms (not a catch-all `_`) so a future op type can't
+        // silently skip analytics without a compile error here.
+        WriteOperationType::Rename | WriteOperationType::CreateFolder | WriteOperationType::CreateFile => {}
     }
 }
 

@@ -365,6 +365,84 @@ impl OperationManager {
         self.emit_changed();
     }
 
+    /// Runs a scan-free, near-instant op (rename / mkdir / mkfile) INLINE under
+    /// manager bookkeeping, returning the op's own result to the caller.
+    ///
+    /// Registers a `Running` record (so it shows in the queue snapshot and gets
+    /// an id), marks its volumes busy (the eject guard, via
+    /// `register_operation_status`), awaits `op` inline, then frees. It does NOT
+    /// reserve a lane and does NOT go through admission: a metadata syscall must
+    /// never queue behind a multi-minute transfer (an inline rename that hangs
+    /// until its IPC timeout is worse than useless, and the MTP/SMB connection
+    /// layer already serializes physical device access). The command layer wraps
+    /// this in its own IPC timeout; nothing here spawns.
+    ///
+    /// **RAII cleanup is mandatory, not happy-path only.** The command wraps this
+    /// in a `tokio::time::timeout`, so a slow op that exceeds it makes the timeout
+    /// DROP this future mid-`op.await`; the async volume path can also panic.
+    /// Either exit MUST still free the record AND unregister the busy status, or
+    /// the eject guard sticks ON forever (the volume can never be ejected again)
+    /// and a phantom `Running` row lingers. An `InstantTaskGuard` held across the
+    /// `op.await` guarantees that on drop/unwind; the happy path frees explicitly
+    /// then disarms it.
+    ///
+    /// No `WriteOperationState` is inserted (instant ops have no
+    /// intent/pause/conflict oneshot). Consequence: `cancel_operation` on an
+    /// instant op is a safe no-op (`cancel_if_queued` is false for a Running op,
+    /// then `cancel_write_operation` finds no state).
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "production callers (managed rename/mkdir/mkfile) are wired in the next milestone; until then it has only test callers, so the non-test lib build sees it as unused under `#![deny(unused)]`"
+        )
+    )]
+    pub(crate) async fn run_instant<T>(
+        &'static self,
+        descriptor: OperationDescriptor,
+        op: impl Future<Output = T>,
+    ) -> T {
+        let operation_id = descriptor.operation_id.clone();
+        let op_type = descriptor.operation_type;
+        let volume_ids = descriptor.volume_ids.clone();
+
+        // Register a Running record directly — no lane reservation, no admission
+        // gate. There are no `.await`s between the insert, the busy-register, and
+        // arming the guard below, so no drop can slip in and orphan the busy set.
+        {
+            let mut inner = self.inner.lock_ignore_poison();
+            inner.records.insert(
+                operation_id.clone(),
+                OpRecord {
+                    descriptor,
+                    status: LifecycleStatus::Running,
+                    deferred: None,
+                    reserved_lanes: Vec::new(),
+                },
+            );
+            inner.order.push(operation_id.clone());
+        }
+        register_operation_status(&operation_id, op_type, volume_ids);
+        self.emit_changed();
+        log::info!(target: "op_manager", "run instant op={operation_id}");
+
+        // The RAII net: on a timeout-drop of this future or a panic in `op`, the
+        // guard's Drop frees the record + unregisters the busy status (and
+        // re-emits the snapshot) during unwind. Held across the `op.await`.
+        let guard = InstantTaskGuard::new(operation_id.clone());
+
+        let result = op.await;
+
+        // Happy path: free + re-emit, then disarm (its Drop is now a no-op).
+        // Do NOT run an admission pass — instant ops reserve no lanes, so nothing
+        // waits on them.
+        self.free_and_remove(&operation_id);
+        self.emit_changed();
+        guard.disarm();
+
+        result
+    }
+
     /// Frees lanes + cleans caches + removes the record for `operation_id`,
     /// without admitting anything. The shared core of `on_settled` (happy
     /// path) and the `Drop` safety net. Idempotent.
@@ -556,6 +634,60 @@ impl Drop for ManagedTaskGuard {
         if self.armed {
             log::warn!(target: "op_manager", "op={} task ended without on_settled (panic?); freeing lanes", self.operation_id);
             manager().free_and_remove(&self.operation_id);
+        }
+    }
+}
+
+/// RAII net for [`OperationManager::run_instant`]. On `Drop` (the command's
+/// IPC-timeout dropping the `run_instant` future mid-`op.await`, or a panic in
+/// the awaited op) it frees the op's record and unregisters its busy status via
+/// `free_and_remove`, then re-emits `operations-changed` so the queue snapshot
+/// drops the now-gone row too. The busy-set release is the load-bearing part:
+/// without it the eject guard would stick ON forever for the op's volume.
+/// Instant ops reserve no lanes, so unlike `ManagedTaskGuard` there's nothing to
+/// release there. The happy path disarms it after an explicit `free_and_remove`
+/// + `emit_changed`, making the Drop a no-op.
+#[cfg_attr(
+    not(test),
+    allow(
+        dead_code,
+        reason = "only `run_instant` constructs it, which has only test callers until the next milestone wires the managed mutations, so the non-test lib build sees it as unused under `#![deny(unused)]`"
+    )
+)]
+struct InstantTaskGuard {
+    operation_id: String,
+    armed: bool,
+}
+
+#[cfg_attr(
+    not(test),
+    allow(
+        dead_code,
+        reason = "only `run_instant` uses these, and it has only test callers until the next milestone (see the struct note)"
+    )
+)]
+impl InstantTaskGuard {
+    fn new(operation_id: impl Into<String>) -> Self {
+        Self {
+            operation_id: operation_id.into(),
+            armed: true,
+        }
+    }
+
+    /// Call on the happy path right after the explicit `free_and_remove` so the
+    /// Drop doesn't re-run the (now redundant) cleanup.
+    fn disarm(mut self) {
+        self.armed = false;
+    }
+}
+
+impl Drop for InstantTaskGuard {
+    fn drop(&mut self) {
+        if self.armed {
+            log::warn!(target: "op_manager", "instant op={} dropped/panicked before completion; freeing record + busy status", self.operation_id);
+            let mgr = manager();
+            mgr.free_and_remove(&self.operation_id);
+            mgr.emit_changed();
         }
     }
 }

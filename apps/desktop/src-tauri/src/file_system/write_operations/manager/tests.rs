@@ -7,6 +7,7 @@
 //! unique operation ids + lane keys to stay correct under nextest's in-process
 //! parallelism.
 
+use super::super::state::busy_volume_ids;
 use super::*;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
@@ -24,6 +25,18 @@ fn descriptor(op_id: &str, lanes: Vec<&str>) -> OperationDescriptor {
         operation_type: WriteOperationType::Copy,
         lanes: lanes.into_iter().map(LaneKey::new).collect(),
         volume_ids: vec![],
+        summary: OperationSummaryText::default(),
+    }
+}
+
+/// A descriptor for an instant op (`run_instant`): no lanes, the given op type
+/// and busy `volume_ids`.
+fn instant_descriptor(op_id: &str, op_type: WriteOperationType, volume_ids: Vec<String>) -> OperationDescriptor {
+    OperationDescriptor {
+        operation_id: op_id.to_string(),
+        operation_type: op_type,
+        lanes: vec![],
+        volume_ids,
         summary: OperationSummaryText::default(),
     }
 }
@@ -498,4 +511,272 @@ async fn single_op_with_free_lanes_behaves_like_immediate_spawn() {
     tokio::time::sleep(Duration::from_millis(150)).await;
     assert_eq!(manager().status_of(&op), None);
     assert!(!manager().lane_use_snapshot().contains_key(&lane));
+}
+
+// ============================================================================
+// Managed instant ops (`run_instant`): scan-free, near-instant, result-returning
+// metadata ops that register + mark-busy but NEVER reserve a lane or queue.
+// ============================================================================
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn run_instant_marks_volume_busy_and_registers_record_for_op_duration() {
+    // (a) The volume is busy and the op shows as a Running record for the op's
+    // whole duration, then both clear once it finishes; the result is returned.
+    let vol = unique("inst-vol");
+    let op = unique("inst-busy");
+    let started = Arc::new(tokio::sync::Notify::new());
+    let release = Arc::new(tokio::sync::Notify::new());
+    let started_in = Arc::clone(&started);
+    let release_in = Arc::clone(&release);
+
+    let desc = instant_descriptor(&op, WriteOperationType::Rename, vec![vol.clone()]);
+    let op_id = op.clone();
+    let handle = tokio::spawn(async move {
+        manager()
+            .run_instant(desc, async move {
+                started_in.notify_one();
+                release_in.notified().await;
+                7_u32
+            })
+            .await
+    });
+
+    // Wait until the op has started (registered + busy-marked + reached op.await).
+    started.notified().await;
+    assert!(
+        busy_volume_ids().contains(&vol),
+        "volume must be busy while the instant op runs"
+    );
+    assert!(
+        manager()
+            .list()
+            .iter()
+            .any(|o| o.operation_id == op_id && o.status == LifecycleStatus::Running),
+        "the instant op must show as a Running record mid-flight"
+    );
+
+    // Release → the op completes and returns its value.
+    release.notify_one();
+    let result = handle.await.expect("task joins");
+    assert_eq!(result, 7, "run_instant returns the op's own result");
+
+    assert!(
+        !busy_volume_ids().contains(&vol),
+        "volume must no longer be busy after the op finishes"
+    );
+    assert!(
+        !manager().list().iter().any(|o| o.operation_id == op),
+        "the record must be removed after the op finishes"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn run_instant_marks_only_nonroot_volumes_busy() {
+    // (b) A non-root volume is marked busy; the root volume is excluded.
+    use crate::file_system::volume::DEFAULT_VOLUME_ID;
+
+    // Non-root volume → busy while running.
+    let vol = unique("inst-nonroot");
+    let op = unique("inst-nonroot-op");
+    let started = Arc::new(tokio::sync::Notify::new());
+    let release = Arc::new(tokio::sync::Notify::new());
+    let (s_in, r_in) = (Arc::clone(&started), Arc::clone(&release));
+    let desc = instant_descriptor(&op, WriteOperationType::CreateFolder, vec![vol.clone()]);
+    let h = tokio::spawn(async move {
+        manager()
+            .run_instant(desc, async move {
+                s_in.notify_one();
+                r_in.notified().await;
+            })
+            .await
+    });
+    started.notified().await;
+    assert!(
+        busy_volume_ids().contains(&vol),
+        "a non-root volume must be marked busy"
+    );
+    release.notify_one();
+    h.await.expect("joins");
+    assert!(!busy_volume_ids().contains(&vol));
+
+    // Root volume → never in the busy set (root is excluded from the busy set).
+    let op_root = unique("inst-root-op");
+    let started2 = Arc::new(tokio::sync::Notify::new());
+    let release2 = Arc::new(tokio::sync::Notify::new());
+    let (s2, r2) = (Arc::clone(&started2), Arc::clone(&release2));
+    let desc_root = instant_descriptor(
+        &op_root,
+        WriteOperationType::Rename,
+        vec![DEFAULT_VOLUME_ID.to_string()],
+    );
+    let h2 = tokio::spawn(async move {
+        manager()
+            .run_instant(desc_root, async move {
+                s2.notify_one();
+                r2.notified().await;
+            })
+            .await
+    });
+    started2.notified().await;
+    assert!(
+        !busy_volume_ids().iter().any(|id| id == DEFAULT_VOLUME_ID),
+        "the root volume must be excluded from the busy set even for an instant op"
+    );
+    assert!(
+        manager().list().iter().any(|o| o.operation_id == op_root),
+        "the root instant op still registers a Running record"
+    );
+    release2.notify_one();
+    h2.await.expect("joins");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 3)]
+async fn run_instant_does_not_reserve_a_lane() {
+    // (c) run_instant reserves no lane even when its descriptor names one, so a
+    // real transfer on the SAME lane is admitted concurrently (Running, not
+    // Queued).
+    let lane = unique("inst-lane");
+    let inst = unique("inst-op");
+    let xfer = unique("xfer-op");
+
+    let started = Arc::new(tokio::sync::Notify::new());
+    let release = Arc::new(tokio::sync::Notify::new());
+    let (s_in, r_in) = (Arc::clone(&started), Arc::clone(&release));
+    // Descriptor deliberately names `lane` to prove run_instant ignores it.
+    let desc = OperationDescriptor {
+        operation_id: inst.clone(),
+        operation_type: WriteOperationType::Rename,
+        lanes: vec![LaneKey::new(lane.as_str())],
+        volume_ids: vec![],
+        summary: OperationSummaryText::default(),
+    };
+    let h = tokio::spawn(async move {
+        manager()
+            .run_instant(desc, async move {
+                s_in.notify_one();
+                r_in.notified().await;
+            })
+            .await
+    });
+    started.notified().await;
+
+    assert!(
+        !manager().lane_use_snapshot().contains_key(&lane),
+        "run_instant must not reserve its descriptor's lanes"
+    );
+
+    // A real transfer on the same lane admits immediately (nothing holds it).
+    let (x_started_tx, x_started_rx) = oneshot::channel();
+    let (x_rel_tx, x_rel_rx) = oneshot::channel();
+    manager().spawn_managed(
+        descriptor(&xfer, vec![&lane]),
+        fresh_state(),
+        gated_deferred(xfer.clone(), x_started_tx, x_rel_rx),
+    );
+    tokio::time::timeout(Duration::from_secs(2), x_started_rx)
+        .await
+        .expect("a transfer on the same lane must admit despite the instant op")
+        .expect("transfer started");
+    assert_eq!(manager().status_of(&xfer), Some(LifecycleStatus::Running));
+
+    release.notify_one();
+    h.await.expect("joins");
+    let _ = x_rel_tx.send(());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn run_instant_releases_busy_and_record_when_dropped_midflight() {
+    // (d, B1) Dropping the run_instant future mid-op.await (the command's IPC
+    // timeout firing) MUST release the busy status and remove the record — else
+    // the eject guard sticks ON forever and a phantom row lingers.
+    let vol = unique("drop-vol");
+    let op = unique("inst-drop");
+    let started = Arc::new(tokio::sync::Notify::new());
+    let parked = Arc::new(tokio::sync::Notify::new()); // never fired → op parks forever
+    let (s_in, p_in) = (Arc::clone(&started), Arc::clone(&parked));
+    let desc = instant_descriptor(&op, WriteOperationType::Rename, vec![vol.clone()]);
+
+    let mut fut = Box::pin(manager().run_instant(desc, async move {
+        s_in.notify_one();
+        p_in.notified().await;
+    }));
+
+    // Poll the future until the op has started (registered + parked at op.await)
+    // WITHOUT letting it complete.
+    tokio::select! {
+        _ = &mut fut => panic!("a parked instant op must not complete"),
+        _ = started.notified() => {}
+    }
+    assert!(busy_volume_ids().contains(&vol), "volume busy while the op runs");
+    assert!(
+        manager().list().iter().any(|o| o.operation_id == op),
+        "record present while running"
+    );
+
+    // Simulate the IPC timeout dropping the future mid-op.await.
+    drop(fut);
+
+    assert!(
+        !busy_volume_ids().contains(&vol),
+        "B1: a mid-flight drop must release the busy status (else eject stays disabled forever)"
+    );
+    assert!(
+        !manager().list().iter().any(|o| o.operation_id == op),
+        "B1: a mid-flight drop must remove the phantom record"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn run_instant_releases_busy_and_record_when_op_panics() {
+    // (d, B1) A panic inside the awaited op MUST still release the busy status and
+    // remove the record on unwind.
+    let vol = unique("panic-vol");
+    let op = unique("inst-panic");
+    let desc = instant_descriptor(&op, WriteOperationType::CreateFile, vec![vol.clone()]);
+
+    let handle = tokio::spawn(async move {
+        manager()
+            .run_instant(desc, async { panic!("simulated instant-op panic") })
+            .await
+    });
+    assert!(handle.await.is_err(), "the panic propagates out of the awaited op");
+
+    assert!(
+        !busy_volume_ids().contains(&vol),
+        "B1: a panicking instant op must release the busy status on unwind"
+    );
+    assert!(
+        !manager().list().iter().any(|o| o.operation_id == op),
+        "B1: a panicking instant op must remove its record on unwind"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn run_instant_returns_the_ops_result_unchanged() {
+    // (e) Both Ok and Err propagate to the caller verbatim, and the record is
+    // cleaned up either way.
+    let op_ok = unique("inst-ok");
+    let ok: Result<u32, String> = manager()
+        .run_instant(
+            instant_descriptor(&op_ok, WriteOperationType::CreateFolder, vec![]),
+            async { Ok(11) },
+        )
+        .await;
+    assert_eq!(ok, Ok(11), "Ok result propagates unchanged");
+    assert!(
+        !manager().list().iter().any(|o| o.operation_id == op_ok),
+        "record removed after a successful instant op"
+    );
+
+    let op_err = unique("inst-err");
+    let err: Result<u32, String> = manager()
+        .run_instant(instant_descriptor(&op_err, WriteOperationType::Rename, vec![]), async {
+            Err("boom".to_string())
+        })
+        .await;
+    assert_eq!(err, Err("boom".to_string()), "Err result propagates unchanged");
+    assert!(
+        !manager().list().iter().any(|o| o.operation_id == op_err),
+        "record removed after a failed instant op"
+    );
 }

@@ -6334,8 +6334,16 @@ export type WriteOperationStartResult = {
   operationType: WriteOperationType
 }
 
-// Type of write operation.
-export type WriteOperationType = 'copy' | 'move' | 'delete' | 'trash'
+/**
+ *  Type of write operation.
+ *
+ *  The last three (`Rename`, `CreateFolder`, `CreateFile`) are scan-free,
+ *  near-instant, result-returning metadata ops that flow through
+ *  `manager::run_instant` (registered + busy-marked, but NOT lane-queued), not
+ *  the streaming `spawn_managed` path the transfers/deletes use. They cross the
+ *  wire as `rename` / `create_folder` / `create_file` (snake_case).
+ */
+export type WriteOperationType = 'copy' | 'move' | 'delete' | 'trash' | 'rename' | 'create_folder' | 'create_file'
 
 /**
  *  Progress event payload for write operations.
