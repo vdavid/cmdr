@@ -10,8 +10,9 @@ copy + move. Frontend counterpart:
 
 ## Files
 
-- **`walker.rs`**: local delete (`delete_files_with_progress`) and non-local delete
-  (`delete_volume_files_with_progress`). `delete_files_start` routes between them by `volume_id`. The volume walker
+- **`walker.rs`**: local delete (`delete_files_with_progress_inner`) and non-local delete
+  (`delete_volume_files_with_progress_inner`), both taking `&dyn OperationEventSink`. `delete_files_start` routes between
+  them by `volume_id`. The volume walker
   (`scan_volume_recursive`) consults `try_get_watched_listing(volume_id, path)` before every `list_directory`, so any
   subtree open in another pane is cache-fed; scans via `volume.list_directory(path, Some(&cb))` (throttled per-entry
   progress) and deletes via `volume.delete()` per item. A shared `Arc<VolumeScanTracker>` (atomics + throttle mutex)

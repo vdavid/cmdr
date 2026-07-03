@@ -4,7 +4,7 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the decision detail lives
 
 ## Volume-delete internals
 
-`delete_volume_files_with_progress` consumes the scan preview via `take_cached_scan_result(preview_id)`. On hit, top-level
+`delete_volume_files_with_progress_inner` consumes the scan preview via `take_cached_scan_result(preview_id)`. On hit, top-level
 files come straight from `CopyScanResult` with no `is_directory` probe; top-level dirs recurse via the oracle-aware
 walker. On no-preview paths (MCP, programmatic), the top-level `is_directory(source)` probe stays unless the source's
 parent is watcher-fresh in `LISTING_CACHE`, in which case the type comes from the cached entry. Both emit paths use
