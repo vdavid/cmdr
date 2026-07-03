@@ -22,6 +22,8 @@
 
 use serde_json::{Value, json};
 
+use super::executor::{ToolError, ToolResult};
+use super::executor::{app, async_tools, dialogs, downloads, file_ops, nav, search, view};
 use super::tools::Tool;
 
 /// Declarative tool table → the three consumers (`get_all_tools`, `execute_tool`, `tool_gate`).
@@ -48,7 +50,31 @@ macro_rules! mcp_tools {
         pub fn get_all_tools() -> Vec<Tool> {
             vec![ $( Tool { name: $name.into(), description: $desc.into(), input_schema: $schema } ),* ]
         }
+
+        /// The `tools/call` dispatch. An unknown name is the same `INVALID_PARAMS`
+        /// "Unknown tool" error the hand-written match returned. Generic over `Runtime`.
+        pub async fn execute_tool<R: tauri::Runtime>(
+            app: &tauri::AppHandle<R>,
+            name: &str,
+            params: &Value,
+        ) -> ToolResult {
+            match name {
+                $( $name => mcp_tools!(@call $shape $path, $name, app, params), )*
+                _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
+            }
+        }
     };
+
+    // Handler-shape arms: each evaluates to a `ToolResult`. Sync handlers deliberately
+    // don't `.await`. `app`/`params`/`name` are passed positionally from the generated
+    // dispatch (the macro's own body context) so `macro_rules!` hygiene never bites.
+    (@call app_params      $p:path, $name:literal, $app:ident, $params:ident) => { $p($app, $params).await };
+    (@call app_only        $p:path, $name:literal, $app:ident, $params:ident) => { $p($app).await };
+    (@call params_only     $p:path, $name:literal, $app:ident, $params:ident) => { $p($params).await };
+    (@call sync_app        $p:path, $name:literal, $app:ident, $params:ident) => { $p($app) };
+    (@call sync_app_params $p:path, $name:literal, $app:ident, $params:ident) => { $p($app, $params) };
+    (@call nav             $p:path, $name:literal, $app:ident, $params:ident) => { $p($app, $name).await };
+    (@call nav_params      $p:path, $name:literal, $app:ident, $params:ident) => { $p($app, $name, $params).await };
 }
 
 /// The empty input schema shared by every no-parameter tool.
@@ -690,11 +716,57 @@ mod tests {
         tools.iter().find(|t| t.name == name).expect("tool present")
     }
 
+    /// The exact set of tool names on the wire. Dispatch (`execute_tool`) is generated from
+    /// the same table, so it covers exactly this set by construction; this pins the set so a
+    /// stray add/remove/rename is a hard failure, not a silent one.
+    const EXPECTED_TOOL_NAMES: &[&str] = &[
+        "select_volume",
+        "nav_to_path",
+        "nav_to_parent",
+        "nav_back",
+        "nav_forward",
+        "scroll_to",
+        "move_cursor",
+        "open_under_cursor",
+        "select",
+        "copy",
+        "move",
+        "delete",
+        "mkdir",
+        "mkfile",
+        "refresh",
+        "toggle_hidden",
+        "set_view_mode",
+        "sort",
+        "tab",
+        "dialog",
+        "open_search_dialog",
+        "quit",
+        "switch_pane",
+        "swap_panes",
+        "search",
+        "ai_search",
+        "set_setting",
+        "connect_to_server",
+        "remove_manual_server",
+        "upgrade_smb_to_direct",
+        "await",
+        "go_to_latest_download",
+    ];
+
     #[test]
     fn test_all_tools_count() {
         // 6 nav + 2 cursor + 1 selection + 6 file_op + 3 view + 1 tab + 2 dialog + 3 app + 2
         // search + 1 settings + 3 network + 1 await + 1 downloads = 32
         assert_eq!(get_all_tools().len(), 32);
+    }
+
+    #[test]
+    fn test_tool_names_are_exactly_the_expected_set() {
+        use std::collections::BTreeSet;
+        let actual: BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();
+        let expected: BTreeSet<String> = EXPECTED_TOOL_NAMES.iter().map(|s| (*s).to_owned()).collect();
+        assert_eq!(actual, expected, "tool name set drifted from the expected 32");
     }
 
     #[test]

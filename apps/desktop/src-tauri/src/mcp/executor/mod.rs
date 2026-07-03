@@ -4,14 +4,17 @@
 //! All tools are designed to match user capabilities exactly.
 
 mod ack;
-mod app;
-mod async_tools;
-mod dialogs;
-mod downloads;
-mod file_ops;
-mod nav;
-mod search;
-mod view;
+// The category handler modules are `pub(crate)` (not private to `executor`) so the generated
+// dispatch in the sibling `mcp/tool_registry.rs` can name their `pub` handler fns; a sibling
+// can't otherwise reach `executor`'s descendants (E0603). `ack` stays private (executor-internal).
+pub(crate) mod app;
+pub(crate) mod async_tools;
+pub(crate) mod dialogs;
+pub(crate) mod downloads;
+pub(crate) mod file_ops;
+pub(crate) mod nav;
+pub(crate) mod search;
+pub(crate) mod view;
 
 pub(crate) use ack::{
     AckSignal, DEFAULT_ACK_TIMEOUT, NAV_ACK_TIMEOUT, snapshot_generation, snapshot_window_count, wait_for_ack,
@@ -199,53 +202,5 @@ async fn mcp_round_trip_with_timeout<R: Runtime>(
             "Frontend did not respond within {}",
             pluralize(timeout_secs, "second")
         ))),
-    }
-}
-
-/// Execute a tool by name.
-pub async fn execute_tool<R: Runtime>(app: &AppHandle<R>, name: &str, params: &Value) -> ToolResult {
-    match name {
-        // App commands
-        "quit" => app::execute_quit(app),
-        "switch_pane" => app::execute_switch_pane(app),
-        "swap_panes" => app::execute_swap_panes(app),
-        // View commands
-        "toggle_hidden" => view::execute_toggle_hidden(app).await,
-        "set_view_mode" => view::execute_set_view_mode(app, params).await,
-        "sort" => view::execute_sort(app, params).await,
-        // Navigation commands (no params)
-        "open_under_cursor" | "nav_to_parent" | "nav_back" | "nav_forward" => nav::execute_nav_command(app, name).await,
-        // Navigation commands (with params)
-        "select_volume" | "nav_to_path" | "move_cursor" | "scroll_to" => {
-            nav::execute_nav_command_with_params(app, name, params).await
-        }
-        // Tab commands
-        "tab" => app::execute_tab(app, params).await,
-        // File operation commands
-        "copy" => file_ops::execute_copy(app, params).await,
-        "move" => file_ops::execute_move(app, params).await,
-        "delete" => file_ops::execute_delete(app, params).await,
-        "mkdir" => file_ops::execute_mkdir(app).await,
-        "mkfile" => file_ops::execute_mkfile(app).await,
-        "refresh" => file_ops::execute_refresh(app).await,
-        // Selection command
-        "select" => file_ops::execute_select_command(app, params).await,
-        // Dialog command
-        "dialog" => dialogs::execute_dialog_command(app, params).await,
-        "open_search_dialog" => dialogs::execute_open_search_dialog(app, params).await,
-        // Search commands
-        "search" => search::execute_search(params).await,
-        "ai_search" => search::execute_ai_search(params).await,
-        // Settings commands
-        "set_setting" => async_tools::execute_set_setting(app, params).await,
-        // Network commands
-        "connect_to_server" => async_tools::execute_connect_to_server(app, params).await,
-        "remove_manual_server" => async_tools::execute_remove_manual_server(app, params),
-        "upgrade_smb_to_direct" => async_tools::execute_upgrade_smb_to_direct(app, params).await,
-        // Async wait
-        "await" => async_tools::execute_await(app, params).await,
-        // Downloads
-        "go_to_latest_download" => downloads::execute_go_to_latest_download(app).await,
-        _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
     }
 }

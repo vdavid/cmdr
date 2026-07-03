@@ -30,10 +30,10 @@ use super::auth::{
     tool_call_requires_token, validate_accept_header, validate_origin, validate_token,
 };
 use super::config::McpConfig;
-use super::executor::execute_tool;
 use super::port_file::{remove_port_file, write_port_file, write_secret_file};
 use super::protocol::{INVALID_PARAMS, INVALID_REQUEST, METHOD_NOT_FOUND, McpRequest, McpResponse, ServerCapabilities};
 use super::resources::{get_all_resources, read_resource};
+use super::tool_registry::execute_tool;
 use super::tools::get_all_tools;
 
 /// File name written under `<data_dir>` so external readers (CLI, E2E fixtures, agent
