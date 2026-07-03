@@ -29,5 +29,6 @@ pub(crate) use engine::search;
 // query.rs
 pub use query::SYSTEM_DIR_EXCLUDES;
 pub(crate) use query::{
-    fill_directory_sizes, format_size, format_timestamp, parse_scope, resolve_include_paths, summarize_query,
+    fill_directory_sizes, filter_directories_by_size, format_size, format_timestamp, parse_scope,
+    resolve_include_paths, summarize_query,
 };

@@ -325,6 +325,45 @@ pub(crate) fn fill_directory_sizes(result: &mut SearchResult, pool: &ReadPool) {
     );
 }
 
+/// Trims directories whose size (from `dir_stats`, filled by
+/// [`fill_directory_sizes`]) falls outside the query's size filter, then resets
+/// `total_count` to the trimmed length.
+///
+/// Files are already size-filtered in `engine::search`; only directories reach
+/// here unfiltered, because their sizes live in `dir_stats` rather than the
+/// entries table. `engine::search` over-fetches directory candidates to absorb
+/// this trim (see its `has_size_filter` limit bump). No-op when the query has no
+/// size filter.
+///
+/// `total_count` is approximate after trimming: the exact count would need
+/// `dir_stats` for ALL matching directories, which is too expensive, so the
+/// displayed count may slightly overestimate.
+pub(crate) fn filter_directories_by_size(result: &mut SearchResult, query: &SearchQuery) {
+    if query.min_size.is_none() && query.max_size.is_none() {
+        return;
+    }
+
+    result.entries.retain(|e| {
+        if !e.is_directory {
+            return true; // files already filtered in engine::search
+        }
+        if let Some(min) = query.min_size {
+            match e.size {
+                Some(s) if s >= min => {}
+                _ => return false,
+            }
+        }
+        if let Some(max) = query.max_size {
+            match e.size {
+                Some(s) if s <= max => {}
+                _ => return false,
+            }
+        }
+        true
+    });
+    result.total_count = result.entries.len() as u32;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -684,6 +723,75 @@ mod tests {
     // The scope parser has nested escape/quote rules. Property tests probe
     // the round-trip and count invariants that don't require asserting a
     // specific canonical form.
+
+    // ── filter_directories_by_size ───────────────────────────────────
+
+    fn dir_entry(name: &str, size: Option<u64>) -> crate::search::SearchResultEntry {
+        crate::search::SearchResultEntry {
+            name: name.to_string(),
+            path: format!("/{name}"),
+            parent_path: "/".to_string(),
+            is_directory: true,
+            size,
+            modified_at: None,
+            icon_id: String::new(),
+            entry_id: 0,
+        }
+    }
+
+    fn file_entry(name: &str, size: Option<u64>) -> crate::search::SearchResultEntry {
+        crate::search::SearchResultEntry {
+            is_directory: false,
+            ..dir_entry(name, size)
+        }
+    }
+
+    /// A size-filtered query, reusing `make_query` and setting only the size bounds.
+    fn size_query(min_size: Option<u64>, max_size: Option<u64>) -> SearchQuery {
+        make_query(None, PatternType::Glob, min_size, max_size, None, None, None)
+    }
+
+    #[test]
+    fn filter_directories_by_size_no_filter_is_noop() {
+        let mut result = SearchResult {
+            entries: vec![dir_entry("a", None), dir_entry("b", Some(10))],
+            total_count: 2,
+        };
+        filter_directories_by_size(&mut result, &size_query(None, None));
+        assert_eq!(result.entries.len(), 2);
+        assert_eq!(result.total_count, 2);
+    }
+
+    #[test]
+    fn filter_directories_by_size_trims_dirs_and_keeps_files() {
+        let mut result = SearchResult {
+            entries: vec![
+                dir_entry("small-dir", Some(100)),
+                dir_entry("big-dir", Some(10_000)),
+                dir_entry("sizeless-dir", None),
+                file_entry("some-file", None), // files pass through unconditionally
+            ],
+            total_count: 4,
+        };
+        filter_directories_by_size(&mut result, &size_query(Some(1_000), None));
+        let names: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();
+        // `big-dir` clears the floor; `small-dir` and the sizeless dir are dropped;
+        // the file passes through (already filtered in engine::search).
+        assert_eq!(names, vec!["big-dir", "some-file"]);
+        assert_eq!(result.total_count, 2);
+    }
+
+    #[test]
+    fn filter_directories_by_size_honors_max_size() {
+        let mut result = SearchResult {
+            entries: vec![dir_entry("small-dir", Some(100)), dir_entry("big-dir", Some(10_000))],
+            total_count: 2,
+        };
+        filter_directories_by_size(&mut result, &size_query(None, Some(1_000)));
+        let names: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();
+        assert_eq!(names, vec!["small-dir"]);
+        assert_eq!(result.total_count, 1);
+    }
 
     mod scope_proptests {
         use super::*;

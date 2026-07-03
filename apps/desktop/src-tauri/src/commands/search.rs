@@ -191,34 +191,9 @@ pub async fn search_files(mut query: SearchQuery) -> Result<SearchResult, String
         fill_directory_sizes(&mut result, &pool);
     }
 
-    // Post-filter: remove directories that don't match size criteria.
-    // Directory sizes come from dir_stats (not the entries table), so the
-    // main search() can't filter them. We over-fetch candidates and trim here.
-    let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
-    if has_size_filter {
-        result.entries.retain(|e| {
-            if !e.is_directory {
-                return true; // files already filtered in search()
-            }
-            if let Some(min) = query.min_size {
-                match e.size {
-                    Some(s) if s >= min => {}
-                    _ => return false,
-                }
-            }
-            if let Some(max) = query.max_size {
-                match e.size {
-                    Some(s) if s <= max => {}
-                    _ => return false,
-                }
-            }
-            true
-        });
-        // total_count is approximate after post-filtering; the true count
-        // would require fetching dir_stats for ALL matching directories, which
-        // is too expensive. The displayed count may overestimate slightly.
-        result.total_count = result.entries.len() as u32;
-    }
+    // Post-filter directories by size (their sizes come from dir_stats, filled
+    // above, so engine::search couldn't apply the size filter to them).
+    search::filter_directories_by_size(&mut result, &query);
 
     // Truncate to the originally requested limit
     let limit = query.limit.min(1000) as usize;
