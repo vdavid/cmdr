@@ -1,11 +1,13 @@
-# Archive reading core (zip)
+# Archive backend (zip)
 
-Read-only zip core the `ArchiveVolume` backend is built on: parse a central directory into a synthetic directory tree,
-and stream-decompress entries. **Decoupled from the `Volume` trait** — it deals in archive-native types (`ArchiveIndex`,
-`ArchiveNode`, `ArchiveError`); the volume layer maps them onto `FileEntry` / `VolumeError` / `VolumeReadStream`.
+Two layers in one directory: a **read-only zip core** (parse a central directory into a synthetic tree,
+stream-decompress entries) and `ArchiveVolume`, the read-only `Volume` built on it. The core is **decoupled from the
+`Volume` trait** — it deals in archive-native types (`ArchiveIndex`, `ArchiveNode`, `ArchiveError`); `volume.rs` is the
+one file that maps them onto `FileEntry` / `VolumeError` / `VolumeReadStream`. Keep the core submodules `Volume`-free.
 
 ## Module map
 
+- `volume.rs`: `ArchiveVolume` — the read-only `Volume` impl (browse + extract + `scan_for_copy`) over the core below.
 - `source.rs`: `ArchiveByteSource` (byte-supply seam) + `LocalFileSource`, `BytesSource`.
 - `index.rs`: `ArchiveIndex` (parsed tree + query surface), the central-directory parse driver, the pure tree builder.
 - `name.rs`: `sanitize_entry_name` (Zip Slip defense). `read.rs`: `ArchiveEntryReader`. `cache.rs`: `ArchiveIndexCache`.
@@ -46,6 +48,14 @@ Depth, rationale, and the full test list: [DETAILS.md](DETAILS.md). Read it befo
 - **The index cache key is `(path, size, mtime)`,** so an external edit auto-invalidates. `index_for_local` is blocking
   — call it from `spawn_blocking`. No eviction here; the volume layer owns archive lifetime and calls `clear()`.
 
-Not here (the `ArchiveVolume` layer's job): the `Volume` impl, capability flags, `scan_for_copy`, registration /
-refcount / LRU, the capability-matrix column, and the `docs/architecture.md` line. See [DETAILS.md](DETAILS.md) § Left
-for the volume layer.
+## `ArchiveVolume` (the `Volume` layer)
+
+- **Read-only until M4.** Every mutation returns `NotSupported`, INCLUDING `create_directory_all` (overridden — the
+  trait default would no-op to `Ok` on an existing dir and falsely claim success on a read-only volume).
+- **`lane_key()` and `get_space_info()` delegate to the PARENT volume, never the archive** — the parent owns the
+  serialization lane and the real disk cost (M4 temp+rename lands there); delegating also dodges `available = 0`, which
+  reads as "disk full" and blocks paste. The capability-flag choices and the typed `ArchiveError → VolumeError` backstop
+  mapping (`no-string-matching`): [DETAILS.md](DETAILS.md) § "The `ArchiveVolume` layer".
+
+Still the routing milestone's job (M1b+): registration, path-aware `resolve`, refcount + LRU eviction, the `'archive'`
+FE `VolumeKind`, and mutation (M4). See [DETAILS.md](DETAILS.md) § Left for the routing milestone.

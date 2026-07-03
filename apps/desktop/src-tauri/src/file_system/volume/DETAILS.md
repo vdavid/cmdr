@@ -151,27 +151,32 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 
 At-a-glance view of which capabilities each current volume opts into. Use this when picking a reference implementation for your new volume.
 
-| Capability                  | Local                | MTP                     | SMB                       | InMemory           |
-| --------------------------- | -------------------- | ----------------------- | ------------------------- | ------------------ |
-| `list_directory` / metadata | ✅                   | ✅                      | ✅                        | ✅                 |
-| Mutations (create/delete/rename) | ✅              | ✅                      | ✅                        | ✅                 |
-| `supports_export`           | ✅                   | ✅                      | ✅                        | ✅                 |
-| `supports_streaming`        | ✅                   | ✅                      | ✅                        | ✅                 |
-| `open_read_stream`          | ✅ spawn_blocking    | ✅ owned download       | ✅ channel-backed         | ✅ in-memory       |
-| `write_from_stream`         | ✅ spawn_blocking    | ✅ streaming            | ✅ streaming              | ✅ in-memory       |
-| `supports_watching`         | ✅ FSEvents/inotify  | ❌ (own USB watcher)    | ❌ (OS-mount FSEvents)    | ❌                 |
-| `listing_is_watched`        | ✅ path-level (WATCHER_MANAGER) | ✅ volume-level (device connected) | ✅ volume-level (watcher + Direct) | ❌ (default) |
-| `supports_local_fs_access`  | ✅ (default)         | ❌                      | ❌                        | ❌                 |
-| `local_path`                | ✅ `Some(root)`      | `None`                  | `None`                    | `None`             |
-| `notify_mutation`           | default (std::fs)    | ✅ MTP `get_metadata`   | ✅ smb2 `get_metadata`    | ✅ in-memory       |
-| `create_directory_errors_on_existing_dir` | ✅ (default) | ❌ (protocol allows dup names) | ✅ (default) | ✅ (default) |
-| `scanner` / `watcher` (indexing) | ✅ / ✅          | ❌                      | ❌                        | ❌                 |
-| `on_unmount`                | default              | default                 | ✅ drops smb2 session     | default            |
-| `smb_connection_state`      | `None`               | `None`                  | ✅                        | `None`             |
-| `space_poll_interval`       | 2 s (default)        | 5 s                     | 5 s                       | `None`             |
-| `max_concurrent_ops`        | 4..=16 (core-based)  | 1 (USB bulk serial)     | 10 (eventually setting)   | 32                 |
+| Capability                  | Local                | MTP                     | SMB                       | InMemory           | Archive                  |
+| --------------------------- | -------------------- | ----------------------- | ------------------------- | ------------------ | ------------------------ |
+| `list_directory` / metadata | ✅                   | ✅                      | ✅                        | ✅                 | ✅                       |
+| Mutations (create/delete/rename) | ✅              | ✅                      | ✅                        | ✅                 | ❌ read-only until M4    |
+| `supports_export`           | ✅                   | ✅                      | ✅                        | ✅                 | ✅                       |
+| `supports_streaming`        | ✅                   | ✅                      | ✅                        | ✅                 | ✅                       |
+| `open_read_stream`          | ✅ spawn_blocking    | ✅ owned download       | ✅ channel-backed         | ✅ in-memory       | ✅ core `ArchiveEntryReader` |
+| `write_from_stream`         | ✅ spawn_blocking    | ✅ streaming            | ✅ streaming              | ✅ in-memory       | ❌ (M4)                  |
+| `supports_watching`         | ✅ FSEvents/inotify  | ❌ (own USB watcher)    | ❌ (OS-mount FSEvents)    | ❌                 | ❌ (M3)                  |
+| `listing_is_watched`        | ✅ path-level (WATCHER_MANAGER) | ✅ volume-level (device connected) | ✅ volume-level (watcher + Direct) | ❌ (default) | ❌ (M3)         |
+| `supports_local_fs_access`  | ✅ (default)         | ❌                      | ❌                        | ❌                 | ❌ (inner paths)         |
+| `local_path`                | ✅ `Some(root)`      | `None`                  | `None`                    | `None`             | `None`                   |
+| `notify_mutation`           | default (std::fs)    | ✅ MTP `get_metadata`   | ✅ smb2 `get_metadata`    | ✅ in-memory       | n/a (read-only)          |
+| `create_directory_errors_on_existing_dir` | ✅ (default) | ❌ (protocol allows dup names) | ✅ (default) | ✅ (default) | n/a (read-only)  |
+| `scanner` / `watcher` (indexing) | ✅ / ✅          | ❌                      | ❌                        | ❌                 | ❌                       |
+| `on_unmount`                | default              | default                 | ✅ drops smb2 session     | default            | default                  |
+| `smb_connection_state`      | `None`               | `None`                  | ✅                        | `None`             | `None`                   |
+| `space_poll_interval`       | 2 s (default)        | 5 s                     | 5 s                       | `None`             | `None`                   |
+| `lane_key` / `get_space_info` | mount root / statvfs+NSURL | device serial / device | server+share / smb2 | root or override / configured | **parent's** / **parent's** |
+| `max_concurrent_ops`        | 4..=16 (core-based)  | 1 (USB bulk serial)     | 10 (eventually setting)   | 32                 | 1 (M1)                   |
 
 Legend: ✅ = implemented, ❌ = opted out (default or explicitly), ⚠️ = implemented but suboptimal (memory-heavy or otherwise worth revisiting).
+
+`ArchiveVolume` is the read-only zip backend ([`backends/archive/`](backends/archive/CLAUDE.md)); its `lane_key` and
+`get_space_info` uniquely delegate to a **parent** volume (the volume storing the `.zip`), so archive work shares the
+device's lane and the space check sees the parent drive's real free space.
 
 When adding a new volume, add a column for it and fill in each row. The matrix doubles as a self-review: gaps will stare back at you.
 

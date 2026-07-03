@@ -134,7 +134,82 @@ mtime, so it's a natural miss and re-parse — no explicit invalidation. `index_
 file, parses on a miss); call it from `spawn_blocking`. No eviction policy here — the volume layer owns archive lifetime
 (refcount + LRU per the plan) and can `clear()` on teardown.
 
+## The `ArchiveVolume` layer
+
+`volume.rs` is the one file in this module that touches the `Volume` trait. It maps the archive-native core
+(`ArchiveIndex` / `ArchiveNode` / `ArchiveEntryReader` / `ArchiveError`) onto `FileEntry` / `VolumeReadStream` /
+`VolumeError`, and holds an `Arc<dyn Volume>` **parent** (the volume physically storing the `.zip`), the archive path,
+the display name, and an `Arc<ArchiveIndexCache>`.
+
+**The parent seam.** Two answers a read-only archive can't give itself come from the parent:
+
+- `lane_key()` returns `parent.lane_key()` — archive work must share the physical device's serialization lane (a zip on
+  an SMB share shares that share's lane), never key on the archive path. Consequence: two zips on the same mount
+  serialize; only zips on different mounts parallelize (the existing per-device write-serialization).
+- `get_space_info()` delegates to the parent (see the decision below).
+
+Only a **local** parent is exercised now: the backing bytes come from a `LocalFileSource` opened over the archive path,
+and the cache's `index_for_local` does the local stat+parse. A remote parent (M5) supplies bytes by implementing
+`ArchiveByteSource` over its ranged reads — no change to the index or reader.
+
+**Path namespace.** `root()` is the real `.zip` path and inner entries join under it, so `/path/to/foo.zip/inner`
+renders transparently (the FE splits on `/`). `inner_path()` maps a volume-namespace path back to the index key: it
+strips the archive-path prefix (the FE sends full absolute paths), accepts an already-inner relative path, and treats an
+empty path / `.` as the root `""`. `node_to_entry` builds each `FileEntry`'s full path as `archive_path/inner`; the root
+node (`""`) carries the archive's own file name and path. `ArchiveNode::modified` is Unix seconds, matching `FileEntry`
+(a negative timestamp is dropped); `extended_metadata_loaded` is `true` — the archive listing is complete in one pass,
+no deferred enrichment.
+
+**Streaming reads.** `open_read_stream` / `open_read_stream_at_offset` parse the index (cached) and open the byte source
+on `spawn_blocking`, then wrap `ArchiveEntryReader` as an `ArchiveVolumeReadStream`. A compressed entry has no random
+access, so a non-zero offset means "decompress from the start and discard the leading `offset` bytes" — correct, not
+cheap. `total_size()` reports the FULL uncompressed size (per the trait); `bytes_read()` counts only the delivered
+segment. Nothing calls the at-offset path with a non-zero offset today, so the common path discards nothing.
+
+**`scan_for_copy`.** Counts and byte totals come straight from the central directory — no decompression during the scan.
+A single file is one entry at its uncompressed size; a directory walks the subtree via the index's per-dir child lists
+(the top-level dir isn't counted, matching `LocalPosixVolume`). `dedup_bytes == total_bytes`: a zip has no hardlinks.
+
+**Capability flags (set explicitly, not inherited).** `local_path = None` and `supports_local_fs_access = false` (inner
+paths aren't reachable via `std::fs`, so no `copyfile` fast path and the legacy synthetic-diff path is skipped);
+`space_poll_interval = None` (a read-only archive's space never changes — the default `Some(2s)` would poll pointlessly);
+`max_concurrent_ops = 1`; `supports_export`/`supports_streaming = true`; `listing_is_watched = false` (no live watcher
+until M3, so it must not claim listing freshness).
+
+### Decision: `get_space_info` delegates to the parent volume
+
+**Why**: An archive isn't a disk with its own free space. The pre-copy space check (`volume_copy.rs`) blocks a copy when
+`dest.available_bytes < total_bytes`, so reporting zeros (or `available = 0`) would read as "disk full" and block a
+paste with a spurious message instead of the correct read-only / `NotSupported` outcome. Any archive edit (M4
+temp+rename) is built on the parent drive, so the parent's free space is the honest constraint AND a non-blocking
+answer. Delegating is one line and stays correct when M4 turns on mutation. Pinned by
+`get_space_info_delegates_to_the_parent`.
+
+### Decision: `max_concurrent_ops = 1` in M1
+
+**Why**: The core supports concurrent independent reads (each `ArchiveEntryReader` owns its `EntryFsm` and read offset
+over a shared `pread` source, no shared cursor — `concurrent_reads_on_two_entries_are_independent` proves it through the
+`Volume` API). But the copy engine's parallelism is a separate hint; the plan pins a single stream in flight against an
+archive for this phase. Raise it later if a real workload wants parallel extract.
+
+### Decision: typed `ArchiveError → VolumeError` mapping, no message strings
+
+**Why** (`no-string-matching`): `to_volume_error` maps the path-shaped errors to their `VolumeError` twins
+(`NotFound → NotFound`, `IsADirectory → IsADirectory`) so path-aware callers keep working, and collapses the
+archive-integrity family (`NotAnArchive` / `Encrypted` / `Unsupported → NotSupported`, `Corrupt` / `Io → IoError`). This
+is a **mid-browse backstop** (the archive was swapped or corrupted after navigation). The user-facing "not a real
+archive" / "encrypted" friendly copy is produced at the M1b routing boundary straight from the raw `ArchiveError` at
+navigation time — not recovered from a `VolumeError` here — so this mapping deliberately doesn't need a new `VolumeError`
+variant or a dedicated friendly-error reason yet.
+
 ## Testing
+
+`volume_test.rs` drives `ArchiveVolume` against real zips written to a temp file (the local source needs a real path):
+list/metadata/exists round-trips incl. synthetic dirs and the transparent path, absolute-path prefix stripping, the
+progress tick, the cancelable-listing default, streaming extract + the at-offset tail, concurrent two-entry reads,
+`scan_for_copy` (subtree / single file / missing), every-mutation-unsupported (incl. the `create_directory_all` guard),
+encrypted/corrupt/non-zip typed errors through the `Volume` API, the parent `lane_key` / `get_space_info` delegation,
+and the capability flags.
 
 `test_fixtures.rs` builds clean zips with the `zip` crate (no checked-in blobs) and byte-patches hostile variants
 (traversal name via equal-length patch, encrypted GP flag, overstated EOCD record count). `archive_test.rs` covers parse
@@ -142,9 +217,17 @@ file, parses on a miss); call it from `spawn_blocking`. No eviction policy here 
 + decompression correctness), stored reads, concurrent reads, best-effort encoding, and cache hit/invalidation.
 `name.rs` and `index.rs` carry pure unit tests for the sanitizer and the tree builder.
 
-## Left for the `ArchiveVolume` (Volume-impl) layer
+## Left for the routing milestone (M1b+)
 
-The `Volume` trait impl, capability flags, `scan_for_copy`, registration/refcount/LRU, mapping `ArchiveNode → FileEntry`
-and `ArchiveError → VolumeError`, wrapping `ArchiveEntryReader` as a `VolumeReadStream`, and the capability-matrix column
-+ `docs/architecture.md` line (they describe the volume's capabilities, which don't exist until that layer). All of the
-map-from surface it needs is public on `ArchiveIndex` / `ArchiveNode` / `ArchiveEntryReader`.
+`ArchiveVolume` (browse + extract + `scan_for_copy`, read-only) now exists in `volume.rs`, with the capability-matrix
+column filled in `../../DETAILS.md` and the map line in `docs/architecture.md`. What's still ahead:
+
+- **M1b — routing**: path-aware `VolumeManager::resolve(volume_id, path)` that detects an archive boundary and
+  registers/looks up an `ArchiveVolume`; `register_if_absent` + **refcount + LRU eviction** (browsing many zips must not
+  leak volumes + parents + index caches); the magic-byte sniff at navigation time (listing uses extension only); the
+  `'archive'` FE `VolumeKind` so capabilities read read-only-correct; persistence of parent drive + zip path (re-derive
+  the archive lazily on restore); and the FE friendly errors, produced from the raw `ArchiveError` at the resolve
+  boundary (this layer's typed `VolumeError` mapping is only a mid-browse backstop).
+- **M3 — live watching**: flip `listing_is_watched` to `true` and watch the parent `.zip` for external edits.
+- **M4 — mutation**: turn the mutation methods and the `'archive'` VolumeKind writable (add/delete/rename/mkdir/mkfile
+  via temp+rename).

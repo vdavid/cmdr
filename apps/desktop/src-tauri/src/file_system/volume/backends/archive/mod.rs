@@ -24,14 +24,15 @@
 //! for the design rationale (why rc-zip's sans-IO fsm and not `rc-zip-tokio`,
 //! the Zip Slip guarantee, the cache key, off-executor decompression).
 
-// This module is the read-only archive core. Its public types and re-exports
-// are the API surface the `ArchiveVolume` `Volume` impl is built on next, so
-// not everything here is called from crate code yet. `#![deny(unused)]` at the
-// crate root would flag the not-yet-consumed re-exports; relax it here (the
-// parent `volume` module already relaxes `dead_code` the same way).
+// A few of this module's public items are part of the reading core's API but
+// aren't referenced outside their own submodule or the tests yet (the Zip Slip
+// sanitizer surface, the in-memory `BytesSource`). `#![deny(unused)]` at the
+// crate root would flag those re-exports; relax `unused_imports` here. The
+// `ArchiveVolume` impl in `volume` now consumes the index / reader / source /
+// cache / error surface, so the allow no longer blankets the whole module.
 #![allow(
     unused_imports,
-    reason = "Public API surface consumed by the ArchiveVolume backend built on top of this module"
+    reason = "Zip Slip sanitizer surface and the in-memory BytesSource are public API not yet consumed outside this module"
 )]
 
 mod cache;
@@ -40,6 +41,7 @@ mod index;
 mod name;
 mod read;
 mod source;
+mod volume;
 
 #[cfg(test)]
 mod archive_test;
@@ -52,3 +54,4 @@ pub use index::{ArchiveIndex, ArchiveNode};
 pub use name::{QuarantineReason, SanitizedName, sanitize_entry_name};
 pub use read::ArchiveEntryReader;
 pub use source::{ArchiveByteSource, BytesSource, LocalFileSource};
+pub use volume::ArchiveVolume;

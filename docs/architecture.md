@@ -109,6 +109,9 @@ All under `apps/desktop/src-tauri/src/`.
   capability matrix for new backends
 - `file_system/volume/backends/`: Per-backend `Volume` impls: `LocalPosixVolume`, `MtpVolume`, `SmbVolume` (+
   `SmbWatcher`), `InMemoryVolume`
+- `file_system/volume/backends/archive/`: `ArchiveVolume` (read-only zip: browse + extract) + its decoupled reading core
+  (central-directory parse, synthetic tree, streaming decompress, Zip Slip). See its
+  [`CLAUDE.md`](../apps/desktop/src-tauri/src/file_system/volume/backends/archive/CLAUDE.md)
 - `file_system/volume/friendly_error/`: typed, word-free error CLASSIFICATION (`ListingError` / `ListingErrorReason`,
   `ErrorCategory`, errno → reason mapping, provider detection over 18 providers). The user-facing WORDS live on the FE
   (`src/lib/errors/`)
