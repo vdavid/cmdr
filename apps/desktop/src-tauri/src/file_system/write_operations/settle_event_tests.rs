@@ -10,10 +10,14 @@
 //! the IPC edge (`TauriEventSink`); these tests pass a `CollectorEventSink`, so
 //! the full lifecycle runs without a Tauri runtime.
 
+use std::fs;
+use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 
+use super::copy_files_start;
 use super::state::WriteSettledGuard;
-use super::types::{CollectorEventSink, OperationEventSink, WriteOperationType, WriteSettledEvent};
+use super::types::{CollectorEventSink, OperationEventSink, WriteOperationConfig, WriteOperationType, WriteSettledEvent};
 
 /// Bridge sink that keeps a direct handle to the underlying `CollectorEventSink`
 /// for inspection. Needed because the guard takes `Arc<dyn OperationEventSink>`,
@@ -175,4 +179,79 @@ fn settled_fires_for_every_operation_type() {
         assert_eq!(settled.len(), 1, "settle must fire once per op_type={:?}", op_type);
         assert_eq!(settled[0].operation_type, op_type);
     }
+}
+
+// ============================================================================
+// Injected event sink drives the managed spawn path end to end
+// ============================================================================
+
+fn create_temp_dir(name: &str) -> PathBuf {
+    let temp_dir = std::env::temp_dir().join(format!("cmdr_write_test_{}", name));
+    let _ = fs::remove_dir_all(&temp_dir); // Clean up any previous run
+    fs::create_dir_all(&temp_dir).expect("Failed to create temp directory");
+    temp_dir
+}
+
+fn cleanup_temp_dir(path: &PathBuf) {
+    let _ = fs::remove_dir_all(path);
+}
+
+/// Drives `copy_files_start` through the operation manager with a
+/// `CollectorEventSink` injected at the (test-stand-in) IPC edge, and asserts
+/// the terminal `write-complete` and the `write-settled` events both arrive via
+/// that sink for a real local copy. Before the sink lift these managed events
+/// were only reachable through a live `TauriEventSink`; now the whole pipeline
+/// takes the injected sink, so it's observable with no Tauri runtime.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn injected_sink_receives_complete_and_settled_for_local_copy() {
+    let src_dir = create_temp_dir("managed_sink_src");
+    let dst_dir = create_temp_dir("managed_sink_dst");
+    let src_file = src_dir.join("hello.txt");
+    fs::write(&src_file, b"managed sink test").expect("failed to write source file");
+
+    let collector = Arc::new(CollectorEventSink::new());
+    let events: Arc<dyn OperationEventSink> = collector.clone();
+
+    let result = copy_files_start(
+        events,
+        vec![src_file.clone()],
+        dst_dir.clone(),
+        WriteOperationConfig::default(),
+        vec![],
+        None,
+    )
+    .await
+    .expect("copy_files_start should return Ok");
+
+    // The deferred task runs asynchronously; poll until it settles.
+    let mut settled_ok = false;
+    for _ in 0..200 {
+        {
+            let settled = collector.settled.lock().unwrap();
+            if let Some(ev) = settled.first() {
+                assert_eq!(ev.operation_id, result.operation_id);
+                assert_eq!(ev.operation_type, WriteOperationType::Copy);
+                assert!(ev.volume_id.is_none(), "a same-root local copy carries volume_id=None");
+                settled_ok = true;
+            }
+        }
+        if settled_ok {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+    assert!(settled_ok, "write-settled must arrive via the injected sink");
+
+    // The full managed pipeline ran through the injected sink, not just the
+    // settle guard: the terminal write-complete arrived and the bytes landed.
+    let complete = collector.complete.lock().unwrap();
+    assert_eq!(complete.len(), 1, "exactly one write-complete must arrive via the sink");
+    assert_eq!(complete[0].operation_id, result.operation_id);
+    assert!(
+        dst_dir.join("hello.txt").exists(),
+        "the copied file must exist at the destination"
+    );
+
+    cleanup_temp_dir(&src_dir);
+    cleanup_temp_dir(&dst_dir);
 }
