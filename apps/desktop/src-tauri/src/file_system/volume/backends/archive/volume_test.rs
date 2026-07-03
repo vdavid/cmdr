@@ -66,6 +66,20 @@ async fn drain(stream: &mut dyn VolumeReadStream) -> Result<Vec<u8>, VolumeError
     Ok(out)
 }
 
+/// Builds a zip with one real file and one symlink entry. The core's fixture
+/// builders don't cover symlinks and `test_fixtures.rs` is off-limits (owned by
+/// the core agent), so this is built inline with the `zip` crate. `add_symlink`
+/// sets `S_IFLNK`, which rc-zip classifies as `EntryKind::Symlink`.
+fn zip_with_symlink() -> Vec<u8> {
+    use std::io::{Cursor, Write};
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let opts = zip::write::SimpleFileOptions::default();
+    writer.start_file("real.txt", opts).expect("start real.txt");
+    writer.write_all(b"hi").expect("write real.txt");
+    writer.add_symlink("link.txt", "real.txt", opts).expect("add symlink");
+    writer.finish().expect("finish zip").into_inner()
+}
+
 // ---- Tier 1: browse -------------------------------------------------------
 
 #[tokio::test]
@@ -118,6 +132,49 @@ async fn metadata_on_root_reports_the_archive_itself() {
     assert!(root.is_directory);
     assert_eq!(root.name, volume.name());
     assert_eq!(root.path, archive.path.to_string_lossy());
+}
+
+#[tokio::test]
+async fn a_symlink_entry_surfaces_as_a_symlink_not_a_directory() {
+    let archive = TestArchive::from_bytes(zip_with_symlink());
+    let volume = archive.volume();
+
+    let link = volume.get_metadata(Path::new("link.txt")).await.unwrap();
+    assert!(link.is_symlink, "a symlink entry must map to is_symlink");
+    assert!(!link.is_directory, "a symlink is never a directory");
+
+    // Same classification through a listing.
+    let root = volume.list_directory(Path::new(""), None).await.unwrap();
+    let listed = root.iter().find(|e| e.name == "link.txt").expect("link.txt is listed");
+    assert!(listed.is_symlink);
+    assert!(!listed.is_directory);
+}
+
+#[test]
+fn a_pre_1970_mtime_maps_to_none() {
+    // A zip can't encode a pre-1970 timestamp (DOS time floors at 1980), so the
+    // negative-mtime drop in `node_to_entry` can't be reached through a real
+    // archive — exercise it directly against a hand-built node.
+    let node = ArchiveNode {
+        name: "old.txt".to_string(),
+        path: "old.txt".to_string(),
+        is_dir: false,
+        is_symlink: false,
+        size: Some(0),
+        compressed_size: Some(0),
+        modified: Some(-1),
+        encrypted: false,
+    };
+    let entry = node_to_entry(Path::new("/archive.zip"), "archive.zip", &node);
+    assert_eq!(entry.modified_at, None, "a negative Unix mtime is dropped, not wrapped");
+
+    // A normal positive timestamp still passes straight through.
+    let recent = ArchiveNode {
+        modified: Some(1_700_000_000),
+        ..node
+    };
+    let recent_entry = node_to_entry(Path::new("/archive.zip"), "archive.zip", &recent);
+    assert_eq!(recent_entry.modified_at, Some(1_700_000_000));
 }
 
 #[tokio::test]

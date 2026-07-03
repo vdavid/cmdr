@@ -116,16 +116,13 @@ impl ArchiveVolume {
         Box::pin(async move {
             // Parse (cached) and open the local byte source off the async
             // executor — both stat/read the real file.
-            let (index, source) = spawn_blocking(
-                move || -> Result<(Arc<ArchiveIndex>, Arc<dyn ArchiveByteSource>), ArchiveError> {
-                    let index = cache.index_for_local(&archive_path)?;
+            let (index, source) =
+                parse_blocking(move || -> Result<(Arc<ArchiveIndex>, Arc<dyn ArchiveByteSource>), VolumeError> {
+                    let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
                     let source: Arc<dyn ArchiveByteSource> = Arc::new(LocalFileSource::open(&archive_path)?);
                     Ok((index, source))
-                },
-            )
-            .await
-            .expect("spawn_blocking open-source closure doesn't panic and the task is uncancelable")
-            .map_err(to_volume_error)?;
+                })
+                .await?;
 
             // `open_read` only looks the entry up and spawns the decompress
             // producer (which itself uses `spawn_blocking`), so it's cheap here.
@@ -169,7 +166,7 @@ impl Volume for ArchiveVolume {
         let archive_path = self.archive_path.clone();
         let volume_name = self.name.clone();
         Box::pin(async move {
-            let entries = spawn_blocking(move || -> Result<Vec<FileEntry>, VolumeError> {
+            let entries = parse_blocking(move || -> Result<Vec<FileEntry>, VolumeError> {
                 let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
                 let nodes = index
                     .list(&inner)
@@ -179,8 +176,7 @@ impl Volume for ArchiveVolume {
                     .map(|node| node_to_entry(&archive_path, &volume_name, node))
                     .collect())
             })
-            .await
-            .expect("spawn_blocking list_directory closure doesn't panic and the task is uncancelable")?;
+            .await?;
 
             // One cumulative progress tick, as the trait asks (backends call
             // `on_progress` at least once; the archive listing is atomic so
@@ -210,7 +206,7 @@ impl Volume for ArchiveVolume {
         let archive_path = self.archive_path.clone();
         let volume_name = self.name.clone();
         Box::pin(async move {
-            spawn_blocking(move || -> Result<FileEntry, VolumeError> {
+            parse_blocking(move || -> Result<FileEntry, VolumeError> {
                 let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
                 let node = index
                     .get(&inner)
@@ -218,7 +214,6 @@ impl Volume for ArchiveVolume {
                 Ok(node_to_entry(&archive_path, &volume_name, &node))
             })
             .await
-            .expect("spawn_blocking get_metadata closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -227,13 +222,16 @@ impl Volume for ArchiveVolume {
         let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
         Box::pin(async move {
-            spawn_blocking(move || match cache.index_for_local(&archive_path) {
-                Ok(index) => index.exists(&inner),
-                // An unreadable archive has no browsable entries.
-                Err(_) => false,
+            parse_blocking(move || -> Result<bool, VolumeError> {
+                Ok(match cache.index_for_local(&archive_path) {
+                    Ok(index) => index.exists(&inner),
+                    // An unreadable archive has no browsable entries.
+                    Err(_) => false,
+                })
             })
             .await
-            .expect("spawn_blocking exists closure doesn't panic and the task is uncancelable")
+            // A parse panic can't confirm existence: report not-exists.
+            .unwrap_or(false)
         })
     }
 
@@ -245,14 +243,13 @@ impl Volume for ArchiveVolume {
         let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
         Box::pin(async move {
-            spawn_blocking(move || -> Result<bool, VolumeError> {
+            parse_blocking(move || -> Result<bool, VolumeError> {
                 let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
                 index
                     .is_directory(&inner)
                     .ok_or_else(|| VolumeError::NotFound(archive_path.join(&inner).display().to_string()))
             })
             .await
-            .expect("spawn_blocking is_directory closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -297,7 +294,7 @@ impl Volume for ArchiveVolume {
         let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
         Box::pin(async move {
-            spawn_blocking(move || -> Result<CopyScanResult, VolumeError> {
+            parse_blocking(move || -> Result<CopyScanResult, VolumeError> {
                 let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
                 let node = index
                     .get(&inner)
@@ -345,7 +342,6 @@ impl Volume for ArchiveVolume {
                 })
             })
             .await
-            .expect("spawn_blocking scan_for_copy closure doesn't panic and the task is uncancelable")
         })
     }
 
@@ -446,6 +442,30 @@ impl VolumeReadStream for ArchiveVolumeReadStream {
     }
 }
 
+/// Runs a blocking archive-parse closure, mapping a `JoinError` — a PANIC inside
+/// the closure — to a typed [`VolumeError`] instead of `expect`-aborting the
+/// whole process.
+///
+/// This DELIBERATELY differs from the repo's usual expect-on-join idiom
+/// (`spawn_blocking(...).await.expect("…the task is uncancelable")`): every path
+/// here parses UNTRUSTED bytes, and a malformed archive can panic deep in the
+/// zip decoder. That must surface as a handled error on the one path being read,
+/// never take the app down. The closure is uncancelable, so the only `JoinError`
+/// is a panic.
+async fn parse_blocking<T, F>(closure: F) -> Result<T, VolumeError>
+where
+    F: FnOnce() -> Result<T, VolumeError> + Send + 'static,
+    T: Send + 'static,
+{
+    match spawn_blocking(closure).await {
+        Ok(result) => result,
+        Err(join_err) => Err(VolumeError::IoError {
+            message: join_err.to_string(),
+            raw_os_error: None,
+        }),
+    }
+}
+
 /// Maps an [`ArchiveNode`] onto a [`FileEntry`]. The full path joins the inner
 /// path under the archive path, so it renders transparently as
 /// `/path/to/foo.zip/inner`. The archive root (`""`) carries the archive's own
@@ -485,19 +505,25 @@ fn node_to_entry(archive_path: &Path, volume_name: &str, node: &ArchiveNode) -> 
 /// recover the fine distinction from a `VolumeError`.
 fn to_volume_error(err: ArchiveError) -> VolumeError {
     match err {
+        // Path-shaped errors keep their native `VolumeError` twins so path-aware
+        // callers keep working.
         ArchiveError::NotFound(path) => VolumeError::NotFound(path),
         ArchiveError::IsADirectory(path) => VolumeError::IsADirectory(path),
-        // We don't decrypt, decode unknown methods, or read a non-zip. From a
-        // browse/extract caller these are all "this backend can't serve that".
-        ArchiveError::Encrypted | ArchiveError::Unsupported(_) | ArchiveError::NotAnArchive => {
-            VolumeError::NotSupported
-        }
         // A structurally broken zip or a live byte-source fault: a serious I/O
         // condition on the path being read.
         ArchiveError::Corrupt(message) | ArchiveError::Io(message) => VolumeError::IoError {
             message,
             raw_os_error: None,
         },
+        // Everything else is "this backend can't or won't serve this archive":
+        // not-a-zip, encrypted, an unsupported codec, a too-large synthesized
+        // tree (the DoS cap), and any future rejection variant the reading core
+        // grows. All collapse to `NotSupported` as a mid-browse backstop; M1b
+        // renders the precise friendly copy from the raw `ArchiveError` at the
+        // routing boundary. The wildcard (rather than an exhaustive list) is
+        // deliberate: it keeps this mapping robust as the core adds rejection
+        // variants, so a new one never breaks the volume layer.
+        _ => VolumeError::NotSupported,
     }
 }
 
