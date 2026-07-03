@@ -496,14 +496,19 @@ fn node_to_entry(archive_path: &Path, volume_name: &str, node: &ArchiveNode) -> 
 /// message-string classification, per `no-string-matching`).
 ///
 /// The path-shaped errors map to their native `VolumeError` twins so
-/// path-aware callers keep working. The archive-integrity family
-/// (not-a-zip / corrupt / encrypted / unsupported) collapses to
-/// `NotSupported` / `IoError` here: this is the mid-browse **backstop**. The
-/// user-facing "not a real archive" / "encrypted" friendly copy is produced at
-/// the M1b routing boundary, straight from the raw `ArchiveError` at
-/// navigation time — not from this mapping — so nothing downstream needs to
-/// recover the fine distinction from a `VolumeError`.
+/// path-aware callers keep working. The rejection family
+/// (not-a-zip / encrypted / unsupported / too-large) collapses to
+/// `NotSupported`, and a broken/faulted read to `IoError`: this is the
+/// mid-browse **backstop**. The user-facing "not a real archive" / "encrypted"
+/// friendly copy is produced at the M1b routing boundary, straight from the raw
+/// `ArchiveError` at navigation time — not from this mapping — so nothing
+/// downstream needs to recover the fine distinction from a `VolumeError`.
 fn to_volume_error(err: ArchiveError) -> VolumeError {
+    // EXHAUSTIVE on purpose (no wildcard): a new `ArchiveError` variant must fail
+    // to compile here and force a conscious mapping, rather than silently
+    // defaulting to `NotSupported`. A future non-rejection variant (say a
+    // transient remote-source error in M5) would be mis-served by a catch-all.
+    // This is the repo's compile-time-tripwire convention (see `analytics.rs`).
     match err {
         // Path-shaped errors keep their native `VolumeError` twins so path-aware
         // callers keep working.
@@ -515,15 +520,13 @@ fn to_volume_error(err: ArchiveError) -> VolumeError {
             message,
             raw_os_error: None,
         },
-        // Everything else is "this backend can't or won't serve this archive":
-        // not-a-zip, encrypted, an unsupported codec, a too-large synthesized
-        // tree (the DoS cap), and any future rejection variant the reading core
-        // grows. All collapse to `NotSupported` as a mid-browse backstop; M1b
-        // renders the precise friendly copy from the raw `ArchiveError` at the
-        // routing boundary. The wildcard (rather than an exhaustive list) is
-        // deliberate: it keeps this mapping robust as the core adds rejection
-        // variants, so a new one never breaks the volume layer.
-        _ => VolumeError::NotSupported,
+        // The rejection family — "this backend can't or won't serve this
+        // archive": not-a-zip, encrypted, an unsupported codec, or a synthesized
+        // tree past the node-count DoS cap. All collapse to `NotSupported`.
+        ArchiveError::NotAnArchive
+        | ArchiveError::Encrypted
+        | ArchiveError::Unsupported(_)
+        | ArchiveError::TooLarge(_) => VolumeError::NotSupported,
     }
 }
 

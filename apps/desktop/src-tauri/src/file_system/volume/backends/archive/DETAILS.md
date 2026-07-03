@@ -218,19 +218,19 @@ archive for this phase. Raise it later if a real workload wants parallel extract
 
 ### Decision: typed `ArchiveError → VolumeError` mapping, no message strings
 
-**Why** (`no-string-matching`): `to_volume_error` names the path-shaped errors → their `VolumeError` twins
-(`NotFound → NotFound`, `IsADirectory → IsADirectory`) so path-aware callers keep working, and names the I/O family
-(`Corrupt` / `Io → IoError`). Everything else — the rejection family (`NotAnArchive` / `Encrypted` / `Unsupported`, the
-`TooLarge` DoS cap, and any future rejection variant the reading core grows) — falls through a **wildcard** to
-`NotSupported`. This is a **mid-browse backstop** (the archive was swapped or corrupted after navigation). The
-user-facing "not a real archive" / "encrypted" friendly copy is produced at the M1b routing boundary straight from the
-raw `ArchiveError` at navigation time — not recovered from a `VolumeError` here — so this mapping deliberately doesn't
-need a new `VolumeError` variant or a dedicated friendly-error reason yet.
+**Why** (`no-string-matching`): `to_volume_error` maps the path-shaped errors to their `VolumeError` twins
+(`NotFound → NotFound`, `IsADirectory → IsADirectory`) so path-aware callers keep working, the I/O family
+(`Corrupt` / `Io → IoError`), and the rejection family (`NotAnArchive` / `Encrypted` / `Unsupported` / the `TooLarge`
+DoS cap `→ NotSupported`). This is a **mid-browse backstop** (the archive was swapped or corrupted after navigation).
+The user-facing "not a real archive" / "encrypted" friendly copy is produced at the M1b routing boundary straight from
+the raw `ArchiveError` at navigation time — not recovered from a `VolumeError` here — so this mapping deliberately
+doesn't need a new `VolumeError` variant or a dedicated friendly-error reason yet.
 
-The wildcard (rather than an exhaustive match) is intentional: the reading core is evolving in parallel, and every new
-rejection variant it adds is another "can't serve this archive" case that correctly defaults to `NotSupported`. Naming
-them all would couple this file to the core's enum and break the volume layer (and coordinated commits) on every new
-variant, for no behavioral gain.
+The match is **exhaustive on purpose — no wildcard**. It's a compile-time tripwire (the repo convention, per
+`analytics.rs`): a new `ArchiveError` variant must fail to compile here and force a conscious mapping. A catch-all
+`_ => NotSupported` would silently mis-serve a future *non-rejection* variant — say a transient remote-source error in
+the remote-archives milestone (M5), which wants a retryable classification, not "not supported". The one-time cost is
+naming each new variant; the payoff is that no failure mode is ever classified by omission.
 
 ## Testing
 
