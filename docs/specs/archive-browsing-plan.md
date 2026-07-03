@@ -1,8 +1,20 @@
 # Archive browsing and editing (zip-first) — implementation plan
 
-Status: reviewed (3 adversarial rounds — 6 BLOCKERs fixed, 11 refinements folded, rc-zip read-side adopted + consistency
-verified) and all decisions resolved. Buildable, ready to execute. Owner: David. Worktree:
-`.claude/worktrees/archive-browsing`.
+Status: in execution. Reviewed (3 adversarial rounds — 6 BLOCKERs fixed, 11 refinements folded, rc-zip read-side
+adopted + consistency verified), all decisions resolved, refreshed 2026-07-03 against the write-ops/commands refactor
+wave. Owner: David. Worktree: `.claude/worktrees/archive-browsing`, branch `david/archive-browsing`.
+
+## Execution ground rules (locked with David, 2026-07-03)
+
+- **Everything lands on the worktree branch.** No merge to `main` until the ENTIRE feature is done and David has
+  reviewed it. Milestones end green and demoable, but they accumulate on `david/archive-browsing`.
+- **M1a starts immediately; M1b is gated on the `FilePane.svelte` drain refactor** (its hook points `handleNavigate`,
+  `handleOpenOrParentKey`, and `navigateToParent` are being extracted to `pane/` modules). David signals when the drain
+  has landed and M1b can start. The `DualPaneExplorer.svelte` drain ideally also lands before M1b (`swapDualPaneState`
+  is on decision 1's threading list) but isn't a hard gate.
+- **Human-eyes review and translations are batched after the milestones.** David reviews the M2 Enter menu, the Archives
+  settings section, and all user-facing copy once the whole feature works, not per milestone. English catalog keys still
+  land with each milestone (`i18n-coverage` is a build error); other languages come after.
 
 ## What we're building
 
@@ -25,9 +37,9 @@ In scope:
 - **Transparent path**: `/path/to/foo.zip/inner`, archive renders exactly like a folder. No volume-selector entry.
 - **Enter behavior**: per-format three-way Browse | Open | Ask, via an Enter-key popup when set to Ask, plus a settings
   section. Covers real archives AND macOS bundles (`.app`, `.bundle`, `.framework`).
-- **Mutation (zip only)**: add/delete/rename via temp+rename safe-overwrite (see Piece 3 — the in-place append method is
-  a later optimization, not the default). Cancellation (no rollback needed), pause/resume, queueing, progress/ETA — all
-  via the existing operation manager.
+- **Mutation (zip only)**: add/delete/rename, plus creating new folders and files inside the archive (mkdir/mkfile), via
+  temp+rename safe-overwrite (see Piece 3 — the in-place append method is a later optimization, not the default).
+  Cancellation (no rollback needed), pause/resume, queueing, progress/ETA — all via the existing operation manager.
 - **Remote-backed archives**: a zip on SMB or MTP is browsed/edited through the same `Volume` abstraction as a local one
   ("even if slower"). MTP in-place editing is a stretch (M6).
 - **Compaction**: moot under temp+rename (each edit already rewrites compactly, no dead space). Returns with M-append
@@ -110,7 +122,9 @@ changeset `{ add, delete, rename }` applied in a single pass by a new `ArchiveEd
 - **Driver is net-new (~85 lines), not "mirror delete."** The volume-delete branch (`write_operations/mod.rs`) is
   bespoke inline ceremony (UUID, state, `ManagedTaskGuard`, `WriteSettledGuard`, terminal match, `on_settled`); the
   manager provides only queue/lanes/busy-set/settle. Cancel/pause/conflict are re-implemented per driver by convention.
-  Budget a new driver of that size.
+  Budget a new driver of that size. The event sink is now injected at the IPC edge (starters take
+  `Arc<dyn OperationEventSink>`; `TauriEventSink` lives only in the command layer), so the driver is headless-testable
+  from day one — TDD it without Tauri.
 - **Plugs into `manager::spawn_managed`** via a `DeferredStart` — confirmed generic, no scheduler change. Inherits queue
   (parent lane), busy-volumes, and the `write-settled` contract.
 - **Pause/cancel** wired in the driver: `PauseGate` checks between entries (and between chunks while streaming an added
@@ -129,7 +143,13 @@ changeset `{ add, delete, rename }` applied in a single pass by a new `ArchiveEd
   as instant. The two-axis estimator still applies (files done as entries land, bytes as they copy), but a "delete"
   shows a real progress bar, not a near-instant flash.
 - Operation mapping: copy/move OUT = pure read (existing engine, needs `scan_for_copy`); copy/move IN = `{ add }`;
-  delete/rename INSIDE = `{ delete | rename }`; move ACROSS = transfer + archive-edit compound on one lifecycle.
+  delete/rename INSIDE = `{ delete | rename }`; **mkdir/mkfile INSIDE = `{ add }`** (an explicit directory entry /
+  zero-byte file); move ACROSS = transfer + archive-edit compound on one lifecycle.
+- **mkdir/mkfile/rename interception happens at the managed layer, not the command layer.** These three now run as
+  managed instant ops (`manager::run_instant`, in `write_operations/create.rs` / `rename.rs`; the IPC commands in
+  `commands/file_system/write_ops.rs` and `commands/rename.rs` are thin shims). An archive target is NOT instant — it's
+  an O(archive) rewrite — so the managed fns fork on an archive target and route to `ArchiveEditOperation` via
+  `spawn_managed` (real progress bar, lane admission) instead of the instant path.
 
 ### Piece 3 — zip mutation mechanism: temp+rename safe-overwrite (default)
 
@@ -179,6 +199,9 @@ and return it + the inner relative path; else return the requested volume + path
 currently does `VolumeManager::get(volume_id)` then `volume.method(path)` — ~18 commands: `path_exists`, listing,
 `create_file`/`create_directory`, `delete_files_start`, `rename_file`, `copy_between_volumes`/`move_between_volumes`,
 `scan_volume_for_copy`/`scan_volume_for_conflicts`, `start_drag_paths`, space polling, the watcher, the listing cache.
+**Re-derive this site list at M1b start**: the commands layout shifted in the 2026-07 refactor wave (`commands/ui.rs`
+split by concern; file-system commands moved under `commands/file_system/`; rename/mkdir/mkfile resolve their volume in
+the managed layer now — intercept there, per Piece 2).
 
 **No-`volume_id` commands need their own archive-aware patch** (these bypass VolumeManager entirely): `viewer_open` /
 `viewer_open_as_text` / `viewer_write_range_to_file` (raw path — **previewing a file inside an archive is unrouted
@@ -311,10 +334,16 @@ Fully parallelizable with M1b until they meet at the resolver seam.
 
 Nice-to-have; can follow M4 if mutation is the priority.
 
-### M4 — Zip mutation (add/delete/rename), temp+rename
+### M4 — Zip mutation (add/delete/rename/mkdir/mkfile), temp+rename
 
 - `ArchiveMutator`: applies a changeset by building the new archive to a `.cmdr-` temp (`raw_copy_file` for retained
   entries, compress only new ones), then atomic-rename. `ZipWriter` over `std::fs::File` (local).
+- **mkdir/mkfile inside archives**: fork the managed instant-op path (`create_directory_managed` / `create_file_managed`
+  / `rename_managed`) on an archive target → `{ add }` changeset (explicit directory entry via
+  `ZipWriter::add_directory` / zero-byte file), through the same driver. Users see a real managed op with progress, not
+  a fake-instant one.
+- **Flip zip capabilities to writable here** (the `'archive'` VolumeKind ships read-only in M1b; M4 turns on
+  `canPasteInto`/`canRenameInPlace`/mkdir/mkfile for zips; tar/7z stay read-only).
 - `ArchiveEditOperation`: net-new ~85-line driver plugged into `manager::spawn_managed`; `PauseGate`/`OperationIntent`
   wiring; progress/ETA on bytes processed; `write-settled` guard; downloads-watcher ignore-set contract.
 - Net-new in-archive conflict resolver sibling (reuse only the pure `ApplyToAll` latch + oneshot plumbing).
@@ -326,7 +355,8 @@ Nice-to-have; can follow M4 if mutation is the priority.
   original fully readable** (temp+rename makes this true — the headline safety property); merge invariant (an edit never
   drops an untouched sibling); two zips on **different mounts** edit in parallel while **same-mount (incl. same-zip)**
   serialize (existing per-device write-serialization, parent lane); pause/resume an add; in-archive name conflict
-  prompt. Re-run data-safety tests yourself before merge; `cargo mutants` on new write-side files. Checks: full
+  prompt; mkdir/mkfile round-trip (dir entry and zero-byte file survive re-read by `unzip`/Archive Utility). Re-run
+  data-safety tests yourself before merge; `cargo mutants` on new write-side files. Checks: full
   `pnpm check --include-slow`, `bindings:regen`.
 
 (Compaction checkbox + dead-space slider deferred to M-append — temp+rename produces no dead space.)
@@ -385,11 +415,11 @@ editing on the device); otherwise the temp+rename whole-object path already work
   extract sequentially in one pass when copying the whole archive (don't issue random per-entry reads). Declare the
   random-access-vs-sequential class so the copy planner avoids O(n²).
 - Mutation paths return `NotSupported` cleanly. Tests: browse + extract per format; the sequential strategy. Checks:
-  `cargo deny check` per new crate (license + 14-day age gate; verify latest on crates.io). Full `pnpm check`.
+  `cargo deny check` per new crate (license + 3-day age gate; verify latest on crates.io). Full `pnpm check`.
 
 ## Dependencies (verify latest + license at add-time)
 
-`cargo deny check` every crate; verify ≥14 days old on crates.io; don't trust training data; Renovate handles updates
+`cargo deny check` every crate; verify ≥3 days old on crates.io; don't trust training data; Renovate handles updates
 after. Shortlist: **`rc-zip` + `rc-zip-tokio`** (sans-IO zip READ — browse/extract, local + remote; enable the `deflate`
 default + any codec feature in-scope archives use — `bzip2`/`lzma`/`zstd` — or extract errors) + **`positioned-io`**
 (ranged-read cursor over the local File), **`zip`** (zip WRITE — temp+rename via `raw_copy_file`/`ZipWriter`; pure-Rust

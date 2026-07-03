@@ -24,6 +24,11 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 - [ ] 2026-07-03 [mcp-tool-registry-plan.md](mcp-tool-registry-plan.md) - Collapse the 4-way hand-synced MCP tool
       bookkeeping (schema, dispatch, auth gate) into one authored `mcp_tools!` registry, so the bearer-token gate is
       by-construction and a destructive tool can't ship ungated. Wire output stays byte-identical.
+- [ ] 2026-07-03 [archive-browsing-plan.md](archive-browsing-plan.md) - Browse + edit zip (and read-only tar/7z)
+      archives as folders: `ArchiveVolume` (rc-zip sans-IO read) + batch `ArchiveEditOperation` on the existing op
+      manager, transparent `/foo.zip/inner` paths, temp+rename mutation in v1 with in-place append as a fast-follow.
+      Executing on the `archive-browsing` worktree; lands as one feature, no partial merges. Supersedes the research in
+      `later/totalcmd-plugin-analysis.md`.
 
 ## Later
 
@@ -47,11 +52,6 @@ Deferred future work. Unchecked by default; the folder name is the status.
       canonical home)
 - [ ] 2026-06-28 later/drive-index-overall-eta.md - Overall indexing ETA across remaining steps, with the backend
       per-phase calibration it needs to stay honest (the step checklist ships per-step ETA only)
-- [ ] 2026-06-30 [archive-browsing-plan.md](later/archive-browsing-plan.md) - Browse + edit zip (and read-only tar/7z)
-      archives as folders: `ArchiveVolume` (rc-zip sans-IO read) + batch `ArchiveEditOperation` on the existing op
-      manager, transparent `/foo.zip/inner` paths, temp+rename mutation in v1 with in-place append as a fast-follow.
-      Reviewed across 3 adversarial rounds, ready to execute. Supersedes the research in
-      `later/totalcmd-plugin-analysis.md`.
 - [ ] 2026-06-30 [later/media-ml-index-plan.md](later/media-ml-index-plan.md) - Searchable image index (OCR, tags,
       faces, text→image) as an ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation
       Models), vectors in SQLite not Postgres, on-device by default with faces/cloud as separate opt-ins. Plan
