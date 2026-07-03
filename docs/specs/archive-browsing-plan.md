@@ -419,6 +419,12 @@ editing on the device); otherwise the temp+rename whole-object path already work
 
 ## Dependencies (verify latest + license at add-time)
 
+Landed with the read core: `rc-zip` 5.4.1 (deflate/bzip2/lzma/zstd features) + `positioned-io` 0.3.5. **`rc-zip-tokio`
+was evaluated and dropped** — its only public entry reader borrows its `ArchiveHandle` (can't back an owned, cached
+stream) and it decompresses on the async executor; we drive `rc-zip`'s sans-IO fsms directly over our own
+`ArchiveByteSource` trait instead (see `backends/archive/DETAILS.md`). References to `rc-zip-tokio` elsewhere in this
+plan read as "the rc-zip read core".
+
 `cargo deny check` every crate; verify ≥3 days old on crates.io; don't trust training data; Renovate handles updates
 after. Shortlist: **`rc-zip` + `rc-zip-tokio`** (sans-IO zip READ — browse/extract, local + remote; enable the `deflate`
 default + any codec feature in-scope archives use — `bzip2`/`lzma`/`zstd` — or extract errors) + **`positioned-io`**
