@@ -19,7 +19,7 @@ frontend" principle says belongs in a `file_system` module.
 The tension to respect: rename/mkdir/mkfile are **instant, scan-free, result-returning** ops. The inline-rename editor
 and the new-file/new-folder dialogs depend on getting the result back synchronously (the new path for cursor placement
 and editor-open; conflict/timeout/success for the rename dialog flow) and on **snappy validation feedback**. So the
-design must NOT turn them into fire-and-forget event-driven ops like copy/move. The mutation gets *wrapped* by the
+design must NOT turn them into fire-and-forget event-driven ops like copy/move. The mutation gets _wrapped_ by the
 manager (registry + busy set + operation_id) but still **runs inline and returns its result**. Validation IPC
 (`check_rename_validity`, `check_rename_permission`) and the FE-side conflict pre-checks (`findFileIndex`) stay exactly
 as they are — snappy, unmanaged.
@@ -40,7 +40,7 @@ wire-compatible.
 - Remove the field from the struct and its `Default`.
 - Remove the `else if config.overwrite { ConflictResolution::Overwrite }` branch in `conflict.rs:128` (the
   `apply_to_all_effective` → `config.conflict_resolution` fallthrough remains).
-- Fix the `tests.rs` references, exactly: `test_config_deserialization` (~54–61) exists *to* deserialize
+- Fix the `tests.rs` references, exactly: `test_config_deserialization` (~54–61) exists _to_ deserialize
   `{"overwrite": true}` — delete that test wholesale. The `assert!(!config.overwrite)` at ~50 and ~68 are line removals
   inside otherwise-valid tests. Keep the `{"conflictResolution": "overwrite"}` case (~78) — that's
   `ConflictResolution::Overwrite`, unrelated.
@@ -59,12 +59,12 @@ conflict path is synchronous and runs on the blocking pool, so it blocks the thr
 
 ### M1.3 Tidy the compat re-export sprawl (judgment call)
 
-`state.rs` re-exports `operation_intent` + `scan_cache` types; `types.rs` re-exports `event_sinks` + `error_classification`
-types, so `state::…` / `types::…` paths keep resolving. This was churn-avoidance during earlier splits. Decide per the
-`ideal-over-cheap` rule, but bounded: only collapse a re-export if the fix is a clean import-path update at the callers,
-not a sprawling touch-every-file churn. Document what was changed and what was deliberately left (with the reason) in
-the `write_operations/DETAILS.md` module inventory. If the churn/benefit ratio is bad, leave it and record the decision.
-Do NOT bump any file-length allowlist to accommodate this — flag instead.
+`state.rs` re-exports `operation_intent` + `scan_cache` types; `types.rs` re-exports `event_sinks` +
+`error_classification` types, so `state::…` / `types::…` paths keep resolving. This was churn-avoidance during earlier
+splits. Decide per the `ideal-over-cheap` rule, but bounded: only collapse a re-export if the fix is a clean import-path
+update at the callers, not a sprawling touch-every-file churn. Document what was changed and what was deliberately left
+(with the reason) in the `write_operations/DETAILS.md` module inventory. If the churn/benefit ratio is bad, leave it and
+record the decision. Do NOT bump any file-length allowlist to accommodate this — flag instead.
 
 **Commit** M1 as its own increment ("Write ops: drop deprecated `overwrite` config flag and tidy stale comments").
 
@@ -79,7 +79,8 @@ testable from birth, and it removes the last Tauri coupling from the orchestrati
 
 ### Current coupling (what to change)
 
-`TauriEventSink::new(...)` is constructed *inside* the orchestration layer at these sites:
+`TauriEventSink::new(...)` is constructed _inside_ the orchestration layer at these sites:
+
 - `mod.rs:314` (copy handler), `mod.rs:526` (trash handler — already wraps in `Arc<dyn OperationEventSink>`).
 - `transfer/move_op.rs:134` (`move_files_with_progress` builds it from `&app`).
 - `transfer/volume_copy.rs:245`, `transfer/volume_move.rs:177`, `:693` (volume copy/move build it from `app`).
@@ -90,10 +91,10 @@ testable from birth, and it removes the last Tauri coupling from the orchestrati
 ### The change
 
 1. **`WriteSettledGuard`**: collapse `EmitSink` to a single `Arc<dyn OperationEventSink>` field (drop the `App` variant
-   and the `#[cfg(test)]` gate). Production constructs it with `Arc::new(TauriEventSink::new(app))` at the edge; the guard
-   calls `sink.emit_settled(event)`. Make `emit_settled` a **required** trait method (drop the `#[allow(dead_code)]`
-   no-op default at `event_sinks.rs:123-127`) so a future sink can't silently swallow settle — `TauriEventSink` and
-   `CollectorEventSink` already implement it.
+   and the `#[cfg(test)]` gate). Production constructs it with `Arc::new(TauriEventSink::new(app))` at the edge; the
+   guard calls `sink.emit_settled(event)`. Make `emit_settled` a **required** trait method (drop the
+   `#[allow(dead_code)]` no-op default at `event_sinks.rs:123-127`) so a future sink can't silently swallow settle —
+   `TauriEventSink` and `CollectorEventSink` already implement it.
 
 2. **`start_write_operation`** (mod.rs): take `events: Arc<dyn OperationEventSink>` instead of `app: tauri::AppHandle`.
    The deferred future uses the sink for the settle guard and the write-error safety-net emits (`sink.emit_error(...)`
@@ -147,17 +148,17 @@ The behavior change. Split into M3a (move logic into modules), M3b (the managed-
 ### The frontend contract (the crux — decide once, here)
 
 **The mutation commands stay request/response and keep returning their result.** `rename_file` still returns
-`Result<(), IpcError>` (the FE maps timeout/conflict/success as today); `create_directory`/`create_file` still return the
-new path `String`. The FE rename/mkdir/mkfile flows are **unchanged** — they call the same wrappers and consume the same
-returns. What changes is purely backend: the mutation is now *wrapped* by a manager registration so it (a) gets an
-`operation_id`, (b) marks its volume busy for its (sub-second) duration so eject can't fire mid-mutation, and (c) appears
-briefly in the queue window's `operations-changed` snapshot.
+`Result<(), IpcError>` (the FE maps timeout/conflict/success as today); `create_directory`/`create_file` still return
+the new path `String`. The FE rename/mkdir/mkfile flows are **unchanged** — they call the same wrappers and consume the
+same returns. What changes is purely backend: the mutation is now _wrapped_ by a manager registration so it (a) gets an
+`operation_id`, (b) marks its volume busy for its (sub-second) duration so eject can't fire mid-mutation, and (c)
+appears briefly in the queue window's `operations-changed` snapshot.
 
-**Validation stays unmanaged and snappy.** `check_rename_validity`, `check_rename_permission`, and the dialogs'
-FE-side `findFileIndex`/`getFileAt` conflict pre-checks do NOT go through the manager. They're read-only, must feel
-instant, and run per-keystroke / on-commit. Only the actual mutating syscall is wrapped.
+**Validation stays unmanaged and snappy.** `check_rename_validity`, `check_rename_permission`, and the dialogs' FE-side
+`findFileIndex`/`getFileAt` conflict pre-checks do NOT go through the manager. They're read-only, must feel instant, and
+run per-keystroke / on-commit. Only the actual mutating syscall is wrapped.
 
-**Instant ops don't reserve a lane or queue behind transfers.** The lane system exists to stop two big *transfers*
+**Instant ops don't reserve a lane or queue behind transfers.** The lane system exists to stop two big _transfers_
 thrashing one device. A metadata syscall (rename/mkdir/mkfile) must not queue behind a multi-minute copy — an inline
 rename that hangs until its 5 s IPC timeout is worse than useless, and the MTP/SMB connection layer already serializes
 physical access. So instant ops register (status `Running`), mark their volume busy, run inline, and clean up — WITHOUT
@@ -165,10 +166,10 @@ lane reservation or an admission gate. This is the key semantic decision; docume
 
 **How they surface in the queue window:** as a `Running` row that goes terminal and is pruned almost immediately (the
 store already prunes terminal rows and the backend removes the record on completion). For a ~50 ms local rename the row
-may never render before it's pruned; for a slow MTP rename it shows "Renaming… / running" with no progress bar (the row's
-`fraction` is null → just label + spinner, which the existing `QueueRow` already handles for the warm-up window). This is
-coherent with existing near-instant-op behavior. Local `root` ops cause NO busy-set churn (`root` is excluded from the
-busy set), so inline-renaming 50 local files won't flicker the eject menu; only volume ops mark busy.
+may never render before it's pruned; for a slow MTP rename it shows "Renaming… / running" with no progress bar (the
+row's `fraction` is null → just label + spinner, which the existing `QueueRow` already handles for the warm-up window).
+This is coherent with existing near-instant-op behavior. Local `root` ops cause NO busy-set churn (`root` is excluded
+from the busy set), so inline-renaming 50 local files won't flicker the eject menu; only volume ops mark busy.
 
 ### M3a — Move rename + create logic into `file_system` modules (commands become thin)
 
@@ -190,8 +191,8 @@ here").
 - **The command files** (`commands/rename.rs`, `commands/file_system/write_ops.rs`): shrink to thin `#[tauri::command]`
   wrappers that expand tilde, resolve `volume_id`, call the module's managed entry point (wrapped in the existing
   timeout tiers — 2 s for validity/permission, 5 s for rename/create), and map errors to `IpcError`. No validation
-  helpers, no `note_pending_write_for_cmdr`, no `notify_mutation` at this layer anymore — those move into the module with
-  the logic they guard.
+  helpers, no `note_pending_write_for_cmdr`, no `notify_mutation` at this layer anymore — those move into the module
+  with the logic they guard.
 - `move_to_trash` (commands/rename.rs) is a separate concern (already delegates to `trash::move_to_trash_sync`); leave
   it, or move it alongside if trivial. Not in scope to change its behavior.
 
@@ -225,22 +226,24 @@ impl OperationManager {
 ```
 
 Notes:
-- **RAII cleanup is mandatory, not happy-path only.** The command still wraps this in a 5 s `tokio::time::timeout`
-  (M3a keeps the tier), so a slow MTP/SMB rename that exceeds 5 s makes the timeout **drop the `run_instant` future
+
+- **RAII cleanup is mandatory, not happy-path only.** The command still wraps this in a 5 s `tokio::time::timeout` (M3a
+  keeps the tier), so a slow MTP/SMB rename that exceeds 5 s makes the timeout **drop the `run_instant` future
   mid-`op.await`** — and the async volume path can also panic. Either exit must still free the record + unregister the
   busy status, or the eject guard sticks ON forever (the volume can never be ejected again) and a phantom `Running` row
-  lingers. Mirror the spawn path: hold a `ManagedTaskGuard` (its `Drop` already does
-  `free_and_remove` → `unregister_operation_status` → `recompute_and_emit_busy_volumes`) across the `op.await`, and
-  `disarm()` it on the happy path right after the explicit `free_and_remove`. Consider an instant-specific guard that
-  ALSO calls `emit_changed` on drop so the queue snapshot re-emits on the drop path too (cosmetic; the busy release is
-  the load-bearing part). This is the single most important correctness point in M3 — pin it with a test (see M3 tests).
+  lingers. Mirror the spawn path: hold a `ManagedTaskGuard` (its `Drop` already does `free_and_remove` →
+  `unregister_operation_status` → `recompute_and_emit_busy_volumes`) across the `op.await`, and `disarm()` it on the
+  happy path right after the explicit `free_and_remove`. Consider an instant-specific guard that ALSO calls
+  `emit_changed` on drop so the queue snapshot re-emits on the drop path too (cosmetic; the busy release is the
+  load-bearing part). This is the single most important correctness point in M3 — pin it with a test (see M3 tests).
 - Reuse `free_and_remove` for the happy-path cleanup (it releases the empty `reserved_lanes`, removes the record,
   unregisters busy, and drops any `WRITE_OPERATION_STATE` entry — harmless if absent). Do NOT run an admission pass on
   completion (instant ops reserve no lanes, so nothing waits on them).
 - Instant ops need NO `WriteOperationState` (no intent/pause/conflict oneshot), so `run_instant` doesn't insert one.
   Consequence: `cancel_operation` on an instant op → `cancel_if_queued` false (it's Running) → falls through to
   `cancel_write_operation(id, false)` which finds no state → safe no-op. Acceptable (instant ops finish before a human
-  can cancel). Optionally hide the cancel affordance for instant op types in `QueueRow` (polish; note but don't gate on).
+  can cancel). Optionally hide the cancel affordance for instant op types in `QueueRow` (polish; note but don't gate
+  on).
 - **New `WriteOperationType` variants**: `Rename`, `CreateFolder`, `CreateFile` (names TBD; keep them queue-label
   friendly). They must be added to the Rust enum → they flow to `bindings.ts` via specta. Handle the new arms wherever
   `WriteOperationType` is exhaustively matched: `analytics::emit_completion_analytics` (instant ops emit no completion
@@ -254,8 +257,8 @@ Notes:
 - **rename**: the managed rename entry point in `write_operations/rename.rs` builds an `OperationDescriptor`
   (`operation_type: Rename`, `volume_ids: [volume_id]` for non-root / `[]` for root, `lanes: []`, a `path_summary`-style
   from→to summary), and runs the actual rename (both branches: `std::fs::rename` for root, `volume.rename` for non-root)
-  + the `note_pending_write_for_cmdr` dual-registration + `notify_rename_in_listing` INSIDE `manager().run_instant(...)`.
-  Returns `Result<(), _>` to the command.
+  - the `note_pending_write_for_cmdr` dual-registration + `notify_rename_in_listing` INSIDE
+    `manager().run_instant(...)`. Returns `Result<(), _>` to the command.
 - **mkdir/mkfile**: same shape; `operation_type: CreateFolder` / `CreateFile`; the closure does the
   `note_pending_write_for_cmdr` + `volume.create_directory` / `create_file` and returns `(PathBuf, expanded)`; the
   command emits the synthetic diff after (or the module does). Returns the path `String` to the command.
@@ -264,25 +267,26 @@ Notes:
   - `QueueRow.svelte:35` icon ternary: add explicit arms for the new types (register any new glyph in
     `lib/ui/icons/icon-map.ts`) — else they fall through to `trash-2` (wrong).
   - `queue.json` `queue.row.label`: add `rename {Renaming} create_folder {Creating folder} create_file {Creating file}`
-    select arms — **snake_case arm names**, because `WriteOperationType` is `#[serde(rename_all = "snake_case")]`, so the
-    variants cross the wire as `rename` / `create_folder` / `create_file`. camelCase arms would never match and fall to
-    `other → "Working"`. (copy/move/delete/trash hid this — they're single words.) Sentence case, present-continuous per
-    the style guide. Same snake_case values in the `QueueRow.svelte:35` icon arms.
+    select arms — **snake_case arm names**, because `WriteOperationType` is `#[serde(rename_all = "snake_case")]`, so
+    the variants cross the wire as `rename` / `create_folder` / `create_file`. camelCase arms would never match and fall
+    to `other → "Working"`. (copy/move/delete/trash hid this — they're single words.) Sentence case, present-continuous
+    per the style guide. Same snake_case values in the `QueueRow.svelte:35` icon arms.
   - Confirm the store's terminal-prune + progress-merge handles a row that appears then vanishes with no progress event
     (the explore confirms it does; add/extend an `operations-store` test that an instant op — Running snapshot then
     removed — never assumes a progress bar).
   - Empty-state / window-description copy (`queue.empty.body`) enumerates "copies, moves, and deletes" — leave as-is
-    (instant ops are transient and not the queue's purpose) or broaden minimally; David reviews copy. Flag, don't invent.
+    (instant ops are transient and not the queue's purpose) or broaden minimally; David reviews copy. Flag, don't
+    invent.
 - **Docs**: update `write_operations/CLAUDE.md` must-knows — the "**Every write op spawns through
   `manager::spawn_managed`** (all five paths)" invariant is now FALSE for instant ops; reword it to carve out the
   instant path explicitly (else a future agent "cleans up" `run_instant` into `spawn_managed` and silently reintroduces
   lane-queuing for metadata syscalls — the regression the design forbids). Same for the `manager.rs:1-53` module-doc
   "five independent spawn paths" framing. Add the busy-set + queue behavior for instant ops.
   `write_operations/DETAILS.md` (a "Managed instant ops" section: the no-lane/no-queue decision + why, the RAII cleanup
-  contract, the result-returning contract, queue surfacing), `commands/CLAUDE.md` (rename/create
-  are now managed; the validity/permission checks remain the unmanaged snappy path), and the frontend `queue/CLAUDE.md`
-  + `file-operations/CLAUDE.md` where operation types are enumerated. Keep each within its must-know bar; put depth in
-  DETAILS. Do NOT bump `claude-md-length` allowlists — if a C.md would grow past budget, move depth to its D.md.
+  contract, the result-returning contract, queue surfacing), `commands/CLAUDE.md` (rename/create are now managed; the
+  validity/permission checks remain the unmanaged snappy path), and the frontend `queue/CLAUDE.md`
+  - `file-operations/CLAUDE.md` where operation types are enumerated. Keep each within its must-know bar; put depth in
+    DETAILS. Do NOT bump `claude-md-length` allowlists — if a C.md would grow past budget, move depth to its D.md.
 
 ### Tests (M3, real red→green for the behavior)
 
@@ -295,14 +299,14 @@ Per the module's ~85–90% mutation bar and `tdd-red-green`:
      running; a root rename marks nothing busy (root excluded). Assert via `busy_volume_ids()`.
   3. `run_instant` does NOT reserve a lane: a transfer on the same lane is admitted concurrently (assert the transfer
      isn't queued behind the instant op).
-  4. **The B1 net (most important):** when the `op` future is dropped mid-flight (simulate the timeout: `select!` /
-     drop the `run_instant` future while `op` is parked on a `Notify`) OR panics, the record is removed AND the busy
+  4. **The B1 net (most important):** when the `op` future is dropped mid-flight (simulate the timeout: `select!` / drop
+     the `run_instant` future while `op` is parked on a `Notify`) OR panics, the record is removed AND the busy
      registration is released (`busy_volume_ids()` no longer lists the volume; `list()` no longer has the record). This
      fails without the RAII guard.
   5. The rename mutation still returns its result (success / conflict-without-force / timeout-shape) unchanged — port
-     the existing `commands/rename.rs` tests to prove the managed wrapper is transparent to the caller.
-  These are genuine red→green: the `run_instant` method and the new op types don't exist yet, so the tests fail to
-  compile / fail first, then pass.
+     the existing `commands/rename.rs` tests to prove the managed wrapper is transparent to the caller. These are
+     genuine red→green: the `run_instant` method and the new op types don't exist yet, so the tests fail to compile /
+     fail first, then pass.
 - **Backend, existing:** all `write_operations` + `commands/rename.rs` + `commands/file_system/write_ops.rs` tests stay
   green through the move (M3a) — a real regression net for the logic relocation.
 - **Frontend:** extend `operations-store.svelte.test.ts` for an instant op (Running → removed, no progress); a
@@ -319,8 +323,8 @@ FE + docs).
 
 ## Checks + wrap
 
-- `pnpm check --fast` while iterating; full `pnpm check` per milestone; `pnpm check --include-slow` before wrap
-  (never tail/truncate the output — `no-tail-checker`).
+- `pnpm check --fast` while iterating; full `pnpm check` per milestone; `pnpm check --include-slow` before wrap (never
+  tail/truncate the output — `no-tail-checker`).
 - Strip milestone tags (`M1`/`M2`/`M3`/"milestone") from touched code + docs before wrap (they live only in this plan).
 - Do NOT bump any `file-length` / `claude-md-length` allowlist. If something would grow past budget, split/move depth to
   DETAILS and, if still over, flag it in the final report.

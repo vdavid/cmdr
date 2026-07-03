@@ -14,9 +14,9 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
       (Phase 2)
 - [ ] 2026-06-29 [drive-index-progress-plan.md](drive-index-progress-plan.md) - Clearer, unified drive-indexing
       progress: name the drive, count-first honest progress, one shared status model, and a per-volume step checklist.
-- [ ] 2026-07-03 [write-ops-managed-plan.md](write-ops-managed-plan.md) - Route rename/mkdir/mkfile through the operation
-      manager as scan-free instant ops (busy/eject guard + queue visibility, still result-returning), lift the event
-      sink to the IPC edge, and sweep small write-ops debt.
+- [ ] 2026-07-03 [write-ops-managed-plan.md](write-ops-managed-plan.md) - Route rename/mkdir/mkfile through the
+      operation manager as scan-free instant ops (busy/eject guard + queue visibility, still result-returning), lift the
+      event sink to the IPC edge, and sweep small write-ops debt.
 
 ## Later
 
