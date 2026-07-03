@@ -334,8 +334,6 @@ export const commands = {
     config: {
       // Progress update interval in milliseconds (default: 200)
       progressIntervalMs?: number
-      // Whether to overwrite existing files (deprecated, use conflict_resolution)
-      overwrite?: boolean
       conflictResolution?: ConflictResolution
       /**
        *  If true, only scan and detect conflicts without executing the operation.
@@ -368,8 +366,6 @@ export const commands = {
     config: {
       // Progress update interval in milliseconds (default: 200)
       progressIntervalMs?: number
-      // Whether to overwrite existing files (deprecated, use conflict_resolution)
-      overwrite?: boolean
       conflictResolution?: ConflictResolution
       /**
        *  If true, only scan and detect conflicts without executing the operation.
@@ -402,8 +398,6 @@ export const commands = {
     config: {
       // Progress update interval in milliseconds (default: 200)
       progressIntervalMs?: number
-      // Whether to overwrite existing files (deprecated, use conflict_resolution)
-      overwrite?: boolean
       conflictResolution?: ConflictResolution
       /**
        *  If true, only scan and detect conflicts without executing the operation.
@@ -433,8 +427,6 @@ export const commands = {
     config: {
       // Progress update interval in milliseconds (default: 200)
       progressIntervalMs?: number
-      // Whether to overwrite existing files (deprecated, use conflict_resolution)
-      overwrite?: boolean
       conflictResolution?: ConflictResolution
       /**
        *  If true, only scan and detect conflicts without executing the operation.
@@ -6240,8 +6232,6 @@ export type WriteErrorEvent = {
 export type WriteOperationConfig = {
   // Progress update interval in milliseconds (default: 200)
   progressIntervalMs?: number
-  // Whether to overwrite existing files (deprecated, use conflict_resolution)
-  overwrite?: boolean
   conflictResolution?: ConflictResolution
   /**
    *  If true, only scan and detect conflicts without executing the operation.

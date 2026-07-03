@@ -430,8 +430,6 @@ export type ConflictResolution = 'stop' | 'skip' | 'overwrite' | 'rename' | 'ove
 export interface WriteOperationConfig {
   /** Progress update interval in milliseconds (default: 200) */
   progressIntervalMs?: number
-  /** Whether to overwrite existing files (deprecated, use conflictResolution) */
-  overwrite?: boolean
   /** How to handle conflicts */
   conflictResolution?: ConflictResolution
   /** If true, only scan and detect conflicts without executing the operation */

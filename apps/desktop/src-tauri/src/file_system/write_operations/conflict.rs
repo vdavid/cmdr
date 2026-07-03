@@ -125,8 +125,6 @@ pub(super) fn resolve_conflict(
     {
         // Use saved "apply to all" resolution
         saved_resolution
-    } else if config.overwrite {
-        ConflictResolution::Overwrite
     } else {
         config.conflict_resolution
     };
@@ -174,8 +172,10 @@ pub(super) fn resolve_conflict(
             // The sender is dropped on cancel_write_operation, which unblocks the
             // receiver immediately. No timeout needed (the old 30s timeout was a
             // safety net; sender-drop is strictly better).
-            // TEMPORARY: blocking_recv because this runs inside spawn_blocking.
-            // Will become rx.await in milestone 2 full async migration.
+            // `blocking_recv` because this local-FS conflict path is synchronous
+            // and runs inside `spawn_blocking`, so it blocks its blocking-pool
+            // thread on the oneshot. The async volume path (`transfer/volume_conflict.rs`)
+            // uses `rx.await` instead.
             match rx.blocking_recv() {
                 Ok(response) => {
                     // Save the original (unreduced) variant under the right bucket so

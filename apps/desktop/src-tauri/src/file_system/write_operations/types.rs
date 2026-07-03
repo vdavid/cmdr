@@ -483,9 +483,6 @@ pub struct WriteOperationConfig {
     /// Progress update interval in milliseconds (default: 200)
     #[serde(default = "default_progress_interval")]
     pub progress_interval_ms: u64,
-    /// Whether to overwrite existing files (deprecated, use conflict_resolution)
-    #[serde(default)]
-    pub overwrite: bool,
     #[serde(default)]
     pub conflict_resolution: ConflictResolution,
     /// If true, only scan and detect conflicts without executing the operation.
@@ -512,7 +509,6 @@ impl Default for WriteOperationConfig {
     fn default() -> Self {
         Self {
             progress_interval_ms: default_progress_interval(),
-            overwrite: false,
             conflict_resolution: ConflictResolution::Stop,
             dry_run: false,
             sort_column: SortColumn::default(),

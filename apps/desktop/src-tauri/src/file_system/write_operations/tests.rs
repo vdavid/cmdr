@@ -47,17 +47,8 @@ fn test_cancel_sets_intent() {
 fn test_default_config() {
     let config = WriteOperationConfig::default();
     assert_eq!(config.progress_interval_ms, 200);
-    assert!(!config.overwrite);
     assert_eq!(config.conflict_resolution, ConflictResolution::Stop);
     assert!(!config.dry_run);
-}
-
-#[test]
-fn test_config_deserialization() {
-    let json = r#"{"progressIntervalMs": 100, "overwrite": true}"#;
-    let config: WriteOperationConfig = serde_json::from_str(json).unwrap();
-    assert_eq!(config.progress_interval_ms, 100);
-    assert!(config.overwrite);
 }
 
 #[test]
@@ -65,7 +56,6 @@ fn test_config_default_values_deserialization() {
     let json = r#"{}"#;
     let config: WriteOperationConfig = serde_json::from_str(json).unwrap();
     assert_eq!(config.progress_interval_ms, 200);
-    assert!(!config.overwrite);
     assert!(!config.dry_run);
 }
 
