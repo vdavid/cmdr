@@ -9,6 +9,14 @@
 //! lifecycle states and **lane-based admission** that can serialize ops which
 //! would thrash a shared device.
 //!
+//! Streaming transfers/deletes (copy/move/delete/trash) flow through
+//! `spawn_managed`. The scan-free, near-instant metadata ops (rename / mkdir /
+//! mkfile) flow through [`run_instant`](OperationManager::run_instant) instead:
+//! they register + mark their volumes busy but reserve NO lane and run NO
+//! admission pass (a metadata syscall must never queue behind a multi-minute
+//! transfer), run inline, and return their result. See `run_instant` for the
+//! full contract; the sections below describe the `spawn_managed` path.
+//!
 //! ## Lanes
 //!
 //! Each op touches the [`LaneKey`](crate::file_system::volume::LaneKey)s of its
@@ -390,13 +398,6 @@ impl OperationManager {
     /// intent/pause/conflict oneshot). Consequence: `cancel_operation` on an
     /// instant op is a safe no-op (`cancel_if_queued` is false for a Running op,
     /// then `cancel_write_operation` finds no state).
-    #[cfg_attr(
-        not(test),
-        allow(
-            dead_code,
-            reason = "production callers (managed rename/mkdir/mkfile) are wired in the next milestone; until then it has only test callers, so the non-test lib build sees it as unused under `#![deny(unused)]`"
-        )
-    )]
     pub(crate) async fn run_instant<T>(
         &'static self,
         descriptor: OperationDescriptor,
@@ -647,25 +648,11 @@ impl Drop for ManagedTaskGuard {
 /// Instant ops reserve no lanes, so unlike `ManagedTaskGuard` there's nothing to
 /// release there. The happy path disarms it after an explicit `free_and_remove`
 /// + `emit_changed`, making the Drop a no-op.
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "only `run_instant` constructs it, which has only test callers until the next milestone wires the managed mutations, so the non-test lib build sees it as unused under `#![deny(unused)]`"
-    )
-)]
 struct InstantTaskGuard {
     operation_id: String,
     armed: bool,
 }
 
-#[cfg_attr(
-    not(test),
-    allow(
-        dead_code,
-        reason = "only `run_instant` uses these, and it has only test callers until the next milestone (see the struct note)"
-    )
-)]
 impl InstantTaskGuard {
     fn new(operation_id: impl Into<String>) -> Self {
         Self {

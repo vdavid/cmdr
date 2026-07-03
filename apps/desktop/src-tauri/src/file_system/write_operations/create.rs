@@ -1,0 +1,247 @@
+//! New-folder / new-file creation and the managed create mutations.
+//!
+//! The command layer (`commands/file_system/write_ops.rs`) is a thin
+//! pass-through: it expands tilde, resolves the `volume_id`, calls
+//! `create_directory_managed` / `create_file_managed` wrapped in its 5 s IPC
+//! timeout, and maps the returned `String` error to `IpcError`. All the logic
+//! lives here per "smart backend / thin frontend"; the backend never names the
+//! command layer's `IpcError` or `expand_tilde`.
+//!
+//! Create is a managed instant op: the mutation runs inside
+//! `manager::run_instant`, so it registers a `Running` record + marks its volume
+//! busy (eject guard) for its sub-second duration, yet still runs inline and
+//! returns the new path to the caller. It does NOT reserve a lane or queue behind
+//! transfers (see `manager::run_instant`). There's no inner timeout: the
+//! command's outer 5 s timeout drops the whole future on a hang, and the
+//! `InstantTaskGuard` releases the busy set on that drop.
+//!
+//! The synthetic-listing-diff update (`emit_synthetic_entry_diff` /
+//! `should_emit_synthetic_diff`) lives here, co-located with the create op it
+//! serves: it's the listing-cache half of "a new entry appeared", and keeping it
+//! next to the create keeps the command a pure pass-through.
+
+use std::path::{Path, PathBuf};
+
+use uuid::Uuid;
+
+use super::manager::{self, OperationDescriptor, OperationSummaryText};
+use super::types::WriteOperationType;
+use crate::file_system::get_volume_manager;
+
+/// Creates a folder as a managed instant op and returns its new path. `parent_path`
+/// is already tilde-expanded by the command layer.
+///
+/// Wraps `create_directory_core` in `manager::run_instant` (busy-marking the
+/// volume + registering a brief `Running` record) and emits the synthetic listing
+/// diff on success for local-FS-backed volumes.
+pub(crate) async fn create_directory_managed(
+    volume_id: Option<String>,
+    parent_path: String,
+    name: String,
+) -> Result<String, String> {
+    let volume_id_for_diff = volume_id.clone();
+    let descriptor = instant_descriptor(WriteOperationType::CreateFolder, volume_id.as_deref(), &name);
+
+    let (new_path, expanded_path) = manager::manager()
+        .run_instant(descriptor, create_directory_core(volume_id, &parent_path, &name))
+        .await?;
+
+    // Synthetic diff only works for volumes backed by the local filesystem.
+    // Protocol-only volumes (MTP) handle UI updates through their own event systems.
+    if should_emit_synthetic_diff(volume_id_for_diff.as_deref()) {
+        emit_synthetic_entry_diff(volume_id_for_diff.as_deref(), &new_path, &PathBuf::from(&expanded_path));
+    }
+    Ok(new_path.to_string_lossy().to_string())
+}
+
+/// Creates an empty file as a managed instant op and returns its new path.
+/// Same shape as [`create_directory_managed`].
+pub(crate) async fn create_file_managed(
+    volume_id: Option<String>,
+    parent_path: String,
+    name: String,
+) -> Result<String, String> {
+    let volume_id_for_diff = volume_id.clone();
+    let descriptor = instant_descriptor(WriteOperationType::CreateFile, volume_id.as_deref(), &name);
+
+    let (new_path, expanded_path) = manager::manager()
+        .run_instant(descriptor, create_file_core(volume_id, &parent_path, &name))
+        .await?;
+
+    if should_emit_synthetic_diff(volume_id_for_diff.as_deref()) {
+        emit_synthetic_entry_diff(volume_id_for_diff.as_deref(), &new_path, &PathBuf::from(&expanded_path));
+    }
+    Ok(new_path.to_string_lossy().to_string())
+}
+
+/// Builds the instant-op descriptor: no lanes, the new entry's name as the
+/// summary, and the volume marked busy for non-root volumes (`root` is never
+/// ejectable, so it stays out of the busy set — no eject-menu churn for local
+/// creates).
+fn instant_descriptor(op_type: WriteOperationType, volume_id: Option<&str>, name: &str) -> OperationDescriptor {
+    let volume_ids = match volume_id {
+        None | Some("root") => vec![],
+        Some(id) => vec![id.to_string()],
+    };
+    OperationDescriptor {
+        operation_id: Uuid::new_v4().to_string(),
+        operation_type: op_type,
+        lanes: vec![],
+        volume_ids,
+        summary: OperationSummaryText {
+            source: Some(name.to_string()),
+            destination: None,
+        },
+    }
+}
+
+/// Core mkdir logic: validates the name, resolves the volume, registers the
+/// downloads-watcher ignore, and issues the `create_directory` syscall. Returns
+/// `(new_path, parent_path)` (the parent is the already-expanded path passed in).
+/// Kept separate from the managed wrapper so it's testable without the operation
+/// manager. `parent_path` must already be tilde-expanded by the caller.
+pub(crate) async fn create_directory_core(
+    volume_id: Option<String>,
+    parent_path: &str,
+    name: &str,
+) -> Result<(PathBuf, String), String> {
+    if name.is_empty() {
+        return Err("Folder name cannot be empty".to_string());
+    }
+    if name.contains('/') || name.contains('\0') {
+        return Err("Folder name contains invalid characters".to_string());
+    }
+
+    let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
+    let expanded_path = parent_path.to_string();
+
+    // Try to use Volume abstraction
+    if let Some(volume) = get_volume_manager().get(&volume_id) {
+        let new_path = PathBuf::from(&expanded_path).join(name);
+
+        // Register the new directory path with the downloads watcher's
+        // ignore set; no-ops for paths outside ~/Downloads.
+        crate::downloads::note_pending_write_for_cmdr(&new_path);
+
+        volume.create_directory(&new_path).await.map_err(|e| match e {
+            crate::file_system::VolumeError::AlreadyExists(_) => format!("'{}' already exists", name),
+            crate::file_system::VolumeError::PermissionDenied(_) => {
+                format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
+            }
+            _ => format!("Couldn't create folder: {}", e),
+        })?;
+
+        return Ok((new_path, expanded_path));
+    }
+
+    // "root" and every mounted volume is always registered in `VolumeManager`,
+    // so reaching here means the volume was unregistered out from under us (e.g.
+    // an unmount race). Error out instead of falling back to an untimed
+    // synchronous `std::fs::create_dir` on the async executor, which would
+    // violate this module's "every FS-touching command is timed" contract on a
+    // hung mount.
+    Err(format!("Volume not found: {}", volume_id))
+}
+
+/// Core file-creation logic. Same shape as [`create_directory_core`].
+pub(crate) async fn create_file_core(
+    volume_id: Option<String>,
+    parent_path: &str,
+    name: &str,
+) -> Result<(PathBuf, String), String> {
+    if name.is_empty() {
+        return Err("File name cannot be empty".to_string());
+    }
+    if name.contains('/') || name.contains('\0') {
+        return Err("File name contains invalid characters".to_string());
+    }
+
+    let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
+    let expanded_path = parent_path.to_string();
+
+    // Try to use Volume abstraction
+    if let Some(volume) = get_volume_manager().get(&volume_id) {
+        let new_path = PathBuf::from(&expanded_path).join(name);
+
+        // Register the new file path with the downloads watcher's ignore
+        // set; no-ops for paths outside ~/Downloads.
+        crate::downloads::note_pending_write_for_cmdr(&new_path);
+
+        volume.create_file(&new_path, b"").await.map_err(|e| match e {
+            crate::file_system::VolumeError::AlreadyExists(_) => format!("'{}' already exists", name),
+            crate::file_system::VolumeError::PermissionDenied(_) => {
+                format!("Permission denied: cannot create '{}' in '{}'", name, parent_path)
+            }
+            _ => format!("Couldn't create file: {}", e),
+        })?;
+
+        return Ok((new_path, expanded_path));
+    }
+
+    // See `create_directory_core`: an unregistered volume means an unmount race;
+    // error out instead of an untimed `std::fs::File::create_new` fallback.
+    Err(format!("Volume not found: {}", volume_id))
+}
+
+/// Returns true if a synthetic entry diff should be emitted for this volume.
+/// Protocol-only volumes (like MTP) don't support `std::fs` access, so synthetic
+/// diffs would fail. These volumes handle UI updates through their own event systems.
+fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
+    match volume_id {
+        None => true, // No volume_id means local filesystem
+        Some(id) => get_volume_manager()
+            .get(id)
+            .is_none_or(|v| v.supports_local_fs_access()),
+    }
+}
+
+/// Queues a synthetic `directory-diff` event for a newly created entry.
+///
+/// Best-effort: if any step fails (stat, cache lookup, etc.) we log a warning
+/// and return. The watcher will pick up the change later.
+fn emit_synthetic_entry_diff(volume_id: Option<&str>, entry_path: &Path, parent_path: &Path) {
+    use crate::file_system::listing::diff_emitter::enqueue_diff;
+    use crate::file_system::listing::reading::get_single_entry;
+    use crate::file_system::listing::{find_listings_for_path, insert_entry_sorted};
+    use crate::file_system::watcher::DiffChange;
+
+    // 1. Construct a FileEntry for the new entry
+    let mut entry = match get_single_entry(entry_path) {
+        Ok(e) => e,
+        Err(e) => {
+            log::warn!("Synthetic entry diff: couldn't stat new entry: {}", e);
+            return;
+        }
+    };
+
+    // 2. Enrich with index data. `None` means the local filesystem (`root`); this
+    // path only runs for local-FS volumes (`should_emit_synthetic_diff`).
+    let volume_id = volume_id.unwrap_or(crate::indexing::ROOT_VOLUME_ID);
+    crate::indexing::enrich_entries_with_index_on_volume(volume_id, std::slice::from_mut(&mut entry));
+
+    // 3. Find affected listings
+    let listings = find_listings_for_path(parent_path);
+    if listings.is_empty() {
+        return;
+    }
+
+    // 4. For each listing, insert and enqueue
+    for (listing_id, _sort_by, _sort_order, _dir_sort_mode) in listings {
+        // insert_entry_sorted acquires LISTING_CACHE write lock and releases it on return
+        let Some(index) = insert_entry_sorted(&listing_id, entry.clone()) else {
+            continue; // Already exists or listing gone
+        };
+
+        enqueue_diff(
+            &listing_id,
+            vec![DiffChange {
+                change_type: "add".to_string(),
+                entry: entry.clone(),
+                index,
+            }],
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests;

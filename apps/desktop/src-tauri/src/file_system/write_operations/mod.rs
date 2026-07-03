@@ -19,6 +19,7 @@
 mod analytics;
 mod cancellable;
 mod conflict;
+mod create;
 mod delete;
 mod durability;
 mod error_classification;
@@ -27,6 +28,7 @@ mod event_sinks;
 mod manager;
 mod operation_intent;
 mod overwrite;
+mod rename;
 mod scan;
 mod scan_cache;
 mod scan_preview;
@@ -87,6 +89,14 @@ pub use state::{
 pub use manager::{
     OperationSnapshot, OperationSummaryText, OperationsChanged, cancel_operation, cancel_operations,
     init_operation_event_emitter, list_operations, pause_all, pause_operation, resume_all, resume_operation,
+};
+// Managed instant mutations (rename / mkdir / mkfile) + rename validation. The
+// thin IPC commands (`commands/rename.rs`, `commands/file_system/write_ops.rs`)
+// call these; `RenameValidityResult` rides into `bindings.ts` via the
+// `check_rename_validity` command signature.
+pub(crate) use create::{create_directory_managed, create_file_managed};
+pub(crate) use rename::{
+    RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
 };
 // External busy-volume seam for the drag-out fulfillment service (see
 // `state.rs` § "External busy-volume seam"). `pub(crate)` so only in-crate

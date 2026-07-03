@@ -1,11 +1,19 @@
 //! Tauri commands for file rename operations.
+//!
+//! Thin pass-throughs: the rename validation + the managed rename mutation live
+//! in `file_system::write_operations::rename`. These commands expand tilde,
+//! resolve the `volume_id`, apply the IPC timeout tiers (2 s validity/permission,
+//! 5 s rename), and map errors to `IpcError`.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tokio::time::Duration;
 
 use super::file_system::expand_tilde;
 use super::util::IpcError;
 use crate::file_system::write_operations::trash::move_to_trash_sync;
+use crate::file_system::write_operations::{
+    RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
+};
 
 // ============================================================================
 // Rename operations
@@ -50,34 +58,6 @@ pub async fn check_rename_permission(path: String) -> Result<(), IpcError> {
     .map_err(IpcError::from_err)
 }
 
-/// Result of a rename validity check.
-#[derive(Debug, Clone, serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct RenameValidityResult {
-    /// Whether the new name is valid (passes filename validation).
-    pub valid: bool,
-    /// Validation error message, if any.
-    pub error: Option<crate::file_system::validation::ValidationError>,
-    /// Whether a conflict exists (a sibling with the same name).
-    pub has_conflict: bool,
-    /// If there's a conflict, whether it's a case-only rename of the same file (same inode).
-    pub is_case_only_rename: bool,
-    /// Conflicting file info, if any.
-    pub conflict: Option<ConflictFileInfo>,
-}
-
-/// Metadata about a conflicting sibling file.
-#[derive(Debug, Clone, serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct ConflictFileInfo {
-    pub name: String,
-    /// In bytes.
-    pub size: u64,
-    /// Unix timestamp in seconds.
-    pub modified: Option<i64>,
-    pub is_directory: bool,
-}
-
 /// Validates a new filename and checks for conflicts in the same directory.
 /// Uses inode comparison to detect case-only renames (valid on case-insensitive APFS).
 /// When `volume_id` is provided and not `"root"`, uses the Volume trait for conflict detection
@@ -106,338 +86,27 @@ pub async fn check_rename_validity(
 ///
 /// When `volume_id` is provided and not `"root"`, routes through the Volume trait
 /// (needed for MTP and other non-local volumes). Otherwise uses `std::fs::rename`.
+/// The mutation runs as a managed instant op (busy-marks the volume, appears
+/// briefly in the queue), still inline and result-returning.
 #[tauri::command]
 #[specta::specta]
 pub async fn rename_file(from: String, to: String, force: bool, volume_id: Option<String>) -> Result<(), IpcError> {
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
-    if volume_id_str != "root" {
-        // Volume-aware rename (MTP, SMB, and other non-local volumes).
-        // The volume's `rename` method calls `notify_mutation` internally,
-        // so the listing cache is updated automatically.
-        let volume = crate::file_system::get_volume_manager()
-            .get(&volume_id_str)
-            .ok_or_else(|| IpcError::from_err(format!("Volume '{}' not found", volume_id_str)))?;
-
-        let from_path = PathBuf::from(&from);
-        let to_path = PathBuf::from(&to);
-
-        // Register both halves of the rename with the downloads watcher's
-        // ignore set: `to` so the rename-arrival event is suppressed, `from`
-        // so a Cmdr-initiated move OUT of Downloads is also suppressed
-        // (the watcher's rename-from-ignored-source branch checks this).
-        // No-ops for paths outside ~/Downloads.
-        crate::downloads::note_pending_write_for_cmdr(&from_path);
-        crate::downloads::note_pending_write_for_cmdr(&to_path);
-
-        tokio::time::timeout(Duration::from_secs(5), volume.rename(&from_path, &to_path, force))
-            .await
-            .map_err(|_| IpcError::timeout())?
-            .map_err(|e| IpcError::from_err(format!("{}", e)))
+    let (from_path, to_path) = if volume_id_str != "root" {
+        // Non-local volume paths are volume-relative; never tilde-expand them.
+        (PathBuf::from(&from), PathBuf::from(&to))
     } else {
-        // Local filesystem rename
-        let from_expanded = expand_tilde(&from);
-        let to_expanded = expand_tilde(&to);
-        let from_path = PathBuf::from(&from_expanded);
-        let to_path = PathBuf::from(&to_expanded);
-
-        let from_for_notify = from_path.clone();
-        let to_for_notify = to_path.clone();
-
-        // See volume-aware branch above for the dual-registration rationale.
-        crate::downloads::note_pending_write_for_cmdr(&from_path);
-        crate::downloads::note_pending_write_for_cmdr(&to_path);
-
-        tokio::time::timeout(
-            Duration::from_secs(5),
-            tokio::task::spawn_blocking(move || {
-                if !force && from_path != to_path && std::fs::symlink_metadata(&to_path).is_ok() {
-                    return Err(format!("'{}' already exists", to_path.display()));
-                }
-                std::fs::rename(&from_path, &to_path).map_err(|e| format!("Rename failed: {}", e))
-            }),
-        )
-        .await
-        .map_err(|_| IpcError::timeout())?
-        .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
-        .map_err(IpcError::from_err)?;
-
-        // Notify listing cache about the rename (fixes pre-existing bug where
-        // rename had no listing notification on any volume type).
-        notify_rename_in_listing(&volume_id_str, &from_for_notify, &to_for_notify).await;
-
-        Ok(())
-    }
-}
-
-/// Notifies the listing cache about a rename via the volume's `notify_mutation`.
-async fn notify_rename_in_listing(volume_id: &str, from: &Path, to: &Path) {
-    use crate::file_system::volume::MutationEvent;
-
-    let volume = match crate::file_system::get_volume_manager().get(volume_id) {
-        Some(v) => v,
-        None => return,
+        (PathBuf::from(expand_tilde(&from)), PathBuf::from(expand_tilde(&to)))
     };
 
-    if let (Some(from_parent), Some(from_name), Some(to_name)) = (from.parent(), from.file_name(), to.file_name()) {
-        if from.parent() == to.parent() {
-            // Same-directory rename
-            volume
-                .notify_mutation(
-                    volume_id,
-                    from_parent,
-                    MutationEvent::Renamed {
-                        from: from_name.to_string_lossy().to_string(),
-                        to: to_name.to_string_lossy().to_string(),
-                    },
-                )
-                .await;
-        } else {
-            // Cross-directory move
-            volume
-                .notify_mutation(
-                    volume_id,
-                    from_parent,
-                    MutationEvent::Deleted(from_name.to_string_lossy().to_string()),
-                )
-                .await;
-            if let Some(to_parent) = to.parent() {
-                volume
-                    .notify_mutation(
-                        volume_id,
-                        to_parent,
-                        MutationEvent::Created(to_name.to_string_lossy().to_string()),
-                    )
-                    .await;
-            }
-        }
-    }
-}
-
-/// Synchronous permission check implementation.
-fn check_rename_permission_sync(path: &Path) -> Result<(), String> {
-    // Check that the file itself exists
-    if std::fs::symlink_metadata(path).is_err() {
-        return Err(format!("'{}' doesn't exist", path.display()));
-    }
-
-    // Check parent directory is writable
-    let parent = path
-        .parent()
-        .ok_or_else(|| "Can't rename the root directory".to_string())?;
-    check_dir_writable(parent)?;
-
-    // Check macOS-specific flags (immutable, SIP, locks)
-    #[cfg(target_os = "macos")]
-    check_macos_flags(path)?;
-
-    Ok(())
-}
-
-/// Checks if a directory is writable using access(W_OK).
-#[cfg(unix)]
-fn check_dir_writable(dir: &Path) -> Result<(), String> {
-    use std::ffi::CString;
-    use std::os::unix::ffi::OsStrExt;
-
-    let c_path = CString::new(dir.as_os_str().as_bytes()).map_err(|_| "Invalid path".to_string())?;
-    // SAFETY: c_path is a valid null-terminated C string
-    let result = unsafe { libc::access(c_path.as_ptr(), libc::W_OK) };
-    if result != 0 {
-        return Err(format!(
-            "The folder '{}' is not writable. Check folder permissions in Finder.",
-            dir.display()
-        ));
-    }
-    Ok(())
-}
-
-#[cfg(not(unix))]
-fn check_dir_writable(_dir: &Path) -> Result<(), String> {
-    Ok(())
-}
-
-/// Checks macOS-specific immutable/SIP/lock flags.
-#[cfg(target_os = "macos")]
-fn check_macos_flags(path: &Path) -> Result<(), String> {
-    use std::ffi::CString;
-    use std::mem::MaybeUninit;
-    use std::os::unix::ffi::OsStrExt;
-
-    let c_path = CString::new(path.as_os_str().as_bytes()).map_err(|_| "Invalid path".to_string())?;
-
-    let mut stat = MaybeUninit::<libc::stat>::uninit();
-    // SAFETY: c_path is valid, stat is a valid pointer
-    let result = unsafe { libc::lstat(c_path.as_ptr(), stat.as_mut_ptr()) };
-    if result != 0 {
-        // Can't stat; file may have been deleted, let the rename itself fail with a clear error
-        return Ok(());
-    }
-
-    // SAFETY: lstat succeeded
-    let stat = unsafe { stat.assume_init() };
-
-    // UF_IMMUTABLE (user immutable / "uchg" flag)
-    const UF_IMMUTABLE: u32 = 0x00000002;
-    // SF_IMMUTABLE (system immutable, set by SIP)
-    const SF_IMMUTABLE: u32 = 0x00020000;
-
-    if (stat.st_flags & UF_IMMUTABLE) != 0 {
-        return Err(
-            "This file is locked (immutable flag). Unlock it in Finder > Get Info before renaming.".to_string(),
-        );
-    }
-    if (stat.st_flags & SF_IMMUTABLE) != 0 {
-        return Err("This file is protected by System Integrity Protection and can't be renamed.".to_string());
-    }
-
-    Ok(())
-}
-
-/// Async validity check implementation.
-async fn check_rename_validity_impl(
-    dir: String,
-    old_name: String,
-    new_name: String,
-    volume_id: String,
-) -> Result<RenameValidityResult, String> {
-    use crate::file_system::validation::{validate_filename, validate_path_length};
-
-    let trimmed = new_name.trim();
-
-    // Validate filename
-    if let Err(error) = validate_filename(trimmed) {
-        return Ok(RenameValidityResult {
-            valid: false,
-            error: Some(error),
-            has_conflict: false,
-            is_case_only_rename: false,
-            conflict: None,
-        });
-    }
-
-    // Validate resulting path length
-    let new_path = PathBuf::from(&dir).join(trimmed);
-    if let Err(error) = validate_path_length(&new_path) {
-        return Ok(RenameValidityResult {
-            valid: false,
-            error: Some(error),
-            has_conflict: false,
-            is_case_only_rename: false,
-            conflict: None,
-        });
-    }
-
-    // Check for conflict: does a sibling with this name already exist?
-    let old_path = PathBuf::from(&dir).join(&old_name);
-
-    if volume_id != "root" {
-        // Non-local volume: use Volume trait for conflict detection
-        let conflict_info = check_sibling_conflict_via_volume(&volume_id, &new_path).await;
-        Ok(RenameValidityResult {
-            valid: true,
-            error: None,
-            has_conflict: conflict_info.0,
-            // MTP is case-sensitive, no case-only rename ambiguity
-            is_case_only_rename: false,
-            conflict: conflict_info.1,
-        })
-    } else {
-        // Local filesystem: use symlink_metadata with inode comparison
-        let conflict_info = check_sibling_conflict(&old_path, &new_path);
-        Ok(RenameValidityResult {
-            valid: true,
-            error: None,
-            has_conflict: conflict_info.0,
-            is_case_only_rename: conflict_info.1,
-            conflict: conflict_info.2,
-        })
-    }
-}
-
-/// Checks if a file with `new_path` exists and whether it's the same inode as `old_path`
-/// (case-only rename on case-insensitive FS).
-#[cfg(unix)]
-fn check_sibling_conflict(old_path: &Path, new_path: &Path) -> (bool, bool, Option<ConflictFileInfo>) {
-    use std::os::unix::fs::MetadataExt;
-
-    let new_meta = match std::fs::symlink_metadata(new_path) {
-        Ok(m) => m,
-        Err(_) => return (false, false, None), // No conflict
-    };
-
-    // Check if it's the same inode (case-only rename)
-    let is_same_inode = std::fs::symlink_metadata(old_path)
-        .map(|old_meta| old_meta.dev() == new_meta.dev() && old_meta.ino() == new_meta.ino())
-        .unwrap_or(false);
-
-    let modified = new_meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs() as i64);
-
-    let conflict = ConflictFileInfo {
-        name: new_path
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_default(),
-        size: new_meta.len(),
-        modified,
-        is_directory: new_meta.is_dir(),
-    };
-
-    (true, is_same_inode, Some(conflict))
-}
-
-#[cfg(not(unix))]
-fn check_sibling_conflict(_old_path: &Path, new_path: &Path) -> (bool, bool, Option<ConflictFileInfo>) {
-    let new_meta = match std::fs::symlink_metadata(new_path) {
-        Ok(m) => m,
-        Err(_) => return (false, false, None),
-    };
-
-    let modified = new_meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs() as i64);
-
-    let conflict = ConflictFileInfo {
-        name: new_path
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_default(),
-        size: new_meta.len(),
-        modified,
-        is_directory: new_meta.is_dir(),
-    };
-
-    // Without inode comparison, we can't detect case-only renames
-    (true, false, Some(conflict))
-}
-
-/// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's
-/// `get_metadata`.
-async fn check_sibling_conflict_via_volume(volume_id: &str, new_path: &Path) -> (bool, Option<ConflictFileInfo>) {
-    let volume = match crate::file_system::get_volume_manager().get(volume_id) {
-        Some(v) => v,
-        None => return (false, None),
-    };
-
-    let entry = match volume.get_metadata(new_path).await {
-        Ok(e) => e,
-        Err(_) => return (false, None), // No conflict: file doesn't exist
-    };
-
-    let conflict = ConflictFileInfo {
-        name: entry.name,
-        size: entry.size.unwrap_or(0),
-        modified: entry.modified_at.map(|t| t as i64),
-        is_directory: entry.is_directory,
-    };
-
-    (true, Some(conflict))
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        rename_managed(from_path, to_path, force, volume_id_str),
+    )
+    .await
+    .map_err(|_| IpcError::timeout())?
+    .map_err(IpcError::from_err)
 }
 
 #[cfg(test)]
@@ -454,6 +123,16 @@ mod tests {
 
     fn cleanup_test_dir(path: &PathBuf) {
         let _ = fs::remove_dir_all(path);
+    }
+
+    /// Registers a real local-FS "root" volume so `rename_file` with
+    /// `volume_id = None` (→ "root") exercises the managed path's local branch,
+    /// the same one production hits. Idempotent via `register_if_absent`.
+    fn ensure_root_volume() {
+        use crate::file_system::get_volume_manager;
+        use crate::file_system::volume::LocalPosixVolume;
+        use std::sync::Arc;
+        get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
     }
 
     // ========================================================================
@@ -560,11 +239,12 @@ mod tests {
     }
 
     // ========================================================================
-    // Rename file
+    // Rename file (managed-wrapper transparency: same returns as before)
     // ========================================================================
 
     #[tokio::test]
     async fn test_rename_file_success() {
+        ensure_root_volume();
         let tmp = create_test_dir("rename_file_ok");
         let old = tmp.join("old.txt");
         let new = tmp.join("new.txt");
@@ -585,6 +265,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_file_conflict_no_force() {
+        ensure_root_volume();
         let tmp = create_test_dir("rename_file_conflict");
         let old = tmp.join("old.txt");
         let new = tmp.join("new.txt");
@@ -608,6 +289,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_file_force_overwrites() {
+        ensure_root_volume();
         let tmp = create_test_dir("rename_file_force");
         let old = tmp.join("old.txt");
         let new = tmp.join("new.txt");

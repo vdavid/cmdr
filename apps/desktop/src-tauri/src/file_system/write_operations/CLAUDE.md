@@ -17,12 +17,13 @@ Documents the cross-cutting machinery both subdirs share (see the module map and
 
 ## Must-knows
 
-- **Every write op spawns through `manager::spawn_managed`** (all five paths). An op holds a slot in each lane it
-  touches (`Volume::lane_key()`, source AND dest), runs only when all are free (budget 1), else Queued. The next op
-  admits on the explicit `on_settled`, NEVER in `Drop` (`ManagedTaskGuard` Drop frees lanes only). Full model, busy-set
-  union, and deferred-start rationale: DETAILS § "Operation manager".
-- **All blocking work runs in `spawn_blocking`** (including validation), never on the async executor. `*_files_start`
-  returns an `operationId` immediately so the dialog opens and offers cancel even on a stalled mount.
+- **Copy/move/delete/trash spawn through `manager::spawn_managed`; rename/mkdir/mkfile run through `manager::run_instant`.**
+  A spawned op holds a slot in each lane it touches (`Volume::lane_key()`, source AND dest), runs when all are free
+  (budget 1), else Queued; the next admits on the explicit `on_settled`, NEVER in `Drop`. Instant ops register +
+  mark-busy but reserve NO lane and never queue (a metadata syscall must not wait behind a transfer); don't fold them
+  into `spawn_managed`. Full model + rationale: DETAILS § "Operation manager".
+- **All blocking work runs in `spawn_blocking`** (including validation). `*_files_start` returns an `operationId`
+  immediately so the dialog opens and offers cancel.
 - **`OperationIntent` is a single `AtomicU8` state machine** (`Running → RollingBack/Stopped`, `Stopped` terminal).
   Cancel keeps copied files (deletes the last partial); Rollback deletes all copied files in reverse with progress.
   Never `state.intent.store(...)` directly: DETAILS.
@@ -37,8 +38,8 @@ Documents the cross-cutting machinery both subdirs share (see the module map and
   end of the spawn-task scope (panic-safe). Cache cleanup (via `manager::on_settled` or the `ManagedTaskGuard` Drop)
   runs first. The FE gates the "Cancelling…" dialog close on this.
 - **Every write-op driver MUST register its destination with the downloads watcher's ignore set BEFORE the syscall**
-  (`crate::downloads::note_pending_write_for_cmdr`; renames register BOTH halves). Scoping is inside the helper — no
-  `path.starts_with(downloads_dir)` guards at call sites.
+  (`crate::downloads::note_pending_write_for_cmdr`; renames register BOTH halves). Scoping lives inside the helper — no
+  call-site guards.
 - **Safe overwrite is temp + rename-aside + rename** (original intact until the new content is fully in place); temp
   files use the `.cmdr-` prefix (crash-recoverable).
 - **Symlinks are never dereferenced** (`symlink_metadata`; loop detection via canonicalized-path `HashSet`).
@@ -46,9 +47,8 @@ Documents the cross-cutting machinery both subdirs share (see the module map and
   `crate::volumes::get_volume_space()` (`statvfs` only on Linux). `statvfs` rejects copies APFS purgeable space allows.
 - **Every scan reports two byte totals**: `total_bytes` (write footprint, used by copy/move) and `dedup_bytes`
   (`du`-equivalent, used by delete). Don't "fix" copy to the dedup'd number — it under-reserves disk space.
-- **All write ops emit via `OperationEventSink`, not `tauri::AppHandle`** (`emit_progress_via_sink`, the only
-  progress-emit path, calls `enrich_progress`). The sink is built only at the IPC edge and injected in; nothing here
-  constructs one.
+- **All write ops emit via `OperationEventSink`, not `tauri::AppHandle`** (`emit_progress_via_sink` calls
+  `enrich_progress`). Built only at the IPC edge and injected in; nothing here constructs one.
 - **The busy-volumes set disables Eject mid-op** (source AND dest volume IDs). The `eject_volume` server-side guard is
   the real safety net; the picker disable is only UX.
 - **Volume-aware ops must not emit `write-error` on `Cancelled`** (the inner handler already emitted `write-cancelled`);

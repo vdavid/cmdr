@@ -2,6 +2,7 @@
 
 use crate::file_system::write_operations::{
     ConflictResolution, ScanPreviewStartResult, cancel_scan_preview as ops_cancel_scan_preview,
+    create_directory_managed as ops_create_directory_managed, create_file_managed as ops_create_file_managed,
     get_scan_preview_totals as ops_get_scan_preview_totals, resolve_write_conflict as ops_resolve_write_conflict,
     start_scan_preview as ops_start_scan_preview,
 };
@@ -16,7 +17,7 @@ use crate::file_system::{
     move_files_start as ops_move_files_start, pause_all as ops_pause_all, pause_operation as ops_pause_operation,
     resume_all as ops_resume_all, resume_operation as ops_resume_operation, trash_files_start as ops_trash_files_start,
 };
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::time::Duration;
 
@@ -24,6 +25,9 @@ use crate::commands::util::IpcError;
 
 use super::expand_tilde;
 
+/// Creates a folder and returns its new path. Thin pass-through to the managed
+/// create op (`write_operations::create`): expand tilde (root only), wrap in the
+/// 5 s write timeout, map to `IpcError`.
 #[tauri::command]
 #[specta::specta]
 pub async fn create_directory(
@@ -31,146 +35,39 @@ pub async fn create_directory(
     parent_path: String,
     name: String,
 ) -> Result<String, IpcError> {
-    let (new_path, expanded_path) = create_directory_core(volume_id.clone(), &parent_path, &name).await?;
-
-    // Synthetic diff only works for volumes backed by the local filesystem.
-    // Protocol-only volumes (MTP) handle UI updates through their own event systems.
-    if should_emit_synthetic_diff(volume_id.as_deref()) {
-        emit_synthetic_entry_diff(volume_id.as_deref(), &new_path, &PathBuf::from(&expanded_path));
-    }
-    Ok(new_path.to_string_lossy().to_string())
+    let expanded_parent = expand_parent(volume_id.as_deref(), &parent_path);
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        ops_create_directory_managed(volume_id, expanded_parent, name),
+    )
+    .await
+    .map_err(|_| IpcError::timeout())?
+    .map_err(IpcError::from_err)
 }
 
+/// Creates an empty file and returns its new path. Same shape as
+/// [`create_directory`].
 #[tauri::command]
 #[specta::specta]
 pub async fn create_file(volume_id: Option<String>, parent_path: String, name: String) -> Result<String, IpcError> {
-    let (new_path, expanded_path) = create_file_core(volume_id.clone(), &parent_path, &name).await?;
-
-    if should_emit_synthetic_diff(volume_id.as_deref()) {
-        emit_synthetic_entry_diff(volume_id.as_deref(), &new_path, &PathBuf::from(&expanded_path));
-    }
-    Ok(new_path.to_string_lossy().to_string())
+    let expanded_parent = expand_parent(volume_id.as_deref(), &parent_path);
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        ops_create_file_managed(volume_id, expanded_parent, name),
+    )
+    .await
+    .map_err(|_| IpcError::timeout())?
+    .map_err(IpcError::from_err)
 }
 
-/// Core mkdir logic, separated from the Tauri command so it can be tested without `AppHandle`.
-pub(super) async fn create_directory_core(
-    volume_id: Option<String>,
-    parent_path: &str,
-    name: &str,
-) -> Result<(PathBuf, String), IpcError> {
-    if name.is_empty() {
-        return Err(IpcError::from_err("Folder name cannot be empty"));
-    }
-    if name.contains('/') || name.contains('\0') {
-        return Err(IpcError::from_err("Folder name contains invalid characters"));
-    }
-
-    let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
-
-    // For local volumes, expand tilde
-    let expanded_path = if volume_id == "root" {
+/// Expands tilde for local (`root`) parents only; volume paths are
+/// volume-relative and must never be tilde-expanded.
+fn expand_parent(volume_id: Option<&str>, parent_path: &str) -> String {
+    if volume_id.unwrap_or("root") == "root" {
         expand_tilde(parent_path)
     } else {
         parent_path.to_string()
-    };
-
-    // Try to use Volume abstraction
-    if let Some(volume) = get_volume_manager().get(&volume_id) {
-        let new_path = PathBuf::from(&expanded_path).join(name);
-        let new_path_clone = new_path.clone();
-        let parent_path_owned = parent_path.to_string();
-        let name_owned = name.to_string();
-
-        // Register the new directory path with the downloads watcher's
-        // ignore set; no-ops for paths outside ~/Downloads.
-        crate::downloads::note_pending_write_for_cmdr(&new_path);
-
-        // Use spawn_blocking to run the Volume operation in a context where
-        // tokio::runtime::Handle::current() is available (needed for MtpVolume)
-        tokio::time::timeout(Duration::from_secs(5), volume.create_directory(&new_path_clone))
-            .await
-            .map_err(|_| IpcError::timeout())?
-            .map_err(|e| match e {
-                crate::file_system::VolumeError::AlreadyExists(_) => {
-                    IpcError::from_err(format!("'{}' already exists", name_owned))
-                }
-                crate::file_system::VolumeError::PermissionDenied(_) => IpcError::from_err(format!(
-                    "Permission denied: cannot create '{}' in '{}'",
-                    name_owned, parent_path_owned
-                )),
-                _ => IpcError::from_err(format!("Couldn't create folder: {}", e)),
-            })?;
-
-        return Ok((new_path, expanded_path));
     }
-
-    // "root" and every mounted volume is always registered in `VolumeManager`,
-    // so reaching here means the volume was unregistered out from under us (e.g.
-    // an unmount race). Error out instead of falling back to an untimed
-    // synchronous `std::fs::create_dir` on the async executor, which would
-    // violate this module's "every FS-touching command is timed" contract on a
-    // hung mount.
-    Err(IpcError::from_err(format!("Volume not found: {}", volume_id)))
-}
-
-/// Core file creation logic, separated from the Tauri command so it can be tested without
-/// `AppHandle`.
-pub(super) async fn create_file_core(
-    volume_id: Option<String>,
-    parent_path: &str,
-    name: &str,
-) -> Result<(PathBuf, String), IpcError> {
-    if name.is_empty() {
-        return Err(IpcError::from_err("File name cannot be empty"));
-    }
-    if name.contains('/') || name.contains('\0') {
-        return Err(IpcError::from_err("File name contains invalid characters"));
-    }
-
-    let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
-
-    // For local volumes, expand tilde
-    let expanded_path = if volume_id == "root" {
-        expand_tilde(parent_path)
-    } else {
-        parent_path.to_string()
-    };
-
-    // Try to use Volume abstraction
-    if let Some(volume) = get_volume_manager().get(&volume_id) {
-        let new_path = PathBuf::from(&expanded_path).join(name);
-        let new_path_clone = new_path.clone();
-        let parent_path_owned = parent_path.to_string();
-        let name_owned = name.to_string();
-
-        // Register the new file path with the downloads watcher's ignore
-        // set; no-ops for paths outside ~/Downloads.
-        crate::downloads::note_pending_write_for_cmdr(&new_path);
-
-        tokio::time::timeout(Duration::from_secs(5), volume.create_file(&new_path_clone, b""))
-            .await
-            .map_err(|_| IpcError::timeout())?
-            .map_err(|e| match e {
-                crate::file_system::VolumeError::AlreadyExists(_) => {
-                    IpcError::from_err(format!("'{}' already exists", name_owned))
-                }
-                crate::file_system::VolumeError::PermissionDenied(_) => IpcError::from_err(format!(
-                    "Permission denied: cannot create '{}' in '{}'",
-                    name_owned, parent_path_owned
-                )),
-                _ => IpcError::from_err(format!("Couldn't create file: {}", e)),
-            })?;
-
-        return Ok((new_path, expanded_path));
-    }
-
-    // "root" and every mounted volume is always registered in `VolumeManager`,
-    // so reaching here means the volume was unregistered out from under us (e.g.
-    // an unmount race). Error out instead of falling back to an untimed
-    // synchronous `std::fs::File::create_new` on the async executor, which would
-    // violate this module's "every FS-touching command is timed" contract on a
-    // hung mount.
-    Err(IpcError::from_err(format!("Volume not found: {}", volume_id)))
 }
 
 // ============================================================================
@@ -412,68 +309,4 @@ pub fn pause_all() {
 #[specta::specta]
 pub fn resume_all() {
     ops_resume_all();
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/// Returns true if a synthetic entry diff should be emitted for this volume.
-/// Protocol-only volumes (like MTP) don't support `std::fs` access, so synthetic
-/// diffs would fail. These volumes handle UI updates through their own event systems.
-fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
-    match volume_id {
-        None => true, // No volume_id means local filesystem
-        Some(id) => get_volume_manager()
-            .get(id)
-            .is_none_or(|v| v.supports_local_fs_access()),
-    }
-}
-
-/// Queues a synthetic `directory-diff` event for a newly created entry.
-///
-/// Best-effort: if any step fails (stat, cache lookup, etc.) we log a warning
-/// and return. The watcher will pick up the change later.
-fn emit_synthetic_entry_diff(volume_id: Option<&str>, entry_path: &Path, parent_path: &Path) {
-    use crate::file_system::listing::diff_emitter::enqueue_diff;
-    use crate::file_system::listing::reading::get_single_entry;
-    use crate::file_system::listing::{find_listings_for_path, insert_entry_sorted};
-    use crate::file_system::watcher::DiffChange;
-
-    // 1. Construct a FileEntry for the new entry
-    let mut entry = match get_single_entry(entry_path) {
-        Ok(e) => e,
-        Err(e) => {
-            log::warn!("Synthetic entry diff: couldn't stat new entry: {}", e);
-            return;
-        }
-    };
-
-    // 2. Enrich with index data. `None` means the local filesystem (`root`); this
-    // path only runs for local-FS volumes (`should_emit_synthetic_diff`).
-    let volume_id = volume_id.unwrap_or(crate::indexing::ROOT_VOLUME_ID);
-    crate::indexing::enrich_entries_with_index_on_volume(volume_id, std::slice::from_mut(&mut entry));
-
-    // 3. Find affected listings
-    let listings = find_listings_for_path(parent_path);
-    if listings.is_empty() {
-        return;
-    }
-
-    // 4. For each listing, insert and enqueue
-    for (listing_id, _sort_by, _sort_order, _dir_sort_mode) in listings {
-        // insert_entry_sorted acquires LISTING_CACHE write lock and releases it on return
-        let Some(index) = insert_entry_sorted(&listing_id, entry.clone()) else {
-            continue; // Already exists or listing gone
-        };
-
-        enqueue_diff(
-            &listing_id,
-            vec![DiffChange {
-                change_type: "add".to_string(),
-                entry: entry.clone(),
-                index,
-            }],
-        );
-    }
 }
