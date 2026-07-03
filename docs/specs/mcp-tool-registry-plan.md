@@ -1,6 +1,6 @@
 # MCP tool registry: collapse the 4-way hand-synced bookkeeping into one source
 
-Status: planning (review round 1 incorporated). Worktree: `.claude/worktrees/mcp-tool-registry`, branch
+Status: ready to execute (2 review rounds incorporated). Worktree: `.claude/worktrees/mcp-tool-registry`, branch
 `worktree-mcp-tool-registry`.
 
 ## Problem
@@ -109,21 +109,50 @@ mcp_tools! {
 }
 ```
 
-**Macro form — the one "does it compile" question (spike this FIRST in M1).** The `run:` arm must be treated as an
-**ident-list + expression template inlined into each match arm**, NOT as a real closure that the macro constructs and
-calls. A closure returning a future that borrows its `&AppHandle<R>` / `&Value` arguments hits Rust's
-higher-ranked-closure-return limitation (`for<'a> Fn(&'a T) -> impl Future + 'a` is inexpressible → "cannot infer an
-appropriate lifetime" / "hidden type captures a lifetime"). So the macro generates arms like
-`"copy" => { file_ops::execute_copy(app, params).await }`, binding the author's `run:` idents (`app`, `p`) to the
-dispatch scope's `app`/`params` by macro substitution (hygiene: the idents come from the invocation, so they resolve to
-the generated `execute_tool` params). **All match arms must unify to `ToolResult` after `.await`**, so the table must
-handle three handler shapes explicitly, not just the async-with-app common case:
-- Async with app+params (most): `run: |app, p| file_ops::execute_copy(app, p)` → arm `execute_copy(app, params).await`.
-- Async with params only (`search`, `ai_search` take no `app`): `run: |_app, p| search::execute_search(p)`.
-- Sync returning `ToolResult` directly (`quit`, `switch_pane`, `swap_panes`, `remove_manual_server`): wrap so the arm
-  still `.await`s — `run: |app, _p| async move { app::execute_quit(app) }`. Spell out all four sync tools in the table;
-  don't discover them one compile error at a time.
-If the spike shows the macro fights Rust more than it earns, take the § Fallback data-table route immediately.
+**Macro form — the one "does it compile" question (spike this FIRST in M1).** We can't store real closures: a closure
+returning a future that borrows its `&AppHandle<R>` / `&Value` args hits Rust's higher-ranked-closure-return limit
+(`for<'a> Fn(&'a T) -> impl Future + 'a` is inexpressible → "cannot infer an appropriate lifetime"). So the handler is
+inlined into the generated `match` arm. **Do NOT try to bind author-written idents from a captured `run: |app,p| …`
+expression to the generated fn's params** — `macro_rules!` hygiene keeps call-site idents (from the invocation) and
+def-site idents (the macro body's fn params) in separate contexts, so a call-site `app` inside a captured `$body` can't
+see the def-site param `app` (`E0425: cannot find value app`). Instead the table stores a **path + an arg-shape tag**,
+and the macro passes its own body-context `app`/`params` positionally into a shape helper. This sidesteps hygiene
+entirely and is the recommended form:
+
+```rust
+macro_rules! mcp_tools {
+    ( $( $name:literal => { desc: $desc:expr, schema: $schema:expr, gate: $gate:expr, run: $shape:tt $path:path } ),* $(,)? ) => {
+        pub fn get_all_tools() -> Vec<Tool> {
+            vec![ $( Tool { name: $name.into(), description: $desc.into(), input_schema: $schema } ),* ]
+        }
+        pub fn tool_gate(name: &str) -> Option<TokenGate> {
+            match name { $( $name => Some($gate), )* _ => None }
+        }
+        pub async fn execute_tool<R: tauri::Runtime>(
+            app: &tauri::AppHandle<R>, name: &str, params: &serde_json::Value,
+        ) -> ToolResult {
+            match name {
+                $( $name => mcp_tools!(@call $shape $path, app, params), )*
+                _ => Err(ToolError::invalid_params(format!("Unknown tool: {name}"))),
+            }
+        }
+    };
+    (@call app_params        $p:path, $app:ident, $params:ident) => { $p($app, $params).await };
+    (@call params_only       $p:path, $app:ident, $params:ident) => { $p($params).await };   // search, ai_search
+    (@call sync_app          $p:path, $app:ident, $params:ident) => { $p($app) };            // quit, switch_pane, swap_panes
+    (@call sync_app_params   $p:path, $app:ident, $params:ident) => { $p($app, $params) };   // remove_manual_server
+}
+```
+
+Table entries then read e.g. `run: app_params file_ops::execute_copy`. **Match arms need only each evaluate to
+`ToolResult` — they do NOT all need `.await`** (the current hand-written match already mixes awaited and non-awaited
+arms), so sync handlers need NO `async move` wrapping; the `sync_app` / `sync_app_params` shapes just don't `.await`.
+The four handler shapes to tag: `app_params` (most), `params_only` (`search`, `ai_search` — no `app`), `sync_app`
+(`quit`, `switch_pane`, `swap_panes`), `sync_app_params` (`remove_manual_server` — sync but uses params). Spell all
+non-`app_params` tools out in the table so arity/shape mismatches are authored, not discovered via compile errors.
+(An alternative that keeps a pseudo-closure look also compiles — capture BOTH the idents and the body and `let`-rebind
+at call-site hygiene: `$name => { let $app_id = app; let $p_id = params; $body.await }` — but the shape-tag form above is
+cleaner; prefer it.) If the spike shows the macro fights Rust more than it earns, take the § Fallback route immediately.
 
 The macro expands to:
 
@@ -169,11 +198,13 @@ the reviewer and at first sign of macro pain.
 The task floated "typed serde params struct, JSON schema derived from the params (schemars or hand-rolled derive)." We
 consciously do **not** do this. Rationale, to be challenged by the reviewer:
 
-- **No `schemars` in the tree** (verified: absent from `Cargo.lock`). Adding it is a new dep (license-check per the
-  `dependencies` rule) whose derived schemas are **not** byte-identical to today's: schemars emits `format: "int64"` /
-  `minimum: 0` on integers, may hoist enums into `$defs`/`oneOf`, adds `$schema`, and orders keys its own way. That
-  violates the byte-identical-wire goal and can change how agents read the tools, for a purity win.
-  `test_select_tool_schema` even asserts `count` is a plain `"integer"`, *not* a `oneOf` — schemars would break it.
+- **Byte-identical schemas rule it out regardless of dep availability.** (`schemars` IS already in `Cargo.lock` — 0.8 /
+  0.9 / 1.x pulled transitively by `tauri-build` / `serde_with` — so "no new dep" is not even the argument; the byte
+  argument is.) schemars-derived schemas are **not** byte-identical to today's: it emits `format: "int64"` / `minimum:
+  0` on integers, may hoist enums into `$defs`/`oneOf`, adds `$schema`, and orders keys its own way. That violates the
+  byte-identical-wire goal and changes how agents read the tools, for a purity win. `test_select_tool_schema` even
+  asserts `count` is a plain `"integer"`, *not* a `oneOf` — schemars would break it. (Depending on schemars as a
+  *direct* dep would still need a `cargo deny` license check, but that's moot since we're not using it.)
 - **Handlers can't collapse to serde deserialization without regressing wire behavior.** The bespoke cross-field
   validation and agent-facing error strings (`move_cursor` index-XOR-filename, `select` modes, `select_volume`/`tab`
   live-state validation) are deliberate UX. serde's deserialize errors are not those messages, and much of the logic
@@ -212,6 +243,16 @@ non-generic. `execute_tool` is generic over `R: Runtime`. The registry must serv
 This is why a single generic `Vec<ToolDef<R>>` holding both metadata and boxed handlers is rejected: it would force
 `get_all_tools`/`tool_gate` to name an `R` they don't have. The macro sidesteps it by generating two code paths from
 one authored table.
+
+**Module-visibility budget (small but required).** The generated `execute_tool` lives in `tool_registry.rs`, a *sibling*
+of `executor/`, and calls `crate::mcp::executor::file_ops::execute_copy` etc. Today those submodules are private
+(`mod app;` … `mod file_ops;` in `executor/mod.rs`) and `mcp/mod.rs` has private `mod executor;` — a sibling can't reach
+`executor`'s private descendants even though the handler fns are `pub`, so this fails with `E0603: module … is
+private`. Fix: widen to `pub(crate) mod executor;` and `pub(crate) mod {app,view,nav,file_ops,dialogs,async_tools,
+search,downloads};` (the handler fns are already `pub`). No cycle is introduced (`tool_registry` → `executor` handlers,
+`auth` → `tool_registry`, all acyclic). Alternatively, generate `execute_tool` *inside* `executor/mod.rs` (a descendant,
+no visibility change) while `get_all_tools`/`tool_gate` live in `tool_registry.rs` — but that re-splits the one table
+across two files, defeating the single-source goal; prefer widening visibility.
 
 ## Milestones
 
@@ -285,9 +326,12 @@ Goal: kill the hand `match name` in `executor/mod.rs`; dispatch flows from the s
   macro generating dispatch, M2 IS this deletion + the dispatch-coverage test.) With the fallback: keep the match but add
   the coverage-consistency test from § Fallback.
 - Handlers stay in their category files, unchanged.
-- **Verify:** every tool still dispatches (add/keep a test that calls `execute_tool` with each name against a
-  `MockRuntime` and asserts it's not the `Unknown tool` error — or that the registry name set == a hardcoded 32-name
-  set). The MCP has 13 test files; keep all green.
+- **Verify:** every tool still dispatches. Use the **name-set** check — assert the set of `get_all_tools()` names equals
+  a hardcoded 32-name set (and, if the fallback data-table route was taken, that dispatch covers exactly that set). Do
+  NOT try to call `execute_tool` per name against a `MockRuntime`: real handlers emit an event and block on an ack up to
+  5 s, so 32 live calls would hang. Under the macro this coverage is by-construction anyway (dispatch and list are
+  generated from the same table), so the name-set test is a cheap guard, not the guarantee. The MCP has 13 test files;
+  keep all green.
 - Docs: `mcp/executor/CLAUDE.md` (the `execute_tool` dispatcher line + "Adding new tools" section point to the
   registry).
 - Checks: `pnpm check rust`.
