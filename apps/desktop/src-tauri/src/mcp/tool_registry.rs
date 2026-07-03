@@ -26,6 +26,40 @@ use super::executor::{ToolError, ToolResult};
 use super::executor::{app, async_tools, dialogs, downloads, file_ops, nav, search, view};
 use super::tools::Tool;
 
+/// How a tool relates to the bearer-token gate. Pure, non-generic, and unit-testable — it
+/// reproduces the previous `tool_call_requires_token` classification exactly, and `auth.rs`
+/// reads it via [`tool_gate`]. See `mcp/DETAILS.md` § Authentication for the threat model.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TokenGate {
+    /// No token needed: reads, nav, search, and destructive ops that still prompt the user.
+    Open,
+    /// Always gated: config mutation that applies with no user confirmation (`set_setting`).
+    Always,
+    /// Gated iff `arguments.autoConfirm == true`: `copy` / `move` / `delete`.
+    IfAutoConfirm,
+    /// Gated iff `arguments.action == "confirm"`: the `dialog` tool.
+    IfConfirmAction,
+}
+
+impl TokenGate {
+    /// Whether a call with these `arguments` (the JSON-RPC `params.arguments` object) requires
+    /// the bearer token. `IfConfirmAction` reads the tool's own typed `action` enum, not a
+    /// message substring, so it's not a `no-string-matching` violation.
+    pub fn requires_token(self, arguments: Option<&Value>) -> bool {
+        match self {
+            TokenGate::Open => false,
+            TokenGate::Always => true,
+            TokenGate::IfAutoConfirm => arguments
+                .and_then(|a| a.get("autoConfirm"))
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false),
+            TokenGate::IfConfirmAction => {
+                arguments.and_then(|a| a.get("action")).and_then(|v| v.as_str()) == Some("confirm")
+            }
+        }
+    }
+}
+
 /// Declarative tool table → the three consumers (`get_all_tools`, `execute_tool`, `tool_gate`).
 ///
 /// Entry form: `"name" => { desc, schema, gate, run: <shape> <handler-path> }`.
@@ -49,6 +83,15 @@ macro_rules! mcp_tools {
         /// The `tools/list` payload: every tool in wire order.
         pub fn get_all_tools() -> Vec<Tool> {
             vec![ $( Tool { name: $name.into(), description: $desc.into(), input_schema: $schema } ),* ]
+        }
+
+        /// The bearer-token classification for a tool, or `None` for an unknown name. The
+        /// single source `auth::tool_call_requires_token` reads.
+        pub fn tool_gate(name: &str) -> Option<TokenGate> {
+            match name {
+                $( $name => Some($gate), )*
+                _ => None,
+            }
         }
 
         /// The `tools/call` dispatch. An unknown name is the same `INVALID_PARAMS`
@@ -967,5 +1010,112 @@ mod tests {
     fn test_downloads_tool_present() {
         let tools = get_all_tools();
         assert_eq!(tool(&tools, "go_to_latest_download").name, "go_to_latest_download");
+    }
+
+    // ── Token gate (auth classification) ──────────────────────────────────────
+
+    #[test]
+    fn test_tool_gate_per_name() {
+        assert_eq!(tool_gate("copy"), Some(TokenGate::IfAutoConfirm));
+        assert_eq!(tool_gate("move"), Some(TokenGate::IfAutoConfirm));
+        assert_eq!(tool_gate("delete"), Some(TokenGate::IfAutoConfirm));
+        assert_eq!(tool_gate("set_setting"), Some(TokenGate::Always));
+        assert_eq!(tool_gate("dialog"), Some(TokenGate::IfConfirmAction));
+        assert_eq!(tool_gate("nav_to_path"), Some(TokenGate::Open));
+        assert_eq!(tool_gate("bogus"), None);
+    }
+
+    /// Anti-footgun backstop: any tool whose schema takes `autoConfirm` (i.e. can bypass the
+    /// user's confirmation dialog) MUST be gated `IfAutoConfirm`, never left `Open`. Adding a
+    /// destructive auto-confirm tool and forgetting its gate fails here.
+    #[test]
+    fn test_autoconfirm_tools_are_gated() {
+        for t in get_all_tools() {
+            let has_auto_confirm = t
+                .input_schema
+                .get("properties")
+                .and_then(|p| p.get("autoConfirm"))
+                .is_some();
+            if has_auto_confirm {
+                assert_eq!(
+                    tool_gate(&t.name),
+                    Some(TokenGate::IfAutoConfirm),
+                    "tool '{}' exposes autoConfirm but isn't gated IfAutoConfirm",
+                    t.name
+                );
+            }
+        }
+    }
+
+    /// Full-table expectation with set-equality: every tool's gate is pinned, AND the set of
+    /// tools in the registry equals the set with a declared gate. Set-equality is load-bearing:
+    /// it forces a conscious auth review for any new tool (a 33rd tool left `Open` fails here).
+    #[test]
+    fn test_gate_table_is_complete_and_correct() {
+        use std::collections::BTreeMap;
+        let expected: BTreeMap<&str, TokenGate> = [
+            ("select_volume", TokenGate::Open),
+            ("nav_to_path", TokenGate::Open),
+            ("nav_to_parent", TokenGate::Open),
+            ("nav_back", TokenGate::Open),
+            ("nav_forward", TokenGate::Open),
+            ("scroll_to", TokenGate::Open),
+            ("move_cursor", TokenGate::Open),
+            ("open_under_cursor", TokenGate::Open),
+            ("select", TokenGate::Open),
+            ("copy", TokenGate::IfAutoConfirm),
+            ("move", TokenGate::IfAutoConfirm),
+            ("delete", TokenGate::IfAutoConfirm),
+            ("mkdir", TokenGate::Open),
+            ("mkfile", TokenGate::Open),
+            ("refresh", TokenGate::Open),
+            ("toggle_hidden", TokenGate::Open),
+            ("set_view_mode", TokenGate::Open),
+            ("sort", TokenGate::Open),
+            ("tab", TokenGate::Open),
+            ("dialog", TokenGate::IfConfirmAction),
+            ("open_search_dialog", TokenGate::Open),
+            ("quit", TokenGate::Open),
+            ("switch_pane", TokenGate::Open),
+            ("swap_panes", TokenGate::Open),
+            ("search", TokenGate::Open),
+            ("ai_search", TokenGate::Open),
+            ("set_setting", TokenGate::Always),
+            ("connect_to_server", TokenGate::Open),
+            ("remove_manual_server", TokenGate::Open),
+            ("upgrade_smb_to_direct", TokenGate::Open),
+            ("await", TokenGate::Open),
+            ("go_to_latest_download", TokenGate::Open),
+        ]
+        .into_iter()
+        .collect();
+
+        let actual: std::collections::BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();
+        let expected_names: std::collections::BTreeSet<String> = expected.keys().map(|s| (*s).to_owned()).collect();
+        assert_eq!(actual, expected_names, "registry tool set differs from the gate table");
+
+        for (name, gate) in expected {
+            assert_eq!(
+                tool_gate(name),
+                Some(gate),
+                "gate for '{name}' differs from expectation"
+            );
+        }
+    }
+
+    #[test]
+    fn test_requires_token_arg_logic() {
+        // IfAutoConfirm: only when autoConfirm == true
+        assert!(TokenGate::IfAutoConfirm.requires_token(Some(&json!({"autoConfirm": true}))));
+        assert!(!TokenGate::IfAutoConfirm.requires_token(Some(&json!({"autoConfirm": false}))));
+        assert!(!TokenGate::IfAutoConfirm.requires_token(Some(&json!({}))));
+        assert!(!TokenGate::IfAutoConfirm.requires_token(None));
+        // IfConfirmAction: only when action == "confirm"
+        assert!(TokenGate::IfConfirmAction.requires_token(Some(&json!({"action": "confirm"}))));
+        assert!(!TokenGate::IfConfirmAction.requires_token(Some(&json!({"action": "open"}))));
+        assert!(!TokenGate::IfConfirmAction.requires_token(None));
+        // Always / Open
+        assert!(TokenGate::Always.requires_token(None));
+        assert!(!TokenGate::Open.requires_token(Some(&json!({"autoConfirm": true}))));
     }
 }

@@ -93,19 +93,18 @@ pub(crate) fn validate_origin(headers: &HeaderMap) -> Result<(), Box<Response>> 
 }
 
 /// Pure predicate: does this JSON-RPC call bypass the user's in-app confirmation dialog,
-/// and therefore require the bearer token? True iff `method == "tools/call"` AND either:
-///   - the tool is `delete`/`move`/`copy` with `arguments.autoConfirm == true`, OR
-///   - the tool is `dialog` with `arguments.action == "confirm"`, OR
-///   - the tool is `set_setting` (config mutation that applies with no user confirmation).
+/// and therefore require the bearer token? True iff `method == "tools/call"` AND the tool's
+/// [`TokenGate`](crate::mcp::tool_registry::TokenGate) says so for these `arguments`:
+///   - `IfAutoConfirm` (`delete`/`move`/`copy`): gated when `arguments.autoConfirm == true`,
+///   - `IfConfirmAction` (`dialog`): gated when `arguments.action == "confirm"`,
+///   - `Always` (`set_setting`): gated regardless of args (config mutation applies with no
+///     user confirmation, so an unauthenticated local process could otherwise silently flip
+///     `updates.errorReports`, `network.*`, `developer.mcp*`, etc.).
 ///
-/// Everything else (resource reads, nav, search, and destructive ops that STILL pop the
-/// dialog) returns false and needs no token. `autoConfirm` and `action` live under
-/// `params.arguments`. No I/O, so it's directly unit-testable.
-///
-/// `set_setting` is gated as a whole tool: it applies any registry setting with no
-/// confirmation, so an unauthenticated local process could otherwise silently flip
-/// `updates.errorReports`, `network.*`, `developer.mcp*`, etc. That's the same
-/// confirmation-bypass class as the auto-confirm file ops, so it belongs in the gated set.
+/// The classification is sourced from the single tool registry, not a separate string list, so
+/// a new destructive tool can't ship with the gate forgotten (the gate is a required field on
+/// its registry entry). Everything else (resource reads, nav, search, and destructive ops that
+/// STILL pop the dialog) needs no token. No I/O, so it's directly unit-testable.
 pub(super) fn tool_call_requires_token(method: &str, params: &Value) -> bool {
     if method != "tools/call" {
         return false;
@@ -113,16 +112,7 @@ pub(super) fn tool_call_requires_token(method: &str, params: &Value) -> bool {
     let Some(name) = params.get("name").and_then(|v| v.as_str()) else {
         return false;
     };
-    let args = params.get("arguments");
-    match name {
-        "delete" | "move" | "copy" => args
-            .and_then(|a| a.get("autoConfirm"))
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false),
-        "dialog" => args.and_then(|a| a.get("action")).and_then(|v| v.as_str()) == Some("confirm"),
-        "set_setting" => true,
-        _ => false,
-    }
+    crate::mcp::tool_registry::tool_gate(name).is_some_and(|gate| gate.requires_token(params.get("arguments")))
 }
 
 /// Validate the per-instance bearer token. This gates only the calls that bypass the
