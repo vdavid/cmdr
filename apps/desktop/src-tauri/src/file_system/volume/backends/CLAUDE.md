@@ -14,6 +14,8 @@ The trait shape, capability matrix, streaming patterns, and "Building a new volu
   `SmbConnectionParams` for reconnect, global `AppHandle` for `smb-connection-changed` events. Same cfg gate.
 - `smb_watcher.rs`: background SMB change watcher on a dedicated smb2 session (separate TCP connection).
 - `in_memory.rs`: `InMemoryVolume`, `RwLock<HashMap>` store for tests + stress tests.
+- `archive/`: read-only zip core (parse, synthetic tree, streaming decompress, Zip Slip) for the `ArchiveVolume`
+  backend. See [`archive/CLAUDE.md`](archive/CLAUDE.md).
 
 ## Must-knows
 
@@ -42,13 +44,12 @@ The trait shape, capability matrix, streaming patterns, and "Building a new volu
   mount paths) before cache lookups. See [DETAILS.md](DETAILS.md) § "Gotchas".
 - **SMB auto-upgrade is gated on `network.directSmbConnection`** and is a no-op when no SMB mounts are present (so it
   fires no macOS Local Network prompt). See [DETAILS.md](DETAILS.md) § "SMB auto-upgrade lifecycle".
-- **SMB drive INDEXING (sizes + search-data) lives in `src/indexing/`, not here.** It needs a `direct` smb2 session, so
-  it treats an `SmbVolume` reporting `Direct` as indexable (an `os_mount` is upgraded first). See
-  [`src/indexing/DETAILS.md`](../../../indexing/DETAILS.md) § "SMB indexing and the freshness model".
+- **SMB drive INDEXING lives in `src/indexing/`, not here.** It needs a `direct` smb2 session (an `os_mount` is upgraded
+  first). See [`src/indexing/DETAILS.md`](../../../indexing/DETAILS.md) § "SMB indexing and the freshness model".
 - **The SMB watcher feeds the per-volume index; don't shorten its lifetime.** `smb_watcher.rs` →
   `notify_directory_changed` ALSO drives `indexing::apply_smb_change` (and `on_smb_watcher_died` / `on_smb_overflow` ⇒
-  index Stale), so the index relies on events arriving for the whole volume lifetime (spawned in `connect`, canceled
-  only by `on_unmount` / `do_attempt_reconnect` — NOT a pane close), even with no pane open. See
+  index Stale), so the index needs events for the whole volume lifetime — canceled only by `on_unmount` /
+  `do_attempt_reconnect`, NOT a pane close, even with no pane open. See
   [`src/indexing/DETAILS.md`](../../../indexing/DETAILS.md) § "Live SMB watch → index".
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

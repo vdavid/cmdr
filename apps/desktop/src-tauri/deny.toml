@@ -30,6 +30,7 @@ allow = [
     "NCSA",                     # For libfuzzer-sys (transitive dependency of image crate)
     "BSL-1.0",                  # For clipboard-win (transitive dependency of tauri-plugin-clipboard-manager)
     "CDLA-Permissive-2.0",      # For webpki-roots (TLS cert verification via reqwest)
+    "bzip2-1.0.6",              # For libbz2-rs-sys (bzip2 codec for archive browsing); permissive BSD-style
 ]
 
 [bans]

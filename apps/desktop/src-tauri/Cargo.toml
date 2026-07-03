@@ -114,6 +114,18 @@ tauri-plugin-playwright = { version = "0.4.1", optional = true }
 # Error reporter: zip the bundle (manifest + redacted log files). `deflate` is the default
 # compression algorithm; we don't need bzip2/zstd/etc. for log text.
 zip = { version = "8.6", default-features = false, features = ["deflate"] }
+# Archive browsing (read side): rc-zip is a sans-IO zip reader whose state machines
+# (`ArchiveFsm` for the central directory, `EntryFsm` for per-entry decompression) request byte
+# ranges and let the caller supply them under any I/O model. We drive those fsms directly over
+# our own `ArchiveByteSource` trait (see `backends/archive/`) rather than the `rc-zip-tokio`
+# wrapper, for two reasons: its only public entry reader borrows its `ArchiveHandle` (can't back
+# an owned, cached stream), and it decompresses on the async executor (we need CPU-bound
+# decompress off it, via `spawn_blocking`). `positioned-io` gives a `ReadAt` cursor over a local
+# `File` for the byte source. Codec features beyond the `deflate` default cover the compression
+# methods real-world zips use (bzip2/lzma/zstd), so extracting those entries doesn't error.
+# Pinned latest stable, all >3 days old (verified crates.io 2026-07-03).
+rc-zip = { version = "5.4.1", features = ["deflate", "bzip2", "lzma", "zstd"] }
+positioned-io = "0.3.5"
 # Error reporter: short-ID generation (`ERR-XXXXX`) using rejection sampling.
 rand = "0.10"
 # Pure-Rust git library for the git browser (M1: discover, repo info, status).

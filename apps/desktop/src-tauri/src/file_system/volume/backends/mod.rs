@@ -8,6 +8,10 @@
 //! matrix, and `backends/CLAUDE.md` for the per-backend decisions and gotchas
 //! that drive each implementation here.
 
+// Archive reading core (zip). Cross-platform (pure Rust), so it isn't gated
+// like the mtp/smb backends. The `ArchiveVolume` `Volume` impl is built on top
+// of this.
+pub mod archive;
 mod in_memory;
 mod local_posix;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
