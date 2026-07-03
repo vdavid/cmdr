@@ -19,18 +19,16 @@ ack signal before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
   timeout return `ToolError::internal` naming the missing signal and budget. Don't return `OK` without waiting. The
   budget is a backend floor, not a tool param (bump per-call via the `Duration` arg). Variants and mapping: DETAILS.md §
   Ack contract.
-- **`GenerationAdvanced` isn't a per-action proof.** The snapshot-dispatch-wait sequence proves the FE pushed pane state
-  recently after dispatch, not that it handled our event; an unrelated push in that window is a (rare, microsecond-scale)
-  false positive. If a real one surfaces, switch the tool to `mcp_round_trip` with a `requestId` (`parse_mcp_response`
-  in `mod.rs`).
+- **`GenerationAdvanced` isn't a per-action proof.** It shows the FE pushed pane state after dispatch, not that it
+  handled our event; an unrelated push in that window is a rare false positive. If a real one surfaces, switch the tool
+  to `mcp_round_trip` with a `requestId` (`parse_mcp_response` in `mod.rs`).
 - **Use `mcp_round_trip` when the backend can't fully validate preconditions or must wait on the OS.** It emits an event
   with a `requestId` and waits for the FE `mcp-response` (`{ requestId, ok, error? }`); don't replicate FE knowledge in
   Rust. Used by `move_cursor`, `set_setting`, `select`, `refresh`, `nav_to_path`, `open_under_cursor`, and resources via
   `resource_round_trip`. Per-tool timeouts in DETAILS.md.
 - **`move_cursor` and `select` flush the MCP state push (`syncStateToMcpNow`) before replying.** Without the flush, the
-  new cursor/selection lives only in FE state until the debounced pane→MCP sync, so a follow-up `copy`/`move`/`delete`
-  reads the stale pre-move cursor (still on `..`) or empty selection and `check_operation_has_target` wrongly rejects
-  with "Nothing to copy" (flaky under load; bit the MTP E2E). Don't drop the flush.
+  new cursor/selection lives only in FE state until the debounced sync, so a follow-up `copy`/`move`/`delete` reads
+  stale state and `check_operation_has_target` wrongly rejects with "Nothing to copy". Don't drop the flush.
 - **Read filesystem path params through `user_path_param` / `expand_user_path` (in `mod.rs`), never raw
   `params.get(...)`.** Agents routinely send `~/Downloads`; the FE and existence checks need absolute paths, and a
   literal `~` either fails validation or silently never matches and burns the full timeout. Validate existence via
@@ -45,14 +43,13 @@ ack signal before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
   `WindowDisappeared("settings")` and times out at 1500 ms. Same shape for any new window-based dialog.
 - **Tab mutations must go through `update_pane_tabs`** (delegates to `PaneStateStore::set_tabs`, the single place tab
   mutation + generation bump live). Any bypass makes the `tab` MCP tool's ack time out.
-- **Param names are camelCase on the wire** (`tabId`, `timeoutSeconds`); see `../DETAILS.md` § Tools.
 
 ## Adding new tools
 
-Add the handler here (pick a category file, or create one and declare it `pub(crate) mod …` in `mod.rs`), then author
-the tool's one `mcp_tools!` entry in [`../tool_registry.rs`](../tool_registry.rs) (schema, `TokenGate`, `run:` shape tag
-+ handler path). For path params, ack choice, and round-trips, follow the must-knows above. A pane-state mutator prefers
-`AckSignal::GenerationAdvanced` routed through `PaneStateStore` (or `update_pane_tabs`). Full workflow:
+Add the handler here (pick or create a category file, declaring it `pub(crate) mod …` in `mod.rs`), then author the
+tool's one `mcp_tools!` entry in [`../tool_registry.rs`](../tool_registry.rs) (schema, `TokenGate`, `run:` shape tag +
+handler path). Follow the must-knows above for path params, ack choice, and round-trips (a pane-state mutator prefers
+`AckSignal::GenerationAdvanced` via `PaneStateStore`). Full workflow:
 [`mcp-development.md`](../../../../../../docs/guides/mcp-development.md).
 
 Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

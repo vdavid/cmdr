@@ -47,6 +47,7 @@
     "apps/desktop/src-tauri/src/ipc.rs": 801,
     "apps/desktop/src-tauri/src/lib.rs": 865,
     "apps/desktop/src-tauri/src/mcp/server.rs": 1008,
+    "apps/desktop/src-tauri/src/mcp/tool_registry.rs": 1121,
     "apps/desktop/src-tauri/src/mtp/connection/directory_ops.rs": 983,
     "apps/desktop/src-tauri/src/mtp/connection/mod.rs": 1204,
     "apps/desktop/src-tauri/src/network/manual_servers.rs": 1056,
