@@ -301,10 +301,18 @@ Fully parallelizable with M1b until they meet at the resolver seam.
   `enrichBreadcrumbSegments`'s base) — WITHOUT surfacing as a selector pill (search-results is the precedent for a
   path-resolvable, non-pill volume).
 - Put new logic in `*.svelte.ts`/`*.ts` helpers (FilePane.svelte is ~3000 lines, file-length-flagged).
+- **Friendly errors come from the raw `ArchiveError` at the resolve boundary**, not from `VolumeError`. The landed
+  `ArchiveVolume` deliberately collapses the integrity family (not-a-zip / corrupt / encrypted / unsupported) to
+  `NotSupported`/`IoError` as a mid-browse backstop (decision recorded in `backends/archive/DETAILS.md`); the
+  user-facing "not a real archive" / "encrypted" copy is produced here, at navigation time, from the raw typed error.
+- **Symlink-target safety (owed from the read milestone)**: `sanitize_entry_name` clamps entry NAMES, but a symlink
+  entry's CONTENT is its target and streams verbatim. Decide extraction semantics for `is_symlink` entries (write the
+  target as a regular file's content, or skip) and pin that extraction never CREATES a symlink from archive data — a
+  symlink pointing outside the extraction root would be Zip Slip through the back door. Test it.
 - Tests: boundary detection (path with `foo.zip` mid-string vs a real dir literally named `foo.zip` — real dir wins);
-  navigate in/out; path-bar round-trip; **preview a file inside the zip**; copy a file out. E2E via Playwright +
-  `dispatchMenuCommand`. i18n keys for any new strings (`i18n-coverage` is now an ERROR — untranslated keys fail the
-  build). Checks: full `pnpm check`, `bindings:regen`.
+  navigate in/out; path-bar round-trip; **preview a file inside the zip**; copy a file out; **extract a symlink entry**
+  (per the semantics above). E2E via Playwright + `dispatchMenuCommand`. i18n keys for any new strings (`i18n-coverage`
+  is now an ERROR — untranslated keys fail the build). Checks: full `pnpm check`, `bindings:regen`.
 
 ### M2 — Enter behavior menu + per-format settings (Browse | Open | Ask)
 
