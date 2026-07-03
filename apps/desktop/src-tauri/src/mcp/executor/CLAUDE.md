@@ -1,12 +1,13 @@
 # Executor
 
-Tool execution layer for the MCP server: each `tools/call` dispatches into `execute_tool()`, which fans out to category
-handlers and (for action tools) waits on a typed ack signal before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
+The MCP tool handlers. Dispatch (`execute_tool`) is generated from the `mcp_tools!` table in
+[`../tool_registry.rs`](../tool_registry.rs), which calls these handlers by path; action-tool handlers wait on a typed
+ack signal before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
 
 ## Files
 
-- **`mod.rs`**: `execute_tool()` dispatcher, shared types (`ToolResult`, `ToolError`), the `mcp_round_trip` /
-  `resource_round_trip` helpers, and `user_path_param` / `expand_user_path` (tilde expansion).
+- **`mod.rs`**: shared types (`ToolResult`, `ToolError`), the `mcp_round_trip` / `resource_round_trip` helpers, and
+  `user_path_param` / `expand_user_path` (tilde expansion). (Dispatch is generated in the registry, not here.)
 - **`ack.rs`**: the ack contract (`AckSignal` variants, `snapshot_generation`, `wait_for_ack`, default budgets).
 - Category handlers: `app.rs`, `view.rs`, `nav.rs`, `file_ops.rs`, `dialogs.rs`, `async_tools.rs`, `search.rs`,
   `downloads.rs`. (Per-file tool lists in DETAILS.md.)
@@ -48,8 +49,10 @@ handlers and (for action tools) waits on a typed ack signal before returning `OK
 
 ## Adding new tools
 
-Pick the right category file (or create one and register it in `mod.rs::execute_tool()`). For path params, ack choice,
-and round-trips, follow the must-knows above. A pane-state mutator prefers `AckSignal::GenerationAdvanced` routed through
-`PaneStateStore` (or `update_pane_tabs`).
+Add the handler here (pick a category file, or create one and declare it `pub(crate) mod …` in `mod.rs`), then author
+the tool's one `mcp_tools!` entry in [`../tool_registry.rs`](../tool_registry.rs) (schema, `TokenGate`, `run:` shape tag
++ handler path). For path params, ack choice, and round-trips, follow the must-knows above. A pane-state mutator prefers
+`AckSignal::GenerationAdvanced` routed through `PaneStateStore` (or `update_pane_tabs`). Full workflow:
+[`mcp-development.md`](../../../../../../docs/guides/mcp-development.md).
 
 Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

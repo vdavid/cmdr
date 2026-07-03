@@ -10,18 +10,21 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
 - `server.rs`: HTTP server, bind/lifecycle, request dispatch (`process_request`), and response formatting only.
 - `auth.rs`: token lifecycle and per-request validation (`tool_call_requires_token`, `validate_token`,
   `validate_origin`, header/protocol checks). One-directional: `server` uses `auth`, never the reverse.
-- `tools.rs` + `executor/`: 32 semantic tools and the ack contract (see [`executor/CLAUDE.md`](executor/CLAUDE.md)).
+- `tool_registry.rs`: single source for all 32 tools — one `mcp_tools!` table generates the list, dispatch, and auth
+  gate (`tool_gate`/`TokenGate`). `tools.rs` is a shim (`Tool` struct + re-export). Handlers + ack contract in
+  `executor/` (see [`executor/CLAUDE.md`](executor/CLAUDE.md)).
 - `resources/`: read-only YAML/text resources (`cmdr://state`, `logs`, `indexing`, `settings`). State stores:
   `PaneStateStore`, `SoftDialogTracker` (`dialog_state.rs`), `listing_errors`. Config: `config.rs`, `port_file.rs`.
 
 ## Must-knows
 
-- **Auth gates ONLY the calls that bypass the user's confirmation dialog.** The bearer token is required iff
-  `tool_call_requires_token(method, params)` is true: `delete`/`move`/`copy` with `autoConfirm: true`, `dialog` with
-  `action: "confirm"`, and `set_setting` (all of it). Everything else (resource reads, nav, search, dialog-prompting
-  destructive ops) needs no token. The threat is a local non-Cmdr process silently auto-confirming a destructive op;
-  `validate_origin` is browser-CSRF defense only and is no barrier to it. Don't widen the gate to reads/nav or narrow it
-  past the auto-confirm bypass.
+- **Auth gates ONLY the calls that bypass the user's confirmation dialog, and the gate is a `TokenGate` on each tool's
+  `tool_registry.rs` entry, not a hand-list.** Gated: `delete`/`move`/`copy` with `autoConfirm: true`, `dialog` with
+  `action: "confirm"`, and `set_setting` (all of it). Everything else (reads, nav, search, dialog-prompting destructive
+  ops) needs no token. A new destructive tool MUST declare its gate — a structural test fails if an `autoConfirm` tool
+  is left `Open`. The threat is a local non-Cmdr process auto-confirming a destructive op (`validate_origin` is
+  browser-CSRF defense only, no barrier to it), so don't widen the gate to reads/nav or narrow it past the auto-confirm
+  bypass.
 - **Token rejection is an in-band JSON-RPC error at HTTP 200, NOT 401.** The Streamable-HTTP spec reserves 401 for an
   OAuth challenge, so a 401 makes clients launch an OAuth discovery flow. Keep it 200 + JSON-RPC `error`. The gate fails
   closed (no token set → reject). One uniform message for missing-vs-wrong token (no oracle); never echo the token.

@@ -17,6 +17,9 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 - [ ] 2026-07-03 [write-ops-managed-plan.md](write-ops-managed-plan.md) - Route rename/mkdir/mkfile through the
       operation manager as scan-free instant ops (busy/eject guard + queue visibility, still result-returning), lift the
       event sink to the IPC edge, and sweep small write-ops debt.
+- [ ] 2026-07-03 [mcp-tool-registry-plan.md](mcp-tool-registry-plan.md) - Collapse the 4-way hand-synced MCP tool
+      bookkeeping (schema, dispatch, auth gate) into one authored `mcp_tools!` registry, so the bearer-token gate is
+      by-construction and a destructive tool can't ship ungated. Wire output stays byte-identical.
 
 ## Later
 

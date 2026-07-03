@@ -82,6 +82,9 @@ fn test_tool_input_schemas_are_valid() {
 #[test]
 fn test_total_tool_count() {
     let tools = get_all_tools();
+    // The registry is the single source, so this count is a cheap guard over a by-construction
+    // property, not a hand-synced number: adding an `mcp_tools!` entry bumps the list, dispatch,
+    // and gate together. It just flags an unintended add/remove.
     // 6 nav + 2 cursor + 1 select + 6 file_op + 3 view + 1 tab + 2 dialog + 3 app + 2 search + 1
     // settings + 3 network + 1 await + 1 downloads = 32
     assert_eq!(
