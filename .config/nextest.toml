@@ -47,6 +47,32 @@ test-group = 'virtual-mtp'
 filter = 'test(smb_integration_)'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
+[[profile.default.overrides]]
+# Real OS file-watcher delivery is inherently laggy AND lossy under load on
+# macOS: FSEvents is documented as "~100 ms idle, seconds under load" (see
+# `file_viewer/CLAUDE.md`). These tests subscribe to a live watcher (`file_viewer`
+# viewer watcher, and the `downloads` `notify` integration tests) and block on
+# real event delivery, so under a saturated full-suite run two things go wrong
+# that never happen in isolation or on a lighter suite:
+#   1. Delivery lags past the tight global 8 s cap — which also equals each test's
+#      own internal event-wait, leaving no slack (this timed out
+#      `partial_rename_to_final_emits_for_final_path` at 8 s and pushed
+#      `watcher_observes_inode_replace` to ~5.3 s). Fixed by raising the tests'
+#      internal waits to 15 s (recv fails cleanly BELOW this 20 s cap) so a merely
+#      slow event still arrives; the 20 s cap stays a hang-catcher.
+#   2. The event is occasionally lost/starved entirely (FSEvents delivery to a
+#      just-registered watch can miss the mutation when the CPU is saturated by
+#      num-cpus test threads) — `partial_rename_to_final_emits_for_final_path`
+#      then waits the full 15 s and gets nothing. A raised timeout can't help a
+#      lost event, so grant retries: each retry re-runs the single test in a fresh
+#      process with a fresh watch, which reliably catches the event. This is the
+#      one class the global `retries = 0` intentionally exempts ("useful for flaky
+#      tests"). Coverage isn't lost: the assertions are unchanged, only real-OS
+#      event timing is tolerated for these specific real-delivery tests.
+filter = 'test(file_viewer::watcher_test::) + test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event)'
+slow-timeout = { period = "20s", terminate-after = 1 }
+retries = 2
+
 [profile.default]
 # Show test output for failing tests only
 failure-output = "immediate"

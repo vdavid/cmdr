@@ -6,6 +6,12 @@ use std::time::Duration;
 
 use super::watcher::{VIEWER_WATCHER_MANAGER, WatcherEvent};
 
+// Real macOS FSEvents delivery is laggy (~100 ms idle, seconds under load; see
+// `file_viewer/CLAUDE.md`), so wait generously for the event to arrive. Kept
+// below the 20 s nextest cap these tests get in `.config/nextest.toml` so the
+// recv fails cleanly here instead of nextest SIGTERM-ing the whole process.
+const EVENT_WAIT: Duration = Duration::from_secs(15);
+
 fn wait_for_event(sub: &super::watcher::ViewerSubscription, total: Duration) -> Option<WatcherEvent> {
     sub.recv_timeout(total)
 }
@@ -24,7 +30,7 @@ fn watcher_observes_append_within_debounce() {
     drop(f);
 
     // Give the debouncer time to emit (300 ms debounce + slack).
-    let event = wait_for_event(&sub, Duration::from_secs(8));
+    let event = wait_for_event(&sub, EVENT_WAIT);
     let new_size = match event {
         Some(WatcherEvent::Grew(n)) => n,
         other => panic!("expected Grew(_), got {:?}", other),
@@ -44,7 +50,7 @@ fn watcher_observes_truncation_as_shrunk() {
     let f = OpenOptions::new().write(true).truncate(true).open(&path).unwrap();
     drop(f);
 
-    let event = wait_for_event(&sub, Duration::from_secs(8));
+    let event = wait_for_event(&sub, EVENT_WAIT);
     assert!(matches!(event, Some(WatcherEvent::Shrunk)), "got {:?}", event);
 }
 
@@ -61,7 +67,7 @@ fn watcher_observes_inode_replace() {
     fs::write(&new_path, b"NEW content\n").unwrap();
     fs::rename(&new_path, &path).unwrap();
 
-    let event = wait_for_event(&sub, Duration::from_secs(8));
+    let event = wait_for_event(&sub, EVENT_WAIT);
     assert!(
         matches!(event, Some(WatcherEvent::Replaced) | Some(WatcherEvent::Grew(_))),
         "got {:?}",
@@ -85,7 +91,7 @@ fn watcher_debounces_rapid_writes() {
     drop(f);
 
     // First event should be Grew with the final size.
-    let event = wait_for_event(&sub, Duration::from_secs(8));
+    let event = wait_for_event(&sub, EVENT_WAIT);
     let new_size = match event {
         Some(WatcherEvent::Grew(n)) => n,
         other => panic!("expected Grew(_), got {:?}", other),

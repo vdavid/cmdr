@@ -815,9 +815,12 @@ mod tests {
         }
     }
 
-    /// Longer than the 200 ms debounce + filesystem-flush slack. CI macOS
-    /// FSEvents can lag a few seconds; choose a generous default.
-    const EVENT_TIMEOUT: Duration = Duration::from_secs(8);
+    /// Longer than the 200 ms debounce + filesystem-flush slack. Real macOS
+    /// `notify`/FSEvents delivery lags seconds under load, so wait generously.
+    /// Kept below the 20 s nextest cap these integration tests get in
+    /// `.config/nextest.toml` so the recv fails cleanly here instead of nextest
+    /// SIGTERM-ing the whole process at the tight global 8 s cap.
+    const EVENT_TIMEOUT: Duration = Duration::from_secs(15);
 
     #[test]
     fn dropping_a_file_emits_one_event() {
