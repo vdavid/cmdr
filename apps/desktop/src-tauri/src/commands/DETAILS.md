@@ -53,11 +53,11 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `get_smb_diagnostics(volume_id)` (a snapshot of one volume's `smb2::SmbClient`). The snapshot DTOs mirror
   `smb2::Diagnostics` & friends with `specta::Type` derives (so `smb2` needn't depend on specta), one `impl From` per
   type.
-- **`eject.rs`**: `eject_volume(volume_id)` dispatches by kind. MTP → `mtp::connection_manager().disconnect`; SMB →
-  `diskutil unmount` (FSEvents handles smb2 teardown via `on_unmount`); physical/DMG → `diskutil eject`. Pure
-  `decide_eject_action` (unit-tested) keeps dispatch separate from the impure shell-out. Guards against ejecting a
-  volume with an in-flight write op (`busy_volume_ids().contains(...)` → error) so a transfer can't be truncated.
-  `get_busy_volume_ids()`: bootstrap for the picker's busy set (see `write_operations/DETAILS.md` § "Busy-volumes set").
+- **`eject.rs`**: `eject_volume(volume_id)` + `get_busy_volume_ids()`, thin delegates. The teardown logic (kind
+  dispatch, the pure unit-tested `decide_eject_action`, the busy-volume guard, and the `diskutil`/`umount`/MTP
+  shell-out) lives in `file_system::volume::eject`; the command only maps the typed `EjectError` to `IpcError`
+  (preserving the timeout flag). `get_busy_volume_ids()` bootstraps the picker's busy set (see
+  `write_operations/DETAILS.md` § "Busy-volumes set").
 - **`favorites.rs`**: `add_favorite`, `remove_favorite`, `rename_favorite`, `reorder_favorites`. Thin pass-throughs over
   `crate::favorites::store`; each persists `favorites.json` (5s write timeout) then re-emits `volumes-changed`. No
   `list_favorites` (listing rides `list_volumes` / `volumes-changed`). See `favorites/CLAUDE.md`.
@@ -72,11 +72,17 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `crate::restricted_paths` for the state machine and the `restricted-paths-changed` event payload.
 - **`file_viewer.rs`**: session lifecycle, regex/literal search with mode flags, word wrap, menu state, encoding pickers
   (`viewer_set_encoding` / `viewer_get_encoding_options`), tail mode (`viewer_set_tail_mode`), `viewer_reload`.
-- **`ui.rs`**: context menu (file/breadcrumb/tab/network host), Finder reveal, clipboard, Quick Look, Get Info, view
-  mode, `activate_window_menu` (per-window focus-gain: swaps the macOS app menu bar between main/viewer, then
-  enables/disables file-scoped items via the private `set_menu_context` helper; see `menu/DETAILS.md`),
-  `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive eviction/download via `FileManager` ubiquity
-  APIs; see `file_system/cloud_actions.rs`).
+- **`menu.rs`**: native menus and menu-bar state — the context menus (file / breadcrumb / volume row / parent row /
+  tab / network host), the view-mode + hidden-files + pin-tab + reopen-tab sync commands, and `activate_window_menu`
+  (per-window focus-gain: swaps the macOS app menu bar between main/viewer, then enables/disables file-scoped items via
+  the private `set_menu_context` helper; see `menu/DETAILS.md`).
+- **`quick_look.rs`**: `quick_look_open` / `quick_look_set_path` / `quick_look_close` (native `QLPreviewPanel`
+  singleton on macOS, no-op stubs elsewhere; 2 s main-thread-hop timeout). See `crate::quick_look`.
+- **`window_ordering.rs`**: `show_main_window` / `order_window_to_back`, E2E-only window z-ordering (order to back
+  without focus). No-op off macOS / outside E2E.
+- **`file_actions.rs`**: direct file actions from the palette / menus — `show_in_finder`, `get_info`, `open_in_editor`,
+  `copy_to_clipboard`, and `cloud_make_available_offline` / `cloud_remove_download` (iCloud Drive download/eviction via
+  `FileManager` ubiquity APIs; see `file_system/cloud_actions.rs`).
 - **`child_window_state.rs`**: `get_child_window_rect` / `set_child_window_rect(label, rect)` persist per-label
   child-window (viewer, settings) geometry via `State<ChildWindowRectStore>`.
 - **`settings.rs`**: port availability check, watcher debounce, menu accelerator updates, live-apply setters for

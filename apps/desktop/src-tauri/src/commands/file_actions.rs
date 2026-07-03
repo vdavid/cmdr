@@ -1,0 +1,141 @@
+//! Direct file-action commands invoked from the command palette, context menus,
+//! and menu items: reveal in Finder, Get Info, open in the default editor, copy
+//! text to the clipboard, and the iCloud make-available-offline / remove-download
+//! pair. Thin pass-throughs that shell out or delegate to `file_system`.
+
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+use std::process::Command;
+use tauri::{AppHandle, Runtime};
+use tauri_plugin_clipboard_manager::ClipboardExt;
+
+/// Show a file in Finder (reveal in parent folder)
+#[tauri::command]
+#[specta::specta]
+#[cfg(target_os = "macos")]
+pub fn show_in_finder(path: String) -> Result<(), String> {
+    Command::new("open")
+        .arg("-R")
+        .arg(&path)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Show a file in the default file manager (open parent folder via xdg-open)
+#[tauri::command]
+#[specta::specta]
+#[cfg(target_os = "linux")]
+pub fn show_in_finder(path: String) -> Result<(), String> {
+    let parent = std::path::Path::new(&path)
+        .parent()
+        .unwrap_or(std::path::Path::new("/"));
+    Command::new("xdg-open")
+        .arg(parent)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+pub fn show_in_finder(_path: String) -> Result<(), String> {
+    Err("Show in file manager is not available on this platform".to_string())
+}
+
+/// Open the Get Info window for a file (macOS only, no-op on other platforms)
+#[tauri::command]
+#[specta::specta]
+#[cfg(target_os = "macos")]
+pub fn get_info(path: String) -> Result<(), String> {
+    // Pass the path as a positional argument via `on run argv` to avoid AppleScript injection.
+    let script = r#"on run argv
+        tell application "Finder"
+            activate
+            open information window of (POSIX file (item 1 of argv) as alias)
+        end tell
+    end run"#;
+
+    Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .arg(&path)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+#[cfg(not(target_os = "macos"))]
+pub fn get_info(_path: String) -> Result<(), String> {
+    Ok(())
+}
+
+/// Open file in the system's default text editor (macOS only)
+#[tauri::command]
+#[specta::specta]
+#[cfg(target_os = "macos")]
+pub fn open_in_editor(path: String) -> Result<(), String> {
+    Command::new("open")
+        .arg("-t")
+        .arg(&path)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+#[cfg(target_os = "linux")]
+pub fn open_in_editor(path: String) -> Result<(), String> {
+    Command::new("xdg-open").arg(&path).spawn().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+pub fn open_in_editor(_path: String) -> Result<(), String> {
+    Err("Open in editor is not available on this platform".to_string())
+}
+
+/// Copy text to clipboard
+#[tauri::command]
+#[specta::specta]
+pub fn copy_to_clipboard<R: Runtime>(app: AppHandle<R>, text: String) -> Result<(), String> {
+    app.clipboard().write_text(text).map_err(|e| e.to_string())
+}
+
+/// Make a cloud-managed file available offline (download it). On macOS, talks to the
+/// File Provider extension responsible for the file (iCloud Drive, Dropbox, GDrive,
+/// OneDrive, Box, etc.).
+#[tauri::command]
+#[specta::specta]
+pub async fn cloud_make_available_offline(path: String) -> Result<(), String> {
+    // 30s timeout like every other fs-touching command: a wedged File Provider
+    // extension can hang the blocking call indefinitely. The download request is
+    // fire-and-forget server-side, so releasing the IPC on timeout is correct.
+    let work = tokio::task::spawn_blocking(move || {
+        crate::file_system::cloud_actions::request_download(std::path::Path::new(&path))
+    });
+    match tokio::time::timeout(tokio::time::Duration::from_secs(30), work).await {
+        Ok(joined) => joined.map_err(|e| e.to_string())?,
+        Err(_elapsed) => Err("Timed out reaching iCloud — give it another try".to_string()),
+    }
+}
+
+/// Evict a cloud-managed file's local copy, leaving a placeholder. Counterpart to
+/// `cloud_make_available_offline`.
+#[tauri::command]
+#[specta::specta]
+pub async fn cloud_remove_download(path: String) -> Result<(), String> {
+    // 30s timeout: same hung-File-Provider risk as `cloud_make_available_offline`.
+    // Eviction is fire-and-forget server-side, so releasing the IPC on timeout is fine.
+    let work =
+        tokio::task::spawn_blocking(move || crate::file_system::cloud_actions::evict_item(std::path::Path::new(&path)));
+    match tokio::time::timeout(tokio::time::Duration::from_secs(30), work).await {
+        Ok(joined) => joined.map_err(|e| e.to_string())?,
+        Err(_elapsed) => Err("Timed out reaching iCloud — give it another try".to_string()),
+    }
+}

@@ -7,7 +7,6 @@
   },
   "files": {
     "apps/desktop/src-tauri/src/commands/network.rs": 901,
-    "apps/desktop/src-tauri/src/commands/ui.rs": 868,
     "apps/desktop/src-tauri/src/downloads/watcher.rs": 935,
     "apps/desktop/src-tauri/src/error_reporter/tests.rs": 998,
     "apps/desktop/src-tauri/src/file_system/listing/caching_test.rs": 1168,

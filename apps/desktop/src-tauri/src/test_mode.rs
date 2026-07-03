@@ -64,7 +64,7 @@ pub fn effective_copy_throttle_ms() -> Option<u64> {
 /// On macOS it also keeps the run's windows out of the developer's way: the app
 /// sets `ActivationPolicy::Prohibited` (so it can never become active, in
 /// `crate::run`) and every window is ordered to the back without focus (see
-/// `crate::commands::ui::show_main_window` and `order_window_to_back`). Tests
+/// `crate::commands::window_ordering::show_main_window` and `order_window_to_back`). Tests
 /// drive the app over the playwright socket, never OS input, so a backgrounded
 /// window passes every test while no longer stealing keystrokes.
 ///

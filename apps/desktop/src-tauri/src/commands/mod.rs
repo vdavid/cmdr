@@ -11,6 +11,7 @@ pub mod eject;
 pub mod error_reporter;
 pub mod favorites;
 pub mod feedback;
+pub mod file_actions;
 pub mod file_system;
 pub mod file_viewer;
 pub mod font_metrics;
@@ -20,10 +21,12 @@ pub mod indexing;
 pub mod licensing;
 pub mod logging;
 pub mod mcp;
+pub mod menu;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod mtp;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod network;
+pub mod quick_look;
 pub mod rename;
 pub mod restricted_paths;
 pub mod search;
@@ -31,10 +34,10 @@ pub mod selection;
 pub mod settings;
 pub mod smb_diagnostics;
 pub mod sync_status; // Has both macOS and non-macOS implementations
-pub mod ui;
 mod util;
 #[cfg(target_os = "macos")]
 pub mod volumes;
 #[cfg(target_os = "linux")]
 pub mod volumes_linux;
 pub mod whats_new;
+pub mod window_ordering;

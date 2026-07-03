@@ -4,7 +4,7 @@ use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, snapshot_generation, wait_for_ack};
-use crate::commands::ui::toggle_hidden_files;
+use crate::commands::menu::toggle_hidden_files;
 
 /// Execute toggle_hidden command. Ack: pane generation advances when the FE re-pushes
 /// state with the new visibility flag.
