@@ -17,6 +17,7 @@ import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import {
   dismissOverlay,
+  dispatchMenuCommand,
   ensureAppReady,
   expectAndDismissToast,
   expectDialogCounters,
@@ -27,6 +28,7 @@ import {
   moveCursorToFile,
   executeViaCommandPalette,
   MKDIR_DIALOG,
+  NEW_FILE_DIALOG,
   TRANSFER_DIALOG,
   CTRL_OR_META,
 } from './helpers.js'
@@ -269,6 +271,54 @@ test.describe('Create folder round-trip', () => {
         `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') || ''`,
       )
       expect(cursorName, `cursor moved off ${folderName} on iteration ${String(i)}`).toBe(folderName)
+      if (i < 4) await new Promise((r) => setTimeout(r, 80))
+    }
+  })
+})
+
+test.describe('New file round-trip', () => {
+  test('creates a new file via the file.newFile command and lands the cursor on it', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    const fileName = `new-test-file-${String(Date.now())}.txt`
+
+    // Dispatch the command rather than synthesizing Shift+F4: this test asserts
+    // on the resulting round-trip (create → listing → disk → cursor), not the
+    // keyboard pathway (docs/testing.md § "Synthesized F-key dispatches"). mkfile
+    // is now a managed instant op (routed through the operation manager), so this
+    // exercises that path end to end.
+    await dispatchMenuCommand(tauriPage, 'file.newFile')
+    await tauriPage.waitForSelector(NEW_FILE_DIALOG, 5000)
+
+    await tauriPage.waitForSelector(`${NEW_FILE_DIALOG} .name-input`, 3000)
+    await tauriPage.fill(`${NEW_FILE_DIALOG} .name-input`, fileName)
+    // The OK button enables once the typed name validates (async conflict check).
+    await expect
+      .poll(async () => tauriPage.isEnabled(`${NEW_FILE_DIALOG} .btn-primary`), { timeout: 2000 })
+      .toBeTruthy()
+
+    await tauriPage.click(`${NEW_FILE_DIALOG} .btn-primary`)
+
+    // Dialog closes.
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
+
+    // The new file appears in the focused pane's listing.
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, fileName), { timeout: 5000 }).toBeTruthy()
+
+    // It exists on disk as an empty regular file.
+    const filePath = path.join(fixtureRoot, 'left', fileName)
+    expect(fs.existsSync(filePath)).toBe(true)
+    expect(fs.statSync(filePath).isFile()).toBe(true)
+
+    // The cursor lands on the new file and stays there. Same 50 ms trailing-window
+    // synthetic-diff coalesce race the mkdir cursor test guards against; five
+    // checks at 80 ms cover the immediate window and any later re-render shift.
+    for (let i = 0; i < 5; i++) {
+      const cursorName = await tauriPage.evaluate<string>(
+        `document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')?.getAttribute('data-filename') || ''`,
+      )
+      expect(cursorName, `cursor moved off ${fileName} on iteration ${String(i)}`).toBe(fileName)
       if (i < 4) await new Promise((r) => setTimeout(r, 80))
     }
   })

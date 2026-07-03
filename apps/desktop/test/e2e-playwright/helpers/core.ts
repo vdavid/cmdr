@@ -21,6 +21,7 @@ export type PageLike = TauriPage | BrowserPageAdapter
 // ── Selectors ────────────────────────────────────────────────────────────────
 
 export const MKDIR_DIALOG = '[data-dialog-id="mkdir-confirmation"]'
+export const NEW_FILE_DIALOG = '[data-dialog-id="new-file-confirmation"]'
 export const TRANSFER_DIALOG = '[data-dialog-id="transfer-confirmation"]'
 
 // ── Platform helpers ─────────────────────────────────────────────────────────
