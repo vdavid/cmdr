@@ -773,87 +773,22 @@ pub async fn reconnect_smb_volume_with_credentials(
         .map_err(|e| IpcError::from_err(e.to_string()))
 }
 
-/// Disconnects a single SMB volume by unmounting it at the OS level.
+/// Disconnects a single SMB volume by tearing down its OS mount.
 ///
+/// Thin delegate to [`crate::file_system::volume::eject::disconnect_smb`], mapping
+/// the typed `EjectError` to the wire `IpcError` (preserving the timeout flag).
 /// Called by the "Disconnect" button in `SmbReconnectingView` / the gave-up
-/// `VolumeUnreachableBanner`. Looks up the volume by id, then runs `diskutil
-/// unmount <mount_path>` (macOS). The OS unmount fires FSEvents, which triggers
-/// the existing volume watcher → `Volume::on_unmount` pipeline:
-///   - `SmbVolume::on_unmount` flips `unmounted=true`, stops the watcher task, drops the smb2
-///     session.
-///   - The volume is removed from `VolumeManager`.
-///   - A `volumes-changed` event flows to the frontend.
-///
-/// On Linux the OS-level unmount isn't wired up yet (mirrors
-/// `unmount_smb_shares_from_host`), so we just drop the smb2 session via
-/// `on_unmount` directly. The OS mount stays alive but the user can eject it
-/// from the file manager.
+/// `VolumeUnreachableBanner`.
 #[tauri::command]
 #[specta::specta]
 pub async fn disconnect_smb_volume(volume_id: String) -> Result<(), crate::commands::util::IpcError> {
     use crate::commands::util::IpcError;
-    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::eject::{self, EjectError};
 
-    let volume = get_volume_manager()
-        .get(&volume_id)
-        .ok_or_else(|| IpcError::from_err(format!("Volume not found: {}", volume_id)))?;
-
-    if volume.smb_connection_state().is_none() {
-        return Err(IpcError::from_err(format!(
-            "Volume {} isn't an SMB volume; can't disconnect",
-            volume_id
-        )));
-    }
-
-    #[cfg(target_os = "macos")]
-    let mount_path = volume.root().to_string_lossy().to_string();
-
-    #[cfg(target_os = "macos")]
-    {
-        use crate::commands::util::blocking_with_timeout;
-        use std::time::Duration;
-
-        let path_for_cmd = mount_path.clone();
-        let result = blocking_with_timeout(
-            Duration::from_secs(15),
-            Err("Unmount timed out".to_string()),
-            move || {
-                let output = std::process::Command::new("diskutil")
-                    .args(["unmount", &path_for_cmd])
-                    .output()
-                    .map_err(|e| format!("Couldn't run diskutil: {}", e))?;
-                if output.status.success() {
-                    Ok(())
-                } else {
-                    Err(format!(
-                        "diskutil unmount failed: {}",
-                        String::from_utf8_lossy(&output.stderr).trim()
-                    ))
-                }
-            },
-        )
-        .await;
-
-        if let Err(e) = result {
-            return Err(IpcError::from_err(e));
-        }
-
-        log::info!("Disconnected SMB volume {} (unmounted {})", volume_id, mount_path);
-        // FSEvents will fire shortly and trigger on_unmount + volume-manager removal.
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        // Linux: OS-level unmount isn't wired up yet (matches `unmount_smb_shares_from_host`).
-        // Drop the smb2 session directly so the volume stops trying to reach the server.
-        volume.on_unmount();
-        log::info!(
-            "Dropped smb2 session for {} (OS unmount not yet implemented on this platform)",
-            volume_id
-        );
-    }
-
-    Ok(())
+    eject::disconnect_smb(&volume_id).await.map_err(|e| match e {
+        EjectError::TimedOut => IpcError::timeout(),
+        other => IpcError::from_err(other),
+    })
 }
 
 // --- Manual Server Commands ---

@@ -197,6 +197,65 @@ pub async fn eject(volume_id: &str) -> Result<(), EjectError> {
     }
 }
 
+/// Disconnects a single SMB volume by tearing down its OS mount.
+///
+/// The "Disconnect" affordance in `SmbReconnectingView` / the gave-up
+/// `VolumeUnreachableBanner` calls this (via the `disconnect_smb_volume`
+/// command). On macOS it runs `diskutil unmount`; FSEvents then drives the
+/// standard `Volume::on_unmount` → `VolumeManager`-removal pipeline (same as an
+/// SMB [`eject`]): `SmbVolume::on_unmount` flips `unmounted=true`, stops the
+/// watcher task, and drops the smb2 session, then a `volumes-changed` event
+/// flows to the frontend.
+///
+/// On other platforms the OS-level unmount isn't wired up yet (mirrors
+/// `network::mount::unmount_smb_shares_from_host`), so it drops the smb2 session
+/// directly via `Volume::on_unmount`; the OS mount stays alive for the user to
+/// eject from the file manager.
+///
+/// Unlike [`eject`], this has no busy gate: the Disconnect affordance targets a
+/// reconnecting or unreachable volume, so there's nothing actively transferring.
+///
+/// Errors:
+/// - [`EjectError::VolumeNotFound`] if the id isn't registered (a race).
+/// - [`EjectError::Failed`] when the volume isn't SMB (a race or automation
+///   caller; the UI only offers Disconnect for SMB volumes).
+pub async fn disconnect_smb(volume_id: &str) -> Result<(), EjectError> {
+    use crate::file_system::get_volume_manager;
+
+    let volume = get_volume_manager()
+        .get(volume_id)
+        .ok_or_else(|| EjectError::VolumeNotFound {
+            volume_id: volume_id.to_string(),
+        })?;
+
+    if volume.smb_connection_state().is_none() {
+        return Err(EjectError::Failed(format!(
+            "Volume {} isn't an SMB volume; can't disconnect",
+            volume_id
+        )));
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let mount_path = volume.root().to_string_lossy().to_string();
+        diskutil_run("unmount", &mount_path).await?;
+        log::info!(target: "eject", "Disconnected SMB volume {} (unmounted {})", volume_id, mount_path);
+        // FSEvents will fire shortly and trigger on_unmount + volume-manager removal.
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        volume.on_unmount();
+        log::info!(
+            target: "eject",
+            "Dropped smb2 session for {} (OS unmount not yet implemented on this platform)",
+            volume_id
+        );
+    }
+
+    Ok(())
+}
+
 /// MTP volume IDs are shaped `{device_id}:{storage_id}` (see
 /// `commands/volumes.rs::append_mtp_volumes`). Confirm against the live device
 /// list so we don't false-positive on any future ID containing a colon.
