@@ -154,13 +154,13 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | Capability                  | Local                | MTP                     | SMB                       | InMemory           | Archive                  |
 | --------------------------- | -------------------- | ----------------------- | ------------------------- | ------------------ | ------------------------ |
 | `list_directory` / metadata | ✅                   | ✅                      | ✅                        | ✅                 | ✅                       |
-| Mutations (create/delete/rename) | ✅              | ✅                      | ✅                        | ✅                 | ❌ read-only until M4    |
+| Mutations (create/delete/rename) | ✅              | ✅                      | ✅                        | ✅                 | ❌ read-only (mutation planned) |
 | `supports_export`           | ✅                   | ✅                      | ✅                        | ✅                 | ✅                       |
 | `supports_streaming`        | ✅                   | ✅                      | ✅                        | ✅                 | ✅                       |
 | `open_read_stream`          | ✅ spawn_blocking    | ✅ owned download       | ✅ channel-backed         | ✅ in-memory       | ✅ core `ArchiveEntryReader` |
-| `write_from_stream`         | ✅ spawn_blocking    | ✅ streaming            | ✅ streaming              | ✅ in-memory       | ❌ (M4)                  |
-| `supports_watching`         | ✅ FSEvents/inotify  | ❌ (own USB watcher)    | ❌ (OS-mount FSEvents)    | ❌                 | ❌ (M3)                  |
-| `listing_is_watched`        | ✅ path-level (WATCHER_MANAGER) | ✅ volume-level (device connected) | ✅ volume-level (watcher + Direct) | ❌ (default) | ❌ (M3)         |
+| `write_from_stream`         | ✅ spawn_blocking    | ✅ streaming            | ✅ streaming              | ✅ in-memory       | ❌ (mutation planned)    |
+| `supports_watching`         | ✅ FSEvents/inotify  | ❌ (own USB watcher)    | ❌ (OS-mount FSEvents)    | ❌                 | ❌ (live watch planned)  |
+| `listing_is_watched`        | ✅ path-level (WATCHER_MANAGER) | ✅ volume-level (device connected) | ✅ volume-level (watcher + Direct) | ❌ (default) | ❌ (live watch planned) |
 | `supports_local_fs_access`  | ✅ (default)         | ❌                      | ❌                        | ❌                 | ❌ (inner paths)         |
 | `local_path`                | ✅ `Some(root)`      | `None`                  | `None`                    | `None`             | `None`                   |
 | `notify_mutation`           | default (std::fs)    | ✅ MTP `get_metadata`   | ✅ smb2 `get_metadata`    | ✅ in-memory       | n/a (read-only)          |
@@ -170,7 +170,7 @@ At-a-glance view of which capabilities each current volume opts into. Use this w
 | `smb_connection_state`      | `None`               | `None`                  | ✅                        | `None`             | `None`                   |
 | `space_poll_interval`       | 2 s (default)        | 5 s                     | 5 s                       | `None`             | `None`                   |
 | `lane_key` / `get_space_info` | mount root / statvfs+NSURL | device serial / device | server+share / smb2 | root or override / configured | **parent's** / **parent's** |
-| `max_concurrent_ops`        | 4..=16 (core-based)  | 1 (USB bulk serial)     | 10 (eventually setting)   | 32                 | 1 (M1)                   |
+| `max_concurrent_ops`        | 4..=16 (core-based)  | 1 (USB bulk serial)     | 10 (eventually setting)   | 32                 | 1 (initial cap)          |
 
 Legend: ✅ = implemented, ❌ = opted out (default or explicitly), ⚠️ = implemented but suboptimal (memory-heavy or otherwise worth revisiting).
 

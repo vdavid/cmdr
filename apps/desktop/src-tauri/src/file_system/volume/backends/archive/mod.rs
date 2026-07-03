@@ -12,7 +12,7 @@
 //!
 //! - [`ArchiveByteSource`] is the byte-supply seam (sans-IO): [`LocalFileSource`]
 //!   reads a local file now; a remote parent volume's ranged read implements the
-//!   same trait later (M5) with no change here.
+//!   same trait later (remote-backed archives) with no change here.
 //! - [`ArchiveIndex::parse`] drives rc-zip's central-directory state machine over
 //!   a source, sanitizes every entry name ([Zip Slip](name) defense), and builds
 //!   the tree.

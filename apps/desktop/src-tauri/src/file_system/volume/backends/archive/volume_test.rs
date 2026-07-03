@@ -467,6 +467,6 @@ fn capability_flags_are_read_only_and_virtual() {
     assert_eq!(volume.local_path(), None);
     assert!(!volume.supports_local_fs_access());
     assert_eq!(volume.space_poll_interval(), None);
-    // No live watcher yet (M3): never claim listing freshness.
+    // No live watcher yet: never claim listing freshness.
     assert!(!volume.listing_is_watched(Path::new("")));
 }

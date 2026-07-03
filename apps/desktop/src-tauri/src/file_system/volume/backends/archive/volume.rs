@@ -7,10 +7,10 @@
 //! central-directory index ([`ArchiveIndex`]); extraction streams one entry at a
 //! time through an [`ArchiveEntryReader`] wrapped as a [`VolumeReadStream`].
 //!
-//! It is read-only in this milestone (M1a): every mutation method returns
-//! [`VolumeError::NotSupported`]. Zip mutation (add/delete/rename via temp+rename)
-//! arrives in M4. Registration, refcounting, and LRU eviction are the routing
-//! milestone's job (M1b); this type is headless and constructed directly.
+//! It is read-only for now: every mutation method returns
+//! [`VolumeError::NotSupported`] until zip mutation (add/delete/rename via
+//! temp+rename) lands. Registration, refcounting, and LRU eviction are the
+//! routing layer's job; this type is headless and constructed directly.
 //!
 //! ## Parent volume
 //!
@@ -22,15 +22,15 @@
 //!   the operation manager serializes archive work against other work on the same
 //!   device/session (an archive on one SMB share must share that share's lane).
 //! - [`get_space_info`](ArchiveVolume::get_space_info) delegates to the parent:
-//!   any archive edit (M4 temp+rename) builds on the parent drive, so the
+//!   any archive edit (the planned temp+rename mutation) builds on the parent drive, so the
 //!   parent's free space is the honest constraint — and delegating avoids
 //!   reporting `available = 0`, which the pre-copy space check reads as "disk
 //!   full" and would use to block a paste.
 //!
 //! Only a **local** parent is exercised now: the backing bytes come from a
-//! [`LocalFileSource`] opened over the archive path. A remote parent (M5) supplies
-//! bytes by implementing [`ArchiveByteSource`] over its ranged reads, with no
-//! change to the index/reader layer.
+//! [`LocalFileSource`] opened over the archive path. When remote-backed archives
+//! land, a remote parent supplies bytes by implementing [`ArchiveByteSource`]
+//! over its ranged reads, with no change to the index/reader layer.
 
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -50,7 +50,7 @@ use crate::file_system::volume::{
 /// A read-only [`Volume`] that presents a zip archive as a browsable folder.
 pub struct ArchiveVolume {
     /// The volume physically holding the `.zip`. Source of the shared lane key
-    /// and the space-info answer; the byte source for a remote parent (M5).
+    /// and the space-info answer; later also the byte source for a remote parent.
     parent: Arc<dyn Volume>,
     /// Absolute path of the `.zip` on the parent volume. This is `root()`, and
     /// every inner entry's path joins under it.
@@ -67,7 +67,7 @@ impl ArchiveVolume {
     /// Builds a read-only archive volume over `archive_path`, backed by `parent`.
     ///
     /// Cheap and infallible: the central directory is parsed lazily on first use
-    /// (and cached). The routing milestone (M1b) confirms the file is a real,
+    /// (and cached). The routing layer confirms the file is a real,
     /// supported archive at navigation time before constructing one.
     pub fn new(parent: Arc<dyn Volume>, archive_path: PathBuf) -> Self {
         let name = archive_path
@@ -253,7 +253,7 @@ impl Volume for ArchiveVolume {
         })
     }
 
-    // ---- Read-only: mutations are unsupported until M4 ----------------------
+    // ---- Read-only: mutations are unsupported until zip mutation lands ------
 
     // `create_file`, `create_directory`, `delete`, `rename`, and
     // `write_from_stream` inherit the trait's `NotSupported` default. Only
@@ -279,9 +279,9 @@ impl Volume for ArchiveVolume {
         true
     }
 
-    /// One at a time in this phase (the plan pins `max_concurrent_ops = 1` for
-    /// M1). The core supports concurrent independent reads, but the copy engine
-    /// keeps a single stream in flight against an archive for now.
+    /// One at a time for now (the plan pins a single stream in flight against an
+    /// archive for the read-only phase). The core supports concurrent independent
+    /// reads, so raising this later is a one-line change.
     fn max_concurrent_ops(&self) -> usize {
         1
     }
@@ -381,15 +381,15 @@ impl Volume for ArchiveVolume {
     }
 
     /// Delegates to the parent volume. An archive isn't a disk with its own free
-    /// space; any edit (M4 temp+rename) lands on the parent drive, so the
+    /// space; any edit (temp+rename) lands on the parent drive, so the
     /// parent's space is the honest, non-blocking answer.
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
         Box::pin(async move { self.parent.get_space_info().await })
     }
 
     // `listing_is_watched` stays the `false` default: there's no live watcher on
-    // the archive yet (M3 adds one). A backend without a real watcher must not
-    // claim listing freshness.
+    // the archive yet (live watching adds one later). A backend without a real
+    // watcher must not claim listing freshness.
 }
 
 /// Wraps an [`ArchiveEntryReader`] as a [`VolumeReadStream`], mapping the core's
@@ -500,14 +500,15 @@ fn node_to_entry(archive_path: &Path, volume_name: &str, node: &ArchiveNode) -> 
 /// (not-a-zip / encrypted / unsupported / too-large) collapses to
 /// `NotSupported`, and a broken/faulted read to `IoError`: this is the
 /// mid-browse **backstop**. The user-facing "not a real archive" / "encrypted"
-/// friendly copy is produced at the M1b routing boundary, straight from the raw
+/// friendly copy is produced at the routing boundary, straight from the raw
 /// `ArchiveError` at navigation time — not from this mapping — so nothing
 /// downstream needs to recover the fine distinction from a `VolumeError`.
 fn to_volume_error(err: ArchiveError) -> VolumeError {
     // EXHAUSTIVE on purpose (no wildcard): a new `ArchiveError` variant must fail
     // to compile here and force a conscious mapping, rather than silently
     // defaulting to `NotSupported`. A future non-rejection variant (say a
-    // transient remote-source error in M5) would be mis-served by a catch-all.
+    // transient source error once remote-backed archives land) would be
+    // mis-served by a catch-all.
     // This is the repo's compile-time-tripwire convention (see `analytics.rs`).
     match err {
         // Path-shaped errors keep their native `VolumeError` twins so path-aware

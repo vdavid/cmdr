@@ -37,9 +37,9 @@ reasons that are both load-bearing here:
    whole `EntryFsm` loop on a `spawn_blocking` thread.
 
 `rc-zip` still owns everything hard: the EOCD/zip64 hunt, central-directory parsing, filename encoding detection, and
-the per-method decoders (deflate/bzip2/lzma/zstd via cargo features on `rc-zip`). The remote M5 source implements the
-same `ArchiveByteSource` trait — one uniform seam for local and remote — which is cleaner than `rc-zip-tokio`'s GAT
-`HasCursor` for our caching needs.
+the per-method decoders (deflate/bzip2/lzma/zstd via cargo features on `rc-zip`). A future remote source (remote-backed
+archives) implements the same `ArchiveByteSource` trait — one uniform seam for local and remote — which is cleaner than
+`rc-zip-tokio`'s GAT `HasCursor` for our caching needs.
 
 ## The byte-source seam (`ArchiveByteSource`)
 
@@ -49,8 +49,8 @@ fit and keeps the trait trivial. `Send + Sync`, shared as `Arc` across concurren
 shared cursor, so parallel entry reads don't contend.
 
 - `LocalFileSource`: `positioned_io::RandomAccessFile` over the real file. This is the only backing implemented now.
-- Remote (M5): a parent volume's ranged read implements the same trait, bridging its async read to the blocking call
-  from inside the `spawn_blocking` context. No change to the parser or reader.
+- Remote (future, with remote-backed archives): a parent volume's ranged read implements the same trait, bridging its
+  async read to the blocking call from inside the `spawn_blocking` context. No change to the parser or reader.
 
 ## Central-directory parse → synthetic tree
 
@@ -173,8 +173,8 @@ the display name, and an `Arc<ArchiveIndexCache>`.
 - `get_space_info()` delegates to the parent (see the decision below).
 
 Only a **local** parent is exercised now: the backing bytes come from a `LocalFileSource` opened over the archive path,
-and the cache's `index_for_local` does the local stat+parse. A remote parent (M5) supplies bytes by implementing
-`ArchiveByteSource` over its ranged reads — no change to the index or reader.
+and the cache's `index_for_local` does the local stat+parse. A remote parent (when remote-backed archives land) supplies
+bytes by implementing `ArchiveByteSource` over its ranged reads — no change to the index or reader.
 
 **Path namespace.** `root()` is the real `.zip` path and inner entries join under it, so `/path/to/foo.zip/inner`
 renders transparently (the FE splits on `/`). `inner_path()` maps a volume-namespace path back to the index key: it
@@ -198,18 +198,17 @@ A single file is one entry at its uncompressed size; a directory walks the subtr
 paths aren't reachable via `std::fs`, so no `copyfile` fast path and the legacy synthetic-diff path is skipped);
 `space_poll_interval = None` (a read-only archive's space never changes — the default `Some(2s)` would poll pointlessly);
 `max_concurrent_ops = 1`; `supports_export`/`supports_streaming = true`; `listing_is_watched = false` (no live watcher
-until M3, so it must not claim listing freshness).
+yet, so it must not claim listing freshness).
 
 ### Decision: `get_space_info` delegates to the parent volume
 
 **Why**: An archive isn't a disk with its own free space. The pre-copy space check (`volume_copy.rs`) blocks a copy when
 `dest.available_bytes < total_bytes`, so reporting zeros (or `available = 0`) would read as "disk full" and block a
-paste with a spurious message instead of the correct read-only / `NotSupported` outcome. Any archive edit (M4
-temp+rename) is built on the parent drive, so the parent's free space is the honest constraint AND a non-blocking
-answer. Delegating is one line and stays correct when M4 turns on mutation. Pinned by
-`get_space_info_delegates_to_the_parent`.
+paste with a spurious message instead of the correct read-only / `NotSupported` outcome. Any archive edit (temp+rename)
+is built on the parent drive, so the parent's free space is the honest constraint AND a non-blocking answer. Delegating
+is one line and stays correct when mutation turns on. Pinned by `get_space_info_delegates_to_the_parent`.
 
-### Decision: `max_concurrent_ops = 1` in M1
+### Decision: `max_concurrent_ops = 1` for the read-only phase
 
 **Why**: The core supports concurrent independent reads (each `ArchiveEntryReader` owns its `EntryFsm` and read offset
 over a shared `pread` source, no shared cursor — `concurrent_reads_on_two_entries_are_independent` proves it through the
@@ -222,14 +221,14 @@ archive for this phase. Raise it later if a real workload wants parallel extract
 (`NotFound → NotFound`, `IsADirectory → IsADirectory`) so path-aware callers keep working, the I/O family
 (`Corrupt` / `Io → IoError`), and the rejection family (`NotAnArchive` / `Encrypted` / `Unsupported` / the `TooLarge`
 DoS cap `→ NotSupported`). This is a **mid-browse backstop** (the archive was swapped or corrupted after navigation).
-The user-facing "not a real archive" / "encrypted" friendly copy is produced at the M1b routing boundary straight from
+The user-facing "not a real archive" / "encrypted" friendly copy is produced at the routing boundary straight from
 the raw `ArchiveError` at navigation time — not recovered from a `VolumeError` here — so this mapping deliberately
 doesn't need a new `VolumeError` variant or a dedicated friendly-error reason yet.
 
 The match is **exhaustive on purpose — no wildcard**. It's a compile-time tripwire (the repo convention, per
 `analytics.rs`): a new `ArchiveError` variant must fail to compile here and force a conscious mapping. A catch-all
-`_ => NotSupported` would silently mis-serve a future *non-rejection* variant — say a transient remote-source error in
-the remote-archives milestone (M5), which wants a retryable classification, not "not supported". The one-time cost is
+`_ => NotSupported` would silently mis-serve a future *non-rejection* variant — say a transient remote-source error
+once remote-backed archives land, which wants a retryable classification, not "not supported". The one-time cost is
 naming each new variant; the payoff is that no failure mode is ever classified by omission.
 
 ## Testing
@@ -249,17 +248,18 @@ archive typed errors, streaming (bounded chunks + decompression correctness + tr
 concurrent reads, best-effort encoding, and cache hit/invalidation. `name.rs` and `index.rs` carry pure unit tests for
 the sanitizer (incl. the depth cap) and the tree builder (incl. the node-count cap and the collision orders).
 
-## Left for the routing milestone (M1b+)
+## Left for the follow-up milestones
 
 `ArchiveVolume` (browse + extract + `scan_for_copy`, read-only) now exists in `volume.rs`, with the capability-matrix
-column filled in `../../DETAILS.md` and the map line in `docs/architecture.md`. What's still ahead:
+column filled in `../../DETAILS.md` and the map line in `docs/architecture.md`. What's still ahead (sequencing lives in
+`/docs/specs/archive-browsing-plan.md`):
 
-- **M1b — routing**: path-aware `VolumeManager::resolve(volume_id, path)` that detects an archive boundary and
+- **Routing**: path-aware `VolumeManager::resolve(volume_id, path)` that detects an archive boundary and
   registers/looks up an `ArchiveVolume`; `register_if_absent` + **refcount + LRU eviction** (browsing many zips must not
   leak volumes + parents + index caches); the magic-byte sniff at navigation time (listing uses extension only); the
   `'archive'` FE `VolumeKind` so capabilities read read-only-correct; persistence of parent drive + zip path (re-derive
   the archive lazily on restore); and the FE friendly errors, produced from the raw `ArchiveError` at the resolve
   boundary (this layer's typed `VolumeError` mapping is only a mid-browse backstop).
-- **M3 — live watching**: flip `listing_is_watched` to `true` and watch the parent `.zip` for external edits.
-- **M4 — mutation**: turn the mutation methods and the `'archive'` VolumeKind writable (add/delete/rename/mkdir/mkfile
+- **Live watching**: flip `listing_is_watched` to `true` and watch the parent `.zip` for external edits.
+- **Mutation**: turn the mutation methods and the `'archive'` VolumeKind writable (add/delete/rename/mkdir/mkfile
   via temp+rename).

@@ -3,7 +3,7 @@
 //! rc-zip is sans-IO — its state machines ask for a byte range and we supply
 //! it. [`ArchiveByteSource`] is that supplier: a positioned, blocking
 //! `read_at`. Local archives read through [`LocalFileSource`] (a `pread` over
-//! the real file); a remote parent volume's ranged read slots in later (M5) by
+//! the real file); a remote parent volume's ranged read slots in later by
 //! implementing this one trait, with no change to the parser or the entry
 //! reader.
 //!

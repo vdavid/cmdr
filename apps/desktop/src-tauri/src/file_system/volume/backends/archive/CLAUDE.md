@@ -30,9 +30,9 @@ Depth, rationale, and the full test list: [DETAILS.md](DETAILS.md). Read it befo
   `ArchiveEntryReader` is a bounded-channel producer/consumer (≤128 KiB/chunk, capacity 4 ⇒ ~512 KiB peak regardless of
   entry size). Dropping the reader cancels the producer. Don't add a whole-entry `Vec` anywhere in the read path.
 
-- **The byte source is blocking and `pread`-shaped (`ArchiveByteSource`).** `LocalFileSource` backs it now; remote (M5)
-  implements the same trait. Shared as `Arc` across concurrent reads — no shared cursor, so parallel reads are
-  independent.
+- **The byte source is blocking and `pread`-shaped (`ArchiveByteSource`).** `LocalFileSource` backs it now; a future
+  remote parent implements the same trait. Shared as `Arc` across concurrent reads — no shared cursor, so parallel reads
+  are independent.
 
 - **Encryption: browsing works, extraction doesn't.** Detected from general-purpose flag bit 0 or the AE-x method (NOT
   in `rc_zip::Error`). `open_read` on an encrypted entry returns `ArchiveError::Encrypted`; `has_encrypted_entries()`
@@ -50,12 +50,15 @@ Depth, rationale, and the full test list: [DETAILS.md](DETAILS.md). Read it befo
 
 ## `ArchiveVolume` (the `Volume` layer)
 
-- **Read-only until M4.** Every mutation returns `NotSupported`, INCLUDING `create_directory_all` (overridden — the
-  trait default would no-op to `Ok` on an existing dir and falsely claim success on a read-only volume).
+- **Read-only until zip mutation lands.** Every mutation returns `NotSupported`, INCLUDING `create_directory_all`
+  (overridden — the trait default would no-op to `Ok` on an existing dir and falsely claim success on a read-only
+  volume).
 - **`lane_key()` and `get_space_info()` delegate to the PARENT volume, never the archive** — the parent owns the
-  serialization lane and the real disk cost (M4 temp+rename lands there); delegating also dodges `available = 0`, which
-  reads as "disk full" and blocks paste. The capability-flag choices and the typed `ArchiveError → VolumeError` backstop
-  mapping (`no-string-matching`): [DETAILS.md](DETAILS.md) § "The `ArchiveVolume` layer".
+  serialization lane and the real disk cost (the future temp+rename mutation lands there); delegating also dodges
+  `available = 0`, which reads as "disk full" and blocks paste. The capability-flag choices and the typed
+  `ArchiveError → VolumeError` backstop mapping (`no-string-matching`): [DETAILS.md](DETAILS.md) § "The `ArchiveVolume`
+  layer".
 
-Still the routing milestone's job (M1b+): registration, path-aware `resolve`, refcount + LRU eviction, the `'archive'`
-FE `VolumeKind`, and mutation (M4). See [DETAILS.md](DETAILS.md) § Left for the routing milestone.
+Still ahead (sequencing in `/docs/specs/archive-browsing-plan.md`): registration, path-aware `resolve`, refcount + LRU
+eviction, the `'archive'` FE `VolumeKind`, live watching, and mutation. See [DETAILS.md](DETAILS.md) § Left for the
+follow-up milestones.
