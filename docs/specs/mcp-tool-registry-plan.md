@@ -1,6 +1,7 @@
 # MCP tool registry: collapse the 4-way hand-synced bookkeeping into one source
 
-Status: planning. Worktree: `.claude/worktrees/mcp-tool-registry`, branch `worktree-mcp-tool-registry`.
+Status: planning (review round 1 incorporated). Worktree: `.claude/worktrees/mcp-tool-registry`, branch
+`worktree-mcp-tool-registry`.
 
 ## Problem
 
@@ -108,11 +109,29 @@ mcp_tools! {
 }
 ```
 
+**Macro form — the one "does it compile" question (spike this FIRST in M1).** The `run:` arm must be treated as an
+**ident-list + expression template inlined into each match arm**, NOT as a real closure that the macro constructs and
+calls. A closure returning a future that borrows its `&AppHandle<R>` / `&Value` arguments hits Rust's
+higher-ranked-closure-return limitation (`for<'a> Fn(&'a T) -> impl Future + 'a` is inexpressible → "cannot infer an
+appropriate lifetime" / "hidden type captures a lifetime"). So the macro generates arms like
+`"copy" => { file_ops::execute_copy(app, params).await }`, binding the author's `run:` idents (`app`, `p`) to the
+dispatch scope's `app`/`params` by macro substitution (hygiene: the idents come from the invocation, so they resolve to
+the generated `execute_tool` params). **All match arms must unify to `ToolResult` after `.await`**, so the table must
+handle three handler shapes explicitly, not just the async-with-app common case:
+- Async with app+params (most): `run: |app, p| file_ops::execute_copy(app, p)` → arm `execute_copy(app, params).await`.
+- Async with params only (`search`, `ai_search` take no `app`): `run: |_app, p| search::execute_search(p)`.
+- Sync returning `ToolResult` directly (`quit`, `switch_pane`, `swap_panes`, `remove_manual_server`): wrap so the arm
+  still `.await`s — `run: |app, _p| async move { app::execute_quit(app) }`. Spell out all four sync tools in the table;
+  don't discover them one compile error at a time.
+If the spike shows the macro fights Rust more than it earns, take the § Fallback data-table route immediately.
+
 The macro expands to:
 
 - `pub fn get_all_tools() -> Vec<Tool>` — non-generic; maps each entry to `Tool { name.into(), description.into(),
   (schema_expr) }`. Descriptions: keep them in the table too (one `desc:` field per entry) so name+desc+schema+gate+handler
-  all live on one line-group.
+  all live on one line-group. **Preserve the exact current tool order** (category concatenation nav → cursor → selection
+  → file_op → view → tab → dialog → app → search → settings → network → await → downloads, and the within-category
+  order), since `get_all_tools()` order is serialized into the tools/list `Vec` and the M0 snapshot pins it.
 - `pub fn tool_gate(name: &str) -> Option<TokenGate>` — non-generic; the single source auth reads.
 - `pub async fn execute_tool<R: Runtime>(app, name, params) -> ToolResult` — generic; the generated dispatch (unknown
   name → the existing `ToolError::invalid_params("Unknown tool: …")`).
@@ -170,6 +189,14 @@ it: a tiny `pane_enum()` helper for the `{"type":"string","enum":["left","right"
 ~15×. Descriptions differ per tool, so the helper would take the description — evaluate whether it actually reduces
 noise without risking drift; if in doubt, leave the literals.
 
+**`preserve_order` is NOT enabled** (verified: `serde_json` in the root `Cargo.lock` pulls no `indexmap`/`preserve_order`
+feature), so `serde_json::Map` is a `BTreeMap` — schema keys serialize alphabetically at every nesting level,
+deterministic and independent of authored key order. This makes byte-identical even stronger than "move verbatim": even
+a `pane_enum()` helper or any source-level key reordering can't change the wire bytes, and the snapshot still catches
+real drift (added/removed/renamed keys or enum members). Down-rank the "key-order drift" risk accordingly — but keep the
+snapshot as the guard. (`Tool` is a struct, not a Map, so serde serializes its fields in *declaration* order — keep
+`name`, `description`, `input_schema` in that order if `Tool` moves into `tool_registry.rs`.)
+
 ## The generic/non-generic split (the one real Rust subtlety)
 
 `tool_call_requires_token` runs at server.rs:584 before dispatch, with no handler `R` in scope, so the auth path must be
@@ -211,8 +238,12 @@ Goal: lock current wire behavior before refactoring, TDD-style for the security-
   - **Structural:** for every tool in `get_all_tools()`, if its schema's `properties` contains `autoConfirm`, then
     `tool_gate(name)` must be `IfAutoConfirm` (never `Open`). This is the "add a destructive tool, can't forget the
     gate" backstop. Red first (no `tool_gate`), green after wiring.
-  - **Full-table expectation:** a test listing the expected `TokenGate` for all 32 tool names and asserting
-    `tool_gate` matches, so adding a tool forces a conscious update here (reviewer's eye on new auth surface).
+  - **Full-table expectation (must assert set-equality, not just per-name):** a test listing the expected `TokenGate`
+    for all 32 tool names, asserting both that `tool_gate(name)` matches for each AND that the set of names in
+    `get_all_tools()` equals the expected map's keys. Set-equality is load-bearing: it's the only thing that forces a
+    conscious auth review for a *new always-gated* tool or a *new confirm-action* tool wrongly left `Open` (the
+    autoConfirm structural test above only catches the auto-confirm class). Without the completeness assert, a 33rd tool
+    left `gate: Open` would slip through. This is the residual footgun the full-table test closes.
 - Docs: none yet.
 - Checks: `pnpm check rust` (new tests compile; snapshot + parity green, structural/gate tests RED until M1).
 - Commit: "MCP: characterize tools/list wire output and auth decisions before the registry refactor".
@@ -223,13 +254,20 @@ Goal: one authored table is the source for listing and auth metadata. Dispatch a
 be the old code at the end of M1 as long as everything is green — but prefer to land the macro generating all three at
 once if clean (then M2/M3 become "delete the old code + prove parity").
 
-- New `mcp/tool_registry.rs` (add `mod tool_registry;` to `mcp/mod.rs`; re-export `get_all_tools` from where server
-  imports it — server.rs:37 `use super::tools::get_all_tools`, so either keep `tools.rs` re-exporting from the registry
-  or update the import). Define `TokenGate` + `mcp_tools!` (or the fallback table). Move every `json!` schema block
-  verbatim.
+- New `mcp/tool_registry.rs` (add `mod tool_registry;` to `mcp/mod.rs`). **Keep `tools.rs` as a thin re-export shim
+  through M1** (`pub use tool_registry::get_all_tools;` and the `Tool` type), so server.rs:37 `use super::tools::…` and
+  the four test files importing `crate::mcp::tools::get_all_tools` (`pane_state_tests`, `protocol_tests`,
+  `tool_category_tests`, `security_tests`) need zero edits — minimizes churn and keeps the snapshot honest. Defer any
+  file deletion / import-site rewrite to M4 (see open question 3). Define `TokenGate` + `mcp_tools!` (or the fallback
+  table). Move every `json!` schema block verbatim.
 - Re-point `get_all_tools()` to the registry. `tool_gate()` new.
-- The `#[cfg(test)]` count/schema tests currently in `tools.rs` move with the code (or stay valid via re-export). Keep
-  them; they're cheap guards.
+- **The inline `#[cfg(test)]` tests in `tools.rs` MUST be rewritten, not just moved** — they call per-category functions
+  (`get_nav_tools()`, `get_selection_tools()`, `get_view_tools()`, …) that the flat registry eliminates, so they won't
+  compile via re-export. Rewrite each to look up tools by name in `get_all_tools()` (e.g.
+  `test_select_tool_schema` → `get_all_tools().iter().find(|t| t.name == "select")`), and drop the now-redundant
+  per-category `*_count` tests (the registry makes count-by-construction; `test_total_tool_count` in `protocol_tests.rs`
+  stays as the single cheap guard). The external `tool_category_tests.rs` already only calls `get_all_tools()`, so it
+  needs no change.
 - **Verify:** M0 snapshot test green (byte-identical), all `tools.rs`/`protocol`/`tool_category`/`security` tests green,
   M0 structural/gate tests now green.
 - Docs: update `mcp/CLAUDE.md` module-map line (`tools.rs` → registry) and `mcp/DETAILS.md` § Tools; hold the big
@@ -241,9 +279,11 @@ once if clean (then M2/M3 become "delete the old code + prove parity").
 
 Goal: kill the hand `match name` in `executor/mod.rs`; dispatch flows from the same registry entries.
 
-- With the macro: `execute_tool<R>` is generated — delete the hand-written match in `executor/mod.rs` (keep the module's
-  shared types/helpers: `ToolResult`, `ToolError`, `mcp_round_trip`, `user_path_param`, etc.; those stay). With the
-  fallback: keep the match but add the coverage-consistency test from § Fallback.
+- With the macro: `execute_tool<R>` is generated — **actually delete** the hand-written match in `executor/mod.rs` (keep
+  the module's shared types/helpers: `ToolResult`, `ToolError`, `mcp_round_trip`, `user_path_param`, etc.; those stay).
+  Don't leave the old match as a dead duplicate — the deletion is the point of this commit. (If M1 already landed the
+  macro generating dispatch, M2 IS this deletion + the dispatch-coverage test.) With the fallback: keep the match but add
+  the coverage-consistency test from § Fallback.
 - Handlers stay in their category files, unchanged.
 - **Verify:** every tool still dispatches (add/keep a test that calls `execute_tool` with each name against a
   `MockRuntime` and asserts it's not the `Unknown tool` error — or that the registry name set == a hardcoded 32-name
@@ -257,8 +297,12 @@ Goal: kill the hand `match name` in `executor/mod.rs`; dispatch flows from the s
 
 Goal: `tool_call_requires_token` reads `tool_gate`; delete the string list from `auth.rs`.
 
-- Re-implement `tool_call_requires_token` as the 4-line registry lookup (§ Target shape). Delete the old `match name`
-  body. `TokenGate::requires_token` carries the per-arg logic.
+- Re-implement `tool_call_requires_token` as the 4-line registry lookup (§ Target shape). **Actually delete** the old
+  `match name` body (not leave it dead). `TokenGate::requires_token` carries the per-arg logic. Note:
+  `TokenGate::IfConfirmAction` exact-matching `arguments.action == "confirm"` is NOT a `no-string-matching` violation —
+  that rule targets classifying errors/state from *message/stderr* substrings; here we read the tool's own typed input
+  enum (schema enum `open|focus|close|confirm`), the same class as existing `mode == "brief"` reads, and lifting it into
+  a typed `TokenGate` variant improves typing. No opt-out comment needed.
 - **Verify (security-critical, re-run yourself per `verify-delegated-work`):** the full `auth.rs` `requires_token_*` /
   `no_token_*` suite green (parity), plus M0's structural + full-table gate tests green. This is the moment the footgun
   closes: a new destructive tool's gate is a required field on its registry entry, and the structural test fails if it's
@@ -273,8 +317,11 @@ Goal: `tool_call_requires_token` reads `tool_gate`; delete the string list from 
 
 - **`docs/guides/mcp-development.md`:** rewrite "Adding a new tool" — it's now ONE registry entry (name, description,
   schema, gate, handler) plus a handler fn in the right category file, instead of the current 5-step
-  edit-tools.rs-then-executor.rs-then-count dance. Fix the stale architecture blurb too (it lists `executor.rs` /
-  `tests.rs` as single files; they're directories now). Show the before/after of adding a tool.
+  edit-tools.rs-then-executor.rs-then-count dance. Fix the stale bits: it lists `executor.rs` / `tests.rs` as single
+  files (they're directories now), uses a wrong `43 → 45` tool-count example (actual is 32), and its "STDIO bridge"
+  section describes a `cmdr-mcp-stdio` binary that **does not exist** in the tree (the only `[[bin]]` is `Cmdr`) — remove
+  or correct that section. Show the before/after of adding a tool. (`docs/architecture.md` doesn't reference `tools.rs`
+  and `docs/tooling/mcp.md` doesn't cover adding tools, so neither needs updating — confirmed.)
 - **TS surface (#4): consciously deferred — document why.** `mcp-listeners.ts` is a separate transport adapter on the
   other side of the IPC boundary; its parsers validate *event payloads* (which stay byte-identical — we changed nothing
   emitted). Collapsing it into the Rust registry would mean generating TS from Rust (a codegen pipeline), which is a
@@ -321,11 +368,16 @@ Goal: `tool_call_requires_token` reads `tool_gate`; delete the string list from 
 
 ## Risks
 
+- **Macro won't compile** (the `run:`-as-closure lifetime trap). This is the top risk. Mitigation: the inline-expression
+  macro form + the M1 spike-first note (§ Recommended); fall back to the data-table route at first sign of pain.
 - **Macro readability.** Mitigation: the fallback data-table route; decide early with the reviewer.
-- **Key-order / formatting drift in schemas.** Mitigation: move `json!` blocks verbatim; the M0 snapshot catches any
-  drift immediately.
-- **Import churn** (`use super::tools::get_all_tools` at server.rs:37; `execute_tool` at :33). Mitigation: keep the
-  public fn names/paths stable (re-export), so server.rs and tests need no edits beyond the module rename.
+- **Key-order / formatting drift in schemas.** Down-ranked: `preserve_order` is off (BTreeMap → alphabetical,
+  deterministic), and `json!` blocks move verbatim; the M0 snapshot catches any real drift immediately.
+- **Import churn** (`use super::tools::get_all_tools` at server.rs:37; `execute_tool` at :33; four test files import
+  `crate::mcp::tools::get_all_tools`). Mitigation: keep `tools.rs` as a re-export shim through M1 (zero edits to server
+  + tests); defer any deletion/import rewrite to M4.
+- **Inline `tools.rs` tests won't compile after the category fns vanish.** Mitigation: rewrite them by-name in M1 (§ M1),
+  not a re-export.
 - **Generic/non-generic split** getting tangled. Mitigation: § The generic/non-generic split — metadata non-generic,
   dispatch generic, no boxed async, no generic statics.
 
@@ -336,6 +388,7 @@ Goal: `tool_call_requires_token` reads `tool_gate`; delete the string list from 
 2. Is skipping typed serde param structs / schemars the right call given the byte-identical + zero-dep + custom-error
    constraints? (Recommendation: yes; documented rationale above.)
 3. Should `tool_registry.rs` fully absorb `tools.rs` (delete the file, move the `Tool` struct) or should `tools.rs` stay
-   as the `Tool` type + a re-export shim? (Recommendation: absorb into `tool_registry.rs`, drop `tools.rs`, update the
-   two imports — cleanest end state.)
+   as the `Tool` type + a re-export shim? **Resolved (reviewer):** keep `tools.rs` as a re-export shim through M1 for
+   zero churn and an honest snapshot; if a clean full absorption (delete `tools.rs`, move `Tool`, rewrite the ~5 import
+   sites in server.rs + four test files) is worth it, do it in M4 as an explicit final-state tidy — not mid-refactor.
 ```
