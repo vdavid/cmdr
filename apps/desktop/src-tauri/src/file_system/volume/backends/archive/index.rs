@@ -28,6 +28,20 @@ use super::source::ArchiveByteSource;
 /// rejected.
 const GP_FLAG_ENCRYPTED: u16 = 1 << 0;
 
+/// Maximum number of nodes (files plus synthesized directories) in one archive's
+/// tree. The backstop against the many-entries axis of memory amplification: the
+/// per-entry `MAX_COMPONENT_DEPTH` cap (in `name.rs`) bounds each entry's cost,
+/// but a central directory with a huge number of deep-ish
+/// entries could still sum to an oversized tree from a modest input. Exceeding
+/// this fails the whole parse with a typed error rather than risking an OOM.
+///
+/// 2,000,000 is well beyond real archives (the Linux kernel source is ~90k
+/// files, a Chromium checkout ~400k), so a legitimate archive never trips it; it
+/// only fires on a hostile blow-up. It bounds node *count*; per-node path length
+/// is separately bounded by the zip name field (`u16`, 64 KB), so worst-case
+/// tree memory is bounded too.
+const MAX_TREE_NODES: usize = 2_000_000;
+
 /// One node in the synthetic tree: a file, a directory (explicit or implied),
 /// or a symlink. Archive-native — the volume layer maps this onto `FileEntry`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -116,7 +130,7 @@ impl ArchiveIndex {
     /// names, and synthesizes the directory tree.
     pub fn parse(source: &dyn ArchiveByteSource) -> Result<Self, ArchiveError> {
         let entries = parse_central_directory(source)?;
-        Ok(build_index(entries))
+        build_index(entries)
     }
 
     /// Lists the children of the directory at `inner_path`. Returns `None` if
@@ -236,7 +250,7 @@ fn parse_central_directory(source: &dyn ArchiveByteSource) -> Result<Vec<Entry>,
 /// Sanitizes and classifies each central-directory entry, then hands the
 /// accepted seeds to [`build_tree`]. Also stashes each readable file's rc-zip
 /// entry (for later reads) and records quarantined names.
-fn build_index(entries: Vec<Entry>) -> ArchiveIndex {
+fn build_index(entries: Vec<Entry>) -> Result<ArchiveIndex, ArchiveError> {
     let mut seeds: Vec<NodeSeed> = Vec::with_capacity(entries.len());
     let mut files: HashMap<String, Entry> = HashMap::new();
     let mut quarantined: Vec<(String, QuarantineReason)> = Vec::new();
@@ -271,14 +285,18 @@ fn build_index(entries: Vec<Entry>) -> ArchiveIndex {
         }
     }
 
-    let (nodes, children) = build_tree(seeds);
-    ArchiveIndex {
+    let (nodes, children) = build_tree(seeds, MAX_TREE_NODES)?;
+    // A file the tree dropped (shadowed by a directory, or blocked by a file
+    // ancestor) must not stay readable via `open_read`: keep an `Entry` only for
+    // paths that ended up as real file nodes.
+    files.retain(|path, _| nodes.get(path).is_some_and(|node| !node.is_dir));
+    Ok(ArchiveIndex {
         nodes,
         children,
         files,
         quarantined,
         has_encrypted,
-    }
+    })
 }
 
 /// Builds the directory tree from accepted entry seeds. Pure — no I/O — so the
@@ -288,7 +306,11 @@ fn build_index(entries: Vec<Entry>) -> ArchiveIndex {
 /// Returns the node map (every path, files and dirs, including the root `""`)
 /// and the per-directory child lists, pre-sorted directories-first then by
 /// case-insensitive name.
-fn build_tree(seeds: Vec<NodeSeed>) -> (HashMap<String, ArchiveNode>, HashMap<String, Vec<String>>) {
+/// The built tree: every node by inner path, plus each directory's pre-sorted
+/// child-path list.
+type BuiltTree = (HashMap<String, ArchiveNode>, HashMap<String, Vec<String>>);
+
+fn build_tree(seeds: Vec<NodeSeed>, max_nodes: usize) -> Result<BuiltTree, ArchiveError> {
     let mut nodes: HashMap<String, ArchiveNode> = HashMap::new();
     let mut child_paths: HashMap<String, Vec<String>> = HashMap::new();
     // Every path whose parent link is already recorded. A path has exactly one
@@ -298,18 +320,24 @@ fn build_tree(seeds: Vec<NodeSeed>) -> (HashMap<String, ArchiveNode>, HashMap<St
     nodes.insert(String::new(), ArchiveNode::root());
 
     for seed in seeds {
-        ensure_ancestors(&seed.path, &mut nodes, &mut child_paths, &mut linked);
+        // Path collisions are resolved first-writer-wins. If an ancestor path is
+        // already a FILE, this entry can't be placed under it — drop it rather
+        // than leaving it as an unreachable orphan.
+        if !ensure_ancestors(&seed.path, &mut nodes, &mut child_paths, &mut linked) {
+            continue;
+        }
 
         if seed.is_dir {
-            // Upgrade an implied dir to explicit (carry its real mtime), or
-            // create it. A file already at this path is left in place — a
-            // path can't be both; the first writer of a concrete node wins.
+            // Create the dir, or upgrade an implied one with its real mtime. If a
+            // file already holds this exact path, `upsert_dir` returns false and
+            // the file wins — drop the dir entry.
             upsert_dir(&seed.path, seed.modified, &mut nodes, &mut child_paths, &mut linked);
         } else {
-            // A file collides with an existing directory only in a malformed
-            // zip; the directory (with children) wins, so skip the file node.
-            let already_dir = nodes.get(&seed.path).is_some_and(|n| n.is_dir);
-            if !already_dir {
+            // Yield to an existing directory at this path (the directory, with
+            // children, wins). Otherwise create the file node, or overwrite an
+            // earlier file of the same name (a later duplicate wins).
+            let occupied_by_dir = nodes.get(&seed.path).is_some_and(|n| n.is_dir);
+            if !occupied_by_dir {
                 let node = ArchiveNode {
                     name: leaf_name(&seed.path).to_string(),
                     path: seed.path.clone(),
@@ -324,47 +352,62 @@ fn build_tree(seeds: Vec<NodeSeed>) -> (HashMap<String, ArchiveNode>, HashMap<St
                 nodes.insert(seed.path.clone(), node);
             }
         }
+
+        // Backstop against the many-entries amplification axis: refuse an
+        // oversized tree rather than risk an OOM. One seed adds at most
+        // MAX_COMPONENT_DEPTH nodes, so we overshoot the cap by a bounded margin
+        // before catching it here.
+        if nodes.len() > max_nodes {
+            return Err(ArchiveError::TooLarge(format!(
+                "directory tree exceeds the {max_nodes}-node limit"
+            )));
+        }
     }
 
     sort_children(&mut child_paths, &nodes);
-    (nodes, child_paths)
+    Ok((nodes, child_paths))
 }
 
 /// Ensures every ancestor directory of `path` exists as a synthetic dir node,
-/// shallowest-first, so a parent is always created before its child.
+/// shallowest-first, so a parent is always created before its child. Returns
+/// `false` if an ancestor path is already occupied by a FILE (so `path` can't be
+/// placed under it); the caller drops the entry.
 fn ensure_ancestors(
     path: &str,
     nodes: &mut HashMap<String, ArchiveNode>,
     child_paths: &mut HashMap<String, Vec<String>>,
     linked: &mut HashSet<String>,
-) {
+) -> bool {
     let parts: Vec<&str> = path.split('/').collect();
     for depth in 1..parts.len() {
         let dir_path = parts[..depth].join("/");
-        upsert_dir(&dir_path, None, nodes, child_paths, linked);
+        if !upsert_dir(&dir_path, None, nodes, child_paths, linked) {
+            return false;
+        }
     }
+    true
 }
 
 /// Inserts a directory node at `dir_path` (creating it if absent) and links it
 /// into its parent. If it already exists as a synthetic dir and `modified` is
-/// `Some` (an explicit entry), upgrades its timestamp.
+/// `Some` (an explicit entry), upgrades its timestamp. Returns `false` if a FILE
+/// already holds this exact path (first-writer-wins: the file keeps it).
 fn upsert_dir(
     dir_path: &str,
     modified: Option<i64>,
     nodes: &mut HashMap<String, ArchiveNode>,
     child_paths: &mut HashMap<String, Vec<String>>,
     linked: &mut HashSet<String>,
-) {
+) -> bool {
     match nodes.get_mut(dir_path) {
         Some(node) if node.is_dir => {
             // Existing dir: let an explicit entry fill in the real mtime.
             if node.modified.is_none() {
                 node.modified = modified;
             }
+            true
         }
-        Some(_) => {
-            // A file already claimed this path; leave it (see build_tree note).
-        }
+        Some(_) => false, // a file already claimed this path
         None => {
             let node = ArchiveNode {
                 name: leaf_name(dir_path).to_string(),
@@ -378,6 +421,7 @@ fn upsert_dir(
             };
             link_child(dir_path, child_paths, linked);
             nodes.insert(dir_path.to_string(), node);
+            true
         }
     }
 }
@@ -457,10 +501,16 @@ mod tests {
             .unwrap_or_default()
     }
 
+    /// Builds the tree with an effectively-unlimited node cap (the node cap is
+    /// tested separately by passing a small one).
+    fn build(seeds: Vec<NodeSeed>) -> BuiltTree {
+        build_tree(seeds, usize::MAX).expect("uncapped build should not exceed the node cap")
+    }
+
     #[test]
     fn synthesizes_implied_directories_from_file_prefixes() {
         // No explicit dir entries: `a/b/c.txt` must imply `a/` and `a/b/`.
-        let (nodes, children) = build_tree(vec![file_seed("a/b/c.txt", 10)]);
+        let (nodes, children) = build(vec![file_seed("a/b/c.txt", 10)]);
 
         assert!(nodes.get("a").is_some_and(|n| n.is_dir), "a/ should be synthesized");
         assert!(nodes.get("a/b").is_some_and(|n| n.is_dir), "a/b/ should be synthesized");
@@ -479,7 +529,7 @@ mod tests {
     fn explicit_dir_entry_upgrades_the_implied_one() {
         // File first (implies `docs/`), then the explicit `docs/` entry: the
         // explicit timestamp must win, and `docs/` must not be duplicated.
-        let (nodes, children) = build_tree(vec![file_seed("docs/readme.md", 20), dir_seed("docs")]);
+        let (nodes, children) = build(vec![file_seed("docs/readme.md", 20), dir_seed("docs")]);
 
         assert!(nodes["docs"].is_dir);
         assert_eq!(nodes["docs"].modified, Some(1_700_000_500));
@@ -490,7 +540,7 @@ mod tests {
     #[test]
     fn explicit_dir_before_its_child_is_not_duplicated() {
         // Order-independence: explicit dir first, then a file inside it.
-        let (nodes, children) = build_tree(vec![dir_seed("pics"), file_seed("pics/a.png", 5)]);
+        let (nodes, children) = build(vec![dir_seed("pics"), file_seed("pics/a.png", 5)]);
         assert!(nodes["pics"].is_dir);
         assert_eq!(child_names(&children, ""), vec!["pics"]);
         assert_eq!(child_names(&children, "pics"), vec!["a.png"]);
@@ -498,7 +548,7 @@ mod tests {
 
     #[test]
     fn mixed_tree_lists_dirs_before_files_alphabetically() {
-        let (_nodes, children) = build_tree(vec![
+        let (_nodes, children) = build(vec![
             file_seed("zeta.txt", 1),
             file_seed("alpha.txt", 1),
             dir_seed("mid"),
@@ -510,7 +560,7 @@ mod tests {
 
     #[test]
     fn deeply_nested_single_file_creates_the_whole_chain() {
-        let (nodes, _children) = build_tree(vec![file_seed("x/y/z/w/deep.bin", 3)]);
+        let (nodes, _children) = build(vec![file_seed("x/y/z/w/deep.bin", 3)]);
         for dir in ["x", "x/y", "x/y/z", "x/y/z/w"] {
             assert!(nodes.get(dir).is_some_and(|n| n.is_dir), "{dir} should exist");
         }
@@ -519,7 +569,7 @@ mod tests {
 
     #[test]
     fn root_node_always_exists_and_is_a_directory() {
-        let (nodes, _children) = build_tree(vec![]);
+        let (nodes, _children) = build(vec![]);
         assert!(nodes[""].is_dir);
         assert_eq!(nodes[""].path, "");
     }
@@ -530,5 +580,32 @@ mod tests {
         assert_eq!(leaf_name("top"), "top");
         assert_eq!(parent_path("a/b/c.txt"), "a/b");
         assert_eq!(parent_path("top"), "");
+    }
+
+    #[test]
+    fn tree_building_fails_when_node_count_exceeds_the_cap() {
+        // Six single-node files plus the root is 7 nodes; a cap of 5 must fail.
+        let seeds: Vec<NodeSeed> = (0..6).map(|i| file_seed(&format!("f{i}.txt"), 1)).collect();
+        let err = build_tree(seeds.clone(), 5).unwrap_err();
+        assert!(matches!(err, ArchiveError::TooLarge(_)), "got {err:?}");
+        // The same seeds fit comfortably under a generous cap.
+        assert!(build_tree(seeds, 1_000).is_ok());
+    }
+
+    #[test]
+    fn file_shadowing_a_directory_path_is_first_writer_wins_both_orders() {
+        // File `foo` first, then `foo/bar`: `foo` stays a file; `foo/bar` can't
+        // live under a file, so it's dropped (not left as an unreachable orphan).
+        let (nodes, children) = build(vec![file_seed("foo", 1), file_seed("foo/bar", 2)]);
+        assert!(!nodes["foo"].is_dir, "first writer (the file) keeps the path");
+        assert!(!nodes.contains_key("foo/bar"), "the shadowed child is dropped, not orphaned");
+        assert_eq!(child_names(&children, ""), vec!["foo"]);
+
+        // Reverse order: `foo/bar` first implies dir `foo`; the later file `foo`
+        // yields to the directory (which has children).
+        let (nodes, children) = build(vec![file_seed("foo/bar", 2), file_seed("foo", 1)]);
+        assert!(nodes["foo"].is_dir, "first writer (the implied dir) keeps the path");
+        assert!(nodes.contains_key("foo/bar"));
+        assert_eq!(child_names(&children, "foo"), vec!["bar"]);
     }
 }

@@ -31,6 +31,12 @@ pub enum ArchiveError {
     /// variant.
     Unsupported(String),
 
+    /// The archive's synthesized directory tree exceeds our node-count cap. This
+    /// is the backstop against a small central directory that expands into a
+    /// huge in-memory tree (a browse-time memory-amplification DoS). Browsing is
+    /// refused rather than risking an out-of-memory abort.
+    TooLarge(String),
+
     /// No entry exists at the requested inner path.
     NotFound(String),
 
@@ -48,6 +54,7 @@ impl std::fmt::Display for ArchiveError {
             Self::Corrupt(msg) => write!(f, "corrupt archive: {msg}"),
             Self::Encrypted => f.write_str("archive entry is encrypted"),
             Self::Unsupported(msg) => write!(f, "unsupported archive feature: {msg}"),
+            Self::TooLarge(msg) => write!(f, "archive is too large to browse: {msg}"),
             Self::NotFound(path) => write!(f, "no such entry: {path}"),
             Self::IsADirectory(path) => write!(f, "entry is a directory: {path}"),
             Self::Io(msg) => write!(f, "archive I/O error: {msg}"),

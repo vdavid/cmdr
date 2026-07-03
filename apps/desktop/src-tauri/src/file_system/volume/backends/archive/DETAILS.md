@@ -65,13 +65,36 @@ shared cursor, so parallel entry reads don't contend.
 **Synthetic dirs.** Most zips carry no explicit directory entries: `a/b/c.txt` alone must produce browsable `a/` and
 `a/b/`. `build_tree` walks each accepted entry's ancestors shallowest-first, creating a synthetic dir node for any that's
 missing (no timestamp — it's inferred). An explicit dir entry (trailing slash or dir mode bits) that arrives later
-*upgrades* the implied one in place (fills its real mtime) rather than duplicating it; order-independent. A file whose
-path collides with a directory (malformed zip) loses — the directory, with children, wins. Duplicate file names: last
-entry wins. Children are stored per-directory, pre-sorted directories-first then case-insensitive by name.
+*upgrades* the implied one in place (fills its real mtime) rather than duplicating it; order-independent. Children are
+stored per-directory, pre-sorted directories-first then case-insensitive by name.
+
+**Path collisions are first-writer-wins (order-dependent, by design).** A malformed zip can carry both a file and a
+directory at the same path. Whoever claims the path first keeps it: `foo` (file) then `foo/bar` → `foo` stays a file and
+`foo/bar` is **dropped** (a file can't hold children — it is not left as an unreachable orphan); `foo/bar` then `foo`
+(file) → the implied directory `foo` wins and the later file is dropped. Duplicate file names (two files, same path) are
+last-writer-wins instead — the later entry replaces the earlier node. A dropped file is also removed from the `files`
+map, so it can never be read via `open_read` even though its `Entry` was parsed. Pinned by
+`file_shadowing_a_directory_path_*` (both orders, unit and integration).
 
 `ArchiveNode` is archive-native (name, inner path, is_dir/is_symlink, sizes, mtime, encrypted). The volume layer maps it
 onto `FileEntry`. Inner paths are `/`-separated, no leading/trailing slash; the archive root is `""`. Lookups
 (`get`/`list`/`is_directory`/`open_read`) trim surrounding slashes so `/dir/` and `dir` resolve the same node.
+
+## Resource caps (memory-amplification defense)
+
+The synthetic tree materializes one node (with a path string) per ancestor prefix of every entry, so a small central
+directory can expand into a huge tree — a browse-time DoS. Two caps bound it on both axes:
+
+- **Per-entry depth** (`name::MAX_COMPONENT_DEPTH`, 256): an entry named `a/a/…` with N components costs O(N) nodes whose
+  path strings sum to O(N²) bytes; a `u16` name field allows N ≈ 32k (≈1 GB from one entry). Over-deep entries are
+  **quarantined** at sanitize time (`QuarantineReason::TooDeep`), before any tree building, so the archive stays
+  browsable. 256 is an order of magnitude past any real archive's nesting.
+- **Total node count** (`index::MAX_TREE_NODES`, 2,000,000): the many-entries backstop. Exceeding it fails the whole
+  parse with `ArchiveError::TooLarge` rather than risking an OOM. Checked once per seed in `build_tree` (a seed adds at
+  most `MAX_COMPONENT_DEPTH` nodes, so the overshoot is bounded). Well beyond real archives (Linux kernel ~90k files,
+  Chromium ~400k); per-node path length is separately bounded by the 64 KB name field, so worst-case memory is bounded
+  too. Tested via `build_tree`'s injectable cap (`tree_building_fails_when_node_count_exceeds_the_cap`) rather than a
+  multi-million-node fixture.
 
 ## Zip Slip guarantee (`sanitize_entry_name`)
 
@@ -81,8 +104,9 @@ layer (not only at extraction) so an escaping path never even becomes a browsabl
 
 Rules: normalize `\`→`/`; drop empty and `.` components (collapses leading/trailing/doubled slashes); **clamp** absolute
 paths to the root (strip leading slashes — the entry stays visible, can't escape, matches `unzip`); **quarantine**
-(reject) any entry with a `..` component (it can't be safely clamped to one in-root location) or that normalizes to
-nothing. Quarantined raw names are recorded on the index (`quarantined()`) for diagnostics; they're absent from the tree.
+(reject) any entry with a `..` component (it can't be safely clamped to one in-root location), that normalizes to
+nothing, or that nests past the depth cap (see Resource caps above). Quarantined raw names are recorded on the index
+(`quarantined()`) with their reason for diagnostics; they're absent from the tree.
 
 Note `..` matches only a whole component — `..foo` and `foo..bar` are legitimate filenames. (rc-zip's own
 `Entry::sanitized_name` uses a coarser `contains("..")` substring test and doesn't normalize `\`; we don't use it.)
@@ -194,13 +218,19 @@ archive for this phase. Raise it later if a real workload wants parallel extract
 
 ### Decision: typed `ArchiveError → VolumeError` mapping, no message strings
 
-**Why** (`no-string-matching`): `to_volume_error` maps the path-shaped errors to their `VolumeError` twins
-(`NotFound → NotFound`, `IsADirectory → IsADirectory`) so path-aware callers keep working, and collapses the
-archive-integrity family (`NotAnArchive` / `Encrypted` / `Unsupported → NotSupported`, `Corrupt` / `Io → IoError`). This
-is a **mid-browse backstop** (the archive was swapped or corrupted after navigation). The user-facing "not a real
-archive" / "encrypted" friendly copy is produced at the M1b routing boundary straight from the raw `ArchiveError` at
-navigation time — not recovered from a `VolumeError` here — so this mapping deliberately doesn't need a new `VolumeError`
-variant or a dedicated friendly-error reason yet.
+**Why** (`no-string-matching`): `to_volume_error` names the path-shaped errors → their `VolumeError` twins
+(`NotFound → NotFound`, `IsADirectory → IsADirectory`) so path-aware callers keep working, and names the I/O family
+(`Corrupt` / `Io → IoError`). Everything else — the rejection family (`NotAnArchive` / `Encrypted` / `Unsupported`, the
+`TooLarge` DoS cap, and any future rejection variant the reading core grows) — falls through a **wildcard** to
+`NotSupported`. This is a **mid-browse backstop** (the archive was swapped or corrupted after navigation). The
+user-facing "not a real archive" / "encrypted" friendly copy is produced at the M1b routing boundary straight from the
+raw `ArchiveError` at navigation time — not recovered from a `VolumeError` here — so this mapping deliberately doesn't
+need a new `VolumeError` variant or a dedicated friendly-error reason yet.
+
+The wildcard (rather than an exhaustive match) is intentional: the reading core is evolving in parallel, and every new
+rejection variant it adds is another "can't serve this archive" case that correctly defaults to `NotSupported`. Naming
+them all would couple this file to the core's enum and break the volume layer (and coordinated commits) on every new
+variant, for no behavioral gain.
 
 ## Testing
 
@@ -211,11 +241,13 @@ progress tick, the cancelable-listing default, streaming extract + the at-offset
 encrypted/corrupt/non-zip typed errors through the `Volume` API, the parent `lane_key` / `get_space_info` delegation,
 and the capability flags.
 
-`test_fixtures.rs` builds clean zips with the `zip` crate (no checked-in blobs) and byte-patches hostile variants
-(traversal name via equal-length patch, encrypted GP flag, overstated EOCD record count). `archive_test.rs` covers parse
-+ listing, synthetic dirs, Zip Slip quarantine, encrypted/corrupt/not-an-archive typed errors, streaming (bounded chunks
-+ decompression correctness), stored reads, concurrent reads, best-effort encoding, and cache hit/invalidation.
-`name.rs` and `index.rs` carry pure unit tests for the sanitizer and the tree builder.
+`test_fixtures.rs` builds clean zips with the `zip` crate (no checked-in blobs; `large_file(true)` for a real zip64
+fixture) and byte-patches hostile variants (traversal name via equal-length patch, encrypted GP flag, overstated EOCD
+record count). `archive_test.rs` covers parse + listing, synthetic dirs, Zip Slip quarantine, the depth-bomb quarantine,
+first-writer-wins file/dir collisions (both orders), the empty archive, a zip64 round-trip, encrypted/corrupt/not-an-
+archive typed errors, streaming (bounded chunks + decompression correctness + truncated-entry error), stored reads,
+concurrent reads, best-effort encoding, and cache hit/invalidation. `name.rs` and `index.rs` carry pure unit tests for
+the sanitizer (incl. the depth cap) and the tree builder (incl. the node-count cap and the collision orders).
 
 ## Left for the routing milestone (M1b+)
 

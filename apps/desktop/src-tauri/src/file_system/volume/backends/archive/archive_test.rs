@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use super::test_fixtures::{
-    build_zip, deflated, dir, overstate_record_count, patch_equal_len, set_first_entry_encrypted, stored,
+    build_zip, deflated, dir, overstate_record_count, patch_equal_len, set_first_entry_encrypted, stored, zip64_stored,
 };
 use super::*;
 
@@ -248,6 +248,86 @@ fn non_utf8_name_is_decoded_best_effort() {
         name, "file_x.txt",
         "the high byte should have decoded to a non-ASCII glyph"
     );
+}
+
+// ---- Hostile scale + structural edge cases ---------------------------------
+
+#[test]
+fn depth_bomb_entry_is_quarantined_and_archive_stays_browsable() {
+    // A single entry nested far past the depth cap would, unguarded, materialize
+    // ~one ancestor node per component (a memory-amplification DoS). It must be
+    // quarantined at sanitize time — before any tree building — leaving the rest
+    // of the archive browsable.
+    let deep = vec!["a"; name::MAX_COMPONENT_DEPTH + 50].join("/");
+    let zip = build_zip(&[stored("safe.txt", "ok"), stored(deep.clone(), "bomb")]);
+    let index = parse(&zip).unwrap();
+
+    // The bomb never enters the tree (no top-level `a`), and the benign file lists.
+    assert_eq!(names(&index, ""), vec!["safe.txt"]);
+    assert!(!index.exists("a"));
+    let quarantined = index.quarantined();
+    assert_eq!(quarantined.len(), 1);
+    assert_eq!(quarantined[0].0, deep);
+    assert_eq!(quarantined[0].1, QuarantineReason::TooDeep);
+}
+
+#[test]
+fn empty_archive_parses_and_lists_an_empty_root() {
+    // A valid zip with zero entries (EOCD only) is not an error.
+    let zip = build_zip(&[]);
+    let index = parse(&zip).unwrap();
+    assert_eq!(index.list("").unwrap(), Vec::new());
+    assert!(index.get("").unwrap().is_dir);
+    assert!(!index.has_encrypted_entries());
+}
+
+#[tokio::test]
+async fn file_shadowing_a_directory_path_file_first_drops_the_child() {
+    // File `foo` precedes `foo/bar`: first-writer-wins keeps `foo` a file, and
+    // `foo/bar` (which can't live under a file) is dropped, not left readable.
+    let zip = build_zip(&[stored("foo", "iamafile"), stored("foo/bar", "shadowed")]);
+    let index = parse(&zip).unwrap();
+    let src = bytes_source(zip);
+
+    assert_eq!(names(&index, ""), vec!["foo"]);
+    assert_eq!(index.is_directory("foo"), Some(false));
+    assert!(index.get("foo/bar").is_none());
+    // The dropped child must not be readable either (files map stays consistent).
+    let err = index.open_read("foo/bar", Arc::clone(&src)).unwrap_err();
+    assert!(matches!(err, ArchiveError::NotFound(_)), "got {err:?}");
+    // The winning file still reads.
+    let mut reader = index.open_read("foo", src).unwrap();
+    assert_eq!(read_all(&mut reader).await.unwrap().0, b"iamafile");
+}
+
+#[tokio::test]
+async fn file_shadowing_a_directory_path_subfile_first_keeps_the_directory() {
+    // Reverse order: `foo/bar` first implies dir `foo`; the later file `foo`
+    // yields to the directory, and its bytes are not readable.
+    let zip = build_zip(&[stored("foo/bar", "child"), stored("foo", "loser")]);
+    let index = parse(&zip).unwrap();
+    let src = bytes_source(zip);
+
+    assert_eq!(index.is_directory("foo"), Some(true));
+    assert_eq!(names(&index, "foo"), vec!["bar"]);
+    let err = index.open_read("foo", Arc::clone(&src)).unwrap_err();
+    assert!(matches!(err, ArchiveError::IsADirectory(_)), "got {err:?}");
+    let mut reader = index.open_read("foo/bar", src).unwrap();
+    assert_eq!(read_all(&mut reader).await.unwrap().0, b"child");
+}
+
+#[tokio::test]
+async fn zip64_archive_parses_and_reads() {
+    // Force the zip64 layout (zip64 extra field + zip64 EOCD) without a 4 GB
+    // payload, to smoke-test rc-zip's zip64 path end to end.
+    let zip = build_zip(&[zip64_stored("z.txt", "hello zip64")]);
+    let index = parse(&zip).unwrap();
+    assert_eq!(names(&index, ""), vec!["z.txt"]);
+    assert_eq!(index.get("z.txt").unwrap().size, Some(11));
+
+    let src = bytes_source(zip);
+    let mut reader = index.open_read("z.txt", src).unwrap();
+    assert_eq!(read_all(&mut reader).await.unwrap().0, b"hello zip64");
 }
 
 // ---- Index cache -----------------------------------------------------------

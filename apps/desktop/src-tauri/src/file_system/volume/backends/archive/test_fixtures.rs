@@ -12,33 +12,48 @@ use zip::{CompressionMethod, ZipWriter};
 
 /// A file to write into a fixture zip.
 pub struct FixtureFile {
-    pub name: &'static str,
+    pub name: String,
     pub content: Vec<u8>,
     pub method: CompressionMethod,
+    /// Force a zip64 entry (zip64 extra field + zip64 EOCD) regardless of size.
+    pub zip64: bool,
 }
 
-pub fn stored(name: &'static str, content: impl Into<Vec<u8>>) -> FixtureFile {
+pub fn stored(name: impl Into<String>, content: impl Into<Vec<u8>>) -> FixtureFile {
     FixtureFile {
-        name,
+        name: name.into(),
         content: content.into(),
         method: CompressionMethod::Stored,
+        zip64: false,
     }
 }
 
-pub fn deflated(name: &'static str, content: impl Into<Vec<u8>>) -> FixtureFile {
+pub fn deflated(name: impl Into<String>, content: impl Into<Vec<u8>>) -> FixtureFile {
     FixtureFile {
-        name,
+        name: name.into(),
         content: content.into(),
         method: CompressionMethod::Deflated,
+        zip64: false,
     }
 }
 
 /// An explicit directory entry (trailing slash, no content).
-pub fn dir(name: &'static str) -> FixtureFile {
+pub fn dir(name: impl Into<String>) -> FixtureFile {
     FixtureFile {
-        name,
+        name: name.into(),
         content: Vec::new(),
         method: CompressionMethod::Stored,
+        zip64: false,
+    }
+}
+
+/// A stored entry forced into the zip64 layout (no 4 GB payload needed).
+pub fn zip64_stored(name: impl Into<String>, content: impl Into<Vec<u8>>) -> FixtureFile {
+    FixtureFile {
+        name: name.into(),
+        content: content.into(),
+        method: CompressionMethod::Stored,
+        zip64: true,
     }
 }
 
@@ -47,11 +62,13 @@ pub fn dir(name: &'static str) -> FixtureFile {
 pub fn build_zip(entries: &[FixtureFile]) -> Vec<u8> {
     let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
     for entry in entries {
-        let opts = SimpleFileOptions::default().compression_method(entry.method);
+        let opts = SimpleFileOptions::default()
+            .compression_method(entry.method)
+            .large_file(entry.zip64);
         if entry.name.ends_with('/') {
             writer.add_directory(entry.name.trim_end_matches('/'), opts).unwrap();
         } else {
-            writer.start_file(entry.name, opts).unwrap();
+            writer.start_file(&*entry.name, opts).unwrap();
             writer.write_all(&entry.content).unwrap();
         }
     }

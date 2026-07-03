@@ -23,6 +23,23 @@
 //!   can't be safely clamped to a single in-root location, so the whole entry is
 //!   dropped rather than guessed at.
 //! - A name that normalizes to nothing (`/`, `.`, ``) is quarantined as empty.
+//! - A name with more than [`MAX_COMPONENT_DEPTH`] path components is quarantined
+//!   as a depth bomb (see the constant's docs).
+
+/// Maximum number of path components (nesting depth) an accepted entry may have.
+///
+/// The synthetic-tree builder materializes one node per ancestor prefix of every
+/// entry, so a single entry named `a/a/a/…` with N components costs O(N) nodes
+/// whose path strings sum to O(N²) bytes. A zip name field is a `u16`, so N can
+/// reach ~32k in a 64 KB name — ~1 GB of ancestor strings from one entry, a
+/// browse-time memory-amplification DoS. Capping the depth kills that quadratic
+/// blowup at its source (the per-entry axis; the total-node-count backstop in
+/// `index.rs` covers the many-entries axis).
+///
+/// 256 is an order of magnitude beyond any real archive's nesting (real trees
+/// rarely pass ~40 deep), so a deeper entry is hostile, not legitimate — it's
+/// quarantined, leaving the rest of the archive browsable.
+pub const MAX_COMPONENT_DEPTH: usize = 256;
 
 /// The result of sanitizing one raw entry name.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,6 +58,9 @@ pub enum QuarantineReason {
     ParentTraversal,
     /// The name normalizes to nothing (e.g. `/`, `.`, or empty).
     Empty,
+    /// The name nests deeper than [`MAX_COMPONENT_DEPTH`] components (a depth
+    /// bomb — see that constant).
+    TooDeep,
 }
 
 /// Normalizes a raw zip entry name into a safe inner path. See the module docs
@@ -65,6 +85,12 @@ pub fn sanitize_entry_name(raw: &str) -> SanitizedName {
 
     if components.is_empty() {
         return SanitizedName::Quarantined(QuarantineReason::Empty);
+    }
+    // Cap nesting depth to defuse the ancestor-materialization bomb (see
+    // MAX_COMPONENT_DEPTH). Checked here, the single choke point, so a depth
+    // bomb never reaches the tree builder.
+    if components.len() > MAX_COMPONENT_DEPTH {
+        return SanitizedName::Quarantined(QuarantineReason::TooDeep);
     }
     SanitizedName::Accepted(components.join("/"))
 }
@@ -120,6 +146,23 @@ mod tests {
         assert_eq!(
             sanitize_entry_name("dir\\..\\..\\evil"),
             SanitizedName::Quarantined(QuarantineReason::ParentTraversal)
+        );
+    }
+
+    #[test]
+    fn name_at_the_depth_cap_is_accepted() {
+        // Exactly MAX_COMPONENT_DEPTH components is still fine.
+        let name = vec!["a"; MAX_COMPONENT_DEPTH].join("/");
+        assert_eq!(accepted(&name), name);
+    }
+
+    #[test]
+    fn name_beyond_the_depth_cap_is_quarantined() {
+        // One component past the cap is a depth bomb.
+        let name = vec!["a"; MAX_COMPONENT_DEPTH + 1].join("/");
+        assert_eq!(
+            sanitize_entry_name(&name),
+            SanitizedName::Quarantined(QuarantineReason::TooDeep)
         );
     }
 
