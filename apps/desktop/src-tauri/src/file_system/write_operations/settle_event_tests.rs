@@ -17,7 +17,9 @@ use std::time::Duration;
 
 use super::copy_files_start;
 use super::state::WriteSettledGuard;
-use super::types::{CollectorEventSink, OperationEventSink, WriteOperationConfig, WriteOperationType, WriteSettledEvent};
+use super::types::{
+    CollectorEventSink, OperationEventSink, WriteOperationConfig, WriteOperationType, WriteSettledEvent,
+};
 
 /// Bridge sink that keeps a direct handle to the underlying `CollectorEventSink`
 /// for inspection. Needed because the guard takes `Arc<dyn OperationEventSink>`,
