@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, unmount, flushSync, type ComponentProps } from 'svelte'
 import QueueRow from './QueueRow.svelte'
+import { operationTypeIcon } from './operation-icon'
 import type { OperationRow } from './operations-store.svelte'
 import type { OperationSnapshot, WriteProgressEvent } from '$lib/ipc/bindings'
 
@@ -113,6 +114,38 @@ describe('QueueRow', () => {
     const bar = target.querySelector('[role="progressbar"]')
     expect(bar).not.toBeNull()
     expect(bar?.getAttribute('aria-valuenow')).toBe('25')
+  })
+
+  it('maps each instant op type to its own glyph, not the trash-2 fallback', () => {
+    // Pure mapping: the snake_case wire values must hit their explicit arms.
+    expect(operationTypeIcon('rename')).toBe('pencil')
+    expect(operationTypeIcon('create_folder')).toBe('folder-plus')
+    expect(operationTypeIcon('create_file')).toBe('file-plus')
+    // The transfer/delete types keep their existing glyphs.
+    expect(operationTypeIcon('copy')).toBe('copy')
+    expect(operationTypeIcon('move')).toBe('folder-input')
+    expect(operationTypeIcon('delete')).toBe('trash-2')
+    expect(operationTypeIcon('trash')).toBe('trash-2')
+  })
+
+  it('labels instant op rows with their action, not the "Working" fallback', () => {
+    const cases: Array<[OperationSnapshot['operationType'], string]> = [
+      ['rename', 'Renaming'],
+      ['create_folder', 'Creating folder'],
+      ['create_file', 'Creating file'],
+    ]
+    for (const [opType, expected] of cases) {
+      render({
+        row: buildRow('running', opType),
+        selected: false,
+        onToggleSelect: () => {},
+        onPauseResume: () => {},
+        onCancel: () => {},
+      })
+      const label = target.querySelector('.op-label')?.textContent.trim()
+      expect(label).toBe(expected)
+      if (instance) void unmount(instance)
+    }
   })
 
   it('exposes the lifecycle status as a data attribute for E2E', () => {

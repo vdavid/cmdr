@@ -22,6 +22,11 @@ manager in
   snapshot (the row set + each row's status); the existing per-file `write-progress` stream drives the live bars/ETA.
   The store keys progress by `operationId` and prunes it to current snapshot membership, so a finished op's bar can't
   linger. Don't fatten `operations-changed` with progress.
+- **Rows cover copy/move/delete/trash AND the instant ops `rename` / `create_folder` / `create_file`.** Instant ops emit
+  NO `write-progress`, so their rows render with a spinner + label and no bar (`progress` stays null), usually flashing
+  by before you can read them. `QueueRow`'s icon + `queue.row.label` arms use the SNAKE_CASE wire values
+  (`create_folder`, not `createFolder`), or they silently fall to the `trash-2` / "Working" fallbacks; the icon mapping
+  is the pure `operation-icon.ts` (unit-tested).
 - **A paused op still reports `is_running: true`** from the backend status query (it stays in the write-op-state map).
   The bar-is-moving truth is the SNAPSHOT `status` (`'running'` vs `'paused'`), NEVER `is_running`. Rows read
   `snapshot.status`.

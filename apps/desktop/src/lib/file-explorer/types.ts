@@ -414,8 +414,9 @@ export type MountError =
 // Write operation types
 // ============================================================================
 
-/** Type of write operation. */
-export type WriteOperationType = 'copy' | 'move' | 'delete' | 'trash'
+/** Type of write operation. Mirrors the `WriteOperationType` enum in `bindings.ts`
+ *  (the managed instant ops `rename` / `create_folder` / `create_file` included). */
+export type WriteOperationType = 'copy' | 'move' | 'delete' | 'trash' | 'rename' | 'create_folder' | 'create_file'
 
 /** Transfer operations (copy or move): subset of write operations that share UI. */
 export type TransferOperationType = 'copy' | 'move' | 'delete' | 'trash'

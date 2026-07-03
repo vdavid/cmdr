@@ -318,8 +318,17 @@ export const commands = {
    *  approximate count shape rather than freezing the drop on slow volume I/O.
    */
   statPathsKinds: (paths: string[]) => __TAURI_INVOKE<TimedOut<(boolean | null)[]>>('stat_paths_kinds', { paths }),
+  /**
+   *  Creates a folder and returns its new path. Thin pass-through to the managed
+   *  create op (`write_operations::create`): expand tilde (root only), wrap in the
+   *  5 s write timeout, map to `IpcError`.
+   */
   createDirectory: (volumeId: string | null, parentPath: string, name: string) =>
     typedError<string, IpcError>(__TAURI_INVOKE('create_directory', { volumeId, parentPath, name })),
+  /**
+   *  Creates an empty file and returns its new path. Same shape as
+   *  [`create_directory`].
+   */
   createFile: (volumeId: string | null, parentPath: string, name: string) =>
     typedError<string, IpcError>(__TAURI_INVOKE('create_file', { volumeId, parentPath, name })),
   /**
@@ -745,6 +754,8 @@ export const commands = {
    *
    *  When `volume_id` is provided and not `"root"`, routes through the Volume trait
    *  (needed for MTP and other non-local volumes). Otherwise uses `std::fs::rename`.
+   *  The mutation runs as a managed instant op (busy-marks the volume, appears
+   *  briefly in the queue), still inline and result-returning.
    */
   renameFile: (from: string, to: string, force: boolean, volumeId: string | null) =>
     typedError<null, IpcError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId })),

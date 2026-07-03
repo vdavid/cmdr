@@ -7,8 +7,8 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { formatDuration } from '$lib/tauri-commands'
     import { tooltip } from '$lib/tooltip/tooltip'
-    import type { IconName } from '$lib/ui/icons/icon-map'
     import type { OperationRow } from './operations-store.svelte'
+    import { operationTypeIcon } from './operation-icon'
 
     interface Props {
         row: OperationRow
@@ -32,13 +32,7 @@
     const isQueued = $derived(status === 'queued')
     const isActionable = $derived(status === 'running' || status === 'paused' || status === 'queued')
 
-    const typeIcon = $derived<IconName>(
-        snapshot.operationType === 'copy'
-            ? 'copy'
-            : snapshot.operationType === 'move'
-              ? 'folder-input'
-              : 'trash-2',
-    )
+    const typeIcon = $derived(operationTypeIcon(snapshot.operationType))
 
     const label = $derived(tString('queue.row.label', { type: snapshot.operationType }))
     const statusLabel = $derived(tString('queue.row.status', { status }))

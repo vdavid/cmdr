@@ -15,8 +15,10 @@ import IconCornerDownLeft from '~icons/lucide/corner-down-left'
 import IconEye from '~icons/lucide/eye'
 import IconEyeOff from '~icons/lucide/eye-off'
 import IconFile from '~icons/lucide/file'
+import IconFilePlus from '~icons/lucide/file-plus'
 import IconFolder from '~icons/lucide/folder'
 import IconFolderInput from '~icons/lucide/folder-input'
+import IconFolderPlus from '~icons/lucide/folder-plus'
 import IconGitBranch from '~icons/lucide/git-branch'
 import IconGitCommitHorizontal from '~icons/lucide/git-commit-horizontal'
 import IconGitFork from '~icons/lucide/git-fork'
@@ -31,6 +33,7 @@ import IconMonitor from '~icons/lucide/monitor'
 import IconMoon from '~icons/lucide/moon'
 import IconMoreHorizontal from '~icons/lucide/more-horizontal'
 import IconPause from '~icons/lucide/pause'
+import IconPencil from '~icons/lucide/pencil'
 import IconPlay from '~icons/lucide/play'
 import IconRotateCcw from '~icons/lucide/rotate-ccw'
 import IconRotateCw from '~icons/lucide/rotate-cw'
@@ -74,8 +77,10 @@ export const ICON_COMPONENTS = {
   eye: IconEye,
   'eye-off': IconEyeOff,
   file: IconFile,
+  'file-plus': IconFilePlus,
   folder: IconFolder,
   'folder-input': IconFolderInput,
+  'folder-plus': IconFolderPlus,
   'git-branch': IconGitBranch,
   'git-commit-horizontal': IconGitCommitHorizontal,
   'git-fork': IconGitFork,
@@ -90,6 +95,7 @@ export const ICON_COMPONENTS = {
   moon: IconMoon,
   'more-horizontal': IconMoreHorizontal,
   pause: IconPause,
+  pencil: IconPencil,
   play: IconPlay,
   'rotate-ccw': IconRotateCcw,
   'rotate-cw': IconRotateCw,

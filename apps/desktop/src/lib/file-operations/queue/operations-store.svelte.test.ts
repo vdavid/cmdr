@@ -87,6 +87,27 @@ describe('operations store reducers', () => {
     cleanup()
   })
 
+  it('surfaces an instant op as a Running row with no progress, then drops it', () => {
+    const cleanup = $effect.root(() => {
+      const store = createOperationsStore()
+      // An instant metadata op (rename) appears as a Running row. It emits NO
+      // write-progress, so the row must render with `progress: null` (a spinner,
+      // no bar) rather than assuming a bar.
+      store._testApplySnapshot([snapshot('r1', 'running', { operationType: 'rename' })])
+      flushSync()
+      const rows = store.operations
+      expect(rows).toHaveLength(1)
+      expect(rows[0].snapshot.operationType).toBe('rename')
+      expect(rows[0].progress).toBeNull()
+
+      // It finishes almost immediately and is pruned from the snapshot.
+      store._testApplySnapshot([])
+      flushSync()
+      expect(store.operations).toHaveLength(0)
+    })
+    cleanup()
+  })
+
   it('tracks running and paused presence for the global toolbar', () => {
     const cleanup = $effect.root(() => {
       const store = createOperationsStore()
