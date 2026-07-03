@@ -886,6 +886,11 @@ pub use types::*;
 // importing `volume::LocalPosixVolume`, `volume::MtpVolume`, etc. without
 // caring about the `backends/` split.
 pub mod backends;
+// Volume teardown (USB/SD/DMG/SMB/MTP), used only by the macOS+Linux eject
+// command. The macOS-vs-Linux difference (diskutil vs umount, NSURL vs
+// `/sys/block`) lives inside via per-fn `#[cfg]`.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub mod eject;
 pub mod friendly_error;
 pub(crate) mod manager;
 

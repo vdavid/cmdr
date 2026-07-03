@@ -236,6 +236,26 @@ All mutation methods (`create_file`, `create_directory`, `delete`, `rename`, `wr
 
 The hook order is fixed: `resolve()` first (normalizes the path), then `try_route_*`. This lets the user open `.git` from any volume-rooted path and get the portal regardless of whether the frontend sent an absolute or relative path.
 
+## Eject
+
+`eject.rs` (macOS+Linux) owns volume teardown across every kind, so it lives next to the `VolumeManager` and `Volume`
+trait it dispatches over. `commands::eject::eject_volume` is a thin delegate; the pipeline is:
+
+1. **Busy gate**: refuse (`EjectError::Busy`) if a write op is touching the volume (`file_system::busy_volume_ids`), so
+   a transfer can't be truncated. The picker already disables Eject for busy volumes; this defends against a race or an
+   MCP/automation caller.
+2. **Classify**: MTP (id shaped `{device_id}:{storage_id}`, confirmed against the live device list) → disconnect the
+   session; a registered `SmbVolume` (`smb_connection_state().is_some()`) → `diskutil unmount` (FSEvents drives smb2
+   teardown via `on_unmount`); otherwise NSURL/`/sys/block` ejectability → `diskutil eject` (powers down USB, detaches
+   DMGs). The pure `decide_eject_action` makes this choice and is unit-tested without touching the FS.
+3. **Execute**: MTP disconnect, or a `diskutil`/`umount` subprocess under a 15 s timeout.
+
+Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `Decision`, `Failed`, `TimedOut`); the command maps
+`TimedOut` to `IpcError::timeout()` and the rest to `IpcError::from_err`, so the wire error keeps the timeout flag
+without string-matching. Returns once teardown is *initiated* — `volume-unmounted` / `mtp-device-disconnected` fire
+shortly after and panes rooted at the volume redirect to root. `disconnect_smb_volume` (in `commands::network`) is the
+same `diskutil unmount` pattern for the explicit SMB-disconnect path.
+
 ## Key decisions
 
 **Decision**: Trait with optional methods defaulting to `NotSupported`/`false`

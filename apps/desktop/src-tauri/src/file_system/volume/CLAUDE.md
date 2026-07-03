@@ -15,6 +15,7 @@ volume root**.
 - `manager.rs`: `VolumeManager`, a thread-safe `RwLock<HashMap>` registry with a default volume.
 - `backends/`: per-backend impls (`LocalPosixVolume`, `MtpVolume`, `SmbVolume` + watcher, `InMemoryVolume`). See
   [`backends/CLAUDE.md`](backends/CLAUDE.md).
+- `eject.rs` (macOS+Linux): volume teardown by kind; `commands::eject` delegates to it. See [DETAILS.md](DETAILS.md).
 - `friendly_error/`: typed, word-free error classification (errno → reason, provider detection); the words live on the
   FE. See [`friendly_error/CLAUDE.md`](friendly_error/CLAUDE.md).
 
@@ -22,10 +23,10 @@ volume root**.
 
 - **Optional trait methods default to `Err(NotSupported)` / `false`**, so new backends start with `list_directory` +
   `get_metadata` and opt into capabilities incrementally. Adding a backend? Read [DETAILS.md](DETAILS.md) § "Building a
-  new volume" and § "Capability matrix" first; both are referenced from `docs/architecture.md`.
+  new volume" and § "Capability matrix" first.
 - **`lane_key()` is the operation manager's serialization key** (default = volume root): write ops sharing a lane run
   one at a time, disjoint lanes run in parallel. Override it when multiple `Volume` instances share one physical
-  resource (MTP device, SMB server) so they don't thrash; see [DETAILS.md](DETAILS.md) § "Building a new volume".
+  resource (MTP device, SMB server) so they don't thrash.
 - **Register watcher-pre-registered volumes via `VolumeManager::register_if_absent`, not `register`.** The FSEvents
   watcher would otherwise overwrite a pre-registered `SmbVolume` with a `LocalPosixVolume`. `register` (overwrite) is
   only for explicit replacement (SmbVolume replacing itself on reconnect).
@@ -36,7 +37,7 @@ volume root**.
   must stream chunk-by-chunk. See [DETAILS.md](DETAILS.md) § "Streaming patterns".
 - **`write_from_stream` is a mutation: call `notify_mutation` on success** on backends with unreliable out-of-band
   notifications (the SMB watcher and MTP USB events are lossy under load). `LocalPosixVolume` is the exception (FSEvents
-  is reliable). The Tier 2 checklist's "call `notify_mutation` after each mutation" rule includes `write_from_stream`.
+  is reliable).
 - **On macOS, never use `statvfs` alone for disk space.** It ignores purgeable space (APFS snapshots, iCloud caches),
   which over-blocks copies and disagrees with the status bar. Use `NSURLVolumeAvailableCapacityForImportantUsageKey`
   (`get_space_info_for_path` calls `crate::volumes::get_volume_space()` on macOS, falls back to `statvfs` on Linux).
