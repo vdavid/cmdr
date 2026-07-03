@@ -13,6 +13,7 @@ pub mod port_file;
 mod protocol;
 pub mod resources;
 mod server;
+mod tool_registry;
 mod tools;
 
 #[cfg(test)]
