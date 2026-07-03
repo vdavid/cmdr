@@ -18,7 +18,7 @@ use super::super::conflict::ApplyToAll;
 use super::super::manager;
 use super::super::state::WriteOperationState;
 use super::super::types::{
-    OperationEventSink, TauriEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
+    OperationEventSink, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
     WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
 };
 use super::transfer_driver::{
@@ -76,7 +76,7 @@ type TransferFut<'a> = Pin<Box<dyn Future<Output = Result<TransferOutcome, Write
     reason = "each volume travels with its ID (for the busy set) plus its Arc; bundling them would just shuffle the same fields into a struct at every call site"
 )]
 pub async fn move_between_volumes(
-    app: tauri::AppHandle,
+    events: Arc<dyn OperationEventSink>,
     source_volume_id: String,
     source_volume: Arc<dyn Volume>,
     source_paths: Vec<PathBuf>,
@@ -87,7 +87,7 @@ pub async fn move_between_volumes(
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Same volume: use native rename/move (instant for MTP)
     if Arc::ptr_eq(&source_volume, &dest_volume) {
-        return move_within_same_volume(app, source_volume_id, source_volume, source_paths, dest_path, config).await;
+        return move_within_same_volume(events, source_volume_id, source_volume, source_paths, dest_path, config).await;
     }
 
     // Both local: delegate to the battle-tested move implementation
@@ -115,7 +115,7 @@ pub async fn move_between_volumes(
         // `Volume::lane_key()`s so the manager serializes against the mount.
         let lanes = vec![source_volume.lane_key(), dest_volume.lane_key()];
         return super::super::move_files_start(
-            app,
+            events,
             absolute_sources,
             absolute_dest,
             write_config,
@@ -155,26 +155,24 @@ pub async fn move_between_volumes(
         summary,
     };
 
-    let app_for_op = app.clone();
+    let events_for_op = Arc::clone(&events);
     let op_id_outer = operation_id.clone();
     let state_for_op = Arc::clone(&state);
     let deferred = move || -> Pin<Box<dyn Future<Output = ()> + Send>> {
         Box::pin(async move {
-            let app = app_for_op;
+            let events = events_for_op;
             let op_id = op_id_outer;
             let state = state_for_op;
             let task_guard = manager::ManagedTaskGuard::new(op_id.clone());
-            let app_for_error = app.clone();
             // Settle guard: emits `write-settled` at end of scope, after the
             // terminal event and after `on_settled`'s cache cleanup.
             let _settled_guard = crate::file_system::write_operations::state::WriteSettledGuard::new(
-                app_for_error.clone(),
+                Arc::clone(&events),
                 op_id.clone(),
                 WriteOperationType::Move,
                 Some(source_volume_name),
             );
 
-            let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
             let result: Result<(), WriteFailure> = move_volumes_with_progress(
                 Arc::clone(&events),
                 &op_id,
@@ -187,7 +185,6 @@ pub async fn move_between_volumes(
             )
             .await;
 
-            use tauri::Emitter;
             match result {
                 Ok(()) => {}
                 Err(WriteFailure { ref error, .. }) if matches!(error, WriteOperationError::Cancelled { .. }) => {
@@ -195,10 +192,7 @@ pub async fn move_between_volumes(
                 }
                 Err(failure) => {
                     log::warn!(target: "move", "move operation {} failed: {:?}", op_id, failure.error);
-                    let _ = app_for_error.emit(
-                        "write-error",
-                        write_error_event_from(op_id.clone(), WriteOperationType::Move, failure),
-                    );
+                    events.emit_error(write_error_event_from(op_id.clone(), WriteOperationType::Move, failure));
                 }
             }
 
@@ -637,7 +631,7 @@ pub(super) async fn move_volumes_with_progress(
 /// For MTP, this uses MTP MoveObject: a single USB command per file.
 /// Runs as a background task with operation registration, progress events, and cancellation.
 async fn move_within_same_volume(
-    app: tauri::AppHandle,
+    events: Arc<dyn OperationEventSink>,
     volume_id: String,
     volume: Arc<dyn Volume>,
     source_paths: Vec<PathBuf>,
@@ -673,24 +667,22 @@ async fn move_within_same_volume(
         summary,
     };
 
-    let app_for_op = app.clone();
+    let events_for_op = Arc::clone(&events);
     let op_id_outer = operation_id.clone();
     let state_for_op = Arc::clone(&state);
     let deferred = move || -> Pin<Box<dyn Future<Output = ()> + Send>> {
         Box::pin(async move {
-            let app = app_for_op;
+            let events = events_for_op;
             let op_id = op_id_outer;
             let state = state_for_op;
             let task_guard = manager::ManagedTaskGuard::new(op_id.clone());
-            let app_for_error = app.clone();
             let _settled_guard = crate::file_system::write_operations::state::WriteSettledGuard::new(
-                app_for_error.clone(),
+                Arc::clone(&events),
                 op_id.clone(),
                 WriteOperationType::Move,
                 Some(volume_name),
             );
 
-            let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
             let result: Result<(), WriteOperationError> = move_within_same_volume_with_progress(
                 Arc::clone(&events),
                 &op_id,
@@ -702,7 +694,6 @@ async fn move_within_same_volume(
             )
             .await;
 
-            use tauri::Emitter;
             match result {
                 Ok(()) => {}
                 Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {
@@ -710,10 +701,7 @@ async fn move_within_same_volume(
                 }
                 Err(e) => {
                     log::warn!(target: "move", "move operation {} failed: {:?}", op_id, e);
-                    let _ = app_for_error.emit(
-                        "write-error",
-                        WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, e),
-                    );
+                    events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, e));
                 }
             }
 

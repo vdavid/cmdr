@@ -52,14 +52,20 @@ use std::time::Duration;
 use uuid::Uuid;
 
 use crate::file_system::volume::LaneKey;
-use delete::{delete_files_with_progress, delete_volume_files_with_progress};
+use delete::{delete_files_with_progress_inner, delete_volume_files_with_progress_inner};
 use manager::OperationDescriptor;
 #[cfg(not(test))]
 use state::WriteOperationState;
 use state::WriteSettledGuard;
 use transfer::copy::copy_files_with_progress_inner;
-use transfer::move_op::move_files_with_progress;
+use transfer::move_op::move_files_with_progress_inner;
 use trash::trash_files_with_progress;
+
+// The event sink trait + its Tauri-backed implementation. Re-exported so the
+// IPC command layer can build `Arc::new(TauriEventSink::new(app))` at the edge
+// and inject it into the managed pipeline; the pipeline itself never constructs
+// a sink (grep confirms zero `TauriEventSink::new` under `write_operations/`).
+pub use event_sinks::{OperationEventSink, TauriEventSink};
 #[cfg(not(test))]
 use validation::{
     ensure_destination_dir, validate_destination_not_inside_source, validate_destination_writable,
@@ -141,7 +147,7 @@ pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
     reason = "the managed-spawn entry point threads lane keys + summary + volume ids alongside the handler; bundling them would just shuffle fields into a struct at every call site"
 )]
 async fn start_write_operation<F>(
-    app: tauri::AppHandle,
+    events: Arc<dyn OperationEventSink>,
     operation_type: WriteOperationType,
     progress_interval_ms: u64,
     volume_ids: Vec<String>,
@@ -150,7 +156,9 @@ async fn start_write_operation<F>(
     handler: F,
 ) -> Result<WriteOperationStartResult, WriteOperationError>
 where
-    F: FnOnce(tauri::AppHandle, String, Arc<WriteOperationState>) -> Result<(), WriteOperationError> + Send + 'static,
+    F: FnOnce(Arc<dyn OperationEventSink>, String, Arc<WriteOperationState>) -> Result<(), WriteOperationError>
+        + Send
+        + 'static,
 {
     let operation_id = Uuid::new_v4().to_string();
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)));
@@ -163,7 +171,7 @@ where
         summary,
     };
 
-    let app_for_op = app.clone();
+    let events_for_op = Arc::clone(&events);
     let operation_id_for_op = operation_id.clone();
     let state_for_op = Arc::clone(&state);
 
@@ -175,21 +183,21 @@ where
     // still frees the lanes + caches (but never spawns).
     let deferred = move || -> Pin<Box<dyn Future<Output = ()> + Send>> {
         Box::pin(async move {
-            let app = app_for_op;
+            let events = events_for_op;
             let op_id = operation_id_for_op;
             let state = state_for_op;
             let task_guard = manager::ManagedTaskGuard::new(op_id.clone());
-            let app_for_error = app.clone();
             // RAII guard: emits `write-settled` when this task exits, no matter
             // how (handler success, error, cancel, or panic via JoinError). FE
             // gates the "Cancelling…" dialog close on this event so the user
             // can't dispatch a new op against a still-tearing-down volume.
-            let _settled_guard = WriteSettledGuard::new(app_for_error.clone(), op_id.clone(), operation_type, None);
+            let _settled_guard = WriteSettledGuard::new(Arc::clone(&events), op_id.clone(), operation_type, None);
 
             let op_id_for_blocking = op_id.clone();
-            let result = tokio::task::spawn_blocking(move || handler(app, op_id_for_blocking, state)).await;
+            let events_for_handler = Arc::clone(&events);
+            let result =
+                tokio::task::spawn_blocking(move || handler(events_for_handler, op_id_for_blocking, state)).await;
 
-            use tauri::Emitter;
             match result {
                 Ok(Ok(())) => {} // Handler already emitted write-complete or write-cancelled
                 Ok(Err(ref e)) if matches!(e, WriteOperationError::Cancelled { .. }) => {
@@ -197,21 +205,18 @@ where
                 }
                 Ok(Err(e)) => {
                     // Handler error (validation, I/O, etc.): emit write-error as safety net
-                    let _ = app_for_error.emit("write-error", WriteErrorEvent::new(op_id.clone(), operation_type, e));
+                    events.emit_error(WriteErrorEvent::new(op_id.clone(), operation_type, e));
                 }
                 Err(join_error) => {
                     // Panic/abort in spawn_blocking
-                    let _ = app_for_error.emit(
-                        "write-error",
-                        WriteErrorEvent::new(
-                            op_id.clone(),
-                            operation_type,
-                            WriteOperationError::IoError {
-                                path: String::new(),
-                                message: format!("Task failed: {}", join_error),
-                            },
-                        ),
-                    );
+                    events.emit_error(WriteErrorEvent::new(
+                        op_id.clone(),
+                        operation_type,
+                        WriteOperationError::IoError {
+                            path: String::new(),
+                            message: format!("Task failed: {}", join_error),
+                        },
+                    ));
                 }
             }
 
@@ -277,7 +282,7 @@ fn path_summary(sources: &[PathBuf], destination: Option<&std::path::Path>) -> O
 /// both-local branch of `copy_between_volumes` passes the real
 /// `Volume::lane_key()`s of the two volumes.
 pub async fn copy_files_start(
-    app: tauri::AppHandle,
+    events: Arc<dyn OperationEventSink>,
     sources: Vec<PathBuf>,
     destination: PathBuf,
     config: WriteOperationConfig,
@@ -294,13 +299,13 @@ pub async fn copy_files_start(
     let lanes = lanes.unwrap_or_else(|| local_lanes(&volume_ids));
     let summary = path_summary(&sources, Some(&destination));
     start_write_operation(
-        app,
+        events,
         WriteOperationType::Copy,
         config.progress_interval_ms,
         volume_ids,
         lanes,
         summary,
-        move |app, op_id, state| {
+        move |events, op_id, state| {
             validate_sources(&sources)?;
             // Guard against copying a folder into itself BEFORE creating anything:
             // the dest may not exist yet, and the guard resolves it via its nearest
@@ -311,8 +316,7 @@ pub async fn copy_files_start(
             ensure_destination_dir(&destination)?;
             validate_destination_writable(&destination)?;
             validate_not_same_location(&sources, &destination)?;
-            let events = types::TauriEventSink::new(app.clone());
-            copy_files_with_progress_inner(&events, &op_id, &state, &sources, &destination, &config)
+            copy_files_with_progress_inner(&*events, &op_id, &state, &sources, &destination, &config)
         },
     )
     .await
@@ -323,7 +327,7 @@ pub async fn copy_files_start(
 /// Uses instant rename() for same-filesystem moves.
 /// Uses atomic staging pattern for cross-filesystem moves.
 pub async fn move_files_start(
-    app: tauri::AppHandle,
+    events: Arc<dyn OperationEventSink>,
     sources: Vec<PathBuf>,
     destination: PathBuf,
     config: WriteOperationConfig,
@@ -340,13 +344,13 @@ pub async fn move_files_start(
     let lanes = lanes.unwrap_or_else(|| local_lanes(&volume_ids));
     let summary = path_summary(&sources, Some(&destination));
     start_write_operation(
-        app,
+        events,
         WriteOperationType::Move,
         config.progress_interval_ms,
         volume_ids,
         lanes,
         summary,
-        move |app, op_id, state| {
+        move |events, op_id, state| {
             validate_sources(&sources)?;
             // Guard against moving a folder into itself BEFORE creating anything:
             // the dest may not exist yet, and the guard resolves it via its nearest
@@ -357,7 +361,7 @@ pub async fn move_files_start(
             ensure_destination_dir(&destination)?;
             validate_destination_writable(&destination)?;
             validate_not_same_location(&sources, &destination)?;
-            move_files_with_progress(&app, &op_id, &state, &sources, &destination, &config)
+            move_files_with_progress_inner(&*events, &op_id, &state, &sources, &destination, &config)
         },
     )
     .await
@@ -369,7 +373,7 @@ pub async fn move_files_start(
 /// is not the default volume, routes through `delete_volume_files_with_progress`
 /// which uses the Volume trait (needed for MTP and other non-local volumes).
 pub async fn delete_files_start(
-    app: tauri::AppHandle,
+    events: Arc<dyn OperationEventSink>,
     sources: Vec<PathBuf>,
     config: WriteOperationConfig,
     volume_id: Option<String>,
@@ -408,48 +412,43 @@ pub async fn delete_files_start(
             summary: path_summary(&sources, None),
         };
 
-        let app_for_op = app.clone();
+        let events_for_op = Arc::clone(&events);
         let op_id_outer = operation_id.clone();
         let state_for_op = Arc::clone(&state);
         let volume_id_for_op = volume_id_str.clone();
         let deferred = move || -> Pin<Box<dyn Future<Output = ()> + Send>> {
             Box::pin(async move {
-                let app = app_for_op;
+                let events = events_for_op;
                 let op_id = op_id_outer;
                 let state = state_for_op;
                 let volume_id_str = volume_id_for_op;
                 let task_guard = manager::ManagedTaskGuard::new(op_id.clone());
-                let app_for_error = app.clone();
                 // Settle guard: fires `write-settled` at end of scope, AFTER the
                 // terminal event and AFTER `on_settled`'s cache cleanup (the
                 // settle guard drops last). Matches the FE ordering contract.
                 let _settled_guard = WriteSettledGuard::new(
-                    app_for_error.clone(),
+                    Arc::clone(&events),
                     op_id.clone(),
                     WriteOperationType::Delete,
                     Some(volume_id_str.clone()),
                 );
 
-                use tauri::Emitter;
                 match crate::file_system::get_volume_manager().get(&volume_id_str) {
                     None => {
-                        let _ = app_for_error.emit(
-                            "write-error",
-                            WriteErrorEvent::new(
-                                op_id.clone(),
-                                WriteOperationType::Delete,
-                                WriteOperationError::IoError {
-                                    path: volume_id_str.clone(),
-                                    message: format!("Volume '{}' not found", volume_id_str),
-                                },
-                            ),
-                        );
+                        events.emit_error(WriteErrorEvent::new(
+                            op_id.clone(),
+                            WriteOperationType::Delete,
+                            WriteOperationError::IoError {
+                                path: volume_id_str.clone(),
+                                message: format!("Volume '{}' not found", volume_id_str),
+                            },
+                        ));
                     }
                     Some(volume) => {
-                        let result = delete_volume_files_with_progress(
+                        let result = delete_volume_files_with_progress_inner(
                             volume,
                             &volume_id_str,
-                            &app,
+                            &*events,
                             &op_id,
                             &state,
                             &sources,
@@ -460,10 +459,7 @@ pub async fn delete_files_start(
                             Ok(()) => {}
                             Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {}
                             Err(e) => {
-                                let _ = app_for_error.emit(
-                                    "write-error",
-                                    WriteErrorEvent::new(op_id.clone(), WriteOperationType::Delete, e),
-                                );
+                                events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Delete, e));
                             }
                         }
                     }
@@ -484,15 +480,15 @@ pub async fn delete_files_start(
         // Local same-`root` delete: no ejectable volume involved.
         let summary = path_summary(&sources, None);
         start_write_operation(
-            app,
+            events,
             WriteOperationType::Delete,
             config.progress_interval_ms,
             vec![],
             vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],
             summary,
-            move |app, op_id, state| {
+            move |events, op_id, state| {
                 validate_sources(&sources)?;
-                delete_files_with_progress(&app, &op_id, &state, &sources, &config)
+                delete_files_with_progress_inner(&*events, &op_id, &state, &sources, &config)
             },
         )
         .await
@@ -505,7 +501,7 @@ pub async fn delete_files_start(
 /// Supports cancellation between items and partial failure (some items may fail
 /// while others succeed).
 pub async fn trash_files_start(
-    app: tauri::AppHandle,
+    events: Arc<dyn OperationEventSink>,
     sources: Vec<PathBuf>,
     item_sizes: Option<Vec<u64>>,
     config: WriteOperationConfig,
@@ -515,15 +511,14 @@ pub async fn trash_files_start(
     // Trash always targets the local macOS Trash; no ejectable volume involved.
     let summary = path_summary(&sources, None);
     start_write_operation(
-        app,
+        events,
         WriteOperationType::Trash,
         config.progress_interval_ms,
         vec![],
         vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],
         summary,
-        move |app, op_id, state| {
+        move |events, op_id, state| {
             validate_sources(&sources)?;
-            let events: Arc<dyn types::OperationEventSink> = Arc::new(types::TauriEventSink::new(app));
             trash_files_with_progress(&*events, &op_id, &state, &sources, item_sizes.as_deref())
         },
     )

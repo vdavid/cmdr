@@ -9,9 +9,8 @@ use super::super::scan::{SourceItemTracker, scan_sources, take_cached_scan_resul
 use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::transfer::volume_copy::map_volume_error;
 use super::super::types::{
-    DryRunResult, IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
-    WriteSourceItemDoneEvent,
+    DryRunResult, IoResultExt, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::listing::caching::try_get_watched_listing;
 use crate::file_system::volume::{Volume, VolumeError};
@@ -20,18 +19,7 @@ use crate::file_system::volume::{Volume, VolumeError};
 // Delete implementation
 // ============================================================================
 
-pub(in crate::file_system::write_operations) fn delete_files_with_progress(
-    app: &tauri::AppHandle,
-    operation_id: &str,
-    state: &Arc<WriteOperationState>,
-    sources: &[PathBuf],
-    config: &WriteOperationConfig,
-) -> Result<(), WriteOperationError> {
-    let events = TauriEventSink::new(app.clone());
-    delete_files_with_progress_inner(&events, operation_id, state, sources, config)
-}
-
-pub(super) fn delete_files_with_progress_inner(
+pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner(
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -567,24 +555,7 @@ fn emit_cancelled_if_aborted(
     clippy::too_many_arguments,
     reason = "Matches the parameter pattern of other write operation functions"
 )]
-pub(in crate::file_system::write_operations) async fn delete_volume_files_with_progress(
-    volume: Arc<dyn Volume>,
-    volume_id: &str,
-    app: &tauri::AppHandle,
-    operation_id: &str,
-    state: &Arc<WriteOperationState>,
-    sources: &[PathBuf],
-    config: &WriteOperationConfig,
-) -> Result<(), WriteOperationError> {
-    let events = TauriEventSink::new(app.clone());
-    delete_volume_files_with_progress_inner(volume, volume_id, &events, operation_id, state, sources, config).await
-}
-
-#[allow(
-    clippy::too_many_arguments,
-    reason = "Matches the parameter pattern of other write operation functions"
-)]
-pub(super) async fn delete_volume_files_with_progress_inner(
+pub(in crate::file_system::write_operations) async fn delete_volume_files_with_progress_inner(
     volume: Arc<dyn Volume>,
     volume_id: &str,
     events: &dyn OperationEventSink,

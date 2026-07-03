@@ -151,6 +151,7 @@ fn cross_fs_local_move_flushes_final_dests_before_deleting_sources() {
     }
 
     impl OperationEventSink for FlushOrderSink {
+        fn emit_settled(&self, _event: crate::file_system::write_operations::types::WriteSettledEvent) {}
         fn emit_progress(&self, event: WriteProgressEvent) {
             if event.phase == WriteOperationPhase::Flushing && !self.saw_flushing.swap(true, Ordering::SeqCst) {
                 self.source_existed_at_flush

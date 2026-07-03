@@ -6,16 +6,18 @@ use crate::file_system::write_operations::{
     start_scan_preview as ops_start_scan_preview,
 };
 use crate::file_system::{
-    OperationSnapshot, OperationStatus, OperationSummary, SortColumn, SortOrder, WriteOperationConfig,
-    WriteOperationError, WriteOperationStartResult, cancel_all_write_operations as ops_cancel_all_write_operations,
-    cancel_operation as ops_cancel_operation, cancel_operations as ops_cancel_operations,
-    cancel_write_operation as ops_cancel_write_operation, copy_files_start as ops_copy_files_start,
-    delete_files_start as ops_delete_files_start, get_operation_status as ops_get_operation_status, get_volume_manager,
+    OperationEventSink, OperationSnapshot, OperationStatus, OperationSummary, SortColumn, SortOrder, TauriEventSink,
+    WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
+    cancel_all_write_operations as ops_cancel_all_write_operations, cancel_operation as ops_cancel_operation,
+    cancel_operations as ops_cancel_operations, cancel_write_operation as ops_cancel_write_operation,
+    copy_files_start as ops_copy_files_start, delete_files_start as ops_delete_files_start,
+    get_operation_status as ops_get_operation_status, get_volume_manager,
     list_active_operations as ops_list_active_operations, list_operations as ops_list_operations,
     move_files_start as ops_move_files_start, pause_all as ops_pause_all, pause_operation as ops_pause_operation,
     resume_all as ops_resume_all, resume_operation as ops_resume_operation, trash_files_start as ops_trash_files_start,
 };
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use tokio::time::Duration;
 
 use crate::commands::util::IpcError;
@@ -191,7 +193,8 @@ pub async fn copy_files(
     // The unified transfer dialog routes every cross-device copy through
     // `copy_between_volumes`; this plain command is the same-`root` local path,
     // so no ejectable volume is involved (empty busy set).
-    ops_copy_files_start(app, sources, destination, config, vec![], None).await
+    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
+    ops_copy_files_start(events, sources, destination, config, vec![], None).await
 }
 
 /// Uses rename() for same-filesystem (instant), copy+delete for cross-filesystem.
@@ -210,7 +213,8 @@ pub async fn move_files(
 
     // Same-`root` local move (the FE uses `move_between_volumes` whenever the
     // source and destination volumes differ), so no ejectable volume here.
-    ops_move_files_start(app, sources, destination, config, vec![], None).await
+    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
+    ops_move_files_start(events, sources, destination, config, vec![], None).await
 }
 
 /// Recursively deletes files and directories. Same events as `copy_files`.
@@ -231,7 +235,8 @@ pub async fn delete_files(
     };
     let config = config.unwrap_or_default();
 
-    ops_delete_files_start(app, sources, config, volume_id).await
+    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
+    ops_delete_files_start(events, sources, config, volume_id).await
 }
 
 /// Moves files to macOS Trash. Same events as `copy_files` but with `operationType: trash`.
@@ -246,7 +251,8 @@ pub async fn trash_files(
     let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
     let config = config.unwrap_or_default();
 
-    ops_trash_files_start(app, sources, item_sizes, config).await
+    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
+    ops_trash_files_start(events, sources, item_sizes, config).await
 }
 
 #[tauri::command]

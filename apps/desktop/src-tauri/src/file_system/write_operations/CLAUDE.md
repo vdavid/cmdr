@@ -47,7 +47,8 @@ Documents the cross-cutting machinery both subdirs share (see the module map and
 - **Every scan reports two byte totals**: `total_bytes` (write footprint, used by copy/move) and `dedup_bytes`
   (`du`-equivalent, used by delete). Don't "fix" copy to the dedup'd number — it under-reserves disk space.
 - **All write ops emit via `OperationEventSink`, not `tauri::AppHandle`** (`emit_progress_via_sink`, the only
-  progress-emit path, calls `enrich_progress`). Makes the pipelines testable without a Tauri runtime.
+  progress-emit path, calls `enrich_progress`). The sink is built only at the IPC edge and injected in; nothing here
+  constructs one.
 - **The busy-volumes set disables Eject mid-op** (source AND dest volume IDs). The `eject_volume` server-side guard is
   the real safety net; the picker disable is only UX.
 - **Volume-aware ops must not emit `write-error` on `Cancelled`** (the inner handler already emitted `write-cancelled`);

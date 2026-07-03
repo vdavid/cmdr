@@ -402,7 +402,7 @@ async fn volume_cancel_emits_write_settled_event() {
     // Mirror production scope shape: guard constructed FIRST, drops LAST.
     {
         let sink_for_guard: Arc<dyn OperationEventSink> = Arc::clone(&sink) as Arc<dyn OperationEventSink>;
-        let _settled_guard = WriteSettledGuard::new_with_sink(
+        let _settled_guard = WriteSettledGuard::new(
             sink_for_guard,
             op_id.clone(),
             WriteOperationType::Delete,
@@ -482,7 +482,7 @@ async fn volume_complete_emits_write_settled_event() {
     {
         let sink_for_guard: Arc<dyn crate::file_system::write_operations::types::OperationEventSink> =
             Arc::clone(&inner_collector) as Arc<dyn crate::file_system::write_operations::types::OperationEventSink>;
-        let _settled_guard = WriteSettledGuard::new_with_sink(
+        let _settled_guard = WriteSettledGuard::new(
             sink_for_guard,
             op_id.clone(),
             WriteOperationType::Delete,
@@ -606,7 +606,7 @@ async fn volume_error_emits_write_settled_event() {
     {
         let sink_for_guard: Arc<dyn crate::file_system::write_operations::types::OperationEventSink> =
             Arc::clone(&inner_collector) as Arc<dyn crate::file_system::write_operations::types::OperationEventSink>;
-        let _settled_guard = WriteSettledGuard::new_with_sink(
+        let _settled_guard = WriteSettledGuard::new(
             sink_for_guard,
             op_id.clone(),
             WriteOperationType::Delete,

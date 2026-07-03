@@ -31,9 +31,9 @@ use super::super::conflict::ApplyToAll;
 use super::super::manager;
 use super::super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
 use super::super::types::{
-    OperationEventSink, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent,
-    WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase,
-    WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
+    OperationEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent,
+    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
+    WriteOperationType, WriteProgressEvent,
 };
 use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
@@ -130,7 +130,7 @@ struct CopyTaskFailure {
     reason = "each volume travels with its ID (for the busy set) plus its Arc; bundling them would just shuffle the same fields into a struct at every call site"
 )]
 pub async fn copy_between_volumes(
-    app: tauri::AppHandle,
+    events: Arc<dyn OperationEventSink>,
     source_volume_id: String,
     source_volume: Arc<dyn Volume>,
     source_paths: Vec<PathBuf>,
@@ -180,7 +180,7 @@ pub async fn copy_between_volumes(
         // serializes against the same mount (two copies to one USB disk wait).
         let lanes = vec![source_volume.lane_key(), dest_volume.lane_key()];
         return super::super::copy_files_start(
-            app,
+            events,
             absolute_sources,
             absolute_dest,
             write_config,
@@ -223,26 +223,24 @@ pub async fn copy_between_volumes(
     };
 
     // Deferred start: the manager spawns this only once both lanes are free.
-    let app_for_op = app.clone();
+    let events_for_op = Arc::clone(&events);
     let op_id_outer = operation_id.clone();
     let state_for_op = Arc::clone(&state);
     let deferred = move || -> Pin<Box<dyn Future<Output = ()> + Send>> {
         Box::pin(async move {
-            let app = app_for_op;
+            let events = events_for_op;
             let op_id = op_id_outer;
             let state = state_for_op;
             let task_guard = manager::ManagedTaskGuard::new(op_id.clone());
-            let app_for_error = app.clone();
             // Settle guard: emits `write-settled` at end of scope, after the
             // terminal write-* event and after `on_settled`'s cache cleanup.
             let _settled_guard = crate::file_system::write_operations::state::WriteSettledGuard::new(
-                app_for_error.clone(),
+                Arc::clone(&events),
                 op_id.clone(),
                 WriteOperationType::Copy,
                 Some(source_volume_name),
             );
 
-            let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
             let result: Result<(), WriteFailure> = copy_volumes_with_progress(
                 Arc::clone(&events),
                 &op_id,
@@ -255,7 +253,6 @@ pub async fn copy_between_volumes(
             )
             .await;
 
-            use tauri::Emitter;
             match result {
                 Ok(()) => {
                     // write-complete already emitted by copy_volumes_with_progress
@@ -268,10 +265,7 @@ pub async fn copy_between_volumes(
                 Err(failure) => {
                     // Toast-visible failure for cross-volume copy (Local↔SMB↔MTP).
                     crate::log_error!("copy_between_volumes: operation {} failed: {:?}", op_id, failure.error,);
-                    let _ = app_for_error.emit(
-                        "write-error",
-                        write_error_event_from(op_id.clone(), WriteOperationType::Copy, failure),
-                    );
+                    events.emit_error(write_error_event_from(op_id.clone(), WriteOperationType::Copy, failure));
                 }
             }
 

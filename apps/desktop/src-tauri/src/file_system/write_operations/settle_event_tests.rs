@@ -5,10 +5,10 @@
 //! event when the spawned task fully returns — happy path, error path,
 //! cancellation, or panic. These tests pin the contract.
 //!
-//! Production code emits via `app.emit("write-settled", ...)` from inside
-//! the guard's `Drop`. Tests use the alternate `new_with_sink` constructor to
-//! redirect into a `CollectorEventSink`, so the full lifecycle runs without
-//! a Tauri runtime.
+//! The guard emits via `sink.emit_settled(...)` from inside its `Drop`, using
+//! the injected `Arc<dyn OperationEventSink>`. Production builds that sink at
+//! the IPC edge (`TauriEventSink`); these tests pass a `CollectorEventSink`, so
+//! the full lifecycle runs without a Tauri runtime.
 
 use std::sync::Arc;
 
@@ -68,8 +68,7 @@ fn settled_fires_once_on_normal_drop() {
     let (sink, collector) = pair();
 
     {
-        let _guard =
-            WriteSettledGuard::new_with_sink(sink, "op-happy", WriteOperationType::Copy, Some("test-vol".to_string()));
+        let _guard = WriteSettledGuard::new(sink, "op-happy", WriteOperationType::Copy, Some("test-vol".to_string()));
         // Guard drops at end of scope.
     }
 
@@ -84,7 +83,7 @@ fn settled_fires_once_on_normal_drop() {
 fn settled_fires_with_none_volume_for_local_ops() {
     let (sink, collector) = pair();
 
-    drop(WriteSettledGuard::new_with_sink(
+    drop(WriteSettledGuard::new(
         sink,
         "op-local",
         WriteOperationType::Delete,
@@ -108,8 +107,7 @@ fn settled_fires_on_panic_unwind() {
     let (sink, collector) = pair();
 
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
-        let _guard =
-            WriteSettledGuard::new_with_sink(sink, "op-panic", WriteOperationType::Move, Some("v".to_string()));
+        let _guard = WriteSettledGuard::new(sink, "op-panic", WriteOperationType::Move, Some("v".to_string()));
         panic!("simulated handler panic");
     }));
 
@@ -137,7 +135,7 @@ fn settled_event_order_is_after_terminal_outcome_event() {
     let op_id = "op-order".to_string();
 
     {
-        let _guard = WriteSettledGuard::new_with_sink(
+        let _guard = WriteSettledGuard::new(
             Arc::clone(&sink),
             op_id.clone(),
             WriteOperationType::Delete,
@@ -172,12 +170,7 @@ fn settled_fires_for_every_operation_type() {
         WriteOperationType::Trash,
     ] {
         let (sink, collector) = pair();
-        drop(WriteSettledGuard::new_with_sink(
-            sink,
-            format!("op-{:?}", op_type),
-            op_type,
-            None,
-        ));
+        drop(WriteSettledGuard::new(sink, format!("op-{:?}", op_type), op_type, None));
         let settled = collector.settled.lock().unwrap();
         assert_eq!(settled.len(), 1, "settle must fire once per op_type={:?}", op_type);
         assert_eq!(settled[0].operation_type, op_type);

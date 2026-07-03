@@ -112,19 +112,10 @@ pub trait OperationEventSink: Send + Sync {
     /// Final dry-run result with conflict sample.
     fn emit_dry_run_complete(&self, result: DryRunResult);
     /// Emitted exactly once per op, after the spawned task fully returns
-    /// (success, error, cancel, or panic). Default impl is a no-op so existing
-    /// production sinks compile unchanged — `TauriEventSink` and
-    /// `CollectorEventSink` override it. See `WriteSettledEvent` for the
-    /// ordering contract.
-    ///
-    /// Production emit goes through `WriteSettledGuard` directly to
-    /// `app.emit`; this trait method exists so tests can observe the same
-    /// event without a Tauri runtime.
-    #[allow(
-        dead_code,
-        reason = "Trait method consumed only by test sinks; production emits via WriteSettledGuard"
-    )]
-    fn emit_settled(&self, _event: WriteSettledEvent) {}
+    /// (success, error, cancel, or panic). `WriteSettledGuard` calls this from
+    /// its `Drop`, so every op settles through the injected sink. See
+    /// `WriteSettledEvent` for the ordering contract.
+    fn emit_settled(&self, event: WriteSettledEvent);
 }
 
 /// Tauri-backed event sink: calls `app.emit()` for each event.

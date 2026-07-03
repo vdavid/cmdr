@@ -820,6 +820,9 @@ async fn test_multi_file_copy_cancel_mid_flight() {
     }
 
     impl OperationEventSink for CancelAfterNSink {
+        fn emit_settled(&self, e: crate::file_system::write_operations::types::WriteSettledEvent) {
+            self.inner.emit_settled(e);
+        }
         fn emit_progress(&self, event: WriteProgressEvent) {
             if event.phase == WriteOperationPhase::Copying
                 && self.events_seen.fetch_add(1, Ordering::Relaxed) >= self.cancel_after_events
@@ -2110,6 +2113,9 @@ async fn test_concurrent_copy_cancellation_mid_batch() {
         events_seen: AtomicUsize,
     }
     impl OperationEventSink for CancelOnProgressSink {
+        fn emit_settled(&self, e: crate::file_system::write_operations::types::WriteSettledEvent) {
+            self.inner.emit_settled(e);
+        }
         fn emit_progress(&self, event: WriteProgressEvent) {
             if event.phase == WriteOperationPhase::Copying
                 && self.events_seen.fetch_add(1, Ordering::Relaxed) >= self.cancel_after_events

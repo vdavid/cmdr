@@ -28,6 +28,9 @@ struct RollbackAfterFirstFileSink {
 }
 
 impl OperationEventSink for RollbackAfterFirstFileSink {
+    fn emit_settled(&self, e: crate::file_system::write_operations::types::WriteSettledEvent) {
+        self.inner.emit_settled(e);
+    }
     fn emit_progress(&self, event: WriteProgressEvent) {
         if event.phase == WriteOperationPhase::Copying && event.files_done >= 1 {
             // RollingBack = 1
@@ -228,6 +231,9 @@ struct TripIntentOnFirstByteSink {
 }
 
 impl OperationEventSink for TripIntentOnFirstByteSink {
+    fn emit_settled(&self, e: crate::file_system::write_operations::types::WriteSettledEvent) {
+        self.inner.emit_settled(e);
+    }
     fn emit_progress(&self, event: WriteProgressEvent) {
         if event.phase == WriteOperationPhase::Copying && event.bytes_done > 0 {
             self.intent.store(self.target_intent, Ordering::Relaxed);
@@ -446,6 +452,9 @@ struct TripIntentAtFilesDoneSink {
 }
 
 impl OperationEventSink for TripIntentAtFilesDoneSink {
+    fn emit_settled(&self, e: crate::file_system::write_operations::types::WriteSettledEvent) {
+        self.inner.emit_settled(e);
+    }
     fn emit_progress(&self, event: WriteProgressEvent) {
         if event.phase == WriteOperationPhase::Copying && event.files_done >= self.trip_at_files_done {
             self.intent.store(self.target_intent, Ordering::Relaxed);

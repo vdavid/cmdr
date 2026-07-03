@@ -133,60 +133,32 @@ impl WriteOperationState {
     }
 }
 
-/// RAII guard that emits exactly one `write-settled` Tauri event when dropped.
+/// RAII guard that emits exactly one `write-settled` event when dropped.
 ///
 /// Place at the top of every write-op spawned task. Whatever way the task
 /// exits — happy path, error path, cancel, or panic via `JoinError` propagation
 /// — the guard's `Drop` impl fires, so the FE always learns "this op's
 /// background work is fully torn down; the volume is ready for the next op."
 ///
-/// Tests can substitute a sink via the `OperationEventSink` trait: pass an
-/// `EmitSink::Sink(...)` variant instead of `EmitSink::App(...)` to redirect
-/// the event into a `CollectorEventSink` without needing a Tauri runtime.
-///
-/// The guard is single-shot: if a caller wants to control emit ordering
-/// explicitly, call `emit_now()` before the natural end-of-scope drop. The
-/// drop becomes a no-op once emitted.
+/// The guard takes the same injected `Arc<dyn OperationEventSink>` the rest of
+/// the pipeline uses (built at the IPC edge as `TauriEventSink`, or a
+/// `CollectorEventSink` in tests), so the full spawn-task lifecycle runs with no
+/// Tauri runtime under test.
 pub(crate) struct WriteSettledGuard {
     inner: Option<WriteSettledGuardInner>,
 }
 
-enum EmitSink {
-    App(tauri::AppHandle),
-    #[cfg(test)]
-    Sink(Arc<dyn OperationEventSink>),
-}
-
 struct WriteSettledGuardInner {
-    sink: EmitSink,
+    sink: Arc<dyn OperationEventSink>,
     operation_id: String,
     operation_type: WriteOperationType,
     volume_id: Option<String>,
 }
 
 impl WriteSettledGuard {
-    /// Production constructor: emits via `app.emit("write-settled", ...)`.
+    /// Builds a guard that emits `write-settled` via `sink.emit_settled(...)`
+    /// on drop.
     pub(crate) fn new(
-        app: tauri::AppHandle,
-        operation_id: impl Into<String>,
-        operation_type: WriteOperationType,
-        volume_id: Option<String>,
-    ) -> Self {
-        Self {
-            inner: Some(WriteSettledGuardInner {
-                sink: EmitSink::App(app),
-                operation_id: operation_id.into(),
-                operation_type,
-                volume_id,
-            }),
-        }
-    }
-
-    /// Test constructor: emits via an `OperationEventSink`. Lets unit tests
-    /// drive the full spawn-task lifecycle through `CollectorEventSink` with
-    /// no Tauri runtime needed.
-    #[cfg(test)]
-    pub(crate) fn new_with_sink(
         sink: Arc<dyn OperationEventSink>,
         operation_id: impl Into<String>,
         operation_type: WriteOperationType,
@@ -194,7 +166,7 @@ impl WriteSettledGuard {
     ) -> Self {
         Self {
             inner: Some(WriteSettledGuardInner {
-                sink: EmitSink::Sink(sink),
+                sink,
                 operation_id: operation_id.into(),
                 operation_type,
                 volume_id,
@@ -206,21 +178,11 @@ impl WriteSettledGuard {
 impl Drop for WriteSettledGuard {
     fn drop(&mut self) {
         let Some(inner) = self.inner.take() else { return };
-        let event = WriteSettledEvent {
+        inner.sink.emit_settled(WriteSettledEvent {
             operation_id: inner.operation_id,
             operation_type: inner.operation_type,
             volume_id: inner.volume_id,
-        };
-        match inner.sink {
-            EmitSink::App(app) => {
-                use tauri_specta::Event;
-                let _ = event.emit(&app);
-            }
-            #[cfg(test)]
-            EmitSink::Sink(sink) => {
-                sink.emit_settled(event);
-            }
-        }
+        });
     }
 }
 

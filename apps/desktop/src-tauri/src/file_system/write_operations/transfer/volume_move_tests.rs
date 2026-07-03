@@ -523,6 +523,9 @@ async fn cross_volume_move_cancel_mid_batch_preserves_completed() {
         intent: Arc<AtomicU8>,
     }
     impl OperationEventSink for CancelAfterFirstSink {
+        fn emit_settled(&self, e: crate::file_system::write_operations::types::WriteSettledEvent) {
+            self.inner.emit_settled(e);
+        }
         fn emit_progress(&self, event: WriteProgressEvent) {
             if event.phase == WriteOperationPhase::Copying && event.files_done >= 1 {
                 self.intent.store(2, Ordering::Relaxed); // Stopped

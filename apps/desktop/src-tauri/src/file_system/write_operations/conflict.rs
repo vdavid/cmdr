@@ -1320,6 +1320,9 @@ mod stop_branch_store_before_emit_tests {
     }
 
     impl OperationEventSink for AnswerOnConflictSink {
+        fn emit_settled(&self, e: crate::file_system::write_operations::types::WriteSettledEvent) {
+            self.inner.emit_settled(e);
+        }
         fn emit_conflict(&self, e: WriteConflictEvent) {
             self.inner.emit_conflict(e);
             if let Some(tx) = self.state.conflict_resolution_tx.lock_ignore_poison().take() {

@@ -17,7 +17,7 @@ pub use crate::file_system::listing::{SortColumn, SortOrder};
 pub(super) use super::error_classification::IoResultExt;
 #[cfg(test)]
 pub(crate) use super::event_sinks::CollectorEventSink;
-pub use super::event_sinks::{OperationEventSink, TauriEventSink};
+pub use super::event_sinks::OperationEventSink;
 
 // ============================================================================
 // Operation types

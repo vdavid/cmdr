@@ -2,8 +2,8 @@
 
 use crate::file_system::Volume;
 use crate::file_system::{
-    ScanConflict, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationError, WriteOperationStartResult,
-    copy_between_volumes as ops_copy_between_volumes, get_volume_manager,
+    OperationEventSink, ScanConflict, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationError,
+    WriteOperationStartResult, copy_between_volumes as ops_copy_between_volumes, get_volume_manager,
     move_between_volumes as ops_move_between_volumes, scan_for_volume_copy as ops_scan_for_volume_copy,
 };
 use std::path::PathBuf;
@@ -53,8 +53,9 @@ pub async fn copy_between_volumes(
     let dest_path = expand_local_dest(&dest_volume, dest_path);
     let config = config.unwrap_or_default();
 
+    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     ops_copy_between_volumes(
-        app,
+        events,
         source_volume_id,
         source_volume,
         source_paths,
@@ -97,8 +98,9 @@ pub async fn move_between_volumes(
     let dest_path = expand_local_dest(&dest_volume, dest_path);
     let config = config.unwrap_or_default();
 
+    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     ops_move_between_volumes(
-        app,
+        events,
         source_volume_id,
         source_volume,
         source_paths,

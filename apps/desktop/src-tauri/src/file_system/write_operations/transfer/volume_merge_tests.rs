@@ -217,6 +217,9 @@ async fn merge_cancel_mid_stream_preserves_unshadowed_dest_files() {
         fired: AtomicU8,
     }
     impl OperationEventSink for CancelOnByteSink {
+        fn emit_settled(&self, e: crate::file_system::write_operations::types::WriteSettledEvent) {
+            self.inner.emit_settled(e);
+        }
         fn emit_progress(&self, event: WriteProgressEvent) {
             if event.phase == WriteOperationPhase::Copying
                 && event.bytes_done > 0

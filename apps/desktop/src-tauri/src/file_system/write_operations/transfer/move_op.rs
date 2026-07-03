@@ -14,9 +14,8 @@ use super::super::state::{
     CopyTransaction, OperationIntent, WriteOperationState, load_intent, update_operation_status,
 };
 use super::super::types::{
-    IoResultExt, OperationEventSink, TauriEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
-    WriteSourceItemDoneEvent,
+    IoResultExt, OperationEventSink, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use super::super::validation::{is_same_filesystem, path_exists_or_is_symlink, validate_file_sizes_for_filesystem};
 use super::copy::copy_single_item;
@@ -123,19 +122,7 @@ fn move_resolved_into_place(
 // Move implementation
 // ============================================================================
 
-pub(in crate::file_system::write_operations) fn move_files_with_progress(
-    app: &tauri::AppHandle,
-    operation_id: &str,
-    state: &Arc<WriteOperationState>,
-    sources: &[PathBuf],
-    destination: &Path,
-    config: &WriteOperationConfig,
-) -> Result<(), WriteOperationError> {
-    let events = TauriEventSink::new(app.clone());
-    move_files_with_progress_inner(&events, operation_id, state, sources, destination, config)
-}
-
-pub(super) fn move_files_with_progress_inner(
+pub(in crate::file_system::write_operations) fn move_files_with_progress_inner(
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
