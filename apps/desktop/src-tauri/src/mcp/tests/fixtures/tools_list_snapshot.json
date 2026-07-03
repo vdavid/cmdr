@@ -1,0 +1,747 @@
+{
+  "tools": [
+    {
+      "description": "Switch pane to specified volume by name",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "description": "Volume name to select",
+            "type": "string"
+          },
+          "pane": {
+            "description": "Which pane to switch",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "pane",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "select_volume"
+    },
+    {
+      "description": "Navigate pane to specified path",
+      "inputSchema": {
+        "properties": {
+          "pane": {
+            "description": "Which pane to navigate",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          },
+          "path": {
+            "description": "Path to navigate to: absolute, ~-relative, or virtual (mtp://, smb://)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pane",
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "nav_to_path"
+    },
+    {
+      "description": "Navigate to parent folder",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "nav_to_parent"
+    },
+    {
+      "description": "Navigate back in history",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "nav_back"
+    },
+    {
+      "description": "Navigate forward in history",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "nav_forward"
+    },
+    {
+      "description": "Load region around specified index for large directories",
+      "inputSchema": {
+        "properties": {
+          "index": {
+            "description": "Zero-based index to scroll to",
+            "type": "integer"
+          },
+          "pane": {
+            "description": "Which pane to scroll",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "pane",
+          "index"
+        ],
+        "type": "object"
+      },
+      "name": "scroll_to"
+    },
+    {
+      "description": "Focuses pane and moves cursor to index or filename. Provide either index or filename",
+      "inputSchema": {
+        "properties": {
+          "filename": {
+            "description": "Filename to move cursor to",
+            "type": "string"
+          },
+          "index": {
+            "description": "Zero-based index to move cursor to",
+            "type": "integer"
+          },
+          "pane": {
+            "description": "Which pane to move cursor in",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "pane"
+        ],
+        "type": "object"
+      },
+      "name": "move_cursor"
+    },
+    {
+      "description": "Open/enter the item (directory, file, network host, share) under the cursor",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "open_under_cursor"
+    },
+    {
+      "description": "Select files in pane. Use names for specific files, count for ranges, all for everything, count=0 to clear",
+      "inputSchema": {
+        "properties": {
+          "all": {
+            "description": "Select all files",
+            "type": "boolean"
+          },
+          "count": {
+            "description": "Number of items from start. 0 clears selection",
+            "type": "integer"
+          },
+          "mode": {
+            "description": "Selection mode (default: replace)",
+            "enum": [
+              "replace",
+              "add",
+              "subtract"
+            ],
+            "type": "string"
+          },
+          "names": {
+            "description": "Filenames to select. Errors if any name isn't in the listing.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "pane": {
+            "description": "Which pane to select in",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          },
+          "start": {
+            "description": "Zero-based start index",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pane"
+        ],
+        "type": "object"
+      },
+      "name": "select"
+    },
+    {
+      "description": "Copy selected files to other pane (opens confirmation dialog)",
+      "inputSchema": {
+        "properties": {
+          "autoConfirm": {
+            "description": "When true, dialog opens and immediately confirms without waiting for user interaction. Returns once the operation starts.",
+            "type": "boolean"
+          },
+          "onConflict": {
+            "description": "Conflict resolution policy for clashing FILES (only when autoConfirm is true). Folders always merge: a source folder landing on a same-named dest folder merges into it, and this policy governs the files inside. Default: skip_all",
+            "enum": [
+              "skip_all",
+              "overwrite_all",
+              "rename_all"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "copy"
+    },
+    {
+      "description": "Move selected files to other pane (opens confirmation dialog)",
+      "inputSchema": {
+        "properties": {
+          "autoConfirm": {
+            "description": "When true, dialog opens and immediately confirms without waiting for user interaction. Returns once the operation starts.",
+            "type": "boolean"
+          },
+          "onConflict": {
+            "description": "Conflict resolution policy for clashing FILES (only when autoConfirm is true). Folders always merge: a source folder landing on a same-named dest folder merges into it, and this policy governs the files inside. Default: skip_all",
+            "enum": [
+              "skip_all",
+              "overwrite_all",
+              "rename_all"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "move"
+    },
+    {
+      "description": "Delete selected files (opens confirmation dialog)",
+      "inputSchema": {
+        "properties": {
+          "autoConfirm": {
+            "description": "When true, dialog opens and immediately confirms without waiting for user interaction. Returns once the operation starts.",
+            "type": "boolean"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "delete"
+    },
+    {
+      "description": "Create folder in focused pane (triggers naming dialog)",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "mkdir"
+    },
+    {
+      "description": "Create file in focused pane (triggers naming dialog)",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "mkfile"
+    },
+    {
+      "description": "Refresh focused pane",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "refresh"
+    },
+    {
+      "description": "Toggle hidden files visibility",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "toggle_hidden"
+    },
+    {
+      "description": "Set view mode for pane",
+      "inputSchema": {
+        "properties": {
+          "mode": {
+            "description": "View mode to set",
+            "enum": [
+              "brief",
+              "full"
+            ],
+            "type": "string"
+          },
+          "pane": {
+            "description": "Which pane to set view mode for",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "pane",
+          "mode"
+        ],
+        "type": "object"
+      },
+      "name": "set_view_mode"
+    },
+    {
+      "description": "Sort files in pane by field and order",
+      "inputSchema": {
+        "properties": {
+          "by": {
+            "description": "Field to sort by",
+            "enum": [
+              "name",
+              "ext",
+              "size",
+              "modified",
+              "created"
+            ],
+            "type": "string"
+          },
+          "order": {
+            "description": "Sort order",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "type": "string"
+          },
+          "pane": {
+            "description": "Which pane to sort",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "pane",
+          "by",
+          "order"
+        ],
+        "type": "object"
+      },
+      "name": "sort"
+    },
+    {
+      "description": "Create, close, activate, pin, or reopen tabs",
+      "inputSchema": {
+        "properties": {
+          "action": {
+            "description": "Action to perform on the tab",
+            "enum": [
+              "new",
+              "close",
+              "close_others",
+              "activate",
+              "set_pinned",
+              "reopen"
+            ],
+            "type": "string"
+          },
+          "pane": {
+            "description": "Which pane to operate on",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          },
+          "pinned": {
+            "description": "Pin state (only for set_pinned action)",
+            "type": "boolean"
+          },
+          "tabId": {
+            "description": "Tab ID. Defaults to active tab for close, close_others, set_pinned. Required for activate. Not used for new or reopen.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "pane"
+        ],
+        "type": "object"
+      },
+      "name": "tab"
+    },
+    {
+      "description": "Open, focus, close, or confirm dialogs",
+      "inputSchema": {
+        "properties": {
+          "action": {
+            "description": "Action to perform. 'confirm' triggers the confirm button on an already-open dialog.",
+            "enum": [
+              "open",
+              "focus",
+              "close",
+              "confirm"
+            ],
+            "type": "string"
+          },
+          "onConflict": {
+            "description": "For confirm action on transfer-confirmation: conflict resolution policy for clashing FILES. Folders always merge (a source folder landing on a same-named dest folder merges into it), and this policy governs the files inside. Default: skip_all",
+            "enum": [
+              "skip_all",
+              "overwrite_all",
+              "rename_all"
+            ],
+            "type": "string"
+          },
+          "path": {
+            "description": "For file-viewer: file path. On open without path, uses cursor file. On close without path, closes all.",
+            "type": "string"
+          },
+          "section": {
+            "description": "For settings: which section to open (e.g., 'shortcuts')",
+            "type": "string"
+          },
+          "type": {
+            "description": "Dialog type. 'transfer-confirmation' covers both copy and move dialogs (preferred over 'copy-confirmation').",
+            "enum": [
+              "settings",
+              "file-viewer",
+              "about",
+              "transfer-confirmation",
+              "copy-confirmation",
+              "mkdir-confirmation",
+              "new-file-confirmation",
+              "delete-confirmation"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "type"
+        ],
+        "type": "object"
+      },
+      "name": "dialog"
+    },
+    {
+      "description": "Open the search dialog with optional pre-filled query and filters. If autoRun (default true), runs the search immediately. Acks once the dialog has mounted; does not wait for results to render.",
+      "inputSchema": {
+        "properties": {
+          "autoRun": {
+            "description": "Default true: open and run the search. False: open and prefill without running.",
+            "type": "boolean"
+          },
+          "caseSensitive": {
+            "description": "Case-sensitive matching",
+            "type": "boolean"
+          },
+          "excludeSystemDirs": {
+            "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc.)",
+            "type": "boolean"
+          },
+          "isDirectory": {
+            "description": "Type filter: true = folders only, false = files only, omit for both",
+            "type": "boolean"
+          },
+          "mode": {
+            "description": "Search mode. Defaults to 'ai' if AI is enabled, otherwise 'filename'.",
+            "enum": [
+              "ai",
+              "filename",
+              "regex"
+            ],
+            "type": "string"
+          },
+          "modifiedAfter": {
+            "description": "ISO date string (for example, '2025-01-01')",
+            "type": "string"
+          },
+          "modifiedBefore": {
+            "description": "ISO date string",
+            "type": "string"
+          },
+          "query": {
+            "description": "Search query to pre-fill in the search bar",
+            "type": "string"
+          },
+          "scope": {
+            "description": "Scope string, same syntax as the scope chip: comma-separated paths, ! prefix for excludes",
+            "type": "string"
+          },
+          "sizeMax": {
+            "description": "Maximum file size in bytes",
+            "type": "integer"
+          },
+          "sizeMin": {
+            "description": "Minimum file size in bytes",
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "open_search_dialog"
+    },
+    {
+      "description": "Quit the application",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "quit"
+    },
+    {
+      "description": "Switch focus to the other pane",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "switch_pane"
+    },
+    {
+      "description": "Swap left and right pane directories, view modes, sort orders, and selections",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "swap_panes"
+    },
+    {
+      "description": "Structured file search across the entire drive index",
+      "inputSchema": {
+        "properties": {
+          "caseSensitive": {
+            "description": "Case-sensitive matching. Default: false on macOS, true on Linux",
+            "type": "boolean"
+          },
+          "excludeSystemDirs": {
+            "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc). Default: true",
+            "type": "boolean"
+          },
+          "limit": {
+            "description": "Max results to return. Default: 30",
+            "type": "integer"
+          },
+          "modifiedAfter": {
+            "description": "ISO date, for example \"2025-01-01\"",
+            "type": "string"
+          },
+          "modifiedBefore": {
+            "description": "ISO date",
+            "type": "string"
+          },
+          "pattern": {
+            "description": "Glob or regex filename pattern (for example, \"*.pdf\", \"report*\")",
+            "type": "string"
+          },
+          "patternType": {
+            "description": "Pattern type. Default: glob",
+            "enum": [
+              "glob",
+              "regex"
+            ],
+            "type": "string"
+          },
+          "scope": {
+            "description": "Scope string: comma-separated paths, ! for excludes (for example, \"~/projects, !node_modules\")",
+            "type": "string"
+          },
+          "sizeMax": {
+            "description": "Maximum file size, human-readable",
+            "type": "string"
+          },
+          "sizeMin": {
+            "description": "Minimum file size, human-readable (for example, \"1 MB\", \"500 KB\")",
+            "type": "string"
+          },
+          "type": {
+            "description": "Filter by type. Omit for both.",
+            "enum": [
+              "file",
+              "dir"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "search"
+    },
+    {
+      "description": "Natural language file search using the configured LLM to translate the query",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "Max results to return. Default: 30",
+            "type": "integer"
+          },
+          "query": {
+            "description": "Natural language search query (for example, \"recent invoices marked rymd\")",
+            "type": "string"
+          },
+          "scope": {
+            "description": "Scope string: comma-separated paths, ! for excludes (for example, \"~/projects, !node_modules\"). Merged with AI-inferred scope.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "ai_search"
+    },
+    {
+      "description": "Set a setting value. Use the cmdr://settings resource to discover available settings and their constraints.",
+      "inputSchema": {
+        "properties": {
+          "id": {
+            "description": "Setting ID, for example 'appearance.appColor'",
+            "type": "string"
+          },
+          "value": {
+            "description": "New value for the setting"
+          }
+        },
+        "required": [
+          "id",
+          "value"
+        ],
+        "type": "object"
+      },
+      "name": "set_setting"
+    },
+    {
+      "description": "Add a manual SMB server by address. Checks TCP reachability then adds to the host list.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "description": "Server address: hostname, IP, IP:port, or smb:// URL",
+            "type": "string"
+          }
+        },
+        "required": [
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "connect_to_server"
+    },
+    {
+      "description": "Remove a manually-added server from the host list.",
+      "inputSchema": {
+        "properties": {
+          "hostId": {
+            "description": "Host ID to remove (for example, manual-192-168-1-100-9445)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hostId"
+        ],
+        "type": "object"
+      },
+      "name": "remove_manual_server"
+    },
+    {
+      "description": "Upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O. Uses Keychain creds. Returns OK, NeedsCredentials, or NetworkError. See cmdr://state volumes for each SMB share's smbConnectionState.",
+      "inputSchema": {
+        "properties": {
+          "volumeId": {
+            "description": "Volume ID of the SMB share (e.g. smb-192-168-1-111-445-naspi). See cmdr://state volumes.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "volumeId"
+        ],
+        "type": "object"
+      },
+      "name": "upgrade_smb_to_direct"
+    },
+    {
+      "description": "Wait until a condition is met on a pane. Use after fire-and-forget actions or to wait for async events like network discovery.",
+      "inputSchema": {
+        "properties": {
+          "afterGeneration": {
+            "description": "Only consider state updates after this generation number. Prevents matching stale state from before an action. Get the current generation from cmdr://state or a previous await result.",
+            "type": "integer"
+          },
+          "condition": {
+            "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value)",
+            "enum": [
+              "has_item",
+              "not_has_item",
+              "item_count_gte",
+              "item_count_lte",
+              "path",
+              "path_contains"
+            ],
+            "type": "string"
+          },
+          "pane": {
+            "description": "Which pane to watch",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          },
+          "timeoutSeconds": {
+            "description": "Timeout in seconds (default 15, max 60)",
+            "type": "integer"
+          },
+          "value": {
+            "description": "Value for the condition (item name, count, path, or substring)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pane",
+          "condition",
+          "value"
+        ],
+        "type": "object"
+      },
+      "name": "await"
+    },
+    {
+      "description": "Navigate the focused pane to the most recently observed eligible file in ~/Downloads and select it. Errors if no eligible file exists or Cmdr lacks Full Disk Access.",
+      "inputSchema": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "go_to_latest_download"
+    }
+  ]
+}

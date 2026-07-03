@@ -10,3 +10,4 @@ mod resource_transfer_tests;
 mod security_tests;
 mod spec_compliance_tests;
 mod tool_category_tests;
+mod tool_snapshot_tests;
