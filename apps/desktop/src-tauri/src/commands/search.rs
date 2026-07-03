@@ -9,9 +9,7 @@ use serde::Serialize;
 
 use genai::chat::ChatOptions;
 
-use crate::ai::client::AiBackend;
-use crate::ai::manager::BackendResolution;
-use crate::ai::{AiTranslateError, AiTranslateErrorKind};
+use crate::ai::AiTranslateError;
 use crate::indexing::get_read_pool;
 use crate::search::{
     self, DIALOG_OPEN, ParsedScope, SEARCH_INDEX, SearchIndexState, SearchQuery, SearchResult, drop_search_index,
@@ -311,26 +309,6 @@ pub struct TranslateDisplay {
     pub case_sensitive: Option<bool>,
 }
 
-/// Resolves the AI backend from the current provider configuration.
-///
-/// Search needs a typed error (not graceful empty) so the dialog can toast a specific reason
-/// and tell the user how to fix it. The `kind` is what the frontend branches on.
-fn resolve_ai_backend() -> Result<AiBackend, AiTranslateError> {
-    use AiTranslateErrorKind as K;
-    match crate::ai::manager::resolve_backend() {
-        BackendResolution::Ready(b) => Ok(b),
-        BackendResolution::Off => Err(AiTranslateError::new(
-            K::Off,
-            "AI is not configured. Enable an AI provider in settings.",
-        )),
-        BackendResolution::NotConfigured(reason) => Err(AiTranslateError::new(K::NotConfigured, reason)),
-        BackendResolution::UnknownProvider(p) => Err(AiTranslateError::new(
-            K::UnknownProvider,
-            format!("Unknown AI provider: {p}"),
-        )),
-    }
-}
-
 /// Translates a natural language search query into structured filters using the configured LLM.
 ///
 /// Single-pass flow: call LLM with classification prompt → parse key-value response →
@@ -345,7 +323,7 @@ pub async fn translate_search_query(
     natural_query: String,
     current_type: Option<bool>,
 ) -> Result<TranslateResult, AiTranslateError> {
-    let backend = resolve_ai_backend()?;
+    let backend = crate::ai::manager::resolve_translate_backend(false)?;
     let system_prompt = ai::build_classification_prompt(current_type);
 
     log::debug!(
@@ -361,24 +339,8 @@ pub async fn translate_search_query(
         .with_max_tokens(300)
         .with_top_p(0.9);
 
-    let t0 = std::time::Instant::now();
-    let response =
-        crate::ai::client::chat_completion_with_empty_retry(&backend, &system_prompt, &natural_query, &options)
-            .await
-            .map_err(|e| {
-                log::warn!(
-                    "AI search: chat_completion failed after {:.1}s for query={natural_query:?}: {e}",
-                    t0.elapsed().as_secs_f64()
-                );
-                AiTranslateError::from(e)
-            })?;
-
-    log::info!(
-        "AI search: chat_completion returned {} chars in {:.1}s",
-        response.len(),
-        t0.elapsed().as_secs_f64()
-    );
-    log::debug!("AI search: raw response: {response:?}");
+    let response = crate::ai::translate::translate_once(&backend, &system_prompt, &natural_query, &options, "AI search")
+        .await?;
 
     // Parse key-value response
     let parsed = ai::parse_llm_response(&response);

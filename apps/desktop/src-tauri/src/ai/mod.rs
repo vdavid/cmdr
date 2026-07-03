@@ -42,6 +42,7 @@ mod stream_registry;
 pub mod suggestions;
 #[cfg(test)]
 mod suggestions_streaming_test;
+pub mod translate;
 pub mod translate_error;
 
 pub use translate_error::{AiTranslateError, AiTranslateErrorKind};

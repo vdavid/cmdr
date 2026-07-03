@@ -9,41 +9,10 @@
 
 use genai::chat::ChatOptions;
 
-use crate::ai::client::AiBackend;
-use crate::ai::manager::BackendResolution;
-use crate::ai::{AiTranslateError, AiTranslateErrorKind};
+use crate::ai::AiTranslateError;
 
 use crate::selection::ai::{self, SelectionTranslateResult, query_builder};
 use crate::selection::history::{self, SelectionHistoryEntry};
-
-/// Resolves the AI backend, requiring a cloud provider.
-///
-/// Mirrors `commands::search::resolve_ai_backend` but adds the cloud-only gate. The
-/// frontend hides the AI chip when `ai.provider !== 'cloud'`; this gate is the
-/// belt-and-braces check so a misconfigured frontend (or an MCP caller in the
-/// future) can't drive the local model with a prompt it can't handle.
-fn resolve_cloud_ai_backend() -> Result<AiBackend, AiTranslateError> {
-    use AiTranslateErrorKind as K;
-    let provider = crate::ai::manager::get_provider();
-    if provider != "cloud" {
-        return Err(AiTranslateError::new(
-            K::NotConfigured,
-            "AI selection needs a cloud provider. Set one in Settings > AI.",
-        ));
-    }
-    match crate::ai::manager::resolve_backend() {
-        BackendResolution::Ready(b) => Ok(b),
-        BackendResolution::Off => Err(AiTranslateError::new(
-            K::Off,
-            "AI is not configured. Enable a cloud provider in settings.",
-        )),
-        BackendResolution::NotConfigured(reason) => Err(AiTranslateError::new(K::NotConfigured, reason)),
-        BackendResolution::UnknownProvider(p) => Err(AiTranslateError::new(
-            K::UnknownProvider,
-            format!("Unknown AI provider: {p}"),
-        )),
-    }
-}
 
 /// Translates a natural-language selection request into a glob/regex plus optional
 /// size and date filters.
@@ -64,7 +33,7 @@ pub async fn translate_selection_query(
     sample_names: Vec<String>,
     current_type: Option<bool>,
 ) -> Result<SelectionTranslateResult, AiTranslateError> {
-    let backend = resolve_cloud_ai_backend()?;
+    let backend = crate::ai::manager::resolve_translate_backend(true)?;
     let system_prompt = ai::build_classification_prompt(&sample_names, current_type);
 
     log::debug!(
@@ -79,25 +48,7 @@ pub async fn translate_selection_query(
         .with_max_tokens(300)
         .with_top_p(0.9);
 
-    let t0 = std::time::Instant::now();
-    let response = crate::ai::client::chat_completion_with_empty_retry(&backend, &system_prompt, &prompt, &options)
-        .await
-        .map_err(|e| {
-            log::warn!(
-                target: "selection::ai",
-                "chat_completion failed after {:.1}s for prompt={prompt:?}: {e}",
-                t0.elapsed().as_secs_f64()
-            );
-            AiTranslateError::from(e)
-        })?;
-
-    log::info!(
-        target: "selection::ai",
-        "translate_selection_query: response {} chars in {:.1}s",
-        response.len(),
-        t0.elapsed().as_secs_f64()
-    );
-    log::debug!(target: "selection::ai", "translate_selection_query raw response: {response:?}");
+    let response = crate::ai::translate::translate_once(&backend, &system_prompt, &prompt, &options, "AI selection").await?;
 
     let parsed = ai::parse_selection_response(&response);
     Ok(query_builder::build_selection_translate_result(&parsed))

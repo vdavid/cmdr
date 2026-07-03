@@ -10,7 +10,6 @@ use genai::chat::ChatOptions;
 use serde::Serialize;
 use tauri::ipc::Channel;
 
-use super::manager::BackendResolution;
 use crate::file_system::get_file_at;
 
 /// Maximum number of file names to include in the prompt context.
@@ -39,20 +38,8 @@ pub async fn get_folder_suggestions(
         current_path
     );
 
-    let backend = match super::manager::resolve_backend() {
-        BackendResolution::Ready(b) => b,
-        BackendResolution::Off => {
-            log::debug!("AI suggestions: provider is off, returning empty");
-            return Ok(Vec::new());
-        }
-        BackendResolution::NotConfigured(reason) => {
-            log::debug!("AI suggestions: backend not configured ({reason}), returning empty");
-            return Ok(Vec::new());
-        }
-        BackendResolution::UnknownProvider(p) => {
-            log::debug!("AI suggestions: unknown provider '{p}', returning empty");
-            return Ok(Vec::new());
-        }
+    let Some(backend) = super::manager::resolve_backend().ready_or_log("AI suggestions") else {
+        return Ok(Vec::new());
     };
 
     get_suggestions_from_backend(&listing_id, &current_path, include_hidden, backend).await
@@ -293,23 +280,9 @@ pub async fn stream_folder_suggestions(
     }
     let _guard = UnregisterGuard(&request_id);
 
-    let backend = match super::manager::resolve_backend() {
-        BackendResolution::Ready(b) => b,
-        BackendResolution::Off => {
-            log::debug!("AI suggestions stream: provider is off");
-            let _ = on_event.send(SuggestionStreamEvent::Done);
-            return Ok(());
-        }
-        BackendResolution::NotConfigured(reason) => {
-            log::debug!("AI suggestions stream: backend not configured ({reason})");
-            let _ = on_event.send(SuggestionStreamEvent::Done);
-            return Ok(());
-        }
-        BackendResolution::UnknownProvider(p) => {
-            log::debug!("AI suggestions stream: unknown provider '{p}'");
-            let _ = on_event.send(SuggestionStreamEvent::Done);
-            return Ok(());
-        }
+    let Some(backend) = super::manager::resolve_backend().ready_or_log("AI suggestions stream") else {
+        let _ = on_event.send(SuggestionStreamEvent::Done);
+        return Ok(());
     };
 
     let file_names = get_file_names(&listing_id, include_hidden);

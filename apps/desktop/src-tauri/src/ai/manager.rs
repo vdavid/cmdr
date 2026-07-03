@@ -24,7 +24,7 @@ use super::state::{
     MANAGER, get_ai_dir, get_cloud_config, get_current_model, get_port, is_fully_installed, load_state,
     new_manager_state, save_state,
 };
-use super::{AiStarting, AiStatus, is_local_ai_supported};
+use super::{AiStarting, AiStatus, AiTranslateError, AiTranslateErrorKind, is_local_ai_supported};
 use crate::ignore_poison::IgnorePoison;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -179,6 +179,68 @@ pub fn resolve_backend() -> BackendResolution {
         model,
         super::state::get_cloud_requires_api_key(),
     )
+}
+
+impl BackendResolution {
+    /// Maps a resolution onto the translate-command surface, where every
+    /// non-ready case is a typed [`AiTranslateError`] the dialog toasts (the
+    /// `kind` is what the frontend branches on). Used via
+    /// [`resolve_translate_backend`].
+    pub fn into_translate_result(self) -> Result<super::client::AiBackend, AiTranslateError> {
+        use AiTranslateErrorKind as K;
+        match self {
+            BackendResolution::Ready(b) => Ok(b),
+            BackendResolution::Off => Err(AiTranslateError::new(
+                K::Off,
+                "AI is not configured. Enable an AI provider in settings.",
+            )),
+            BackendResolution::NotConfigured(reason) => Err(AiTranslateError::new(K::NotConfigured, reason)),
+            BackendResolution::UnknownProvider(p) => {
+                Err(AiTranslateError::new(K::UnknownProvider, format!("Unknown AI provider: {p}")))
+            }
+        }
+    }
+
+    /// Maps a resolution onto the graceful-empty surface used by nice-to-have
+    /// features (folder suggestions): the backend when ready, else `None` after
+    /// logging the reason at debug. `context` labels the log line.
+    pub fn ready_or_log(self, context: &str) -> Option<super::client::AiBackend> {
+        match self {
+            BackendResolution::Ready(b) => Some(b),
+            BackendResolution::Off => {
+                log::debug!("{context}: provider is off, returning empty");
+                None
+            }
+            BackendResolution::NotConfigured(reason) => {
+                log::debug!("{context}: backend not configured ({reason}), returning empty");
+                None
+            }
+            BackendResolution::UnknownProvider(p) => {
+                log::debug!("{context}: unknown provider '{p}', returning empty");
+                None
+            }
+        }
+    }
+}
+
+/// Resolves the AI backend for a translate command, mapping every non-ready case
+/// to a typed [`AiTranslateError`] the dialog can toast.
+///
+/// When `cloud_only`, rejects any provider other than `cloud` up front: selection
+/// AI needs a cloud model (small local models can't reliably handle a 200+-name
+/// folder sample plus the structured prompt). The frontend hides the AI chip when
+/// `ai.provider !== 'cloud'`, so this gate is the belt-and-braces check for a
+/// misconfigured frontend or an automation caller. Because a non-cloud provider
+/// (including `off`) is rejected here, the cloud path only ever reaches
+/// [`BackendResolution::into_translate_result`] with `Ready`/`NotConfigured`.
+pub fn resolve_translate_backend(cloud_only: bool) -> Result<super::client::AiBackend, AiTranslateError> {
+    if cloud_only && get_provider() != "cloud" {
+        return Err(AiTranslateError::new(
+            AiTranslateErrorKind::NotConfigured,
+            "AI selection needs a cloud provider. Set one in Settings > AI.",
+        ));
+    }
+    resolve_backend().into_translate_result()
 }
 
 /// Pure provider-resolution decision, split out so the global `MANAGER` lock doesn't have to
