@@ -12,10 +12,7 @@
     import type { SelectionAction } from '../../../routes/(main)/explorer-api'
     import { saveSettings, subscribeToSettingsChanges } from '$lib/settings-store'
     import {
-        pathExists,
         listen,
-        getDefaultVolumeId,
-        resolvePathVolume,
         type Location,
         type UnlistenFn,
         updateFocusedPane,
@@ -36,9 +33,8 @@
     } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath } from '../navigation/path-navigation'
-    import { resolveValidPath } from '../navigation/path-resolution'
 
-    import { getCurrentEntry, canGoBack, type NavigationHistory } from '../navigation/navigation-history'
+    import { getCurrentEntry, type NavigationHistory } from '../navigation/navigation-history'
     import TabBar from '../tabs/TabBar.svelte'
     import {
         getActiveTab,
@@ -71,12 +67,7 @@
         switchToTab as tabOpsSwitchToTab,
     } from './tab-operations'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '../network/network-store.svelte'
-    import {
-        initVolumeStore,
-        getVolumes as getStoreVolumes,
-        cleanupVolumeStore,
-        requestVolumeRefresh,
-    } from '$lib/stores/volume-store.svelte'
+    import { initVolumeStore, getVolumes as getStoreVolumes, cleanupVolumeStore } from '$lib/stores/volume-store.svelte'
     import { initVolumeBusyStore, cleanupVolumeBusyStore } from '$lib/stores/volume-busy-store.svelte'
     import { initRestrictedPathsStore } from '$lib/stores/restricted-paths-store.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
@@ -93,6 +84,7 @@
     import { createSortOperations } from './sort-operations'
     import { createSwapPanes } from './swap-panes'
     import { createVolumeSelection } from './volume-selection'
+    import { createEdgeFlowHandlers } from './edge-flow-handlers'
     import {
         navigate as runNavigate,
         commitPathFromListing,
@@ -326,6 +318,17 @@
         getVolumes: () => volumes,
         navigate: navigateIntent,
     })
+    // Recovery / fallback nav flows (cancel-loading, MTP-fatal, retry-unreachable,
+    // open-home, volume-unmount). Each folds onto navigate({ source: 'fallback' | 'cancel' }).
+    const edgeFlow = createEdgeFlowHandlers({
+        navigate: navigateIntent,
+        getPaneRef,
+        getPaneHistory,
+        getPaneVolumeId,
+        getTabMgr,
+        getVolumes: () => volumes,
+        focusContainer: () => containerElement?.focus(),
+    })
 
     // Per-pane transaction-token map for `navigate()`. Caller-owned (it must
     // survive across `navigate()` calls), keyed by side. Gates the per-pane
@@ -535,119 +538,6 @@
         containerElement?.focus()
     }
 
-    function handleCancelLoading(pane: 'left' | 'right', cancelledPath: string, selectName?: string) {
-        const history = getPaneHistory(pane)
-        const entry = getCurrentEntry(history)
-        const paneRef = getPaneRef(pane)
-
-        if (entry.volumeId === 'network') {
-            // Network restore: re-commit the network entry without leaving the
-            // volume and without a load. A `'fallback'` volume "switch" to the same
-            // network volume is a terminal commit (no old-path pre-save, no
-            // correction); `pushHistory: false` keeps history put (the entry's
-            // already current). The subscriber persists the store mutation.
-            navigateIntent({
-                pane,
-                to: { selectVolume: { volumeId: 'network', path: entry.path } },
-                source: 'fallback',
-                pushHistory: false,
-            })
-            paneRef?.setNetworkHost(entry.networkHost ?? null)
-            containerElement?.focus()
-            return
-        }
-
-        if (entry.path === cancelledPath) {
-            // Listing completed before cancel; history has the cancelled path pushed. Go back.
-            // The history-back walk + commit lives in `navigate()`'s history arm.
-            // `navigate()` re-checks `canGoBack`, so the gate here is the
-            // cancel-specific guard, not a duplicate.
-            if (canGoBack(history)) {
-                navigateIntent({ pane, to: { history: 'back' }, source: 'cancel' })
-                return
-            }
-
-            // Edge case: tab opened directly at this path, no history. Walk up to nearest valid parent.
-            const parentPath = entry.path.substring(0, Math.max(1, entry.path.lastIndexOf('/')))
-            const volumeRoot = volumes.find((v) => v.id === entry.volumeId)?.path
-            void resolveValidPath(parentPath, { volumeRoot }).then((validPath) => {
-                const target = validPath ?? '~'
-                const isOutsideVolume = entry.volumeId !== 'root' && (target === '~' || target === '/')
-                // Volume root unreachable ⇒ switch to root volume; otherwise stay on
-                // the current volume at the resolved parent. Either way a terminal
-                // `'fallback'` commit (no history push — the walk-up is a correction
-                // to the cancelled destination, not a new Back target). The
-                // subscriber persists the store mutation.
-                navigateIntent({
-                    pane,
-                    to: { selectVolume: { volumeId: isOutsideVolume ? 'root' : getPaneVolumeId(pane), path: target } },
-                    source: 'fallback',
-                    pushHistory: false,
-                })
-                containerElement?.focus()
-            })
-            return
-        }
-
-        // Listing didn't complete; history still points at the previous folder (correct destination).
-        // setPanePath won't trigger FilePane's $effect (path unchanged), so call navigateToPath directly.
-        void paneRef?.navigateToPath(entry.path, selectName)
-        containerElement?.focus()
-    }
-
-    async function handleMtpFatalError(pane: 'left' | 'right', errorMessage: string) {
-        log.warn('{pane} pane MTP fatal error, falling back to default volume: {error}', { pane, error: errorMessage })
-        const defaultVolumeId = await getDefaultVolumeId()
-        const defaultVolume = volumes.find((v) => v.id === defaultVolumeId)
-        const defaultPath = defaultVolume?.path ?? '~'
-
-        // Fallback to the default volume, pushing a history entry. The subscriber
-        // persists the store mutation `navigate()`'s commit makes.
-        navigateIntent({
-            pane,
-            to: { selectVolume: { volumeId: defaultVolumeId, path: defaultPath } },
-            source: 'fallback',
-        })
-    }
-
-    async function handleRetryUnreachable(pane: 'left' | 'right') {
-        const tab = getActiveTab(getTabMgr(pane))
-        if (!tab.unreachable) return
-
-        const originalPath = tab.unreachable.originalPath
-        tab.unreachable = { originalPath, retrying: true }
-
-        // Try to resolve the volume via statfs (backend has its own 2s timeout).
-        // The resolve-timeout fallback to `getDefaultVolumeId` survives.
-        const result = await resolvePathVolume(originalPath)
-
-        const volumeId = result.volume ? result.volume.id : await getDefaultVolumeId()
-
-        // Clear unreachable BEFORE navigating, then commit + refresh (ordering
-        // preserved). Let FilePane try to load the directory directly: even if
-        // volume resolution timed out, the directory itself may be reachable.
-        tab.unreachable = null
-        navigateIntent({ pane, to: { selectVolume: { volumeId, path: originalPath } }, source: 'fallback' })
-
-        // Sync the volume selector; retry may have fixed a mount that was stale.
-        requestVolumeRefresh()
-
-        log.info('Volume retry navigating to {path} on volume {vol}', {
-            path: originalPath,
-            vol: volumeId,
-        })
-    }
-
-    async function handleOpenHome(pane: 'left' | 'right') {
-        const tab = getActiveTab(getTabMgr(pane))
-        tab.unreachable = null
-
-        const defaultId = await getDefaultVolumeId()
-        const homePath = '~'
-        navigateIntent({ pane, to: { selectVolume: { volumeId: defaultId, path: homePath } }, source: 'fallback' })
-        log.info('Unreachable tab opened home folder for {pane} pane', { pane })
-    }
-
     /**
      * Routes keys to whichever pane has its volume switcher dropdown open, and
      * SWALLOWS them from the pane behind it. Returns true whenever a chooser is
@@ -832,7 +722,7 @@
         unlistenVolumeUnmount = await onVolumeUnmounted((payload) => {
             const volume = volumes.find((v) => v.path === payload.volumePath)
             if (volume) {
-                void handleVolumeUnmount(volume.id)
+                void edgeFlow.handleVolumeUnmount(volume.id)
             }
         })
 
@@ -871,30 +761,6 @@
         // was already created synchronously in the factory body.
         await dragDrop.init()
     })
-
-    async function handleVolumeUnmount(unmountedId: string) {
-        const defaultVolumeId = await getDefaultVolumeId()
-        // Navigate to home directory, falling back to / if home doesn't exist
-        const homePath = (await pathExists('~')) ? '~' : '/'
-
-        // Redirect each affected pane (independently — left and right) to the
-        // default volume at home. `pushHistory: false` is the history-push
-        // asymmetry: an unmount must NOT grow a Back target (unlike the MTP-fatal /
-        // retry / open-home fallbacks, which DO push). The subscriber persists each
-        // store mutation `navigate()`'s commit makes.
-        for (const pane of ['left', 'right'] as const) {
-            if (getPaneVolumeId(pane) === unmountedId) {
-                navigateIntent({
-                    pane,
-                    to: { selectVolume: { volumeId: defaultVolumeId, path: homePath } },
-                    source: 'fallback',
-                    pushHistory: false,
-                })
-            }
-        }
-
-        // Volume list is now maintained reactively by the volume store
-    }
 
     onDestroy(() => {
         unlistenSettings?.()
@@ -1648,12 +1514,12 @@
                     handleNetworkHostChange(paneId, host)
                 }}
                 onCancelLoading={(cancelledPath: string, selectName?: string) => {
-                    handleCancelLoading(paneId, cancelledPath, selectName)
+                    edgeFlow.handleCancelLoading(paneId, cancelledPath, selectName)
                 }}
-                onMtpFatalError={(msg: string) => handleMtpFatalError(paneId, msg)}
+                onMtpFatalError={(msg: string) => edgeFlow.handleMtpFatalError(paneId, msg)}
                 unreachable={getActiveTab(tabMgr).unreachable}
-                onRetryUnreachable={() => handleRetryUnreachable(paneId)}
-                onOpenHome={() => handleOpenHome(paneId)}
+                onRetryUnreachable={() => edgeFlow.handleRetryUnreachable(paneId)}
+                onOpenHome={() => edgeFlow.handleOpenHome(paneId)}
                 {onCommand}
             />
         {/key}
