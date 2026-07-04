@@ -221,9 +221,11 @@ archive for this phase. Raise it later if a real workload wants parallel extract
 (`NotFound → NotFound`, `IsADirectory → IsADirectory`) so path-aware callers keep working, the I/O family
 (`Corrupt` / `Io → IoError`), and the rejection family (`NotAnArchive` / `Encrypted` / `Unsupported` / the `TooLarge`
 DoS cap `→ NotSupported`). This is a **mid-browse backstop** (the archive was swapped or corrupted after navigation).
-The user-facing "not a real archive" / "encrypted" friendly copy is produced at the routing boundary straight from
-the raw `ArchiveError` at navigation time — not recovered from a `VolumeError` here — so this mapping deliberately
-doesn't need a new `VolumeError` variant or a dedicated friendly-error reason yet.
+Dedicated archive friendly copy exists today ONLY in the viewer (`viewer.error.archiveUnreadable` /
+`archiveTooLarge`, produced from typed `ViewerError` variants); the listing/copy paths surface generic errors via this
+collapsed mapping. That's an accepted gap for read-only browsing (an encrypted zip browses fine — only extraction
+refuses; a corrupt zip is rare) — the Enter-behavior milestone owes the listing-path friendly copy, at which point a
+dedicated variant or friendly-error reason may be warranted. Until then this mapping deliberately adds neither.
 
 The match is **exhaustive on purpose — no wildcard**. It's a compile-time tripwire (the repo convention, per
 `analytics.rs`): a new `ArchiveError` variant must fail to compile here and force a conscious mapping. A catch-all

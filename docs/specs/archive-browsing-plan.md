@@ -333,6 +333,13 @@ wins.
 
 ### M2 — Enter behavior menu + per-format settings (Browse | Open | Ask)
 
+Carried over from the routing milestone (review findings): (a) **listing-path friendly errors** — navigating into a
+corrupt zip shows a generic listing error today; only the viewer has dedicated archive copy. Produce the "not a real
+archive" / damaged copy on the navigation path (likely alongside the Enter menu work, which touches the same flow).
+(b) **Enter on a file inside a zip currently routes to the viewer** as the honest interim; the Open arm of the menu
+must extract-then-launch (or explain), superseding that interim. (c) Quick Look stays gated off for archive-inner
+paths until it, too, can serve from an extracted temp.
+
 - New `lib/ui/Menu.svelte` (Ark UI `Menu`; none exists — context menus are native/muda today) as the Enter popup:
   "Browse like a folder" / "Open with external app" / "Configure…", default-highlighting the configured action; keyboard
   mechanics modeled on `VolumeBreadcrumb.svelte`. Hook at `handleOpenOrParentKey` before the open: archive-or-bundle +
