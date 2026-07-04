@@ -355,24 +355,29 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
 pub async fn handle_directory_change(listing_id: &str) {
     log::debug!("handle_directory_change: listing_id={}", listing_id);
 
-    // Look up volume for this listing so we can re-read through the Volume trait.
-    let volume = {
+    // Look up this listing's volume id so we can re-read through the Volume trait.
+    let volume_id = {
         use crate::file_system::listing::caching::LISTING_CACHE;
         let cache = match LISTING_CACHE.read() {
             Ok(c) => c,
             Err(_) => return,
         };
-        let listing = match cache.get(listing_id) {
-            Some(l) => l,
+        match cache.get(listing_id) {
+            Some(l) => l.volume_id.clone(),
             None => return,
-        };
-        crate::file_system::get_volume_manager().get(&listing.volume_id)
+        }
     };
 
     // Get old entries and path from the unified LISTING_CACHE
     let Some((path, old_entries)) = get_listing_entries(listing_id) else {
         return; // Listing no longer exists
     };
+
+    // Resolve (not plain `get`) so a `.zip`-crossing listing re-reads through the
+    // same ArchiveVolume the listing used, re-registering it if the LRU evicted
+    // it. (Archives get no FSEvents watcher today, so this fires for them only
+    // once live archive watching lands.)
+    let volume = crate::file_system::get_volume_manager().resolve(&volume_id, &path).volume;
 
     // Get app handle for emitting events
     let app_handle = {

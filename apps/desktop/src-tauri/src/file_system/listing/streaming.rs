@@ -403,10 +403,18 @@ pub(crate) async fn read_directory_with_progress(
         return Ok(());
     }
 
-    // Get the volume from VolumeManager
-    let volume = crate::file_system::get_volume_manager()
-        .get(volume_id)
+    // Resolve the volume, routing a `.zip`-crossing path to its read-only
+    // `ArchiveVolume`. The cache still keys on the FE-provided `volume_id` (the
+    // parent drive), so the downstream re-read sites re-resolve the same archive
+    // from `(volume_id, path)` — eviction-safe (see `caching.rs`).
+    let resolved = crate::file_system::get_volume_manager().resolve(volume_id, path);
+    let is_archive = resolved.is_archive;
+    let volume = resolved
+        .volume
         .ok_or_else(|| VolumeError::NotFound(format!("Volume not found: {}", volume_id)))?;
+    // The listing task consumes its own handle; keep `volume` for the watcher
+    // check and `volume_root` below (an archive's `root()` is the `.zip` path).
+    let volume_for_task = Arc::clone(&volume);
 
     // Read directory entries via Volume abstraction.
     // Spawn the listing as a tokio task and use select! with a cancellation poll loop
@@ -436,7 +444,7 @@ pub(crate) async fn read_directory_with_progress(
             // files + dirs for that.
             events_for_progress.emit_progress(&listing_id_for_progress, p.entries());
         };
-        volume.list_directory(&path_for_task, Some(&on_progress)).await
+        volume_for_task.list_directory(&path_for_task, Some(&on_progress)).await
     });
 
     // Wait for either listing completion or cancellation (no polling).
@@ -471,11 +479,14 @@ pub(crate) async fn read_directory_with_progress(
     }
 
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
-    // so that sort-by-size works correctly for directories.
+    // so that sort-by-size works correctly for directories. Archives have no drive
+    // index (their inner paths aren't real FS paths), so enrich/verify are skipped.
     let enrich_start = std::time::Instant::now();
-    crate::indexing::enrich_entries_with_index_on_volume(volume_id, &mut entries);
+    if !is_archive {
+        crate::indexing::enrich_entries_with_index_on_volume(volume_id, &mut entries);
+        crate::indexing::trigger_verification(volume_id, &path.to_string_lossy());
+    }
     let enrich_ms = enrich_start.elapsed().as_millis();
-    crate::indexing::trigger_verification(volume_id, &path.to_string_lossy());
 
     // Sort entries
     benchmark::log_event("sort START");
@@ -532,7 +543,6 @@ pub(crate) async fn read_directory_with_progress(
     // `git::watcher::invalidate_virtual_listings` instead.
     let watcher_start_t = std::time::Instant::now();
     if !crate::file_system::git::is_virtual(path)
-        && let Some(volume) = crate::file_system::get_volume_manager().get(volume_id)
         && volume.supports_watching()
         && let Err(e) = start_watching(listing_id, path)
     {
@@ -541,9 +551,10 @@ pub(crate) async fn read_directory_with_progress(
     }
     let watcher_start_ms = watcher_start_t.elapsed().as_millis();
 
-    // Get volume root for the event (used by frontend to determine if at volume root)
-    let volume = crate::file_system::get_volume_manager().get(volume_id);
-    let volume_root_path = volume.as_ref().map(|v| v.root().to_path_buf());
+    // Volume root for the event (the FE uses it to decide "at volume root"). For
+    // an archive this is the `.zip` path, so the FE breadcrumb renders
+    // `…/foo.zip/inner` and treats the archive root as the volume root.
+    let volume_root_path = Some(volume.root().to_path_buf());
     let volume_root = volume_root_path
         .as_ref()
         .map(|p| p.to_string_lossy().to_string())

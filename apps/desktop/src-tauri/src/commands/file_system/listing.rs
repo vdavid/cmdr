@@ -109,8 +109,11 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bo
     // For local volumes, expand tilde
     let expanded_path = if volume_id == "root" { expand_tilde(&path) } else { path };
 
-    // Try to use Volume abstraction
-    if let Some(volume) = get_volume_manager().get(&volume_id) {
+    // Resolve so an archive-inner path checks existence inside the `.zip`.
+    if let Some(volume) = get_volume_manager()
+        .resolve(&volume_id, Path::new(&expanded_path))
+        .volume
+    {
         // For SMB volumes, an immediate `false` from `exists()` may be the connection
         // being dead (`clone_session` returns `Err`) rather than the path actually missing.
         // Snapshot whether this is an SMB volume by whether it reports an SMB connection state.
@@ -406,7 +409,7 @@ pub fn list_directory_end(listing_id: String) {
 #[specta::specta]
 pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
     if let Some((volume_id, path)) = crate::file_system::listing::get_listing_volume_id_and_path(&listing_id)
-        && let Some(volume) = get_volume_manager().get(&volume_id)
+        && let Some(volume) = get_volume_manager().resolve(&volume_id, &path).volume
         && volume.local_path().is_none()
         && volume.listing_is_watched(&path)
     {

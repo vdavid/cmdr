@@ -564,6 +564,35 @@ mod tests {
         assert!(manager.get(&oldest_id).is_some());
     }
 
+    #[tokio::test]
+    async fn resolve_lists_a_real_zip_end_to_end() {
+        use std::io::Write;
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let zip_path = dir.path().join("bundle.zip");
+        {
+            let file = std::fs::File::create(&zip_path).expect("create zip");
+            let mut writer = zip::ZipWriter::new(file);
+            let options = zip::write::SimpleFileOptions::default();
+            writer.start_file("readme.txt", options).expect("start file");
+            writer.write_all(b"hello").expect("write");
+            writer.add_directory("docs/", options).expect("add dir");
+            writer.finish().expect("finish zip");
+        }
+
+        let manager = VolumeManager::new();
+        manager.register("root", Arc::new(InMemoryVolume::new("Root")));
+
+        // Resolving the `.zip` path lists the archive root through the ArchiveVolume.
+        let resolved = manager.resolve("root", &zip_path);
+        assert!(resolved.is_archive);
+        let volume = resolved.volume.expect("archive volume");
+        let entries = volume.list_directory(&resolved.path, None).await.expect("list archive root");
+        let names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
+        assert!(names.contains(&"readme.txt"), "got: {names:?}");
+        assert!(names.contains(&"docs"), "got: {names:?}");
+    }
+
     #[test]
     fn resolve_without_a_registered_parent_yields_no_volume() {
         let dir = tempfile::tempdir().expect("tempdir");

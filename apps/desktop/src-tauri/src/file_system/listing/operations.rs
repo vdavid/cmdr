@@ -54,8 +54,12 @@ pub async fn list_directory_start_with_volume(
     benchmark::reset_epoch();
     benchmark::log_event_value("list_directory_start CALLED", path.display());
 
-    // Get the volume from VolumeManager
-    let volume = crate::file_system::get_volume_manager().get(volume_id).ok_or_else(|| {
+    // Resolve the volume, routing a `.zip`-crossing path to its read-only
+    // `ArchiveVolume`. The cache keeps the FE-provided `volume_id` (parent drive);
+    // the downstream re-read sites re-resolve the archive from `(volume_id, path)`.
+    let resolved = crate::file_system::get_volume_manager().resolve(volume_id, path);
+    let is_archive = resolved.is_archive;
+    let volume = resolved.volume.ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::NotFound,
             format!("Volume '{}' not found", volume_id),
@@ -75,10 +79,13 @@ pub async fn list_directory_start_with_volume(
     let total_count = visible_entries(&all_entries, include_hidden).count();
 
     // Enrich directory entries with index data (recursive_size etc.) before sorting,
-    // so that sort-by-size works correctly for directories.
+    // so that sort-by-size works correctly for directories. Archives have no drive
+    // index (inner paths aren't real FS paths), so enrich/verify are skipped.
     let mut all_entries = all_entries;
-    crate::indexing::enrich_entries_with_index_on_volume(volume_id, &mut all_entries);
-    crate::indexing::trigger_verification(volume_id, &path.to_string_lossy());
+    if !is_archive {
+        crate::indexing::enrich_entries_with_index_on_volume(volume_id, &mut all_entries);
+        crate::indexing::trigger_verification(volume_id, &path.to_string_lossy());
+    }
 
     // Sort the entries
     sort_entries(&mut all_entries, sort_by, sort_order, dir_sort_mode);

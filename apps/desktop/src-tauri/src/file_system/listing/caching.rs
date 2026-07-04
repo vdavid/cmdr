@@ -668,7 +668,12 @@ async fn notify_full_refresh(
     use crate::file_system::listing::sorting::sort_entries;
     use crate::file_system::watcher::compute_diff;
 
-    let vol = match crate::file_system::get_volume_manager().get(&volume_id) {
+    // Re-resolve from `(volume_id, parent_path)` so a `.zip`-crossing listing hits
+    // the same `ArchiveVolume` the read used (the cache keys on the parent drive
+    // id, and a re-resolve re-registers a lazily-evicted archive).
+    let resolved = crate::file_system::get_volume_manager().resolve(&volume_id, &parent_path);
+    let is_archive = resolved.is_archive;
+    let vol = match resolved.volume {
         Some(v) => v,
         None => {
             log::warn!("notify_directory_changed: volume `{}` not found", volume_id);
@@ -688,7 +693,10 @@ async fn notify_full_refresh(
         }
     };
 
-    crate::indexing::enrich_entries_with_index_on_volume(&volume_id, &mut new_entries);
+    // Archives have no drive index, so enrich is a no-op — skip it.
+    if !is_archive {
+        crate::indexing::enrich_entries_with_index_on_volume(&volume_id, &mut new_entries);
+    }
 
     for (listing_id, sort_by, sort_order, dir_sort_mode) in &listings {
         // Re-sort to match this listing's sort params
@@ -789,9 +797,11 @@ pub fn try_get_watched_listing(volume_id: &str, path: &Path) -> Option<Vec<FileE
     };
 
     // Step 2: ask the volume whether this listing is being kept fresh by a watcher.
-    // VolumeManager::get returns an Arc<dyn Volume> which we hold for the duration of
-    // the sync `listing_is_watched` call. No await between this and the entries return.
-    let volume = crate::file_system::get_volume_manager().get(volume_id)?;
+    // Resolve (not plain `get`) so a `.zip`-crossing listing asks the ArchiveVolume,
+    // which reports `listing_is_watched = false` (no live archive watcher yet) — so
+    // an archive listing correctly falls back to a real read rather than reusing a
+    // possibly-stale cache. We hold the Arc across the sync call; no await between.
+    let volume = crate::file_system::get_volume_manager().resolve(volume_id, path).volume?;
     if volume.listing_is_watched(path) {
         Some(entries)
     } else {
