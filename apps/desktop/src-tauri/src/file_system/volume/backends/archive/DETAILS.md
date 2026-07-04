@@ -231,6 +231,43 @@ The match is **exhaustive on purpose — no wildcard**. It's a compile-time trip
 once remote-backed archives land, which wants a retryable classification, not "not supported". The one-time cost is
 naming each new variant; the payoff is that no failure mode is ever classified by omission.
 
+## Routing and lifecycle (`boundary.rs` + `VolumeManager::resolve`)
+
+An `ArchiveVolume` is never constructed here directly in production — it's minted on demand by
+`VolumeManager::resolve(volume_id, path)` when a path crosses a `.zip` boundary. The detector is `boundary.rs`:
+
+- **Two tiers.** `archive_boundary_candidate` is a pure string split (extension-only, leftmost `.zip` component wins so a
+  nested `a.zip/b.zip` treats the inner as a plain file — nested archives are out of scope). `confirm_archive_boundary`
+  adds the I/O: the component must be a real FILE (a directory named `foo.zip` loses to normal navigation) whose first
+  bytes are a zip signature (a mislabeled file isn't routed). Extension-only feeds `FileEntry.is_archive` at listing time
+  (no per-entry byte read — that's a round-trip-per-file on a remote backend); confirm runs once at navigation time.
+- **`SUPPORTED_ARCHIVE_EXTENSIONS` is the one source of truth** shared by `is_archive` and boundary detection; the later
+  tar/7z read milestone extends it (and confirm's magic check gains sibling signatures).
+
+**resolve returns the FULL path, unchanged.** The decision (over returning a stripped inner path): `ArchiveVolume`
+already maps a volume-namespace path to its inner key via `inner_path()`, `node_to_entry` builds full paths, and
+`root()` is the `.zip` — so a full-path passthrough makes every adoption site uniform (`resolve` only swaps the volume,
+never rewrites the path) and keeps the listing cache, the FE, and the entries all speaking full paths.
+
+**Routing id vs display id.** The registry id is `archive-{hash(canonical zip path)}`, backend-internal only: it never
+enters FE state, history, persistence, or MCP sync. The FE holds the PARENT drive id (display), and
+`resolve_path_volume` / `resolve_location` return that parent drive for an archive-inner path (resolved from the `.zip`'s
+real location, since the inner path isn't a real FS path). So the listing cache keys on the parent id too, and the
+downstream re-read sites (`notify_full_refresh`, `try_get_watched_listing`, `watcher::handle_directory_change`,
+`refresh_listing`) RE-RESOLVE from `(parent_id, full_path)` rather than `get`-ing a stored archive id — which is what
+makes LRU eviction safe.
+
+**Archive LRU (cap 16).** `VolumeManager` tracks archive registration recency; resolving past the cap unregisters the
+least-recently-resolved archive (its `ArchiveIndexCache` drops with the volume). Eviction is harmless because every read
+site re-resolves: an evicted archive re-registers lazily on the next navigation (`ArchiveVolume::new` is cheap; the index
+re-parses on demand). No frontend refcount exists — the FE never holds an archive id, so there's nothing to refcount.
+
+**Read-only write guards.** Because routing is path-based, the write seams that bypass `VolumeManager` guard themselves
+against an archive target: the local `copy`/`move`/`delete`/`trash` fast-paths and the cross-volume dest reject with
+`WriteOperationError::ReadOnlyDevice`; the managed instant-op forks (`create_directory_core`, `create_file_core`,
+`rename_managed`) return a clean refusal. Move also rejects an archive SOURCE (a move deletes the source side). These
+seams become archive-edit routing when mutation lands.
+
 ## Testing
 
 `volume_test.rs` drives `ArchiveVolume` against real zips written to a temp file (the local source needs a real path):
@@ -250,16 +287,15 @@ the sanitizer (incl. the depth cap) and the tree builder (incl. the node-count c
 
 ## Left for the follow-up milestones
 
-`ArchiveVolume` (browse + extract + `scan_for_copy`, read-only) now exists in `volume.rs`, with the capability-matrix
-column filled in `../../DETAILS.md` and the map line in `docs/architecture.md`. What's still ahead (sequencing lives in
-`/docs/specs/archive-browsing-plan.md`):
+`ArchiveVolume` (browse + extract + `scan_for_copy`, read-only) exists in `volume.rs`, and backend routing (§ "Routing
+and lifecycle" above) is landed: `VolumeManager::resolve`, the shared `boundary.rs` detector, the archive LRU, and the
+read-only write guards. What's still ahead (sequencing lives in `/docs/specs/archive-browsing-plan.md`):
 
-- **Routing**: path-aware `VolumeManager::resolve(volume_id, path)` that detects an archive boundary and
-  registers/looks up an `ArchiveVolume`; `register_if_absent` + **refcount + LRU eviction** (browsing many zips must not
-  leak volumes + parents + index caches); the magic-byte sniff at navigation time (listing uses extension only); the
-  `'archive'` FE `VolumeKind` so capabilities read read-only-correct; persistence of parent drive + zip path (re-derive
-  the archive lazily on restore); and the FE friendly errors, produced from the raw `ArchiveError` at the resolve
-  boundary (this layer's typed `VolumeError` mapping is only a mid-browse backstop).
+- **Frontend**: the `'archive'` capabilities `VolumeKind` (derived from `pathInsideArchive`, read-only-correct), the
+  Enter-into-archive fork driven by `FileEntry.is_archive`, breadcrumb/path-bar rendering of `…/foo.zip/inner`, and the
+  friendly errors produced from the raw `ArchiveError` at the resolve boundary (this layer's typed `VolumeError` mapping
+  is only a mid-browse backstop). Persistence is already archive-safe (the FE stores the parent drive id + full path).
+- **Viewer**: previewing a file inside an archive (a bounded temp-extract — the viewer core is `std::fs`-only).
 - **Live watching**: flip `listing_is_watched` to `true` and watch the parent `.zip` for external edits.
 - **Mutation**: turn the mutation methods and the `'archive'` VolumeKind writable (add/delete/rename/mkdir/mkfile
-  via temp+rename).
+  via temp+rename). The write-guard seams (§ "Routing and lifecycle") become the mutation routing points.

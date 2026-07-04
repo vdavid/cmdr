@@ -11,6 +11,8 @@ one file that maps them onto `FileEntry` / `VolumeError` / `VolumeReadStream`. K
 - `source.rs`: `ArchiveByteSource` (byte-supply seam) + `LocalFileSource`, `BytesSource`.
 - `index.rs`: `ArchiveIndex` (parsed tree + query surface), the central-directory parse driver, the pure tree builder.
 - `name.rs`: `sanitize_entry_name` (Zip Slip defense). `read.rs`: `ArchiveEntryReader`. `cache.rs`: `ArchiveIndexCache`.
+- `boundary.rs`: the SHARED `.zip`-boundary detector (`VolumeManager::resolve` + `commands/volumes.rs` both use it, so
+  the pane label and the I/O target can't disagree).
 
 Depth, rationale, and the full test list: [DETAILS.md](DETAILS.md). Read it before non-trivial work here.
 
@@ -59,6 +61,9 @@ Depth, rationale, and the full test list: [DETAILS.md](DETAILS.md). Read it befo
   `ArchiveError → VolumeError` backstop mapping (`no-string-matching`): [DETAILS.md](DETAILS.md) § "The `ArchiveVolume`
   layer".
 
-Still ahead (sequencing in `/docs/specs/archive-browsing-plan.md`): registration, path-aware `resolve`, refcount + LRU
-eviction, the `'archive'` FE `VolumeKind`, live watching, and mutation. See [DETAILS.md](DETAILS.md) § Left for the
-follow-up milestones.
+- **This layer is headless: it never registers itself.** `VolumeManager::resolve` routes a `.zip`-crossing path here
+  (on-demand registration, archive LRU, backend-internal id). Full model + the routing-vs-display id split:
+  [DETAILS.md](DETAILS.md) § "Routing and lifecycle".
+
+Still ahead (sequencing in `/docs/specs/archive-browsing-plan.md`): the `'archive'` FE `VolumeKind`, live watching, and
+mutation. See [DETAILS.md](DETAILS.md) § Left for the follow-up milestones.

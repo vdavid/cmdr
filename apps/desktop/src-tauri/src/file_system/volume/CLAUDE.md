@@ -27,6 +27,11 @@ volume root**.
 - **`lane_key()` is the operation manager's serialization key** (default = volume root): write ops sharing a lane run
   one at a time, disjoint lanes run in parallel. Override it when multiple `Volume` instances share one physical
   resource (MTP device, SMB server) so they don't thrash.
+- **At a site that calls a `Volume` method with a path, use `VolumeManager::resolve(volume_id, path)`, not
+  `get(volume_id)`.** `resolve` routes a `.zip`-crossing path to a read-only `ArchiveVolume` (on-demand, LRU-capped),
+  returning the path UNCHANGED; a non-archive path is a plain `get`. `resolved.is_archive` gates drive-index
+  enrich/verify. The archive id stays backend-internal, so the listing cache keys on the parent drive id and re-read
+  sites re-resolve. See [`backends/archive/DETAILS.md`](backends/archive/DETAILS.md) § "Routing and lifecycle".
 - **Register watcher-pre-registered volumes via `VolumeManager::register_if_absent`, not `register`.** The FSEvents
   watcher would otherwise overwrite a pre-registered `SmbVolume` with a `LocalPosixVolume`. `register` (overwrite) is
   only for explicit replacement (SmbVolume replacing itself on reconnect).
