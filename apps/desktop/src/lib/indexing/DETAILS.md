@@ -53,6 +53,10 @@ destroyIndexState(): void            // call at app teardown
 initIndexEvents(onDirUpdated: (paths: string[]) => void): Promise<UnlistenFn>
 ```
 
+`index-events.ts` bridges the `index-dir-updated` event to `onDirUpdated`. Each callback gets a BATCH of paths (multiple
+during DB replay, typically one in live FS-watch). `DualPaneExplorer` checks each path against each pane's current dir
+with a path-prefix comparison, which relies on trailing-slash normalization.
+
 ## Scan-state events (`index-state.svelte.ts`)
 
 Ten Tauri events drive the state. All of them carry a `volumeId`: scan and replay key the live-`activity` map,
@@ -198,6 +202,13 @@ The hourglass is a ~14px `<Icon>` (the same icon as the size-column stale indica
 first-scan tier instead (see "Status indicator tooltip content" above). The flag still drives the "(first scan)" label
 and the render-gate. The ETA window samples the SAME counter the tier divides by (entries for tier 1, bytes for tier 2)
 — don't mix them. `formatEta` carries a `Number.isFinite` guard so a dropped null gate can't surface "Infinitym left".
+
+### Tier recovery after a mid-scan reload
+
+`get_index_status` backfills the tier inputs (root-only) after a window reload lands mid-scan, so the bar/ETA recover
+without waiting for the next full scan. `scanStartedAt` can't cross IPC, so it stays 0 and the ETA degrades until the
+sliding window fills again (accepted). Tier 1 reads the prior scan's totals from the nested `indexStatus` meta via
+`parseMetaNumber`.
 
 ## ETA mechanics (`eta.ts`)
 
