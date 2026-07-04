@@ -30,6 +30,7 @@ import globals from 'globals'
 import noIsolatedTests from './eslint-plugins/no-isolated-tests.js'
 import noErrorStringMatch from './eslint-plugins/no-error-string-match.js'
 import noRawTauriInvoke from './eslint-plugins/no-raw-tauri-invoke.js'
+import noRawBindingsImport from './eslint-plugins/no-raw-bindings-import.js'
 import noExplorerStateWrites from './eslint-plugins/no-explorer-state-writes.js'
 import noRawCommandDispatch from './eslint-plugins/no-raw-command-dispatch.js'
 import noRawLucideImport from './eslint-plugins/no-raw-lucide-import.js'
@@ -247,6 +248,7 @@ export default tseslint.config(
         rules: {
           'no-error-string-match': noErrorStringMatch,
           'no-raw-tauri-invoke': noRawTauriInvoke,
+          'no-raw-bindings-import': noRawBindingsImport,
           'no-explorer-state-writes': noExplorerStateWrites,
           'no-raw-command-dispatch': noRawCommandDispatch,
           'no-raw-lucide-import': noRawLucideImport,
@@ -259,6 +261,9 @@ export default tseslint.config(
     rules: {
       'cmdr/no-error-string-match': 'error',
       'cmdr/no-raw-tauri-invoke': 'error',
+      // Feature code imports typed wrappers from `$lib/tauri-commands`, never the
+      // raw `commands`/`events` bindings (type imports from bindings stay fine).
+      'cmdr/no-raw-bindings-import': 'error',
       'cmdr/no-explorer-state-writes': 'error',
       'cmdr/no-raw-command-dispatch': 'error',
       'cmdr/no-raw-lucide-import': 'error',
