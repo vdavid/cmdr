@@ -598,7 +598,10 @@ mod tests {
         // live under a file, so it's dropped (not left as an unreachable orphan).
         let (nodes, children) = build(vec![file_seed("foo", 1), file_seed("foo/bar", 2)]);
         assert!(!nodes["foo"].is_dir, "first writer (the file) keeps the path");
-        assert!(!nodes.contains_key("foo/bar"), "the shadowed child is dropped, not orphaned");
+        assert!(
+            !nodes.contains_key("foo/bar"),
+            "the shadowed child is dropped, not orphaned"
+        );
         assert_eq!(child_names(&children, ""), vec!["foo"]);
 
         // Reverse order: `foo/bar` first implies dir `foo`; the later file `foo`

@@ -116,13 +116,14 @@ impl ArchiveVolume {
         Box::pin(async move {
             // Parse (cached) and open the local byte source off the async
             // executor — both stat/read the real file.
-            let (index, source) =
-                parse_blocking(move || -> Result<(Arc<ArchiveIndex>, Arc<dyn ArchiveByteSource>), VolumeError> {
+            let (index, source) = parse_blocking(
+                move || -> Result<(Arc<ArchiveIndex>, Arc<dyn ArchiveByteSource>), VolumeError> {
                     let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
                     let source: Arc<dyn ArchiveByteSource> = Arc::new(LocalFileSource::open(&archive_path)?);
                     Ok((index, source))
-                })
-                .await?;
+                },
+            )
+            .await?;
 
             // `open_read` only looks the entry up and spawns the decompress
             // producer (which itself uses `spawn_blocking`), so it's cheap here.
