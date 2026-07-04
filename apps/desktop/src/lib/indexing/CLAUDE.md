@@ -21,9 +21,9 @@ DETAILS.md or `codegraph_search`.
 - **`initIndexState` uses "listen first, then query"**: register event listeners, THEN call `get_index_status`. The Rust
   indexer starts in `setup()` before the frontend mounts, so querying first races `index-scan-started` and the UI sticks
   on "not scanning". Don't reorder.
-- **`index-state` is the SINGLE source of live activity** (scan/replay counters + aggregation), keyed by `volumeId`. Read
-  a volume's activity via `getVolumeActivity(volumeId)`. Don't reintroduce a second live-count path — the breadcrumb
-  badge's `drive-index-manager` (in `navigation/`) owns ONLY freshness/menu facts, never live progress.
+- **`index-state` is the SINGLE source of live activity** (scan/replay counters + aggregation), keyed by `volumeId`.
+  Read a volume's activity via `getVolumeActivity(volumeId)`. Don't reintroduce a second live-count path — the
+  breadcrumb badge's `drive-index-manager` (in `navigation/`) owns ONLY freshness/menu facts, never live progress.
 - **A keyed entry is cleared by a TERMINAL event, never by freshness** (`index-scan-complete` / `index-replay-complete`
   / `index-aggregation-complete`). A network (SMB/MTP) scan that aborts fires no completion, so the backend emits
   `index-scan-aborted { volumeId }` and `index-state` drops that volume's activity + aggregation — else an aborted
@@ -40,9 +40,9 @@ DETAILS.md or `codegraph_search`.
   hourglass is PER-VOLUME (`isVolumeScanning(volumeId)` / `isVolumeAggregating(volumeId)`), so a scan on drive B never
   flags drive A. No global scanning boolean; only the corner hourglass is global (`isAnyVolumeIndexing()`). Don't
   reintroduce a global `isScanning()`.
-- **The indicator is a focusable, hoverable icon** (`role="img"`, `tabindex="0"`), not `pointer-events: none`; the detail
-  lives in a tooltip reached by hover or focus. Don't use `role="status"` (a live region — wrong for a focusable hover
-  target); the tooltip carries the live label + ETA via `aria-describedby`.
+- **The indicator is a focusable, hoverable icon** (`role="img"`, `tabindex="0"`), not `pointer-events: none`; the
+  detail lives in a tooltip reached by hover or focus. Don't use `role="status"` (a live region — wrong for a focusable
+  hover target); the tooltip carries the live label + ETA via `aria-describedby`.
 - **Directory sizes are HONEST: unknown (the `<dir>` placeholder) ≠ empty (`0 bytes`) ≠ lower-bound (`≥`).**
   `getDirSizeDisplayState` (`views/full-list-utils.ts`) is the single source of truth, consumed in lockstep by
   `FullList` / `SelectionInfo` / `measure-column-widths`. Rendering + sort: DETAILS.md.

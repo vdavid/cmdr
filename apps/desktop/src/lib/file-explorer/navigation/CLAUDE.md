@@ -24,8 +24,8 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   (each entry is three strings).
 - **`path-resolution.ts` is a separate module to break a cycle**: `app-status-store.ts` imports `resolveValidPath`, and
   `path-navigation.ts` imports `getLastUsedPathForVolume` from it. Keep `resolveValidPath` here.
-- **Two-layer timeout on every `pathExists`**: Rust `blocking_with_timeout` (2 s) plus a frontend `withTimeout` (per-call
-  values in DETAILS); the faster wins, so a hung mount never blocks runtime.
+- **Two-layer timeout on every `pathExists`**: Rust `blocking_with_timeout` (2 s) plus a frontend `withTimeout`
+  (per-call values in DETAILS); the faster wins, so a hung mount never blocks runtime.
 - **Stale volume-switch corrections are gated by a single GLOBAL `correctionGen`** (shared by both panes): a later
   volume change on either pane bumps it and drops a superseded background `determineNavigationPath` correction. Not
   per-pane.
@@ -50,9 +50,9 @@ Browser-style back/forward history, path resolution, paged keyboard shortcuts, a
   `isModalDialogOpen()` suppresses central dispatch.
 - **Favorite reorder is POINTER-based and LOCAL-FIRST, not HTML5 drag** (the OS intercepts drag under Tauri's
   `dragDropEnabled`, so `draggable`/`ondrop` never fire; don't reintroduce them). Keyboard reorder (Alt+↑ / Alt+↓) runs
-  before `handleDropdownKey` consumes the bare arrows. Both paths set `optimisticFavoriteIds` synchronously, then persist
-  the full order via `reorderFavorites(bareIds)` in the background (don't await the IPC first). Full flow + the reorder
-  mechanism: DETAILS § Editable favorites.
+  before `handleDropdownKey` consumes the bare arrows. Both paths set `optimisticFavoriteIds` synchronously, then
+  persist the full order via `reorderFavorites(bareIds)` in the background (don't await the IPC first). Full flow + the
+  reorder mechanism: DETAILS § Editable favorites.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.
