@@ -17,6 +17,8 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 - Media (Image/PDF): `content_kind.rs` (`classify_viewer_content`), `media.rs` (`cmdr-media://` token map),
   `media_protocol.rs` (async scheme handler), `media_backend.rs` (no-op `MediaBackend`), `media_session.rs` (the
   media-open path, built on `session.rs`'s `ViewerSession`). See [DETAILS.md](DETAILS.md) § "Media rendering".
+- `archive_extract.rs`: preview-in-zip (streams an archive-inner entry to a bounded temp). See
+  [DETAILS.md](DETAILS.md) § "Preview inside an archive".
 
 ## Must-knows
 
@@ -50,5 +52,9 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   arithmetic depends on this; stripping `\r` later needs the same change there. See [DETAILS.md](DETAILS.md) § "Gotchas".
 - **Cancellation is per-read / per-search, never session-wide**: `read_range` and `search` check the cancel flag inside
   the per-line loop (not just between chunks), so concurrent reads don't race a shared flag.
+- **Never open an archive-inner path (`/…/foo.zip/inner`) via `std::fs` here.** The viewer core is `std::fs`-only, so
+  `open_session` routes such a path through `archive_extract` (bounded temp-extract, size-capped, deleted on close via
+  `ViewerSession.extract_cleanup`); bypassing it opens a non-existent path. The cap refuses BEFORE extraction (zip-bomb
+  guard). See [DETAILS.md](DETAILS.md) § "Preview inside an archive".
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

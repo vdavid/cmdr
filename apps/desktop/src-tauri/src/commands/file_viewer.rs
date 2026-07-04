@@ -14,6 +14,29 @@ use tauri::menu::MenuItemKind;
 
 const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
 
+/// Open budget for a preview INSIDE an archive: the whole entry is streamed out to a
+/// bounded temp first, so it needs the recursive-scan tier, not the 2 s read tier. The
+/// extraction cap keeps the worst case bounded. A non-archive open keeps the strict 2 s.
+const VIEWER_ARCHIVE_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Picks the open timeout for `path`: the generous archive budget only when the path
+/// actually crosses a `.zip` boundary, else the strict 2 s. The detection is a local
+/// stat + a few-byte magic read, run off the IPC thread so it never blocks it.
+async fn open_timeout_for(path: &str) -> Duration {
+    let path = path.to_string();
+    let is_archive = tokio::task::spawn_blocking(move || {
+        let expanded = crate::commands::file_system::expand_tilde(&path);
+        crate::file_system::volume::backends::archive::path_crosses_archive_boundary(std::path::Path::new(&expanded))
+    })
+    .await
+    .unwrap_or(false);
+    if is_archive {
+        VIEWER_ARCHIVE_TIMEOUT
+    } else {
+        VIEWER_TIMEOUT
+    }
+}
+
 /// Maximum read timeout for `viewer_read_range`. The 100 MiB hard ceiling (enforced
 /// at the FE) means even on a slow disk we shouldn't blow this. The backend's per-read
 /// cancel flag covers the actually-stuck case via Escape.
@@ -30,7 +53,8 @@ const READ_RANGE_TIMEOUT: Duration = Duration::from_secs(60);
 #[tauri::command]
 #[specta::specta]
 pub async fn viewer_open(path: String, window_label: String) -> Result<ViewerOpenResult, IpcError> {
-    blocking_result_with_timeout(VIEWER_TIMEOUT, move || {
+    let timeout = open_timeout_for(&path).await;
+    blocking_result_with_timeout(timeout, move || {
         let result = file_viewer::open_session(&path).map_err(|e| e.to_string())?;
         file_viewer::register_window_session(&window_label, &result.session_id);
         Ok(result)
@@ -47,7 +71,8 @@ pub async fn viewer_open(path: String, window_label: String) -> Result<ViewerOpe
 #[tauri::command]
 #[specta::specta]
 pub async fn viewer_open_as_text(path: String, window_label: String) -> Result<ViewerOpenResult, IpcError> {
-    blocking_result_with_timeout(VIEWER_TIMEOUT, move || {
+    let timeout = open_timeout_for(&path).await;
+    blocking_result_with_timeout(timeout, move || {
         let result = file_viewer::open_session_as_text(&path).map_err(|e| e.to_string())?;
         file_viewer::register_window_session(&window_label, &result.session_id);
         Ok(result)
@@ -200,6 +225,14 @@ pub async fn viewer_write_range_to_file(
     focus: RangeEnd,
     dest_path: String,
 ) -> Result<(), ViewerError> {
+    // The source may be an archive preview temp (it writes fine via `std::fs` off the
+    // open session), but the DESTINATION must not be inside an archive: archives are
+    // read-only in this phase. Reject with a typed error, matching the write-path guards.
+    if crate::file_system::volume::backends::archive::path_crosses_archive_boundary(std::path::Path::new(
+        &crate::commands::file_system::expand_tilde(&dest_path),
+    )) {
+        return Err(ViewerError::DestinationInsideArchive);
+    }
     match tokio::time::timeout(
         READ_RANGE_TIMEOUT,
         tokio::task::spawn_blocking(move || {
@@ -339,5 +372,68 @@ pub fn viewer_set_word_wrap(app_handle: tauri::AppHandle, label: String, checked
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::file_viewer::RangeEnd;
+    use std::io::Write as _;
+
+    /// Writes a minimal real zip (one stored entry) so the boundary magic check passes.
+    fn write_zip(path: &std::path::Path) {
+        use zip::write::SimpleFileOptions;
+        let file = std::fs::File::create(path).expect("create zip");
+        let mut writer = zip::ZipWriter::new(file);
+        writer
+            .start_file(
+                "inner.txt",
+                SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored),
+            )
+            .expect("start");
+        writer.write_all(b"hello").expect("write");
+        writer.finish().expect("finish");
+    }
+
+    #[tokio::test]
+    async fn write_range_rejects_a_destination_inside_an_archive() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let zip = dir.path().join("bundle.zip");
+        write_zip(&zip);
+
+        // The guard runs before any session lookup, so a bogus session id is fine: the
+        // point is that an archive-inner DESTINATION is refused with the typed error.
+        let dest = zip.join("inner.txt");
+        let err = viewer_write_range_to_file(
+            "no-such-session".to_string(),
+            0,
+            RangeEnd::Eof,
+            RangeEnd::Eof,
+            dest.to_string_lossy().into_owned(),
+        )
+        .await
+        .expect_err("archive-inner destination must be refused");
+        assert!(
+            matches!(err, ViewerError::DestinationInsideArchive),
+            "expected DestinationInsideArchive, got {err:?}"
+        );
+
+        // A plain sibling destination passes the guard (proves it's not a blanket reject);
+        // the bogus session then surfaces as SessionNotFound.
+        let plain = dir.path().join("out.txt");
+        let err = viewer_write_range_to_file(
+            "no-such-session".to_string(),
+            0,
+            RangeEnd::Eof,
+            RangeEnd::Eof,
+            plain.to_string_lossy().into_owned(),
+        )
+        .await
+        .expect_err("bogus session should fail past the guard");
+        assert!(
+            matches!(err, ViewerError::SessionNotFound { .. }),
+            "expected the guard to pass and the session lookup to fail, got {err:?}"
+        );
     }
 }

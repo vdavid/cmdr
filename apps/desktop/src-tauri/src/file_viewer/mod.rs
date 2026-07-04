@@ -5,6 +5,7 @@
 //! - `LineIndexBackend`: sparse line-offset index, O(lines/256) memory
 //! - `ByteSeekBackend`: byte-offset seeking, no pre-scan needed (instant open)
 
+mod archive_extract;
 mod byte_seek;
 pub mod content_kind;
 pub mod encoding;
@@ -19,6 +20,8 @@ mod search_matcher;
 pub mod session;
 pub mod watcher;
 
+#[cfg(test)]
+mod archive_extract_test;
 #[cfg(test)]
 mod byte_seek_test;
 #[cfg(test)]
@@ -40,6 +43,7 @@ mod session_test;
 #[cfg(test)]
 mod watcher_test;
 
+pub use archive_extract::init_archive_extract_dir;
 pub use content_kind::{ViewerContentKind, classify_viewer_content};
 pub use encoding::FileEncoding;
 pub use media_session::MediaDimensions;
@@ -143,6 +147,22 @@ pub enum ViewerError {
     /// The read exceeded the IPC timeout. The frontend can offer Retry; the underlying
     /// backend read continues until it sees the per-read cancel flag or completes.
     TimedOut,
+    /// Previewing a file inside an archive would extract more than the preview cap.
+    /// Refused before any extraction (the zip-bomb guard for preview); `size` is the
+    /// entry's declared uncompressed size, `cap` the limit. See
+    /// `file_viewer::archive_extract`.
+    ExtractTooLarge {
+        size: u64,
+        cap: u64,
+    },
+    /// Saving a selection to a destination INSIDE an archive isn't supported (archives
+    /// are read-only in this phase). Rejected by `viewer_write_range_to_file`.
+    DestinationInsideArchive,
+    /// The archive entry can't be previewed (encrypted, corrupt, or an unsupported
+    /// codec). Carries a message; the FE renders it without inspecting the string.
+    Archive {
+        message: String,
+    },
 }
 
 impl std::fmt::Display for ViewerError {
@@ -155,6 +175,14 @@ impl std::fmt::Display for ViewerError {
             Self::Cancelled => write!(f, "Read cancelled"),
             Self::OutOfRange => write!(f, "Selection is past the end of the file"),
             Self::TimedOut => write!(f, "Read timed out"),
+            Self::ExtractTooLarge { size, cap } => {
+                write!(
+                    f,
+                    "This item is too large to preview from the archive ({size} bytes, limit {cap})"
+                )
+            }
+            Self::DestinationInsideArchive => write!(f, "Can't save into an archive"),
+            Self::Archive { message } => write!(f, "{message}"),
         }
     }
 }

@@ -38,13 +38,17 @@ pub struct MediaDimensions {
 /// Classifies `file_path` by magic bytes and, if it's a media kind (`Image` / `Pdf` on a
 /// local volume), opens a media session and returns its result. Returns `None` when the
 /// file should flow through the text pipeline, so the caller can fall through.
-pub(super) fn try_open_media(file_path: &Path, file_size: u64) -> Option<Result<ViewerOpenResult, ViewerError>> {
+pub(super) fn try_open_media(
+    file_path: &Path,
+    file_size: u64,
+    extract_cleanup: Option<std::path::PathBuf>,
+) -> Option<Result<ViewerOpenResult, ViewerError>> {
     let head = read_head(file_path, CLASSIFY_HEAD_LEN);
     let ext = file_path.extension().and_then(|e| e.to_str());
     let is_local = is_local_posix_path(file_path);
     let kind = classify_viewer_content(&head, ext, is_local);
     if matches!(kind, ViewerContentKind::Image | ViewerContentKind::Pdf) {
-        Some(open_media_session(file_path, file_size, &head, kind))
+        Some(open_media_session(file_path, file_size, &head, kind, extract_cleanup))
     } else {
         None
     }
@@ -58,6 +62,7 @@ fn open_media_session(
     file_size: u64,
     head: &[u8],
     kind: ViewerContentKind,
+    extract_cleanup: Option<std::path::PathBuf>,
 ) -> Result<ViewerOpenResult, ViewerError> {
     let file_name = file_path
         .file_name()
@@ -100,6 +105,7 @@ fn open_media_session(
         watcher_stop: Arc::new(AtomicBool::new(false)),
         path: file_path.to_path_buf(),
         media_token: Some(media_token.clone()),
+        extract_cleanup,
     });
 
     // No watcher and no LineIndex upgrade for media: there's no text viewport to

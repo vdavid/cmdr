@@ -5949,6 +5949,23 @@ export type ViewerError =
    *  backend read continues until it sees the per-read cancel flag or completes.
    */
   | { kind: 'timedOut' }
+  /**
+   *  Previewing a file inside an archive would extract more than the preview cap.
+   *  Refused before any extraction (the zip-bomb guard for preview); `size` is the
+   *  entry's declared uncompressed size, `cap` the limit. See
+   *  `file_viewer::archive_extract`.
+   */
+  | { kind: 'extractTooLarge'; size: number; cap: number }
+  /**
+   *  Saving a selection to a destination INSIDE an archive isn't supported (archives
+   *  are read-only in this phase). Rejected by `viewer_write_range_to_file`.
+   */
+  | { kind: 'destinationInsideArchive' }
+  /**
+   *  The archive entry can't be previewed (encrypted, corrupt, or an unsupported
+   *  codec). Carries a message; the FE renders it without inspecting the string.
+   */
+  | { kind: 'archive'; message: string }
 
 // Result returned when opening a viewer session.
 export type ViewerOpenResult = {

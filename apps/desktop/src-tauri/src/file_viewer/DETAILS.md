@@ -60,10 +60,11 @@ The viewer renders images and PDFs inline instead of showing the binary warning.
 - `media_backend.rs`: `MediaBackend`, a no-op `FileViewerBackend` so a media session can fill the non-optional
   `backend` field without a text backend. Every text-shaped call returns empty/zero.
 - `media_session.rs`: the media-open path, kept out of `session.rs` so that file stays text-backend orchestration.
-  `try_open_media(file_path, file_size)` reads the head, classifies (`is_local_posix_path` decides locality),
-  and for a media kind calls `open_media_session`; otherwise returns `None` so `open_session` falls through to text.
-  `open_media_session` mints the token, reads dimensions best-effort, installs a `MediaBackend`, and builds the
-  `ViewerSession` via `session::ViewerSession::new`. Owns the `MediaDimensions` type. Covered by `media_session_test.rs`
+  `try_open_media(file_path, file_size, extract_cleanup)` reads the head, classifies (`is_local_posix_path` decides
+  locality), and for a media kind calls `open_media_session`; otherwise returns `None` so `open_session` falls through to
+  text. `open_media_session` mints the token, reads dimensions best-effort, installs a `MediaBackend`, and builds the
+  `ViewerSession` via `session::ViewerSession::new`, passing `extract_cleanup` through so an image/PDF previewed from
+  inside a zip deletes its temp on close (see § "Preview inside an archive"). Owns the `MediaDimensions` type. Covered by `media_session_test.rs`
   (image / PDF / text-fallthrough / open-as-text through the public `open_session`).
 
 Open flow: `open_session` calls `media_session::try_open_media` before building a text backend; a media kind opens
@@ -106,6 +107,51 @@ asking, and the window already knows its own path anyway. The unguessable token 
 files it chose to serve; there is no way to name an arbitrary file, and an unknown token is simply a 404. The data URL
 shortcut for small images (already allowed by `img-src data:`) was rejected for uniformity — PDFs and large images need
 the scheme + range support regardless, so one path (the token scheme for everything) beats a size-cliff between two.
+
+## Preview inside an archive
+
+`archive_extract.rs` lets the viewer preview a file addressed by an archive-inner path (`/…/foo.zip/inner.txt`). The
+viewer core is 100% `std::fs::File`-based (byte-seek, line-index, encoding, and the `cmdr-media://` handler all `File::open`
+a real path), so there's no `Volume` byte-source seam to thread through. Instead of that larger refactor, `open_session`
+extracts the addressed entry to a bounded temp and opens THAT — the deliberately simple bridge per
+[archive-browsing-m1b-derivation.md](../../../../../docs/specs/archive-browsing-m1b-derivation.md) lead decision 5.
+
+Flow (in `open_session_inner`, before the media/text split):
+
+1. `extract_if_archive_inner(requested)` calls `VolumeManager::resolve("root", requested)` — the SAME shared
+   boundary detector + on-demand `ArchiveVolume` registration + LRU the listing and copy paths use, so the pane label and
+   the preview target can't disagree. A non-archive path returns `None` and the open flows through unchanged.
+2. For an archive path it reads the entry's `get_metadata` (uncompressed size + kind come from the central directory, no
+   decompression). A directory entry → `ViewerError::IsDirectory`. A size over the cap → `ViewerError::ExtractTooLarge`,
+   refused BEFORE any temp is created — this up-front refusal is the zip-bomb guard for preview.
+3. Otherwise it streams `open_read_stream` into `<extract_dir>/.cmdr-viewer-<uuid>/<entry-basename>`, enforcing the cap
+   again on bytes written (a central directory that understates the real size can't sneak past). The basename is the
+   entry's, so the viewer window shows the right title and media classification sees the right extension.
+4. `open_session` then runs its normal media/text classification on the temp. The `ViewerSession` stores the temp's
+   subdir in `extract_cleanup`; a media open threads the same value through `try_open_media`. Extracted sessions spawn
+   NO watcher (the temp is immutable for the session's life).
+
+**Temp lifetime == session lifetime.** `close_session` (the single choke point both teardown paths funnel through)
+`remove_dir_all`s `extract_cleanup`. One temp per open — re-opening the same entry re-extracts (simple beats a dedup
+cache).
+
+**The cap is 256 MiB** (`EXTRACT_CAP_BYTES`), chosen to comfortably cover real preview content (documents, images, PDFs,
+most media) while bounding the temp write, extraction time, and decompression amplification. It's independent of the FE
+copy-selection ceiling (`COPY_REFUSE_BYTES`, 100 MiB): that caps a *selection*, this caps a whole-entry materialization.
+Because a large entry can take longer than the 2 s read tier to decompress, `viewer_open` / `viewer_open_as_text` use a
+30 s budget (`VIEWER_ARCHIVE_TIMEOUT`, the recursive-scan tier) when the path crosses a `.zip` boundary, and the strict
+2 s otherwise — the detection is a local stat + magic read run off the IPC thread.
+
+**Per-instance extract dir + startup reaper.** The dir is `<app_data_dir>/viewer-extract` (set by
+`init_archive_extract_dir` from `lib.rs`), so side-by-side dev/prod/worktree instances never reap each other's live
+temps. At startup the reaper removes any `.cmdr-viewer-*` subdir a crash left behind; the prefix guard means it can only
+touch our own extraction subdirs. When uninitialized (unit tests), it falls back to an OS-temp subdir.
+
+**Save-selection from an archive preview**: `viewer_write_range_to_file`'s SOURCE can be an archive temp — it reads via
+the open session and writes with `std::fs`, so it just works off the temp. The DESTINATION, though, must not be
+archive-inner (archives are read-only this phase): the command rejects it with `ViewerError::DestinationInsideArchive`,
+matching the write-path guards. Covered by `commands/file_viewer.rs` tests; the extraction, cap, cleanup, and media
+paths by `archive_extract_test.rs`.
 
 ## Backend selection logic
 

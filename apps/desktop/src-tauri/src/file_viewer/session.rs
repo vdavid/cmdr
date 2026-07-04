@@ -233,6 +233,11 @@ pub(super) struct ViewerSession {
     /// to the single close choke point keeps the token's lifetime exactly the
     /// session's, so a closed-window viewer can't leave a live token mapping a path.
     media_token: Option<String>,
+    /// For a preview-in-zip session, the `.cmdr-viewer-<uuid>/` temp subdir the entry
+    /// was extracted into. Removed wholesale at `close_session` (both close paths funnel
+    /// through it), so the temp's lifetime is exactly the session's. `None` for a normal
+    /// on-disk open. See `file_viewer::archive_extract`.
+    extract_cleanup: Option<PathBuf>,
 }
 
 /// The fields that vary between a text open and a media open. Everything else on a
@@ -247,6 +252,7 @@ pub(super) struct ViewerSessionInit {
     pub(super) watcher_stop: Arc<AtomicBool>,
     pub(super) path: PathBuf,
     pub(super) media_token: Option<String>,
+    pub(super) extract_cleanup: Option<PathBuf>,
 }
 
 impl ViewerSession {
@@ -266,6 +272,7 @@ impl ViewerSession {
             active_reads: Mutex::new(HashMap::new()),
             path: init.path,
             media_token: init.media_token,
+            extract_cleanup: init.extract_cleanup,
         }
     }
 
@@ -347,7 +354,18 @@ pub fn open_session_as_text(path: &str) -> Result<ViewerOpenResult, ViewerError>
 
 fn open_session_inner(path: &str, force_text: bool) -> Result<ViewerOpenResult, ViewerError> {
     let expanded = expand_tilde(path);
-    let file_path = PathBuf::from(&expanded);
+    let requested = PathBuf::from(&expanded);
+
+    // A path INSIDE an archive (`/…/foo.zip/inner`) has no `std::fs` file to open, so
+    // the viewer can't touch it directly. Stream the entry out to a bounded temp and
+    // open THAT; a non-archive path returns `None` and flows through unchanged. On
+    // close, `close_session` removes the temp subdir. See `archive_extract`.
+    let extracted = super::archive_extract::extract_if_archive_inner(&requested)?;
+    let (file_path, extract_cleanup) = match extracted {
+        Some(e) => (e.temp_file, Some(e.cleanup_dir)),
+        None => (requested, None),
+    };
+    let is_extracted = extract_cleanup.is_some();
 
     if !file_path.exists() {
         return Err(ViewerError::NotFound { path: path.to_string() });
@@ -362,7 +380,10 @@ fn open_session_inner(path: &str, force_text: bool) -> Result<ViewerOpenResult, 
     // Classify by magic bytes (unless the caller forced text, e.g. "View as text").
     // A media kind (Image/Pdf on a local volume) opens a no-op session that serves bytes
     // via `cmdr-media://`; the whole media-open path lives in `media_session.rs`.
-    if !force_text && let Some(result) = media_session::try_open_media(&file_path, file_size) {
+    // An extracted image/PDF renders inline too: the media session serves the temp via
+    // `cmdr-media://` and inherits the same `extract_cleanup`, so closing it deletes the
+    // temp. `try_open_media` returns `None` (falls through to text) for non-media kinds.
+    if !force_text && let Some(result) = media_session::try_open_media(&file_path, file_size, extract_cleanup.clone()) {
         return result;
     }
 
@@ -403,6 +424,7 @@ fn open_session_inner(path: &str, force_text: bool) -> Result<ViewerOpenResult, 
         watcher_stop,
         path: file_path.clone(),
         media_token: None,
+        extract_cleanup,
     });
 
     // Calculate estimated total lines from the initial sample
@@ -447,8 +469,9 @@ fn open_session_inner(path: &str, force_text: bool) -> Result<ViewerOpenResult, 
     // the open→subscribe window for any append that landed before the watcher
     // went live. See `spawn_watcher_manager`.
     //
-    // Tests can opt out via `CMDR_VIEWER_DISABLE_WATCHER=1`.
-    if std::env::var("CMDR_VIEWER_DISABLE_WATCHER").is_err() {
+    // Tests can opt out via `CMDR_VIEWER_DISABLE_WATCHER=1`. An extracted archive temp
+    // is immutable for the session's life, so it gets no watcher (nothing to tail).
+    if !is_extracted && std::env::var("CMDR_VIEWER_DISABLE_WATCHER").is_err() {
         spawn_watcher_manager(session_id.clone(), session_path, watcher_stop_for_thread);
     }
 
@@ -1190,6 +1213,16 @@ pub fn close_session(session_id: &str) -> Result<(), ViewerError> {
         // via `close_session_for_window`) funnel through.
         if let Some(token) = &session.media_token {
             media::drop_token(token);
+        }
+        // Delete the preview-in-zip temp (if any). This is the single choke point both
+        // teardown paths funnel through, so the temp's lifetime is exactly the session's.
+        if let Some(dir) = &session.extract_cleanup
+            && let Err(e) = std::fs::remove_dir_all(dir)
+        {
+            debug!(
+                "close_session: viewer extract cleanup failed for {}: {e}",
+                dir.display()
+            );
         }
     }
     Ok(())

@@ -452,6 +452,13 @@ pub fn run() {
             // threads so they can emit `viewer:file-changed:<sid>` events.
             file_viewer::init_app_handle(app.handle().clone());
 
+            // Point preview-in-zip temp-extraction at a per-instance dir under the app
+            // data dir (so side-by-side dev/prod/worktree instances never reap each
+            // other's live temps), and reap any `.cmdr-viewer-*` orphan left by a crash.
+            if let Ok(data_dir) = config::resolved_app_data_dir(app.handle()) {
+                file_viewer::init_archive_extract_dir(data_dir.join("viewer-extract"));
+            }
+
             // Initialize the volume manager with the root volume
             file_system::init_volume_manager();
 
