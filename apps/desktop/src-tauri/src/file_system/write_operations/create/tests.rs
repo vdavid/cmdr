@@ -357,8 +357,13 @@ async fn create_directory_core_rejects_a_target_inside_an_archive() {
 
     // Parent is inside the archive → read-only until zip mutation lands.
     let parent = zip.join("sub");
-    let result = create_directory_core(None, &parent.to_string_lossy(), "newdir").await;
-    assert!(result.is_err(), "expected rejection, got {result:?}");
+    let err = create_directory_core(None, &parent.to_string_lossy(), "newdir")
+        .await
+        .expect_err("creating inside an archive must be refused");
+    // allowed-error-string-match: the fn returns a String, and the archive-specific
+    // refusal is the signal that the FORK fired — a natural mkdir failure (volume
+    // not found, ENOTDIR) also errors, so `is_err()` alone wouldn't prove the guard.
+    assert!(err.contains("archive"), "expected the archive refusal, got: {err}");
     cleanup_test_dir(&dir);
 }
 
@@ -369,7 +374,10 @@ async fn create_file_core_rejects_a_target_inside_an_archive() {
     write_zip_magic(&zip);
 
     // The archive root itself is also read-only.
-    let result = create_file_core(None, &zip.to_string_lossy(), "new.txt").await;
-    assert!(result.is_err(), "expected rejection, got {result:?}");
+    let err = create_file_core(None, &zip.to_string_lossy(), "new.txt")
+        .await
+        .expect_err("creating inside an archive must be refused");
+    // allowed-error-string-match: see `create_directory_core_rejects_...`.
+    assert!(err.contains("archive"), "expected the archive refusal, got: {err}");
     cleanup_test_dir(&dir);
 }

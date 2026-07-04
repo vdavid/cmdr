@@ -202,7 +202,12 @@ async fn rename_managed_rejects_a_target_inside_an_archive() {
     // mutation lands (the fork returns before touching the operation manager).
     let from = zip.join("old.txt");
     let to = zip.join("new.txt");
-    let result = rename_managed(from, to, false, "root".to_string()).await;
-    assert!(result.is_err(), "expected rejection, got {result:?}");
+    let err = rename_managed(from, to, false, "root".to_string())
+        .await
+        .expect_err("renaming inside an archive must be refused");
+    // allowed-error-string-match: the fn returns a String, and the archive-specific
+    // refusal is the signal that the FORK fired — a natural rename failure (source
+    // missing) also errors, so `is_err()` alone wouldn't prove the guard bites.
+    assert!(err.contains("archive"), "expected the archive refusal, got: {err}");
     let _ = fs::remove_dir_all(&tmp);
 }

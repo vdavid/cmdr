@@ -345,3 +345,28 @@ pub fn pause_all() {
 pub fn resume_all() {
     ops_resume_all();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reject_if_archive_inner_flags_a_path_inside_a_zip() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let zip = dir.path().join("bundle.zip");
+        // A zip start-of-file signature is enough for the boundary magic check.
+        std::fs::write(&zip, b"PK\x03\x04rest").expect("write zip magic");
+
+        // A path INSIDE the archive is refused with a typed read-only error...
+        let inner = zip.join("inner.txt");
+        let err = reject_if_archive_inner(std::iter::once(&inner)).expect_err("archive-inner path must be refused");
+        assert!(
+            matches!(err, WriteOperationError::ReadOnlyDevice { .. }),
+            "expected ReadOnlyDevice, got {err:?}"
+        );
+
+        // ...while a plain local sibling passes (proves the guard, not a blanket reject).
+        let plain = dir.path().join("plain.txt");
+        assert!(reject_if_archive_inner(std::iter::once(&plain)).is_ok());
+    }
+}
