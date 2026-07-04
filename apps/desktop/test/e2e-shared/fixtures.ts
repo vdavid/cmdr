@@ -42,14 +42,33 @@ function copyMediaFixtures(rootPath: string): void {
   }
 }
 
+// A committed real zip (`inner.txt` + `nested/deep.txt`) copied into `left/` so
+// the archive-browsing E2E specs can enter it like a folder, preview an entry,
+// and copy one out. Committed (not generated) so the central-directory bytes the
+// backend magic-sniffs stay deterministic and reviewable.
+const archiveFixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'archive-fixtures')
+const archiveFixtures = [{ rel: 'left/sample.zip', source: 'sample.zip' }] as const
+
+function copyArchiveFixtures(rootPath: string): void {
+  for (const file of archiveFixtures) {
+    const dest = path.join(rootPath, file.rel)
+    fs.mkdirSync(path.dirname(dest), { recursive: true })
+    fs.copyFileSync(path.join(archiveFixturesDir, file.source), dest)
+  }
+}
+
 const fixtureLayout = {
   textFiles: [
     { rel: 'left/file-a.txt', content: smallFileContent },
     { rel: 'left/file-b.txt', content: smallFileContent },
     { rel: 'left/sub-dir/nested-file.txt', content: smallFileContent },
     { rel: 'left/.hidden-file', content: smallFileContent },
+    // A file inside a real DIRECTORY literally named `decoy.zip`: proves the
+    // archive-browsing boundary check loses to normal directory navigation (a
+    // real dir named `*.zip` must enter as a plain folder, not route to an archive).
+    { rel: 'left/decoy.zip/marker.txt', content: smallFileContent },
   ],
-  directories: ['left/bulk', 'right'],
+  directories: ['left/bulk', 'left/decoy.zip', 'right'],
   largeFiles: [
     { rel: 'left/bulk/large-1.dat', sizeMb: 50 },
     { rel: 'left/bulk/large-2.dat', sizeMb: 50 },
@@ -243,6 +262,7 @@ export function createFixtures(instanceId?: string): string {
   }
 
   copyMediaFixtures(rootPath)
+  copyArchiveFixtures(rootPath)
 
   if (instanceId) {
     ensureCacheBuilt()
@@ -317,8 +337,9 @@ export function recreateFixtures(rootPath: string): void {
     fs.writeFileSync(filePath, file.content)
   }
 
-  // Re-copy the media fixtures: they live under left/, which the cleanup above wiped.
+  // Re-copy the media + archive fixtures: they live under left/, which the cleanup above wiped.
   copyMediaFixtures(rootPath)
+  copyArchiveFixtures(rootPath)
 
   // Bulk .dat files are NOT recreated; they persist from createFixtures()
 }
