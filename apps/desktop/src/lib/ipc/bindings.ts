@@ -801,7 +801,7 @@ export const commands = {
    *  no owning window (no mapping is recorded).
    */
   viewerOpen: (path: string, windowLabel: string) =>
-    typedError<ViewerOpenResult, IpcError>(__TAURI_INVOKE('viewer_open', { path, windowLabel })),
+    typedError<ViewerOpenResult, ViewerError>(__TAURI_INVOKE('viewer_open', { path, windowLabel })),
   /**
    *  Opens a fresh, full **text** session for `path`, ignoring media classification.
    *
@@ -811,7 +811,7 @@ export const commands = {
    *  frees the new session.
    */
   viewerOpenAsText: (path: string, windowLabel: string) =>
-    typedError<ViewerOpenResult, IpcError>(__TAURI_INVOKE('viewer_open_as_text', { path, windowLabel })),
+    typedError<ViewerOpenResult, ViewerError>(__TAURI_INVOKE('viewer_open_as_text', { path, windowLabel })),
   /**
    *  Fetches a range of lines from a viewer session.
    *

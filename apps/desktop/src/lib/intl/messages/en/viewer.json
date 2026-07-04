@@ -38,6 +38,16 @@
     "description": "Shown when opening the file timed out, typically on a slow or stalled drive or network share. \"volume\" means a disk or mounted drive. A Retry button sits below it."
   },
 
+  "viewer.error.archiveTooLarge": "This file is too big to preview from inside the archive. Copy it out first, then open it.",
+  "@viewer.error.archiveTooLarge": {
+    "description": "Shown when previewing a file INSIDE an archive (zip) would need to extract more than the preview size cap. Previewing a file in an archive extracts it to a temporary location first, which is capped. Suggests copying the file out (extract it) and opening it from there."
+  },
+
+  "viewer.error.archiveUnreadable": "Couldn't open this file from the archive. It may be encrypted, damaged, or use a format Cmdr can''t read.",
+  "@viewer.error.archiveUnreadable": {
+    "description": "Shown when a file inside an archive (zip) can''t be previewed because the archive entry is encrypted, corrupt, or uses an unsupported compression method. \"archive\" means a zip file being browsed like a folder."
+  },
+
   "viewer.error.retry": "Retry",
   "@viewer.error.retry": {
     "description": "Button that tries opening the file again after a load timeout. Keep it short (a button)."

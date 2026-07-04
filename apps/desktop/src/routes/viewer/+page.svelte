@@ -15,6 +15,7 @@
         isIpcError,
         onViewerWordWrapToggled,
         activateWindowMenu,
+        type ViewerError,
     } from '$lib/tauri-commands'
     import { getCurrentWindow } from '@tauri-apps/api/window'
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
@@ -537,6 +538,26 @@
     }
 
     /**
+     * Maps a caught viewer-open failure to the display copy + whether it was a
+     * timeout, so the three open sites (mount, retry, view-as-text reopen) render
+     * one consistent, per-variant message. Inspects the typed `ViewerError` carried
+     * on `viewerError` (archive family gets friendly copy); falls back to the
+     * `IpcError` timeout flag, then a stringified message, then the generic copy.
+     */
+    function openFailureCopy(e: unknown): { message: string; isTimeout: boolean } {
+        const ve =
+            e && typeof e === 'object' && 'viewerError' in e ? (e as { viewerError: ViewerError }).viewerError : undefined
+        if (ve) {
+            if (ve.kind === 'timedOut') return { message: tString('viewer.error.timeout'), isTimeout: true }
+            if (ve.kind === 'extractTooLarge') return { message: tString('viewer.error.archiveTooLarge'), isTimeout: false }
+            if (ve.kind === 'archive') return { message: tString('viewer.error.archiveUnreadable'), isTimeout: false }
+        }
+        if (isIpcError(e) && e.timedOut) return { message: tString('viewer.error.timeout'), isTimeout: true }
+        const message = typeof e === 'string' ? e : isIpcError(e) ? e.message : tString('viewer.error.readFailed')
+        return { message, isTimeout: false }
+    }
+
+    /**
      * Opens (or re-opens) the viewer session for `path`. `asText: true` forces a full
      * text session even for a media file (the "View as text" override); the default
      * lets the backend classify and return a media or text session.
@@ -683,13 +704,9 @@
         try {
             await openViewerSession(filePath)
         } catch (e) {
-            if (isIpcError(e) && e.timedOut) {
-                error = tString('viewer.error.timeout')
-                errorIsTimeout = true
-            } else {
-                error = typeof e === 'string' ? e : isIpcError(e) ? e.message : tString('viewer.error.readFailed')
-                errorIsTimeout = false
-            }
+            const copy = openFailureCopy(e)
+            error = copy.message
+            errorIsTimeout = copy.isTimeout
             log.error('Retry failed: {error}', { error: String(e) })
         } finally {
             loading = false
@@ -733,8 +750,9 @@
                 viewerClose(oldSessionId).catch(() => {})
             }
         } catch (e) {
-            error = typeof e === 'string' ? e : isIpcError(e) ? e.message : tString('viewer.error.readFailed')
-            errorIsTimeout = isIpcError(e) && e.timedOut
+            const copy = openFailureCopy(e)
+            error = copy.message
+            errorIsTimeout = copy.isTimeout
             log.error('{label} failed: {error}', { label: logLabel, error: String(e) })
         } finally {
             loading = false
@@ -789,13 +807,9 @@
         try {
             await openViewerSession(pathParam)
         } catch (e) {
-            if (isIpcError(e) && e.timedOut) {
-                error = tString('viewer.error.timeout')
-                errorIsTimeout = true
-            } else {
-                error = typeof e === 'string' ? e : isIpcError(e) ? e.message : tString('viewer.error.readFailed')
-                errorIsTimeout = false
-            }
+            const copy = openFailureCopy(e)
+            error = copy.message
+            errorIsTimeout = copy.isTimeout
             log.error('Failed to open file: {error}', { error: String(e) })
         } finally {
             loading = false

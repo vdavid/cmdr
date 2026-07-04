@@ -52,14 +52,27 @@ const READ_RANGE_TIMEOUT: Duration = Duration::from_secs(60);
 /// no owning window (no mapping is recorded).
 #[tauri::command]
 #[specta::specta]
-pub async fn viewer_open(path: String, window_label: String) -> Result<ViewerOpenResult, IpcError> {
+pub async fn viewer_open(path: String, window_label: String) -> Result<ViewerOpenResult, ViewerError> {
     let timeout = open_timeout_for(&path).await;
-    blocking_result_with_timeout(timeout, move || {
-        let result = file_viewer::open_session(&path).map_err(|e| e.to_string())?;
-        file_viewer::register_window_session(&window_label, &result.session_id);
-        Ok(result)
-    })
+    // Typed `ViewerError` (not a stringified `IpcError`) so the FE can render friendly
+    // copy for the archive family — `ExtractTooLarge` (preview cap), `Archive`
+    // (encrypted / corrupt / unsupported codec) — matching `viewer_read_range`.
+    match tokio::time::timeout(
+        timeout,
+        tokio::task::spawn_blocking(move || {
+            let result = file_viewer::open_session(&path)?;
+            file_viewer::register_window_session(&window_label, &result.session_id);
+            Ok(result)
+        }),
+    )
     .await
+    {
+        Ok(Ok(result)) => result,
+        Ok(Err(join_err)) => Err(ViewerError::Io {
+            message: join_err.to_string(),
+        }),
+        Err(_) => Err(ViewerError::TimedOut),
+    }
 }
 
 /// Opens a fresh, full **text** session for `path`, ignoring media classification.
@@ -70,14 +83,24 @@ pub async fn viewer_open(path: String, window_label: String) -> Result<ViewerOpe
 /// frees the new session.
 #[tauri::command]
 #[specta::specta]
-pub async fn viewer_open_as_text(path: String, window_label: String) -> Result<ViewerOpenResult, IpcError> {
+pub async fn viewer_open_as_text(path: String, window_label: String) -> Result<ViewerOpenResult, ViewerError> {
     let timeout = open_timeout_for(&path).await;
-    blocking_result_with_timeout(timeout, move || {
-        let result = file_viewer::open_session_as_text(&path).map_err(|e| e.to_string())?;
-        file_viewer::register_window_session(&window_label, &result.session_id);
-        Ok(result)
-    })
+    match tokio::time::timeout(
+        timeout,
+        tokio::task::spawn_blocking(move || {
+            let result = file_viewer::open_session_as_text(&path)?;
+            file_viewer::register_window_session(&window_label, &result.session_id);
+            Ok(result)
+        }),
+    )
     .await
+    {
+        Ok(Ok(result)) => result,
+        Ok(Err(join_err)) => Err(ViewerError::Io {
+            message: join_err.to_string(),
+        }),
+        Err(_) => Err(ViewerError::TimedOut),
+    }
 }
 
 /// Fetches a range of lines from a viewer session.

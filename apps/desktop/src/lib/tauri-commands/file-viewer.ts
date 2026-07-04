@@ -116,8 +116,19 @@ export interface SearchPollResult {
  */
 export async function viewerOpen(path: string, windowLabel = ''): Promise<ViewerOpenResult> {
   const res = await commands.viewerOpen(path, windowLabel)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwViewerOpenError(res.error)
   return res.data
+}
+
+/**
+ * Throws a viewer-open failure carrying the typed `ViewerError` on a `viewerError`
+ * property, so the caller can render friendly per-variant copy (the archive family:
+ * `extractTooLarge`, `archive`) rather than a stringified backend message. The
+ * `Error.message` is a best-effort fallback for generic consumers / logs.
+ */
+function throwViewerOpenError(error: ViewerError): never {
+  const message = 'message' in error ? error.message : error.kind
+  throw Object.assign(new Error(message), { viewerError: error })
 }
 
 /**
@@ -128,7 +139,7 @@ export async function viewerOpen(path: string, windowLabel = ''): Promise<Viewer
  */
 export async function viewerOpenAsText(path: string, windowLabel = ''): Promise<ViewerOpenResult> {
   const res = await commands.viewerOpenAsText(path, windowLabel)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwViewerOpenError(res.error)
   return res.data
 }
 

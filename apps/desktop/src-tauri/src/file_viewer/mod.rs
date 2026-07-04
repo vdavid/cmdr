@@ -176,9 +176,11 @@ impl std::fmt::Display for ViewerError {
             Self::OutOfRange => write!(f, "Selection is past the end of the file"),
             Self::TimedOut => write!(f, "Read timed out"),
             Self::ExtractTooLarge { size, cap } => {
+                // Display/log string only — the user sees the FE's friendly copy
+                // (`viewer.error.archiveTooLarge`). Phrased to avoid a `1 bytes` singular.
                 write!(
                     f,
-                    "This item is too large to preview from the archive ({size} bytes, limit {cap})"
+                    "This item is too large to preview from the archive (size {size}, limit {cap})"
                 )
             }
             Self::DestinationInsideArchive => write!(f, "Can't save into an archive"),
