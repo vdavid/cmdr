@@ -458,4 +458,6 @@ AppKit + SystemSettings, 2026-06-21).
   se ha podido crear la carpeta"); "la creará" agrees with fem. "carpeta"; "durante la copia" / "durante el movimiento"
   reuse the settled copy→Copia / move→Movimiento nouns (transfer-toast pattern). Two literal sentences, no ICU select,
   per the op-specific keys · high
-- **queue.row.label progress arms (rename / create folder / create file)** · `Renombrando` / `Creando carpeta` / `Creando archivo` · gerund progress style of the sibling arms; Nautilus ("Renombrando", "Creando"), settled `carpeta`/`archivo` · high
+- **queue.row.label progress arms (rename / create folder / create file)** · `Renombrando` / `Creando carpeta` /
+  `Creando archivo` · gerund progress style of the sibling arms; Nautilus ("Renombrando", "Creando"), settled
+  `carpeta`/`archivo` · high

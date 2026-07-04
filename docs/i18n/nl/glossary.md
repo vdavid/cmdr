@@ -572,4 +572,6 @@ From the dialog-polish pass (4 new `fileOperations` keys; mined `_ignored/i18n/n
   tijdens het {kopiëren/verplaatsen}." · negative of macOS Finder "bestaat al" (→"bestaat nog niet"); "hem" pronoun for
   de-word "map" (cf. in-file "Vind hem in de overdrachtswachtrij"); operation verb "het kopiëren"/"het verplaatsen"
   matches in-file scanTitle/scanPhase usage. No ICU apostrophe needed (Dutch has none) · high
-- **queue.row.label progress arms (rename / create folder / create file)** · `Bezig met hernoemen` / `Bezig met map aanmaken` / `Bezig met bestand aanmaken` · "Bezig met [infinitief]" style of the sibling arms; Nautilus ("hernoemen", "aanmaken"), settled `map`/`bestand` · high
+- **queue.row.label progress arms (rename / create folder / create file)** · `Bezig met hernoemen` /
+  `Bezig met map aanmaken` / `Bezig met bestand aanmaken` · "Bezig met [infinitief]" style of the sibling arms; Nautilus
+  ("hernoemen", "aanmaken"), settled `map`/`bestand` · high

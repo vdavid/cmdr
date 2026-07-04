@@ -472,4 +472,7 @@ macOS Finder zh-CN Tier 1 (`PE4.5` = the same "too large for the volume's format
   `Cmdr 会在移动时自动创建它` · `创建` reused from this file''s `创建文件夹` (mkdir); `拷贝`/`移动` settled verbs;
   `自动` carries the "automatically" reassurance from the @key description; brand `Cmdr` kept verbatim with surrounding
   space · `high`
-- **queue.row.label progress arms (rename / create folder / create file)** · `正在重命名` / `正在创建文件夹` / `正在创建文件` · "正在[动词]" style of the sibling arms (正在拷贝/移动); reuses settled `重命名` and `创建` (创建文件夹 from mkdir); macOS uses 创建 as the create verb ("未能创建文件夹") while 新建文件夹 is the menu label · high
+- **queue.row.label progress arms (rename / create folder / create file)** · `正在重命名` / `正在创建文件夹` /
+  `正在创建文件` · "正在[动词]" style of the sibling arms (正在拷贝/移动); reuses settled `重命名` and `创建`
+  (创建文件夹 from mkdir); macOS uses 创建 as the create verb ("未能创建文件夹") while 新建文件夹 is the menu label ·
+  high

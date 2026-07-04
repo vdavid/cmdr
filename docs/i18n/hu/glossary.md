@@ -488,4 +488,6 @@ Settled while translating the destination-will-be-created warning keys (`fileOpe
   `move → áthelyezés`, `create → létrehoz` (`létrehozza` = definite conj., the "it" object folded in) · high. Two
   literal sentences per the en `@key` note (operation-specific verb, no ICU select). Brand `A Cmdr` bare as subject
   (consonant onset → article `a`).
-- **queue.row.label progress arms (rename / create folder / create file)** · `Átnevezés` / `Mappa létrehozása` / `Fájl létrehozása` · verbal-noun style of the sibling arms (Másolás, Áthelyezés); Nautilus ("átnevezése", "… létrehozása"), reuses settled `rename → átnevezés`, `create → létrehoz`, `mappa`/`fájl` · high
+- **queue.row.label progress arms (rename / create folder / create file)** · `Átnevezés` / `Mappa létrehozása` /
+  `Fájl létrehozása` · verbal-noun style of the sibling arms (Másolás, Áthelyezés); Nautilus ("átnevezése", "…
+  létrehozása"), reuses settled `rename → átnevezés`, `create → létrehoz`, `mappa`/`fájl` · high
