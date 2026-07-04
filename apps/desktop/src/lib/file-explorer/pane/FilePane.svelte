@@ -104,13 +104,11 @@
     import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
     import { getPaneTintBg, getPaneTintName } from './volume-tint.svelte'
     import * as benchmark from '$lib/benchmark'
-    import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
-    import { computeSearchPaneKeyAction } from './search-results-keys'
+    import { createCursorNavKeys } from './cursor-nav-keys'
+    import { createSearchPaneKeys } from './search-pane-keys'
     import { computeHasParent } from './has-parent'
     import { firstSelectedIndex } from './first-selected-index'
     import { capabilitiesFor } from './volume-capabilities'
-    import { openFileViewer } from '$lib/file-viewer/open-viewer'
-    import { openInEditor } from '$lib/tauri-commands'
     import { resolveValidPath } from '../navigation/path-resolution'
     import { isVolumeEjectable } from '../navigation/eject-predicate'
     import { homeDir } from '@tauri-apps/api/path'
@@ -771,7 +769,7 @@
         selection.toggleAt(cursorIndex, hasParent)
         if (cursorIndex < effectiveTotalCount - 1) {
             const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-            applyNavigation(cursorIndex + 1, listRef, false)
+            cursorNav.applyNavigation(cursorIndex + 1, listRef, false)
         }
     }
 
@@ -1798,88 +1796,23 @@
         onNetworkHostChange?.(host)
     }
 
-    // Helper: Handle navigation result by updating cursor index and scrolling.
-    // On Shift+nav: toggle-and-fill keyboard selection. `overflow` (intended
-    // jump > actual jump because of a list boundary) decides whether the
-    // landing item is included in the range fill.
-    function applyNavigation(
-        newIndex: number,
-        listRef: { scrollToIndex: (index: number) => void } | undefined,
-        shiftKey = false,
-        overflow = false,
-    ) {
-        if (shiftKey) {
-            selection.handleShiftKeyboardNavigation(cursorIndex, newIndex, overflow, hasParent)
-        }
-        cursorIndex = newIndex
-        listRef?.scrollToIndex(newIndex)
-        // fetchEntryUnderCursor is handled by the $effect tracking cursorIndex
-    }
-
-    /**
-     * `⌘←` / `⌘→` belong to "Copy path between panes" (document-level dispatch).
-     * Bail so the local pane handlers don't also move the cursor when those
-     * shortcuts fire. Other modifier + arrow combos keep their existing behavior.
-     */
-    function isShortcutModifierArrow(e: KeyboardEvent): boolean {
-        if (!e.metaKey) return false
-        return e.key === 'ArrowLeft' || e.key === 'ArrowRight'
-    }
-
-    // Helper: Handle brief mode key navigation
-    function handleBriefModeKeys(e: KeyboardEvent): boolean {
-        if (isShortcutModifierArrow(e)) return false
-        const result = briefListRef?.handleKeyNavigation?.(e.key, e)
-        if (result !== undefined) {
-            e.preventDefault()
-            applyNavigation(result.newIndex, briefListRef, e.shiftKey, result.overflow)
-            return true
-        }
-        return false
-    }
-
-    // Helper: Handle full mode key navigation
-    function handleFullModeKeys(e: KeyboardEvent): boolean {
-        if (isShortcutModifierArrow(e)) return false
-        const visibleItems: number = fullListRef?.getVisibleItemsCount?.() ?? 20
-        const shortcutResult = handleNavigationShortcut(e, {
-            currentIndex: cursorIndex,
-            totalCount: effectiveTotalCount,
-            visibleItems,
-        })
-        if (shortcutResult) {
-            e.preventDefault()
-            applyNavigation(shortcutResult.newIndex, fullListRef, e.shiftKey, shortcutResult.overflow)
-            return true
-        }
-
-        // Handle arrow navigation. Overflow = the step was clamped at a boundary.
-        if (e.key === 'ArrowDown') {
-            e.preventDefault()
-            const newIndex = Math.min(cursorIndex + 1, effectiveTotalCount - 1)
-            applyNavigation(newIndex, fullListRef, e.shiftKey, newIndex === cursorIndex)
-            return true
-        }
-        if (e.key === 'ArrowUp') {
-            e.preventDefault()
-            const newIndex = Math.max(cursorIndex - 1, 0)
-            applyNavigation(newIndex, fullListRef, e.shiftKey, newIndex === cursorIndex)
-            return true
-        }
-        // Left/Right arrows jump to first/last (same as Brief mode at boundaries).
-        // These always overflow: intended distance = infinity.
-        if (e.key === 'ArrowLeft') {
-            e.preventDefault()
-            applyNavigation(0, fullListRef, e.shiftKey, true)
-            return true
-        }
-        if (e.key === 'ArrowRight') {
-            e.preventDefault()
-            applyNavigation(effectiveTotalCount - 1, fullListRef, e.shiftKey, true)
-            return true
-        }
-        return false
-    }
+    // Cursor movement for the Brief/Full list views (arrows, Page/Home/End,
+    // Shift-extend). The per-view step math lives in `../navigation/keyboard-shortcuts`
+    // and the list components; this factory is the glue turning a keystroke into a
+    // cursor move + scroll + selection fill. `applyNavigation` stays reachable for
+    // `toggleSelectionAndMoveDownAtCursor`.
+    const cursorNav = createCursorNavKeys({
+        getCursorIndex: () => cursorIndex,
+        applyCursor: (index: number) => {
+            cursorIndex = index
+        },
+        extendSelection: (fromIndex, toIndex, overflow, parent) =>
+            { selection.handleShiftKeyboardNavigation(fromIndex, toIndex, overflow, parent); },
+        getHasParent: () => hasParent,
+        getEffectiveTotalCount: () => effectiveTotalCount,
+        getBriefListRef: () => briefListRef,
+        getFullListRef: () => fullListRef,
+    })
 
     /**
      * Bare `+` / `-` open the Selection dialog. Dispatch lives at the FilePane
@@ -1974,85 +1907,21 @@
         await handleNavigate(entry)
     }
 
-    /**
-     * Keyboard handler for the search-results pane. Routes the keydown through the pure
-     * `computeSearchPaneKeyAction` helper (see `search-results-keys.ts`) and then mutates
-     * pane state for whichever action it returns. Splitting the dispatch from the side
-     * effects keeps the keyboard contract unit-testable without spinning up `FilePane`.
-     *
-     * Key coverage: PgUp / PgDn, Home / End, Left / Right (intentional no-op),
-     * Space, ⇧Up / ⇧Dn, F3 / F4.
-     *
-     * The snapshot pane has no `..` row, so the selection helpers run with
-     * `hasParent = false`. Cmd+A keeps flowing through the unified command
-     * dispatch (see `command-dispatch.ts`).
-     */
-    /**
-     * Hand the cursor's file to the in-app viewer (F3) or the default editor (F4). Used for
-     * the snapshot pane only — directories are no-ops here.
-     */
-    function openSnapshotFileWith(kind: 'viewer' | 'editor'): void {
-        const entry = searchSnapshot?.entries[cursorIndex]
-        if (!entry || entry.isDirectory) return
-        if (kind === 'viewer') {
-            void openFileViewer(entry.path)
-        } else {
-            void openInEditor(entry.path)
-        }
-    }
-
-    /** Apply a `move-cursor` action from the search-pane key dispatcher. */
-    function applySearchPaneMove(index: number, overflow: boolean, shiftKey: boolean): void {
-        if (shiftKey) {
-            // Extend selection across the jump via the same toggle-and-fill helper
-            // the regular pane uses. `hasParent = false` because the snapshot pane never
-            // carries a synthetic `..` row.
-            selection.handleShiftKeyboardNavigation(cursorIndex, index, overflow, false)
-        }
-        void setCursorIndex(index)
-    }
-
-    function handleSearchResultsKeyDown(e: KeyboardEvent): void {
-        const visibleItems: number = fullListRef?.getVisibleItemsCount?.() ?? 20
-        const action = computeSearchPaneKeyAction(e, {
-            cursorIndex,
-            count: searchResultsCount,
-            visibleItems,
-        })
-        if (action === null) return
-
-        // Every action below "handles" the key. Prevent default + stop propagation so the
-        // outer document-level dispatch doesn't double-fire (notably Space, which the global
-        // selection.toggle case in `command-dispatch.ts` also listens for).
-        e.preventDefault()
-        e.stopPropagation()
-
-        switch (action.kind) {
-            case 'noop':
-                return
-            case 'open-cursor':
-                void openCursorItem()
-                return
-            case 'view-file':
-                openSnapshotFileWith('viewer')
-                return
-            case 'edit-file':
-                openSnapshotFileWith('editor')
-                return
-            case 'toggle-selection-at-cursor':
-                if (searchResultsCount > 0) selection.toggleAt(cursorIndex, false)
-                return
-            case 'toggle-selection-and-advance':
-                if (searchResultsCount > 0) {
-                    selection.toggleAt(cursorIndex, false)
-                    void setCursorIndex(Math.min(cursorIndex + 1, Math.max(0, searchResultsCount - 1)))
-                }
-                return
-            case 'move-cursor':
-                applySearchPaneMove(action.index, action.overflow, action.shiftKey)
-                return
-        }
-    }
+    // Search-results pane keyboard: the pure `computeSearchPaneKeyAction` dispatch
+    // stays in `search-results-keys.ts`; the side-effect wiring (view/edit-file,
+    // toggle, move + shift-extend) lives in `search-pane-keys.ts`. The snapshot
+    // pane has no `..` row, so selection runs with `hasParent = false`.
+    const searchPaneKeys = createSearchPaneKeys({
+        getCursorIndex: () => cursorIndex,
+        setCursorIndex: (index: number) => void setCursorIndex(index),
+        getSearchResultsCount: () => searchResultsCount,
+        getVisibleItemsCount: () => fullListRef?.getVisibleItemsCount?.() ?? 20,
+        getSnapshotEntryAt: (index: number) => searchSnapshot?.entries[index],
+        extendSelection: (fromIndex, toIndex, overflow) =>
+            { selection.handleShiftKeyboardNavigation(fromIndex, toIndex, overflow, false); },
+        toggleSelectionAt: (index: number) => selection.toggleAt(index, false),
+        openCursorItem: () => void openCursorItem(),
+    })
 
     /**
      * Open / parent keys, view-independent (handled before the Brief/Full split).
@@ -2117,7 +1986,7 @@
         // owns its own bind ref; FilePane's `fullListRef` doesn't apply here. The
         // cursor state itself still lives on `cursorIndex` so we can clamp uniformly.
         if (isSearchResultsView) {
-            handleSearchResultsKeyDown(e)
+            searchPaneKeys.handleSearchResultsKeyDown(e)
             return
         }
 
@@ -2133,9 +2002,9 @@
 
         // Delegate to view-mode-specific handler
         if (viewMode === 'brief') {
-            handleBriefModeKeys(e)
+            cursorNav.handleBriefModeKeys(e)
         } else {
-            handleFullModeKeys(e)
+            cursorNav.handleFullModeKeys(e)
         }
     }
 
