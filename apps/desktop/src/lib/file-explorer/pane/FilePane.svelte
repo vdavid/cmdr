@@ -94,6 +94,9 @@
     import { computeHasParent } from './has-parent'
     import { firstSelectedIndex } from './first-selected-index'
     import { capabilitiesForPane, pathInsideArchive } from './volume-capabilities'
+    import { resolveEnterPolicy, parseEnterBehaviorOverrides } from './archive-enter-policy'
+    import { createEnterMenu } from './enter-menu.svelte'
+    import Menu from '$lib/ui/Menu.svelte'
     import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { resolveValidPath } from '../navigation/path-resolution'
     import { isVolumeEjectable } from '../navigation/eject-predicate'
@@ -336,6 +339,17 @@
     let volumeBreadcrumbRef: VolumeBreadcrumbAPI | undefined = $state()
     let networkMountViewRef: NetworkMountViewAPI | undefined = $state()
     let searchResultsViewRef: SearchResultsViewAPI | undefined = $state()
+    // The pane's root element, so the Enter-behavior popup can anchor at the cursor row.
+    let paneEl: HTMLElement | undefined = $state()
+
+    // The Browse | Open | Configure popup shown when an archive/bundle set to Ask is
+    // opened. Rendered near the pane root; opened from `handleNavigate`.
+    const enterMenu = createEnterMenu({
+        getPaneElement: () => paneEl ?? null,
+        browse: (entry) => void browseIntoEntry(entry),
+        open: (entry) => void openEntryExternally(entry),
+        restoreFocus: () => onRequestFocus?.(),
+    })
 
     /**
      * This pane's volume capabilities, the single A6 source of truth for "what
@@ -1389,11 +1403,37 @@
             await loader.loadDirectory(entry.redirectToPath)
             return
         }
+        // Enter-behavior policy for archives (`.zip`) and macOS bundles (`.app`
+        // etc.). Skipped for items already INSIDE an archive — those keep the viewer
+        // interim below. `browse` falls through to the folder-browse arm; `open`
+        // launches; `ask` shows the Browse | Open | Configure popup.
+        if (!pathInsideArchive(entry.path)) {
+            const action = resolveEnterPolicy(
+                entry,
+                parseEnterBehaviorOverrides(getSetting('behavior.archiveEnterBehavior')),
+            )
+            if (action) {
+                // From search results, opening any real entry must switch to its real
+                // volume first (no popup on the snapshot pane — mirrors the arms below).
+                if (isSearchResultsView) {
+                    await goToRealEntry(entry.path)
+                    return
+                }
+                if (action === 'ask') {
+                    enterMenu.openFor(entry, action)
+                    return
+                }
+                if (action === 'open') {
+                    await openEntryExternally(entry)
+                    return
+                }
+                // action === 'browse': fall through to the folder-browse arm.
+            }
+        }
         // An archive file (`.zip`) browses like a folder: Enter navigates INTO it,
         // same-volume in-place (the tab keeps the parent-drive id; the backend
         // `resolve` routes the `…/foo.zip/…` path to the read-only ArchiveVolume).
         // `isDirectory` stays false on an archive, so it's an explicit second arm.
-        // Entering is direct for now; the Browse | Open | Ask menu comes later.
         if (entry.isDirectory || entry.isArchive) {
             // Same as the redirect branch: a real directory opened from the
             // search-results rows switches to its real volume first.
@@ -1401,13 +1441,7 @@
                 await goToRealEntry(entry.path)
                 return
             }
-            // When navigating to parent (..), remember current folder name to select it
-            const isGoingUp = entry.name === '..'
-            const currentFolderName = isGoingUp && canonicalPath ? basenameOf(canonicalPath) : undefined
-
-            currentPath = entry.path
-            // Note: onPathChange is called in listing-complete handler after successful load
-            await loader.loadDirectory(entry.path, currentFolderName)
+            await browseIntoEntry(entry)
         } else if (pathInsideArchive(entry.path)) {
             // A file INSIDE an archive can't be opened by the OS default app: the
             // inner path doesn't exist on disk, so `openFile` is a silent no-op.
@@ -1415,12 +1449,32 @@
             // interim until the Enter-behavior milestone adds extract-then-open.
             void openFileViewer(entry.path)
         } else {
-            // Open file with default application
-            try {
-                await openFile(entry.path)
-            } catch {
-                // Silently fail - file open errors are expected sometimes
-            }
+            await openEntryExternally(entry)
+        }
+    }
+
+    /**
+     * Step into a folder / archive / bundle: commit the path and load its listing.
+     * When going up (`..`), remember the folder we came from so it lands selected.
+     * The archive/bundle browse arms and the Enter popup's Browse choice share this.
+     */
+    async function browseIntoEntry(entry: FileEntry): Promise<void> {
+        const isGoingUp = entry.name === '..'
+        const currentFolderName = isGoingUp && canonicalPath ? basenameOf(canonicalPath) : undefined
+        currentPath = entry.path
+        // Note: onPathChange is called in the listing-complete handler after a successful load.
+        await loader.loadDirectory(entry.path, currentFolderName)
+    }
+
+    /**
+     * Hand an entry to its default app via LaunchServices: a `.zip` opens in the OS
+     * archive tool, a `.app`/`.bundle` launches, any other file opens normally.
+     */
+    async function openEntryExternally(entry: FileEntry): Promise<void> {
+        try {
+            await openFile(entry.path)
+        } catch {
+            // Silently fail - file open errors are expected sometimes
         }
     }
 
@@ -2127,6 +2181,7 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
+    bind:this={paneEl}
     class="file-pane"
     class:is-focused={isFocused}
     onclick={handlePaneClick}
@@ -2360,6 +2415,19 @@
         {/if}
     {/if}
 </div>
+
+<!-- Enter-behavior popup (archive/bundle set to Ask). Portaled to body so the
+     explorer's focus guard doesn't yank focus off the `role="menu"`. -->
+<Menu
+    open={enterMenu.open}
+    onOpenChange={enterMenu.onOpenChange}
+    onSelect={enterMenu.onSelect}
+    items={enterMenu.items}
+    anchorPoint={enterMenu.anchorPoint}
+    defaultHighlightedValue={enterMenu.highlight}
+    ariaLabel={tString('fileExplorer.archiveEnterMenu.ariaLabel')}
+    portal
+/>
 
 {#if renameFlow.extensionDialogState}
     <ExtensionChangeDialog

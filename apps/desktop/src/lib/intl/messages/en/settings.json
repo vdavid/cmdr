@@ -462,6 +462,51 @@
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
 
+  "settings.archives.enterBehavior.label": "Opening archives and bundles",
+  "@settings.archives.enterBehavior.label": {
+    "description": "Search label for the Behavior > Archives settings section, which sets what pressing Enter does on an archive or a macOS app bundle. \"Enter\" is the Return/Enter key; do not translate the key name if your language keeps it in English."
+  },
+  "settings.archives.enterBehavior.description": "Choose what pressing Enter does for each format: browse inside it like a folder, open it in another app, or ask each time.",
+  "@settings.archives.enterBehavior.description": {
+    "description": "Search help text for the Behavior > Archives section. \"Enter\" is the Return/Enter key."
+  },
+  "settings.archives.card.archives": "Archives",
+  "@settings.archives.card.archives": {
+    "description": "Card title in Settings > Behavior > Archives, grouping the archive formats Cmdr can browse into (zip today). \"Cmdr\" is the product name; do not translate it."
+  },
+  "settings.archives.card.bundles": "App bundles",
+  "@settings.archives.card.bundles": {
+    "description": "Card title in Settings > Behavior > Archives, grouping macOS app bundles (.app, .bundle, .framework) — folders macOS presents as a single item."
+  },
+  "settings.archives.zip.label": "Zip archives",
+  "@settings.archives.zip.label": {
+    "description": "Row label in Settings > Behavior > Archives for the .zip format. \".zip\" is a file extension; do not translate it."
+  },
+  "settings.archives.zip.description": "What pressing Enter does on a zip file.",
+  "@settings.archives.zip.description": {
+    "description": "Help text under the zip row in Settings > Behavior > Archives. \"Enter\" is the Return/Enter key."
+  },
+  "settings.archives.bundle.label": "App bundles",
+  "@settings.archives.bundle.label": {
+    "description": "Row label in Settings > Behavior > Archives for macOS app bundles (.app, .bundle, .framework)."
+  },
+  "settings.archives.bundle.description": "What pressing Enter does on a .app, .bundle, or .framework.",
+  "@settings.archives.bundle.description": {
+    "description": "Help text under the app-bundles row in Settings > Behavior > Archives. \".app\", \".bundle\", and \".framework\" are file extensions; do not translate them. \"Enter\" is the Return/Enter key."
+  },
+  "settings.archives.opt.browse": "Browse",
+  "@settings.archives.opt.browse": {
+    "description": "Toggle option in Settings > Behavior > Archives: pressing Enter steps inside the archive or bundle like a folder. Keep it short (one segmented-control cell)."
+  },
+  "settings.archives.opt.open": "Open",
+  "@settings.archives.opt.open": {
+    "description": "Toggle option in Settings > Behavior > Archives: pressing Enter opens the archive or bundle in its default app instead of browsing it. Keep it short (one segmented-control cell)."
+  },
+  "settings.archives.opt.ask": "Ask",
+  "@settings.archives.opt.ask": {
+    "description": "Toggle option in Settings > Behavior > Archives: pressing Enter shows a small popup asking whether to browse or open. Keep it short (one segmented-control cell)."
+  },
+
   "settings.indexing.enabled.label": "Drive indexing",
   "@settings.indexing.enabled.label": {
     "description": "Label for the background drive-indexing toggle. In Settings > Behavior > File system watching.",
@@ -1326,6 +1371,10 @@
     "description": "Heading of the File operations card (copy, move, rename, delete settings) in Settings > Behavior > Navigation & file ops.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.section.archives": "Archives",
+  "@settings.section.archives": {
+    "description": "Settings subsection title under Behavior: Archives. Covers what pressing Enter does on archive files and macOS app bundles. Sidebar and page heading."
+  },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Double-click the pane background to go up a folder",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "description": "Label of the switch that controls whether double-clicking the empty background of a file pane goes up one folder (to the parent folder). \"pane\" = one of the two file-list columns; \"go up a folder\" = navigate to the parent folder.",
@@ -1439,6 +1488,10 @@
   "settings.summary.navigationAndFileOps": "Double-click-to-parent navigation, and behavior when renaming files.",
   "@settings.summary.navigationAndFileOps": {
     "description": "One-line summary shown under the \"Navigation & file ops\" subsection heading. \"extension\" = a filename's dotted suffix; \"parent\" = the folder one level up."
+  },
+  "settings.summary.archives": "What pressing Enter does on archives and app bundles: browse inside, open, or ask.",
+  "@settings.summary.archives": {
+    "description": "One-line summary shown under the \"Archives\" subsection heading. \"Enter\" is the Return/Enter key; \"app bundles\" are macOS .app/.bundle/.framework folders."
   },
   "settings.summary.fileSystemWatching": "Drive indexing, Downloads notifications, and the global go-to-latest-download shortcut. Needs Full Disk Access.",
   "@settings.summary.fileSystemWatching": {

@@ -241,6 +241,9 @@ export interface SettingsValues {
   'behavior.doubleClickPaneNavigatesToParent': boolean
   'behavior.doubleClickOnPaneNotificationSeen': boolean
 
+  // Archives (Enter behavior per format: pinned-shape JSON, `{ zip: 'ask', … }`)
+  'behavior.archiveEnterBehavior': string
+
   // File operations
   'fileOperations.mtpEnabled': boolean
   'fileOperations.mtpConnectionWarning': boolean

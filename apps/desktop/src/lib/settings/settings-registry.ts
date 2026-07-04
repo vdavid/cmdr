@@ -544,6 +544,25 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   },
 
   // ========================================================================
+  // Behavior › Archives
+  // Per-format Enter behavior (Browse | Open | Ask) for archives and macOS
+  // bundles. Stored as a pinned-shape JSON object keyed by format
+  // (`{ zip: 'ask', bundle: 'ask' }`); parsed and rendered by the custom
+  // `ArchivesSection`. FE-owned: read at Enter time, applies with no restart or
+  // backend round-trip.
+  // ========================================================================
+  {
+    id: 'behavior.archiveEnterBehavior',
+    section: ['Behavior', 'Archives'],
+    labelKey: 'settings.archives.enterBehavior.label',
+    descriptionKey: 'settings.archives.enterBehavior.description',
+    keywords: ['archive', 'zip', 'bundle', 'app', 'browse', 'open', 'extract', 'enter', 'launch'],
+    type: 'string',
+    default: '{}',
+    component: 'text-input',
+  },
+
+  // ========================================================================
   // Behavior › File system watching
   // (formerly "Drive indexing"; renamed so the indexer and the downloads
   // watcher both live under one umbrella that shares the FDA gate)

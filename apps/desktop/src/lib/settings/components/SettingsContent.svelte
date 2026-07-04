@@ -4,6 +4,7 @@
     import AppearanceSizesSection from '$lib/settings/sections/AppearanceSizesSection.svelte'
     import ListingSection from '$lib/settings/sections/ListingSection.svelte'
     import NavigationAndFileOpsSection from '$lib/settings/sections/NavigationAndFileOpsSection.svelte'
+    import ArchivesSection from '$lib/settings/sections/ArchivesSection.svelte'
     import FileSystemWatchingSection from '$lib/settings/sections/FileSystemWatchingSection.svelte'
     import SearchSection from '$lib/settings/sections/SearchSection.svelte'
     import AiSection from '$lib/settings/sections/AiSection.svelte'
@@ -102,6 +103,11 @@
         {#if shouldShowSection(['Behavior', 'Navigation & file ops'])}
             <section data-section-id="behavior-navigation-and-file-ops">
                 <NavigationAndFileOpsSection {searchQuery} />
+            </section>
+        {/if}
+        {#if shouldShowSection(['Behavior', 'Archives'])}
+            <section data-section-id="behavior-archives">
+                <ArchivesSection {searchQuery} />
             </section>
         {/if}
         {#if shouldShowSection(['Behavior', 'File system watching'])}

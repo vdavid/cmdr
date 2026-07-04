@@ -25,6 +25,7 @@ const SECTION_TITLE_KEY: Partial<Record<string, MessageKey>> = {
   Listing: 'settings.section.listing',
   Behavior: 'settings.section.behavior',
   'Navigation & file ops': 'settings.section.navigationAndFileOps',
+  Archives: 'settings.section.archives',
   'File system watching': 'settings.section.fileSystemWatching',
   Search: 'settings.section.search',
   AI: 'settings.section.ai',

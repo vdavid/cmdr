@@ -26,6 +26,7 @@
         'File and folder sizes': 'settings.summary.fileAndFolderSizes',
         Listing: 'settings.summary.listing',
         'Navigation & file ops': 'settings.summary.navigationAndFileOps',
+        Archives: 'settings.summary.archives',
         'File system watching': 'settings.summary.fileSystemWatching',
         Search: 'settings.summary.search',
         'SMB/Network shares': 'settings.summary.smbNetworkShares',

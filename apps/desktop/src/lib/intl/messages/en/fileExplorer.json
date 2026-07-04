@@ -1,4 +1,20 @@
 {
+  "fileExplorer.archiveEnterMenu.ariaLabel": "Open archive or bundle",
+  "@fileExplorer.archiveEnterMenu.ariaLabel": {
+    "description": "Accessible name for the popup menu that appears when the user presses Enter on an archive or app bundle set to \"Ask\". The menu offers browse, open, or configure."
+  },
+  "fileExplorer.archiveEnterMenu.browse": "Browse like a folder",
+  "@fileExplorer.archiveEnterMenu.browse": {
+    "description": "Menu item: step inside the archive or bundle and list its contents like a normal folder."
+  },
+  "fileExplorer.archiveEnterMenu.open": "Open with default app",
+  "@fileExplorer.archiveEnterMenu.open": {
+    "description": "Menu item: hand the archive or bundle to its default app instead of browsing it (a .zip opens in the OS archive tool; a .app launches)."
+  },
+  "fileExplorer.archiveEnterMenu.configure": "Configure…",
+  "@fileExplorer.archiveEnterMenu.configure": {
+    "description": "Menu item: open Settings to change what pressing Enter does for this format. The trailing ellipsis (…) signals that a settings window opens; keep it."
+  },
   "fileExplorer.breadcrumb.navigateTooltip": "Click to navigate to {path}",
   "@fileExplorer.breadcrumb.navigateTooltip": {
     "description": "Tooltip on a clickable path segment in a pane's breadcrumb. Clicking the segment opens that ancestor folder.",
