@@ -64,6 +64,22 @@
         placement: 'bottom-start' as const,
         gutter: 2,
     }
+
+    // Opened programmatically (controlled `open` + `anchorPoint`, no trigger to hand
+    // focus over), so focus the content ourselves once Ark has rendered it —
+    // otherwise keyboard navigation (arrows / Enter / Escape) never reaches the menu
+    // and it's mouse-only. rAF waits for the content to mount and position after open.
+    // Query by class rather than `bind:ref` (Ark's ref typing trips the lint's
+    // flow analysis); only one menu is open at a time, so the selector is unambiguous.
+    $effect(() => {
+        if (!open) return
+        const raf = requestAnimationFrame(() => {
+            document.querySelector<HTMLElement>('.menu-content')?.focus()
+        })
+        return () => {
+            cancelAnimationFrame(raf)
+        }
+    })
 </script>
 
 <Menu.Root

@@ -2,13 +2,16 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { createEnterMenu } from './enter-menu.svelte'
 import type { FileEntry } from '$lib/file-explorer/types'
 
-const openSettingsWindow = vi.fn(() => Promise.resolve())
+const { openSettingsWindowMock } = vi.hoisted(() => ({
+  openSettingsWindowMock: vi.fn<(section?: string[]) => Promise<void>>(),
+}))
 vi.mock('$lib/settings/settings-window', () => ({
-  openSettingsWindow: (...args: unknown[]) => openSettingsWindow(...args),
+  openSettingsWindow: openSettingsWindowMock,
 }))
 
 function makeEntry(name: string, isArchive = true): FileEntry {
-  return { name, path: `/left/${name}`, isDirectory: false, isSymlink: false, isArchive }
+  // Only name/isDirectory/isArchive are read; a partial cast keeps the test focused.
+  return { name, path: `/left/${name}`, isDirectory: false, isSymlink: false, isArchive } as unknown as FileEntry
 }
 
 function makeDeps() {
@@ -22,7 +25,7 @@ function makeDeps() {
 
 describe('createEnterMenu', () => {
   beforeEach(() => {
-    openSettingsWindow.mockClear()
+    openSettingsWindowMock.mockClear()
   })
 
   it('starts closed', () => {
@@ -60,7 +63,7 @@ describe('createEnterMenu', () => {
     const menu = createEnterMenu(makeDeps())
     menu.openFor(makeEntry('a.zip'), 'ask')
     menu.onSelect('configure')
-    expect(openSettingsWindow).toHaveBeenCalledWith(['Behavior', 'Archives'])
+    expect(openSettingsWindowMock).toHaveBeenCalledWith(['Behavior', 'Archives'])
   })
 
   it('onOpenChange(false) restores focus to the pane', () => {

@@ -125,15 +125,6 @@ async function clearOpenedPaths(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('e2e_clear_opened_paths')`)
 }
 
-/** Clicks the Enter-menu row whose visible label contains `substring`. */
-async function clickEnterMenuItem(tauriPage: PageLike, substring: string): Promise<void> {
-  await tauriPage.evaluate(`(function(){
-      var items = Array.from(document.querySelectorAll('${ENTER_MENU} .menu-item'));
-      var match = items.find(function(el){ return (el.textContent || '').indexOf(${JSON.stringify(substring)}) !== -1; });
-      if (match) match.click();
-  })()`)
-}
-
 test.describe('Archive browsing', () => {
   // These tests browse INTO archives directly, so force the zip Enter behavior to
   // Browse (the default is Ask, which would pop the menu instead — that flow is
@@ -370,8 +361,8 @@ test.describe('Archive Enter-behavior menu', () => {
     await tauriPage.waitForSelector(ENTER_MENU, 5000)
     expect(await getFocusedPaneActiveTabPath()).toBe(`${getFixtureRoot()}/left`)
 
-    // Browse steps inside the archive like a folder.
-    await clickEnterMenuItem(tauriPage, 'Browse')
+    // Browse is highlighted on open, so Enter picks it and steps inside.
+    await tauriPage.keyboard.press('Enter')
     await expect.poll(async () => !(await tauriPage.isVisible(ENTER_MENU)), { timeout: 3000 }).toBeTruthy()
     await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(zipPath)
     await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
@@ -421,7 +412,10 @@ test.describe('Archive Enter-behavior menu', () => {
 
     await enterEntry(tauriPage, 'sample.zip')
     await tauriPage.waitForSelector(ENTER_MENU, 5000)
-    await clickEnterMenuItem(tauriPage, 'Configure')
+    // Browse → Open → Configure: two Downs land on Configure, Enter selects it.
+    await tauriPage.keyboard.press('ArrowDown')
+    await tauriPage.keyboard.press('ArrowDown')
+    await tauriPage.keyboard.press('Enter')
 
     // The settings window (label `settings`) opens, deep-linked to Behavior > Archives.
     const settings = await main.waitForWindow((w) => w.label === 'settings', { timeout: 10000 })
