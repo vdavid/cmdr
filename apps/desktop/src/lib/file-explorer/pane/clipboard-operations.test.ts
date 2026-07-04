@@ -191,6 +191,20 @@ describe('copyToClipboard', () => {
     expect(copyFilesToClipboardSpy).not.toHaveBeenCalled()
     expect(addToastSpy).not.toHaveBeenCalled()
   })
+
+  it('refuses copy inside an archive (writable parent) and points at F5/F6', async () => {
+    // The pane's volumeId is the writable parent drive; the archive-ness is in the
+    // PATH. Without the archive check ⌘C would push unresolvable archive-inner
+    // paths onto the OS clipboard.
+    const access = buildAccess({ volumeId: 'root', path: '/x/foo.zip/inner' })
+
+    await createClipboardOperations(access, buildDialogs()).copyToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('To copy files out of an archive, use F5 to copy or F6 to move.', {
+      level: 'info',
+    })
+    expect(copyFilesToClipboardSpy).not.toHaveBeenCalled()
+  })
 })
 
 describe('cutToClipboard', () => {
@@ -224,6 +238,17 @@ describe('cutToClipboard', () => {
     expect(cutFilesToClipboardSpy).toHaveBeenCalled()
     expect(addToastSpy).toHaveBeenCalledWith('1 item ready to move. Paste to complete.', { level: 'info' })
   })
+
+  it('refuses cut inside an archive and points at F5/F6', async () => {
+    const access = buildAccess({ volumeId: 'root', path: '/x/foo.zip/inner' })
+
+    await createClipboardOperations(access, buildDialogs()).cutToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('To copy files out of an archive, use F5 to copy or F6 to move.', {
+      level: 'info',
+    })
+    expect(cutFilesToClipboardSpy).not.toHaveBeenCalled()
+  })
 })
 
 describe('pasteFromClipboard', () => {
@@ -233,6 +258,19 @@ describe('pasteFromClipboard', () => {
     await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
 
     expect(addToastSpy).toHaveBeenCalledWith('Use F5 to copy files to MTP devices', { level: 'info' })
+    expect(readClipboardFilesSpy).not.toHaveBeenCalled()
+    expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
+  })
+
+  it('refuses pasting into an archive destination with the archive alert', async () => {
+    const access = buildAccess({ volumeId: 'root', path: '/x/foo.zip/inner' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(dialogsStub.showAlert).toHaveBeenCalledWith(
+      'Archives are read-only',
+      "You can copy files out of an archive, but copying into one isn't possible yet.",
+    )
     expect(readClipboardFilesSpy).not.toHaveBeenCalled()
     expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
   })

@@ -226,6 +226,28 @@ describe('startRename', () => {
 
     expect(startRename).toHaveBeenCalledTimes(1)
   })
+
+  it('refuses inside an archive (writable parent drive) with the archive alert', () => {
+    // The pane's volumeId is the WRITABLE parent drive, so the VolumeInfo.isReadOnly
+    // check passes; the archive-ness comes from the PATH. Without the caps check this
+    // rename would go through.
+    const startRename = vi.fn()
+    const paneRef = buildPaneRef({ startRename })
+    const access = buildAccess({
+      paneRefs: { left: paneRef },
+      volumes: [volume()],
+      paths: { left: '/left/foo.zip/inner' },
+    })
+    const dialogs = buildDialogs()
+
+    create(access, dialogs).startRename()
+
+    expect(dialogs.showAlert).toHaveBeenCalledWith(
+      'Archives are read-only',
+      "Archives are read-only for now. Renaming items inside them isn't possible yet.",
+    )
+    expect(startRename).not.toHaveBeenCalled()
+  })
 })
 
 describe('cancelRename', () => {
@@ -278,6 +300,23 @@ describe('openNewFolderDialog', () => {
     expect(dialogs.showNewFolder).not.toHaveBeenCalled()
   })
 
+  it('refuses inside an archive with the archive alert', async () => {
+    const access = buildAccess({
+      paneRefs: { left: buildPaneRef({ listingId: 'lst-1' }) },
+      volumes: [volume()],
+      paths: { left: '/left/foo.zip' },
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openNewFolderDialog()
+
+    expect(dialogs.showAlert).toHaveBeenCalledWith(
+      'Archives are read-only',
+      "Archives are read-only for now. Creating folders inside them isn't possible yet.",
+    )
+    expect(dialogs.showNewFolder).not.toHaveBeenCalled()
+  })
+
   it('bails when the focused pane has no listing id', async () => {
     const access = buildAccess({ paneRefs: { left: buildPaneRef({ listingId: null }) }, volumes: [volume()] })
     const dialogs = buildDialogs()
@@ -319,6 +358,23 @@ describe('openNewFileDialog', () => {
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
       "This is a read-only volume. Creating files isn't possible here.",
+    )
+    expect(dialogs.showNewFile).not.toHaveBeenCalled()
+  })
+
+  it('refuses inside an archive with the archive alert', async () => {
+    const access = buildAccess({
+      paneRefs: { left: buildPaneRef({ listingId: 'lst-1' }) },
+      volumes: [volume()],
+      paths: { left: '/left/foo.zip' },
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openNewFileDialog()
+
+    expect(dialogs.showAlert).toHaveBeenCalledWith(
+      'Archives are read-only',
+      "Archives are read-only for now. Creating files inside them isn't possible yet.",
     )
     expect(dialogs.showNewFile).not.toHaveBeenCalled()
   })
@@ -441,6 +497,26 @@ describe('openTransferDialog', () => {
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only device',
       '"Pixel SD card" is read-only. You can copy files from it, but not to it.',
+    )
+    expect(dialogs.showTransfer).not.toHaveBeenCalled()
+  })
+
+  it('refuses an archive destination (opposite pane inside a zip) with the archive alert', async () => {
+    // Both panes are on the writable root drive; the opposite pane's PATH crosses a
+    // zip, so pasting INTO it must be refused frontend-side.
+    const access = buildAccess({
+      focusedPane: 'left',
+      volumeIds: { left: 'root', right: 'root' },
+      paths: { left: '/left/dir', right: '/right/foo.zip/inner' },
+      volumes: [volume()],
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openTransferDialog('copy')
+
+    expect(dialogs.showAlert).toHaveBeenCalledWith(
+      'Archives are read-only',
+      "You can copy files out of an archive, but copying into one isn't possible yet.",
     )
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
   })
@@ -587,6 +663,23 @@ describe('openDeleteDialog', () => {
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
       "This is a read-only volume. Deleting files isn't possible here.",
+    )
+    expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
+  })
+
+  it('refuses deleting inside an archive with the archive alert', async () => {
+    const access = buildAccess({
+      paneRefs: { left: buildPaneRef({ listingId: 'lst-1' }) },
+      volumes: [volume()],
+      paths: { left: '/left/foo.zip/inner' },
+    })
+    const dialogs = buildDialogs()
+
+    await create(access, dialogs).openDeleteDialog(false)
+
+    expect(dialogs.showAlert).toHaveBeenCalledWith(
+      'Archives are read-only',
+      "Archives are read-only for now. Deleting items inside them isn't possible yet.",
     )
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })

@@ -100,6 +100,26 @@ describe('checkTransferDestinationGuard', () => {
     const result = checkTransferDestinationGuard('vanished', [ROOT])
     expect(result.ok).toBe(true)
   })
+
+  it('blocks an archive destination (path crosses a zip) with the archive alert', () => {
+    // The dest volumeId is the WRITABLE parent drive, so isReadOnly is false; the
+    // archive-ness comes from the dest PATH. Without the path-aware caps check this
+    // paste would be allowed through.
+    const result = checkTransferDestinationGuard('root', [ROOT], '/Users/me/foo.zip/inner')
+    expect(result.ok).toBe(false)
+    if (result.ok) throw new Error('expected a block')
+    expect(result.alert).toEqual({
+      title: 'Archives are read-only',
+      message: "You can copy files out of an archive, but copying into one isn't possible yet.",
+    })
+    expect(result.toast).toBeUndefined()
+  })
+
+  it('allows a writable local destination even when the path merely contains a zip file name', () => {
+    // The pane is AT `/Users/me` (which contains `foo.zip` as a row), not inside it.
+    const result = checkTransferDestinationGuard('root', [ROOT], '/Users/me')
+    expect(result.ok).toBe(true)
+  })
 })
 
 describe('resolveSourceVolumeId', () => {

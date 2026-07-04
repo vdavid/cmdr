@@ -1122,6 +1122,35 @@
     }
   },
 
+  "fileExplorer.archive.readOnlyTitle": "Archives are read-only",
+  "@fileExplorer.archive.readOnlyTitle": {
+    "description": "Alert dialog title shown when the user tries a write action (rename, create, delete, or paste) inside an archive such as a zip file, which Cmdr can browse and copy out of but not yet change."
+  },
+  "fileExplorer.archive.renameMessage": "Archives are read-only for now. Renaming items inside them isn''t possible yet.",
+  "@fileExplorer.archive.renameMessage": {
+    "description": "Alert body when the user tries to rename an item inside an archive (zip). Editing archives is a planned feature that isn''t available yet."
+  },
+  "fileExplorer.archive.mkdirMessage": "Archives are read-only for now. Creating folders inside them isn''t possible yet.",
+  "@fileExplorer.archive.mkdirMessage": {
+    "description": "Alert body when the user tries to create a folder inside an archive (zip). Editing archives is a planned feature that isn''t available yet."
+  },
+  "fileExplorer.archive.mkfileMessage": "Archives are read-only for now. Creating files inside them isn''t possible yet.",
+  "@fileExplorer.archive.mkfileMessage": {
+    "description": "Alert body when the user tries to create a file inside an archive (zip). Editing archives is a planned feature that isn''t available yet."
+  },
+  "fileExplorer.archive.deleteMessage": "Archives are read-only for now. Deleting items inside them isn''t possible yet.",
+  "@fileExplorer.archive.deleteMessage": {
+    "description": "Alert body when the user tries to delete an item inside an archive (zip). Editing archives is a planned feature that isn''t available yet."
+  },
+  "fileExplorer.archive.pasteMessage": "You can copy files out of an archive, but copying into one isn''t possible yet.",
+  "@fileExplorer.archive.pasteMessage": {
+    "description": "Alert body when the user tries to copy or move files INTO an archive (zip) as the destination. Copying files OUT of an archive works; adding to it is a planned feature that isn''t available yet."
+  },
+  "fileExplorer.archive.useTransferToCopyOut": "To copy files out of an archive, use F5 to copy or F6 to move.",
+  "@fileExplorer.archive.useTransferToCopyOut": {
+    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside an archive. The system clipboard can''t carry archive-inner paths, so it points them at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is."
+  },
+
   "fileExplorer.rename.hiddenAfterRename": "Your file disappeared from view because hidden files aren''t shown.",
   "@fileExplorer.rename.hiddenAfterRename": {
     "description": "Info toast after renaming a file to a name starting with a dot, which hides it because hidden files aren''t currently shown. Reassures the user the file still exists."

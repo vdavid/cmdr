@@ -18,7 +18,7 @@ import { DEFAULT_VOLUME_ID } from '$lib/tauri-commands'
 import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
 import { findVolumeIdForPath } from '../drag/drop-operation'
 import { getCommonParentPath, getDestinationVolumeInfo } from './transfer-operations'
-import { capabilitiesFor } from './volume-capabilities'
+import { capabilitiesForPane } from './volume-capabilities'
 import { tString } from '$lib/intl/messages.svelte'
 import type { PathVolumeResolution } from '$lib/tauri-commands'
 import type { VolumeInfo } from '../types'
@@ -54,18 +54,40 @@ export type TransferGuardResult =
  *    `!canPasteInto` SCOPED to the `search-results` kind so the wording stays
  *    correct (a network destination shares the `false` capability but isn't a
  *    misrendered "not a folder").
- * 2. Read-only destination → refuse with an alert. Read off the destination's
+ * 2. Archive destination → read-only in this phase, refuse with an alert. The
+ *    dest `volumeId` is the WRITABLE parent drive, so the archive-ness comes from
+ *    `destPath` (kind-from-path) — `capabilitiesForPane` is what makes the
+ *    `!canPasteInto` gate fire for a `…/foo.zip/…` destination that would
+ *    otherwise fall through as writable.
+ * 3. Read-only destination → refuse with an alert. Read off the destination's
  *    `VolumeInfo.isReadOnly` (a per-volume runtime flag, not a kind capability).
  *
- * Returns `ok` when neither fires. An unknown destination volume id (no
- * `VolumeInfo`) is allowed through: we can't prove it's read-only, the backend
- * still rejects a genuinely read-only write, and blocking on "unknown" would
- * break legitimate transfers to a freshly-mounted volume.
+ * Returns `ok` when none fire. An unknown destination volume id (no `VolumeInfo`)
+ * is allowed through: we can't prove it's read-only, the backend still rejects a
+ * genuinely read-only write, and blocking on "unknown" would break legitimate
+ * transfers to a freshly-mounted volume.
+ *
+ * `destPath` is the destination pane's current path (needed for the archive
+ * kind-from-path check). It's optional so existing non-archive callers keep
+ * working; omitting it skips only the archive branch.
  */
-export function checkTransferDestinationGuard(destVolumeId: string, volumes: VolumeInfo[]): TransferGuardResult {
-  const destCaps = capabilitiesFor(destVolumeId)
+export function checkTransferDestinationGuard(
+  destVolumeId: string,
+  volumes: VolumeInfo[],
+  destPath?: string,
+): TransferGuardResult {
+  const destCaps = capabilitiesForPane(destVolumeId, destPath)
   if (!destCaps.canPasteInto && destCaps.kind === 'search-results') {
     return { ok: false, toast: { message: SEARCH_RESULTS_NOT_A_FOLDER_TOAST, level: 'warn' } }
+  }
+  if (!destCaps.canPasteInto && destCaps.kind === 'archive') {
+    return {
+      ok: false,
+      alert: {
+        title: tString('fileExplorer.archive.readOnlyTitle'),
+        message: tString('fileExplorer.archive.pasteMessage'),
+      },
+    }
   }
 
   const destVolume = getDestinationVolumeInfo(destVolumeId, volumes)

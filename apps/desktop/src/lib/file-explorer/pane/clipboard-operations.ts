@@ -15,7 +15,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
 import { checkTransferDestinationGuard } from './transfer-entry'
-import { capabilitiesFor } from './volume-capabilities'
+import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
 import type { createDialogState } from './dialog-state.svelte'
 import type { PaneAccess } from './pane-access'
 
@@ -83,8 +83,19 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     const selectedIndices = sourcePaneRef?.getSelectedIndices() ?? []
     const cursorIndex = sourcePaneRef?.getCursorIndex() ?? 0
     const volumeId = access.getPaneVolumeId(access.getFocusedPane())
+    const path = access.getPanePath(access.getFocusedPane())
 
-    return { listingId, hasParent, selectedIndices, cursorIndex, volumeId }
+    return { listingId, hasParent, selectedIndices, cursorIndex, volumeId, path }
+  }
+
+  /**
+   * True when the focused pane is inside an archive (kind-from-path). The system
+   * clipboard can't carry archive-inner paths (they aren't OS-resolvable files),
+   * so ⌘C/⌘X are refused and the user is pointed at F5/F6 extract-out — the same
+   * shape as the MTP refusal, but a different reason and hint.
+   */
+  function isArchivePane(volumeId: string, path: string): boolean {
+    return capabilitiesForPane(volumeId, path).kind === 'archive'
   }
 
   /**
@@ -131,6 +142,11 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     const state = getClipboardPaneState()
     if (!state) return
 
+    if (isArchivePane(state.volumeId, state.path)) {
+      addToast(tString('fileExplorer.archive.useTransferToCopyOut'), { level: 'info' })
+      return
+    }
+
     if (isMtpClipboardRefusal(state.volumeId)) {
       addToast(tString('fileExplorer.clipboard.useF5FromMtp'), { level: 'info' })
       return
@@ -168,6 +184,11 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     const state = getClipboardPaneState()
     if (!state) return
 
+    if (isArchivePane(state.volumeId, state.path)) {
+      addToast(tString('fileExplorer.archive.useTransferToCopyOut'), { level: 'info' })
+      return
+    }
+
     if (isMtpClipboardRefusal(state.volumeId)) {
       addToast(tString('fileExplorer.clipboard.useF6FromMtp'), { level: 'info' })
       return
@@ -203,11 +224,13 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
         return
       }
 
-      // Shared destination guard (read-only alert + search-results refusal) —
-      // the same chain F5/F6 and drag-and-drop run, so pasting into a read-only
-      // destination gets the same "Read-only device" alert instead of silently
-      // queueing a transfer the backend would reject.
-      const guard = checkTransferDestinationGuard(volumeId, access.getVolumes())
+      // Shared destination guard (search-results refusal + archive/read-only
+      // alert) — the same chain F5/F6 and drag-and-drop run, so pasting into a
+      // read-only or archive destination gets the same alert instead of silently
+      // queueing a transfer the backend would reject. The dest path drives the
+      // archive kind-from-path check.
+      const destPath = access.getPanePath(access.getFocusedPane())
+      const guard = checkTransferDestinationGuard(volumeId, access.getVolumes(), destPath)
       if (!guard.ok) {
         if (guard.toast) addToast(guard.toast.message, { level: guard.toast.level })
         else dialogs.showAlert(guard.alert.title, guard.alert.message)
@@ -222,7 +245,6 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       }
 
       const operationType: TransferOperationType = result.isCut || forceMove ? 'move' : 'copy'
-      const destPath = access.getPanePath(access.getFocusedPane())
       const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())
       const destVolId = access.getPaneVolumeId(access.getFocusedPane())
       const sourceFolderPath = getCommonParentPath(result.paths)

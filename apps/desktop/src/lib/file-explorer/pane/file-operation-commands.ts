@@ -16,8 +16,9 @@ import {
   buildTransferPropsFromSnapshot,
   getDestinationVolumeInfo,
 } from './transfer-operations'
-import { capabilitiesFor } from './volume-capabilities'
+import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
 import { checkTransferDestinationGuard } from './transfer-entry'
+import type { MessageKey } from '$lib/intl/keys.gen'
 import type { FilePaneAPI } from './types'
 import type { TransferOperationType } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
@@ -35,13 +36,54 @@ type DialogState = ReturnType<typeof createDialogState>
  * through the explorer's dialog state.
  */
 export function createFileOperationCommands(access: PaneAccess, dialogs: DialogState) {
-  /** Activates inline rename on the focused pane's cursor item. */
-  function startRename() {
-    // Check if the volume is read-only before starting rename
-    const volId = access.getPaneVolumeId(access.getFocusedPane())
+  /**
+   * The read-only refusal alert for a write action on the focused pane, or `null`
+   * when the pane accepts writes. Two independent read-only sources, checked in
+   * order:
+   *  1. Inside an archive (kind-from-path): the pane's `volumeId` is the WRITABLE
+   *     parent drive, so `VolumeInfo.isReadOnly` alone misses it — `capabilitiesForPane`
+   *     resolves the `archive` kind from the PATH. Archives are read-only in this
+   *     phase (mutation lands later); the backend `ReadOnlyDevice` rejection is the net.
+   *  2. A read-only VolumeInfo (a write-protected USB stick, a read-only disk image).
+   * Surfacing this up front beats letting the user type a name and then hit a
+   * backend rejection.
+   */
+  function readOnlyRefusal(
+    action: 'rename' | 'mkdir' | 'mkfile' | 'delete',
+  ): { title: string; message: string } | null {
+    const pane = access.getFocusedPane()
+    const volId = access.getPaneVolumeId(pane)
+    const path = access.getPanePath(pane)
+
+    if (capabilitiesForPane(volId, path).kind === 'archive') {
+      const messageKey: Record<typeof action, MessageKey> = {
+        rename: 'fileExplorer.archive.renameMessage',
+        mkdir: 'fileExplorer.archive.mkdirMessage',
+        mkfile: 'fileExplorer.archive.mkfileMessage',
+        delete: 'fileExplorer.archive.deleteMessage',
+      }
+      return { title: tString('fileExplorer.archive.readOnlyTitle'), message: tString(messageKey[action]) }
+    }
+
     const volumeInfo = getDestinationVolumeInfo(volId, access.getVolumes())
     if (volumeInfo?.isReadOnly) {
-      dialogs.showAlert(tString('fileExplorer.readOnly.volumeTitle'), tString('fileExplorer.readOnly.renameMessage'))
+      const messageKey: Record<typeof action, MessageKey> = {
+        rename: 'fileExplorer.readOnly.renameMessage',
+        mkdir: 'fileExplorer.readOnly.mkdirMessage',
+        mkfile: 'fileExplorer.readOnly.mkfileMessage',
+        delete: 'fileExplorer.readOnly.deleteMessage',
+      }
+      return { title: tString('fileExplorer.readOnly.volumeTitle'), message: tString(messageKey[action]) }
+    }
+
+    return null
+  }
+
+  /** Activates inline rename on the focused pane's cursor item. */
+  function startRename() {
+    const refusal = readOnlyRefusal('rename')
+    if (refusal) {
+      dialogs.showAlert(refusal.title, refusal.message)
       return
     }
 
@@ -69,12 +111,12 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const path = access.getPanePath(access.getFocusedPane())
     const volumeIdForPane = access.getPaneVolumeId(access.getFocusedPane())
 
-    // Read-only volumes (MTP SD cards in some configurations, etc.) can't accept
-    // new folders. Surface that as an alert up front rather than letting the user
-    // type a name and then hit a backend error. Mirrors `startRename`.
-    const volumeInfo = getDestinationVolumeInfo(volumeIdForPane, access.getVolumes())
-    if (volumeInfo?.isReadOnly) {
-      dialogs.showAlert(tString('fileExplorer.readOnly.volumeTitle'), tString('fileExplorer.readOnly.mkdirMessage'))
+    // Read-only destinations (a write-protected volume, or inside an archive) can't
+    // accept new folders. Surface that as an alert up front rather than letting the
+    // user type a name and then hit a backend rejection. Mirrors `startRename`.
+    const refusal = readOnlyRefusal('mkdir')
+    if (refusal) {
+      dialogs.showAlert(refusal.title, refusal.message)
       return
     }
 
@@ -101,9 +143,9 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const path = access.getPanePath(access.getFocusedPane())
     const volumeIdForPane = access.getPaneVolumeId(access.getFocusedPane())
 
-    const volumeInfo = getDestinationVolumeInfo(volumeIdForPane, access.getVolumes())
-    if (volumeInfo?.isReadOnly) {
-      dialogs.showAlert(tString('fileExplorer.readOnly.volumeTitle'), tString('fileExplorer.readOnly.mkfileMessage'))
+    const refusal = readOnlyRefusal('mkfile')
+    if (refusal) {
+      dialogs.showAlert(refusal.title, refusal.message)
       return
     }
 
@@ -284,15 +326,18 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   /** Opens the transfer dialog with the current selection info. */
   async function openTransferDialog(operationType: TransferOperationType, autoConfirm?: boolean, onConflict?: string) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
-    const destVolId = access.getPaneVolumeId(access.otherPane(access.getFocusedPane()))
+    const destPane = access.otherPane(access.getFocusedPane())
+    const destVolId = access.getPaneVolumeId(destPane)
+    const destPath = access.getPanePath(destPane)
 
-    // Shared destination guard chain (search-results refusal + read-only alert).
-    // Every transfer entry path — F5/F6, drag-and-drop, clipboard paste — runs
-    // the same `checkTransferDestinationGuard`, so the refusal copy and ordering
-    // can't drift between paths. The F-key bar already disables F5/F6 when the
-    // OPPOSITE pane is a snapshot, so the search-results branch here is a
-    // belt-and-braces guard for the shortcut path.
-    const guard = checkTransferDestinationGuard(destVolId, access.getVolumes())
+    // Shared destination guard chain (search-results refusal + archive/read-only
+    // alert). Every transfer entry path — F5/F6, drag-and-drop, clipboard paste —
+    // runs the same `checkTransferDestinationGuard`, so the refusal copy and
+    // ordering can't drift between paths. `destPath` drives the archive
+    // kind-from-path check. The F-key bar already disables F5/F6 when the OPPOSITE
+    // pane is a snapshot, so the search-results branch here is a belt-and-braces
+    // guard for the shortcut path.
+    const guard = checkTransferDestinationGuard(destVolId, access.getVolumes(), destPath)
     if (!guard.ok) {
       if (guard.toast) addToast(guard.toast.message, { level: guard.toast.level })
       else dialogs.showAlert(guard.alert.title, guard.alert.message)
@@ -408,12 +453,12 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       return
     }
 
-    // Read-only volumes can't accept deletes. Surface as an alert before any
-    // dialog opens. Mirrors `startRename` and `openNewFolderDialog`.
-    const sourceVolumeIdForCheck = access.getPaneVolumeId(access.getFocusedPane())
-    const sourceVolumeInfo = getDestinationVolumeInfo(sourceVolumeIdForCheck, access.getVolumes())
-    if (sourceVolumeInfo?.isReadOnly) {
-      dialogs.showAlert(tString('fileExplorer.readOnly.volumeTitle'), tString('fileExplorer.readOnly.deleteMessage'))
+    // Read-only sources (a write-protected volume, or inside an archive) can't
+    // accept deletes. Surface as an alert before any dialog opens. Mirrors
+    // `startRename` and `openNewFolderDialog`.
+    const refusal = readOnlyRefusal('delete')
+    if (refusal) {
+      dialogs.showAlert(refusal.title, refusal.message)
       return
     }
 

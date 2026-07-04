@@ -153,8 +153,13 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     if (sourcePaths.length === 0) return
 
     const destVolId = access.getPaneVolumeId(targetPane)
+    // The real drop target: a hovered folder row (`targetFolderPath`, which can be
+    // a `.zip` row or a folder inside an open archive) else the pane's own path.
+    // It drives the archive kind-from-path check, so dropping ONTO a zip or INTO
+    // an open archive is refused up front.
+    const destPath = targetFolderPath ?? access.getPanePath(targetPane)
 
-    const guard = checkTransferDestinationGuard(destVolId, access.getVolumes())
+    const guard = checkTransferDestinationGuard(destVolId, access.getVolumes(), destPath)
     if (!guard.ok) {
       if (guard.toast) addToast(guard.toast.message, { level: guard.toast.level })
       else dialogs.showAlert(guard.alert.title, guard.alert.message)
@@ -162,7 +167,6 @@ export function createDragDropController(deps: DragDropControllerDeps) {
     }
 
     const { sortBy, sortOrder } = access.getPaneSort(targetPane)
-    const destPath = targetFolderPath ?? access.getPanePath(targetPane)
 
     if (recordedIdentity) {
       // In-app self-drag: trust the recorded identity wholesale; skip the
