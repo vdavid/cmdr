@@ -6,6 +6,10 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-04 [listing-loader-extraction-plan.md](listing-loader-extraction-plan.md) - Drain FilePane's last deferred
+      cluster (the listing loader: `loadDirectory`/`handleListingComplete`/reset + streaming listeners + pendingLoad +
+      the generation/listingId drop-foreign-listings token model) into a tested `listing-loader.svelte.ts` factory,
+      behavior-preserving, `FilePaneAPI` byte-identical.
 - [ ] 2026-06-28 local-reconcile-rescan-plan.md - Reclaim index DB disk: recreate-on-schema-mismatch + port the SMB/MTP
       reconcile-in-place rescan onto the local jwalk path (stale sizes stay visible, no freelist balloon)
 - [ ] 2026-06-28 [location-type-nav-plan.md](location-type-nav-plan.md) - Make `(volumeId, path)` a first-class
