@@ -1,7 +1,7 @@
 # FilePane listing-loader extraction plan
 
-Status: reviewed once (fresh-eyes Opus round 1 folded in). Worktree: `.claude/worktrees/extract-listing-loader`, branch
-`extract-listing-loader` off local `main` (978e0ffb).
+Status: reviewed twice (fresh-eyes Opus rounds 1-2 folded in; round 2 verdict: sound and ready to execute). Worktree:
+`.claude/worktrees/extract-listing-loader`, branch `extract-listing-loader` off local `main` (978e0ffb).
 
 ## Goal
 
@@ -151,8 +151,12 @@ displays / the alt-view `{#if}` chain; deriveds `effectiveVolumeRoot` (`volumeRo
 (`totalCount`), `hasParent` (indirect); `createPaneMcpSync` getters (`getListingId`, `getTotalCount`); `jump` deps
 (`getListingId`, `getLoading`); the `includeHidden` `$effect` (reads `listingId`/`loading`, writes `totalCount`); the
 `initListingDiffSync` deps (`getListingId`, `getLastSequence`/`setLastSequence`, `setTotalCount`, `navigateToFallback`);
-`createSmbViewState` deps (`loadDirectory`, `navigateToFallback`); `onMount` (`loading` write, `loadDirectory` call);
-`injectError`; `isInErrorState`/Quick-Look hooks (read `friendlyError`); `getSwapState`/`adoptListing`.
+`createSmbViewState` deps (`loadDirectory`, `navigateToFallback` — keep the exact arrow wrapper `(path) => void
+loader.loadDirectory(path)` that DROPS `selectName`, ~486, or the SMB fallback signature shifts); `onMount` (`loading`
+write, `loadDirectory` call); the dirExistsPoll (`navigateToFallback`, ~2392/2401); `injectError`;
+`isInErrorState`/Quick-Look hooks (read `friendlyError`); `getSwapState`/`adoptListing`. Three reactivity-sensitive
+`$effect`s gate on `listingId && !loading` and must become `loader.listingId && !loader.loading`: the includeHidden
+refetch (~2042), the cursorIndex→entry/MCP-sync effect (~2151), and the selection→stats effect (~2201).
 
 ## Milestones
 
@@ -187,9 +191,13 @@ displays / the alt-view `{#if}` chain; deriveds `effectiveVolumeRoot` (`volumeRo
   `loader.cleanup()`.
 - `FilePane.svelte`: replace the inline cluster with `const loader = createListingLoader({...})` and thin export
   delegates (`navigateToPath`, `navigateToParent`, `handleCancelLoading`, `whenLoadSettles`, `isLoading`,
-  `getListingId`, `getSwapState`, `adoptListing`) that call `loader.*`. Byte-identical signatures.
+  `getListingId`, `getSwapState`, `adoptListing`, and `injectError` — the last folds into `loader.injectError` but stays
+  an exported `FilePaneAPI` method) that call `loader.*`. Byte-identical signatures. `onDestroy` calls `loader.cleanup()`
+  (placement relative to the other teardown is behavior-neutral — they're independent concerns).
 - Docs: update `pane/CLAUDE.md` module map (add `listing-loader`) and `pane/DETAILS.md` (a "listing loader / generation
-  guard" subsection; move/point the token-model description here as the single source). Keep `CLAUDE.md` under 600 words.
+  guard" subsection; move/point the token-model description here as the single source). `pane/CLAUDE.md` is already ~596
+  words against the hard 600 cap, so this milestone MUST condense to make room for the new module-map entry (per
+  `docs/doc-system.md` condense-first), not just append.
 - Checks: `pnpm check eslint-typecheck-ts svelte -q` + scoped vitest.
 
 ### M3 — Factory integration tests (foreign-listing dropped, proven red by mutation)
@@ -212,6 +220,10 @@ displays / the alt-view `{#if}` chain; deriveds `effectiveVolumeRoot` (`volumeRo
     chains onto the existing resolver without disturbing a waiting `navigateToPath`.
   - **reset semantics:** `resetLoadingState(msg)` rejects pending with the message; cancel path rejects with
     `'Loading cancelled'`; `preserveTotalCount` respected.
+  - **branch coverage for verbatim-moved branches** (cheap, and exactly what a paraphrase can silently drop):
+    `navigateToFallback` outside-volume branch (`onVolumeChange('root','/',target)`) vs the in-volume `currentPath +
+    loadDirectory` branch (~1259-1266); `handleCancelLoading`'s `!loading || !listingId` early return (~1522);
+    `navigateToParent`'s two early returns (at-root, unresolved `canonicalPath`, ~1068/1072).
 - Prove RED: temporarily delete the generation half of the predicate (or the post-await guard), run — the foreign-drop
   tests MUST fail; restore — green. Record this in the commit body.
 - Checks: scoped vitest, then the full `eslint-typecheck-ts` lane.
