@@ -93,7 +93,7 @@
     import { createSearchPaneKeys } from './search-pane-keys'
     import { computeHasParent } from './has-parent'
     import { firstSelectedIndex } from './first-selected-index'
-    import { capabilitiesFor } from './volume-capabilities'
+    import { capabilitiesForPane } from './volume-capabilities'
     import { resolveValidPath } from '../navigation/path-resolution'
     import { isVolumeEjectable } from '../navigation/eject-predicate'
     import { homeDir } from '@tauri-apps/api/path'
@@ -338,12 +338,15 @@
 
     /**
      * This pane's volume capabilities, the single A6 source of truth for "what
-     * can a pane on this KIND do". Resolved once from `volumeId` (the two virtual
-     * ids short-circuit in `volumeKindOf` before the store lookup; real ids read
-     * `fsType`/`category` from the volume store). The view-selection discriminant,
-     * the named view deriveds below, and the per-feature gates all read off this.
+     * can a pane on this KIND do". Resolved from `volumeId` AND `currentPath`
+     * (kind-from-path): a path inside a supported archive resolves the read-only
+     * `archive` kind even though `volumeId` is the writable parent drive; the two
+     * virtual ids short-circuit in `volumeKindOf` before the store lookup, and
+     * other real ids read `fsType`/`category` from the volume store. The
+     * view-selection discriminant, the named view deriveds below, and the
+     * per-feature gates all read off this.
      */
-    const caps = $derived(capabilitiesFor(volumeId))
+    const caps = $derived(capabilitiesForPane(volumeId, currentPath))
 
     // Check if we're viewing the network (special virtual volume). Sourced from
     // the kind, not a `volumeId === 'network'` string compare (A6).
@@ -568,6 +571,7 @@
         paneId,
         getVolumeId: () => volumeId,
         getCurrentPath: () => currentPath,
+        getVolumePath: () => volumePath,
         getIsDiskImage: () => isDiskImageVolume,
     })
 
@@ -1176,8 +1180,12 @@
     }
 
     // Check if current directory has a parent (not at filesystem root AND not at volume root)
-    // Prefer volumeRoot from the listing event (accurate for MTP), fall back to prop (for initial state)
-    const effectiveVolumeRoot = $derived(volumeRootFromEvent ?? volumePath)
+    // Prefer volumeRoot from the listing event (accurate for MTP), fall back to prop (for initial state).
+    // Inside an archive the backend emits the `.zip` path as the listing's volume root, but the FE's
+    // volume is the PARENT drive (the tab keeps its id) — so at the archive root `/foo.zip` there IS a
+    // parent (the zip's containing dir). Use the parent mount (`volumePath`), so `..` shows and
+    // navigateToParent bubbles out of the archive instead of stopping at a false "volume root".
+    const effectiveVolumeRoot = $derived(caps.kind === 'archive' ? volumePath : (volumeRootFromEvent ?? volumePath))
     // Search-results panes have NO `..` row: the snapshot is a flat result set, not a directory.
     // Without this gate, the path comparison was true (search-results://sr-N never matches a real
     // volume root), causing `hasParent` to be `true`, which made `selectAll` skip index 0 (P6).
@@ -1380,7 +1388,12 @@
             await loader.loadDirectory(entry.redirectToPath)
             return
         }
-        if (entry.isDirectory) {
+        // An archive file (`.zip`) browses like a folder: Enter navigates INTO it,
+        // same-volume in-place (the tab keeps the parent-drive id; the backend
+        // `resolve` routes the `…/foo.zip/…` path to the read-only ArchiveVolume).
+        // `isDirectory` stays false on an archive, so it's an explicit second arm.
+        // M1b enters directly; the Browse | Open | Ask menu is a later milestone.
+        if (entry.isDirectory || entry.isArchive) {
             // Same as the redirect branch: a real directory opened from the
             // search-results rows switches to its real volume first.
             if (isSearchResultsView) {

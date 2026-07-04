@@ -5,6 +5,15 @@ export interface FileEntry {
   path: string
   isDirectory: boolean
   isSymlink: boolean
+  /**
+   * True when this is a file whose extension marks it as a supported archive
+   * (a `.zip` today), computed backend-side at listing time (extension-only, no
+   * per-file byte read). Drives the Enter fork: an archive file navigates INTO
+   * itself like a folder rather than opening in the OS default app. `isDirectory`
+   * stays `false` — an archive is a file that browses like a folder. Optional
+   * here so synthetic entries (the `..` row, search-results adapters) can omit it.
+   */
+  isArchive?: boolean
   size?: number
   physicalSize?: number
   modifiedAt?: number

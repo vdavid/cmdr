@@ -37,6 +37,7 @@ function setup(over: Partial<VolumeSpaceDeps> = {}) {
     paneId: 'left',
     getVolumeId: () => 'vol-1',
     getCurrentPath: () => '/vol-1/dir',
+    getVolumePath: () => '/vol-1',
     getIsDiskImage: () => false,
     ...over,
   }
@@ -62,6 +63,16 @@ describe('createVolumeSpace', () => {
     await ctl.refresh()
     expect(ipc.getVolumeSpace).not.toHaveBeenCalled()
     expect(ctl.volumeSpace).toBeNull()
+  })
+
+  it('refresh queries the parent volume path when inside an archive', async () => {
+    // The archive-inner current path isn't a real filesystem path (NSURL returns
+    // nothing), so the query uses the containing volume's mount — the space shown
+    // is the parent drive's.
+    const ctl = setup({ getCurrentPath: () => '/vol-1/foo.zip/inner', getVolumePath: () => '/vol-1' })
+    await ctl.refresh()
+    expect(ipc.getVolumeSpace).toHaveBeenCalledWith('/vol-1')
+    expect(ctl.volumeSpace).toEqual(space)
   })
 
   it('the live event updates the readout for the pane volume', () => {

@@ -16,6 +16,7 @@
 import { lookupRepoInfo, subscribeToRepo, unsubscribeFromRepo, type RepoInfo } from '../git/git-store.svelte'
 import { getSetting, onSpecificSettingChange } from '$lib/settings'
 import { isMtpVolumeId } from '$lib/mtp'
+import { pathInsideArchive } from './volume-capabilities'
 
 export interface GitBrowserSyncDeps {
   /** The pane's current directory path (reactive read). */
@@ -75,8 +76,16 @@ export function createGitBrowserSync(deps: GitBrowserSyncDeps): GitBrowserSync {
     // `!getHasBackendListing()` (no real directory to host a repo). The
     // `isMtpVolumeId` check STAYS: MTP DOES have a backend listing but git can't
     // run over the MTP transport, so it's an MTP-path-specific skip, not a
-    // capability question.
-    if (!gitFeaturesNeeded || isMtpVolumeId(deps.getVolumeId()) || !deps.getHasBackendListing()) {
+    // capability question. Archives ALSO have a backend listing (so
+    // `getHasBackendListing()` is true), but a git repo can't live inside a zip —
+    // an explicit `pathInsideArchive` skip, since `hasBackendListing` doesn't cover
+    // it (a `lookupRepoInfo` on a `…/foo.zip/…` path would walk out of the archive).
+    if (
+      !gitFeaturesNeeded ||
+      isMtpVolumeId(deps.getVolumeId()) ||
+      !deps.getHasBackendListing() ||
+      pathInsideArchive(path)
+    ) {
       if (activeRepoRoot) {
         await unsubscribeFromRepo(activeRepoRoot)
         activeRepoRoot = null

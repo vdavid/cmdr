@@ -19,11 +19,21 @@ import {
   type VolumeSpaceInfo,
   type UnlistenFn,
 } from '$lib/tauri-commands'
+import { pathInsideArchive } from './volume-capabilities'
 
 export interface VolumeSpaceDeps {
   paneId: 'left' | 'right'
   getVolumeId: () => string
   getCurrentPath: () => string
+  /**
+   * The pane's volume (parent) mount path (reactive read). Used for the space
+   * query when the pane is inside an archive: `getVolumeSpace` runs an NSURL
+   * volume-capacity lookup, which returns nothing for a non-existent `…/foo.zip/…`
+   * inner path, so we query the containing volume's path instead. The reported
+   * space is the parent drive's — which is exactly what should show, since an
+   * archive borrows its parent's space (matching the backend's parent delegation).
+   */
+  getVolumePath: () => string
   /** The pane's disk-image flag (reactive read). Disk images report no meaningful space. */
   getIsDiskImage: () => boolean
 }
@@ -56,7 +66,12 @@ export function createVolumeSpace(deps: VolumeSpaceDeps): VolumeSpace {
       volumeSpace = null
       return
     }
-    volumeSpace = (await getVolumeSpace(deps.getCurrentPath())).data
+    // Inside an archive the current path (`…/foo.zip/inner`) isn't a real
+    // filesystem path, so query the containing volume's mount instead — the space
+    // shown is the parent drive's, which is what an archive borrows.
+    const currentPath = deps.getCurrentPath()
+    const queryPath = pathInsideArchive(currentPath) ? deps.getVolumePath() : currentPath
+    volumeSpace = (await getVolumeSpace(queryPath)).data
   }
 
   function startListening(): void {
