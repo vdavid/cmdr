@@ -70,6 +70,7 @@
     import { enrichBreadcrumbSegments } from '../navigation/breadcrumb-navigation'
     import RepoChip from '../git/RepoChip.svelte'
     import { createGitBrowserSync } from './git-browser-sync.svelte'
+    import { createSmbViewState } from './smb-view-state.svelte'
     import { isVirtualGitPath } from '../git/path-detection'
     import { getSetting, setSetting } from '$lib/settings'
     import { isFileListBackgroundClick } from './pane-background-dblclick'
@@ -120,14 +121,11 @@
         watchVolumeSpace,
         unwatchVolumeSpace,
         showBreadcrumbContextMenu,
-        upgradeToSmbVolumeWithCredentials,
-        disconnectSmbVolume,
-        type UpgradeResult,
         type VolumeSpaceInfo,
     } from '$lib/tauri-commands'
     import { getIpcErrorMessage } from '$lib/tauri-commands/ipc-types'
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
-    import { requestVolumeRefresh, getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
+    import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getDiskUsageLevel, getUsedPercent, formatBarTooltip } from '../disk-space-utils'
     import { getFileSizeFormat, getTypeToJumpResetDelay } from '$lib/settings/reactive-settings.svelte'
@@ -218,18 +216,6 @@
     let loading = $state(true)
     let error = $state<string | null>(null)
     let friendlyError = $state<FriendlyError | null>(null)
-
-    // SMB upgrade login form state: shown when "Connect directly" needs credentials
-    let smbUpgradeLogin = $state<{
-        volumeId: string
-        server: string
-        share: string
-        port: number
-        displayName: string
-        usernameHint: string | null
-        errorMessage?: string
-        isConnecting: boolean
-    } | null>(null)
 
     let cursorIndex = $state(0)
 
@@ -484,8 +470,6 @@
     // view and to decide whether subscribing to the SMB reconnect manager is
     // even relevant for this pane).
     const currentVolumeInfo = $derived(getStoreVolumes().find((v) => v.id === volumeId) ?? null)
-    /** True if this pane is on an SMB share (any state: direct, os_mount, or disconnected). */
-    const isSmbVolume = $derived(currentVolumeInfo?.smbConnectionState != null)
     /**
      * True on a mounted disk image (.dmg): a transient, effectively-full mount. Its free space
      * is meaningless, so we skip the space query and hide the bottom disk-usage bar.
@@ -503,73 +487,20 @@
      * push selection-fg below AA. Always tracks `paneTintBg`.
      */
     const paneTintName = $derived(getPaneTintName(volumeId, currentVolumeInfo?.fsType, currentVolumeInfo?.category))
-    /**
-     * Reactive: the per-volume reconnect cycle state, or `null` if no cycle is
-     * running. The manager is the single source of truth for the view. By the
-     * time this is non-null, the backend has already emitted `disconnected` and
-     * the manager has scheduled the first attempt.
-     */
-    const reconnectState = $derived(smbReconnectManager.getState(volumeId))
-    /** Show the reconnecting view while a cycle is in flight (waiting/attempting). */
-    const showSmbReconnecting = $derived(
-        reconnectState !== null && (reconnectState.status === 'waiting' || reconnectState.status === 'attempting'),
-    )
-    /** Show the gave-up state: uses the existing unreachable banner with an added Disconnect button. */
-    const showSmbGaveUp = $derived(reconnectState !== null && reconnectState.status === 'gave-up')
-    /** Show the sign-in prompt: reconnect gave up because the saved password went stale. */
-    const showSmbNeedsAuth = $derived(reconnectState !== null && reconnectState.status === 'needs-auth')
 
-    // Subscribe to the per-volume reconnect manager whenever this pane is on
-    // an SMB share. The subscription is refcounted (multiple panes on the same
-    // share share one cycle) and serves two purposes:
-    // 1. Tells the manager "someone is watching": the cycle starts on the next
-    //    `disconnected` event (via `handleDisconnected`), but only if subscribers > 0.
-    // 2. Registers a success callback so the pane re-runs `loadDirectory` after
-    //    a successful reconnect. (Reactive `$effect` covers showing/hiding the view.)
-    $effect(() => {
-        if (!isSmbVolume) return
-        const targetVolumeId = volumeId
-        const isDisconnected = currentVolumeInfo?.smbConnectionState === 'disconnected'
-        const onSuccess = () => {
-            log.info('[FilePane] SMB reconnect succeeded for {volumeId}, reloading {path}', {
-                volumeId: targetVolumeId,
-                path: currentPath,
-            })
-            void loadDirectory(currentPath)
-        }
-        const unsubscribe = smbReconnectManager.subscribe(targetVolumeId, onSuccess)
-        // If we land on a Disconnected SMB share without a cycle running (e.g. user
-        // navigated to a share that was already broken), kick off the cycle ourselves.
-        if (isDisconnected) {
-            smbReconnectManager.startCycle(targetVolumeId)
-        }
-        return unsubscribe
+    // SMB reconnect + direct-upgrade view state: the alt-view decision deriveds
+    // (reconnecting / gave-up / needs-auth), the reconnect-manager subscription
+    // effect, and the cancel / disconnect / connect-directly handlers live in a
+    // `*.svelte.ts` factory. The pane keeps the shared `currentVolumeInfo` derived
+    // (tint + disk-image + eject read it too) and passes it in.
+    const smbView = createSmbViewState({
+        getVolumeId: () => volumeId,
+        getCurrentPath: () => currentPath,
+        getVolumePath: () => volumePath,
+        getCurrentVolumeInfo: () => currentVolumeInfo,
+        loadDirectory: (path: string) => void loadDirectory(path),
+        navigateToFallback,
     })
-
-    function handleSmbReconnectCancel() {
-        smbReconnectManager.cancel(volumeId)
-        // Walk up to the nearest reachable folder, same fallback chain we use elsewhere.
-        void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
-            navigateToFallback(validPath)
-        })
-    }
-
-    function handleSmbReconnectDisconnect() {
-        const targetVolumeId = volumeId
-        smbReconnectManager.cancel(targetVolumeId)
-        // Fire the OS-level unmount (macOS: `diskutil unmount`). We don't await
-        // here. The FSEvents-driven `volumes-changed` will tear down the
-        // SmbVolume and remove the entry; meanwhile the user expects the pane
-        // to leave the broken share immediately, so navigate away in parallel.
-        void disconnectSmbVolume(targetVolumeId).catch((e: unknown) => {
-            const message = getIpcErrorMessage(e)
-            log.warn('Disconnect SMB volume {volumeId} failed: {error}', { volumeId: targetVolumeId, error: message })
-            addToast(tString('fileExplorer.pane.disconnectFailedToast', { message }), { level: 'error' })
-        })
-        void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
-            navigateToFallback(validPath)
-        })
-    }
 
     // Network browsing state - tracked here for history navigation integration
     let currentNetworkHost = $state<NetworkHost | null>(null)
@@ -2295,63 +2226,6 @@
         return friendlyError !== null || unreachable !== null
     }
 
-    /** Show the SMB login form for a "Connect directly" upgrade that needs credentials. */
-    function handleSmbUpgradeLogin(info: UpgradeResult & { status: 'credentialsNeeded' }, vid: string) {
-        smbUpgradeLogin = {
-            volumeId: vid,
-            server: info.server,
-            share: info.share,
-            port: info.port,
-            displayName: info.displayName,
-            usernameHint: info.usernameHint,
-            errorMessage: info.message ?? undefined,
-            isConnecting: false,
-        }
-    }
-
-    async function handleSmbUpgradeConnect(
-        username: string | null,
-        password: string | null,
-        rememberInKeychain: boolean,
-    ) {
-        if (!smbUpgradeLogin) return
-        smbUpgradeLogin = { ...smbUpgradeLogin, isConnecting: true, errorMessage: undefined }
-
-        try {
-            const result = await upgradeToSmbVolumeWithCredentials(
-                smbUpgradeLogin.volumeId,
-                username,
-                password,
-                rememberInKeychain,
-            )
-            if (result.status === 'success') {
-                smbUpgradeLogin = null
-                requestVolumeRefresh()
-                addToast(tString('fileExplorer.pane.connectedDirectlyToast'), { level: 'success' })
-            } else if (result.status === 'credentialsNeeded') {
-                smbUpgradeLogin = {
-                    ...smbUpgradeLogin,
-                    isConnecting: false,
-                    errorMessage: result.message ?? tString('fileExplorer.network.authFailed'),
-                }
-            } else {
-                smbUpgradeLogin = null
-                addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: result.message }), {
-                    level: 'error',
-                })
-            }
-        } catch (e) {
-            smbUpgradeLogin = null
-            addToast(tString('fileExplorer.pane.directConnectionFailedToast', { message: String(e) }), {
-                level: 'error',
-            })
-        }
-    }
-
-    function handleSmbUpgradeCancel() {
-        smbUpgradeLogin = null
-    }
-
     // When includeHidden changes, cancel rename and refetch total count
     $effect(() => {
         if (listingId && !loading) {
@@ -2781,7 +2655,7 @@
             {volumeId}
             {currentPath}
             onVolumeChange={handleVolumeChangeFromBreadcrumb}
-            onSmbUpgradeLogin={handleSmbUpgradeLogin}
+            onSmbUpgradeLogin={smbView.handleSmbUpgradeLogin}
         />
         <span class="path">{#each clickableBreadcrumbSegments as seg, i (i)}{#if i > 0 && seg.text !== ''}<span class="path-sep">/</span>{/if}{#if seg.target !== null}<button
                     type="button"
@@ -2807,27 +2681,27 @@
                 onRetry={() => onRetryUnreachable?.()}
                 onOpenHome={() => onOpenHome?.()}
             />
-        {:else if showSmbReconnecting && reconnectState}
+        {:else if smbView.showSmbReconnecting && smbView.reconnectState}
             <SmbReconnectingView
                 {volumeId}
                 shareName={currentVolumeInfo?.name ?? volumeId}
-                cycleState={reconnectState}
-                onCancel={handleSmbReconnectCancel}
-                onDisconnect={handleSmbReconnectDisconnect}
+                cycleState={smbView.reconnectState}
+                onCancel={smbView.handleSmbReconnectCancel}
+                onDisconnect={smbView.handleSmbReconnectDisconnect}
             />
-        {:else if showSmbNeedsAuth}
+        {:else if smbView.showSmbNeedsAuth}
             <SmbReauthView
                 {volumeId}
                 serverLabel={currentVolumeInfo?.name ?? volumePath}
-                onCancel={handleSmbReconnectDisconnect}
+                onCancel={smbView.handleSmbReconnectDisconnect}
             />
-        {:else if showSmbGaveUp}
+        {:else if smbView.showSmbGaveUp}
             <VolumeUnreachableBanner
                 originalPath={currentVolumeInfo?.name ?? volumePath}
                 retrying={false}
                 onRetry={() => { smbReconnectManager.retryNow(volumeId); }}
                 smbGaveUp={true}
-                onDisconnect={handleSmbReconnectDisconnect}
+                onDisconnect={smbView.handleSmbReconnectDisconnect}
             />
         {:else if paneViewKind === 'network'}
             <NetworkMountView
@@ -2860,16 +2734,20 @@
             />
         {:else if paneViewKind === 'mtp-connect'}
             <MtpConnectionView {volumeId} {onVolumeChange} />
-        {:else if smbUpgradeLogin}
+        {:else if smbView.smbUpgradeLogin}
             <NetworkLoginForm
-                host={{ id: smbUpgradeLogin.volumeId, name: smbUpgradeLogin.displayName, port: smbUpgradeLogin.port }}
-                shareName={smbUpgradeLogin.share}
+                host={{
+                    id: smbView.smbUpgradeLogin.volumeId,
+                    name: smbView.smbUpgradeLogin.displayName,
+                    port: smbView.smbUpgradeLogin.port,
+                }}
+                shareName={smbView.smbUpgradeLogin.share}
                 authMode="guest_allowed"
                 defaultConnectionMode="credentials"
-                errorMessage={smbUpgradeLogin.errorMessage}
-                isConnecting={smbUpgradeLogin.isConnecting}
-                onConnect={handleSmbUpgradeConnect}
-                onCancel={handleSmbUpgradeCancel}
+                errorMessage={smbView.smbUpgradeLogin.errorMessage}
+                isConnecting={smbView.smbUpgradeLogin.isConnecting}
+                onConnect={smbView.handleSmbUpgradeConnect}
+                onCancel={smbView.handleSmbUpgradeCancel}
             />
         {:else if loading}
             <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
