@@ -20,17 +20,18 @@ const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
 const VIEWER_ARCHIVE_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Picks the open timeout for `path`: the generous archive budget only when the path
-/// actually crosses a `.zip` boundary, else the strict 2 s. The detection is a local
-/// stat + a few-byte magic read, run off the IPC thread so it never blocks it.
+/// is INSIDE a `.zip` (a temp-extract, which is slow), else the strict 2 s. Viewing
+/// the `.zip` file itself is a normal local read, so it keeps the strict budget. The
+/// detection is a local stat + a few-byte magic read, run off the IPC thread.
 async fn open_timeout_for(path: &str) -> Duration {
     let path = path.to_string();
-    let is_archive = tokio::task::spawn_blocking(move || {
+    let needs_extract = tokio::task::spawn_blocking(move || {
         let expanded = crate::commands::file_system::expand_tilde(&path);
-        crate::file_system::volume::backends::archive::path_crosses_archive_boundary(std::path::Path::new(&expanded))
+        crate::file_system::volume::backends::archive::path_is_inside_archive(std::path::Path::new(&expanded))
     })
     .await
     .unwrap_or(false);
-    if is_archive {
+    if needs_extract {
         VIEWER_ARCHIVE_TIMEOUT
     } else {
         VIEWER_TIMEOUT
@@ -249,9 +250,11 @@ pub async fn viewer_write_range_to_file(
     dest_path: String,
 ) -> Result<(), ViewerError> {
     // The source may be an archive preview temp (it writes fine via `std::fs` off the
-    // open session), but the DESTINATION must not be inside an archive: archives are
-    // read-only in this phase. Reject with a typed error, matching the write-path guards.
-    if crate::file_system::volume::backends::archive::path_crosses_archive_boundary(std::path::Path::new(
+    // open session), but the DESTINATION must not be INSIDE an archive: archives are
+    // read-only in this phase. Saving over a `.zip` file itself is a normal file
+    // overwrite (allowed); only a path inside one is refused. Typed error, matching
+    // the write-path guards.
+    if crate::file_system::volume::backends::archive::path_is_inside_archive(std::path::Path::new(
         &crate::commands::file_system::expand_tilde(&dest_path),
     )) {
         return Err(ViewerError::DestinationInsideArchive);

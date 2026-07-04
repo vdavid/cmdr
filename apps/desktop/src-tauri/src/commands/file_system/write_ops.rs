@@ -40,10 +40,11 @@ use super::expand_tilde;
 /// `None` means "scan the local filesystem directly" (the `std::fs` fast path);
 /// `Some` means scan through the `Volume` trait.
 fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathBuf>) -> Option<Arc<dyn Volume>> {
+    // Route to the ArchiveVolume only for a source INSIDE the archive. The `.zip`
+    // file itself is scanned as a plain file (one entry), not its contents.
     let archive_source = first_source
-        .map(|first| get_volume_manager().resolve(volume_id, first))
-        .filter(|resolved| resolved.is_archive)
-        .and_then(|resolved| resolved.volume);
+        .filter(|first| archive::path_is_inside_archive(first))
+        .and_then(|first| get_volume_manager().resolve(volume_id, first).volume);
     if archive_source.is_some() {
         archive_source
     } else if volume_id == "root" {
@@ -61,7 +62,9 @@ fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathBuf>) -
 /// lands.
 fn reject_if_archive_inner<'a>(paths: impl IntoIterator<Item = &'a PathBuf>) -> Result<(), WriteOperationError> {
     for path in paths {
-        if archive::path_crosses_archive_boundary(path) {
+        // Only a path INSIDE an archive is read-only. The `.zip` file itself is a
+        // regular file — copying/moving/deleting/trashing it must work.
+        if archive::path_is_inside_archive(path) {
             return Err(WriteOperationError::ReadOnlyDevice {
                 path: path.to_string_lossy().into_owned(),
                 device_name: None,
@@ -391,6 +394,13 @@ mod tests {
         // ...while a plain local sibling passes (proves the guard, not a blanket reject).
         let plain = dir.path().join("plain.txt");
         assert!(reject_if_archive_inner(std::iter::once(&plain)).is_ok());
+
+        // ...AND the `.zip` FILE ITSELF passes: copying/moving/deleting/trashing a
+        // zip file is a normal file op, not a write INSIDE the archive.
+        assert!(
+            reject_if_archive_inner(std::iter::once(&zip)).is_ok(),
+            "the .zip file itself must not be refused"
+        );
     }
 
     #[test]

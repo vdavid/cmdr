@@ -96,11 +96,30 @@ pub fn confirm_archive_boundary(path: &Path) -> Option<(PathBuf, PathBuf)> {
     Some((archive_path, inner_path))
 }
 
-/// Whether `path` crosses into a confirmed supported archive. Convenience over
-/// [`confirm_archive_boundary`] for the many guard sites that only need the
-/// yes/no (write rejections, `go_to_path`, stat probes).
+/// Whether `path` crosses into a confirmed supported archive — the `.zip` file
+/// ITSELF (empty inner) OR a path inside it. This is the "enter the archive"
+/// predicate: navigation and listing route the `.zip` path here to browse the
+/// archive root.
+///
+/// For write/copy/viewer sites that operate ON a path, prefer
+/// [`path_is_inside_archive`]: those must treat the `.zip` file itself as a
+/// normal file (copy/move/rename/view it), and only refuse or route paths
+/// genuinely INSIDE the archive.
 pub fn path_crosses_archive_boundary(path: &Path) -> bool {
     confirm_archive_boundary(path).is_some()
+}
+
+/// Whether `path` points at something INSIDE a confirmed archive (a non-empty
+/// inner path like `foo.zip/entry`), as opposed to the `.zip` file itself.
+///
+/// This is the predicate for sites that operate ON a path rather than navigate
+/// INTO it: copy/move/delete/rename guards, source routing, drag locality, and
+/// the viewer. The `.zip` file itself is a regular file — copying, moving,
+/// renaming, or viewing it must behave exactly like any other file — so those
+/// sites must NOT treat it as archive-internal. Only a genuinely-inner path is
+/// read-only / extract-routed / non-materializable.
+pub fn path_is_inside_archive(path: &Path) -> bool {
+    confirm_archive_boundary(path).is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty())
 }
 
 /// Reads the first four bytes and checks them against the three zip start-of-file
@@ -208,6 +227,23 @@ mod tests {
         std::fs::write(&mislabeled, b"this is plain text, not a zip").expect("write file");
 
         assert!(confirm_archive_boundary(&mislabeled.join("inner")).is_none());
+    }
+
+    #[test]
+    fn inside_archive_distinguishes_the_zip_file_itself_from_its_contents() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let zip = dir.path().join("real.zip");
+        std::fs::write(&zip, b"PK\x03\x04rest-of-archive").expect("write zip");
+
+        // A path INSIDE the archive is "inside"...
+        assert!(path_is_inside_archive(&zip.join("inner/a.txt")));
+        // ...but the `.zip` file ITSELF is NOT inside — it's a regular file, even
+        // though it DOES "cross" a boundary (navigation enters it).
+        assert!(!path_is_inside_archive(&zip));
+        assert!(path_crosses_archive_boundary(&zip));
+        // A plain non-archive path is neither.
+        assert!(!path_is_inside_archive(dir.path()));
+        assert!(!path_crosses_archive_boundary(dir.path()));
     }
 
     #[test]

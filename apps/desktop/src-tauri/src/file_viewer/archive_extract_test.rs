@@ -77,6 +77,27 @@ fn non_archive_path_returns_none() {
 }
 
 #[test]
+fn the_zip_file_itself_returns_none_so_it_views_as_raw_bytes() {
+    ensure_root_volume();
+    let src = tempfile::tempdir().expect("src dir");
+    let zip = src.path().join("bundle.zip");
+    build_zip(&zip, &[("inner.txt", b"hello")]);
+    let extract = tempfile::tempdir().expect("extract dir");
+
+    // The `.zip` FILE itself is NOT temp-extracted — it views as raw bytes like any
+    // binary file. (Extracting inner "" would address the archive ROOT, a directory,
+    // and error — so pre-fix this would panic here.)
+    let got = extract_if_archive_inner_with(&zip, extract.path(), EXTRACT_CAP_BYTES).expect("resolve the .zip file");
+    assert!(got.is_none(), "the .zip file itself must not extract (raw-bytes view)");
+
+    // A path INSIDE the archive DOES extract to a temp.
+    let inner = zip.join("inner.txt");
+    let extracted =
+        extract_if_archive_inner_with(&inner, extract.path(), EXTRACT_CAP_BYTES).expect("resolve inner entry");
+    assert!(extracted.is_some(), "an inner path extracts to a temp");
+}
+
+#[test]
 fn refuses_oversize_entry_before_extracting() {
     ensure_root_volume();
     let extract = tempfile::tempdir().expect("extract dir");

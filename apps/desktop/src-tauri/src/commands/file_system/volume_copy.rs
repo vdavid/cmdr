@@ -11,6 +11,7 @@ use std::sync::Arc;
 use tokio::time::Duration;
 
 use crate::commands::util::IpcError;
+use crate::file_system::volume::backends::archive;
 
 /// Expands a leading `~` in the destination path when the destination is a local
 /// volume. The transfer dialog accepts the home shortcut (`~`, `~/…`) in its
@@ -24,18 +25,19 @@ fn expand_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: String) -> PathBu
     }
 }
 
-/// Resolves a batch's source volume, routing an archive-inner batch to its
+/// Resolves a batch's source volume, routing a source INSIDE an archive to its
 /// `ArchiveVolume` (extract-out is a supported source). One `source_volume_id`
 /// per batch means no straddle risk — every path shares the same archive or none
-/// — so the first path decides. Returns the resolved `(volume, is_archive)`.
+/// — so the first path decides. The `bool` is "source is inside an archive": the
+/// `.zip` file itself is a plain file (copied/moved as a file, via its parent
+/// volume), so only a genuinely-inner source flips it true.
 fn resolve_source(volume_id: &str, first_path: Option<&PathBuf>) -> Option<(Arc<dyn Volume>, bool)> {
     let manager = get_volume_manager();
     match first_path {
-        Some(path) => {
-            let resolved = manager.resolve(volume_id, path);
-            resolved.volume.map(|v| (v, resolved.is_archive))
+        Some(path) if archive::path_is_inside_archive(path) => {
+            manager.resolve(volume_id, path).volume.map(|v| (v, true))
         }
-        None => manager.get(volume_id).map(|v| (v, false)),
+        Some(_) | None => manager.get(volume_id).map(|v| (v, false)),
     }
 }
 
@@ -302,9 +304,37 @@ pub struct SourceItemInput {
 
 #[cfg(test)]
 mod tests {
-    use super::{merge_source_types_from_batch, reject_write_into_archive};
+    use super::{merge_source_types_from_batch, reject_write_into_archive, resolve_source};
     use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo, WriteOperationError};
     use std::path::{Path, PathBuf};
+
+    #[test]
+    fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {
+        use crate::file_system::get_volume_manager;
+        use crate::file_system::volume::LocalPosixVolume;
+        use std::sync::Arc;
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let zip = dir.path().join("bundle.zip");
+        std::fs::write(&zip, b"PK\x03\x04rest").expect("write zip magic");
+        // The parent drive holds the `.zip`. (nextest isolates the global per test.)
+        get_volume_manager().register(
+            "root",
+            Arc::new(LocalPosixVolume::new("Root", dir.path().to_str().unwrap())),
+        );
+
+        // The `.zip` FILE itself is copied as a plain file: routed to the PARENT
+        // volume, `is_inside = false` (NOT the ArchiveVolume, which would scan its
+        // contents instead of copying the file).
+        let (vol, is_inside) = resolve_source("root", Some(&zip)).expect("source volume");
+        assert!(!is_inside, "the .zip file itself is not archive-inner");
+        assert_eq!(vol.name(), "Root", "routed to the parent volume, not the archive");
+
+        // A path INSIDE the archive routes to the ArchiveVolume, is_inside = true.
+        let (inner_vol, inner_is_inside) = resolve_source("root", Some(&zip.join("entry.txt"))).expect("inner volume");
+        assert!(inner_is_inside, "an inner path is archive-inner");
+        assert_eq!(inner_vol.root(), zip, "the archive volume's root is the .zip");
+    }
 
     #[test]
     fn rejecting_a_write_into_an_archive_is_a_typed_read_only_error() {

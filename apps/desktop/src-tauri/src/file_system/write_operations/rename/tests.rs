@@ -68,6 +68,21 @@ async fn rename_managed_local_success() {
 }
 
 #[tokio::test]
+async fn rename_managed_renames_a_zip_file_itself() {
+    // The `.zip` file is a regular file: renaming it must work like any other file.
+    // Only a rename INSIDE the archive is refused (covered by the reject test).
+    let tmp = create_test_dir("managed_zip_rename");
+    let old = tmp.join("bundle.zip");
+    let new = tmp.join("renamed.zip");
+    fs::write(&old, b"PK\x03\x04rest").unwrap();
+    let result = rename_managed(old.clone(), new.clone(), false, "root".to_string()).await;
+    assert!(result.is_ok(), "renaming the .zip file itself must succeed: {result:?}");
+    assert!(!old.exists());
+    assert!(new.exists());
+    let _ = fs::remove_dir_all(&tmp);
+}
+
+#[tokio::test]
 async fn rename_managed_local_conflict_without_force_is_transparent() {
     let tmp = create_test_dir("managed_conflict");
     let old = tmp.join("old.txt");

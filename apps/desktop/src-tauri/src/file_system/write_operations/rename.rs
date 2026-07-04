@@ -64,9 +64,10 @@ pub(crate) struct ConflictFileInfo {
 /// `from`/`to` are already tilde-expanded (root) or volume-relative (non-root)
 /// by the command layer. `volume_id` is `"root"` for the local filesystem.
 pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volume_id: String) -> Result<(), String> {
-    // Renaming into, out of, or inside an archive is a mutation — read-only until
-    // zip mutation lands (this seam becomes archive-edit routing then).
-    if archive::path_crosses_archive_boundary(&from) || archive::path_crosses_archive_boundary(&to) {
+    // Renaming a path INSIDE an archive is a mutation — read-only until zip
+    // mutation lands (this seam becomes archive-edit routing then). The `.zip`
+    // file itself is a regular file: renaming it must work like any other file.
+    if archive::path_is_inside_archive(&from) || archive::path_is_inside_archive(&to) {
         return Err("Renaming items inside an archive isn't available yet".to_string());
     }
 
@@ -142,10 +143,10 @@ fn rename_descriptor(from: &Path, to: &Path, volume_id: &str) -> OperationDescri
 async fn notify_rename_in_listing(volume_id: &str, from: &Path, to: &Path) {
     use crate::file_system::volume::MutationEvent;
 
-    // Resolve so a rename inside an archive notifies through the ArchiveVolume
-    // (rename into an archive is rejected upstream today; uniform for when
-    // mutation lands). A non-archive path is a plain `get`.
-    let volume = match crate::file_system::get_volume_manager().resolve(volume_id, from).volume {
+    // Plain `get`, not `resolve`: a rename INSIDE an archive is rejected upstream,
+    // so this only ever runs for a normal file (incl. the `.zip` file itself),
+    // which must notify through its own volume — never route to the ArchiveVolume.
+    let volume = match crate::file_system::get_volume_manager().get(volume_id) {
         Some(v) => v,
         None => return,
     };
@@ -395,13 +396,10 @@ fn check_sibling_conflict(_old_path: &Path, new_path: &Path) -> (bool, bool, Opt
 /// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's
 /// `get_metadata`.
 async fn check_sibling_conflict_via_volume(volume_id: &str, new_path: &Path) -> (bool, Option<ConflictFileInfo>) {
-    // Resolve so a sibling-conflict check for a target inside an archive consults
-    // the ArchiveVolume's index (rename into an archive is rejected upstream today,
-    // so this only matters once mutation lands, but it keeps the routing uniform).
-    let volume = match crate::file_system::get_volume_manager()
-        .resolve(volume_id, new_path)
-        .volume
-    {
+    // Plain `get`, not `resolve`: renaming INTO an archive is rejected upstream, so
+    // the target is always a normal sibling (incl. a `.zip` file), checked on its
+    // own volume — routing to the ArchiveVolume would mis-consult the zip's index.
+    let volume = match crate::file_system::get_volume_manager().get(volume_id) {
         Some(v) => v,
         None => return (false, None),
     };

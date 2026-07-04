@@ -61,17 +61,20 @@ pub async fn stat_paths_kinds(paths: Vec<String>) -> TimedOut<Vec<Option<bool>>>
 
     // A path INSIDE an archive can't be `symlink_metadata`'d (it's not a real FS
     // path), so it comes back `None`. Route those through the archive volume to
-    // recover the kind. `resolve` does no I/O unless a component carries a `.zip`
-    // extension, so genuinely-missing paths stay a cheap `None`.
+    // recover the kind. Gate on "inside an archive" (not just "crosses"): the
+    // `.zip` file ITSELF is a real file that `symlink_metadata` already classified
+    // as a non-directory, so it never reaches here — and if it did, we must NOT
+    // report the archive ROOT's directory-ness for the file. `path_is_inside_archive`
+    // does no I/O unless a component carries a `.zip` extension.
     if !result.timed_out {
         for (kind, path) in result.data.iter_mut().zip(paths.iter()) {
-            if kind.is_some() {
+            if kind.is_some() || !crate::file_system::volume::backends::archive::path_is_inside_archive(Path::new(path))
+            {
                 continue;
             }
             let resolved = crate::file_system::get_volume_manager()
                 .resolve(crate::file_system::volume::DEFAULT_VOLUME_ID, Path::new(path));
-            if resolved.is_archive
-                && let Some(volume) = resolved.volume
+            if let Some(volume) = resolved.volume
                 && let Ok(is_dir) = volume.is_directory(&resolved.path).await
             {
                 *kind = Some(is_dir);
@@ -147,6 +150,22 @@ mod tests {
         let result = stat_paths_kinds(paths).await;
         assert!(!result.timed_out);
         assert_eq!(result.data, vec![Some(false), None]);
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[tokio::test]
+    async fn a_zip_file_itself_reports_as_a_file_not_a_directory() {
+        // The `.zip` file is a real file: `symlink_metadata` classifies it, and the
+        // archive-inner recovery branch must NOT re-report the archive ROOT's
+        // directory-ness for it (which would mislead drag/transfer callers).
+        let tmp = test_dir("zipfile");
+        let zip = tmp.join("bundle.zip");
+        fs::write(&zip, b"PK\x03\x04rest").unwrap();
+
+        let result = stat_paths_kinds(vec![zip.to_string_lossy().into_owned()]).await;
+        assert!(!result.timed_out);
+        assert_eq!(result.data, vec![Some(false)], "the .zip file must report as a file");
 
         let _ = fs::remove_dir_all(&tmp);
     }

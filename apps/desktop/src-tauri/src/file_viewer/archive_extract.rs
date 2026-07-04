@@ -120,6 +120,12 @@ pub(super) fn extract_if_archive_inner_with(
     dir: &Path,
     cap: u64,
 ) -> Result<Option<ExtractedEntry>, ViewerError> {
+    // Only a path INSIDE the archive is temp-extracted. The `.zip` file ITSELF is a
+    // regular file: viewing it shows its raw bytes like any binary file (extracting
+    // inner "" would address the archive ROOT — a directory — and error).
+    if !crate::file_system::volume::backends::archive::path_is_inside_archive(requested) {
+        return Ok(None);
+    }
     let resolved = crate::file_system::get_volume_manager().resolve("root", requested);
     if !resolved.is_archive {
         return Ok(None);

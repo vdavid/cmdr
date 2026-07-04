@@ -114,7 +114,10 @@ pub(crate) async fn create_directory_core(
     }
 
     // Creating inside an archive is a mutation, read-only until zip mutation lands
-    // (this seam becomes archive-edit routing then).
+    // (this seam becomes archive-edit routing then). Uses `path_crosses` (NOT
+    // `path_is_inside`) on purpose: a `.zip` file AS the parent means the new child
+    // would land INSIDE the archive (at its root), so a `.zip`-file parent must be
+    // refused too.
     if archive::path_crosses_archive_boundary(Path::new(parent_path)) {
         return Err("Adding items inside an archive isn't available yet".to_string());
     }
@@ -164,7 +167,10 @@ pub(crate) async fn create_file_core(
     }
 
     // Creating inside an archive is a mutation, read-only until zip mutation lands
-    // (this seam becomes archive-edit routing then).
+    // (this seam becomes archive-edit routing then). Uses `path_crosses` (NOT
+    // `path_is_inside`) on purpose: a `.zip` file AS the parent means the new child
+    // would land INSIDE the archive (at its root), so a `.zip`-file parent must be
+    // refused too.
     if archive::path_crosses_archive_boundary(Path::new(parent_path)) {
         return Err("Adding items inside an archive isn't available yet".to_string());
     }
