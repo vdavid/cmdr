@@ -50,7 +50,17 @@ pub fn start_drag_paths(
     if path_bufs.is_empty() {
         return Err("No valid files to drag".to_string());
     }
-    let locality = locality_for_volume(source_volume_id.as_deref());
+    // Archive-inner paths aren't materializable as local file URLs (they live
+    // inside the `.zip`), so they force a VIRTUAL session — a file-promise
+    // provider — even though the source volume id is the local parent drive.
+    let locality = if path_bufs
+        .iter()
+        .any(|p| crate::file_system::volume::backends::archive::path_crosses_archive_boundary(p))
+    {
+        DragSessionLocality::Virtual
+    } else {
+        locality_for_volume(source_volume_id.as_deref())
+    };
     run_drag_on_main_thread(&app, path_bufs, PathBuf::from(icon_path), locality, source_volume_id)
 }
 

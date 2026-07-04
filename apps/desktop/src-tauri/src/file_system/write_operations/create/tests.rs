@@ -342,3 +342,34 @@ async fn create_file_core_maps_permission_denied_to_friendly_message() {
     assert!(msg.contains("Permission denied"), "got: {msg}");
     assert!(msg.contains("file.txt") && msg.contains("/somewhere"), "got: {msg}");
 }
+
+/// Writes a file whose first bytes are a zip signature (enough for the boundary
+/// magic check; these tests never parse the archive).
+fn write_zip_magic(path: &Path) {
+    fs::write(path, b"PK\x03\x04not-a-real-body").expect("write zip magic");
+}
+
+#[tokio::test]
+async fn create_directory_core_rejects_a_target_inside_an_archive() {
+    let dir = create_test_dir("archive-mkdir");
+    let zip = dir.join("bundle.zip");
+    write_zip_magic(&zip);
+
+    // Parent is inside the archive → read-only until zip mutation lands.
+    let parent = zip.join("sub");
+    let result = create_directory_core(None, &parent.to_string_lossy(), "newdir").await;
+    assert!(result.is_err(), "expected rejection, got {result:?}");
+    cleanup_test_dir(&dir);
+}
+
+#[tokio::test]
+async fn create_file_core_rejects_a_target_inside_an_archive() {
+    let dir = create_test_dir("archive-mkfile");
+    let zip = dir.join("bundle.zip");
+    write_zip_magic(&zip);
+
+    // The archive root itself is also read-only.
+    let result = create_file_core(None, &zip.to_string_lossy(), "new.txt").await;
+    assert!(result.is_err(), "expected rejection, got {result:?}");
+    cleanup_test_dir(&dir);
+}

@@ -20,6 +20,7 @@ use uuid::Uuid;
 
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::types::WriteOperationType;
+use crate::file_system::volume::backends::archive;
 
 /// Result of a rename validity check.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
@@ -63,6 +64,12 @@ pub(crate) struct ConflictFileInfo {
 /// `from`/`to` are already tilde-expanded (root) or volume-relative (non-root)
 /// by the command layer. `volume_id` is `"root"` for the local filesystem.
 pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volume_id: String) -> Result<(), String> {
+    // Renaming into, out of, or inside an archive is a mutation — read-only until
+    // zip mutation lands (this seam becomes archive-edit routing then).
+    if archive::path_crosses_archive_boundary(&from) || archive::path_crosses_archive_boundary(&to) {
+        return Err("Renaming items inside an archive isn't available yet".to_string());
+    }
+
     let is_root = volume_id == "root";
     let descriptor = rename_descriptor(&from, &to, &volume_id);
 

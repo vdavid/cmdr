@@ -149,6 +149,15 @@ pub fn resolve(input: &str, base_dir: &str) -> GoToPathResolution {
     let normalized = lexical_normalize(&joined);
     let normalized_str = normalized.to_string_lossy().to_string();
 
+    // A path that crosses into a supported archive is browsed as a folder, even
+    // though the inner path (or the `.zip` file itself) isn't a real directory on
+    // disk — so typing it in the path bar enters the archive. Confirm the boundary
+    // (a real archive FILE + zip magic) so a directory named `foo.zip` or a
+    // mislabeled file still classifies normally below.
+    if crate::file_system::volume::backends::archive::path_crosses_archive_boundary(&normalized) {
+        return GoToPathResolution::Directory { path: normalized_str };
+    }
+
     // `metadata` follows symlinks, so a symlinked dir/file classifies as its target.
     match std::fs::metadata(&normalized) {
         Ok(meta) if meta.is_dir() => GoToPathResolution::Directory { path: normalized_str },
@@ -199,6 +208,41 @@ mod tests {
                 path: sub.to_string_lossy().to_string()
             }
         );
+    }
+
+    #[test]
+    fn typing_a_path_into_a_zip_enters_it_as_a_directory() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let zip = dir.path().join("bundle.zip");
+        // A zip start-of-file signature is enough for the boundary magic check.
+        fs::write(&zip, b"PK\x03\x04rest-of-archive").expect("write zip");
+
+        // An inner path that doesn't exist on disk still enters the archive.
+        let inner = zip.join("docs");
+        let res = resolve(&inner.to_string_lossy(), dir.path().to_str().unwrap());
+        assert_eq!(
+            res,
+            GoToPathResolution::Directory {
+                path: inner.to_string_lossy().to_string()
+            }
+        );
+
+        // Typing the `.zip` path itself also enters it (lists the archive root).
+        let res_root = resolve(&zip.to_string_lossy(), dir.path().to_str().unwrap());
+        assert!(matches!(res_root, GoToPathResolution::Directory { .. }));
+    }
+
+    #[test]
+    fn a_directory_named_like_a_zip_does_not_enter_as_an_archive() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let fake = dir.path().join("foo.zip");
+        fs::create_dir(&fake).expect("create dir named foo.zip");
+
+        // A non-existent child: the archive branch would wrongly return
+        // `Directory`; a real directory correctly falls to `NearestAncestor`.
+        let child = fake.join("ghost");
+        let res = resolve(&child.to_string_lossy(), dir.path().to_str().unwrap());
+        assert!(matches!(res, GoToPathResolution::NearestAncestor { .. }));
     }
 
     #[test]

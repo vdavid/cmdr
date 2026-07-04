@@ -53,7 +53,32 @@ pub fn stat_paths_kinds_blocking(paths: &[String]) -> Vec<Option<bool>> {
 pub async fn stat_paths_kinds(paths: Vec<String>) -> TimedOut<Vec<Option<bool>>> {
     let count = paths.len();
     let fallback = vec![None; count];
-    blocking_with_timeout_flag(STAT_PATHS_TIMEOUT, fallback, move || stat_paths_kinds_blocking(&paths)).await
+    let paths_for_blocking = paths.clone();
+    let mut result = blocking_with_timeout_flag(STAT_PATHS_TIMEOUT, fallback, move || {
+        stat_paths_kinds_blocking(&paths_for_blocking)
+    })
+    .await;
+
+    // A path INSIDE an archive can't be `symlink_metadata`'d (it's not a real FS
+    // path), so it comes back `None`. Route those through the archive volume to
+    // recover the kind. `resolve` does no I/O unless a component carries a `.zip`
+    // extension, so genuinely-missing paths stay a cheap `None`.
+    if !result.timed_out {
+        for (kind, path) in result.data.iter_mut().zip(paths.iter()) {
+            if kind.is_some() {
+                continue;
+            }
+            let resolved = crate::file_system::get_volume_manager()
+                .resolve(crate::file_system::volume::DEFAULT_VOLUME_ID, Path::new(path));
+            if resolved.is_archive
+                && let Some(volume) = resolved.volume
+                && let Ok(is_dir) = volume.is_directory(&resolved.path).await
+            {
+                *kind = Some(is_dir);
+            }
+        }
+    }
+    result
 }
 
 #[cfg(test)]

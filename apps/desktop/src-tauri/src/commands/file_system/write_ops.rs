@@ -22,8 +22,27 @@ use std::sync::Arc;
 use tokio::time::Duration;
 
 use crate::commands::util::IpcError;
+use crate::file_system::volume::backends::archive;
 
 use super::expand_tilde;
+
+/// Rejects a local write op that touches a path INSIDE an archive. Archives are
+/// read-only until zip mutation lands, and the real extract-out path goes through
+/// `copy_between_volumes` (which routes to the `ArchiveVolume`), never this local
+/// `std::fs` fast-path. A backend safety net behind the frontend's read-only
+/// capability gating; this seam turns into archive-edit routing when mutation
+/// lands.
+fn reject_if_archive_inner<'a>(paths: impl IntoIterator<Item = &'a PathBuf>) -> Result<(), WriteOperationError> {
+    for path in paths {
+        if archive::path_crosses_archive_boundary(path) {
+            return Err(WriteOperationError::ReadOnlyDevice {
+                path: path.to_string_lossy().into_owned(),
+                device_name: None,
+            });
+        }
+    }
+    Ok(())
+}
 
 /// Creates a folder and returns its new path. Thin pass-through to the managed
 /// create op (`write_operations::create`): expand tilde (root only), wrap in the
@@ -87,6 +106,10 @@ pub async fn copy_files(
     let destination = PathBuf::from(expand_tilde(&destination));
     let config = config.unwrap_or_default();
 
+    // A copy INTO or OUT of an archive doesn't belong on the local fast-path
+    // (extract-out routes through `copy_between_volumes`; write-in is read-only).
+    reject_if_archive_inner(sources.iter().chain(std::iter::once(&destination)))?;
+
     // The unified transfer dialog routes every cross-device copy through
     // `copy_between_volumes`; this plain command is the same-`root` local path,
     // so no ejectable volume is involved (empty busy set).
@@ -107,6 +130,10 @@ pub async fn move_files(
     let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
     let destination = PathBuf::from(expand_tilde(&destination));
     let config = config.unwrap_or_default();
+
+    // A move touching an archive doesn't belong on the local fast-path (moving
+    // into or out of a zip is read-only until mutation lands).
+    reject_if_archive_inner(sources.iter().chain(std::iter::once(&destination)))?;
 
     // Same-`root` local move (the FE uses `move_between_volumes` whenever the
     // source and destination volumes differ), so no ejectable volume here.
@@ -132,6 +159,11 @@ pub async fn delete_files(
     };
     let config = config.unwrap_or_default();
 
+    // Deleting an entry inside an archive is a mutation (read-only for now). The
+    // boundary check only bites for real local `.zip` paths, so non-root volume
+    // paths (MTP/SMB) pass through untouched.
+    reject_if_archive_inner(sources.iter())?;
+
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     ops_delete_files_start(events, sources, config, volume_id).await
 }
@@ -147,6 +179,9 @@ pub async fn trash_files(
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
     let config = config.unwrap_or_default();
+
+    // Trashing an entry inside an archive is a mutation (read-only for now).
+    reject_if_archive_inner(sources.iter())?;
 
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     ops_trash_files_start(events, sources, item_sizes, config).await

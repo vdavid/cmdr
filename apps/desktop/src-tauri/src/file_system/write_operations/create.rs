@@ -27,6 +27,7 @@ use uuid::Uuid;
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::types::WriteOperationType;
 use crate::file_system::get_volume_manager;
+use crate::file_system::volume::backends::archive;
 
 /// Creates a folder as a managed instant op and returns its new path. `parent_path`
 /// is already tilde-expanded by the command layer.
@@ -112,6 +113,12 @@ pub(crate) async fn create_directory_core(
         return Err("Folder name contains invalid characters".to_string());
     }
 
+    // Creating inside an archive is a mutation, read-only until zip mutation lands
+    // (this seam becomes archive-edit routing then).
+    if archive::path_crosses_archive_boundary(Path::new(parent_path)) {
+        return Err("Adding items inside an archive isn't available yet".to_string());
+    }
+
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
     let expanded_path = parent_path.to_string();
 
@@ -154,6 +161,12 @@ pub(crate) async fn create_file_core(
     }
     if name.contains('/') || name.contains('\0') {
         return Err("File name contains invalid characters".to_string());
+    }
+
+    // Creating inside an archive is a mutation, read-only until zip mutation lands
+    // (this seam becomes archive-edit routing then).
+    if archive::path_crosses_archive_boundary(Path::new(parent_path)) {
+        return Err("Adding items inside an archive isn't available yet".to_string());
     }
 
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());

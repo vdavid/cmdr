@@ -191,3 +191,18 @@ async fn rename_managed_marks_nonroot_volume_busy_during_op() {
         "the volume must be freed once the rename finishes"
     );
 }
+
+#[tokio::test]
+async fn rename_managed_rejects_a_target_inside_an_archive() {
+    let tmp = create_test_dir("archive_rename");
+    let zip = tmp.join("bundle.zip");
+    fs::write(&zip, b"PK\x03\x04not-a-real-body").expect("write zip magic");
+
+    // Renaming a file inside the archive is a mutation — rejected until zip
+    // mutation lands (the fork returns before touching the operation manager).
+    let from = zip.join("old.txt");
+    let to = zip.join("new.txt");
+    let result = rename_managed(from, to, false, "root".to_string()).await;
+    assert!(result.is_err(), "expected rejection, got {result:?}");
+    let _ = fs::remove_dir_all(&tmp);
+}
