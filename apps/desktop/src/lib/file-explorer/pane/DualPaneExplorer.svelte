@@ -20,7 +20,6 @@
         type Location,
         type UnlistenFn,
         updateFocusedPane,
-        updatePaneTabs,
         updateViewModeMenu,
         ejectVolume,
         onVolumeContextAction,
@@ -103,6 +102,8 @@
     import { isPrintableJumpContinuation, isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
     import { createDragDropController } from './drag-drop-controller.svelte'
     import { initPersistenceSubscriber } from './persistence-subscriber.svelte'
+    import { initDebugEmitters } from './debug-emitters.svelte'
+    import { initTabMcpSync } from './tab-mcp-sync.svelte'
     import { recalculateWebviewOffset } from '../drag/drag-position'
     import { initIndexEvents } from '$lib/indexing/index'
     import { createIndexEventHandler } from './index-events'
@@ -182,44 +183,13 @@
     let unlistenIndexEvents: UnlistenFn | undefined
     let unlistenIndexAggregationComplete: UnlistenFn | undefined
 
-    // Debounced tab sync to MCP backend (~100ms trailing)
-    let tabSyncTimer: ReturnType<typeof setTimeout> | null = null
-    const TAB_SYNC_DEBOUNCE_MS = 100
-
-    function syncTabsToBackend() {
-        if (tabSyncTimer) clearTimeout(tabSyncTimer)
-        tabSyncTimer = setTimeout(() => {
-            const leftTabs = getAllTabs(leftTabMgr).map((t) => ({
-                id: t.id,
-                path: t.path,
-                pinned: t.pinned,
-                active: t.id === leftTabMgr.activeTabId,
-            }))
-            const rightTabs = getAllTabs(rightTabMgr).map((t) => ({
-                id: t.id,
-                path: t.path,
-                pinned: t.pinned,
-                active: t.id === rightTabMgr.activeTabId,
-            }))
-            void updatePaneTabs('left', leftTabs)
-            void updatePaneTabs('right', rightTabs)
-        }, TAB_SYNC_DEBOUNCE_MS)
-    }
-
-    // Reactive effect: sync tab structural changes to the MCP backend
-    $effect(() => {
-        // Read reactive values to establish Svelte reactivity dependencies.
-        // Include path so MCP state updates when the active tab navigates.
-        void getAllTabs(leftTabMgr).map((t) => `${t.id}:${t.pinned ? 'p' : ''}:${t.path}`)
-        void getAllTabs(rightTabMgr).map((t) => `${t.id}:${t.pinned ? 'p' : ''}:${t.path}`)
-        void leftTabMgr.activeTabId
-        void rightTabMgr.activeTabId
-
-        if (!initialized) return
-
-        untrack(() => {
-            syncTabsToBackend()
-        })
+    // Debounced mirror of both panes' tab structure into the MCP backend store.
+    // Owns its own reactive $effect + debounce timer; `syncTabsToBackend` is
+    // exposed for the one-shot initial push onMount fires after init.
+    const tabMcpSync = initTabMcpSync({
+        getLeftTabMgr: () => leftTabMgr,
+        getRightTabMgr: () => rightTabMgr,
+        getInitialized: () => initialized,
     })
 
     // Refs for pane wrapper elements (used for hit-testing drop targets)
@@ -424,35 +394,13 @@
         getPaneWrapperEls: () => paneWrapperEls,
     })
 
-    // Emit history state to debug window (dev mode only, skip in tests)
-    $effect(() => {
-        if (!import.meta.env.DEV || import.meta.env.MODE === 'test') return
-        // Read the reactive values
-        const left = leftHistory
-        const right = rightHistory
-        const focused = focusedPane
-        // Emit without tracking to avoid infinite loops
-        untrack(() => {
-            void import('@tauri-apps/api/event').then(({ emit }) => {
-                void emit('debug-history', { left, right, focusedPane: focused })
-            })
-        })
-    })
-
-    // Emit closed-tab stacks to debug window (dev mode only, skip in tests)
-    $effect(() => {
-        if (!import.meta.env.DEV || import.meta.env.MODE === 'test') return
-        // Snapshot reads every property, setting up reactivity on push/pop/mutate.
-        // It also produces plain JSON so Tauri's event channel can serialize it;
-        // raw `$state` proxies + nested NavigationHistory throw on structured-clone.
-        const leftSnap = $state.snapshot(leftTabMgr.closedStack)
-        const rightSnap = $state.snapshot(rightTabMgr.closedStack)
-        const focused = focusedPane
-        untrack(() => {
-            void import('@tauri-apps/api/event').then(({ emit }) => {
-                void emit('debug-closed-tabs', { left: leftSnap, right: rightSnap, focusedPane: focused })
-            })
-        })
+    // Dev-only: mirror per-pane history + closed-tab stacks to the debug window.
+    initDebugEmitters({
+        getLeftHistory: () => leftHistory,
+        getRightHistory: () => rightHistory,
+        getLeftTabMgr: () => leftTabMgr,
+        getRightTabMgr: () => rightTabMgr,
+        getFocusedPane: () => focusedPane,
     })
 
     // Derived volume paths - handle 'network' virtual volume specially
@@ -842,7 +790,7 @@
         pushViewMenuState()
 
         // Sync initial tab state to MCP backend
-        syncTabsToBackend()
+        tabMcpSync.syncTabsToBackend()
 
         // Dev-only: correct drag coordinates when Web Inspector is docked.
         if (import.meta.env.DEV) {
@@ -933,7 +881,7 @@
         unlistenVolumeContextAction?.()
         unlistenIndexEvents?.()
         unlistenIndexAggregationComplete?.()
-        if (tabSyncTimer) clearTimeout(tabSyncTimer)
+        tabMcpSync.cleanup()
         if (quickLookFollowTimer !== null) clearTimeout(quickLookFollowTimer)
         // No cleanup needed for throttle (no pending timers)
         cleanupVolumeStore()
