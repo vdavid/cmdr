@@ -339,8 +339,8 @@ pub async fn translate_search_query(
         .with_max_tokens(300)
         .with_top_p(0.9);
 
-    let response = crate::ai::translate::translate_once(&backend, &system_prompt, &natural_query, &options, "AI search")
-        .await?;
+    let response =
+        crate::ai::translate::translate_once(&backend, &system_prompt, &natural_query, &options, "AI search").await?;
 
     // Parse key-value response
     let parsed = ai::parse_llm_response(&response);

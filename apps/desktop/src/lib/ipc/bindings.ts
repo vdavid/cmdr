@@ -2363,21 +2363,12 @@ export const commands = {
       __TAURI_INVOKE('reconnect_smb_volume_with_credentials', { volumeId, username, password }),
     ),
   /**
-   *  Disconnects a single SMB volume by unmounting it at the OS level.
+   *  Disconnects a single SMB volume by tearing down its OS mount.
    *
+   *  Thin delegate to [`crate::file_system::volume::eject::disconnect_smb`], mapping
+   *  the typed `EjectError` to the wire `IpcError` (preserving the timeout flag).
    *  Called by the "Disconnect" button in `SmbReconnectingView` / the gave-up
-   *  `VolumeUnreachableBanner`. Looks up the volume by id, then runs `diskutil
-   *  unmount <mount_path>` (macOS). The OS unmount fires FSEvents, which triggers
-   *  the existing volume watcher → `Volume::on_unmount` pipeline:
-   *    - `SmbVolume::on_unmount` flips `unmounted=true`, stops the watcher task, drops the smb2
-   *      session.
-   *    - The volume is removed from `VolumeManager`.
-   *    - A `volumes-changed` event flows to the frontend.
-   *
-   *  On Linux the OS-level unmount isn't wired up yet (mirrors
-   *  `unmount_smb_shares_from_host`), so we just drop the smb2 session via
-   *  `on_unmount` directly. The OS mount stays alive but the user can eject it
-   *  from the file manager.
+   *  `VolumeUnreachableBanner`.
    */
   disconnectSmbVolume: (volumeId: string) =>
     typedError<null, IpcError>(__TAURI_INVOKE('disconnect_smb_volume', { volumeId })),

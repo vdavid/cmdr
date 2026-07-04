@@ -15,7 +15,11 @@
  */
 
 import type { RecentPathEntry } from '$lib/ipc/bindings'
-import { addRecentPath as addRecentPathCommand, getRecentPaths, removeRecentPath as removeRecentPathCommand } from '$lib/tauri-commands'
+import {
+  addRecentPath as addRecentPathCommand,
+  getRecentPaths,
+  removeRecentPath as removeRecentPathCommand,
+} from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('go-to-path')

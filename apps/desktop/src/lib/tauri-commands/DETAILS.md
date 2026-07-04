@@ -8,8 +8,8 @@ commands, and notable non-obvious placements.
 - **`ipc-types.ts`**: `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()`: shared timeout-aware types.
 - **`index.ts`**: barrel re-export of everything below.
 - **`file-listing.ts`**: virtual-scroll listing API, batch accessors (`getPathsAtIndices`, `getFilesAtIndices`),
-  drag-and-drop, `pathExists`, `createDirectory`, `createFile`, sync status, font metrics,
-  `getBriefColumnTextWidths` (Brief-view column measurement).
+  drag-and-drop, `pathExists`, `createDirectory`, `createFile`, sync status, font metrics, `getBriefColumnTextWidths`
+  (Brief-view column measurement).
 - **`file-viewer.ts`**: viewer session only: open, seek, search (with `useRegex` / `caseSensitive` modes), close, word
   wrap menu, encoding pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`),
   `viewerReload`.
@@ -35,9 +35,9 @@ commands, and notable non-obvious placements.
 - **`tab.ts`**: tab context menu: `showTabContextMenu`, `onTabContextAction`.
 - **`clipboard-files.ts`**: clipboard file operations: copy/cut files to system clipboard, read/paste, clear cut state.
 - **`indexing.ts`**: drive-indexing commands (status reads `getIndexStatus` / `getVolumeIndexStatusById`, lifecycle
-  `enable/disable/forget/rescan/clearDriveIndex`) plus the event listeners: typed `on*` wrappers over the
-  `tauri-specta` `events.index*` helpers (scan/replay/aggregation progress + complete, rescan notification, dir-updated,
-  memory warning).
+  `enable/disable/forget/rescan/clearDriveIndex`) plus the event listeners: typed `on*` wrappers over the `tauri-specta`
+  `events.index*` helpers (scan/replay/aggregation progress + complete, rescan notification, dir-updated, memory
+  warning).
 - **`ai.ts`**: AI lifecycle event listeners
   (`onAi{DownloadProgress,Starting,ServerReady,Verifying,Installing,InstallComplete,Extracting}`) over the `events.ai*`
   helpers.
@@ -51,8 +51,8 @@ commands, and notable non-obvious placements.
   `onDragOutSessionComplete` (drag-out-to-Finder toasts).
 - **`quick-look.ts`**: `onQuickLookKey` / `onQuickLookClosed` over the Quick Look panel events.
 - **`downloads.ts`**: downloads-watcher commands (`downloadsWatcherStatus`, `goToLatestDownload`,
-  `setGlobalGoToLatestShortcut`, `recheckDownloadsWatcherGate`) plus `onDownloadDetected` / `onGlobalShortcutFired`
-  over the downloads-watcher + global-hotkey events.
+  `setGlobalGoToLatestShortcut`, `recheckDownloadsWatcherGate`) plus `onDownloadDetected` / `onGlobalShortcutFired` over
+  the downloads-watcher + global-hotkey events.
 - **`restricted-paths.ts`**: `onRestrictedPathsChanged` over the TCC-restricted-path-set event.
 - **`dialog-events.ts`**: window-management events: `onExecuteCommand` + `emitExecuteCommand` (the unified
   menu/cross-window relay), the MCP `dialog` lifecycle (`on{Open,Focus,Close}Settings` / `…FileViewer` / `…About` /
@@ -61,10 +61,10 @@ commands, and notable non-obvious placements.
   `onPersistRestrictedSetting`.
 - **`git.ts`**: git-browser commands (`getGitRepoInfo`, `subscribeGitState` / `unsubscribeGitState`,
   `getGitStatusForPaths`) plus `onGitStateChanged` over the per-repo `git-state-changed` event.
-- **`go-to-path.ts`**: ⌘G path resolution (`resolveGoToPath`) and the persisted recent-paths list
-  (`getRecentPaths`, `addRecentPath`, `removeRecentPath`).
-- **`tags.ts`**: macOS Finder color tags: `toggleTags` (toggle a color across paths) and `enrichTags` (patch fresh
-  tag data into a cached listing).
+- **`go-to-path.ts`**: ⌘G path resolution (`resolveGoToPath`) and the persisted recent-paths list (`getRecentPaths`,
+  `addRecentPath`, `removeRecentPath`).
+- **`tags.ts`**: macOS Finder color tags: `toggleTags` (toggle a color across paths) and `enrichTags` (patch fresh tag
+  data into a cached listing).
 - **`updates.ts`**: macOS custom updater: `checkForUpdate` / `downloadUpdate` / `installUpdate` (see
   `$lib/updates/updater.svelte.ts` for the full flow and the non-macOS Tauri-plugin fallback).
 - **`debug.ts`**: dev/benchmark IPC: `benchmarkLog` (join a frontend timing into the Rust benchmark timeline).

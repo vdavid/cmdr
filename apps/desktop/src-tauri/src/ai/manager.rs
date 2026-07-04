@@ -195,9 +195,10 @@ impl BackendResolution {
                 "AI is not configured. Enable an AI provider in settings.",
             )),
             BackendResolution::NotConfigured(reason) => Err(AiTranslateError::new(K::NotConfigured, reason)),
-            BackendResolution::UnknownProvider(p) => {
-                Err(AiTranslateError::new(K::UnknownProvider, format!("Unknown AI provider: {p}")))
-            }
+            BackendResolution::UnknownProvider(p) => Err(AiTranslateError::new(
+                K::UnknownProvider,
+                format!("Unknown AI provider: {p}"),
+            )),
         }
     }
 

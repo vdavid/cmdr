@@ -11,7 +11,11 @@ import { resolveStorePath } from './store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 import type { RestrictedWindowPersistableSetting, SettingValue } from '$lib/ipc/bindings'
-import { getRestrictedWindowSettings, persistRestrictedWindowSetting, recordSettingsDefaults } from '$lib/tauri-commands'
+import {
+  getRestrictedWindowSettings,
+  persistRestrictedWindowSetting,
+  recordSettingsDefaults,
+} from '$lib/tauri-commands'
 
 const log = getAppLogger('settings')
 

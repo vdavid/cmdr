@@ -7,12 +7,7 @@
  */
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import type { RepoInfo } from '$lib/ipc/bindings'
-import {
-  getGitRepoInfo,
-  onGitStateChanged,
-  subscribeGitState,
-  unsubscribeGitState,
-} from '$lib/tauri-commands'
+import { getGitRepoInfo, onGitStateChanged, subscribeGitState, unsubscribeGitState } from '$lib/tauri-commands'
 
 // Re-export the generated `RepoInfo` so existing importers (`RepoChip`, `FilePane`,
 // tests) keep their `from './git-store.svelte'` import path.

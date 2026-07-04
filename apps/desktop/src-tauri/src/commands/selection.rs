@@ -48,7 +48,8 @@ pub async fn translate_selection_query(
         .with_max_tokens(300)
         .with_top_p(0.9);
 
-    let response = crate::ai::translate::translate_once(&backend, &system_prompt, &prompt, &options, "AI selection").await?;
+    let response =
+        crate::ai::translate::translate_once(&backend, &system_prompt, &prompt, &options, "AI selection").await?;
 
     let parsed = ai::parse_selection_response(&response);
     Ok(query_builder::build_selection_translate_result(&parsed))

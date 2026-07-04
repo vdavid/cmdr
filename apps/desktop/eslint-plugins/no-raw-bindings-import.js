@@ -51,14 +51,13 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description:
-        'Import typed wrappers from `$lib/tauri-commands` instead of the raw `commands`/`events` bindings.',
+      description: 'Import typed wrappers from `$lib/tauri-commands` instead of the raw `commands`/`events` bindings.',
       recommended: true,
     },
     messages: {
       rawBindingsImport:
         "Don't import `{{ name }}` from `$lib/ipc/bindings` directly. Use the typed wrapper from " +
-        '`$lib/tauri-commands` (add a thin one if it\'s missing) so IPC stays on one seam with consistent ' +
+        "`$lib/tauri-commands` (add a thin one if it's missing) so IPC stays on one seam with consistent " +
         'error/timeout unwrapping. See `lib/tauri-commands/CLAUDE.md`. Type imports from bindings are fine.',
     },
     schema: [],
