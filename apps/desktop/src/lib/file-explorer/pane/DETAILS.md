@@ -46,6 +46,12 @@ list).
 - **`listing-diff-sync.svelte.ts`**: File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core)
 - **`drag-drop-controller.svelte.ts`**: Native drag band: drop-target state, drag handlers, auto-scroll loop, Tauri
   listeners
+- **`tab-mcp-sync.svelte.ts`**: Debounced mirror of each pane's tab structure into the MCP backend store
+  (`updatePaneTabs`) via a reactive `$effect`; sibling of `pane-mcp-sync` (which mirrors pane state, not the tab set)
+- **`quick-look-follow.svelte.ts`**: Quick Look cursor-follow (debounced `quickLookSetPath`) + the error-state
+  auto-close, two reactive `$effect`s + the debounce/generation state
+- **`debug-emitters.svelte.ts`**: Dev-only reactive `$effect`s that mirror per-pane history + closed-tab stacks to the
+  debug window (no-op outside DEV / in tests)
 
 ### Pure utilities (`*.ts`)
 
@@ -55,6 +61,16 @@ list).
 - **`clipboard-operations.ts`**: System-clipboard copy/cut/paste factory (MTP refusal, snapshot, cut-vs-copy)
 - **`file-operation-commands.ts`**: Rename / new-folder / new-file / viewer / transfer / delete openers factory
 - **`pane-commands.ts`**: MCP/palette read-only + delegating command bodies (selection, key-route, MTP val)
+- **`sort-operations.ts`**: Sort orchestration factory: column-click cycle, order toggle, atomic MCP `setSort`,
+  re-sort-both-panes hook (over the pure `sorting-handlers` helpers)
+- **`swap-panes.ts`**: Full left/right pane swap (nav-state trade + listing adoption) + the `canSwapPanes` gate
+- **`volume-selection.ts`**: MCP/palette volume selection by index / name, folding onto `navigate({ selectVolume })`
+- **`edge-flow-handlers.ts`**: The five recovery nav edge-flows (cancel-loading, MTP-fatal, retry-unreachable,
+  open-home, volume-unmount), each folding onto `navigate({ source: 'fallback' | 'cancel' })`
+- **`pane-mirror.ts`**: "Copy path from → to pane" — mirror location + network state without shifting focus
+- **`key-dispatch.ts`**: Container-level keyboard + focus routing (`handleKeyDown` / `handleKeyUp` / `handleFocusGuard`,
+  the volume-chooser swallow, escape-during-loading, type-to-jump intercept)
+- **`mcp-tab-action.ts`**: The MCP `tab` tool's per-pane dispatch (new/close/close_others/reopen/activate/set_pinned)
 - **`type-to-jump-keys.ts`**: Pure `isTypeToJumpChar` / `isTypeToJumpResetKey` shared by both jump intercepts
 - **`initialization.ts`**: Load persisted tabs + status + settings; resolve volumes; apply E2E overrides
 - **`tab-operations.ts`**: Tab CRUD + context menu + persistence wired to `tabs/tab-state-manager`
@@ -479,14 +495,16 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
   live CSS vars via `getComputedStyle` and mixes in sRGB. A reactive `mediaTick` re-fires `$derived` callers when
   `prefers-color-scheme` / `prefers-contrast` flips; without it, dark-mode swaps wouldn't repaint the tint. The branch
   is picked once at module load via `hasColorMix` from `$lib/utils/webkit-compat.ts`.
-- **`DualPaneExplorer.svelte` and `FilePane.svelte` are ~3000 lines each and flagged by `file-length`.** Don't add to
+- **`DualPaneExplorer.svelte` (~1450 lines) and `FilePane.svelte` (~2940) are flagged by `file-length`.** Don't add to
   them without extracting first. New cross-cutting state goes into a `*.svelte.ts` factory; new pure logic goes into a
-  `*.ts` helper with a colocated test. The `dialog-state` / `rename-flow` / `type-to-jump-state` extractions are the
-  pattern to follow.
+  `*.ts` helper with a colocated test. `DualPaneExplorer` has been drained to mostly its `ExplorerAPI` delegate facade +
+  factory wiring + markup: its command bodies and coordinator handlers live in the factories above (`sort-operations`,
+  `edge-flow-handlers`, `pane-mirror`, `key-dispatch`, `mcp-tab-action`, `swap-panes`, `volume-selection`, …). The
+  `dialog-state` / `rename-flow` / `type-to-jump-state` extractions are the pattern to follow.
 
-  **Why not child components.** The seam that works here is **state-ownership vs command-logic**, not feature-carved
-  child components. A `<DialogCoordinator>` child-component split was rejected as "a boundary without a real
-  responsibility seam": dialogs read and write pane state heavily, and a child-component boundary severs that. Every
-  closure/factory/module extraction instead landed and stuck (`dialog-state`, `tab-operations`, `initialization`,
-  `index-events`, `listing-diff-sync`, `pane-mcp-sync`, and the explorer store). So when a "clean up the 3000-line
-  component" pass tempts you, reach for a store/factory/helper, never a child component to shrink the line count.
+    **Why not child components.** The seam that works here is **state-ownership vs command-logic**, not feature-carved
+    child components. A `<DialogCoordinator>` child-component split was rejected as "a boundary without a real
+    responsibility seam": dialogs read and write pane state heavily, and a child-component boundary severs that. Every
+    closure/factory/module extraction instead landed and stuck (`dialog-state`, `tab-operations`, `initialization`,
+    `index-events`, `listing-diff-sync`, `pane-mcp-sync`, and the explorer store). So when a "clean up the 3000-line
+    component" pass tempts you, reach for a store/factory/helper, never a child component to shrink the line count.
