@@ -633,12 +633,8 @@
 
     /**
      * Returns a promise that resolves when the current load (if any) settles.
-     * Used by `moveCursor` (and any other callers that need a stable
-     * `listingId`) to avoid the race where the FE has set a fresh `listingId`
-     * but `list_directory_start_streaming` hasn't yet inserted the listing
-     * into the backend's `LISTING_CACHE`. Wraps the existing
-     * `pendingLoadResolve` hook so we don't introduce a second promise track:
-     * if no load is in flight, resolves immediately.
+     * Used by `moveCursor` to avoid acting on a not-yet-cached `listingId`.
+     * Delegates to the listing loader (which owns the `pendingLoad` machinery).
      */
     export function whenLoadSettles(): Promise<void> {
         return loader.whenLoadSettles()
