@@ -350,9 +350,7 @@ mod tests {
         let volume = Arc::new(InMemoryVolume::new("Test Volume"));
         manager.register("test-id", volume);
 
-        let (id, v) = manager
-            .find_by_root(Path::new("/"))
-            .expect("InMemoryVolume root is /");
+        let (id, v) = manager.find_by_root(Path::new("/")).expect("InMemoryVolume root is /");
         assert_eq!(id, "test-id");
         assert_eq!(v.name(), "Test Volume");
     }
@@ -361,11 +359,7 @@ mod tests {
     fn test_find_by_root_returns_none_for_unknown_root() {
         let manager = VolumeManager::new();
         manager.register("test-id", Arc::new(InMemoryVolume::new("Test")));
-        assert!(
-            manager
-                .find_by_root(Path::new("/nonexistent/path"))
-                .is_none()
-        );
+        assert!(manager.find_by_root(Path::new("/nonexistent/path")).is_none());
     }
 
     #[test]
@@ -587,7 +581,10 @@ mod tests {
         let resolved = manager.resolve("root", &zip_path);
         assert!(resolved.is_archive);
         let volume = resolved.volume.expect("archive volume");
-        let entries = volume.list_directory(&resolved.path, None).await.expect("list archive root");
+        let entries = volume
+            .list_directory(&resolved.path, None)
+            .await
+            .expect("list archive root");
         let names: Vec<&str> = entries.iter().map(|e| e.name.as_str()).collect();
         assert!(names.contains(&"readme.txt"), "got: {names:?}");
         assert!(names.contains(&"docs"), "got: {names:?}");

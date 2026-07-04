@@ -801,7 +801,9 @@ pub fn try_get_watched_listing(volume_id: &str, path: &Path) -> Option<Vec<FileE
     // which reports `listing_is_watched = false` (no live archive watcher yet) — so
     // an archive listing correctly falls back to a real read rather than reusing a
     // possibly-stale cache. We hold the Arc across the sync call; no await between.
-    let volume = crate::file_system::get_volume_manager().resolve(volume_id, path).volume?;
+    let volume = crate::file_system::get_volume_manager()
+        .resolve(volume_id, path)
+        .volume?;
     if volume.listing_is_watched(path) {
         Some(entries)
     } else {

@@ -6,7 +6,7 @@ use crate::file_system::{
     WriteOperationStartResult, copy_between_volumes as ops_copy_between_volumes, get_volume_manager,
     move_between_volumes as ops_move_between_volumes, scan_for_volume_copy as ops_scan_for_volume_copy,
 };
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::time::Duration;
 
@@ -24,6 +24,32 @@ fn expand_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: String) -> PathBu
     }
 }
 
+/// Resolves a batch's source volume, routing an archive-inner batch to its
+/// `ArchiveVolume` (extract-out is a supported source). One `source_volume_id`
+/// per batch means no straddle risk — every path shares the same archive or none
+/// — so the first path decides. Returns the resolved `(volume, is_archive)`.
+fn resolve_source(volume_id: &str, first_path: Option<&PathBuf>) -> Option<(Arc<dyn Volume>, bool)> {
+    let manager = get_volume_manager();
+    match first_path {
+        Some(path) => {
+            let resolved = manager.resolve(volume_id, path);
+            resolved.volume.map(|v| (v, resolved.is_archive))
+        }
+        None => manager.get(volume_id).map(|v| (v, false)),
+    }
+}
+
+/// Typed rejection for a write that would land INSIDE an archive. Archives are
+/// read-only until zip mutation lands; this is the real backend guard behind the
+/// frontend's read-only capability gating. (This seam turns into archive-edit
+/// routing when mutation lands.)
+fn reject_write_into_archive(dest_path: &Path) -> WriteOperationError {
+    WriteOperationError::ReadOnlyDevice {
+        path: dest_path.to_string_lossy().into_owned(),
+        device_name: None,
+    }
+}
+
 /// Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.
 #[tauri::command]
 #[specta::specta]
@@ -35,21 +61,25 @@ pub async fn copy_between_volumes(
     dest_path: String,
     config: Option<VolumeCopyConfig>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let source_volume = get_volume_manager()
-        .get(&source_volume_id)
-        .ok_or_else(|| WriteOperationError::IoError {
+    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
+
+    // Route an archive-inner source batch to its ArchiveVolume (extract-out).
+    let (source_volume, _source_is_archive) =
+        resolve_source(&source_volume_id, source_paths.first()).ok_or_else(|| WriteOperationError::IoError {
             path: source_volume_id.clone(),
             message: format!("Source volume '{}' not found", source_volume_id),
         })?;
 
-    let dest_volume = get_volume_manager()
-        .get(&dest_volume_id)
-        .ok_or_else(|| WriteOperationError::IoError {
-            path: dest_volume_id.clone(),
-            message: format!("Destination volume '{}' not found", dest_volume_id),
-        })?;
+    // Resolve the dest as a safety net: writing INTO an archive is read-only.
+    let dest_resolved = get_volume_manager().resolve(&dest_volume_id, Path::new(&dest_path));
+    let dest_volume = dest_resolved.volume.ok_or_else(|| WriteOperationError::IoError {
+        path: dest_volume_id.clone(),
+        message: format!("Destination volume '{}' not found", dest_volume_id),
+    })?;
+    if dest_resolved.is_archive {
+        return Err(reject_write_into_archive(Path::new(&dest_path)));
+    }
 
-    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
     let dest_path = expand_local_dest(&dest_volume, dest_path);
     let config = config.unwrap_or_default();
 
@@ -80,21 +110,30 @@ pub async fn move_between_volumes(
     dest_path: String,
     config: Option<VolumeCopyConfig>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let source_volume = get_volume_manager()
-        .get(&source_volume_id)
-        .ok_or_else(|| WriteOperationError::IoError {
+    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
+
+    // A move deletes the source side, which a read-only archive can't do — so an
+    // archive SOURCE is rejected (extract-out via copy is the supported path).
+    let (source_volume, source_is_archive) =
+        resolve_source(&source_volume_id, source_paths.first()).ok_or_else(|| WriteOperationError::IoError {
             path: source_volume_id.clone(),
             message: format!("Source volume '{}' not found", source_volume_id),
         })?;
+    if source_is_archive {
+        return Err(reject_write_into_archive(
+            source_paths.first().map_or(Path::new(""), |p| p.as_path()),
+        ));
+    }
 
-    let dest_volume = get_volume_manager()
-        .get(&dest_volume_id)
-        .ok_or_else(|| WriteOperationError::IoError {
-            path: dest_volume_id.clone(),
-            message: format!("Destination volume '{}' not found", dest_volume_id),
-        })?;
+    let dest_resolved = get_volume_manager().resolve(&dest_volume_id, Path::new(&dest_path));
+    let dest_volume = dest_resolved.volume.ok_or_else(|| WriteOperationError::IoError {
+        path: dest_volume_id.clone(),
+        message: format!("Destination volume '{}' not found", dest_volume_id),
+    })?;
+    if dest_resolved.is_archive {
+        return Err(reject_write_into_archive(Path::new(&dest_path)));
+    }
 
-    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
     let dest_path = expand_local_dest(&dest_volume, dest_path);
     let config = config.unwrap_or_default();
 
@@ -122,16 +161,19 @@ pub async fn scan_volume_for_copy(
     dest_path: String,
     max_conflicts: Option<usize>,
 ) -> Result<VolumeCopyScanResult, IpcError> {
-    let source_volume = get_volume_manager()
-        .get(&source_volume_id)
+    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
+    let dest_path = PathBuf::from(dest_path);
+
+    // Resolve both so an archive-inner source scans through its ArchiveVolume
+    // (sizing an extract-out) and the dest routes consistently with the copy op.
+    let (source_volume, _) = resolve_source(&source_volume_id, source_paths.first())
         .ok_or_else(|| IpcError::from_err(format!("Source volume '{}' not found", source_volume_id)))?;
 
     let dest_volume = get_volume_manager()
-        .get(&dest_volume_id)
+        .resolve(&dest_volume_id, &dest_path)
+        .volume
         .ok_or_else(|| IpcError::from_err(format!("Destination volume '{}' not found", dest_volume_id)))?;
 
-    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
-    let dest_path = PathBuf::from(dest_path);
     let max_conflicts = max_conflicts.unwrap_or(100);
 
     // Run scan (now async)
@@ -162,8 +204,13 @@ pub async fn scan_volume_for_conflicts(
     source_volume_id: Option<String>,
     source_paths: Option<Vec<String>>,
 ) -> Result<Vec<ScanConflict>, IpcError> {
+    let dest_path = PathBuf::from(dest_path);
+
+    // Resolve the destination so a conflict scan against an archive-inner dest
+    // routes to its ArchiveVolume (consistent with the copy op's routing).
     let volume = get_volume_manager()
-        .get(&volume_id)
+        .resolve(&volume_id, &dest_path)
+        .volume
         .ok_or_else(|| IpcError::from_err(format!("Volume '{}' not found", volume_id)))?;
 
     let mut source_items: Vec<crate::file_system::SourceItemInfo> = source_items
@@ -177,26 +224,25 @@ pub async fn scan_volume_for_conflicts(
         .collect();
 
     // Resolve real per-item types and sizes from the source volume when the
-    // caller supplied it. One batched stat, O(top-level items).
-    if let (Some(src_volume_id), Some(src_paths)) = (source_volume_id, source_paths)
-        && let Some(src_volume) = get_volume_manager().get(&src_volume_id)
-    {
+    // caller supplied it. One batched stat, O(top-level items). `resolve_source`
+    // routes an archive-inner source through its ArchiveVolume.
+    if let (Some(src_volume_id), Some(src_paths)) = (source_volume_id, source_paths) {
         let paths: Vec<PathBuf> = src_paths.iter().map(PathBuf::from).collect();
-        match tokio::time::timeout(Duration::from_secs(30), src_volume.scan_for_copy_batch(&paths)).await {
-            Ok(Ok(batch)) => merge_source_types_from_batch(&mut source_items, &batch),
-            // A failed source-side stat is non-fatal: fall back to the
-            // name-only items the caller sent. Conflict detection still
-            // works by name; only the dir/size hints degrade.
-            Ok(Err(e)) => {
-                log::debug!(target: "conflict_scan", "Source batch stat failed, using name-only items: {}", e);
-            }
-            Err(_) => {
-                log::debug!(target: "conflict_scan", "Source batch stat timed out, using name-only items");
+        if let Some((src_volume, _)) = resolve_source(&src_volume_id, paths.first()) {
+            match tokio::time::timeout(Duration::from_secs(30), src_volume.scan_for_copy_batch(&paths)).await {
+                Ok(Ok(batch)) => merge_source_types_from_batch(&mut source_items, &batch),
+                // A failed source-side stat is non-fatal: fall back to the
+                // name-only items the caller sent. Conflict detection still
+                // works by name; only the dir/size hints degrade.
+                Ok(Err(e)) => {
+                    log::debug!(target: "conflict_scan", "Source batch stat failed, using name-only items: {}", e);
+                }
+                Err(_) => {
+                    log::debug!(target: "conflict_scan", "Source batch stat timed out, using name-only items");
+                }
             }
         }
     }
-
-    let dest_path = PathBuf::from(dest_path);
 
     // Run conflict scan (now async)
     tokio::time::timeout(
@@ -256,9 +302,20 @@ pub struct SourceItemInput {
 
 #[cfg(test)]
 mod tests {
-    use super::merge_source_types_from_batch;
-    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo};
-    use std::path::PathBuf;
+    use super::{merge_source_types_from_batch, reject_write_into_archive};
+    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo, WriteOperationError};
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn rejecting_a_write_into_an_archive_is_a_typed_read_only_error() {
+        // The dest-resolves-to-archive guard must produce a typed read-only
+        // rejection (no string classification), carrying the offending path.
+        let err = reject_write_into_archive(Path::new("/vol/foo.zip/inner"));
+        assert!(matches!(
+            err,
+            WriteOperationError::ReadOnlyDevice { ref path, device_name: None } if path == "/vol/foo.zip/inner"
+        ));
+    }
 
     fn scan(is_dir: bool, bytes: u64) -> CopyScanResult {
         CopyScanResult {
