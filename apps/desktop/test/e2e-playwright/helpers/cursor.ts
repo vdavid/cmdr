@@ -12,31 +12,39 @@ import { type PageLike, findFileIndex, pollUntil } from './core.js'
 
 // ── Cursor helpers ──────────────────────────────────────────────────────────
 
-/** If the cursor is on the ".." parent entry, moves it down one position. */
+/**
+ * If the cursor is on the ".." parent entry, moves it onto the first real entry.
+ *
+ * Uses the MCP `move_cursor` path (via `moveCursorToFile`), NOT an OS-keyboard
+ * ArrowDown. Under Linux Xvfb the OS keystroke can vanish (unreliable X11 focus
+ * delivery), leaving the cursor stuck on ".." past the deadline — the flaky
+ * `skipParentEntry: cursor did not leave ".."` on the Docker lane, which took
+ * down the F5/F6/F8/Space setup in `app.spec.ts`. MCP round-trips through the
+ * backend with no keystroke, so it's deterministic. Moving to the first non-".."
+ * entry equals one ArrowDown from ".." (which sorts first in the listing).
+ */
 export async function skipParentEntry(tauriPage: PageLike): Promise<void> {
   const cursorText = await tauriPage.evaluate<string>(`(function() {
-        var entry = document.querySelector('.file-entry.is-under-cursor');
+        var entry = document.querySelector('.file-pane.is-focused .file-entry.is-under-cursor')
+          || document.querySelector('.file-entry.is-under-cursor');
         if (!entry) return '';
         return entry.getAttribute('data-filename') || '';
     })()`)
-  if (cursorText === '..') {
-    await tauriPage.keyboard.press('ArrowDown')
-    const moved = await pollUntil(
-      tauriPage,
-      async () => {
-        const name = await tauriPage.evaluate<string>(`(function() {
-                    var entry = document.querySelector('.file-entry.is-under-cursor');
-                    if (!entry) return '';
-                    return entry.getAttribute('data-filename') || '';
-                })()`)
-        return name !== '..'
-      },
-      8000,
-    )
-    if (!moved) {
-      throw new Error('skipParentEntry: cursor did not leave the ".." entry within 8s after ArrowDown')
-    }
-  }
+  if (cursorText !== '..') return
+
+  const firstReal = await tauriPage.evaluate<string>(`(function() {
+        var pane = document.querySelector('.file-pane.is-focused') || document.querySelector('.file-pane');
+        if (!pane) return '';
+        var entries = pane.querySelectorAll('.file-entry');
+        for (var i = 0; i < entries.length; i++) {
+            var name = entries[i].getAttribute('data-filename') || '';
+            if (name && name !== '..') return name;
+        }
+        return '';
+    })()`)
+  if (!firstReal) throw new Error('skipParentEntry: focused pane has no non-".." entry to move to')
+  const moved = await moveCursorToFile(tauriPage, firstReal)
+  if (!moved) throw new Error('skipParentEntry: could not move the cursor off ".." onto ' + firstReal)
 }
 
 /**
