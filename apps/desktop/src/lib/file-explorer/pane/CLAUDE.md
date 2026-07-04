@@ -8,11 +8,13 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
 - `DualPaneExplorer.svelte`: root, owns both panes, unified key/command dispatch, the dialog manager, the MCP surface.
 - `FilePane.svelte`: one pane, owns its listing, cursor, selection, view mode, type-to-jump, rename flow, breadcrumb,
   and the alt-view `{#if}` chain (MTP / network / SMB-reconnect / search-results / error / list).
-- State factories (`*.svelte.ts`): `explorer-state` (the store), `selection-state`, `rename-flow`, `type-to-jump-state`,
-  `volume-tint`, `pane-mcp-sync`, `tab-mcp-sync`, `persistence-subscriber`, `listing-diff-sync`, `quick-look-follow`,
-  `debug-emitters`, `drag-drop-controller`, `dialog-state`.
-- Pure utilities (`*.ts`): `navigate`, `volume-capabilities`, `has-parent`, `pane-access`, `focused-pane-reads`, the
-  command-body / coordinator-handler factories (full list in DETAILS), and the function-key / selection-dialog helpers.
+- State factories (`*.svelte.ts`): `explorer-state`, `selection-state`, `rename-flow`, `type-to-jump-state` +
+  `type-to-jump-controller`, `volume-tint`, `pane-mcp-sync`, `tab-mcp-sync`, `persistence-subscriber`,
+  `listing-diff-sync`, `quick-look-follow`, `debug-emitters`, `drag-drop-controller`, `dialog-state`, `git-browser-sync`,
+  `smb-view-state`, `volume-space`.
+- Pure utilities (`*.ts`): `navigate`, `volume-capabilities`, `has-parent`, `pane-access`, `focused-pane-reads`,
+  command/coordinator factories (full list in DETAILS), keyboard helpers (`search-pane-keys`, `cursor-nav-keys`,
+  function-key, selection-dialog).
 
 ## Must-knows
 
@@ -49,7 +51,7 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
 - **Self-drag drop builds from recorded app state, not the pasteboard** (`handleDrop` consumes
   `consumableSelfDragIdentity` for a self-drag from a backend-real volume). See
   [`../drag/CLAUDE.md`](../drag/CLAUDE.md).
-- **`DualPaneExplorer.svelte` (~1450 lines, mostly `ExplorerAPI` facade + wiring + markup) and `FilePane.svelte` (~2940)
+- **`DualPaneExplorer.svelte` (~1450 lines, mostly `ExplorerAPI` facade + wiring + markup) and `FilePane.svelte` (~2815)
   are `file-length`-flagged.** Don't add to them or carve child components (DETAILS § "Why not child components");
   cross-cutting state → a `*.svelte.ts` factory, pure logic → a `*.ts` helper.
 - **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`. Don't drop the reactive

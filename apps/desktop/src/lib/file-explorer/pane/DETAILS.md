@@ -39,6 +39,16 @@ list).
 - **`selection-state.svelte.ts`**: `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers
 - **`rename-flow.svelte.ts`**: Rename validation, conflict + extension dialogs, save / cancel
 - **`type-to-jump-state.svelte.ts`**: Buffer + indicator + reset/hide timers + generation counter (race protection)
+- **`type-to-jump-controller.svelte.ts`**: Wraps `type-to-jump-state` with the IPC fuzzy-match runner (generation-guarded)
+  + the MCP last-matched-name mirror. FilePane keeps handleJumpKeystroke / isJumpActive / clearJumpState delegates
+- **`git-browser-sync.svelte.ts`**: Breadcrumb repo-chip + git-status-column: the two setting mirrors, the lazy repo
+  lookup/subscribe lifecycle, the path-change `$effect`, and `cleanup()` (drops the setting listeners too — the pre-
+  extraction FilePane leaked them)
+- **`smb-view-state.svelte.ts`**: SMB reconnect view deriveds (reconnecting / gave-up / needs-auth) + the reconnect-
+  manager subscription `$effect` + the cancel/disconnect/connect-directly handlers. Takes `currentVolumeInfo` (shared
+  with tint/eject) as a dep
+- **`volume-space.svelte.ts`**: Live per-pane disk space: the reactive readout, the fetch (disk-image skip), the backend
+  live-update listener, and watch/unwatch keyed by pane id. FilePane keeps a `refreshVolumeSpace` delegate
 - **`volume-tint.svelte.ts`**: `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier
 - **`pane-mcp-sync.svelte.ts`**: Mirrors pane state into the MCP `PaneState` store; skips network/search panes
 - **`persistence-subscriber.svelte.ts`**: The single nav-state persistence subscriber (A5): reactive `$effect`s →
@@ -87,6 +97,10 @@ list).
 - **`volume-capabilities.ts`**: `VolumeKind` + frozen per-kind `VolumeCapabilities` table + `volumeKindOf` /
   `capabilitiesFor`
 - **`search-results-keys.ts`**: Pure key→action dispatch for the flat snapshot pane
+- **`search-pane-keys.ts`**: The side-effect wiring over `search-results-keys` (view/edit-file, toggle, move + shift-
+  extend); snapshot-pane semantics (`hasParent = false`)
+- **`cursor-nav-keys.ts`**: Brief/Full list cursor movement (arrows, Page/Home/End, Shift-extend) over
+  `handleNavigationShortcut`; `applyNavigation` also feeds `toggleSelectionAndMoveDownAtCursor`
 - **`selection-dialog-keys.ts`**: Classify `+` / `-` keypresses → open Selection dialog (Total Commander parity)
 - **`function-key-commands.ts`**: `fnKeyToCommand`: the F-key bar's 9 button → command-id map (typed; unit-tested)
 - **`error-pane-utils.ts`**: Tiny helper for `ErrorPane`'s technical-details rendering
@@ -495,7 +509,7 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
   live CSS vars via `getComputedStyle` and mixes in sRGB. A reactive `mediaTick` re-fires `$derived` callers when
   `prefers-color-scheme` / `prefers-contrast` flips; without it, dark-mode swaps wouldn't repaint the tint. The branch
   is picked once at module load via `hasColorMix` from `$lib/utils/webkit-compat.ts`.
-- **`DualPaneExplorer.svelte` (~1450 lines) and `FilePane.svelte` (~2940) are flagged by `file-length`.** Don't add to
+- **`DualPaneExplorer.svelte` (~1450 lines) and `FilePane.svelte` (~2815) are flagged by `file-length`.** Don't add to
   them without extracting first. New cross-cutting state goes into a `*.svelte.ts` factory; new pure logic goes into a
   `*.ts` helper with a colocated test. `DualPaneExplorer` has been drained to mostly its `ExplorerAPI` delegate facade +
   factory wiring + markup: its command bodies and coordinator handlers live in the factories above (`sort-operations`,
