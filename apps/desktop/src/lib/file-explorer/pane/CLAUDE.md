@@ -1,7 +1,7 @@
 # Pane subsystem
 
-Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, drag, tinting, navigation.
-Up: [`../CLAUDE.md`](../CLAUDE.md). File table and conventions: [DETAILS.md](DETAILS.md).
+Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, drag, tinting, navigation. Up:
+[`../CLAUDE.md`](../CLAUDE.md). File table and conventions: [DETAILS.md](DETAILS.md).
 
 ## Module map
 
@@ -32,16 +32,16 @@ Up: [`../CLAUDE.md`](../CLAUDE.md). File table and conventions: [DETAILS.md](DET
   `VolumeInfo.isReadOnly` alone.** A pane inside a `.zip` keeps the parent DRIVE's (writable) `volumeId`, so an
   `isReadOnly` check falls through as writable; the path is what makes it the read-only `archive` kind. Every write
   guard uses it. DETAILS § "Archive browsing (kind-from-path)".
-- **`FilePane.applyIndices` jumps the cursor on SELECT only** (deselect leaves it put), via `firstSelectedIndex`
-  (skips the `..` row); raw `idxs[0]` can be `..`.
+- **`FilePane.applyIndices` jumps the cursor on SELECT only** (deselect leaves it put), via `firstSelectedIndex` (skips
+  the `..` row); raw `idxs[0]` can be `..`.
 - **Snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false` (no `..`
   row) AND opening a real entry must LEAVE the snapshot volume (`FilePane.handleNavigate` → `onGoToLocation` → switch
   arm). Skip either → off-by-one selection, or `search-results` stuck on a real path. DETAILS § Conventions.
 - **The MTP clipboard refusal gate keys on `caps.kind === 'mtp'`, not `!supportsSystemClipboard`** (network and
   search-results lack one too, so the MTP toast would misfire).
 - **The focus guard (`key-dispatch.ts`) must keep its `[role="dialog"], [role="alertdialog"]` exemption.** Rename
-  dialogs mount inside FilePane; without it the guard and `use:trapFocus` ping-pong focus and freeze the webview.
-  Pinned by E2E.
+  dialogs mount inside FilePane; without it the guard and `use:trapFocus` ping-pong focus and freeze the webview. Pinned
+  by E2E.
 - **Nav-state persistence fires from ONE subscriber** (`persistence-subscriber.svelte.ts`, A5). Don't scatter
   `saveAppStatus` / `saveTabsForPaneSide` across nav paths: mutate the store, the subscriber reacts (exceptions in
   DETAILS).
@@ -51,9 +51,9 @@ Up: [`../CLAUDE.md`](../CLAUDE.md). File table and conventions: [DETAILS.md](DET
 - **Self-drag drop builds from recorded app state, not the pasteboard** (`handleDrop` consumes
   `consumableSelfDragIdentity` for a self-drag from a backend-real volume). See
   [`../drag/CLAUDE.md`](../drag/CLAUDE.md).
-- **`DualPaneExplorer.svelte` (~1450 lines) and `FilePane.svelte` (~2815) are `file-length`-flagged**: don't add to
-  them or carve child components (DETAILS § "Why not child components"); cross-cutting state → a `*.svelte.ts` factory,
-  pure logic → a `*.ts` helper.
+- **`DualPaneExplorer.svelte` (~1450 lines) and `FilePane.svelte` (~2815) are `file-length`-flagged**: don't add to them
+  or carve child components (DETAILS § "Why not child components"); cross-cutting state → a `*.svelte.ts` factory, pure
+  logic → a `*.ts` helper.
 - **Volume tint has an old-WebKit (Safari < 16.2) sRGB fallback** gated by `hasColorMix`. Don't drop the reactive
   `mediaTick`, or dark-mode / contrast swaps won't repaint the tint.
 

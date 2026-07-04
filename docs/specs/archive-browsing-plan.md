@@ -19,8 +19,8 @@ wave. Owner: David. Worktree: `.claude/worktrees/archive-browsing`, branch `davi
   `@key` descriptions, and the feature context — over ALL the feature's keys in one pass (confirmed 2026-07-05).
 - **Confirmed 2026-07-05: milestones through M7 run autonomously** (M6 stays a stretch, M-append stays a fast-follow —
   neither blocks the wrap). The bar for the wrap: stable under hostile edge cases, and no data loss possible — the
-  mutation milestone gets strict red-first TDD, crash/cancel-safety tests, metadata preservation, and `cargo mutants`
-  on every write-side file before acceptance.
+  mutation milestone gets strict red-first TDD, crash/cancel-safety tests, metadata preservation, and `cargo mutants` on
+  every write-side file before acceptance.
 
 ## What we're building
 
