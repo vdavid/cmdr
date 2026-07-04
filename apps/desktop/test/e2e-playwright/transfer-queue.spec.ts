@@ -117,15 +117,26 @@ test.beforeEach(async ({ tauriPage }) => {
 })
 
 test.afterEach(async ({ tauriPage }) => {
-  // Cancel anything still in flight and clear the throttle so a leaked op can't
-  // bleed into the next test.
+  // Clear the throttle FIRST so any in-flight op winds down fast, cancel
+  // everything, then WAIT for the operation-manager lane to actually empty.
+  // `cancel_operations` returns once cancellation is REQUESTED, not once the ops
+  // have wound down; a still-cancelling op leaves the local lane busy, so the
+  // next test's foreground F5 copy is admitted as Queued (not Running) and its
+  // progress modal never opens — the Linux `transfer-queue` flake (rarer on the
+  // faster macOS lane). The drain loop runs in the webview so it doesn't depend
+  // on `evaluate` returning an async value; Node awaits the IIFE either way.
   await tauriPage.evaluate(`(async function() {
+    try { await window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null }); } catch (e) {}
     try {
       var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
       var ids = ops.map(function(o) { return o.operationId; });
       if (ids.length) await window.__TAURI_INTERNALS__.invoke('cancel_operations', { operationIds: ids });
     } catch (e) {}
-    try { await window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null }); } catch (e) {}
+    for (var i = 0; i < 60; i++) {
+      var remaining = await window.__TAURI_INTERNALS__.invoke('list_operations');
+      if (!remaining || remaining.length === 0) break;
+      await new Promise(function(r) { setTimeout(r, 100); });
+    }
   })()`)
 })
 

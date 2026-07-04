@@ -457,13 +457,12 @@ the shared fixture directory. Without cleanup, later tests see stale artifacts. 
 
 **Gotcha**: the first listing read after `ensureAppReady` can hit a transiently EMPTY pane. **Why**: a spec's
 `recreateFixtures` (beforeEach) deletes then recreates `left/` on disk; the file watcher's debounced remove/create diffs
-drain a beat AFTER `ensureAppReady`'s files-present poll, briefly emptying the pane (and, mid-drain, a background listing
-can consume `error-pane`'s single-shot injected error). It surfaces only across a multi-spec run, where the debouncer
-backlog accumulates — each spec passes in isolation, so it reads like a focus race but the pane is focused-yet-empty.
-`ensureAppReady` calls `flush_file_watcher` then re-confirms the left pane is populated, so the app is quiescent by
-return; `moveCursorToFile` polls for the target rather than reading once. Don't revert either to a one-shot read (see the
-comments at both sites in `helpers/app-lifecycle.ts` and `helpers/cursor.ts`).
-
+drain a beat AFTER `ensureAppReady`'s files-present poll, briefly emptying the pane (and, mid-drain, a background
+listing can consume `error-pane`'s single-shot injected error). It surfaces only across a multi-spec run, where the
+debouncer backlog accumulates — each spec passes in isolation, so it reads like a focus race but the pane is
+focused-yet-empty. `ensureAppReady` calls `flush_file_watcher` then re-confirms the left pane is populated, so the app
+is quiescent by return; `moveCursorToFile` polls for the target rather than reading once. Don't revert either to a
+one-shot read (see the comments at both sites in `helpers/app-lifecycle.ts` and `helpers/cursor.ts`).
 
 **Gotcha**: The clipboard is mocked, not real. **Why**: E2E builds compile with the `playwright-e2e` Cargo feature,
 which swaps the real `NSPasteboard` interop for an in-process mock store
