@@ -88,6 +88,9 @@
         "file-explorer/pane/listing-diff-sync.svelte.ts": {
             "reason": "Tauri listen() wiring inside $effect factories (same shape as ai-toast-sync); pure reconcileCursorAndSelection core tested in listing-diff-sync.test.ts, integration via selection-consistency.test.ts"
         },
+        "file-explorer/pane/quick-look-follow.svelte.ts": {
+            "reason": "Reactive $effect factory driving quickLookSetPath IPC on cursor-follow + error-close; depends on FilePane refs and quick-look-state, exercised via DualPaneExplorer integration"
+        },
         "file-explorer/pane/rename-flow.svelte.ts": {
             "reason": "Extracted from FilePane, depends on Tauri commands and rename operations"
         },
