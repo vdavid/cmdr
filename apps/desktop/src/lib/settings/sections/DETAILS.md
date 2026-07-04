@@ -24,6 +24,13 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. The hidden
   `behavior.doubleClickOnPaneNotificationSeen` flag (one-time-hint tracker) is registered but renders no row. Each card
   frame gated via `anyVisible(shouldShow, ...)` (same pattern as FSW above).
+- **`ArchivesSection.svelte`**: `Behavior > Archives`: what pressing Enter does per format (Browse | Open | Ask). A
+  CUSTOM section (not registry-driven rows): all formats live in ONE pinned-shape JSON setting
+  (`behavior.archiveEnterBehavior`, `{ zip, bundle }`), so the format list extends without a registry entry per format.
+  Two labeled `SectionCard`s — Archives (the zip row) and App bundles — each a `lib/ui/ToggleGroup`
+  (`semantics="toggles"`) bound to the parsed override, writing the merged JSON back. Defaults + the pure classification
+  live in `file-explorer/pane/archive-enter-policy.ts`; this file only renders and persists. Both cards gated via
+  `anyVisible(shouldShow, 'behavior.archiveEnterBehavior')`.
 - **`FileSystemWatchingSection.svelte`**: `Behavior > File system watching`: three `SectionCard` card groups — Drive
   indexing (toggle + clear-index action, the hidden `indexing.indexSize` search anchor), Downloads (BOTH
   Downloads-folder features in one card: the 4-option `downloadsNotifications` ToggleGroup, plus the on/off go-to-latest

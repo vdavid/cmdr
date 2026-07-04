@@ -500,10 +500,12 @@ fn node_to_entry(archive_path: &Path, volume_name: &str, node: &ArchiveNode) -> 
 /// path-aware callers keep working. The rejection family
 /// (not-a-zip / encrypted / unsupported / too-large) collapses to
 /// `NotSupported`, and a broken/faulted read to `IoError`: this is the
-/// mid-browse **backstop**. The user-facing "not a real archive" / "encrypted"
-/// friendly copy is produced at the routing boundary, straight from the raw
-/// `ArchiveError` at navigation time — not from this mapping — so nothing
-/// downstream needs to recover the fine distinction from a `VolumeError`.
+/// mid-browse **backstop**. The user-facing "damaged archive" friendly copy
+/// (`ListingErrorReason::ArchiveUnreadable`) is produced downstream at the
+/// listing seam (`listing/streaming.rs`), from the path + this collapsed error
+/// kind — not from the fine `ArchiveError` distinction, which stops here. A
+/// single combined message covers the whole family, so recovering the
+/// distinction isn't needed (matches the viewer's one archive-unreadable copy).
 fn to_volume_error(err: ArchiveError) -> VolumeError {
     // EXHAUSTIVE on purpose (no wildcard): a new `ArchiveError` variant must fail
     // to compile here and force a conscious mapping, rather than silently

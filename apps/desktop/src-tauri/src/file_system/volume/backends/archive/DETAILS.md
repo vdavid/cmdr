@@ -221,11 +221,13 @@ archive for this phase. Raise it later if a real workload wants parallel extract
 (`NotFound → NotFound`, `IsADirectory → IsADirectory`) so path-aware callers keep working, the I/O family
 (`Corrupt` / `Io → IoError`), and the rejection family (`NotAnArchive` / `Encrypted` / `Unsupported` / the `TooLarge`
 DoS cap `→ NotSupported`). This is a **mid-browse backstop** (the archive was swapped or corrupted after navigation).
-Dedicated archive friendly copy exists today ONLY in the viewer (`viewer.error.archiveUnreadable` /
-`archiveTooLarge`, produced from typed `ViewerError` variants); the listing/copy paths surface generic errors via this
-collapsed mapping. That's an accepted gap for read-only browsing (an encrypted zip browses fine — only extraction
-refuses; a corrupt zip is rare) — the Enter-behavior milestone owes the listing-path friendly copy, at which point a
-dedicated variant or friendly-error reason may be warranted. Until then this mapping deliberately adds neither.
+The user-facing "damaged archive" copy is NOT produced here: the listing seam (`listing/streaming.rs`) turns a failed
+`.zip` browse into `ListingErrorReason::ArchiveUnreadable` from the PATH + this collapsed error kind (an integrity
+collapse — `NotSupported`/`IoError` — on a path that `archive::boundary::path_targets_archive_file` says targets a real
+archive file). A valid archive with a missing inner path stays `NotFound` (not an integrity fault). This mapping stays
+message-string-free and keeps only the coarse family the FE needs, because a SINGLE combined message ("damaged,
+encrypted, or an unsupported format") covers the whole family — the same wording the viewer uses
+(`viewer.error.archiveUnreadable`), so recovering the fine `ArchiveError` distinction downstream isn't needed.
 
 The match is **exhaustive on purpose — no wildcard**. It's a compile-time tripwire (the repo convention, per
 `analytics.rs`): a new `ArchiveError` variant must fail to compile here and force a conscious mapping. A catch-all
@@ -293,11 +295,16 @@ the sanitizer (incl. the depth cap) and the tree builder (incl. the node-count c
 and lifecycle" above) is landed: `VolumeManager::resolve`, the shared `boundary.rs` detector, the archive LRU, and the
 read-only write guards. What's still ahead (sequencing lives in `/docs/specs/archive-browsing-plan.md`):
 
-- **Frontend**: the `'archive'` capabilities `VolumeKind` (derived from `pathInsideArchive`, read-only-correct), the
-  Enter-into-archive fork driven by `FileEntry.is_archive`, breadcrumb/path-bar rendering of `…/foo.zip/inner`, and the
-  friendly errors produced from the raw `ArchiveError` at the resolve boundary (this layer's typed `VolumeError` mapping
-  is only a mid-browse backstop). Persistence is already archive-safe (the FE stores the parent drive id + full path).
-- **Viewer**: previewing a file inside an archive (a bounded temp-extract — the viewer core is `std::fs`-only).
+Landed since: the FE `'archive'` capabilities `VolumeKind` (kind-from-path), the Enter-into-archive fork, the
+breadcrumb/path-bar `…/foo.zip/inner` rendering, the bounded temp-extract viewer preview, the listing-path
+`ArchiveUnreadable` friendly copy (§ "Decision: typed `ArchiveError → VolumeError` mapping"), and the M2 Enter-behavior
+menu + per-format Settings (`docs/specs/archive-browsing-plan.md` § M2). What's still ahead:
+
+- **Open-with-external-app for a file INSIDE an archive (deferred, M2 carried-over item b).** Enter on a file inside a
+  `.zip` still opens the VIEWER (bounded temp-extract), not the OS default app. Extract-then-launch isn't a clean reuse
+  of `file_viewer/archive_extract.rs`: that extractor is viewer-`pub(super)`-scoped and its temp is reaped on VIEWER
+  SESSION close, whereas a detached launched app holds the file for an unknown lifetime and has no close event to hook —
+  it needs its own extract-and-persist-until-startup-reaper lifecycle. Deferred deliberately; the viewer interim stands.
 - **Live watching**: flip `listing_is_watched` to `true` and watch the parent `.zip` for external edits.
 - **Mutation**: turn the mutation methods and the `'archive'` VolumeKind writable (add/delete/rename/mkdir/mkfile
   via temp+rename). The write-guard seams (§ "Routing and lifecycle") become the mutation routing points.

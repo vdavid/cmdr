@@ -339,6 +339,26 @@ by that class (the query dialog's capture-phase guard checks `dialogElement.quer
 overlay-dismissal helper and `search-filters.spec.ts` use it as a stable selector too. Don't rename it without updating
 those.
 
+## Menu
+
+Controlled action menu built on Ark UI's `Menu` (the app's first — context menus are otherwise native/muda). An
+items-driven shell: the caller controls `open`, supplies `items`, and reacts to `onSelect`; Ark owns the keyboard
+contract (arrow nav, Enter/Space select, Escape dismiss, typeahead) and focus management. Frosted-glass surface with the
+shared glass tokens (drops its blur under reduced transparency). The first user is the archive Enter-behavior popup
+(`file-explorer/pane/enter-menu.svelte.ts`).
+
+Props: `open` + `onOpenChange` (controlled), `items: MenuItem[]`, `onSelect(value)`, `ariaLabel`, `anchorPoint?` (a
+viewport point — the context-menu shape; omit for trigger anchoring), `defaultHighlightedValue?` (the row highlighted on
+open), `portal?` (teleport the open menu to `document.body`).
+
+- **`MenuItem` lives in `menu-types.ts`, NOT the component's module script** (unlike `SelectItem`): non-Svelte glue (the
+  pane's enter-menu helpers) imports it, and a type imported from a `.svelte` file resolves to `any` under the
+  plain-TypeScript lint service. Inline `onSelect`/`onOpenChange` arrows in a `.svelte` consumer hit the same `any`
+  inference — pass a named, typed handler (like `SettingToggleGroup`) instead.
+- **Point-anchored + no trigger**: opened programmatically via `open` + `anchorPoint`, so there's no trigger element for
+  Ark to restore focus to on close. A keyboard-invoked caller (the Enter popup) should `portal` it out of any host with
+  an `onfocusin` focus guard and restore focus itself on close.
+
 ## FilterPopover
 
 A thin composition of `Popover` plus a labelled section header, for the query dialogs' Size / Modified / Search-in

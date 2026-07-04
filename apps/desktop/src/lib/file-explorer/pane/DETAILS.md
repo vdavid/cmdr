@@ -51,6 +51,8 @@ list).
 - **`volume-space.svelte.ts`**: Live per-pane disk space: the reactive readout, the fetch (disk-image skip), the backend
   live-update listener, and watch/unwatch keyed by pane id. FilePane keeps a `refreshVolumeSpace` delegate
 - **`volume-tint.svelte.ts`**: `color-mix(...)` or sRGB hex by volume kind; pure `volumeKindFor` classifier
+- **`enter-menu.svelte.ts`**: `createEnterMenu` — the Enter-behavior popup's open/anchor/highlight state + choice
+  dispatch (browse / open / deep-link to Settings); see § "Enter-behavior policy"
 - **`pane-mcp-sync.svelte.ts`**: Mirrors pane state into the MCP `PaneState` store; skips network/search panes
 - **`persistence-subscriber.svelte.ts`**: The single nav-state persistence subscriber (A5): reactive `$effect`s →
   `app-status.json`
@@ -104,6 +106,9 @@ list).
   row)
 - **`volume-capabilities.ts`**: `VolumeKind` + frozen per-kind `VolumeCapabilities` table + `volumeKindOf` /
   `capabilitiesFor`
+- **`archive-enter-policy.ts`**: pure `resolveEnterPolicy(entry, overrides)` (Enter → browse/open/ask) + the format
+  registry + `parseEnterBehaviorOverrides` (see § "Enter-behavior policy")
+- **`enter-menu.ts`**: builds the Enter popup's items and resolves its cursor-row anchor point
 - **`search-results-keys.ts`**: Pure key→action dispatch for the flat snapshot pane
 - **`search-pane-keys.ts`**: The side-effect wiring over `search-results-keys` (view/edit-file, toggle, move + shift-
   extend); snapshot-pane semantics (`hasParent = false`)
@@ -557,8 +562,9 @@ state, history, persistence, or MCP sync. Archive-ness is derived from the PATH;
 - **`pathInsideArchive(path)` + `capabilitiesForPane(volumeId, path)`** (`volume-capabilities.ts`) are the seam. The
   first is a pure, extension-only check mirroring the backend's `SUPPORTED_ARCHIVE_EXTENSIONS`; the second returns the
   read-only `archive` capability row when the path is inside an archive, else defers to `capabilitiesFor(volumeId)`. The
-  pane's `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so `hasBackendListing`/`hasParentRow`/`syncsToMcp`
-  are true and the write flags (`canPasteInto`/`canCreateChild`/`canRenameInPlace`) are false.
+  pane's `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so
+  `hasBackendListing`/`hasParentRow`/`syncsToMcp` are true and the write flags
+  (`canPasteInto`/`canCreateChild`/`canRenameInPlace`) are false.
 - **Why `VolumeInfo.isReadOnly` is insufficient**: the archive pane's `volumeId` is the writable parent drive, which has
   no read-only `VolumeInfo`. The write guards (`file-operation-commands.ts` `readOnlyRefusal`, `transfer-entry.ts`
   `checkTransferDestinationGuard`'s `destPath` param, `clipboard-operations.ts` copy/cut/paste, `drag-drop-controller`'s
@@ -566,14 +572,15 @@ state, history, persistence, or MCP sync. Archive-ness is derived from the PATH;
   `ReadOnlyDevice` rejection is the safety net behind them.
 - **Navigation is nearly free.** `handleNavigate` forks on `entry.isDirectory || entry.isArchive` (a zip stays
   `isDirectory:false`; `isArchive` is backend-computed, extension-only, crosses IPC on `FileEntry`), routing in-place
-  (same parent-drive volume). `navigateToParent` needs no archive branch: `parentOf('/a/foo.zip')` is `/a` (the
-  containing dir), so walking up bubbles out of the archive by plain path arithmetic. The ONE reconciliation:
-  `effectiveVolumeRoot` (feeds `computeHasParent`) uses `volumePath` (the parent mount) inside an archive, NOT the
-  `.zip` path the backend emits as the listing's `volume_root` — otherwise the archive root would read as a volume root
-  and hide its `..` row.
-- **Opt-outs that `hasBackendListing:true` doesn't cover**: `git-browser-sync` skips inside archives (`pathInsideArchive`
-  — a repo can't live in a zip); `volume-space` queries the parent mount path inside an archive (an archive-inner path
-  isn't NSURL-resolvable, and the archive borrows the parent's space).
+  (same parent-drive volume) via `browseIntoEntry`. The Enter-behavior policy (below) runs FIRST and can divert to a
+  popup or an external open before this browse arm. `navigateToParent` needs no archive branch: `parentOf('/a/foo.zip')`
+  is `/a` (the containing dir), so walking up bubbles out of the archive by plain path arithmetic. The ONE
+  reconciliation: `effectiveVolumeRoot` (feeds `computeHasParent`) uses `volumePath` (the parent mount) inside an
+  archive, NOT the `.zip` path the backend emits as the listing's `volume_root` — otherwise the archive root would read
+  as a volume root and hide its `..` row.
+- **Opt-outs that `hasBackendListing:true` doesn't cover**: `git-browser-sync` skips inside archives
+  (`pathInsideArchive` — a repo can't live in a zip); `volume-space` queries the parent mount path inside an archive (an
+  archive-inner path isn't NSURL-resolvable, and the archive borrows the parent's space).
 - **Path bar** renders the transparent `…/foo.zip/inner` for free: `breadcrumbDisplayPath` strips the parent
   `volumePath` prefix and `enrichBreadcrumbSegments` rebuilds ancestor targets from it, both path-agnostic.
 - **Persistence/restore** is archive-safe with no FE change: the tab stores `(parentDriveId, fullPath)`; on restore
@@ -583,3 +590,28 @@ state, history, persistence, or MCP sync. Archive-ness is derived from the PATH;
 
 Full backend routing, the LRU lifecycle, and the viewer temp-extract: `docs/specs/archive-browsing-m1b-derivation.md`
 and `src-tauri/src/file_system/volume/backends/archive/DETAILS.md`.
+
+## Enter-behavior policy (archives and bundles)
+
+Pressing Enter on an archive or a macOS app bundle (`.app`/`.bundle`/`.framework`) is a three-way choice: browse inside,
+open in the default app, or ask. The decision is a pure function; the UI is a small popup.
+
+- **`archive-enter-policy.ts` is the pure resolver**:
+  `resolveEnterPolicy(entry, overrides) -> 'browse' | 'open' | 'ask' | null`. `null` means the entry is an ordinary
+  file/folder (the caller does its normal open/browse). Zip archives default Ask (matched off `entry.isArchive`, so
+  tar/7z join automatically when the backend flags them); bundles default Ask (matched by directory extension);
+  Office/app packages (`.docx`/`.xlsx`/`.pptx`/`.jar`/`.apk`) default Open and aren't user-configurable yet (browse-into
+  isn't supported for them). Per-format overrides come from the `behavior.archiveEnterBehavior` setting (a pinned-shape
+  JSON object, parsed by `parseEnterBehaviorOverrides`).
+- **`handleNavigate` consults it before the browse arm**, but only when NOT `pathInsideArchive(entry.path)` (a file
+  inside an archive keeps the viewer interim). `ask` → `enterMenu.openFor`; `open` → `openEntryExternally` (`openFile`,
+  i.e. LaunchServices — a `.zip` opens in the OS archive tool, a `.app` launches); `browse` → falls through to
+  `browseIntoEntry`. On the search-results snapshot pane the popup is skipped (opening any real entry switches volume
+  first via `goToRealEntry`).
+- **`enter-menu.svelte.ts` (`createEnterMenu`) holds the popup state**; `enter-menu.ts` builds the items and computes
+  the cursor-row anchor. The menu (`lib/ui/Menu`) is **portaled to `document.body`** so the explorer's `onfocusin` focus
+  guard (`key-dispatch.ts`, which only exempts `[role="dialog"]`) doesn't yank focus off the `role="menu"`; on close the
+  controller calls `restoreFocus` (`onRequestFocus`), which re-focuses the explorer container so keyboard routing
+  resumes. `Configure…` deep-links to `openSettingsWindow(['Behavior', 'Archives'])`.
+- **Settings** live in `settings/sections/ArchivesSection.svelte` (a custom section: two `ToggleGroup` cards over the
+  one JSON setting, so the format list extends without a registry entry per format).
