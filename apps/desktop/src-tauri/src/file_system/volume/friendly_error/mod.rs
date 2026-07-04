@@ -106,7 +106,9 @@ pub enum ListingErrorReason {
     // ── errno: transient ──
     Interrupted,
     NotEnoughMemory,
-    ResourceBusy { path: String },
+    ResourceBusy {
+        path: String,
+    },
     TemporarilyUnavailable,
     NetworkDown,
     NetworkConnectionDropped,
@@ -118,46 +120,83 @@ pub enum ListingErrorReason {
     LockUnavailable,
     CancelledErrno,
     // ── errno: needs-action ──
-    NotPermitted { path: String },
-    PathNotFoundErrno { path: String },
-    NoPermissionErrno { path: String },
-    AlreadyExistsErrno { path: String },
+    NotPermitted {
+        path: String,
+    },
+    PathNotFoundErrno {
+        path: String,
+    },
+    NoPermissionErrno {
+        path: String,
+    },
+    AlreadyExistsErrno {
+        path: String,
+    },
     CrossDeviceOperation,
-    NotAFolder { path: String },
-    IsAFolderErrno { path: String },
+    NotAFolder {
+        path: String,
+    },
+    IsAFolderErrno {
+        path: String,
+    },
     DiskFullErrno,
     ReadOnlyVolumeErrno,
     NotSupportedErrno,
     NetworkUnreachable,
     ConnectionRefused,
-    SymlinkLoopErrno { path: String },
+    SymlinkLoopErrno {
+        path: String,
+    },
     NameTooLongErrno,
     HostUnreachable,
-    FolderNotEmpty { path: String },
+    FolderNotEmpty {
+        path: String,
+    },
     QuotaExceeded,
     AuthRequiredEauth,
     AuthRequiredEneedauth,
     DevicePoweredOff,
     AttributeNotFound,
     // ── errno: serious ──
-    DiskReadProblem { path: String },
+    DiskReadProblem {
+        path: String,
+    },
     UnexpectedSystemResponse,
     DeviceProblem,
-    CouldntReadUnknown { path: String },
+    CouldntReadUnknown {
+        path: String,
+    },
     // ── typed VolumeError variants (shared "kinds") ──
-    NotFound { path: String },
-    TccRestricted { path: String },
-    PermissionDenied { path: String },
-    AlreadyExists { path: String },
+    NotFound {
+        path: String,
+    },
+    TccRestricted {
+        path: String,
+    },
+    PermissionDenied {
+        path: String,
+    },
+    AlreadyExists {
+        path: String,
+    },
     Cancelled,
-    DeviceDisconnected { path: String },
+    DeviceDisconnected {
+        path: String,
+    },
     ReadOnly,
     StorageFull,
     ConnectionTimedOut,
     NotSupported,
-    DeletePending { path: String },
-    IoSerious { path: String, os_message: String },
-    IsADirectory { path: String },
+    DeletePending {
+        path: String,
+    },
+    IoSerious {
+        path: String,
+        os_message: String,
+    },
+    IsADirectory {
+        path: String,
+    },
     // ── archive (browsing a `.zip` that can't be read) ──
     /// Browsing an archive failed because the archive itself is unreadable:
     /// damaged/truncated, encrypted, an unsupported format, or a file that carries
@@ -169,7 +208,9 @@ pub enum ListingErrorReason {
     // ── empty-root hint ──
     EmptyRootICloud,
     // ── git (wire-only; FE routes to its parallel git factory) ──
-    Git { kind: FriendlyGitErrorKind },
+    Git {
+        kind: FriendlyGitErrorKind,
+    },
 }
 
 // ============================================================================
