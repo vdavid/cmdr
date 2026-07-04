@@ -14,7 +14,13 @@ wave. Owner: David. Worktree: `.claude/worktrees/archive-browsing`, branch `davi
   is on decision 1's threading list) but isn't a hard gate.
 - **Human-eyes review and translations are batched after the milestones.** David reviews the M2 Enter menu, the Archives
   settings section, and all user-facing copy once the whole feature works, not per milestone. English catalog keys still
-  land with each milestone (`i18n-coverage` is a build error); other languages come after.
+  land with each milestone; `i18n-coverage` stays known-red for the feature's keys until the end (David-approved), when
+  a dedicated translator agent runs the full process from `docs/guides/i18n-translation.md` — per-language style guides,
+  `@key` descriptions, and the feature context — over ALL the feature's keys in one pass (confirmed 2026-07-05).
+- **Confirmed 2026-07-05: milestones through M7 run autonomously** (M6 stays a stretch, M-append stays a fast-follow —
+  neither blocks the wrap). The bar for the wrap: stable under hostile edge cases, and no data loss possible — the
+  mutation milestone gets strict red-first TDD, crash/cancel-safety tests, metadata preservation, and `cargo mutants`
+  on every write-side file before acceptance.
 
 ## What we're building
 
@@ -335,10 +341,10 @@ wins.
 
 Carried over from the routing milestone (review findings): (a) **listing-path friendly errors** — navigating into a
 corrupt zip shows a generic listing error today; only the viewer has dedicated archive copy. Produce the "not a real
-archive" / damaged copy on the navigation path (likely alongside the Enter menu work, which touches the same flow).
-(b) **Enter on a file inside a zip currently routes to the viewer** as the honest interim; the Open arm of the menu
-must extract-then-launch (or explain), superseding that interim. (c) Quick Look stays gated off for archive-inner
-paths until it, too, can serve from an extracted temp.
+archive" / damaged copy on the navigation path (likely alongside the Enter menu work, which touches the same flow). (b)
+**Enter on a file inside a zip currently routes to the viewer** as the honest interim; the Open arm of the menu must
+extract-then-launch (or explain), superseding that interim. (c) Quick Look stays gated off for archive-inner paths until
+it, too, can serve from an extracted temp.
 
 - New `lib/ui/Menu.svelte` (Ark UI `Menu`; none exists — context menus are native/muda today) as the Enter popup:
   "Browse like a folder" / "Open with external app" / "Configure…", default-highlighting the configured action; keyboard
