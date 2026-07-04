@@ -432,3 +432,4 @@ scan/genomsökning terms above; new ones:
   pile) for copy, `under flytten` (definite of this file's settled `flytt` move-noun) for move. Two literal sentences,
   no ICU select, per the operation-specific keys. `high` (move-noun definite `flytten` regular but not directly
   attested; `flyttningen` is the pile alt).
+- **queue.row.label progress arms (rename / create folder / create file)** · `Byter namn` / `Skapar mapp` / `Skapar fil` · present-tense style of the sibling arms (Kopierar, Flyttar); Nautilus ("Byter namn", "Skapar"), settled `byt namn`, `mapp`/`fil` · high

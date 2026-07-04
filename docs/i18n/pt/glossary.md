@@ -244,3 +244,4 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
   subject is **O Cmdr** (running-text pattern across the pt catalog, e.g. "O Cmdr cuida da cópia automaticamente"); copy
   noun = **cópia**, move noun = **movimentação** (matches `transferProgress.rollbackUnavailableTooltip` "movimentações
   no mesmo volume") · high. The two keys stay literal (operation-specific noun), no ICU select.
+- **queue.row.label progress arms (rename / create folder / create file)** · `Renomeando` / `Criando pasta` / `Criando arquivo` · pt-BR gerund style of the sibling arms (NOT the pt-PT "A criar"/"A mudar o nome" Nautilus shows); settled `Renomear`→gerund, `pasta`/`arquivo` · high

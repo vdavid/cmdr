@@ -361,3 +361,4 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
   erstellt ihn" preferred over macOS's passive "wird erstellt" per the active-voice rule; "during the X" →
   verb-preferred "beim Kopieren/Bewegen" (style guide: verb over verbal noun; copy→Kopieren, move→Bewegen settled). DC
   confirms create→erstellen ("Verzeichnis erstellen") and non-existence ("existiert nicht") · high
+- **queue.row.label progress arms (rename / create folder / create file)** · `Wird umbenannt` / `Ordner wird erstellt` / `Datei wird erstellt` · keep the sibling arms' passive present ("Wird kopiert/bewegt"), so the progress label stays passive even though the auto-create *reassurance* sentence uses active "Cmdr erstellt ihn"; rename via Nautilus ("wird … umbenannt"), create via settled `create → erstellen` · high

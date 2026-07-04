@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "c24a288"
   },
-  "queue.row.label": "{type, select, copy {正在拷贝} move {正在移动} delete {正在删除} trash {正在移到废纸篓} other {正在处理}}",
+  "queue.row.label": "{type, select, copy {正在拷贝} move {正在移动} delete {正在删除} trash {正在移到废纸篓} rename {正在重命名} create_folder {正在创建文件夹} create_file {正在创建文件} other {正在处理}}",
   "@queue.row.label": {
-    "sourceHash": "d5f30f5"
+    "sourceHash": "2d12510"
   },
   "queue.row.status": "{status, select, queued {等待中} running {进行中} paused {已暂停} done {已完成} cancelled {已取消} failed {无法完成} other {进行中}}",
   "@queue.row.status": {

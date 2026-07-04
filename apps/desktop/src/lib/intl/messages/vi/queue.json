@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "c24a288"
   },
-  "queue.row.label": "{type, select, copy {Đang sao chép} move {Đang di chuyển} delete {Đang xóa} trash {Đang chuyển vào thùng rác} other {Đang xử lý}}",
+  "queue.row.label": "{type, select, copy {Đang sao chép} move {Đang di chuyển} delete {Đang xóa} trash {Đang chuyển vào thùng rác} rename {Đang đổi tên} create_folder {Đang tạo thư mục} create_file {Đang tạo tệp} other {Đang xử lý}}",
   "@queue.row.label": {
-    "sourceHash": "d5f30f5"
+    "sourceHash": "2d12510"
   },
   "queue.row.status": "{status, select, queued {Đang chờ} running {Đang chạy} paused {Đã tạm dừng} done {Xong} cancelled {Đã hủy} failed {Chưa hoàn tất được} other {Đang chạy}}",
   "@queue.row.status": {

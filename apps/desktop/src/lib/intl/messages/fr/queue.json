@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "c24a288"
   },
-  "queue.row.label": "{type, select, copy {Copie} move {Déplacement} delete {Suppression} trash {Placement dans la corbeille} other {En cours}}",
+  "queue.row.label": "{type, select, copy {Copie} move {Déplacement} delete {Suppression} trash {Placement dans la corbeille} rename {Renommage} create_folder {Création du dossier} create_file {Création du fichier} other {En cours}}",
   "@queue.row.label": {
-    "sourceHash": "d5f30f5"
+    "sourceHash": "2d12510"
   },
   "queue.row.status": "{status, select, queued {En attente} running {En cours} paused {En pause} done {Terminé} cancelled {Annulé} failed {N''a pas pu se terminer} other {En cours}}",
   "@queue.row.status": {

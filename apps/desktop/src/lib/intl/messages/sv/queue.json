@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "c24a288"
   },
-  "queue.row.label": "{type, select, copy {Kopierar} move {Flyttar} delete {Raderar} trash {Flyttar till papperskorgen} other {Arbetar}}",
+  "queue.row.label": "{type, select, copy {Kopierar} move {Flyttar} delete {Raderar} trash {Flyttar till papperskorgen} rename {Byter namn} create_folder {Skapar mapp} create_file {Skapar fil} other {Arbetar}}",
   "@queue.row.label": {
-    "sourceHash": "d5f30f5"
+    "sourceHash": "2d12510"
   },
   "queue.row.status": "{status, select, queued {Väntar} running {Pågår} paused {Pausad} done {Klar} cancelled {Avbruten} failed {Gick inte att slutföra} other {Pågår}}",
   "@queue.row.status": {

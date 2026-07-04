@@ -506,3 +506,4 @@ copy/move + delete dialogs). Reuses prior terms (scan/scanning → `quét`/`đan
   it, inanimate pronoun) is attested in the pile (Nautilus "không có quyền tạo nó ở đích đến");
   `khi sao chép`/`khi di chuyển` (when copying/moving) renders "during the copy/move" concisely. Two literal sentences
   per the en `@key` (no ICU select; the verb is operation-specific). `high`.
+- **queue.row.label progress arms (rename / create folder / create file)** · `Đang đổi tên` / `Đang tạo thư mục` / `Đang tạo tệp` · "Đang [verb]" style of the sibling arms; Nautilus ("Đang đổi tên", "Đang tạo"), settled `đổi tên`, `thư mục`/`tệp` · high

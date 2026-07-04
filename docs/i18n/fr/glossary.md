@@ -528,3 +528,4 @@ doubled below to match this doc's convention:
   as "Cmdr le créera" ("le" = the masculine "dossier"; not the passive "sera créé" the pile shows in Thunar); "during
   the copy/move" → "lors de la copie" / "lors du déplacement" (pile-attested "lors de la copie"; reuses the settled
   `copy → copie` / `move → déplacement` nouns). Two literal sentences, operation-specific verb, no ICU select · high
+- **queue.row.label progress arms (rename / create folder / create file)** · `Renommage` / `Création du dossier` / `Création du fichier` · verbal-noun style of the sibling arms (Copie, Déplacement); Nautilus ("Renommage de …", "Création des …"), settled `dossier`/`fichier` · high
