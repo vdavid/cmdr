@@ -34,7 +34,7 @@
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath } from '../navigation/path-navigation'
 
-    import { getCurrentEntry, type NavigationHistory } from '../navigation/navigation-history'
+    import { type NavigationHistory } from '../navigation/navigation-history'
     import TabBar from '../tabs/TabBar.svelte'
     import {
         getActiveTab,
@@ -85,6 +85,7 @@
     import { createSwapPanes } from './swap-panes'
     import { createVolumeSelection } from './volume-selection'
     import { createEdgeFlowHandlers } from './edge-flow-handlers'
+    import { createPaneMirror } from './pane-mirror'
     import {
         navigate as runNavigate,
         commitPathFromListing,
@@ -328,6 +329,20 @@
         getTabMgr,
         getVolumes: () => volumes,
         focusContainer: () => containerElement?.focus(),
+    })
+    // "Copy path from <source> to <target> pane": mirror location + network state
+    // into the other pane without shifting keyboard focus.
+    const paneMirror = createPaneMirror({
+        navigate: navigateIntent,
+        getPaneRef,
+        getPaneVolumeId,
+        getPanePath,
+        getPaneHistory,
+        setPaneHistory,
+        getFocusedPane: () => focusedPane,
+        setFocusedPane: (pane) => {
+            explorerState.setFocusedPane(pane)
+        },
     })
 
     // Per-pane transaction-token map for `navigate()`. Caller-owned (it must
@@ -1154,93 +1169,7 @@
      * cursor-on-share (share browser) queues auto-mount on the target.
      */
     export function copyPathBetweenPanes(source: 'left' | 'right', target: 'left' | 'right'): void {
-        if (source === target) return
-        const sourcePaneRef = getPaneRef(source)
-        if (!sourcePaneRef) return
-
-        const sourceVolumeId = getPaneVolumeId(source)
-        const sourcePath = getPanePath(source)
-        const sourceHistoryEntry = getCurrentEntry(getPaneHistory(source))
-        const sourceHost = sourceHistoryEntry.networkHost ?? null
-        const sourceFocused = focusedPane === source
-
-        // Normal listing on the source: cursor-on-folder refines the path.
-        if (sourceVolumeId !== 'network') {
-            let destPath = sourcePath
-            if (sourceFocused) {
-                const entry = sourcePaneRef.getCursorEntry()
-                if (entry && entry.isDirectory && entry.name !== '..') {
-                    destPath = entry.path
-                }
-            }
-            mirrorLocalStateToPane(target, sourceVolumeId, destPath)
-            return
-        }
-
-        // Source is on the network volume (host list or share list).
-        let destHost: NetworkHost | null = sourceHost
-        let destAutoMountShare: string | undefined
-        if (sourceFocused) {
-            const cursor = sourcePaneRef.getNetworkCursorEntry()
-            if (cursor?.kind === 'host') {
-                destHost = cursor.host
-            } else if (cursor?.kind === 'share' && sourceHost) {
-                destAutoMountShare = cursor.share.name
-            }
-        }
-        mirrorNetworkStateToPane(target, destHost, destAutoMountShare)
-    }
-
-    /** Helper: mirror a {volumeId, path} state to a target pane without shifting focus. */
-    function mirrorLocalStateToPane(target: 'left' | 'right', volumeId: string, path: string): void {
-        const originalFocused = focusedPane
-        // Keep the same-volume same-path no-op: routing it through `{ location }`
-        // would `navigateToPath(samePath)` — a redundant listing reload with
-        // cursor/selection churn. The `{ location }` arm subsumes the other two
-        // branches (cross-volume → switch, same-volume different path → in-place).
-        if (getPaneVolumeId(target) === volumeId && getPanePath(target) === path) {
-            restoreFocus(originalFocused)
-            return
-        }
-        // `source: 'mirror'` keeps focus on the source pane (no focus shift, L1).
-        navigateIntent({ pane: target, to: { goTo: { volumeId, path } }, source: 'mirror' })
-        restoreFocus(originalFocused)
-    }
-
-    /** Helper: mirror a network state ({host, autoMountShare}) to a target pane without shifting focus. */
-    function mirrorNetworkStateToPane(
-        target: 'left' | 'right',
-        host: NetworkHost | null,
-        autoMountShare: string | undefined,
-    ): void {
-        const originalFocused = focusedPane
-        const targetPaneRef = getPaneRef(target)
-        if (getPaneVolumeId(target) !== 'network') {
-            navigateIntent({
-                pane: target,
-                to: { selectVolume: { volumeId: 'network', path: 'smb://' } },
-                source: 'mirror',
-            })
-        }
-        targetPaneRef?.setNetworkHost(host)
-        setPaneHistory(
-            target,
-            pushHistoryEntry(getPaneHistory(target), {
-                volumeId: 'network',
-                path: 'smb://',
-                networkHost: host ?? undefined,
-            }),
-        )
-        targetPaneRef?.setNetworkAutoMount(autoMountShare)
-        restoreFocus(originalFocused)
-    }
-
-    /** Restore focus to a pane after a target-pane state change so the user keeps working where they were. */
-    function restoreFocus(pane: 'left' | 'right'): void {
-        if (focusedPane !== pane) {
-            explorerState.setFocusedPane(pane)
-            // focusedPane persistence fires from the subscriber's focus effect.
-        }
+        paneMirror.copyPathBetweenPanes(source, target)
     }
 
     export async function refreshPane(): Promise<void> {
