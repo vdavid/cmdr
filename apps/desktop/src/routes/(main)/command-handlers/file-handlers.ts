@@ -23,6 +23,7 @@ import {
 } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import { addToast } from '$lib/ui/toast'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
+import { pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
 import { tString } from '$lib/intl/messages.svelte'
 import type { CommandArgs } from '$lib/commands'
 import type { CommandHandlerContext, CommandHandlerRecord } from './types'
@@ -131,6 +132,12 @@ export const fileHandlers = {
     }
     const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
     if (!entryUnderCursor) return
+    // Quick Look can't preview a file INSIDE an archive: the inner path isn't a
+    // real file on disk, so the panel would open blank. No-op — consistent with
+    // how Quick Look already skips non-local volumes; F3 (viewer temp-extract) is
+    // the preview path inside a zip. Return BEFORE flipping `isOpen` so state stays
+    // consistent (no panel opened).
+    if (pathInsideArchive(entryUnderCursor.path)) return
     const volumeId = getFocusedPaneVolumeId()
     // Optimistically flip `isOpen` before the IPC: AppKit returns from
     // `makeKeyAndOrderFront:` synchronously and the panel is up by the time

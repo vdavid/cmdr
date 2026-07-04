@@ -93,7 +93,8 @@
     import { createSearchPaneKeys } from './search-pane-keys'
     import { computeHasParent } from './has-parent'
     import { firstSelectedIndex } from './first-selected-index'
-    import { capabilitiesForPane } from './volume-capabilities'
+    import { capabilitiesForPane, pathInsideArchive } from './volume-capabilities'
+    import { openFileViewer } from '$lib/file-viewer/open-viewer'
     import { resolveValidPath } from '../navigation/path-resolution'
     import { isVolumeEjectable } from '../navigation/eject-predicate'
     import { homeDir } from '@tauri-apps/api/path'
@@ -1407,6 +1408,12 @@
             currentPath = entry.path
             // Note: onPathChange is called in listing-complete handler after successful load
             await loader.loadDirectory(entry.path, currentFolderName)
+        } else if (pathInsideArchive(entry.path)) {
+            // A file INSIDE an archive can't be opened by the OS default app: the
+            // inner path doesn't exist on disk, so `openFile` is a silent no-op.
+            // Route to the viewer (bounded temp-extract, same as F3) — the honest
+            // interim until the Enter-behavior milestone adds extract-then-open.
+            void openFileViewer(entry.path)
         } else {
             // Open file with default application
             try {

@@ -175,6 +175,35 @@ test.describe('Archive browsing', () => {
     }
   })
 
+  test('pressing Enter on a text file inside the archive opens the viewer (not a dead-end)', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const main = tauriPage as TauriPage
+
+    await enterEntry(tauriPage, 'sample.zip')
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
+
+    // Enter on a non-archive file inside the zip routes to the VIEWER (temp-extract).
+    // The OS default-app open would be a silent no-op on the inner path, so a new
+    // viewer window opening is the proof the dead-end is gone.
+    const before = new Set((await main.listWindows()).map((w) => w.label).filter((l) => l.startsWith('viewer-')))
+    const found = await moveCursorToFile(tauriPage, 'inner.txt')
+    expect(found).toBe(true)
+    await tauriPage.keyboard.press('Enter')
+
+    const viewer = await main.waitForWindow((w) => w.label.startsWith('viewer-') && !before.has(w.label), {
+      timeout: 10000,
+    })
+    const viewerLabel = viewer.targetWindow
+    if (!viewerLabel) throw new Error('Scoped viewer page has no targetWindow label')
+    try {
+      await viewer.waitForSelector('.viewer-container[data-window-ready="loaded"]', 10000)
+      expect(await viewer.textContent('.file-content')).toContain('hello from inside the archive')
+    } finally {
+      await closeScopedWindow(main, viewer, viewerLabel)
+    }
+  })
+
   // Extract-out: copy a file from inside the archive to the local pane. The scan
   // preview now routes the archive-inner source through its `ArchiveVolume`
   // (`scan_preview_source_volume`), so the cached preview has the real file count

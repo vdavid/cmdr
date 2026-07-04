@@ -14,6 +14,7 @@
 import { quickLookSetPath } from '$lib/tauri-commands'
 import { closeFromPaneError, quickLookState } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import { getAppLogger } from '$lib/logging/logger'
+import { pathInsideArchive } from './volume-capabilities'
 import type { FilePaneAPI } from './types'
 
 const log = getAppLogger('fileExplorer')
@@ -65,6 +66,11 @@ export function initQuickLookFollow(deps: QuickLookFollowDeps): QuickLookFollow 
     // No path → don't reloadData with stale state; wait for the next $effect fire
     // once the entry resolves (FilePane fetches it on every cursorIndex change).
     if (!path || !volId) return
+    // A file inside an archive has no real on-disk path, so Quick Look would blank
+    // (the pane's `volId` is the writable parent drive, so the backend's non-local
+    // no-op doesn't catch it). Skip it — the panel keeps its last valid preview,
+    // matching the initial-open gate in the `file.quickLook` handler.
+    if (pathInsideArchive(path)) return
     const generation = ++quickLookFollowGeneration
     if (quickLookFollowTimer !== null) clearTimeout(quickLookFollowTimer)
     quickLookFollowTimer = setTimeout(() => {
