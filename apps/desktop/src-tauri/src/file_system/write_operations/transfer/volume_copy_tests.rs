@@ -2396,3 +2396,66 @@ async fn extract_out_copies_a_file_and_a_directory_subtree_out_of_a_zip() {
     assert_eq!(complete[0].files_processed, 2, "two top-level sources");
     assert_eq!(complete[0].bytes_processed, 5 + 3 + 3, "all inner-file bytes copied");
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn extracting_a_symlink_entry_writes_a_regular_file_never_a_symlink() {
+    use crate::file_system::volume::backends::archive::ArchiveVolume;
+
+    // Pins that extraction never CREATES a symlink from archive data: a symlink
+    // entry's content is its target path, and writing those bytes verbatim as a
+    // regular file is what stops Zip Slip through the back door (a symlink entry
+    // pointing outside the extraction root).
+    let src_dir = tempfile::tempdir().expect("src tempdir");
+    let zip_path = src_dir.path().join("bundle.zip");
+    {
+        let file = std::fs::File::create(&zip_path).expect("create zip");
+        let mut writer = zip::ZipWriter::new(file);
+        let options = zip::write::SimpleFileOptions::default();
+        // The hostile case: a symlink whose target is an absolute path OUTSIDE any
+        // extraction root. Extraction must write these bytes as a plain file, never
+        // materialize a link to `/etc/passwd`.
+        writer.add_symlink("link", "/etc/passwd", options).expect("add symlink");
+        writer.finish().expect("finish zip");
+    }
+
+    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent"));
+    let source: Arc<dyn Volume> = Arc::new(ArchiveVolume::new(parent, zip_path.clone()));
+
+    // A real-filesystem destination so we can stat the landed entry's kind.
+    let dst_dir = tempfile::tempdir().expect("dst tempdir");
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.path().to_str().unwrap()));
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = VolumeCopyConfig {
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "symlink-extract-op",
+        &state,
+        Arc::clone(&source),
+        &[zip_path.join("link")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "symlink extraction should succeed: {result:?}");
+
+    // (a) The destination is a REGULAR file, never a symlink.
+    let landed = dst_dir.path().join("link");
+    let meta = std::fs::symlink_metadata(&landed).expect("dest entry exists");
+    assert!(
+        meta.file_type().is_file(),
+        "extracted symlink entry must be a regular file, not a symlink"
+    );
+    assert!(
+        !meta.file_type().is_symlink(),
+        "must NOT be a symlink — that would be Zip Slip through the back door"
+    );
+    // (b) Its content is the target-path bytes, written verbatim (never followed).
+    assert_eq!(std::fs::read(&landed).expect("read dest"), b"/etc/passwd");
+}
