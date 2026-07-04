@@ -13,7 +13,6 @@
     import {
         cancelListing,
         findFileIndex,
-        findFirstFuzzyMatch,
         getFileRange,
         pathExistsChecked,
         getFileAt,
@@ -30,7 +29,6 @@
         onListingError,
         onListingCancelled,
         onMtpDeviceDisconnected,
-        onVolumeSpaceChanged,
         openFile,
         refreshListingIndexSizes,
         showFileContextMenu,
@@ -46,7 +44,7 @@
     import { updateIndexSizesInPlace } from '../views/file-list-utils'
     import { evictPerPathIconsForDir } from '$lib/icon-cache'
     import { classifySelectionDialogKey } from './selection-dialog-keys'
-    import { createTypeToJumpState } from './type-to-jump-state.svelte'
+    import { createTypeToJumpController } from './type-to-jump-controller.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
     import type { ViewMode } from '$lib/app-status-store'
     import type { CommandId } from '$lib/commands'
@@ -71,6 +69,7 @@
     import RepoChip from '../git/RepoChip.svelte'
     import { createGitBrowserSync } from './git-browser-sync.svelte'
     import { createSmbViewState } from './smb-view-state.svelte'
+    import { createVolumeSpace } from './volume-space.svelte'
     import { isVirtualGitPath } from '../git/path-detection'
     import { getSetting, setSetting } from '$lib/settings'
     import { isFileListBackgroundClick } from './pane-background-dblclick'
@@ -116,14 +115,7 @@
     import { isVolumeEjectable } from '../navigation/eject-predicate'
     import { homeDir } from '@tauri-apps/api/path'
     import { basenameOf, type CanonicalPath, parentOf, toCanonical } from '$lib/path/canonical'
-    import {
-        getVolumeSpace,
-        watchVolumeSpace,
-        unwatchVolumeSpace,
-        showBreadcrumbContextMenu,
-        type VolumeSpaceInfo,
-    } from '$lib/tauri-commands'
-    import { getIpcErrorMessage } from '$lib/tauri-commands/ipc-types'
+    import { showBreadcrumbContextMenu } from '$lib/tauri-commands'
     import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
     import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
@@ -231,27 +223,24 @@
     let operationSelectedNames = $state<string[] | 'all' | null>(null)
     let diffGeneration = 0 // NOT $state: only used in async callbacks, never for rendering
 
-    // Type-to-jump: per-pane buffer + indicator. The reset delay is read live
-    // from Settings > Advanced on each keystroke via the reactive getter, so
-    // moving the slider takes effect on the next keystroke without restart.
-    const typeToJump = createTypeToJumpState({
+    // Type-to-jump: per-pane buffer + indicator + the IPC fuzzy-match runner and
+    // the MCP mirror of the last matched name, all in a `*.svelte.ts` controller.
+    // The reset delay is read live from Settings on each keystroke (reactive
+    // getter), so moving the slider takes effect on the next keystroke. FilePane
+    // reads `jump.buffer` / `.indicatorVisible` / `.indicatorStale` /
+    // `.lastMatchedName` and keeps one-line handleJumpKeystroke / isJumpActive /
+    // clearJumpState delegates.
+    const jump = createTypeToJumpController({
         getResetMs: () => getTypeToJumpResetDelay(),
-        onMatch: (buffer, generation) => {
-            void runJumpMatch(buffer, generation)
-        },
-        onIndicatorHide: () => {
-            // Stale match info is meaningless once the indicator is gone.
-            lastJumpMatchedName = null
-            debouncedSyncMcp.call()
-        },
+        getListingId: () => listingId,
+        getLoading: () => loading,
+        getHasBackendListing: () => caps.hasBackendListing,
+        getIsMtpDeviceOnly: () => isMtpDeviceOnly,
+        getIncludeHidden: () => includeHidden,
+        getHasParent: () => hasParent,
+        setCursorIndex: (index: number) => void setCursorIndex(index),
+        onSyncMcp: () => { debouncedSyncMcp.call(); },
     })
-
-    // Name of the file the most recent successful type-to-jump match landed
-    // on. Mirrored to the MCP `PaneState.typeToJump.lastMatchedName` field so
-    // MCP-driven tests can assert where the cursor jumped to without
-    // re-deriving from `cursor_index` + `files`. Cleared when the indicator
-    // hides or `clearJumpState()` runs.
-    let lastJumpMatchedName = $state<string | null>(null)
 
     // Rename state (inline rename editor)
     const rename = createRenameState()
@@ -265,8 +254,6 @@
     // Volume root path from listing-complete event (accurate for MTP and all volume types)
     let volumeRootFromEvent = $state<string | undefined>(undefined)
 
-    // Disk space info for the current volume (fetched on mount, volume change, and after file ops)
-    let volumeSpace: VolumeSpaceInfo | null = $state(null)
 
     import type { ListViewAPI, VolumeBreadcrumbAPI, NetworkMountViewAPI, NetworkCursorEntry } from './types'
     import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/drag-auto-scroll'
@@ -502,6 +489,17 @@
         navigateToFallback,
     })
 
+    // Live per-pane disk space: the readout, the fetch, the backend live-update
+    // listener, and the watch/unwatch registration live in a `*.svelte.ts` factory.
+    // The pane keeps a one-line `refreshVolumeSpace` delegate (a FilePaneAPI export)
+    // and drives watch/unwatch across mount, volume-switch, and destroy.
+    const diskSpace = createVolumeSpace({
+        paneId,
+        getVolumeId: () => volumeId,
+        getCurrentPath: () => currentPath,
+        getIsDiskImage: () => isDiskImageVolume,
+    })
+
     // Network browsing state - tracked here for history navigation integration
     let currentNetworkHost = $state<NetworkHost | null>(null)
     // Pending share to auto-mount on the network host. Set by "Copy path between
@@ -702,15 +700,7 @@
      * cache as it stands at that moment.
      */
     export function handleJumpKeystroke(char: string): void {
-        // No real listing to jump within (network / search-results) folds into
-        // `!caps.hasBackendListing`. `isMtpDeviceOnly` STAYS: it's the MTP
-        // not-yet-connected runtime sub-state, not a kind capability (a CONNECTED
-        // MTP pane has a backend listing and jumps fine).
-        if (!listingId || loading || !caps.hasBackendListing || isMtpDeviceOnly) return
-        typeToJump.appendChar(char)
-        // Surface the buffer change to MCP (`runJumpMatch` syncs again on
-        // success, but a no-match keystroke would otherwise leave MCP stale).
-        debouncedSyncMcp.call()
+        jump.handleJumpKeystroke(char)
     }
 
     /**
@@ -719,52 +709,12 @@
      * decide whether a printable keystroke extends the buffer or runs its command.
      */
     export function isJumpActive(): boolean {
-        return typeToJump.buffer.length > 0
+        return jump.isJumpActive()
     }
 
     /** Clears the type-to-jump buffer + indicator + timers. Safe to call repeatedly. */
     export function clearJumpState(): void {
-        typeToJump.clear()
-        // Clearing the buffer invalidates whatever the last match landed on.
-        if (lastJumpMatchedName !== null) {
-            lastJumpMatchedName = null
-            debouncedSyncMcp.call()
-        }
-    }
-
-    /**
-     * Runs the IPC fuzzy match and applies the result if it's still fresh.
-     * The generation tag guards against out-of-order responses (slow keystroke 1
-     * resolving after fast keystroke 2, same pattern as `diffGeneration`).
-     */
-    async function runJumpMatch(buffer: string, generation: number): Promise<void> {
-        if (!listingId || buffer === '') return
-        const capturedListingId = listingId
-        try {
-            const backendIndex = await findFirstFuzzyMatch(capturedListingId, buffer, includeHidden)
-            // Discard stale responses (newer keystroke fired) or responses
-            // arriving after a buffer clear / listing swap.
-            if (generation !== typeToJump.generation) return
-            if (typeToJump.buffer === '') return
-            if (capturedListingId !== listingId) return
-            if (backendIndex === null) return
-            const frontendIndex = hasParent ? backendIndex + 1 : backendIndex
-            void setCursorIndex(frontendIndex)
-            // Remember where the match landed so MCP can surface it. Use
-            // the entry from the cache rather than the visible-range slice
-            // (the matched index may be off-screen until the scroll catches up).
-            try {
-                const entry = await getFileAt(capturedListingId, backendIndex, includeHidden)
-                if (entry && generation === typeToJump.generation) {
-                    lastJumpMatchedName = entry.name
-                    debouncedSyncMcp.call()
-                }
-            } catch {
-                // Cache lookup failure is non-fatal: MCP just lacks the name.
-            }
-        } catch (e) {
-            log.warn('type-to-jump match failed: {error}', { error: getIpcErrorMessage(e) })
-        }
+        jump.clearJumpState()
     }
 
     /** Find an item by name in network views. Returns index or -1. */
@@ -972,7 +922,7 @@
 
     export function startRename(): void {
         // Type-to-jump must not linger over the inline rename editor.
-        typeToJump.clear()
+        jump.clear()
         renameFlow.startRename()
     }
 
@@ -1015,13 +965,7 @@
     }
 
     export async function refreshVolumeSpace(): Promise<void> {
-        // Disk images report no meaningful free space; keep it null so neither the bottom
-        // disk-usage bar nor the SelectionInfo free/total text renders.
-        if (isDiskImageVolume) {
-            volumeSpace = null
-            return
-        }
-        volumeSpace = (await getVolumeSpace(currentPath)).data
+        await diskSpace.refresh()
     }
 
     /** Re-fetches index sizes (recursive_size, etc.) without a full list rebuild. */
@@ -1150,7 +1094,6 @@
     let unlistenComplete: UnlistenFn | undefined
     let unlistenError: UnlistenFn | undefined
     let unlistenCancelled: UnlistenFn | undefined
-    let unlistenSpaceChanged: UnlistenFn | undefined
     // Opening folder state (before read_dir starts - slow for network folders)
     let openingFolder = $state(false)
     // Loading progress state for streaming
@@ -1215,11 +1158,11 @@
         getSortOrder: () => sortOrder,
         getShowHiddenFiles: () => showHiddenFiles,
         getTypeToJump: () => ({
-            buffer: typeToJump.buffer,
-            indicatorVisible: typeToJump.indicatorVisible,
-            indicatorStale: typeToJump.indicatorStale,
+            buffer: jump.buffer,
+            indicatorVisible: jump.indicatorVisible,
+            indicatorStale: jump.indicatorStale,
         }),
-        getLastJumpMatchedName: () => lastJumpMatchedName,
+        getLastJumpMatchedName: () => jump.lastMatchedName,
     })
     const syncPaneStateToMcp = mcpSync.syncPaneStateToMcp
 
@@ -1332,7 +1275,7 @@
         cancelClickToRename()
         dismissTransientToasts()
         // Directory change invalidates in-flight type-to-jump buffer (per plan § 6).
-        typeToJump.clear()
+        jump.clear()
 
         // Reset benchmark epoch for this navigation
         benchmark.resetEpoch()
@@ -1719,13 +1662,13 @@
             // The `..` row gets its own one-item menu: "Add to favorites" (favorites the
             // parent dir `entry.path`). The full file menu (Copy / Move / Delete) makes no
             // sense on `..`. On a snapshot pane there's no real parent to favorite, so skip.
-            typeToJump.clear()
+            jump.clear()
             if (volumeId === 'search-results') return
             await showParentRowContextMenu(entry.path)
             return
         }
         // Spec: opening a context menu cancels in-flight type-to-jump.
-        typeToJump.clear()
+        jump.clear()
         // Match Finder: if the right-clicked entry is part of the current selection,
         // actions apply to the whole selection. Otherwise they apply to just this entry.
         let paths = [entry.path]
@@ -1832,20 +1775,20 @@
         const isDeviceOnlyMtp = isMtpVolumeId(newVolumeId) && !newVolumeId.includes(':')
         if (newVolumeId !== 'network' && !isDeviceOnlyMtp) {
             void loadDirectory(targetPath)
-            void unwatchVolumeSpace(paneId)
+            diskSpace.unwatch()
             // Disk images have no meaningful free space: skip the poll, the bottom bar, and the
             // SelectionInfo free/total text. Read the flag off the NEW volume directly — the
             // `volumeId` prop (and so `isDiskImageVolume`) hasn't updated yet this tick.
             const newIsDiskImage = getStoreVolumes().find((v) => v.id === newVolumeId)?.isDiskImage === true
             if (newIsDiskImage) {
-                volumeSpace = null
+                diskSpace.clear()
             } else {
-                void refreshVolumeSpace()
-                void watchVolumeSpace(paneId, newVolumeId, targetPath)
+                void diskSpace.refresh()
+                diskSpace.watch(newVolumeId, targetPath)
             }
         } else {
             // Leaving a physical volume: stop watching
-            void unwatchVolumeSpace(paneId)
+            diskSpace.unwatch()
         }
     }
 
@@ -2494,19 +2437,8 @@
             userHomePath = h.endsWith('/') ? h.slice(0, -1) : h
         })
 
-        // Listen for live disk-space updates from the backend poller (typed event).
-        // Ignore disk images: no meaningful free space. We don't register a watch for them
-        // (below), so this is a belt-and-suspenders guard against a late/stray event.
-        void onVolumeSpaceChanged((payload) => {
-            if (payload.volumeId === volumeId && !isDiskImageVolume) {
-                volumeSpace = {
-                    totalBytes: payload.totalBytes,
-                    availableBytes: payload.availableBytes,
-                }
-            }
-        }).then((fn) => {
-            unlistenSpaceChanged = fn
-        })
+        // Live disk-space updates from the backend poller (typed event).
+        diskSpace.startListening()
 
         // Skip directory loading for:
         // - Network views (they handle their own data via NetworkBrowser/ShareBrowser)
@@ -2524,9 +2456,9 @@
             void loadDirectory(currentPath)
             // Disk images have no meaningful free space: no poll, no bar, no SelectionInfo text.
             if (!isDiskImageVolume) {
-                void refreshVolumeSpace()
+                void diskSpace.refresh()
                 // Register for live disk-space polling
-                void watchVolumeSpace(paneId, volumeId, currentPath)
+                diskSpace.watch(volumeId, currentPath)
             }
         } else {
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for paneId={paneId}', { paneId })
@@ -2622,15 +2554,15 @@
         debouncedSyncMcp.cancel()
         // Stop type-to-jump timers so they can't fire after the FilePane is gone
         // (otherwise orphan setTimeouts mutate $state slots on the dead instance).
-        typeToJump.dispose()
+        jump.dispose()
         unlistenOpening?.()
         unlistenProgress?.()
         unlistenReadComplete?.()
         unlistenComplete?.()
         unlistenError?.()
         unlistenCancelled?.()
-        unlistenSpaceChanged?.()
-        void unwatchVolumeSpace(paneId)
+        // Drop the disk-space live listener + this pane's space watch.
+        diskSpace.cleanup()
         // Drop the git subscriptions (setting listeners + repo watcher) on unmount.
         gitBrowser.cleanup()
     })
@@ -2670,9 +2602,9 @@
     </div>
     <div class="content">
         <TypeToJumpIndicator
-            buffer={typeToJump.buffer}
-            visible={typeToJump.indicatorVisible}
-            stale={typeToJump.indicatorStale}
+            buffer={jump.buffer}
+            visible={jump.indicatorVisible}
+            stale={jump.indicatorStale}
         />
         {#if unreachable}
             <VolumeUnreachableBanner
@@ -2840,30 +2772,30 @@
             currentDirModifiedAt={undefined}
             stats={listingStats}
             selectedCount={selection.selectedIndices.size}
-            {volumeSpace}
+            volumeSpace={diskSpace.volumeSpace}
             {mtpSpaceHint}
         />
         <!--suppress HtmlWrongAttributeValue -- We know this is not a valid ARIA role, it's fine -->
         {#if !isDiskImageVolume}
         <div
             class="disk-usage-bar-wrapper"
-            use:tooltip={volumeSpace
-                ? { text: formatBarTooltip(volumeSpace, (b) => formatFileSizeWithFormat(b, getFileSizeFormat()), mtpSpaceHint) }
+            use:tooltip={diskSpace.volumeSpace
+                ? { text: formatBarTooltip(diskSpace.volumeSpace, (b) => formatFileSizeWithFormat(b, getFileSizeFormat()), mtpSpaceHint) }
                 : ''}
         >
             <div
                 class="disk-usage-bar"
                 role="meter"
                 aria-label={tString('fileExplorer.pane.diskUsageAriaLabel')}
-                aria-valuenow={volumeSpace ? getUsedPercent(volumeSpace) : 0}
+                aria-valuenow={diskSpace.volumeSpace ? getUsedPercent(diskSpace.volumeSpace) : 0}
                 aria-valuemin={0}
                 aria-valuemax={100}
             >
-                {#if volumeSpace}
+                {#if diskSpace.volumeSpace}
                     <div
                         class="disk-usage-fill"
-                        style:width="{getUsedPercent(volumeSpace)}%"
-                        style:background-color="var({getDiskUsageLevel(getUsedPercent(volumeSpace)).cssVar})"
+                        style:width="{getUsedPercent(diskSpace.volumeSpace)}%"
+                        style:background-color="var({getDiskUsageLevel(getUsedPercent(diskSpace.volumeSpace)).cssVar})"
                     ></div>
                 {/if}
             </div>
