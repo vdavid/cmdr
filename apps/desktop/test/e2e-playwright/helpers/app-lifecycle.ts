@@ -8,7 +8,7 @@
  */
 
 import { ensureMcpClient, mcpReadResource } from '../../e2e-shared/mcp-client.js'
-import { type PageLike, LOCAL_VOLUME_NAME, getFixtureRoot, isStateClean, pollUntil } from './core.js'
+import { type PageLike, LOCAL_VOLUME_NAME, flushFileWatcher, getFixtureRoot, isStateClean, pollUntil } from './core.js'
 import { navigateToRoute } from './navigation.js'
 
 // ── App readiness ────────────────────────────────────────────────────────────
@@ -152,6 +152,37 @@ export async function ensureAppReady(
     throw new Error(
       `ensureAppReady: expected files ${JSON.stringify(leftExpected)} not found in left pane after 10s. ` +
         `Actual entries: ${JSON.stringify(actual)}. Fixture directory may need recreateFixtures() in beforeEach.`,
+    )
+  }
+
+  // Drain the file-watcher backlog before returning. A prior spec's fixture
+  // churn (recreateFixtures deletes+recreates `left/`) leaves debounced
+  // remove/create diffs queued in the notify-debouncer; they land AFTER the
+  // files-present poll above and either briefly empty the pane (breaking the
+  // first cursor/selection read of the test) or, mid-drain, consume error-pane's
+  // single-shot injected error. `flush_file_watcher` re-reads every active
+  // listing now and flushes the coalescer, so the app is quiescent by return;
+  // the re-confirm proves the left pane settled populated (not mid-reload).
+  // Feature-gated to `playwright-e2e`, present in the E2E binary.
+  await flushFileWatcher(tauriPage)
+  const filesStable = await pollUntil(
+    tauriPage,
+    async () => {
+      return tauriPage.evaluate<boolean>(`(function() {
+                var pane = document.querySelectorAll('.file-pane')[0];
+                if (!pane) return false;
+                var expected = ${JSON.stringify(leftExpected)};
+                return expected.every(function(name) {
+                  return !!pane.querySelector('[data-filename="' + name + '"]');
+                });
+            })()`)
+    },
+    5000,
+  )
+  if (!filesStable) {
+    throw new Error(
+      `ensureAppReady: left pane emptied after flushing the file-watcher backlog ` +
+        `(expected ${JSON.stringify(leftExpected)} to remain). A background re-listing is still churning.`,
     )
   }
 

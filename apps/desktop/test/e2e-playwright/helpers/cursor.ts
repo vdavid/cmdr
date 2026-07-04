@@ -120,11 +120,24 @@ export async function focusPane(tauriPage: PageLike, paneIndex: 0 | 1): Promise<
  * their own keyboard-driven helper and don't use this function.
  */
 export async function moveCursorToFile(tauriPage: PageLike, targetName: string): Promise<boolean> {
-  // Bail early when the file isn't in the focused pane's listing. This matches
-  // the previous behavior (returns false) so callers that assert `found === true`
-  // still get the right signal.
-  const info = await findFileIndex(tauriPage, targetName)
-  if ('error' in info || info.targetIndex < 0) return false
+  // Wait for the target to appear in the focused pane's listing instead of
+  // reading once. A file-op spec's `recreateFixtures` (beforeEach) deletes then
+  // recreates `left/` on disk; the file watcher's debounced remove/create diffs
+  // can drain just AFTER `ensureAppReady`'s files-present poll, briefly emptying
+  // the pane (observed: left pane focused, `pane0Count` 0). A one-shot read
+  // caught that reload window and returned false. Polling waits out the transient
+  // empty; a file that's genuinely absent still fails after the deadline (returns
+  // false, no masking). 5 s is failure headroom under parallel-shard load, well
+  // within the 15 s per-test budget.
+  const listed = await pollUntil(
+    tauriPage,
+    async () => {
+      const probe = await findFileIndex(tauriPage, targetName)
+      return !('error' in probe) && probe.targetIndex >= 0
+    },
+    5000,
+  )
+  if (!listed) return false
 
   // Determine which pane is focused so we can target the right one via MCP.
   const focusedPane = await tauriPage.evaluate<'left' | 'right' | null>(`(function() {
