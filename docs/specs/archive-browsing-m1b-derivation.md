@@ -8,10 +8,9 @@ Implementation agents: treat this as the authoritative site list; the plan holds
 
 1. **The tab keeps ONE id: the parent drive (display).** No `archive-<hash>` ever enters frontend state, history,
    persistence, or MCP sync. Rationale (from the FE derivation): all display chrome resolves from the volumes store off
-   `tab.volumeId` (archive ids aren't in the store); the unmount-redirect compare
-   (`edge-flow-handlers.ts` `getPaneVolumeId(pane) === unmountedId`) must match the parent drive or dead-mount recovery
-   breaks; persistence + restore (`initialization.ts::resolveVolumeId` re-derives from path) become archive-safe with
-   zero new code.
+   `tab.volumeId` (archive ids aren't in the store); the unmount-redirect compare (`edge-flow-handlers.ts`
+   `getPaneVolumeId(pane) === unmountedId`) must match the parent drive or dead-mount recovery breaks; persistence +
+   restore (`initialization.ts::resolveVolumeId` re-derives from path) become archive-safe with zero new code.
 2. **All I/O routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.** The FE keeps sending
    `(parentDriveId, /path/to/foo.zip/inner)`; resolve detects the boundary, `register_if_absent`s the `ArchiveVolume`,
    and returns `(archive_volume, inner_path)`. The FE derives archive-NESS (not an id) from the path for capability
@@ -53,9 +52,9 @@ Adopt `VolumeManager::resolve(volume_id, path)` (returns the archive volume + in
 - `commands/file_system/drag.rs:26` — locality only; archive → Virtual. `native_drag/fulfillment.rs:111` works once
   registered.
 
-**Not adoption sites** (false positives): `indexing/mtp_index.rs:40`, `indexing/smb_watch.rs:309` (archives get no
-index DB), `space_poller.rs:232` (no path arg; archive delegates space to parent; just needs registration),
-`create.rs:192` (`supports_local_fs_access` false already correct).
+**Not adoption sites** (false positives): `indexing/mtp_index.rs:40`, `indexing/smb_watch.rs:309` (archives get no index
+DB), `space_poller.rs:232` (no path arg; archive delegates space to parent; just needs registration), `create.rs:192`
+(`supports_local_fs_access` false already correct).
 
 ## Backend: no-`volume_id` commands (bypass VolumeManager)
 
@@ -74,8 +73,7 @@ index DB), `space_poller.rs:232` (no path arg; archive delegates space to parent
 Fork on archive-inner target, returning typed not-supported (these same seams become the mutation routing later):
 
 - `file_system/write_operations/rename.rs:65` `rename_managed` — fork at top (covers non-root and root branches).
-- `file_system/write_operations/create.rs:119` `create_directory_core`, `:163` `create_file_core` — fork before
-  `get()`.
+- `file_system/write_operations/create.rs:119` `create_directory_core`, `:163` `create_file_core` — fork before `get()`.
 
 ## Backend: registration + lifecycle
 
@@ -89,19 +87,18 @@ Fork on archive-inner target, returning typed not-supported (these same seams be
 - `volume-capabilities.ts`: add `'archive'` to the capabilities `VolumeKind` union (NOT the tint union in
   `volume-tint.svelte.ts` — archive panes show parent-drive tint). Kind derivation needs the PATH: a pane whose path is
   inside an archive gets kind `'archive'` regardless of `volumeId`. New frozen `CAPABILITY_TABLE` row (read-only phase):
-  `hasBackendListing:true, canBeSource:true, canPasteInto/canCreateChild/canRenameInPlace:false,
-  supportsSystemClipboard:false, pathScheme:'filesystem', hasParentRow:true`; mutation later flips the three write
-  flags. Decide `syncsToMcp` explicitly (archive HAS a backend listing; recommend true, reporting parent id + full
-  path).
+  `hasBackendListing:true, canBeSource:true, canPasteInto/canCreateChild/canRenameInPlace:false, supportsSystemClipboard:false, pathScheme:'filesystem', hasParentRow:true`;
+  mutation later flips the three write flags. Decide `syncsToMcp` explicitly (archive HAS a backend listing; recommend
+  true, reporting parent id + full path).
 - **Caps-bypass fixes (the derivation's key catch)**: `file-operation-commands.ts` (`startRename:41`,
   `openNewFolder:70`, `openNewFile:102`) and `transfer-entry.ts::checkTransferDestinationGuard:71` gate writes on
   `VolumeInfo.isReadOnly`, which an archive pane doesn't have (falls through as writable!). These sites must consult
   capabilities (the `'archive'` kind) for the read-only decision, or the kind row is dead code.
 - `createGitBrowserSync` (FilePane) is NOT gated off inside archives (`hasBackendListing` is true) — add an explicit
   archive opt-out.
-- Space watch (`createVolumeSpace`, gate currently `getIsDiskImage`) — skip inside archives (no VolumeInfo; parent
-  space is what the status bar should show; simplest: keep watching the DISPLAY volume's space, which is the parent —
-  verify which id it keys on).
+- Space watch (`createVolumeSpace`, gate currently `getIsDiskImage`) — skip inside archives (no VolumeInfo; parent space
+  is what the status bar should show; simplest: keep watching the DISPLAY volume's space, which is the parent — verify
+  which id it keys on).
 - `pane/navigate.ts`: in-place-vs-switch compare and `commitPathFromListing` keep working on parent ids (entering
   `/foo.zip` is same-volume in-place nav — correct). The foreign-drop guard (`isPathOnVolume` with parent volumePath)
   passes for archive-inner paths — keep display semantics, don't switch it to the archive root.
@@ -111,8 +108,8 @@ Fork on archive-inner target, returning typed not-supported (these same seams be
   segments render with no prefix-stripping change; verify segment navigation targets inside the archive work.
 - `FileEntry.is_archive` (backend-computed, extension-only at listing time) drives the `handleNavigate` fork: navigate
   INTO on Enter (this milestone enters directly; the Ask menu is the next milestone).
-- Persistence: already archive-safe under this model (parent id + full path round-trip; `resolveVolumeId` re-derives
-  the parent). Verify the unreachable-path timeout path treats a deleted zip sanely.
+- Persistence: already archive-safe under this model (parent id + full path round-trip; `resolveVolumeId` re-derives the
+  parent). Verify the unreachable-path timeout path treats a deleted zip sanely.
 - Drag-out source (`resolveSourceVolumeId` longest-prefix over real volumes → parent drive): fine under this model —
   backend resolve re-routes by path; verify `scan_for_copy` routes into the archive from `(parentId, inner path)`.
 - MCP `cmdr://state`: report parent id + full path (agents navigate by path).

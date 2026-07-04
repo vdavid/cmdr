@@ -243,14 +243,14 @@ existing analog for path-based routing.
    lockstep with the backend resolver. **Refcount vs persist use two id forms, by design**: in-session history/panes
    carry `archive-<hash>` (drives the refcount/eviction; history isn't persisted), while persistence stores parent
    drive + zip path (drives restore). The mount hook increments; the search-results
-   `droppedEntries`/`snapshotIdFromEntry` release is the eviction template.
-   **Refined at execution time (2026-07-04, after the exhaustive derivation pass this decision demanded)**: the
-   mechanism is simpler than the sketch above — the tab keeps ONE id (the parent drive, display semantics);
-   `archive-<hash>` never enters FE state, history, persistence, or MCP sync; ALL I/O routing happens backend-side in
-   `VolumeManager::resolve(volume_id, path)`; the FE derives the capabilities kind from the PATH
-   (`pathInsideArchive`); and lifecycle is a backend LRU with NO FE refcount (eviction is harmless — the next listing
-   re-resolves lazily). The resolved UX is unchanged. Ground truth, full bucketed site lists, and the viewer
-   temp-extract decision: [archive-browsing-m1b-derivation.md](archive-browsing-m1b-derivation.md).
+   `droppedEntries`/`snapshotIdFromEntry` release is the eviction template. **Refined at execution time (2026-07-04,
+   after the exhaustive derivation pass this decision demanded)**: the mechanism is simpler than the sketch above — the
+   tab keeps ONE id (the parent drive, display semantics); `archive-<hash>` never enters FE state, history, persistence,
+   or MCP sync; ALL I/O routing happens backend-side in `VolumeManager::resolve(volume_id, path)`; the FE derives the
+   capabilities kind from the PATH (`pathInsideArchive`); and lifecycle is a backend LRU with NO FE refcount (eviction
+   is harmless — the next listing re-resolves lazily). The resolved UX is unchanged. Ground truth, full bucketed site
+   lists, and the viewer temp-extract decision:
+   [archive-browsing-m1b-derivation.md](archive-browsing-m1b-derivation.md).
 2. **RESOLVED — bundles (`.app`/`.bundle`/`.framework`) default to Ask.** Nothing silently changes vs today's
    browse-into behavior; both options are offered.
 3. **Mutation strategy — needs one explicit confirmation (reverses my earlier pitch).** My earlier "near-instant
@@ -291,10 +291,11 @@ Fully parallelizable with M1b until they meet at the resolver seam.
 
 ### M1b — Routing, navigation, path bar, viewer-into-archive
 
-**Authoritative ground truth for this milestone: [archive-browsing-m1b-derivation.md](archive-browsing-m1b-derivation.md)**
-— the derived (post-refactor) site lists plus the lead decisions refining decision 1 (single display id on the tab,
-backend-side routing, kind-from-path capabilities, backend-LRU lifecycle, viewer temp-extract). Where the bullets below
-and the derivation doc disagree, the derivation doc wins.
+**Authoritative ground truth for this milestone:
+[archive-browsing-m1b-derivation.md](archive-browsing-m1b-derivation.md)** — the derived (post-refactor) site lists plus
+the lead decisions refining decision 1 (single display id on the tab, backend-side routing, kind-from-path capabilities,
+backend-LRU lifecycle, viewer temp-extract). Where the bullets below and the derivation doc disagree, the derivation doc
+wins.
 
 - **Path-aware `VolumeManager::resolve(volume_id, path)`** + adoption at the ~18 path-blind sites and the no-`volume_id`
   commands (incl. **`viewer_open*` — without this you can browse a zip but not preview a file in it**).
