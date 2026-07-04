@@ -52,7 +52,8 @@ types. DETAILS.md has the per-file contents and the "where to put a new command"
 - `./ipc-types`: `throwIpcError`, `TimedOut`, `IpcError`.
 - `@tauri-apps/api/core`: raw `invoke` (only for excluded commands; see `lib/ipc/CLAUDE.md`).
 - `@tauri-apps/api/event`: `listen`, `UnlistenFn`.
-- `@tauri-apps/plugin-opener`: `openPath`, `openUrl`.
+- `@tauri-apps/plugin-opener`: `openUrl` only. File opening goes through the backend `openPath` command (so the
+  `playwright-e2e` build can record instead of launch); see `file-actions.ts`.
 - Types from `$lib/file-explorer/types`.
 
 Full details (per-file command inventory, the new-command routing map, and notable non-obvious placements):

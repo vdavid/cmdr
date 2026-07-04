@@ -100,6 +100,78 @@ pub fn open_in_editor(_path: String) -> Result<(), String> {
     Err("Open in editor is not available on this platform".to_string())
 }
 
+/// Open a file (or folder) with the system's default application.
+///
+/// Backs the frontend "open" action (Enter / double-click / MCP `open_under_cursor`
+/// on a file entry). Kept in Rust rather than the frontend opener plugin so the
+/// `playwright-e2e` build can swap in a launch-free variant: the real one spawns
+/// TextEdit/Preview/etc. per open, and the E2E suite (which creates and opens
+/// files) has no way to close them, so they pile up unbounded across runs.
+#[tauri::command]
+#[specta::specta]
+#[cfg(all(target_os = "macos", not(feature = "playwright-e2e")))]
+pub fn open_path(path: String) -> Result<(), String> {
+    Command::new("open").arg(&path).spawn().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+#[cfg(all(target_os = "linux", not(feature = "playwright-e2e")))]
+pub fn open_path(path: String) -> Result<(), String> {
+    Command::new("xdg-open").arg(&path).spawn().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+#[cfg(all(not(any(target_os = "macos", target_os = "linux")), not(feature = "playwright-e2e")))]
+pub fn open_path(_path: String) -> Result<(), String> {
+    Err("Open is not available on this platform".to_string())
+}
+
+/// E2E variant: record the open request instead of launching an external app,
+/// so the suite never floods the desktop with orphan TextEdit/Preview windows.
+/// Specs can assert intent via `open_mock::snapshot` / `open_mock::clear`.
+#[tauri::command]
+#[specta::specta]
+#[cfg(feature = "playwright-e2e")]
+pub fn open_path(path: String) -> Result<(), String> {
+    open_mock::record(path);
+    Ok(())
+}
+
+/// In-process record of `open_path` requests for the `playwright-e2e` build.
+/// Mirrors the clipboard mock (`crate::clipboard`): compiled only under the
+/// feature so prod/dev binaries never link it, and it never touches the OS.
+#[cfg(feature = "playwright-e2e")]
+mod open_mock {
+    use std::path::PathBuf;
+    use std::sync::{LazyLock, Mutex};
+
+    use crate::ignore_poison::IgnorePoison;
+
+    static OPENED: LazyLock<Mutex<Vec<PathBuf>>> = LazyLock::new(|| Mutex::new(Vec::new()));
+
+    /// Records an open request without launching anything.
+    pub fn record(path: String) {
+        log::info!(target: "file_actions", "[mock] open_path recorded (not launched): {path}");
+        OPENED.lock_ignore_poison().push(PathBuf::from(path));
+    }
+
+    /// Returns the paths opened so far, oldest first.
+    #[allow(dead_code, reason = "Exported for future Playwright specs that assert open intent.")]
+    pub fn snapshot() -> Vec<PathBuf> {
+        OPENED.lock_ignore_poison().clone()
+    }
+
+    /// Clears the recorded open requests (per-test reset).
+    #[allow(dead_code, reason = "Exported for future Playwright specs that reset open state.")]
+    pub fn clear() {
+        OPENED.lock_ignore_poison().clear();
+    }
+}
+
 /// Copy text to clipboard
 #[tauri::command]
 #[specta::specta]

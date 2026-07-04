@@ -1,16 +1,22 @@
 // File actions: open, reveal, preview, and context menu commands
 
 import { invoke } from '@tauri-apps/api/core'
-import { openPath, openUrl } from '@tauri-apps/plugin-opener'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import { commands } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 /**
  * Opens a file with the system's default application.
+ *
+ * Routes through the backend `openPath` command (not the opener plugin) so the
+ * `playwright-e2e` build can record the open instead of launching an external
+ * app. Otherwise the E2E suite floods the desktop with orphan TextEdit/Preview
+ * windows it can't close. See `src-tauri/src/commands/file_actions.rs`.
  * @param path - Path to the file to open.
  */
 export async function openFile(path: string): Promise<void> {
-  await openPath(path)
+  const res = await commands.openPath(path)
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 /**

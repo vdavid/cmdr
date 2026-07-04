@@ -1004,6 +1004,16 @@ export const commands = {
   // Open file in the system's default text editor (macOS only)
   openInEditor: (path: string) => typedError<null, string>(__TAURI_INVOKE('open_in_editor', { path })),
   /**
+   *  Open a file (or folder) with the system's default application.
+   *
+   *  Backs the frontend "open" action (Enter / double-click / MCP `open_under_cursor`
+   *  on a file entry). Kept in Rust rather than the frontend opener plugin so the
+   *  `playwright-e2e` build can swap in a launch-free variant: the real one spawns
+   *  TextEdit/Preview/etc. per open, and the E2E suite (which creates and opens
+   *  files) has no way to close them, so they pile up unbounded across runs.
+   */
+  openPath: (path: string) => typedError<null, string>(__TAURI_INVOKE('open_path', { path })),
+  /**
    *  Make a cloud-managed file available offline (download it). On macOS, talks to the
    *  File Provider extension responsible for the file (iCloud Drive, Dropbox, GDrive,
    *  OneDrive, Box, etc.).
