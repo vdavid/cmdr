@@ -1,7 +1,7 @@
 # FilePane listing-loader extraction plan
 
-Status: DRAFT (pre-review). Worktree: `.claude/worktrees/extract-listing-loader`, branch `extract-listing-loader` off
-local `main` (978e0ffb).
+Status: reviewed once (fresh-eyes Opus round 1 folded in). Worktree: `.claude/worktrees/extract-listing-loader`, branch
+`extract-listing-loader` off local `main` (978e0ffb).
 
 ## Goal
 
@@ -17,15 +17,22 @@ stay identical.
 
 ## Why this is safe to do as a pure extraction
 
-The cluster is a self-contained lifecycle machine. Its only inbound edges are:
+The cluster is a self-contained lifecycle machine. Its inbound edges (all preserved as thin delegates / injected deps):
 
-- The `FilePaneAPI` methods that wrap it: `loadDirectory` (internal), `navigateToPath`, `navigateToParent`,
-  `handleCancelLoading`, `whenLoadSettles`, `isLoading`, `getListingId`, `getSwapState`, `adoptListing`. External callers
-  (`swap-panes.ts`, `edge-flow-handlers.ts`, `dialog-state`, `file-operation-commands`, `pane-mcp-sync`, `rename-flow`,
-  `listing-diff-sync`, `navigate.ts`) reach it ONLY through these `paneRef.*` methods. Keeping `FilePane`'s exports as
-  thin delegates to the factory means zero change at any call site outside `FilePane.svelte`.
-- Three `$effect`s / `onMount` inside `FilePane` that call `loadDirectory` (retry-on-reachable, the initial-path/MTP-
-  connect effect, the onMount initial load). These stay in `FilePane` and call `loader.loadDirectory(...)`.
+- **`FilePaneAPI` methods that wrap it** (external callers reach it ONLY through `paneRef.*`, so keeping `FilePane`'s
+  exports as thin delegates means zero change at any external call site): `navigateToPath`, `navigateToParent`,
+  `handleCancelLoading`, `whenLoadSettles`, `isLoading`, `getListingId`, `getSwapState`, `adoptListing`. Callers:
+  `swap-panes.ts`, `edge-flow-handlers.ts`, `dialog-state`, `file-operation-commands`, `pane-mcp-sync`, `rename-flow`,
+  `listing-diff-sync`, `navigate.ts`.
+- **`loadDirectory` and `navigateToFallback` are also called intra-component and by sibling factories**, so they must be
+  PUBLIC loader methods (not internal-only): `loadDirectory` is called by the retry-on-reachable `$effect` (~2083), the
+  initial-path/MTP-connect `$effect` (~2107/2127), `onMount` (~2325), `navigateToParent`, `navigateToFallback`, the
+  open/navigate handlers (~1701/1717), `handleVolumeChange` (~1775), and the `createSmbViewState` dep (~486).
+  `navigateToFallback` is passed as a dep to BOTH `createSmbViewState` (~487) and `initListingDiffSync` (~2252). After
+  the move, `FilePane` passes `loader.loadDirectory` / `loader.navigateToFallback` into those factory dep objects.
+- **Three `$effect`s / `onMount`** stay in `FilePane` and call `loader.loadDirectory(...)`. They also currently write
+  loader-owned lifecycle state directly (`onMount` sets `loading = false`; see the co-ownership note below) — those
+  writes route through loader setters after the move.
 
 ## The crown jewel: the token / drop-foreign-listings model (must be provably unchanged)
 
@@ -41,13 +48,27 @@ Today, `loadDirectory`:
    (and the same guard in the `catch`).
 
 The predicate is what makes a foreign listing inert: once a newer `loadDirectory` runs, `loadGeneration` has advanced,
-so the older load's captured `thisGeneration` no longer matches and ALL of its still-registered listeners no-op — even
-before their `unlisten*` fires. The `payload.listingId` half is defense-in-depth against a backend event tagged with a
-different listing id.
+so the older load's captured `thisGeneration` no longer matches and the SYNCHRONOUS body of each still-registered
+listener no-ops — even before its `unlisten*` fires. The `payload.listingId` half is defense-in-depth against a backend
+event tagged with a different listing id.
 
-**Extraction rule:** this predicate moves verbatim. We factor it into a named pure helper
+**Important nuance — the guard protects only the synchronous listener entry, NOT the async tails.** Two handlers do work
+after an `await` that is NOT re-guarded on generation:
+
+- `onListingError` → `pathExistsChecked(loadPath).then(...)` (~1391-1411) calls `resetLoadingState` /
+  `navigateToFallback` / `onPathChange?.(loadPath)` after its await, with no `thisGeneration === loadGeneration`
+  re-check.
+- `handleListingComplete` writes `totalCount` synchronously (~1461) then writes `cursorIndex` after `await findFileIndex`
+  (~1466-1471), again without a re-check.
+
+This is CURRENT behavior. The extraction preserves it byte-for-byte: **do NOT add re-guards to these async tails** —
+that would be a redesign, not a behavior-preserving move. M3 includes a test that pins the current (unguarded) async-tail
+behavior so a later "tidy-up" can't silently change it.
+
+**Extraction rule:** the synchronous entry predicate moves verbatim. We factor it into a named pure helper
 `isEventForCurrentLoad(payloadListingId, captured, liveGeneration)` so it can be unit-tested in true red→green isolation,
-then call it from every listener. No behavioral change: same two comparisons, same order.
+then call it from every listener's entry. No behavioral change: same two comparisons, same order, same
+guard-the-entry-only semantics.
 
 Note there is a SECOND, unrelated drop-foreign policy at the coordinator level (`navigate.ts::commitPathFromListing`,
 DETAILS § navigate transaction). That one is out of scope and untouched. This plan concerns only the pane-local
@@ -55,20 +76,37 @@ generation guard.
 
 ## State the cluster owns / touches
 
-Owned lifecycle state (only the loader writes these):
+Loader-owned state. Some of these are written ONLY by the loader; several are **co-owned** — written by external
+collaborators too, so the loader must expose SETTERS for them (this is the correction from review round 1; treating them
+as write-exclusive "outputs" would silently break the external writers):
 
 - `loadGeneration` (plain), `isDestroyed` (plain — also read by the tag-sweep `isStale`).
-- `listingId` (`$state`), `loadedPath` (plain), `lastSequence` (plain).
-- `loading`, `openingFolder`, `loadingCount`, `finalizingCount`, `totalCount` (`$state`).
-- `error`, `friendlyError` (`$state`).
-- `volumeRootFromEvent` (`$state`).
+- `listingId` (`$state`) — loader-write-exclusive.
+- `loadedPath` (plain), `lastSequence` (plain). **`lastSequence` is CO-OWNED:** `initListingDiffSync` writes it via a
+  `setLastSequence` dep (~2237). Loader exposes `setLastSequence`; `FilePane` rewires the diff-sync dep to
+  `loader.setLastSequence`.
+- `loading` (`$state`) — **CO-OWNED:** `onMount` (~2322/2338) and `injectError` (~2024) also set it. Loader exposes a
+  setter (or `setLoadingIdle()` / a small `injectError()` method). Initialize `loading` to `true` (matches today's
+  `$state(true)` so the spinner shows on first paint before onMount).
+- `openingFolder`, `loadingCount`, `finalizingCount` (`$state`) — loader-write-exclusive.
+- `totalCount` (`$state`) — **CO-OWNED:** `initListingDiffSync` writes it via `setTotalCount` (~2242) and the
+  `includeHidden` `$effect` writes it after a `getTotalCount` refetch (~2052). Loader exposes `setTotalCount`; both sites
+  rewire to `loader.setTotalCount` (the includeHidden effect stays in `FilePane`, reading `loader.listingId` /
+  `loader.loading` and writing `loader.setTotalCount`).
+- `error`, `friendlyError` (`$state`) — **CO-OWNED:** `injectError` (~2022-2023) sets both. Fold into the loader's
+  `injectError()` method (or setters).
+- `volumeRootFromEvent` (`$state`) — loader-write-exclusive (read by `effectiveVolumeRoot`→`hasParent`).
 - The six `unlisten*` handles (plain).
 - `pendingLoadResolve` / `pendingLoadReject` (plain) + `resolvePendingLoad` / `rejectPendingLoad`.
 
-Shared `FilePane` state it must poke (NOT owned — injected):
+Shared `FilePane` state it must poke (NOT owned — injected). **Cursor + entry writes inside the cluster are RAW `$state`
+assignments, so inject RAW setters, NOT the `FilePaneAPI` methods** (this is the review-round-1 trap): `setCursorIndex`
+(the export, ~627) branches on network/search-results, scrolls, `await tick()`s, and fires `debouncedSyncMcp` — the
+cluster's `cursorIndex = …` sites (`handleListingComplete` ~1468/1470, `adoptListing` ~1011) do their OWN scroll and must
+NOT go through it. Use a raw setter mirroring the existing `applyCursorIndex` dep (~2230):
 
-- `cursorIndex` (write via `setCursorIndex`), `currentPath` (get/set), `cacheGeneration` bump (adoptListing),
-  `entryUnderCursor` (cleared to null; refreshed via `fetchEntryUnderCursor`), `syncStatusMap` (cleared),
+- `cursorIndex` (RAW setter, mirrors `applyCursorIndex`), `currentPath` (get/set), `cacheGeneration` bump (adoptListing),
+  `entryUnderCursor` (RAW setter to null; refresh via the injected `fetchEntryUnderCursor`), `syncStatusMap` (cleared),
   `syncRetryTimer` (cleared), `selection` (clearSelection / get/setSelectedIndices).
 
 Collaborators it calls (injected): `rename.cancel`, `cancelClickToRename`, `dismissTransientToasts`, `jump.clear`,
@@ -90,21 +128,31 @@ Two idiomatic shapes exist in `pane/`; the reviewer should rule on which:
 
 - **Option A — state-owning factory (recommended, matches `git-browser-sync`/`volume-space`/`dialog-state`).** The
   factory owns the lifecycle `$state` (`loading`, `openingFolder`, `loadingCount`, `finalizingCount`, `totalCount`,
-  `error`, `friendlyError`, `listingId`, `volumeRootFromEvent`) and exposes them as getters. `FilePane` reads
-  `loader.loading`, `loader.listingId`, `loader.totalCount`, etc. in its markup and deriveds. Most elegant end state
-  (these ARE the loader's outputs), but the biggest read-site churn: ~40–60 references across markup, `hasParent`,
-  `effectiveTotalCount`, the `mcpSync`/`jump` deps getters, and the alt-view `{#if}` chain must switch to `loader.*`.
-  Getters preserve reactivity (proven by `git-browser-sync`'s `gitRepoInfo`).
+  `error`, `friendlyError`, `listingId`, `volumeRootFromEvent`) and exposes them as getters PLUS the co-ownership setters
+  above (`setTotalCount`, `setLastSequence`, `injectError`/loading setter). `FilePane` reads `loader.loading`,
+  `loader.listingId`, `loader.totalCount`, etc. Read-site churn is the cost: ~40–60 references across markup, `hasParent`
+  (via `effectiveVolumeRoot`←`volumeRootFromEvent`), `effectiveTotalCount`←`totalCount`, the `mcpSync`/`jump` deps
+  getters, and the alt-view `{#if}` chain switch to `loader.*`. Getters preserve reactivity (proven by
+  `git-browser-sync`'s `gitRepoInfo`). NOTE (review round 1): these fields are co-owned, not pure outputs — so the
+  churn also includes non-markup WRITE sites that are easier to miss than markup (the `includeHidden` effect, the
+  diff-sync deps, `onMount`, `injectError`). The implementation checklist below enumerates them so none is dropped.
 
 - **Option B — surgical factory (matches `type-to-jump-controller`).** `FilePane` keeps the `$state` locals; the factory
-  takes a getter + setter per field. Minimal read-site churn (markup untouched), but a ~15-setter deps object and the
-  lifecycle state stays visually in `FilePane` even though only the loader writes it.
+  takes a getter + setter per field. Minimal read-site churn (markup untouched), but a ~15-accessor deps object and the
+  lifecycle state stays visually in `FilePane` even though the loader is its primary writer.
 
 **Recommendation: Option A.** It's the ideal end state (David's `ideal-over-cheap`), matches the dominant idiom, and the
-churn is mechanical and fully covered by the type-aware lint lane + E2E. The reviewer should confirm, or push to B if the
-churn is judged too risky for a behavior-preserving pass. Whichever we pick, `getSwapState`/`adoptListing` live with the
-state they read/write (so they move into the factory under A; they need `cacheGeneration` bump + `setCursorIndex` +
-selection injected).
+churn is mechanical and fully covered by the type-aware lint lane + E2E. Whichever we pick, `getSwapState`/`adoptListing`
+live with the state they read/write (so they move into the factory under A; they need the `cacheGeneration` bump + the
+RAW cursor setter + selection get/set + the `loading`/`error` setters injected).
+
+**Read/write-site checklist for Option A (drop none):** markup `{loading}` / `{error}` / `{friendlyError}` / count
+displays / the alt-view `{#if}` chain; deriveds `effectiveVolumeRoot` (`volumeRootFromEvent`), `effectiveTotalCount`
+(`totalCount`), `hasParent` (indirect); `createPaneMcpSync` getters (`getListingId`, `getTotalCount`); `jump` deps
+(`getListingId`, `getLoading`); the `includeHidden` `$effect` (reads `listingId`/`loading`, writes `totalCount`); the
+`initListingDiffSync` deps (`getListingId`, `getLastSequence`/`setLastSequence`, `setTotalCount`, `navigateToFallback`);
+`createSmbViewState` deps (`loadDirectory`, `navigateToFallback`); `onMount` (`loading` write, `loadDirectory` call);
+`injectError`; `isInErrorState`/Quick-Look hooks (read `friendlyError`); `getSwapState`/`adoptListing`.
 
 ## Milestones
 
@@ -129,8 +177,14 @@ selection injected).
 - New `pane/listing-loader.svelte.ts`: `createListingLoader(deps): ListingLoader`. Module doc comment states it owns the
   listing lifecycle + generation guard, mirrors the `git-browser-sync` header style, and links the token model.
 - Move the cluster verbatim (Option A: bring the `$state` in; Option B: wire getters/setters). Every listener calls
-  `isEventForCurrentLoad(...)`. `cleanup()` fires the six `unlisten*` and sets `isDestroyed` (called from `FilePane`'s
-  `onDestroy`, which keeps its other teardown).
+  `isEventForCurrentLoad(...)` at its synchronous entry (async tails stay unguarded — see crown-jewel § "do not
+  re-guard"). Expose the co-ownership setters (`setTotalCount`, `setLastSequence`, `injectError` + loading setter) and
+  the RAW cursor/entry setters used by `handleListingComplete`/`adoptListing`.
+- `cleanup()` performs the FULL listing teardown, not just unlisten: it reads loader-owned `listingId`/`loadedPath`, so
+  `onDestroy`'s `if (listingId) { cancelListing; listDirectoryEnd; evictPerPathIconsForDir(loadedPath) }` block (~2412)
+  MOVES into `cleanup()` alongside the six `unlisten*` fires and `isDestroyed = true`. `FilePane`'s `onDestroy` keeps its
+  other teardown (timers, debounces, `jump.dispose`, `diskSpace.cleanup`, `gitBrowser.cleanup`) and calls
+  `loader.cleanup()`.
 - `FilePane.svelte`: replace the inline cluster with `const loader = createListingLoader({...})` and thin export
   delegates (`navigateToPath`, `navigateToParent`, `handleCancelLoading`, `whenLoadSettles`, `isLoading`,
   `getListingId`, `getSwapState`, `adoptListing`) that call `loader.*`. Byte-identical signatures.
@@ -146,9 +200,14 @@ selection injected).
 - Pinned behaviors:
   - **Foreign complete dropped:** start load A (capture its complete cb + listingId), start load B (supersedes), fire
     A's complete → `totalCount`/cursor unchanged, `onPathChange` NOT called with A's path; fire B's complete → accepted.
-  - Same for A's `error`, `cancelled`, `progress`, `opening`, `read-complete` callbacks after B starts → all no-op.
-  - **Post-await supersession:** if `loadGeneration` advances during the `await listDirectoryStart`, the abandoned
-    listing is cancelled and no state is committed.
+  - Same for A's `error`, `cancelled`, `progress`, `opening`, `read-complete` callbacks after B starts → all no-op (the
+    synchronous entry guard drops them).
+  - **Async-tail preservation (pins CURRENT unguarded behavior, so a later tidy-up can't change it):** fire A's `error`
+    entry (accepted — A is still current), THEN start B, THEN resolve A's `pathExistsChecked` promise → assert the tail
+    still runs as it does today (this is deliberately NOT re-guarded). Likewise `handleListingComplete`'s post-`await
+    findFileIndex` cursor write. Comment these tests clearly as behavior-lock, not correctness assertions.
+  - **Post-await supersession:** if `loadGeneration` advances during the `await listDirectoryStart` (and in the `catch`),
+    the abandoned listing is cancelled and no state is committed.
   - **pendingLoad ordering:** `navigateToPath` rejects the prior pending load, resolves on complete; `whenLoadSettles`
     chains onto the existing resolver without disturbing a waiting `navigateToPath`.
   - **reset semantics:** `resetLoadingState(msg)` rejects pending with the message; cancel path rejects with
@@ -178,6 +237,15 @@ selection injected).
 
 ## Risks & mitigations
 
+- **Dropped co-ownership setter** (the top risk from review round 1): if the implementer treats `totalCount` /
+  `lastSequence` / `loading` / `error` as write-exclusive outputs and omits the setters, the external writers
+  (file-watcher diff-sync count/sequence updates, the includeHidden refetch, onMount spinner clear, injectError) silently
+  break. Mitigation: the Option A read/write-site checklist above enumerates every writer; a scoped vitest of diff-sync
+  plus the hidden-files-toggle and swap E2E exercise these. Verify each `set*` dep resolves to a `loader.*` setter after
+  the move.
+- **RAW vs `FilePaneAPI` cursor setter** (review round 1 trap): using the exported `setCursorIndex` inside
+  `handleListingComplete`/`adoptListing` would double-scroll, mis-branch on view kind, and fire extra MCP syncs. Use the
+  raw setter mirroring `applyCursorIndex`. Caught by cursor-position E2E + swap E2E.
 - **Reactivity break under Option A** (a getter not tracked, a derived reading a stale value): caught by E2E (loading
   spinner, breadcrumb, count displays) + the type lane. Mitigation: move deriveds that read lifecycle state (`hasParent`
   via `effectiveVolumeRoot`←`volumeRootFromEvent`, `effectiveTotalCount`←`totalCount`) carefully; keep them in `FilePane`
