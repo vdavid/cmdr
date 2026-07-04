@@ -89,6 +89,13 @@ list).
 - **`transfer-entry.ts`**: Shared transfer entry seam: `checkTransferDestinationGuard` + `resolveSourceVolumeId`
 - **`sorting-handlers.ts`**: `getNewSortOrder` (column click cycle), `toFrontendIndices` (`..` offset)
 - **`index-events.ts`**: Throttled `index-dir-updated` handler with `/private/` symlink resolution
+- **`listing-loader.ts`**: The streaming directory-load pipeline + the pane-local generation/listingId drop-foreign-
+  listings token model (see § "The listing loader" below). `createListingLoader` owns `loadDirectory` /
+  `handleListingComplete` / `resetLoadingState`, the six streaming listeners, the `pendingLoad` promise machinery,
+  `navigateToFallback` / `navigateToParent` / `navigateToPath` / `handleCancelLoading` / `whenLoadSettles`, and the swap
+  pair (`getSwapState` / `adoptListing`). FilePane keeps the lifecycle `$state` + thin FilePaneAPI delegates.
+- **`listing-token.ts`**: `isEventForCurrentLoad(payloadListingId, captured, liveGeneration)` — the pure drop-foreign
+  predicate every streaming listener's synchronous entry checks
 - **`navigate.ts`**: `navigate(intent, deps)` transaction: the single coordinator-level pane-nav entry. `Location` is
   navigation's currency (`{ goTo }` self-routes by volume; `{ selectVolume }` always switches) — its module doc is the
   canonical home for the destination shapes and the four edge resolvers.
@@ -443,6 +450,22 @@ entry — they're not pane-destination changes).
 the drop-foreign-listings policy in `navigate.ts::commitPathFromListing` (`smb://` prefix for `network`,
 `search-results://` prefix for snapshots, `isPathOnVolume` for everything else). Adding a new virtual-volume namespace?
 Extend the explicit prefix branch. See parent § "Gotchas".
+
+**The listing loader (pane-local generation guard).** `listing-loader.ts::createListingLoader` owns the streaming
+directory-load pipeline for one pane. Every `loadDirectory` captures its identity as `{ listingId, generation }` and
+bumps a per-pane `loadGeneration` (its ONLY two bump sites are `loadDirectory` and `adoptListing`, both loader-private);
+each of the six streaming listeners checks `isEventForCurrentLoad(payload.listingId, captured, loadGeneration)`
+(`listing-token.ts`) at its SYNCHRONOUS entry. So once a newer load (or a pane swap's `adoptListing`) advances the
+generation, the older load's still-registered listeners no-op — even before their `unlisten*` fires. This is the
+pane-local drop-foreign-listings guard, DISTINCT from `navigate.ts`'s coordinator-level policy above (that one drops a
+stale `onPathChange`; this one drops the stale listing's streaming events). Two async tails run UNGUARDED and MUST stay
+that way (a faithful move, behavior-locked by `listing-loader.test.ts`): the `onListingError` `pathExistsChecked`
+continuation and `handleListingComplete`'s post-`await findFileIndex` cursor write. Boundary: the pane's lifecycle
+`$state` (listingId / loading / totalCount / error / openingFolder / … ) stays in `FilePane` — ~60 non-loader read sites
+(selection, stats, menu, MCP sync, markup, five sub-factory dep getters) — and the loader reads/writes it through
+injected accessors (the `type-to-jump-controller` idiom, not a state-owning `.svelte.ts` factory). `getSwapState` /
+`adoptListing` share `loadGeneration`, so they live in the loader too. `cleanup()` (called from FilePane's `onDestroy`)
+owns the full listing teardown (`cancelListing` + `listDirectoryEnd` + `evictPerPathIconsForDir` + the six `unlisten*`).
 
 **Nav-state persistence fires from ONE subscriber (A5).** `persistence-subscriber.svelte.ts` is the single module that
 writes pane navigation state to `app-status.json`. `DualPaneExplorer` creates it synchronously during init (L3, the

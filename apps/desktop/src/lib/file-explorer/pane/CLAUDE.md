@@ -12,9 +12,9 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
   `type-to-jump-controller`, `volume-tint`, `pane-mcp-sync`, `tab-mcp-sync`, `persistence-subscriber`,
   `listing-diff-sync`, `quick-look-follow`, `debug-emitters`, `drag-drop-controller`, `dialog-state`,
   `git-browser-sync`, `smb-view-state`, `volume-space`.
-- Pure utilities (`*.ts`): `navigate`, `volume-capabilities`, `has-parent`, `pane-access`, `focused-pane-reads`,
-  command/coordinator factories (full list in DETAILS), keyboard helpers (`search-pane-keys`, `cursor-nav-keys`,
-  function-key, selection-dialog).
+- Pure utilities (`*.ts`): `navigate`, `listing-loader`, `volume-capabilities`, `has-parent`, `pane-access`,
+  `focused-pane-reads`, command/coordinator factories (full list in DETAILS), keyboard helpers (`search-pane-keys`,
+  `cursor-nav-keys`, function-key, selection-dialog).
 
 ## Must-knows
 
