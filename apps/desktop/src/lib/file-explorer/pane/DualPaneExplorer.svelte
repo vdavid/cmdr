@@ -39,15 +39,10 @@
     import {
         getActiveTab,
         getAllTabs,
-        getTabCount,
-        closeTabRecording,
-        closeOtherTabsRecording,
         pushHistoryEntry,
         trimClosedStack,
         getClosedStackSize,
         MAX_TABS_PER_PANE,
-        pinTab,
-        unpinTab,
         type TabManager,
     } from '../tabs/tab-state-manager.svelte'
     import type { TabId } from '../tabs/tab-types'
@@ -73,7 +68,6 @@
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { initialize as initMtpStore } from '$lib/mtp'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
-    import { getAppLogger } from '$lib/logging/logger'
     import type { TransferOperationType } from '../types'
     import { createDialogState } from './dialog-state.svelte'
     import { explorerState } from './explorer-state.svelte'
@@ -87,6 +81,7 @@
     import { createEdgeFlowHandlers } from './edge-flow-handlers'
     import { createPaneMirror } from './pane-mirror'
     import { createKeyDispatch } from './key-dispatch'
+    import { createMcpTabAction } from './mcp-tab-action'
     import {
         navigate as runNavigate,
         commitPathFromListing,
@@ -109,8 +104,6 @@
     import DragOverlay from '../drag/DragOverlay.svelte'
     import { addToast } from '$lib/ui/toast'
     import { tString } from '$lib/intl/messages.svelte'
-
-    const log = getAppLogger('fileExplorer')
 
     function saveTabsForPaneSide(pane: 'left' | 'right') {
         saveTabsForPane(pane, getTabMgr)
@@ -330,6 +323,20 @@
         getVolumes: () => volumes,
         focusContainer: () => containerElement?.focus(),
     })
+    // MCP `tab` tool per-pane action dispatch (new/close/close_others/reopen/
+    // activate/set_pinned). Menu-sync + persistence driven the same way as before.
+    const mcpTab = createMcpTabAction({
+        getFocusedPane: () => focusedPane,
+        getTabMgr,
+        getClosedTabsCap,
+        saveTabsForPaneSide,
+        syncPinTabMenu,
+        syncReopenMenuState,
+        reopenLastClosedTab,
+        switchToTab,
+        snapshotHistory: (h) => $state.snapshot(h),
+    })
+
     // Top-level keyboard + focus routing (onkeydown / onkeyup / onfocusin on the
     // container): escape-during-loading, volume-chooser routing, type-to-jump
     // intercept, and the focus guard. Owns no state; routes to the focused pane.
@@ -1214,51 +1221,7 @@
      * just forwards the typed args.
      */
     export function handleMcpTabAction(pane: 'left' | 'right', action: McpTabAction, tabId?: string, pinned?: boolean) {
-        const mgr = getTabMgr(pane)
-        const mcpTabHandlers: Record<McpTabAction, () => void> = {
-            new: () => {
-                if (!tabOpsNewTab(pane, getTabMgr, (h) => $state.snapshot(h))) {
-                    log.warn(`MCP tab new: tab limit reached in ${pane} pane`)
-                }
-            },
-            close: () => {
-                if (getTabCount(mgr) <= 1) {
-                    log.warn(`MCP tab close: can't close last tab in ${pane} pane`)
-                    return
-                }
-                closeTabRecording(mgr, tabId ?? mgr.activeTabId, getClosedTabsCap())
-                saveTabsForPaneSide(pane)
-                if (pane === focusedPane) syncPinTabMenu()
-                if (pane === focusedPane) syncReopenMenuState()
-            },
-            close_others: () => {
-                closeOtherTabsRecording(mgr, tabId ?? mgr.activeTabId, getClosedTabsCap())
-                saveTabsForPaneSide(pane)
-                if (pane === focusedPane) syncReopenMenuState()
-            },
-            reopen: () => {
-                if (pane === focusedPane) {
-                    // Cheap path: existing helper handles the focused pane.
-                    reopenLastClosedTab()
-                    return
-                }
-                // For non-focused panes, call the tab-operations helper with the target pane.
-                tabOpsReopenLastClosedTab(pane, getTabMgr)
-            },
-            activate: () => {
-                if (tabId) switchToTab(pane, tabId)
-            },
-            set_pinned: () => {
-                const pinId = tabId ?? mgr.activeTabId
-                const tab = getAllTabs(mgr).find((t) => t.id === pinId)
-                if (!tab) return
-                if (pinned && !tab.pinned) pinTab(mgr, pinId)
-                else if (!pinned && tab.pinned) unpinTab(mgr, pinId)
-                saveTabsForPaneSide(pane)
-                if (pane === focusedPane && pinId === mgr.activeTabId) syncPinTabMenu()
-            },
-        }
-        mcpTabHandlers[action]()
+        mcpTab.handleMcpTabAction(pane, action, tabId, pinned)
     }
 
     function syncPinTabMenu() {
