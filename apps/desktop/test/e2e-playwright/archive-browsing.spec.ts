@@ -27,6 +27,7 @@ import {
   fileExistsInFocusedPane,
   openViewerWindow,
   closeScopedWindow,
+  expectAndDismissToast,
   TRANSFER_DIALOG,
   MKDIR_DIALOG,
 } from './helpers.js'
@@ -200,6 +201,10 @@ test.describe('Archive browsing (M1b)', () => {
     expect(fs.readFileSync(path.join(fixtureRoot, 'right', 'inner.txt'), 'utf8')).toContain(
       'hello from inside the archive',
     )
+
+    // The success toast is part of the contract; asserting it also clears it
+    // (the global afterEach fails any test that leaks a toast).
+    await expectAndDismissToast(tauriPage, 'Copied 1 file')
   })
 
   test('creating a folder inside the archive is refused with the archive alert', async ({ tauriPage }) => {
