@@ -92,6 +92,8 @@
     import { createFileOperationCommands } from './file-operation-commands'
     import { createPaneCommands } from './pane-commands'
     import { createSortOperations } from './sort-operations'
+    import { createSwapPanes } from './swap-panes'
+    import { createVolumeSelection } from './volume-selection'
     import {
         navigate as runNavigate,
         commitPathFromListing,
@@ -312,6 +314,17 @@
         setPaneSort,
         getShowHiddenFiles: () => showHiddenFiles,
         getFocusedPane: () => focusedPane,
+    })
+    const swapper = createSwapPanes({
+        getPaneRef,
+        getLeftTabMgr: () => leftTabMgr,
+        getRightTabMgr: () => rightTabMgr,
+        isAnyTransferDialogOpen: () => dialogs.isAnyTransferDialogOpen(),
+        focusContainer: () => containerElement?.focus(),
+    })
+    const volumeSelection = createVolumeSelection({
+        getVolumes: () => volumes,
+        navigate: navigateIntent,
     })
 
     // Per-pane transaction-token map for `navigate()`. Caller-owned (it must
@@ -1102,54 +1115,12 @@
         containerElement?.focus()
     }
 
-    /** Returns true if pane swap is safe (both panes ready, no dialogs open). */
-    function canSwapPanes(): boolean {
-        const leftRef = getPaneRef('left')
-        const rightRef = getPaneRef('right')
-        if (!leftRef || !rightRef) return false
-        if (leftRef.isLoading() || rightRef.isLoading()) return false
-        return !dialogs.isAnyTransferDialogOpen()
-    }
-
-    /** Swaps all active tab state between left and right panes. */
-    function swapDualPaneState(): void {
-        const leftTab = getActiveTab(leftTabMgr)
-        const rightTab = getActiveTab(rightTabMgr)
-
-        ;[leftTab.path, rightTab.path] = [rightTab.path, leftTab.path]
-        ;[leftTab.volumeId, rightTab.volumeId] = [rightTab.volumeId, leftTab.volumeId]
-        ;[leftTab.history, rightTab.history] = [rightTab.history, leftTab.history]
-        ;[leftTab.viewMode, rightTab.viewMode] = [rightTab.viewMode, leftTab.viewMode]
-        ;[leftTab.sortBy, rightTab.sortBy] = [rightTab.sortBy, leftTab.sortBy]
-        ;[leftTab.sortOrder, rightTab.sortOrder] = [rightTab.sortOrder, leftTab.sortOrder]
-    }
-
     /**
      * Swap left and right panes entirely (paths, volumes, history, sort, view mode, listing state).
      * Zero backend calls: we just swap listing ownership on the frontend.
      */
     export function swapPanes(): void {
-        if (!canSwapPanes()) return
-
-        const leftRef = getPaneRef('left')
-        const rightRef = getPaneRef('right')
-        if (!leftRef || !rightRef) return
-
-        // 1. Snapshot both panes' listing state
-        const leftSwap = leftRef.getSwapState()
-        const rightSwap = rightRef.getSwapState()
-
-        // 2. Swap DualPaneExplorer state variables
-        swapDualPaneState()
-
-        // 3. Each pane adopts the other's listing (no backend calls)
-        leftRef.adoptListing(rightSwap)
-        rightRef.adoptListing(leftSwap)
-
-        // 4. Persistence (both panes' app-status fields + tab sets) fires from the
-        // single subscriber: the swap mutates each pane's active-tab nav-state, so
-        // both per-pane effects re-run.
-        containerElement?.focus()
+        swapper.swapPanes()
     }
 
     export function toggleVolumeChooser(pane: 'left' | 'right') {
@@ -1285,38 +1256,6 @@
         paneCommands.routePanelKey(payload)
     }
 
-    /**
-     * Select a volume by index for a specific pane.
-     * Matches the behavior of VolumeBreadcrumb's handleVolumeSelect.
-     * @param pane - 'left' or 'right'
-     * @param index - Zero-based index into the volumes array
-     */
-    async function selectVolumeByIndex(pane: 'left' | 'right', index: number): Promise<boolean> {
-        if (index < 0 || index >= volumes.length) {
-            log.warn('Invalid volume index: {index} (valid range: 0-{max})', { index, max: volumes.length - 1 })
-            return false
-        }
-
-        const volume = volumes[index]
-
-        // Handle favorites differently from actual volumes (same as VolumeBreadcrumb).
-        // `navigate({ source: 'user' })`'s volume-switch arm shifts STORE focus to the
-        // pane (matching the old `handleVolumeChange`), but does NOT re-anchor DOM focus
-        // on the container — doing so drops a Space press during the multi-select-then-
-        // delete sequence (regression guard: mtp.spec.ts:414).
-        if (volume.category === 'favorite') {
-            // For favorites, navigate to the favorite's path on its containing volume.
-            const { volume: containingVolume } = await resolvePathVolume(volume.path)
-            const volumeId = containingVolume?.id ?? 'root'
-            navigateIntent({ pane, to: { selectVolume: { volumeId, path: volume.path } }, source: 'user' })
-        } else {
-            // For actual volumes, navigate to the volume's root.
-            navigateIntent({ pane, to: { selectVolume: { volumeId: volume.id, path: volume.path } }, source: 'user' })
-        }
-
-        return true
-    }
-
     export function handleSelectionAction(action: SelectionAction, startIndex?: number, endIndex?: number) {
         paneCommands.handleSelectionAction(action, startIndex, endIndex)
     }
@@ -1401,19 +1340,7 @@
      * Used by MCP select_volume tool.
      */
     export async function selectVolumeByName(pane: 'left' | 'right', name: string): Promise<boolean> {
-        // "Network" is a virtual volume not in the volumes list
-        if (name === 'Network') {
-            navigateIntent({ pane, to: { selectVolume: { volumeId: 'network', path: 'smb://' } }, source: 'user' })
-            return true
-        }
-
-        const index = volumes.findIndex((v) => v.name === name)
-        if (index !== -1) {
-            return selectVolumeByIndex(pane, index)
-        }
-
-        log.warn('Volume not found: {name}', { name })
-        return false
+        return volumeSelection.selectVolumeByName(pane, name)
     }
 
     /**
