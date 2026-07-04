@@ -236,6 +236,30 @@ test.describe('Archive browsing', () => {
     await expectAndDismissToast(tauriPage, 'Copied 1 file')
   })
 
+  test('copying the zip FILE itself copies the whole archive, not its contents', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    // Do NOT enter the archive: F5 on the `.zip` file itself must copy the whole
+    // file (a `.zip` is a regular file), not route into it and scan its contents.
+    const found = await moveCursorToFile(tauriPage, 'sample.zip')
+    expect(found).toBe(true)
+    await tauriPage.keyboard.press('F5')
+    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+    await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
+    await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
+
+    // The whole zip lands in the right pane, byte-identical to the source file.
+    const dest = path.join(fixtureRoot, 'right', 'sample.zip')
+    await expect.poll(() => fs.existsSync(dest), { timeout: 5000 }).toBeTruthy()
+    const srcBytes = fs.readFileSync(path.join(fixtureRoot, 'left', 'sample.zip'))
+    expect(fs.readFileSync(dest).equals(srcBytes)).toBe(true)
+
+    await expectAndDismissToast(tauriPage, 'Copied 1 file')
+  })
+
   test('creating a folder inside the archive is refused with the archive alert', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
