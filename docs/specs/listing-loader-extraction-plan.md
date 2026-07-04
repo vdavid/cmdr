@@ -141,10 +141,25 @@ Two idiomatic shapes exist in `pane/`; the reviewer should rule on which:
   takes a getter + setter per field. Minimal read-site churn (markup untouched), but a ~15-accessor deps object and the
   lifecycle state stays visually in `FilePane` even though the loader is its primary writer.
 
-**Recommendation: Option A.** It's the ideal end state (David's `ideal-over-cheap`), matches the dominant idiom, and the
-churn is mechanical and fully covered by the type-aware lint lane + E2E. Whichever we pick, `getSwapState`/`adoptListing`
-live with the state they read/write (so they move into the factory under A; they need the `cacheGeneration` bump + the
-RAW cursor setter + selection get/set + the `loading`/`error` setters injected).
+**DECISION (during M2 implementation): Option B.** The read-site enumeration proved decisive: `listingId` / `totalCount`
+/ `loading` / `error` are read by ~60 sites, and the majority sit in NON-loader concerns — `fetchEntryUnderCursor`,
+`fetchListingStats`, `selectAllFiles`, `updateMenuContext`, `refreshView`, the cursor/selection `$effect`s, the
+markup, and FIVE sub-factory dep getters (`pane-mcp-sync`, `type-to-jump-controller`, `listing-diff-sync`,
+`rename-flow`, `dialog-state`). That distribution means these are genuinely pane-shared state (many readers) with the
+loader as their primary WRITER — the same relationship `cursorIndex` has with `type-to-jump-controller` (stays in the
+pane, injected). Option A would prefix ~60 unrelated reads with `loader.`, coupling every reader to the loader and making
+`FilePane` less readable, not more — and each rewrite is a reactivity-bug risk for zero behavioral gain. So the ideal end
+state here (`ideal-over-cheap`, honestly applied) is B: the loader owns the ORCHESTRATION + the generation/pendingLoad
+machinery (the actual risky cluster); the lifecycle `$state` stays in `FilePane`, and the loader reads/writes it through
+a focused injected accessor set. This keeps the crown-jewel token model, the six listeners, `pendingLoad`, and the
+generation counter fully encapsulated in the factory while leaving the ~60 read sites untouched.
+
+Under B: `loadGeneration` (the ONLY two bump sites — `loadDirectory` and `adoptListing` — both move into the loader, so
+the counter is loader-private), `isDestroyed`, `loadedPath`, the six `unlisten*`, and `pendingLoadResolve/Reject` are
+loader-owned. `getSwapState`/`adoptListing` move into the loader (paired with the counter; they read pane state via
+injected getters, bump `cacheGeneration` + set the RAW cursor + selection via injected setters). The trivial accessors
+that only read a `$state` slot stay in `FilePane`: `isLoading`, `getListingId`, and `injectError` (a 3-line debug method
+touching only pane `$state`, no loader-owned state — no reason to move it).
 
 **Read/write-site checklist for Option A (drop none):** markup `{loading}` / `{error}` / `{friendlyError}` / count
 displays / the alt-view `{#if}` chain; deriveds `effectiveVolumeRoot` (`volumeRootFromEvent`), `effectiveTotalCount`

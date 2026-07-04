@@ -9,9 +9,7 @@
         SortOrder,
         SyncStatus,
     } from '../types'
-    import type { ListingCompleteEvent } from '$lib/tauri-commands'
     import {
-        cancelListing,
         findFileIndex,
         getFileRange,
         pathExistsChecked,
@@ -20,29 +18,16 @@
         getPathsAtIndices,
         getSyncStatus,
         getTotalCount,
-        listDirectoryEnd,
-        listDirectoryStart,
-        onListingOpening,
-        onListingProgress,
-        onListingReadComplete,
-        onListingComplete,
-        onListingError,
-        onListingCancelled,
         onMtpDeviceDisconnected,
         openFile,
         refreshListingIndexSizes,
         showFileContextMenu,
         showParentRowContextMenu,
-        trackEvent,
         type Location,
-        type UnlistenFn,
         updateMenuContext,
     } from '$lib/tauri-commands'
     import { resolveLocationOrToast } from '../navigation/navigate-and-select'
-    import { sweepListingTags } from './tag-sweep'
-    import { renderListingError } from '$lib/errors/listing-error'
     import { updateIndexSizesInPlace } from '../views/file-list-utils'
-    import { evictPerPathIconsForDir } from '$lib/icon-cache'
     import { classifySelectionDialogKey } from './selection-dialog-keys'
     import { createTypeToJumpController } from './type-to-jump-controller.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
@@ -68,6 +53,7 @@
     import { enrichBreadcrumbSegments } from '../navigation/breadcrumb-navigation'
     import RepoChip from '../git/RepoChip.svelte'
     import { createGitBrowserSync } from './git-browser-sync.svelte'
+    import { createListingLoader } from './listing-loader.svelte'
     import { createSmbViewState } from './smb-view-state.svelte'
     import { createVolumeSpace } from './volume-space.svelte'
     import { isVirtualGitPath } from '../git/path-detection'
@@ -91,7 +77,7 @@
     import { createRenameState } from '../rename/rename-state.svelte'
     import { cancelClickToRename } from '../rename/rename-activation'
     import { type DirectorySortMode } from '$lib/settings'
-    import { addToast, dismissTransientToasts } from '$lib/ui/toast'
+    import { addToast } from '$lib/ui/toast'
     import { tString } from '$lib/intl/messages.svelte'
     import { maybeShowQuickLookHint } from '../quick-look/quick-look-hint'
     import { createRenameFlow } from './rename-flow.svelte'
@@ -103,7 +89,6 @@
     const log = getAppLogger('fileExplorer')
     import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
     import { getPaneTintBg, getPaneTintName } from './volume-tint.svelte'
-    import * as benchmark from '$lib/benchmark'
     import { createCursorNavKeys } from './cursor-nav-keys'
     import { createSearchPaneKeys } from './search-pane-keys'
     import { computeHasParent } from './has-parent'
@@ -195,13 +180,10 @@
 
     let currentPath = $state(untrack(() => initialPath))
 
-    // New architecture: store listingId and totalCount, not files
+    // New architecture: store listingId and totalCount, not files. These lifecycle
+    // slots are written primarily by the listing loader (`listing-loader.svelte.ts`,
+    // via injected setters) but read by many non-loader concerns, so they stay here.
     let listingId = $state('')
-    // The directory path of the currently active listing. Plain bookkeeping (not
-    // reactive): used to evict this directory's per-path icons (`path:*` / `pkg:*`)
-    // when the listing ends, so a folder re-iconed while away is re-detected next
-    // time it's shown rather than served stale from the session cache.
-    let loadedPath = ''
     let totalCount = $state(0)
     let loading = $state(true)
     let error = $state<string | null>(null)
@@ -242,6 +224,97 @@
 
     // Rename state (inline rename editor)
     const rename = createRenameState()
+
+    // Listing loader: the streaming directory-load pipeline + the generation /
+    // listingId drop-foreign-listings token model, in a `*.svelte.ts` factory.
+    // The pane's lifecycle `$state` (listingId / loading / totalCount / error /
+    // …) STAYS here (many non-loader readers); the loader reads/writes it through
+    // the accessors below. Deps are deferred closures, so the state they touch may
+    // be declared later in this file (the pattern `jump` already uses for
+    // `debouncedSyncMcp`).
+    const loader = createListingLoader({
+        paneId,
+        getVolumeId: () => volumeId,
+        getVolumePath: () => volumePath,
+        getCurrentPath: () => currentPath,
+        setCurrentPath: (path) => {
+            currentPath = path
+        },
+        getCanonicalPath: () => canonicalPath,
+        getIncludeHidden: () => includeHidden,
+        getSortBy: () => sortBy,
+        getSortOrder: () => sortOrder,
+        getDirectorySortMode: () => directorySortMode,
+        getCaps: () => caps,
+        getHasParent: () => hasParent,
+        getIsMtpView: () => isMtpView,
+        getViewMode: () => viewMode,
+        getBriefListRef: () => briefListRef,
+        getFullListRef: () => fullListRef,
+        getListingId: () => listingId,
+        setListingId: (id) => {
+            listingId = id
+        },
+        getLoading: () => loading,
+        setLoading: (value) => {
+            loading = value
+        },
+        getTotalCount: () => totalCount,
+        setTotalCount: (count) => {
+            totalCount = count
+        },
+        getLastSequence: () => lastSequence,
+        setLastSequence: (sequence) => {
+            lastSequence = sequence
+        },
+        setError: (value) => {
+            error = value
+        },
+        setFriendlyError: (value) => {
+            friendlyError = value
+        },
+        setOpeningFolder: (value) => {
+            openingFolder = value
+        },
+        setLoadingCount: (count) => {
+            loadingCount = count
+        },
+        setFinalizingCount: (count) => {
+            finalizingCount = count
+        },
+        setVolumeRootFromEvent: (root) => {
+            volumeRootFromEvent = root
+        },
+        getCursorIndex: () => cursorIndex,
+        setCursorIndexRaw: (index) => {
+            cursorIndex = index
+        },
+        clearEntryUnderCursor: () => {
+            entryUnderCursor = null
+        },
+        clearSyncStatusMap: () => {
+            syncStatusMap = {}
+        },
+        clearSyncRetryTimer: () => {
+            clearTimeout(syncRetryTimer)
+            syncRetryTimer = undefined
+        },
+        bumpCacheGeneration: () => {
+            cacheGeneration++
+        },
+        selection,
+        renameCancel: () => { rename.cancel(); },
+        jumpClear: () => { jump.clear(); },
+        syncMcp: () => {
+            debouncedSyncMcp.call()
+        },
+        fetchEntryUnderCursor: () => void fetchEntryUnderCursor(),
+        fetchListingStats: () => void fetchListingStats(),
+        onPathChange: (path) => onPathChange?.(path),
+        onVolumeChange: (id, path, target) => onVolumeChange?.(id, path, target),
+        onMtpFatalError: (message) => onMtpFatalError?.(message),
+        onCancelLoading: (cancelledPath, selectName) => onCancelLoading?.(cancelledPath, selectName),
+    })
 
     // File under the cursor fetched separately for SelectionInfo
     let entryUnderCursor = $state<FileEntry | null>(null)
@@ -483,8 +556,8 @@
         getCurrentPath: () => currentPath,
         getVolumePath: () => volumePath,
         getCurrentVolumeInfo: () => currentVolumeInfo,
-        loadDirectory: (path: string) => void loadDirectory(path),
-        navigateToFallback,
+        loadDirectory: (path: string) => void loader.loadDirectory(path),
+        navigateToFallback: loader.navigateToFallback,
     })
 
     // Live per-pane disk space: the readout, the fetch, the backend live-update
@@ -568,21 +641,7 @@
      * if no load is in flight, resolves immediately.
      */
     export function whenLoadSettles(): Promise<void> {
-        if (!loading) return Promise.resolve()
-        return new Promise<void>((resolve) => {
-            // Chain onto the existing resolver / rejecter so we don't disturb
-            // a pending `navigateToPath` caller already waiting on the load.
-            const prevResolve = pendingLoadResolve
-            const prevReject = pendingLoadReject
-            pendingLoadResolve = () => {
-                prevResolve?.()
-                resolve()
-            }
-            pendingLoadReject = (reason: string) => {
-                prevReject?.(reason)
-                resolve() // We treat reject as "load is no longer in flight"; caller checks isLoading.
-            }
-        })
+        return loader.whenLoadSettles()
     }
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
@@ -985,51 +1044,11 @@
     }
 
     export function getSwapState(): SwapState {
-        return {
-            currentPath,
-            listingId,
-            totalCount,
-            cursorIndex,
-            selectedIndices: selection.getSelectedIndices(),
-            lastSequence,
-        }
+        return loader.getSwapState()
     }
 
     export function adoptListing(state: SwapState): void {
-        // Cancel any in-flight loads
-        loadGeneration++
-
-        // Set currentPath first so the initialPath $effect sees newPath === curPath and skips reload
-        currentPath = state.currentPath
-
-        // Adopt the listing identity
-        listingId = state.listingId
-        totalCount = state.totalCount
-        lastSequence = state.lastSequence
-
-        // Restore cursor and selection
-        cursorIndex = state.cursorIndex
-        selection.setSelectedIndices(state.selectedIndices)
-
-        // Force virtual list to re-fetch visible range from (now-swapped) cache
-        cacheGeneration++
-
-        // Clear loading/error state
-        loading = false
-        error = null
-
-        // Re-fetch entry under cursor and listing stats for SelectionInfo
-        void fetchEntryUnderCursor()
-        void fetchListingStats()
-
-        // Sync state to MCP
-        debouncedSyncMcp.call()
-
-        // Scroll to cursor position
-        void tick().then(() => {
-            const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-            listRef?.scrollToIndex(cursorIndex)
-        })
+        loader.adoptListing(state)
     }
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
@@ -1064,57 +1083,19 @@
     }
 
     /** Navigates up and selects the folder we came from. Returns false if already at root. */
-    export async function navigateToParent(): Promise<boolean> {
-        if (currentPath === '/' || currentPath === volumePath) {
-            return false // Already at root
-        }
-        const canonical = canonicalPath
-        if (!canonical) return false // userHomePath not resolved yet
-        const currentFolderName = basenameOf(canonical)
-        const parentPath = parentOf(canonical)
-
-        currentPath = parentPath
-        // Note: onPathChange is called in listing-complete handler after successful load
-        await loadDirectory(parentPath, currentFolderName)
-        return true
+    export function navigateToParent(): Promise<boolean> {
+        return loader.navigateToParent()
     }
 
-    // Track the current load operation to cancel outdated ones
-    let loadGeneration = 0
-    // Set on unmount so the background Finder-tag sweep stops (it's a detached
-    // async loop the listing-cancel machinery doesn't reach).
-    let isDestroyed = false
-    // Track last sequence for file watcher diffs
+    // Track last sequence for file watcher diffs (read/written by the loader's
+    // swap-state accessors and by `listing-diff-sync`).
     let lastSequence = 0
-    // Streaming event listeners
-    let unlistenOpening: UnlistenFn | undefined
-    let unlistenProgress: UnlistenFn | undefined
-    let unlistenComplete: UnlistenFn | undefined
-    let unlistenError: UnlistenFn | undefined
-    let unlistenCancelled: UnlistenFn | undefined
     // Opening folder state (before read_dir starts - slow for network folders)
     let openingFolder = $state(false)
     // Loading progress state for streaming
     let loadingCount = $state<number | undefined>(undefined)
     // Finalizing state (read_dir done, now sorting/caching)
     let finalizingCount = $state<number | undefined>(undefined)
-    let unlistenReadComplete: UnlistenFn | undefined
-    function resetLoadingState(errorMessage?: string, preserveTotalCount = false, friendly?: FriendlyError | null) {
-        if (errorMessage) error = errorMessage
-        friendlyError = friendly ?? null
-        listingId = ''
-        if (!preserveTotalCount) totalCount = 0
-        loading = false
-        openingFolder = false
-        loadingCount = undefined
-        finalizingCount = undefined
-        // Reject pending load promise on error/cancel
-        if (errorMessage) {
-            rejectPendingLoad(errorMessage)
-        } else {
-            rejectPendingLoad('Loading cancelled')
-        }
-    }
 
     // Sync status map for visible files
     let syncStatusMap = $state<Record<string, SyncStatus>>({})
@@ -1232,319 +1213,21 @@
     let visibleRangeStart = $state(0)
     let visibleRangeEnd = $state(100)
 
-    // Pending load completion resolver: used by navigateToPath to signal when listing is done.
-    // Set at the start of loadDirectory, resolved by handleListingComplete / error / cancel handlers.
-    let pendingLoadResolve: (() => void) | null = null
-    let pendingLoadReject: ((reason: string) => void) | null = null
-
-    function resolvePendingLoad() {
-        pendingLoadResolve?.()
-        pendingLoadResolve = null
-        pendingLoadReject = null
-    }
-
-    function rejectPendingLoad(reason: string) {
-        pendingLoadReject?.(reason)
-        pendingLoadResolve = null
-        pendingLoadReject = null
-    }
-
-    /**
-     * Navigates to a fallback path after the current path became invalid.
-     * If the resolved path is outside the current volume (~ or /), switches
-     * to the root volume instead of trying to list it on a non-root volume.
-     */
-    function navigateToFallback(validPath: string | null) {
-        const target = validPath ?? '~'
-        const isOutsideVolume = volumeId !== 'root' && (target === '~' || target === '/')
-        if (isOutsideVolume && onVolumeChange) {
-            // The volume root was unreachable: switch to the root volume
-            log.info('Volume root unreachable, switching to root volume with path: {target}', { target })
-            onVolumeChange('root', '/', target)
-        } else {
-            currentPath = target
-            void loadDirectory(target)
-        }
-    }
-
-    async function loadDirectory(path: string, selectName?: string) {
-        // Cancel any active rename when navigating
-        rename.cancel()
-        cancelClickToRename()
-        dismissTransientToasts()
-        // Directory change invalidates in-flight type-to-jump buffer (per plan § 6).
-        jump.clear()
-
-        // Reset benchmark epoch for this navigation
-        benchmark.resetEpoch()
-        benchmark.logEventValue('loadDirectory CALLED', path)
-
-        // Debug logging for diagnosing concurrent list_directory calls
-        log.debug(
-            '[FilePane] loadDirectory called: paneId={paneId}, volumeId={volumeId}, path={path}, selectName={selectName}, currentLoading={loading}, currentListingId={listingId}',
-            { paneId, volumeId, path, selectName: selectName ?? 'none', loading, listingId },
-        )
-
-        // Reject any pending load from a previous navigation
-        rejectPendingLoad('Superseded by new navigation')
-
-        // Increment generation to cancel any in-flight requests
-        const thisGeneration = ++loadGeneration
-        log.debug('[FilePane] loadDirectory: generation={generation}', { generation: thisGeneration })
-
-        // Cancel any abandoned listing from previous navigation
-        if (listingId) {
-            log.debug('[FilePane] loadDirectory: cancelling previous listing {listingId}', { listingId })
-            void cancelListing(listingId)
-            void listDirectoryEnd(listingId)
-            // Evict the closed directory's per-path icons (no longer visible).
-            evictPerPathIconsForDir(loadedPath)
-            listingId = ''
-            loadedPath = ''
-            lastSequence = 0
-        }
-
-        // Clean up previous event listeners
-        unlistenOpening?.()
-        unlistenProgress?.()
-        unlistenReadComplete?.()
-        unlistenComplete?.()
-        unlistenError?.()
-        unlistenCancelled?.()
-
-        // Set loading state BEFORE starting IPC call
-        // This ensures the UI shows the loading spinner immediately
-        loading = true
-        openingFolder = false
-        loadingCount = undefined
-        finalizingCount = undefined
-        error = null
-        friendlyError = null
-        syncStatusMap = {}
-        clearTimeout(syncRetryTimer)
-        syncRetryTimer = undefined
-        selection.clearSelection()
-        totalCount = 0 // Reset to show empty list immediately
-        entryUnderCursor = null // Clear old under-the-cursor entry info
-
-        // Store path and selectName for use in event handlers
-        const loadPath = path
-        const loadSelectName = selectName
-
-        // Loading state is set synchronously above; Svelte will render it on the next
-        // microtask. The IPC call below is non-blocking (spawns a background task and
-        // returns immediately), so no double-RAF paint wait is needed.
-        await tick()
-
-        try {
-            // Generate listingId first and set up listeners BEFORE starting the streaming
-            // This prevents a race condition where fast folders complete before listeners are ready
-            const newListingId = crypto.randomUUID()
-            listingId = newListingId
-            loadedPath = path
-            lastSequence = 0
-
-            // Register all event listeners in parallel (no ordering dependency between them)
-            ;[
-                unlistenOpening,
-                unlistenProgress,
-                unlistenReadComplete,
-                unlistenComplete,
-                unlistenError,
-                unlistenCancelled,
-            ] = await Promise.all([
-                onListingOpening((payload) => {
-                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                        openingFolder = true
-                    }
-                }),
-                onListingProgress((payload) => {
-                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                        loadingCount = payload.loadedCount
-                    }
-                }),
-                onListingReadComplete((payload) => {
-                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                        finalizingCount = payload.totalCount
-                    }
-                }),
-                onListingComplete((payload) => {
-                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                        void handleListingComplete(payload, loadPath, loadSelectName)
-                    }
-                }),
-                onListingError((payload) => {
-                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                        // For MTP volumes, trigger fallback on error (device likely disconnected)
-                        if (isMtpView) {
-                            resetLoadingState(payload.message)
-                            log.warn('MTP listing error, triggering fallback: {error}', {
-                                error: payload.message,
-                            })
-                            onMtpFatalError?.(payload.message)
-                            return
-                        }
-
-                        // For local volumes, check if the path was deleted.
-                        // Use the checked variant so a connection-blip "false" doesn't get treated as
-                        // "deleted": show the error pane in that case instead of walking up.
-                        void pathExistsChecked(loadPath).then(({ data: exists, timedOut }) => {
-                            if (!exists && !timedOut) {
-                                // Path is gone: auto-navigate to nearest valid parent
-                                log.info('Listing error for deleted path, navigating to valid parent: {path}', {
-                                    path: loadPath,
-                                })
-                                void resolveValidPath(loadPath, { volumeRoot: volumePath }).then((validPath) => {
-                                    navigateToFallback(validPath)
-                                })
-                            } else {
-                                // Path exists, or we couldn't tell: show the original listing error
-                                const rendered = payload.error ? renderListingError(payload.error) : undefined
-                                resetLoadingState(payload.message, false, rendered)
-                                // Record the failed path in history so Cmd+[ goes back one step,
-                                // not two. The success path pushes via the `onPathChange` call in
-                                // `handleListingComplete`; without this call, an error pane would
-                                // be visually displayed but absent from history, so Back would
-                                // skip over it. `pushPath` deduplicates same-path retries.
-                                onPathChange?.(loadPath)
-                            }
-                        })
-                    }
-                }),
-                onListingCancelled((payload) => {
-                    if (payload.listingId === newListingId && thisGeneration === loadGeneration) {
-                        // Cancellation handled by onCancelLoading callback
-                        resetLoadingState(undefined, true)
-                    }
-                }),
-            ])
-
-            // Now start streaming listing - listeners are already set up
-            benchmark.logEvent('IPC listDirectoryStart CALL')
-            log.debug(
-                '[FilePane] calling listDirectoryStart: volumeId={volumeId}, path={loadPath}, listingId={listingId}',
-                { volumeId, loadPath, listingId: newListingId },
-            )
-            const result = await listDirectoryStart(
-                volumeId,
-                path,
-                includeHidden,
-                sortBy,
-                sortOrder,
-                newListingId,
-                directorySortMode,
-            )
-            benchmark.logEventValue('IPC listDirectoryStart RETURNED', result.listingId)
-            log.debug('[FilePane] listDirectoryStart returned: status={status}', {
-                status: JSON.stringify(result.status),
-            })
-
-            // Check if this load was cancelled while we were starting
-            if (thisGeneration !== loadGeneration) {
-                // Cancel the abandoned listing
-                void cancelListing(newListingId)
-                return
-            }
-        } catch (e) {
-            if (thisGeneration !== loadGeneration) return
-            resetLoadingState(e instanceof Error ? e.message : String(e))
-        }
-    }
-
-    // Handle listing completion event
-    async function handleListingComplete(
-        payload: ListingCompleteEvent,
-        loadPath: string,
-        loadSelectName: string | undefined,
-    ) {
-        benchmark.logEventValue('listing-complete received, totalCount', payload.totalCount)
-        totalCount = payload.totalCount
-        volumeRootFromEvent = payload.volumeRoot
-
-        // Determine initial cursor position
-        if (loadSelectName) {
-            const foundIndex = await findFileIndex(listingId, loadSelectName, includeHidden)
-            const adjustedIndex = hasParent ? (foundIndex ?? -1) + 1 : (foundIndex ?? 0)
-            cursorIndex = adjustedIndex >= 0 ? adjustedIndex : 0
-        } else {
-            cursorIndex = 0
-        }
-
-        loading = false
-        openingFolder = false
-        loadingCount = undefined
-        finalizingCount = undefined
-        benchmark.logEvent('loading = false (UI can render)')
-
-        // NOW push to history (only on successful completion)
-        onPathChange?.(loadPath)
-
-        // PII-free analytics: a navigation landed. Only the volume KIND enum crosses; never the path.
-        void trackEvent('pane_navigated', { volume_kind: caps.kind })
-
-        // Fetch entry under the cursor for SelectionInfo
-        void fetchEntryUnderCursor()
-
-        // Fetch listing stats for SelectionInfo
-        void fetchListingStats()
-
-        // Resolve pending load promise (for MCP round-trips waiting on directory load)
-        resolvePendingLoad()
-
-        // Sync state to MCP for context tools
-        debouncedSyncMcp.call()
-
-        // Backfill Finder tags for the WHOLE listing (not just the visible range)
-        // so scrolling shows dots instantly and a future sort/filter sees them.
-        // Cancelable via `isStale`: stops on unmount, a newer load, or a listing
-        // swap. The detached loop's logic lives in `tag-sweep.ts` (testable).
-        if (getSetting('listing.showTags') && caps.hasBackendListing) {
-            const sweepGen = loadGeneration
-            const sweepListingId = listingId
-            void sweepListingTags({
-                listingId: sweepListingId,
-                totalCount: payload.totalCount,
-                includeHidden,
-                isStale: () => isDestroyed || sweepGen !== loadGeneration || sweepListingId !== listingId,
-            })
-        }
-
-        // Scroll to cursor after DOM updates
-        void tick().then(() => {
-            const listRef = viewMode === 'brief' ? briefListRef : fullListRef
-            listRef?.scrollToIndex(cursorIndex)
-        })
-    }
+    // The pending-load promise machinery, the streaming load pipeline, and the
+    // drop-foreign token model live in the listing loader (`listing-loader.svelte.ts`).
+    // FilePane keeps thin exported delegates for the FilePaneAPI surface.
 
     // Handle cancellation during loading (called from DualPaneExplorer on ESC)
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function handleCancelLoading() {
-        if (!loading || !listingId) return
-
-        // Cancel the Rust-side operation
-        void cancelListing(listingId)
-
-        // Extract the folder name we were trying to enter, so parent can select it when reloading
-        const folderName = currentPath.split('/').pop()
-
-        // Tell parent to navigate back (passes the path we were loading so parent can decide where to go)
-        onCancelLoading?.(currentPath, folderName)
+        loader.handleCancelLoading()
     }
 
     // Navigate to a specific path with optional item selection (used when cancelling navigation).
     // Returns a Promise that resolves when the directory listing completes, or rejects on error.
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function navigateToPath(path: string, selectName?: string): Promise<void> {
-        currentPath = path
-        // Start loadDirectory first: it rejects any previous pending load
-        void loadDirectory(path, selectName)
-        // Then set up our promise (after the previous one was rejected)
-        return new Promise<void>((resolve, reject) => {
-            pendingLoadResolve = resolve
-            pendingLoadReject = (reason: string) => {
-                reject(new Error(reason))
-            }
-        })
+        return loader.navigateToPath(path, selectName)
     }
 
     // Fetch the entry currently under the cursor for SelectionInfo
@@ -1698,7 +1381,7 @@
                 return
             }
             currentPath = entry.redirectToPath
-            await loadDirectory(entry.redirectToPath)
+            await loader.loadDirectory(entry.redirectToPath)
             return
         }
         if (entry.isDirectory) {
@@ -1714,7 +1397,7 @@
 
             currentPath = entry.path
             // Note: onPathChange is called in listing-complete handler after successful load
-            await loadDirectory(entry.path, currentFolderName)
+            await loader.loadDirectory(entry.path, currentFolderName)
         } else {
             // Open file with default application
             try {
@@ -1772,7 +1455,7 @@
         // But DO load for connected MTP views (storage-specific volume ID contains ":")
         const isDeviceOnlyMtp = isMtpVolumeId(newVolumeId) && !newVolumeId.includes(':')
         if (newVolumeId !== 'network' && !isDeviceOnlyMtp) {
-            void loadDirectory(targetPath)
+            void loader.loadDirectory(targetPath)
             diskSpace.unwatch()
             // Disk images have no meaningful free space: skip the poll, the bottom bar, and the
             // SelectionInfo free/total text. Read the flag off the NEW volume directly — the
@@ -2080,7 +1763,7 @@
 
         if (wasUnreachable && isNowReachable && pathUnchanged) {
             log.info('Tab became reachable (retry succeeded), loading directory: {path}', { path: initialPath })
-            void loadDirectory(initialPath)
+            void loader.loadDirectory(initialPath)
             void refreshVolumeSpace()
         }
         prevUnreachable = unreachable
@@ -2104,7 +1787,7 @@
         if (wasDeviceOnly && isNowConnected) {
             log.info('MTP volume connected, loading directory: {path}', { path: newPath })
             currentPath = newPath
-            void loadDirectory(newPath)
+            void loader.loadDirectory(newPath)
             prevVolumeId = currentVolumeId
             return // Don't also fire the initialPath branch
         }
@@ -2124,7 +1807,7 @@
                 { paneId, newPath, curPath },
             )
             currentPath = newPath
-            void loadDirectory(newPath)
+            void loader.loadDirectory(newPath)
         }
 
         // Case 3: Device-only MTP: just sync path, don't load (auto-connect handles transition)
@@ -2249,7 +1932,7 @@
         fetchEntryUnderCursor: () => void fetchEntryUnderCursor(),
         fetchListingStats: () => void fetchListingStats(),
         onRequestFocus,
-        navigateToFallback,
+        navigateToFallback: loader.navigateToFallback,
     })
 
     // Listen for MTP device removal events
@@ -2322,7 +2005,7 @@
             loading = false
         } else if (!isNetworkView && !isMtpDeviceOnly && !isSearchResultsView) {
             log.debug('[FilePane] onMount: triggering loadDirectory for paneId={paneId}', { paneId })
-            void loadDirectory(currentPath)
+            void loader.loadDirectory(currentPath)
             // Disk images have no meaningful free space: no poll, no bar, no SelectionInfo text.
             if (!isDiskImageVolume) {
                 void diskSpace.refresh()
@@ -2389,7 +2072,7 @@
                                 { dir: currentPath, volume: volumePath },
                             )
                             void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
-                                navigateToFallback(validPath)
+                                loader.navigateToFallback(validPath)
                             })
                         },
                     )
@@ -2398,7 +2081,7 @@
                         dir: currentPath,
                     })
                     void resolveValidPath(currentPath, { volumeRoot: volumePath }).then((validPath) => {
-                        navigateToFallback(validPath)
+                        loader.navigateToFallback(validPath)
                     })
                 }
             })
@@ -2406,14 +2089,9 @@
     })
 
     onDestroy(() => {
-        // Stop the background Finder-tag sweep if one is mid-flight.
-        isDestroyed = true
-        // Clean up listing
-        if (listingId) {
-            void cancelListing(listingId)
-            void listDirectoryEnd(listingId)
-            evictPerPathIconsForDir(loadedPath)
-        }
+        // Stop the background Finder-tag sweep, cancel the active listing, drop its
+        // per-path icons, and unlisten the six streaming listeners. All loader-owned.
+        loader.cleanup()
         clearInterval(syncPollInterval)
         clearTimeout(syncRetryTimer)
         clearInterval(dirExistsPollInterval)
@@ -2424,12 +2102,6 @@
         // Stop type-to-jump timers so they can't fire after the FilePane is gone
         // (otherwise orphan setTimeouts mutate $state slots on the dead instance).
         jump.dispose()
-        unlistenOpening?.()
-        unlistenProgress?.()
-        unlistenReadComplete?.()
-        unlistenComplete?.()
-        unlistenError?.()
-        unlistenCancelled?.()
         // Drop the disk-space live listener + this pane's space watch.
         diskSpace.cleanup()
         // Drop the git subscriptions (setting listeners + repo watcher) on unmount.
