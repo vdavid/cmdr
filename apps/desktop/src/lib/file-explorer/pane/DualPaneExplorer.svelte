@@ -17,7 +17,6 @@
         listen,
         getDefaultVolumeId,
         resolvePathVolume,
-        resortListing,
         type Location,
         type UnlistenFn,
         updateFocusedPane,
@@ -37,16 +36,11 @@
         FriendlyError,
         FileEntry,
     } from '../types'
-    import { defaultSortOrders } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath } from '../navigation/path-navigation'
     import { resolveValidPath } from '../navigation/path-resolution'
 
-    import {
-        getCurrentEntry,
-        canGoBack,
-        type NavigationHistory,
-    } from '../navigation/navigation-history'
+    import { getCurrentEntry, canGoBack, type NavigationHistory } from '../navigation/navigation-history'
     import TabBar from '../tabs/TabBar.svelte'
     import {
         getActiveTab,
@@ -91,7 +85,6 @@
     import { initialize as initMtpStore } from '$lib/mtp'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import { getAppLogger } from '$lib/logging/logger'
-    import { getNewSortOrder, applySortResult, collectSortState } from './sorting-handlers'
     import type { TransferOperationType } from '../types'
     import { createDialogState } from './dialog-state.svelte'
     import { explorerState } from './explorer-state.svelte'
@@ -99,6 +92,7 @@
     import { createClipboardOperations } from './clipboard-operations'
     import { createFileOperationCommands } from './file-operation-commands'
     import { createPaneCommands } from './pane-commands'
+    import { createSortOperations } from './sort-operations'
     import {
         navigate as runNavigate,
         commitPathFromListing,
@@ -342,6 +336,13 @@
     const clipboardOps = createClipboardOperations(paneAccess, dialogs)
     const fileOps = createFileOperationCommands(paneAccess, dialogs)
     const paneCommands = createPaneCommands(paneAccess, dialogs)
+    const sortOps = createSortOperations({
+        getPaneRef,
+        getPaneSort,
+        setPaneSort,
+        getShowHiddenFiles: () => showHiddenFiles,
+        getFocusedPane: () => focusedPane,
+    })
 
     // Per-pane transaction-token map for `navigate()`. Caller-owned (it must
     // survive across `navigate()` calls), keyed by side. Gates the per-pane
@@ -508,60 +509,6 @@
         )
     }
 
-    async function handleSortChange(pane: 'left' | 'right', newColumn: SortColumn) {
-        // Cancel any active rename on the affected pane (sort invalidates indices)
-        getPaneRef(pane)?.cancelRename()
-        // Re-sort changes the listing's index space; any in-flight type-to-jump
-        // match would land on the wrong row.
-        getPaneRef(pane)?.clearJumpState()
-
-        const paneRef = getPaneRef(pane)
-        const listingId = paneRef?.getListingId()
-        if (!listingId) return
-
-        const { sortBy, sortOrder } = getPaneSort(pane)
-        const newOrder =
-            newColumn === sortBy ? getNewSortOrder(newColumn, sortBy, sortOrder) : defaultSortOrders[newColumn]
-
-        const sortState = collectSortState(paneRef)
-        const result = await resortListing(
-            listingId,
-            newColumn,
-            newOrder,
-            sortState.cursorFilename,
-            showHiddenFiles,
-            sortState.backendSelectedIndices,
-            sortState.allSelected,
-            getDirectorySortMode(),
-        )
-
-        setPaneSort(pane, newColumn, newOrder)
-        // Persistence (saveAppStatus sortBy + the pane's tab set) fires from the
-        // single subscriber's per-pane effect, which reacts to this store change.
-        applySortResult(paneRef, result, sortState.hasParent)
-    }
-
-    /** Re-sorts a single pane in-place using its current column/order but a new directorySortMode. */
-    async function resortPaneWithCurrentSort(pane: 'left' | 'right') {
-        const paneRef = getPaneRef(pane)
-        const listingId = paneRef?.getListingId()
-        if (!listingId) return
-
-        const { sortBy, sortOrder } = getPaneSort(pane)
-        const sortState = collectSortState(paneRef)
-        const result = await resortListing(
-            listingId,
-            sortBy,
-            sortOrder,
-            sortState.cursorFilename,
-            showHiddenFiles,
-            sortState.backendSelectedIndices,
-            sortState.allSelected,
-            getDirectorySortMode(),
-        )
-        applySortResult(paneRef, result, sortState.hasParent)
-    }
-
     // Re-sort both panes when directorySortMode setting changes
     $effect(() => {
         // Read the reactive value to establish the dependency
@@ -570,8 +517,8 @@
         if (!initialized) return
         // Re-sort both panes with the new mode (untrack to avoid re-triggering)
         untrack(() => {
-            void resortPaneWithCurrentSort('left')
-            void resortPaneWithCurrentSort('right')
+            void sortOps.resortPaneWithCurrentSort('left')
+            void sortOps.resortPaneWithCurrentSort('right')
         })
     })
 
@@ -687,7 +634,11 @@
 
         // Fallback to the default volume, pushing a history entry. The subscriber
         // persists the store mutation `navigate()`'s commit makes.
-        navigateIntent({ pane, to: { selectVolume: { volumeId: defaultVolumeId, path: defaultPath } }, source: 'fallback' })
+        navigateIntent({
+            pane,
+            to: { selectVolume: { volumeId: defaultVolumeId, path: defaultPath } },
+            source: 'fallback',
+        })
     }
 
     async function handleRetryUnreachable(pane: 'left' | 'right') {
@@ -1340,7 +1291,7 @@
      * Used by command palette.
      */
     export function setSortColumn(column: SortColumn, pane?: 'left' | 'right') {
-        void handleSortChange(pane ?? focusedPane, column)
+        sortOps.setSortColumn(column, pane)
     }
 
     /**
@@ -1348,21 +1299,7 @@
      * Used by command palette.
      */
     export function setSortOrder(order: 'asc' | 'desc' | 'toggle', pane?: 'left' | 'right') {
-        const targetPane = pane ?? focusedPane
-        const { sortOrder: currentOrder, sortBy: currentColumn } = getPaneSort(targetPane)
-
-        let newOrder: SortOrder
-        if (order === 'toggle') {
-            newOrder = currentOrder === 'ascending' ? 'descending' : 'ascending'
-        } else {
-            newOrder = order === 'asc' ? 'ascending' : 'descending'
-        }
-
-        // Re-apply sort with new order by pretending to click same column
-        // This triggers the toggle logic in the handler
-        if (newOrder !== currentOrder) {
-            void handleSortChange(targetPane, currentColumn)
-        }
+        sortOps.setSortOrder(order, pane)
     }
 
     /**
@@ -1370,27 +1307,7 @@
      * Used by MCP sort command to avoid race conditions.
      */
     export async function setSort(column: SortColumn, order: 'asc' | 'desc', pane: 'left' | 'right') {
-        const paneRef = getPaneRef(pane)
-        const listingId = paneRef?.getListingId()
-        if (!listingId) return
-
-        const newOrder: SortOrder = order === 'asc' ? 'ascending' : 'descending'
-
-        const sortState = collectSortState(paneRef)
-        const result = await resortListing(
-            listingId,
-            column,
-            newOrder,
-            sortState.cursorFilename,
-            showHiddenFiles,
-            sortState.backendSelectedIndices,
-            sortState.allSelected,
-            getDirectorySortMode(),
-        )
-
-        setPaneSort(pane, column, newOrder)
-        // Sort persistence (app-status sortBy + tab set) fires from the subscriber.
-        applySortResult(paneRef, result, sortState.hasParent)
+        await sortOps.setSort(column, order, pane)
     }
 
     export function getFocusedPane(): 'left' | 'right' {
@@ -1622,7 +1539,11 @@
         const originalFocused = focusedPane
         const targetPaneRef = getPaneRef(target)
         if (getPaneVolumeId(target) !== 'network') {
-            navigateIntent({ pane: target, to: { selectVolume: { volumeId: 'network', path: 'smb://' } }, source: 'mirror' })
+            navigateIntent({
+                pane: target,
+                to: { selectVolume: { volumeId: 'network', path: 'smb://' } },
+                source: 'mirror',
+            })
         }
         targetPaneRef?.setNetworkHost(host)
         setPaneHistory(
@@ -1682,9 +1603,7 @@
         // as the live drop's recorded-identity branch does. Absent → model a
         // genuine external drop (resolver path). The recorded identity carries
         // `startedAt` for shape parity with the real record.
-        const identity = recordedIdentity
-            ? { ...recordedIdentity, startedAt: Date.now() }
-            : undefined
+        const identity = recordedIdentity ? { ...recordedIdentity, startedAt: Date.now() } : undefined
         void dragDrop.handleFileDrop(paths, targetPane, targetFolderPath, operation, identity)
     }
 
@@ -1731,7 +1650,14 @@
     }
 
     function handleNewTab(pane: 'left' | 'right') {
-        tabOpsHandleNewTab(pane, focusedPane, (p) => { explorerState.setFocusedPane(p); }, newTab)
+        tabOpsHandleNewTab(
+            pane,
+            focusedPane,
+            (p) => {
+                explorerState.setFocusedPane(p)
+            },
+            newTab,
+        )
     }
 
     function handleTabContextMenu(pane: 'left' | 'right', tabId: TabId, event: MouseEvent) {
@@ -1778,12 +1704,7 @@
      * bus (`tab.mcpAction`). Owns the tab-mutation primitives; the dispatch layer
      * just forwards the typed args.
      */
-    export function handleMcpTabAction(
-        pane: 'left' | 'right',
-        action: McpTabAction,
-        tabId?: string,
-        pinned?: boolean,
-    ) {
+    export function handleMcpTabAction(pane: 'left' | 'right', action: McpTabAction, tabId?: string, pinned?: boolean) {
         const mgr = getTabMgr(pane)
         const mcpTabHandlers: Record<McpTabAction, () => void> = {
             new: () => {
@@ -1895,7 +1816,11 @@
                     handlePathCommitted(paneId, path)
                 }}
                 onVolumeChange={(volumeId: string, volumePath: string, targetPath: string) => {
-                    navigateIntent({ pane: paneId, to: { selectVolume: { volumeId, path: targetPath } }, source: 'user' })
+                    navigateIntent({
+                        pane: paneId,
+                        to: { selectVolume: { volumeId, path: targetPath } },
+                        source: 'user',
+                    })
                 }}
                 onGoToLocation={(location: Location) => {
                     // A search-results row opening a real entry: `{ location }` routes
@@ -1907,7 +1832,7 @@
                 onRequestFocus={() => {
                     handleFocus(paneId)
                 }}
-                onSortChange={(column: SortColumn) => handleSortChange(paneId, column)}
+                onSortChange={(column: SortColumn) => sortOps.handleSortChange(paneId, column)}
                 onNetworkHostChange={(host: NetworkHost | null) => {
                     handleNetworkHostChange(paneId, host)
                 }}
