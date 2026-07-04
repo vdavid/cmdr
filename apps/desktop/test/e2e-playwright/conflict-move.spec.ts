@@ -19,13 +19,18 @@ import {
   createConflictFixturesB,
   readFile,
   fileExists,
-  selectAll,
+  selectItemsByName,
   waitForConflictPolicy,
   selectConflictPolicy,
   clickTransferStart,
   clickConflictButton,
   waitForDialogsToClose,
 } from './conflict-helpers.js'
+
+// Layout B's own top-level items, WITHOUT the preserved ~170 MB `bulk/` tree.
+// Selecting exactly these (not `selectAll`) keeps the move fast and deterministic;
+// sweeping in bulk/ slowed ops into the 15 s per-test budget under Docker load.
+const LAYOUT_B_ITEMS = ['alpha', 'bravo', 'charlie', 'delta.txt']
 
 test.beforeEach(() => {
   recreateFixtures(getFixtureRoot())
@@ -37,7 +42,7 @@ test.describe('Move multi-item merge (Layout B)', () => {
     createConflictFixturesB(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
 
-    await selectAll(tauriPage)
+    await selectItemsByName(tauriPage, LAYOUT_B_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
@@ -45,9 +50,9 @@ test.describe('Move multi-item merge (Layout B)', () => {
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
-    // Layout B selectAll: 1 top-level file (delta.txt) + 4 folders (alpha/,
-    // bravo/, charlie/, bulk/). Overwrite All skips nothing.
-    await expectAndDismissToast(tauriPage, 'Moved 1 file and 4 folders.')
+    // Layout B selection: 1 top-level file (delta.txt) + 3 folders (alpha/,
+    // bravo/, charlie/). Overwrite All skips nothing.
+    await expectAndDismissToast(tauriPage, 'Moved 1 file and 3 folders.')
 
     // Dest files correct (same as copy overwrite)
     expect(readFile(fixtureRoot, 'right/alpha/info.txt')).toBe('alpha-info')
@@ -73,7 +78,7 @@ test.describe('Move multi-item merge (Layout B)', () => {
     createConflictFixturesB(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
 
-    await selectAll(tauriPage)
+    await selectItemsByName(tauriPage, LAYOUT_B_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
@@ -81,10 +86,10 @@ test.describe('Move multi-item merge (Layout B)', () => {
     await selectConflictPolicy(tauriPage, 'skip')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
-    // Layout B selectAll: 1 top-level file (delta.txt) + 4 folders. Skip All
+    // Layout B selection: 1 top-level file (delta.txt) + 3 folders. Skip All
     // skips the one clashing file (bravo/foxtrot/golf.txt), which the toast
-    // counts against the file part, so no files land — 4 folders merge.
-    await expectAndDismissToast(tauriPage, 'Moved 4 folders, skipped 1 file (already at the target).')
+    // counts against the file part, so no files land — 3 folders merge.
+    await expectAndDismissToast(tauriPage, 'Moved 3 folders, skipped 1 file (already at the target).')
 
     // Dest files correct (same as copy skip)
     expect(readFile(fixtureRoot, 'right/bravo/foxtrot/golf.txt')).toBe('dest-golf')
@@ -113,7 +118,7 @@ test.describe('Move rollback', () => {
     createConflictFixturesB(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
 
-    await selectAll(tauriPage)
+    await selectItemsByName(tauriPage, LAYOUT_B_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.move')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)

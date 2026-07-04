@@ -5,7 +5,6 @@
  * across two fixture layouts (A: nested conflicts, B: multi-item merge).
  */
 
-import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
@@ -21,12 +20,13 @@ import {
   TRANSFER_DIALOG,
 } from './helpers.js'
 
-/** Recursive file/dir counts for everything `selectAll` grabs in `left/`
- *  (the top-level children, including the preserved `bulk/` tree). */
-function leftSelectionCounts(fixtureRoot: string): { files: number; dirs: number } {
+/** Recursive file/dir counts for the named top-level items in `left/`. Scoped to
+ *  the selection each test makes (via `selectItemsByName`) so the counter line
+ *  matches what's actually copied — deliberately NOT the whole `left/`, whose
+ *  preserved `bulk/` tree (~170 MB) these conflict tests don't need. */
+function selectionCounts(fixtureRoot: string, names: string[]): { files: number; dirs: number } {
   const leftDir = path.join(fixtureRoot, 'left')
-  const children = fs.readdirSync(leftDir).map((name) => path.join(leftDir, name))
-  return countTree(children)
+  return countTree(names.map((name) => path.join(leftDir, name)))
 }
 import {
   createConflictFixturesA,
@@ -34,13 +34,20 @@ import {
   readFile,
   writeFile,
   fileExists,
-  selectAll,
+  selectItemsByName,
   waitForConflictPolicy,
   selectConflictPolicy,
   clickTransferStart,
   clickConflictButton,
   waitForDialogsToClose,
 } from './conflict-helpers.js'
+
+// The conflict fixtures' own top-level items, WITHOUT the preserved `bulk/` tree
+// (~170 MB). Selecting exactly these (instead of `selectAll`) keeps each op fast
+// and deterministic — copying `bulk/` slowed the dry-run scan / copy / dialog
+// counters into the 15 s per-test budget under Docker-lane load (the conflict flakes).
+const LAYOUT_A_ITEMS = ['readme.txt', 'only-in-source.txt', 'docs']
+const LAYOUT_B_ITEMS = ['alpha', 'bravo', 'charlie', 'delta.txt']
 
 test.beforeEach(() => {
   recreateFixtures(getFixtureRoot())
@@ -52,21 +59,21 @@ test.describe('Copy with conflict policies (Layout A)', () => {
     createConflictFixturesA(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
 
-    await selectAll(tauriPage)
+    await selectItemsByName(tauriPage, LAYOUT_A_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
-    // The counter line reports the full recursive selection (Layout A text files
-    // + the preserved bulk/ tree). Computed from disk so it tracks the fixtures.
-    await expectDialogCounters(tauriPage, leftSelectionCounts(fixtureRoot))
+    // The counter line reports the recursive selection (Layout A's text files +
+    // docs/). Computed from disk so it tracks the fixtures.
+    await expectDialogCounters(tauriPage, selectionCounts(fixtureRoot, LAYOUT_A_ITEMS))
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
-    // Layout A selectAll copies 2 top-level files + 2 folders (docs/, bulk/); the
-    // completion toast must be asserted + dismissed or the afterEach leak guard
-    // fails on the still-visible transient toast.
-    await expectAndDismissToast(tauriPage, 'Copied 2 files and 2 folders.')
+    // Layout A copies 2 top-level files + 1 folder (docs/); the completion toast
+    // must be asserted + dismissed or the afterEach leak guard fails on the
+    // still-visible transient toast.
+    await expectAndDismissToast(tauriPage, 'Copied 2 files and 1 folder.')
 
     // Conflicting files overwritten with source content
     expect(readFile(fixtureRoot, 'right/readme.txt')).toBe('source-readme')
@@ -87,18 +94,18 @@ test.describe('Copy with conflict policies (Layout A)', () => {
     createConflictFixturesA(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
 
-    await selectAll(tauriPage)
+    await selectItemsByName(tauriPage, LAYOUT_A_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
-    await expectDialogCounters(tauriPage, leftSelectionCounts(fixtureRoot))
+    await expectDialogCounters(tauriPage, selectionCounts(fixtureRoot, LAYOUT_A_ITEMS))
     await selectConflictPolicy(tauriPage, 'skip')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
     // Skip All keeps the conflicting top-level readme.txt at the dest, so the
-    // toast reports it as skipped (only-in-source.txt + docs/ + bulk/ copied).
-    await expectAndDismissToast(tauriPage, 'Copied 1 file and 2 folders, skipped 1 file')
+    // toast reports it as skipped (only-in-source.txt + docs/ copied).
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 1 folder, skipped 1 file')
 
     // Conflicting files preserved (dest content kept)
     expect(readFile(fixtureRoot, 'right/readme.txt')).toBe('dest-readme')
@@ -120,18 +127,17 @@ test.describe('Copy multi-item merge (Layout B)', () => {
     createConflictFixturesB(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
 
-    await selectAll(tauriPage)
+    await selectItemsByName(tauriPage, LAYOUT_B_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await waitForConflictPolicy(tauriPage)
-    await expectDialogCounters(tauriPage, leftSelectionCounts(fixtureRoot))
+    await expectDialogCounters(tauriPage, selectionCounts(fixtureRoot, LAYOUT_B_ITEMS))
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage)
-    // Layout B selectAll: 1 top-level file (delta.txt) + 4 folders (alpha, bravo,
-    // charlie, bulk).
-    await expectAndDismissToast(tauriPage, 'Copied 1 file and 4 folders.')
+    // Layout B: 1 top-level file (delta.txt) + 3 folders (alpha, bravo, charlie).
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 3 folders.')
 
     // New dirs and files created
     expect(readFile(fixtureRoot, 'right/alpha/info.txt')).toBe('alpha-info')
@@ -154,7 +160,7 @@ test.describe('Copy multi-item merge (Layout B)', () => {
     createConflictFixturesB(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['alpha'] })
 
-    await selectAll(tauriPage)
+    await selectItemsByName(tauriPage, LAYOUT_B_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
@@ -166,7 +172,7 @@ test.describe('Copy multi-item merge (Layout B)', () => {
     // test. Nested skips (golf.txt) aren't surfaced in the count, so it reads the
     // same as Overwrite. Without this the toast lingers and the teardown leak-check
     // races its auto-dismiss timer (passes only if the timer fires first).
-    await expectAndDismissToast(tauriPage, 'Copied 1 file and 4 folders.')
+    await expectAndDismissToast(tauriPage, 'Copied 1 file and 3 folders.')
 
     // Conflicting file preserved
     expect(readFile(fixtureRoot, 'right/bravo/foxtrot/golf.txt')).toBe('dest-golf')
@@ -189,7 +195,7 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     createConflictFixturesA(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
 
-    await selectAll(tauriPage)
+    await selectItemsByName(tauriPage, LAYOUT_A_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
@@ -242,14 +248,14 @@ test.describe('Per-file conflict decisions (Layout A)', () => {
     }
 
     await waitForDialogsToClose(tauriPage)
-    // The copy fires a transient selection-split toast. Layout A's selectAll
-    // grabs 2 top-level files (readme.txt, only-in-source.txt) + 2 folders
-    // (docs/, bulk/); per-file Skips are not surfaced in the count. Assert +
-    // dismiss it so the afterEach leak-detector does not fail on a still-visible
-    // toast (these per-file-conflict flows finish slower than the upfront-policy
-    // tests, so the toast is still on screen when afterEach probes — it does not
-    // reliably auto-dismiss in time on Linux).
-    await expectAndDismissToast(tauriPage, 'Copied 2 files and 2 folders.')
+    // The copy fires a transient selection-split toast. Layout A's selection is
+    // 2 top-level files (readme.txt, only-in-source.txt) + 1 folder (docs/);
+    // per-file Skips are not surfaced in the count. Assert + dismiss it so the
+    // afterEach leak-detector does not fail on a still-visible toast (these
+    // per-file-conflict flows finish slower than the upfront-policy tests, so the
+    // toast is still on screen when afterEach probes — it does not reliably
+    // auto-dismiss in time on Linux).
+    await expectAndDismissToast(tauriPage, 'Copied 2 files and 1 folder.')
 
     // We overwrote the first conflict and skipped the rest.
     // Since filesystem traversal order is unpredictable, verify that
@@ -316,7 +322,7 @@ test.describe('Rename conflict resolution', () => {
     createConflictFixturesA(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['readme.txt'] })
 
-    await selectAll(tauriPage)
+    await selectItemsByName(tauriPage, LAYOUT_A_ITEMS)
     await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
@@ -332,8 +338,8 @@ test.describe('Rename conflict resolution', () => {
     await clickConflictButton(tauriPage, '.conflict-buttons-row button', 'Rename all')
 
     await waitForDialogsToClose(tauriPage)
-    // Layout A selectAll: 2 top-level files + 2 folders (docs/, bulk/).
-    await expectAndDismissToast(tauriPage, 'Copied 2 files and 2 folders.')
+    // Layout A selection: 2 top-level files + 1 folder (docs/).
+    await expectAndDismissToast(tauriPage, 'Copied 2 files and 1 folder.')
 
     // All original dest files preserved
     expect(readFile(fixtureRoot, 'right/readme.txt')).toBe('dest-readme')

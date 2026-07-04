@@ -25,7 +25,7 @@ import {
   clickConflictButton,
   clickTransferStart,
   readFile,
-  selectAll,
+  selectItemsByName,
   selectConflictPolicy,
   waitForConflictPolicy,
   waitForDialogsToClose,
@@ -100,7 +100,9 @@ test.describe('Conditional conflict policies (upfront radios)', () => {
     createSizeFixture(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['equal.txt', 'larger.txt', 'smaller.txt'] })
 
-    await selectAll(tauriPage)
+    // Scope to the size fixture's own files (not `selectAll`, which sweeps in
+    // the ~170 MB bulk/ tree these tests don't need).
+    await selectItemsByName(tauriPage, ['smaller.txt', 'equal.txt', 'larger.txt'])
     await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
@@ -123,7 +125,9 @@ test.describe('Conditional conflict policies (upfront radios)', () => {
     createMtimeFixture(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['equal.txt', 'newer.txt', 'older.txt'] })
 
-    await selectAll(tauriPage)
+    // Scope to the mtime fixture's own files (not `selectAll`, which sweeps in
+    // the ~170 MB bulk/ tree these tests don't need).
+    await selectItemsByName(tauriPage, ['older.txt', 'equal.txt', 'newer.txt'])
     await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
@@ -148,7 +152,9 @@ test.describe('Conditional conflict policies (per-file dialog buttons)', () => {
     createMtimeFixture(fixtureRoot)
     await ensureAppReady(tauriPage, { leftPane: ['equal.txt', 'newer.txt', 'older.txt'] })
 
-    await selectAll(tauriPage)
+    // Scope to the mtime fixture's own files (not `selectAll`, which sweeps in
+    // the ~170 MB bulk/ tree these tests don't need).
+    await selectItemsByName(tauriPage, ['older.txt', 'equal.txt', 'newer.txt'])
     await dispatchMenuCommand(tauriPage, 'file.copy')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
