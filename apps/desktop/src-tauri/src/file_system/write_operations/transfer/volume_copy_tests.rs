@@ -2312,7 +2312,7 @@ async fn cross_volume_copy_into_existing_dest_is_a_no_op_create() {
 
 // ========================================================================
 // Extract-out: copy a file + a directory subtree OUT of a zip archive
-// (headless repro of the M1 extract-out flow through the transfer engine).
+// (headless repro of the extract-out flow through the transfer engine).
 // ========================================================================
 
 /// Builds a real zip with a top-level file and a two-file directory, returning

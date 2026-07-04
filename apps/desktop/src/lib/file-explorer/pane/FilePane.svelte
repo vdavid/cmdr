@@ -1392,7 +1392,7 @@
         // same-volume in-place (the tab keeps the parent-drive id; the backend
         // `resolve` routes the `…/foo.zip/…` path to the read-only ArchiveVolume).
         // `isDirectory` stays false on an archive, so it's an explicit second arm.
-        // M1b enters directly; the Browse | Open | Ask menu is a later milestone.
+        // Entering is direct for now; the Browse | Open | Ask menu comes later.
         if (entry.isDirectory || entry.isArchive) {
             // Same as the redirect branch: a real directory opened from the
             // search-results rows switches to its real volume first.

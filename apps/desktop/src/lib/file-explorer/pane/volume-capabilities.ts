@@ -194,7 +194,7 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // to the zip's containing dir (`hasParentRow`). Read-only in THIS phase: the
     // three write flags are false so rename/mkdir/mkfile/paste refuse frontend-
     // side (backend `ReadOnlyDevice` is the safety net); zip mutation flips them
-    // later. `canBeSource: true` — copying files OUT is the headline M1 feature.
+    // later. `canBeSource: true` — copying files OUT is the headline read feature.
     // No system clipboard: an archive-inner path isn't an OS-resolvable local
     // path, so ⌘C/⌘V can't carry it (F5/F6 extract-out is the supported path).
     // `syncsToMcp: true` — the listing is real; MCP reports the parent drive id

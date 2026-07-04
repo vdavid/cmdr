@@ -1,5 +1,5 @@
 /**
- * E2E tests for archive browsing (zip-as-folder), milestone M1b.
+ * E2E tests for archive browsing (zip-as-folder), read-only phase.
  *
  * Verifies the user-visible flows: pressing Enter on a `.zip` steps inside it
  * like a folder with a transparent path, navigating out exits the archive, a
@@ -102,7 +102,7 @@ async function navigatePaneTo(tauriPage: PageLike, pane: 'left' | 'right', targe
     })()`)
 }
 
-test.describe('Archive browsing (M1b)', () => {
+test.describe('Archive browsing', () => {
   test('pressing Enter on a zip lists its inner entries with a transparent path', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
