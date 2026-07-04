@@ -15,7 +15,8 @@ use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::volume::VolumeError;
 use crate::file_system::volume::friendly_error::{
-    ListingError, enrich_with_provider, listing_error_for_restricted_empty_root, listing_error_from_volume_error,
+    ListingError, archive_unreadable_listing_error, enrich_with_provider, listing_error_for_restricted_empty_root,
+    listing_error_from_volume_error,
 };
 use crate::file_system::watcher::start_watching;
 #[cfg(test)]
@@ -332,8 +333,22 @@ pub async fn list_directory_start_streaming(
         match result {
             Err(e) => {
                 // Function returned an error (volume not found, permission denied, I/O, etc.)
-                let mut listing_error = listing_error_from_volume_error(&e, &path_for_error);
-                enrich_with_provider(&mut listing_error, &path_for_error);
+                // A failed `.zip` browse — the archive is damaged, encrypted, an
+                // unsupported format, or a file with an archive extension that isn't
+                // really an archive — collapses to `NotSupported`/`IoError` at the
+                // `ArchiveVolume` layer. Swap in the dedicated "damaged archive" copy
+                // so the pane doesn't show a generic listing error. A valid archive
+                // with a missing inner path stays `NotFound` (not an integrity fault),
+                // and the archive case skips provider enrichment (no cloud suggestion).
+                let listing_error = if matches!(e, VolumeError::NotSupported | VolumeError::IoError { .. })
+                    && crate::file_system::volume::backends::archive::path_targets_archive_file(&path_for_error)
+                {
+                    archive_unreadable_listing_error()
+                } else {
+                    let mut generic = listing_error_from_volume_error(&e, &path_for_error);
+                    enrich_with_provider(&mut generic, &path_for_error);
+                    generic
+                };
                 if matches!(&e, VolumeError::PermissionDenied(_)) {
                     crate::restricted_paths::record_denial(&path_for_error);
                 }

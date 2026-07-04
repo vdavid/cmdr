@@ -122,6 +122,20 @@ pub fn path_is_inside_archive(path: &Path) -> bool {
     confirm_archive_boundary(path).is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty())
 }
 
+/// True when a path targets an archive FILE Cmdr tried to browse — the archive
+/// component exists and is a regular file (not a directory that merely shares the
+/// name). Path + a cheap stat, no magic check: the caller pairs it with the
+/// listing error kind to decide whether a FAILED listing was a damaged/mislabeled
+/// archive (`NotSupported`/`IoError`) versus a valid archive with a missing inner
+/// path (`NotFound`). A real directory named `foo.zip` returns false — it lists
+/// like any folder.
+pub fn path_targets_archive_file(path: &Path) -> bool {
+    let Some((archive_path, _inner)) = archive_boundary_candidate(path) else {
+        return false;
+    };
+    std::fs::metadata(&archive_path).is_ok_and(|meta| meta.is_file())
+}
+
 /// Reads the first four bytes and checks them against the three zip start-of-file
 /// signatures: a local file header (`PK\x03\x04`), an empty archive's end-of-
 /// central-directory (`PK\x05\x06`), or the spanned-archive marker (`PK\x07\x08`).
@@ -244,6 +258,30 @@ mod tests {
         // A plain non-archive path is neither.
         assert!(!path_is_inside_archive(dir.path()));
         assert!(!path_crosses_archive_boundary(dir.path()));
+    }
+
+    #[test]
+    fn targets_archive_file_true_for_a_real_file_named_like_an_archive() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        // A mislabeled file (no zip magic) still counts: browsing it failed because
+        // it isn't a real archive, which is the "unreadable archive" case.
+        let mislabeled = dir.path().join("notreally.zip");
+        std::fs::write(&mislabeled, b"plain text").expect("write file");
+        assert!(path_targets_archive_file(&mislabeled));
+        assert!(path_targets_archive_file(&mislabeled.join("inner")));
+    }
+
+    #[test]
+    fn targets_archive_file_false_for_a_directory_or_a_non_archive_path() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        // A real directory named like an archive lists normally, so it's not the case.
+        let fake = dir.path().join("foo.zip");
+        std::fs::create_dir(&fake).expect("create dir named foo.zip");
+        assert!(!path_targets_archive_file(&fake));
+        // No archive-extension component at all.
+        assert!(!path_targets_archive_file(&dir.path().join("plain/folder")));
+        // Archive-extension name that doesn't exist on disk.
+        assert!(!path_targets_archive_file(&dir.path().join("ghost.zip")));
     }
 
     #[test]

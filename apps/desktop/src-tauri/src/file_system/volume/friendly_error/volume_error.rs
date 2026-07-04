@@ -24,6 +24,22 @@ use crate::file_system::volume::VolumeError;
 /// Layer-0 pass-through), before any errno mapping, so git copy isn't clobbered
 /// by the generic I/O fallback. The carried kind rides as the `Git` reason and
 /// the FE renders the git-specific copy.
+/// The "this archive can't be read" listing error, produced at the listing seam
+/// when a `.zip` browse fails on a damaged/encrypted/unsupported or mislabeled
+/// archive (the `ArchiveVolume` collapses those to `NotSupported`/`IoError`, so
+/// they're detected from the path + error kind, not a dedicated `VolumeError`).
+/// `Serious` (corrupted data), no retry, no action button.
+pub fn archive_unreadable_listing_error() -> ListingError {
+    ListingError {
+        category: ErrorCategory::Serious,
+        reason: ListingErrorReason::ArchiveUnreadable,
+        provider: None,
+        action_kind: None,
+        retry_hint: false,
+        raw_detail: "archive unreadable".to_string(),
+    }
+}
+
 pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> ListingError {
     let path_display = path.display().to_string();
     let raw = err.to_string();

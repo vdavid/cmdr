@@ -111,6 +111,8 @@ export type ListingErrorReason =
   | { reason: 'deletePending'; path: string }
   | { reason: 'ioSerious'; path: string; osMessage: string }
   | { reason: 'isADirectory'; path: string }
+  // ── archive (browsing a `.zip` that can't be read) ──
+  | { reason: 'archiveUnreadable' }
   // ── empty-root hint ──
   | { reason: 'emptyRootICloud' }
 

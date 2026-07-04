@@ -100,6 +100,7 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'deletePending', path: PATH },
   { reason: 'ioSerious', path: PATH, osMessage: 'something went wrong' },
   { reason: 'isADirectory', path: PATH },
+  { reason: 'archiveUnreadable' },
   { reason: 'emptyRootICloud' },
 ]
 

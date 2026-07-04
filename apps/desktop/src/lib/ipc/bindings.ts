@@ -4170,6 +4170,15 @@ export type ListingErrorReason =
   | { reason: 'deletePending'; path: string }
   | { reason: 'ioSerious'; path: string; osMessage: string }
   | { reason: 'isADirectory'; path: string }
+  /**
+   *  Browsing an archive failed because the archive itself is unreadable:
+   *  damaged/truncated, encrypted, an unsupported format, or a file that carries
+   *  an archive extension but isn't really an archive. The `ArchiveVolume`
+   *  collapses the integrity family to `NotSupported`/`IoError`, so this is
+   *  classified at the listing seam from the path + error kind, not from a
+   *  dedicated `VolumeError`.
+   */
+  | { reason: 'archiveUnreadable' }
   | { reason: 'emptyRootICloud' }
   | { reason: 'git'; kind: FriendlyGitErrorKind }
 

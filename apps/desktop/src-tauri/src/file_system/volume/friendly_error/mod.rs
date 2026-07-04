@@ -36,7 +36,7 @@ use crate::file_system::git::friendly::FriendlyGitErrorKind;
 // unchanged for callers regardless of how the module is split internally.
 pub use empty_root::listing_error_for_restricted_empty_root;
 pub use provider::{Provider, enrich_with_provider};
-pub use volume_error::listing_error_from_volume_error;
+pub use volume_error::{archive_unreadable_listing_error, listing_error_from_volume_error};
 
 // ============================================================================
 // Data model
@@ -158,6 +158,14 @@ pub enum ListingErrorReason {
     DeletePending { path: String },
     IoSerious { path: String, os_message: String },
     IsADirectory { path: String },
+    // ── archive (browsing a `.zip` that can't be read) ──
+    /// Browsing an archive failed because the archive itself is unreadable:
+    /// damaged/truncated, encrypted, an unsupported format, or a file that carries
+    /// an archive extension but isn't really an archive. The `ArchiveVolume`
+    /// collapses the integrity family to `NotSupported`/`IoError`, so this is
+    /// classified at the listing seam from the path + error kind, not from a
+    /// dedicated `VolumeError`.
+    ArchiveUnreadable,
     // ── empty-root hint ──
     EmptyRootICloud,
     // ── git (wire-only; FE routes to its parallel git factory) ──
