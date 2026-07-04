@@ -112,7 +112,9 @@ describe('createGitBrowserSync', () => {
 
     const { sub } = create({ path: '/repo/src' })
 
-    await vi.waitFor(() => { expect(sub.gitRepoInfo).toEqual(live); })
+    await vi.waitFor(() => {
+      expect(sub.gitRepoInfo).toEqual(live)
+    })
     expect(gitStore.subscribeToRepo).toHaveBeenCalledWith('/repo')
     expect(sub.showRepoChip).toBe(true)
     expect(sub.showGitStatusColumn).toBe(true)
@@ -125,10 +127,14 @@ describe('createGitBrowserSync', () => {
     gitStore.subscribeToRepo.mockImplementation((root: string) => Promise.resolve(repo({ repoRoot: root })))
 
     const h = create({ path: '/repo/src' })
-    await vi.waitFor(() => { expect(h.sub.gitRepoInfo?.repoRoot).toBe('/repo'); })
+    await vi.waitFor(() => {
+      expect(h.sub.gitRepoInfo?.repoRoot).toBe('/repo')
+    })
 
     h.setPath('/other/pkg')
-    await vi.waitFor(() => { expect(h.sub.gitRepoInfo?.repoRoot).toBe('/other'); })
+    await vi.waitFor(() => {
+      expect(h.sub.gitRepoInfo?.repoRoot).toBe('/other')
+    })
     expect(gitStore.unsubscribeFromRepo).toHaveBeenCalledWith('/repo')
     expect(gitStore.subscribeToRepo).toHaveBeenCalledWith('/other')
   })
@@ -139,7 +145,9 @@ describe('createGitBrowserSync', () => {
     gitStore.lookupRepoInfo.mockResolvedValue(repo({ repoRoot: '/repo' }))
 
     const { sub } = create({ path: '/repo/src' })
-    await vi.waitFor(() => { expect(gitStore.lookupRepoInfo).not.toHaveBeenCalled(); })
+    await vi.waitFor(() => {
+      expect(gitStore.lookupRepoInfo).not.toHaveBeenCalled()
+    })
     expect(sub.gitRepoInfo).toBeNull()
   })
 
@@ -148,26 +156,34 @@ describe('createGitBrowserSync', () => {
     gitStore.subscribeToRepo.mockResolvedValue(repo({ repoRoot: '/repo' }))
 
     const { sub } = create({ path: '/repo/src' })
-    await vi.waitFor(() => { expect(sub.gitRepoInfo?.repoRoot).toBe('/repo'); })
+    await vi.waitFor(() => {
+      expect(sub.gitRepoInfo?.repoRoot).toBe('/repo')
+    })
 
     settingsListeners['fileExplorer.git.showRepoChip']('fileExplorer.git.showRepoChip', false)
     settingsListeners['fileExplorer.git.showStatusColumn']('fileExplorer.git.showStatusColumn', false)
     flushSync()
 
-    await vi.waitFor(() => { expect(sub.gitRepoInfo).toBeNull(); })
+    await vi.waitFor(() => {
+      expect(sub.gitRepoInfo).toBeNull()
+    })
     expect(gitStore.unsubscribeFromRepo).toHaveBeenCalledWith('/repo')
   })
 
   it('skips the lookup on an MTP volume (git cannot run over the MTP transport)', async () => {
     const { sub } = create({ path: '/DCIM', volumeId: 'mtp-123:456' })
-    await vi.waitFor(() => { expect(sub.showRepoChip).toBe(true); })
+    await vi.waitFor(() => {
+      expect(sub.showRepoChip).toBe(true)
+    })
     expect(gitStore.lookupRepoInfo).not.toHaveBeenCalled()
     expect(sub.gitRepoInfo).toBeNull()
   })
 
   it('skips the lookup on a volume without a backend listing', async () => {
     create({ path: 'smb://host', volumeId: 'network', hasBackendListing: false })
-    await vi.waitFor(() => { expect(isMtpVolumeIdSpy).toHaveBeenCalled(); })
+    await vi.waitFor(() => {
+      expect(isMtpVolumeIdSpy).toHaveBeenCalled()
+    })
     expect(gitStore.lookupRepoInfo).not.toHaveBeenCalled()
   })
 
@@ -175,11 +191,15 @@ describe('createGitBrowserSync', () => {
     gitStore.lookupRepoInfo.mockResolvedValueOnce(repo({ repoRoot: '/repo' }))
     gitStore.subscribeToRepo.mockResolvedValue(repo({ repoRoot: '/repo' }))
     const h = create({ path: '/repo/src' })
-    await vi.waitFor(() => { expect(h.sub.gitRepoInfo?.repoRoot).toBe('/repo'); })
+    await vi.waitFor(() => {
+      expect(h.sub.gitRepoInfo?.repoRoot).toBe('/repo')
+    })
 
     gitStore.lookupRepoInfo.mockResolvedValue(null)
     h.setPath('/tmp/not-a-repo')
-    await vi.waitFor(() => { expect(h.sub.gitRepoInfo).toBeNull(); })
+    await vi.waitFor(() => {
+      expect(h.sub.gitRepoInfo).toBeNull()
+    })
     expect(gitStore.unsubscribeFromRepo).toHaveBeenCalledWith('/repo')
   })
 
@@ -189,14 +209,18 @@ describe('createGitBrowserSync', () => {
     gitStore.subscribeToRepo.mockRejectedValue(new Error('watcher busy'))
 
     const { sub } = create({ path: '/repo/src' })
-    await vi.waitFor(() => { expect(sub.gitRepoInfo).toEqual(info); })
+    await vi.waitFor(() => {
+      expect(sub.gitRepoInfo).toEqual(info)
+    })
   })
 
   it('cleanup drops both setting listeners and the active repo subscription', async () => {
     gitStore.lookupRepoInfo.mockResolvedValue(repo({ repoRoot: '/repo' }))
     gitStore.subscribeToRepo.mockResolvedValue(repo({ repoRoot: '/repo' }))
     const { sub } = create({ path: '/repo/src' })
-    await vi.waitFor(() => { expect(sub.gitRepoInfo?.repoRoot).toBe('/repo'); })
+    await vi.waitFor(() => {
+      expect(sub.gitRepoInfo?.repoRoot).toBe('/repo')
+    })
 
     expect(Object.keys(settingsListeners)).toHaveLength(2)
     sub.cleanup()

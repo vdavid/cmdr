@@ -39,8 +39,9 @@ list).
 - **`selection-state.svelte.ts`**: `SvelteSet<number>` of indices + range anchor/end + `applyIndices` helpers
 - **`rename-flow.svelte.ts`**: Rename validation, conflict + extension dialogs, save / cancel
 - **`type-to-jump-state.svelte.ts`**: Buffer + indicator + reset/hide timers + generation counter (race protection)
-- **`type-to-jump-controller.svelte.ts`**: Wraps `type-to-jump-state` with the IPC fuzzy-match runner (generation-guarded)
-  + the MCP last-matched-name mirror. FilePane keeps handleJumpKeystroke / isJumpActive / clearJumpState delegates
+- **`type-to-jump-controller.svelte.ts`**: Wraps `type-to-jump-state` with the IPC fuzzy-match runner
+  (generation-guarded)
+  - the MCP last-matched-name mirror. FilePane keeps handleJumpKeystroke / isJumpActive / clearJumpState delegates
 - **`git-browser-sync.svelte.ts`**: Breadcrumb repo-chip + git-status-column: the two setting mirrors, the lazy repo
   lookup/subscribe lifecycle, the path-change `$effect`, and `cleanup()` (drops the setting listeners too — the pre-
   extraction FilePane leaked them)

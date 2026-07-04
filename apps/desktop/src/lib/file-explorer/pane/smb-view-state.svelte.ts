@@ -13,11 +13,7 @@
  */
 
 import { getIpcErrorMessage } from '$lib/tauri-commands/ipc-types'
-import {
-  disconnectSmbVolume,
-  upgradeToSmbVolumeWithCredentials,
-  type UpgradeResult,
-} from '$lib/tauri-commands'
+import { disconnectSmbVolume, upgradeToSmbVolumeWithCredentials, type UpgradeResult } from '$lib/tauri-commands'
 import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
 import { resolveValidPath } from '../navigation/path-resolution'
 import { requestVolumeRefresh } from '$lib/stores/volume-store.svelte'

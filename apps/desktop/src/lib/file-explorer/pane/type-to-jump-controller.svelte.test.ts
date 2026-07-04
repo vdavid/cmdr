@@ -59,8 +59,12 @@ describe('createTypeToJumpController', () => {
     const { ctl, setCursorIndex, onSyncMcp } = setup({ getHasParent: () => true })
     ctl.handleJumpKeystroke('f')
     expect(ipc.findFirstFuzzyMatch).toHaveBeenCalledWith('listing-1', 'f', true)
-    await vi.waitFor(() => { expect(setCursorIndex).toHaveBeenCalledWith(3); })
-    await vi.waitFor(() => { expect(ctl.lastMatchedName).toBe('foo.txt'); })
+    await vi.waitFor(() => {
+      expect(setCursorIndex).toHaveBeenCalledWith(3)
+    })
+    await vi.waitFor(() => {
+      expect(ctl.lastMatchedName).toBe('foo.txt')
+    })
     expect(onSyncMcp).toHaveBeenCalled()
     ctl.dispose()
   })
@@ -69,7 +73,9 @@ describe('createTypeToJumpController', () => {
     ipc.findFirstFuzzyMatch.mockResolvedValue(2)
     const { ctl, setCursorIndex } = setup({ getHasParent: () => false })
     ctl.handleJumpKeystroke('f')
-    await vi.waitFor(() => { expect(setCursorIndex).toHaveBeenCalledWith(2); })
+    await vi.waitFor(() => {
+      expect(setCursorIndex).toHaveBeenCalledWith(2)
+    })
     ctl.dispose()
   })
 
@@ -77,7 +83,9 @@ describe('createTypeToJumpController', () => {
     ipc.findFirstFuzzyMatch.mockResolvedValue(null)
     const { ctl, setCursorIndex } = setup()
     ctl.handleJumpKeystroke('z')
-    await vi.waitFor(() => { expect(ipc.findFirstFuzzyMatch).toHaveBeenCalled(); })
+    await vi.waitFor(() => {
+      expect(ipc.findFirstFuzzyMatch).toHaveBeenCalled()
+    })
     await Promise.resolve()
     expect(setCursorIndex).not.toHaveBeenCalled()
     ctl.dispose()
@@ -117,7 +125,9 @@ describe('createTypeToJumpController', () => {
     ipc.getFileAt.mockResolvedValue({ name: 'bar' })
     const { ctl, onSyncMcp } = setup({ getHasParent: () => false })
     ctl.handleJumpKeystroke('b')
-    await vi.waitFor(() => { expect(ctl.lastMatchedName).toBe('bar'); })
+    await vi.waitFor(() => {
+      expect(ctl.lastMatchedName).toBe('bar')
+    })
     onSyncMcp.mockClear()
     ctl.clearJumpState()
     expect(ctl.lastMatchedName).toBeNull()

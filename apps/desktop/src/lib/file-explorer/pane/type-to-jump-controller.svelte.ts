@@ -144,8 +144,12 @@ export function createTypeToJumpController(deps: TypeToJumpControllerDeps): Type
     },
     handleJumpKeystroke,
     isJumpActive: () => typeToJump.buffer.length > 0,
-    clear: () => { typeToJump.clear(); },
+    clear: () => {
+      typeToJump.clear()
+    },
     clearJumpState,
-    dispose: () => { typeToJump.dispose(); },
+    dispose: () => {
+      typeToJump.dispose()
+    },
   }
 }

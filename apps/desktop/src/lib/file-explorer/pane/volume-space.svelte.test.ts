@@ -121,7 +121,9 @@ describe('createVolumeSpace', () => {
     ipc.onVolumeSpaceChanged.mockResolvedValue(unlisten)
     const ctl = setup()
     ctl.startListening()
-    await vi.waitFor(() => { expect(ipc.onVolumeSpaceChanged).toHaveBeenCalled(); })
+    await vi.waitFor(() => {
+      expect(ipc.onVolumeSpaceChanged).toHaveBeenCalled()
+    })
     // Let the `.then(fn => unlisten = fn)` microtask settle.
     await Promise.resolve()
     ctl.cleanup()

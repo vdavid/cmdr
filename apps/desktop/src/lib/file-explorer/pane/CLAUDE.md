@@ -10,8 +10,8 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
   and the alt-view `{#if}` chain (MTP / network / SMB-reconnect / search-results / error / list).
 - State factories (`*.svelte.ts`): `explorer-state`, `selection-state`, `rename-flow`, `type-to-jump-state` +
   `type-to-jump-controller`, `volume-tint`, `pane-mcp-sync`, `tab-mcp-sync`, `persistence-subscriber`,
-  `listing-diff-sync`, `quick-look-follow`, `debug-emitters`, `drag-drop-controller`, `dialog-state`, `git-browser-sync`,
-  `smb-view-state`, `volume-space`.
+  `listing-diff-sync`, `quick-look-follow`, `debug-emitters`, `drag-drop-controller`, `dialog-state`,
+  `git-browser-sync`, `smb-view-state`, `volume-space`.
 - Pure utilities (`*.ts`): `navigate`, `volume-capabilities`, `has-parent`, `pane-access`, `focused-pane-reads`,
   command/coordinator factories (full list in DETAILS), keyboard helpers (`search-pane-keys`, `cursor-nav-keys`,
   function-key, selection-dialog).

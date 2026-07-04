@@ -168,7 +168,9 @@ describe('createSmbViewState', () => {
     sub.handleSmbReconnectCancel()
     expect(manager.cancel).toHaveBeenCalledWith('smb-vol')
     expect(resolveValidPathSpy).toHaveBeenCalledWith('/smb-vol/dir', { volumeRoot: '/smb-vol' })
-    await vi.waitFor(() => { expect(navigateToFallback).toHaveBeenCalledWith('/valid'); })
+    await vi.waitFor(() => {
+      expect(navigateToFallback).toHaveBeenCalledWith('/valid')
+    })
   })
 
   it('handleSmbReconnectDisconnect cancels, OS-unmounts, and navigates away', async () => {
@@ -176,7 +178,9 @@ describe('createSmbViewState', () => {
     sub.handleSmbReconnectDisconnect()
     expect(manager.cancel).toHaveBeenCalledWith('smb-vol')
     expect(ipc.disconnectSmbVolume).toHaveBeenCalledWith('smb-vol')
-    await vi.waitFor(() => { expect(navigateToFallback).toHaveBeenCalledWith('/valid'); })
+    await vi.waitFor(() => {
+      expect(navigateToFallback).toHaveBeenCalledWith('/valid')
+    })
   })
 
   it('maps the manager cycle status onto the view deriveds', () => {
