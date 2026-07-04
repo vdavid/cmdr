@@ -129,8 +129,17 @@ docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" ps
 echo ""
 echo "SMB servers ready! Connection URLs:"
 echo ""
-echo "  smb://localhost:10480/public    # smb-consumer-guest (no auth)"
-echo "  smb://localhost:10481/private   # smb-consumer-auth (user: testuser, pass: testpass)"
-echo "  smb://localhost:10482/mixed     # smb-consumer-both (guest or auth)"
+# Resolve each service's ACTUAL published host port — they shift whenever
+# SMB_CONSUMER_*_PORT is set (cmdr's check orchestrator pins 11480+, smb2's
+# default is 10480+), so a hardcoded URL would lie. Skip any service not running
+# in this mode.
+print_url() {
+    local service="$1" share="$2" note="$3" port
+    port=$(docker compose -p "$PROJECT_NAME" -f "$COMPOSE_DIR/docker-compose.yml" port "$service" 445 2>/dev/null | awk -F: '{print $NF}')
+    [ -n "$port" ] && printf "  smb://localhost:%s/%s    # %s\n" "$port" "$share" "$note"
+}
+print_url smb-consumer-guest public "smb-consumer-guest (no auth)"
+print_url smb-consumer-auth private "smb-consumer-auth (user: testuser, pass: testpass)"
+print_url smb-consumer-both mixed "smb-consumer-both (guest or auth)"
 echo ""
 echo "Use './apps/desktop/test/smb-servers/stop.sh' to stop all containers."
