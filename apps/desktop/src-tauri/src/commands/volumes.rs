@@ -110,9 +110,21 @@ async fn resolve_path_to_volume(path: String) -> (Option<VolumeInfo>, bool) {
         );
     }
 
-    // Filesystem paths: resolve via statfs with timeout
-    let result =
-        blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || volumes::resolve_path_volume_fast(&path)).await;
+    // Filesystem paths: resolve via statfs with timeout. A path INSIDE an archive
+    // resolves to the PARENT drive (display semantics — the FE holds the parent
+    // drive id, never a per-archive id), so statfs the `.zip`'s real location, not
+    // the inner path (which isn't a real FS path). The boundary check runs inside
+    // the timeout-wrapped closure so its stat can't block IPC on a hung mount.
+    let result = blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || {
+        let fs_path = match crate::file_system::volume::backends::archive::confirm_archive_boundary(
+            std::path::Path::new(&path),
+        ) {
+            Some((zip_path, _inner)) => zip_path,
+            None => std::path::PathBuf::from(&path),
+        };
+        volumes::resolve_path_volume_fast(&fs_path.to_string_lossy())
+    })
+    .await;
     (result.data, result.timed_out)
 }
 
@@ -214,6 +226,29 @@ mod tests {
         assert!(!result.timed_out);
         let location = result.location.expect("local file should resolve to a volume");
         assert_eq!(location.volume_id, DEFAULT_VOLUME_ID);
+        assert_eq!(location.path, path);
+    }
+
+    #[tokio::test]
+    async fn resolve_location_inside_an_archive_returns_the_parent_drive() {
+        // A path INSIDE a `.zip` resolves to the parent drive (display semantics),
+        // not `None` — so restoring a pane deep-linked inside an archive works. The
+        // inner path isn't a real FS path, so this only works by resolving the
+        // `.zip`'s real location.
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let zip = dir.path().join("bundle.zip");
+        std::fs::write(&zip, b"PK\x03\x04rest").expect("write zip magic");
+        let inner = zip.join("docs/readme.txt");
+        let path = inner.to_string_lossy().to_string();
+
+        let result = resolve_location(path.clone()).await;
+
+        assert!(!result.timed_out);
+        let location = result
+            .location
+            .expect("archive-inner path should resolve to the parent drive");
+        assert_eq!(location.volume_id, DEFAULT_VOLUME_ID);
+        // The returned path is the full inner path the caller wants to land on.
         assert_eq!(location.path, path);
     }
 
