@@ -31,6 +31,10 @@ tinting, navigation. Up: [`../CLAUDE.md`](../CLAUDE.md). Full file table and con
 - **`capabilitiesFor` / `volumeKindOf` must stay TOTAL** (never `undefined`): unknown real ids fall to the `local`
   default, the two virtual ids short-circuit. Keep the tint classifier `volumeKindFor` separate; never feed the `local`
   default into tinting.
+- **Archive panes are KIND-FROM-PATH: gate read-only via `capabilitiesForPane(volumeId, path)`, never
+  `VolumeInfo.isReadOnly` alone.** A pane inside a `.zip` keeps the parent DRIVE's (writable) `volumeId`, so an
+  `isReadOnly` check falls through as writable; the path crossing an archive is what makes it the read-only `archive`
+  kind. The pane's `caps` and every write guard use it. DETAILS § "Archive browsing (kind-from-path)".
 - **`FilePane.applyIndices` jumps the cursor on SELECT only** (deselect leaves it put), via
   `firstSelectedIndex(idxs, hasParent)`, which skips the `..` row. Don't use raw `idxs[0]`; it can be `..`.
 - **Snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false` (no `..`

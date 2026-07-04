@@ -546,3 +546,40 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
   closure/factory/module extraction instead landed and stuck (`dialog-state`, `tab-operations`, `initialization`,
   `index-events`, `listing-diff-sync`, `pane-mcp-sync`, and the explorer store). So when a "clean up the 3000-line
   component" pass tempts you, reach for a store/factory/helper, never a child component to shrink the line count.
+
+## Archive browsing (kind-from-path)
+
+Pressing Enter on a `.zip` steps inside it like a folder, read-only (mutation is a later milestone). The design keeps
+the frontend simple: the tab keeps ONE `volumeId` — the parent drive — and `archive-<hash>` volume ids never enter FE
+state, history, persistence, or MCP sync. Archive-ness is derived from the PATH; all I/O routing happens backend-side in
+`VolumeManager::resolve(volume_id, path)`.
+
+- **`pathInsideArchive(path)` + `capabilitiesForPane(volumeId, path)`** (`volume-capabilities.ts`) are the seam. The
+  first is a pure, extension-only check mirroring the backend's `SUPPORTED_ARCHIVE_EXTENSIONS`; the second returns the
+  read-only `archive` capability row when the path is inside an archive, else defers to `capabilitiesFor(volumeId)`. The
+  pane's `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so `hasBackendListing`/`hasParentRow`/`syncsToMcp`
+  are true and the write flags (`canPasteInto`/`canCreateChild`/`canRenameInPlace`) are false.
+- **Why `VolumeInfo.isReadOnly` is insufficient**: the archive pane's `volumeId` is the writable parent drive, which has
+  no read-only `VolumeInfo`. The write guards (`file-operation-commands.ts` `readOnlyRefusal`, `transfer-entry.ts`
+  `checkTransferDestinationGuard`'s `destPath` param, `clipboard-operations.ts` copy/cut/paste, `drag-drop-controller`'s
+  drop dest) each resolve the archive kind from the PATH and refuse with archive-specific copy. The backend
+  `ReadOnlyDevice` rejection is the safety net behind them.
+- **Navigation is nearly free.** `handleNavigate` forks on `entry.isDirectory || entry.isArchive` (a zip stays
+  `isDirectory:false`; `isArchive` is backend-computed, extension-only, crosses IPC on `FileEntry`), routing in-place
+  (same parent-drive volume). `navigateToParent` needs no archive branch: `parentOf('/a/foo.zip')` is `/a` (the
+  containing dir), so walking up bubbles out of the archive by plain path arithmetic. The ONE reconciliation:
+  `effectiveVolumeRoot` (feeds `computeHasParent`) uses `volumePath` (the parent mount) inside an archive, NOT the
+  `.zip` path the backend emits as the listing's `volume_root` — otherwise the archive root would read as a volume root
+  and hide its `..` row.
+- **Opt-outs that `hasBackendListing:true` doesn't cover**: `git-browser-sync` skips inside archives (`pathInsideArchive`
+  — a repo can't live in a zip); `volume-space` queries the parent mount path inside an archive (an archive-inner path
+  isn't NSURL-resolvable, and the archive borrows the parent's space).
+- **Path bar** renders the transparent `…/foo.zip/inner` for free: `breadcrumbDisplayPath` strips the parent
+  `volumePath` prefix and `enrichBreadcrumbSegments` rebuilds ancestor targets from it, both path-agnostic.
+- **Persistence/restore** is archive-safe with no FE change: the tab stores `(parentDriveId, fullPath)`; on restore
+  `initialization.ts::resolveVolumeId` calls `resolvePathVolume(path)`, which the backend resolves to the parent drive
+  for an archive-inner path (backend test `resolve_location_inside_an_archive_returns_the_parent_drive`). A deleted zip
+  falls into the existing unreachable-path handling.
+
+Full backend routing, the LRU lifecycle, and the viewer temp-extract: `docs/specs/archive-browsing-m1b-derivation.md`
+and `src-tauri/src/file_system/volume/backends/archive/DETAILS.md`.
