@@ -215,11 +215,14 @@ export async function selectAll(tauriPage: PageLike): Promise<void> {
 
 /** Waits for the dry-run scan to detect conflicts and show the policy radio buttons. */
 export async function waitForConflictPolicy(tauriPage: PageLike): Promise<void> {
-  // 5 s: dry-run completes in well under 1 s on a healthy machine. The previous
-  // 15 s value was dead under the suite's 8 s per-test ceiling; it just hid
-  // failures behind the outer timeout instead of producing a useful error.
-  const found = await pollUntil(tauriPage, async () => tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`), 5000)
-  if (!found) throw new Error('waitForConflictPolicy: .conflict-policy radio buttons did not appear within 5s')
+  // 12 s: the dry-run finishes in well under 1 s for a small selection, but the
+  // conflict specs `selectAll`, which sweeps in the fixture's ~170 MB `bulk/`
+  // tree — scanning that under Docker-lane load has run ~5 s, past the old 5 s
+  // budget (the flaky conflict-copy dry-run). 12 s is failure headroom that fits
+  // the 15 s per-test ceiling (the old comment's "8 s ceiling" is stale). The
+  // ideal fix is to scope these tests off `bulk/` via `selectItemsByName`.
+  const found = await pollUntil(tauriPage, async () => tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`), 12000)
+  if (!found) throw new Error('waitForConflictPolicy: .conflict-policy radio buttons did not appear within 12s')
 }
 
 /** Selects a conflict resolution policy radio button. */
@@ -251,10 +254,14 @@ export async function clickTransferStart(tauriPage: PageLike): Promise<void> {
 }
 
 /** Waits for all modal dialogs to close after an operation completes. */
-export async function waitForDialogsToClose(tauriPage: PageLike, timeout = 5000): Promise<void> {
-  // 5 s default: transfer dialogs close in <1 s on the happy path. Callers can
-  // pass a tighter timeout when the wait is wrapped inside another budget.
-  // The previous 15 s default exceeded the suite's 8 s per-test ceiling.
+export async function waitForDialogsToClose(tauriPage: PageLike, timeout = 12000): Promise<void> {
+  // 12 s default: a transfer closes in <1 s for a small op, but the conflict
+  // specs `selectAll`, copying the fixture's ~170 MB `bulk/` tree — that copy has
+  // run ~5 s under Docker-lane load, past the old 5 s default (the flaky
+  // conflict-copy dialog-close). 12 s is failure headroom within the 15 s
+  // per-test ceiling (the old "8 s ceiling" note is stale). Callers can still
+  // pass a tighter value. Ideal fix: scope these tests off `bulk/` via
+  // `selectItemsByName`.
   const closed = await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), timeout)
   if (!closed) {
     throw new Error(`waitForDialogsToClose: .modal-overlay still visible after ${String(timeout)}ms`)
