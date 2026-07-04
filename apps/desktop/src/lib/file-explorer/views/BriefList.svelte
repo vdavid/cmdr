@@ -27,9 +27,8 @@
         updateIndexSizesInPlace,
         type DirStats,
     } from './file-list-utils'
-    import { commands } from '$lib/ipc/bindings'
     import { ensureFontMetricsLoaded, getCurrentFontId } from '$lib/font-metrics'
-    import { getDirStatsBatch } from '$lib/tauri-commands'
+    import { getBriefColumnTextWidths, getDirStatsBatch } from '$lib/tauri-commands'
     import { buildDirSizeTooltip, hasSizeMismatch } from './full-list-utils'
     import {
         getRowHeight,
@@ -343,7 +342,7 @@
         const fontId = getCurrentFontId()
         const fetchItemsPerColumn = Math.max(1, itemsPerColumn)
         try {
-            const result = await commands.getBriefColumnTextWidths(
+            const result = await getBriefColumnTextWidths(
                 capturedListingId,
                 fetchItemsPerColumn,
                 hasParent,

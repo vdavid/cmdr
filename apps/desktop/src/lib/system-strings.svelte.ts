@@ -26,7 +26,7 @@
  * holds the English defaults so SSR / first-render still produce correct copy.
  */
 
-import { commands } from '$lib/ipc/bindings'
+import { getLocalizedSystemStrings } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('system-strings')
@@ -57,7 +57,7 @@ let initialized = false
 export async function initSystemStrings(): Promise<void> {
   if (initialized) return
   try {
-    const resolved = await commands.getLocalizedSystemStrings()
+    const resolved = await getLocalizedSystemStrings()
     systemStrings.systemSettings = resolved.systemSettings
     systemStrings.privacyAndSecurity = resolved.privacyAndSecurity
     systemStrings.fullDiskAccess = resolved.fullDiskAccess

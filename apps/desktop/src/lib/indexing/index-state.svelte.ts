@@ -19,8 +19,9 @@
  */
 
 import { SvelteMap } from 'svelte/reactivity'
-import { commands, type ActivityPhase } from '$lib/ipc/bindings'
+import type { ActivityPhase } from '$lib/ipc/bindings'
 import {
+  getIndexStatus,
   onIndexAggregationComplete,
   onIndexAggregationProgress,
   onIndexPhaseChanged,
@@ -379,7 +380,7 @@ export async function initIndexState(): Promise<void> {
   // so skip the IPC result.
   const versionBeforeIpc = eventVersion
   try {
-    const res = await commands.getIndexStatus()
+    const res = await getIndexStatus()
     if (res.status === 'ok' && res.data.scanning && eventVersion === versionBeforeIpc) {
       const a = newScanActivity(ROOT_VOLUME_ID)
       // No scan-start wall-clock on late-join: the percent still works

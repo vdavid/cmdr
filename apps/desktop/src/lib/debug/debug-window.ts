@@ -17,7 +17,7 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { Effect, EffectState } from '@tauri-apps/api/window'
-import { commands } from '$lib/ipc/bindings'
+import { getShouldReduceTransparency } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { decorateChildWindowTitle } from '$lib/app-mode'
 import { readMainRect, readMonitors, readSavedRect, resolveChildPosition } from '$lib/window-positioning'
@@ -54,7 +54,7 @@ export async function openDebugWindow(): Promise<void> {
   // (the settings tokens flip opaque in `app.css`). Read from the backend
   // (`NSWorkspace`), not a media query — WKWebView doesn't reflect
   // `prefers-reduced-transparency`. `prefers-color-scheme` IS reflected.
-  const reduceTransparency = await commands.getShouldReduceTransparency()
+  const reduceTransparency = await getShouldReduceTransparency()
   const darkAppearance = window.matchMedia('(prefers-color-scheme: dark)').matches
   const backgroundColor: [number, number, number, number] = reduceTransparency
     ? darkAppearance

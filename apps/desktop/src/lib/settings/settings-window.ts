@@ -21,7 +21,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { emitTo } from '@tauri-apps/api/event'
 import { Effect, EffectState } from '@tauri-apps/api/window'
-import { commands } from '$lib/ipc/bindings'
+import { getShouldReduceTransparency } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
 import { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } from '$lib/app-mode'
@@ -110,7 +110,7 @@ export async function openSettingsWindow(section?: string[], anchor?: string): P
   // for the current setting; the page content still re-themes live via the
   // `reduce-transparency` class (see `$lib/reduce-transparency`).
   // `prefers-color-scheme` IS reflected, so dark detection stays a media query.
-  const reduceTransparency = await commands.getShouldReduceTransparency()
+  const reduceTransparency = await getShouldReduceTransparency()
   const darkAppearance = window.matchMedia('(prefers-color-scheme: dark)').matches
   const backgroundColor: [number, number, number, number] = reduceTransparency
     ? darkAppearance

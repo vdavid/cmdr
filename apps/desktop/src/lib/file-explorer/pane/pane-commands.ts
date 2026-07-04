@@ -1,5 +1,4 @@
-import { findFileIndex, findFileIndices, refreshListing, getPathsAtIndices } from '$lib/tauri-commands'
-import { commands } from '$lib/ipc/bindings'
+import { findFileIndex, findFileIndices, getPathsAtIndices, refreshListing, toggleTags } from '$lib/tauri-commands'
 import type { McpSelectMode, ConfirmDialogType } from '$lib/commands'
 import { isPrintableJumpContinuation, isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
 import { capabilitiesFor } from './volume-capabilities'
@@ -108,7 +107,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
       paths = [cursorPath]
     }
     if (paths.length === 0) return
-    await commands.toggleTags(listingId, paths, color)
+    await toggleTags(listingId, paths, color)
   }
 
   /**

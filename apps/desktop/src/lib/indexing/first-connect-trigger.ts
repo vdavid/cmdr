@@ -9,7 +9,7 @@
 // persisted silence handles the cross-session case.
 
 import { addToast } from '$lib/ui/toast'
-import { commands } from '$lib/ipc/bindings'
+import { getVolumeIndexStatusById } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings'
 import { getAppLogger } from '$lib/logging/logger'
 import { isDriveSilenced } from './drive-index-prefs'
@@ -45,7 +45,7 @@ export async function maybePromptFirstConnect(
   if (isDriveSilenced(volumeId)) return
 
   // Don't prompt a drive that's already indexed (enabled or a persisted index).
-  const statusRes = await commands.getVolumeIndexStatusById(volumeId)
+  const statusRes = await getVolumeIndexStatusById(volumeId)
   if (statusRes.status === 'ok' && statusRes.data.enabled) return
 
   promptedThisSession.add(volumeId)

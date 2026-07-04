@@ -3,8 +3,7 @@
  */
 
 import type { FileEntry, SyncStatus } from '../types'
-import { getFileRange, getDirStatsBatch, type DirStats } from '$lib/tauri-commands'
-import { commands } from '$lib/ipc/bindings'
+import { enrichTags, getFileRange, getDirStatsBatch, type DirStats } from '$lib/tauri-commands'
 import { prefetchIcons, prefetchCustomFolderIcons } from '$lib/icon-cache'
 import { getUseAppIconsForDocuments } from '$lib/settings/reactive-settings.svelte'
 import { getSetting } from '$lib/settings/settings-store'
@@ -190,7 +189,7 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
   if (getSetting('listing.showTags')) {
     // Fire-and-forget; swallow rejections so a transient IPC failure (or a test
     // without the Tauri bridge) can't surface as an unhandled rejection.
-    void commands.enrichTags(listingId, paths).catch(() => {})
+    void enrichTags(listingId, paths).catch(() => {})
   }
 
   return {

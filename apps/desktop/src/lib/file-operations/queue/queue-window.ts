@@ -20,7 +20,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { LogicalPosition } from '@tauri-apps/api/dpi'
 import { emitTo } from '@tauri-apps/api/event'
 import { Effect, EffectState } from '@tauri-apps/api/window'
-import { commands } from '$lib/ipc/bindings'
+import { getShouldReduceTransparency } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { getEffectiveScale } from '$lib/text-size.svelte'
 import { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } from '$lib/app-mode'
@@ -79,7 +79,7 @@ export async function openQueueWindow(): Promise<void> {
   // `prefers-color-scheme` IS reflected, so dark detection stays a media query.
   let reduceTransparency: boolean
   try {
-    reduceTransparency = await commands.getShouldReduceTransparency()
+    reduceTransparency = await getShouldReduceTransparency()
   } catch (error) {
     log.warn('Failed to read reduce-transparency; opening opaque: {error}', { error: String(error) })
     reduceTransparency = true

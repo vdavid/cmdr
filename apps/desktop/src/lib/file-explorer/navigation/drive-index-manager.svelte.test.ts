@@ -37,6 +37,7 @@ vi.mock('$lib/tauri-commands/indexing', () => ({
     onFreshness = cb
     return Promise.resolve(noopUnlisten)
   },
+  getVolumeIndexStatusById,
 }))
 
 // The manager refetches status on each event; stub the IPC to return a status so

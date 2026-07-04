@@ -1,12 +1,49 @@
 // Settings commands and AI-related commands
 
 import { Channel, invoke } from '@tauri-apps/api/core'
-import { commands } from '$lib/ipc/bindings'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import {
+  commands,
+  events,
+  type RestrictedWindowPersistableSetting,
+  type RestrictedWindowSettings,
+  type SettingsChanged,
+  type SettingValue,
+} from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 // ============================================================================
 // Settings commands
 // ============================================================================
+
+/** Returns the persisted restricted-window settings (the settings synced to the pared-down MCP/E2E window). */
+export function getRestrictedWindowSettings(): Promise<RestrictedWindowSettings> {
+  return commands.getRestrictedWindowSettings()
+}
+
+/**
+ * Pushes the FE settings-registry default map to the backend, so error-report
+ * manifests don't duplicate defaults between TypeScript and Rust.
+ */
+export function recordSettingsDefaults(defaults: { [key in string]: SettingValue }): Promise<void> {
+  return commands.recordSettingsDefaults(defaults)
+}
+
+/** Subscribes to live settings changes pushed from another window (currently just `showHiddenFiles`). */
+export function onSettingsChanged(handler: (payload: SettingsChanged) => void): Promise<UnlistenFn> {
+  return events.settingsChanged.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Forwards a restricted window's (the viewer's) setting change to the main
+ * window, whose `restricted-settings-bridge` persists it. Passthrough: the
+ * caller checks the typed `Result` before logging.
+ */
+export function persistRestrictedWindowSetting(setting: RestrictedWindowPersistableSetting, value: boolean) {
+  return commands.persistRestrictedWindowSetting(setting, value)
+}
 
 /**
  * Checks if a port is available for binding.

@@ -49,9 +49,8 @@
     import MediaPdfView from './MediaPdfView.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
-    import { commands } from '$lib/ipc/bindings'
     import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
-    import type { RangeEnd } from '$lib/tauri-commands'
+    import { viewerSetEncoding, viewerSetTailMode, viewerGetEncodingOptions, type RangeEnd } from '$lib/tauri-commands'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
     import { categorizeForViewerWarning, viewerWarningLabel } from '$lib/file-viewer/binary-warning'
     import { isMediaKind } from './media-view'
@@ -144,7 +143,7 @@
         const next = !tailMode
         tailMode = next
         try {
-            const res = await commands.viewerSetTailMode(sessionId, next)
+            const res = await viewerSetTailMode(sessionId, next)
             if (res.status === 'error') {
                 log.warn('viewer_set_tail_mode failed: {error}', { error: res.error })
                 tailMode = !next
@@ -197,7 +196,7 @@
         const prev = currentEncoding
         currentEncoding = encoding
         try {
-            const res = await commands.viewerSetEncoding(sessionId, encoding)
+            const res = await viewerSetEncoding(sessionId, encoding)
             if (res.status === 'error') {
                 log.error('set_encoding failed: {message}', { message: res.error })
                 currentEncoding = prev
@@ -566,8 +565,7 @@
         // Encoding options are text-only; a media session has no decoded bytes to pick
         // an encoding for. Fetch the dropdown options once for text; they don't change.
         if (!openedAsMedia) {
-            void commands
-                .viewerGetEncodingOptions(result.sessionId)
+            void viewerGetEncodingOptions(result.sessionId)
                 .then((res) => {
                     if (res.status === 'ok') {
                         encodingChoices = res.data.all

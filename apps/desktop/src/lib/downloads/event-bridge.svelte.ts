@@ -28,8 +28,8 @@
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { sendNotification } from '@tauri-apps/plugin-notification'
-import { commands, type DownloadDetectedEvent } from '$lib/ipc/bindings'
-import { onDownloadDetected } from '$lib/tauri-commands'
+import type { DownloadDetectedEvent } from '$lib/ipc/bindings'
+import { downloadsWatcherStatus, onDownloadDetected } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
@@ -85,7 +85,7 @@ async function handleDownloadDetected(
   // watcher shouldn't be emitting in that case; bail anyway so a transient
   // race during a gate flip can't surface a notification before the user's
   // ready for it.
-  const status = await commands.downloadsWatcherStatus().catch(() => null)
+  const status = await downloadsWatcherStatus().catch(() => null)
   if (status?.status === 'ok' && status.data.fdaPending) {
     log.debug('Skipping download-detected dispatch; FDA gate pending')
     return

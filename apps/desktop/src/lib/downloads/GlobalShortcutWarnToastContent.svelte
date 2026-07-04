@@ -15,7 +15,7 @@
      */
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
-    import { commands } from '$lib/ipc/bindings'
+    import { setGlobalGoToLatestShortcut } from '$lib/tauri-commands'
     import { setGlobalGoToLatestEnabled } from './global-shortcut-setting'
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
@@ -40,7 +40,7 @@
             // Tell the backend to unregister live so the next ⌃⌥⌘J in Chrome
             // doesn't still fire. The Settings UI store change also drives
             // this, but the IPC ack here is what the test asserts on.
-            const result = await commands.setGlobalGoToLatestShortcut(false, binding)
+            const result = await setGlobalGoToLatestShortcut(false, binding)
             if (result.status === 'error') {
                 log.warn('setGlobalGoToLatestShortcut(false, ...) returned an error: {error}', {
                     error: JSON.stringify(result.error),

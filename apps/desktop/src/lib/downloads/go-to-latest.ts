@@ -10,7 +10,7 @@
  * stable dedup id so spamming ⌘J doesn't stack copies.
  */
 
-import { commands } from '$lib/ipc/bindings'
+import { downloadsWatcherStatus, goToLatestDownload as goToLatestDownloadCommand } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import {
@@ -49,7 +49,7 @@ export async function goToLatestDownload(explorer: ExplorerAPI | undefined): Pro
     return
   }
 
-  const result = await commands.goToLatestDownload()
+  const result = await goToLatestDownloadCommand()
   if (result.status === 'ok') {
     await revealDownloadInBestPane(explorer, result.data.parentDir, result.data.fileName)
     return
@@ -110,7 +110,7 @@ async function showEmptyToast(explorer: ExplorerAPI): Promise<void> {
   // Resolve the Downloads dir up front so the toast's "Go to Downloads"
   // button knows where to navigate. Best-effort: if the status call fails
   // the prop closure logs and bails.
-  const status = await commands.downloadsWatcherStatus()
+  const status = await downloadsWatcherStatus()
   const downloadsDir = status.status === 'ok' ? status.data.downloadsDir : null
   // Snapshot the Downloads dir at toast-add time (it won't change), but pick the
   // target pane at CLICK time: `navigateToDirInBestPane` re-evaluates which pane

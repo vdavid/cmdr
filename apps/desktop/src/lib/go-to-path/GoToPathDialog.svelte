@@ -20,8 +20,8 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import { createDebounce, withTimeout } from '$lib/utils/timing'
-    import { readClipboardText } from '$lib/tauri-commands'
-    import { commands, type GoToPathResolution } from '$lib/ipc/bindings'
+    import { readClipboardText, resolveGoToPath } from '$lib/tauri-commands'
+    import type { GoToPathResolution } from '$lib/ipc/bindings'
     import { getAppLogger } from '$lib/logging/logger'
     import { digitToRecentIndex, shouldPrefillClipboard } from './go-to-path'
     import {
@@ -91,7 +91,7 @@
     }
 
     async function resolveOrNull(input: string): Promise<GoToPathResolution | null> {
-        const result = await commands.resolveGoToPath(input, baseDir)
+        const result = await resolveGoToPath(input, baseDir)
         return result.status === 'ok' ? result.data : null
     }
 

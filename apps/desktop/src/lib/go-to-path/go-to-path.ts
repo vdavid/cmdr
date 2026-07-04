@@ -9,7 +9,8 @@
  * target into recents, never the raw typed input.
  */
 
-import { commands, type GoToPathResolution, type RecentPathEntry } from '$lib/ipc/bindings'
+import type { GoToPathResolution, RecentPathEntry } from '$lib/ipc/bindings'
+import { resolveGoToPath } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { getEffectiveShortcuts } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
@@ -56,7 +57,7 @@ export async function goToPath(
   }
 
   const baseDir = getFocusedPanePath()
-  const result = await commands.resolveGoToPath(input, baseDir)
+  const result = await resolveGoToPath(input, baseDir)
   if (result.status === 'error') {
     log.warn('goToPath: resolve failed for {input}: {error}', { input, error: result.error.message })
     return undefined

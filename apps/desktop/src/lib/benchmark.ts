@@ -10,7 +10,7 @@
  * @module benchmark
  */
 
-import { commands } from '$lib/ipc/bindings'
+import { benchmarkLog } from '$lib/tauri-commands'
 
 /* eslint-disable no-console */
 
@@ -34,7 +34,7 @@ let epochMs = 0
 function sendToRust(message: string): void {
   console.log(message) // Also log locally for DevTools
   // Fire-and-forget: don't await, we don't want to slow down the app
-  void commands.benchmarkLog(message).catch(() => {
+  void benchmarkLog(message).catch(() => {
     // Ignore errors - benchmarking should never break the app
   })
 }

@@ -1,4 +1,4 @@
-import { commands } from '$lib/ipc/bindings'
+import { checkForUpdate, downloadUpdate, installUpdate } from '$lib/tauri-commands'
 import { getVersion } from '@tauri-apps/api/app'
 import { getSetting, onSpecificSettingChange } from '$lib/settings/settings-store'
 import { getAppLogger } from '$lib/logging/logger'
@@ -112,9 +112,7 @@ export async function checkForUpdates(): Promise<void> {
 async function runMacUpdateFlow(currentVersion: string): Promise<void> {
   let update: UpdateInfo | null
   try {
-    const checkRes = await commands.checkForUpdate()
-    if (checkRes.status === 'error') throw new Error(checkRes.error)
-    update = checkRes.data
+    update = await checkForUpdate()
   } catch (error) {
     finishCheckWithFailure(error, 'check')
     return
@@ -130,11 +128,9 @@ async function runMacUpdateFlow(currentVersion: string): Promise<void> {
   updateState.status = 'downloading'
 
   try {
-    const dlRes = await commands.downloadUpdate(update.url, update.signature)
-    if (dlRes.status === 'error') throw new Error(dlRes.error)
+    await downloadUpdate(update.url, update.signature)
     updateState.status = 'installing'
-    const installRes = await commands.installUpdate()
-    if (installRes.status === 'error') throw new Error(installRes.error)
+    await installUpdate()
   } catch (error) {
     finishCheckWithFailure(error, 'download-install')
     return

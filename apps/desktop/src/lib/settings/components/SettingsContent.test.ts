@@ -26,6 +26,16 @@ vi.mock('$lib/tauri-commands', () => ({
   openPrivacySettings: vi.fn(() => Promise.resolve()),
   invoke: vi.fn(() => Promise.resolve(null)),
   listen: vi.fn(() => Promise.resolve(() => {})),
+  // FileSystemWatchingSection now reaches these IPCs through the wrapper layer.
+  downloadsWatcherStatus: vi.fn(() =>
+    Promise.resolve({ status: 'ok', data: { running: true, downloadsDir: '/d', fdaPending: false } }),
+  ),
+  recheckDownloadsWatcherGate: vi.fn(() => Promise.resolve({ status: 'ok', data: null })),
+  setGlobalGoToLatestShortcut: vi.fn(() =>
+    Promise.resolve({ status: 'ok', data: { status: 'registered', binding: '', enabled: true } }),
+  ),
+  getIndexStatus: vi.fn(() => Promise.resolve({ status: 'ok', data: { dbFileSize: 1024 } })),
+  clearDriveIndex: vi.fn(() => Promise.resolve({ status: 'ok', data: null })),
 }))
 
 // `FileSystemWatchingSection` (rendered when an "index size" search keeps it

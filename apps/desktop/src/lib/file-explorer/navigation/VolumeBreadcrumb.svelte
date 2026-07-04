@@ -1,9 +1,13 @@
 <script lang="ts">
     import { onMount, onDestroy, tick, untrack } from 'svelte'
     import {
+        disableDriveIndex,
         ejectVolume,
+        enableDriveIndex,
+        forgetDriveIndex,
         getIpcErrorMessage,
         onVolumeContextAction,
+        rescanDriveIndex,
         resolvePathVolume,
         showVolumeRowContextMenu,
         upgradeToSmbVolume,
@@ -63,7 +67,7 @@
     import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelte'
     import DriveIndexBadge from './DriveIndexBadge.svelte'
     import type { DriveIndexMenuAction } from './drive-index-status'
-    import { commands, type SmbIndexGateReason } from '$lib/ipc/bindings'
+    import type { SmbIndexGateReason } from '$lib/ipc/bindings'
     import { maybePromptFirstConnect } from '$lib/indexing/first-connect-trigger'
     import { silenceDrive } from '$lib/indexing/drive-index-prefs'
     import { setSetting } from '$lib/settings'
@@ -648,15 +652,15 @@
                 // Delete the drive's index DB entirely (vs disable, which keeps it
                 // on disk to resume). The recovery path for an index stuck in a bad
                 // state. Its badge goes gray; re-enabling does a fresh full scan.
-                await commands.forgetDriveIndex(vid)
+                await forgetDriveIndex(vid)
             } else if (action === 'disable' || action === 'stop') {
-                await commands.disableDriveIndex(vid)
+                await disableDriveIndex(vid)
             } else {
                 // enable | rescan: both return an EnableIndexingOutcome.
                 const res =
                     action === 'enable'
-                        ? await commands.enableDriveIndex(vid)
-                        : await commands.rescanDriveIndex(vid)
+                        ? await enableDriveIndex(vid)
+                        : await rescanDriveIndex(vid)
                 if (res.status === 'ok' && res.data.status === 'refused') {
                     handleIndexRefusal(vid, name, res.data.reason)
                 }

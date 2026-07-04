@@ -14,7 +14,8 @@
  * add/remove mutators instead of the generic recent-items factory.
  */
 
-import { commands, type RecentPathEntry } from '$lib/ipc/bindings'
+import type { RecentPathEntry } from '$lib/ipc/bindings'
+import { addRecentPath as addRecentPathCommand, getRecentPaths, removeRecentPath as removeRecentPathCommand } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('go-to-path')
@@ -38,7 +39,7 @@ export async function loadRecentPaths(force = false): Promise<void> {
   if (loading) return
   loading = true
   try {
-    entries = await commands.getRecentPaths()
+    entries = await getRecentPaths()
     loaded = true
   } catch (error) {
     log.warn('Failed to load recent paths: {error}', { error })
@@ -53,12 +54,12 @@ export async function loadRecentPaths(force = false): Promise<void> {
  * leaves the mirror untouched.
  */
 export async function addRecentPath(entry: RecentPathEntry): Promise<void> {
-  const result = await commands.addRecentPath(entry)
+  const result = await addRecentPathCommand(entry)
   if (result.status === 'error') {
     log.warn('Failed to add recent path {path}: {error}', { path: entry.path, error: result.error })
     return
   }
-  entries = await commands.getRecentPaths()
+  entries = await getRecentPaths()
   loaded = true
 }
 
@@ -67,12 +68,12 @@ export async function addRecentPath(entry: RecentPathEntry): Promise<void> {
  * mirror. Best-effort: a failed write leaves the mirror untouched.
  */
 export async function removeRecentPath(id: string): Promise<void> {
-  const result = await commands.removeRecentPath(id)
+  const result = await removeRecentPathCommand(id)
   if (result.status === 'error') {
     log.warn('Failed to remove recent path {id}: {error}', { id, error: result.error })
     return
   }
-  entries = await commands.getRecentPaths()
+  entries = await getRecentPaths()
   loaded = true
 }
 

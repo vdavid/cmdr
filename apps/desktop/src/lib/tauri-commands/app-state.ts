@@ -1,7 +1,8 @@
 // App-level state: MCP pane state, dialog tracking, menu context, window lifecycle
 
 import { invoke } from '@tauri-apps/api/core'
-import { commands, type PaneFileEntry, type PaneState } from '$lib/ipc/bindings'
+import { commands, type ChildWindowRect, type PaneFileEntry, type PaneState } from '$lib/ipc/bindings'
+import { throwIpcError } from './ipc-types'
 
 export type { PaneFileEntry, PaneState }
 
@@ -170,4 +171,20 @@ export async function showMainWindow(): Promise<void> {
 export async function orderWindowToBack(label: string): Promise<void> {
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- generic <R: Runtime> command, excluded from typed bindings (see ipc_collectors.rs)
   await invoke('order_window_to_back', { label })
+}
+
+/** Returns the saved rect for a child window label, or `null` if no entry exists. */
+export function getChildWindowRect(label: string) {
+  return commands.getChildWindowRect(label)
+}
+
+/** Saves the rect for a child window label. Called from the move/resize listeners on Settings and Debug. */
+export function setChildWindowRect(label: string, rect: ChildWindowRect): Promise<void> {
+  return commands.setChildWindowRect(label, rect)
+}
+
+/** Updates the menu accelerator for a command, called when a keyboard shortcut is changed. */
+export async function updateMenuAccelerator(commandId: string, shortcut: string): Promise<void> {
+  const res = await commands.updateMenuAccelerator(commandId, shortcut)
+  if (res.status === 'error') throwIpcError(res.error)
 }

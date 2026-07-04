@@ -22,7 +22,7 @@
 </script>
 
 <script lang="ts">
-    import { commands } from '$lib/ipc/bindings'
+    import { viewerReload } from '$lib/tauri-commands'
     import { dismissToast } from '$lib/ui/toast/toast-store.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
@@ -39,7 +39,7 @@
         const session = ctx.sessionId
         const toastId = ctx.toastId
         try {
-            const res = await commands.viewerReload(session)
+            const res = await viewerReload(session)
             if (res.status === 'error') {
                 log.warn('viewer_reload failed: {error}', { error: res.error })
             }

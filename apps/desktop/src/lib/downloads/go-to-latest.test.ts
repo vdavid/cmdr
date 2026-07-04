@@ -52,6 +52,8 @@ vi.mock('$lib/ui/toast', () => ({
 
 vi.mock('$lib/tauri-commands', () => ({
   openPrivacySettings: openPrivacySettingsMock,
+  goToLatestDownload: goToLatestDownloadMock,
+  downloadsWatcherStatus: downloadsWatcherStatusMock,
 }))
 
 vi.mock('$lib/file-explorer/navigation/resolve-location', () => ({

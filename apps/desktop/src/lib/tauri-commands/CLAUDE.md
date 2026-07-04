@@ -12,10 +12,11 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing' // wrong: 
 
 `index.ts` barrel-re-exports per-domain sub-files: `file-listing.ts`, `file-viewer.ts`, `file-actions.ts`,
 `favorites.ts`, `icons.ts`, `app-state.ts`, `write-operations.ts`, `rename.ts`, `storage.ts`, `networking.ts`, `mtp.ts`,
-`licensing.ts`, `settings.ts`, `tab.ts`, `clipboard-files.ts`, plus event-listener modules (`indexing.ts`, `ai.ts`,
-`appearance.ts`, `menu-events.ts`, `directory-watcher.ts`, `native-drag.ts`, `quick-look.ts`, `downloads.ts`,
-`restricted-paths.ts`, `dialog-events.ts`). `ipc-types.ts` holds the shared `TimedOut<T>`, `IpcError`, `isIpcError()`,
-`getIpcErrorMessage()` types. DETAILS.md has the per-file contents and the "where to put a new command" routing map.
+`licensing.ts`, `settings.ts`, `tab.ts`, `clipboard-files.ts`, `git.ts`, `go-to-path.ts`, `tags.ts`, `updates.ts`,
+`debug.ts`, plus mostly-event modules (several also carry a few commands): `indexing.ts`, `ai.ts`, `appearance.ts`,
+`menu-events.ts`, `directory-watcher.ts`, `native-drag.ts`, `quick-look.ts`, `downloads.ts`, `restricted-paths.ts`,
+`dialog-events.ts`. `ipc-types.ts` holds the shared `TimedOut<T>`, `IpcError`, `isIpcError()`, `getIpcErrorMessage()`
+types. DETAILS.md has the per-file contents and the "where to put a new command" routing map.
 
 ## Must-knows (invariants and guardrails)
 

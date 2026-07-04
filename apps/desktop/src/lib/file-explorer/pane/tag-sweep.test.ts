@@ -2,13 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('$lib/tauri-commands', () => ({
   getFileRange: vi.fn(),
-}))
-vi.mock('$lib/ipc/bindings', () => ({
-  commands: { enrichTags: vi.fn().mockResolvedValue({ status: 'ok', data: null }) },
+  enrichTags: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
 }))
 
-import { getFileRange } from '$lib/tauri-commands'
-import { commands } from '$lib/ipc/bindings'
+import { getFileRange, enrichTags } from '$lib/tauri-commands'
 import type { FileEntry } from '../types'
 import { sweepListingTags, TAG_SWEEP_CHUNK } from './tag-sweep'
 
@@ -20,7 +17,7 @@ function fakeRange(start: number, count: number): FileEntry[] {
 
 beforeEach(() => {
   vi.mocked(getFileRange).mockReset()
-  vi.mocked(commands.enrichTags).mockClear()
+  vi.mocked(enrichTags).mockClear()
 })
 
 describe('sweepListingTags', () => {
@@ -34,15 +31,15 @@ describe('sweepListingTags', () => {
 
     // Three chunks: 500, 500, 30.
     expect(vi.mocked(getFileRange)).toHaveBeenCalledTimes(3)
-    expect(vi.mocked(commands.enrichTags)).toHaveBeenCalledTimes(3)
-    expect(vi.mocked(commands.enrichTags).mock.calls[0][1]).toHaveLength(TAG_SWEEP_CHUNK)
-    expect(vi.mocked(commands.enrichTags).mock.calls[2][1]).toHaveLength(30)
+    expect(vi.mocked(enrichTags)).toHaveBeenCalledTimes(3)
+    expect(vi.mocked(enrichTags).mock.calls[0][1]).toHaveLength(TAG_SWEEP_CHUNK)
+    expect(vi.mocked(enrichTags).mock.calls[2][1]).toHaveLength(30)
   })
 
   it('stops immediately when already stale (no IPC at all)', async () => {
     await sweepListingTags({ listingId: 'L1', totalCount: 5000, includeHidden: false, isStale: () => true })
     expect(vi.mocked(getFileRange)).not.toHaveBeenCalled()
-    expect(vi.mocked(commands.enrichTags)).not.toHaveBeenCalled()
+    expect(vi.mocked(enrichTags)).not.toHaveBeenCalled()
   })
 
   it('stops mid-sweep once isStale flips (e.g. navigation away)', async () => {
@@ -51,7 +48,7 @@ describe('sweepListingTags', () => {
     )
     // Become stale after the first chunk's enrich.
     let enriched = 0
-    vi.mocked(commands.enrichTags).mockImplementation(() => {
+    vi.mocked(enrichTags).mockImplementation(() => {
       enriched++
       return Promise.resolve({ status: 'ok', data: null } as never)
     })
@@ -60,13 +57,13 @@ describe('sweepListingTags', () => {
     await sweepListingTags({ listingId: 'L1', totalCount: 10_000, includeHidden: false, isStale })
 
     // One chunk enriched, then the post-await check stops the loop.
-    expect(vi.mocked(commands.enrichTags)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(enrichTags)).toHaveBeenCalledTimes(1)
   })
 
   it('aborts the sweep if a chunk fetch throws', async () => {
     vi.mocked(getFileRange).mockRejectedValue(new Error('listing gone'))
     await sweepListingTags({ listingId: 'L1', totalCount: 5000, includeHidden: false, isStale: () => false })
-    expect(vi.mocked(commands.enrichTags)).not.toHaveBeenCalled()
+    expect(vi.mocked(enrichTags)).not.toHaveBeenCalled()
   })
 
   it('passes includeHidden through to getFileRange', async () => {

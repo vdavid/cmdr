@@ -500,3 +500,18 @@ export async function onListingCancelled(callback: (event: ListingCancelledEvent
     callback(event.payload)
   })
 }
+
+/**
+ * Measures per-column text widths for Brief view, given the current font metrics.
+ * Passthrough: the caller branches on the typed error (`font_metrics_not_ready`,
+ * `invalid_items_per_column`, `listing_not_found:{id}`, or a pass-through).
+ */
+export function getBriefColumnTextWidths(
+  listingId: string,
+  itemsPerColumn: number,
+  hasParent: boolean,
+  fontId: string,
+  includeHidden: boolean,
+) {
+  return commands.getBriefColumnTextWidths(listingId, itemsPerColumn, hasParent, fontId, includeHidden)
+}

@@ -5,6 +5,7 @@
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import {
+  commands,
   events,
   type AggregationProgressEvent,
   type IndexAggregationCompleteEvent,
@@ -126,4 +127,45 @@ export function onIndexFreshnessChanged(callback: (payload: IndexFreshnessChange
   return events.indexFreshnessChanged.listen((event) => {
     callback(event.payload)
   })
+}
+
+// ============================================================================
+// Drive-indexing commands
+// ============================================================================
+// Callers branch on the typed `Result`/error discriminant, so these are
+// passthroughs — they don't unwrap the generated `Result` shape.
+
+/** Reads the global drive-indexing status (running/idle, per-volume summary). */
+export function getIndexStatus() {
+  return commands.getIndexStatus()
+}
+
+/** Per-volume index status keyed by volume id (the per-drive badge surface). */
+export function getVolumeIndexStatusById(volumeId: string) {
+  return commands.getVolumeIndexStatusById(volumeId)
+}
+
+/** Turns on indexing for a specific drive. */
+export function enableDriveIndex(volumeId: string) {
+  return commands.enableDriveIndex(volumeId)
+}
+
+/** Turns off indexing for a specific drive, preserving its DB on disk. */
+export function disableDriveIndex(volumeId: string) {
+  return commands.disableDriveIndex(volumeId)
+}
+
+/** Forgets a drive's index entirely: stops it and deletes its index DB. */
+export function forgetDriveIndex(volumeId: string) {
+  return commands.forgetDriveIndex(volumeId)
+}
+
+/** Forces a fresh full rescan of a drive (the menu's "Rescan now"). */
+export function rescanDriveIndex(volumeId: string) {
+  return commands.rescanDriveIndex(volumeId)
+}
+
+/** Clears the local (`root`) drive index entirely. */
+export function clearDriveIndex() {
+  return commands.clearDriveIndex()
 }

@@ -6,9 +6,13 @@
  * `unsubscribe(repoRoot)` on unmount or path-off-repo.
  */
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { commands, type RepoInfo } from '$lib/ipc/bindings'
-import { onGitStateChanged } from '$lib/tauri-commands'
-import { throwIpcError } from '$lib/tauri-commands/ipc-types'
+import type { RepoInfo } from '$lib/ipc/bindings'
+import {
+  getGitRepoInfo,
+  onGitStateChanged,
+  subscribeGitState,
+  unsubscribeGitState,
+} from '$lib/tauri-commands'
 
 // Re-export the generated `RepoInfo` so existing importers (`RepoChip`, `FilePane`,
 // tests) keep their `from './git-store.svelte'` import path.
@@ -73,9 +77,7 @@ export async function subscribeToRepo(repoRoot: string): Promise<RepoInfo> {
   // synchronously, before any `await`, so concurrent callers coalesce onto it.
   const subscribe = (async (): Promise<RepoInfo> => {
     await ensureListener()
-    const res = await commands.subscribeGitState(repoRoot)
-    if (res.status === 'error') throwIpcError(res.error)
-    const info = res.data
+    const info = await subscribeGitState(repoRoot)
     repos.set(repoRoot, { refcount: 1, info })
     return info
   })()
@@ -97,7 +99,7 @@ export async function unsubscribeFromRepo(repoRoot: string): Promise<void> {
   entry.refcount -= 1
   if (entry.refcount <= 0) {
     repos.delete(repoRoot)
-    await commands.unsubscribeGitState(repoRoot)
+    await unsubscribeGitState(repoRoot)
   }
 }
 
@@ -114,6 +116,6 @@ export function getRepoInfo(repoRoot: string): RepoInfo | null {
  * a git repo or the lookup timed out.
  */
 export async function lookupRepoInfo(path: string): Promise<RepoInfo | null> {
-  const result = await commands.getGitRepoInfo(path)
+  const result = await getGitRepoInfo(path)
   return result.data
 }

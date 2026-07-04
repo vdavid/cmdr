@@ -3,7 +3,7 @@
 import { load } from '@tauri-apps/plugin-store'
 import type { Store } from '@tauri-apps/plugin-store'
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { events } from '$lib/ipc/bindings'
+import { onSettingsChanged } from '$lib/tauri-commands'
 import { resolveStorePath } from './settings/store-path'
 import { getAppLogger } from './logging/logger'
 
@@ -95,7 +95,5 @@ export async function saveSettings(settings: Partial<Settings>): Promise<boolean
  * Returns an unlisten function to clean up the subscription.
  */
 export async function subscribeToSettingsChanges(callback: (settings: Partial<Settings>) => void): Promise<UnlistenFn> {
-  return events.settingsChanged.listen((event) => {
-    callback(event.payload)
-  })
+  return onSettingsChanged(callback)
 }

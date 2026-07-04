@@ -12,7 +12,7 @@
 
 import { availableMonitors, getCurrentWindow } from '@tauri-apps/api/window'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { commands } from '$lib/ipc/bindings'
+import { getChildWindowRect, setChildWindowRect } from '$lib/tauri-commands'
 import type { MonitorRect, Rect } from './window-positioning-utils'
 
 export type { ChildSize, MonitorRect, Rect } from './window-positioning-utils'
@@ -52,12 +52,12 @@ export async function readMonitors(): Promise<MonitorRect[]> {
 
 /** Fetch the in-session saved rect for a child window label, or null. */
 export async function readSavedRect(label: string): Promise<Rect | null> {
-  return commands.getChildWindowRect(label)
+  return getChildWindowRect(label)
 }
 
 /** Persist the current rect of a child window (called from move/resize listeners). */
 export async function writeSavedRect(label: string, rect: Rect): Promise<void> {
-  await commands.setChildWindowRect(label, rect)
+  await setChildWindowRect(label, rect)
 }
 
 /**

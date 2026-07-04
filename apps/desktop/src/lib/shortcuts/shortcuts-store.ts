@@ -4,7 +4,7 @@
 
 import { load, type Store } from '@tauri-apps/plugin-store'
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
-import { commands as ipcCommands } from '$lib/ipc/bindings'
+import { updateMenuAccelerator as updateMenuAcceleratorCommand } from '$lib/tauri-commands'
 import { commands, FIXED_KEY_COMMAND_IDS, NATIVE_SHORTCUT_COMMAND_IDS } from '$lib/commands/command-registry'
 import { resolveStorePath } from '$lib/settings/store-path'
 import { getAppLogger } from '$lib/logging/logger'
@@ -600,8 +600,7 @@ async function updateMenuAccelerator(commandId: string): Promise<void> {
     const shortcuts = getEffectiveShortcuts(commandId)
     // Use the first shortcut for the menu accelerator (menus only show one)
     const shortcut = shortcuts[0] ?? ''
-    const res = await ipcCommands.updateMenuAccelerator(commandId, shortcut)
-    if (res.status === 'error') throw new Error(res.error)
+    await updateMenuAcceleratorCommand(commandId, shortcut)
   } catch (error) {
     log.error('Failed to update menu accelerator: {error}', { error })
   }

@@ -16,8 +16,7 @@
  */
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { commands } from '$lib/ipc/bindings'
-import { onReduceTransparencyChanged } from '$lib/tauri-commands'
+import { getShouldReduceTransparency, onReduceTransparencyChanged } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('reduce-transparency')
@@ -36,7 +35,7 @@ function apply(reduce: boolean): void {
  */
 export async function initReduceTransparency(): Promise<void> {
   try {
-    apply(await commands.getShouldReduceTransparency())
+    apply(await getShouldReduceTransparency())
   } catch (error) {
     log.warn('Could not read reduce-transparency setting, leaving transparency on: {error}', { error })
   }

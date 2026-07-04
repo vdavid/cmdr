@@ -12,8 +12,13 @@
 
 import { SvelteMap } from 'svelte/reactivity'
 import type { UnlistenFn } from '@tauri-apps/api/event'
-import { commands, type VolumeIndexStatus } from '$lib/ipc/bindings'
-import { onIndexFreshnessChanged, onIndexScanStarted, onIndexScanComplete } from '$lib/tauri-commands/indexing'
+import type { VolumeIndexStatus } from '$lib/ipc/bindings'
+import {
+  getVolumeIndexStatusById,
+  onIndexFreshnessChanged,
+  onIndexScanStarted,
+  onIndexScanComplete,
+} from '$lib/tauri-commands/indexing'
 import type { VolumeInfo } from '../types'
 
 /**
@@ -56,7 +61,7 @@ export function createDriveIndexManager(): DriveIndexManager {
     // available in a test harness, volume vanished mid-call). A failed fetch
     // degrades to "no badge for this drive", never an unhandled rejection.
     try {
-      const res = await commands.getVolumeIndexStatusById(volumeId)
+      const res = await getVolumeIndexStatusById(volumeId)
       if (res.status === 'ok') {
         statusMap.set(volumeId, res.data)
       }

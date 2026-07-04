@@ -15,8 +15,7 @@
  * still-running-but-abandoned chunk is cheap.
  */
 
-import { getFileRange } from '$lib/tauri-commands'
-import { commands } from '$lib/ipc/bindings'
+import { enrichTags, getFileRange } from '$lib/tauri-commands'
 
 /** Low-priority chunk size for the sweep (paths per `enrich_tags` call). */
 export const TAG_SWEEP_CHUNK = 500
@@ -43,7 +42,7 @@ export async function sweepListingTags(opts: TagSweepOptions): Promise<void> {
     if (isStale()) return
     if (chunk.length === 0) break
     try {
-      await commands.enrichTags(
+      await enrichTags(
         listingId,
         chunk.map((e) => e.path),
       )

@@ -25,7 +25,7 @@
      * translates it for the plugin at the IPC boundary.
      */
     import { onMount } from 'svelte'
-    import { commands } from '$lib/ipc/bindings'
+    import { setGlobalGoToLatestShortcut } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
     import { formatKeyCombo, isModifierKey } from '$lib/shortcuts'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -64,7 +64,7 @@
         // Live-apply: re-register with the backend right away. We pass the
         // current `enabled` so toggling-off elsewhere isn't overridden.
         const enabled = getSetting(GLOBAL_GO_TO_LATEST_ENABLED_KEY)
-        const result = await commands.setGlobalGoToLatestShortcut(enabled, next)
+        const result = await setGlobalGoToLatestShortcut(enabled, next)
         if (result.status === 'ok') {
             statusText = tString(
                 result.data.status === 'registered'

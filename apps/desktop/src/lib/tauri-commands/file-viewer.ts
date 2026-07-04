@@ -237,3 +237,26 @@ export async function viewerWriteRangeToFile(
   if (res.status === 'ok') return { ok: true }
   return { ok: false, error: res.error }
 }
+
+// Callers branch on the typed `Result`/error discriminant, so these are
+// passthroughs — they don't unwrap the generated `Result` shape.
+
+/** Switches the active encoding for a session. */
+export function viewerSetEncoding(sessionId: string, encoding: FileEncoding) {
+  return commands.viewerSetEncoding(sessionId, encoding)
+}
+
+/** Toggles tail mode for a viewer session (auto-follow new bytes as the file grows). */
+export function viewerSetTailMode(sessionId: string, enabled: boolean) {
+  return commands.viewerSetTailMode(sessionId, enabled)
+}
+
+/** Reopens the viewer's backend against the file on disk under the session's current encoding. */
+export function viewerReload(sessionId: string) {
+  return commands.viewerReload(sessionId)
+}
+
+/** Fetches the encoding-picker options (all, detected, current) for a text session. */
+export function viewerGetEncodingOptions(sessionId: string) {
+  return commands.viewerGetEncodingOptions(sessionId)
+}

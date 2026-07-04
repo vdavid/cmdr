@@ -33,7 +33,6 @@
      * (no empty cards). The Downloads card dims via `SectionCard`'s `gated`
      * prop and carries the single FDA hint, per the "Locked copy" decision.
      */
-    import { commands } from '$lib/ipc/bindings'
     import { onMount } from 'svelte'
     import { Switch } from '@ark-ui/svelte/switch'
     import SettingsSection from '../components/SettingsSection.svelte'
@@ -52,7 +51,14 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import Size from '$lib/ui/Size.svelte'
     import { getAppLogger } from '$lib/logging/logger'
-    import { openPrivacySettings } from '$lib/tauri-commands'
+    import {
+        clearDriveIndex,
+        downloadsWatcherStatus,
+        getIndexStatus,
+        openPrivacySettings,
+        recheckDownloadsWatcherGate,
+        setGlobalGoToLatestShortcut,
+    } from '$lib/tauri-commands'
     import {
         getGlobalGoToLatestEnabled,
         getGlobalGoToLatestBinding,
@@ -139,12 +145,12 @@
         }
         // Belt-and-braces re-check of the FDA gate so opening Settings recovers
         // from a stale focus-event read (e.g. user granted FDA, came straight here).
-        const statusResult = await commands.downloadsWatcherStatus()
+        const statusResult = await downloadsWatcherStatus()
         if (statusResult.status === 'ok') {
             fdaPending = statusResult.data.fdaPending
             watcherRunning = statusResult.data.running
         }
-        const recheck = await commands.recheckDownloadsWatcherGate()
+        const recheck = await recheckDownloadsWatcherGate()
         if (recheck.status === 'error') {
             log.warn('recheckDownloadsWatcherGate failed: {message}', {
                 message: recheck.error.message,
@@ -158,7 +164,7 @@
         // registration. The returned status drives nothing in this row anymore
         // (the binding + its registration feedback live in `Keyboard
         // shortcuts`); we just keep the live-apply contract on the toggle.
-        const result = await commands.setGlobalGoToLatestShortcut(shortcutEnabled, shortcutBinding)
+        const result = await setGlobalGoToLatestShortcut(shortcutEnabled, shortcutBinding)
         if (result.status === 'error') {
             log.warn('setGlobalGoToLatestShortcut failed: {error}', { error: JSON.stringify(result.error) })
         }
@@ -184,7 +190,7 @@
     let refreshTimer: ReturnType<typeof setInterval> | undefined
 
     async function refreshDbSize() {
-        const res = await commands.getIndexStatus()
+        const res = await getIndexStatus()
         if (res.status === 'ok') {
             dbFileSize = res.data.dbFileSize
         } else {
@@ -196,7 +202,7 @@
         clearing = true
         clearError = null
         try {
-            const res = await commands.clearDriveIndex()
+            const res = await clearDriveIndex()
             if (res.status === 'error') throw new Error(res.error)
             dbFileSize = null
             log.info('Drive index cleared from settings')

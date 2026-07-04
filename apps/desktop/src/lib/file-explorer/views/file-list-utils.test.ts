@@ -20,6 +20,7 @@ import type { FileEntry } from '../types'
 vi.mock('$lib/tauri-commands', () => ({
   getFileRange: vi.fn(),
   getDirStatsBatch: vi.fn(),
+  enrichTags: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
 }))
 vi.mock('$lib/icon-cache', () => ({
   prefetchIcons: vi.fn(),

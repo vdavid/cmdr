@@ -238,6 +238,15 @@
     "tauri-commands/clipboard-files.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
+    "tauri-commands/debug.ts": {
+      "reason": "Thin dev-only IPC pass-through wrapper (benchmarkLog); exercised via benchmark.ts"
+    },
+    "tauri-commands/tags.ts": {
+      "reason": "Thin IPC pass-through wrappers (toggleTags, enrichTags); exercised via pane-commands.ts, tag-sweep.ts, file-list-utils.ts (which mock the wrapper layer)"
+    },
+    "tauri-commands/updates.ts": {
+      "reason": "Thin IPC wrappers (checkForUpdate, downloadUpdate, installUpdate); exercised via updater.svelte.ts (which mocks the wrapper layer)"
+    },
     "tauri-commands/crash-reporter.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
@@ -261,9 +270,6 @@
     },
     "tauri-commands/dialog-events.ts": {
       "reason": "Thin typed window-management event wrappers (on*/emit) over events.executeCommand / open|focus|close dialog helpers; exercised via integration ((main)/+page.svelte, settings + viewer windows, restricted-settings-bridge.ts)"
-    },
-    "tauri-commands/git.ts": {
-      "reason": "Thin typed-event listener wrapper over events.gitStateChanged.listen; exercised via integration (git-store.svelte.ts, FullList.svelte)"
     },
     "tauri-commands/menu-events.ts": {
       "reason": "Thin typed-event listener wrappers over events.viewModeChanged / menuSort; exercised via integration ((main)/+page.svelte)"

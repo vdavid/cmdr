@@ -13,8 +13,7 @@
  */
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { commands } from '$lib/ipc/bindings'
-import { onAccentColorChanged } from '$lib/tauri-commands'
+import { getAccentColor, onAccentColorChanged } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import { clearDirectoryIconCache } from '$lib/icon-cache'
 import { getSetting, onSpecificSettingChange } from '$lib/settings'
@@ -140,7 +139,7 @@ export async function initAccentColor(): Promise<void> {
 
   // Load system accent color
   try {
-    const hex = await commands.getAccentColor()
+    const hex = await getAccentColor()
     applySystemAccentPreview(hex)
     applyAccentForCurrentSetting()
     log.debug('System accent color loaded: {hex}', { hex })

@@ -38,6 +38,7 @@ export {
   onListingComplete,
   onListingError,
   onListingCancelled,
+  getBriefColumnTextWidths,
 } from './file-listing'
 // Streaming-listing event payload types now flow from the typed-events bindings
 // via the `file-listing.ts` re-export.
@@ -65,6 +66,10 @@ export {
   viewerReadRange,
   viewerCancelRead,
   viewerWriteRangeToFile,
+  viewerSetEncoding,
+  viewerSetTailMode,
+  viewerReload,
+  viewerGetEncodingOptions,
 } from './file-viewer'
 export type {
   LineChunk,
@@ -130,6 +135,9 @@ export {
   orderWindowToBack,
   updatePinTabMenu,
   setReopenClosedTabEnabled,
+  getChildWindowRect,
+  setChildWindowRect,
+  updateMenuAccelerator,
 } from './app-state'
 export type { PaneFileEntry, PaneState, McpTabInfo } from './app-state'
 
@@ -206,8 +214,14 @@ export {
   setNetworkEnabled,
 } from './networking'
 
-// Git browser events
-export { onGitStateChanged } from './git'
+// Git browser commands and events
+export {
+  getGitRepoInfo,
+  subscribeGitState,
+  unsubscribeGitState,
+  getGitStatusForPaths,
+  onGitStateChanged,
+} from './git'
 
 // Write operations (copy, move, delete)
 export {
@@ -320,8 +334,16 @@ export {
   onAiExtracting,
 } from './ai'
 
-// Appearance / system events
-export { onAccentColorChanged, onReduceTransparencyChanged, onSystemTextSizeChanged } from './appearance'
+// Appearance / system-environment (accent color, reduce-transparency, text-size, localized strings)
+export {
+  getAccentColor,
+  getShouldReduceTransparency,
+  getSystemTextSizeMultiplier,
+  getLocalizedSystemStrings,
+  onAccentColorChanged,
+  onReduceTransparencyChanged,
+  onSystemTextSizeChanged,
+} from './appearance'
 
 // Native-menu events
 export { onViewModeChanged, onMenuSort } from './menu-events'
@@ -335,8 +357,15 @@ export { onDragImageSize, onDragModifiers, onDragOutSessionStarted, onDragOutSes
 // Quick Look events
 export { onQuickLookKey, onQuickLookClosed } from './quick-look'
 
-// Downloads events
-export { onDownloadDetected, onGlobalShortcutFired } from './downloads'
+// Downloads commands and events
+export {
+  downloadsWatcherStatus,
+  goToLatestDownload,
+  setGlobalGoToLatestShortcut,
+  recheckDownloadsWatcherGate,
+  onDownloadDetected,
+  onGlobalShortcutFired,
+} from './downloads'
 
 // Restricted-paths event
 export { onRestrictedPathsChanged } from './restricted-paths'
@@ -479,6 +508,10 @@ export {
   deleteAiApiKey,
   hasAiApiKey,
   getSystemMemoryInfo,
+  getRestrictedWindowSettings,
+  recordSettingsDefaults,
+  onSettingsChanged,
+  persistRestrictedWindowSetting,
 } from './settings'
 export type {
   AiStatus,
@@ -543,6 +576,17 @@ export {
 } from './selection'
 export type { SelectionHistoryEntry, SelectionTranslateResult } from '$lib/ipc/bindings'
 
+// Drive-indexing commands
+export {
+  getIndexStatus,
+  getVolumeIndexStatusById,
+  enableDriveIndex,
+  disableDriveIndex,
+  forgetDriveIndex,
+  rescanDriveIndex,
+  clearDriveIndex,
+} from './indexing'
+
 // Drive-indexing event listeners
 export {
   onIndexScanStarted,
@@ -569,3 +613,16 @@ export type {
   IndexDirUpdatedEvent,
   IndexMemoryWarningEvent,
 } from '$lib/ipc/bindings'
+
+// "Go to path" (⌘G): resolving typed input, and the persisted recents list
+export { resolveGoToPath, getRecentPaths, addRecentPath, removeRecentPath } from './go-to-path'
+
+// macOS Finder color tags
+export { toggleTags, enrichTags } from './tags'
+
+// macOS custom updater (check / download / install)
+export { checkForUpdate, downloadUpdate, installUpdate } from './updates'
+export type { UpdateCheckResult } from './updates'
+
+// Dev/benchmark IPC
+export { benchmarkLog } from './debug'

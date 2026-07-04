@@ -25,6 +25,7 @@
 
 import { configure, getConsoleSink, getLogger as getLogTapeLogger, withFilter } from '@logtape/logtape'
 import type { Logger } from '@logtape/logtape'
+// eslint-disable-next-line cmdr/no-raw-bindings-import -- logging/store bootstrap infra: the tauri-commands barrel imports the logger (storage.ts), so wrapping here would create an import cycle
 import { commands } from '$lib/ipc/bindings'
 import { load, type Store } from '@tauri-apps/plugin-store'
 import { resolveStorePath } from '$lib/settings/store-path'

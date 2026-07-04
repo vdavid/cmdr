@@ -10,8 +10,8 @@ import { getDefaultValue, settingsRegistry, validateSettingValue } from './setti
 import { resolveStorePath } from './store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
-import { commands } from '$lib/ipc/bindings'
 import type { RestrictedWindowPersistableSetting, SettingValue } from '$lib/ipc/bindings'
+import { getRestrictedWindowSettings, persistRestrictedWindowSetting, recordSettingsDefaults } from '$lib/tauri-commands'
 
 const log = getAppLogger('settings')
 
@@ -206,7 +206,7 @@ export async function initializeSettings(options?: { restrictedWindow?: boolean 
 async function initializeSettingsRestricted(): Promise<void> {
   restrictedWindowMode = true
   try {
-    const snapshot = await commands.getRestrictedWindowSettings()
+    const snapshot = await getRestrictedWindowSettings()
     // Mechanical mapping: each snapshot field name spells out its setting id.
     const mapped: Partial<Record<SettingId, unknown>> = {
       'viewer.wordWrap': snapshot.viewerWordWrap,
@@ -255,7 +255,7 @@ async function pushSettingsDefaultsToBackend(): Promise<void> {
         defaults[def.id] = value
       }
     }
-    await commands.recordSettingsDefaults(defaults)
+    await recordSettingsDefaults(defaults)
   } catch (err) {
     log.warn('Failed to push settings defaults to backend: {err}', { err })
   }
@@ -379,8 +379,7 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
     // command, which forwards to the main window's restricted-settings bridge.
     const persistable = RESTRICTED_PERSISTABLE_SETTINGS[id]
     if (persistable !== undefined && typeof value === 'boolean') {
-      void commands
-        .persistRestrictedWindowSetting(persistable, value)
+      void persistRestrictedWindowSetting(persistable, value)
         .then((result) => {
           if (result.status === 'error') {
             log.warn('Failed to persist {id} from restricted window: {error}', { id, error: result.error })
