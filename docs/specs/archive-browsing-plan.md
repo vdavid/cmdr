@@ -184,7 +184,11 @@ adapter: build the new archive in a **local** seekable temp, then `write_from_st
 Data-safety invariants temp+rename must inherit (the app already enforces these for file overwrites):
 
 - **Temp is a same-directory sibling** of the `.zip` (`foo.zip.cmdr-tmp-<uuid>`), so the final rename is atomic on one
-  filesystem — never an OS-temp-dir build + cross-device move. The startup `.cmdr-` reaper covers leftovers.
+  filesystem — never an OS-temp-dir build + cross-device move. **Correction (found during the routing milestone): the
+  startup `.cmdr-` reaper this bullet assumed does NOT exist** — write-op `.cmdr-tmp-` files are intentionally left for
+  crash recovery. M4 must decide its leftover story explicitly (build a reaper for archive-edit temps, or document why
+  leftovers stay); the viewer's self-contained per-instance reaper (`file_viewer/archive_extract.rs`) is the pattern to
+  reuse.
 - **Preserve the original zip's own metadata**: a rewrite yields a fresh inode, so copy the original's mode, mtimes, and
   xattrs (macOS Finder tags, quarantine, creation date) onto the temp before the rename — else "edit in place" silently
   strips tags a plain copy would keep.
