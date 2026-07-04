@@ -8,6 +8,7 @@
     import SelectSection from './sections/SelectSection.svelte'
     import ComboboxSection from './sections/ComboboxSection.svelte'
     import PopoverSection from './sections/PopoverSection.svelte'
+    import MenuSection from './sections/MenuSection.svelte'
     import FilterPopoverSection from './sections/FilterPopoverSection.svelte'
     import ChipSection from './sections/ChipSection.svelte'
     import Dialogs from './sections/Dialogs.svelte'
@@ -44,6 +45,7 @@
         'select',
         'combobox',
         'popover',
+        'menu',
         'filter-popover',
         'chip',
         'dialogs',
@@ -162,6 +164,7 @@
         <SelectSection />
         <ComboboxSection />
         <PopoverSection />
+        <MenuSection />
         <FilterPopoverSection />
         <ChipSection />
         <Dialogs />

@@ -57,6 +57,7 @@ test.describe('Settings page', () => {
       'Listing',
       'Behavior',
       'Navigation & file ops',
+      'Archives',
       'File system watching',
       'Search',
       'AI',
