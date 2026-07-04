@@ -53,7 +53,7 @@
     import { enrichBreadcrumbSegments } from '../navigation/breadcrumb-navigation'
     import RepoChip from '../git/RepoChip.svelte'
     import { createGitBrowserSync } from './git-browser-sync.svelte'
-    import { createListingLoader } from './listing-loader.svelte'
+    import { createListingLoader } from './listing-loader'
     import { createSmbViewState } from './smb-view-state.svelte'
     import { createVolumeSpace } from './volume-space.svelte'
     import { isVirtualGitPath } from '../git/path-detection'
@@ -181,7 +181,7 @@
     let currentPath = $state(untrack(() => initialPath))
 
     // New architecture: store listingId and totalCount, not files. These lifecycle
-    // slots are written primarily by the listing loader (`listing-loader.svelte.ts`,
+    // slots are written primarily by the listing loader (`listing-loader.ts`,
     // via injected setters) but read by many non-loader concerns, so they stay here.
     let listingId = $state('')
     let totalCount = $state(0)
@@ -1214,7 +1214,7 @@
     let visibleRangeEnd = $state(100)
 
     // The pending-load promise machinery, the streaming load pipeline, and the
-    // drop-foreign token model live in the listing loader (`listing-loader.svelte.ts`).
+    // drop-foreign token model live in the listing loader (`listing-loader.ts`).
     // FilePane keeps thin exported delegates for the FilePaneAPI surface.
 
     // Handle cancellation during loading (called from DualPaneExplorer on ESC)
