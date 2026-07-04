@@ -22,9 +22,36 @@ use std::sync::Arc;
 use tokio::time::Duration;
 
 use crate::commands::util::IpcError;
+use crate::file_system::Volume;
 use crate::file_system::volume::backends::archive;
 
 use super::expand_tilde;
+
+/// Picks the source volume for a scan preview.
+///
+/// Routes an archive-inner source to its `ArchiveVolume` so the preview scan reads
+/// entries from INSIDE the zip. Without this, a `.zip`-crossing source (whose
+/// display volume id is the local parent drive, `"root"`) would take the local
+/// `std::fs` scan path and find 0 files (inner paths aren't real FS paths), cache
+/// a 0-file preview, and the copy would reuse it — the extract-out "cancelled
+/// after 0 files" stall. `resolve` does no I/O unless a path component carries a
+/// `.zip` extension, so ordinary local/remote scans are unaffected.
+///
+/// `None` means "scan the local filesystem directly" (the `std::fs` fast path);
+/// `Some` means scan through the `Volume` trait.
+fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathBuf>) -> Option<Arc<dyn Volume>> {
+    let archive_source = first_source
+        .map(|first| get_volume_manager().resolve(volume_id, first))
+        .filter(|resolved| resolved.is_archive)
+        .and_then(|resolved| resolved.volume);
+    if archive_source.is_some() {
+        archive_source
+    } else if volume_id == "root" {
+        None
+    } else {
+        get_volume_manager().get(volume_id)
+    }
+}
 
 /// Rejects a local write op that touches a path INSIDE an archive. Archives are
 /// read-only until zip mutation lands, and the real extract-out path goes through
@@ -228,11 +255,7 @@ pub async fn start_scan_preview(
         sources.iter().map(PathBuf::from).collect()
     };
 
-    let source_volume = if is_local {
-        None
-    } else {
-        get_volume_manager().get(&volume_id)
-    };
+    let source_volume = scan_preview_source_volume(&volume_id, sources.first());
 
     let progress_interval = progress_interval_ms.unwrap_or(500);
     ops_start_scan_preview(
@@ -368,5 +391,29 @@ mod tests {
         // ...while a plain local sibling passes (proves the guard, not a blanket reject).
         let plain = dir.path().join("plain.txt");
         assert!(reject_if_archive_inner(std::iter::once(&plain)).is_ok());
+    }
+
+    #[test]
+    fn scan_preview_routes_an_archive_source_to_the_archive_volume() {
+        use crate::file_system::volume::InMemoryVolume;
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let zip = dir.path().join("bundle.zip");
+        std::fs::write(&zip, b"PK\x03\x04rest").expect("write zip magic");
+
+        // resolve needs the parent drive registered to build the ArchiveVolume.
+        // (nextest runs each test in its own process, so this global is isolated.)
+        get_volume_manager().register("root", Arc::new(InMemoryVolume::new("Root")));
+
+        // An archive-inner source resolves to the ArchiveVolume (its root() is the
+        // `.zip`), so the preview scans INSIDE the zip instead of via `std::fs`
+        // (which would find 0 files and stall extract-out).
+        let inner = zip.join("inner.txt");
+        let source = scan_preview_source_volume("root", Some(&inner)).expect("archive source volume");
+        assert_eq!(source.root(), zip);
+
+        // A plain local source stays `None` — the `std::fs` fast path.
+        let plain = dir.path().join("plain.txt");
+        assert!(scan_preview_source_volume("root", Some(&plain)).is_none());
     }
 }

@@ -2309,3 +2309,90 @@ async fn cross_volume_copy_into_existing_dest_is_a_no_op_create() {
     assert!(dest.exists(Path::new("/existing/keep.txt")).await);
     assert!(dest.exists(Path::new("/existing/a.txt")).await);
 }
+
+// ========================================================================
+// Extract-out: copy a file + a directory subtree OUT of a zip archive
+// (headless repro of the M1 extract-out flow through the transfer engine).
+// ========================================================================
+
+/// Builds a real zip with a top-level file and a two-file directory, returning
+/// the tempdir (keep it alive) and the `.zip` path.
+fn build_extract_out_fixture() -> (tempfile::TempDir, PathBuf) {
+    use std::io::Write;
+    let dir = tempfile::tempdir().expect("tempdir");
+    let zip_path = dir.path().join("bundle.zip");
+    let file = std::fs::File::create(&zip_path).expect("create zip");
+    let mut writer = zip::ZipWriter::new(file);
+    let options = zip::write::SimpleFileOptions::default();
+    writer.start_file("readme.txt", options).expect("start readme");
+    writer.write_all(b"hello").expect("write readme");
+    writer.add_directory("docs/", options).expect("add docs dir");
+    writer.start_file("docs/a.txt", options).expect("start a");
+    writer.write_all(b"aaa").expect("write a");
+    writer.start_file("docs/b.txt", options).expect("start b");
+    writer.write_all(b"bbb").expect("write b");
+    writer.finish().expect("finish zip");
+    (dir, zip_path)
+}
+
+async fn read_dest_file(dest: &Arc<dyn Volume>, path: &str) -> Vec<u8> {
+    let mut stream = dest
+        .open_read_stream(Path::new(path))
+        .await
+        .unwrap_or_else(|e| panic!("dest missing {path}: {e:?}"));
+    let mut out = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        out.extend_from_slice(&chunk.expect("chunk"));
+    }
+    out
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn extract_out_copies_a_file_and_a_directory_subtree_out_of_a_zip() {
+    use crate::file_system::volume::backends::archive::ArchiveVolume;
+
+    let (_tmp, zip_path) = build_extract_out_fixture();
+
+    // Source = the read-only ArchiveVolume over the zip; dest = in-memory.
+    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent"));
+    let source: Arc<dyn Volume> = Arc::new(ArchiveVolume::new(parent, zip_path.clone()));
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
+
+    let events = Arc::new(CollectorEventSink::new());
+    let state = make_state();
+    let config = VolumeCopyConfig {
+        progress_interval_ms: 0,
+        ..VolumeCopyConfig::default()
+    };
+
+    // The FE sends FULL paths that cross the archive boundary (what resolve
+    // returns unchanged): a top-level file and a directory.
+    let sources = vec![zip_path.join("readme.txt"), zip_path.join("docs")];
+
+    let result = copy_volumes_with_progress(
+        events.clone(),
+        "extract-out-op",
+        &state,
+        Arc::clone(&source),
+        &sources,
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(result.is_ok(), "extract-out should succeed: {result:?}");
+
+    // The file and both subtree files land at the destination with their bytes.
+    assert_eq!(read_dest_file(&dest, "/readme.txt").await, b"hello");
+    assert_eq!(read_dest_file(&dest, "/docs/a.txt").await, b"aaa");
+    assert_eq!(read_dest_file(&dest, "/docs/b.txt").await, b"bbb");
+
+    let complete = events.complete.lock().unwrap();
+    assert_eq!(complete.len(), 1, "one completion event");
+    // `files_processed` counts TOP-LEVEL source items (the file + the directory),
+    // not leaves — same as any local↔local directory copy. `bytes_processed` is
+    // the reliable full-transfer measure: all three inner files' bytes.
+    assert_eq!(complete[0].files_processed, 2, "two top-level sources");
+    assert_eq!(complete[0].bytes_processed, 5 + 3 + 3, "all inner-file bytes copied");
+}

@@ -174,13 +174,11 @@ test.describe('Archive browsing (M1b)', () => {
     }
   })
 
-  // BLOCKED on backend copy-from-archive execution, NOT the M1b frontend routing.
-  // The FE opens the transfer dialog and confirms correctly (the source builds via
-  // the listing-id path, the dest guard passes), but the copy stalls — the backend
-  // logs `Copy cancelled after 0 files`, i.e. `scan_volume_for_copy` /
-  // `copy_between_volumes` don't stream an archive-inner source through to the
-  // local destination. Un-`fixme` once extract-out completes end to end.
-  test.fixme('copying a file out of the archive extracts it to the other pane', async ({ tauriPage }) => {
+  // Extract-out: copy a file from inside the archive to the local pane. The scan
+  // preview now routes the archive-inner source through its `ArchiveVolume`
+  // (`scan_preview_source_volume`), so the cached preview has the real file count
+  // instead of the 0-file `std::fs` result that stalled the copy at "0 files".
+  test('copying a file out of the archive extracts it to the other pane', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
     const fixtureRoot = getFixtureRoot()
