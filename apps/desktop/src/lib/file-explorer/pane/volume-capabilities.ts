@@ -54,8 +54,15 @@ import { getVolumes } from '$lib/stores/volume-store.svelte'
 /**
  * The closed set of volume kinds. The discriminant — every capability lookup
  * goes kind → record. No `'other'` member: the two virtual kinds plus the three
- * real kinds, nothing else. A real-but-unclassified volume defaults to `'local'`
- * (see `volumeKindOf`), so the kind → table lookup is total.
+ * real kinds plus `archive`, nothing else. A real-but-unclassified volume
+ * defaults to `'local'` (see `volumeKindOf`), so the kind → table lookup is total.
+ *
+ * `archive` is KIND-FROM-PATH, not kind-from-id: a pane whose PATH crosses a
+ * supported archive (`pathInsideArchive`) is an `archive` kind regardless of its
+ * `volumeId`, which stays the parent drive (the tab keeps ONE id). This union is
+ * DELIBERATELY WIDER than the tint union in `volume-tint.svelte.ts`: an archive
+ * pane shows the PARENT drive's tint (it lives on that drive), so `archive` is a
+ * capability kind only, never a tint kind.
  */
 export type VolumeKind =
   | 'local' // real filesystem volume (root, attached, cloud_drive, main_volume)
@@ -63,6 +70,7 @@ export type VolumeKind =
   | 'mtp' // connected MTP storage (real backend listing, mtp:// scheme, no system clipboard)
   | 'network' // the synthetic SMB browser virtual volume (host/share list, smb:// namespace)
   | 'search-results' // the snapshot virtual volume (search-results:// namespace, flat result set)
+  | 'archive' // a pane inside a supported archive (kind-from-path; read-only in this phase)
 
 /**
  * What a pane on a given volume KIND can do. A real typed interface (NOT a
@@ -179,6 +187,28 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     syncsToMcp: false,
     pathScheme: 'search-results',
   }),
+  archive: Object.freeze({
+    kind: 'archive',
+    // A real backend listing (the `ArchiveVolume` lists inner entries like a
+    // folder), so the alt-view chain renders the file list, and `..` bubbles out
+    // to the zip's containing dir (`hasParentRow`). Read-only in THIS phase: the
+    // three write flags are false so rename/mkdir/mkfile/paste refuse frontend-
+    // side (backend `ReadOnlyDevice` is the safety net); zip mutation flips them
+    // later. `canBeSource: true` — copying files OUT is the headline M1 feature.
+    // No system clipboard: an archive-inner path isn't an OS-resolvable local
+    // path, so ⌘C/⌘V can't carry it (F5/F6 extract-out is the supported path).
+    // `syncsToMcp: true` — the listing is real; MCP reports the parent drive id
+    // plus the full `…/foo.zip/inner` path, so agents navigate by path.
+    hasBackendListing: true,
+    canPasteInto: false,
+    canCreateChild: false,
+    canRenameInPlace: false,
+    canBeSource: true,
+    supportsSystemClipboard: false,
+    hasParentRow: true,
+    syncsToMcp: true,
+    pathScheme: 'filesystem',
+  }),
 })
 
 /**
@@ -228,4 +258,61 @@ export function capabilitiesFor(volumeId: string, fsType?: string, category?: Lo
     return capabilitiesForKind(volumeKindOf(volumeId, info?.fsType, info?.category))
   }
   return capabilitiesForKind(volumeKindOf(volumeId, fsType, category))
+}
+
+/**
+ * The supported archive extensions, MIRRORING the backend's
+ * `SUPPORTED_ARCHIVE_EXTENSIONS` (`backends/archive/boundary.rs`). Kept in lockstep
+ * with it — the FE does the cheap extension pre-filter, the backend stat- and
+ * magic-confirms on actual navigation. Zip only in this phase.
+ */
+const SUPPORTED_ARCHIVE_EXTENSIONS: readonly string[] = ['zip']
+
+/**
+ * True if `name`'s extension is a supported archive format (case-insensitive).
+ * Mirrors the backend's `has_supported_archive_extension`: a name with no
+ * extension (`zip`), a leading-dot dotfile with no stem (`.zip`), or a different
+ * final extension (`foo.zip.txt`) is NOT an archive.
+ */
+function hasSupportedArchiveExtension(name: string): boolean {
+  const dot = name.lastIndexOf('.')
+  // `dot <= 0` covers both "no dot" and a leading-dot dotfile (no stem), matching
+  // Rust's `Path::extension()` returning `None` for `.zip`.
+  if (dot <= 0) return false
+  return SUPPORTED_ARCHIVE_EXTENSIONS.includes(name.slice(dot + 1).toLowerCase())
+}
+
+/**
+ * Whether `path` is at or inside a supported archive — a pure, extension-only
+ * string check (NO I/O), mirroring the backend's `archive_boundary_candidate`:
+ * ANY path component (not just the last) carrying a supported archive extension
+ * crosses the boundary. `/a/foo.zip` (the archive root) and `/a/foo.zip/inner`
+ * both return true; `/a` (a plain folder that merely CONTAINS `foo.zip`) does not.
+ *
+ * This is a lower bound the backend corrects: a real directory literally named
+ * `foo.zip`, or a mislabeled non-archive file, is NOT decidable here (it needs a
+ * stat + magic sniff). The FE uses it only for read-only capability gating, where
+ * a false "read-only" is safe (the backend rejects a genuinely writable-target
+ * mistake) and a missed one is caught by the backend `ReadOnlyDevice` net.
+ */
+export function pathInsideArchive(path: string): boolean {
+  return path.split('/').some((segment) => hasSupportedArchiveExtension(segment))
+}
+
+/**
+ * Capabilities for a PANE, resolving the kind from BOTH the volume id and the
+ * path (kind-from-path). A path inside a supported archive is the `archive` kind
+ * (read-only in this phase) regardless of the parent-drive `volumeId`; otherwise
+ * this defers to `capabilitiesFor`. This is the entry point every write-guard
+ * site uses so an archive pane — whose `volumeId` is the WRITABLE parent drive —
+ * is correctly gated read-only, instead of falling through as writable.
+ */
+export function capabilitiesForPane(
+  volumeId: string,
+  path: string | undefined,
+  fsType?: string,
+  category?: LocationCategory,
+): VolumeCapabilities {
+  if (path !== undefined && pathInsideArchive(path)) return CAPABILITY_TABLE.archive
+  return capabilitiesFor(volumeId, fsType, category)
 }

@@ -29,6 +29,8 @@ import {
   volumeKindOf,
   capabilitiesForKind,
   capabilitiesFor,
+  capabilitiesForPane,
+  pathInsideArchive,
 } from './volume-capabilities'
 
 function vol(partial: Partial<VolumeInfo> & { id: string }): VolumeInfo {
@@ -102,6 +104,18 @@ describe('capabilitiesForKind — the frozen per-kind table', () => {
       hasParentRow: false,
       syncsToMcp: false,
       pathScheme: 'search-results',
+    },
+    archive: {
+      kind: 'archive',
+      hasBackendListing: true,
+      canPasteInto: false,
+      canCreateChild: false,
+      canRenameInPlace: false,
+      canBeSource: true,
+      supportsSystemClipboard: false,
+      hasParentRow: true,
+      syncsToMcp: true,
+      pathScheme: 'filesystem',
     },
   }
 
@@ -211,5 +225,67 @@ describe('capabilitiesFor — the store-reading convenience', () => {
     for (const id of ['network', 'search-results', 'root', 'mtp-1:1', 'nope']) {
       expect(capabilitiesFor(id)).toBeDefined()
     }
+  })
+})
+
+describe('pathInsideArchive — the pure extension-only boundary check', () => {
+  it('is true at the archive root and anywhere inside it', () => {
+    expect(pathInsideArchive('/a/foo.zip')).toBe(true) // the archive root itself
+    expect(pathInsideArchive('/a/foo.zip/inner')).toBe(true)
+    expect(pathInsideArchive('/a/foo.zip/inner/deep/file.txt')).toBe(true)
+  })
+
+  it('is false for a plain folder that merely CONTAINS an archive', () => {
+    // The pane is at `/a`, listing `foo.zip` as a row — not inside it.
+    expect(pathInsideArchive('/a')).toBe(false)
+    expect(pathInsideArchive('/a/b/c')).toBe(false)
+  })
+
+  it('matches the case-insensitive extension, and any component (nested leftmost)', () => {
+    expect(pathInsideArchive('/a/foo.ZIP/inner')).toBe(true)
+    expect(pathInsideArchive('/a/archive.name.zip')).toBe(true)
+    // Leftmost archive component makes the whole path "inside"; the inner b.zip
+    // is a plain entry the FE can't distinguish, but the answer (true) is right.
+    expect(pathInsideArchive('/a.zip/b.zip/x')).toBe(true)
+  })
+
+  it('is NOT decidable-true for a component whose extension is not an archive', () => {
+    // `foo.zip.txt`: final extension is txt, so the STRING doesn't cross a boundary.
+    expect(pathInsideArchive('/a/foo.zip.txt')).toBe(false)
+    // A leading-dot dotfile has no stem, so `.zip` is not an extension.
+    expect(pathInsideArchive('/a/.zip')).toBe(false)
+    // No dot at all.
+    expect(pathInsideArchive('/a/zip/file')).toBe(false)
+  })
+
+  it('a real directory literally named foo.zip is NOT decidable here (backend corrects)', () => {
+    // Extension-only: the FE reads this as inside-an-archive. The backend
+    // stat+magic check corrects a real directory to plain navigation; the FE only
+    // uses this for read-only gating, where the false positive is safe.
+    expect(pathInsideArchive('/a/foo.zip/anything')).toBe(true)
+  })
+})
+
+describe('capabilitiesForPane — kind-from-path resolution', () => {
+  it('returns the read-only archive row when the PATH is inside an archive', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    // The volumeId is the WRITABLE parent drive, but the path crosses a zip.
+    const caps = capabilitiesForPane('root', '/Users/me/foo.zip/inner')
+    expect(caps.kind).toBe('archive')
+    expect(caps.canPasteInto).toBe(false)
+    expect(caps.canCreateChild).toBe(false)
+    expect(caps.canRenameInPlace).toBe(false)
+    expect(caps.canBeSource).toBe(true)
+    expect(caps.hasBackendListing).toBe(true)
+  })
+
+  it('defers to the id-based kind when the path is NOT inside an archive', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    expect(capabilitiesForPane('root', '/Users/me/Documents').kind).toBe('local')
+  })
+
+  it('defers to the id-based kind when the path is undefined', () => {
+    volumes.list = [vol({ id: 'volumesnaspi', fsType: 'smbfs', category: 'network' })]
+    expect(capabilitiesForPane('volumesnaspi', undefined).kind).toBe('smb')
   })
 })
