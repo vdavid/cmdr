@@ -160,16 +160,34 @@ mod open_mock {
     }
 
     /// Returns the paths opened so far, oldest first.
-    #[allow(dead_code, reason = "Exported for future Playwright specs that assert open intent.")]
     pub fn snapshot() -> Vec<PathBuf> {
         OPENED.lock_ignore_poison().clone()
     }
 
     /// Clears the recorded open requests (per-test reset).
-    #[allow(dead_code, reason = "Exported for future Playwright specs that reset open state.")]
     pub fn clear() {
         OPENED.lock_ignore_poison().clear();
     }
+}
+
+/// E2E: the paths `open_path` recorded (oldest first), so a spec can assert that
+/// "Open with default app" launched the right file. Never touches the OS.
+#[tauri::command]
+#[specta::specta]
+#[cfg(feature = "playwright-e2e")]
+pub fn e2e_opened_paths() -> Vec<String> {
+    open_mock::snapshot()
+        .into_iter()
+        .map(|p| p.to_string_lossy().into_owned())
+        .collect()
+}
+
+/// E2E: reset the recorded open requests between tests.
+#[tauri::command]
+#[specta::specta]
+#[cfg(feature = "playwright-e2e")]
+pub fn e2e_clear_opened_paths() {
+    open_mock::clear();
 }
 
 /// Copy text to clipboard

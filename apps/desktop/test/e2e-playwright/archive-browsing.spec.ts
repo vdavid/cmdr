@@ -19,7 +19,7 @@ import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { ensureMcpClient, mcpReadResource } from '../e2e-shared/mcp-client.js'
+import { ensureMcpClient, mcpReadResource, mcpCall } from '../e2e-shared/mcp-client.js'
 import {
   ensureAppReady,
   getFixtureRoot,
@@ -102,7 +102,48 @@ async function navigatePaneTo(tauriPage: PageLike, pane: 'left' | 'right', targe
     })()`)
 }
 
+const ENTER_MENU = '.menu-content'
+
+/**
+ * Sets the per-format Enter behavior (the `behavior.archiveEnterBehavior` pinned-
+ * shape JSON) through the same MCP `set_setting` path the UI uses. `set_setting`
+ * round-trips, so the setting is live by the time this resolves.
+ */
+async function setArchiveEnterBehavior(behavior: Record<string, string>): Promise<void> {
+  await mcpCall('set_setting', { id: 'behavior.archiveEnterBehavior', value: JSON.stringify(behavior) })
+}
+
+/** The paths `open_path` recorded in the E2E build (LaunchServices is mocked, never launched). */
+async function getOpenedPaths(tauriPage: PageLike): Promise<string[]> {
+  return tauriPage.evaluate<string[]>(
+    `(async function(){ return await window.__TAURI_INTERNALS__.invoke('e2e_opened_paths'); })()`,
+  )
+}
+
+/** Resets the recorded open requests (per-test isolation). */
+async function clearOpenedPaths(tauriPage: PageLike): Promise<void> {
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('e2e_clear_opened_paths')`)
+}
+
+/** Clicks the Enter-menu row whose visible label contains `substring`. */
+async function clickEnterMenuItem(tauriPage: PageLike, substring: string): Promise<void> {
+  await tauriPage.evaluate(`(function(){
+      var items = Array.from(document.querySelectorAll('${ENTER_MENU} .menu-item'));
+      var match = items.find(function(el){ return (el.textContent || '').indexOf(${JSON.stringify(substring)}) !== -1; });
+      if (match) match.click();
+  })()`)
+}
+
 test.describe('Archive browsing', () => {
+  // These tests browse INTO archives directly, so force the zip Enter behavior to
+  // Browse (the default is Ask, which would pop the menu instead — that flow is
+  // covered by the "Archive Enter-behavior menu" suite below).
+  test.beforeEach(async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    await setArchiveEnterBehavior({ zip: 'browse', bundle: 'browse' })
+  })
+
   test('pressing Enter on a zip lists its inner entries with a transparent path', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
@@ -308,5 +349,88 @@ test.describe('Archive browsing', () => {
     expect(alert.title).toBe('Archives are read-only')
     expect(alert.message).toContain('copying into one')
     await dismissAlert(tauriPage)
+  })
+})
+
+test.describe('Archive Enter-behavior menu', () => {
+  test.beforeEach(async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    // The headline flow: zip set to Ask (the default), so Enter pops the menu.
+    await setArchiveEnterBehavior({ zip: 'ask', bundle: 'ask' })
+    await clearOpenedPaths(tauriPage)
+  })
+
+  test('Enter on a zip set to Ask shows the menu; Browse steps inside', async ({ tauriPage }) => {
+    const zipPath = `${getFixtureRoot()}/left/sample.zip`
+
+    await enterEntry(tauriPage, 'sample.zip')
+
+    // The popup appears instead of navigating.
+    await tauriPage.waitForSelector(ENTER_MENU, 5000)
+    expect(await getFocusedPaneActiveTabPath()).toBe(`${getFixtureRoot()}/left`)
+
+    // Browse steps inside the archive like a folder.
+    await clickEnterMenuItem(tauriPage, 'Browse')
+    await expect.poll(async () => !(await tauriPage.isVisible(ENTER_MENU)), { timeout: 3000 }).toBeTruthy()
+    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(zipPath)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
+  })
+
+  test('Enter then Down then Enter picks Open, launching the zip in the default app', async ({ tauriPage }) => {
+    const zipPath = `${getFixtureRoot()}/left/sample.zip`
+
+    await enterEntry(tauriPage, 'sample.zip')
+    await tauriPage.waitForSelector(ENTER_MENU, 5000)
+
+    // Browse is highlighted on open; ArrowDown moves to Open, Enter selects it.
+    await tauriPage.keyboard.press('ArrowDown')
+    await tauriPage.keyboard.press('Enter')
+    await expect.poll(async () => !(await tauriPage.isVisible(ENTER_MENU)), { timeout: 3000 }).toBeTruthy()
+
+    // Open hands the `.zip` file itself to LaunchServices (mocked in E2E), and
+    // does NOT browse into it — the pane stays put.
+    await expect.poll(async () => getOpenedPaths(tauriPage), { timeout: 5000 }).toContain(zipPath)
+    expect(await getFocusedPaneActiveTabPath()).toBe(`${getFixtureRoot()}/left`)
+  })
+
+  test('a zip set to Browse skips the menu and enters directly', async ({ tauriPage }) => {
+    const zipPath = `${getFixtureRoot()}/left/sample.zip`
+    await setArchiveEnterBehavior({ zip: 'browse', bundle: 'ask' })
+
+    await enterEntry(tauriPage, 'sample.zip')
+
+    // No popup: it steps straight inside.
+    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(zipPath)
+    expect(await tauriPage.isVisible(ENTER_MENU)).toBe(false)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
+  })
+
+  test('a .docx defaults to Open with no menu', async ({ tauriPage }) => {
+    const docxPath = `${getFixtureRoot()}/left/report.docx`
+
+    await enterEntry(tauriPage, 'report.docx')
+
+    // Document packages default to Open, so there's no popup — it opens directly.
+    await expect.poll(async () => getOpenedPaths(tauriPage), { timeout: 5000 }).toContain(docxPath)
+    expect(await tauriPage.isVisible(ENTER_MENU)).toBe(false)
+  })
+
+  test('Configure deep-links to the Archives settings section', async ({ tauriPage }) => {
+    const main = tauriPage as TauriPage
+
+    await enterEntry(tauriPage, 'sample.zip')
+    await tauriPage.waitForSelector(ENTER_MENU, 5000)
+    await clickEnterMenuItem(tauriPage, 'Configure')
+
+    // The settings window (label `settings`) opens, deep-linked to Behavior > Archives.
+    const settings = await main.waitForWindow((w) => w.label === 'settings', { timeout: 10000 })
+    const settingsLabel = settings.targetWindow
+    if (!settingsLabel) throw new Error('Scoped settings page has no targetWindow label')
+    try {
+      await settings.waitForSelector('[data-section-id="behavior-archives"]', 10000)
+    } finally {
+      await closeScopedWindow(main, settings, settingsLabel)
+    }
   })
 })

@@ -61,6 +61,10 @@ const fixtureLayout = {
   textFiles: [
     { rel: 'left/file-a.txt', content: smallFileContent },
     { rel: 'left/file-b.txt', content: smallFileContent },
+    // A document package (`.docx`): the archive Enter-policy defaults these to
+    // Open (not browse), so Enter opens it in the default app with no popup. The
+    // bytes don't matter — only the extension drives the policy.
+    { rel: 'left/report.docx', content: smallFileContent },
     { rel: 'left/sub-dir/nested-file.txt', content: smallFileContent },
     { rel: 'left/.hidden-file', content: smallFileContent },
     // A file inside a real DIRECTORY literally named `decoy.zip`: proves the

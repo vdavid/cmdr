@@ -227,6 +227,10 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::file_actions::get_info,
         crate::commands::file_actions::open_in_editor,
         crate::commands::file_actions::open_path,
+        #[cfg(feature = "playwright-e2e")]
+        crate::commands::file_actions::e2e_opened_paths,
+        #[cfg(feature = "playwright-e2e")]
+        crate::commands::file_actions::e2e_clear_opened_paths,
         crate::commands::file_actions::cloud_make_available_offline,
         crate::commands::file_actions::cloud_remove_download,
         crate::mcp::pane_state::update_left_pane_state,
