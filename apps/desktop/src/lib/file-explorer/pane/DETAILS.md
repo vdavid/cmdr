@@ -502,9 +502,9 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
   `edge-flow-handlers`, `pane-mirror`, `key-dispatch`, `mcp-tab-action`, `swap-panes`, `volume-selection`, …). The
   `dialog-state` / `rename-flow` / `type-to-jump-state` extractions are the pattern to follow.
 
-    **Why not child components.** The seam that works here is **state-ownership vs command-logic**, not feature-carved
-    child components. A `<DialogCoordinator>` child-component split was rejected as "a boundary without a real
-    responsibility seam": dialogs read and write pane state heavily, and a child-component boundary severs that. Every
-    closure/factory/module extraction instead landed and stuck (`dialog-state`, `tab-operations`, `initialization`,
-    `index-events`, `listing-diff-sync`, `pane-mcp-sync`, and the explorer store). So when a "clean up the 3000-line
-    component" pass tempts you, reach for a store/factory/helper, never a child component to shrink the line count.
+  **Why not child components.** The seam that works here is **state-ownership vs command-logic**, not feature-carved
+  child components. A `<DialogCoordinator>` child-component split was rejected as "a boundary without a real
+  responsibility seam": dialogs read and write pane state heavily, and a child-component boundary severs that. Every
+  closure/factory/module extraction instead landed and stuck (`dialog-state`, `tab-operations`, `initialization`,
+  `index-events`, `listing-diff-sync`, `pane-mcp-sync`, and the explorer store). So when a "clean up the 3000-line
+  component" pass tempts you, reach for a store/factory/helper, never a child component to shrink the line count.

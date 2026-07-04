@@ -59,7 +59,7 @@
     "apps/desktop/src/lib/commands/command-registry.ts": 1044,
     "apps/desktop/src/lib/file-explorer/navigation/VolumeBreadcrumb.svelte": 1639,
     "apps/desktop/src/lib/file-explorer/network/NetworkBrowser.svelte": 815,
-    "apps/desktop/src/lib/file-explorer/pane/DualPaneExplorer.svelte": 2140,
+    "apps/desktop/src/lib/file-explorer/pane/DualPaneExplorer.svelte": 1450,
     "apps/desktop/src/lib/file-explorer/pane/FilePane.svelte": 2936,
     "apps/desktop/src/lib/file-explorer/pane/drag-drop-controller.svelte.test.ts": 814,
     "apps/desktop/src/lib/file-explorer/pane/volume-breadcrumb.test.ts": 802,
