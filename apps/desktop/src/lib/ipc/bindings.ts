@@ -96,6 +96,16 @@ export const commands = {
         path: string
         isDirectory: boolean
         isSymlink: boolean
+        /**
+         *  `true` when this entry is a file whose extension is a supported browsable
+         *  archive (zip today). Computed extension-only at listing time — no per-file
+         *  byte read, which would be a round-trip-per-file on a remote backend. It
+         *  drives the frontend's Enter fork (navigate INTO the archive); the actual
+         *  magic-byte confirmation happens once at navigation time in the routing
+         *  layer. A directory named `foo.zip` is NOT an archive (its `is_directory`
+         *  wins), so this is always `false` for directories.
+         */
+        isArchive: boolean
         size: number | null
         // Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
         physicalSize: number | null
@@ -3382,6 +3392,16 @@ export type FileEntry = {
   path: string
   isDirectory: boolean
   isSymlink: boolean
+  /**
+   *  `true` when this entry is a file whose extension is a supported browsable
+   *  archive (zip today). Computed extension-only at listing time — no per-file
+   *  byte read, which would be a round-trip-per-file on a remote backend. It
+   *  drives the frontend's Enter fork (navigate INTO the archive); the actual
+   *  magic-byte confirmation happens once at navigation time in the routing
+   *  layer. A directory named `foo.zip` is NOT an archive (its `is_directory`
+   *  wins), so this is always `false` for directories.
+   */
+  isArchive: boolean
   size: number | null
   // Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
   physicalSize: number | null

@@ -105,6 +105,14 @@ pub struct FileEntry {
     pub path: String,
     pub is_directory: bool,
     pub is_symlink: bool,
+    /// `true` when this entry is a file whose extension is a supported browsable
+    /// archive (zip today). Computed extension-only at listing time — no per-file
+    /// byte read, which would be a round-trip-per-file on a remote backend. It
+    /// drives the frontend's Enter fork (navigate INTO the archive); the actual
+    /// magic-byte confirmation happens once at navigation time in the routing
+    /// layer. A directory named `foo.zip` is NOT an archive (its `is_directory`
+    /// wins), so this is always `false` for directories.
+    pub is_archive: bool,
     pub size: Option<u64>,
     /// Physical size on disk in bytes (st_blocks * 512 on Unix, same as size on other platforms)
     pub physical_size: Option<u64>,
@@ -187,6 +195,10 @@ impl FileEntry {
     pub(crate) fn new(name: String, path: String, is_dir: bool, is_symlink: bool) -> Self {
         Self {
             icon_id: get_icon_id(is_dir, is_symlink, &name, &path),
+            // Extension-only, and never for a directory (a folder named
+            // `foo.zip` is browsed as itself, not as an archive).
+            is_archive: !is_dir
+                && crate::file_system::volume::backends::archive::has_supported_archive_extension(&name),
             name,
             path,
             is_directory: is_dir,

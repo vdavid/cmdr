@@ -35,6 +35,7 @@
     reason = "Zip Slip sanitizer surface and the in-memory BytesSource are public API not yet consumed outside this module"
 )]
 
+mod boundary;
 mod cache;
 mod error;
 mod index;
@@ -48,6 +49,10 @@ mod archive_test;
 #[cfg(test)]
 mod test_fixtures;
 
+pub use boundary::{
+    SUPPORTED_ARCHIVE_EXTENSIONS, archive_boundary_candidate, confirm_archive_boundary,
+    has_supported_archive_extension, path_crosses_archive_boundary,
+};
 pub use cache::ArchiveIndexCache;
 pub use error::ArchiveError;
 pub use index::{ArchiveIndex, ArchiveNode};
