@@ -108,9 +108,10 @@ describe('capabilitiesForKind — the frozen per-kind table', () => {
     archive: {
       kind: 'archive',
       hasBackendListing: true,
-      canPasteInto: false,
-      canCreateChild: false,
-      canRenameInPlace: false,
+      // Zip is writable: the three write flags are true (managed archive-edit flow).
+      canPasteInto: true,
+      canCreateChild: true,
+      canRenameInPlace: true,
       canBeSource: true,
       supportsSystemClipboard: false,
       hasParentRow: true,
@@ -267,16 +268,19 @@ describe('pathInsideArchive — the pure extension-only boundary check', () => {
 })
 
 describe('capabilitiesForPane — kind-from-path resolution', () => {
-  it('returns the read-only archive row when the PATH is inside an archive', () => {
+  it('returns the writable archive row when the PATH is inside a zip', () => {
     volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
-    // The volumeId is the WRITABLE parent drive, but the path crosses a zip.
+    // The volumeId is the parent drive, but the path crosses a zip — the archive
+    // row (writable) gates the pane, not the drive's row.
     const caps = capabilitiesForPane('root', '/Users/me/foo.zip/inner')
     expect(caps.kind).toBe('archive')
-    expect(caps.canPasteInto).toBe(false)
-    expect(caps.canCreateChild).toBe(false)
-    expect(caps.canRenameInPlace).toBe(false)
+    expect(caps.canPasteInto).toBe(true)
+    expect(caps.canCreateChild).toBe(true)
+    expect(caps.canRenameInPlace).toBe(true)
     expect(caps.canBeSource).toBe(true)
     expect(caps.hasBackendListing).toBe(true)
+    // No system clipboard even when writable: archive-inner paths aren't OS URLs.
+    expect(caps.supportsSystemClipboard).toBe(false)
   })
 
   it('defers to the id-based kind when the path is NOT inside an archive', () => {

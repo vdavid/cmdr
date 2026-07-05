@@ -23,6 +23,7 @@
         eye: 'Reveal-password toggle in settings password fields.',
         'eye-off': 'Hide-password toggle in settings password fields.',
         file: 'Fallback file glyph in the search and selection results, and the drag overlay, when no OS icon is available.',
+        'file-archive': 'Type marker for a zip-edit (archive_edit) operation row in the transfer queue window.',
         'file-plus': 'Type marker for a new-file (create) operation row in the transfer queue window.',
         folder:
             'Fallback folder glyph in the search and selection results, the SMB share list, the drag overlay, and the volume-breadcrumb placeholder.',

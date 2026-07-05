@@ -247,6 +247,34 @@ describe('createTransferProgressState: dispatch routing', () => {
     expect(moveFiles).not.toHaveBeenCalled()
   })
 
+  it('routes a move INTO a zip through moveBetweenVolumes, not the local fast-path', async () => {
+    // Source and dest share the parent drive's `root` id (the zip lives on it), so
+    // the volume-id comparison alone would pick `moveFiles`. The dest PATH inside a
+    // `.zip` forces the cross-volume route (backend runs the archive-edit flow).
+    await startedState({
+      operationType: 'move',
+      sourceVolumeId: 'root',
+      destVolumeId: 'root',
+      sourcePaths: ['/left/file.txt'],
+      destinationPath: '/left/foo.zip/inner',
+    })
+    expect(moveBetweenVolumes).toHaveBeenCalledTimes(1)
+    expect(moveFiles).not.toHaveBeenCalled()
+  })
+
+  it('routes a move OUT of a zip through moveBetweenVolumes, not the local fast-path', async () => {
+    // Extract-out move: the SOURCE path is inside a `.zip` while both ids are `root`.
+    await startedState({
+      operationType: 'move',
+      sourceVolumeId: 'root',
+      destVolumeId: 'root',
+      sourcePaths: ['/left/foo.zip/inner.txt'],
+      destinationPath: '/right',
+    })
+    expect(moveBetweenVolumes).toHaveBeenCalledTimes(1)
+    expect(moveFiles).not.toHaveBeenCalled()
+  })
+
   it('dispatches delete through deleteFiles', async () => {
     await startedState({ operationType: 'delete' })
     expect(deleteFiles).toHaveBeenCalledTimes(1)

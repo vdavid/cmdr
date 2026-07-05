@@ -16,7 +16,7 @@ import {
   buildTransferPropsFromSnapshot,
   getDestinationVolumeInfo,
 } from './transfer-operations'
-import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
+import { capabilitiesFor, pathInsideArchive } from './volume-capabilities'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { FilePaneAPI } from './types'
@@ -38,32 +38,19 @@ type DialogState = ReturnType<typeof createDialogState>
 export function createFileOperationCommands(access: PaneAccess, dialogs: DialogState) {
   /**
    * The read-only refusal alert for a write action on the focused pane, or `null`
-   * when the pane accepts writes. Two independent read-only sources, checked in
-   * order:
-   *  1. Inside an archive (kind-from-path): the pane's `volumeId` is the WRITABLE
-   *     parent drive, so `VolumeInfo.isReadOnly` alone misses it — `capabilitiesForPane`
-   *     resolves the `archive` kind from the PATH. Archives are read-only in this
-   *     phase (mutation lands later); the backend `ReadOnlyDevice` rejection is the net.
-   *  2. A read-only VolumeInfo (a write-protected USB stick, a read-only disk image).
-   * Surfacing this up front beats letting the user type a name and then hit a
-   * backend rejection.
+   * when the pane accepts writes. A zip archive is WRITABLE (the pane's `volumeId`
+   * is the parent drive and `capabilitiesForPane` gives the writable `archive`
+   * row), so an archive pane falls through here and runs the real managed
+   * archive-edit flow. What still refuses is a read-only `VolumeInfo` (a
+   * write-protected USB stick, a read-only disk image) — including a zip that
+   * lives on such a volume, which can't be rewritten in place. Surfacing this up
+   * front beats letting the user type a name and then hit a backend rejection.
    */
   function readOnlyRefusal(
     action: 'rename' | 'mkdir' | 'mkfile' | 'delete',
   ): { title: string; message: string } | null {
     const pane = access.getFocusedPane()
     const volId = access.getPaneVolumeId(pane)
-    const path = access.getPanePath(pane)
-
-    if (capabilitiesForPane(volId, path).kind === 'archive') {
-      const messageKey: Record<typeof action, MessageKey> = {
-        rename: 'fileExplorer.archive.renameMessage',
-        mkdir: 'fileExplorer.archive.mkdirMessage',
-        mkfile: 'fileExplorer.archive.mkfileMessage',
-        delete: 'fileExplorer.archive.deleteMessage',
-      }
-      return { title: tString('fileExplorer.archive.readOnlyTitle'), message: tString(messageKey[action]) }
-    }
 
     const volumeInfo = getDestinationVolumeInfo(volId, access.getVolumes())
     if (volumeInfo?.isReadOnly) {
@@ -526,17 +513,24 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
 
     // Look up supportsTrash from the source volume
     const sourceVolId = access.getPaneVolumeId(access.getFocusedPane())
+    const sourceFolderPath = access.getPanePath(access.getFocusedPane())
     const sourceVolume = access.getVolumes().find((v) => v.id === sourceVolId)
-    const supportsTrash = sourceVolume?.supportsTrash !== false
+    // Deleting an entry INSIDE a zip is permanent: there's no Trash inside an
+    // archive (the backend rejects trashing an archive-inner path), so force
+    // permanent + the archive warning regardless of the parent drive's trash
+    // support or the F8/Shift+F8 preselect.
+    const sourceIsArchive = pathInsideArchive(sourceFolderPath)
+    const supportsTrash = sourceIsArchive ? false : sourceVolume?.supportsTrash !== false
 
     const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())
 
     dialogs.showDeleteConfirmation({
       sourceItems,
       sourcePaths,
-      sourceFolderPath: access.getPanePath(access.getFocusedPane()),
-      isPermanent: permanent,
+      sourceFolderPath,
+      isPermanent: permanent || sourceIsArchive,
       supportsTrash,
+      isArchive: sourceIsArchive,
       isFromCursor: !hasSelection,
       sortColumn: sortBy,
       sortOrder,

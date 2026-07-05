@@ -19,11 +19,11 @@
     "description": "Supporting line under the empty-state title, explaining what will appear in the transfer queue window and why."
   },
 
-  "queue.row.label": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} rename {Renaming} create_folder {Creating folder} create_file {Creating file} other {Working}}",
+  "queue.row.label": "{type, select, copy {Copying} move {Moving} delete {Deleting} trash {Moving to trash} rename {Renaming} create_folder {Creating folder} create_file {Creating file} archive_edit {Editing archive} other {Working}}",
   "@queue.row.label": {
-    "description": "Names what an operation row is doing, shown next to a direction arrow and the source-to-destination summary. Reads as a present-continuous action. The rename, create_folder, and create_file arms are near-instant metadata ops that usually flash by too fast to read.",
+    "description": "Names what an operation row is doing, shown next to a direction arrow and the source-to-destination summary. Reads as a present-continuous action. The rename, create_folder, and create_file arms are near-instant metadata ops that usually flash by too fast to read. The archive_edit arm covers changing a zip (adding, removing, or renaming entries inside it); \"archive\" means a zip file.",
     "placeholders": {
-      "type": "the kind of operation: copy, move, delete, trash, rename, create_folder, or create_file"
+      "type": "the kind of operation: copy, move, delete, trash, rename, create_folder, create_file, or archive_edit"
     }
   },
 

@@ -98,16 +98,14 @@
 
     /** Title for the scanning phase: names the upcoming action so the user
      *  knows why we're walking the tree, not just "scanning for fun". */
-    const scanTitleMap: Record<TransferOperationType, MessageKey> = {
+    const scanTitleMap: Record<Exclude<TransferOperationType, 'archive_edit'>, MessageKey> = {
         copy: 'fileOperations.transferProgress.scanTitleCopy',
         move: 'fileOperations.transferProgress.scanTitleMove',
         delete: 'fileOperations.transferProgress.scanTitleDelete',
         trash: 'fileOperations.transferProgress.scanTitleTrash',
-        // Archive edits have no scan phase, so this title never renders; the entry
-        // exists only to satisfy the exhaustive Record.
-        archive_edit: 'fileOperations.transferProgress.scanTitleArchiveEdit',
     }
-    const scanTitle = $derived(tString(scanTitleMap[operationType]))
+    // Archive edits have no scan phase, so no scan title ever renders for them.
+    const scanTitle = $derived(operationType === 'archive_edit' ? '' : tString(scanTitleMap[operationType]))
     const volumes = $derived(getVolumes())
     const destUsesNativeSmb = $derived(
         volumes.find((v) => v.id === destVolumeId)?.smbConnectionState === 'os_mount',

@@ -552,24 +552,36 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
   `index-events`, `listing-diff-sync`, `pane-mcp-sync`, and the explorer store). So when a "clean up the 3000-line
   component" pass tempts you, reach for a store/factory/helper, never a child component to shrink the line count.
 
-## Archive browsing (kind-from-path)
+## Archive browsing and editing (kind-from-path)
 
-Pressing Enter on a `.zip` steps inside it like a folder, read-only (mutation is a later milestone). The design keeps
-the frontend simple: the tab keeps ONE `volumeId` — the parent drive — and `archive-<hash>` volume ids never enter FE
-state, history, persistence, or MCP sync. Archive-ness is derived from the PATH; all I/O routing happens backend-side in
-`VolumeManager::resolve(volume_id, path)`.
+Pressing Enter on a `.zip` steps inside it like a folder, and a zip is WRITABLE (create/rename/delete inside, paste in,
+move out). The design keeps the frontend simple: the tab keeps ONE `volumeId` — the parent drive — and `archive-<hash>`
+volume ids never enter FE state, history, persistence, or MCP sync. Archive-ness is derived from the PATH; all I/O
+routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
 
 - **`pathInsideArchive(path)` + `capabilitiesForPane(volumeId, path)`** (`volume-capabilities.ts`) are the seam. The
   first is a pure, extension-only check mirroring the backend's `SUPPORTED_ARCHIVE_EXTENSIONS`; the second returns the
-  read-only `archive` capability row when the path is inside an archive, else defers to `capabilitiesFor(volumeId)`. The
-  pane's `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so
-  `hasBackendListing`/`hasParentRow`/`syncsToMcp` are true and the write flags
-  (`canPasteInto`/`canCreateChild`/`canRenameInPlace`) are false.
-- **Why `VolumeInfo.isReadOnly` is insufficient**: the archive pane's `volumeId` is the writable parent drive, which has
-  no read-only `VolumeInfo`. The write guards (`file-operation-commands.ts` `readOnlyRefusal`, `transfer-entry.ts`
-  `checkTransferDestinationGuard`'s `destPath` param, `clipboard-operations.ts` copy/cut/paste, `drag-drop-controller`'s
-  drop dest) each resolve the archive kind from the PATH and refuse with archive-specific copy. The backend
+  `archive` capability row when the path is inside an archive, else defers to `capabilitiesFor(volumeId)`. The pane's
+  `caps` uses it (`capabilitiesForPane(volumeId, currentPath)`), so `hasBackendListing`/`hasParentRow`/`syncsToMcp` and
+  the write flags (`canPasteInto`/`canCreateChild`/`canRenameInPlace`) are all true — `supportsSystemClipboard` stays
+  false (archive-inner paths aren't OS URLs, so ⌘C/⌘V route to F5/F6). Zip is the only supported format and it's
+  mutable; when M7 adds browse-only formats (tar/7z) to `SUPPORTED_ARCHIVE_EXTENSIONS`, `capabilitiesForPane` must split
+  to a read-only archive variant for a non-writable boundary format (its doc comment marks the seam).
+- **Why `VolumeInfo.isReadOnly` still matters**: the archive pane's `volumeId` is the parent drive. A writable zip runs
+  the real managed archive-edit flow, but a zip that lives on a read-only `VolumeInfo` (a locked disk image) can't be
+  rewritten in place — the write guards (`file-operation-commands.ts` `readOnlyRefusal`, `transfer-entry.ts`
+  `checkTransferDestinationGuard`) still fall through to the per-volume `isReadOnly` refusal for that case. The backend
   `ReadOnlyDevice` rejection is the safety net behind them.
+- **Edits are managed ops, not instant.** A zip mutation is an O(archive) temp+rename rewrite, so mkdir/mkfile/rename
+  inside a zip return an OPERATION handle, not a landed path, and copy/move into or out of a zip route through
+  `copyBetweenVolumes`/`moveBetweenVolumes` (never the local `moveFiles` fast-path — `transfer-progress-state`'s
+  `isVolumeMove` OR-s in `pathInsideArchive(sourcePaths | destinationPath)` so a same-drive archive move still crosses).
+  The cursor lands on the new/renamed entry when the backing `.zip`'s live-watch refresh arrives (the durable
+  `pendingCursorName` channel in `listing-diff-sync`, consumed on the refresh diff — no timer). `handleNewFileCreated`
+  skips its open-in-editor for an archive target (the file is created async and an archive-inner path isn't editable in
+  place). Deleting inside a zip is PERMANENT (no Trash inside an archive): `openDeleteDialog` forces
+  `isPermanent`/`isArchive` and drops `supportsTrash`, and `DeleteDialog` shows the archive warning. The queue row for a
+  zip edit is the `archive_edit` `WriteOperationType` (`file-archive` glyph, "Editing archive" label; no scan phase).
 - **Navigation is nearly free.** `handleNavigate` forks on `entry.isDirectory || entry.isArchive` (a zip stays
   `isDirectory:false`; `isArchive` is backend-computed, extension-only, crosses IPC on `FileEntry`), routing in-place
   (same parent-drive volume) via `browseIntoEntry`. The Enter-behavior policy (below) runs FIRST and can divert to a

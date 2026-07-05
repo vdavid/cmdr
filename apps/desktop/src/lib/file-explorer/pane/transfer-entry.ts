@@ -54,22 +54,21 @@ export type TransferGuardResult =
  *    `!canPasteInto` SCOPED to the `search-results` kind so the wording stays
  *    correct (a network destination shares the `false` capability but isn't a
  *    misrendered "not a folder").
- * 2. Archive destination → read-only in this phase, refuse with an alert. The
- *    dest `volumeId` is the WRITABLE parent drive, so the archive-ness comes from
- *    `destPath` (kind-from-path) — `capabilitiesForPane` is what makes the
- *    `!canPasteInto` gate fire for a `…/foo.zip/…` destination that would
- *    otherwise fall through as writable.
- * 3. Read-only destination → refuse with an alert. Read off the destination's
+ * 2. Read-only destination → refuse with an alert. Read off the destination's
  *    `VolumeInfo.isReadOnly` (a per-volume runtime flag, not a kind capability).
+ *
+ * A zip destination is NOT refused: it's the writable `archive` kind
+ * (`canPasteInto: true`), so it passes step 1 and the transfer routes into the
+ * archive-edit flow (a zip on a read-only VolumeInfo is still caught by step 2).
  *
  * Returns `ok` when none fire. An unknown destination volume id (no `VolumeInfo`)
  * is allowed through: we can't prove it's read-only, the backend still rejects a
  * genuinely read-only write, and blocking on "unknown" would break legitimate
  * transfers to a freshly-mounted volume.
  *
- * `destPath` is the destination pane's current path (needed for the archive
- * kind-from-path check). It's optional so existing non-archive callers keep
- * working; omitting it skips only the archive branch.
+ * `destPath` is the destination pane's current path (kind-from-path resolution,
+ * e.g. distinguishing a `…/foo.zip/…` archive destination). It's optional so
+ * existing callers keep working; omitting it defers to the id-based kind.
  */
 export function checkTransferDestinationGuard(
   destVolumeId: string,
@@ -79,15 +78,6 @@ export function checkTransferDestinationGuard(
   const destCaps = capabilitiesForPane(destVolumeId, destPath)
   if (!destCaps.canPasteInto && destCaps.kind === 'search-results') {
     return { ok: false, toast: { message: SEARCH_RESULTS_NOT_A_FOLDER_TOAST, level: 'warn' } }
-  }
-  if (!destCaps.canPasteInto && destCaps.kind === 'archive') {
-    return {
-      ok: false,
-      alert: {
-        title: tString('fileExplorer.archive.readOnlyTitle'),
-        message: tString('fileExplorer.archive.pasteMessage'),
-      },
-    }
   }
 
   const destVolume = getDestinationVolumeInfo(destVolumeId, volumes)

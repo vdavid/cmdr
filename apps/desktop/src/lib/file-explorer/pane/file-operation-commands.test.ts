@@ -227,10 +227,10 @@ describe('startRename', () => {
     expect(startRename).toHaveBeenCalledTimes(1)
   })
 
-  it('refuses inside an archive (writable parent drive) with the archive alert', () => {
-    // The pane's volumeId is the WRITABLE parent drive, so the VolumeInfo.isReadOnly
-    // check passes; the archive-ness comes from the PATH. Without the caps check this
-    // rename would go through.
+  it('starts rename inside a zip (writable archive, no refusal)', () => {
+    // A zip is writable: renaming an entry inside it runs the real managed
+    // archive-edit flow, so no refusal alert fires even though the path crosses a
+    // `.zip`. The parent drive isn't read-only, so nothing blocks it.
     const startRename = vi.fn()
     const paneRef = buildPaneRef({ startRename })
     const access = buildAccess({
@@ -242,9 +242,28 @@ describe('startRename', () => {
 
     create(access, dialogs).startRename()
 
+    expect(dialogs.showAlert).not.toHaveBeenCalled()
+    expect(startRename).toHaveBeenCalledTimes(1)
+  })
+
+  it('still refuses rename inside a zip that lives on a read-only volume', () => {
+    // A writable-archive path doesn't override a read-only parent VolumeInfo: the
+    // zip can't be rewritten in place on a read-only mount, so the volume refusal
+    // still fires.
+    const startRename = vi.fn()
+    const paneRef = buildPaneRef({ startRename })
+    const access = buildAccess({
+      paneRefs: { left: paneRef },
+      volumes: [volume({ isReadOnly: true })],
+      paths: { left: '/left/foo.zip/inner' },
+    })
+    const dialogs = buildDialogs()
+
+    create(access, dialogs).startRename()
+
     expect(dialogs.showAlert).toHaveBeenCalledWith(
-      'Archives are read-only',
-      "Archives are read-only for now. Renaming items inside them isn't possible yet.",
+      'Read-only volume',
+      "This is a read-only volume. Renaming isn't possible here.",
     )
     expect(startRename).not.toHaveBeenCalled()
   })
@@ -300,7 +319,8 @@ describe('openNewFolderDialog', () => {
     expect(dialogs.showNewFolder).not.toHaveBeenCalled()
   })
 
-  it('refuses inside an archive with the archive alert', async () => {
+  it('opens the new-folder dialog inside a zip (writable archive)', async () => {
+    getInitialFolderNameSpy.mockResolvedValue('seed')
     const access = buildAccess({
       paneRefs: { left: buildPaneRef({ listingId: 'lst-1' }) },
       volumes: [volume()],
@@ -310,11 +330,16 @@ describe('openNewFolderDialog', () => {
 
     await create(access, dialogs).openNewFolderDialog()
 
-    expect(dialogs.showAlert).toHaveBeenCalledWith(
-      'Archives are read-only',
-      "Archives are read-only for now. Creating folders inside them isn't possible yet.",
-    )
-    expect(dialogs.showNewFolder).not.toHaveBeenCalled()
+    // No refusal: creating a folder inside a zip runs the real managed
+    // archive-edit flow, so the dialog opens like any writable destination.
+    expect(dialogs.showAlert).not.toHaveBeenCalled()
+    expect(dialogs.showNewFolder).toHaveBeenCalledWith({
+      currentPath: '/left/foo.zip',
+      listingId: 'lst-1',
+      showHiddenFiles: true,
+      initialName: 'seed',
+      volumeId: 'root',
+    })
   })
 
   it('bails when the focused pane has no listing id', async () => {
@@ -362,7 +387,8 @@ describe('openNewFileDialog', () => {
     expect(dialogs.showNewFile).not.toHaveBeenCalled()
   })
 
-  it('refuses inside an archive with the archive alert', async () => {
+  it('opens the new-file dialog inside a zip (writable archive)', async () => {
+    getInitialFileNameSpy.mockResolvedValue('seed')
     const access = buildAccess({
       paneRefs: { left: buildPaneRef({ listingId: 'lst-1' }) },
       volumes: [volume()],
@@ -372,11 +398,15 @@ describe('openNewFileDialog', () => {
 
     await create(access, dialogs).openNewFileDialog()
 
-    expect(dialogs.showAlert).toHaveBeenCalledWith(
-      'Archives are read-only',
-      "Archives are read-only for now. Creating files inside them isn't possible yet.",
-    )
-    expect(dialogs.showNewFile).not.toHaveBeenCalled()
+    // No refusal: creating a file inside a zip runs the managed archive-edit flow.
+    expect(dialogs.showAlert).not.toHaveBeenCalled()
+    expect(dialogs.showNewFile).toHaveBeenCalledWith({
+      currentPath: '/left/foo.zip',
+      listingId: 'lst-1',
+      showHiddenFiles: true,
+      initialName: 'seed',
+      volumeId: 'root',
+    })
   })
 
   it('bails when the focused pane has no listing id', async () => {
@@ -501,9 +531,11 @@ describe('openTransferDialog', () => {
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
   })
 
-  it('refuses an archive destination (opposite pane inside a zip) with the archive alert', async () => {
+  it('allows a zip destination (opposite pane inside a zip) and opens the transfer dialog', async () => {
     // Both panes are on the writable root drive; the opposite pane's PATH crosses a
-    // zip, so pasting INTO it must be refused frontend-side.
+    // zip. A zip is a writable destination now, so no refusal fires and the
+    // transfer dialog opens (the backend routes it into the archive-edit flow).
+    buildFromCursorSpy.mockResolvedValue({ operationType: 'copy' })
     const access = buildAccess({
       focusedPane: 'left',
       volumeIds: { left: 'root', right: 'root' },
@@ -514,11 +546,8 @@ describe('openTransferDialog', () => {
 
     await create(access, dialogs).openTransferDialog('copy')
 
-    expect(dialogs.showAlert).toHaveBeenCalledWith(
-      'Archives are read-only',
-      "You can copy files out of an archive, but copying into one isn't possible yet.",
-    )
-    expect(dialogs.showTransfer).not.toHaveBeenCalled()
+    expect(dialogs.showAlert).not.toHaveBeenCalled()
+    expect(dialogs.showTransfer).toHaveBeenCalledWith({ operationType: 'copy' })
   })
 
   it('builds transfer props from the selection when items are selected', async () => {
@@ -667,21 +696,28 @@ describe('openDeleteDialog', () => {
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })
 
-  it('refuses deleting inside an archive with the archive alert', async () => {
+  it('opens a PERMANENT delete confirm inside a zip (no trash, archive flag)', async () => {
+    // Deleting an entry inside a zip is permanent: there's no Trash inside an
+    // archive. Even with the trash preselect (F8, `permanent: false`) and a
+    // trash-capable parent drive, the confirm forces permanent, drops trash, and
+    // sets the archive flag so the dialog shows the archive warning.
+    getFilesAtIndicesSpy.mockResolvedValue([fileEntry({ name: 'inner.txt' })])
     const access = buildAccess({
-      paneRefs: { left: buildPaneRef({ listingId: 'lst-1' }) },
-      volumes: [volume()],
+      paneRefs: { left: buildPaneRef({ listingId: 'lst-1', selectedIndices: [0] }) },
+      volumes: [volume({ supportsTrash: true })],
       paths: { left: '/left/foo.zip/inner' },
     })
     const dialogs = buildDialogs()
 
     await create(access, dialogs).openDeleteDialog(false)
 
-    expect(dialogs.showAlert).toHaveBeenCalledWith(
-      'Archives are read-only',
-      "Archives are read-only for now. Deleting items inside them isn't possible yet.",
-    )
-    expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
+    expect(dialogs.showAlert).not.toHaveBeenCalled()
+    expect(dialogs.showDeleteConfirmation.mock.calls[0][0]).toMatchObject({
+      isPermanent: true,
+      supportsTrash: false,
+      isArchive: true,
+      sourceFolderPath: '/left/foo.zip/inner',
+    })
   })
 
   it('deletes the selection (hasSelection branch) and is not flagged as from-cursor', async () => {

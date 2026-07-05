@@ -30,6 +30,16 @@
     "description": "Second half of the no-trash warning banner, following fileOperations.delete.noTrashWarningStrong. Tells the user the delete is permanent on this volume."
   },
 
+  "fileOperations.delete.archiveWarningStrong": "There''s no trash inside an archive.",
+  "@fileOperations.delete.archiveWarningStrong": {
+    "description": "Bold lead of a warning banner in the delete dialog, shown when deleting items from inside a zip archive (Cmdr browses zips like folders). Followed by fileOperations.delete.archiveWarningRest in the same sentence. \"archive\" = a zip file."
+  },
+
+  "fileOperations.delete.archiveWarningRest": "These items will be removed from the zip for good.",
+  "@fileOperations.delete.archiveWarningRest": {
+    "description": "Second half of the archive delete warning banner, following fileOperations.delete.archiveWarningStrong. Tells the user the delete is permanent because a zip has no trash."
+  },
+
   "fileOperations.delete.toggleTrash": "Trash",
   "@fileOperations.delete.toggleTrash": {
     "description": "Label of the segmented-control option that moves items to the system trash (recoverable). Short control label, sits next to the Delete option.",
@@ -539,11 +549,6 @@
   "fileOperations.transferProgress.scanTitleTrash": "Counting items to trash...",
   "@fileOperations.transferProgress.scanTitleTrash": {
     "description": "Progress-dialog title while counting items before moving them to trash. Keep the trailing ellipsis."
-  },
-
-  "fileOperations.transferProgress.scanTitleArchiveEdit": "Preparing archive edit...",
-  "@fileOperations.transferProgress.scanTitleArchiveEdit": {
-    "description": "Progress-dialog title for editing a .zip archive (adding, deleting, or renaming entries inside it). Archive edits have no scanning phase, so this rarely shows, but the dialog needs a title for every operation type. Keep the trailing ellipsis. 'archive' means a compressed .zip file."
   },
 
   "fileOperations.transferProgress.rollbackUnavailableTooltip": "Rollback is not available for same-volume moves",

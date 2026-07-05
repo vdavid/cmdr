@@ -7,6 +7,7 @@ import { getSetting } from '$lib/settings'
 import type { RenameConflictResolution } from '../rename/rename-operations'
 import { addToast, dismissTransientToasts } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
+import { pathInsideArchive } from './volume-capabilities'
 import type { FileEntry } from '../types'
 import type { createRenameState } from '../rename/rename-state.svelte'
 
@@ -160,11 +161,14 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         renameSiblingNames = names
       })
 
-      // Skip permission check for MTP volumes: checkRenamePermission uses
-      // symlink_metadata and Unix access() which don't work on MTP virtual paths.
-      // The validity check (conflict detection) IS volume-aware and runs for all volumes.
+      // Skip the permission check for MTP AND archive-inner paths:
+      // `checkRenamePermission` uses `symlink_metadata` + Unix `access()`, which
+      // don't work on an MTP virtual path or a path INSIDE a zip (not a real FS
+      // path — it would report "doesn't exist" and cancel the rename). The backend
+      // rejects a genuinely disallowed rename; the validity check (conflict
+      // detection) IS volume-aware and still runs for all volumes.
       const currentVolumeId = deps.getVolumeId()
-      if (!currentVolumeId.startsWith('mtp-')) {
+      if (!currentVolumeId.startsWith('mtp-') && !pathInsideArchive(entry.path)) {
         void checkPermission(entry.path).then((errorMsg) => {
           if (errorMsg && rename.active && rename.target?.path === entry.path) {
             rename.cancel()

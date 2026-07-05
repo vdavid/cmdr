@@ -140,6 +140,7 @@
             sourceFolderPath={deleteDialogProps.sourceFolderPath}
             isPermanent={deleteDialogProps.isPermanent}
             supportsTrash={deleteDialogProps.supportsTrash}
+            isArchive={deleteDialogProps.isArchive}
             isFromCursor={deleteDialogProps.isFromCursor}
             sortColumn={deleteDialogProps.sortColumn}
             sortOrder={deleteDialogProps.sortOrder}

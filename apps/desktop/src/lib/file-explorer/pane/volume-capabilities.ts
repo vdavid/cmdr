@@ -70,7 +70,7 @@ export type VolumeKind =
   | 'mtp' // connected MTP storage (real backend listing, mtp:// scheme, no system clipboard)
   | 'network' // the synthetic SMB browser virtual volume (host/share list, smb:// namespace)
   | 'search-results' // the snapshot virtual volume (search-results:// namespace, flat result set)
-  | 'archive' // a pane inside a supported archive (kind-from-path; read-only in this phase)
+  | 'archive' // a pane inside a supported archive (kind-from-path; zip is writable, see the row)
 
 /**
  * What a pane on a given volume KIND can do. A real typed interface (NOT a
@@ -191,18 +191,21 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     kind: 'archive',
     // A real backend listing (the `ArchiveVolume` lists inner entries like a
     // folder), so the alt-view chain renders the file list, and `..` bubbles out
-    // to the zip's containing dir (`hasParentRow`). Read-only in THIS phase: the
-    // three write flags are false so rename/mkdir/mkfile/paste refuse frontend-
-    // side (backend `ReadOnlyDevice` is the safety net); zip mutation flips them
-    // later. `canBeSource: true` — copying files OUT is the headline read feature.
+    // to the zip's containing dir (`hasParentRow`). WRITABLE: the three write
+    // flags are true, so rename/mkdir/mkfile/paste run the real managed
+    // archive-edit flow (backend temp+rename rewrite). Zip is the only supported
+    // archive format today and it's mutable; when M7 adds browse-only formats
+    // (tar/7z), `capabilitiesForPane` must return a read-only archive variant for
+    // a path whose boundary is a non-writable format (see its comment).
+    // `canBeSource: true` — copying files OUT stays a headline feature.
     // No system clipboard: an archive-inner path isn't an OS-resolvable local
-    // path, so ⌘C/⌘V can't carry it (F5/F6 extract-out is the supported path).
+    // path, so ⌘C/⌘V can't carry it (F5/F6 is the supported path in AND out).
     // `syncsToMcp: true` — the listing is real; MCP reports the parent drive id
     // plus the full `…/foo.zip/inner` path, so agents navigate by path.
     hasBackendListing: true,
-    canPasteInto: false,
-    canCreateChild: false,
-    canRenameInPlace: false,
+    canPasteInto: true,
+    canCreateChild: true,
+    canRenameInPlace: true,
     canBeSource: true,
     supportsSystemClipboard: false,
     hasParentRow: true,
@@ -302,10 +305,16 @@ export function pathInsideArchive(path: string): boolean {
 /**
  * Capabilities for a PANE, resolving the kind from BOTH the volume id and the
  * path (kind-from-path). A path inside a supported archive is the `archive` kind
- * (read-only in this phase) regardless of the parent-drive `volumeId`; otherwise
- * this defers to `capabilitiesFor`. This is the entry point every write-guard
- * site uses so an archive pane — whose `volumeId` is the WRITABLE parent drive —
- * is correctly gated read-only, instead of falling through as writable.
+ * regardless of the parent-drive `volumeId`; otherwise this defers to
+ * `capabilitiesFor`. This is the entry point every write-guard site uses so an
+ * archive pane — whose `volumeId` is the WRITABLE parent drive — is gated by the
+ * ARCHIVE row (zip mutation), not the parent drive's row.
+ *
+ * Every supported archive format today (zip) is mutable, so this returns the
+ * writable `archive` row for any archive path. When M7 adds browse-only formats
+ * (tar/7z) to `SUPPORTED_ARCHIVE_EXTENSIONS`, split here: for a path whose
+ * archive boundary segment is a non-writable format, return a read-only archive
+ * capability variant (write flags false) instead of `CAPABILITY_TABLE.archive`.
  */
 export function capabilitiesForPane(
   volumeId: string,

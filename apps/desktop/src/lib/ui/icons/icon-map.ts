@@ -15,6 +15,7 @@ import IconCornerDownLeft from '~icons/lucide/corner-down-left'
 import IconEye from '~icons/lucide/eye'
 import IconEyeOff from '~icons/lucide/eye-off'
 import IconFile from '~icons/lucide/file'
+import IconFileArchive from '~icons/lucide/file-archive'
 import IconFilePlus from '~icons/lucide/file-plus'
 import IconFolder from '~icons/lucide/folder'
 import IconFolderInput from '~icons/lucide/folder-input'
@@ -77,6 +78,7 @@ export const ICON_COMPONENTS = {
   eye: IconEye,
   'eye-off': IconEyeOff,
   file: IconFile,
+  'file-archive': IconFileArchive,
   'file-plus': IconFilePlus,
   folder: IconFolder,
   'folder-input': IconFolderInput,

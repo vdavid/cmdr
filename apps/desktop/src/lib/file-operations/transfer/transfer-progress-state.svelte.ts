@@ -81,6 +81,7 @@ import { getSetting } from '$lib/settings'
 import { getAppLogger } from '$lib/logging/logger'
 import { ScanThroughput } from '../scan-throughput'
 import { tString } from '$lib/intl/messages.svelte'
+import { pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
 
 export interface TransferProgressStateConfig {
   operationType: TransferOperationType
@@ -126,10 +127,22 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   }
   const operationLabel = operationLabelMap[config.operationType]
 
-  /** Whether this move involves a non-local volume (MTP, etc.); backend handles all strategy. */
+  // A move whose source OR destination is inside a zip must NOT take the local
+  // `moveFiles` fast-path: an archive-inner path isn't a real folder, and the
+  // backend fast-path rejects it. Route it through `moveBetweenVolumes`, which
+  // resolves the archive boundary and runs the managed archive-edit flow (move
+  // into = `{ add }`, move out = extract + `{ delete }`). Source and dest can
+  // share the parent drive's `volumeId` (a zip lives on the same drive), so the
+  // volume-id comparison alone misses this — the path check is what catches it.
+  const touchesArchive =
+    pathInsideArchive(config.destinationPath ?? '') || config.sourcePaths.some((p) => pathInsideArchive(p))
+
+  /** Whether this move involves a non-local volume (MTP, an archive, etc.); backend handles all strategy. */
   const isVolumeMove =
     config.operationType === 'move' &&
-    (config.sourceVolumeId !== DEFAULT_VOLUME_ID || (config.destVolumeId ?? DEFAULT_VOLUME_ID) !== DEFAULT_VOLUME_ID)
+    (config.sourceVolumeId !== DEFAULT_VOLUME_ID ||
+      (config.destVolumeId ?? DEFAULT_VOLUME_ID) !== DEFAULT_VOLUME_ID ||
+      touchesArchive)
 
   /** Minimum display time (ms) to prevent jarring one-frame flash. */
   const MIN_DISPLAY_MS = 400

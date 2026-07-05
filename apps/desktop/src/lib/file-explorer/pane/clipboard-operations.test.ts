@@ -262,17 +262,22 @@ describe('pasteFromClipboard', () => {
     expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
   })
 
-  it('refuses pasting into an archive destination with the archive alert', async () => {
+  it('allows pasting into a zip destination and starts a transfer', async () => {
+    // A zip is a writable destination now: ⌘V into it passes the shared guard and
+    // starts a transfer (the backend routes it into the archive-edit flow).
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/x/a.txt'], isCut: false })
+    getCommonParentPathSpy.mockReturnValue('/x')
     const access = buildAccess({ volumeId: 'root', path: '/x/foo.zip/inner' })
 
     await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
 
-    expect(dialogsStub.showAlert).toHaveBeenCalledWith(
-      'Archives are read-only',
-      "You can copy files out of an archive, but copying into one isn't possible yet.",
-    )
-    expect(readClipboardFilesSpy).not.toHaveBeenCalled()
-    expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
+    expect(dialogsStub.showAlert).not.toHaveBeenCalled()
+    expect(dialogsStub.startTransferProgress).toHaveBeenCalledTimes(1)
+    expect(dialogsStub.startTransferProgress.mock.calls[0][0]).toMatchObject({
+      operationType: 'copy',
+      sourcePaths: ['/x/a.txt'],
+      destinationPath: '/x/foo.zip/inner',
+    })
   })
 
   it('refuses pasting into a read-only destination with the shared "Read-only device" alert', async () => {

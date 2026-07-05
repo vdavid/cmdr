@@ -126,6 +126,8 @@ describe('QueueRow', () => {
     expect(operationTypeIcon('move')).toBe('folder-input')
     expect(operationTypeIcon('delete')).toBe('trash-2')
     expect(operationTypeIcon('trash')).toBe('trash-2')
+    // A zip edit gets the dedicated archive glyph, not the move placeholder.
+    expect(operationTypeIcon('archive_edit')).toBe('file-archive')
   })
 
   it('labels instant op rows with their action, not the "Working" fallback', () => {
@@ -133,6 +135,7 @@ describe('QueueRow', () => {
       ['rename', 'Renaming'],
       ['create_folder', 'Creating folder'],
       ['create_file', 'Creating file'],
+      ['archive_edit', 'Editing archive'],
     ]
     for (const [opType, expected] of cases) {
       render({

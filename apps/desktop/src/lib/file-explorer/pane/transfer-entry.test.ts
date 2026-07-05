@@ -101,18 +101,25 @@ describe('checkTransferDestinationGuard', () => {
     expect(result.ok).toBe(true)
   })
 
-  it('blocks an archive destination (path crosses a zip) with the archive alert', () => {
-    // The dest volumeId is the WRITABLE parent drive, so isReadOnly is false; the
-    // archive-ness comes from the dest PATH. Without the path-aware caps check this
-    // paste would be allowed through.
+  it('allows a zip destination (path crosses a zip): it is a writable target now', () => {
+    // A zip is the writable `archive` kind (`canPasteInto: true`), so pasting INTO
+    // it passes the guard; the backend routes the transfer into the archive-edit
+    // flow. The dest volumeId is the parent drive, the archive-ness is in the PATH.
     const result = checkTransferDestinationGuard('root', [ROOT], '/Users/me/foo.zip/inner')
+    expect(result.ok).toBe(true)
+  })
+
+  it('still blocks a zip destination that lives on a read-only volume', () => {
+    // A writable-archive path doesn't override a read-only parent VolumeInfo: the
+    // zip can't be rewritten in place, so the device refusal still fires.
+    const result = checkTransferDestinationGuard(
+      'ro',
+      [{ ...ROOT, id: 'ro', name: 'Locked', isReadOnly: true }],
+      '/ro/foo.zip/inner',
+    )
     expect(result.ok).toBe(false)
-    if (result.ok) throw new Error('expected a block')
-    expect(result.alert).toEqual({
-      title: 'Archives are read-only',
-      message: "You can copy files out of an archive, but copying into one isn't possible yet.",
-    })
-    expect(result.toast).toBeUndefined()
+    if (result.ok || !result.alert) throw new Error('expected a blocking alert')
+    expect(result.alert.title).toBe('Read-only device')
   })
 
   it('allows a writable local destination even when the path merely contains a zip file name', () => {

@@ -39,6 +39,8 @@
         sourceFolderPath: string
         isPermanent: boolean
         supportsTrash: boolean
+        /** Source is inside a zip: deletes are permanent (no Trash inside an archive). */
+        isArchive?: boolean
         isFromCursor: boolean
         /** Current sort column on source pane (for scan preview ordering) */
         sortColumn: SortColumn
@@ -61,6 +63,7 @@
         sourceFolderPath,
         isPermanent: initialIsPermanent,
         supportsTrash,
+        isArchive = false,
         isFromCursor,
         sortColumn,
         sortOrder,
@@ -247,8 +250,19 @@
             {tString('fileOperations.delete.fromPath', { path: abbreviatedPath })}
         </div>
 
-        <!-- No-trash warning banner -->
-        {#if !supportsTrash}
+        <!-- Warning banner: archive deletes are permanent (no Trash inside a zip);
+             other no-trash volumes get the generic banner. -->
+        {#if isArchive}
+            <div class="warning-banner" role="alert">
+                <span class="warning-icon" aria-hidden="true">
+                    <Icon name="triangle-alert" size={18} />
+                </span>
+                <p id="delete-warning-text">
+                    <strong>{tString('fileOperations.delete.archiveWarningStrong')}</strong>
+                    {tString('fileOperations.delete.archiveWarningRest')}
+                </p>
+            </div>
+        {:else if !supportsTrash}
             <div class="warning-banner" role="alert">
                 <span class="warning-icon" aria-hidden="true">
                     <Icon name="triangle-alert" size={18} />

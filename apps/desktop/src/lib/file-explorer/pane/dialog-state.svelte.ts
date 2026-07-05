@@ -5,6 +5,7 @@ import { composeTransferCompleteToast } from '$lib/file-operations/transfer/tran
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
 import { removeEntryFromAllSnapshots } from '$lib/search/snapshot-store.svelte'
+import { pathInsideArchive } from './volume-capabilities'
 import type { TransferDialogPropsData } from './transfer-operations'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
@@ -81,6 +82,12 @@ export interface DeleteDialogPropsData {
   sortColumn: SortColumn
   sortOrder: SortOrder
   sourceVolumeId: string
+  /**
+   * Source is INSIDE a zip. Deleting an archive entry is permanent (there's no
+   * Trash inside a zip), so the dialog forces permanent mode and shows an
+   * archive-specific warning instead of the generic no-trash banner.
+   */
+  isArchive?: boolean
   /** When true, dialog auto-confirms without user interaction (MCP auto-confirm). */
   autoConfirm?: boolean
 }
@@ -505,7 +512,12 @@ export function createDialogState(deps: DialogStateDeps) {
         )
       }
 
-      // Open the newly created file in the default editor
+      // Open the newly created file in the default editor — but NOT for a file
+      // created inside a zip: that's an async managed archive-edit, so the entry
+      // doesn't exist yet when this runs (the create returns an op id, not a
+      // landed path), and an archive-inner path isn't openable in an external
+      // editor anyway. The cursor still lands on it after the edit's refresh.
+      if (pathInsideArchive(currentPath)) return
       const fullPath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`
       deps.onOpenInEditor(fullPath)
     },
