@@ -2,18 +2,3 @@
 members = ["apps/desktop/src-tauri", "crates/fsevent-stream", "crates/index-query"]
 exclude = ["benchmarks/smb"]
 resolver = "2"
-
-# TEMPORARY (M5 remote archives, David-gated). Published smb2 0.11.4 has no
-# public positioned-read primitive (`close_handle` is `pub(crate)`), so a
-# per-read open would leak an SMB handle each call. This override points the dep
-# at the local `david/read-at` worktree, which adds `smb2::FileReader`
-# (open -> N `read_at(offset, len)` -> `close`), the primitive `SmbVolume::read_range`
-# needs to back a remote-zip browse/extract.
-#
-# Merge-time follow-up (do NOT land this patch on Cmdr `main`): publish smb2 with
-# `FileReader`, bump the dep in `apps/desktop/src-tauri/Cargo.toml` to that
-# version, and DELETE this whole `[patch.crates-io]` section. Full checklist:
-# apps/desktop/src-tauri/src/file_system/volume/backends/archive/DETAILS.md
-# § "Remote-backed archives (read path)".
-[patch.crates-io]
-smb2 = { path = "/Users/veszelovszki/projects-git/vdavid/smb2/.claude/worktrees/read-at" }

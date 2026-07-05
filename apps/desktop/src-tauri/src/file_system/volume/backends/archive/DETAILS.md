@@ -249,8 +249,8 @@ naming each new variant; the payoff is that no failure mode is ever classified b
 
 A zip on a direct SMB or MTP volume browses and extracts through the SAME `ArchiveVolume` as a local one — only the
 byte supply differs. The read side is landed for both SMB and MTP; the write (edit) side is a follow-up (see
-`/docs/specs/archive-browsing-plan.md` § M5 and § "Left for the follow-up milestones" below). SMB's ranged read rides a
-**temporary `smb2` source patch** until the primitive is published — see "The positioned-read primitive" below.
+`/docs/specs/archive-browsing-plan.md` § M5 and § "Left for the follow-up milestones" below). SMB's ranged read uses
+`smb2::FileReader` from the published crate — see "The positioned-read primitive" below.
 
 **Local vs remote is the parent's capability, not the path.** `ArchiveVolume::parent_is_local()` returns
 `parent.supports_local_fs_access()`. A `LocalPosixVolume` parent (a plain drive OR an OS-mounted share) reports `true`
@@ -290,15 +290,11 @@ per path is a cheap future optimization if the round-trip ever matters; a normal
 Docker Samba share). The freshness key for the remote index cache comes from the parent's `get_metadata` (`size` +
 second-granularity `modified_at` widened to nanos) — a remote `.zip` can't be `std::fs`-stat'd.
 
-**`smb2::FileReader` ships via a TEMPORARY source patch (David-gated).** Published `smb2` 0.11.4 has no public
-positioned read (its `Tree::close_handle` is `pub(crate)`, so a hand-rolled Cmdr `read_at` would leak an SMB handle per
-call). The primitive lives on the local `david/read-at` smb2 worktree, wired in by a `[patch.crates-io]` override in the
-**workspace-root `Cargo.toml`**. Do NOT land that patch on Cmdr `main`. Merge-time checklist:
-
-1. In smb2: land `david/read-at` on smb2 `main`, then publish a new `smb2` version (external action — David runs it).
-2. In Cmdr: bump `smb2 = "…"` in `apps/desktop/src-tauri/Cargo.toml` to the published version.
-3. In Cmdr: delete the whole `[patch.crates-io]` section from the workspace-root `Cargo.toml`.
-4. `cargo update -p smb2 --precise <version>` (allowed for a ≥3-day-old or first-party pin) and re-run `pnpm check rust`.
+**`smb2::FileReader` (published crate).** `smb2` exposes `FileReader`, an open handle serving positioned
+`read_at(offset, len)`s plus an explicit `close` — the primitive `SmbVolume::read_range` needs. `smb2 = "0.12.0"` in
+`apps/desktop/src-tauri/Cargo.toml` pulls it straight from crates.io; there is no workspace `[patch.crates-io]` override.
+(A hand-rolled `read_at` would need `Tree::close_handle`, which stays `pub(crate)`, so it'd leak an SMB handle per call —
+`FileReader` owns the close.)
 
 ## Routing and lifecycle (`boundary.rs` + `VolumeManager::resolve`)
 
