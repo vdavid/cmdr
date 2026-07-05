@@ -302,7 +302,7 @@ impl Volume for FailingWriteVolume {
 fn archive_source_volume(archive_path: &Path) -> Arc<dyn Volume> {
     use crate::file_system::volume::InMemoryVolume;
     use crate::file_system::volume::backends::archive::ArchiveVolume;
-    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("parent"));
+    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("parent").with_local_fs_access());
     Arc::new(ArchiveVolume::new(parent, archive_path.to_path_buf()))
 }
 

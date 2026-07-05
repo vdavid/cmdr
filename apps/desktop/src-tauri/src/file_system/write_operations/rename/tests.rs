@@ -280,6 +280,9 @@ async fn route_archive_rename_onto_an_existing_name_errors_without_building_a_te
         .flatten()
         .filter(|e| e.file_name().to_string_lossy().contains(".cmdr-tmp-"))
         .collect();
-    assert!(temps.is_empty(), "a pre-checked duplicate rename must not build a temp, found {temps:?}");
+    assert!(
+        temps.is_empty(),
+        "a pre-checked duplicate rename must not build a temp, found {temps:?}"
+    );
     let _ = fs::remove_dir_all(&tmp);
 }

@@ -2354,7 +2354,7 @@ async fn extract_out_copies_a_file_and_a_directory_subtree_out_of_a_zip() {
     let (_tmp, zip_path) = build_extract_out_fixture();
 
     // Source = the read-only ArchiveVolume over the zip; dest = in-memory.
-    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent"));
+    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent").with_local_fs_access());
     let source: Arc<dyn Volume> = Arc::new(ArchiveVolume::new(parent, zip_path.clone()));
     let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Dest").with_space_info(10_000_000, 10_000_000));
 
@@ -2418,7 +2418,7 @@ async fn extracting_a_symlink_entry_writes_a_regular_file_never_a_symlink() {
         writer.finish().expect("finish zip");
     }
 
-    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent"));
+    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Parent").with_local_fs_access());
     let source: Arc<dyn Volume> = Arc::new(ArchiveVolume::new(parent, zip_path.clone()));
 
     // A real-filesystem destination so we can stat the landed entry's kind.

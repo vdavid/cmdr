@@ -428,6 +428,9 @@ async fn route_archive_create_on_an_existing_inner_name_errors_without_building_
         .flatten()
         .filter(|e| e.file_name().to_string_lossy().contains(".cmdr-tmp-"))
         .collect();
-    assert!(temps.is_empty(), "a pre-checked duplicate must not build a temp, found {temps:?}");
+    assert!(
+        temps.is_empty(),
+        "a pre-checked duplicate must not build a temp, found {temps:?}"
+    );
     cleanup_test_dir(&dir);
 }
