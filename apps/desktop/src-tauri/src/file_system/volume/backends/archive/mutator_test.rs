@@ -62,7 +62,10 @@ fn add_streams_a_new_entry_and_keeps_the_rest() {
     let path = write_zip(
         tmp.path(),
         "a",
-        &build_zip(&[stored("keep.txt", b"keep me".to_vec()), deflated("also.txt", b"also".to_vec())]),
+        &build_zip(&[
+            stored("keep.txt", b"keep me".to_vec()),
+            deflated("also.txt", b"also".to_vec()),
+        ]),
     );
 
     let changeset = Changeset {
@@ -129,7 +132,11 @@ fn delete_of_a_directory_drops_the_whole_subtree() {
 
     let back = read_back(&path);
     assert_eq!(back.get("keep.txt").map(|v| v.as_slice()), Some(b"keep".as_slice()));
-    assert!(back.keys().all(|k| !k.starts_with("sub")), "subtree fully removed: {:?}", back.keys());
+    assert!(
+        back.keys().all(|k| !k.starts_with("sub")),
+        "subtree fully removed: {:?}",
+        back.keys()
+    );
     assert!(unzip_accepts(&path));
 }
 
@@ -159,8 +166,15 @@ fn rename_moves_a_file_and_a_subtree_prefix() {
     assert_eq!(back.get("new.txt").map(|v| v.as_slice()), Some(b"file".as_slice()));
     assert!(!back.contains_key("old.txt"));
     assert_eq!(back.get("newdir/x.txt").map(|v| v.as_slice()), Some(b"x".as_slice()));
-    assert_eq!(back.get("newdir/deep/y.txt").map(|v| v.as_slice()), Some(b"y".as_slice()));
-    assert!(back.keys().all(|k| !k.starts_with("olddir")), "old prefix gone: {:?}", back.keys());
+    assert_eq!(
+        back.get("newdir/deep/y.txt").map(|v| v.as_slice()),
+        Some(b"y".as_slice())
+    );
+    assert!(
+        back.keys().all(|k| !k.starts_with("olddir")),
+        "old prefix gone: {:?}",
+        back.keys()
+    );
     assert!(unzip_accepts(&path));
 }
 
@@ -176,7 +190,11 @@ fn mkdir_writes_an_explicit_directory_entry() {
     apply(&path, &changeset, &NoHooks).expect("apply mkdir");
 
     let back = read_back(&path);
-    assert!(back.contains_key("fresh/"), "explicit dir entry present: {:?}", back.keys());
+    assert!(
+        back.contains_key("fresh/"),
+        "explicit dir entry present: {:?}",
+        back.keys()
+    );
     assert!(unzip_accepts(&path));
 }
 
@@ -235,7 +253,11 @@ fn cancel_midway_leaves_the_original_intact_and_no_temp_behind() {
     assert!(matches!(result, Err(MutationError::Cancelled)), "got {result:?}");
 
     // The original archive is byte-for-byte unchanged.
-    assert_eq!(std::fs::read(&path).expect("re-read original"), original, "original untouched by a cancelled edit");
+    assert_eq!(
+        std::fs::read(&path).expect("re-read original"),
+        original,
+        "original untouched by a cancelled edit"
+    );
     // No `.cmdr-tmp-` sibling lingers after a cancel.
     let leftovers: Vec<_> = std::fs::read_dir(tmp.path())
         .expect("read dir")
@@ -256,8 +278,15 @@ fn a_leftover_temp_is_reaped_on_the_next_edit_and_the_original_survives() {
     std::fs::write(&stale, b"garbage from a crashed edit").expect("write stale temp");
 
     // A successful edit reaps the stale temp as part of its run.
-    apply(&path, &Changeset { adds: vec![add_bytes("added.txt", b"x")], ..Default::default() }, &NoHooks)
-        .expect("apply over a leftover");
+    apply(
+        &path,
+        &Changeset {
+            adds: vec![add_bytes("added.txt", b"x")],
+            ..Default::default()
+        },
+        &NoHooks,
+    )
+    .expect("apply over a leftover");
 
     assert!(!stale.exists(), "the stale temp is reaped on the next edit");
     let back = read_back(&path);
@@ -282,12 +311,25 @@ fn deleting_one_entry_keeps_the_others_byte_for_byte() {
     );
     let raw_before = raw_entry_bytes(&path, "survivor.dat");
 
-    apply(&path, &Changeset { deletes: vec!["victim.txt".to_string()], ..Default::default() }, &NoHooks)
-        .expect("apply delete");
+    apply(
+        &path,
+        &Changeset {
+            deletes: vec!["victim.txt".to_string()],
+            ..Default::default()
+        },
+        &NoHooks,
+    )
+    .expect("apply delete");
 
     let raw_after = raw_entry_bytes(&path, "survivor.dat");
-    assert_eq!(raw_before, raw_after, "retained entry's raw compressed bytes are identical");
-    assert_eq!(read_back(&path).get("survivor.dat").map(|v| v.as_slice()), Some(payload.as_slice()));
+    assert_eq!(
+        raw_before, raw_after,
+        "retained entry's raw compressed bytes are identical"
+    );
+    assert_eq!(
+        read_back(&path).get("survivor.dat").map(|v| v.as_slice()),
+        Some(payload.as_slice())
+    );
 }
 
 /// Reads one entry's RAW (still-compressed) bytes, so a test can assert a
@@ -327,11 +369,22 @@ fn an_edit_preserves_the_archive_mode_mtime_and_xattrs() {
     // preservation when the stamp itself took.
     let xattr_stamped = xattr::set(&path, tag_xattr, &tag_value).is_ok();
 
-    apply(&path, &Changeset { adds: vec![add_bytes("added.txt", b"x")], ..Default::default() }, &NoHooks)
-        .expect("apply edit");
+    apply(
+        &path,
+        &Changeset {
+            adds: vec![add_bytes("added.txt", b"x")],
+            ..Default::default()
+        },
+        &NoHooks,
+    )
+    .expect("apply edit");
 
     let meta = std::fs::metadata(&path).expect("stat result");
-    assert_eq!(meta.permissions().mode() & 0o777, 0o640, "mode preserved across the edit");
+    assert_eq!(
+        meta.permissions().mode() & 0o777,
+        0o640,
+        "mode preserved across the edit"
+    );
     assert_eq!(
         filetime::FileTime::from_last_modification_time(&meta),
         old_mtime,
@@ -373,7 +426,10 @@ fn an_edit_that_would_retain_an_encrypted_entry_is_refused_and_leaves_the_origin
     // An unrelated add would retain the encrypted entry -> refused.
     let result = apply(
         &path,
-        &Changeset { adds: vec![add_bytes("note.txt", b"note")], ..Default::default() },
+        &Changeset {
+            adds: vec![add_bytes("note.txt", b"note")],
+            ..Default::default()
+        },
         &NoHooks,
     );
     assert!(
@@ -381,7 +437,11 @@ fn an_edit_that_would_retain_an_encrypted_entry_is_refused_and_leaves_the_origin
         "got {result:?}"
     );
     // The original archive is byte-for-byte untouched, and no temp lingers.
-    assert_eq!(std::fs::read(&path).expect("re-read"), original_on_disk, "original untouched by a refused edit");
+    assert_eq!(
+        std::fs::read(&path).expect("re-read"),
+        original_on_disk,
+        "original untouched by a refused edit"
+    );
     let leftovers = std::fs::read_dir(tmp.path())
         .expect("read dir")
         .flatten()
@@ -402,8 +462,15 @@ fn deleting_an_encrypted_entry_is_allowed() {
     let path = write_zip(tmp.path(), "a", &bytes);
 
     // Deleting the encrypted entry doesn't retain it, so the edit proceeds.
-    apply(&path, &Changeset { deletes: vec!["secret.bin".to_string()], ..Default::default() }, &NoHooks)
-        .expect("delete of an encrypted entry is allowed");
+    apply(
+        &path,
+        &Changeset {
+            deletes: vec!["secret.bin".to_string()],
+            ..Default::default()
+        },
+        &NoHooks,
+    )
+    .expect("delete of an encrypted entry is allowed");
 
     let back = read_back(&path);
     assert!(!back.contains_key("secret.bin"), "encrypted entry removed");
@@ -464,7 +531,11 @@ fn a_paused_add_parks_then_completes_on_resume() {
         assert!(waited < 2000, "edit never parked");
     }
     // While parked, the original archive is untouched (nothing renamed yet).
-    assert_eq!(std::fs::read(&path).expect("read while parked"), original, "original untouched while paused");
+    assert_eq!(
+        std::fs::read(&path).expect("read while parked"),
+        original,
+        "original untouched while paused"
+    );
 
     // Resume and let it finish.
     {
@@ -473,5 +544,119 @@ fn a_paused_add_parks_then_completes_on_resume() {
         hooks.cvar.notify_all();
     }
     handle.join().expect("join").expect("edit completes after resume");
-    assert!(read_back(&path).contains_key("big.bin"), "the paused add landed after resume");
+    assert!(
+        read_back(&path).contains_key("big.bin"),
+        "the paused add landed after resume"
+    );
+}
+
+// ---- Progress accounting -----------------------------------------------------
+
+/// Records every progress snapshot the mutator reports.
+struct RecordingHooks {
+    snapshots: std::sync::Mutex<Vec<MutationProgress>>,
+}
+
+impl RecordingHooks {
+    fn new() -> Self {
+        Self {
+            snapshots: std::sync::Mutex::new(Vec::new()),
+        }
+    }
+    fn snapshots(&self) -> Vec<MutationProgress> {
+        self.snapshots.lock().expect("lock").clone()
+    }
+}
+
+impl MutationHooks for RecordingHooks {
+    fn on_progress(&self, progress: MutationProgress) {
+        self.snapshots.lock().expect("lock").push(progress);
+    }
+}
+
+#[test]
+fn progress_reaches_the_totals_and_never_goes_backwards() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    // One retained STORED entry (compressed size == 5 bytes of "keepy"), plus one
+    // added file of exactly 100 bytes, so the totals are predictable.
+    let path = write_zip(tmp.path(), "a", &build_zip(&[stored("keep.txt", b"keepy".to_vec())]));
+    let added = vec![b'z'; 100];
+
+    let hooks = RecordingHooks::new();
+    apply(
+        &path,
+        &Changeset {
+            adds: vec![add_bytes("added.bin", &added)],
+            ..Default::default()
+        },
+        &hooks,
+    )
+    .expect("apply add");
+
+    let snaps = hooks.snapshots();
+    assert!(!snaps.is_empty(), "progress was reported");
+
+    // Totals: 2 entries (1 retained + 1 add); bytes = retained compressed (5, stored)
+    // + added (100) = 105.
+    let last = *snaps.last().expect("a final snapshot");
+    assert_eq!(last.entries_total, 2, "entries_total counts retained + added");
+    assert_eq!(last.bytes_total, 105, "bytes_total = retained compressed + added");
+    assert_eq!(last.entries_done, 2, "every entry is accounted for at the end");
+    assert_eq!(last.bytes_done, 105, "every byte is accounted for at the end");
+
+    // Monotonic non-decreasing on both axes (catches a `-=` / `*=` on the accumulators).
+    for pair in snaps.windows(2) {
+        assert!(
+            pair[1].entries_done >= pair[0].entries_done,
+            "entries_done never decreases: {:?} -> {:?}",
+            pair[0],
+            pair[1]
+        );
+        assert!(
+            pair[1].bytes_done >= pair[0].bytes_done,
+            "bytes_done never decreases: {:?} -> {:?}",
+            pair[0],
+            pair[1]
+        );
+    }
+}
+
+#[test]
+fn a_local_path_add_streams_its_bytes_and_counts_them() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let path = write_zip(tmp.path(), "a", &build_zip(&[stored("keep.txt", b"keep".to_vec())]));
+
+    // A local source file larger than one add chunk, so the streaming loop runs
+    // multiple iterations (exercises the read-until-zero loop, not a single read).
+    let source_path = tmp.path().join("source.bin");
+    let payload = vec![b'q'; 300 * 1024];
+    std::fs::write(&source_path, &payload).expect("write source");
+
+    let hooks = RecordingHooks::new();
+    apply(
+        &path,
+        &Changeset {
+            adds: vec![AddEntry {
+                inner_path: "into/added.bin".to_string(),
+                source: AddSource::LocalPath(source_path),
+            }],
+            ..Default::default()
+        },
+        &hooks,
+    )
+    .expect("apply local-path add");
+
+    // The full payload landed (a broken read-loop would truncate or empty it).
+    assert_eq!(
+        read_back(&path).get("into/added.bin").map(|v| v.len()),
+        Some(payload.len()),
+        "the streamed file's full length landed"
+    );
+    // The streamed bytes were counted into progress.
+    let last = *hooks.snapshots().last().expect("a final snapshot");
+    assert_eq!(last.bytes_done, last.bytes_total, "streamed bytes fully accounted for");
+    assert!(
+        last.bytes_done >= payload.len() as u64,
+        "at least the added bytes counted"
+    );
 }
