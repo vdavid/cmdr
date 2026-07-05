@@ -31,6 +31,13 @@
 # wins with `DirectoryNotEmpty`. Cap concurrency at 1 to serialize them across
 # nextest's per-process forks.
 virtual-mtp = { max-threads = 1 }
+# Tests that block on REAL OS file-watcher delivery (FSEvents). Running several
+# at once multiplies live watches and event storms, and under a saturated suite
+# (which grew with the archive milestones' real zip I/O) delivery starvation
+# started beating even the per-test retries. Serializing them removes the
+# self-interference; the 20 s cap + retries below still cover load from the
+# rest of the suite.
+real-notify = { max-threads = 1 }
 
 [[profile.default.overrides]]
 filter = 'test(mtp_scan) + test(listing_is_watched_flips_with_connection)'
@@ -76,6 +83,7 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 #   8 s cap would SIGTERM them under a saturated run, and they want the same retry
 #   tolerance for a starved event.
 filter = 'test(file_viewer::watcher_test::) + test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(archive::watch_integration_test::a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk) + test(archive::watch_integration_test::a_temp_rename_swap_refreshes_the_listing)'
+test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 retries = 2
 
