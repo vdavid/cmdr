@@ -301,9 +301,13 @@ impl Volume for FailingWriteVolume {
 /// Builds a local-backed `ArchiveVolume` over `archive_path` for move-out tests.
 fn archive_source_volume(archive_path: &Path) -> Arc<dyn Volume> {
     use crate::file_system::volume::InMemoryVolume;
-    use crate::file_system::volume::backends::archive::ArchiveVolume;
+    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
     let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("parent").with_local_fs_access());
-    Arc::new(ArchiveVolume::new(parent, archive_path.to_path_buf()))
+    Arc::new(ArchiveVolume::new(
+        parent,
+        archive_path.to_path_buf(),
+        ArchiveFormat::Zip,
+    ))
 }
 
 fn move_out_config() -> crate::file_system::VolumeCopyConfig {
@@ -755,12 +759,12 @@ async fn overwrite_older_overwrites_only_a_strictly_older_entry() {
     // Case C: EQUAL mtimes → skip (the comparison is strict `<`, not `<=`). Derive
     // the source mtime from the archive entry's ACTUAL parsed value so the two are
     // bit-for-bit equal regardless of DOS-datetime timezone conversion.
-    use crate::file_system::volume::backends::archive::{ArchiveIndex, LocalFileSource};
+    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
     let archive_c = tmp.path().join("c.zip");
     write_zip_with_mtime(&archive_c, "d/f.txt", b"KEEP", old);
     let parsed_mtime = {
         let src = LocalFileSource::open(&archive_c).expect("open archive");
-        let index = ArchiveIndex::parse(&src).expect("parse index");
+        let index = ArchiveIndex::parse(Arc::new(src), ArchiveFormat::Zip).expect("parse index");
         index.get("d/f.txt").and_then(|n| n.modified).expect("entry mtime")
     };
     let src_c = tmp.path().join("srcc");
@@ -1298,4 +1302,33 @@ async fn interactive_dir_vs_dir_merges_without_prompting() {
         zip.by_name("d/").is_err(),
         "a merge into a pre-existing archive dir must not add a redundant explicit dir entry"
     );
+}
+
+/// The mutation refusal matrix: only zip is writable. Every non-zip archive
+/// format (tar family + 7z) refuses with a typed `ReadOnlyDevice` at the write
+/// chokepoint, so no archive-edit route ever hands a non-zip file to the
+/// zip-only mutator. Path-only (extension-based), no I/O.
+#[test]
+fn ensure_zip_writable_allows_zip_and_refuses_read_only_formats() {
+    use std::path::Path;
+    assert!(ensure_zip_writable(Path::new("/x/writable.zip")).is_ok());
+    for name in [
+        "ro.tar",
+        "ro.tar.gz",
+        "ro.tgz",
+        "ro.tar.xz",
+        "ro.txz",
+        "ro.tar.bz2",
+        "ro.tbz2",
+        "ro.tar.zst",
+        "ro.tzst",
+        "ro.7z",
+    ] {
+        let path = format!("/x/{name}");
+        let err = ensure_zip_writable(Path::new(&path)).expect_err(name);
+        assert!(
+            matches!(err, WriteOperationError::ReadOnlyDevice { .. }),
+            "{name}: {err:?}"
+        );
+    }
 }

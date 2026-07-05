@@ -1,32 +1,30 @@
-//! The parsed archive index: a synthetic directory tree over a zip's central
-//! directory, plus the query surface the volume layer reads.
+//! The parsed archive index: a synthetic directory tree plus the query surface
+//! the volume layer reads. Format-agnostic — zip, tar, and 7z all feed the same
+//! tree.
 //!
-//! Parsing has two stages, split so the tree logic is pure and unit-testable
-//! without any I/O:
+//! Each format's `parse` (in [`super::zip`] / [`super::tar`] / [`super::sevenz`])
+//! produces a `Vec<(RawEntry, H)>` — a format-neutral [`RawEntry`] plus a
+//! per-format read handle `H`. [`build_index`] then does the format-independent
+//! work over any `H`:
 //!
-//! 1. [`parse_central_directory`] drives rc-zip's [`ArchiveFsm`] over an
-//!    [`ArchiveByteSource`] to get the flat list of central-directory entries.
-//! 2. [`build_index`] sanitizes each name (Zip Slip defense, see [`super::name`]),
-//!    then [`build_tree`] synthesizes the directory hierarchy from the entry path
-//!    prefixes — most zips carry no explicit directory entries, so the tree is
-//!    inferred from `a/b/c.txt` implying `a/` and `a/b/`.
+//! 1. sanitize each name (Zip Slip defense, see [`super::name`]), and
+//! 2. [`build_tree`] synthesizes the directory hierarchy from the entry path
+//!    prefixes — most archives carry no explicit directory entries, so the tree
+//!    is inferred from `a/b/c.txt` implying `a/` and `a/b/`.
+//!
+//! The pruned handle map is wrapped into an [`EntryStore`] variant; [`ArchiveIndex::open_read`]
+//! dispatches per format to open a streaming reader.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use rc_zip::fsm::{ArchiveFsm, FsmResult};
-use rc_zip::parse::Method;
-use rc_zip::{Entry, EntryKind};
+use rc_zip::Entry;
 
 use super::error::ArchiveError;
+use super::format::ArchiveFormat;
 use super::name::{QuarantineReason, SanitizedName, sanitize_entry_name};
 use super::read::ArchiveEntryReader;
 use super::source::ArchiveByteSource;
-
-/// General-purpose bit flag 0: the entry is encrypted (traditional PKWARE or
-/// strong encryption). We don't decrypt, so extraction of such an entry is
-/// rejected.
-const GP_FLAG_ENCRYPTED: u16 = 1 << 0;
 
 /// Maximum number of nodes (files plus synthesized directories) in one archive's
 /// tree. The backstop against the many-entries axis of memory amplification: the
@@ -40,7 +38,7 @@ const GP_FLAG_ENCRYPTED: u16 = 1 << 0;
 /// only fires on a hostile blow-up. It bounds node *count*; per-node path length
 /// is separately bounded by the zip name field (`u16`, 64 KB), so worst-case
 /// tree memory is bounded too.
-const MAX_TREE_NODES: usize = 2_000_000;
+pub(super) const MAX_TREE_NODES: usize = 2_000_000;
 
 /// One node in the synthetic tree: a file, a directory (explicit or implied),
 /// or a symlink. Archive-native — the volume layer maps this onto `FileEntry`.
@@ -95,30 +93,104 @@ struct NodeSeed {
     encrypted: bool,
 }
 
-/// A parsed zip index: the synthetic tree plus the per-file metadata needed to
-/// open a read. Cheap to share (`Arc`) and immutable once built.
+/// A format-neutral parsed entry: the fields every format's parser produces for
+/// the shared tree builder. The per-format read handle (`H` in
+/// [`build_index`]) travels alongside it, not inside.
+pub(super) struct RawEntry {
+    /// Raw, attacker-controlled entry name (pre-sanitization). `\` and `..` and
+    /// absolute paths are handled by [`sanitize_entry_name`], identically for
+    /// every format — the Zip Slip defense is format-independent.
+    pub name: String,
+    pub is_dir: bool,
+    pub is_symlink: bool,
+    /// Uncompressed size (0 for a dir/symlink is fine — dirs report `None`).
+    pub size: u64,
+    pub compressed_size: u64,
+    pub modified: Option<i64>,
+    pub encrypted: bool,
+}
+
+/// The per-format read handles, keyed by sanitized inner path. Each variant
+/// knows how to open a streaming reader for one entry; [`Self::open_read`]
+/// dispatches. The zip store IS the rc-zip entry map; tar and 7z carry their own
+/// location/metadata handles plus the format state their reader needs.
+pub(super) enum EntryStore {
+    Zip(HashMap<String, Entry>),
+    Tar(super::tar::TarStore),
+    SevenZ(super::sevenz::SevenZStore),
+}
+
+impl EntryStore {
+    /// Opens a streaming reader for the file at the already-normalized `inner`
+    /// path. The caller ([`ArchiveIndex::open_read`]) has confirmed it's a file,
+    /// not a directory, and passes the tree's `size` so every format reports the
+    /// same uncompressed total for progress. Maps a missing handle to `NotFound`.
+    fn open_read(
+        &self,
+        inner: &str,
+        size: u64,
+        source: Arc<dyn ArchiveByteSource>,
+    ) -> Result<ArchiveEntryReader, ArchiveError> {
+        match self {
+            EntryStore::Zip(files) => {
+                let entry = files
+                    .get(inner)
+                    .ok_or_else(|| ArchiveError::NotFound(inner.to_string()))?;
+                super::zip::open_read(entry, source)
+            }
+            EntryStore::Tar(store) => store.open_read(inner, size, source),
+            EntryStore::SevenZ(store) => store.open_read(inner, size, source),
+        }
+    }
+}
+
+/// The output of the shared tree builder plus the pruned per-format handle map,
+/// before it's wrapped into an [`ArchiveIndex`] with a concrete [`EntryStore`].
+pub(super) struct BuiltIndex<H> {
+    nodes: HashMap<String, ArchiveNode>,
+    children: HashMap<String, Vec<String>>,
+    quarantined: Vec<(String, QuarantineReason)>,
+    has_encrypted: bool,
+    /// Read handles for the entries that ended up as real file nodes.
+    files: HashMap<String, H>,
+}
+
+impl<H> BuiltIndex<H> {
+    /// Wraps the built tree into an [`ArchiveIndex`], turning the handle map into
+    /// a concrete [`EntryStore`] via `wrap`.
+    pub(super) fn into_index(self, wrap: impl FnOnce(HashMap<String, H>) -> EntryStore) -> ArchiveIndex {
+        ArchiveIndex {
+            nodes: self.nodes,
+            children: self.children,
+            quarantined: self.quarantined,
+            has_encrypted: self.has_encrypted,
+            store: wrap(self.files),
+        }
+    }
+}
+
+/// A parsed archive index: the synthetic tree plus the per-file read handles.
+/// Format-agnostic — the tree query surface is shared, and the format-specific
+/// read handles live behind [`EntryStore`]. Cheap to share (`Arc`) and immutable
+/// once built.
 pub struct ArchiveIndex {
     /// Every node (files and directories, including the root) by inner path.
     nodes: HashMap<String, ArchiveNode>,
     /// Directory path -> its children's inner paths, pre-sorted (directories
     /// first, then case-insensitive by name).
     children: HashMap<String, Vec<String>>,
-    /// Inner path -> the rc-zip entry, kept only for readable (non-directory)
-    /// entries so [`Self::open_read`] can build a decompressing reader.
-    files: HashMap<String, Entry>,
     /// Raw names dropped by the sanitizer, with the reason. Kept for diagnostics
     /// and tests (a hostile `../evil` never reaches the tree, but we record it).
     quarantined: Vec<(String, QuarantineReason)>,
     has_encrypted: bool,
+    /// The per-format read handles for readable (non-directory) entries.
+    store: EntryStore,
 }
 
-// `rc_zip::Entry` isn't `Debug`, so `ArchiveIndex` can't derive it; a concise
-// summary is more useful than the full node dump anyway.
 impl std::fmt::Debug for ArchiveIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ArchiveIndex")
             .field("nodes", &self.nodes.len())
-            .field("files", &self.files.len())
             .field("quarantined", &self.quarantined.len())
             .field("has_encrypted", &self.has_encrypted)
             .finish()
@@ -126,11 +198,26 @@ impl std::fmt::Debug for ArchiveIndex {
 }
 
 impl ArchiveIndex {
-    /// Parses `source` into an index: reads the central directory, sanitizes
-    /// names, and synthesizes the directory tree.
-    pub fn parse(source: &dyn ArchiveByteSource) -> Result<Self, ArchiveError> {
-        let entries = parse_central_directory(source)?;
-        build_index(entries)
+    /// Parses `source` into an index for the given `format`: reads the format's
+    /// directory (zip central directory, one tar scan, or the 7z header),
+    /// sanitizes names identically for every format, and synthesizes the tree.
+    pub fn parse(source: Arc<dyn ArchiveByteSource>, format: ArchiveFormat) -> Result<Self, ArchiveError> {
+        match format {
+            ArchiveFormat::Zip => {
+                let entries = super::zip::parse(source.as_ref())?;
+                Ok(build_index(entries)?.into_index(EntryStore::Zip))
+            }
+            ArchiveFormat::Tar(codec) => {
+                let entries = super::tar::parse(source, codec)?;
+                Ok(build_index(entries)?
+                    .into_index(|members| EntryStore::Tar(super::tar::TarStore::new(codec, members))))
+            }
+            ArchiveFormat::SevenZ => {
+                let (entries, meta) = super::sevenz::parse(source)?;
+                Ok(build_index(entries)?
+                    .into_index(|members| EntryStore::SevenZ(super::sevenz::SevenZStore::new(meta, members))))
+            }
+        }
     }
 
     /// Lists the children of the directory at `inner_path`. Returns `None` if
@@ -194,21 +281,17 @@ impl ArchiveIndex {
         if self.nodes.get(key).is_some_and(|n| n.is_dir) {
             return Err(ArchiveError::IsADirectory(key.to_string()));
         }
-        let entry = self
-            .files
-            .get(key)
-            .ok_or_else(|| ArchiveError::NotFound(key.to_string()))?;
-        if is_encrypted(entry) {
-            return Err(ArchiveError::Encrypted);
-        }
-        Ok(ArchiveEntryReader::spawn(source, entry.clone()))
+        let size = self.nodes.get(key).and_then(|n| n.size).unwrap_or(0);
+        self.store.open_read(key, size, source)
     }
-}
 
-/// Whether the entry is encrypted: general-purpose flag bit 0, or the AE-x
-/// (WinZip AES) marker method.
-fn is_encrypted(entry: &Entry) -> bool {
-    entry.flags & GP_FLAG_ENCRYPTED != 0 || entry.method == Method::Aex
+    /// The uncompressed size of the file at `inner_path`, or `None` for a missing
+    /// path or a directory. Used by the sequential one-pass extractor to size a
+    /// member from the tree without touching the store.
+    pub(super) fn file_size(&self, inner_path: &str) -> Option<u64> {
+        let node = self.nodes.get(normalize_lookup(inner_path))?;
+        (!node.is_dir).then_some(node.size.unwrap_or(0))
+    }
 }
 
 /// Trims leading/trailing slashes so a caller's inner path (which may arrive as
@@ -218,68 +301,35 @@ fn normalize_lookup(inner_path: &str) -> &str {
     inner_path.trim_matches('/')
 }
 
-/// Drives rc-zip's central-directory state machine over the byte source,
-/// returning the flat entry list. This is the only I/O in the parse path.
-fn parse_central_directory(source: &dyn ArchiveByteSource) -> Result<Vec<Entry>, ArchiveError> {
-    let size = source.size();
-    if size == 0 {
-        // rc-zip would report an EOCD-not-found; short-circuit for clarity.
-        return Err(ArchiveError::NotAnArchive);
-    }
-
-    let mut fsm = ArchiveFsm::new(size);
-    loop {
-        if let Some(offset) = fsm.wants_read() {
-            let space = fsm.space();
-            let n = source.read_at(offset, space)?;
-            if n == 0 {
-                return Err(ArchiveError::Corrupt(
-                    "unexpected end of file while reading the central directory".to_string(),
-                ));
-            }
-            fsm.fill(n);
-        }
-
-        fsm = match fsm.process()? {
-            FsmResult::Done(archive) => return Ok(archive.entries().cloned().collect()),
-            FsmResult::Continue(next) => next,
-        };
-    }
-}
-
-/// Sanitizes and classifies each central-directory entry, then hands the
-/// accepted seeds to [`build_tree`]. Also stashes each readable file's rc-zip
-/// entry (for later reads) and records quarantined names.
-fn build_index(entries: Vec<Entry>) -> Result<ArchiveIndex, ArchiveError> {
+/// Sanitizes and classifies each parsed entry (format-neutrally), then hands the
+/// accepted seeds to [`build_tree`]. Stashes each readable file's per-format read
+/// handle (pruned to the entries that end up as real file nodes) and records
+/// quarantined names. Generic over the handle type `H`, so every format shares
+/// the Zip Slip defense, the synthetic-tree logic, and the DoS caps.
+pub(super) fn build_index<H>(entries: Vec<(RawEntry, H)>) -> Result<BuiltIndex<H>, ArchiveError> {
     let mut seeds: Vec<NodeSeed> = Vec::with_capacity(entries.len());
-    let mut files: HashMap<String, Entry> = HashMap::new();
+    let mut files: HashMap<String, H> = HashMap::new();
     let mut quarantined: Vec<(String, QuarantineReason)> = Vec::new();
     let mut has_encrypted = false;
 
-    for entry in entries {
-        let encrypted = is_encrypted(&entry);
-        has_encrypted |= encrypted;
+    for (raw, handle) in entries {
+        has_encrypted |= raw.encrypted;
 
-        let is_symlink = entry.kind() == EntryKind::Symlink;
-        // A directory is signalled either by the mode bits or (very commonly) by
-        // a trailing slash on the name. A symlink is never treated as a dir.
-        let is_dir = !is_symlink && (entry.kind() == EntryKind::Directory || entry.name.ends_with('/'));
-
-        match sanitize_entry_name(&entry.name) {
-            SanitizedName::Quarantined(reason) => quarantined.push((entry.name.clone(), reason)),
+        match sanitize_entry_name(&raw.name) {
+            SanitizedName::Quarantined(reason) => quarantined.push((raw.name, reason)),
             SanitizedName::Accepted(path) => {
                 seeds.push(NodeSeed {
                     path: path.clone(),
-                    is_dir,
-                    is_symlink,
-                    size: if is_dir { None } else { Some(entry.uncompressed_size) },
-                    compressed_size: if is_dir { None } else { Some(entry.compressed_size) },
-                    modified: Some(entry.modified.timestamp()),
-                    encrypted,
+                    is_dir: raw.is_dir,
+                    is_symlink: raw.is_symlink,
+                    size: if raw.is_dir { None } else { Some(raw.size) },
+                    compressed_size: if raw.is_dir { None } else { Some(raw.compressed_size) },
+                    modified: raw.modified,
+                    encrypted: raw.encrypted,
                 });
-                if !is_dir {
-                    // Later duplicate wins (some zips carry repeat names).
-                    files.insert(path, entry);
+                if !raw.is_dir {
+                    // Later duplicate wins (some archives carry repeat names).
+                    files.insert(path, handle);
                 }
             }
         }
@@ -287,15 +337,15 @@ fn build_index(entries: Vec<Entry>) -> Result<ArchiveIndex, ArchiveError> {
 
     let (nodes, children) = build_tree(seeds, MAX_TREE_NODES)?;
     // A file the tree dropped (shadowed by a directory, or blocked by a file
-    // ancestor) must not stay readable via `open_read`: keep an `Entry` only for
+    // ancestor) must not stay readable via `open_read`: keep a handle only for
     // paths that ended up as real file nodes.
     files.retain(|path, _| nodes.get(path).is_some_and(|node| !node.is_dir));
-    Ok(ArchiveIndex {
+    Ok(BuiltIndex {
         nodes,
         children,
-        files,
         quarantined,
         has_encrypted,
+        files,
     })
 }
 

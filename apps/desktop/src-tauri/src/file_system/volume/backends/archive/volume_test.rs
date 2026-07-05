@@ -43,7 +43,7 @@ impl TestArchive {
     }
 
     fn volume_with_parent(&self, parent: Arc<dyn Volume>) -> ArchiveVolume {
-        ArchiveVolume::new(parent, self.path.clone())
+        ArchiveVolume::new(parent, self.path.clone(), ArchiveFormat::Zip)
     }
 }
 
@@ -493,7 +493,7 @@ async fn remote_archive(bytes: Vec<u8>) -> (Arc<InMemoryVolume>, ArchiveVolume) 
         .create_file(&archive_path, &bytes)
         .await
         .expect("load remote zip into parent store");
-    let volume = ArchiveVolume::new(Arc::clone(&parent) as Arc<dyn Volume>, archive_path);
+    let volume = ArchiveVolume::new(Arc::clone(&parent) as Arc<dyn Volume>, archive_path, ArchiveFormat::Zip);
     (parent, volume)
 }
 

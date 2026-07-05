@@ -80,6 +80,81 @@ impl ArchiveByteSource for LocalFileSource {
     }
 }
 
+/// A forward `Read` + `Seek` cursor over an [`ArchiveByteSource`], so the tar and
+/// 7z decoders (which want `std::io::Read`, and 7z also `Seek`) drive over the
+/// same positioned byte supply the zip fsm uses — local or remote, unchanged.
+///
+/// Runs on the producer's `spawn_blocking` thread, so a remote source's
+/// `block_on`-backed `read_at` is safe here.
+pub(super) struct SourceReader {
+    source: Arc<dyn ArchiveByteSource>,
+    size: u64,
+    pos: u64,
+}
+
+impl SourceReader {
+    pub(super) fn new(source: Arc<dyn ArchiveByteSource>) -> Self {
+        let size = source.size();
+        Self { source, size, pos: 0 }
+    }
+}
+
+impl io::Read for SourceReader {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let n = self.source.read_at(self.pos, buf)?;
+        self.pos += n as u64;
+        Ok(n)
+    }
+}
+
+impl io::Seek for SourceReader {
+    fn seek(&mut self, from: io::SeekFrom) -> io::Result<u64> {
+        let target = match from {
+            io::SeekFrom::Start(n) => n as i128,
+            io::SeekFrom::End(n) => self.size as i128 + n as i128,
+            io::SeekFrom::Current(n) => self.pos as i128 + n as i128,
+        };
+        if target < 0 {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "seek before start"));
+        }
+        self.pos = target as u64;
+        Ok(self.pos)
+    }
+}
+
+/// A `Read` over a bounded byte range of an [`ArchiveByteSource`], starting at
+/// `offset` and yielding at most `remaining` bytes. Used for a plain-`.tar`
+/// member's data (random access: seek to the member offset, read its exact
+/// size), so reading never spills into the following header or padding.
+pub(super) struct SourceRangeReader {
+    source: Arc<dyn ArchiveByteSource>,
+    offset: u64,
+    remaining: u64,
+}
+
+impl SourceRangeReader {
+    pub(super) fn new(source: Arc<dyn ArchiveByteSource>, offset: u64, len: u64) -> Self {
+        Self {
+            source,
+            offset,
+            remaining: len,
+        }
+    }
+}
+
+impl io::Read for SourceRangeReader {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.remaining == 0 {
+            return Ok(0);
+        }
+        let want = buf.len().min(self.remaining as usize);
+        let n = self.source.read_at(self.offset, &mut buf[..want])?;
+        self.offset += n as u64;
+        self.remaining -= n as u64;
+        Ok(n)
+    }
+}
+
 /// An in-memory archive source over a shared byte buffer.
 ///
 /// Used by tests (hand-crafted hostile fixtures, no disk) and available for a

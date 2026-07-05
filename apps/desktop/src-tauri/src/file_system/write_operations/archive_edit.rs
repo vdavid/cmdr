@@ -43,7 +43,7 @@ use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::{
     self, AddEntry, AddSource, Changeset, MutationError, MutationHooks, MutationProgress,
 };
-use crate::file_system::volume::backends::archive::{ArchiveIndex, LocalFileSource};
+use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
 use crate::file_system::volume::{LaneKey, Volume};
 use crate::ignore_poison::IgnorePoison;
 
@@ -113,6 +113,7 @@ pub(crate) async fn route_archive_delete(
         message: "no entries to delete".to_string(),
     })?;
     let (archive_path, _) = archive::archive_boundary_candidate(first).ok_or_else(|| read_only_error(first))?;
+    ensure_zip_writable(&archive_path)?;
 
     let mut deletes = Vec::with_capacity(sources.len());
     for source in sources {
@@ -154,6 +155,19 @@ fn read_only_error(path: &Path) -> WriteOperationError {
     }
 }
 
+/// Refuses a mutation on a NON-ZIP archive. tar / 7z (and every other format) are
+/// browse + extract only — only zip is writable — so every archive-edit route
+/// funnels through this guard before touching the (zip-only) mutator. A tar/7z
+/// target returns the typed read-only refusal, leaving the archive untouched. The
+/// routing predicates stay format-agnostic (they also gate reads and navigation);
+/// this is the single write-side chokepoint.
+pub(crate) fn ensure_zip_writable(archive_path: &Path) -> Result<(), WriteOperationError> {
+    match archive::format_for_path(archive_path) {
+        Some(ArchiveFormat::Zip) => Ok(()),
+        _ => Err(read_only_error(archive_path)),
+    }
+}
+
 /// Whether `inner_path` already exists in the archive at `archive_path`, parsing
 /// the central directory on the blocking pool. The create/rename routing calls
 /// this to reject a duplicate up front with the app's typed already-exists error,
@@ -168,7 +182,8 @@ pub(crate) async fn archive_inner_exists(archive_path: PathBuf, inner_path: Stri
         let Ok(source) = LocalFileSource::open(&archive_path) else {
             return false;
         };
-        let Ok(index) = ArchiveIndex::parse(&source) else {
+        // Mutation is zip-only, so the oracle always parses as zip.
+        let Ok(index) = ArchiveIndex::parse(Arc::new(source), ArchiveFormat::Zip) else {
             return false;
         };
         index.exists(&inner_path)
@@ -218,6 +233,7 @@ pub(crate) async fn route_archive_copy_into(
     // wrongly return `None`.
     let (archive_path, dest_inner) =
         archive::archive_boundary_candidate(&dest_full_path).ok_or_else(|| read_only_error(&dest_full_path))?;
+    ensure_zip_writable(&archive_path)?;
     let dest_inner = normalize_inner_path(&dest_inner);
 
     // Stop policy → the interactive per-file prompt. Planning must run INSIDE the
@@ -429,7 +445,7 @@ fn build_copy_into_changeset_inner(
             message: e.to_string(),
         })
     })?;
-    let index = ArchiveIndex::parse(&source).map_err(|e| {
+    let index = ArchiveIndex::parse(Arc::new(source), ArchiveFormat::Zip).map_err(|e| {
         PlanError::Op(WriteOperationError::WriteError {
             path: archive_path.display().to_string(),
             message: e.to_string(),
@@ -936,6 +952,9 @@ pub(crate) async fn route_archive_move_out(
         message: "no entries to move".to_string(),
     })?;
     let (archive_path, _) = archive::archive_boundary_candidate(first).ok_or_else(|| read_only_error(first))?;
+    // Moving OUT of a read-only archive would need to DELETE the source entries;
+    // tar/7z can't be edited, so refuse (copy-out still works via the read path).
+    ensure_zip_writable(&archive_path)?;
     let mut inner_deletes = Vec::with_capacity(source_paths.len());
     for source in &source_paths {
         let (source_archive, inner) =

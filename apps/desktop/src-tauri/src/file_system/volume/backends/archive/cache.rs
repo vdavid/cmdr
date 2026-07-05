@@ -18,6 +18,7 @@ use std::sync::{Arc, Mutex};
 use crate::ignore_poison::IgnorePoison;
 
 use super::error::ArchiveError;
+use super::format::ArchiveFormat;
 use super::index::ArchiveIndex;
 use super::source::{ArchiveByteSource, LocalFileSource};
 
@@ -49,15 +50,15 @@ impl ArchiveIndexCache {
     /// Blocking: stats the file and (on a miss) reads and parses the central
     /// directory. Call from a blocking context (`spawn_blocking`), not directly
     /// on the async executor.
-    pub fn index_for_local(&self, path: &Path) -> Result<Arc<ArchiveIndex>, ArchiveError> {
+    pub fn index_for_local(&self, path: &Path, format: ArchiveFormat) -> Result<Arc<ArchiveIndex>, ArchiveError> {
         let key = cache_key_for(path)?;
 
         if let Some(hit) = self.get(&key) {
             return Ok(hit);
         }
 
-        let source = LocalFileSource::open(path)?;
-        let index = Arc::new(ArchiveIndex::parse(&source)?);
+        let source: Arc<dyn ArchiveByteSource> = Arc::new(LocalFileSource::open(path)?);
+        let index = Arc::new(ArchiveIndex::parse(source, format)?);
         self.insert(key, Arc::clone(&index));
         Ok(index)
     }
@@ -77,7 +78,8 @@ impl ArchiveIndexCache {
         path: &Path,
         size: u64,
         mtime_nanos: Option<i128>,
-        source: &dyn ArchiveByteSource,
+        source: Arc<dyn ArchiveByteSource>,
+        format: ArchiveFormat,
     ) -> Result<Arc<ArchiveIndex>, ArchiveError> {
         let key = CacheKey {
             path: path.to_path_buf(),
@@ -87,7 +89,7 @@ impl ArchiveIndexCache {
         if let Some(hit) = self.get(&key) {
             return Ok(hit);
         }
-        let index = Arc::new(ArchiveIndex::parse(source)?);
+        let index = Arc::new(ArchiveIndex::parse(source, format)?);
         self.insert(key, Arc::clone(&index));
         Ok(index)
     }

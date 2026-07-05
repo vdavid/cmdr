@@ -21,26 +21,41 @@
 
 use std::path::{Component, Path, PathBuf};
 
-/// Archive file extensions this build routes INTO as browsable folders.
-///
-/// Extension-only, lowercased, no leading dot. ZIP is the only browsable format
-/// for now; the later tar/7z read milestone extends this ONE set (it's the
-/// single source of truth shared by `FileEntry.is_archive` and boundary
-/// detection). Magic-byte confirmation ([`confirm_archive_boundary`]) is
-/// zip-specific and gains sibling checks when that set grows.
-pub const SUPPORTED_ARCHIVE_EXTENSIONS: &[&str] = &["zip"];
+use super::format::{ArchiveFormat, TarCodec, format_for_name, format_for_path};
 
-/// True if `name`'s extension is a supported archive format (case-insensitive).
+/// Longest header prefix any format's magic check needs. A plain `.tar`'s ustar
+/// magic sits at offset 257, so one 512-byte tar block covers every format
+/// (zip/gzip/bzip2/xz/zstd/7z magics all live at offset 0).
+pub const ARCHIVE_MAGIC_PREFIX_LEN: usize = 512;
+
+/// True if `name`'s SUFFIX denotes a supported archive format (case-insensitive).
 ///
-/// Extension-only, no I/O. A name with no extension (`zip`) or a dotfile with no
-/// stem (`.zip`) is not an archive. Drives `FileEntry.is_archive` at listing
-/// time and the cheap pre-filter in [`archive_boundary_candidate`].
+/// Extension-only, no I/O. Suffix-based (not just the last `.ext`) so `.tar.gz`
+/// counts while a bare `.gz` doesn't — see [`format_for_name`], the single source
+/// of truth this delegates to. Drives `FileEntry.is_archive` at listing time and
+/// the cheap pre-filter in [`archive_boundary_candidate`].
 pub fn has_supported_archive_extension(name: &str) -> bool {
-    Path::new(name)
-        .extension()
-        .and_then(|ext| ext.to_str())
-        .map(|ext| ext.to_ascii_lowercase())
-        .is_some_and(|ext| SUPPORTED_ARCHIVE_EXTENSIONS.contains(&ext.as_str()))
+    format_for_name(name).is_some()
+}
+
+/// Whether `header` (a file's first bytes, ideally [`ARCHIVE_MAGIC_PREFIX_LEN`]
+/// long) carries the magic signature for `format`. Short slices simply fail to
+/// match (never panic), so a truncated read declines the route rather than
+/// mis-detecting. Shared by the local sniff and the REMOTE confirm in
+/// `VolumeManager`, so both agree on what "is a `<format>`" means.
+pub fn bytes_match_archive_magic(format: ArchiveFormat, header: &[u8]) -> bool {
+    match format {
+        ArchiveFormat::Zip => bytes_start_with_zip_signature(header),
+        // A plain tar has no signature at offset 0; the ustar magic sits at 257.
+        // (A pre-POSIX v7 tar has none at all — those are accepted by extension +
+        // a successful parse rather than magic, but modern tars are ustar/GNU/pax.)
+        ArchiveFormat::Tar(TarCodec::Plain) => matches!(header.get(257..262), Some(b"ustar")),
+        ArchiveFormat::Tar(TarCodec::Gzip) => header.starts_with(&[0x1f, 0x8b]),
+        ArchiveFormat::Tar(TarCodec::Bzip2) => header.starts_with(b"BZh"),
+        ArchiveFormat::Tar(TarCodec::Xz) => header.starts_with(&[0xfd, b'7', b'z', b'X', b'Z', 0x00]),
+        ArchiveFormat::Tar(TarCodec::Zstd) => header.starts_with(&[0x28, 0xb5, 0x2f, 0xfd]),
+        ArchiveFormat::SevenZ => header.starts_with(&[0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c]),
+    }
 }
 
 /// The extension-only boundary candidate (no I/O). If a path component (scanning
@@ -76,9 +91,9 @@ pub fn archive_boundary_candidate(path: &Path) -> Option<(PathBuf, PathBuf)> {
 ///
 /// Runs [`archive_boundary_candidate`], then confirms the candidate is a real
 /// archive: (a) the component is a FILE — a directory literally named `foo.zip`
-/// must lose to normal directory navigation — and (b) its first bytes are a zip
-/// signature, so a mislabeled non-archive isn't routed. Returns the split only
-/// when both hold.
+/// must lose to normal directory navigation — and (b) its bytes carry the
+/// format's magic ([`bytes_match_archive_magic`]), so a mislabeled non-archive
+/// isn't routed. Returns the split only when both hold.
 ///
 /// Blocking (a local stat + a few-byte read). Callers on the async executor
 /// accept it because it runs once per navigation and only when a path component
@@ -90,7 +105,8 @@ pub fn confirm_archive_boundary(path: &Path) -> Option<(PathBuf, PathBuf)> {
     if !metadata.is_file() {
         return None;
     }
-    if !file_starts_with_zip_signature(&archive_path) {
+    let format = format_for_path(&archive_path)?;
+    if !file_matches_archive_magic(&archive_path, format) {
         return None;
     }
     Some((archive_path, inner_path))
@@ -136,19 +152,25 @@ pub fn path_targets_archive_file(path: &Path) -> bool {
     std::fs::metadata(&archive_path).is_ok_and(|meta| meta.is_file())
 }
 
-/// Reads the first four bytes and checks them against the zip start-of-file
-/// signatures (see [`bytes_start_with_zip_signature`]). A file shorter than four
-/// bytes, or one that can't be opened, isn't a zip.
-fn file_starts_with_zip_signature(path: &Path) -> bool {
+/// Reads up to [`ARCHIVE_MAGIC_PREFIX_LEN`] bytes and checks them against
+/// `format`'s magic ([`bytes_match_archive_magic`]). Best-effort read: a file
+/// shorter than the prefix (a tiny zip) yields fewer bytes, and the magic check
+/// tolerates that. A file that can't be opened isn't an archive.
+fn file_matches_archive_magic(path: &Path, format: ArchiveFormat) -> bool {
     use std::io::Read;
     let Ok(mut file) = std::fs::File::open(path) else {
         return false;
     };
-    let mut buf = [0u8; 4];
-    if file.read_exact(&mut buf).is_err() {
-        return false;
+    let mut buf = [0u8; ARCHIVE_MAGIC_PREFIX_LEN];
+    let mut filled = 0;
+    while filled < buf.len() {
+        match file.read(&mut buf[filled..]) {
+            Ok(0) => break,
+            Ok(n) => filled += n,
+            Err(_) => return false,
+        }
     }
-    bytes_start_with_zip_signature(&buf)
+    bytes_match_archive_magic(format, &buf[..filled])
 }
 
 /// Whether `bytes` (a file's first four bytes) match one of the three zip
@@ -304,5 +326,71 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let missing = dir.path().join("ghost.zip").join("inner");
         assert!(confirm_archive_boundary(&missing).is_none());
+    }
+
+    // ---- Multi-format extension + magic ------------------------------------
+
+    #[test]
+    fn extension_check_recognizes_the_tar_family_and_7z() {
+        for name in [
+            "a.tar",
+            "a.tar.gz",
+            "a.tgz",
+            "a.tar.xz",
+            "a.txz",
+            "a.tar.bz2",
+            "a.tbz2",
+            "a.tar.zst",
+            "a.tzst",
+            "a.7z",
+            "a.TAR.GZ",
+        ] {
+            assert!(has_supported_archive_extension(name), "{name} should be an archive");
+        }
+        // A bare compressed file (not a tar) is not a browsable archive.
+        assert!(!has_supported_archive_extension("photo.gz"));
+        assert!(!has_supported_archive_extension("data.zst"));
+    }
+
+    #[test]
+    fn confirm_matches_per_format_magic() {
+        let dir = tempfile::tempdir().expect("tempdir");
+
+        // A plain tar has no offset-0 magic; ustar sits at 257.
+        let tar = dir.path().join("real.tar");
+        let mut tar_bytes = vec![0u8; 512];
+        tar_bytes[257..262].copy_from_slice(b"ustar");
+        std::fs::write(&tar, &tar_bytes).expect("write tar");
+        assert!(confirm_archive_boundary(&tar.join("inner")).is_some());
+
+        // gzip-wrapped tar.
+        let tgz = dir.path().join("real.tar.gz");
+        std::fs::write(&tgz, [0x1f, 0x8b, 0x08, 0x00]).expect("write tgz");
+        let (zip, inner) = confirm_archive_boundary(&tgz.join("d/f.txt")).expect("tgz boundary");
+        assert_eq!(zip, tgz);
+        assert_eq!(inner, PathBuf::from("d/f.txt"));
+
+        // 7z magic.
+        let sevenz = dir.path().join("real.7z");
+        std::fs::write(&sevenz, [0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c, 0x00]).expect("write 7z");
+        assert!(confirm_archive_boundary(&sevenz.join("x")).is_some());
+    }
+
+    #[test]
+    fn confirm_rejects_a_mislabeled_tar_gz() {
+        // A `.tar.gz` name whose bytes aren't gzip must not route.
+        let dir = tempfile::tempdir().expect("tempdir");
+        let fake = dir.path().join("notreally.tar.gz");
+        std::fs::write(&fake, b"plain text, definitely not gzip").expect("write file");
+        assert!(confirm_archive_boundary(&fake.join("inner")).is_none());
+    }
+
+    #[test]
+    fn candidate_splits_a_double_extension_at_the_whole_component() {
+        // `.tar.gz` is one path component, so the split includes the full name —
+        // never `foo.tar` with `.gz` as inner.
+        let (zip, inner) = archive_boundary_candidate(Path::new("/a/foo.tar.gz/inner/b.txt")).expect("boundary");
+        assert_eq!(zip, PathBuf::from("/a/foo.tar.gz"));
+        assert_eq!(inner, PathBuf::from("inner/b.txt"));
     }
 }

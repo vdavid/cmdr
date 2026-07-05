@@ -38,29 +38,36 @@
 mod boundary;
 mod cache;
 mod error;
+mod format;
 mod index;
 /// The zip write side (temp+rename safe-overwrite). The write-ops archive-edit
 /// driver drives it; the read core above stays untouched.
 pub(crate) mod mutator;
 mod name;
 mod read;
+mod sevenz;
 mod source;
+mod tar;
 mod volume;
 mod watch;
+mod zip;
 
 #[cfg(test)]
 mod archive_test;
+#[cfg(test)]
+mod multiformat_test;
 #[cfg(test)]
 mod test_fixtures;
 #[cfg(test)]
 mod watch_integration_test;
 
 pub use boundary::{
-    SUPPORTED_ARCHIVE_EXTENSIONS, archive_boundary_candidate, bytes_start_with_zip_signature, confirm_archive_boundary,
+    ARCHIVE_MAGIC_PREFIX_LEN, archive_boundary_candidate, bytes_match_archive_magic, confirm_archive_boundary,
     has_supported_archive_extension, path_crosses_archive_boundary, path_is_inside_archive, path_targets_archive_file,
 };
 pub use cache::ArchiveIndexCache;
 pub use error::ArchiveError;
+pub use format::{ArchiveFormat, TarCodec, format_for_name, format_for_path};
 pub use index::{ArchiveIndex, ArchiveNode};
 pub use name::{QuarantineReason, SanitizedName, sanitize_entry_name};
 pub use read::ArchiveEntryReader;

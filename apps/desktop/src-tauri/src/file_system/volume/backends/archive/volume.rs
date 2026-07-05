@@ -40,7 +40,7 @@ use std::sync::{Arc, Mutex};
 use tokio::task::spawn_blocking;
 
 use super::{
-    ArchiveByteSource, ArchiveEntryReader, ArchiveError, ArchiveIndex, ArchiveIndexCache, ArchiveNode,
+    ArchiveByteSource, ArchiveEntryReader, ArchiveError, ArchiveFormat, ArchiveIndex, ArchiveIndexCache, ArchiveNode,
     DEFAULT_TAIL_CACHE_LEN, LocalFileSource, TailCachedSource,
 };
 use crate::file_system::listing::FileEntry;
@@ -57,6 +57,10 @@ pub struct ArchiveVolume {
     /// Absolute path of the `.zip` on the parent volume. This is `root()`, and
     /// every inner entry's path joins under it.
     archive_path: PathBuf,
+    /// Which archive format (zip / tar+codec / 7z) — decided from the path at
+    /// resolve time and threaded into every parse. Also drives the sequential
+    /// access class ([`ArchiveFormat::is_sequential`]).
+    format: ArchiveFormat,
     /// Display name: the archive file's own name.
     name: String,
     /// Parsed-index cache keyed by `(path, size, mtime)`. Shared as `Arc` so the
@@ -72,12 +76,13 @@ pub struct ArchiveVolume {
 }
 
 impl ArchiveVolume {
-    /// Builds a read-only archive volume over `archive_path`, backed by `parent`.
+    /// Builds a read-only archive volume over `archive_path` (a `format` archive),
+    /// backed by `parent`.
     ///
-    /// Cheap and infallible: the central directory is parsed lazily on first use
-    /// (and cached). The routing layer confirms the file is a real,
-    /// supported archive at navigation time before constructing one.
-    pub fn new(parent: Arc<dyn Volume>, archive_path: PathBuf) -> Self {
+    /// Cheap and infallible: the directory is parsed lazily on first use (and
+    /// cached). The routing layer confirms the file is a real, supported archive
+    /// (extension + magic) and picks the `format` before constructing one.
+    pub fn new(parent: Arc<dyn Volume>, archive_path: PathBuf, format: ArchiveFormat) -> Self {
         let name = archive_path
             .file_name()
             .map(|s| s.to_string_lossy().into_owned())
@@ -85,6 +90,7 @@ impl ArchiveVolume {
         Self {
             parent,
             archive_path,
+            format,
             name,
             cache: Arc::new(ArchiveIndexCache::new()),
             watch: Mutex::new(None),
@@ -172,13 +178,14 @@ impl ArchiveVolume {
     async fn index(&self) -> Result<Arc<ArchiveIndex>, VolumeError> {
         let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
+        let format = self.format;
         if self.parent_is_local() {
-            parse_blocking(move || cache.index_for_local(&archive_path).map_err(to_volume_error)).await
+            parse_blocking(move || cache.index_for_local(&archive_path, format).map_err(to_volume_error)).await
         } else {
             let (size, mtime_nanos, source) = self.open_remote_source().await?;
             parse_blocking(move || {
                 cache
-                    .index_for_source(&archive_path, size, mtime_nanos, source.as_ref())
+                    .index_for_source(&archive_path, size, mtime_nanos, source, format)
                     .map_err(to_volume_error)
             })
             .await
@@ -192,10 +199,11 @@ impl ArchiveVolume {
     async fn load(&self) -> Result<(Arc<ArchiveIndex>, Arc<dyn ArchiveByteSource>), VolumeError> {
         let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
+        let format = self.format;
         if self.parent_is_local() {
             parse_blocking(
                 move || -> Result<(Arc<ArchiveIndex>, Arc<dyn ArchiveByteSource>), VolumeError> {
-                    let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
+                    let index = cache.index_for_local(&archive_path, format).map_err(to_volume_error)?;
                     let source: Arc<dyn ArchiveByteSource> = Arc::new(LocalFileSource::open(&archive_path)?);
                     Ok((index, source))
                 },
@@ -207,7 +215,7 @@ impl ArchiveVolume {
             let path_for_parse = archive_path.clone();
             let index = parse_blocking(move || {
                 cache
-                    .index_for_source(&path_for_parse, size, mtime_nanos, parse_source.as_ref())
+                    .index_for_source(&path_for_parse, size, mtime_nanos, parse_source, format)
                     .map_err(to_volume_error)
             })
             .await?;
@@ -372,6 +380,13 @@ impl Volume for ArchiveVolume {
     /// reads, so raising this later is a one-line change.
     fn max_concurrent_ops(&self) -> usize {
         1
+    }
+
+    /// A compressed tar or 7z is sequential-access (see
+    /// [`Volume::extraction_is_sequential`] and [`ArchiveFormat::is_sequential`]);
+    /// a plain `.tar` and a zip are random-access.
+    fn extraction_is_sequential(&self, _path: &Path) -> bool {
+        self.format.is_sequential()
     }
 
     fn scan_for_copy<'a>(

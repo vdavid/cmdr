@@ -1,20 +1,28 @@
-# Archive backend (zip)
+# Archive backend (zip, tar, 7z)
 
-Two layers: a **read-only zip core** (central directory → synthetic tree; streaming decompress) and `ArchiveVolume`, the
-`Volume` built on it. The core is **decoupled from the `Volume` trait** (archive-native types: `ArchiveIndex`,
-`ArchiveNode`, `ArchiveError`); `volume.rs` alone maps them onto `FileEntry` / `VolumeError` / `VolumeReadStream`. Keep
-the core submodules `Volume`-free.
+Two layers: a **read core** (parse → synthetic tree; streaming decompress) and `ArchiveVolume`, the `Volume` built on
+it. The core is **decoupled from the `Volume` trait** (archive-native types: `ArchiveIndex`, `ArchiveNode`,
+`ArchiveError`); `volume.rs` alone maps them onto `FileEntry` / `VolumeError` / `VolumeReadStream`. Keep the core
+submodules `Volume`-free.
+
+**Formats: zip (browse + extract + WRITE), tar / tar.gz / tar.xz / tar.bz2 / tar.zst / 7z (browse + extract, READ-ONLY).**
+The tree, Zip Slip sanitizer, DoS caps, cache, and byte-source seam are format-agnostic; only parsing and the per-entry
+read handle differ per format. Extraction is all pure-Rust and streams in bounded chunks (never whole-buffered).
 
 ## Module map
 
 - `volume.rs`: `ArchiveVolume` — the read-only `Volume` impl (browse + extract + `scan_for_copy`) over the core below.
-- `source.rs`: `ArchiveByteSource` (byte-supply seam) + `LocalFileSource`, `BytesSource`.
-- `index.rs`: `ArchiveIndex` (parsed tree + query surface), the central-directory parse driver, the pure tree builder.
+- `format.rs`: `ArchiveFormat` / `TarCodec`, suffix→format detection (`format_for_name`), and the pure-Rust tar codec
+  decoder factory. `is_sequential` = the access class.
+- `index.rs`: `ArchiveIndex` (parsed tree + query surface + the `EntryStore` dispatch), the generic tree builder.
+- `zip.rs` / `tar.rs` / `sevenz.rs`: the per-format parse (→ `RawEntry` list) and per-entry streaming producer.
+- `source.rs`: `ArchiveByteSource` (byte-supply seam) + `LocalFileSource`, `BytesSource`, `SourceReader` (Read+Seek
+  adapter for the tar/7z decoders), `TailCachedSource`.
 - `name.rs`: `sanitize_entry_name` (Zip Slip defense). `read.rs`: `ArchiveEntryReader`. `cache.rs`: `ArchiveIndexCache`.
-- `boundary.rs`: the SHARED `.zip`-boundary detector (`VolumeManager::resolve` and `commands/volumes.rs` both use it;
-  two would drift).
-- `mutator.rs`: the WRITE side (temp+rename safe-overwrite). `Volume`-free; the write-ops `ArchiveEditOperation` driver
-  wraps it. See [DETAILS.md](DETAILS.md) § "Zip mutation".
+- `boundary.rs`: the SHARED archive-boundary detector + per-format magic (`VolumeManager::resolve` and
+  `commands/volumes.rs` both use it; two would drift).
+- `mutator.rs`: the WRITE side (temp+rename safe-overwrite, ZIP ONLY). `Volume`-free; the write-ops
+  `ArchiveEditOperation` driver wraps it. See [DETAILS.md](DETAILS.md) § "Zip mutation".
 
 Depth, rationale, and full test list: [DETAILS.md](DETAILS.md); read before non-trivial work here.
 
@@ -28,6 +36,18 @@ Depth, rationale, and full test list: [DETAILS.md](DETAILS.md); read before non-
 - **We drive rc-zip's sans-IO fsm directly, NOT `rc-zip-tokio`**: its only public entry reader borrows its
   `ArchiveHandle` (can't back an owned, cached stream), and it decompresses on the async executor (we need it off).
   Codec features live on the `rc-zip` dep. See [DETAILS.md](DETAILS.md) § Decision.
+
+- **Format is decided by NAME SUFFIX (`format_for_name`, the single source of truth), then confirmed by per-format magic
+  at navigation.** Longest-suffix wins, so `.tar.gz` is a gzip tar and a bare `.gz` is NOT an archive. A plain `.tar`'s
+  ustar magic is at offset 257, so the confirm reads 512 bytes. Details: [DETAILS.md](DETAILS.md) § "tar and 7z".
+
+- **Only zip is WRITABLE; tar/7z are read-only.** The write-side chokepoint is
+  `write_operations::archive_edit::ensure_zip_writable`; a non-zip target returns typed `ReadOnlyDevice`, untouched.
+  Don't route a non-zip archive to the mutator (it parses-as-zip and fails).
+
+- **Compressed tar and 7z are SEQUENTIAL-access (`Volume::extraction_is_sequential`).** A single extract prefix-decodes
+  to the target (O(prefix)); 7z solid blocks consume earlier entries to advance the stream. Plain `.tar` and zip are
+  random-access. The whole-subtree copy is O(n²) (one-pass planner deferred): [DETAILS.md](DETAILS.md) § "tar and 7z".
 
 - **Decompression runs on `spawn_blocking`, never on the executor; reads are chunked, never whole-entry buffered.**
   `ArchiveEntryReader` is a bounded-channel producer/consumer (≤128 KiB/chunk, capacity 4 ⇒ ~512 KiB peak). Dropping

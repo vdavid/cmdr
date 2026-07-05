@@ -130,6 +130,8 @@ async fn route_archive_create(
     // works for a REMOTE zip, where the `std::fs` confirm would wrongly fail.
     let (archive_path, inner_parent) = archive::archive_boundary_candidate(Path::new(parent_path))
         .ok_or_else(|| "This archive can't be edited right now.".to_string())?;
+    // Only zip archives are writable; tar and 7z are browse + extract only.
+    archive_edit::ensure_zip_writable(&archive_path).map_err(|_| "This archive is read-only.".to_string())?;
     let inner_path = archive_edit::join_inner_path(&inner_parent, name);
 
     // Reject a duplicate up front with the same friendly message the real-FS

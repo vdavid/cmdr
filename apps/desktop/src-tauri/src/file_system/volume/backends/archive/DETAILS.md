@@ -488,6 +488,66 @@ verified via our reader AND external `unzip -t`), cancel-midway-leaves-the-origi
 reaped on the next edit, the merge invariant (a delete keeps siblings' raw compressed bytes byte-identical), metadata
 (mode/mtime/xattr) survival, pause-parks-mid-add-then-completes-on-resume, and the encrypted-entry refusal.
 
+## tar and 7z (read-only, multi-format core)
+
+The read core serves three formats behind ONE tree + query surface. Only parsing and the per-entry read handle differ;
+the Zip Slip sanitizer (`name.rs`), the synthetic-tree builder and DoS caps (`index.rs`), the byte-source seam
+(`source.rs`), the cache, and `ArchiveEntryReader` are all format-agnostic.
+
+**The generic seam.** Each format's `parse` produces a `Vec<(RawEntry, H)>` — a format-neutral `RawEntry`
+(name/is_dir/is_symlink/size/mtime/encrypted) plus a per-format read handle `H`. `index::build_index<H>` runs the SAME
+sanitize + `build_tree` + prune over any `H`, returning a `BuiltIndex<H>` the format wraps into an `EntryStore` variant.
+`ArchiveIndex::open_read` looks the node up (dir → `IsADirectory`), then dispatches to the store. So a new format is a
+new `parse` + producer + `EntryStore` arm; the tree, safety, and caps come for free. `ArchiveVolume` holds the
+`ArchiveFormat` (decided from the path at resolve time) and threads it into every parse.
+
+**Format detection (`format.rs`).** `format_for_name` is the single source of truth (both `has_supported_archive_extension`
+and the FE mirror defer to it). It matches by NAME SUFFIX, longest-first, so `.tar.gz` is a gzip tar (not the `.tar` its
+substring suggests, nor a bare `.gz` — a single compressed file with nothing to browse is deliberately NOT an archive).
+The boundary detector then confirms with per-format magic (`bytes_match_archive_magic`): zip `PK`, gzip `1f 8b`, bzip2
+`BZh`, xz `fd 37 7a 58 5a 00`, zstd `28 b5 2f fd`, 7z `37 7a bc af 27 1c`, and — the one that isn't at offset 0 — a plain
+tar's `ustar` at offset 257, so the confirm reads a 512-byte prefix (`ARCHIVE_MAGIC_PREFIX_LEN`).
+
+**Codecs — all pure-Rust, all pull-model `Read`, bounded memory (`format.rs::open_tar_decoder`).** gzip → `flate2`
+(`miniz_oxide`), bzip2 → `bzip2` (pure `libbz2-rs-sys` default, no C libbz2), xz → `lzma-rust2`'s `XzReader` (the pure
+streaming `.xz` reader `lzma-rs` lacks), zstd → `ruzstd`'s `StreamingDecoder`. Each handles concatenated members
+(`gzip -c a b`). tar parsing/streaming rides the `tar` crate over a `SourceReader` (a `Read`+`Seek` cursor on the byte
+source); 7z uses `sevenz-rust2`'s `ArchiveReader` (needs `Read`+`Seek`, hence `SourceReader`). LZMA/LZMA2 (the common 7z
+codec) is built into `sevenz-rust2`; `bzip2`/`deflate`/`ppmd` are feature-enabled. `aes256` is OFF, so an encrypted 7z
+surfaces a typed error rather than being decrypted (matches zip's "encrypted → reject").
+
+**Access class — the sequential trap (`ArchiveFormat::is_sequential`, `Volume::extraction_is_sequential`).** A plain
+`.tar` is RANDOM-access: `TarStore` records each member's data offset, so `open_read` seeks and streams the member's
+exact bytes (no decompression). A COMPRESSED tar and 7z are SEQUENTIAL: there's no random access into the decoded stream.
+
+- **tar (compressed):** `open_read` prefix-decodes the whole stream from the start, matching entries by their sanitized
+  name, and streams the target — O(prefix) per entry, bounded memory (data before the target is decoded and discarded).
+- **7z:** the header (metadata, at the file end like zip's CD) builds the index with NO decompression. `open_read`
+  drives `for_each_entries`; inside a SOLID block the entries share one decode stream, so an earlier entry must be fully
+  CONSUMED (read to a sink) to advance the decoder to the target — skipping without reading desyncs it into a checksum
+  failure. Reaching the target streams it, then stops.
+
+**O(n²) copy caveat (deferred one-pass, a documented fast-follow).** The copy engine reads a directory extraction
+entry-by-entry via `open_read_stream`. For a compressed tar / solid 7z, each call re-decodes the prefix, so extracting a
+whole subtree is O(n²) in the worst case. `extraction_is_sequential` DECLARES the class for a future copy-planner
+one-pass strategy, but the planner does NOT yet consult it — bulk-extracting a large compressed archive is currently
+slow. This is a performance limitation, never a correctness/safety one: browse, preview, single-file and small
+extractions are fast; the fix (a one-pass sequential extractor the planner drives) is scoped like the plan's other
+deferred optimizations (M-append, M6). A plain `.tar` and zip are unaffected (random-access).
+
+**Mutation is zip-only.** tar/7z are browse + extract. Every archive-edit route funnels through
+`write_operations::archive_edit::ensure_zip_writable`, which returns a typed `ReadOnlyDevice` for a non-zip target
+(leaving it untouched) BEFORE the zip-only mutator sees it. The routing predicates stay format-agnostic (they also gate
+reads and navigation); this is the single write-side chokepoint. The FE mirrors it: `capabilitiesForPane` returns the
+read-only archive capability (write flags off, `canBeSource` on for copy-OUT) for a non-zip boundary segment, and the
+Enter policy auto-joins tar/7z via the backend `is_archive` flag (default Ask → Browse | Open).
+
+**Remote (SMB/MTP).** tar/7z fall out of the remote seams naturally: `SourceReader` reads over any `ArchiveByteSource`,
+including the parent-backed `VolumeByteSource`, so a remote tar/7z browses and extracts through the parent's ranged
+reads with no new code. A compressed-tar index parse streams the whole file once over `read_range` (the honest "even if
+slower" cost); a 7z header parse benefits from `TailCachedSource`. The plain-tar random-access path issues one
+`read_range` per member read.
+
 ## Testing
 
 `volume_test.rs` drives `ArchiveVolume` against real zips written to a temp file (the local source needs a real path):
@@ -504,6 +564,15 @@ first-writer-wins file/dir collisions (both orders), the empty archive, a zip64 
 archive typed errors, streaming (bounded chunks + decompression correctness + truncated-entry error), stored reads,
 concurrent reads, best-effort encoding, and cache hit/invalidation. `name.rs` and `index.rs` carry pure unit tests for
 the sanitizer (incl. the depth cap) and the tree builder (incl. the node-count cap and the collision orders).
+
+`multiformat_test.rs` builds tar and 7z fixtures in memory (dev-only encoders: `tar`/`flate2`/`bzip2` writers,
+`lzma-rust2`'s `XzWriter`, `zstd`, and `sevenz-rust2`'s `compress` feature — the shipped path stays decode-only) and
+covers the tar synthetic tree, a per-codec round-trip (plain/gzip/bzip2/xz/zstd), bounded-chunk streaming, the tar Zip
+Slip quarantine (a hostile `../evil.txt` injected as a raw ustar header), the symlink-extracts-to-nothing safety, and 7z
+browse + solid-block extract of a later member. `format.rs` unit-tests suffix detection and the sequential class;
+`boundary.rs` tests the per-format magic (incl. plain-tar ustar-at-257) and the double-extension split.
+`write_operations/archive_edit_tests.rs::ensure_zip_writable_allows_zip_and_refuses_read_only_formats` pins the
+non-zip-refuses-typed matrix.
 
 `watch.rs` unit-tests the pure event filter (`event_path_targets_archive`: exact match, the `/private` firmlink
 normalization, sibling and prefix-similar rejection). `watch_integration_test.rs` drives the whole refresh through

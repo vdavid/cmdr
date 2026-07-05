@@ -707,7 +707,7 @@ fn a_local_path_add_streams_its_bytes_and_counts_them() {
 
 #[test]
 fn a_local_path_add_carries_the_source_files_mtime() {
-    use crate::file_system::volume::backends::archive::{ArchiveIndex, LocalFileSource};
+    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
 
     let tmp = tempfile::tempdir().expect("tempdir");
     let path = write_zip(tmp.path(), "a", &build_zip(&[stored("keep.txt", b"keep".to_vec())]));
@@ -735,7 +735,7 @@ fn a_local_path_add_carries_the_source_files_mtime() {
     // Re-parse via the app's index: the added entry reports the SOURCE mtime
     // (within DOS granularity), not the archive's write time.
     let source = LocalFileSource::open(&path).expect("open archive");
-    let index = ArchiveIndex::parse(&source).expect("parse index");
+    let index = ArchiveIndex::parse(std::sync::Arc::new(source), ArchiveFormat::Zip).expect("parse index");
     let reported = index
         .get("added.txt")
         .and_then(|n| n.modified)

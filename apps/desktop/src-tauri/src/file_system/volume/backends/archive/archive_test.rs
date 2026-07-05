@@ -14,7 +14,7 @@ fn bytes_source(bytes: Vec<u8>) -> Arc<dyn ArchiveByteSource> {
 
 fn parse(bytes: &[u8]) -> Result<ArchiveIndex, ArchiveError> {
     let src = BytesSource::new(bytes.to_vec());
-    ArchiveIndex::parse(&src)
+    ArchiveIndex::parse(Arc::new(src), ArchiveFormat::Zip)
 }
 
 fn names(index: &ArchiveIndex, dir_path: &str) -> Vec<String> {
@@ -338,15 +338,15 @@ fn cache_reuses_index_then_invalidates_on_change() {
     std::fs::write(&path, build_zip(&[stored("one.txt", "1")])).unwrap();
 
     let cache = ArchiveIndexCache::new();
-    let first = cache.index_for_local(&path).unwrap();
-    let second = cache.index_for_local(&path).unwrap();
+    let first = cache.index_for_local(&path, ArchiveFormat::Zip).unwrap();
+    let second = cache.index_for_local(&path, ArchiveFormat::Zip).unwrap();
     assert!(Arc::ptr_eq(&first, &second), "same file must hit the cache");
     assert_eq!(cache.len(), 1);
     assert_eq!(names(&first, ""), vec!["one.txt"]);
 
     // Rewrite the archive with a different entry set (different size ⇒ new key).
     std::fs::write(&path, build_zip(&[stored("two.txt", "22"), stored("three.txt", "333")])).unwrap();
-    let third = cache.index_for_local(&path).unwrap();
+    let third = cache.index_for_local(&path, ArchiveFormat::Zip).unwrap();
     assert!(!Arc::ptr_eq(&first, &third), "an external edit must miss the cache");
     assert_eq!(names(&third, ""), vec!["three.txt", "two.txt"]);
 
@@ -360,7 +360,7 @@ fn cache_reports_a_typed_error_for_a_non_archive_file() {
     let path = std::env::temp_dir().join(format!("cmdr-archive-bad-{}.bin", uuid::Uuid::new_v4()));
     std::fs::write(&path, b"not a zip").unwrap();
     let cache = ArchiveIndexCache::new();
-    let err = cache.index_for_local(&path).unwrap_err();
+    let err = cache.index_for_local(&path, ArchiveFormat::Zip).unwrap_err();
     assert!(matches!(err, ArchiveError::NotAnArchive), "got {err:?}");
     let _ = std::fs::remove_file(&path);
 }

@@ -558,6 +558,22 @@ pub trait Volume: Send + Sync {
         1
     }
 
+    /// Whether extracting from this volume is inherently SEQUENTIAL: the stream
+    /// (or a solid block) must be decoded front-to-back, so there's no cheap
+    /// random access to an arbitrary entry. `true` for a compressed tar
+    /// (`.tar.gz`/`.xz`/`.bz2`/`.zst`) and 7z; `false` for a plain `.tar`, a zip,
+    /// and every real filesystem.
+    ///
+    /// The access-class declaration for the copy planner's one-pass strategy: a
+    /// per-entry random read of a sequential archive re-decodes the prefix in
+    /// front of each entry, so extracting a whole subtree entry-by-entry is
+    /// O(n²). A planner that sees `true` should extract the subtree in ONE
+    /// sequential pass. Default `false` keeps the existing per-entry behavior for
+    /// random-access backends.
+    fn extraction_is_sequential(&self, _path: &Path) -> bool {
+        false
+    }
+
     /// Scans a path recursively to get statistics for a copy operation.
     /// Returns file count, directory count, and total bytes.
     fn scan_for_copy<'a>(

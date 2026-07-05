@@ -5,7 +5,8 @@
 
 use super::Volume;
 use super::backends::archive::{
-    ArchiveVolume, archive_boundary_candidate, bytes_start_with_zip_signature, confirm_archive_boundary,
+    ARCHIVE_MAGIC_PREFIX_LEN, ArchiveFormat, ArchiveVolume, archive_boundary_candidate, bytes_match_archive_magic,
+    confirm_archive_boundary, format_for_path,
 };
 use crate::ignore_poison::IgnorePoison;
 use std::collections::{HashMap, VecDeque};
@@ -251,7 +252,11 @@ impl VolumeManager {
         path: &Path,
     ) -> ResolvedVolume {
         let archive_id = archive_volume_id(&zip_path);
-        let archive = Arc::new(ArchiveVolume::new(parent, zip_path));
+        // The format is decided from the confirmed archive's name. A confirmed
+        // boundary always carries a supported extension, so `format_for_path`
+        // yields `Some`; the `Zip` fallback only guards a future path shape.
+        let format = format_for_path(&zip_path).unwrap_or(ArchiveFormat::Zip);
+        let archive = Arc::new(ArchiveVolume::new(parent, zip_path, format));
         // Only the resolve that actually registered starts the content watch, so
         // repeated resolves of an already-registered archive don't churn notify
         // watchers. The watch lives on the registered `ArchiveVolume` and stops
@@ -388,18 +393,20 @@ impl Default for VolumeManager {
 ///
 /// Mirrors the local [`confirm_archive_boundary`] check: the component must be a
 /// FILE (a directory named `foo.zip` loses to normal navigation) whose first
-/// bytes are a zip signature. It reuses the SAME magic-byte predicate
-/// ([`bytes_start_with_zip_signature`]) so local and remote agree on "is a zip".
+/// bytes carry the format's magic. It reuses the SAME magic predicate
+/// ([`bytes_match_archive_magic`]) so local and remote agree on "is a `<format>`",
+/// reading one tar block ([`ARCHIVE_MAGIC_PREFIX_LEN`]) to cover a plain tar's
+/// ustar magic at offset 257.
 ///
 /// **Refuse-typed on an unavailable primitive.** If the parent can't do a
 /// positioned read yet (`SmbVolume::read_range` before its smb2 primitive lands
 /// → `NotSupported`), or the sniff hits a transient remote fault, we can't rule
 /// the file out — so we route it anyway. The archive layer then re-attempts the
 /// read while parsing and surfaces a clean typed "unreadable archive" rather than
-/// mis-listing the `.zip` as a plain file. When the SMB primitive lands, the same
+/// mis-listing the file as a plain one. When the SMB primitive lands, the same
 /// path simply starts sniffing real magic and browsing for real — no code change.
-/// Only a *successful* read whose bytes AREN'T a zip signature (a genuinely
-/// mislabeled remote file) declines the route.
+/// Only a *successful* read whose bytes DON'T match (a genuinely mislabeled remote
+/// file) declines the route.
 async fn confirm_remote_archive_boundary(parent: &dyn Volume, zip_path: &Path) -> bool {
     match parent.get_metadata(zip_path).await {
         Ok(meta) if !meta.is_directory => {}
@@ -407,8 +414,11 @@ async fn confirm_remote_archive_boundary(parent: &dyn Volume, zip_path: &Path) -
         // fault: don't route.
         _ => return false,
     }
-    match parent.read_range(zip_path, 0, 4).await {
-        Ok(bytes) => bytes_start_with_zip_signature(&bytes),
+    let Some(format) = format_for_path(zip_path) else {
+        return false;
+    };
+    match parent.read_range(zip_path, 0, ARCHIVE_MAGIC_PREFIX_LEN).await {
+        Ok(bytes) => bytes_match_archive_magic(format, &bytes),
         // Can't sniff (positioned reads unsupported, or a transient fault): route
         // and let the archive layer refuse typed if it's truly unreadable.
         Err(_) => true,

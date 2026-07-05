@@ -699,7 +699,7 @@ async fn read_device_zip(vol: &MtpVolume, path: &Path) -> std::collections::Hash
 #[cfg(feature = "virtual-mtp")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
-    use crate::file_system::volume::backends::archive::ArchiveVolume;
+    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
     use std::sync::Arc;
 
     async fn drain(archive: &ArchiveVolume, inner: &str) -> Vec<u8> {
@@ -723,6 +723,7 @@ async fn virtual_mtp_archive_browses_and_extracts_via_read_range() {
     let archive = ArchiveVolume::new(
         Arc::clone(&vol) as Arc<dyn Volume>,
         std::path::PathBuf::from("/bundle.zip"),
+        ArchiveFormat::Zip,
     );
 
     // Browse: synthetic `dir` first, then the root file.

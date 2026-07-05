@@ -624,7 +624,7 @@ async fn smb_integration_space_info() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_archive_browse_and_extract_via_read_range() {
-    use crate::file_system::volume::backends::archive::ArchiveVolume;
+    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
     use std::io::Write as _;
 
     async fn drain_archive(archive: &ArchiveVolume, inner: &str) -> Vec<u8> {
@@ -659,7 +659,11 @@ async fn smb_integration_archive_browse_and_extract_via_read_range() {
     // Wrap the live SMB volume as the archive's parent. Direct SMB has no local
     // FS access, so every archive read flows through `SmbVolume::read_range`.
     assert!(!vol.supports_local_fs_access());
-    let archive = ArchiveVolume::new(Arc::clone(&vol) as Arc<dyn Volume>, zip_path.clone());
+    let archive = ArchiveVolume::new(
+        Arc::clone(&vol) as Arc<dyn Volume>,
+        zip_path.clone(),
+        ArchiveFormat::Zip,
+    );
 
     // Browse: root shows the synthetic `dir` first, then the file.
     let root = archive.list_directory(Path::new(""), None).await.unwrap();
@@ -749,7 +753,7 @@ fn two_entry_zip() -> Vec<u8> {
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_archive_routing_detection_and_extract_out() {
     use crate::file_system::get_volume_manager;
-    use crate::file_system::volume::backends::archive::ArchiveVolume;
+    use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
     use std::io::Write as _;
 
     let vol = Arc::new(make_docker_volume().await);
@@ -776,7 +780,11 @@ async fn smb_integration_archive_routing_detection_and_extract_out() {
 
     // Extract-out: stream a DEFLATED entry through the archive (over `read_range`)
     // and materialize it to LOCAL disk, then read it back.
-    let archive = ArchiveVolume::new(Arc::clone(&vol) as Arc<dyn Volume>, zip_path.clone());
+    let archive = ArchiveVolume::new(
+        Arc::clone(&vol) as Arc<dyn Volume>,
+        zip_path.clone(),
+        ArchiveFormat::Zip,
+    );
     let local_dir = tempfile::tempdir().unwrap();
     let out_path = local_dir.path().join("drop.txt");
     {
