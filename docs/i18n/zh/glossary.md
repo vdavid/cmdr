@@ -482,17 +482,17 @@ macOS Finder zh-CN Tier 1 (`PE4.5` = the same "too large for the volume's format
 macOS Finder zh-CN + the two-pane/explorer file-manager family (Total/Double Commander, Nautilus, Thunar) for the
 "browse an archive like a folder" feature; Microsoft zh-Hans cross-check.
 
-- **archive (zip/tar/7z, the browsable compressed file)** · `压缩文件` · the whole file-manager family renders this exact
-  feature with `压缩文件` (Nautilus/Thunar: `将压缩文件作为文件夹浏览` = browse the archive as a folder, `浏览压缩文件内容`,
-  `解压缩文件`), and the existing zh catalog already uses `压缩文件` for compressed files
-  (`settings.listing.sizeDisplay.description`: `磁盘映像和压缩文件`). macOS Finder's `归档` (Zip归档, "Kind is archives" →
-  归档) is the alternative, but it carries the "compress-into / file-away records" packaging sense; `压缩文件` is what a
-  user browsing INTO a zip actually sees across every file manager and reads naturally for zip/tar/7z alike. Chosen for
-  the whole archive-browsing surface. · `high`
+- **archive (zip/tar/7z, the browsable compressed file)** · `压缩文件` · the whole file-manager family renders this
+  exact feature with `压缩文件` (Nautilus/Thunar: `将压缩文件作为文件夹浏览` = browse the archive as a folder,
+  `浏览压缩文件内容`, `解压缩文件`), and the existing zh catalog already uses `压缩文件` for compressed files
+  (`settings.listing.sizeDisplay.description`: `磁盘映像和压缩文件`). macOS Finder's `归档` (Zip归档, "Kind is archives"
+  →归档) is the alternative, but it carries the "compress-into / file-away records" packaging sense; `压缩文件` is what
+  a user browsing INTO a zip actually sees across every file manager and reads naturally for zip/tar/7z alike. Chosen
+  for the whole archive-browsing surface. · `high`
 - **app bundle / bundle (.app/.bundle/.framework, a folder macOS shows as one item)** · `应用程序包` · composed from
-  macOS `应用程序` (Applications) + `包` (macOS "Show Package Contents" → `显示包内容`, "Package" → `软件包`); `应用程序包`
-  is the established Chinese term for a macOS app bundle. Generic "bundle" alongside "archive" also renders `应用程序包`
-  here (the popup only ever targets app bundles). · `high`
+  macOS `应用程序` (Applications) + `包` (macOS "Show Package Contents" → `显示包内容`, "Package" → `软件包`);
+  `应用程序包` is the established Chinese term for a macOS app bundle. Generic "bundle" alongside "archive" also renders
+  `应用程序包` here (the popup only ever targets app bundles). · `high`
 - **browse (like a folder, step inside)** · `浏览` · macOS (`浏览` for Browse, 22 hits incl. `48.title` → 浏览) +
   file-manager family (`作为文件夹浏览`). "Browse like a folder" → `像文件夹一样浏览`; segmented-control cell → bare
   `浏览`; summary "browse inside" → `进入浏览`. · `high`
@@ -502,8 +502,8 @@ macOS Finder zh-CN + the two-pane/explorer file-manager family (Total/Double Com
 - **damaged (archive/file)** · `已损坏` / `损坏` · macOS Finder (`NE59` `…因为它已损坏`, `LA33` `可能已损坏或不完整`) ·
   `high`
 - **encrypted** · `加密` (`被加密`) · macOS Finder (`Encrypted` → 加密) · `high`
-- **default app (open with)** · `默认应用` · macOS uses the full `默认应用程序` (`N141`); shortened to `默认应用` for the
-  concise menu item `用默认应用打开`. · `high`
+- **default app (open with)** · `默认应用` · macOS uses the full `默认应用程序` (`N141`); shortened to `默认应用` for
+  the concise menu item `用默认应用打开`. · `high`
 - **configure (opens Settings)** · `配置` · macOS (`Configure` → 配置); trailing full-width `…` per the ellipsis
   normalization rule. · `high`
 - **pressing Enter / the Enter key** · keep `Enter` verbatim, phrased `按 Enter 键` · matches the dominant existing
@@ -514,5 +514,6 @@ macOS Finder zh-CN + the two-pane/explorer file-manager family (Total/Double Com
   pattern. · `high`
 - **archive_edit (queue arm, "Editing archive" = changing a zip's entries)** · `正在编辑压缩文件` · `正在[动词]` sibling
   style + function-key-bar verb `编辑` + settled `压缩文件`. · `high`
-- **"removed from the zip for good" (delete-warning continuation)** · `将从 zip 中被永久移除` · `永久` = for good; `移除`
-  = remove; `zip` kept verbatim (format token); reads as a natural continuation of `压缩文件里没有废纸篓。` · `high`
+- **"removed from the zip for good" (delete-warning continuation)** · `将从 zip 中被永久移除` · `永久` = for good;
+  `移除` = remove; `zip` kept verbatim (format token); reads as a natural continuation of `压缩文件里没有废纸篓。` ·
+  `high`

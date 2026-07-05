@@ -510,17 +510,17 @@ Settled while translating the archive-browsing feature keys (`errors.json`, `fil
   mappára" — its exact parallel to Cmdr's browse-an-archive-like-a-folder gesture) · high. "browses and extracts …
   archives" = `böngészi és kicsomagolja a … archívumokat`.
 - app bundle / bundle / package (.app, .bundle, .framework) → `csomag`; "app bundles" = `alkalmazáscsomagok` · macOS
-  Finder "Show Package Contents" = `Csomag tartalmának megjelenítése` (package = `csomag`), Microsoft terminology
-  bundle = `csomag` · high. Cmdr's UI says "App bundles" (not "packages"), so the transparent compound
-  `alkalmazáscsomag` names the .app/.bundle/.framework category (keys 16 & 19 both `Alkalmazáscsomagok`); the generic
-  standalone "bundle" (aria "Open archive or bundle") is bare `csomag`.
+  Finder "Show Package Contents" = `Csomag tartalmának megjelenítése` (package = `csomag`), Microsoft terminology bundle
+  = `csomag` · high. Cmdr's UI says "App bundles" (not "packages"), so the transparent compound `alkalmazáscsomag` names
+  the .app/.bundle/.framework category (keys 16 & 19 both `Alkalmazáscsomagok`); the generic standalone "bundle" (aria
+  "Open archive or bundle") is bare `csomag`.
 - browse (step inside an archive/bundle and list it like a folder) → `böngészés` (noun) · Cmdr catalog already uses the
   `böngész-` root (`git böngésző`, `Megosztásböngésző`); MS `tallózás` is the file-picker sense, not this one · high.
-  "Browse like a folder" = `Böngészés mappaként` ("as a folder", matching Total Commander's "mint egy mappára"). Segmented
-  cell `settings.archives.opt.browse` = `Böngészés`.
+  "Browse like a folder" = `Böngészés mappaként` ("as a folder", matching Total Commander's "mint egy mappára").
+  Segmented cell `settings.archives.opt.browse` = `Böngészés`.
 - "Open with default app" → `Megnyitás az alapértelmezett appban` · shipped catalog
-  (`fileExplorer.quickLookHint.enterOpens` = "…az alapértelmezett appban", `settings.fileViewer…` = "a társított appban")
-  · high. `app` kept as loanword (glossary). Segmented cell `settings.archives.opt.open` = `Megnyitás`.
+  (`fileExplorer.quickLookHint.enterOpens` = "…az alapértelmezett appban", `settings.fileViewer…` = "a társított
+  appban") · high. `app` kept as loanword (glossary). Segmented cell `settings.archives.opt.open` = `Megnyitás`.
 - Ask (Enter-behavior option: pop up a browse/open prompt) → `Rákérdezés` (nominal, short segmented cell) · descriptive,
   common HU UI usage; nominal form fits the one-cell control (the longer önözés `Mindig kérdezzen` of
   `allowFileExtensionChanges.opt.ask` is for a wider control) · tentative. "or ask each time" (description) =

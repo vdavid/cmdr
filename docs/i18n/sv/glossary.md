@@ -448,14 +448,14 @@ INTO a zip/tar/7z the way it steps into a folder, and offers browse/open/ask on 
 - **zip archive: `zip-arkiv`** · macOS Finder exact term ("Zip-arkiv", "ZIP-arkiv", "Zip-arkivformat"; same pattern as
   "CPIO-arkiv", "Apple-arkiv"). The `.zip` extension token stays verbatim; the format word lowercases in the compound
   (`zip-arkiv`, `zip-fil`). `high`.
-- **read-only archive: `skrivskyddat arkiv`** · `skrivskyddad` (glossary read-only) + neuter agreement on `arkiv`
-  (`-t` → `skrivskyddat`). `high`.
+- **read-only archive: `skrivskyddat arkiv`** · `skrivskyddad` (glossary read-only) + neuter agreement on `arkiv` (`-t`
+  → `skrivskyddat`). `high`.
 - **bundle / app bundle: `paket` (generic bundle) / `appaket` (app bundle)** · macOS = "paket" ("Visa paketets innehåll"
   = Show Package Contents, the Finder term for a bundle/app). Generic "bundle" (keys `archiveEnterMenu.ariaLabel`,
-  `enterBehavior.label`) → `paket`; "App bundles" (the card/section grouping .app/.bundle/.framework) → `appaket`
-  (app + paket, Swedish three-p reduction: appp→app). Faithfully mirrors EN's own split ("bundles" vs "app bundles").
-  `appaket` is a convention-composed compound (macOS-backed `paket`, not directly attested as a compound), so
-  `tentative` (review whether `appaket` reads cleanly vs. `programpaket`).
+  `enterBehavior.label`) → `paket`; "App bundles" (the card/section grouping .app/.bundle/.framework) → `appaket` (app +
+  paket, Swedish three-p reduction: appp→app). Faithfully mirrors EN's own split ("bundles" vs "app bundles"). `appaket`
+  is a convention-composed compound (macOS-backed `paket`, not directly attested as a compound), so `tentative` (review
+  whether `appaket` reads cleanly vs. `programpaket`).
 - **browse (step inside like a folder): `bläddra`; "browse like a folder" → `bläddra som en mapp`** · macOS "Bläddra i
   listvy/kolumnvy", "bläddra i ditt filsystem"; TC "…som på en mapp". Short segmented-control cell "Browse" → `Bläddra`.
   `high`.

@@ -201,19 +201,19 @@ Cmdr browses zip/tar/7z archives like folders; this batch added the settings, me
   lineage; keys 98-190 render the archive as "arquivo compactado", e.g. 160 "Esta função não pode ser usada com arquivos
   compactados!", 165 "Erro no arquivo compactado"), macOS Finder ("Arquivo comprimido"/"Arquivo compactado"), AND
   already used in the shipped pt catalog (`settings...zoomResetHint`-adjacent viewer setting: "imagem, PDF, arquivo
-  compactado ou outro arquivo binário") · high. Covers zip/tar/7z generically. Note the unavoidable double-"arquivo" when
-  "file" (arquivo) and "archive" (arquivo compactado) co-occur in one sentence — reads naturally, kept. Used across
+  compactado ou outro arquivo binário") · high. Covers zip/tar/7z generically. Note the unavoidable double-"arquivo"
+  when "file" (arquivo) and "archive" (arquivo compactado) co-occur in one sentence — reads naturally, kept. Used across
   `settings.archives.*`, `fileExplorer.archiveEnterMenu.*`, `fileExplorer.readOnly.archive*`,
-  `fileExplorer.archive.useTransferToCopyOut`, `fileOperations.delete.archiveWarning*`, `errors.listing.archiveUnreadable.*`,
-  `viewer.error.archive*`, and the `queue.row.label` `archive_edit` arm.
+  `fileExplorer.archive.useTransferToCopyOut`, `fileOperations.delete.archiveWarning*`,
+  `errors.listing.archiveUnreadable.*`, `viewer.error.archive*`, and the `queue.row.label` `archive_edit` arm.
 - app bundle / bundle (macOS .app/.bundle/.framework) · **pacote de aplicativo** (generic bundle: **pacote**) · macOS
   Finder ("Mostrar Conteúdo do Pacote" = Show Package Contents → bundle = pacote), MS terminology ("pacote de
   aplicativo") · high. Plural card/label "App bundles" → "Pacotes de aplicativo". `settings.archives.card.bundles`,
   `settings.archives.bundle.label`, and the `archiveEnterMenu.ariaLabel` "ou pacote".
-- browse (step inside and list contents like a folder) · **Navegar** ("Browse like a folder" → "Navegar como uma
-  pasta"; segmented cell "Browse" → "Navegar") · macOS Finder VO ("Navegar em visualização por colunas"), Total
-  Commander pt-BR hint 148 ("clicar duas vezes sobre o arquivo como em uma pasta, para mostrar seu conteúdo") · high.
-  Distinct from "Abrir" (Open); the two are contrasting behaviors in the same segmented control, so they must differ.
+- browse (step inside and list contents like a folder) · **Navegar** ("Browse like a folder" → "Navegar como uma pasta";
+  segmented cell "Browse" → "Navegar") · macOS Finder VO ("Navegar em visualização por colunas"), Total Commander pt-BR
+  hint 148 ("clicar duas vezes sobre o arquivo como em uma pasta, para mostrar seu conteúdo") · high. Distinct from
+  "Abrir" (Open); the two are contrasting behaviors in the same segmented control, so they must differ.
 - open (with default app) · **Abrir** / **Abrir no aplicativo padrão** · shipped pt catalog ("abrir arquivos no
   aplicativo padrão", `fileExplorer.quickLookHint.enterOpens`), macOS · confirmed. default app = **aplicativo padrão**.
 - Ask (behavior option: ask each time) · **Perguntar** (segmented cell); "ask each time" (running text) → **perguntar a

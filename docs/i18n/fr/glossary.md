@@ -535,21 +535,21 @@ doubled below to match this doc's convention:
 Settled during the `archive-browsing` pass (2026-07-05, browse-into-zip/tar/7z + app bundles). ICU values double
 apostrophes; the RAW `errors.*` keys use single apostrophes:
 
-- archive (a zip/tar/7z browsed like a folder) → archive (feminine: "une archive", "l''archive") · macOS Finder ("Archive
-  ZIP", "Compresse des éléments dans une archive.", "Choisissez un mot de passe pour l’archive.", "Déplacer l’archive
-  vers…") · high — same word as EN but genuinely FR (feminine), so NOT flagged identical where it inflects; the bare card
-  title `settings.archives.card.archives` / section `settings.section.archives` ("Archives") IS identical-to-English and
-  carries `sameAsSourceJustification`. zip/tar/7z format tokens kept verbatim.
+- archive (a zip/tar/7z browsed like a folder) → archive (feminine: "une archive", "l''archive") · macOS Finder
+  ("Archive ZIP", "Compresse des éléments dans une archive.", "Choisissez un mot de passe pour l’archive.", "Déplacer
+  l’archive vers…") · high — same word as EN but genuinely FR (feminine), so NOT flagged identical where it inflects;
+  the bare card title `settings.archives.card.archives` / section `settings.section.archives` ("Archives") IS
+  identical-to-English and carries `sameAsSourceJustification`. zip/tar/7z format tokens kept verbatim.
 - app bundle (.app/.bundle/.framework, a macOS package folder shown as one item) → paquet ("Paquets d''application") ·
-  macOS Finder ("Afficher le contenu du paquet" = Show Package Contents; "Archive de paquet iOS") · high — Finder calls a
-  bundle a "paquet"; "App bundles" card/row titles → "Paquets d''application" (keys 16 & 19 use the SAME word, per the
+  macOS Finder ("Afficher le contenu du paquet" = Show Package Contents; "Archive de paquet iOS") · high — Finder calls
+  a bundle a "paquet"; "App bundles" card/row titles → "Paquets d''application" (keys 16 & 19 use the SAME word, per the
   brief's consistency note).
 - extract (pull files out of an archive) → extraire ("Cmdr parcourt et extrait…") · GNOME Nautilus ("fichier extrait"),
   Total Commander ("Extraire les fichiers"), MS terminology FRA ("extraire") · high — the browse verb is the settled
   `browse → parcourir`; "browses and extracts" → "parcourt et extrait".
-- editable / can be edited (a zip whose entries can be added/removed/renamed) → modifiable ("seules les archives zip sont
-  modifiables") · standard FR; rendered with the adjective to stay active and dodge the passive "peuvent être modifiées"
-  · high
+- editable / can be edited (a zip whose entries can be added/removed/renamed) → modifiable ("seules les archives zip
+  sont modifiables") · standard FR; rendered with the adjective to stay active and dodge the passive "peuvent être
+  modifiées" · high
 - encrypted → chiffré(e) · macOS ("Chiffrement", "Chiffrer") · high — agrees with the subject: feminine "archive"
   ("chiffrée") in the listing explanation, masculine "fichier" ("chiffré") in the viewer error.
 - damaged → endommagé(e) · macOS ("Impossible d’ouvrir cette application car elle est peut-être endommagée…") · high —
@@ -563,8 +563,8 @@ apostrophes; the RAW `errors.*` keys use single apostrophes:
   catalog-wide; kept, not the English "Enter".
 - Ask (segmented-control cell, "ask each time") → Demander · existing fr catalog ("Toujours demander", "Tout demander"),
   macOS pattern · high. Browse cell → Parcourir; Open cell → Ouvrir (settled `browse`/`open`).
-- "Editing archive" (queue.row.label `archive_edit` arm) → "Modification de l''archive" · verbal-noun style of the sibling
-  arms (Copie, Déplacement, Renommage); edit → modification; settled `archive` · high
-- fresh copy (ask the sender for one) → une nouvelle copie · macOS ("Une nouvelle copie de « %@ » a été créée.") · high —
-  the sender phrased gender-neutrally as "la personne qui vous l''a envoyée" (name the person, past participle agrees with
-  the feminine "archive" via the preceding "l''").
+- "Editing archive" (queue.row.label `archive_edit` arm) → "Modification de l''archive" · verbal-noun style of the
+  sibling arms (Copie, Déplacement, Renommage); edit → modification; settled `archive` · high
+- fresh copy (ask the sender for one) → une nouvelle copie · macOS ("Une nouvelle copie de « %@ » a été créée.") · high
+  — the sender phrased gender-neutrally as "la personne qui vous l''a envoyée" (name the person, past participle agrees
+  with the feminine "archive" via the preceding "l''").

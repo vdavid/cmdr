@@ -376,8 +376,8 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 - app bundle (the .app/.bundle/.framework opaque-folder group) → App-Paket (plural App-Pakete; dative plural
   App-Paketen) · macOS Finder's own term for these is "Paket" ("Paketinhalt zeigen" = Show Package Contents), and modern
   macOS uses "App"/"Apps" (App Store, "Apps"); so "App-Paket" is the macOS-native compound · high. MS terminology has
-  bundle→Bundle (Windows/dev term), noted as the alternative but rejected for a macOS file manager. Keep the SAME word in
-  card.bundles, bundle.label, and the enterBehavior/summary prose
+  bundle→Bundle (Windows/dev term), noted as the alternative but rejected for a macOS file manager. Keep the SAME word
+  in card.bundles, bundle.label, and the enterBehavior/summary prose
 - browse (step INTO an archive/bundle and list it like a folder) → durchsehen · KDE Dolphin ("Browse through archives" →
   "Archive durchsehen") · high. Deliberately NOT "durchsuchen" — that's the settled scan/search verb (glossary scan →
   durchsuchen), and "durchsehen" (look through) is the file-manager-native, unambiguous term for browsing into an
@@ -390,11 +390,11 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
   queue.row.label `archive_edit` arm ("Editing archive") → "Archiv wird bearbeitet", keeping the sibling arms' passive
   present
 - Enter key (the Return/Enter key, "pressing Enter does X") → die Eingabetaste · settled in the existing de catalog
-  (search.json, viewer.json: "warten immer auf die Eingabetaste", "die Eingabetaste (Öffnen …)") · high. Frame
-  "What pressing Enter does on X" → "Was die Eingabetaste bei X bewirkt"
+  (search.json, viewer.json: "warten immer auf die Eingabetaste", "die Eingabetaste (Öffnen …)") · high. Frame "What
+  pressing Enter does on X" → "Was die Eingabetaste bei X bewirkt"
 - Ask (segmented option: ask each time whether to browse or open) → Fragen (control cell); prose "ask each time" →
-  "jedes Mal fragen" · MS terminology (Ask → Fragen); macOS uses "nachfragen" for confirm-prompts, but the short "Fragen"
-  fits the segmented cell and reads clean · high
+  "jedes Mal fragen" · MS terminology (Ask → Fragen); macOS uses "nachfragen" for confirm-prompts, but the short
+  "Fragen" fits the segmented cell and reads clean · high
 - Configure… (menu item opening Settings) → Konfigurieren… · MS terminology (configure → konfigurieren); ellipsis
   attached with no space (macOS menu-item-opens-dialog convention, per style guide) · high
 - read-only archive → Schreibgeschütztes Archiv · glossary read-only → schreibgeschützt + archive → Archiv · high
