@@ -18,7 +18,9 @@ use crate::ignore_poison::IgnorePoison;
 fn write_simple_zip(path: &Path, entry: &str, content: &[u8]) {
     let file = std::fs::File::create(path).expect("create zip");
     let mut writer = ZipWriter::new(file);
-    writer.start_file(entry, SimpleFileOptions::default()).expect("start entry");
+    writer
+        .start_file(entry, SimpleFileOptions::default())
+        .expect("start entry");
     writer.write_all(content).expect("write entry");
     writer.finish().expect("finish zip");
 }
@@ -80,11 +82,16 @@ async fn a_successful_edit_rewrites_the_archive_and_emits_complete_then_settled(
     assert_eq!(read_entry(&path, "keep.txt").as_deref(), Some(b"keep".as_slice()));
     assert_eq!(read_entry(&path, "added.txt").as_deref(), Some(b"new bytes".as_slice()));
 
-    let complete = events.complete.lock_ignore_poison();
-    assert_eq!(complete.len(), 1);
-    assert_eq!(complete[0].operation_type, WriteOperationType::ArchiveEdit);
+    {
+        let complete = events.complete.lock_ignore_poison();
+        assert_eq!(complete.len(), 1);
+        assert_eq!(complete[0].operation_type, WriteOperationType::ArchiveEdit);
+    }
     // No error, and settle fired for the same op.
-    assert!(events.errors.lock_ignore_poison().is_empty(), "no write-error on success");
+    assert!(
+        events.errors.lock_ignore_poison().is_empty(),
+        "no write-error on success"
+    );
     assert!(
         wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await,
         "write-settled should fire"
@@ -132,7 +139,9 @@ async fn copy_into_adds_a_local_directory_tree_and_skips_conflicts() {
     {
         let file = std::fs::File::create(&archive).expect("create zip");
         let mut writer = ZipWriter::new(file);
-        writer.start_file("payload/existing.txt", SimpleFileOptions::default()).expect("start");
+        writer
+            .start_file("payload/existing.txt", SimpleFileOptions::default())
+            .expect("start");
         writer.write_all(b"OLD").expect("write");
         writer.finish().expect("finish");
     }
@@ -168,9 +177,18 @@ async fn copy_into_adds_a_local_directory_tree_and_skips_conflicts() {
         "copy-into should complete"
     );
     // The colliding file kept its OLD bytes (Skip), the new files were added.
-    assert_eq!(read_entry(&archive, "payload/existing.txt").as_deref(), Some(b"OLD".as_slice()));
-    assert_eq!(read_entry(&archive, "payload/fresh.txt").as_deref(), Some(b"fresh".as_slice()));
-    assert_eq!(read_entry(&archive, "payload/sub/deep.txt").as_deref(), Some(b"deep".as_slice()));
+    assert_eq!(
+        read_entry(&archive, "payload/existing.txt").as_deref(),
+        Some(b"OLD".as_slice())
+    );
+    assert_eq!(
+        read_entry(&archive, "payload/fresh.txt").as_deref(),
+        Some(b"fresh".as_slice())
+    );
+    assert_eq!(
+        read_entry(&archive, "payload/sub/deep.txt").as_deref(),
+        Some(b"deep".as_slice())
+    );
 }
 
 #[tokio::test]
@@ -198,7 +216,10 @@ async fn a_missing_archive_emits_a_write_error_not_a_panic() {
         wait_until(|| !events.errors.lock_ignore_poison().is_empty()).await,
         "a missing archive should surface a write-error"
     );
-    assert!(events.complete.lock_ignore_poison().is_empty(), "no write-complete on failure");
+    assert!(
+        events.complete.lock_ignore_poison().is_empty(),
+        "no write-complete on failure"
+    );
     // Settle still fires (torn-down cleanly, no hang).
     assert!(
         wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await,

@@ -23,5 +23,10 @@ export function operationTypeIcon(operationType: WriteOperationType): IconName {
     case 'delete':
     case 'trash':
       return 'trash-2'
+    // A zip edit (add/delete/rename inside, or copy/move into a `.zip`). Reuses
+    // the move-into glyph as a placeholder; the FE follow-up may add a dedicated
+    // archive icon.
+    case 'archive_edit':
+      return 'folder-input'
   }
 }

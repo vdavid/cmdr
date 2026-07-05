@@ -76,3 +76,7 @@ docs/specs/file-viewer-selection-progress.md
 
 # Wrangler local state (local D1/KV/R2 for `wrangler dev --local`), regenerable
 .wrangler/
+
+# cargo-mutants output (tooling artifacts, never commit)
+mutants.out/
+mutants.out.old/

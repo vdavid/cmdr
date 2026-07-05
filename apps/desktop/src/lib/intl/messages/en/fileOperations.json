@@ -541,6 +541,11 @@
     "description": "Progress-dialog title while counting items before moving them to trash. Keep the trailing ellipsis."
   },
 
+  "fileOperations.transferProgress.scanTitleArchiveEdit": "Preparing archive edit...",
+  "@fileOperations.transferProgress.scanTitleArchiveEdit": {
+    "description": "Progress-dialog title for editing a .zip archive (adding, deleting, or renaming entries inside it). Archive edits have no scanning phase, so this rarely shows, but the dialog needs a title for every operation type. Keep the trailing ellipsis. 'archive' means a compressed .zip file."
+  },
+
   "fileOperations.transferProgress.rollbackUnavailableTooltip": "Rollback is not available for same-volume moves",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
     "description": "Tooltip on the disabled Rollback button. A move within one disk/device renames in place and can't be undone step by step. 'Rollback' means undoing the operation so far."

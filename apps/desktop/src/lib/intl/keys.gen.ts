@@ -1167,6 +1167,7 @@ export type MessageKey =
   | 'fileOperations.transferProgress.resumeAria'
   | 'fileOperations.transferProgress.rollbackTooltip'
   | 'fileOperations.transferProgress.rollbackUnavailableTooltip'
+  | 'fileOperations.transferProgress.scanTitleArchiveEdit'
   | 'fileOperations.transferProgress.scanTitleCopy'
   | 'fileOperations.transferProgress.scanTitleDelete'
   | 'fileOperations.transferProgress.scanTitleMove'

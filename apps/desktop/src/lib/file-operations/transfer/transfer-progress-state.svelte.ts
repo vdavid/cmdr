@@ -122,6 +122,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     move: 'Move',
     delete: 'Delete',
     trash: 'Trash',
+    archive_edit: 'Archive edit',
   }
   const operationLabel = operationLabelMap[config.operationType]
 

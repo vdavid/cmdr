@@ -103,6 +103,9 @@
         move: 'fileOperations.transferProgress.scanTitleMove',
         delete: 'fileOperations.transferProgress.scanTitleDelete',
         trash: 'fileOperations.transferProgress.scanTitleTrash',
+        // Archive edits have no scan phase, so this title never renders; the entry
+        // exists only to satisfy the exhaustive Record.
+        archive_edit: 'fileOperations.transferProgress.scanTitleArchiveEdit',
     }
     const scanTitle = $derived(tString(scanTitleMap[operationType]))
     const volumes = $derived(getVolumes())
