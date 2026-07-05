@@ -25,6 +25,7 @@ Pre-flight scans reuse cached listings when the source volume reports an active 
 - **`manager.rs`**: The operation manager — the single registry + lane-admission scheduler every write op flows through. `OperationManager`, `OperationDescriptor`, `DeferredStart`, `LifecycleStatus`, `OperationSnapshot`, `OperationsChanged` (the `operations-changed` event), `ManagedTaskGuard` (panic-safe lane + cache release), and the `list_operations` / `cancel_operation(s)` API. See [Operation manager](#operation-manager).
 - **`types.rs`**: Pure serializable DTOs: events, config, errors, results. `WriteOperationConfig`, `ConflictResolution`, `WriteOperationError`, `DryRunResult`, scan preview events, the config convenience impls (`Default`, `VolumeCopyConfig::from(&WriteOperationConfig)`). Holds the event STRUCT definitions; their builder impls and the sinks live in `event_sinks.rs`. Re-exports `OperationEventSink`, `CollectorEventSink` (from `event_sinks`) and `IoResultExt` (from `error_classification`) so existing `types::…` import paths keep resolving. `TauriEventSink` is re-exported at the `write_operations` module root (and up through `file_system`) for the IPC edge, not here — the pipeline layer only ever names the trait.
 - **`event_sinks.rs`**: The `OperationEventSink` trait (decouples event emission from `tauri::AppHandle`), `TauriEventSink` (production), `CollectorEventSink` (test-only), and the builder impls for `WriteProgressEvent` (`new`/`with_scan_meta`) and `WriteErrorEvent` (`new`). `TauriEventSink::emit_complete` calls `analytics::emit_completion_analytics`.
+- **`archive_edit.rs`**: The `ArchiveEditOperation` driver — runs a zip mutation (`ArchiveMutator`) as a managed op. See [Archive edits](#archive-edits).
 - **`analytics.rs`**: PII-free PostHog completion analytics (`emit_completion_analytics`, `item_count_bucket`), `pub(super)`, called only by `TauriEventSink`. Copy/Move → `file_transfer_completed`, Delete/Trash → `delete_used`; every prop is categorical (op, count bucket, a bool), no names or paths.
 - **`error_classification.rs`**: Maps raw `std::io::Error` to typed `WriteOperationError` variants from `errno`/`ErrorKind` only (never the message). `classify_io_error`, the `IoResultExt` extension trait (`with_path`), and `impl From<std::io::Error> for WriteOperationError`.
 - **`state.rs`**: The operation-lifecycle core. The `WRITE_OPERATION_STATE` + `OPERATION_STATUS_CACHE` `LazyLock<RwLock<HashMap>>` caches, `WriteOperationState`, `CopyTransaction`, busy-volumes tracking, the query/cancel/resolve APIs, and the `WriteSettledGuard` RAII shape for the settle contract. Re-exports the `operation_intent` and `scan_cache` types so their `state::…` paths keep resolving.
@@ -228,6 +229,36 @@ Rename, make-folder, and make-file (`WriteOperationType::Rename` / `CreateFolder
 - **RAII cleanup on drop/panic is mandatory, not happy-path only.** The command wraps `run_instant` in a `tokio::time::timeout`, so a slow op that exceeds it makes the timeout **drop the `run_instant` future mid-`op.await`**; the async volume path can also panic. Either exit MUST still free the record AND unregister the busy status — else the eject guard sticks ON forever (the volume can never be ejected again) and a phantom `Running` row lingers. An `InstantTaskGuard` held across the `op.await` guarantees this: its `Drop` calls `free_and_remove` (record removal + `unregister_operation_status` → `recompute_and_emit_busy_volumes`) and re-emits `operations-changed`. The happy path calls `free_and_remove` + `emit_changed` explicitly, then `guard.disarm()`s so the Drop is a no-op. No admission pass on completion (instant ops reserve no lanes, so nothing waits on them). Pinned by `manager::tests::run_instant_releases_busy_and_record_when_{dropped_midflight,op_panics}`.
 - **No `WriteOperationState`.** Instant ops have no intent/pause/conflict oneshot, so `run_instant` inserts none. Consequence: `cancel_operation` on an instant op is a safe no-op — `cancel_if_queued` is false for a Running op, then `cancel_write_operation` finds no state. Acceptable: instant ops finish before a human can cancel.
 - **Queue surfacing.** They appear as a `Running` snapshot row that goes away almost immediately (the store prunes terminal/removed rows). A ~50 ms local rename may never render before it's pruned; a slow MTP rename shows a label + spinner with no progress bar (`fraction` is null). Local `root` ops cause NO busy-set churn (`root` is excluded), so inline-renaming local files won't flicker the eject menu; only volume ops mark busy.
+
+## Archive edits
+
+Editing a `.zip` (mkdir/mkfile/rename/delete inside, or copy/move INTO one) is an O(archive) temp+rename rewrite, not a
+metadata syscall, so it runs as a managed op through `spawn_managed`, NOT `run_instant`. `archive_edit.rs` is the driver;
+the mutation mechanism (`ArchiveMutator`, temp+rename safe-overwrite) lives in the archive backend
+(`volume/backends/archive/DETAILS.md` § "Zip mutation").
+
+- **Driver shape.** `archive_edit_start(events, request, interval)` mirrors the volume-delete branch: a deferred async
+  start owns the op end to end (a `WriteSettledGuard`, the `ArchiveMutator` run on the blocking pool, the terminal
+  event, `on_settled`). The op takes the PARENT drive's lane (archive work shares the device's serialization lane) and
+  marks the parent drive busy (eject guard). A `MutatorHooks` bridge wires the mutator's control seam to the live op:
+  cancel from `OperationIntent`, pause from the `PauseGate` (a sync park on the blocking thread), throttled
+  `write-progress` (two-axis: entries + bytes), and the downloads-watcher ignore registration for the temp AND final
+  paths (before each syscall, via the mutator's `note_pending` hook). `Cancelled` emits `write-cancelled`, never
+  `write-error`; other mutator faults map to typed `WriteOperationError`.
+- **Routing seams.** The former archive rejections become routing: `create_directory_managed` / `create_file_managed`
+  (a `.zip`-crossing parent), `rename_managed` (an in-archive path), `delete_files_start` (in-archive sources), and the
+  `copy`/`move_between_volumes` COMMANDS (an archive-resolved destination). The instant-op forks reach a `TauriEventSink`
+  via the manager's startup-wired app handle (`operations_app_handle`), so no command signature changes; a
+  `create`/`rename` return is the operation id, not a path (the FE reads it as an op handle).
+- **Changeset per op.** mkdir → `{ mkdir }`; mkfile → `{ add }` (empty bytes); rename inside → `{ rename }`; delete
+  inside → `{ delete }` (batched across a multi-select in one zip); copy/move INTO → one `{ add + mkdir }` for the whole
+  transfer (`route_archive_copy_into` walks local sources with `walkdir`). A move INTO deletes the top-level local
+  sources after the commit, and only when nothing was skipped (the move invariant — never delete a source whose bytes
+  didn't land).
+- **Conflicts (non-interactive, v1).** An add whose inner path already exists is resolved from the transfer's
+  `ConflictResolution` against the archive index: Skip drops the add; Overwrite deletes the existing entry then adds (a
+  clean replace); Rename picks a unique ` (n)` name; Stop → `DestinationExists`; OverwriteSmaller/Older compare
+  size/mtime (strict). The interactive per-file prompt + ApplyToAll latch is a follow-up.
 
 ## Busy-volumes set
 

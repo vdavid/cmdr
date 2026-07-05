@@ -17,6 +17,12 @@ Documents the cross-cutting machinery both subdirs share (see the module map and
 
 ## Must-knows
 
+- **A zip edit (`ArchiveEdit`) is a managed op, NOT instant.** Editing a `.zip` (mkdir/mkfile/rename/delete inside, or
+  copy/move INTO one) routes to the `archive_edit.rs` driver, which runs the `ArchiveMutator` (temp+rename, an
+  O(archive) rewrite) via `spawn_managed` on the PARENT drive's lane — a real progress bar, not the instant path. The
+  instant-op forks (`create`/`rename`) and the delete/copy-into seams detect an archive target and route there; a
+  `create`/`rename` return becomes the operation id, not a path. Conflicts inside a zip are resolved non-interactively
+  from the transfer's policy against the archive index (no prompt yet). See DETAILS § "Archive edits".
 - **Copy/move/delete/trash spawn through `manager::spawn_managed`; rename/mkdir/mkfile run through `manager::run_instant`.**
   A spawned op holds a slot in each lane it touches (`Volume::lane_key()`, source AND dest), runs when all are free
   (budget 1), else Queued; the next admits on the explicit `on_settled`, NEVER in `Drop`. Instant ops register +

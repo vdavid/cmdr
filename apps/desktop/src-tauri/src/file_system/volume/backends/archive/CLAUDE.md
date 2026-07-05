@@ -13,6 +13,8 @@ the core submodules `Volume`-free.
 - `name.rs`: `sanitize_entry_name` (Zip Slip defense). `read.rs`: `ArchiveEntryReader`. `cache.rs`: `ArchiveIndexCache`.
 - `boundary.rs`: the SHARED `.zip`-boundary detector (`VolumeManager::resolve` and `commands/volumes.rs` both use it;
   two would drift).
+- `mutator.rs`: the WRITE side (temp+rename safe-overwrite). `Volume`-free; the write-ops `ArchiveEditOperation` driver
+  wraps it. See [DETAILS.md](DETAILS.md) § "Zip mutation".
 
 Depth, rationale, and full test list: [DETAILS.md](DETAILS.md); read before non-trivial work here.
 
@@ -47,10 +49,23 @@ Depth, rationale, and full test list: [DETAILS.md](DETAILS.md); read before non-
 - **The index cache key is `(path, size, mtime)`,** so an external edit auto-invalidates. `index_for_local` is blocking
   — call it from `spawn_blocking`. No eviction here; the volume layer owns archive lifetime and calls `clear()`.
 
+## Zip mutation (`mutator.rs`)
+
+- **Editing goes through `mutator.rs` + the write-ops driver, NOT `ArchiveVolume`'s mutation methods.** Routing is
+  path-based and backend-side: `create`/`rename`/`delete` inside and copy/move INTO a zip route to the
+  `ArchiveEditOperation` driver, which drives `ArchiveMutator::apply` (temp+rename) directly from the archive path. So
+  `ArchiveVolume`'s `create_file`/`delete`/`rename` stay `NotSupported` on purpose — nothing calls them.
+- **Temp+rename is the ONLY strategy; never `ZipWriter::new_append`** (it overwrites the old central directory and
+  corrupts the archive on cancel — the original does not survive). The original is byte-for-byte intact until the final
+  atomic rename.
+- **An edit that would RETAIN an encrypted entry is refused** (`zip`'s raw copy drops the PKWARE encryption flag, which
+  would silently corrupt the entry). Deleting an encrypted entry is fine. See [DETAILS.md](DETAILS.md) § "Zip mutation".
+
 ## `ArchiveVolume` (the `Volume` layer)
 
-- **Read-only until zip mutation lands.** Every mutation returns `NotSupported`, incl. `create_directory_all`
-  (overridden — the trait default falsely returns `Ok` on an existing dir).
+- **`ArchiveVolume` itself is read-only.** Every mutation method returns `NotSupported`, incl. `create_directory_all`
+  (overridden — the trait default falsely returns `Ok` on an existing dir). Writes happen via `mutator.rs` (above), not
+  here.
 - **`lane_key()` and `get_space_info()` delegate to the PARENT volume, never the archive** — the parent owns the
   serialization lane and the real disk cost; delegating also dodges `available = 0` (reads as "disk full", blocks
   paste). Capability flags + typed `ArchiveError → VolumeError` mapping: [DETAILS.md](DETAILS.md) § "The `ArchiveVolume`

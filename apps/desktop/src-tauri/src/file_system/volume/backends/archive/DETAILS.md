@@ -332,6 +332,48 @@ The read isn't serialized on the edit's lane, but it doesn't need to be — atom
 prevents the torn read. The `(path, size, mtime)` key plus the watch's `cache.clear()` guarantee the post-rename read
 re-parses the new file.
 
+## Zip mutation (`mutator.rs`, temp+rename safe-overwrite)
+
+The write side. `ArchiveMutator::apply(archive_path, changeset, hooks)` applies a batched `Changeset`
+(`add` / `mkdir` / `delete` / `rename`; a mkfile is an add of empty bytes) by building the FULL new archive into a
+same-directory sibling temp (`foo.zip.cmdr-tmp-<uuid>`), then atomically renaming it over the original. It is
+`Volume`-free and manager-free (like the read core): the write-ops `ArchiveEditOperation` driver wraps it with the real
+event sink, pause gate, and cancel intent via the `MutationHooks` seam. Full driver wiring:
+`write_operations/DETAILS.md` § "Archive edits".
+
+- **Temp+rename, not append-in-place.** `zip`'s `ZipWriter::new_append` overwrites the old central directory, so a
+  cancel mid-edit corrupts the archive (verified: truncating before the new EOCD yields "Could not find EOCD"; the
+  original does NOT survive). Building fresh into a temp and renaming is the app's mandated safe-overwrite and the only
+  shape where cancel is genuinely free (abandon the temp, no rollback ledger). The original is byte-for-byte untouched
+  until the final rename; a cancel or crash at any earlier point leaves it fully readable.
+- **Retained entries copy verbatim** via `raw_copy_file_rename` (no decompress/recompress); only added files
+  stream-compress (chunked, never whole-buffered — the add chunk is also the pause/cancel granularity mid-file).
+- **Metadata preservation.** A rewrite yields a fresh inode, so the original's mode, timestamps, and xattrs are carried
+  onto the temp before the swap: macOS `copyfile` with `COPYFILE_STAT | COPYFILE_ACL | COPYFILE_XATTR` (Finder tags,
+  quarantine, creation date, and `com.apple.FinderInfo` copied VERBATIM — a faithful copy that keeps the custom-icon
+  flag, so the `tags.rs` FinderInfo gotcha doesn't apply here); mode+mtime+xattr elsewhere. Best-effort: metadata loss
+  never fails a data-safe edit.
+- **Decision — refuse to retain an encrypted entry (data-safety, deviates from the plan).** `zip`'s raw copy
+  reconstructs an entry's options from `ZipFile::options()`, which does NOT carry the traditional-PKWARE encryption GP
+  flag. So a retained encrypted entry would keep its ciphertext bytes but lose the "encrypted" header bit — semantically
+  corrupt (a reader hands back ciphertext as plaintext). `apply` therefore returns `EncryptedEntryRetained` for any edit
+  that would KEEP an encrypted entry, leaving the original untouched. Deleting an encrypted entry is allowed (it isn't
+  retained). Editing encrypted archives is out of scope in v1 (matches the plan's "encrypted: detect + reject"). The
+  plan's "raw_copy retains encrypted entries byte-for-byte" claim is false against `zip` 8.6 (verified by
+  `mutator_test.rs`); this refusal is the resolution.
+- **Leftover policy — no startup reaper.** A leftover `foo.zip.cmdr-tmp-*` is always an ABANDONED build (the original is
+  intact), so it's harmless. `apply` reaps siblings of the target at the START of the next edit of that archive (before
+  building its own fresh-uuid temp), which is sufficient; a cancel/error removes its own temp immediately via an RAII
+  guard.
+- **Deletes/renames reshape the retained set.** A delete drops a file or a whole subtree (component-wise match, so
+  `foo` never catches `foobar`); a rename rewrites a subtree prefix. Both are computed per original entry in one pass
+  (`plan_new_name`); deletes win over renames.
+
+`mutator_test.rs` is the red-first TDD anchor for every data-safety property: round-trips (add/delete/rename/mkdir/mkfile
+verified via our reader AND external `unzip -t`), cancel-midway-leaves-the-original-intact-with-no-temp, a leftover temp
+reaped on the next edit, the merge invariant (a delete keeps siblings' raw compressed bytes byte-identical), metadata
+(mode/mtime/xattr) survival, pause-parks-mid-add-then-completes-on-resume, and the encrypted-entry refusal.
+
 ## Testing
 
 `volume_test.rs` drives `ArchiveVolume` against real zips written to a temp file (the local source needs a real path):
@@ -373,6 +415,12 @@ watch": `listing_is_watched` reflects it, the backing `.zip` is watched for exte
   of `file_viewer/archive_extract.rs`: that extractor is viewer-`pub(super)`-scoped and its temp is reaped on VIEWER
   SESSION close, whereas a detached launched app holds the file for an unknown lifetime and has no close event to hook —
   it needs its own extract-and-persist-until-startup-reaper lifecycle. Deferred deliberately; the viewer interim stands.
-- **Mutation**: turn the mutation methods and the `'archive'` VolumeKind writable (add/delete/rename/mkdir/mkfile
-  via temp+rename). The write-guard seams (§ "Routing and lifecycle") become the mutation routing points, and the edit's
-  final atomic rename is the change event the live watch (§ "Live content watch") turns into the post-edit refresh.
+- **Mutation is landed on the backend** (§ "Zip mutation"): `mutator.rs` (temp+rename) plus the write-ops
+  `ArchiveEditOperation` driver, and the write-guard seams (§ "Routing and lifecycle") are now archive-edit routing
+  points — mkdir/mkfile/rename/delete inside and copy/move INTO a zip run as managed edit ops. `ArchiveVolume`'s own
+  mutation methods deliberately STAY `NotSupported`: routing is path-based and backend-side (the driver drives the
+  mutator directly from the archive path), so nothing calls `Volume::create_file`/`delete`/`rename` on an archive. The
+  edit's final atomic rename is the change event the live watch (§ "Live content watch") turns into the post-edit
+  refresh. Still ahead: the interactive in-archive conflict prompt (ApplyToAll + oneshot — the non-interactive policy
+  ships now), the compound move ACROSS the boundary (out-of-zip = extract + archive-delete), non-local sources into a
+  zip, and flipping the FE `'archive'` VolumeKind writable.
