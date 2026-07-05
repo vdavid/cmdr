@@ -26,6 +26,13 @@ Documents the cross-cutting machinery both subdirs share (see the module map and
   **Move OUT** is a compound Move op (`route_archive_move_out`): extract via the copy engine, then a batch `{ delete }`
   rewrite only on a fully clean extract (all-or-nothing — any skip/error/cancel deletes nothing; delete runs only after
   the extract is durable). See DETAILS § "Archive edits".
+- **Every archive apply site runs through `run_managed_edit`, never a bare `spawn_blocking(mutator::apply)`.** It
+  dispatches on `parent.supports_local_fs_access()`: a LOCAL parent edits the real file in place (byte-identical to
+  before); a REMOTE parent (SMB / MTP) pulls the `.zip` local, edits the copy, uploads it under a remote temp name, and
+  swaps (`archive_remote_edit.rs`). The remote original is untouched until the final swap; a cancel anywhere before it
+  leaves it intact. The swap prefers atomic rename-overwrite, else delete-then-rename (MTP always, and its one crash
+  window keeps the NEW data under the temp name — never lost). Don't reintroduce an in-place remote edit: `raw_copy_file`
+  needs `Read + Seek`. See DETAILS § "Remote edit: the data-safety contract".
 - **Copy/move/delete/trash spawn through `manager::spawn_managed`; rename/mkdir/mkfile run through `manager::run_instant`.**
   A spawned op holds a slot in each lane it touches (`Volume::lane_key()`, source AND dest), runs when all are free
   (budget 1), else Queued; the next admits on the explicit `on_settled`, NEVER in `Drop`. Instant ops register +

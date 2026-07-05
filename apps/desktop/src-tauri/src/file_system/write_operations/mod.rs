@@ -18,6 +18,7 @@
 
 mod analytics;
 mod archive_edit;
+mod archive_remote_edit;
 mod cancellable;
 mod conflict;
 mod create;

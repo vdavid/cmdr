@@ -306,6 +306,70 @@ enum PlanError {
     Op(WriteOperationError),
 }
 
+impl From<PlanError> for super::archive_remote_edit::RemoteEditError {
+    fn from(e: PlanError) -> Self {
+        match e {
+            PlanError::Cancelled => Self::Cancelled,
+            PlanError::Op(w) => Self::Op(w),
+        }
+    }
+}
+
+impl From<super::archive_remote_edit::RemoteEditError> for PlanError {
+    fn from(e: super::archive_remote_edit::RemoteEditError) -> Self {
+        match e {
+            super::archive_remote_edit::RemoteEditError::Cancelled => Self::Cancelled,
+            super::archive_remote_edit::RemoteEditError::Op(w) => Self::Op(w),
+        }
+    }
+}
+
+/// Runs a plan+apply closure against an archive, transparently LOCAL or REMOTE.
+///
+/// The closure is exactly the blocking plan+apply the local path always ran (it
+/// plans against, and mutates, the path it's handed). For a LOCAL parent this is
+/// byte-identical to before — the closure runs on the real archive file via
+/// `spawn_blocking`, and the mutator's own temp+rename commits the edit. For a
+/// REMOTE parent (direct SMB / MTP) it routes through
+/// [`archive_remote_edit::pull_apply_upload_swap`]: pull the `.zip` to a local
+/// temp, run the closure there, upload the result under a remote temp name, and
+/// swap. The remote original is untouched until that final swap; a cancel or
+/// fault anywhere before it leaves the original intact.
+///
+/// `parent_volume_id` is the drive holding the `.zip` (`"root"` for a local disk);
+/// an unregistered id falls back to the local path (a plain-file edit that will
+/// surface its own not-found).
+async fn run_managed_edit<T, F>(
+    parent_volume_id: &str,
+    archive_path: PathBuf,
+    state: Arc<WriteOperationState>,
+    plan_and_apply: F,
+) -> Result<T, PlanError>
+where
+    F: FnOnce(&Path) -> Result<T, PlanError> + Send + 'static,
+    T: Send + 'static,
+{
+    let parent = get_volume_manager().get(parent_volume_id);
+    let is_remote = parent.as_ref().is_some_and(|p| !p.supports_local_fs_access());
+
+    if !is_remote {
+        // LOCAL: run plan+apply on the real archive file (mutator temp+rename).
+        let path = archive_path.clone();
+        return match tokio::task::spawn_blocking(move || plan_and_apply(&path)).await {
+            Ok(result) => result,
+            Err(join) => Err(PlanError::Op(WriteOperationError::IoError {
+                path: archive_path.display().to_string(),
+                message: format!("archive edit task failed: {join}"),
+            })),
+        };
+    }
+
+    let parent = parent.expect("is_remote is only true when the parent is registered");
+    super::archive_remote_edit::pull_apply_upload_swap(parent, archive_path, state, plan_and_apply)
+        .await
+        .map_err(PlanError::from)
+}
+
 /// Walks the local sources and builds the `{ add + delete + mkdir }` changeset
 /// under a pre-resolved policy (no prompting). Blocking — call from `spawn_blocking`.
 fn build_copy_into_changeset(
@@ -745,38 +809,43 @@ async fn archive_copy_into_interactive_start(
                 latest: Mutex::new(MutationProgress::default()),
             });
 
-            // Plan (with prompting) then apply, both on the blocking pool. Returns
+            // Plan (with prompting) then apply against the archive — LOCAL in place,
+            // or pulled-local then uploaded+swapped for a REMOTE parent. Returns
             // the move sources to delete after a committed MOVE (empty otherwise).
             let hooks_for_blocking = Arc::clone(&hooks);
             let events_for_blocking = Arc::clone(&events);
             let state_for_blocking = Arc::clone(&state);
             let op_id_for_blocking = op_id.clone();
-            let archive_for_blocking = archive_path.clone();
-            let result = tokio::task::spawn_blocking(move || -> Result<(Vec<PathBuf>, usize), PlanError> {
-                let plan = build_copy_into_changeset_interactive(
-                    &archive_for_blocking,
-                    &absolute_sources,
-                    &dest_inner,
-                    &*events_for_blocking,
-                    &op_id_for_blocking,
-                    &state_for_blocking,
-                )?;
-                let move_sources = if is_move && plan.skipped_count == 0 {
-                    absolute_sources.clone()
-                } else {
-                    Vec::new()
-                };
-                mutator::apply(&archive_for_blocking, &plan.changeset, &*hooks_for_blocking).map_err(|e| match e {
-                    MutationError::Cancelled => PlanError::Cancelled,
-                    other => PlanError::Op(to_write_error(&archive_for_blocking, other)),
-                })?;
-                Ok((move_sources, plan.skipped_count))
-            })
+            let result = run_managed_edit(
+                &parent_volume_id,
+                archive_path.clone(),
+                Arc::clone(&state),
+                move |working: &Path| -> Result<(Vec<PathBuf>, usize), PlanError> {
+                    let plan = build_copy_into_changeset_interactive(
+                        working,
+                        &absolute_sources,
+                        &dest_inner,
+                        &*events_for_blocking,
+                        &op_id_for_blocking,
+                        &state_for_blocking,
+                    )?;
+                    let move_sources = if is_move && plan.skipped_count == 0 {
+                        absolute_sources.clone()
+                    } else {
+                        Vec::new()
+                    };
+                    mutator::apply(working, &plan.changeset, &*hooks_for_blocking).map_err(|e| match e {
+                        MutationError::Cancelled => PlanError::Cancelled,
+                        other => PlanError::Op(to_write_error(working, other)),
+                    })?;
+                    Ok((move_sources, plan.skipped_count))
+                },
+            )
             .await;
 
             let final_progress = *hooks.latest.lock_ignore_poison();
             match result {
-                Ok(Ok((move_sources, skipped_count))) => {
+                Ok((move_sources, skipped_count)) => {
                     // Move invariant: delete the local sources only now that the
                     // archive rewrite is durably committed.
                     delete_move_sources(&move_sources).await;
@@ -788,7 +857,7 @@ async fn archive_copy_into_interactive_start(
                         bytes_processed: final_progress.bytes_total,
                     });
                 }
-                Ok(Err(PlanError::Cancelled)) => {
+                Err(PlanError::Cancelled) => {
                     events.emit_cancelled(WriteCancelledEvent {
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::ArchiveEdit,
@@ -796,21 +865,11 @@ async fn archive_copy_into_interactive_start(
                         rolled_back: false,
                     });
                 }
-                Ok(Err(PlanError::Op(err))) => {
+                Err(PlanError::Op(err)) => {
                     events.emit_error(WriteErrorEvent::new(
                         op_id.clone(),
                         WriteOperationType::ArchiveEdit,
                         err,
-                    ));
-                }
-                Err(join_error) => {
-                    events.emit_error(WriteErrorEvent::new(
-                        op_id.clone(),
-                        WriteOperationType::ArchiveEdit,
-                        WriteOperationError::IoError {
-                            path: archive_path.display().to_string(),
-                            message: format!("archive edit task failed: {join_error}"),
-                        },
                     ));
                 }
             }
@@ -983,13 +1042,20 @@ pub(crate) async fn route_archive_move_out(
                         latest: Mutex::new(MutationProgress::default()),
                     });
                     let hooks_for_blocking = Arc::clone(&hooks);
-                    let archive_for_blocking = archive_path.clone();
-                    let delete_result = tokio::task::spawn_blocking(move || {
-                        mutator::apply(&archive_for_blocking, &changeset, &*hooks_for_blocking)
-                    })
+                    let delete_result = run_managed_edit(
+                        &source_volume_id,
+                        archive_path.clone(),
+                        Arc::clone(&state),
+                        move |working: &Path| {
+                            mutator::apply(working, &changeset, &*hooks_for_blocking).map_err(|e| match e {
+                                MutationError::Cancelled => PlanError::Cancelled,
+                                other => PlanError::Op(to_write_error(working, other)),
+                            })
+                        },
+                    )
                     .await;
                     match delete_result {
-                        Ok(Ok(())) => {
+                        Ok(()) => {
                             events.emit_complete(WriteCompleteEvent {
                                 operation_id: op_id.clone(),
                                 operation_type: WriteOperationType::Move,
@@ -998,7 +1064,7 @@ pub(crate) async fn route_archive_move_out(
                                 bytes_processed: bytes_extracted,
                             });
                         }
-                        Ok(Err(MutationError::Cancelled)) => {
+                        Err(PlanError::Cancelled) => {
                             // Cancelled during the archive rewrite: the extract
                             // already landed, the archive is intact (temp
                             // abandoned) — effectively a completed copy.
@@ -1009,7 +1075,7 @@ pub(crate) async fn route_archive_move_out(
                                 rolled_back: false,
                             });
                         }
-                        Ok(Err(err)) => {
+                        Err(PlanError::Op(err)) => {
                             // The extract landed but the archive couldn't be
                             // rewritten. The originals are intact and the copies
                             // are at the destination (no data loss), so surface
@@ -1017,17 +1083,7 @@ pub(crate) async fn route_archive_move_out(
                             events.emit_error(WriteErrorEvent::new(
                                 op_id.clone(),
                                 WriteOperationType::Move,
-                                to_write_error(&archive_path, err),
-                            ));
-                        }
-                        Err(join_error) => {
-                            events.emit_error(WriteErrorEvent::new(
-                                op_id.clone(),
-                                WriteOperationType::Move,
-                                WriteOperationError::IoError {
-                                    path: archive_path.display().to_string(),
-                                    message: format!("archive delete task failed: {join_error}"),
-                                },
+                                err,
                             ));
                         }
                     }
@@ -1186,15 +1242,22 @@ pub(crate) async fn archive_edit_start(
             });
 
             let hooks_for_blocking = Arc::clone(&hooks);
-            let archive_for_blocking = archive_path.clone();
-            let result = tokio::task::spawn_blocking(move || {
-                mutator::apply(&archive_for_blocking, &changeset, &*hooks_for_blocking)
-            })
+            let result = run_managed_edit(
+                &parent_volume_id,
+                archive_path.clone(),
+                Arc::clone(&state),
+                move |working: &Path| {
+                    mutator::apply(working, &changeset, &*hooks_for_blocking).map_err(|e| match e {
+                        MutationError::Cancelled => PlanError::Cancelled,
+                        other => PlanError::Op(to_write_error(working, other)),
+                    })
+                },
+            )
             .await;
 
             let final_progress = *hooks.latest.lock_ignore_poison();
             match result {
-                Ok(Ok(())) => {
+                Ok(()) => {
                     // Move invariant: delete the local sources only now that the
                     // rewritten archive is durably committed. Best-effort — a
                     // failed source delete leaves the file in both places (an
@@ -1208,7 +1271,7 @@ pub(crate) async fn archive_edit_start(
                         bytes_processed: final_progress.bytes_total,
                     });
                 }
-                Ok(Err(MutationError::Cancelled)) => {
+                Err(PlanError::Cancelled) => {
                     events.emit_cancelled(WriteCancelledEvent {
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::ArchiveEdit,
@@ -1216,21 +1279,11 @@ pub(crate) async fn archive_edit_start(
                         rolled_back: false,
                     });
                 }
-                Ok(Err(err)) => {
+                Err(PlanError::Op(err)) => {
                     events.emit_error(WriteErrorEvent::new(
                         op_id.clone(),
                         WriteOperationType::ArchiveEdit,
-                        to_write_error(&archive_path, err),
-                    ));
-                }
-                Err(join_error) => {
-                    events.emit_error(WriteErrorEvent::new(
-                        op_id.clone(),
-                        WriteOperationType::ArchiveEdit,
-                        WriteOperationError::IoError {
-                            path: archive_path.display().to_string(),
-                            message: format!("archive edit task failed: {join_error}"),
-                        },
+                        err,
                     ));
                 }
             }

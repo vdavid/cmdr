@@ -57,6 +57,12 @@ pub struct InMemoryVolume {
     /// smb2 primitive lands). Models the "refuse typed" remote-archive path.
     /// Default `false` (positioned reads work). Set via [`Self::with_read_range_unsupported`].
     read_range_unsupported: bool,
+    /// When `true`, [`Volume::create_directory_errors_on_existing_dir`] reports
+    /// `false`, modeling a backend that ALLOWS same-name sibling objects (MTP).
+    /// The remote-archive-edit swap uses that flag to pick delete-then-rename over
+    /// an atomic rename-overwrite. Default `false` (rejects collisions, like SMB /
+    /// local / a plain in-memory store).
+    sibling_duplicates_allowed: bool,
     /// Raw errno to inject on the next `list_directory` call. Cleared after use.
     #[cfg(feature = "playwright-e2e")]
     injected_error: std::sync::Mutex<Option<i32>>,
@@ -74,9 +80,18 @@ impl InMemoryVolume {
             local_fs_access: false,
             read_range_log: std::sync::Mutex::new(Vec::new()),
             read_range_unsupported: false,
+            sibling_duplicates_allowed: false,
             #[cfg(feature = "playwright-e2e")]
             injected_error: std::sync::Mutex::new(None),
         }
+    }
+
+    /// Makes [`Volume::create_directory_errors_on_existing_dir`] report `false`,
+    /// modeling a backend that allows same-name siblings (MTP). Used by the
+    /// remote-archive-edit swap tests to exercise the delete-then-rename path.
+    pub fn with_sibling_duplicates_allowed(mut self) -> Self {
+        self.sibling_duplicates_allowed = true;
+        self
     }
 
     /// Makes [`Volume::read_range`] return `NotSupported`, modeling a remote
@@ -668,6 +683,10 @@ impl Volume for InMemoryVolume {
 
     fn supports_local_fs_access(&self) -> bool {
         self.local_fs_access
+    }
+
+    fn create_directory_errors_on_existing_dir(&self) -> bool {
+        !self.sibling_duplicates_allowed
     }
 
     fn space_poll_interval(&self) -> Option<std::time::Duration> {

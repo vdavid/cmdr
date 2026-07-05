@@ -237,6 +237,47 @@ metadata syscall, so it runs as a managed op through `spawn_managed`, NOT `run_i
 the mutation mechanism (`ArchiveMutator`, temp+rename safe-overwrite) lives in the archive backend
 (`volume/backends/archive/DETAILS.md` § "Zip mutation").
 
+### Local vs remote: one closure, one dispatcher (`run_managed_edit`)
+
+Every apply site in `archive_edit.rs` runs its plan+apply through `run_managed_edit(parent_volume_id, archive_path,
+state, plan_and_apply)` rather than a bare `spawn_blocking(mutator::apply(...))`. The closure is the SAME blocking
+plan+apply either way — it plans against, and mutates, the path it's HANDED. The dispatcher (keyed on
+`parent.supports_local_fs_access()`) decides what that path is:
+
+- **Local parent**: byte-identical to before — the closure runs on the REAL archive file, and the mutator's own
+  temp+rename commits the edit. No pull, no upload.
+- **Remote parent** (direct SMB / MTP): routed through `archive_remote_edit::pull_apply_upload_swap`.
+
+Because the local mutator's `raw_copy_file` needs a `Read + Seek` source (which async ranged reads can't give), a remote
+edit does NOT edit in place — it PULLS the `.zip` to a local temp, runs the ordinary local closure there, uploads the
+rewritten temp under a remote temp name, then swaps. This means a remote edit needs only streaming read + write + rename
++ delete on the parent; it does NOT depend on the SMB positioned-read (`read_range`) primitive that BROWSING needs (the
+CD is parsed from the pulled-local copy, not over ranged reads).
+
+### Remote edit: the data-safety contract (`archive_remote_edit.rs`)
+
+The remote ORIGINAL is byte-for-byte untouched until the very last swap:
+
+1. **Pull** streams the remote `.zip` to a local scratch copy (`open_read_stream`, cancel-checked between chunks,
+   `fsync`ed). Writes nothing remote.
+2. **Apply** runs the closure on the local copy — the mutator's temp+rename commits onto the scratch file. A cancel/fault
+   leaves the scratch file as the pulled original; nothing remote changed.
+3. **Upload** streams the edited copy to a NEW remote name (`foo.zip.cmdr-tmp-<uuid>`) via `write_from_stream`; the
+   original keeps its name and bytes. A cancel/fault deletes the partial temp best-effort.
+4. **Swap** is the ONLY step that changes the original. Where the backend REJECTS a same-name collision
+   (`create_directory_errors_on_existing_dir()` true — SMB, local), it tries an atomic rename-overwrite first (SMB with
+   `ReplaceIfExists`); on refusal it falls back to delete-then-rename. A backend that ALLOWS same-name siblings (MTP,
+   flag false) goes STRAIGHT to delete-then-rename — a rename onto the live name would DUPLICATE, not replace. The
+   delete-then-rename path has exactly ONE crash window (between the delete and the rename): the NEW, fully-uploaded data
+   survives under the temp name — never lost, only briefly misnamed.
+
+A cancel at ANY point before the swap completes leaves the remote original intact (the local scratch dir and any partial
+remote temp are cleaned up — a RAII `ScratchDir` and the upload's on-error delete). Pinned by `archive_remote_edit_tests`
+(round-trip, cancel-before-swap-leaves-the-original, and the sibling-allowing delete-then-rename swap). Cost: O(archive)
+network per edit (the pull), documented and accepted — there is no remote random-access WRITE adapter (that's only a
+future in-place-append optimization). Remote backends don't carry the archive file's mode/mtime/xattr across the rewrite
+the way local `copyfile` does; the upload mints a fresh remote object.
+
 - **Driver shape.** `archive_edit_start(events, request, interval)` mirrors the volume-delete branch: a deferred async
   start owns the op end to end (a `WriteSettledGuard`, the `ArchiveMutator` run on the blocking pool, the terminal
   event, `on_settled`). The op takes the PARENT drive's lane (archive work shares the device's serialization lane) and
