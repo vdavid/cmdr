@@ -29,8 +29,11 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   default, the two virtual ids short-circuit. Keep the tint classifier `volumeKindFor` separate; never feed the `local`
   default into tinting.
 - **Archive panes are KIND-FROM-PATH: gate via `capabilitiesForPane(volumeId, path)`, never `VolumeInfo` alone.** A pane
-  inside a `.zip` keeps the parent DRIVE's `volumeId`; the PATH makes it the `archive` kind. Zip is WRITABLE — mutations
-  are managed ops (op handle, not a path), delete is permanent. DETAILS § "Archive browsing and editing".
+  inside an archive keeps the parent DRIVE's `volumeId`; the PATH makes it the `archive` kind. Zip is WRITABLE —
+  mutations are managed ops (op handle, not a path), delete is permanent. tar / tar.gz / tar.xz / tar.bz2 / tar.zst / 7z
+  are READ-ONLY (browse + extract): `capabilitiesForPane` returns the write-flags-off `archive` row for a non-zip
+  boundary segment (`isWritableArchiveName`), so mkdir/mkfile/rename/paste are gated off; copy-OUT still works. DETAILS
+  § "Archive browsing and editing".
 - **`FilePane.applyIndices` jumps the cursor on SELECT only** (deselect leaves it put), via `firstSelectedIndex` (skips
   the `..` row); raw `idxs[0]` can be `..`.
 - **Snapshot pane (`volumeId === 'search-results'`) couples two points**: `computeHasParent` returns `false` (no `..`

@@ -976,6 +976,8 @@ export type MessageKey =
   | 'fileExplorer.quickLookHint.finderComparison'
   | 'fileExplorer.quickLookHint.quickView'
   | 'fileExplorer.quickLookHint.spaceSelects'
+  | 'fileExplorer.readOnly.archiveMessage'
+  | 'fileExplorer.readOnly.archiveTitle'
   | 'fileExplorer.readOnly.deleteMessage'
   | 'fileExplorer.readOnly.deviceMessage'
   | 'fileExplorer.readOnly.deviceTitle'

@@ -16,7 +16,7 @@ import {
   buildTransferPropsFromSnapshot,
   getDestinationVolumeInfo,
 } from './transfer-operations'
-import { capabilitiesFor, pathInsideArchive } from './volume-capabilities'
+import { capabilitiesFor, capabilitiesForPane, pathInsideArchive } from './volume-capabilities'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { FilePaneAPI } from './types'
@@ -53,6 +53,22 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const volId = access.getPaneVolumeId(pane)
 
     const volumeInfo = getDestinationVolumeInfo(volId, access.getVolumes())
+
+    // A read-only archive (tar / 7z) is browse + extract only: refuse the write
+    // up front rather than letting the user type a name and hit the backend's
+    // `ReadOnlyDevice`. Kind-from-path: the pane's `volumeId` is the writable
+    // parent drive, so the PATH decides. A writable zip has the three write flags
+    // on and falls through to the managed archive-edit flow.
+    // The archive-path branch of `capabilitiesForPane` ignores fsType/category
+    // (the boundary segment decides), so passing only the id + path is enough.
+    const paneCaps = capabilitiesForPane(volId, access.getPanePath(pane))
+    if (paneCaps.kind === 'archive' && !paneCaps.canCreateChild) {
+      return {
+        title: tString('fileExplorer.readOnly.archiveTitle'),
+        message: tString('fileExplorer.readOnly.archiveMessage'),
+      }
+    }
+
     if (volumeInfo?.isReadOnly) {
       const messageKey: Record<typeof action, MessageKey> = {
         rename: 'fileExplorer.readOnly.renameMessage',

@@ -1126,6 +1126,14 @@
   "@fileExplorer.readOnly.deleteMessage": {
     "description": "Alert body when the user tries to delete a file on a read-only volume."
   },
+  "fileExplorer.readOnly.archiveTitle": "Read-only archive",
+  "@fileExplorer.readOnly.archiveTitle": {
+    "description": "Alert dialog title shown when the user tries a write action (rename, create, paste) inside a read-only archive (a tar or 7z file). \"archive\" = a compressed file Cmdr browses like a folder."
+  },
+  "fileExplorer.readOnly.archiveMessage": "Cmdr browses and extracts tar and 7z archives, but only zip archives can be edited.",
+  "@fileExplorer.readOnly.archiveMessage": {
+    "description": "Alert body when the user tries to modify the contents of a read-only archive. Explains that tar and 7z archives are browse + extract only, while zip archives can be edited. \"Cmdr\" is the app name; do NOT translate. \"tar\", \"7z\", and \"zip\" are archive file formats."
+  },
   "fileExplorer.readOnly.deviceTitle": "Read-only device",
   "@fileExplorer.readOnly.deviceTitle": {
     "description": "Alert title shown when the user tries to copy/move files ONTO a read-only device."

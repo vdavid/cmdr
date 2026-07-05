@@ -79,6 +79,18 @@ export function checkTransferDestinationGuard(
   if (!destCaps.canPasteInto && destCaps.kind === 'search-results') {
     return { ok: false, toast: { message: SEARCH_RESULTS_NOT_A_FOLDER_TOAST, level: 'warn' } }
   }
+  // A read-only archive (tar / 7z) can't accept a paste/move-in: browse + extract
+  // only. Refuse up front rather than routing to the archive-edit flow that the
+  // backend would reject. A writable zip has `canPasteInto: true` and falls through.
+  if (!destCaps.canPasteInto && destCaps.kind === 'archive') {
+    return {
+      ok: false,
+      alert: {
+        title: tString('fileExplorer.readOnly.archiveTitle'),
+        message: tString('fileExplorer.readOnly.archiveMessage'),
+      },
+    }
+  }
 
   const destVolume = getDestinationVolumeInfo(destVolumeId, volumes)
   if (destVolume?.isReadOnly) {

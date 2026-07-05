@@ -276,25 +276,51 @@ export function capabilitiesFor(volumeId: string, fsType?: string, category?: Lo
 }
 
 /**
- * The supported archive extensions, MIRRORING the backend's
- * `SUPPORTED_ARCHIVE_EXTENSIONS` (`backends/archive/boundary.rs`). Kept in lockstep
- * with it — the FE does the cheap extension pre-filter, the backend stat- and
- * magic-confirms on actual navigation. Zip only in this phase.
+ * The supported archive-name SUFFIXES, MIRRORING the backend's `format_for_name`
+ * (`backends/archive/format.rs`). Kept in lockstep — the FE does the cheap
+ * suffix pre-filter, the backend stat- and magic-confirms on actual navigation.
+ * Suffix-based (not just the last `.ext`) so `.tar.gz` matches while a bare `.gz`
+ * doesn't. Longest-first so `.tar.gz` wins over `.tar`.
  */
-const SUPPORTED_ARCHIVE_EXTENSIONS: readonly string[] = ['zip']
+const SUPPORTED_ARCHIVE_SUFFIXES: readonly string[] = [
+  '.tar.gz',
+  '.tar.bz2',
+  '.tar.xz',
+  '.tar.zst',
+  '.tgz',
+  '.tbz2',
+  '.tbz',
+  '.txz',
+  '.tzst',
+  '.tar',
+  '.zip',
+  '.7z',
+]
 
 /**
- * True if `name`'s extension is a supported archive format (case-insensitive).
- * Mirrors the backend's `has_supported_archive_extension`: a name with no
- * extension (`zip`), a leading-dot dotfile with no stem (`.zip`), or a different
- * final extension (`foo.zip.txt`) is NOT an archive.
+ * The WRITABLE archive suffixes: only zip. tar and 7z are browse + extract only,
+ * so a pane inside one gets the read-only archive capability. Mirrors the backend
+ * write chokepoint (`archive_edit::ensure_zip_writable`).
+ */
+const WRITABLE_ARCHIVE_SUFFIXES: readonly string[] = ['.zip']
+
+/** Whether `name` ends with `suffix` and has a real stem before it. */
+function nameHasSuffix(name: string, suffix: string): boolean {
+  const lower = name.toLowerCase()
+  return lower.endsWith(suffix) && lower.length > suffix.length
+}
+
+/**
+ * True if `name`'s suffix is a supported archive format (case-insensitive).
+ * Mirrors the backend's `has_supported_archive_extension`.
  */
 function hasSupportedArchiveExtension(name: string): boolean {
-  const dot = name.lastIndexOf('.')
-  // `dot <= 0` covers both "no dot" and a leading-dot dotfile (no stem), matching
-  // Rust's `Path::extension()` returning `None` for `.zip`.
-  if (dot <= 0) return false
-  return SUPPORTED_ARCHIVE_EXTENSIONS.includes(name.slice(dot + 1).toLowerCase())
+  return SUPPORTED_ARCHIVE_SUFFIXES.some((s) => nameHasSuffix(name, s))
+}
+
+/** True if `name` is a WRITABLE archive (zip) — tar/7z return false. */
+function isWritableArchiveName(name: string): boolean {
+  return WRITABLE_ARCHIVE_SUFFIXES.some((s) => nameHasSuffix(name, s))
 }
 
 /**
@@ -322,11 +348,12 @@ export function pathInsideArchive(path: string): boolean {
  * archive pane — whose `volumeId` is the WRITABLE parent drive — is gated by the
  * ARCHIVE row (zip mutation), not the parent drive's row.
  *
- * Every supported archive format today (zip) is mutable, so this returns the
- * writable `archive` row for any archive path. When M7 adds browse-only formats
- * (tar/7z) to `SUPPORTED_ARCHIVE_EXTENSIONS`, split here: for a path whose
- * archive boundary segment is a non-writable format, return a read-only archive
- * capability variant (write flags false) instead of `CAPABILITY_TABLE.archive`.
+ * Zip is writable (the managed archive-edit flow); tar and 7z are browse +
+ * extract only. So a path inside a NON-zip archive gets `READ_ONLY_ARCHIVE` (the
+ * three write flags off, `canBeSource` on so copy-OUT still works) — the
+ * kind-from-path split the M4b seam anticipated. Which format is decided by the
+ * FIRST archive boundary segment (leftmost wins, matching the backend), so a
+ * nested `foo.tar/bar.zip/…` is read-only (the outer tar governs).
  */
 export function capabilitiesForPane(
   volumeId: string,
@@ -334,6 +361,22 @@ export function capabilitiesForPane(
   fsType?: string,
   category?: LocationCategory,
 ): VolumeCapabilities {
-  if (path !== undefined && pathInsideArchive(path)) return CAPABILITY_TABLE.archive
+  const boundarySegment = path === undefined ? undefined : path.split('/').find(hasSupportedArchiveExtension)
+  if (boundarySegment !== undefined) {
+    return isWritableArchiveName(boundarySegment) ? CAPABILITY_TABLE.archive : READ_ONLY_ARCHIVE
+  }
   return capabilitiesFor(volumeId, fsType, category)
 }
+
+/**
+ * The read-only archive capability (tar / 7z): the `archive` row with the three
+ * write flags turned OFF. Same `kind: 'archive'` (tint, breadcrumb, and MCP are
+ * identical to a zip pane); only mutation is gated off. `canBeSource` stays true
+ * so copying files OUT — the headline read feature — still works.
+ */
+const READ_ONLY_ARCHIVE: VolumeCapabilities = Object.freeze({
+  ...CAPABILITY_TABLE.archive,
+  canPasteInto: false,
+  canCreateChild: false,
+  canRenameInPlace: false,
+})

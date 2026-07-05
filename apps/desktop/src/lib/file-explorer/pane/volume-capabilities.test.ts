@@ -292,4 +292,49 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
     volumes.list = [vol({ id: 'volumesnaspi', fsType: 'smbfs', category: 'network' })]
     expect(capabilitiesForPane('volumesnaspi', undefined).kind).toBe('smb')
   })
+
+  it('returns the READ-ONLY archive row for a tar or 7z path (browse + extract only)', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    for (const path of ['/x/foo.tar/inner', '/x/foo.tar.gz/d/f.txt', '/x/foo.7z/inner']) {
+      const caps = capabilitiesForPane('root', path)
+      expect(caps.kind, path).toBe('archive')
+      // Read-only: the three write flags are off...
+      expect(caps.canPasteInto, path).toBe(false)
+      expect(caps.canCreateChild, path).toBe(false)
+      expect(caps.canRenameInPlace, path).toBe(false)
+      // ...but copying files OUT still works, and it lists like a folder.
+      expect(caps.canBeSource, path).toBe(true)
+      expect(caps.hasBackendListing, path).toBe(true)
+    }
+  })
+
+  it('a nested zip inside a read-only tar stays read-only (the outer format governs)', () => {
+    volumes.list = [vol({ id: 'root', fsType: 'apfs', category: 'main_volume' })]
+    // Leftmost archive component wins: `foo.tar` is the boundary, `bar.zip` is a
+    // plain inner entry — so the pane is read-only, not writable.
+    expect(capabilitiesForPane('root', '/x/foo.tar/bar.zip/y').canPasteInto).toBe(false)
+  })
+})
+
+describe('pathInsideArchive — tar family and 7z', () => {
+  it('recognizes the compressed-tar suffixes and 7z', () => {
+    for (const name of [
+      'a.tar',
+      'a.tar.gz',
+      'a.tgz',
+      'a.tar.xz',
+      'a.txz',
+      'a.tar.bz2',
+      'a.tbz2',
+      'a.tar.zst',
+      'a.7z',
+    ]) {
+      expect(pathInsideArchive(`/dir/${name}/inner`), name).toBe(true)
+    }
+  })
+
+  it('does NOT treat a bare compressed file (not a tar) as an archive', () => {
+    expect(pathInsideArchive('/dir/photo.gz')).toBe(false)
+    expect(pathInsideArchive('/dir/data.zst/x')).toBe(false)
+  })
 })
