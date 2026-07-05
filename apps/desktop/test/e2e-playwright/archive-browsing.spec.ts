@@ -132,6 +132,11 @@ test.describe('Archive browsing', () => {
   test.beforeEach(async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
+    // Return the focused pane to `left/` and confirm it landed: a prior test may have
+    // left it browsing INSIDE the archive, and `ensureAppReady` doesn't reliably back
+    // out of an archive volume, so start each test from a known directory.
+    await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
+    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${getFixtureRoot()}/left`)
     await setArchiveEnterBehavior({ zip: 'browse', bundle: 'browse' })
   })
 
@@ -347,6 +352,11 @@ test.describe('Archive Enter-behavior menu', () => {
   test.beforeEach(async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
+    // Return the focused pane to `left/` and confirm it landed: a prior test may have
+    // left it browsing INSIDE the archive, and `ensureAppReady` doesn't reliably back
+    // out of an archive volume, so start each menu test from a known directory.
+    await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
+    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${getFixtureRoot()}/left`)
     // The headline flow: zip set to Ask (the default), so Enter pops the menu.
     await setArchiveEnterBehavior({ zip: 'ask', bundle: 'ask' })
     await clearOpenedPaths(tauriPage)
@@ -374,8 +384,19 @@ test.describe('Archive Enter-behavior menu', () => {
     await enterEntry(tauriPage, 'sample.zip')
     await tauriPage.waitForSelector(ENTER_MENU, 5000)
 
-    // Browse is highlighted on open; ArrowDown moves to Open, Enter selects it.
+    // Browse is highlighted on open; ArrowDown moves to Open. Wait for the highlight
+    // to actually land on Open before selecting (probing the state, not sleeping) so
+    // Enter can't race ahead of the arrow.
     await tauriPage.keyboard.press('ArrowDown')
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(
+            `(function(){ var el = document.querySelector('.menu-item.is-highlighted'); return !!el && (el.textContent || '').indexOf('Open') !== -1; })()`,
+          ),
+        { timeout: 2000 },
+      )
+      .toBeTruthy()
     await tauriPage.keyboard.press('Enter')
     await expect.poll(async () => !(await tauriPage.isVisible(ENTER_MENU)), { timeout: 3000 }).toBeTruthy()
 

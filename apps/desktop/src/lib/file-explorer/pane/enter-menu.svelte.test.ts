@@ -23,6 +23,11 @@ function makeDeps() {
   }
 }
 
+/** A minimal keydown-like object the controller reads (`key` + the two stoppers). */
+function key(name: string): KeyboardEvent {
+  return { key: name, preventDefault: vi.fn(), stopPropagation: vi.fn() } as unknown as KeyboardEvent
+}
+
 describe('createEnterMenu', () => {
   beforeEach(() => {
     openSettingsWindowMock.mockClear()
@@ -38,13 +43,13 @@ describe('createEnterMenu', () => {
     const menu = createEnterMenu(makeDeps())
     menu.openFor(makeEntry('a.zip'), 'open')
     expect(menu.open).toBe(true)
-    expect(menu.highlight).toBe('open')
+    expect(menu.highlighted).toBe('open')
 
     menu.openFor(makeEntry('b.zip'), 'ask')
-    expect(menu.highlight).toBe('browse')
+    expect(menu.highlighted).toBe('browse')
   })
 
-  it('onSelect routes browse and open to the deps with the pending entry', () => {
+  it('onSelect (pointer) routes browse and open to the deps with the pending entry', () => {
     const deps = makeDeps()
     const menu = createEnterMenu(deps)
     const entry = makeEntry('a.zip')
@@ -53,6 +58,7 @@ describe('createEnterMenu', () => {
     menu.onSelect('browse')
     expect(deps.browse).toHaveBeenCalledWith(entry)
     expect(menu.open).toBe(false)
+    expect(deps.restoreFocus).toHaveBeenCalled()
 
     menu.openFor(entry, 'ask')
     menu.onSelect('open')
@@ -66,12 +72,59 @@ describe('createEnterMenu', () => {
     expect(openSettingsWindowMock).toHaveBeenCalledWith(['Behavior', 'Archives'])
   })
 
-  it('onOpenChange(false) restores focus to the pane', () => {
+  it('onOpenChange(false) restores focus only on a real close transition', () => {
     const deps = makeDeps()
     const menu = createEnterMenu(deps)
     menu.openFor(makeEntry('a.zip'), 'ask')
     menu.onOpenChange(false)
     expect(menu.open).toBe(false)
-    expect(deps.restoreFocus).toHaveBeenCalled()
+    expect(deps.restoreFocus).toHaveBeenCalledTimes(1)
+  })
+
+  describe('handleKey', () => {
+    it('is a no-op when the menu is closed', () => {
+      const menu = createEnterMenu(makeDeps())
+      expect(menu.handleKey(key('Enter'))).toBe(false)
+    })
+
+    it('ArrowDown / ArrowUp move the highlight, clamped at the ends', () => {
+      const menu = createEnterMenu(makeDeps())
+      menu.openFor(makeEntry('a.zip'), 'ask') // highlighted = browse
+      expect(menu.handleKey(key('ArrowDown'))).toBe(true)
+      expect(menu.highlighted).toBe('open')
+      menu.handleKey(key('ArrowDown'))
+      expect(menu.highlighted).toBe('configure')
+      menu.handleKey(key('ArrowDown')) // clamp at the last row
+      expect(menu.highlighted).toBe('configure')
+      menu.handleKey(key('ArrowUp'))
+      expect(menu.highlighted).toBe('open')
+    })
+
+    it('Enter selects the highlighted row and closes', () => {
+      const deps = makeDeps()
+      const menu = createEnterMenu(deps)
+      const entry = makeEntry('a.zip')
+      menu.openFor(entry, 'ask') // browse
+      menu.handleKey(key('ArrowDown')) // open
+      expect(menu.handleKey(key('Enter'))).toBe(true)
+      expect(deps.open).toHaveBeenCalledWith(entry)
+      expect(menu.open).toBe(false)
+    })
+
+    it('Escape closes without selecting', () => {
+      const deps = makeDeps()
+      const menu = createEnterMenu(deps)
+      menu.openFor(makeEntry('a.zip'), 'ask')
+      expect(menu.handleKey(key('Escape'))).toBe(true)
+      expect(menu.open).toBe(false)
+      expect(deps.browse).not.toHaveBeenCalled()
+      expect(deps.open).not.toHaveBeenCalled()
+    })
+
+    it('ignores unrelated keys', () => {
+      const menu = createEnterMenu(makeDeps())
+      menu.openFor(makeEntry('a.zip'), 'ask')
+      expect(menu.handleKey(key('a'))).toBe(false)
+    })
   })
 })

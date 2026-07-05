@@ -12,25 +12,29 @@
         { value: 'configure', label: 'Configure…' },
     ]
 
+    let highlighted = $state<string | null>('browse')
+
     function openAt(event: MouseEvent): void {
         anchorPoint = { x: event.clientX, y: event.clientY }
+        highlighted = 'browse'
         open = true
-    }
-
-    function handleOpenChange(next: boolean): void {
-        open = next
     }
 
     function handleSelect(value: string): void {
         lastChoice = value
+        open = false
+    }
+
+    function handleHighlight(value: string | null): void {
+        highlighted = value
     }
 </script>
 
 <SectionCard id="components-menu" label="Menu">
     <div class="cell">
         <p class="caption">
-            Controlled action menu (Ark UI): opened at a point, keyboard nav + typeahead + Esc from Ark. Click the anchor
-            to open it at the cursor.
+            Presentational action menu: rendered at a point, mounted only while open. Click the anchor to open it at the
+            cursor; click a row or outside to dismiss.
         </p>
         <button
             type="button"
@@ -44,16 +48,19 @@
         {#if lastChoice}
             <p class="caption">Last choice: {lastChoice}</p>
         {/if}
-        <Menu
-            {open}
-            onOpenChange={handleOpenChange}
-            onSelect={handleSelect}
-            {items}
-            {anchorPoint}
-            defaultHighlightedValue="browse"
-            ariaLabel="Demo menu"
-            portal
-        />
+        {#if open}
+            <Menu
+                onSelect={handleSelect}
+                onClose={() => {
+                    open = false
+                }}
+                {items}
+                {anchorPoint}
+                highlightedValue={highlighted}
+                onHighlightChange={handleHighlight}
+                ariaLabel="Demo menu"
+            />
+        {/if}
     </div>
 </SectionCard>
 

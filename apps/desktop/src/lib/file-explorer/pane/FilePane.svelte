@@ -350,6 +350,9 @@
         open: (entry) => void openEntryExternally(entry),
         restoreFocus: () => onRequestFocus?.(),
     })
+    onDestroy(() => {
+        enterMenu.dispose()
+    })
 
     /**
      * This pane's volume capabilities, the single A6 source of truth for "what
@@ -1404,10 +1407,14 @@
             return
         }
         // Enter-behavior policy for archives (`.zip`) and macOS bundles (`.app`
-        // etc.). Skipped for items already INSIDE an archive — those keep the viewer
-        // interim below. `browse` falls through to the folder-browse arm; `open`
-        // launches; `ask` shows the Browse | Open | Configure popup.
-        if (!pathInsideArchive(entry.path)) {
+        // etc.). Gate on the PANE's path, not the entry's: `pathInsideArchive` is true
+        // for a `.zip` file ITSELF (its own path crosses the boundary), so gating on
+        // the entry would wrongly skip the archive we want the popup for. Gating on the
+        // current directory skips the policy only when we're already browsing INSIDE an
+        // archive — there the entries are inner items, which keep the viewer interim
+        // below. `browse` falls through to the folder-browse arm; `open` launches;
+        // `ask` shows the Browse | Open | Configure popup.
+        if (!pathInsideArchive(currentPath)) {
             const action = resolveEnterPolicy(
                 entry,
                 parseEnterBehaviorOverrides(getSetting('behavior.archiveEnterBehavior')),
@@ -2416,18 +2423,24 @@
     {/if}
 </div>
 
-<!-- Enter-behavior popup (archive/bundle set to Ask). Portaled to body so the
-     explorer's focus guard doesn't yank focus off the `role="menu"`. -->
-<Menu
-    open={enterMenu.open}
-    onOpenChange={enterMenu.onOpenChange}
-    onSelect={enterMenu.onSelect}
-    items={enterMenu.items}
-    anchorPoint={enterMenu.anchorPoint}
-    defaultHighlightedValue={enterMenu.highlight}
-    ariaLabel={tString('fileExplorer.archiveEnterMenu.ariaLabel')}
-    portal
-/>
+<!-- Enter-behavior popup (archive/bundle set to Ask). Portaled to body. Keyboard
+     nav is driven by the controller's document listener (`enterMenu.handleKey`); Ark
+     owns rendering, positioning, and pointer selection. Mounted only while open (an
+     `{#if}`) so closing UNMOUNTS it — Ark's controlled-open machine doesn't reliably
+     close on `open=false` alone. -->
+{#if enterMenu.open}
+    <Menu
+        items={enterMenu.items}
+        onSelect={enterMenu.onSelect}
+        onClose={() => {
+            enterMenu.onOpenChange(false)
+        }}
+        anchorPoint={enterMenu.anchorPoint}
+        highlightedValue={enterMenu.highlighted}
+        onHighlightChange={enterMenu.setHighlighted}
+        ariaLabel={tString('fileExplorer.archiveEnterMenu.ariaLabel')}
+    />
+{/if}
 
 {#if renameFlow.extensionDialogState}
     <ExtensionChangeDialog

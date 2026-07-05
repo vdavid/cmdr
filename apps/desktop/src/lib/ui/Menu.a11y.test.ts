@@ -1,9 +1,9 @@
 /**
- * Tier 3 a11y tests for the generic `Menu` primitive.
+ * Tier 3 a11y tests for the presentational `Menu` primitive.
  *
- * Axes the OPEN menu (the only state with rendered content — closed renders
- * nothing), rendered inline (`portal` off) so the content lands in the target.
- * Color contrast is tier 1's job; focus traps are tier 2's.
+ * The menu renders its content whenever mounted (the caller gates it with `{#if}`),
+ * so mounting it is enough to axe the open state. It portals to `document.body`, so
+ * axe the whole body. Color contrast is tier 1's job; focus traps are tier 2's.
  */
 
 import { describe, it } from 'vitest'
@@ -24,15 +24,15 @@ describe('Menu a11y', () => {
     mount(Menu, {
       target,
       props: {
-        open: true,
-        onOpenChange: () => {},
-        onSelect: () => {},
         items,
+        onSelect: () => {},
+        onClose: () => {},
         ariaLabel: 'Open archive or bundle',
-        defaultHighlightedValue: 'browse',
+        anchorPoint: { x: 100, y: 100 },
+        highlightedValue: 'browse',
       },
     })
     await tick()
-    await expectNoA11yViolations(target)
+    await expectNoA11yViolations(document.body)
   })
 })
