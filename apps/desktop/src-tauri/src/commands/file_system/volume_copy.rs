@@ -42,17 +42,6 @@ fn resolve_source(volume_id: &str, first_path: Option<&PathBuf>) -> Option<(Arc<
     }
 }
 
-/// Typed rejection for a write that would land INSIDE an archive. Archives are
-/// read-only until zip mutation lands; this is the real backend guard behind the
-/// frontend's read-only capability gating. (This seam turns into archive-edit
-/// routing when mutation lands.)
-fn reject_write_into_archive(dest_path: &Path) -> WriteOperationError {
-    WriteOperationError::ReadOnlyDevice {
-        path: dest_path.to_string_lossy().into_owned(),
-        device_name: None,
-    }
-}
-
 /// Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.
 #[tauri::command]
 #[specta::specta]
@@ -126,18 +115,13 @@ pub async fn move_between_volumes(
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
 
-    // A move deletes the source side, which a read-only archive can't do — so an
-    // archive SOURCE is rejected (extract-out via copy is the supported path).
+    // An archive SOURCE routes to the compound move-out op (extract via the copy
+    // engine, then a batch `{ delete }` archive rewrite once the extract lands).
     let (source_volume, source_is_archive) =
         resolve_source(&source_volume_id, source_paths.first()).ok_or_else(|| WriteOperationError::IoError {
             path: source_volume_id.clone(),
             message: format!("Source volume '{}' not found", source_volume_id),
         })?;
-    if source_is_archive {
-        return Err(reject_write_into_archive(
-            source_paths.first().map_or(Path::new(""), |p| p.as_path()),
-        ));
-    }
 
     let dest_resolved = get_volume_manager().resolve(&dest_volume_id, Path::new(&dest_path));
     let dest_volume = dest_resolved.volume.ok_or_else(|| WriteOperationError::IoError {
@@ -146,6 +130,24 @@ pub async fn move_between_volumes(
     })?;
     let config = config.unwrap_or_default();
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
+
+    // Move OUT of a zip. Takes precedence over the dest-archive branch: a
+    // zip→zip move extracts out first (the dest-archive case degrades to a copy
+    // failure inside the extract, never data loss).
+    if source_is_archive {
+        let dest_path = expand_local_dest(&dest_volume, dest_path);
+        return crate::file_system::route_archive_move_out(
+            events,
+            source_volume_id,
+            source_volume,
+            source_paths,
+            dest_volume_id,
+            dest_volume,
+            dest_path,
+            config,
+        )
+        .await;
+    }
 
     // A move INTO a zip routes to the managed edit driver as one `{ add }`
     // changeset; the local sources are deleted after the commit (move invariant).
@@ -328,9 +330,9 @@ pub struct SourceItemInput {
 
 #[cfg(test)]
 mod tests {
-    use super::{merge_source_types_from_batch, reject_write_into_archive, resolve_source};
-    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo, WriteOperationError};
-    use std::path::{Path, PathBuf};
+    use super::{merge_source_types_from_batch, resolve_source};
+    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo};
+    use std::path::PathBuf;
 
     #[test]
     fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {
@@ -358,17 +360,6 @@ mod tests {
         let (inner_vol, inner_is_inside) = resolve_source("root", Some(&zip.join("entry.txt"))).expect("inner volume");
         assert!(inner_is_inside, "an inner path is archive-inner");
         assert_eq!(inner_vol.root(), zip, "the archive volume's root is the .zip");
-    }
-
-    #[test]
-    fn rejecting_a_write_into_an_archive_is_a_typed_read_only_error() {
-        // The dest-resolves-to-archive guard must produce a typed read-only
-        // rejection (no string classification), carrying the offending path.
-        let err = reject_write_into_archive(Path::new("/vol/foo.zip/inner"));
-        assert!(matches!(
-            err,
-            WriteOperationError::ReadOnlyDevice { ref path, device_name: None } if path == "/vol/foo.zip/inner"
-        ));
     }
 
     fn scan(is_dir: bool, bytes: u64) -> CopyScanResult {

@@ -80,4 +80,5 @@ Depth, rationale, and full test list: [DETAILS.md](DETAILS.md); read before non-
   the `.zip`'s parent DIRECTORY (survives temp+rename inode swaps); `listing_is_watched` is live-only. Details:
   [DETAILS.md](DETAILS.md) § "Live content watch".
 
-Still ahead: zip mutation (`/docs/specs/archive-browsing-plan.md`; [DETAILS.md](DETAILS.md) § follow-up milestones).
+Local zip mutation has landed (`mutator.rs` + the write-ops driver). Still ahead: remote-backed archives, in-place
+append (`/docs/specs/archive-browsing-plan.md`; [DETAILS.md](DETAILS.md) § follow-up milestones).

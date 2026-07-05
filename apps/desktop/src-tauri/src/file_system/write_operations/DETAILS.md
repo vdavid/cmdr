@@ -255,10 +255,26 @@ the mutation mechanism (`ArchiveMutator`, temp+rename safe-overwrite) lives in t
   transfer (`route_archive_copy_into` walks local sources with `walkdir`). A move INTO deletes the top-level local
   sources after the commit, and only when nothing was skipped (the move invariant — never delete a source whose bytes
   didn't land).
-- **Conflicts (non-interactive, v1).** An add whose inner path already exists is resolved from the transfer's
-  `ConflictResolution` against the archive index: Skip drops the add; Overwrite deletes the existing entry then adds (a
-  clean replace); Rename picks a unique ` (n)` name; Stop → `DestinationExists`; OverwriteSmaller/Older compare
-  size/mtime (strict). The interactive per-file prompt + ApplyToAll latch is a follow-up.
+- **Move OUT of a zip is a compound op** (`route_archive_move_out`), NOT a per-file `Volume::delete` (the `ArchiveVolume`
+  is read-only). One managed Move op runs two phases on ONE lifecycle: (1) extract the selected entries to the
+  destination through the ordinary cross-volume copy engine (`copy_volumes_with_progress`, wrapped in a
+  `SuppressTerminalsSink` that withholds the copy's terminal event so the compound op emits the single Move terminal and
+  reads `files_skipped`); (2) a batch `{ delete }` archive rewrite via the mutator. **MOVE INVARIANT**: the archive
+  delete runs ONLY after the extract is durably committed (the copy engine fsyncs each destination file), so a crash or
+  cancel never loses both copies. **Partial-move policy: batch all-or-nothing (skip / error / cancel aware).** The
+  entries are deleted ONLY on a fully clean extract (zero skips, zero errors, not cancelled); any skip, failure, or
+  cancel leaves the archive byte-for-byte intact and deletes nothing (the landed copies stay at the destination — the
+  move degrades to a copy for that run). Batch granularity matches the single atomic archive rewrite and sidesteps the
+  partial-merge-skip hazard; per-entry deletion is a future refinement. Progress is two honest phases (extract bytes,
+  then rewrite bytes). Pinned by the `move_out_*` tests.
+- **Conflicts.** An add whose inner path already exists is resolved against the archive index. Pre-resolved policies stay
+  non-interactive (`build_copy_into_changeset`): Skip drops the add; Overwrite deletes the existing entry then adds (a
+  clean replace); Rename picks a unique ` (n)` name; OverwriteSmaller/Older compare size/mtime (strict). **The Stop
+  policy prompts interactively** (`archive_copy_into_interactive_start`): planning moves INSIDE the managed op (so the op
+  is registered and `resolve_write_conflict(op_id)` can reach the oneshot), and each FILE collision emits a
+  `write-conflict` and blocks on the answer, reusing the pure `ApplyToAll` latch + the oneshot plumbing (store the sender
+  BEFORE the emit). Dir-vs-dir collisions merge silently — only files prompt (the app-wide rule). A cancel during a
+  pending prompt drops the sender → the planner bails → the archive is untouched. Pinned by the `interactive_*` tests.
 
 ## Busy-volumes set
 
