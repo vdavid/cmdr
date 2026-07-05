@@ -31,11 +31,11 @@ The report includes:
 
 ### Fetching the report
 
-The dashboard is behind Cloudflare Access. Authenticate with the service token stored in macOS Keychain:
+The dashboard is behind Cloudflare Access. Authenticate with the service token stored in the sops secrets store (fetch with `secret NAME`):
 
 ```bash
-CF_ID=$(security find-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22" -w)
-CF_SECRET=$(security find-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_SECRET_EXPIRES_2027_03_22" -w)
+CF_ID=$(secret CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22)
+CF_SECRET=$(secret CF_ACCESS_CLIENT_SECRET_EXPIRES_2027_03_22)
 curl -s "https://analdash.getcmdr.com/api/report?range=7d" \
   -H "CF-Access-Client-Id: ${CF_ID}" \
   -H "CF-Access-Client-Secret: ${CF_SECRET}"

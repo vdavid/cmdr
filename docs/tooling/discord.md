@@ -5,8 +5,8 @@ Cmdr's community Discord. This doc lets an agent read the server through the **C
 
 ## Auth
 
-- Bot token lives in macOS Keychain as `DISCORD_BOT_TOKEN`. Never echo it; load into a shell var:
-  `TOKEN=$(security find-generic-password -a "$USER" -s "DISCORD_BOT_TOKEN" -w)`
+- Bot token lives in the sops secrets store as `DISCORD_BOT_TOKEN`. Never echo it; load into a shell var:
+  `TOKEN=$(secret DISCORD_BOT_TOKEN)`
 - Every request: header `Authorization: Bot $TOKEN` against `https://discord.com/api/v10`.
 - The bot is a **guild-install, private** app (only the owner can add it). Message Content is a privileged intent and is
   enabled, so REST message fetches return real text for channels the bot can read.
@@ -73,7 +73,7 @@ method; `after=<cutoff>` alone caps at the 100 most-recent and silently drops ol
 cutoff. macOS BSD `date`:
 
 ```bash
-TOKEN=$(security find-generic-password -a "$USER" -s "DISCORD_BOT_TOKEN" -w)
+TOKEN=$(secret DISCORD_BOT_TOKEN)
 DAYS=7
 CUTOFF=$(( ($(date -v-${DAYS}d +%s) * 1000 - 1420070400000) << 22 ))
 # Public community channels to sweep:

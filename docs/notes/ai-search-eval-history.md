@@ -426,11 +426,11 @@ Notes on the AI set:
   (rolling 7-day vs. previous calendar week). Mirrors the same lesson as queries #19 / #5 in the catalog above.
 
 OpenAI `gpt-5.5` sanity-check passed at M5 (single curl call against `https://api.openai.com/v1/chat/completions` with
-the `OPENAI_API_KEY` keychain secret). To re-check the model in a future round of evals:
+the `OPENAI_API_KEY` sops secret). To re-check the model in a future round of evals:
 
 ```bash
 curl -s https://api.openai.com/v1/chat/completions \
-  -H "Authorization: Bearer $(security find-generic-password -s OPENAI_API_KEY -a veszelovszki -w)" \
+  -H "Authorization: Bearer $(secret OPENAI_API_KEY)" \
   -H "Content-Type: application/json" \
   -d '{"model":"gpt-5.5","messages":[{"role":"user","content":"Say hi"}],"max_completion_tokens":50}'
 ```
