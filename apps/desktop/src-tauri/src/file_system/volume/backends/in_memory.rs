@@ -6,7 +6,6 @@
 
 use super::{CopyScanResult, LaneKey, ScanConflict, SourceItemInfo, SpaceInfo, Volume, VolumeError, VolumeReadStream};
 use crate::file_system::listing::FileEntry;
-#[cfg(feature = "playwright-e2e")]
 use crate::ignore_poison::IgnorePoison;
 use crate::ignore_poison::RwLockIgnorePoison;
 use std::collections::HashMap;
@@ -42,6 +41,17 @@ pub struct InMemoryVolume {
     /// `with_lane_key` to force same-lane (serialize) vs different-lane
     /// (parallel) behavior.
     lane_key: Option<String>,
+    /// What [`Volume::supports_local_fs_access`] reports. Default `false` (a real
+    /// in-memory store is not on the local FS). Archive tests that want to model a
+    /// LOCAL-backed parent (so `ArchiveVolume` takes its `LocalFileSource` fast
+    /// path) set it `true` via [`with_local_fs_access`](Self::with_local_fs_access);
+    /// remote-backed archive tests leave it `false`.
+    local_fs_access: bool,
+    /// Log of `read_range(offset, len)` calls, in order. Lets tests assert how
+    /// many positioned reads a remote-archive flow issues (e.g. the
+    /// central-directory tail-read strategy: one tail read, a second only if the
+    /// directory exceeds the first window). See [`Self::read_range_log`].
+    read_range_log: std::sync::Mutex<Vec<(u64, usize)>>,
     /// Raw errno to inject on the next `list_directory` call. Cleared after use.
     #[cfg(feature = "playwright-e2e")]
     injected_error: std::sync::Mutex<Option<i32>>,
@@ -56,9 +66,23 @@ impl InMemoryVolume {
             entries: RwLock::new(HashMap::new()),
             space_info: None,
             lane_key: None,
+            local_fs_access: false,
+            read_range_log: std::sync::Mutex::new(Vec::new()),
             #[cfg(feature = "playwright-e2e")]
             injected_error: std::sync::Mutex::new(None),
         }
+    }
+
+    /// Records a `read_range` call for the request-count assertions in the
+    /// remote-archive source tests.
+    fn record_read_range(&self, offset: u64, len: usize) {
+        self.read_range_log.lock_ignore_poison().push((offset, len));
+    }
+
+    /// The `(offset, len)` of every `read_range` call so far, in order. Tests use
+    /// it to pin the remote-archive byte source's request pattern.
+    pub fn read_range_log(&self) -> Vec<(u64, usize)> {
+        self.read_range_log.lock_ignore_poison().clone()
     }
 
     /// Sets the operation-manager lane key. Two `InMemoryVolume`s with the same
@@ -67,6 +91,16 @@ impl InMemoryVolume {
     /// volumes fall back to the root lane (the trait default).
     pub fn with_lane_key(mut self, key: impl Into<String>) -> Self {
         self.lane_key = Some(key.into());
+        self
+    }
+
+    /// Makes this volume report `supports_local_fs_access() = true`, so an
+    /// `ArchiveVolume` backed by it takes the LOCAL `LocalFileSource` path (the
+    /// archive's `.zip` is assumed to be a real local file). Archive tests use it
+    /// to model a local-backed parent; leave it off (default) to model a
+    /// remote-backed one.
+    pub fn with_local_fs_access(mut self) -> Self {
+        self.local_fs_access = true;
         self
     }
 
@@ -548,6 +582,32 @@ impl Volume for InMemoryVolume {
         })
     }
 
+    fn read_range<'a>(
+        &'a self,
+        path: &'a Path,
+        offset: u64,
+        len: usize,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let normalized = self.normalize(path);
+            self.record_read_range(offset, len);
+            let entries = self.entries.read().map_err(|_| VolumeError::IoError {
+                message: "Lock poisoned".into(),
+                raw_os_error: None,
+            })?;
+            let entry = entries
+                .get(&normalized)
+                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
+            if entry.metadata.is_directory {
+                return Err(VolumeError::IsADirectory(normalized.display().to_string()));
+            }
+            let content = entry.content.as_deref().unwrap_or_default();
+            let start = (offset as usize).min(content.len());
+            let end = start.saturating_add(len).min(content.len());
+            Ok(content[start..end].to_vec())
+        })
+    }
+
     fn write_from_stream<'a>(
         &'a self,
         dest: &'a Path,
@@ -585,6 +645,10 @@ impl Volume for InMemoryVolume {
 
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
         Box::pin(async move { self.space_info.clone().ok_or(VolumeError::NotSupported) })
+    }
+
+    fn supports_local_fs_access(&self) -> bool {
+        self.local_fs_access
     }
 
     fn space_poll_interval(&self) -> Option<std::time::Duration> {

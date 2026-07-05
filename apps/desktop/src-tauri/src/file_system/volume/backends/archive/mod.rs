@@ -64,6 +64,6 @@ pub use error::ArchiveError;
 pub use index::{ArchiveIndex, ArchiveNode};
 pub use name::{QuarantineReason, SanitizedName, sanitize_entry_name};
 pub use read::ArchiveEntryReader;
-pub use source::{ArchiveByteSource, BytesSource, LocalFileSource};
+pub use source::{ArchiveByteSource, BytesSource, DEFAULT_TAIL_CACHE_LEN, LocalFileSource, TailCachedSource};
 pub use volume::ArchiveVolume;
 pub use watch::active_watch_count;

@@ -119,7 +119,7 @@ fn drop_listing(listing_id: &str) {
 async fn refresh_reflects_a_new_entry_and_leaves_outside_listings_alone() {
     let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec())]);
     let volume_id = format!("test-vol-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent")));
+    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent").with_local_fs_access()));
 
     // Resolve once so the zip is recognized as an archive (this test drives the
     // refresh directly, so it needs no live watch).
@@ -165,7 +165,7 @@ async fn refresh_reflects_a_new_entry_and_leaves_outside_listings_alone() {
 async fn a_truncated_midwrite_archive_keeps_the_previous_listing() {
     let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
     let volume_id = format!("test-vol-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent")));
+    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent").with_local_fs_access()));
     get_volume_manager().resolve(&volume_id, &fixture.zip_path);
 
     let listing = seed_listing(
@@ -201,7 +201,7 @@ async fn a_truncated_midwrite_archive_keeps_the_previous_listing() {
 async fn a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk() {
     let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec())]);
     let volume_id = format!("test-vol-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent")));
+    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent").with_local_fs_access()));
 
     // Resolve registers the archive; without an app handle it doesn't auto-start
     // the watch, so start it directly (see `start_watch_on`).
@@ -259,7 +259,7 @@ async fn a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk() {
 async fn a_temp_rename_swap_refreshes_the_listing() {
     let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec())]);
     let volume_id = format!("test-vol-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent")));
+    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent").with_local_fs_access()));
 
     let resolved = get_volume_manager().resolve(&volume_id, &fixture.zip_path);
     let archive = resolved.volume.expect("archive volume");
@@ -301,7 +301,7 @@ async fn a_temp_rename_swap_refreshes_the_listing() {
 fn lru_eviction_releases_the_archive_and_its_watch() {
     let base = tempfile::tempdir().expect("tempdir");
     let manager = VolumeManager::new();
-    manager.register("root", Arc::new(InMemoryVolume::new("root")));
+    manager.register("root", Arc::new(InMemoryVolume::new("root").with_local_fs_access()));
 
     // Resolve archive A, start its watch, and hold its Arc.
     let zip_a = base.path().join("a.zip");

@@ -19,7 +19,7 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::error::ArchiveError;
 use super::index::ArchiveIndex;
-use super::source::LocalFileSource;
+use super::source::{ArchiveByteSource, LocalFileSource};
 
 /// Identity of a cached archive: its path plus the size and mtime that were
 /// current when it was parsed. Any change to size or mtime misses the cache.
@@ -58,6 +58,36 @@ impl ArchiveIndexCache {
 
         let source = LocalFileSource::open(path)?;
         let index = Arc::new(ArchiveIndex::parse(&source)?);
+        self.insert(key, Arc::clone(&index));
+        Ok(index)
+    }
+
+    /// Returns the parsed index for a remote archive, parsing from `source` on a
+    /// miss and caching under `(path, size, mtime)`.
+    ///
+    /// The caller supplies the freshness fields (`size`, `mtime_nanos`) from the
+    /// PARENT volume's metadata, because a remote archive can't be `std::fs`-stat'd
+    /// the way [`index_for_local`](Self::index_for_local) does — the byte source is
+    /// the parent volume's ranged read. The key still misses on any size/mtime
+    /// change, so an external edit re-parses. Blocking (drives `source.read_at`,
+    /// which for a remote source bridges to the parent's async read): call from a
+    /// `spawn_blocking` context.
+    pub fn index_for_source(
+        &self,
+        path: &Path,
+        size: u64,
+        mtime_nanos: Option<i128>,
+        source: &dyn ArchiveByteSource,
+    ) -> Result<Arc<ArchiveIndex>, ArchiveError> {
+        let key = CacheKey {
+            path: path.to_path_buf(),
+            size,
+            mtime_nanos,
+        };
+        if let Some(hit) = self.get(&key) {
+            return Ok(hit);
+        }
+        let index = Arc::new(ArchiveIndex::parse(source)?);
         self.insert(key, Arc::clone(&index));
         Ok(index)
     }

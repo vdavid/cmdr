@@ -40,7 +40,8 @@ use std::sync::{Arc, Mutex};
 use tokio::task::spawn_blocking;
 
 use super::{
-    ArchiveByteSource, ArchiveEntryReader, ArchiveError, ArchiveIndex, ArchiveIndexCache, ArchiveNode, LocalFileSource,
+    ArchiveByteSource, ArchiveEntryReader, ArchiveError, ArchiveIndex, ArchiveIndexCache, ArchiveNode,
+    DEFAULT_TAIL_CACHE_LEN, LocalFileSource, TailCachedSource,
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{
@@ -129,9 +130,91 @@ impl ArchiveVolume {
         slashed.trim_matches('/').to_string()
     }
 
-    /// Loads the parsed index and opens a fresh byte source for streaming, both
-    /// blocking. `offset` is the decompressed byte offset the returned stream
-    /// starts at (0 = the whole entry).
+    /// Whether the parent stores the `.zip` on the local filesystem — a plain
+    /// local drive OR an OS-mounted share (both served by `LocalPosixVolume`,
+    /// which reports `supports_local_fs_access() = true`). Then the fast local
+    /// path applies: `std::fs` stat + a `LocalFileSource` `pread`. Otherwise the
+    /// archive is remote-backed (direct SMB / MTP) and every read flows through
+    /// the parent volume's `read_range` (a [`VolumeByteSource`]).
+    fn parent_is_local(&self) -> bool {
+        self.parent.supports_local_fs_access()
+    }
+
+    /// Builds a parent-backed byte source for a REMOTE archive, plus the
+    /// freshness fields the index cache keys on.
+    ///
+    /// The size and mtime come from the parent volume's metadata (a remote `.zip`
+    /// can't be `std::fs`-stat'd). Async because it does one metadata round-trip
+    /// to the backend; the returned [`VolumeByteSource`] then reads ranges lazily.
+    async fn open_remote_source(&self) -> Result<(u64, Option<i128>, Arc<dyn ArchiveByteSource>), VolumeError> {
+        let meta = self.parent.get_metadata(&self.archive_path).await?;
+        let size = meta.size.unwrap_or(0);
+        // `FileEntry::modified_at` is Unix SECONDS; widen to nanos for the cache
+        // key. Second granularity is enough to catch an external edit (size also
+        // guards), and it round-trips the same way on every browse.
+        let mtime_nanos = meta.modified_at.map(|s| i128::from(s) * 1_000_000_000);
+        let raw: Arc<dyn ArchiveByteSource> =
+            Arc::new(VolumeByteSource::new(Arc::clone(&self.parent), self.archive_path.clone(), size));
+        // Cache the file's tail so the central-directory parse costs one ranged
+        // read of the backend, not many small ones (entry reads mid-file fall
+        // through to the raw parent-backed source).
+        let source: Arc<dyn ArchiveByteSource> = Arc::new(TailCachedSource::new(raw, DEFAULT_TAIL_CACHE_LEN));
+        Ok((size, mtime_nanos, source))
+    }
+
+    /// Loads the parsed central-directory index (cached), picking the local fast
+    /// path or the remote parent-backed path by [`parent_is_local`](Self::parent_is_local).
+    /// The pure tree queries the callers run on the returned index don't block, so
+    /// only the parse itself is off-executor.
+    async fn index(&self) -> Result<Arc<ArchiveIndex>, VolumeError> {
+        let cache = Arc::clone(&self.cache);
+        let archive_path = self.archive_path.clone();
+        if self.parent_is_local() {
+            parse_blocking(move || cache.index_for_local(&archive_path).map_err(to_volume_error)).await
+        } else {
+            let (size, mtime_nanos, source) = self.open_remote_source().await?;
+            parse_blocking(move || {
+                cache
+                    .index_for_source(&archive_path, size, mtime_nanos, source.as_ref())
+                    .map_err(to_volume_error)
+            })
+            .await
+        }
+    }
+
+    /// Loads the index AND a byte source for streaming an entry's bytes (local
+    /// `LocalFileSource` or remote [`VolumeByteSource`]). Used by
+    /// [`open_stream`](Self::open_stream); the query-only methods use
+    /// [`index`](Self::index), which skips opening a source.
+    async fn load(&self) -> Result<(Arc<ArchiveIndex>, Arc<dyn ArchiveByteSource>), VolumeError> {
+        let cache = Arc::clone(&self.cache);
+        let archive_path = self.archive_path.clone();
+        if self.parent_is_local() {
+            parse_blocking(
+                move || -> Result<(Arc<ArchiveIndex>, Arc<dyn ArchiveByteSource>), VolumeError> {
+                    let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
+                    let source: Arc<dyn ArchiveByteSource> = Arc::new(LocalFileSource::open(&archive_path)?);
+                    Ok((index, source))
+                },
+            )
+            .await
+        } else {
+            let (size, mtime_nanos, source) = self.open_remote_source().await?;
+            let parse_source = Arc::clone(&source);
+            let path_for_parse = archive_path.clone();
+            let index = parse_blocking(move || {
+                cache
+                    .index_for_source(&path_for_parse, size, mtime_nanos, parse_source.as_ref())
+                    .map_err(to_volume_error)
+            })
+            .await?;
+            Ok((index, source))
+        }
+    }
+
+    /// Loads the index + byte source and opens a streaming reader for `path`.
+    /// `offset` is the decompressed byte offset the returned stream starts at
+    /// (0 = the whole entry).
     #[allow(
         clippy::type_complexity,
         reason = "mirrors the VolumeReadStream trait method's pinned-boxed-future return shape"
@@ -142,20 +225,8 @@ impl ArchiveVolume {
         offset: u64,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
         let inner = self.inner_path(path);
-        let cache = Arc::clone(&self.cache);
-        let archive_path = self.archive_path.clone();
         Box::pin(async move {
-            // Parse (cached) and open the local byte source off the async
-            // executor — both stat/read the real file.
-            let (index, source) = parse_blocking(
-                move || -> Result<(Arc<ArchiveIndex>, Arc<dyn ArchiveByteSource>), VolumeError> {
-                    let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
-                    let source: Arc<dyn ArchiveByteSource> = Arc::new(LocalFileSource::open(&archive_path)?);
-                    Ok((index, source))
-                },
-            )
-            .await?;
-
+            let (index, source) = self.load().await?;
             // `open_read` only looks the entry up and spawns the decompress
             // producer (which itself uses `spawn_blocking`), so it's cheap here.
             let reader = index.open_read(&inner, source).map_err(to_volume_error)?;
@@ -194,21 +265,17 @@ impl Volume for ArchiveVolume {
         on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
         let inner = self.inner_path(path);
-        let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
         let volume_name = self.name.clone();
         Box::pin(async move {
-            let entries = parse_blocking(move || -> Result<Vec<FileEntry>, VolumeError> {
-                let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
-                let nodes = index
-                    .list(&inner)
-                    .ok_or_else(|| VolumeError::NotFound(archive_path.join(&inner).display().to_string()))?;
-                Ok(nodes
-                    .iter()
-                    .map(|node| node_to_entry(&archive_path, &volume_name, node))
-                    .collect())
-            })
-            .await?;
+            let index = self.index().await?;
+            let nodes = index
+                .list(&inner)
+                .ok_or_else(|| VolumeError::NotFound(archive_path.join(&inner).display().to_string()))?;
+            let entries: Vec<FileEntry> = nodes
+                .iter()
+                .map(|node| node_to_entry(&archive_path, &volume_name, node))
+                .collect();
 
             // One cumulative progress tick, as the trait asks (backends call
             // `on_progress` at least once; the archive listing is atomic so
@@ -234,36 +301,26 @@ impl Volume for ArchiveVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
         let inner = self.inner_path(path);
-        let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
         let volume_name = self.name.clone();
         Box::pin(async move {
-            parse_blocking(move || -> Result<FileEntry, VolumeError> {
-                let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
-                let node = index
-                    .get(&inner)
-                    .ok_or_else(|| VolumeError::NotFound(archive_path.join(&inner).display().to_string()))?;
-                Ok(node_to_entry(&archive_path, &volume_name, &node))
-            })
-            .await
+            let index = self.index().await?;
+            let node = index
+                .get(&inner)
+                .ok_or_else(|| VolumeError::NotFound(archive_path.join(&inner).display().to_string()))?;
+            Ok(node_to_entry(&archive_path, &volume_name, &node))
         })
     }
 
     fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
         let inner = self.inner_path(path);
-        let cache = Arc::clone(&self.cache);
-        let archive_path = self.archive_path.clone();
         Box::pin(async move {
-            parse_blocking(move || -> Result<bool, VolumeError> {
-                Ok(match cache.index_for_local(&archive_path) {
-                    Ok(index) => index.exists(&inner),
-                    // An unreadable archive has no browsable entries.
-                    Err(_) => false,
-                })
-            })
-            .await
-            // A parse panic can't confirm existence: report not-exists.
-            .unwrap_or(false)
+            // An unreadable archive (parse error or a lost remote) has no
+            // browsable entries.
+            match self.index().await {
+                Ok(index) => index.exists(&inner),
+                Err(_) => false,
+            }
         })
     }
 
@@ -272,16 +329,12 @@ impl Volume for ArchiveVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
         let inner = self.inner_path(path);
-        let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
         Box::pin(async move {
-            parse_blocking(move || -> Result<bool, VolumeError> {
-                let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
-                index
-                    .is_directory(&inner)
-                    .ok_or_else(|| VolumeError::NotFound(archive_path.join(&inner).display().to_string()))
-            })
-            .await
+            let index = self.index().await?;
+            index
+                .is_directory(&inner)
+                .ok_or_else(|| VolumeError::NotFound(archive_path.join(&inner).display().to_string()))
         })
     }
 
@@ -323,57 +376,53 @@ impl Volume for ArchiveVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         let inner = self.inner_path(path);
-        let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
         Box::pin(async move {
-            parse_blocking(move || -> Result<CopyScanResult, VolumeError> {
-                let index = cache.index_for_local(&archive_path).map_err(to_volume_error)?;
-                let node = index
-                    .get(&inner)
-                    .ok_or_else(|| VolumeError::NotFound(archive_path.join(&inner).display().to_string()))?;
+            let index = self.index().await?;
+            let node = index
+                .get(&inner)
+                .ok_or_else(|| VolumeError::NotFound(archive_path.join(&inner).display().to_string()))?;
 
-                // A single file: one entry, its uncompressed size.
-                if !node.is_dir {
-                    let size = node.size.unwrap_or(0);
-                    return Ok(CopyScanResult {
-                        file_count: 1,
-                        dir_count: 0,
-                        total_bytes: size,
-                        // No hardlinks in a zip: the two footprints are equal.
-                        dedup_bytes: size,
-                        top_level_is_directory: false,
-                    });
-                }
+            // A single file: one entry, its uncompressed size.
+            if !node.is_dir {
+                let size = node.size.unwrap_or(0);
+                return Ok(CopyScanResult {
+                    file_count: 1,
+                    dir_count: 0,
+                    total_bytes: size,
+                    // No hardlinks in a zip: the two footprints are equal.
+                    dedup_bytes: size,
+                    top_level_is_directory: false,
+                });
+            }
 
-                // A directory: walk the subtree via the index's per-dir child
-                // lists. Counts and byte totals come from the central directory —
-                // no decompression during the scan. The top-level dir isn't
-                // counted (matches `LocalPosixVolume`).
-                let mut file_count = 0;
-                let mut dir_count = 0;
-                let mut total_bytes = 0u64;
-                let mut pending = vec![inner];
-                while let Some(dir) = pending.pop() {
-                    let Some(children) = index.list(&dir) else { continue };
-                    for child in children {
-                        if child.is_dir {
-                            dir_count += 1;
-                            pending.push(child.path);
-                        } else {
-                            file_count += 1;
-                            total_bytes += child.size.unwrap_or(0);
-                        }
+            // A directory: walk the subtree via the index's per-dir child lists.
+            // Counts and byte totals come from the central directory — no
+            // decompression during the scan. The top-level dir isn't counted
+            // (matches `LocalPosixVolume`).
+            let mut file_count = 0;
+            let mut dir_count = 0;
+            let mut total_bytes = 0u64;
+            let mut pending = vec![inner];
+            while let Some(dir) = pending.pop() {
+                let Some(children) = index.list(&dir) else { continue };
+                for child in children {
+                    if child.is_dir {
+                        dir_count += 1;
+                        pending.push(child.path);
+                    } else {
+                        file_count += 1;
+                        total_bytes += child.size.unwrap_or(0);
                     }
                 }
-                Ok(CopyScanResult {
-                    file_count,
-                    dir_count,
-                    total_bytes,
-                    dedup_bytes: total_bytes,
-                    top_level_is_directory: true,
-                })
+            }
+            Ok(CopyScanResult {
+                file_count,
+                dir_count,
+                total_bytes,
+                dedup_bytes: total_bytes,
+                top_level_is_directory: true,
             })
-            .await
         })
     }
 
@@ -499,6 +548,66 @@ where
             message: join_err.to_string(),
             raw_os_error: None,
         }),
+    }
+}
+
+/// An [`ArchiveByteSource`] backed by a parent [`Volume`]'s ranged read, for a
+/// zip that lives on a REMOTE backend (direct SMB or MTP), where there's no
+/// local file to `pread`.
+///
+/// The core's `read_at` is **blocking** (the parse and decompress run on
+/// `spawn_blocking`), but a `Volume`'s [`read_range`](Volume::read_range) is
+/// async. This bridges the two: it captures the tokio runtime handle at
+/// construction (on the async executor, in
+/// [`open_remote_source`](ArchiveVolume::open_remote_source)) and `block_on`s
+/// the parent's `read_range` from inside the blocking read. That's sound because
+/// `read_at` only ever runs on a `spawn_blocking` thread — never a runtime worker
+/// — so `block_on` doesn't reenter the executor (the same bridge the viewer's
+/// archive extractor uses). Shared as `Arc` across concurrent reads; `read_at`
+/// takes `&self` with no shared cursor, so parallel entry reads are independent.
+struct VolumeByteSource {
+    parent: Arc<dyn Volume>,
+    /// Absolute path of the `.zip` on the parent volume.
+    path: PathBuf,
+    /// The archive's size, from the parent's metadata at construction. A read at
+    /// or past it returns EOF, matching a local `pread`.
+    size: u64,
+    handle: tokio::runtime::Handle,
+}
+
+impl VolumeByteSource {
+    fn new(parent: Arc<dyn Volume>, path: PathBuf, size: u64) -> Self {
+        Self {
+            parent,
+            path,
+            size,
+            handle: tokio::runtime::Handle::current(),
+        }
+    }
+}
+
+impl ArchiveByteSource for VolumeByteSource {
+    fn size(&self) -> u64 {
+        self.size
+    }
+
+    fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<usize> {
+        if buf.is_empty() || offset >= self.size {
+            return Ok(0);
+        }
+        // Clamp the request to the known size so read-ahead past EOF (rc-zip's
+        // fsm always leaves buffer room) doesn't ask the backend for bytes that
+        // don't exist.
+        let want = buf.len().min((self.size - offset) as usize);
+        let parent = Arc::clone(&self.parent);
+        let path = self.path.clone();
+        let data = self
+            .handle
+            .block_on(async move { parent.read_range(&path, offset, want).await })
+            .map_err(|err| std::io::Error::other(err.to_string()))?;
+        let n = data.len().min(buf.len());
+        buf[..n].copy_from_slice(&data[..n]);
+        Ok(n)
     }
 }
 

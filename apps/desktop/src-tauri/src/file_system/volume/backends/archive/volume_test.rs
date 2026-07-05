@@ -35,7 +35,11 @@ impl TestArchive {
     }
 
     fn volume(&self) -> ArchiveVolume {
-        self.volume_with_parent(Arc::new(InMemoryVolume::new("parent")))
+        // A local-backed parent: the `.zip` is a real temp file, so the volume
+        // must take its `LocalFileSource` fast path (`parent_is_local()` reads the
+        // parent's `supports_local_fs_access()`). Remote-backed reads are covered
+        // separately with a plain in-memory parent holding the bytes.
+        self.volume_with_parent(Arc::new(InMemoryVolume::new("parent").with_local_fs_access()))
     }
 
     fn volume_with_parent(&self, parent: Arc<dyn Volume>) -> ArchiveVolume {
@@ -469,4 +473,82 @@ fn capability_flags_are_read_only_and_virtual() {
     assert_eq!(volume.space_poll_interval(), None);
     // No live watcher yet: never claim listing freshness.
     assert!(!volume.listing_is_watched(Path::new("")));
+}
+
+// ---- Remote-backed archives (SMB / MTP parent) ----------------------------
+//
+// A zip whose bytes live on a remote backend browses/extracts through the SAME
+// `ArchiveVolume`, reading via the parent's `read_range` instead of a local
+// `pread`. These model that with an `InMemoryVolume` parent WITHOUT local FS
+// access (so `parent_is_local()` is false), holding the `.zip` bytes in its
+// store. The request-count assertion pins the tail-cache strategy.
+
+/// A remote-backed `ArchiveVolume`: the `.zip` bytes live in an in-memory parent
+/// with no local FS access, forcing the `VolumeByteSource` + tail-cache path.
+/// Returns the parent too, so tests can inspect its `read_range` log.
+async fn remote_archive(bytes: Vec<u8>) -> (Arc<InMemoryVolume>, ArchiveVolume) {
+    let parent = Arc::new(InMemoryVolume::new("remote"));
+    let archive_path = PathBuf::from("/remote/archive.zip");
+    parent
+        .create_file(&archive_path, &bytes)
+        .await
+        .expect("load remote zip into parent store");
+    let volume = ArchiveVolume::new(Arc::clone(&parent) as Arc<dyn Volume>, archive_path);
+    (parent, volume)
+}
+
+#[tokio::test]
+async fn remote_backed_archive_browses_and_extracts_through_read_range() {
+    let bytes = build_zip(&[stored("a.txt", "hello"), deflated("dir/b.txt", "world")]);
+    let (parent, volume) = remote_archive(bytes).await;
+
+    // Browse: root + a synthetic directory, same as a local archive.
+    let root = volume.list_directory(Path::new(""), None).await.unwrap();
+    assert_eq!(names(&root), vec!["dir", "a.txt"]);
+    assert_eq!(
+        names(&volume.list_directory(Path::new("dir"), None).await.unwrap()),
+        vec!["b.txt"]
+    );
+
+    // Extract: a stored entry and a DEFLATED entry both decompress correctly
+    // when every byte is pulled through the parent's ranged read.
+    assert_eq!(read_all(&volume, Path::new("a.txt")).await.unwrap(), b"hello");
+    assert_eq!(read_all(&volume, Path::new("dir/b.txt")).await.unwrap(), b"world");
+
+    // The reads genuinely went through the remote seam (not a local `pread`).
+    assert!(
+        !parent.read_range_log().is_empty(),
+        "remote archive reads must flow through the parent's read_range"
+    );
+}
+
+#[tokio::test]
+async fn remote_central_directory_parse_is_a_single_tail_read() {
+    // A small archive's whole central directory fits in the tail window, so
+    // parsing it (browsing the root) costs ONE ranged read of the backend — the
+    // aggressive-CD-caching contract. `get_metadata` (for size/mtime) is a
+    // separate call and isn't a `read_range`, so it doesn't count.
+    let bytes = build_zip(&[stored("a.txt", "x"), deflated("dir/b.txt", "y")]);
+    let (parent, volume) = remote_archive(bytes).await;
+
+    volume.list_directory(Path::new(""), None).await.unwrap();
+    assert_eq!(
+        parent.read_range_log().len(),
+        1,
+        "the central directory parse should be a single tail read, got {:?}",
+        parent.read_range_log()
+    );
+}
+
+#[tokio::test]
+async fn remote_archive_reports_a_damaged_zip_typed_not_a_panic() {
+    // A remote "archive" whose bytes aren't a zip surfaces as a typed error
+    // (NotSupported/IoError), never a panic — the mid-browse backstop still holds
+    // when the bytes come from a remote parent.
+    let (_parent, volume) = remote_archive(b"this is not a zip file".to_vec()).await;
+    let result = volume.list_directory(Path::new(""), None).await;
+    assert!(
+        matches!(result, Err(VolumeError::NotSupported | VolumeError::IoError { .. })),
+        "a non-zip remote file lists as a typed error, got {result:?}"
+    );
 }

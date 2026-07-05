@@ -517,6 +517,36 @@ impl Volume for LocalPosixVolume {
         })
     }
 
+    fn read_range<'a>(
+        &'a self,
+        path: &'a Path,
+        offset: u64,
+        len: usize,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
+        let abs_path = self.resolve(path);
+        Box::pin(async move {
+            spawn_blocking(move || {
+                use std::os::unix::fs::FileExt;
+                let file = std::fs::File::open(&abs_path)?;
+                let mut buf = vec![0u8; len];
+                let mut filled = 0usize;
+                // `read_at` is a `pread`; it may short-read, so loop until the
+                // window is full or the file ends (a read at/past EOF returns 0).
+                while filled < len {
+                    let n = file.read_at(&mut buf[filled..], offset + filled as u64)?;
+                    if n == 0 {
+                        break;
+                    }
+                    filled += n;
+                }
+                buf.truncate(filled);
+                Ok(buf)
+            })
+            .await
+            .expect("spawn_blocking read_range closure doesn't panic and the task is uncancelable")
+        })
+    }
+
     fn write_from_stream<'a>(
         &'a self,
         dest: &'a Path,

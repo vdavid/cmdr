@@ -782,6 +782,41 @@ pub trait Volume: Send + Sync {
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
+    /// Reads a bounded byte range `[offset, offset + len)` of `path`, returning
+    /// the bytes actually read.
+    ///
+    /// The positioned, `pread`-shaped primitive that backs **remote-archive
+    /// browsing**: the archive byte source calls this to feed `rc-zip`'s sans-IO
+    /// reader a few ranges (the tail for the central directory, then each entry's
+    /// compressed span) without downloading the whole `.zip`. Unlike
+    /// [`open_read_stream_at_offset`](Self::open_read_stream_at_offset) — a
+    /// stream-to-EOF — this returns exactly the requested window.
+    ///
+    /// Returns fewer than `len` bytes ONLY at end of file (a read wholly past the
+    /// end yields an empty `Vec`); the backend fills the window from as few
+    /// backend round-trips as it can, so a caller never has to loop for a network
+    /// short read. `len` is caller-bounded (the archive source uses ≤ a tail-sized
+    /// window), so buffering the range is safe — this is NOT a whole-file read.
+    ///
+    /// Default is `NotSupported`. Implemented by the backends that can back a
+    /// remote archive: `LocalPosixVolume` (`pread`), `SmbVolume` (a positioned
+    /// SMB READ), and `MtpVolume` (a `GetPartialObject64` window). A backend that
+    /// can't do positioned reads leaves the default, and the archive layer treats
+    /// its archives as unreadable rather than misbehaving.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn read_range<'a>(
+        &'a self,
+        path: &'a Path,
+        offset: u64,
+        len: usize,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
+        let _ = (path, offset, len);
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
     /// Whether pausing a streaming read from this volume needs to release a
     /// scarce backend resource (rather than park the open stream in place).
     ///

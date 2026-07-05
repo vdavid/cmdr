@@ -587,7 +587,10 @@ mod tests {
         }
 
         let manager = VolumeManager::new();
-        manager.register("root", Arc::new(InMemoryVolume::new("Root")));
+        // The parent stands in for a local drive holding the `.zip`, so it must
+        // report local FS access (else the archive takes its remote read path and
+        // can't reach the real temp file).
+        manager.register("root", Arc::new(InMemoryVolume::new("Root").with_local_fs_access()));
 
         // Resolving the `.zip` path lists the archive root through the ArchiveVolume.
         let resolved = manager.resolve("root", &zip_path);

@@ -852,6 +852,48 @@ impl Volume for MtpVolume {
         })
     }
 
+    fn read_range<'a>(
+        &'a self,
+        path: &'a Path,
+        offset: u64,
+        len: usize,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            if len == 0 {
+                return Ok(Vec::new());
+            }
+            let mtp_path = self.to_mtp_path(path);
+            // One bounded window sized to the request: `GetPartialObject64` at
+            // `offset` for up to `len` bytes. A single window suffices for the
+            // archive source's reads (a tail-sized central-directory read or a
+            // bounded entry chunk, both ≤ the source's window); we still loop in
+            // case the device returns a short window before EOF.
+            let window = u32::try_from(len).unwrap_or(u32::MAX);
+            let mut session = connection_manager()
+                .open_read_session(&self.device_id, self.storage_id, &mtp_path, offset, window)
+                .await
+                .map_err(map_mtp_error)?;
+            let mut out = Vec::with_capacity(len.min(window as usize));
+            while out.len() < len {
+                match connection_manager()
+                    .read_next_window(&mut session, &self.device_id)
+                    .await
+                    .map_err(map_mtp_error)?
+                {
+                    Some(chunk) => {
+                        let take = (len - out.len()).min(chunk.len());
+                        out.extend_from_slice(&chunk[..take]);
+                        if take < chunk.len() || chunk.is_empty() {
+                            break;
+                        }
+                    }
+                    None => break,
+                }
+            }
+            Ok(out)
+        })
+    }
+
     fn pause_releases_read_stream(&self) -> bool {
         // MTP reads in bounded windows (~8 MiB) and holds the one-per-device PTP
         // session ONLY during a window — between windows the session is free. So a
