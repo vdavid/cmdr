@@ -24,10 +24,18 @@ use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
 
+use super::archive_edit::{self, ArchiveEditRequest};
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::types::WriteOperationType;
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::backends::archive;
+use crate::file_system::volume::backends::archive::mutator::{AddEntry, AddSource, Changeset};
+
+/// Whether a routed archive add creates a directory entry or an empty file.
+enum ArchiveEntryKind {
+    Dir,
+    File,
+}
 
 /// Creates a folder as a managed instant op and returns its new path. `parent_path`
 /// is already tilde-expanded by the command layer.
@@ -40,6 +48,14 @@ pub(crate) async fn create_directory_managed(
     parent_path: String,
     name: String,
 ) -> Result<String, String> {
+    // A parent that crosses into a `.zip` means the new folder lands INSIDE the
+    // archive: route to the managed archive-edit driver (an O(archive) rewrite
+    // with a real progress bar), not the instant path. Returns the operation id
+    // (the FE queue window shows it), not a filesystem path.
+    if archive::path_crosses_archive_boundary(Path::new(&parent_path)) {
+        return route_archive_create(&parent_path, &name, ArchiveEntryKind::Dir, volume_id).await;
+    }
+
     let volume_id_for_diff = volume_id.clone();
     let descriptor = instant_descriptor(WriteOperationType::CreateFolder, volume_id.as_deref(), &name);
 
@@ -62,6 +78,12 @@ pub(crate) async fn create_file_managed(
     parent_path: String,
     name: String,
 ) -> Result<String, String> {
+    // See `create_directory_managed`: a `.zip`-crossing parent routes the new
+    // (empty) file into the archive via the managed edit driver.
+    if archive::path_crosses_archive_boundary(Path::new(&parent_path)) {
+        return route_archive_create(&parent_path, &name, ArchiveEntryKind::File, volume_id).await;
+    }
+
     let volume_id_for_diff = volume_id.clone();
     let descriptor = instant_descriptor(WriteOperationType::CreateFile, volume_id.as_deref(), &name);
 
@@ -73,6 +95,55 @@ pub(crate) async fn create_file_managed(
         emit_synthetic_entry_diff(volume_id_for_diff.as_deref(), &new_path, &PathBuf::from(&expanded_path));
     }
     Ok(new_path.to_string_lossy().to_string())
+}
+
+/// Routes an in-archive mkdir/mkfile to the managed archive-edit driver. Builds
+/// a one-entry changeset (an explicit directory entry, or a zero-byte file),
+/// starts the managed op, and returns its operation id.
+///
+/// Note the return-value shift versus the instant path: this yields the
+/// OPERATION ID, not the new filesystem path (an archive-inner path isn't a real
+/// FS path, and the edit is asynchronous). The FE distinguishes archive-target
+/// creates and reads the id as an operation handle, not a cursor target.
+async fn route_archive_create(
+    parent_path: &str,
+    name: &str,
+    kind: ArchiveEntryKind,
+    volume_id: Option<String>,
+) -> Result<String, String> {
+    let (archive_path, inner_parent) = archive::confirm_archive_boundary(Path::new(parent_path))
+        .ok_or_else(|| "This archive can't be edited right now.".to_string())?;
+    let inner_path = archive_edit::join_inner_path(&inner_parent, name);
+
+    let changeset = match kind {
+        ArchiveEntryKind::Dir => Changeset {
+            mkdirs: vec![inner_path],
+            ..Default::default()
+        },
+        ArchiveEntryKind::File => Changeset {
+            adds: vec![AddEntry {
+                inner_path,
+                source: AddSource::Bytes(Vec::new()),
+            }],
+            ..Default::default()
+        },
+    };
+
+    let events = archive_edit::global_tauri_sink().ok_or_else(|| "The app isn't ready to edit archives yet.".to_string())?;
+    let request = ArchiveEditRequest {
+        archive_path,
+        parent_volume_id: volume_id.unwrap_or_else(|| "root".to_string()),
+        changeset,
+        summary: OperationSummaryText {
+            source: Some(name.to_string()),
+            destination: None,
+        },
+        move_sources_to_delete: Vec::new(),
+    };
+    let started = archive_edit::archive_edit_start(events, request, 200)
+        .await
+        .map_err(|e| format!("Couldn't start the archive edit: {e:?}"))?;
+    Ok(started.operation_id)
 }
 
 /// Builds the instant-op descriptor: no lanes, the new entry's name as the

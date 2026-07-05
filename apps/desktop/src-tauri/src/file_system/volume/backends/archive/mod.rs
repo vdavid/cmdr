@@ -39,7 +39,9 @@ mod boundary;
 mod cache;
 mod error;
 mod index;
-mod mutator;
+/// The zip write side (temp+rename safe-overwrite). The write-ops archive-edit
+/// driver drives it; the read core above stays untouched.
+pub(crate) mod mutator;
 mod name;
 mod read;
 mod source;

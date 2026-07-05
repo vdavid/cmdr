@@ -208,21 +208,33 @@ async fn rename_managed_marks_nonroot_volume_busy_during_op() {
 }
 
 #[tokio::test]
-async fn rename_managed_rejects_a_target_inside_an_archive() {
+async fn rename_managed_routes_an_in_archive_rename_to_the_edit_driver() {
     let tmp = create_test_dir("archive_rename");
     let zip = tmp.join("bundle.zip");
     fs::write(&zip, b"PK\x03\x04not-a-real-body").expect("write zip magic");
 
-    // Renaming a file inside the archive is a mutation — rejected until zip
-    // mutation lands (the fork returns before touching the operation manager).
+    // A rename INSIDE the archive routes to the managed edit driver. With no app
+    // handle wired in the unit test, `global_tauri_sink()` is absent, so routing
+    // surfaces the "app isn't ready" signal — which proves the ROUTING fork fired
+    // rather than the old flat "isn't available yet" refusal or an instant rename.
     let from = zip.join("old.txt");
     let to = zip.join("new.txt");
     let err = rename_managed(from, to, false, "root".to_string())
         .await
-        .expect_err("renaming inside an archive must be refused");
-    // allowed-error-string-match: the fn returns a String, and the archive-specific
-    // refusal is the signal that the FORK fired — a natural rename failure (source
-    // missing) also errors, so `is_err()` alone wouldn't prove the guard bites.
-    assert!(err.contains("archive"), "expected the archive refusal, got: {err}");
+        .expect_err("routing needs an app handle the unit test doesn't wire");
+    // allowed-error-string-match: the fn returns a String; the "archive" wording is
+    // how we tell the routing fork fired from a natural rename failure.
+    assert!(err.contains("archive"), "expected the archive-routing signal, got: {err}");
+
+    // A cross-boundary rename (OUT of the archive) is refused as a move, a
+    // deterministic routing decision that needs no app handle.
+    let outside = tmp.join("out.txt");
+    let cross = rename_managed(zip.join("old.txt"), outside, false, "root".to_string())
+        .await
+        .expect_err("a cross-boundary rename is refused");
+    assert!(
+        cross.to_lowercase().contains("move"),
+        "a cross-boundary rename should suggest a move instead, got: {cross}"
+    );
     let _ = fs::remove_dir_all(&tmp);
 }

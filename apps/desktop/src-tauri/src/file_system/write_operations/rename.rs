@@ -18,9 +18,11 @@ use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
 
+use super::archive_edit::{self, ArchiveEditRequest};
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::types::WriteOperationType;
 use crate::file_system::volume::backends::archive;
+use crate::file_system::volume::backends::archive::mutator::Changeset;
 
 /// Result of a rename validity check.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
@@ -64,11 +66,12 @@ pub(crate) struct ConflictFileInfo {
 /// `from`/`to` are already tilde-expanded (root) or volume-relative (non-root)
 /// by the command layer. `volume_id` is `"root"` for the local filesystem.
 pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volume_id: String) -> Result<(), String> {
-    // Renaming a path INSIDE an archive is a mutation — read-only until zip
-    // mutation lands (this seam becomes archive-edit routing then). The `.zip`
-    // file itself is a regular file: renaming it must work like any other file.
+    // Renaming a path INSIDE an archive is a zip mutation: route it to the
+    // managed archive-edit driver. The `.zip` file itself is a regular file —
+    // renaming it must work like any other file — so only a genuinely-inner path
+    // routes here.
     if archive::path_is_inside_archive(&from) || archive::path_is_inside_archive(&to) {
-        return Err("Renaming items inside an archive isn't available yet".to_string());
+        return route_archive_rename(&from, &to, &volume_id).await;
     }
 
     let is_root = volume_id == "root";
@@ -110,6 +113,56 @@ pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volu
             }
         })
         .await
+}
+
+/// Routes an in-archive rename to the managed archive-edit driver. Both `from`
+/// and `to` must resolve to the SAME archive (a rename within the zip). A
+/// cross-boundary rename (in↔out of the archive) is a move, not a rename, and is
+/// refused here — the FE routes those through copy/move.
+///
+/// Returns `Ok(())` once the managed op has STARTED (it runs asynchronously and
+/// emits `write-progress`/`write-complete`), unlike a plain rename which
+/// completes inline. The op id rides on the `operations-changed` queue snapshot.
+async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result<(), String> {
+    let (from_archive, from_inner) =
+        archive::confirm_archive_boundary(from).ok_or_else(|| "This archive can't be edited right now.".to_string())?;
+    let (to_archive, to_inner) = archive::confirm_archive_boundary(to)
+        .ok_or_else(|| "Renaming an item out of an archive isn't supported. Move it instead.".to_string())?;
+    if from_archive != to_archive {
+        return Err("Renaming an item across archives isn't supported. Move it instead.".to_string());
+    }
+
+    let from_inner = archive_edit::normalize_inner_path(&from_inner);
+    let to_inner = archive_edit::normalize_inner_path(&to_inner);
+    if from_inner.is_empty() || to_inner.is_empty() {
+        return Err("This archive can't be edited right now.".to_string());
+    }
+
+    let events =
+        archive_edit::global_tauri_sink().ok_or_else(|| "The app isn't ready to edit archives yet.".to_string())?;
+    let summary = OperationSummaryText {
+        source: Some(leaf(&from_inner)),
+        destination: Some(leaf(&to_inner)),
+    };
+    let request = ArchiveEditRequest {
+        archive_path: from_archive,
+        parent_volume_id: volume_id.to_string(),
+        changeset: Changeset {
+            renames: vec![(from_inner, to_inner)],
+            ..Default::default()
+        },
+        summary,
+        move_sources_to_delete: Vec::new(),
+    };
+    archive_edit::archive_edit_start(events, request, 200)
+        .await
+        .map_err(|e| format!("Couldn't start the archive edit: {e:?}"))?;
+    Ok(())
+}
+
+/// The last `/`-separated component of an inner path (for the queue summary).
+fn leaf(inner_path: &str) -> String {
+    inner_path.rsplit('/').next().unwrap_or(inner_path).to_string()
 }
 
 /// Builds the instant-op descriptor for a rename: no lanes, a `from → to`

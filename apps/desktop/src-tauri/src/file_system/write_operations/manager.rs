@@ -245,6 +245,14 @@ pub fn init_operation_event_emitter(app: &tauri::AppHandle) {
     let _ = OPERATIONS_APP.set(app.clone());
 }
 
+/// The startup-wired app handle, if present. Lets the instant-op forks
+/// (mkdir/mkfile/rename) build a `TauriEventSink` to route an archive target to
+/// the managed edit driver without threading an `AppHandle` through every
+/// command signature. `None` before wiring (unit tests).
+pub(crate) fn operations_app_handle() -> Option<tauri::AppHandle> {
+    OPERATIONS_APP.get().cloned()
+}
+
 impl OperationManager {
     fn new() -> Self {
         Self {

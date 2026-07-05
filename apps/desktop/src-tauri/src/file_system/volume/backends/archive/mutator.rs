@@ -97,6 +97,11 @@ pub trait MutationHooks: Sync {
     fn wait_if_paused(&self) {}
     /// Reports cumulative progress; called after every entry and every chunk.
     fn on_progress(&self, _progress: MutationProgress) {}
+    /// Announces a path the mutator is about to write, BEFORE the syscall — the
+    /// driver registers it with the downloads-watcher ignore set so Cmdr's own
+    /// write doesn't fire a "Downloaded …" toast. Called for the temp (before
+    /// create) and the final archive path (before the rename). No-op by default.
+    fn note_pending(&self, _path: &Path) {}
 }
 
 /// No-op hooks for tests and uncontrolled edits.
@@ -203,6 +208,7 @@ pub fn apply(archive_path: &Path, changeset: &Changeset, hooks: &dyn MutationHoo
     // Build the new archive into a same-directory sibling temp. The guard removes
     // it on any early return (error or cancel) so the original stays alone.
     let temp_path = temp_sibling_path(archive_path);
+    hooks.note_pending(&temp_path);
     let temp_file = File::create(&temp_path).map_err(MutationError::Io)?;
     let mut guard = TempGuard {
         path: temp_path.clone(),
@@ -261,6 +267,7 @@ pub fn apply(archive_path: &Path, changeset: &Changeset, hooks: &dyn MutationHoo
     // The atomic swap: on one filesystem this is the single instant the archive
     // changes. A concurrent reader sees either the old-complete or new-complete
     // inode, never a torn read.
+    hooks.note_pending(archive_path);
     std::fs::rename(&temp_path, archive_path).map_err(MutationError::Io)?;
     guard.disarm();
 

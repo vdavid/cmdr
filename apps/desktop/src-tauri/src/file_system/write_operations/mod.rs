@@ -17,6 +17,7 @@
 //! - Atomic cross-filesystem moves using staging directory
 
 mod analytics;
+mod archive_edit;
 mod cancellable;
 mod conflict;
 mod create;

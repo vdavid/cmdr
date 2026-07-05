@@ -25,11 +25,17 @@ pub use super::event_sinks::OperationEventSink;
 
 /// Type of write operation.
 ///
-/// The last three (`Rename`, `CreateFolder`, `CreateFile`) are scan-free,
-/// near-instant, result-returning metadata ops that flow through
-/// `manager::run_instant` (registered + busy-marked, but NOT lane-queued), not
-/// the streaming `spawn_managed` path the transfers/deletes use. They cross the
-/// wire as `rename` / `create_folder` / `create_file` (snake_case).
+/// `Rename`, `CreateFolder`, and `CreateFile` are scan-free, near-instant,
+/// result-returning metadata ops that flow through `manager::run_instant`
+/// (registered + busy-marked, but NOT lane-queued), not the streaming
+/// `spawn_managed` path the transfers/deletes use. They cross the wire as
+/// `rename` / `create_folder` / `create_file` (snake_case).
+///
+/// `ArchiveEdit` is the zip-mutation op (add / delete / rename / mkdir / mkfile
+/// inside a `.zip`, and copy/move INTO one): an O(archive) temp+rename rewrite
+/// that flows through `spawn_managed` with a real progress bar and the parent
+/// drive's lane, NOT the instant path (a rewrite is not a metadata syscall). It
+/// crosses the wire as `archive_edit`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum WriteOperationType {
@@ -40,6 +46,7 @@ pub enum WriteOperationType {
     Rename,
     CreateFolder,
     CreateFile,
+    ArchiveEdit,
 }
 
 /// Phase of the operation (for progress reporting).
