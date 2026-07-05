@@ -237,6 +237,22 @@ metadata syscall, so it runs as a managed op through `spawn_managed`, NOT `run_i
 the mutation mechanism (`ArchiveMutator`, temp+rename safe-overwrite) lives in the archive backend
 (`volume/backends/archive/DETAILS.md` § "Zip mutation").
 
+### Reaching the edit driver: parent-aware write-routing
+
+A write only reaches this driver if the routing seam DETECTS its target as archive-inner. That detection MUST be
+parent-aware, not `std::fs`-only: the sync `archive::path_is_inside_archive` / `path_crosses_archive_boundary`
+predicates confirm a `.zip` via `std::fs::metadata` + a local magic read, which silently returns FALSE for an
+`smb://` / `mtp://` path — so a write inside a remote zip would fall through to a plain parent-volume write and error
+confusingly (data-safe, but wrong). So the routing seams call the async `VolumeManager::path_is_inside_archive`
+(delete `mod.rs`, rename `rename.rs`, copy-out / move-out source `commands/file_system/volume_copy.rs::resolve_source`
+and the scan-preview source) and `path_crosses_archive_boundary` (create `create.rs`), which confirm through the
+parent's OWN `get_metadata` + four-byte `read_range` for a remote parent (mirroring `VolumeManager::resolve`) and keep
+the zero-network `std::fs` fast path for a local one. Copy/move INTO already routed correctly (the dest goes through
+the async `resolve` → `dest_resolved.is_archive`). The `route_*` functions then re-split the confirmed path with the
+pure-string `archive_boundary_candidate` (NOT `confirm_archive_boundary`, whose `std::fs` confirm would wrongly fail
+for a remote zip) — confirmation already happened at the seam. Pinned by the `path_is_inside_archive_*` unit tests in
+`volume/manager.rs` (local + remote + `read_range`-unsupported + mislabeled).
+
 ### Local vs remote: one closure, one dispatcher (`run_managed_edit`)
 
 Every apply site in `archive_edit.rs` runs its plan+apply through `run_managed_edit(parent_volume_id, archive_path,
@@ -273,7 +289,12 @@ The remote ORIGINAL is byte-for-byte untouched until the very last swap:
 
 A cancel at ANY point before the swap completes leaves the remote original intact (the local scratch dir and any partial
 remote temp are cleaned up — a RAII `ScratchDir` and the upload's on-error delete). Pinned by `archive_remote_edit_tests`
-(round-trip, cancel-before-swap-leaves-the-original, and the sibling-allowing delete-then-rename swap). Cost: O(archive)
+(round-trip, cancel-before-swap-leaves-the-original, and the sibling-allowing delete-then-rename swap), plus live-remote
+integration proofs that drive `pull_apply_upload_swap` against a REAL backend: `smb_integration_test`
+(`smb_integration_remote_zip_edit_deletes_an_entry_through_the_share` + `..._cancel_before_swap_keeps_original`, and
+routing detection + extract-out in `smb_integration_archive_routing_detection_and_extract_out`) and `mtp_test` under the
+`virtual-mtp` feature (`virtual_mtp_archive_browses_and_extracts_via_read_range` +
+`virtual_mtp_remote_zip_edit_deletes_an_entry_through_the_device`, exercising the MTP delete-then-rename swap). Cost: O(archive)
 network per edit (the pull), documented and accepted — there is no remote random-access WRITE adapter (that's only a
 future in-place-append optimization). Remote backends don't carry the archive file's mode/mtime/xattr across the rewrite
 the way local `copyfile` does; the upload mints a fresh remote object.

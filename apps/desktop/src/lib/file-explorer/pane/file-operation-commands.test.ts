@@ -81,6 +81,7 @@ import { createFileOperationCommands } from './file-operation-commands'
 function buildPaneRef(
   overrides: Partial<{
     listingId: string | null
+    volumeId: string
     hasParent: boolean
     selectedIndices: number[]
     cursorIndex: number
@@ -92,6 +93,7 @@ function buildPaneRef(
 ): FilePaneAPI {
   const stub = {
     getListingId: () => ('listingId' in overrides ? overrides.listingId : 'listing-1'),
+    getVolumeId: () => overrides.volumeId ?? 'root',
     hasParentEntry: () => overrides.hasParent ?? false,
     getSelectedIndices: () => overrides.selectedIndices ?? [],
     getCursorIndex: () => overrides.cursorIndex ?? 0,
@@ -472,13 +474,24 @@ describe('openViewerForCursor', () => {
     expect(openFileViewerSpy).not.toHaveBeenCalled()
   })
 
-  it('opens the viewer for a file under the cursor', async () => {
+  it('opens the viewer for a file under the cursor, threading the pane volume id', async () => {
     getFileAtSpy.mockResolvedValue(fileEntry({ path: '/Users/x/dir/note.md' }))
     const access = buildAccess({ paneRefs: { left: buildPaneRef({ listingId: 'lst-1', cursorIndex: 2 }) } })
 
     await create(access, buildDialogs()).openViewerForCursor()
 
-    expect(openFileViewerSpy).toHaveBeenCalledWith('/Users/x/dir/note.md')
+    expect(openFileViewerSpy).toHaveBeenCalledWith('/Users/x/dir/note.md', 'root')
+  })
+
+  it('threads a non-root pane volume id so a remote-hosted archive previews through it', async () => {
+    getFileAtSpy.mockResolvedValue(fileEntry({ path: '/share/bundle.zip/inner.txt' }))
+    const access = buildAccess({
+      paneRefs: { left: buildPaneRef({ listingId: 'lst-1', cursorIndex: 2, volumeId: 'smb-1' }) },
+    })
+
+    await create(access, buildDialogs()).openViewerForCursor()
+
+    expect(openFileViewerSpy).toHaveBeenCalledWith('/share/bundle.zip/inner.txt', 'smb-1')
   })
 })
 

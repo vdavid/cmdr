@@ -51,7 +51,7 @@ fn open_png_yields_image_session_with_token_and_dimensions() {
     let dir = create_test_dir("png");
     let file = write_bytes(&dir, "pixel.png", ONE_BY_ONE_PNG);
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
 
     assert_eq!(result.kind, ViewerContentKind::Image);
     assert_eq!(result.file_name, "pixel.png");
@@ -82,7 +82,7 @@ fn open_pdf_yields_pdf_session_with_token_and_no_dimensions() {
     let dir = create_test_dir("pdf");
     let file = write_bytes(&dir, "doc.pdf", PDF_HEADER);
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
 
     assert_eq!(result.kind, ViewerContentKind::Pdf);
     let token = result.media_token.clone().expect("pdf session mints a token");
@@ -101,7 +101,7 @@ fn open_text_file_falls_through_to_text_pipeline() {
     let dir = create_test_dir("text");
     let file = write_bytes(&dir, "notes.txt", b"hello\nworld\n");
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
 
     assert_eq!(result.kind, ViewerContentKind::Text);
     assert!(result.media_token.is_none());
@@ -120,7 +120,7 @@ fn open_as_text_forces_text_for_a_media_file() {
 
     // The "View as text" override: a real PNG, opened as text, mints no token and
     // flows through the text pipeline (it shows the raw bytes).
-    let result = session::open_session_as_text(file.to_str().unwrap()).unwrap();
+    let result = session::open_session_as_text(file.to_str().unwrap(), "root").unwrap();
 
     assert_eq!(result.kind, ViewerContentKind::Text);
     assert!(result.media_token.is_none());

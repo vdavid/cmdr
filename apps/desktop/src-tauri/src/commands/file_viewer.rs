@@ -19,19 +19,21 @@ const VIEWER_TIMEOUT: Duration = Duration::from_secs(2);
 /// extraction cap keeps the worst case bounded. A non-archive open keeps the strict 2 s.
 const VIEWER_ARCHIVE_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Picks the open timeout for `path`: the generous archive budget only when the path
-/// is INSIDE a `.zip` (a temp-extract, which is slow), else the strict 2 s. Viewing
-/// the `.zip` file itself is a normal local read, so it keeps the strict budget. The
-/// detection is a local stat + a few-byte magic read, run off the IPC thread.
-async fn open_timeout_for(path: &str) -> Duration {
-    let path = path.to_string();
-    let needs_extract = tokio::task::spawn_blocking(move || {
-        let expanded = crate::commands::file_system::expand_tilde(&path);
-        crate::file_system::volume::backends::archive::path_is_inside_archive(std::path::Path::new(&expanded))
-    })
-    .await
-    .unwrap_or(false);
-    if needs_extract {
+/// Picks the open timeout for `path`: the generous archive budget when the path is
+/// INSIDE a `.zip` (a temp-extract, which is slow — more so pulling from a remote
+/// parent), else the strict 2 s. Viewing the `.zip` file itself is a normal read, so
+/// it keeps the strict budget.
+///
+/// This is a pure string check (a non-empty inner under a `.zip` component), no I/O
+/// and no confirm: the budget is a heuristic, not a correctness gate, so it needs no
+/// `volume_id` and never touches the disk or network. Over-granting the archive
+/// budget to a mislabeled `.zip` is harmless (the open fails fast on its own).
+fn open_timeout_for(path: &str) -> Duration {
+    let expanded = crate::commands::file_system::expand_tilde(path);
+    let looks_archive_inner =
+        crate::file_system::volume::backends::archive::archive_boundary_candidate(std::path::Path::new(&expanded))
+            .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
+    if looks_archive_inner {
         VIEWER_ARCHIVE_TIMEOUT
     } else {
         VIEWER_TIMEOUT
@@ -53,15 +55,19 @@ const READ_RANGE_TIMEOUT: Duration = Duration::from_secs(60);
 /// no owning window (no mapping is recorded).
 #[tauri::command]
 #[specta::specta]
-pub async fn viewer_open(path: String, window_label: String) -> Result<ViewerOpenResult, ViewerError> {
-    let timeout = open_timeout_for(&path).await;
+pub async fn viewer_open(
+    path: String,
+    volume_id: String,
+    window_label: String,
+) -> Result<ViewerOpenResult, ViewerError> {
+    let timeout = open_timeout_for(&path);
     // Typed `ViewerError` (not a stringified `IpcError`) so the FE can render friendly
     // copy for the archive family — `ExtractTooLarge` (preview cap), `Archive`
     // (encrypted / corrupt / unsupported codec) — matching `viewer_read_range`.
     match tokio::time::timeout(
         timeout,
         tokio::task::spawn_blocking(move || {
-            let result = file_viewer::open_session(&path)?;
+            let result = file_viewer::open_session(&path, &volume_id)?;
             file_viewer::register_window_session(&window_label, &result.session_id);
             Ok(result)
         }),
@@ -84,12 +90,16 @@ pub async fn viewer_open(path: String, window_label: String) -> Result<ViewerOpe
 /// frees the new session.
 #[tauri::command]
 #[specta::specta]
-pub async fn viewer_open_as_text(path: String, window_label: String) -> Result<ViewerOpenResult, ViewerError> {
-    let timeout = open_timeout_for(&path).await;
+pub async fn viewer_open_as_text(
+    path: String,
+    volume_id: String,
+    window_label: String,
+) -> Result<ViewerOpenResult, ViewerError> {
+    let timeout = open_timeout_for(&path);
     match tokio::time::timeout(
         timeout,
         tokio::task::spawn_blocking(move || {
-            let result = file_viewer::open_session_as_text(&path)?;
+            let result = file_viewer::open_session_as_text(&path, &volume_id)?;
             file_viewer::register_window_session(&window_label, &result.session_id);
             Ok(result)
         }),

@@ -34,12 +34,26 @@ fn expand_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: String) -> PathBu
 /// volume), so only a genuinely-inner source flips it true.
 async fn resolve_source(volume_id: &str, first_path: Option<&PathBuf>) -> Option<(Arc<dyn Volume>, bool)> {
     let manager = get_volume_manager();
-    match first_path {
-        Some(path) if archive::path_is_inside_archive(path) => {
-            manager.resolve(volume_id, path).await.volume.map(|v| (v, true))
-        }
-        Some(_) | None => manager.get(volume_id).map(|v| (v, false)),
+    let Some(path) = first_path else {
+        return manager.get(volume_id).map(|v| (v, false));
+    };
+    // Only a non-empty inner component can be archive-inner; the `.zip` file itself
+    // (empty inner) is a plain file copied via its parent volume. This is a pure
+    // string pre-filter, so a plain local/remote path skips the resolve below.
+    let is_inner_candidate =
+        archive::archive_boundary_candidate(path).is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
+    if !is_inner_candidate {
+        return manager.get(volume_id).map(|v| (v, false));
     }
+    // Parent-aware resolve (local `std::fs` OR remote via the parent's own I/O):
+    // a confirmed archive routes to the `ArchiveVolume` (extract-out) with
+    // `is_inside = true`; a mislabeled `.zip` degrades to the parent, `false`.
+    let resolved = manager.resolve(volume_id, path).await;
+    let is_inside = resolved.is_archive;
+    resolved
+        .volume
+        .or_else(|| manager.get(volume_id))
+        .map(|v| (v, is_inside))
 }
 
 /// Unified copy across volume types (local, MTP, etc.). Same events as `copy_files`.

@@ -46,7 +46,11 @@ use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
 /// A failure from the remote pull / upload / swap orchestration. Structurally the
 /// twin of `archive_edit::PlanError` (a `From` impl in that module bridges them),
 /// so the driver's terminal-event handling stays uniform local vs remote.
-pub(super) enum RemoteEditError {
+///
+/// `pub(crate)` (not `pub(super)`) so the live-SMB and MTP integration suites
+/// under `file_system::volume::backends` can drive [`pull_apply_upload_swap`]
+/// directly against a real remote volume.
+pub(crate) enum RemoteEditError {
     /// The op was cancelled before the swap committed — the remote original is
     /// untouched.
     Cancelled,
@@ -63,7 +67,7 @@ pub(super) enum RemoteEditError {
 ///
 /// The closure runs on the blocking pool (it decompresses/compresses/fsyncs); the
 /// pull, upload, and swap are async I/O against the parent volume.
-pub(super) async fn pull_apply_upload_swap<T, E, F>(
+pub(crate) async fn pull_apply_upload_swap<T, E, F>(
     parent: Arc<dyn Volume>,
     archive_path: PathBuf,
     state: Arc<WriteOperationState>,

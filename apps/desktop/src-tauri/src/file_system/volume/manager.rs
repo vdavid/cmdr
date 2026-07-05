@@ -192,6 +192,53 @@ impl VolumeManager {
         self.register_archive(volume_id, parent, zip_path, path)
     }
 
+    /// Async, parent-aware sibling of the sync
+    /// [`archive::path_is_inside_archive`](super::backends::archive::path_is_inside_archive):
+    /// true when `path` points INSIDE a confirmed archive (a non-empty inner
+    /// path), for BOTH local and remote (direct SMB / MTP) parents. The `.zip`
+    /// file itself is a plain file → false.
+    ///
+    /// The write-routing seams (delete / rename / copy-out source) use this so a
+    /// remote archive-inner write reaches the managed edit driver instead of
+    /// falling through to a confusing parent-volume write. The sync free function
+    /// is `std::fs`-only, so it silently returns false for `smb://` / `mtp://`
+    /// paths — the bug this closes. Confirmation mirrors [`resolve`](Self::resolve):
+    /// a local parent uses the zero-network `std::fs` stat + magic sniff; a remote
+    /// parent confirms through its own `get_metadata` + four-byte `read_range`.
+    pub async fn path_is_inside_archive(&self, volume_id: &str, path: &Path) -> bool {
+        self.confirm_boundary_on_parent(volume_id, path)
+            .await
+            .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty())
+    }
+
+    /// Async, parent-aware sibling of the sync
+    /// [`archive::path_crosses_archive_boundary`](super::backends::archive::path_crosses_archive_boundary):
+    /// true when `path` crosses into a confirmed archive — the `.zip` file itself
+    /// (empty inner) OR a path inside it.
+    ///
+    /// `create` uses this (not [`path_is_inside_archive`](Self::path_is_inside_archive)):
+    /// a new entry's parent can BE the `.zip` file (creating at the archive root),
+    /// which must still route to the managed edit driver.
+    pub async fn path_crosses_archive_boundary(&self, volume_id: &str, path: &Path) -> bool {
+        self.confirm_boundary_on_parent(volume_id, path).await.is_some()
+    }
+
+    /// Shared confirm behind the two async boundary predicates above: returns the
+    /// `(zip_path, inner_path)` split when `path` crosses into a CONFIRMED archive
+    /// on `volume_id`'s volume, else `None` (not an archive path, or the volume
+    /// isn't registered). Local parents confirm with `std::fs`; remote parents
+    /// (direct SMB / MTP) through the parent's own I/O, which is why it's `async`.
+    async fn confirm_boundary_on_parent(&self, volume_id: &str, path: &Path) -> Option<(PathBuf, PathBuf)> {
+        let (zip_path, inner) = archive_boundary_candidate(path)?;
+        let parent = self.get(volume_id)?;
+        let confirmed = if parent.supports_local_fs_access() {
+            confirm_archive_boundary(path).is_some()
+        } else {
+            confirm_remote_archive_boundary(parent.as_ref(), &zip_path).await
+        };
+        confirmed.then_some((zip_path, inner))
+    }
+
     /// Registers (or reuses) the [`ArchiveVolume`] for a confirmed `.zip`, bumps
     /// the LRU, and returns it resolved. Shared by both [`resolve`](Self::resolve)
     /// and [`resolve_local_only`](Self::resolve_local_only); the confirm step (the
@@ -789,6 +836,89 @@ mod tests {
         let resolved = manager.resolve("root", &zip.join("inner")).await;
         assert!(!resolved.is_archive);
         assert!(resolved.volume.is_none());
+    }
+
+    #[tokio::test]
+    async fn path_is_inside_archive_confirms_a_local_inner_path_but_not_the_zip_itself() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let zip = dir.path().join("bundle.zip");
+        write_zip_magic(&zip);
+
+        let manager = VolumeManager::new();
+        manager.register("root", Arc::new(InMemoryVolume::new("Root").with_local_fs_access()));
+
+        // A genuinely-inner path is inside the archive; the `.zip` file itself is a
+        // plain file (write-routing must treat deleting/renaming it as a normal op).
+        assert!(manager.path_is_inside_archive("root", &zip.join("inner.txt")).await);
+        assert!(!manager.path_is_inside_archive("root", &zip).await);
+        // `crosses` includes the `.zip` file itself (create-at-archive-root).
+        assert!(manager.path_crosses_archive_boundary("root", &zip).await);
+        assert!(
+            manager
+                .path_crosses_archive_boundary("root", &zip.join("inner.txt"))
+                .await
+        );
+        // A plain path is neither.
+        assert!(!manager.path_is_inside_archive("root", dir.path()).await);
+        assert!(!manager.path_crosses_archive_boundary("root", dir.path()).await);
+    }
+
+    #[tokio::test]
+    async fn path_is_inside_archive_confirms_a_remote_inner_path_through_the_parent() {
+        // The bug this pins: the sync `archive::path_is_inside_archive` is
+        // `std::fs`-only, so it silently returns false for an `smb://` / `mtp://`
+        // zip and the remote archive-inner write falls through to the parent volume.
+        // The async parent-aware method confirms through the parent's own I/O.
+        let zip = PathBuf::from("/device/bundle.zip");
+        let manager = VolumeManager::new();
+        manager.register("root", Arc::new(remote_parent_with_zip(&zip).await));
+
+        assert!(
+            manager
+                .path_is_inside_archive("root", &zip.join("docs/readme.txt"))
+                .await,
+            "a remote archive-inner path must be detected so the write reaches the edit driver"
+        );
+        // The remote `.zip` file itself is still a plain file.
+        assert!(!manager.path_is_inside_archive("root", &zip).await);
+        assert!(manager.path_crosses_archive_boundary("root", &zip).await);
+    }
+
+    #[tokio::test]
+    async fn path_is_inside_archive_routes_a_remote_zip_even_without_ranged_reads() {
+        // SMB before its positioned-read primitive lands: `get_metadata` confirms
+        // the file but `read_range` is `NotSupported`. We still detect it as
+        // archive-inner so the edit driver refuses typed rather than the write
+        // silently landing on the parent volume.
+        let zip = PathBuf::from("/share/bundle.zip");
+        let parent = InMemoryVolume::new("Remote").with_read_range_unsupported();
+        parent
+            .create_file(&zip, b"PK\x03\x04body")
+            .await
+            .expect("seed remote zip");
+        let manager = VolumeManager::new();
+        manager.register("root", Arc::new(parent));
+
+        assert!(manager.path_is_inside_archive("root", &zip.join("inner")).await);
+    }
+
+    #[tokio::test]
+    async fn path_is_inside_archive_declines_a_mislabeled_remote_file() {
+        let mislabeled = PathBuf::from("/device/notreally.zip");
+        let parent = InMemoryVolume::new("Remote");
+        parent
+            .create_file(&mislabeled, b"plain text, definitely not a zip")
+            .await
+            .expect("seed remote file");
+        let manager = VolumeManager::new();
+        manager.register("root", Arc::new(parent));
+
+        assert!(!manager.path_is_inside_archive("root", &mislabeled.join("inner")).await);
+        assert!(
+            !manager
+                .path_crosses_archive_boundary("root", &mislabeled.join("inner"))
+                .await
+        );
     }
 
     #[test]

@@ -69,8 +69,11 @@ pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volu
     // Renaming a path INSIDE an archive is a zip mutation: route it to the
     // managed archive-edit driver. The `.zip` file itself is a regular file —
     // renaming it must work like any other file — so only a genuinely-inner path
-    // routes here.
-    if archive::path_is_inside_archive(&from) || archive::path_is_inside_archive(&to) {
+    // routes here. Parent-aware detection (not the `std::fs`-only sync predicate)
+    // so a rename inside a REMOTE zip (direct SMB / MTP) routes too.
+    let manager = crate::file_system::get_volume_manager();
+    if manager.path_is_inside_archive(&volume_id, &from).await || manager.path_is_inside_archive(&volume_id, &to).await
+    {
         return route_archive_rename(&from, &to, &volume_id).await;
     }
 
@@ -124,9 +127,13 @@ pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volu
 /// emits `write-progress`/`write-complete`), unlike a plain rename which
 /// completes inline. The op id rides on the `operations-changed` queue snapshot.
 async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result<(), String> {
-    let (from_archive, from_inner) =
-        archive::confirm_archive_boundary(from).ok_or_else(|| "This archive can't be edited right now.".to_string())?;
-    let (to_archive, to_inner) = archive::confirm_archive_boundary(to)
+    // Confirmation happened at the routing site (parent-aware `path_is_inside_archive`),
+    // so a pure string split suffices — and it works for a REMOTE zip, where the
+    // `std::fs` confirm would wrongly fail. A `to` with no archive component means a
+    // rename OUT of the archive (a move), which is refused here.
+    let (from_archive, from_inner) = archive::archive_boundary_candidate(from)
+        .ok_or_else(|| "This archive can't be edited right now.".to_string())?;
+    let (to_archive, to_inner) = archive::archive_boundary_candidate(to)
         .ok_or_else(|| "Renaming an item out of an archive isn't supported. Move it instead.".to_string())?;
     if from_archive != to_archive {
         return Err("Renaming an item across archives isn't supported. Move it instead.".to_string());

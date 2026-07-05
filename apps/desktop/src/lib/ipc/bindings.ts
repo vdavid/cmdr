@@ -800,8 +800,8 @@ export const commands = {
    *  that never fires the FE `viewer_close` IPC). Pass an empty string when there's
    *  no owning window (no mapping is recorded).
    */
-  viewerOpen: (path: string, windowLabel: string) =>
-    typedError<ViewerOpenResult, ViewerError>(__TAURI_INVOKE('viewer_open', { path, windowLabel })),
+  viewerOpen: (path: string, volumeId: string, windowLabel: string) =>
+    typedError<ViewerOpenResult, ViewerError>(__TAURI_INVOKE('viewer_open', { path, volumeId, windowLabel })),
   /**
    *  Opens a fresh, full **text** session for `path`, ignoring media classification.
    *
@@ -810,8 +810,8 @@ export const commands = {
    *  the old one. Re-registers the window -> session link so the window-destroyed handler
    *  frees the new session.
    */
-  viewerOpenAsText: (path: string, windowLabel: string) =>
-    typedError<ViewerOpenResult, ViewerError>(__TAURI_INVOKE('viewer_open_as_text', { path, windowLabel })),
+  viewerOpenAsText: (path: string, volumeId: string, windowLabel: string) =>
+    typedError<ViewerOpenResult, ViewerError>(__TAURI_INVOKE('viewer_open_as_text', { path, volumeId, windowLabel })),
   /**
    *  Fetches a range of lines from a viewer session.
    *

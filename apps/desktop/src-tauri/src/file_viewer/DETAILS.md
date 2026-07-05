@@ -118,9 +118,14 @@ extracts the addressed entry to a bounded temp and opens THAT — the deliberate
 
 Flow (in `open_session_inner`, before the media/text split):
 
-1. `extract_if_archive_inner(requested)` calls `VolumeManager::resolve("root", requested)` — the SAME shared
-   boundary detector + on-demand `ArchiveVolume` registration + LRU the listing and copy paths use, so the pane label and
-   the preview target can't disagree. A non-archive path returns `None` and the open flows through unchanged.
+1. `extract_if_archive_inner(requested, volume_id)` calls `VolumeManager::resolve(volume_id, requested)` — the SAME
+   shared boundary detector + on-demand `ArchiveVolume` registration + LRU the listing and copy paths use, so the pane
+   label and the preview target can't disagree. A non-archive path returns `None` and the open flows through unchanged.
+   `volume_id` is threaded from `viewer_open` (command → FE `viewerOpen` wrapper → the viewer window's `volume` URL
+   param, sourced from the opening pane's DRIVE volume id), so a `.zip` on a REMOTE parent (direct SMB / MTP) is pulled
+   through that parent's `read_range`, not a hardcoded `"root"`. A pure string pre-filter (a non-empty inner under a
+   `.zip` component) gates the resolve; the parent-aware confirm inside `resolve` handles a mislabeled or remote-only
+   archive.
 2. For an archive path it reads the entry's `get_metadata` (uncompressed size + kind come from the central directory, no
    decompression). A directory entry → `ViewerError::IsDirectory`. A size over the cap → `ViewerError::ExtractTooLarge`,
    refused BEFORE any temp is created — this up-front refusal is the zip-bomb guard for preview.

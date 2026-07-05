@@ -209,6 +209,14 @@ async fn rename_managed_marks_nonroot_volume_busy_during_op() {
 
 #[tokio::test]
 async fn rename_managed_routes_an_in_archive_rename_to_the_edit_driver() {
+    // Routing detection is parent-aware (`VolumeManager::path_is_inside_archive`),
+    // so it needs a registered local `"root"` volume to confirm the boundary — as
+    // production always has. (nextest isolates the global per test process.)
+    get_volume_manager().register_if_absent(
+        "root",
+        Arc::new(crate::file_system::volume::LocalPosixVolume::new("Test root", "/")),
+    );
+
     let tmp = create_test_dir("archive_rename");
     let zip = tmp.join("bundle.zip");
     fs::write(&zip, b"PK\x03\x04not-a-real-body").expect("write zip magic");

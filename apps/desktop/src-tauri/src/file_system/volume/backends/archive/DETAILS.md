@@ -330,6 +330,12 @@ An `ArchiveVolume` is never constructed here directly in production — it's min
     established), declining the cache so the pre-op scan reruns honestly.
 - **`SUPPORTED_ARCHIVE_EXTENSIONS` is the one source of truth** shared by `is_archive` and boundary detection; the later
   tar/7z read milestone extends it (and confirm's magic check gains sibling signatures).
+- **Write-routing reuses the same parent-aware confirm.** The write seams (delete / rename / create / copy-out-source)
+  don't `resolve` — they need only a yes/no "is this archive-inner?" — so they call
+  `VolumeManager::path_is_inside_archive` / `path_crosses_archive_boundary` (in `manager.rs`), the async siblings of the
+  `std::fs`-only `boundary.rs` predicates. Same `supports_local_fs_access()` fork, same `confirm_remote_archive_boundary`
+  for a remote parent. Without them a write inside a remote zip falls through to the parent volume and errors; see
+  `write_operations/DETAILS.md` § "Reaching the edit driver: parent-aware write-routing".
 
 **resolve returns the FULL path, unchanged.** The decision (over returning a stripped inner path): `ArchiveVolume`
 already maps a volume-namespace path to its inner key via `inner_path()`, `node_to_entry` builds full paths, and

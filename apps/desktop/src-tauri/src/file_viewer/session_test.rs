@@ -57,7 +57,7 @@ fn open_small_file_uses_full_load() {
     let dir = create_test_dir("small");
     let file = write_test_file(&dir, "test.txt", "hello\nworld\n");
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     assert_eq!(result.file_name, "test.txt");
     assert_eq!(result.total_bytes, 12);
     assert_eq!(result.total_lines, Some(3));
@@ -83,7 +83,7 @@ fn open_large_file_uses_byte_seek() {
     let content: String = line.repeat(line_count);
     let file = write_test_file(&dir, "big.txt", &content);
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     assert!(result.total_bytes > FULL_LOAD_THRESHOLD);
     assert!(matches!(result.backend_type, session::BackendType::ByteSeek));
     assert!(!result.capabilities.supports_line_seek);
@@ -98,14 +98,14 @@ fn open_large_file_uses_byte_seek() {
 
 #[test]
 fn open_not_found() {
-    let result = session::open_session("/nonexistent_session_test.txt");
+    let result = session::open_session("/nonexistent_session_test.txt", "root");
     assert!(result.is_err());
 }
 
 #[test]
 fn open_directory_fails() {
     let dir = create_test_dir("dir_fail");
-    let result = session::open_session(dir.to_str().unwrap());
+    let result = session::open_session(dir.to_str().unwrap(), "root");
     assert!(result.is_err());
     cleanup(&dir);
 }
@@ -115,7 +115,7 @@ fn get_lines_after_open() {
     let dir = create_test_dir("get_lines");
     let file = write_test_file(&dir, "test.txt", "a\nb\nc\nd\ne\n");
 
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
 
     let chunk = session::get_lines(&open_result.session_id, super::SeekTarget::Line(2), 3).unwrap();
     assert_eq!(chunk.first_line_number, 2);
@@ -136,7 +136,7 @@ fn close_session_cleans_up() {
     let dir = create_test_dir("close");
     let file = write_test_file(&dir, "test.txt", "test\n");
 
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = open_result.session_id.clone();
 
     // Session should work
@@ -156,7 +156,7 @@ fn search_start_and_poll() {
     let dir = create_test_dir("search");
     let file = write_test_file(&dir, "test.txt", "hello world\nfoo bar\nhello again\n");
 
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     // Start search
@@ -186,7 +186,7 @@ fn search_cancel_works() {
     let content = "hello world\n".repeat(100000);
     let file = write_test_file(&dir, "test.txt", &content);
 
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
@@ -231,7 +231,7 @@ fn search_poll_after_cancel_surfaces_cancelled_then_idle_after_new_start() {
     let content = "hello world\n".repeat(200_000);
     let file = write_test_file(&dir, "test.txt", &content);
 
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
@@ -267,7 +267,7 @@ fn search_poll_no_active_search() {
     let dir = create_test_dir("poll_idle");
     let file = write_test_file(&dir, "test.txt", "test\n");
 
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     let poll = session::search_poll(sid, 0).unwrap();
@@ -280,7 +280,7 @@ fn search_poll_no_active_search() {
 #[test]
 fn tilde_expansion() {
     // open_session should handle ~ paths
-    let result = session::open_session("~/nonexistent_file_tilde_test.txt");
+    let result = session::open_session("~/nonexistent_file_tilde_test.txt", "root");
     // Should get NotFound rather than a panic/crash
     assert!(result.is_err());
 }
@@ -297,7 +297,7 @@ fn large_file_upgrades_to_line_index() {
         .collect();
     let file = write_test_file(&dir, "upgrade.txt", &content);
 
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     // Initially ByteSeek
@@ -323,8 +323,8 @@ fn multiple_sessions() {
     let file1 = write_test_file(&dir, "a.txt", "file a\n");
     let file2 = write_test_file(&dir, "b.txt", "file b\n");
 
-    let res1 = session::open_session(file1.to_str().unwrap()).unwrap();
-    let res2 = session::open_session(file2.to_str().unwrap()).unwrap();
+    let res1 = session::open_session(file1.to_str().unwrap(), "root").unwrap();
+    let res2 = session::open_session(file2.to_str().unwrap(), "root").unwrap();
 
     assert_ne!(res1.session_id, res2.session_id);
     assert_eq!(res1.file_name, "a.txt");
@@ -348,7 +348,7 @@ fn search_poll_reports_match_limit() {
     let content = "aa\n".repeat(MAX_SEARCH_MATCHES + 1000);
     let file = write_test_file(&dir, "test.txt", &content);
 
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     session::search_start(sid, "a".to_string(), literal_mode()).unwrap();
@@ -379,7 +379,7 @@ fn search_poll_incremental_delivery() {
     let dir = create_test_dir("search_incremental");
     let file = write_test_file(&dir, "test.txt", "aaa\nbbb\naaa\nbbb\naaa\n");
 
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     session::search_start(sid, "aaa".to_string(), literal_mode()).unwrap();
@@ -423,7 +423,9 @@ fn line(line: u64, offset: u32) -> RangeEnd {
 fn read_range_full_load_anchor_equals_focus_returns_empty() {
     let dir = create_test_dir("range_eq");
     let file = write_test_file(&dir, "test.txt", "hello\nworld\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     let out = session::read_range(&sid, 1, line(0, 3), line(0, 3)).unwrap();
     assert_eq!(out, "");
@@ -436,7 +438,9 @@ fn read_range_full_load_anchor_equals_focus_returns_empty() {
 fn read_range_full_load_single_line_slice() {
     let dir = create_test_dir("range_single_line");
     let file = write_test_file(&dir, "test.txt", "hello world\nsecond line\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     // Slice "ello w" out of the first line.
     let out = session::read_range(&sid, 1, line(0, 1), line(0, 7)).unwrap();
@@ -450,7 +454,9 @@ fn read_range_full_load_single_line_slice() {
 fn read_range_full_load_multi_line_includes_newlines_between() {
     let dir = create_test_dir("range_multi_line");
     let file = write_test_file(&dir, "test.txt", "alpha\nbeta\ngamma\ndelta\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     // From (0, 2) "pha\n" + "beta\n" + "gamma\n" + "del" => "pha\nbeta\ngamma\ndel".
     let out = session::read_range(&sid, 1, line(0, 2), line(3, 3)).unwrap();
@@ -464,7 +470,9 @@ fn read_range_full_load_multi_line_includes_newlines_between() {
 fn read_range_full_load_reversed_inputs_normalised() {
     let dir = create_test_dir("range_reversed");
     let file = write_test_file(&dir, "test.txt", "hello world\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     let forward = session::read_range(&sid, 1, line(0, 0), line(0, 5)).unwrap();
     let reversed = session::read_range(&sid, 2, line(0, 5), line(0, 0)).unwrap();
@@ -479,7 +487,9 @@ fn read_range_full_load_reversed_inputs_normalised() {
 fn read_range_full_load_out_of_range_returns_typed_error() {
     let dir = create_test_dir("range_oor");
     let file = write_test_file(&dir, "test.txt", "one line only\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     let err = session::read_range(&sid, 1, line(99, 0), line(99, 5)).unwrap_err();
     assert!(matches!(err, ViewerError::OutOfRange));
@@ -492,7 +502,9 @@ fn read_range_full_load_out_of_range_returns_typed_error() {
 fn read_range_full_load_eof_selects_to_end() {
     let dir = create_test_dir("range_eof");
     let file = write_test_file(&dir, "test.txt", "first\nsecond\nthird\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     let out = session::read_range(&sid, 1, line(0, 0), RangeEnd::Eof).unwrap();
     // The trailing newline is excluded (half-open semantics; the last line's content is included).
@@ -509,7 +521,9 @@ fn read_range_full_load_utf16_surrogate_clamps_down() {
     let dir = create_test_dir("range_surrogate");
     // "👋hi" has UTF-16 length 4 (emoji is 2 units, then h, i).
     let file = write_test_file(&dir, "test.txt", "👋hi\nnext\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     // Offset 1 lands inside the surrogate pair; clamp to 0 — output excludes the emoji entirely.
     let out = session::read_range(&sid, 1, line(0, 1), line(0, 3)).unwrap();
@@ -534,7 +548,9 @@ fn read_range_full_load_only_newlines_file() {
     let dir = create_test_dir("range_only_newlines");
     // Three empty lines: "\n\n\n" gives 4 entries when split by '\n' (empty, empty, empty, empty).
     let file = write_test_file(&dir, "test.txt", "\n\n\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     // Select all up to line 2 offset 0: "(empty)\n(empty)\n" = "\n\n".
     let out = session::read_range(&sid, 1, line(0, 0), line(2, 0)).unwrap();
@@ -552,7 +568,7 @@ fn read_range_byte_seek_eof_selects_whole_file() {
     let line_count = (FULL_LOAD_THRESHOLD as usize / line_str.len()) + 100;
     let content: String = line_str.repeat(line_count);
     let file = write_test_file(&dir, "big.txt", &content);
-    let open = session::open_session(file.to_str().unwrap()).unwrap();
+    let open = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = open.session_id.clone();
 
     let out = session::read_range(&sid, 1, line(0, 0), RangeEnd::Eof).unwrap();
@@ -601,7 +617,9 @@ fn read_range_session_cancellation_returns_cancelled_and_cleans_up() {
     let line_str = "z".repeat(4096) + "\n";
     let content: String = line_str.repeat(4096);
     let file = write_test_file(&dir, "big.txt", &content);
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     let sid_for_cancel = sid.clone();
     let canceller = thread::spawn(move || {
@@ -636,7 +654,9 @@ fn read_range_full_load_crlf_preserves_carriage_returns() {
     let dir = create_test_dir("range_crlf");
     let content = "alpha\r\nbeta\r\ngamma\r\n";
     let file = write_test_file(&dir, "crlf.txt", content);
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     // ⌘A-equivalent: read everything. The backend keeps `\r` as part of each line;
     // `range_read` rejoins with `\n` between lines and trims exactly one trailing
@@ -659,7 +679,9 @@ fn read_range_full_load_crlf_preserves_carriage_returns() {
 fn read_range_cleans_up_active_reads_on_success() {
     let dir = create_test_dir("range_cleanup");
     let file = write_test_file(&dir, "test.txt", "small\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     session::read_range(&sid, 7, line(0, 0), line(0, 5)).unwrap();
     assert_eq!(session::active_read_count(&sid), 0);
@@ -678,7 +700,9 @@ fn read_range_session_not_found_returns_typed_error() {
 fn cancel_read_unknown_id_is_no_op() {
     let dir = create_test_dir("cancel_unknown");
     let file = write_test_file(&dir, "test.txt", "small\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     // No read with id 99; cancel should succeed silently.
     session::cancel_read(&sid, 99).unwrap();
@@ -691,7 +715,9 @@ fn cancel_read_unknown_id_is_no_op() {
 fn write_range_to_file_writes_atomically() {
     let dir = create_test_dir("write_range");
     let file = write_test_file(&dir, "test.txt", "alpha\nbeta\ngamma\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     let dest = dir.join("out.txt");
     session::write_range_to_file(&sid, 1, line(0, 0), line(2, 5), &dest).unwrap();
@@ -713,7 +739,9 @@ fn write_range_to_file_writes_atomically() {
 fn write_range_to_file_propagates_out_of_range_error() {
     let dir = create_test_dir("write_range_oor");
     let file = write_test_file(&dir, "test.txt", "one line\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     let dest = dir.join("out.txt");
     let err = session::write_range_to_file(&sid, 1, line(99, 0), line(99, 5), &dest).unwrap_err();
@@ -728,7 +756,9 @@ fn write_range_to_file_propagates_out_of_range_error() {
 fn read_range_stitching_adjacent_ranges_equals_one_big_range() {
     let dir = create_test_dir("range_stitch");
     let file = write_test_file(&dir, "test.txt", "alpha\nbeta\ngamma\ndelta\nepsilon\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     // Pick a split point in the middle of the file: between (1, 2) and (1, 2).
     let big = session::read_range(&sid, 1, line(0, 0), line(4, 5)).unwrap();
@@ -752,7 +782,7 @@ fn search_pre_cancelled_starts_and_finishes_quickly() {
     let content: String = line_with_a.repeat(50_000);
     let file = write_test_file(&dir, "test.txt", &content);
 
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     session::search_start(sid, "a".to_string(), literal_mode()).unwrap();
@@ -894,7 +924,7 @@ fn test_new_search_after_watchdog_cancelled_starts_clean() {
     // After a Cancelled verdict, starting a fresh search must reset the status.
     let dir = create_test_dir("watchdog_reset");
     let file = write_test_file(&dir, "test.txt", "hello\nworld\n");
-    let open_result = session::open_session(file.to_str().unwrap()).unwrap();
+    let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = &open_result.session_id;
 
     session::search_start(sid, "hello".to_string(), literal_mode()).unwrap();
@@ -929,7 +959,9 @@ fn test_new_search_after_watchdog_cancelled_starts_clean() {
 fn test_invalid_regex_surfaces_as_invalid_query_status() {
     let dir = create_test_dir("invalid_regex");
     let file = write_test_file(&dir, "test.txt", "hello\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     let mode = SearchMode {
         use_regex: true,
@@ -954,7 +986,9 @@ fn test_invalid_regex_surfaces_as_invalid_query_status() {
 fn test_multiline_regex_surfaces_as_invalid_query_status() {
     let dir = create_test_dir("multiline_regex");
     let file = write_test_file(&dir, "test.txt", "hello\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     let mode = SearchMode {
         use_regex: true,
@@ -977,7 +1011,9 @@ fn test_multiline_regex_surfaces_as_invalid_query_status() {
 fn test_regex_search_returns_matches() {
     let dir = create_test_dir("regex_search");
     let file = write_test_file(&dir, "test.txt", "a123\nb456\nc789\n");
-    let sid = session::open_session(file.to_str().unwrap()).unwrap().session_id;
+    let sid = session::open_session(file.to_str().unwrap(), "root")
+        .unwrap()
+        .session_id;
 
     let mode = SearchMode {
         use_regex: true,
@@ -1019,7 +1055,7 @@ fn get_encoding_options_returns_detected_and_all() {
     let file = dir.join("latin1.txt");
     fs::write(&file, b"caf\xE9\n").unwrap();
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let opts = session::get_encoding_options(&result.session_id).unwrap();
     assert_eq!(opts.detected, FileEncoding::Windows1252);
     assert_eq!(opts.current, FileEncoding::Windows1252);
@@ -1037,7 +1073,7 @@ fn set_encoding_full_load_swaps_decoder() {
     // 0xE9 = 'é' in Windows-1252 / 'í' in Mac Roman / lone 0xE9 in UTF-8 is U+FFFD.
     let file = dir.join("bytes.txt");
     fs::write(&file, b"caf\xE9\n").unwrap();
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     assert!(matches!(result.backend_type, session::BackendType::FullLoad));
 
     // Currently Windows-1252 (detected): line should decode as "café".
@@ -1066,7 +1102,7 @@ fn set_encoding_large_file_utf8_to_utf16_rebuilds_under_new_encoding() {
     let file = dir.join("big-utf16.txt");
     fs::write(&file, &bytes).unwrap();
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     // Detector should already pick UTF-16 LE via parity. Decode of line 0 = "hello world".
     let initial = &result.initial_lines.lines;
     assert!(
@@ -1116,7 +1152,7 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     fs::write(&file, &content).unwrap();
     let original_size = fs::metadata(&file).unwrap().len();
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     // Wait for the initial ByteSeek -> LineIndex upgrade to finish so the
     // pending_grew queue only exercises the rebuild's drain, not the
     // upgrade's. (Otherwise the upgrade could drain our queued EOF before
@@ -1180,7 +1216,7 @@ fn test_append_during_encoding_rebuild_not_dropped() {
 fn tail_mode_toggle_persists_on_session() {
     let dir = create_test_dir("tail_toggle");
     let file = write_test_file(&dir, "log.txt", "hello\n");
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     assert!(!session::test_only_tail_mode(&sid));
@@ -1197,7 +1233,7 @@ fn tail_mode_toggle_persists_on_session() {
 fn reload_replaces_backend_against_current_disk_contents() {
     let dir = create_test_dir("reload");
     let file = write_test_file(&dir, "log.txt", "first\n");
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Overwrite the file out of band: same path, fully replaced content.
@@ -1221,7 +1257,7 @@ fn set_tail_mode_enabling_catches_up_existing_growth() {
     // updates total_bytes; the catch-up check still proves the path is wired.
     let initial: String = "a\n".repeat((FULL_LOAD_THRESHOLD as usize / 2) + 1);
     let file = write_test_file(&dir, "log.txt", &initial);
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     let original_bytes = result.total_bytes;
 
@@ -1265,7 +1301,7 @@ fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
     let initial: String = line.repeat(line_count);
     let path = write_test_file(&dir, "tail-int.log", &initial);
 
-    let result = session::open_session(path.to_str().unwrap()).unwrap();
+    let result = session::open_session(path.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     let original_bytes = result.total_bytes;
     // Sync on the background subscribe before mutating, so the catch-up re-stat
@@ -1357,7 +1393,7 @@ fn test_tail_extend_during_encoding_rebuild_discards_stale_extend() {
     let dir = create_test_dir("tail_clobber_race");
     let initial: String = "x\n".repeat((FULL_LOAD_THRESHOLD as usize / 2) + 1);
     let file = write_test_file(&dir, "race.log", &initial);
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Grow the file so apply_tail_extend has something to extend to.
@@ -1413,7 +1449,7 @@ fn test_append_during_upgrade_not_dropped() {
     let file = write_test_file(&dir, "upgrade.log", &content);
     let original_size = fs::metadata(&file).unwrap().len();
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Append 500 KB while the upgrade thread is paused.
@@ -1466,7 +1502,7 @@ fn test_append_between_drain_and_swap_not_dropped() {
     let mut content = line.repeat(line_count);
     let file = write_test_file(&dir, "race.log", &content);
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Two consecutive queued EOFs: simulates two watcher events the
@@ -1514,7 +1550,7 @@ fn test_session_emits_file_changed_on_append() {
     let line_count = (FULL_LOAD_THRESHOLD as usize / line.len()) + 100;
     let initial: String = line.repeat(line_count);
     let file = write_test_file(&dir, "emit.log", &initial);
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     // Sync on the background subscribe before mutating the file, so the
     // catch-up re-stat stays a no-op and the explicit emit below is the driver.
@@ -1557,7 +1593,7 @@ fn test_session_tail_mode_off_does_not_extend_index() {
     let dir = create_test_dir("tail_off_no_extend");
     let initial = "a\nb\nc\n";
     let file = write_test_file(&dir, "tailoff.log", initial);
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     wait_for_watcher_subscribed();
     assert!(!session::test_only_tail_mode(&sid));
@@ -1601,7 +1637,7 @@ fn test_session_rotation_reopens_backend() {
     let dir = create_test_dir("rotation");
     fs::write(dir.join("rot.log"), b"old content\n").unwrap();
     let file = dir.join("rot.log");
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
     let original_bytes = result.total_bytes;
     wait_for_watcher_subscribed();
@@ -1641,7 +1677,7 @@ fn test_session_close_stops_watcher() {
     // from the shared singleton.
     let dir = create_test_dir("close_stops_watcher");
     let file = write_test_file(&dir, "tmp.log", "hi\n");
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     wait_for_watcher_subscribed();
@@ -1679,7 +1715,7 @@ fn test_set_encoding_during_rebuild_serialization() {
     let content = line.repeat(line_count);
     let file = write_test_file(&dir, "rebuild.txt", &content);
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Wait for the initial upgrade so we test the rebuild path, not the
@@ -1736,7 +1772,7 @@ fn test_set_encoding_ascii_compatible_is_instant() {
     let content = line.repeat(line_count);
     let file = write_test_file(&dir, "instant.txt", &content);
 
-    let result = session::open_session(file.to_str().unwrap()).unwrap();
+    let result = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = result.session_id.clone();
 
     // Wait for the initial upgrade so we count from a stable baseline.

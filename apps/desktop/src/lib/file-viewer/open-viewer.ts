@@ -13,14 +13,20 @@ const VIEWER_HEIGHT = 600
  */
 let cascadeIndex = 0
 
-/** Opens a file viewer window for the given file path. Multiple viewers can be open at once. */
-export async function openFileViewer(filePath: string): Promise<void> {
+/**
+ * Opens a file viewer window for the given file path. Multiple viewers can be open at
+ * once. `volumeId` is the volume the file lives on (`'root'` for the local drive); it
+ * rides the URL to the viewer so a file inside a `.zip` on a remote parent (direct
+ * SMB / MTP) is previewed by pulling the entry through that volume.
+ */
+export async function openFileViewer(filePath: string, volumeId = 'root'): Promise<void> {
   const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow')
   const { decorateChildWindowTitle, getAppMode, orderChildWindowToBackInE2e } = await import('$lib/app-mode')
 
   // Use a unique label per viewer instance (timestamp-based)
   const label = `viewer-${String(Date.now())}`
   const encodedPath = encodeURIComponent(filePath)
+  const encodedVolume = encodeURIComponent(volumeId)
 
   // E2E suites open viewer windows repeatedly; stealing OS focus each time
   // makes the host machine unusable while tests run. The plugin reaches the
@@ -38,7 +44,7 @@ export async function openFileViewer(filePath: string): Promise<void> {
   }
 
   const win = new WebviewWindow(label, {
-    url: `/viewer?path=${encodedPath}`,
+    url: `/viewer?path=${encodedPath}&volume=${encodedVolume}`,
     title: decorateChildWindowTitle(filePath.split('/').pop() ?? getMessage('viewer.window.fallbackTitle')),
     width: VIEWER_WIDTH,
     height: VIEWER_HEIGHT,

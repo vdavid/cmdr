@@ -108,25 +108,36 @@ pub(super) fn is_orphan_extract_name(name: &str) -> bool {
 /// temp and return it; otherwise `Ok(None)` (the caller opens `requested` directly).
 ///
 /// Uses the shared [`VolumeManager::resolve`](crate::file_system::VolumeManager::resolve)
-/// so archive detection, registration, and the LRU stay single-sourced with the
-/// listing/copy paths. Blocking: run it inside `spawn_blocking`, not on the IPC thread.
-pub(super) fn extract_if_archive_inner(requested: &Path) -> Result<Option<ExtractedEntry>, ViewerError> {
-    extract_if_archive_inner_with(requested, &extract_dir(), EXTRACT_CAP_BYTES)
+/// against `volume_id`'s volume so archive detection, registration, and the LRU stay
+/// single-sourced with the listing/copy paths — and a `.zip` on a REMOTE parent
+/// (direct SMB / MTP) is pulled through that parent, not a hardcoded `"root"`.
+/// Blocking: run it inside `spawn_blocking`, not on the IPC thread.
+pub(super) fn extract_if_archive_inner(
+    requested: &Path,
+    volume_id: &str,
+) -> Result<Option<ExtractedEntry>, ViewerError> {
+    extract_if_archive_inner_with(requested, volume_id, &extract_dir(), EXTRACT_CAP_BYTES)
 }
 
 /// [`extract_if_archive_inner`] with an explicit dir + cap, for tests.
 pub(super) fn extract_if_archive_inner_with(
     requested: &Path,
+    volume_id: &str,
     dir: &Path,
     cap: u64,
 ) -> Result<Option<ExtractedEntry>, ViewerError> {
     // Only a path INSIDE the archive is temp-extracted. The `.zip` file ITSELF is a
     // regular file: viewing it shows its raw bytes like any binary file (extracting
-    // inner "" would address the archive ROOT — a directory — and error).
-    if !crate::file_system::volume::backends::archive::path_is_inside_archive(requested) {
+    // inner "" would address the archive ROOT — a directory — and error). Pure
+    // string pre-filter (no I/O); `resolve` below does the parent-aware confirm, so
+    // a mislabeled `.zip` or a remote-only archive is handled there.
+    let is_inner_candidate = crate::file_system::volume::backends::archive::archive_boundary_candidate(requested)
+        .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
+    if !is_inner_candidate {
         return Ok(None);
     }
-    let resolved = tauri::async_runtime::block_on(crate::file_system::get_volume_manager().resolve("root", requested));
+    let resolved =
+        tauri::async_runtime::block_on(crate::file_system::get_volume_manager().resolve(volume_id, requested));
     if !resolved.is_archive {
         return Ok(None);
     }

@@ -176,7 +176,9 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     const file = await getFileAt(listingId, backendIndex, access.getShowHiddenFiles())
     if (!file || file.isDirectory || file.name === '..') return
 
-    void openFileViewer(file.path)
+    // Pass the pane's DRIVE volume id (an archive pane keeps its parent drive's
+    // id) so a file inside a remote-hosted zip previews through that volume.
+    void openFileViewer(file.path, paneRef?.getVolumeId() ?? 'root')
   }
 
   /** Builds a TransferContext from pane state. */

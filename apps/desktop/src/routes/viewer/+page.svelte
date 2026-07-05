@@ -68,6 +68,10 @@
     let error = $state('')
     let errorIsTimeout = $state(false)
     let filePath = $state('')
+    // The volume the file lives on (`'root'` for the local drive), from the `volume`
+    // URL param. Threaded to `viewerOpen` so a file inside a `.zip` on a remote
+    // parent (direct SMB / MTP) is previewed by pulling the entry through that volume.
+    let volumeId = $state('root')
     let loading = $state(true)
     let sessionId = $state('')
     let backendType = $state<'fullLoad' | 'byteSeek' | 'lineIndex'>('fullLoad')
@@ -567,7 +571,7 @@
         // Pass the window label so the backend can free this session when the
         // window is closed via the titlebar X (which never fires `viewerClose`).
         const open = asText ? viewerOpenAsText : viewerOpen
-        const result = await open(path, getCurrentWindow().label)
+        const result = await open(path, volumeId, getCurrentWindow().label)
         log.debug('viewer_open IPC took {ms}ms', { ms: Math.round(performance.now() - t0) })
 
         sessionId = result.sessionId
@@ -803,6 +807,8 @@
         }
 
         filePath = pathParam
+        // Missing / empty `volume` param means the local drive (older links, MCP).
+        volumeId = params.get('volume') || 'root'
 
         try {
             await openViewerSession(pathParam)

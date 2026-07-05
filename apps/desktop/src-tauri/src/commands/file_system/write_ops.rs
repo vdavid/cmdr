@@ -41,10 +41,21 @@ use super::expand_tilde;
 /// `Some` means scan through the `Volume` trait.
 async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathBuf>) -> Option<Arc<dyn Volume>> {
     // Route to the ArchiveVolume only for a source INSIDE the archive. The `.zip`
-    // file itself is scanned as a plain file (one entry), not its contents.
-    let archive_source = match first_source.filter(|first| archive::path_is_inside_archive(first)) {
-        Some(first) => get_volume_manager().resolve(volume_id, first).await.volume,
-        None => None,
+    // file itself is scanned as a plain file (one entry), not its contents. Only a
+    // non-empty inner component can be archive-inner; the pure string pre-filter
+    // gates the parent-aware resolve, which confirms a REMOTE zip too.
+    let is_inner_candidate = first_source
+        .and_then(|first| archive::archive_boundary_candidate(first))
+        .is_some_and(|(_zip, inner)| !inner.as_os_str().is_empty());
+    let archive_source = if is_inner_candidate {
+        let resolved = get_volume_manager()
+            .resolve(volume_id, first_source.expect("candidate implies a source"))
+            .await;
+        // `is_archive` gates whether we actually got the ArchiveVolume (a mislabeled
+        // `.zip` falls through to the parent, which the branches below handle).
+        resolved.is_archive.then_some(resolved.volume).flatten()
+    } else {
+        None
     };
     if archive_source.is_some() {
         archive_source

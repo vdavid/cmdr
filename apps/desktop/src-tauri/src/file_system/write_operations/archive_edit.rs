@@ -92,7 +92,7 @@ pub(crate) fn join_inner_path(inner_parent: &Path, name: &str) -> String {
     }
 }
 
-/// Normalizes an archive-inner path (from `confirm_archive_boundary`) to the
+/// Normalizes an archive-inner path (from `archive_boundary_candidate`) to the
 /// `/`-separated, surrounding-slash-free form the changeset uses.
 pub(crate) fn normalize_inner_path(inner: &Path) -> String {
     inner.to_string_lossy().replace('\\', "/").trim_matches('/').to_string()
@@ -112,12 +112,12 @@ pub(crate) async fn route_archive_delete(
         path: String::new(),
         message: "no entries to delete".to_string(),
     })?;
-    let (archive_path, _) = archive::confirm_archive_boundary(first).ok_or_else(|| read_only_error(first))?;
+    let (archive_path, _) = archive::archive_boundary_candidate(first).ok_or_else(|| read_only_error(first))?;
 
     let mut deletes = Vec::with_capacity(sources.len());
     for source in sources {
         let (source_archive, inner) =
-            archive::confirm_archive_boundary(source).ok_or_else(|| read_only_error(source))?;
+            archive::archive_boundary_candidate(source).ok_or_else(|| read_only_error(source))?;
         if source_archive != archive_path {
             return Err(WriteOperationError::IoError {
                 path: source.display().to_string(),
@@ -212,8 +212,12 @@ pub(crate) async fn route_archive_copy_into(
     })?;
     let absolute_sources: Vec<PathBuf> = source_paths.iter().map(|p| src_root.join(p)).collect();
 
+    // Confirmation already happened at the routing site (`dest_resolved.is_archive`
+    // from the async, parent-aware `resolve`), so a pure string split is enough
+    // here — and it works for a REMOTE dest zip, where the `std::fs` confirm would
+    // wrongly return `None`.
     let (archive_path, dest_inner) =
-        archive::confirm_archive_boundary(&dest_full_path).ok_or_else(|| read_only_error(&dest_full_path))?;
+        archive::archive_boundary_candidate(&dest_full_path).ok_or_else(|| read_only_error(&dest_full_path))?;
     let dest_inner = normalize_inner_path(&dest_inner);
 
     // Stop policy → the interactive per-file prompt. Planning must run INSIDE the
@@ -931,11 +935,11 @@ pub(crate) async fn route_archive_move_out(
         path: String::new(),
         message: "no entries to move".to_string(),
     })?;
-    let (archive_path, _) = archive::confirm_archive_boundary(first).ok_or_else(|| read_only_error(first))?;
+    let (archive_path, _) = archive::archive_boundary_candidate(first).ok_or_else(|| read_only_error(first))?;
     let mut inner_deletes = Vec::with_capacity(source_paths.len());
     for source in &source_paths {
         let (source_archive, inner) =
-            archive::confirm_archive_boundary(source).ok_or_else(|| read_only_error(source))?;
+            archive::archive_boundary_candidate(source).ok_or_else(|| read_only_error(source))?;
         if source_archive != archive_path {
             return Err(WriteOperationError::IoError {
                 path: source.display().to_string(),

@@ -154,6 +154,12 @@ pub(crate) use archive_edit::route_archive_move_out;
 // (`route_archive_move_out`). Not spawn-managed itself — it runs inside the
 // move-out op's deferred under the move op's id/state/sink.
 pub(crate) use transfer::volume_copy::copy_volumes_with_progress;
+// The remote zip-edit orchestration (pull-local, apply, upload, swap). Exposed at
+// crate scope for the live-SMB / MTP integration suites, which drive the real
+// mechanism against a real remote volume. The managed driver reaches it directly
+// via `super::archive_remote_edit`, so this re-export is test-only.
+#[cfg(test)]
+pub(crate) use archive_remote_edit::{RemoteEditError, pull_apply_upload_swap};
 
 // ============================================================================
 // Public API functions
@@ -412,10 +418,18 @@ pub async fn delete_files_start(
     // Deleting entries INSIDE a zip is a mutation: route to the managed archive-edit
     // driver as a single `{ delete }` changeset (a rewrite, not per-entry). The
     // `.zip` file itself is a regular file — deleting it stays on the normal path.
-    if sources
-        .first()
-        .is_some_and(|s| crate::file_system::volume::backends::archive::path_is_inside_archive(s))
-    {
+    // Parent-aware detection (not the `std::fs`-only sync predicate) so a delete
+    // inside a REMOTE zip (direct SMB / MTP) also reaches the driver instead of
+    // falling through to a confusing parent-volume delete.
+    let first_is_archive_inner = match sources.first() {
+        Some(s) => {
+            crate::file_system::get_volume_manager()
+                .path_is_inside_archive(&volume_id_str, s)
+                .await
+        }
+        None => false,
+    };
+    if first_is_archive_inner {
         return archive_edit::route_archive_delete(events, &sources, &volume_id_str, config.progress_interval_ms).await;
     }
 

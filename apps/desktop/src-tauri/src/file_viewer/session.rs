@@ -341,26 +341,28 @@ pub(super) fn generate_session_id() -> String {
 /// file size:
 /// - Under 1 MB: FullLoad (instant, full random access)
 /// - Over 1 MB: ByteSeek first (instant open), then upgrades to LineIndex in background
-pub fn open_session(path: &str) -> Result<ViewerOpenResult, ViewerError> {
-    open_session_inner(path, /*force_text=*/ false)
+pub fn open_session(path: &str, volume_id: &str) -> Result<ViewerOpenResult, ViewerError> {
+    open_session_inner(path, volume_id, /*force_text=*/ false)
 }
 
 /// Opens a fresh, full text session regardless of content kind. Backs the "View as
 /// text" override: a media session isn't upgraded in place; the FE swaps to the
 /// session this returns. Reuses the text path verbatim.
-pub fn open_session_as_text(path: &str) -> Result<ViewerOpenResult, ViewerError> {
-    open_session_inner(path, /*force_text=*/ true)
+pub fn open_session_as_text(path: &str, volume_id: &str) -> Result<ViewerOpenResult, ViewerError> {
+    open_session_inner(path, volume_id, /*force_text=*/ true)
 }
 
-fn open_session_inner(path: &str, force_text: bool) -> Result<ViewerOpenResult, ViewerError> {
+fn open_session_inner(path: &str, volume_id: &str, force_text: bool) -> Result<ViewerOpenResult, ViewerError> {
     let expanded = expand_tilde(path);
     let requested = PathBuf::from(&expanded);
 
     // A path INSIDE an archive (`/…/foo.zip/inner`) has no `std::fs` file to open, so
     // the viewer can't touch it directly. Stream the entry out to a bounded temp and
-    // open THAT; a non-archive path returns `None` and flows through unchanged. On
-    // close, `close_session` removes the temp subdir. See `archive_extract`.
-    let extracted = super::archive_extract::extract_if_archive_inner(&requested)?;
+    // open THAT; a non-archive path returns `None` and flows through unchanged. The
+    // `.zip` can live on a remote parent (direct SMB / MTP), so the entry is pulled
+    // through `volume_id`'s volume, not hardcoded `"root"`. On close, `close_session`
+    // removes the temp subdir. See `archive_extract`.
+    let extracted = super::archive_extract::extract_if_archive_inner(&requested, volume_id)?;
     let (file_path, extract_cleanup) = match extracted {
         Some(e) => (e.temp_file, Some(e.cleanup_dir)),
         None => (requested, None),

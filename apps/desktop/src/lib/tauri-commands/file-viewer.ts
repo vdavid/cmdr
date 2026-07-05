@@ -109,13 +109,17 @@ export interface SearchPollResult {
 /**
  * Opens a viewer session for a file. Returns session metadata + initial lines.
  *
+ * `volumeId` is the volume the file lives on (`'root'` for the local drive). A file
+ * INSIDE a `.zip` on a remote parent (direct SMB / MTP) is previewed by pulling the
+ * entry through that volume, so the id must be the pane's, not a hardcoded root.
+ *
  * `windowLabel` links the session to the owning viewer window so the backend can
  * free the session when the window is closed via the titlebar X (a path that never
  * fires `viewerClose`). Pass `getCurrentWindow().label`. Defaults to `''` (no
  * mapping) for callers without an owning window.
  */
-export async function viewerOpen(path: string, windowLabel = ''): Promise<ViewerOpenResult> {
-  const res = await commands.viewerOpen(path, windowLabel)
+export async function viewerOpen(path: string, volumeId = 'root', windowLabel = ''): Promise<ViewerOpenResult> {
+  const res = await commands.viewerOpen(path, volumeId, windowLabel)
   if (res.status === 'error') throwViewerOpenError(res.error)
   return res.data
 }
@@ -137,8 +141,8 @@ function throwViewerOpenError(error: ViewerError): never {
  * session and closes the old media one. Returns a `kind: 'text'` result with the
  * line fields populated, exactly like a text-detected `viewerOpen`.
  */
-export async function viewerOpenAsText(path: string, windowLabel = ''): Promise<ViewerOpenResult> {
-  const res = await commands.viewerOpenAsText(path, windowLabel)
+export async function viewerOpenAsText(path: string, volumeId = 'root', windowLabel = ''): Promise<ViewerOpenResult> {
+  const res = await commands.viewerOpenAsText(path, volumeId, windowLabel)
   if (res.status === 'error') throwViewerOpenError(res.error)
   return res.data
 }

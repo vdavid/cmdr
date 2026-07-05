@@ -37,6 +37,17 @@ enum ArchiveEntryKind {
     File,
 }
 
+/// Parent-aware "does this create target land at or inside a `.zip`?" — the
+/// routing gate for `create_directory_managed` / `create_file_managed`. `None`
+/// volume means the local `"root"` drive. Uses `path_crosses` (not
+/// `path_is_inside`) because the parent can BE the `.zip` file itself (creating an
+/// entry at the archive root).
+async fn parent_crosses_archive_boundary(volume_id: Option<&str>, parent_path: &str) -> bool {
+    get_volume_manager()
+        .path_crosses_archive_boundary(volume_id.unwrap_or("root"), Path::new(parent_path))
+        .await
+}
+
 /// Creates a folder as a managed instant op and returns its new path. `parent_path`
 /// is already tilde-expanded by the command layer.
 ///
@@ -51,8 +62,10 @@ pub(crate) async fn create_directory_managed(
     // A parent that crosses into a `.zip` means the new folder lands INSIDE the
     // archive: route to the managed archive-edit driver (an O(archive) rewrite
     // with a real progress bar), not the instant path. Returns the operation id
-    // (the FE queue window shows it), not a filesystem path.
-    if archive::path_crosses_archive_boundary(Path::new(&parent_path)) {
+    // (the FE queue window shows it), not a filesystem path. Parent-aware detection
+    // (not the `std::fs`-only sync predicate) so creating inside a REMOTE zip
+    // (direct SMB / MTP) routes too.
+    if parent_crosses_archive_boundary(volume_id.as_deref(), &parent_path).await {
         return route_archive_create(&parent_path, &name, ArchiveEntryKind::Dir, volume_id).await;
     }
 
@@ -79,8 +92,9 @@ pub(crate) async fn create_file_managed(
     name: String,
 ) -> Result<String, String> {
     // See `create_directory_managed`: a `.zip`-crossing parent routes the new
-    // (empty) file into the archive via the managed edit driver.
-    if archive::path_crosses_archive_boundary(Path::new(&parent_path)) {
+    // (empty) file into the archive via the managed edit driver (parent-aware, so
+    // a REMOTE zip routes too).
+    if parent_crosses_archive_boundary(volume_id.as_deref(), &parent_path).await {
         return route_archive_create(&parent_path, &name, ArchiveEntryKind::File, volume_id).await;
     }
 
@@ -111,7 +125,10 @@ async fn route_archive_create(
     kind: ArchiveEntryKind,
     volume_id: Option<String>,
 ) -> Result<String, String> {
-    let (archive_path, inner_parent) = archive::confirm_archive_boundary(Path::new(parent_path))
+    // Confirmation happened at the routing site (parent-aware
+    // `path_crosses_archive_boundary`), so a pure string split suffices — and it
+    // works for a REMOTE zip, where the `std::fs` confirm would wrongly fail.
+    let (archive_path, inner_parent) = archive::archive_boundary_candidate(Path::new(parent_path))
         .ok_or_else(|| "This archive can't be edited right now.".to_string())?;
     let inner_path = archive_edit::join_inner_path(&inner_parent, name);
 

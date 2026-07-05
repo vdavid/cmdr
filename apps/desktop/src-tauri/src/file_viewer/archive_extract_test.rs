@@ -72,7 +72,7 @@ fn non_archive_path_returns_none() {
     std::fs::write(&plain, b"hi").expect("seed");
     let extract = tempfile::tempdir().expect("extract dir");
 
-    let got = extract_if_archive_inner_with(&plain, extract.path(), EXTRACT_CAP_BYTES).expect("resolve");
+    let got = extract_if_archive_inner_with(&plain, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve");
     assert!(got.is_none(), "a non-archive path must not extract");
 }
 
@@ -87,13 +87,14 @@ fn the_zip_file_itself_returns_none_so_it_views_as_raw_bytes() {
     // The `.zip` FILE itself is NOT temp-extracted — it views as raw bytes like any
     // binary file. (Extracting inner "" would address the archive ROOT, a directory,
     // and error — so pre-fix this would panic here.)
-    let got = extract_if_archive_inner_with(&zip, extract.path(), EXTRACT_CAP_BYTES).expect("resolve the .zip file");
+    let got =
+        extract_if_archive_inner_with(&zip, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve the .zip file");
     assert!(got.is_none(), "the .zip file itself must not extract (raw-bytes view)");
 
     // A path INSIDE the archive DOES extract to a temp.
     let inner = zip.join("inner.txt");
     let extracted =
-        extract_if_archive_inner_with(&inner, extract.path(), EXTRACT_CAP_BYTES).expect("resolve inner entry");
+        extract_if_archive_inner_with(&inner, "root", extract.path(), EXTRACT_CAP_BYTES).expect("resolve inner entry");
     assert!(extracted.is_some(), "an inner path extracts to a temp");
 }
 
@@ -112,7 +113,7 @@ fn refuses_oversize_entry_before_extracting() {
     build_zip(&zip, &[("data.bin", &vec![0u8; entry_len])]);
 
     let inner = zip.join("data.bin");
-    let err = extract_if_archive_inner_with(&inner, extract.path(), 10).expect_err("oversize must be refused");
+    let err = extract_if_archive_inner_with(&inner, "root", extract.path(), 10).expect_err("oversize must be refused");
     assert!(
         matches!(err, ViewerError::ExtractTooLarge { size, cap: 10 } if size == entry_len as u64),
         "expected ExtractTooLarge with the full declared size (refused before extraction), got {err:?}"
@@ -138,7 +139,7 @@ fn directory_entry_in_zip_is_rejected() {
     build_zip(&zip, &[("sub/", b""), ("sub/f.txt", b"x")]);
 
     let inner = zip.join("sub");
-    let err = extract_if_archive_inner_with(&inner, extract.path(), EXTRACT_CAP_BYTES)
+    let err = extract_if_archive_inner_with(&inner, "root", extract.path(), EXTRACT_CAP_BYTES)
         .expect_err("a directory entry can't be previewed");
     assert!(
         matches!(err, ViewerError::IsDirectory),
@@ -159,7 +160,7 @@ fn text_file_in_zip_round_trips_and_temp_is_deleted_on_close() {
     build_zip(&zip, &[("notes.txt", content)]);
 
     let inner = zip.join("notes.txt");
-    let result = session::open_session(inner.to_str().expect("utf8 path")).expect("open preview");
+    let result = session::open_session(inner.to_str().expect("utf8 path"), "root").expect("open preview");
 
     // The viewer shows the entry's basename, not the uuid temp name.
     assert_eq!(result.file_name, "notes.txt");
@@ -209,7 +210,7 @@ fn image_in_zip_opens_as_media_and_temp_is_deleted_on_close() {
     build_zip(&zip, &[("logo.png", png)]);
 
     let inner = zip.join("logo.png");
-    let result = session::open_session(inner.to_str().expect("utf8 path")).expect("open image preview");
+    let result = session::open_session(inner.to_str().expect("utf8 path"), "root").expect("open image preview");
 
     // The extracted image renders inline (media session): a media token, right title.
     assert!(
