@@ -96,7 +96,8 @@ check, not the maintainer's human "is this repo notable?" judgment. So a domain 
 
 Resubmit when the repo clears ~225 stars — or already at 75+ stars if a community member (not David) opens the PR, since
 the lower non-owner bar applies to the PR author. The cask file needs no changes for that: its shape already passes
-`brew audit` and `brew style`. The submission PR is opened by a human, never an agent (`no-external-actions`). Steps for the human:
+`brew audit` and `brew style`. The submission PR is opened by a human, never an agent (`no-external-actions`). Steps for
+the human:
 
 1. Fork `Homebrew/homebrew-cask`, add the cask as `Casks/c/cmdr.rb`, one commit named `cmdr <version> (new cask)` (their
    convention: `token version (new cask)`).

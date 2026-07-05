@@ -1,8 +1,8 @@
 # Listmonk (Cmdr-specific)
 
 Self-hosted newsletter and mailing-list manager. The Cmdr beta-tester contact channel runs on it. Generic access (the
-`agent` API user, the `LISTMONK_API_KEY` in the sops secrets store, full cURL recipes) lives in the obsidian listmonk doc; this
-note documents only the Cmdr beta-list wiring.
+`agent` API user, the `LISTMONK_API_KEY` in the sops secrets store, full cURL recipes) lives in the obsidian listmonk
+doc; this note documents only the Cmdr beta-list wiring.
 
 - **Instance**: https://mail.getcmdr.com/
 - **Beta-tester list**: a dedicated **double-opt-in** list "Cmdr beta testers", separate from the public "Cmdr

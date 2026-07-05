@@ -31,7 +31,8 @@ The report includes:
 
 ### Fetching the report
 
-The dashboard is behind Cloudflare Access. Authenticate with the service token stored in the sops secrets store (fetch with `secret NAME`):
+The dashboard is behind Cloudflare Access. Authenticate with the service token stored in the sops secrets store (fetch
+with `secret NAME`):
 
 ```bash
 CF_ID=$(secret CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22)

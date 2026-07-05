@@ -13,8 +13,7 @@ recipe it points to. Read-only: never write or delete here without explicit appr
 Both stores are reached with the Cloudflare API token already on this machine:
 
 - `wrangler` reads it from the `CLOUDFLARE_API_TOKEN` env var (already set; `npx wrangler whoami` confirms the account).
-- For raw REST calls, load it from the sops secrets store:
-  `TOKEN=$(secret CLOUDFLARE_API_TOKEN)`.
+- For raw REST calls, load it from the sops secrets store: `TOKEN=$(secret CLOUDFLARE_API_TOKEN)`.
 
 Cloudflare account id: `6a4433bf11c3cf86feda057f76f47991` (also printed by `wrangler whoami`; not a secret).
 
