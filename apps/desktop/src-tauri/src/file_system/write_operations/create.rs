@@ -115,6 +115,14 @@ async fn route_archive_create(
         .ok_or_else(|| "This archive can't be edited right now.".to_string())?;
     let inner_path = archive_edit::join_inner_path(&inner_parent, name);
 
+    // Reject a duplicate up front with the same friendly message the real-FS
+    // mkdir/mkfile paths use, so the FE shows the standard "already exists" copy
+    // instead of the raw `zip` "Duplicate filename" the mutator would hit at
+    // write time — and no temp is built for a doomed edit.
+    if archive_edit::archive_inner_exists(archive_path.clone(), inner_path.clone()).await {
+        return Err(format!("'{name}' already exists"));
+    }
+
     let changeset = match kind {
         ArchiveEntryKind::Dir => Changeset {
             mkdirs: vec![inner_path],
@@ -140,6 +148,7 @@ async fn route_archive_create(
             destination: None,
         },
         move_sources_to_delete: Vec::new(),
+        skipped_count: 0,
     };
     let started = archive_edit::archive_edit_start(events, request, 200)
         .await
@@ -185,13 +194,15 @@ pub(crate) async fn create_directory_core(
         return Err("Folder name contains invalid characters".to_string());
     }
 
-    // Creating inside an archive is a mutation, read-only until zip mutation lands
-    // (this seam becomes archive-edit routing then). Uses `path_crosses` (NOT
-    // `path_is_inside`) on purpose: a `.zip` file AS the parent means the new child
-    // would land INSIDE the archive (at its root), so a `.zip`-file parent must be
-    // refused too.
+    // Defensive fallback: the managed wrapper (`create_directory_managed`) routes
+    // an archive-crossing parent to `route_archive_create` BEFORE reaching core,
+    // so in production this branch never fires. It stays as a guard for a direct
+    // `*_core` caller (tests): core's plain-FS create can't reach inside a `.zip`,
+    // so it refuses rather than attempting a bogus filesystem write. Uses
+    // `path_crosses` (NOT `path_is_inside`) so a `.zip` file AS the parent (a child
+    // at the archive root) is caught too.
     if archive::path_crosses_archive_boundary(Path::new(parent_path)) {
-        return Err("Adding items inside an archive isn't available yet".to_string());
+        return Err("Creating inside an archive goes through the archive-edit path, not here".to_string());
     }
 
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());
@@ -238,13 +249,13 @@ pub(crate) async fn create_file_core(
         return Err("File name contains invalid characters".to_string());
     }
 
-    // Creating inside an archive is a mutation, read-only until zip mutation lands
-    // (this seam becomes archive-edit routing then). Uses `path_crosses` (NOT
-    // `path_is_inside`) on purpose: a `.zip` file AS the parent means the new child
-    // would land INSIDE the archive (at its root), so a `.zip`-file parent must be
-    // refused too.
+    // Defensive fallback, same as `create_directory_core`: the managed wrapper
+    // (`create_file_managed`) routes an archive-crossing parent to
+    // `route_archive_create` before reaching core, so this branch is unreachable
+    // in production. It guards a direct `*_core` caller (tests) from a bogus
+    // plain-FS write into a `.zip`. `path_crosses` also catches a `.zip`-file parent.
     if archive::path_crosses_archive_boundary(Path::new(parent_path)) {
-        return Err("Adding items inside an archive isn't available yet".to_string());
+        return Err("Creating inside an archive goes through the archive-edit path, not here".to_string());
     }
 
     let volume_id = volume_id.unwrap_or_else(|| "root".to_string());

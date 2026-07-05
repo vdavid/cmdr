@@ -257,6 +257,18 @@ the mutation mechanism (`ArchiveMutator`, temp+rename safe-overwrite) lives in t
   transfer (`route_archive_copy_into` walks local sources with `walkdir`). A move INTO deletes the top-level local
   sources after the commit, and only when nothing was skipped (the move invariant — never delete a source whose bytes
   didn't land).
+- **Duplicate pre-check for create / rename** (`archive_inner_exists`, parsed off-executor). `route_archive_create` and
+  `route_archive_rename` reject a name that already exists inside the zip UP FRONT with the same friendly "already
+  exists" message the real-FS mkdir/rename paths use, so the FE shows the standard copy — the mutator otherwise only
+  rejects a duplicate at write time (`zip`'s `Duplicate filename`), after building a temp. A parse failure resolves to
+  "not a duplicate" so the managed op still surfaces the real fault. Copy/move-INTO conflicts are handled by the policy
+  layer below, not this pre-check.
+- **Unrepresentable source entries are skipped, never lost (data safety).** A zip changeset can only carry real files
+  and directories. When `route_archive_copy_into` walks the sources, any entry that's a symlink or special file
+  (fifo/socket/device — including a broken symlink, since `symlink_metadata` classifies it as neither file nor dir) is
+  counted as skipped rather than added. On a MOVE, any skip suppresses the source deletion (all-or-nothing — the whole
+  transfer degrades to a copy, so a symlink is never removed from the source while absent from the archive). The skip
+  count rides in `ArchiveEditRequest.skipped_count` and surfaces as `files_skipped` on the terminal event.
 - **Move OUT of a zip is a compound op** (`route_archive_move_out`), NOT a per-file `Volume::delete` (the `ArchiveVolume`
   is read-only). One managed Move op runs two phases on ONE lifecycle: (1) extract the selected entries to the
   destination through the ordinary cross-volume copy engine (`copy_volumes_with_progress`, wrapped in a
@@ -276,7 +288,10 @@ the mutation mechanism (`ArchiveMutator`, temp+rename safe-overwrite) lives in t
   is registered and `resolve_write_conflict(op_id)` can reach the oneshot), and each FILE collision emits a
   `write-conflict` and blocks on the answer, reusing the pure `ApplyToAll` latch + the oneshot plumbing (store the sender
   BEFORE the emit). Dir-vs-dir collisions merge silently — only files prompt (the app-wide rule). A cancel during a
-  pending prompt drops the sender → the planner bails → the archive is untouched. Pinned by the `interactive_*` tests.
+  pending prompt drops the sender → the planner bails → the archive is untouched. Every Skip (a conflict resolved to
+  Skip, a conditional policy that declines to overwrite, or an unrepresentable entry) increments the plan's
+  `skipped_count`, which gates the move-source deletion and surfaces as `files_skipped` on the terminal event. Pinned by
+  the `interactive_*` tests.
 - **Mutation-test coverage (`cargo mutants` on `archive_edit.rs`).** Every conflict-resolution and routing/data-path
   mutant is killed (Rename numbering incl. dotfiles, OverwriteSmaller/Older strict `<` incl. the equal-size/mtime
   boundary, move-source deletion gating, all-or-nothing move-out, dir-merge mkdir guard, settle payloads). The only

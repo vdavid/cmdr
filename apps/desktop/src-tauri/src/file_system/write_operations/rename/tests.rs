@@ -241,3 +241,45 @@ async fn rename_managed_routes_an_in_archive_rename_to_the_edit_driver() {
     );
     let _ = fs::remove_dir_all(&tmp);
 }
+
+/// Builds a real, parseable zip with the given entries.
+fn write_real_zip(path: &Path, entries: &[(&str, &[u8])]) {
+    use std::io::Write;
+    use zip::ZipWriter;
+    use zip::write::SimpleFileOptions;
+    let file = fs::File::create(path).expect("create zip");
+    let mut writer = ZipWriter::new(file);
+    for (name, content) in entries {
+        writer.start_file(*name, SimpleFileOptions::default()).expect("start");
+        writer.write_all(content).expect("write");
+    }
+    writer.finish().expect("finish");
+}
+
+#[tokio::test]
+async fn route_archive_rename_onto_an_existing_name_errors_without_building_a_temp() {
+    // Renaming an in-archive entry onto a name that already exists must be
+    // rejected up front with the standard "already exists" message, so the FE
+    // shows the friendly copy instead of the raw `zip` "Duplicate filename" — and
+    // no temp is built.
+    let tmp = create_test_dir("archive_rename_dup");
+    let zip = tmp.join("bundle.zip");
+    write_real_zip(&zip, &[("old.txt", b"o"), ("taken.txt", b"t")]);
+
+    let from = zip.join("old.txt");
+    let to = zip.join("taken.txt");
+    let err = route_archive_rename(&from, &to, "root")
+        .await
+        .expect_err("renaming onto an existing name must be refused");
+    // allowed-error-string-match: the fn returns a String; the "already exists"
+    // wording is what the FE keys its friendly message on.
+    assert!(err.contains("already exists"), "got: {err}");
+
+    let temps: Vec<_> = fs::read_dir(&tmp)
+        .expect("read dir")
+        .flatten()
+        .filter(|e| e.file_name().to_string_lossy().contains(".cmdr-tmp-"))
+        .collect();
+    assert!(temps.is_empty(), "a pre-checked duplicate rename must not build a temp, found {temps:?}");
+    let _ = fs::remove_dir_all(&tmp);
+}

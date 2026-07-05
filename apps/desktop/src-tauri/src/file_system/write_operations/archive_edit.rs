@@ -64,6 +64,12 @@ pub(crate) struct ArchiveEditRequest {
     /// once the destination (the rewritten archive) is durably in place, so a
     /// crash never loses both copies. Empty for copy-into and in-archive edits.
     pub move_sources_to_delete: Vec<PathBuf>,
+    /// How many source entries the changeset couldn't represent and skipped (a
+    /// conflict resolved to Skip, or a symlink / special file a zip can't hold).
+    /// Reported as `files_skipped` on the terminal event so the user isn't
+    /// silently surprised, and (for a move) any skip suppresses the source
+    /// deletion. Zero for delete / mkdir / mkfile / rename edits.
+    pub skipped_count: usize,
 }
 
 /// Builds a Tauri-backed event sink from the startup-wired app handle, for
@@ -134,6 +140,7 @@ pub(crate) async fn route_archive_delete(
             destination: None,
         },
         move_sources_to_delete: Vec::new(),
+        skipped_count: 0,
     };
     archive_edit_start(events, request, progress_interval_ms).await
 }
@@ -145,6 +152,29 @@ fn read_only_error(path: &Path) -> WriteOperationError {
         path: path.display().to_string(),
         device_name: None,
     }
+}
+
+/// Whether `inner_path` already exists in the archive at `archive_path`, parsing
+/// the central directory on the blocking pool. The create/rename routing calls
+/// this to reject a duplicate up front with the app's typed already-exists error,
+/// so the mutator never builds a temp for an edit `zip` would only reject at
+/// write time (`Duplicate filename`).
+///
+/// A parse failure (unreadable or corrupt archive) resolves to `false`: it isn't
+/// a known duplicate, so routing proceeds and the managed op surfaces the real
+/// fault through its normal error path rather than being masked here.
+pub(crate) async fn archive_inner_exists(archive_path: PathBuf, inner_path: String) -> bool {
+    tokio::task::spawn_blocking(move || {
+        let Ok(source) = LocalFileSource::open(&archive_path) else {
+            return false;
+        };
+        let Ok(index) = ArchiveIndex::parse(&source) else {
+            return false;
+        };
+        index.exists(&inner_path)
+    })
+    .await
+    .unwrap_or(false)
 }
 
 /// Routes a copy/move INTO a zip (a local-FS source dropped onto an archive
@@ -216,7 +246,7 @@ pub(crate) async fn route_archive_copy_into(
         message: format!("the archive copy couldn't be planned: {e}"),
     })??;
 
-    let move_sources_to_delete = if is_move && !plan.any_skipped {
+    let move_sources_to_delete = if is_move && plan.skipped_count == 0 {
         absolute_sources
     } else {
         Vec::new()
@@ -236,15 +266,18 @@ pub(crate) async fn route_archive_copy_into(
             destination: None,
         },
         move_sources_to_delete,
+        skipped_count: plan.skipped_count,
     };
     archive_edit_start(events, request, progress_interval_ms).await
 }
 
-/// The planned changeset for a copy/move-into, plus whether any file was skipped
-/// (which suppresses the source deletion on a move).
+/// The planned changeset for a copy/move-into, plus how many source entries were
+/// skipped (a conflict resolved to Skip, or a symlink / special file a zip can't
+/// hold). A non-zero count suppresses the source deletion on a move and surfaces
+/// as `files_skipped` on the terminal event.
 struct CopyIntoPlan {
     changeset: Changeset,
-    any_skipped: bool,
+    skipped_count: usize,
 }
 
 /// How a copy/move-into resolves collisions with existing archive entries.
@@ -340,7 +373,7 @@ fn build_copy_into_changeset_inner(
     let mut deletes: Vec<String> = Vec::new();
     // Inner paths this changeset already claims (dedup + Rename uniqueness).
     let mut planned: HashSet<String> = HashSet::new();
-    let mut any_skipped = false;
+    let mut skipped_count: usize = 0;
 
     for src in absolute_sources {
         let Some(name) = src.file_name().and_then(|n| n.to_str()) else {
@@ -377,11 +410,17 @@ fn build_copy_into_changeset_inner(
                         &mut adds,
                         &mut deletes,
                         &mut planned,
-                        &mut any_skipped,
+                        &mut skipped_count,
                     )?;
+                } else {
+                    // A symlink or special file (fifo/socket/device) inside the
+                    // tree: a zip can't represent it, so it can't be added. Count
+                    // it as skipped — that suppresses the source deletion on a
+                    // MOVE (data safety: the whole subtree stays put rather than
+                    // being deleted with the symlink unarchived) and surfaces the
+                    // skip to the user.
+                    skipped_count += 1;
                 }
-                // Symlinks and special files inside the tree are skipped (never
-                // materialize a symlink from source into the archive).
             }
         } else if meta.is_file() {
             plan_file_add(
@@ -393,8 +432,13 @@ fn build_copy_into_changeset_inner(
                 &mut adds,
                 &mut deletes,
                 &mut planned,
-                &mut any_skipped,
+                &mut skipped_count,
             )?;
+        } else {
+            // A top-level symlink or special file, same reasoning as above: it
+            // can't be archived, so it's skipped (never silently deleted on a
+            // move by falling through with an empty changeset).
+            skipped_count += 1;
         }
     }
 
@@ -405,7 +449,7 @@ fn build_copy_into_changeset_inner(
             deletes,
             renames: Vec::new(),
         },
-        any_skipped,
+        skipped_count,
     })
 }
 
@@ -425,7 +469,7 @@ fn plan_file_add(
     adds: &mut Vec<AddEntry>,
     deletes: &mut Vec<String>,
     planned: &mut HashSet<String>,
-    any_skipped: &mut bool,
+    skipped_count: &mut usize,
 ) -> Result<(), PlanError> {
     let in_index = index.exists(&inner);
     let collides = in_index || planned.contains(&inner);
@@ -438,7 +482,7 @@ fn plan_file_add(
         let resolution = resolve_effective(mode, &inner, src_path, archive_path, index, is_file_to_folder)?;
         match resolution {
             ConflictResolution::Skip => {
-                *any_skipped = true;
+                *skipped_count += 1;
                 return Ok(());
             }
             ConflictResolution::Stop => {
@@ -458,7 +502,7 @@ fn plan_file_add(
                     deletes.push(inner.clone());
                     inner
                 } else {
-                    *any_skipped = true;
+                    *skipped_count += 1;
                     return Ok(());
                 }
             }
@@ -708,7 +752,7 @@ async fn archive_copy_into_interactive_start(
             let state_for_blocking = Arc::clone(&state);
             let op_id_for_blocking = op_id.clone();
             let archive_for_blocking = archive_path.clone();
-            let result = tokio::task::spawn_blocking(move || -> Result<Vec<PathBuf>, PlanError> {
+            let result = tokio::task::spawn_blocking(move || -> Result<(Vec<PathBuf>, usize), PlanError> {
                 let plan = build_copy_into_changeset_interactive(
                     &archive_for_blocking,
                     &absolute_sources,
@@ -717,7 +761,7 @@ async fn archive_copy_into_interactive_start(
                     &op_id_for_blocking,
                     &state_for_blocking,
                 )?;
-                let move_sources = if is_move && !plan.any_skipped {
+                let move_sources = if is_move && plan.skipped_count == 0 {
                     absolute_sources.clone()
                 } else {
                     Vec::new()
@@ -726,13 +770,13 @@ async fn archive_copy_into_interactive_start(
                     MutationError::Cancelled => PlanError::Cancelled,
                     other => PlanError::Op(to_write_error(&archive_for_blocking, other)),
                 })?;
-                Ok(move_sources)
+                Ok((move_sources, plan.skipped_count))
             })
             .await;
 
             let final_progress = *hooks.latest.lock_ignore_poison();
             match result {
-                Ok(Ok(move_sources)) => {
+                Ok(Ok((move_sources, skipped_count))) => {
                     // Move invariant: delete the local sources only now that the
                     // archive rewrite is durably committed.
                     delete_move_sources(&move_sources).await;
@@ -740,7 +784,7 @@ async fn archive_copy_into_interactive_start(
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::ArchiveEdit,
                         files_processed: final_progress.entries_changed,
-                        files_skipped: 0,
+                        files_skipped: skipped_count,
                         bytes_processed: final_progress.bytes_total,
                     });
                 }
@@ -1110,6 +1154,7 @@ pub(crate) async fn archive_edit_start(
         parent_volume_id,
         changeset,
         move_sources_to_delete,
+        skipped_count,
         ..
     } = request;
 
@@ -1159,7 +1204,7 @@ pub(crate) async fn archive_edit_start(
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::ArchiveEdit,
                         files_processed: final_progress.entries_changed,
-                        files_skipped: 0,
+                        files_skipped: skipped_count,
                         bytes_processed: final_progress.bytes_total,
                     });
                 }

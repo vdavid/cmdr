@@ -347,12 +347,23 @@ event sink, pause gate, and cancel intent via the `MutationHooks` seam. Full dri
   shape where cancel is genuinely free (abandon the temp, no rollback ledger). The original is byte-for-byte untouched
   until the final rename; a cancel or crash at any earlier point leaves it fully readable.
 - **Retained entries copy verbatim** via `raw_copy_file_rename` (no decompress/recompress); only added files
-  stream-compress (chunked, never whole-buffered — the add chunk is also the pause/cancel granularity mid-file).
-- **Metadata preservation.** A rewrite yields a fresh inode, so the original's mode, timestamps, and xattrs are carried
-  onto the temp before the swap: macOS `copyfile` with `COPYFILE_STAT | COPYFILE_ACL | COPYFILE_XATTR` (Finder tags,
-  quarantine, creation date, and `com.apple.FinderInfo` copied VERBATIM — a faithful copy that keeps the custom-icon
-  flag, so the `tags.rs` FinderInfo gotcha doesn't apply here); mode+mtime+xattr elsewhere. Best-effort: metadata loss
-  never fails a data-safe edit.
+  stream-compress (chunked, never whole-buffered — the add chunk is also the pause/cancel granularity mid-file). An
+  added file carries its SOURCE's modification time into the entry (`add_entry_options`), not the write time — zip stores
+  it as MS-DOS date/time (2-second granularity, 1980–2107 range; an mtime outside that range keeps the default). The
+  decompose is done in UTC because `rc-zip` reads the DOS fields back as UTC, so the mtime round-trips through the index
+  parse.
+- **Metadata preservation (the archive FILE, not the entries).** A rewrite yields a fresh inode, so the original `.zip`'s
+  mode, timestamps, and xattrs are carried onto the temp before the swap: macOS `copyfile` with
+  `COPYFILE_STAT | COPYFILE_ACL | COPYFILE_XATTR`. `COPYFILE_STAT` carries mode and all timestamps INCLUDING the
+  creation/birth date (`st_birthtime` lives in the inode, not an xattr); `COPYFILE_XATTR` carries Finder tags,
+  quarantine, and `com.apple.FinderInfo` VERBATIM — a faithful copy that keeps the custom-icon flag, so the `tags.rs`
+  FinderInfo gotcha doesn't apply here. mode+mtime+xattr elsewhere. Best-effort: metadata loss never fails a data-safe
+  edit.
+- **External replacement of the `.zip` between planning and the final rename is last-writer-wins.** The changeset is
+  planned against the archive as parsed at plan time; if an outside process rewrites the same `.zip` before the mutator's
+  atomic rename, that outside write is simply overwritten by our temp (and vice-versa — a rename that lands after ours
+  wins). This is acceptable for the single-user local model Cmdr targets; there's no cross-process lock. It's stated here
+  so a future multi-writer scenario revisits it deliberately rather than assuming a guard exists.
 - **Decision — refuse to retain an encrypted entry (data-safety, deviates from the plan).** `zip`'s raw copy
   reconstructs an entry's options from `ZipFile::options()`, which does NOT carry the traditional-PKWARE encryption GP
   flag. So a retained encrypted entry would keep its ciphertext bytes but lose the "encrypted" header bit — semantically

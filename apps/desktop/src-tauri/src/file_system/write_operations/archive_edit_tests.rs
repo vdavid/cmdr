@@ -69,6 +69,7 @@ async fn a_successful_edit_rewrites_the_archive_and_emits_complete_then_settled(
         },
         summary: OperationSummaryText::default(),
         move_sources_to_delete: vec![],
+        skipped_count: 0,
     };
 
     let start = archive_edit_start(Arc::clone(&events) as Arc<dyn OperationEventSink>, request, 0)
@@ -544,6 +545,7 @@ async fn a_missing_archive_emits_a_write_error_not_a_panic() {
         },
         summary: OperationSummaryText::default(),
         move_sources_to_delete: vec![],
+        skipped_count: 0,
     };
 
     archive_edit_start(Arc::clone(&events) as Arc<dyn OperationEventSink>, request, 0)
@@ -840,6 +842,166 @@ async fn copy_into_preserves_an_empty_source_directory() {
     assert!(
         zip.by_name("d/empty_sub/").is_ok(),
         "an empty source directory must be preserved as an explicit archive entry"
+    );
+}
+
+// ---- Data safety: unrepresentable source entries (symlinks, special files) --
+//
+// A zip changeset can only carry real files and directories. A symlink or a
+// special file (fifo/socket/device) the builder can't represent must NOT be
+// silently dropped on a MOVE: dropping it while still deleting the source loses
+// the user's data. The all-or-nothing move policy applies — any unrepresentable
+// entry marks the batch skipped, so the source is preserved (the move degrades
+// to a copy) and the skip is surfaced on the terminal event.
+
+#[cfg(unix)]
+#[tokio::test]
+async fn move_into_a_top_level_symlink_preserves_the_source_and_surfaces_the_skip() {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    use crate::file_system::write_operations::route_archive_copy_into;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let archive = tmp.path().join("a.zip");
+    write_multi_zip(&archive, &[("placeholder.txt", b"x")]);
+
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(&src_root).expect("mkdir src");
+    std::fs::write(src_root.join("target.txt"), b"real").expect("target");
+    std::os::unix::fs::symlink("target.txt", src_root.join("link")).expect("symlink");
+
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+    let events = Arc::new(CollectorEventSink::new());
+    route_archive_copy_into(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        source_volume,
+        vec![PathBuf::from("link")],
+        archive.clone(),
+        "root".to_string(),
+        ConflictResolution::Overwrite,
+        0,
+        true, // is_move
+    )
+    .await
+    .expect("start move-into");
+
+    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    // DATA SAFETY: the source symlink survives (it can't be archived, so the move
+    // deletes nothing), and it never entered the archive.
+    assert!(
+        std::fs::symlink_metadata(src_root.join("link")).is_ok(),
+        "a moved symlink the archive can't represent must be preserved at the source"
+    );
+    assert!(
+        read_entry(&archive, "link").is_none(),
+        "the symlink must not enter the archive"
+    );
+    let complete = events.complete.lock_ignore_poison();
+    assert!(
+        complete[0].files_skipped >= 1,
+        "the skipped symlink must be surfaced on the terminal event, got {}",
+        complete[0].files_skipped
+    );
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn move_into_a_dir_containing_a_symlink_preserves_the_whole_source_tree() {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    use crate::file_system::write_operations::route_archive_copy_into;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let archive = tmp.path().join("a.zip");
+    write_multi_zip(&archive, &[("placeholder.txt", b"x")]);
+
+    // A dir with a real file AND a symlink inside. WalkDir yields the symlink but
+    // the archive can't represent it — the whole move must degrade to a copy.
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(src_root.join("d")).expect("mkdir src");
+    std::fs::write(src_root.join("d/real.txt"), b"real").expect("real");
+    std::os::unix::fs::symlink("real.txt", src_root.join("d/link")).expect("symlink");
+
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+    let events = Arc::new(CollectorEventSink::new());
+    route_archive_copy_into(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        source_volume,
+        vec![PathBuf::from("d")],
+        archive.clone(),
+        "root".to_string(),
+        ConflictResolution::Overwrite,
+        0,
+        true, // is_move
+    )
+    .await
+    .expect("start move-into");
+
+    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    // DATA SAFETY: the source tree survives (a contained symlink can't be archived,
+    // so the batch is all-or-nothing skipped and the source dir is NOT removed).
+    assert!(
+        std::fs::symlink_metadata(src_root.join("d/link")).is_ok(),
+        "a symlink inside a moved dir must be preserved (the source dir is not deleted)"
+    );
+    assert!(
+        src_root.join("d/real.txt").exists(),
+        "the source dir survives intact when the move degrades to a copy"
+    );
+    // The real file still landed in the archive (copy semantics for what CAN be
+    // represented); only the source deletion is suppressed.
+    assert_eq!(
+        read_entry(&archive, "d/real.txt").as_deref(),
+        Some(b"real".as_slice()),
+        "the representable file is still copied into the archive"
+    );
+    let complete = events.complete.lock_ignore_poison();
+    assert!(
+        complete[0].files_skipped >= 1,
+        "the skipped symlink must be surfaced, got {}",
+        complete[0].files_skipped
+    );
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn move_into_a_broken_symlink_preserves_the_source() {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    use crate::file_system::write_operations::route_archive_copy_into;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let archive = tmp.path().join("a.zip");
+    write_multi_zip(&archive, &[("placeholder.txt", b"x")]);
+
+    // A dangling symlink (its target doesn't exist): `symlink_metadata` still
+    // succeeds (it's an lstat), so it classifies as neither file nor dir.
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(&src_root).expect("mkdir src");
+    std::os::unix::fs::symlink("/nonexistent/target-xyz", src_root.join("broken")).expect("symlink");
+
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+    let events = Arc::new(CollectorEventSink::new());
+    route_archive_copy_into(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        source_volume,
+        vec![PathBuf::from("broken")],
+        archive.clone(),
+        "root".to_string(),
+        ConflictResolution::Overwrite,
+        0,
+        true, // is_move
+    )
+    .await
+    .expect("start move-into");
+
+    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    assert!(
+        std::fs::symlink_metadata(src_root.join("broken")).is_ok(),
+        "a broken symlink must be preserved at the source, never silently deleted"
+    );
+    let complete = events.complete.lock_ignore_poison();
+    assert!(
+        complete[0].files_skipped >= 1,
+        "the skipped broken symlink must be surfaced, got {}",
+        complete[0].files_skipped
     );
 }
 

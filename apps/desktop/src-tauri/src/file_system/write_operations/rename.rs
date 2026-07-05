@@ -138,6 +138,15 @@ async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result
         return Err("This archive can't be edited right now.".to_string());
     }
 
+    // Reject renaming onto an existing inner name up front with the same friendly
+    // message the real-FS rename uses, so the FE shows the standard "already
+    // exists" copy instead of the raw `zip` "Duplicate filename" the mutator would
+    // hit at write time — and no temp is built. (A no-op rename to the same name
+    // is left to proceed; the mutator handles it harmlessly.)
+    if to_inner != from_inner && archive_edit::archive_inner_exists(from_archive.clone(), to_inner.clone()).await {
+        return Err(format!("'{}' already exists", leaf(&to_inner)));
+    }
+
     let events =
         archive_edit::global_tauri_sink().ok_or_else(|| "The app isn't ready to edit archives yet.".to_string())?;
     let summary = OperationSummaryText {
@@ -153,6 +162,7 @@ async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result
         },
         summary,
         move_sources_to_delete: Vec::new(),
+        skipped_count: 0,
     };
     archive_edit::archive_edit_start(events, request, 200)
         .await

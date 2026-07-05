@@ -704,3 +704,44 @@ fn a_local_path_add_streams_its_bytes_and_counts_them() {
         "at least the added bytes counted"
     );
 }
+
+#[test]
+fn a_local_path_add_carries_the_source_files_mtime() {
+    use crate::file_system::volume::backends::archive::{ArchiveIndex, LocalFileSource};
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let path = write_zip(tmp.path(), "a", &build_zip(&[stored("keep.txt", b"keep".to_vec())]));
+
+    // A source file stamped with a known UTC mtime. MS-DOS time has 2-second
+    // granularity; this value is already an even second, so the round-trip is exact.
+    let src = tmp.path().join("src.txt");
+    std::fs::write(&src, b"payload").expect("write source");
+    let mtime_secs: i64 = 1_600_000_000; // 2020-09-13T12:26:40Z
+    filetime::set_file_mtime(&src, filetime::FileTime::from_unix_time(mtime_secs, 0)).expect("set mtime");
+
+    apply(
+        &path,
+        &Changeset {
+            adds: vec![AddEntry {
+                inner_path: "added.txt".to_string(),
+                source: AddSource::LocalPath(src),
+            }],
+            ..Default::default()
+        },
+        &NoHooks,
+    )
+    .expect("apply local-path add");
+
+    // Re-parse via the app's index: the added entry reports the SOURCE mtime
+    // (within DOS granularity), not the archive's write time.
+    let source = LocalFileSource::open(&path).expect("open archive");
+    let index = ArchiveIndex::parse(&source).expect("parse index");
+    let reported = index
+        .get("added.txt")
+        .and_then(|n| n.modified)
+        .expect("added entry has a modification time");
+    assert!(
+        (reported - mtime_secs).abs() <= 2,
+        "the added entry's mtime {reported} must match the source's {mtime_secs} within DOS-time granularity"
+    );
+}

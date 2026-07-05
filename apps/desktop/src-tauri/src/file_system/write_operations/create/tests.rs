@@ -381,3 +381,53 @@ async fn create_file_core_rejects_a_target_inside_an_archive() {
     assert!(err.contains("archive"), "expected the archive refusal, got: {err}");
     cleanup_test_dir(&dir);
 }
+
+/// Builds a real, parseable zip with the given entries.
+fn write_real_zip(path: &Path, entries: &[(&str, &[u8])]) {
+    use std::io::Write;
+    use zip::ZipWriter;
+    use zip::write::SimpleFileOptions;
+    let file = fs::File::create(path).expect("create zip");
+    let mut writer = ZipWriter::new(file);
+    for (name, content) in entries {
+        writer.start_file(*name, SimpleFileOptions::default()).expect("start");
+        writer.write_all(content).expect("write");
+    }
+    writer.finish().expect("finish");
+}
+
+#[tokio::test]
+async fn route_archive_create_on_an_existing_inner_name_errors_without_building_a_temp() {
+    // A duplicate mkdir/mkfile inside a zip must be rejected UP FRONT with the
+    // standard "already exists" message (matching the real-FS paths), so the FE
+    // shows the friendly copy instead of the raw `zip` "Duplicate filename" — and
+    // no temp is built for the doomed edit.
+    let dir = create_test_dir("archive-dup-create");
+    let zip = dir.join("bundle.zip");
+    write_real_zip(&zip, &[("existing.txt", b"x"), ("sub/existing.txt", b"y")]);
+
+    // mkfile onto an existing name at the archive root.
+    let root_parent = zip.to_string_lossy().to_string();
+    let err_file = route_archive_create(&root_parent, "existing.txt", ArchiveEntryKind::File, None)
+        .await
+        .expect_err("mkfile onto an existing inner name must be refused");
+    // allowed-error-string-match: the fn returns a String; the app-wide "already
+    // exists" wording is what the FE keys its friendly message on.
+    assert!(err_file.contains("already exists"), "got: {err_file}");
+
+    // mkdir onto an existing name inside a subdirectory.
+    let sub_parent = zip.join("sub").to_string_lossy().to_string();
+    let err_dir = route_archive_create(&sub_parent, "existing.txt", ArchiveEntryKind::Dir, None)
+        .await
+        .expect_err("mkdir onto an existing inner name must be refused");
+    assert!(err_dir.contains("already exists"), "got: {err_dir}");
+
+    // Neither doomed edit built a temp.
+    let temps: Vec<_> = fs::read_dir(&dir)
+        .expect("read dir")
+        .flatten()
+        .filter(|e| e.file_name().to_string_lossy().contains(".cmdr-tmp-"))
+        .collect();
+    assert!(temps.is_empty(), "a pre-checked duplicate must not build a temp, found {temps:?}");
+    cleanup_test_dir(&dir);
+}

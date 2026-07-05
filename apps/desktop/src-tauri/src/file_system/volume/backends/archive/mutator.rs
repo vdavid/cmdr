@@ -17,8 +17,10 @@
 //! a fresh archive to a temp and renaming is the app's mandated safe-overwrite
 //! (AGENTS.md principle 4) and the only shape where cancel is genuinely free
 //! (abandon the temp, no rollback ledger). Retained entries copy verbatim via
-//! `raw_copy_file_rename` (no decompress/recompress — byte-for-byte, including
-//! encrypted entries); only newly added files are compressed.
+//! `raw_copy_file_rename` (no decompress/recompress — byte-for-byte); only newly
+//! added files are compressed. An edit that would RETAIN an encrypted entry is
+//! refused instead: `zip`'s raw copy drops the traditional-PKWARE encryption flag,
+//! which would silently corrupt the entry (see `MutationError::EncryptedEntryRetained`).
 
 use std::fs::File;
 use std::io::{self, Read, Write};
@@ -270,10 +272,7 @@ pub fn apply(archive_path: &Path, changeset: &Changeset, hooks: &dyn MutationHoo
     for add in &changeset.adds {
         checkpoint(hooks)?;
         writer
-            .start_file(
-                add.inner_path.trim_matches('/'),
-                SimpleFileOptions::default().compression_method(CompressionMethod::Deflated),
-            )
+            .start_file(add.inner_path.trim_matches('/'), add_entry_options(add))
             .map_err(MutationError::Zip)?;
         stream_added_entry(&mut writer, add, hooks, &mut progress)?;
         progress.entries_done += 1;
@@ -367,6 +366,46 @@ fn stream_added_entry(
     Ok(())
 }
 
+/// The write options for an added entry: Deflated compression, plus the source
+/// file's modification time for a `LocalPath` add (a copy/move INTO the archive),
+/// so the archived copy carries the original's mtime rather than "now". Zip stores
+/// time in MS-DOS format (2-second granularity, 1980-2107 range); an mtime outside
+/// that range — or an in-memory `Bytes` add (mkfile / resident payload, which has
+/// no source file) — keeps the `zip` default (write time).
+fn add_entry_options(add: &AddEntry) -> SimpleFileOptions {
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+    let AddSource::LocalPath(path) = &add.source else {
+        return options;
+    };
+    match std::fs::metadata(path)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(system_time_to_zip_datetime)
+    {
+        Some(dt) => options.last_modified_time(dt),
+        None => options,
+    }
+}
+
+/// Converts a `SystemTime` to a `zip::DateTime` via a UTC calendar decompose,
+/// returning `None` outside the MS-DOS-representable 1980-2107 range. UTC (not
+/// local) is deliberate: `rc-zip` reads the stored DOS date/time fields back as
+/// UTC, so decomposing in UTC here keeps an added file's mtime stable across the
+/// write-then-reparse round-trip (within the 2-second DOS-time granularity).
+fn system_time_to_zip_datetime(time: std::time::SystemTime) -> Option<zip::DateTime> {
+    use chrono::{Datelike, Timelike};
+    let dt: chrono::DateTime<chrono::Utc> = time.into();
+    zip::DateTime::from_date_and_time(
+        dt.year().try_into().ok()?,
+        dt.month() as u8,
+        dt.day() as u8,
+        dt.hour() as u8,
+        dt.minute() as u8,
+        dt.second() as u8,
+    )
+    .ok()
+}
+
 /// The uncompressed byte length of an add source, for the progress total. A
 /// missing local source counts as 0 (the read later surfaces the real error).
 fn add_source_len(add: &AddEntry) -> u64 {
@@ -458,10 +497,11 @@ fn preserve_archive_metadata(from: &Path, to: &Path) {
     use std::os::unix::ffi::OsStrExt;
 
     // copyfile flags (from <copyfile.h>): metadata only, never the data — the
-    // temp already holds the rebuilt archive bytes. STAT (mode + times) | ACL |
-    // XATTR (Finder tags, quarantine, creation date, and `com.apple.FinderInfo`
-    // copied VERBATIM — a faithful copy that preserves the custom-icon flag,
-    // never zeroing it, so the `tags.rs` FinderInfo gotcha doesn't apply here).
+    // temp already holds the rebuilt archive bytes. STAT (mode + times, INCLUDING
+    // the creation/birth date, which lives in the inode's `st_birthtime`, not an
+    // xattr) | ACL | XATTR (Finder tags, quarantine, and `com.apple.FinderInfo`
+    // copied VERBATIM — a faithful copy that preserves the custom-icon flag, never
+    // zeroing it, so the `tags.rs` FinderInfo gotcha doesn't apply here).
     const COPYFILE_ACL: u32 = 1 << 0;
     const COPYFILE_STAT: u32 = 1 << 1;
     const COPYFILE_XATTR: u32 = 1 << 2;
