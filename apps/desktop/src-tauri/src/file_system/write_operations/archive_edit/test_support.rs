@@ -1,0 +1,117 @@
+//! Shared helpers and common re-exports for the archive-edit test modules. Each
+//! `*_tests.rs` file does `use super::*;` (the module's public routes) plus
+//! `use super::test_support::*;` (these helpers and the common types), so the test
+//! bodies read the same as when they lived in one file.
+
+use uuid::Uuid;
+
+// Common re-exports the test bodies reference by bare name (they also serve
+// test_support's own helpers below).
+pub(super) use std::io::{Read, Write};
+pub(super) use std::path::{Path, PathBuf};
+pub(super) use std::sync::Arc;
+pub(super) use std::time::Duration;
+
+pub(super) use super::super::OperationEventSink;
+pub(super) use super::super::manager::OperationSummaryText;
+pub(super) use super::super::types::{CollectorEventSink, ConflictResolution, WriteOperationError, WriteOperationType};
+pub(super) use crate::file_system::get_volume_manager;
+pub(super) use crate::file_system::volume::Volume;
+pub(super) use crate::file_system::volume::backends::archive::mutator::Changeset;
+pub(super) use crate::ignore_poison::IgnorePoison;
+pub(super) use zip::write::SimpleFileOptions;
+pub(super) use zip::{ZipArchive, ZipWriter};
+
+/// Builds a one-entry zip at `path`.
+pub(super) fn write_simple_zip(path: &Path, entry: &str, content: &[u8]) {
+    let file = std::fs::File::create(path).expect("create zip");
+    let mut writer = ZipWriter::new(file);
+    writer
+        .start_file(entry, SimpleFileOptions::default())
+        .expect("start entry");
+    writer.write_all(content).expect("write entry");
+    writer.finish().expect("finish zip");
+}
+
+/// Builds a multi-entry zip at `path`.
+pub(super) fn write_multi_zip(path: &Path, entries: &[(&str, &[u8])]) {
+    let file = std::fs::File::create(path).expect("create zip");
+    let mut writer = ZipWriter::new(file);
+    for (name, content) in entries {
+        writer.start_file(*name, SimpleFileOptions::default()).expect("start");
+        writer.write_all(content).expect("write");
+    }
+    writer.finish().expect("finish zip");
+}
+
+/// Reads one entry's decompressed bytes back, or `None` if absent.
+pub(super) fn read_entry(path: &Path, name: &str) -> Option<Vec<u8>> {
+    let file = std::fs::File::open(path).ok()?;
+    let mut archive = ZipArchive::new(file).ok()?;
+    let mut entry = archive.by_name(name).ok()?;
+    let mut buf = Vec::new();
+    entry.read_to_end(&mut buf).ok()?;
+    Some(buf)
+}
+
+/// Polls until `predicate` holds or a bounded timeout elapses, yielding to the
+/// runtime so the spawned op makes progress.
+pub(super) async fn wait_until(mut predicate: impl FnMut() -> bool) -> bool {
+    for _ in 0..3000 {
+        if predicate() {
+            return true;
+        }
+        tokio::time::sleep(Duration::from_millis(1)).await;
+    }
+    false
+}
+
+/// A real zip as in-memory bytes, for seeding a remote parent's store.
+pub(super) fn zip_bytes(entries: &[(&str, &[u8])]) -> Vec<u8> {
+    let mut cursor = std::io::Cursor::new(Vec::new());
+    {
+        let mut writer = ZipWriter::new(&mut cursor);
+        for (name, content) in entries {
+            writer.start_file(*name, SimpleFileOptions::default()).expect("start");
+            writer.write_all(content).expect("write");
+        }
+        writer.finish().expect("finish");
+    }
+    cursor.into_inner()
+}
+
+/// Registers a NON-local `InMemoryVolume` (the remote-parent stand-in) holding a
+/// zip at `archive_path`, under a unique volume id. Unregister with
+/// `get_volume_manager().unregister(&id)` when done.
+pub(super) async fn register_remote_zip(
+    archive_path: &Path,
+    entries: &[(&str, &[u8])],
+) -> (String, Arc<crate::file_system::volume::InMemoryVolume>) {
+    use crate::file_system::volume::InMemoryVolume;
+    let parent = InMemoryVolume::new("Remote");
+    if let Some(dir) = archive_path.parent() {
+        parent.create_directory(dir).await.expect("seed parent dir");
+    }
+    parent
+        .create_file(archive_path, &zip_bytes(entries))
+        .await
+        .expect("seed remote zip");
+    let parent = Arc::new(parent);
+    let id = format!("remote-test-{}", Uuid::new_v4());
+    get_volume_manager().register(&id, Arc::clone(&parent) as Arc<dyn Volume>);
+    (id, parent)
+}
+
+/// Streams the archive back out of a (remote) parent and returns one entry's bytes.
+pub(super) async fn read_remote_entry(parent: &dyn Volume, archive_path: &Path, name: &str) -> Option<Vec<u8>> {
+    let mut stream = parent.open_read_stream(archive_path).await.ok()?;
+    let mut bytes = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        bytes.extend_from_slice(&chunk.ok()?);
+    }
+    let mut archive = ZipArchive::new(std::io::Cursor::new(bytes)).ok()?;
+    let mut entry = archive.by_name(name).ok()?;
+    let mut buf = Vec::new();
+    entry.read_to_end(&mut buf).ok()?;
+    Some(buf)
+}

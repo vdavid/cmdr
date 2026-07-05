@@ -25,7 +25,7 @@ Pre-flight scans reuse cached listings when the source volume reports an active 
 - **`manager.rs`**: The operation manager — the single registry + lane-admission scheduler every write op flows through. `OperationManager`, `OperationDescriptor`, `DeferredStart`, `LifecycleStatus`, `OperationSnapshot`, `OperationsChanged` (the `operations-changed` event), `ManagedTaskGuard` (panic-safe lane + cache release), and the `list_operations` / `cancel_operation(s)` API. See [Operation manager](#operation-manager).
 - **`types.rs`**: Pure serializable DTOs: events, config, errors, results. `WriteOperationConfig`, `ConflictResolution`, `WriteOperationError`, `DryRunResult`, scan preview events, the config convenience impls (`Default`, `VolumeCopyConfig::from(&WriteOperationConfig)`). Holds the event STRUCT definitions; their builder impls and the sinks live in `event_sinks.rs`. Re-exports `OperationEventSink`, `CollectorEventSink` (from `event_sinks`) and `IoResultExt` (from `error_classification`) so existing `types::…` import paths keep resolving. `TauriEventSink` is re-exported at the `write_operations` module root (and up through `file_system`) for the IPC edge, not here — the pipeline layer only ever names the trait.
 - **`event_sinks.rs`**: The `OperationEventSink` trait (decouples event emission from `tauri::AppHandle`), `TauriEventSink` (production), `CollectorEventSink` (test-only), and the builder impls for `WriteProgressEvent` (`new`/`with_scan_meta`) and `WriteErrorEvent` (`new`). `TauriEventSink::emit_complete` calls `analytics::emit_completion_analytics`.
-- **`archive_edit.rs`**: The `ArchiveEditOperation` driver — runs a zip mutation (`ArchiveMutator`) as a managed op. See [Archive edits](#archive-edits).
+- **`archive_edit/`**: Runs a zip mutation (`ArchiveMutator`) as a managed op. Split by seam: `routing.rs` (shared detection/path primitives, the zip-only write guard, the duplicate oracle, the instant-op sink builder), `engine.rs` (the `run_managed_edit` LOCAL/REMOTE apply chokepoint, `PlanError`, `MutatorHooks`, error mapping, post-commit source deletion), `conflicts.rs` (copy-into collision resolution — policy + interactive prompt), `copy_into.rs` (route + changeset planning + driver for copy/move INTO a zip), `move_out.rs` (`route_archive_move_out` — the extract-then-batch-delete compound op), `driver.rs` (`ArchiveEditRequest`, `archive_edit_start`, and the in-archive delete route). Public routes are re-exported from `mod.rs` so `archive_edit::<symbol>` paths hold. See [Archive edits](#archive-edits).
 - **`analytics.rs`**: PII-free PostHog completion analytics (`emit_completion_analytics`, `item_count_bucket`), `pub(super)`, called only by `TauriEventSink`. Copy/Move → `file_transfer_completed`, Delete/Trash → `delete_used`; every prop is categorical (op, count bucket, a bool), no names or paths.
 - **`error_classification.rs`**: Maps raw `std::io::Error` to typed `WriteOperationError` variants from `errno`/`ErrorKind` only (never the message). `classify_io_error`, the `IoResultExt` extension trait (`with_path`), and `impl From<std::io::Error> for WriteOperationError`.
 - **`state.rs`**: The operation-lifecycle core. The `WRITE_OPERATION_STATE` + `OPERATION_STATUS_CACHE` `LazyLock<RwLock<HashMap>>` caches, `WriteOperationState`, `CopyTransaction`, busy-volumes tracking, the query/cancel/resolve APIs, and the `WriteSettledGuard` RAII shape for the settle contract. Re-exports the `operation_intent` and `scan_cache` types so their `state::…` paths keep resolving.
@@ -233,7 +233,7 @@ Rename, make-folder, and make-file (`WriteOperationType::Rename` / `CreateFolder
 ## Archive edits
 
 Editing a `.zip` (mkdir/mkfile/rename/delete inside, or copy/move INTO one) is an O(archive) temp+rename rewrite, not a
-metadata syscall, so it runs as a managed op through `spawn_managed`, NOT `run_instant`. `archive_edit.rs` is the driver;
+metadata syscall, so it runs as a managed op through `spawn_managed`, NOT `run_instant`. The `archive_edit/` module is the driver;
 the mutation mechanism (`ArchiveMutator`, temp+rename safe-overwrite) lives in the archive backend
 (`volume/backends/archive/DETAILS.md` § "Zip mutation").
 
@@ -255,7 +255,7 @@ for a remote zip) — confirmation already happened at the seam. Pinned by the `
 
 ### Local vs remote: one closure, one dispatcher (`run_managed_edit`)
 
-Every apply site in `archive_edit.rs` runs its plan+apply through `run_managed_edit(parent_volume_id, archive_path,
+Every apply site in `archive_edit/` runs its plan+apply through `engine::run_managed_edit(parent_volume_id, archive_path,
 state, plan_and_apply)` rather than a bare `spawn_blocking(mutator::apply(...))`. The closure is the SAME blocking
 plan+apply either way — it plans against, and mutates, the path it's HANDED. The dispatcher (keyed on
 `parent.supports_local_fs_access()`) decides what that path is:
@@ -361,7 +361,7 @@ the way local `copyfile` does; the upload mints a fresh remote object.
   Skip, a conditional policy that declines to overwrite, or an unrepresentable entry) increments the plan's
   `skipped_count`, which gates the move-source deletion and surfaces as `files_skipped` on the terminal event. Pinned by
   the `interactive_*` tests.
-- **Mutation-test coverage (`cargo mutants` on `archive_edit.rs`).** Every conflict-resolution and routing/data-path
+- **Mutation-test coverage (`cargo mutants` on `archive_edit/`).** Every conflict-resolution and routing/data-path
   mutant is killed (Rename numbering incl. dotfiles, OverwriteSmaller/Older strict `<` incl. the equal-size/mtime
   boundary, move-source deletion gating, all-or-nothing move-out, dir-merge mkdir guard, settle payloads). The only
   deliberately-unkilled survivors are in `MutatorHooks` — progress-emit THROTTLING, pause parking, and the

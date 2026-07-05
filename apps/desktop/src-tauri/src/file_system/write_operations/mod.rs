@@ -148,7 +148,7 @@ pub(crate) use archive_edit::route_archive_copy_into;
 // Move OUT of a zip: the command layer routes an archive SOURCE here. It runs a
 // compound op — extract via the cross-volume copy engine, then (only on a fully
 // clean extract) a batch `{ delete }` archive rewrite (the move invariant). See
-// `archive_edit.rs` and DETAILS § "Archive edits".
+// `archive_edit/` and DETAILS § "Archive edits".
 pub(crate) use archive_edit::route_archive_move_out;
 // The cross-volume copy body, reused as the extract phase of an out-of-zip MOVE
 // (`route_archive_move_out`). Not spawn-managed itself — it runs inside the

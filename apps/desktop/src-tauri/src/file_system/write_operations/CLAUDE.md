@@ -18,7 +18,7 @@ Documents the cross-cutting machinery both subdirs share (see the module map and
 ## Must-knows
 
 - **A zip edit (`ArchiveEdit`) is a managed op, NOT instant.** Editing a `.zip` (mkdir/mkfile/rename/delete inside, or
-  copy/move INTO one) routes to the `archive_edit.rs` driver, which runs the `ArchiveMutator` (temp+rename, an
+  copy/move INTO one) routes to the `archive_edit/` driver, which runs the `ArchiveMutator` (temp+rename, an
   O(archive) rewrite) via `spawn_managed` on the PARENT drive's lane — a real progress bar, not the instant path. The
   instant-op forks (`create`/`rename`) and the delete/copy-into seams detect an archive target and route there; a
   `create`/`rename` return becomes the operation id, not a path. Pre-resolved policies resolve non-interactively; Stop

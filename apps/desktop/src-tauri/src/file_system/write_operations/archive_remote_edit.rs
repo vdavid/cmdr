@@ -44,7 +44,7 @@ use super::types::WriteOperationError;
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
 
 /// A failure from the remote pull / upload / swap orchestration. Structurally the
-/// twin of `archive_edit::PlanError` (a `From` impl in that module bridges them),
+/// twin of `archive_edit::engine::PlanError` (a `From` impl in that module bridges them),
 /// so the driver's terminal-event handling stays uniform local vs remote.
 ///
 /// `pub(crate)` (not `pub(super)`) so the live-SMB and MTP integration suites
