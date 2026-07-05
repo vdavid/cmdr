@@ -424,11 +424,21 @@ export type MountError =
 // ============================================================================
 
 /** Type of write operation. Mirrors the `WriteOperationType` enum in `bindings.ts`
- *  (the managed instant ops `rename` / `create_folder` / `create_file` included). */
-export type WriteOperationType = 'copy' | 'move' | 'delete' | 'trash' | 'rename' | 'create_folder' | 'create_file'
+ *  (the managed instant ops `rename` / `create_folder` / `create_file`, plus
+ *  `archive_edit` — the zip mutation op — included). */
+export type WriteOperationType =
+  | 'copy'
+  | 'move'
+  | 'delete'
+  | 'trash'
+  | 'rename'
+  | 'create_folder'
+  | 'create_file'
+  | 'archive_edit'
 
-/** Transfer operations (copy or move): subset of write operations that share UI. */
-export type TransferOperationType = 'copy' | 'move' | 'delete' | 'trash'
+/** Transfer-style operations that share the progress UI. `archive_edit` (a zip
+ *  temp+rename rewrite) reports progress like a transfer, so it rides this set. */
+export type TransferOperationType = 'copy' | 'move' | 'delete' | 'trash' | 'archive_edit'
 
 /** Phase of a write operation. */
 export type WriteOperationPhase = 'scanning' | 'copying' | 'deleting' | 'trashing' | 'rolling_back' | 'flushing'
