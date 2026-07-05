@@ -184,6 +184,10 @@ const currentYear = new Date().getFullYear()
     .hero-base {
         transform-origin: 0 0;
         backface-visibility: hidden;
+        /* Pin the GPU layer so scroll doesn't evict and re-rasterize it: mid-range Android GPUs
+           otherwise discard this heavy 3D-transformed, masked layer's tiles under memory pressure
+           when it scrolls near the viewport edge, then repaint on re-entry (a visible flicker). */
+        will-change: transform;
         width: 1600px;
         height: 900px;
         margin: 280px auto auto;
@@ -193,6 +197,15 @@ const currentYear = new Date().getFullYear()
         left: -100px;
         right: 0;
         transform: translate(2%) scale(1.2) rotateX(47deg) rotateY(31deg) rotate(324deg);
+        /* Right-edge fade, applied once on the assembled layer (not per pane) to collapse three
+           offscreen mask surfaces into one. Stops include a `+ 10vw` term so wider viewports reveal
+           ~10 percentage points more of the image without a breakpoint hop. */
+        mask-image: linear-gradient(
+            to right,
+            black 0%,
+            black calc(50% + 10vw),
+            transparent calc(80% + 10vw)
+        );
     }
 
     @media (max-width: 767px) {
@@ -312,19 +325,6 @@ const currentYear = new Date().getFullYear()
         background-image: image-set(
             url('/hero/cmdr-hero-right-pane-light-1x.webp') 1x,
             url('/hero/cmdr-hero-right-pane-light.webp') 2x
-        );
-    }
-
-    /* Gradient fade on right edge. Stops include a `+ 10vw` term so wider viewports
-       reveal ~10 percentage points more of the image without a breakpoint hop. */
-    .hero-frame,
-    .hero-left-pane,
-    .hero-right-pane {
-        mask-image: linear-gradient(
-            to right,
-            black 0%,
-            black calc(50% + 10vw),
-            transparent calc(80% + 10vw)
         );
     }
 
