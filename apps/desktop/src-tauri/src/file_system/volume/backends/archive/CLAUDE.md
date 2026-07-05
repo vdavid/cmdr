@@ -33,9 +33,13 @@ Depth, rationale, and full test list: [DETAILS.md](DETAILS.md); read before non-
   `ArchiveEntryReader` is a bounded-channel producer/consumer (≤128 KiB/chunk, capacity 4 ⇒ ~512 KiB peak). Dropping
   the reader cancels the producer. Don't add a whole-entry `Vec` anywhere in the read path.
 
-- **The byte source is blocking and `pread`-shaped (`ArchiveByteSource`).** `LocalFileSource` backs it now; a future
-  remote parent implements the same trait. Shared as `Arc` across concurrent reads (no shared cursor, so parallel reads
-  are independent).
+- **The byte source is blocking and `pread`-shaped (`ArchiveByteSource`).** A LOCAL archive uses `LocalFileSource`; a
+  REMOTE one (direct SMB / MTP) uses `VolumeByteSource`, which bridges to the parent volume's async `read_range`.
+  `ArchiveVolume` picks local vs remote by `parent.supports_local_fs_access()`, NOT by whether the path opens locally
+  (a direct-SMB parent must read through the parent, never its possibly-hung OS mount). `SmbVolume::read_range` isn't
+  implemented yet (needs an smb2 positioned-read primitive), so remote SMB archives refuse cleanly for now. Full model
+  (the `block_on` bridge, the tail cache, the primitive): [DETAILS.md](DETAILS.md) § "Remote-backed archives (read
+  path)". Shared as `Arc` across concurrent reads (no shared cursor, so parallel reads are independent).
 
 - **Encryption: browsing works, extraction doesn't.** Detected from GP flag bit 0 or the AE-x method (not in
   `rc_zip::Error`). `open_read` on an encrypted entry returns `Encrypted`; `has_encrypted_entries()` gates up front.

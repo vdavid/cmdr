@@ -50,9 +50,14 @@ central-directory parse and every entry decompress already run on `spawn_blockin
 fit and keeps the trait trivial. `Send + Sync`, shared as `Arc` across concurrent reads — `read_at` is a `pread` with no
 shared cursor, so parallel entry reads don't contend.
 
-- `LocalFileSource`: `positioned_io::RandomAccessFile` over the real file. This is the only backing implemented now.
-- Remote (future, with remote-backed archives): a parent volume's ranged read implements the same trait, bridging its
-  async read to the blocking call from inside the `spawn_blocking` context. No change to the parser or reader.
+- `LocalFileSource`: `positioned_io::RandomAccessFile` over the real file. Backs a LOCAL archive.
+- `VolumeByteSource` (in `volume.rs`, the `Volume`-aware layer): backs a REMOTE archive (direct SMB / MTP). It bridges
+  the blocking `read_at` to the parent volume's async `Volume::read_range` by `block_on`-ing a captured runtime handle
+  from inside the `spawn_blocking` parse/decompress context. No change to the parser or reader. See
+  § "Remote-backed archives (read path)".
+- `TailCachedSource` (a decorator, `source.rs`, `Volume`-free): caches the file's tail so the central-directory parse
+  (rc-zip hunts the EOCD + directory near the end) is ONE ranged read of a slow backend, not many. Applied only to the
+  remote source.
 
 ## Central-directory parse → synthetic tree
 
@@ -174,9 +179,10 @@ the display name, and an `Arc<ArchiveIndexCache>`.
   serialize; only zips on different mounts parallelize (the existing per-device write-serialization).
 - `get_space_info()` delegates to the parent (see the decision below).
 
-Only a **local** parent is exercised now: the backing bytes come from a `LocalFileSource` opened over the archive path,
-and the cache's `index_for_local` does the local stat+parse. A remote parent (when remote-backed archives land) supplies
-bytes by implementing `ArchiveByteSource` over its ranged reads — no change to the index or reader.
+`ArchiveVolume` serves BOTH a local parent (`LocalFileSource` + `index_for_local`'s local stat+parse) and a remote one
+(`VolumeByteSource` + `index_for_source`, freshness from the parent's metadata). It picks by
+`parent.supports_local_fs_access()` (§ "Remote-backed archives (read path)"). The index and reader are unchanged either
+way — both already speak `dyn ArchiveByteSource`.
 
 **Path namespace.** `root()` is the real `.zip` path and inner entries join under it, so `/path/to/foo.zip/inner`
 renders transparently (the FE splits on `/`). `inner_path()` maps a volume-namespace path back to the index key: it
@@ -238,6 +244,47 @@ The match is **exhaustive on purpose — no wildcard**. It's a compile-time trip
 `_ => NotSupported` would silently mis-serve a future *non-rejection* variant — say a transient remote-source error
 once remote-backed archives land, which wants a retryable classification, not "not supported". The one-time cost is
 naming each new variant; the payoff is that no failure mode is ever classified by omission.
+
+## Remote-backed archives (read path)
+
+A zip on a direct SMB or MTP volume browses and extracts through the SAME `ArchiveVolume` as a local one — only the
+byte supply differs. The read side is landed; the write (edit) side and the SMB `read_range` primitive are follow-ups
+(see `/docs/specs/archive-browsing-plan.md` § M5 and § "Left for the follow-up milestones" below).
+
+**Local vs remote is the parent's capability, not the path.** `ArchiveVolume::parent_is_local()` returns
+`parent.supports_local_fs_access()`. A `LocalPosixVolume` parent (a plain drive OR an OS-mounted share) reports `true`
+⇒ the fast local path: `LocalFileSource` `pread` + `ArchiveIndexCache::index_for_local` (local `std::fs` stat). SMB
+(direct) and MTP report `false` ⇒ the remote path. The discriminator is deliberately NOT "can the archive path be
+opened locally": a direct-SMB volume keeps its `/Volumes/...` mount point, so the `.zip` might still be openable through
+the OS mount — but reading it that way defeats the direct connection and can block on a hung mount. Keying on the
+capability forces the read through the parent volume.
+
+**The bridge (`VolumeByteSource`, `volume.rs`).** The core's `ArchiveByteSource::read_at` is blocking (the parse and
+every decompress run on `spawn_blocking`), but `Volume::read_range` is async. `VolumeByteSource` captures the tokio
+runtime handle at construction (on the async executor, in `open_remote_source`) and `block_on`s the parent's
+`read_range` inside the blocking read. Sound because `read_at` only ever runs on a `spawn_blocking` thread (never a
+runtime worker), so `block_on` doesn't reenter the executor — the same bridge the viewer's archive extractor uses. It
+clamps requests to the known size so rc-zip's read-ahead past EOF doesn't ask the backend for absent bytes.
+
+**One tail read for the central directory (`TailCachedSource`, `source.rs`).** rc-zip's sans-IO fsm finds the EOCD by
+reading backward from the end, then reads the central directory that precedes it — all near the tail. Without caching,
+each of those `read_at`s would be a separate backend round-trip (slow on SMB/MTP). `TailCachedSource` wraps the remote
+source and, on the first read that lands in the tail window (`DEFAULT_TAIL_CACHE_LEN`, 256 KiB), fetches the whole tail
+once and serves every subsequent tail read from memory. A read before the window (an entry's bytes mid-file, or a
+central directory larger than 256 KiB) falls through to a real ranged read. So a normal remote browse issues ONE
+`read_range` for the CD parse (plus one `get_metadata` for size/mtime, which isn't a `read_range`); a giant directory
+adds a second. Pinned by `source.rs`'s fetch-count tests and `volume_test.rs`'s
+`remote_central_directory_parse_is_a_single_tail_read`. Entry extraction opens its own (uncached) source and streams the
+entry's compressed range through the parent's `read_range` in bounded chunks.
+
+**The positioned-read primitive (`Volume::read_range(path, offset, len)`).** Optional trait method, `NotSupported`
+default. `LocalPosixVolume` implements it as a `pread` (`FileExt::read_at` loop), `MtpVolume` as one bounded
+`GetPartialObject64` window opened at the offset. **`SmbVolume` does NOT implement it yet** — smb2 0.11.4 exposes no
+public positioned read and its handle-close is `pub(crate)`, so a self-contained Cmdr `read_at` would leak an SMB handle
+per call; SMB needs a `read_range`/`read_at` primitive added to the (first-party) smb2 crate. Until then a remote SMB
+archive's parse hits the `NotSupported` default, surfaces as a typed integrity error, and shows the "damaged archive"
+copy rather than misbehaving. The freshness key for the remote index cache comes from the parent's `get_metadata`
+(`size` + second-granularity `modified_at` widened to nanos) — a remote `.zip` can't be `std::fs`-stat'd.
 
 ## Routing and lifecycle (`boundary.rs` + `VolumeManager::resolve`)
 
