@@ -80,6 +80,9 @@ pub use write_operations::{
 pub use write_operations::{
     VolumeCopyConfig, VolumeCopyScanResult, copy_between_volumes, move_between_volumes, scan_for_volume_copy,
 };
+/// Copy/move INTO a zip routing (the command layer routes an archive destination
+/// here). Crate-internal — not part of the public write-ops surface.
+pub(crate) use write_operations::route_archive_copy_into;
 
 /// Global volume manager instance
 static VOLUME_MANAGER: LazyLock<VolumeManager> = LazyLock::new(VolumeManager::new);

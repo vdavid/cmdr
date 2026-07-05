@@ -19,6 +19,7 @@
 //! Conflicts are resolved into the changeset before it reaches here, so the
 //! mutator stays deterministic.
 
+use std::collections::HashSet;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -26,20 +27,23 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use uuid::Uuid;
+use walkdir::WalkDir;
 
 use super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
 use super::operation_intent::is_cancelled;
 use super::state::{WriteOperationState, WriteSettledGuard};
 use super::types::{
-    WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError, WriteOperationPhase,
-    WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
+    ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
+    WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::OperationEventSink;
 use crate::file_system::get_volume_manager;
-use crate::file_system::volume::LaneKey;
+use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::{
-    self, Changeset, MutationError, MutationHooks, MutationProgress,
+    self, AddEntry, AddSource, Changeset, MutationError, MutationHooks, MutationProgress,
 };
+use crate::file_system::volume::backends::archive::{ArchiveIndex, LocalFileSource};
+use crate::file_system::volume::{LaneKey, Volume};
 use crate::ignore_poison::IgnorePoison;
 
 /// Everything the driver needs to run one archive edit.
@@ -85,6 +89,339 @@ pub(crate) fn join_inner_path(inner_parent: &Path, name: &str) -> String {
 /// `/`-separated, surrounding-slash-free form the changeset uses.
 pub(crate) fn normalize_inner_path(inner: &Path) -> String {
     inner.to_string_lossy().replace('\\', "/").trim_matches('/').to_string()
+}
+
+/// Routes an in-archive delete (one or more entries inside the SAME zip) to the
+/// managed edit driver as a single `{ delete }` changeset. All sources must
+/// resolve to one archive (a multi-select can't span archives in one pane).
+/// `parent_volume_id` is the display drive id (`"root"` for a local zip).
+pub(crate) async fn route_archive_delete(
+    events: Arc<dyn OperationEventSink>,
+    sources: &[PathBuf],
+    parent_volume_id: &str,
+    progress_interval_ms: u64,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let first = sources.first().ok_or_else(|| WriteOperationError::IoError {
+        path: String::new(),
+        message: "no entries to delete".to_string(),
+    })?;
+    let (archive_path, _) = archive::confirm_archive_boundary(first).ok_or_else(|| read_only_error(first))?;
+
+    let mut deletes = Vec::with_capacity(sources.len());
+    for source in sources {
+        let (source_archive, inner) =
+            archive::confirm_archive_boundary(source).ok_or_else(|| read_only_error(source))?;
+        if source_archive != archive_path {
+            return Err(WriteOperationError::IoError {
+                path: source.display().to_string(),
+                message: "can't delete entries from more than one archive at once".to_string(),
+            });
+        }
+        deletes.push(normalize_inner_path(&inner));
+    }
+
+    let summary_source = deletes.first().map(|d| d.rsplit('/').next().unwrap_or(d).to_string());
+    let request = ArchiveEditRequest {
+        archive_path,
+        parent_volume_id: parent_volume_id.to_string(),
+        changeset: Changeset {
+            deletes,
+            ..Default::default()
+        },
+        summary: OperationSummaryText {
+            source: summary_source,
+            destination: None,
+        },
+        move_sources_to_delete: Vec::new(),
+    };
+    archive_edit_start(events, request, progress_interval_ms).await
+}
+
+/// The read-only refusal for a path that should have crossed an archive boundary
+/// but didn't confirm (a mislabeled or vanished `.zip`).
+fn read_only_error(path: &Path) -> WriteOperationError {
+    WriteOperationError::ReadOnlyDevice {
+        path: path.display().to_string(),
+        device_name: None,
+    }
+}
+
+/// Routes a copy/move INTO a zip (a local-FS source dropped onto an archive
+/// destination) to the managed edit driver as a SINGLE `{ add + mkdir }`
+/// changeset — the whole transfer becomes one archive rewrite, not one per file.
+///
+/// Conflicts (an added inner path that already exists) are resolved
+/// non-interactively from `conflict` against the archive's index (Skip drops the
+/// add; Overwrite deletes the existing entry then adds; Rename picks a unique
+/// name; Stop fails with `DestinationExists`; the conditional policies compare
+/// size/mtime). `source_paths` are relative to the source volume root, as
+/// `copy_between_volumes` passes them. For a MOVE, the top-level sources are
+/// deleted after the commit — but only when nothing was skipped, so a partial
+/// (conflict-skipped) move never deletes a source whose bytes didn't land.
+///
+/// v1 handles LOCAL sources only; a non-local source (MTP/SMB → zip) is refused
+/// (the mutator streams adds from a local path).
+#[allow(clippy::too_many_arguments, reason = "the cross-volume→archive seam threads the source handle, paths, dest, parent id, and policy; a struct would just shuffle them")]
+pub(crate) async fn route_archive_copy_into(
+    events: Arc<dyn OperationEventSink>,
+    source_volume: Arc<dyn Volume>,
+    source_paths: Vec<PathBuf>,
+    dest_full_path: PathBuf,
+    parent_volume_id: String,
+    conflict: ConflictResolution,
+    progress_interval_ms: u64,
+    is_move: bool,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let src_root = source_volume.local_path().ok_or_else(|| WriteOperationError::IoError {
+        path: String::new(),
+        message: "copying into an archive from this source isn't supported yet".to_string(),
+    })?;
+    let absolute_sources: Vec<PathBuf> = source_paths.iter().map(|p| src_root.join(p)).collect();
+
+    let (archive_path, dest_inner) =
+        archive::confirm_archive_boundary(&dest_full_path).ok_or_else(|| read_only_error(&dest_full_path))?;
+    let dest_inner = normalize_inner_path(&dest_inner);
+
+    // Enumerate the sources + parse the index off the async executor.
+    let archive_for_build = archive_path.clone();
+    let sources_for_build = absolute_sources.clone();
+    let plan = tokio::task::spawn_blocking(move || {
+        build_copy_into_changeset(&archive_for_build, &sources_for_build, &dest_inner, conflict)
+    })
+    .await
+    .map_err(|e| WriteOperationError::IoError {
+        path: String::new(),
+        message: format!("the archive copy couldn't be planned: {e}"),
+    })??;
+
+    let move_sources_to_delete = if is_move && !plan.any_skipped {
+        absolute_sources
+    } else {
+        Vec::new()
+    };
+    let summary_source = plan
+        .changeset
+        .adds
+        .first()
+        .map(|a| a.inner_path.rsplit('/').next().unwrap_or(&a.inner_path).to_string());
+
+    let request = ArchiveEditRequest {
+        archive_path,
+        parent_volume_id,
+        changeset: plan.changeset,
+        summary: OperationSummaryText {
+            source: summary_source,
+            destination: None,
+        },
+        move_sources_to_delete,
+    };
+    archive_edit_start(events, request, progress_interval_ms).await
+}
+
+/// The planned changeset for a copy/move-into, plus whether any file was skipped
+/// (which suppresses the source deletion on a move).
+struct CopyIntoPlan {
+    changeset: Changeset,
+    any_skipped: bool,
+}
+
+/// Walks the local sources and builds the `{ add + delete + mkdir }` changeset,
+/// resolving each file conflict against the archive index per `conflict`.
+/// Blocking (parses the index, stats/walks the tree) — call from `spawn_blocking`.
+fn build_copy_into_changeset(
+    archive_path: &Path,
+    absolute_sources: &[PathBuf],
+    dest_inner: &str,
+    conflict: ConflictResolution,
+) -> Result<CopyIntoPlan, WriteOperationError> {
+    let source = LocalFileSource::open(archive_path).map_err(|e| WriteOperationError::WriteError {
+        path: archive_path.display().to_string(),
+        message: e.to_string(),
+    })?;
+    let index = ArchiveIndex::parse(&source).map_err(|e| WriteOperationError::WriteError {
+        path: archive_path.display().to_string(),
+        message: e.to_string(),
+    })?;
+
+    let mut adds: Vec<AddEntry> = Vec::new();
+    let mut mkdirs: Vec<String> = Vec::new();
+    let mut deletes: Vec<String> = Vec::new();
+    // Inner paths this changeset already claims (dedup + Rename uniqueness).
+    let mut planned: HashSet<String> = HashSet::new();
+    let mut any_skipped = false;
+
+    for src in absolute_sources {
+        let Some(name) = src.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        let base_inner = join_inner_str(dest_inner, name);
+        let meta = std::fs::symlink_metadata(src).map_err(|e| WriteOperationError::ReadError {
+            path: src.display().to_string(),
+            message: e.to_string(),
+        })?;
+
+        if meta.is_dir() {
+            for entry in WalkDir::new(src).into_iter().filter_map(Result::ok) {
+                let rel = entry.path().strip_prefix(src).unwrap_or_else(|_| entry.path());
+                let inner = if rel.as_os_str().is_empty() {
+                    base_inner.clone()
+                } else {
+                    join_inner_str(&base_inner, &rel.to_string_lossy().replace('\\', "/"))
+                };
+                let file_type = entry.file_type();
+                if file_type.is_dir() {
+                    if !index.exists(&inner) && planned.insert(inner.clone()) {
+                        mkdirs.push(inner);
+                    }
+                } else if file_type.is_file() {
+                    plan_file_add(
+                        inner,
+                        entry.path(),
+                        &index,
+                        conflict,
+                        &mut adds,
+                        &mut deletes,
+                        &mut planned,
+                        &mut any_skipped,
+                    )?;
+                }
+                // Symlinks and special files inside the tree are skipped (never
+                // materialize a symlink from source into the archive).
+            }
+        } else if meta.is_file() {
+            plan_file_add(
+                base_inner,
+                src,
+                &index,
+                conflict,
+                &mut adds,
+                &mut deletes,
+                &mut planned,
+                &mut any_skipped,
+            )?;
+        }
+    }
+
+    Ok(CopyIntoPlan {
+        changeset: Changeset {
+            adds,
+            mkdirs,
+            deletes,
+            renames: Vec::new(),
+        },
+        any_skipped,
+    })
+}
+
+/// Resolves one file's conflict against the index + already-planned paths and
+/// appends the resulting add (and a delete, for an overwrite). Mutates the
+/// accumulators in place.
+#[allow(clippy::too_many_arguments, reason = "shared accumulators for one pass; bundling them into a struct adds ceremony without clarity")]
+fn plan_file_add(
+    inner: String,
+    src_path: &Path,
+    index: &ArchiveIndex,
+    conflict: ConflictResolution,
+    adds: &mut Vec<AddEntry>,
+    deletes: &mut Vec<String>,
+    planned: &mut HashSet<String>,
+    any_skipped: &mut bool,
+) -> Result<(), WriteOperationError> {
+    let in_index = index.exists(&inner);
+    let collides = in_index || planned.contains(&inner);
+
+    let target = if collides {
+        match conflict {
+            ConflictResolution::Skip => {
+                *any_skipped = true;
+                return Ok(());
+            }
+            ConflictResolution::Stop => {
+                return Err(WriteOperationError::DestinationExists { path: inner });
+            }
+            ConflictResolution::Overwrite => {
+                if in_index {
+                    deletes.push(inner.clone());
+                }
+                inner
+            }
+            ConflictResolution::Rename => find_unique_inner(&inner, index, planned),
+            ConflictResolution::OverwriteSmaller | ConflictResolution::OverwriteOlder => {
+                if in_index && conditional_overwrites(conflict, index, &inner, src_path) {
+                    deletes.push(inner.clone());
+                    inner
+                } else {
+                    *any_skipped = true;
+                    return Ok(());
+                }
+            }
+        }
+    } else {
+        inner
+    };
+
+    planned.insert(target.clone());
+    adds.push(AddEntry {
+        inner_path: target,
+        source: AddSource::LocalPath(src_path.to_path_buf()),
+    });
+    Ok(())
+}
+
+/// Whether a conditional policy overwrites the existing entry: `OverwriteSmaller`
+/// only when the destination is strictly smaller than the source, `OverwriteOlder`
+/// only when the destination is strictly older. Missing metadata never overwrites
+/// (strict comparison, matching the local-FS conflict reducer).
+fn conditional_overwrites(conflict: ConflictResolution, index: &ArchiveIndex, inner: &str, src_path: &Path) -> bool {
+    let Some(node) = index.get(inner) else {
+        return false;
+    };
+    let Ok(src_meta) = std::fs::metadata(src_path) else {
+        return false;
+    };
+    match conflict {
+        ConflictResolution::OverwriteSmaller => node.size.is_some_and(|dest_size| dest_size < src_meta.len()),
+        ConflictResolution::OverwriteOlder => {
+            let (Some(dest_mtime), Ok(src_mtime)) = (node.modified, src_meta.modified()) else {
+                return false;
+            };
+            let Ok(src_secs) = src_mtime.duration_since(std::time::UNIX_EPOCH) else {
+                return false;
+            };
+            dest_mtime < src_secs.as_secs() as i64
+        }
+        _ => false,
+    }
+}
+
+/// Finds a unique inner path by appending ` (1)`, ` (2)`, … before the extension,
+/// avoiding both existing archive entries and already-planned paths.
+fn find_unique_inner(inner: &str, index: &ArchiveIndex, planned: &HashSet<String>) -> String {
+    let (stem, ext) = match inner.rsplit_once('.') {
+        // Keep an extension only when there's a stem before the dot (not a dotfile).
+        Some((stem, ext)) if !stem.rsplit('/').next().unwrap_or(stem).is_empty() => (stem.to_string(), format!(".{ext}")),
+        _ => (inner.to_string(), String::new()),
+    };
+    for n in 1..=9999 {
+        let candidate = format!("{stem} ({n}){ext}");
+        if !index.exists(&candidate) && !planned.contains(&candidate) {
+            return candidate;
+        }
+    }
+    // Astronomically unlikely; fall back to a uuid suffix so we never loop forever.
+    format!("{stem} ({}){ext}", Uuid::new_v4())
+}
+
+/// Joins an archive-inner parent (possibly empty) and a child name into one
+/// `/`-separated inner path.
+fn join_inner_str(parent: &str, child: &str) -> String {
+    let parent = parent.trim_matches('/');
+    let child = child.trim_matches('/');
+    if parent.is_empty() {
+        child.to_string()
+    } else {
+        format!("{parent}/{child}")
+    }
 }
 
 /// Starts an archive edit as a managed operation, returning its id immediately
@@ -211,11 +548,19 @@ pub(crate) async fn archive_edit_start(
 }
 
 /// Deletes an into-archive move's local sources after the commit, on the blocking
-/// pool. Best-effort per file (a failure is logged, never fatal).
+/// pool. Handles both files and directory trees. Best-effort per source (a
+/// failure leaves the file in both places — an incomplete move, never data loss).
 async fn delete_move_sources(sources: &[PathBuf]) {
     for source in sources {
         let source = source.clone();
-        let removed = tokio::task::spawn_blocking(move || std::fs::remove_file(&source).map_err(|e| (source, e))).await;
+        let removed = tokio::task::spawn_blocking(move || {
+            let result = match std::fs::symlink_metadata(&source) {
+                Ok(meta) if meta.is_dir() => std::fs::remove_dir_all(&source),
+                _ => std::fs::remove_file(&source),
+            };
+            result.map_err(|e| (source, e))
+        })
+        .await;
         if let Ok(Err((path, err))) = removed {
             log::warn!(target: "archive_edit", "couldn't remove moved source {}: {err}", path.display());
         }

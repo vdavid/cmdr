@@ -189,11 +189,9 @@ pub async fn delete_files(
     };
     let config = config.unwrap_or_default();
 
-    // Deleting an entry inside an archive is a mutation (read-only for now). The
-    // boundary check only bites for real local `.zip` paths, so non-root volume
-    // paths (MTP/SMB) pass through untouched.
-    reject_if_archive_inner(sources.iter())?;
-
+    // Deleting an entry INSIDE an archive routes to the managed archive-edit
+    // driver inside `delete_files_start` (a `{ delete }` changeset), so no
+    // rejection here. The `.zip` file itself deletes on the normal path.
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     ops_delete_files_start(events, sources, config, volume_id).await
 }

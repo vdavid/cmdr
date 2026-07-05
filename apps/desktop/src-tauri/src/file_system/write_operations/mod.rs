@@ -143,6 +143,10 @@ pub(crate) use types::CollectorEventSink;
 pub use transfer::volume_copy::{copy_between_volumes, scan_for_volume_copy};
 pub use transfer::volume_move::move_between_volumes;
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
+// Copy/move INTO a zip: the command layer routes an archive destination here
+// (the whole transfer becomes one `{ add }` changeset) instead of the per-file
+// cross-volume engine.
+pub(crate) use archive_edit::route_archive_copy_into;
 
 // ============================================================================
 // Public API functions
@@ -397,6 +401,16 @@ pub async fn delete_files_start(
         volume_id_str,
         config.dry_run
     );
+
+    // Deleting entries INSIDE a zip is a mutation: route to the managed archive-edit
+    // driver as a single `{ delete }` changeset (a rewrite, not per-entry). The
+    // `.zip` file itself is a regular file — deleting it stays on the normal path.
+    if sources
+        .first()
+        .is_some_and(|s| crate::file_system::volume::backends::archive::path_is_inside_archive(s))
+    {
+        return archive_edit::route_archive_delete(events, &sources, &volume_id_str, config.progress_interval_ms).await;
+    }
 
     if volume_id_str != "root" {
         // Volume-aware delete (async handler): route through the manager via a

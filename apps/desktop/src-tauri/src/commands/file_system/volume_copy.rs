@@ -4,7 +4,8 @@ use crate::file_system::Volume;
 use crate::file_system::{
     OperationEventSink, ScanConflict, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationError,
     WriteOperationStartResult, copy_between_volumes as ops_copy_between_volumes, get_volume_manager,
-    move_between_volumes as ops_move_between_volumes, scan_for_volume_copy as ops_scan_for_volume_copy,
+    move_between_volumes as ops_move_between_volumes, route_archive_copy_into as ops_route_archive_copy_into,
+    scan_for_volume_copy as ops_scan_for_volume_copy,
 };
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -72,20 +73,31 @@ pub async fn copy_between_volumes(
             message: format!("Source volume '{}' not found", source_volume_id),
         })?;
 
-    // Resolve the dest as a safety net: writing INTO an archive is read-only.
+    // Resolve the destination. A `.zip`-crossing dest routes the whole copy to
+    // the managed archive-edit driver (one `{ add }` changeset).
     let dest_resolved = get_volume_manager().resolve(&dest_volume_id, Path::new(&dest_path));
     let dest_volume = dest_resolved.volume.ok_or_else(|| WriteOperationError::IoError {
         path: dest_volume_id.clone(),
         message: format!("Destination volume '{}' not found", dest_volume_id),
     })?;
+    let config = config.unwrap_or_default();
+    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
+
     if dest_resolved.is_archive {
-        return Err(reject_write_into_archive(Path::new(&dest_path)));
+        return ops_route_archive_copy_into(
+            events,
+            source_volume,
+            source_paths,
+            PathBuf::from(&dest_path),
+            dest_volume_id,
+            config.conflict_resolution,
+            config.progress_interval_ms,
+            false,
+        )
+        .await;
     }
 
     let dest_path = expand_local_dest(&dest_volume, dest_path);
-    let config = config.unwrap_or_default();
-
-    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     ops_copy_between_volumes(
         events,
         source_volume_id,
@@ -132,14 +144,26 @@ pub async fn move_between_volumes(
         path: dest_volume_id.clone(),
         message: format!("Destination volume '{}' not found", dest_volume_id),
     })?;
+    let config = config.unwrap_or_default();
+    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
+
+    // A move INTO a zip routes to the managed edit driver as one `{ add }`
+    // changeset; the local sources are deleted after the commit (move invariant).
     if dest_resolved.is_archive {
-        return Err(reject_write_into_archive(Path::new(&dest_path)));
+        return ops_route_archive_copy_into(
+            events,
+            source_volume,
+            source_paths,
+            PathBuf::from(&dest_path),
+            dest_volume_id,
+            config.conflict_resolution,
+            config.progress_interval_ms,
+            true,
+        )
+        .await;
     }
 
     let dest_path = expand_local_dest(&dest_volume, dest_path);
-    let config = config.unwrap_or_default();
-
-    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
     ops_move_between_volumes(
         events,
         source_volume_id,
