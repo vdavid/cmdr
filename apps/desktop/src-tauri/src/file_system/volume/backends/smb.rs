@@ -1948,6 +1948,44 @@ impl Volume for SmbVolume {
         })
     }
 
+    fn read_range<'a>(
+        &'a self,
+        path: &'a Path,
+        offset: u64,
+        len: usize,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            if len == 0 {
+                return Ok(Vec::new());
+            }
+            let smb_path = self.to_smb_path(path);
+            debug!(
+                "SmbVolume::read_range: share={}, path={:?}, offset={}, len={}",
+                self.share_name, smb_path, offset, len
+            );
+
+            // One open -> one positioned read -> close per call. `smb2::FileReader`
+            // itself serves many `read_at`s per open, but `Volume::read_range` is
+            // stateless (no handle persists across calls), so opening per call is
+            // the simple, correct shape for now: a remote-zip browse issues only a
+            // handful of ranged reads (the `TailCachedSource` collapses the
+            // central-directory parse to ~1). Caching an open `FileReader` per path
+            // is the future optimization; see the archive backend DETAILS.
+            let (tree, conn) = self.clone_session().await?;
+            let reader = self.handle_smb_result("read_range(open)", tree.open_file_reader(conn, &smb_path).await)?;
+
+            let read_result = reader.read_at(offset, len as u64).await;
+            // Close the handle regardless of the read outcome. Relying on `Drop`
+            // would only log and leak the handle until session teardown, so we
+            // close explicitly on both the success and error paths.
+            let close_result = reader.close().await;
+
+            let data = self.handle_smb_result("read_range", read_result)?;
+            self.handle_smb_result("read_range(close)", close_result)?;
+            Ok(data)
+        })
+    }
+
     fn write_from_stream<'a>(
         &'a self,
         dest: &'a Path,

@@ -248,8 +248,9 @@ naming each new variant; the payoff is that no failure mode is ever classified b
 ## Remote-backed archives (read path)
 
 A zip on a direct SMB or MTP volume browses and extracts through the SAME `ArchiveVolume` as a local one — only the
-byte supply differs. The read side is landed; the write (edit) side and the SMB `read_range` primitive are follow-ups
-(see `/docs/specs/archive-browsing-plan.md` § M5 and § "Left for the follow-up milestones" below).
+byte supply differs. The read side is landed for both SMB and MTP; the write (edit) side is a follow-up (see
+`/docs/specs/archive-browsing-plan.md` § M5 and § "Left for the follow-up milestones" below). SMB's ranged read rides a
+**temporary `smb2` source patch** until the primitive is published — see "The positioned-read primitive" below.
 
 **Local vs remote is the parent's capability, not the path.** `ArchiveVolume::parent_is_local()` returns
 `parent.supports_local_fs_access()`. A `LocalPosixVolume` parent (a plain drive OR an OS-mounted share) reports `true`
@@ -279,12 +280,25 @@ entry's compressed range through the parent's `read_range` in bounded chunks.
 
 **The positioned-read primitive (`Volume::read_range(path, offset, len)`).** Optional trait method, `NotSupported`
 default. `LocalPosixVolume` implements it as a `pread` (`FileExt::read_at` loop), `MtpVolume` as one bounded
-`GetPartialObject64` window opened at the offset. **`SmbVolume` does NOT implement it yet** — smb2 0.11.4 exposes no
-public positioned read and its handle-close is `pub(crate)`, so a self-contained Cmdr `read_at` would leak an SMB handle
-per call; SMB needs a `read_range`/`read_at` primitive added to the (first-party) smb2 crate. Until then a remote SMB
-archive's parse hits the `NotSupported` default, surfaces as a typed integrity error, and shows the "damaged archive"
-copy rather than misbehaving. The freshness key for the remote index cache comes from the parent's `get_metadata`
-(`size` + second-granularity `modified_at` widened to nanos) — a remote `.zip` can't be `std::fs`-stat'd.
+`GetPartialObject64` window opened at the offset, and `SmbVolume` via `smb2::FileReader` — an open handle that serves
+positioned `read_at(offset, len)`s (the SMB analog of `pread`) then an explicit `close`. `SmbVolume::read_range` does one
+`open_file_reader` → `read_at` → `close` per call: the `Volume` trait is stateless (no handle persists across calls), so
+opening per call is the simple, correct shape. `FileReader` itself serves many reads per open, so caching an open reader
+per path is a cheap future optimization if the round-trip ever matters; a normal remote browse issues only a handful of
+`read_range`s (the `TailCachedSource` collapses the CD parse to ~1). Pinned end to end by
+`smb_integration_test::smb_integration_archive_browse_and_extract_via_read_range` (browse + extract a zip on a real
+Docker Samba share). The freshness key for the remote index cache comes from the parent's `get_metadata` (`size` +
+second-granularity `modified_at` widened to nanos) — a remote `.zip` can't be `std::fs`-stat'd.
+
+**`smb2::FileReader` ships via a TEMPORARY source patch (David-gated).** Published `smb2` 0.11.4 has no public
+positioned read (its `Tree::close_handle` is `pub(crate)`, so a hand-rolled Cmdr `read_at` would leak an SMB handle per
+call). The primitive lives on the local `david/read-at` smb2 worktree, wired in by a `[patch.crates-io]` override in the
+**workspace-root `Cargo.toml`**. Do NOT land that patch on Cmdr `main`. Merge-time checklist:
+
+1. In smb2: land `david/read-at` on smb2 `main`, then publish a new `smb2` version (external action — David runs it).
+2. In Cmdr: bump `smb2 = "…"` in `apps/desktop/src-tauri/Cargo.toml` to the published version.
+3. In Cmdr: delete the whole `[patch.crates-io]` section from the workspace-root `Cargo.toml`.
+4. `cargo update -p smb2 --precise <version>` (allowed for a ≥3-day-old or first-party pin) and re-run `pnpm check rust`.
 
 ## Routing and lifecycle (`boundary.rs` + `VolumeManager::resolve`)
 

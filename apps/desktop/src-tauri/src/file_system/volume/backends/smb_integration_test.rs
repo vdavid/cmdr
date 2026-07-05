@@ -609,3 +609,70 @@ async fn smb_integration_space_info() {
     assert!(space.available_bytes > 0);
     assert!(space.used_bytes <= space.total_bytes);
 }
+
+/// End-to-end proof that a zip living on a REAL SMB share browses and extracts
+/// through `SmbVolume::read_range` (backed by `smb2::FileReader`) — the remote
+/// counterpart to the in-memory `remote_backed_archive_*` unit tests in
+/// `archive/volume_test.rs`. This is the integration link the ranged-read
+/// primitive exists for.
+///
+/// Writes a small zip to the share, wraps the live `SmbVolume` as an
+/// `ArchiveVolume` parent (a direct-SMB volume reports
+/// `supports_local_fs_access() == false`, so the archive takes the ranged-read
+/// path, not a local `pread`), then lists the root and extracts a STORED and a
+/// DEFLATED entry, checking the decompressed bytes.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_archive_browse_and_extract_via_read_range() {
+    use crate::file_system::volume::backends::archive::ArchiveVolume;
+    use std::io::Write as _;
+
+    async fn drain_archive(archive: &ArchiveVolume, inner: &str) -> Vec<u8> {
+        let mut stream = archive.open_read_stream(Path::new(inner)).await.unwrap();
+        let mut out = Vec::new();
+        while let Some(chunk) = stream.next_chunk().await {
+            out.extend_from_slice(&chunk.expect("archive extract chunk"));
+        }
+        out
+    }
+
+    let vol = Arc::new(make_docker_volume().await);
+
+    // Build a small zip: one STORED entry at the root, one DEFLATED entry in a
+    // subdirectory (so the synthetic-directory browse path runs too).
+    let zip_bytes = {
+        let mut w = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        let stored = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+        let deflated = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+        w.start_file("a.txt", stored).unwrap();
+        w.write_all(b"hello").unwrap();
+        w.start_file("dir/b.txt", deflated).unwrap();
+        w.write_all(b"world from a deflated entry").unwrap();
+        w.finish().unwrap().into_inner()
+    };
+
+    // Unique root-level name so the no-clobber `create_file` never collides and
+    // no directory setup is needed.
+    let zip_path = PathBuf::from(format!("/{}.zip", test_dir_name()));
+    vol.create_file(&zip_path, &zip_bytes).await.unwrap();
+
+    // Wrap the live SMB volume as the archive's parent. Direct SMB has no local
+    // FS access, so every archive read flows through `SmbVolume::read_range`.
+    assert!(!vol.supports_local_fs_access());
+    let archive = ArchiveVolume::new(Arc::clone(&vol) as Arc<dyn Volume>, zip_path.clone());
+
+    // Browse: root shows the synthetic `dir` first, then the file.
+    let root = archive.list_directory(Path::new(""), None).await.unwrap();
+    let names: Vec<String> = root.iter().map(|e| e.name.clone()).collect();
+    assert_eq!(names, vec!["dir", "a.txt"], "unexpected archive root listing");
+
+    // Extract both entries, pulling every byte through the ranged-read seam.
+    assert_eq!(drain_archive(&archive, "a.txt").await, b"hello");
+    assert_eq!(
+        drain_archive(&archive, "dir/b.txt").await,
+        b"world from a deflated entry"
+    );
+
+    // Cleanup: remove the zip from the share.
+    let _ = vol.delete(&zip_path).await;
+}

@@ -36,10 +36,11 @@ Depth, rationale, and full test list: [DETAILS.md](DETAILS.md); read before non-
 - **The byte source is blocking and `pread`-shaped (`ArchiveByteSource`).** A LOCAL archive uses `LocalFileSource`; a
   REMOTE one (direct SMB / MTP) uses `VolumeByteSource`, which bridges to the parent volume's async `read_range`.
   `ArchiveVolume` picks local vs remote by `parent.supports_local_fs_access()`, NOT by whether the path opens locally
-  (a direct-SMB parent must read through the parent, never its possibly-hung OS mount). `SmbVolume::read_range` isn't
-  implemented yet (needs an smb2 positioned-read primitive), so remote SMB archives refuse cleanly for now. Full model
-  (the `block_on` bridge, the tail cache, the primitive): [DETAILS.md](DETAILS.md) § "Remote-backed archives (read
-  path)". Shared as `Arc` across concurrent reads (no shared cursor, so parallel reads are independent).
+  (a direct-SMB parent must read through the parent, never its possibly-hung OS mount). `SmbVolume::read_range` is
+  implemented via `smb2::FileReader`, which currently rides a TEMPORARY workspace-root `[patch.crates-io]` override until
+  the primitive is published — don't land that patch on `main`; merge checklist in DETAILS. Full model (the `block_on`
+  bridge, the tail cache, the primitive): [DETAILS.md](DETAILS.md) § "Remote-backed archives (read path)". Shared as
+  `Arc` across concurrent reads (no shared cursor, so parallel reads are independent).
 
 - **Encryption: browsing works, extraction doesn't.** Detected from GP flag bit 0 or the AE-x method (not in
   `rc_zip::Error`). `open_read` on an encrypted entry returns `Encrypted`; `has_encrypted_entries()` gates up front.
