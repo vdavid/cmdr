@@ -622,6 +622,50 @@ fn progress_reaches_the_totals_and_never_goes_backwards() {
 }
 
 #[test]
+fn entries_changed_counts_added_deleted_and_renamed_not_retained() {
+    // Three kept entries plus one to delete and one to rename; the changeset also
+    // adds a file and a dir. `entries_changed` must be the affected count (4: one
+    // delete, one rename, one add, one mkdir), NOT the written-entry total (6:
+    // four retained + one add + one mkdir). This is the user-facing "files
+    // processed" count that fixed the "Delete complete: 2 files" off-by count.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let path = write_zip(
+        tmp.path(),
+        "a",
+        &build_zip(&[
+            stored("keep1.txt", b"1".to_vec()),
+            stored("keep2.txt", b"2".to_vec()),
+            stored("keep3.txt", b"3".to_vec()),
+            stored("del.txt", b"d".to_vec()),
+            stored("ren.txt", b"r".to_vec()),
+        ]),
+    );
+
+    let hooks = RecordingHooks::new();
+    apply(
+        &path,
+        &Changeset {
+            adds: vec![add_bytes("new.txt", b"n")],
+            mkdirs: vec!["newdir".to_string()],
+            deletes: vec!["del.txt".to_string()],
+            renames: vec![("ren.txt".to_string(), "ren2.txt".to_string())],
+        },
+        &hooks,
+    )
+    .expect("apply mixed changeset");
+
+    let last = *hooks.snapshots().last().expect("a final snapshot");
+    assert_eq!(
+        last.entries_changed, 4,
+        "entries_changed = 1 delete + 1 rename + 1 add + 1 mkdir"
+    );
+    assert_eq!(
+        last.entries_total, 6,
+        "entries_total (written) = 4 retained + 1 add + 1 mkdir — deliberately larger than entries_changed"
+    );
+}
+
+#[test]
 fn a_local_path_add_streams_its_bytes_and_counts_them() {
     let tmp = tempfile::tempdir().expect("tempdir");
     let path = write_zip(tmp.path(), "a", &build_zip(&[stored("keep.txt", b"keep".to_vec())]));

@@ -244,7 +244,9 @@ the mutation mechanism (`ArchiveMutator`, temp+rename safe-overwrite) lives in t
   cancel from `OperationIntent`, pause from the `PauseGate` (a sync park on the blocking thread), throttled
   `write-progress` (two-axis: entries + bytes), and the downloads-watcher ignore registration for the temp AND final
   paths (before each syscall, via the mutator's `note_pending` hook). `Cancelled` emits `write-cancelled`, never
-  `write-error`; other mutator faults map to typed `WriteOperationError`.
+  `write-error`; other mutator faults map to typed `WriteOperationError`. **The terminal `files_processed` is
+  `MutationProgress::entries_changed`** (entries the edit adds / deletes / renames), NOT `entries_total` (the
+  retained-rewrite count) — deleting one file from a 3-entry zip reports 1, not 2.
 - **Routing seams.** The former archive rejections become routing: `create_directory_managed` / `create_file_managed`
   (a `.zip`-crossing parent), `rename_managed` (an in-archive path), `delete_files_start` (in-archive sources), and the
   `copy`/`move_between_volumes` COMMANDS (an archive-resolved destination). The instant-op forks reach a `TauriEventSink`

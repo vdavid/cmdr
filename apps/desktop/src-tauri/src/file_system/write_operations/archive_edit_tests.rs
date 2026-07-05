@@ -133,6 +133,37 @@ async fn route_archive_delete_removes_entries_and_completes() {
 }
 
 #[tokio::test]
+async fn route_archive_delete_reports_the_deleted_count_not_the_retained_count() {
+    // Deleting ONE entry from a 3-entry zip must report `files_processed == 1`
+    // (the number DELETED), not the retained-entry count (2). Pins the archive
+    // edit's `files_processed` semantics against the "Delete complete: 2 files" bug.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let path = tmp.path().join("a.zip");
+    write_multi_zip(
+        &path,
+        &[("drop.txt", b"drop"), ("keep1.txt", b"one"), ("keep2.txt", b"two")],
+    );
+
+    let events = Arc::new(CollectorEventSink::new());
+    route_archive_delete(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        &[path.join("drop.txt")],
+        "root",
+        0,
+    )
+    .await
+    .expect("start delete");
+
+    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    assert!(read_entry(&path, "drop.txt").is_none(), "the entry was removed");
+    let complete = events.complete.lock_ignore_poison();
+    assert_eq!(
+        complete[0].files_processed, 1,
+        "a one-file delete must report 1 processed file, not the retained-entry count"
+    );
+}
+
+#[tokio::test]
 async fn copy_into_adds_a_local_directory_tree_and_skips_conflicts() {
     use crate::file_system::volume::backends::LocalPosixVolume;
     use crate::file_system::write_operations::route_archive_copy_into;

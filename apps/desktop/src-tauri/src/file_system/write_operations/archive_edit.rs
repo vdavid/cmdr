@@ -739,7 +739,7 @@ async fn archive_copy_into_interactive_start(
                     events.emit_complete(WriteCompleteEvent {
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::ArchiveEdit,
-                        files_processed: final_progress.entries_total,
+                        files_processed: final_progress.entries_changed,
                         files_skipped: 0,
                         bytes_processed: final_progress.bytes_total,
                     });
@@ -1158,7 +1158,7 @@ pub(crate) async fn archive_edit_start(
                     events.emit_complete(WriteCompleteEvent {
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::ArchiveEdit,
-                        files_processed: final_progress.entries_total,
+                        files_processed: final_progress.entries_changed,
                         files_skipped: 0,
                         bytes_processed: final_progress.bytes_total,
                     });

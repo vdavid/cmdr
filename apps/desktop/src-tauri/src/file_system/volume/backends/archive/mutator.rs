@@ -76,10 +76,20 @@ pub struct Changeset {
 /// written (retained + mkdir + add) and bytes processed (retained compressed
 /// bytes raw-copied + added bytes compressed), so a delete of one file from a
 /// big zip shows a real, moving progress bar rather than an instant flash.
+///
+/// `entries_changed` is a separate, constant tally of the entries the edit
+/// actually ADDS, REMOVES, or RENAMES — the user-facing "files processed" count.
+/// It is deliberately NOT the written-entry total (`entries_total`, which counts
+/// RETAINED entries too): deleting one file from a 3-entry zip changes 1, even
+/// though 2 retained entries are rewritten. Drivers report this, not
+/// `entries_total`, on the terminal event.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct MutationProgress {
     pub entries_done: usize,
     pub entries_total: usize,
+    /// Constant across ticks: the count of entries added, deleted, or renamed
+    /// (the user-facing affected-item count). See the struct doc.
+    pub entries_changed: usize,
     pub bytes_done: u64,
     pub bytes_total: u64,
 }
@@ -175,34 +185,48 @@ pub fn apply(archive_path: &Path, changeset: &Changeset, hooks: &dyn MutationHoo
     // lookup per entry reads the name + compressed size together.
     let mut retained: Vec<RetainedEntry> = Vec::new();
     let mut retained_bytes: u64 = 0;
+    // Count original entries the edit removes or renames, for the user-facing
+    // affected-item tally (`entries_changed`), NOT the retained-rewrite total.
+    let mut deleted_count: usize = 0;
+    let mut renamed_count: usize = 0;
     for index in 0..src.len() {
         let file = src.by_index_raw(index).map_err(MutationError::Zip)?;
         let original_name = file.name().to_string();
         let compressed_size = file.compressed_size();
         let encrypted = file.encrypted();
         drop(file);
-        if let Some(new_name) = plan_new_name(&original_name, &changeset.deletes, &changeset.renames) {
-            // Refuse before creating any temp: a retained encrypted entry can't
-            // be copied verbatim (the flag is lost), so touching this archive at
-            // all would corrupt it. Bailing here keeps the original untouched.
-            if encrypted {
-                return Err(MutationError::EncryptedEntryRetained { name: original_name });
+        match plan_new_name(&original_name, &changeset.deletes, &changeset.renames) {
+            Some(new_name) => {
+                // Refuse before creating any temp: a retained encrypted entry can't
+                // be copied verbatim (the flag is lost), so touching this archive at
+                // all would corrupt it. Bailing here keeps the original untouched.
+                if encrypted {
+                    return Err(MutationError::EncryptedEntryRetained { name: original_name });
+                }
+                if new_name != original_name {
+                    renamed_count += 1;
+                }
+                retained.push(RetainedEntry {
+                    index,
+                    new_name,
+                    compressed_size,
+                });
+                retained_bytes += compressed_size;
             }
-            retained.push(RetainedEntry {
-                index,
-                new_name,
-                compressed_size,
-            });
-            retained_bytes += compressed_size;
+            None => deleted_count += 1,
         }
     }
 
     let added_bytes: u64 = changeset.adds.iter().map(add_source_len).sum();
     let entries_total = retained.len() + changeset.mkdirs.len() + changeset.adds.len();
+    // The user-facing "files processed" count: entries this edit adds, removes, or
+    // renames — never the retained entries it merely rewrites in place.
+    let entries_changed = deleted_count + renamed_count + changeset.mkdirs.len() + changeset.adds.len();
     let bytes_total = retained_bytes + added_bytes;
     let mut progress = MutationProgress {
         entries_done: 0,
         entries_total,
+        entries_changed,
         bytes_done: 0,
         bytes_total,
     };
