@@ -364,6 +364,50 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.archives.enterBehavior.label": "Abrir archivos comprimidos y paquetes",
+  "@settings.archives.enterBehavior.label": {
+    "sourceHash": "554e1f7"
+  },
+  "settings.archives.enterBehavior.description": "Elige qué hace pulsar Intro en cada formato: explorarlo como una carpeta, abrirlo en otra app o preguntar cada vez.",
+  "@settings.archives.enterBehavior.description": {
+    "sourceHash": "26dfc0c"
+  },
+  "settings.archives.card.archives": "Archivos comprimidos",
+  "@settings.archives.card.archives": {
+    "sourceHash": "e404aa8"
+  },
+  "settings.archives.card.bundles": "Paquetes de apps",
+  "@settings.archives.card.bundles": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.zip.label": "Archivos comprimidos zip",
+  "@settings.archives.zip.label": {
+    "sourceHash": "ec0fd54"
+  },
+  "settings.archives.zip.description": "Qué hace pulsar Intro en un archivo zip.",
+  "@settings.archives.zip.description": {
+    "sourceHash": "70c3cb1"
+  },
+  "settings.archives.bundle.label": "Paquetes de apps",
+  "@settings.archives.bundle.label": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.bundle.description": "Qué hace pulsar Intro en un .app, .bundle o .framework.",
+  "@settings.archives.bundle.description": {
+    "sourceHash": "9d30dcc"
+  },
+  "settings.archives.opt.browse": "Explorar",
+  "@settings.archives.opt.browse": {
+    "sourceHash": "3227aa9"
+  },
+  "settings.archives.opt.open": "Abrir",
+  "@settings.archives.opt.open": {
+    "sourceHash": "ed077f3"
+  },
+  "settings.archives.opt.ask": "Preguntar",
+  "@settings.archives.opt.ask": {
+    "sourceHash": "b8c209c"
+  },
   "settings.indexing.enabled.label": "Indexación de unidades",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
@@ -1037,6 +1081,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.section.archives": "Archivos comprimidos",
+  "@settings.section.archives": {
+    "sourceHash": "e404aa8"
+  },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Haz doble clic en el fondo del panel para subir a la carpeta superior",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
@@ -1133,6 +1181,10 @@
   "settings.summary.navigationAndFileOps": "Navegación con doble clic a la carpeta superior y comportamiento al renombrar archivos.",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
+  },
+  "settings.summary.archives": "Qué hace pulsar Intro en archivos comprimidos y paquetes de apps: explorar, abrir o preguntar.",
+  "@settings.summary.archives": {
+    "sourceHash": "340a411"
   },
   "settings.summary.fileSystemWatching": "Indexación de unidades, avisos de descargas y el atajo global de ir a la última descarga. Requiere Acceso a todo el disco.",
   "@settings.summary.fileSystemWatching": {

@@ -27,6 +27,14 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
+  "viewer.error.archiveTooLarge": "Dit bestand is te groot om vanuit het archief te bekijken. Kopieer het er eerst uit en open het daarna.",
+  "@viewer.error.archiveTooLarge": {
+    "sourceHash": "1bf7d91"
+  },
+  "viewer.error.archiveUnreadable": "Kon dit bestand niet vanuit het archief openen. Het is mogelijk versleuteld of beschadigd, of het gebruikt een structuur die Cmdr niet kan lezen.",
+  "@viewer.error.archiveUnreadable": {
+    "sourceHash": "01490a6"
+  },
   "viewer.error.retry": "Probeer opnieuw",
   "@viewer.error.retry": {
     "sourceHash": "942087c"

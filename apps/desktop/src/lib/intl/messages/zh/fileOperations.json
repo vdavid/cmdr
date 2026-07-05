@@ -19,6 +19,14 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
+  "fileOperations.delete.archiveWarningStrong": "压缩文件里没有废纸篓。",
+  "@fileOperations.delete.archiveWarningStrong": {
+    "sourceHash": "29efc59"
+  },
+  "fileOperations.delete.archiveWarningRest": "这些项目将从 zip 中被永久移除。",
+  "@fileOperations.delete.archiveWarningRest": {
+    "sourceHash": "5fa93f5"
+  },
   "fileOperations.delete.toggleTrash": "废纸篓",
   "@fileOperations.delete.toggleTrash": {
     "sourceHash": "c560122"

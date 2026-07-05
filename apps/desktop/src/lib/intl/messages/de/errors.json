@@ -611,6 +611,18 @@
   "@errors.listing.isADirectory.suggestion": {
     "sourceHash": "fcf6f9d"
   },
+  "errors.listing.archiveUnreadable.title": "Dieses Archiv lässt sich nicht öffnen",
+  "@errors.listing.archiveUnreadable.title": {
+    "sourceHash": "6b34ae6"
+  },
+  "errors.listing.archiveUnreadable.explanation": "Diese Datei sieht wie ein Archiv aus, aber Cmdr konnte den Inhalt nicht lesen. Vielleicht ist sie beschädigt, verschlüsselt oder liegt in einem Archivformat vor, das Cmdr noch nicht öffnen kann.",
+  "@errors.listing.archiveUnreadable.explanation": {
+    "sourceHash": "e413580"
+  },
+  "errors.listing.archiveUnreadable.suggestion": "Versuche, sie mit einer anderen App zu öffnen, oder bitte die Person, die sie geschickt hat, um eine neue Kopie.",
+  "@errors.listing.archiveUnreadable.suggestion": {
+    "sourceHash": "67b7e70"
+  },
   "errors.listing.emptyRootICloud.title": "iCloud Drive sieht leer aus",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

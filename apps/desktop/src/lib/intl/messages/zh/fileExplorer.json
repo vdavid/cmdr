@@ -1,4 +1,20 @@
 {
+  "fileExplorer.archiveEnterMenu.ariaLabel": "打开压缩文件或应用程序包",
+  "@fileExplorer.archiveEnterMenu.ariaLabel": {
+    "sourceHash": "df385c5"
+  },
+  "fileExplorer.archiveEnterMenu.browse": "像文件夹一样浏览",
+  "@fileExplorer.archiveEnterMenu.browse": {
+    "sourceHash": "8da5c95"
+  },
+  "fileExplorer.archiveEnterMenu.open": "用默认应用打开",
+  "@fileExplorer.archiveEnterMenu.open": {
+    "sourceHash": "d3d5d6e"
+  },
+  "fileExplorer.archiveEnterMenu.configure": "配置…",
+  "@fileExplorer.archiveEnterMenu.configure": {
+    "sourceHash": "37d7822"
+  },
   "fileExplorer.breadcrumb.navigateTooltip": "点击前往 {path}",
   "@fileExplorer.breadcrumb.navigateTooltip": {
     "sourceHash": "9d08428"
@@ -719,6 +735,14 @@
   "@fileExplorer.readOnly.deleteMessage": {
     "sourceHash": "965a635"
   },
+  "fileExplorer.readOnly.archiveTitle": "只读压缩文件",
+  "@fileExplorer.readOnly.archiveTitle": {
+    "sourceHash": "56ff9e9"
+  },
+  "fileExplorer.readOnly.archiveMessage": "Cmdr 可以浏览和解压 tar 和 7z 压缩文件，但只有 zip 压缩文件可以编辑。",
+  "@fileExplorer.readOnly.archiveMessage": {
+    "sourceHash": "32a03f0"
+  },
   "fileExplorer.readOnly.deviceTitle": "只读设备",
   "@fileExplorer.readOnly.deviceTitle": {
     "sourceHash": "3f79690"
@@ -726,6 +750,10 @@
   "fileExplorer.readOnly.deviceMessage": "“{name}”是只读的。你可以从它拷贝文件，但无法拷贝到它上面。",
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
+  },
+  "fileExplorer.archive.useTransferToCopyOut": "要把文件从压缩文件里拷贝出来，请用 F5 拷贝或 F6 移动。",
+  "@fileExplorer.archive.useTransferToCopyOut": {
+    "sourceHash": "3edbc36"
   },
   "fileExplorer.rename.hiddenAfterRename": "你的文件从视图中消失了，因为当前不显示隐藏文件。",
   "@fileExplorer.rename.hiddenAfterRename": {

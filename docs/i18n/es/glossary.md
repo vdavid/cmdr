@@ -461,3 +461,41 @@ AppKit + SystemSettings, 2026-06-21).
 - **queue.row.label progress arms (rename / create folder / create file)** · `Renombrando` / `Creando carpeta` /
   `Creando archivo` · gerund progress style of the sibling arms; Nautilus ("Renombrando", "Creando"), settled
   `carpeta`/`archivo` · high
+
+### Settled during the archive-browsing pass (browse into zip/tar/7z + app bundles; Enter-behavior settings + read-only/delete warnings + viewer errors; macOS Finder/ArchiveUtility + Total Commander + MS terminology, 2026-07-05)
+
+- **archive (noun: a zip/tar/7z browsed like a folder) → archivo comprimido** · macOS ArchiveUtility/Finder ("Zip
+  archive"→"Archivo comprimido Zip", "%[Kind]@ is %[archives]@"→"archivo comprimido", "Apple Archive"→"archivo
+  comprimido de Apple") + Total Commander ("Propiedades del archivo comprimido", "Comprobar (archivo comprimido)"). Two
+  Tier-1/orthodox sources agree. NOTE the catalog collision: "file" is already `archivo` (glossary), so an archive is
+  the qualified `archivo comprimido`, never bare `archivo`. Reads for all three formats (zip/tar/7z). TC also shows the
+  Spain-only "fichero comprimido", rejected per the `archivo`-not-`fichero` style rule · confirmed (two authoritative
+  sources)
+- **app bundle → paquete** (Cmdr's "App bundles" card/section → **Paquetes de apps**) · macOS ("Show Package Contents"→
+  "Mostrar contenido del paquete"); a .app/.bundle/.framework is a "paquete" in macOS Spanish. "de apps" uses the
+  settled casual `app` (glossary) · high
+- **browse (step inside an archive/bundle, list like a folder) → explorar** · MS terminology ("Browse"→"Explorar";
+  "browse mode"→"modo de exploración") + Nautilus ("explorar el sistema de archivos"). Segmented-control cell "Browse"→
+  "Explorar" (single word, fits the tight cell); "Browse like a folder"→"Explorar como una carpeta" · high
+- **Open / Ask (segmented-control cells) → Abrir / Preguntar** · macOS ("Abrir"); "Preguntar" for the ask-each-time
+  option (standard) · high
+- **Enter (key name) → Intro** · reaffirms the existing glossary/style entry (Apple HW convention); "pulsar Intro"
+  (press → pulsar) · tentative
+- **encrypted → cifrado** · CHOSEN over the pile's only hit "Encriptado" (a single stale FileVault/disk-burning string
+  in `es/macOS/`): "cifrado" is the RAE-preferred term and what current macOS uses broadly for data encryption, and
+  reads more professional in a file-manager error. Flagged for review given the pile conflict · tentative
+- **damaged → dañado** · macOS Finder ("...no puede abrirse porque está dañado") · high
+- **extract (pull files out of an archive) → extraer** · standard; chosen over Total Commander's compress-specific
+  "descomprimir" because tar isn't compressed, so "extraer" fits zip/tar/7z generically ("Cmdr explora y extrae...") ·
+  high
+- **preview (verb, in the Visor) → previsualizar** · standard; noun stays "vista previa" (glossary); "demasiado grande
+  para previsualizarlo" · high
+- **configure → configurar** · standard/MS; keeps the trailing "…" (settings-window signal) · high
+- **"for good" (permanent delete, colloquial) → para siempre** · warmer colloquial match for "for good" over the formal
+  "permanentemente"; fits the delete-warning banner · high
+- **archive delete-warning halves** · Strong "Dentro de un archivo comprimido no hay papelera." + Rest "Estos elementos
+  se eliminarán del zip para siempre." · phrased so the two concatenate naturally; "items"→"elementos" to match the
+  sibling `fileOperations.json` (which uses "elementos", not macOS's "ítems") · high
+- **queue.row.label `archive_edit` arm → Editando archivo comprimido** · gerund progress style of the sibling arms
+  (Copiando/Moviendo); "Editing archive" = changing a zip's entries; edit→editar (glossary) + archive→archivo comprimido
+  · high

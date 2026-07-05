@@ -27,6 +27,14 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
+  "viewer.error.archiveTooLarge": "Ce fichier est trop volumineux pour être prévisualisé depuis l''archive. Copiez-le d''abord hors de l''archive, puis ouvrez-le.",
+  "@viewer.error.archiveTooLarge": {
+    "sourceHash": "1bf7d91"
+  },
+  "viewer.error.archiveUnreadable": "Impossible d''ouvrir ce fichier depuis l''archive. Il est peut-être chiffré, endommagé, ou utilise un format que Cmdr ne sait pas lire.",
+  "@viewer.error.archiveUnreadable": {
+    "sourceHash": "01490a6"
+  },
   "viewer.error.retry": "Réessayer",
   "@viewer.error.retry": {
     "sourceHash": "942087c"

@@ -1,4 +1,20 @@
 {
+  "fileExplorer.archiveEnterMenu.ariaLabel": "Archívum vagy csomag megnyitása",
+  "@fileExplorer.archiveEnterMenu.ariaLabel": {
+    "sourceHash": "df385c5"
+  },
+  "fileExplorer.archiveEnterMenu.browse": "Böngészés mappaként",
+  "@fileExplorer.archiveEnterMenu.browse": {
+    "sourceHash": "8da5c95"
+  },
+  "fileExplorer.archiveEnterMenu.open": "Megnyitás az alapértelmezett appban",
+  "@fileExplorer.archiveEnterMenu.open": {
+    "sourceHash": "d3d5d6e"
+  },
+  "fileExplorer.archiveEnterMenu.configure": "Konfigurálás…",
+  "@fileExplorer.archiveEnterMenu.configure": {
+    "sourceHash": "37d7822"
+  },
   "fileExplorer.breadcrumb.navigateTooltip": "Kattints ide az ugráshoz: {path}",
   "@fileExplorer.breadcrumb.navigateTooltip": {
     "sourceHash": "9d08428"
@@ -720,6 +736,14 @@
   "@fileExplorer.readOnly.deleteMessage": {
     "sourceHash": "965a635"
   },
+  "fileExplorer.readOnly.archiveTitle": "Csak olvasható archívum",
+  "@fileExplorer.readOnly.archiveTitle": {
+    "sourceHash": "56ff9e9"
+  },
+  "fileExplorer.readOnly.archiveMessage": "A Cmdr böngészi és kicsomagolja a tar- és 7z-archívumokat, de csak a zip-archívumokat lehet szerkeszteni.",
+  "@fileExplorer.readOnly.archiveMessage": {
+    "sourceHash": "32a03f0"
+  },
   "fileExplorer.readOnly.deviceTitle": "Csak olvasható eszköz",
   "@fileExplorer.readOnly.deviceTitle": {
     "sourceHash": "3f79690"
@@ -727,6 +751,10 @@
   "fileExplorer.readOnly.deviceMessage": "A(z) „{name}” csak olvasható. Másolhatsz róla fájlokat, de rá nem.",
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
+  },
+  "fileExplorer.archive.useTransferToCopyOut": "Ha fájlokat szeretnél kimásolni egy archívumból, használd az F5-öt másoláshoz vagy az F6-ot áthelyezéshez.",
+  "@fileExplorer.archive.useTransferToCopyOut": {
+    "sourceHash": "3edbc36"
   },
   "fileExplorer.rename.hiddenAfterRename": "A fájl eltűnt a nézetből, mert a rejtett fájlok nem jelennek meg.",
   "@fileExplorer.rename.hiddenAfterRename": {

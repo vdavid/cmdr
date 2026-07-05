@@ -364,6 +364,50 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.archives.enterBehavior.label": "Abrir arquivos compactados e pacotes",
+  "@settings.archives.enterBehavior.label": {
+    "sourceHash": "554e1f7"
+  },
+  "settings.archives.enterBehavior.description": "Escolha o que pressionar Enter faz em cada formato: navegar dentro dele como em uma pasta, abrir em outro aplicativo ou perguntar a cada vez.",
+  "@settings.archives.enterBehavior.description": {
+    "sourceHash": "26dfc0c"
+  },
+  "settings.archives.card.archives": "Arquivos compactados",
+  "@settings.archives.card.archives": {
+    "sourceHash": "e404aa8"
+  },
+  "settings.archives.card.bundles": "Pacotes de aplicativo",
+  "@settings.archives.card.bundles": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.zip.label": "Arquivos zip",
+  "@settings.archives.zip.label": {
+    "sourceHash": "ec0fd54"
+  },
+  "settings.archives.zip.description": "O que pressionar Enter faz em um arquivo zip.",
+  "@settings.archives.zip.description": {
+    "sourceHash": "70c3cb1"
+  },
+  "settings.archives.bundle.label": "Pacotes de aplicativo",
+  "@settings.archives.bundle.label": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.bundle.description": "O que pressionar Enter faz em um .app, .bundle ou .framework.",
+  "@settings.archives.bundle.description": {
+    "sourceHash": "9d30dcc"
+  },
+  "settings.archives.opt.browse": "Navegar",
+  "@settings.archives.opt.browse": {
+    "sourceHash": "3227aa9"
+  },
+  "settings.archives.opt.open": "Abrir",
+  "@settings.archives.opt.open": {
+    "sourceHash": "ed077f3"
+  },
+  "settings.archives.opt.ask": "Perguntar",
+  "@settings.archives.opt.ask": {
+    "sourceHash": "b8c209c"
+  },
   "settings.indexing.enabled.label": "Indexação de disco",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
@@ -1037,6 +1081,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.section.archives": "Arquivos compactados",
+  "@settings.section.archives": {
+    "sourceHash": "e404aa8"
+  },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Clique duplo no fundo do painel para ir à pasta superior",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
@@ -1133,6 +1181,10 @@
   "settings.summary.navigationAndFileOps": "Navegação com clique duplo para a pasta superior e comportamento ao renomear arquivos.",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
+  },
+  "settings.summary.archives": "O que pressionar Enter faz em arquivos compactados e pacotes de aplicativo: navegar dentro, abrir ou perguntar.",
+  "@settings.summary.archives": {
+    "sourceHash": "340a411"
   },
   "settings.summary.fileSystemWatching": "Indexação de disco, notificações de Downloads e o atalho global de ir para o download mais recente. Precisa de Acesso Total ao Disco.",
   "@settings.summary.fileSystemWatching": {

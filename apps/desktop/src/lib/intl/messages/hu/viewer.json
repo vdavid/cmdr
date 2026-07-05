@@ -27,6 +27,14 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
+  "viewer.error.archiveTooLarge": "Ez a fájl túl nagy ahhoz, hogy az archívumon belülről megjelenítsük. Előbb másold ki, aztán nyisd meg.",
+  "@viewer.error.archiveTooLarge": {
+    "sourceHash": "1bf7d91"
+  },
+  "viewer.error.archiveUnreadable": "Nem sikerült megnyitni ezt a fájlt az archívumból. Lehet, hogy titkosított, sérült, vagy olyan formátumú, amelyet a Cmdr nem tud elolvasni.",
+  "@viewer.error.archiveUnreadable": {
+    "sourceHash": "01490a6"
+  },
   "viewer.error.retry": "Újra",
   "@viewer.error.retry": {
     "sourceHash": "942087c"

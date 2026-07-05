@@ -509,3 +509,37 @@ copy/move + delete dialogs). Reuses prior terms (scan/scanning → `quét`/`đan
 - **queue.row.label progress arms (rename / create folder / create file)** · `Đang đổi tên` / `Đang tạo thư mục` /
   `Đang tạo tệp` · "Đang [verb]" style of the sibling arms; Nautilus ("Đang đổi tên", "Đang tạo"), settled `đổi tên`,
   `thư mục`/`tệp` · high
+
+Added during the archive-browsing pass (2026-07-05): the 28 archive/bundle keys (browse-into-zip feature). Reuses prior
+terms (browse → `duyệt`, folder → `thư mục`, file → `tệp`, open → `mở`, default → `mặc định`, read-only → `chỉ đọc`,
+trash → `thùng rác`, delete → `xóa`, copy/move → `sao chép`/`di chuyển`, permanently/for good → `vĩnh viễn`, format →
+`định dạng`, preview → `xem trước`, can't → `không thể`). New terms below:
+
+- **archive (a zip/tar/7z browsed like a folder): `tệp nén`** · Cmdr's OWN catalog already renders compressed/archive
+  files as `tệp nén` (`settings.listing.sizeDisplay.description` "tệp nén", `settings.fileViewer.suppressBinaryWarning`
+  "tệp nén"), so these keys MATCH it (catalog-consistency, the no-forking-terminology rule). Corroborated by GNOME
+  Nautilus + MS terminology "nén" (compress) and macOS Finder "đã nén" (compressed). Deliberately NOT the archival
+  `kho lưu trữ` (GNOME's "Archive" menu) or `Bộ lưu trữ` (macOS "iOS Package Archive"): both read as backup/storage, the
+  wrong register for a browsable zip. Renders zip/tar/7z generically; "zip archives" → `tệp nén zip`, "archive format" →
+  `định dạng nén`. `high` (catalog-consistent).
+- **app bundle: `gói ứng dụng`** · macOS Finder `gói` for package/bundle ("iOS Package Archive" → "Bộ lưu trữ gói iOS")
+  + `ứng dụng` (app, macOS Finder "Ứng dụng"). The .app/.bundle/.framework folders macOS shows as one item. `high`.
+- **extract (an archive): `giải nén`** · Cmdr's own catalog (`ai.local.installStepExtracting` "Đang giải nén"), GNOME
+  Nautilus ("Giải nén"). Used in `readOnly.archiveMessage` ("browses and extracts" → "duyệt và giải nén"). `high`.
+- **edit (an archive's contents): `chỉnh sửa`** · catalog reserves `chỉnh sửa` for "edited" (`errors` "đã bị chỉnh sửa
+  bên ngoài git") vs `sửa đổi` for the "modified" date; editing zip entries is the `chỉnh sửa` sense. `readOnly.archiveMessage`
+  "can be edited" → "có thể chỉnh sửa"; `queue.row.label` `archive_edit` "Editing archive" → `Đang chỉnh sửa tệp nén`.
+  `high`.
+- **configure (menu item): `Cấu hình`** · MS terminology ("configure" → "cấu hình", many hits). Trailing `…` kept
+  (opens Settings). `high`.
+- **damaged / corrupt (of a file): `hỏng`** · catalog's established term (`errors` "đĩa đang hỏng dần", "vùng hỏng").
+  "It may be damaged" → "Có thể tệp bị hỏng". `high`.
+- **encrypted: `được mã hóa` / `bị mã hóa`** · catalog (`errors.provider.veraCrypt` "ổ đĩa được mã hóa"). `high`.
+- **default app: `ứng dụng mặc định`** · `mặc định` (default, settings pass) + `ứng dụng` (app). `high`.
+- **fresh copy (of a file): `một bản mới`** · `bản` (copy/version) + `mới` (new); "ask whoever sent it for a fresh copy"
+  → "nhờ người đã gửi nó cung cấp một bản mới". Natural rendering, no single pile source. `tentative`.
+- **pressing Enter (does X): `nhấn Enter (sẽ làm gì)`** · catalog convention `nhấn Enter` (`queryUi` "nhấn Enter để tìm
+  kiếm"); Enter key name kept verbatim (macOS vi keeps "Enter"). "What pressing Enter does" → "Nhấn Enter sẽ làm gì".
+  `high`.
+- **ask (each time / on Enter): `hỏi`** · segmented-control opt + `enterBehavior` "ask each time" → "hỏi mỗi lần". macOS
+  Finder attests `hỏi` in prompts. `high`.

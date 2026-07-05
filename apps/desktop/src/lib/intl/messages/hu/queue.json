@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "c24a288"
   },
-  "queue.row.label": "{type, select, copy {Másolás} move {Áthelyezés} delete {Törlés} trash {Áthelyezés a Kukába} rename {Átnevezés} create_folder {Mappa létrehozása} create_file {Fájl létrehozása} other {Folyamatban}}",
+  "queue.row.label": "{type, select, copy {Másolás} move {Áthelyezés} delete {Törlés} trash {Áthelyezés a Kukába} rename {Átnevezés} create_folder {Mappa létrehozása} create_file {Fájl létrehozása} archive_edit {Archívum szerkesztése} other {Folyamatban}}",
   "@queue.row.label": {
-    "sourceHash": "2d12510"
+    "sourceHash": "9f18acf"
   },
   "queue.row.status": "{status, select, queued {Várakozik} running {Fut} paused {Szüneteltetve} done {Kész} cancelled {Megszakítva} failed {Nem sikerült befejezni} other {Fut}}",
   "@queue.row.status": {

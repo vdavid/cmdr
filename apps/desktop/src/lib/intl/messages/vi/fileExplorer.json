@@ -1,4 +1,20 @@
 {
+  "fileExplorer.archiveEnterMenu.ariaLabel": "Mở tệp nén hoặc gói ứng dụng",
+  "@fileExplorer.archiveEnterMenu.ariaLabel": {
+    "sourceHash": "df385c5"
+  },
+  "fileExplorer.archiveEnterMenu.browse": "Duyệt như một thư mục",
+  "@fileExplorer.archiveEnterMenu.browse": {
+    "sourceHash": "8da5c95"
+  },
+  "fileExplorer.archiveEnterMenu.open": "Mở bằng ứng dụng mặc định",
+  "@fileExplorer.archiveEnterMenu.open": {
+    "sourceHash": "d3d5d6e"
+  },
+  "fileExplorer.archiveEnterMenu.configure": "Cấu hình…",
+  "@fileExplorer.archiveEnterMenu.configure": {
+    "sourceHash": "37d7822"
+  },
   "fileExplorer.breadcrumb.navigateTooltip": "Bấm để đi tới {path}",
   "@fileExplorer.breadcrumb.navigateTooltip": {
     "sourceHash": "9d08428"
@@ -720,6 +736,14 @@
   "@fileExplorer.readOnly.deleteMessage": {
     "sourceHash": "965a635"
   },
+  "fileExplorer.readOnly.archiveTitle": "Tệp nén chỉ đọc",
+  "@fileExplorer.readOnly.archiveTitle": {
+    "sourceHash": "56ff9e9"
+  },
+  "fileExplorer.readOnly.archiveMessage": "Cmdr duyệt và giải nén tệp nén tar và 7z, nhưng chỉ tệp nén zip mới có thể chỉnh sửa.",
+  "@fileExplorer.readOnly.archiveMessage": {
+    "sourceHash": "32a03f0"
+  },
   "fileExplorer.readOnly.deviceTitle": "Thiết bị chỉ đọc",
   "@fileExplorer.readOnly.deviceTitle": {
     "sourceHash": "3f79690"
@@ -727,6 +751,10 @@
   "fileExplorer.readOnly.deviceMessage": "\"{name}\" ở chế độ chỉ đọc. Bạn có thể sao chép tệp từ nó, nhưng không thể sao chép vào nó.",
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
+  },
+  "fileExplorer.archive.useTransferToCopyOut": "Để sao chép tệp ra khỏi một tệp nén, hãy dùng F5 để sao chép hoặc F6 để di chuyển.",
+  "@fileExplorer.archive.useTransferToCopyOut": {
+    "sourceHash": "3edbc36"
   },
   "fileExplorer.rename.hiddenAfterRename": "Tệp của bạn đã biến mất khỏi khung nhìn vì các tệp ẩn không được hiển thị.",
   "@fileExplorer.rename.hiddenAfterRename": {

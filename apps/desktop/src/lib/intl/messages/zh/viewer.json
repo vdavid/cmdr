@@ -27,6 +27,14 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
+  "viewer.error.archiveTooLarge": "这个文件太大，无法从压缩文件里直接预览。请先把它拷贝出来，再打开。",
+  "@viewer.error.archiveTooLarge": {
+    "sourceHash": "1bf7d91"
+  },
+  "viewer.error.archiveUnreadable": "无法从压缩文件中打开这个文件。它可能被加密、已损坏，或者采用了 Cmdr 无法读取的格式。",
+  "@viewer.error.archiveUnreadable": {
+    "sourceHash": "01490a6"
+  },
   "viewer.error.retry": "重试",
   "@viewer.error.retry": {
     "sourceHash": "942087c"

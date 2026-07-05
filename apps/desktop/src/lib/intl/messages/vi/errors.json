@@ -611,6 +611,18 @@
   "@errors.listing.isADirectory.suggestion": {
     "sourceHash": "fcf6f9d"
   },
+  "errors.listing.archiveUnreadable.title": "Không thể mở tệp nén này",
+  "@errors.listing.archiveUnreadable.title": {
+    "sourceHash": "6b34ae6"
+  },
+  "errors.listing.archiveUnreadable.explanation": "Tệp này trông giống một tệp nén, nhưng Cmdr không đọc được nội dung bên trong. Có thể tệp bị hỏng, được mã hóa, hoặc ở một định dạng nén mà Cmdr chưa mở được.",
+  "@errors.listing.archiveUnreadable.explanation": {
+    "sourceHash": "e413580"
+  },
+  "errors.listing.archiveUnreadable.suggestion": "Hãy thử mở nó bằng ứng dụng khác, hoặc nhờ người đã gửi nó cung cấp một bản mới.",
+  "@errors.listing.archiveUnreadable.suggestion": {
+    "sourceHash": "67b7e70"
+  },
   "errors.listing.emptyRootICloud.title": "iCloud Drive trông như trống",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

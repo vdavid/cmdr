@@ -193,6 +193,41 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
   them verbatim (MS tbx term ids 153889/153903 = "FAT32"; Finder "ExFAT") · confirmed. Don't translate; source EN
   capitalization ("FAT32", "exFAT") is preserved.
 
+### Archive-browsing terms (archive-browsing feature)
+
+Cmdr browses zip/tar/7z archives like folders; this batch added the settings, menu, error, and warning strings for it.
+
+- archive (a zip/tar/7z browsed like a folder) · **arquivo compactado** · Total Commander pt-BR (Cmdr's two-pane
+  lineage; keys 98-190 render the archive as "arquivo compactado", e.g. 160 "Esta função não pode ser usada com arquivos
+  compactados!", 165 "Erro no arquivo compactado"), macOS Finder ("Arquivo comprimido"/"Arquivo compactado"), AND
+  already used in the shipped pt catalog (`settings...zoomResetHint`-adjacent viewer setting: "imagem, PDF, arquivo
+  compactado ou outro arquivo binário") · high. Covers zip/tar/7z generically. Note the unavoidable double-"arquivo" when
+  "file" (arquivo) and "archive" (arquivo compactado) co-occur in one sentence — reads naturally, kept. Used across
+  `settings.archives.*`, `fileExplorer.archiveEnterMenu.*`, `fileExplorer.readOnly.archive*`,
+  `fileExplorer.archive.useTransferToCopyOut`, `fileOperations.delete.archiveWarning*`, `errors.listing.archiveUnreadable.*`,
+  `viewer.error.archive*`, and the `queue.row.label` `archive_edit` arm.
+- app bundle / bundle (macOS .app/.bundle/.framework) · **pacote de aplicativo** (generic bundle: **pacote**) · macOS
+  Finder ("Mostrar Conteúdo do Pacote" = Show Package Contents → bundle = pacote), MS terminology ("pacote de
+  aplicativo") · high. Plural card/label "App bundles" → "Pacotes de aplicativo". `settings.archives.card.bundles`,
+  `settings.archives.bundle.label`, and the `archiveEnterMenu.ariaLabel` "ou pacote".
+- browse (step inside and list contents like a folder) · **Navegar** ("Browse like a folder" → "Navegar como uma
+  pasta"; segmented cell "Browse" → "Navegar") · macOS Finder VO ("Navegar em visualização por colunas"), Total
+  Commander pt-BR hint 148 ("clicar duas vezes sobre o arquivo como em uma pasta, para mostrar seu conteúdo") · high.
+  Distinct from "Abrir" (Open); the two are contrasting behaviors in the same segmented control, so they must differ.
+- open (with default app) · **Abrir** / **Abrir no aplicativo padrão** · shipped pt catalog ("abrir arquivos no
+  aplicativo padrão", `fileExplorer.quickLookHint.enterOpens`), macOS · confirmed. default app = **aplicativo padrão**.
+- Ask (behavior option: ask each time) · **Perguntar** (segmented cell); "ask each time" (running text) → **perguntar a
+  cada vez** · macOS ("Perguntar"), shipped pt catalog (`allowFileExtensionChanges.opt.ask` = "Sempre perguntar") · high
+- extract (from an archive) · **extrair** (also **descompactar**) · Total Commander pt-BR ("extrair-los com F5",
+  "Descompactar"), macOS · high. "browses and extracts" → "navega e extrai" (`fileExplorer.readOnly.archiveMessage`).
+- damaged · **danificado** · macOS Finder (4 hits), TC ("está danificado") · high. encrypted · **criptografado** · macOS
+  (6 hits) · confirmed. Used in the two archive-unreadable error/viewer strings.
+- Enter (the Return/Enter key, in running text) · **Enter** (kept) · shipped pt catalog keeps "Enter" throughout
+  ("Pressione Enter para buscar", "<runKey>Enter</runKey>") · confirmed. "What pressing Enter does" → "O que pressionar
+  Enter faz"; the pt macOS pile localizes no distinct Return-key word here, so "Enter" stands.
+- Editing archive (queue.row.label arm, changing a zip's entries) · **Editando arquivo compactado** · gerund matching
+  the sibling arms (Copiando/Movendo/…) · high
+
 ### Reconciliation notes
 
 - **delete = Apagar (macOS Finder term).** The file-delete action/command is **Apagar** / **Apagar permanentemente**

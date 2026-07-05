@@ -363,6 +363,50 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.archives.enterBehavior.label": "Öppna arkiv och paket",
+  "@settings.archives.enterBehavior.label": {
+    "sourceHash": "554e1f7"
+  },
+  "settings.archives.enterBehavior.description": "Välj vad Enter gör för varje format: bläddra i det som en mapp, öppna det i en annan app, eller fråga varje gång.",
+  "@settings.archives.enterBehavior.description": {
+    "sourceHash": "26dfc0c"
+  },
+  "settings.archives.card.archives": "Arkiv",
+  "@settings.archives.card.archives": {
+    "sourceHash": "e404aa8"
+  },
+  "settings.archives.card.bundles": "Appaket",
+  "@settings.archives.card.bundles": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.zip.label": "Zip-arkiv",
+  "@settings.archives.zip.label": {
+    "sourceHash": "ec0fd54"
+  },
+  "settings.archives.zip.description": "Vad Enter gör med en zip-fil.",
+  "@settings.archives.zip.description": {
+    "sourceHash": "70c3cb1"
+  },
+  "settings.archives.bundle.label": "Appaket",
+  "@settings.archives.bundle.label": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.bundle.description": "Vad Enter gör med en .app, .bundle, eller .framework.",
+  "@settings.archives.bundle.description": {
+    "sourceHash": "9d30dcc"
+  },
+  "settings.archives.opt.browse": "Bläddra",
+  "@settings.archives.opt.browse": {
+    "sourceHash": "3227aa9"
+  },
+  "settings.archives.opt.open": "Öppna",
+  "@settings.archives.opt.open": {
+    "sourceHash": "ed077f3"
+  },
+  "settings.archives.opt.ask": "Fråga",
+  "@settings.archives.opt.ask": {
+    "sourceHash": "b8c209c"
+  },
   "settings.indexing.enabled.label": "Indexering av enhet",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
@@ -1040,6 +1084,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.section.archives": "Arkiv",
+  "@settings.section.archives": {
+    "sourceHash": "e404aa8"
+  },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Dubbelklicka på panelens bakgrund för att gå upp till den överordnade mappen",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
@@ -1137,6 +1185,10 @@
   "settings.summary.navigationAndFileOps": "Navigering till överordnad mapp med dubbelklick och beteende när du byter namn på filer.",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
+  },
+  "settings.summary.archives": "Vad Enter gör med arkiv och appaket: bläddra i dem, öppna, eller fråga.",
+  "@settings.summary.archives": {
+    "sourceHash": "340a411"
   },
   "settings.summary.fileSystemWatching": "Indexering av enhet, aviseringar om hämtningar och den globala genvägen för gå-till-senaste-hämtning. Kräver Fullständig åtkomst till skivan.",
   "@settings.summary.fileSystemWatching": {

@@ -611,6 +611,18 @@
   "@errors.listing.isADirectory.suggestion": {
     "sourceHash": "fcf6f9d"
   },
+  "errors.listing.archiveUnreadable.title": "No se puede abrir este archivo comprimido",
+  "@errors.listing.archiveUnreadable.title": {
+    "sourceHash": "6b34ae6"
+  },
+  "errors.listing.archiveUnreadable.explanation": "Este archivo parece un archivo comprimido, pero Cmdr no pudo leer su contenido. Puede que esté dañado, cifrado o en un formato de archivo comprimido que Cmdr aún no puede abrir.",
+  "@errors.listing.archiveUnreadable.explanation": {
+    "sourceHash": "e413580"
+  },
+  "errors.listing.archiveUnreadable.suggestion": "Prueba a abrirlo con otra app, o pide una copia nueva a quien te lo envió.",
+  "@errors.listing.archiveUnreadable.suggestion": {
+    "sourceHash": "67b7e70"
+  },
   "errors.listing.emptyRootICloud.title": "iCloud Drive parece vacío",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

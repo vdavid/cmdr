@@ -611,6 +611,18 @@
   "@errors.listing.isADirectory.suggestion": {
     "sourceHash": "fcf6f9d"
   },
+  "errors.listing.archiveUnreadable.title": "Det går inte att öppna det här arkivet",
+  "@errors.listing.archiveUnreadable.title": {
+    "sourceHash": "6b34ae6"
+  },
+  "errors.listing.archiveUnreadable.explanation": "Filen ser ut att vara ett arkiv, men Cmdr kunde inte läsa innehållet. Det kan vara skadat, krypterat eller i ett arkivformat som Cmdr inte kan öppna än.",
+  "@errors.listing.archiveUnreadable.explanation": {
+    "sourceHash": "e413580"
+  },
+  "errors.listing.archiveUnreadable.suggestion": "Försök öppna det i en annan app, eller be den som skickade det om en ny kopia.",
+  "@errors.listing.archiveUnreadable.suggestion": {
+    "sourceHash": "67b7e70"
+  },
   "errors.listing.emptyRootICloud.title": "iCloud Drive ser tom ut",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

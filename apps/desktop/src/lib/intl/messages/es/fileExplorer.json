@@ -1,4 +1,20 @@
 {
+  "fileExplorer.archiveEnterMenu.ariaLabel": "Abrir archivo comprimido o paquete",
+  "@fileExplorer.archiveEnterMenu.ariaLabel": {
+    "sourceHash": "df385c5"
+  },
+  "fileExplorer.archiveEnterMenu.browse": "Explorar como una carpeta",
+  "@fileExplorer.archiveEnterMenu.browse": {
+    "sourceHash": "8da5c95"
+  },
+  "fileExplorer.archiveEnterMenu.open": "Abrir con la app por omisión",
+  "@fileExplorer.archiveEnterMenu.open": {
+    "sourceHash": "d3d5d6e"
+  },
+  "fileExplorer.archiveEnterMenu.configure": "Configurar…",
+  "@fileExplorer.archiveEnterMenu.configure": {
+    "sourceHash": "37d7822"
+  },
   "fileExplorer.breadcrumb.navigateTooltip": "Haz clic para ir a {path}",
   "@fileExplorer.breadcrumb.navigateTooltip": {
     "sourceHash": "9d08428"
@@ -720,6 +736,14 @@
   "@fileExplorer.readOnly.deleteMessage": {
     "sourceHash": "965a635"
   },
+  "fileExplorer.readOnly.archiveTitle": "Archivo comprimido de solo lectura",
+  "@fileExplorer.readOnly.archiveTitle": {
+    "sourceHash": "56ff9e9"
+  },
+  "fileExplorer.readOnly.archiveMessage": "Cmdr explora y extrae archivos comprimidos tar y 7z, pero solo se pueden editar los zip.",
+  "@fileExplorer.readOnly.archiveMessage": {
+    "sourceHash": "32a03f0"
+  },
   "fileExplorer.readOnly.deviceTitle": "Dispositivo de solo lectura",
   "@fileExplorer.readOnly.deviceTitle": {
     "sourceHash": "3f79690"
@@ -727,6 +751,10 @@
   "fileExplorer.readOnly.deviceMessage": "\"{name}\" es de solo lectura. Puedes copiar archivos desde él, pero no hacia él.",
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
+  },
+  "fileExplorer.archive.useTransferToCopyOut": "Para copiar archivos fuera de un archivo comprimido, usa F5 para copiar o F6 para mover.",
+  "@fileExplorer.archive.useTransferToCopyOut": {
+    "sourceHash": "3edbc36"
   },
   "fileExplorer.rename.hiddenAfterRename": "Tu archivo desapareció de la vista porque no se muestran los archivos ocultos.",
   "@fileExplorer.rename.hiddenAfterRename": {

@@ -20,6 +20,14 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
+  "fileOperations.delete.archiveWarningStrong": "Det finns ingen papperskorg i ett arkiv.",
+  "@fileOperations.delete.archiveWarningStrong": {
+    "sourceHash": "29efc59"
+  },
+  "fileOperations.delete.archiveWarningRest": "Objekten tas bort permanent ur zip-arkivet.",
+  "@fileOperations.delete.archiveWarningRest": {
+    "sourceHash": "5fa93f5"
+  },
   "fileOperations.delete.toggleTrash": "Papperskorg",
   "@fileOperations.delete.toggleTrash": {
     "sourceHash": "c560122"

@@ -1,4 +1,20 @@
 {
+  "fileExplorer.archiveEnterMenu.ariaLabel": "Open archief of pakket",
+  "@fileExplorer.archiveEnterMenu.ariaLabel": {
+    "sourceHash": "df385c5"
+  },
+  "fileExplorer.archiveEnterMenu.browse": "Blader als een map",
+  "@fileExplorer.archiveEnterMenu.browse": {
+    "sourceHash": "8da5c95"
+  },
+  "fileExplorer.archiveEnterMenu.open": "Open met standaardapp",
+  "@fileExplorer.archiveEnterMenu.open": {
+    "sourceHash": "d3d5d6e"
+  },
+  "fileExplorer.archiveEnterMenu.configure": "Configureer…",
+  "@fileExplorer.archiveEnterMenu.configure": {
+    "sourceHash": "37d7822"
+  },
   "fileExplorer.breadcrumb.navigateTooltip": "Klik om naar {path} te gaan",
   "@fileExplorer.breadcrumb.navigateTooltip": {
     "sourceHash": "9d08428"
@@ -723,6 +739,14 @@
   "@fileExplorer.readOnly.deleteMessage": {
     "sourceHash": "965a635"
   },
+  "fileExplorer.readOnly.archiveTitle": "Alleen-lezen archief",
+  "@fileExplorer.readOnly.archiveTitle": {
+    "sourceHash": "56ff9e9"
+  },
+  "fileExplorer.readOnly.archiveMessage": "Cmdr kan tar- en 7z-archieven doorbladeren en uitpakken, maar alleen zip-archieven kunnen worden bewerkt.",
+  "@fileExplorer.readOnly.archiveMessage": {
+    "sourceHash": "32a03f0"
+  },
   "fileExplorer.readOnly.deviceTitle": "Alleen-lezen apparaat",
   "@fileExplorer.readOnly.deviceTitle": {
     "sourceHash": "3f79690"
@@ -730,6 +754,10 @@
   "fileExplorer.readOnly.deviceMessage": "‘{name}’ is alleen-lezen. Je kunt er bestanden van kopiëren, maar niet naartoe.",
   "@fileExplorer.readOnly.deviceMessage": {
     "sourceHash": "039488f"
+  },
+  "fileExplorer.archive.useTransferToCopyOut": "Om bestanden uit een archief te halen, gebruik je F5 om te kopiëren of F6 om te verplaatsen.",
+  "@fileExplorer.archive.useTransferToCopyOut": {
+    "sourceHash": "3edbc36"
   },
   "fileExplorer.rename.hiddenAfterRename": "Je bestand is uit beeld verdwenen omdat verborgen bestanden niet worden getoond.",
   "@fileExplorer.rename.hiddenAfterRename": {

@@ -27,6 +27,14 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
+  "viewer.error.archiveTooLarge": "Filen är för stor för att förhandsvisas inifrån arkivet. Kopiera ut den först och öppna den sedan.",
+  "@viewer.error.archiveTooLarge": {
+    "sourceHash": "1bf7d91"
+  },
+  "viewer.error.archiveUnreadable": "Det gick inte att öppna den här filen från arkivet. Den kan vara krypterad, skadad, eller använda ett format som Cmdr inte kan läsa.",
+  "@viewer.error.archiveUnreadable": {
+    "sourceHash": "01490a6"
+  },
   "viewer.error.retry": "Försök igen",
   "@viewer.error.retry": {
     "sourceHash": "942087c"

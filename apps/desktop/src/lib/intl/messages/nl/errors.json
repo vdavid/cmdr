@@ -611,6 +611,18 @@
   "@errors.listing.isADirectory.suggestion": {
     "sourceHash": "fcf6f9d"
   },
+  "errors.listing.archiveUnreadable.title": "Dit archief kan niet worden geopend",
+  "@errors.listing.archiveUnreadable.title": {
+    "sourceHash": "6b34ae6"
+  },
+  "errors.listing.archiveUnreadable.explanation": "Dit bestand lijkt een archief, maar Cmdr kon de inhoud niet lezen. Het is mogelijk beschadigd of versleuteld, of het gebruikt een archiefstructuur die Cmdr nog niet kan openen.",
+  "@errors.listing.archiveUnreadable.explanation": {
+    "sourceHash": "e413580"
+  },
+  "errors.listing.archiveUnreadable.suggestion": "Probeer het met een andere app te openen, of vraag de afzender om een nieuwe kopie.",
+  "@errors.listing.archiveUnreadable.suggestion": {
+    "sourceHash": "67b7e70"
+  },
   "errors.listing.emptyRootICloud.title": "iCloud Drive lijkt leeg",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

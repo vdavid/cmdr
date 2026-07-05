@@ -19,6 +19,14 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
+  "fileOperations.delete.archiveWarningStrong": "Dentro de un archivo comprimido no hay papelera.",
+  "@fileOperations.delete.archiveWarningStrong": {
+    "sourceHash": "29efc59"
+  },
+  "fileOperations.delete.archiveWarningRest": "Estos elementos se eliminarán del zip para siempre.",
+  "@fileOperations.delete.archiveWarningRest": {
+    "sourceHash": "5fa93f5"
+  },
   "fileOperations.delete.toggleTrash": "Papelera",
   "@fileOperations.delete.toggleTrash": {
     "sourceHash": "c560122"

@@ -611,6 +611,18 @@
   "@errors.listing.isADirectory.suggestion": {
     "sourceHash": "fcf6f9d"
   },
+  "errors.listing.archiveUnreadable.title": "Ez az archívum nem nyitható meg",
+  "@errors.listing.archiveUnreadable.title": {
+    "sourceHash": "6b34ae6"
+  },
+  "errors.listing.archiveUnreadable.explanation": "Ez a fájl archívumnak tűnik, de a Cmdr nem tudta elolvasni a tartalmát. Lehet, hogy sérült, titkosított, vagy olyan archívumformátumban van, amelyet a Cmdr még nem tud megnyitni.",
+  "@errors.listing.archiveUnreadable.explanation": {
+    "sourceHash": "e413580"
+  },
+  "errors.listing.archiveUnreadable.suggestion": "Próbáld megnyitni egy másik appban, vagy kérj friss másolatot attól, akitől kaptad.",
+  "@errors.listing.archiveUnreadable.suggestion": {
+    "sourceHash": "67b7e70"
+  },
   "errors.listing.emptyRootICloud.title": "Az iCloud Drive üresnek tűnik",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

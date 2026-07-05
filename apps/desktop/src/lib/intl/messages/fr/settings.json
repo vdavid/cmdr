@@ -362,6 +362,51 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.archives.enterBehavior.label": "Ouverture des archives et des paquets",
+  "@settings.archives.enterBehavior.label": {
+    "sourceHash": "554e1f7"
+  },
+  "settings.archives.enterBehavior.description": "Choisissez ce que fait la touche Entrée pour chaque format : parcourir le contenu comme un dossier, ouvrir dans une autre application, ou demander à chaque fois.",
+  "@settings.archives.enterBehavior.description": {
+    "sourceHash": "26dfc0c"
+  },
+  "settings.archives.card.archives": "Archives",
+  "@settings.archives.card.archives": {
+    "sourceHash": "e404aa8",
+    "sameAsSourceJustification": "'Archives' is identical in French (feminine plural 'archives'); macOS Finder uses 'Archive'/'archives' verbatim."
+  },
+  "settings.archives.card.bundles": "Paquets d''application",
+  "@settings.archives.card.bundles": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.zip.label": "Archives zip",
+  "@settings.archives.zip.label": {
+    "sourceHash": "ec0fd54"
+  },
+  "settings.archives.zip.description": "Ce que fait la touche Entrée sur un fichier zip.",
+  "@settings.archives.zip.description": {
+    "sourceHash": "70c3cb1"
+  },
+  "settings.archives.bundle.label": "Paquets d''application",
+  "@settings.archives.bundle.label": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.bundle.description": "Ce que fait la touche Entrée sur un .app, un .bundle, ou un .framework.",
+  "@settings.archives.bundle.description": {
+    "sourceHash": "9d30dcc"
+  },
+  "settings.archives.opt.browse": "Parcourir",
+  "@settings.archives.opt.browse": {
+    "sourceHash": "3227aa9"
+  },
+  "settings.archives.opt.open": "Ouvrir",
+  "@settings.archives.opt.open": {
+    "sourceHash": "ed077f3"
+  },
+  "settings.archives.opt.ask": "Demander",
+  "@settings.archives.opt.ask": {
+    "sourceHash": "b8c209c"
+  },
   "settings.indexing.enabled.label": "Indexation du disque",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
@@ -1042,6 +1087,11 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.section.archives": "Archives",
+  "@settings.section.archives": {
+    "sourceHash": "e404aa8",
+    "sameAsSourceJustification": "'Archives' is identical in French (feminine plural 'archives'); macOS Finder uses 'Archive'/'archives' verbatim."
+  },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Double-cliquez sur l''arrière-plan du panneau pour remonter au dossier parent",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
@@ -1138,6 +1188,10 @@
   "settings.summary.navigationAndFileOps": "Navigation par double-clic vers le dossier parent, et comportement lors du renommage des fichiers.",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
+  },
+  "settings.summary.archives": "Ce que fait la touche Entrée sur les archives et les paquets d''application : parcourir le contenu, ouvrir, ou demander.",
+  "@settings.summary.archives": {
+    "sourceHash": "340a411"
   },
   "settings.summary.fileSystemWatching": "Indexation du disque, notifications de téléchargements, et raccourci global « aller au dernier téléchargement ». Nécessite l''Accès complet au disque.",
   "@settings.summary.fileSystemWatching": {

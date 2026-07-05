@@ -491,3 +491,51 @@ Settled while translating the destination-will-be-created warning keys (`fileOpe
 - **queue.row.label progress arms (rename / create folder / create file)** · `Átnevezés` / `Mappa létrehozása` /
   `Fájl létrehozása` · verbal-noun style of the sibling arms (Másolás, Áthelyezés); Nautilus ("átnevezése", "…
   létrehozása"), reuses settled `rename → átnevezés`, `create → létrehoz`, `mappa`/`fájl` · high
+
+Settled while translating the archive-browsing feature keys (`errors.json`, `fileExplorer.json`, `fileOperations.json`,
+`settings.json`, `viewer.json`, `queue.json`, 2026-07-05):
+
+- archive (a zip/tar/7z Cmdr browses like a folder) → `archívum` · macOS Finder (Tier 1) directly: `CompressWithOptions`
+  has "Zip archive" = `Zip archívum`, "Apple Archive" = `Apple-archívum`, "CPIO archive" = `CPIO-archívum`; the shipped
+  Cmdr catalog already uses it (`settings.fileViewer.suppressBinaryWarning.description` = "…archívumot…") · high. Beats
+  Total Commander's `tömörített fájl` (compressed file) on the macOS-Finder-wins rule + existing-catalog consistency.
+  Inflects regularly (back vowel `archívum`): accusative `archívumot`, elative `archívumból`, superessive `archívumon`,
+  plural `archívumok`.
+  - Orthography: a lowercase format token compounds with a hyphen (`zip-archívum`, `tar-`/`7z-archívum`); a capitalized
+    proper-name-style token takes a space, matching macOS's own `Zip archívum` (so heading "Zip archives" =
+    `Zip archívumok`, but in-sentence lowercase "zip archives" = `zip-archívumokat`). "a zip file" stays `zip fájl`
+    (macOS "Zip file" = `Zip fájl`).
+- extract (unpack files from an archive) → `kicsomagol` (verb), `kicsomagolás` (noun) · Total Commander (Cmdr's two-pane
+  lineage) throughout its archive UI ("Fájl kicsomagolása", "Kicsomagolás:", and the tip "kattints rá kétszer, mint egy
+  mappára" — its exact parallel to Cmdr's browse-an-archive-like-a-folder gesture) · high. "browses and extracts …
+  archives" = `böngészi és kicsomagolja a … archívumokat`.
+- app bundle / bundle / package (.app, .bundle, .framework) → `csomag`; "app bundles" = `alkalmazáscsomagok` · macOS
+  Finder "Show Package Contents" = `Csomag tartalmának megjelenítése` (package = `csomag`), Microsoft terminology
+  bundle = `csomag` · high. Cmdr's UI says "App bundles" (not "packages"), so the transparent compound
+  `alkalmazáscsomag` names the .app/.bundle/.framework category (keys 16 & 19 both `Alkalmazáscsomagok`); the generic
+  standalone "bundle" (aria "Open archive or bundle") is bare `csomag`.
+- browse (step inside an archive/bundle and list it like a folder) → `böngészés` (noun) · Cmdr catalog already uses the
+  `böngész-` root (`git böngésző`, `Megosztásböngésző`); MS `tallózás` is the file-picker sense, not this one · high.
+  "Browse like a folder" = `Böngészés mappaként` ("as a folder", matching Total Commander's "mint egy mappára"). Segmented
+  cell `settings.archives.opt.browse` = `Böngészés`.
+- "Open with default app" → `Megnyitás az alapértelmezett appban` · shipped catalog
+  (`fileExplorer.quickLookHint.enterOpens` = "…az alapértelmezett appban", `settings.fileViewer…` = "a társított appban")
+  · high. `app` kept as loanword (glossary). Segmented cell `settings.archives.opt.open` = `Megnyitás`.
+- Ask (Enter-behavior option: pop up a browse/open prompt) → `Rákérdezés` (nominal, short segmented cell) · descriptive,
+  common HU UI usage; nominal form fits the one-cell control (the longer önözés `Mindig kérdezzen` of
+  `allowFileExtensionChanges.opt.ask` is for a wider control) · tentative. "or ask each time" (description) =
+  `vagy rákérdezés minden alkalommal`.
+- Configure… (menu item opening Settings for this format) → `Konfigurálás…` · Microsoft terminology (`konfigurálás`
+  throughout) · high. Chosen over `Beállítás…` to avoid colliding with Settings = `Beállítások`. Single-char ellipsis.
+- "Read-only archive" → `Csak olvasható archívum` · reuses settled `read-only → csak olvasható` + `archívum` · high.
+- "There's no trash inside an archive." → `Egy archívumon belül nincs Kuka.` · reuses settled `trash → Kuka`
+  (capitalized, the Trash feature). Followed in the same banner by "removed from the zip for good" =
+  `Ezek az elemek véglegesen törlődnek a zipből.` (items = `elemek`, macOS Finder "Compress Items" = "Elemek
+  tömörítése"; `for good → véglegesen`; `zipből` elative, front harmony) · high.
+- "Editing archive" (queue.row.label `archive_edit` arm: changing a zip's entries) → `Archívum szerkesztése` ·
+  verbal-noun style of the sibling arms; reuses `edit → szerkesztés` (catalog `commands.fileEdit.label`) + `archívum` ·
+  high.
+- damaged / corrupt → `sérült`; encrypted → `titkosított` · shipped catalog (`errors.git.corruptRepo` = "sérültnek
+  tűnik", `errors.provider.veraCrypt.*` = "titkosított kötet") + macOS Finder ("Encrypted" = "Titkosítva") · high.
+- No `sameAsSourceJustification` needed in this batch: every one of the 28 values differs from English (the segmented
+  cells Böngészés/Megnyitás/Rákérdezés all translate; no brand-only or unit-only values here).

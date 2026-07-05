@@ -20,6 +20,14 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
+  "fileOperations.delete.archiveWarningStrong": "In einem Archiv gibt es keinen Papierkorb.",
+  "@fileOperations.delete.archiveWarningStrong": {
+    "sourceHash": "29efc59"
+  },
+  "fileOperations.delete.archiveWarningRest": "Diese Objekte werden endgültig aus der Zip-Datei entfernt.",
+  "@fileOperations.delete.archiveWarningRest": {
+    "sourceHash": "5fa93f5"
+  },
   "fileOperations.delete.toggleTrash": "Papierkorb",
   "@fileOperations.delete.toggleTrash": {
     "sourceHash": "c560122"

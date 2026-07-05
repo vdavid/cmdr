@@ -359,6 +359,50 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.archives.enterBehavior.label": "Mở tệp nén và gói ứng dụng",
+  "@settings.archives.enterBehavior.label": {
+    "sourceHash": "554e1f7"
+  },
+  "settings.archives.enterBehavior.description": "Chọn xem nhấn Enter sẽ làm gì với mỗi định dạng: duyệt bên trong như một thư mục, mở trong ứng dụng khác, hoặc hỏi mỗi lần.",
+  "@settings.archives.enterBehavior.description": {
+    "sourceHash": "26dfc0c"
+  },
+  "settings.archives.card.archives": "Tệp nén",
+  "@settings.archives.card.archives": {
+    "sourceHash": "e404aa8"
+  },
+  "settings.archives.card.bundles": "Gói ứng dụng",
+  "@settings.archives.card.bundles": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.zip.label": "Tệp nén zip",
+  "@settings.archives.zip.label": {
+    "sourceHash": "ec0fd54"
+  },
+  "settings.archives.zip.description": "Nhấn Enter sẽ làm gì với một tệp zip.",
+  "@settings.archives.zip.description": {
+    "sourceHash": "70c3cb1"
+  },
+  "settings.archives.bundle.label": "Gói ứng dụng",
+  "@settings.archives.bundle.label": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.bundle.description": "Nhấn Enter sẽ làm gì với tệp .app, .bundle, hoặc .framework.",
+  "@settings.archives.bundle.description": {
+    "sourceHash": "9d30dcc"
+  },
+  "settings.archives.opt.browse": "Duyệt",
+  "@settings.archives.opt.browse": {
+    "sourceHash": "3227aa9"
+  },
+  "settings.archives.opt.open": "Mở",
+  "@settings.archives.opt.open": {
+    "sourceHash": "ed077f3"
+  },
+  "settings.archives.opt.ask": "Hỏi",
+  "@settings.archives.opt.ask": {
+    "sourceHash": "b8c209c"
+  },
   "settings.indexing.enabled.label": "Lập chỉ mục ổ đĩa",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
@@ -1031,6 +1075,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.section.archives": "Tệp nén",
+  "@settings.section.archives": {
+    "sourceHash": "e404aa8"
+  },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Bấm đúp vào nền khung để lên thư mục cha",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
@@ -1128,6 +1176,10 @@
   "settings.summary.navigationAndFileOps": "Điều hướng bằng bấm đúp tới thư mục cha, và hành vi khi đổi tên tệp.",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
+  },
+  "settings.summary.archives": "Nhấn Enter sẽ làm gì với tệp nén và gói ứng dụng: duyệt bên trong, mở, hoặc hỏi.",
+  "@settings.summary.archives": {
+    "sourceHash": "340a411"
   },
   "settings.summary.fileSystemWatching": "Lập chỉ mục ổ đĩa, thông báo Tải về, và phím tắt toàn cục đến-tệp-tải-về-mới-nhất. Cần Toàn quyền truy cập đĩa.",
   "@settings.summary.fileSystemWatching": {

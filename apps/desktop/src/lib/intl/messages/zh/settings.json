@@ -361,6 +361,50 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.archives.enterBehavior.label": "打开压缩文件和应用程序包",
+  "@settings.archives.enterBehavior.label": {
+    "sourceHash": "554e1f7"
+  },
+  "settings.archives.enterBehavior.description": "选择每种格式按 Enter 键时的行为：像文件夹一样浏览它、用其他应用打开它，或者每次都询问。",
+  "@settings.archives.enterBehavior.description": {
+    "sourceHash": "26dfc0c"
+  },
+  "settings.archives.card.archives": "压缩文件",
+  "@settings.archives.card.archives": {
+    "sourceHash": "e404aa8"
+  },
+  "settings.archives.card.bundles": "应用程序包",
+  "@settings.archives.card.bundles": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.zip.label": "Zip 压缩文件",
+  "@settings.archives.zip.label": {
+    "sourceHash": "ec0fd54"
+  },
+  "settings.archives.zip.description": "在 zip 文件上按 Enter 键时的行为。",
+  "@settings.archives.zip.description": {
+    "sourceHash": "70c3cb1"
+  },
+  "settings.archives.bundle.label": "应用程序包",
+  "@settings.archives.bundle.label": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.bundle.description": "在 .app、.bundle 或 .framework 上按 Enter 键时的行为。",
+  "@settings.archives.bundle.description": {
+    "sourceHash": "9d30dcc"
+  },
+  "settings.archives.opt.browse": "浏览",
+  "@settings.archives.opt.browse": {
+    "sourceHash": "3227aa9"
+  },
+  "settings.archives.opt.open": "打开",
+  "@settings.archives.opt.open": {
+    "sourceHash": "ed077f3"
+  },
+  "settings.archives.opt.ask": "询问",
+  "@settings.archives.opt.ask": {
+    "sourceHash": "b8c209c"
+  },
   "settings.indexing.enabled.label": "驱动器索引",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
@@ -1033,6 +1077,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.section.archives": "压缩文件",
+  "@settings.section.archives": {
+    "sourceHash": "e404aa8"
+  },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "双击窗格背景前往上层文件夹",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
@@ -1130,6 +1178,10 @@
   "settings.summary.navigationAndFileOps": "双击前往上层文件夹，以及重命名文件时的行为。",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
+  },
+  "settings.summary.archives": "在压缩文件和应用程序包上按 Enter 键时的行为：进入浏览、打开，或者询问。",
+  "@settings.summary.archives": {
+    "sourceHash": "340a411"
   },
   "settings.summary.fileSystemWatching": "驱动器索引、“下载”通知，以及全局前往最新下载的快捷键。需要完全磁盘访问权限。",
   "@settings.summary.fileSystemWatching": {

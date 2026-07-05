@@ -15,9 +15,9 @@
   "@queue.empty.body": {
     "sourceHash": "c24a288"
   },
-  "queue.row.label": "{type, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} delete {Bezig met verwijderen} trash {Naar prullenmand verplaatsen} rename {Bezig met hernoemen} create_folder {Bezig met map aanmaken} create_file {Bezig met bestand aanmaken} other {Bezig}}",
+  "queue.row.label": "{type, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} delete {Bezig met verwijderen} trash {Naar prullenmand verplaatsen} rename {Bezig met hernoemen} create_folder {Bezig met map aanmaken} create_file {Bezig met bestand aanmaken} archive_edit {Bezig met archief bewerken} other {Bezig}}",
   "@queue.row.label": {
-    "sourceHash": "2d12510"
+    "sourceHash": "9f18acf"
   },
   "queue.row.status": "{status, select, queued {Wachten} running {Bezig} paused {Gepauzeerd} done {Gereed} cancelled {Geannuleerd} failed {Niet voltooid} other {Bezig}}",
   "@queue.row.status": {

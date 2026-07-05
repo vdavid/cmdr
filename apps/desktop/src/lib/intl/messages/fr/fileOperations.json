@@ -20,6 +20,14 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
+  "fileOperations.delete.archiveWarningStrong": "Il n''y a pas de corbeille dans une archive.",
+  "@fileOperations.delete.archiveWarningStrong": {
+    "sourceHash": "29efc59"
+  },
+  "fileOperations.delete.archiveWarningRest": "Ces éléments seront définitivement retirés du zip.",
+  "@fileOperations.delete.archiveWarningRest": {
+    "sourceHash": "5fa93f5"
+  },
   "fileOperations.delete.toggleTrash": "Corbeille",
   "@fileOperations.delete.toggleTrash": {
     "sourceHash": "c560122"

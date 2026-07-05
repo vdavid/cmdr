@@ -611,6 +611,18 @@
   "@errors.listing.isADirectory.suggestion": {
     "sourceHash": "fcf6f9d"
   },
+  "errors.listing.archiveUnreadable.title": "无法打开这个压缩文件",
+  "@errors.listing.archiveUnreadable.title": {
+    "sourceHash": "6b34ae6"
+  },
+  "errors.listing.archiveUnreadable.explanation": "这个文件看起来是压缩文件，但 Cmdr 读不到里面的内容。它可能已损坏、被加密，或者采用了 Cmdr 暂时无法打开的压缩格式。",
+  "@errors.listing.archiveUnreadable.explanation": {
+    "sourceHash": "e413580"
+  },
+  "errors.listing.archiveUnreadable.suggestion": "可以试试用其他应用打开它，或者向发送者要一份新的副本。",
+  "@errors.listing.archiveUnreadable.suggestion": {
+    "sourceHash": "67b7e70"
+  },
   "errors.listing.emptyRootICloud.title": "iCloud Drive 看起来是空的",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

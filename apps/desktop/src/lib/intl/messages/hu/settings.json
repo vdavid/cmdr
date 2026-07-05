@@ -361,6 +361,50 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.archives.enterBehavior.label": "Archívumok és csomagok megnyitása",
+  "@settings.archives.enterBehavior.label": {
+    "sourceHash": "554e1f7"
+  },
+  "settings.archives.enterBehavior.description": "Válaszd ki, mit tegyen az Enter az egyes formátumoknál: böngészés mappaként, megnyitás egy másik appban, vagy rákérdezés minden alkalommal.",
+  "@settings.archives.enterBehavior.description": {
+    "sourceHash": "26dfc0c"
+  },
+  "settings.archives.card.archives": "Archívumok",
+  "@settings.archives.card.archives": {
+    "sourceHash": "e404aa8"
+  },
+  "settings.archives.card.bundles": "Alkalmazáscsomagok",
+  "@settings.archives.card.bundles": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.zip.label": "Zip archívumok",
+  "@settings.archives.zip.label": {
+    "sourceHash": "ec0fd54"
+  },
+  "settings.archives.zip.description": "Mit tesz az Enter egy zip fájlon.",
+  "@settings.archives.zip.description": {
+    "sourceHash": "70c3cb1"
+  },
+  "settings.archives.bundle.label": "Alkalmazáscsomagok",
+  "@settings.archives.bundle.label": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.bundle.description": "Mit tesz az Enter egy .app, .bundle vagy .framework fájlon.",
+  "@settings.archives.bundle.description": {
+    "sourceHash": "9d30dcc"
+  },
+  "settings.archives.opt.browse": "Böngészés",
+  "@settings.archives.opt.browse": {
+    "sourceHash": "3227aa9"
+  },
+  "settings.archives.opt.open": "Megnyitás",
+  "@settings.archives.opt.open": {
+    "sourceHash": "ed077f3"
+  },
+  "settings.archives.opt.ask": "Rákérdezés",
+  "@settings.archives.opt.ask": {
+    "sourceHash": "b8c209c"
+  },
   "settings.indexing.enabled.label": "Meghajtó indexelése",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
@@ -1034,6 +1078,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.section.archives": "Archívumok",
+  "@settings.section.archives": {
+    "sourceHash": "e404aa8"
+  },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Dupla kattintás a panel hátterére a szülőmappába lépéshez",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
@@ -1131,6 +1179,10 @@
   "settings.summary.navigationAndFileOps": "Navigáció a szülőmappába dupla kattintással, és viselkedés fájlok átnevezésekor.",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
+  },
+  "settings.summary.archives": "Mit tesz az Enter az archívumokon és alkalmazáscsomagokon: böngészés, megnyitás vagy rákérdezés.",
+  "@settings.summary.archives": {
+    "sourceHash": "340a411"
   },
   "settings.summary.fileSystemWatching": "Meghajtó-indexelés, Letöltések értesítések és a globális „ugrás a legutóbbi letöltéshez” parancs. Teljes lemezhozzáférést igényel.",
   "@settings.summary.fileSystemWatching": {

@@ -575,3 +575,52 @@ From the dialog-polish pass (4 new `fileOperations` keys; mined `_ignored/i18n/n
 - **queue.row.label progress arms (rename / create folder / create file)** · `Bezig met hernoemen` /
   `Bezig met map aanmaken` / `Bezig met bestand aanmaken` · "Bezig met [infinitief]" style of the sibling arms; Nautilus
   ("hernoemen", "aanmaken"), settled `map`/`bestand` · high
+
+From the archive-browsing pass (28 keys across errors/fileExplorer/fileOperations/settings/viewer/queue; mined
+`_ignored/i18n/nl/`, 2026-07-05):
+
+- archive (noun, zip/tar/7z browsed like a folder) → archief (plural archieven) · macOS Finder ("Zip archive"→"Zip-archief",
+  "Kind is archives"→"Soort is Archief"); already in-catalog (settings.fileViewer "afbeelding, PDF, archief …") · high
+- archive format → archiefstructuur · macOS Finder ("Zip archive format"→"Zip-archiefstructuur",
+  "Compression format to use"→"Te gebruiken compressiestructuur"); the bare "format" for an entry's compression method also
+  renders "structuur" (macOS "compressiestructuur") · high
+- app bundle (.app/.bundle/.framework, folder shown as one item) → pakket / App-pakketten · macOS Finder
+  ("Show Package Contents"→"Toon pakketinhoud" — Apple's user-facing word for a .app is "pakket", Tier 1 over MS "bundel").
+  ariaLabel uses bare "pakket"; the Settings card/row label uses "App-pakketten" (keys 16 & 19 match) · high
+- browse (step inside an archive/bundle, list contents like a folder) → bladeren; Blader (short menu/toggle imperative),
+  doorbladeren (in a sentence) · macOS Finder ("Browse"→"Blader", key 48.title), MS ("browse"→"bladeren", NLD/BEL). Distinct
+  from "open" (hand to default app): "Blader als een map" vs "Open met standaardapp" · high
+- extract (unpack an archive) → uitpakken · Double Commander ("Bestanden uitpakken"), MS ("extract"→"uitpakken") · high
+- default app → standaardapp · macOS Finder ("no default app specified"→"Er is geen standaardapp opgegeven", N141) ·
+  "Open with default app"→"Open met standaardapp" · high
+- edit (change a zip's entries) → bewerken · macOS ("bewerking"/glossary File operations→Bestandsbewerkingen), Double
+  Commander ("Bewerken"); queue.row.label archive_edit arm → "Bezig met archief bewerken" ("Bezig met [infinitief]" family) ·
+  high
+- damaged → beschadigd · macOS Finder ("corrupt/damaged"→"beschadigd", LA33/NE59) · high
+- encrypted → versleuteld · macOS ("Encrypted"→"Versleuteld") · high
+- configure → Configureer · macOS Finder ("Configure Time Machine…"→"Configureer Time Machine…", BU3, keeps the ellipsis) ·
+  high
+- ask (segmented-control option, "ask each time") → Vraag · imperative stem of "vragen"; Double Commander ("ask each time
+  which to use"→"vraag elke keer welke te gebruiken") · high
+- open (segmented-control option / imperative) → Open · macOS Finder uses "Open" as the button/menu imperative ("Open in New
+  Window"→"Open in nieuw venster"); coincides with EN, recorded via `sameAsSourceJustification` on `settings.archives.opt.open`
+  · high
+- for good / permanently (delete has no trash) → definitief · macOS ("definitief verwijderen"; glossary delete permanently);
+  "worden definitief uit de zip verwijderd" · high
+- read-only archive → Alleen-lezen archief · matches the SIBLING `fileExplorer.readOnly.deviceTitle` "Alleen-lezen apparaat"
+  (space form) for local consistency; errors.json prefers the no-space compound "alleen-lezenvolume" — divergence flagged · high
+- "each format" (generic, in the settings blurb) → elk formaat · in-catalog "formaat" precedent; macOS "structuur" is the
+  archive-specific compress form, reserved here for "archiefstructuur"/"structuur" · high
+- format-token compounds hyphenate lowercase per macOS ("Zip-archief"): zip-archieven, tar-archieven, 7z-archieven,
+  zip-bestand · high
+
+REVIEW FLAGS (archive-browsing pass):
+
+- **app bundle → "App-pakketten"** is the Tier-1 macOS choice ("Toon pakketinhoud" = Show Package Contents, Apple's word
+  for a .app), preferred over MS "bundel". Risk: "pakket" can also read as an installer (.pkg); the ".app/.bundle/.framework"
+  descriptions disambiguate. Confirm it reads right, or fall back to "App-bundels".
+- **read-only archive → "Alleen-lezen archief" (with space)** to match the neighboring `deviceTitle` "Alleen-lezen apparaat".
+  This diverges from the errors.json no-space compound rule ("alleen-lezenvolume"). Worth a locale-wide decision on which
+  form wins for "alleen-lezen" + noun.
+- **preview (verb) → "bekijken"** in `viewer.error.archiveTooLarge` ("om vanuit het archief te bekijken"); macOS
+  "Voorvertoning" is the Quick-Look noun, so the plain verb "bekijken" (view) is used. Subjective.

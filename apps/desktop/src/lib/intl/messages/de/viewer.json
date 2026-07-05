@@ -27,6 +27,14 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
+  "viewer.error.archiveTooLarge": "Diese Datei ist zu groß, um sie direkt aus dem Archiv in der Vorschau anzuzeigen. Kopiere sie zuerst heraus und öffne sie dann.",
+  "@viewer.error.archiveTooLarge": {
+    "sourceHash": "1bf7d91"
+  },
+  "viewer.error.archiveUnreadable": "Diese Datei ließ sich nicht aus dem Archiv öffnen. Vielleicht ist sie verschlüsselt, beschädigt oder verwendet ein Format, das Cmdr nicht lesen kann.",
+  "@viewer.error.archiveUnreadable": {
+    "sourceHash": "01490a6"
+  },
   "viewer.error.retry": "Erneut versuchen",
   "@viewer.error.retry": {
     "sourceHash": "942087c"

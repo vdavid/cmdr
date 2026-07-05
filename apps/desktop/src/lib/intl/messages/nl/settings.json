@@ -365,6 +365,51 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.archives.enterBehavior.label": "Archieven en pakketten openen",
+  "@settings.archives.enterBehavior.label": {
+    "sourceHash": "554e1f7"
+  },
+  "settings.archives.enterBehavior.description": "Kies wat Enter voor elk formaat doet: erin bladeren als een map, in een andere app openen, of elke keer vragen.",
+  "@settings.archives.enterBehavior.description": {
+    "sourceHash": "26dfc0c"
+  },
+  "settings.archives.card.archives": "Archieven",
+  "@settings.archives.card.archives": {
+    "sourceHash": "e404aa8"
+  },
+  "settings.archives.card.bundles": "App-pakketten",
+  "@settings.archives.card.bundles": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.zip.label": "Zip-archieven",
+  "@settings.archives.zip.label": {
+    "sourceHash": "ec0fd54"
+  },
+  "settings.archives.zip.description": "Wat Enter doet bij een zip-bestand.",
+  "@settings.archives.zip.description": {
+    "sourceHash": "70c3cb1"
+  },
+  "settings.archives.bundle.label": "App-pakketten",
+  "@settings.archives.bundle.label": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.bundle.description": "Wat Enter doet bij een .app, .bundle of .framework.",
+  "@settings.archives.bundle.description": {
+    "sourceHash": "9d30dcc"
+  },
+  "settings.archives.opt.browse": "Blader",
+  "@settings.archives.opt.browse": {
+    "sourceHash": "3227aa9"
+  },
+  "settings.archives.opt.open": "Open",
+  "@settings.archives.opt.open": {
+    "sourceHash": "ed077f3",
+    "sameAsSourceJustification": "‘Open’ is de Nederlandse imperatiefstam van ‘openen’ en toevallig identiek aan het Engels; macOS Finder gebruikt ‘Open’ als knop/menu-imperatief (‘Open in New Window’→‘Open in nieuw venster’)."
+  },
+  "settings.archives.opt.ask": "Vraag",
+  "@settings.archives.opt.ask": {
+    "sourceHash": "b8c209c"
+  },
   "settings.indexing.enabled.label": "Schijf indexeren",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
@@ -1040,6 +1085,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.section.archives": "Archieven",
+  "@settings.section.archives": {
+    "sourceHash": "e404aa8"
+  },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Dubbelklik op de paneelachtergrond om naar de bovenliggende map te gaan",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
@@ -1137,6 +1186,10 @@
   "settings.summary.navigationAndFileOps": "Navigeren naar de bovenliggende map met dubbelklik, en gedrag bij het wijzigen van bestandsnamen.",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
+  },
+  "settings.summary.archives": "Wat Enter doet bij archieven en app-pakketten: erin bladeren, openen, of vragen.",
+  "@settings.summary.archives": {
+    "sourceHash": "340a411"
   },
   "settings.summary.fileSystemWatching": "Schijf indexeren, downloadmeldingen, en de globale sneltoets ga-naar-laatste-download. Vereist Volledige schijftoegang.",
   "@settings.summary.fileSystemWatching": {

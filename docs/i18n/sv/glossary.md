@@ -435,3 +435,43 @@ scan/genomsökning terms above; new ones:
 - **queue.row.label progress arms (rename / create folder / create file)** · `Byter namn` / `Skapar mapp` / `Skapar fil`
   · present-tense style of the sibling arms (Kopierar, Flyttar); Nautilus ("Byter namn", "Skapar"), settled `byt namn`,
   `mapp`/`fil` · high
+
+From the archive-browsing pass (2026-07-05; the 27 archive keys + the new `archive_edit` queue arm). Cmdr can now step
+INTO a zip/tar/7z the way it steps into a folder, and offers browse/open/ask on Enter. New terms:
+
+- **archive (the compressed file: zip/tar/7z, browsed like a folder): `arkiv`** (neuter: ett arkiv, definite `arkivet`,
+  plural unchanged `arkiv`) · macOS Finder authoritative: "Komprimerar objekt till ett arkiv" (Compressing items into an
+  archive), "Välj ett lösenord för arkivet", "Flytta arkiv till"; Total Commander (Cmdr's two-pane lineage) uses
+  "arkivfil"/"arkiv" throughout and even has the exact browse-like-a-folder concept ("dubbelklicka på arkivfilen som på
+  en mapp"). The bare menu label "Arkiv" = the macOS **File** menu, but in every archive/zip context Apple itself uses
+  "arkiv" for the compressed file, so no collision in Cmdr's surfaces. `high`.
+- **zip archive: `zip-arkiv`** · macOS Finder exact term ("Zip-arkiv", "ZIP-arkiv", "Zip-arkivformat"; same pattern as
+  "CPIO-arkiv", "Apple-arkiv"). The `.zip` extension token stays verbatim; the format word lowercases in the compound
+  (`zip-arkiv`, `zip-fil`). `high`.
+- **read-only archive: `skrivskyddat arkiv`** · `skrivskyddad` (glossary read-only) + neuter agreement on `arkiv`
+  (`-t` → `skrivskyddat`). `high`.
+- **bundle / app bundle: `paket` (generic bundle) / `appaket` (app bundle)** · macOS = "paket" ("Visa paketets innehåll"
+  = Show Package Contents, the Finder term for a bundle/app). Generic "bundle" (keys `archiveEnterMenu.ariaLabel`,
+  `enterBehavior.label`) → `paket`; "App bundles" (the card/section grouping .app/.bundle/.framework) → `appaket`
+  (app + paket, Swedish three-p reduction: appp→app). Faithfully mirrors EN's own split ("bundles" vs "app bundles").
+  `appaket` is a convention-composed compound (macOS-backed `paket`, not directly attested as a compound), so
+  `tentative` (review whether `appaket` reads cleanly vs. `programpaket`).
+- **browse (step inside like a folder): `bläddra`; "browse like a folder" → `bläddra som en mapp`** · macOS "Bläddra i
+  listvy/kolumnvy", "bläddra i ditt filsystem"; TC "…som på en mapp". Short segmented-control cell "Browse" → `Bläddra`.
+  `high`.
+- **extract (unpack an archive): `extrahera`** · the explorer family overwhelmingly (Nautilus/Thunar/Dolphin, 17+ hits)
+  uses "extrahera"/"extraherad"; TC's "packa upp" is the two-pane alt. Chose `extrahera` for the macOS/explorer voice.
+  `high`.
+- **open with default app: `öppna i standardappen`** · matches the EXISTING sv catalog
+  (`fileExplorer.quickLookHint.enterOpens`: "öppna filer i standardappen"); Thunar's "standardprogram" is the alt, but
+  Cmdr's voice uses "app" (76 catalog hits vs. "program"). `high`.
+- **configure (opens Settings): `Konfigurera…`** · macOS/MS ("Konfigurera"); trailing Unicode ellipsis kept (signals a
+  window opens). `high`.
+- **ask (Enter-behavior option, segmented cell): `Fråga`** · macOS "Fråga …" prompt convention. `high`.
+- **"for good" / permanently (delete finality): `permanent`** · macOS uses "permanent" (14 hits) for irreversible
+  removal. Archive-delete warning: "There''s no trash inside an archive." → "Det finns ingen papperskorg i ett arkiv." +
+  "…removed from the zip for good." → "Objekten tas bort permanent ur zip-arkivet." (`ta bort … ur` = remove out of the
+  container, glossary's list/collection sense; `ur` matches TC's "ta bort … ur arkivfilen"). `high`.
+- **archive_edit (queue.row.label arm, "Editing archive"): `Redigerar arkiv`** · present-tense sibling-arm style
+  (Kopierar, Flyttar); `redigera` = edit (glossary, macOS). Inserted before the `other` arm; sourceHash set to
+  `9f18acf`. `high`.

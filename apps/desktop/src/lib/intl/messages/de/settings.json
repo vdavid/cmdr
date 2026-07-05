@@ -363,6 +363,50 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.archives.enterBehavior.label": "Archive und App-Pakete öffnen",
+  "@settings.archives.enterBehavior.label": {
+    "sourceHash": "554e1f7"
+  },
+  "settings.archives.enterBehavior.description": "Wähle, was die Eingabetaste bei jedem Format bewirkt: wie einen Ordner durchsehen, in einer anderen App öffnen oder jedes Mal fragen.",
+  "@settings.archives.enterBehavior.description": {
+    "sourceHash": "26dfc0c"
+  },
+  "settings.archives.card.archives": "Archive",
+  "@settings.archives.card.archives": {
+    "sourceHash": "e404aa8"
+  },
+  "settings.archives.card.bundles": "App-Pakete",
+  "@settings.archives.card.bundles": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.zip.label": "Zip-Archive",
+  "@settings.archives.zip.label": {
+    "sourceHash": "ec0fd54"
+  },
+  "settings.archives.zip.description": "Was die Eingabetaste bei einer Zip-Datei bewirkt.",
+  "@settings.archives.zip.description": {
+    "sourceHash": "70c3cb1"
+  },
+  "settings.archives.bundle.label": "App-Pakete",
+  "@settings.archives.bundle.label": {
+    "sourceHash": "4a5e902"
+  },
+  "settings.archives.bundle.description": "Was die Eingabetaste bei einer .app, .bundle oder .framework bewirkt.",
+  "@settings.archives.bundle.description": {
+    "sourceHash": "9d30dcc"
+  },
+  "settings.archives.opt.browse": "Durchsehen",
+  "@settings.archives.opt.browse": {
+    "sourceHash": "3227aa9"
+  },
+  "settings.archives.opt.open": "Öffnen",
+  "@settings.archives.opt.open": {
+    "sourceHash": "ed077f3"
+  },
+  "settings.archives.opt.ask": "Fragen",
+  "@settings.archives.opt.ask": {
+    "sourceHash": "b8c209c"
+  },
   "settings.indexing.enabled.label": "Laufwerksindizierung",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
@@ -1041,6 +1085,10 @@
   "@settings.navigationAndFileOps.card.fileOperations": {
     "sourceHash": "ed23515"
   },
+  "settings.section.archives": "Archive",
+  "@settings.section.archives": {
+    "sourceHash": "e404aa8"
+  },
   "settings.behavior.doubleClickPaneNavigatesToParent.label": "Doppelklicke auf den Bereichshintergrund, um in den übergeordneten Ordner zu wechseln",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
@@ -1137,6 +1185,10 @@
   "settings.summary.navigationAndFileOps": "Navigation per Doppelklick zum übergeordneten Ordner und das Verhalten beim Umbenennen von Dateien.",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
+  },
+  "settings.summary.archives": "Was die Eingabetaste bei Archiven und App-Paketen bewirkt: durchsehen, öffnen oder fragen.",
+  "@settings.summary.archives": {
+    "sourceHash": "340a411"
   },
   "settings.summary.fileSystemWatching": "Laufwerksindizierung, Download-Mitteilungen und der globale Kurzbefehl „Zum neuesten Download springen“. Erfordert „Voller Festplattenzugriff“.",
   "@settings.summary.fileSystemWatching": {
