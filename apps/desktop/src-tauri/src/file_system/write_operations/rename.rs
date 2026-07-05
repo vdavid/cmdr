@@ -152,7 +152,7 @@ async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result
     // exists" copy instead of the raw `zip` "Duplicate filename" the mutator would
     // hit at write time — and no temp is built. (A no-op rename to the same name
     // is left to proceed; the mutator handles it harmlessly.)
-    if to_inner != from_inner && archive_edit::archive_inner_exists(from_archive.clone(), to_inner.clone()).await {
+    if to_inner != from_inner && archive_edit::archive_inner_exists(volume_id, &from_archive, &to_inner).await {
         return Err(format!("'{}' already exists", leaf(&to_inner)));
     }
 

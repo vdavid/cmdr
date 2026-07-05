@@ -138,7 +138,8 @@ async fn route_archive_create(
     // mkdir/mkfile paths use, so the FE shows the standard "already exists" copy
     // instead of the raw `zip` "Duplicate filename" the mutator would hit at
     // write time — and no temp is built for a doomed edit.
-    if archive_edit::archive_inner_exists(archive_path.clone(), inner_path.clone()).await {
+    let parent_volume_id = volume_id.as_deref().unwrap_or("root");
+    if archive_edit::archive_inner_exists(parent_volume_id, &archive_path, &inner_path).await {
         return Err(format!("'{name}' already exists"));
     }
 

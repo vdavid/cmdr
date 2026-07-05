@@ -6,10 +6,13 @@
  * navigate fork. Pure decision logic stays in `archive-enter-policy.ts`; item
  * building and anchoring in `enter-menu.ts`.
  *
- * Keyboard model: the popup (`lib/ui/Menu`) is portaled to `document.body` and
- * focuses itself on mount, so it owns the keyboard and its keys can't race back to
- * the pane. Its `onKeydown` calls `handleKey` here — arrows move the highlight,
- * Enter/Space select, Escape closes. The menu owns rendering, positioning, pointer
+ * Keyboard model: while the popup (`lib/ui/Menu`, portaled to `document.body`) is
+ * open, a document-level CAPTURE keydown listener (attached here, live only while
+ * open) routes every key to `handleKey` — arrows move the highlight, Enter/Space
+ * select, Escape closes — and stops it before it reaches the pane's own nav. The
+ * capture listener, not focus, is what makes the keys deterministic: it catches
+ * them wherever focus landed (the pane or the portaled menu), so the menu's mount
+ * autofocus can't race them. The menu owns rendering, positioning, pointer
  * selection, and outside-click dismissal; `setHighlighted` syncs the highlight on
  * pointer hover.
  */

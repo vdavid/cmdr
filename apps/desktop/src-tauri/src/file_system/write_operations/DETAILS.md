@@ -319,12 +319,14 @@ the way local `copyfile` does; the upload mints a fresh remote object.
   transfer (`route_archive_copy_into` walks local sources with `walkdir`). A move INTO deletes the top-level local
   sources after the commit, and only when nothing was skipped (the move invariant — never delete a source whose bytes
   didn't land).
-- **Duplicate pre-check for create / rename** (`archive_inner_exists`, parsed off-executor). `route_archive_create` and
+- **Duplicate pre-check for create / rename** (`archive_inner_exists`). `route_archive_create` and
   `route_archive_rename` reject a name that already exists inside the zip UP FRONT with the same friendly "already
   exists" message the real-FS mkdir/rename paths use, so the FE shows the standard copy — the mutator otherwise only
-  rejects a duplicate at write time (`zip`'s `Duplicate filename`), after building a temp. A parse failure resolves to
-  "not a duplicate" so the managed op still surfaces the real fault. Copy/move-INTO conflicts are handled by the policy
-  layer below, not this pre-check.
+  rejects a duplicate at write time (`zip`'s `Duplicate filename`), after building a temp. It dispatches on the parent
+  like `run_managed_edit`: a LOCAL (or unregistered) parent parses the central directory straight off the real file
+  (off-executor), a REMOTE parent reads it through the parent volume (a ranged tail read via `resolve`, not a full pull).
+  A parse failure resolves to "not a duplicate" so the managed op still surfaces the real fault. Copy/move-INTO conflicts
+  are handled by the policy layer below, not this pre-check.
 - **Unrepresentable source entries are skipped, never lost (data safety).** A zip changeset can only carry real files
   and directories. When `route_archive_copy_into` walks the sources, any entry that's a symlink or special file
   (fifo/socket/device — including a broken symlink, since `symlink_metadata` classifies it as neither file nor dir) is
@@ -343,14 +345,19 @@ the way local `copyfile` does; the upload mints a fresh remote object.
   move degrades to a copy for that run). Batch granularity matches the single atomic archive rewrite and sidesteps the
   partial-merge-skip hazard; per-entry deletion is a future refinement. Progress is two honest phases (extract bytes,
   then rewrite bytes). Pinned by the `move_out_*` tests.
-- **Conflicts.** An add whose inner path already exists is resolved against the archive index. Pre-resolved policies stay
-  non-interactive (`build_copy_into_changeset`): Skip drops the add; Overwrite deletes the existing entry then adds (a
-  clean replace); Rename picks a unique ` (n)` name; OverwriteSmaller/Older compare size/mtime (strict). **The Stop
-  policy prompts interactively** (`archive_copy_into_interactive_start`): planning moves INSIDE the managed op (so the op
-  is registered and `resolve_write_conflict(op_id)` can reach the oneshot), and each FILE collision emits a
-  `write-conflict` and blocks on the answer, reusing the pure `ApplyToAll` latch + the oneshot plumbing (store the sender
-  BEFORE the emit). Dir-vs-dir collisions merge silently — only files prompt (the app-wide rule). A cancel during a
-  pending prompt drops the sender → the planner bails → the archive is untouched. Every Skip (a conflict resolved to
+- **Conflicts.** An add whose inner path already exists is resolved against the archive index. BOTH the pre-resolved
+  policies and Stop PLAN inside the managed op (`archive_copy_into_start`), against the working copy `run_managed_edit`
+  hands the closure — the real archive for a LOCAL parent, the pulled-local copy for a REMOTE one. Planning up front
+  against the archive path would break a REMOTE edit (`LocalFileSource::open` on a direct-SMB / MTP path fails, or opens
+  the OS mount the design routes around); planning inside the op is what keeps a remote plan on the pulled bytes. A
+  pre-resolved policy resolves each collision non-interactively (`build_copy_into_changeset`): Skip drops the add;
+  Overwrite deletes the existing entry then adds (a clean replace); Rename picks a unique ` (n)` name;
+  OverwriteSmaller/Older compare size/mtime (strict). **The Stop policy prompts interactively**
+  (`build_copy_into_changeset_interactive`): the op is registered so `resolve_write_conflict(op_id)` can reach the
+  oneshot, and each FILE collision emits a `write-conflict` and blocks on the answer, reusing the pure `ApplyToAll` latch
+  + the oneshot plumbing (store the sender BEFORE the emit). Dir-vs-dir collisions merge silently — only files prompt
+  (the app-wide rule). A cancel during a pending prompt drops the sender → the planner bails → the archive is untouched.
+  Every Skip (a conflict resolved to
   Skip, a conditional policy that declines to overwrite, or an unrepresentable entry) increments the plan's
   `skipped_count`, which gates the move-source deletion and surfaces as `files_skipped` on the terminal event. Pinned by
   the `interactive_*` tests.

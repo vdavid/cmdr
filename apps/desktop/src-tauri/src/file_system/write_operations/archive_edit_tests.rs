@@ -1304,6 +1304,140 @@ async fn interactive_dir_vs_dir_merges_without_prompting() {
     );
 }
 
+// ---- Remote-parent routes (plan / check against the parent, not a local open) --
+//
+// A REMOTE archive (direct SMB / MTP parent) has NO real local path, so any route
+// that opens the `.zip` with `LocalFileSource::open(archive_path)` fails (MTP) or
+// hits the OS mount the design routes around (direct SMB). These pin that the
+// non-interactive copy-into plans against the pulled-local working copy, and that
+// the mkdir/mkfile duplicate pre-check runs through the parent volume.
+
+/// A real zip as in-memory bytes, for seeding a remote parent's store.
+fn zip_bytes(entries: &[(&str, &[u8])]) -> Vec<u8> {
+    let mut cursor = std::io::Cursor::new(Vec::new());
+    {
+        let mut writer = ZipWriter::new(&mut cursor);
+        for (name, content) in entries {
+            writer.start_file(*name, SimpleFileOptions::default()).expect("start");
+            writer.write_all(content).expect("write");
+        }
+        writer.finish().expect("finish");
+    }
+    cursor.into_inner()
+}
+
+/// Registers a NON-local `InMemoryVolume` (the remote-parent stand-in) holding a
+/// zip at `archive_path`, under a unique volume id. Unregister with
+/// `get_volume_manager().unregister(&id)` when done.
+async fn register_remote_zip(
+    archive_path: &Path,
+    entries: &[(&str, &[u8])],
+) -> (String, Arc<crate::file_system::volume::InMemoryVolume>) {
+    use crate::file_system::volume::InMemoryVolume;
+    let parent = InMemoryVolume::new("Remote");
+    if let Some(dir) = archive_path.parent() {
+        parent.create_directory(dir).await.expect("seed parent dir");
+    }
+    parent
+        .create_file(archive_path, &zip_bytes(entries))
+        .await
+        .expect("seed remote zip");
+    let parent = Arc::new(parent);
+    let id = format!("remote-test-{}", Uuid::new_v4());
+    get_volume_manager().register(&id, Arc::clone(&parent) as Arc<dyn Volume>);
+    (id, parent)
+}
+
+/// Streams the archive back out of a (remote) parent and returns one entry's bytes.
+async fn read_remote_entry(parent: &dyn Volume, archive_path: &Path, name: &str) -> Option<Vec<u8>> {
+    let mut stream = parent.open_read_stream(archive_path).await.ok()?;
+    let mut bytes = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        bytes.extend_from_slice(&chunk.ok()?);
+    }
+    let mut archive = ZipArchive::new(std::io::Cursor::new(bytes)).ok()?;
+    let mut entry = archive.by_name(name).ok()?;
+    let mut buf = Vec::new();
+    entry.read_to_end(&mut buf).ok()?;
+    Some(buf)
+}
+
+#[tokio::test]
+async fn copy_into_a_remote_archive_lands_the_file_via_the_pulled_local_copy() {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    use crate::file_system::write_operations::route_archive_copy_into;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    // A local source file to copy INTO the remote archive.
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(&src_root).expect("mkdir src");
+    std::fs::write(src_root.join("new.txt"), b"fresh").expect("w");
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+
+    // The archive lives on a NON-local parent — `/device/bundle.zip` is not a real
+    // local file, so planning MUST run against the pulled-local working copy.
+    let archive_path = PathBuf::from("/device/bundle.zip");
+    let (parent_id, parent) = register_remote_zip(&archive_path, &[("keep.txt", b"keep")]).await;
+
+    let events = Arc::new(CollectorEventSink::new());
+    let result = route_archive_copy_into(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        source_volume,
+        vec![PathBuf::from("new.txt")],
+        archive_path.clone(), // dest is the archive root
+        parent_id.clone(),
+        ConflictResolution::Overwrite,
+        0,
+        false,
+    )
+    .await;
+    assert!(
+        result.is_ok(),
+        "a non-interactive copy INTO a remote archive must start (plan against the pulled copy), got {result:?}"
+    );
+
+    assert!(
+        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
+        "the remote copy-into should complete"
+    );
+    // The copied file landed in the re-read remote archive, next to the original.
+    assert_eq!(
+        read_remote_entry(parent.as_ref(), &archive_path, "keep.txt")
+            .await
+            .as_deref(),
+        Some(b"keep".as_slice()),
+        "the original entry survives the remote edit"
+    );
+    assert_eq!(
+        read_remote_entry(parent.as_ref(), &archive_path, "new.txt")
+            .await
+            .as_deref(),
+        Some(b"fresh".as_slice()),
+        "the copied file must land in the remote archive"
+    );
+
+    get_volume_manager().unregister(&parent_id);
+}
+
+#[tokio::test]
+async fn archive_inner_exists_detects_a_duplicate_in_a_remote_archive() {
+    // The mkdir/mkfile duplicate pre-check must see entries inside a REMOTE archive
+    // (through the parent volume), not fail open by attempting a local file open.
+    let archive_path = PathBuf::from("/device/bundle.zip");
+    let (parent_id, _parent) = register_remote_zip(&archive_path, &[("existing.txt", b"x")]).await;
+
+    assert!(
+        archive_inner_exists(&parent_id, &archive_path, "existing.txt").await,
+        "a duplicate inside a remote archive must be detected"
+    );
+    assert!(
+        !archive_inner_exists(&parent_id, &archive_path, "not_there.txt").await,
+        "a non-existent inner path reports absent"
+    );
+
+    get_volume_manager().unregister(&parent_id);
+}
+
 /// The mutation refusal matrix: only zip is writable. Every non-zip archive
 /// format (tar family + 7z) refuses with a typed `ReadOnlyDevice` at the write
 /// chokepoint, so no archive-edit route ever hands a non-zip file to the

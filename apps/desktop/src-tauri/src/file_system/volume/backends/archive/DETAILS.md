@@ -478,7 +478,10 @@ event sink, pause gate, and cancel intent via the `MutationHooks` seam. Full dri
 - **Leftover policy — no startup reaper.** A leftover `foo.zip.cmdr-tmp-*` is always an ABANDONED build (the original is
   intact), so it's harmless. `apply` reaps siblings of the target at the START of the next edit of that archive (before
   building its own fresh-uuid temp), which is sufficient; a cancel/error removes its own temp immediately via an RAII
-  guard.
+  guard. Caveat for a REMOTE archive: the sibling-reap runs on the LOCAL scratch copy, so a leftover
+  `foo.zip.cmdr-tmp-*` on the REMOTE share (a crash after upload, before swap) is NOT reaped by the next edit — it stays
+  until the user removes it. Still harmless: the original is intact, and the leftover holds the fully-uploaded NEW bytes
+  (see `write_operations/archive_remote_edit.rs`).
 - **Deletes/renames reshape the retained set.** A delete drops a file or a whole subtree (component-wise match, so
   `foo` never catches `foobar`); a rename rewrites a subtree prefix. Both are computed per original entry in one pass
   (`plan_new_name`); deletes win over renames.
@@ -604,6 +607,8 @@ watch": `listing_is_watched` reflects it, the backing `.zip` is watched for exte
   mutation methods deliberately STAY `NotSupported`: routing is path-based and backend-side (the driver drives the
   mutator directly from the archive path), so nothing calls `Volume::create_file`/`delete`/`rename` on an archive. The
   edit's final atomic rename is the change event the live watch (§ "Live content watch") turns into the post-edit
-  refresh. Still ahead: the interactive in-archive conflict prompt (ApplyToAll + oneshot — the non-interactive policy
-  ships now), the compound move ACROSS the boundary (out-of-zip = extract + archive-delete), non-local sources into a
-  zip, and flipping the FE `'archive'` VolumeKind writable.
+  refresh. Landed since: the interactive in-archive conflict prompt (ApplyToAll + oneshot), the compound move ACROSS the
+  boundary (out-of-zip = extract + archive-delete), remote-hosted zip edits (pull → edit → upload → swap, § "Remote edit"
+  in `write_operations/DETAILS.md`), and the writable FE `'archive'` VolumeKind. Still ahead: NON-LOCAL sources INTO a
+  zip (an MTP/SMB source copied into an archive — `route_archive_copy_into` still requires a `local_path()` source; the
+  archive itself may be remote).

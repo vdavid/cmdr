@@ -16,9 +16,10 @@
      * driven and doesn't reliably open (mounted-already-open) or close (controlled
      * `open=false`) when driven programmatically at a point, which this use needs. So
      * this owns its rendering, positioning, pointer selection, and outside-click
-     * dismissal directly. KEYBOARD navigation is the caller's job (it keeps focus and
-     * routes keys), reflected here via the controlled `highlightedValue`; pointer
-     * hover reports back through `onHighlightChange`.
+     * dismissal directly. KEYBOARD navigation is the caller's job (it routes keys via
+     * its own document-capture listener, NOT by holding focus here), reflected here
+     * via the controlled `highlightedValue`; pointer hover reports back through
+     * `onHighlightChange`.
      *
      * Portaled to `document.body` so `position: fixed` isn't captured by an ancestor
      * transform, and to escape ancestor `overflow`/`mask`. Frosted-glass surface with

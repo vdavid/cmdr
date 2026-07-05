@@ -168,16 +168,40 @@ pub(crate) fn ensure_zip_writable(archive_path: &Path) -> Result<(), WriteOperat
     }
 }
 
-/// Whether `inner_path` already exists in the archive at `archive_path`, parsing
-/// the central directory on the blocking pool. The create/rename routing calls
-/// this to reject a duplicate up front with the app's typed already-exists error,
-/// so the mutator never builds a temp for an edit `zip` would only reject at
-/// write time (`Duplicate filename`).
+/// Whether `inner_path` already exists in the archive at `archive_path` (on its
+/// parent drive `parent_volume_id`). The create/rename routing calls this to
+/// reject a duplicate up front with the app's typed already-exists error, so the
+/// mutator never builds a temp for an edit `zip` would only reject at write time
+/// (`Duplicate filename`).
 ///
-/// A parse failure (unreadable or corrupt archive) resolves to `false`: it isn't
-/// a known duplicate, so routing proceeds and the managed op surfaces the real
-/// fault through its normal error path rather than being masked here.
-pub(crate) async fn archive_inner_exists(archive_path: PathBuf, inner_path: String) -> bool {
+/// Dispatches on the parent like [`run_managed_edit`]: a LOCAL (or unregistered —
+/// always a local edit) parent parses the central directory straight off the real
+/// `.zip` file (zero network, no volume registration needed); a REMOTE (direct SMB
+/// / MTP) parent has no local file to open, so it reads the central directory
+/// through the parent volume (a ranged tail read via `resolve`, NOT a full pull).
+///
+/// An unresolvable or unreadable archive resolves to `false`: it isn't a known
+/// duplicate, so routing proceeds and the managed op surfaces the real fault
+/// through its normal error path rather than being masked here.
+pub(crate) async fn archive_inner_exists(parent_volume_id: &str, archive_path: &Path, inner_path: &str) -> bool {
+    let parent = get_volume_manager().get(parent_volume_id);
+    let is_remote = parent.as_ref().is_some_and(|p| !p.supports_local_fs_access());
+
+    if is_remote {
+        let full_path = if inner_path.is_empty() {
+            archive_path.to_path_buf()
+        } else {
+            archive_path.join(inner_path)
+        };
+        let resolved = get_volume_manager().resolve(parent_volume_id, &full_path).await;
+        return match resolved.volume {
+            Some(volume) if resolved.is_archive => volume.exists(&full_path).await,
+            _ => false,
+        };
+    }
+
+    let archive_path = archive_path.to_path_buf();
+    let inner_path = inner_path.to_string();
     tokio::task::spawn_blocking(move || {
         let Ok(source) = LocalFileSource::open(&archive_path) else {
             return false;
@@ -236,59 +260,25 @@ pub(crate) async fn route_archive_copy_into(
     ensure_zip_writable(&archive_path)?;
     let dest_inner = normalize_inner_path(&dest_inner);
 
-    // Stop policy → the interactive per-file prompt. Planning must run INSIDE the
-    // managed op (so the op is registered and `resolve_write_conflict(op_id)` can
-    // reach the oneshot), so we hand the raw inputs to a dedicated start that
-    // plans-then-applies inside its deferred. Pre-resolved policies keep the
-    // up-front, non-interactive planning below.
-    if matches!(conflict, ConflictResolution::Stop) {
-        return archive_copy_into_interactive_start(
-            events,
-            absolute_sources,
-            archive_path,
-            dest_inner,
-            parent_volume_id,
-            is_move,
-            progress_interval_ms,
-        )
-        .await;
-    }
-
-    // Enumerate the sources + parse the index off the async executor.
-    let archive_for_build = archive_path.clone();
-    let sources_for_build = absolute_sources.clone();
-    let plan = tokio::task::spawn_blocking(move || {
-        build_copy_into_changeset(&archive_for_build, &sources_for_build, &dest_inner, conflict)
-    })
-    .await
-    .map_err(|e| WriteOperationError::IoError {
-        path: String::new(),
-        message: format!("the archive copy couldn't be planned: {e}"),
-    })??;
-
-    let move_sources_to_delete = if is_move && plan.skipped_count == 0 {
-        absolute_sources
-    } else {
-        Vec::new()
-    };
-    let summary_source = plan
-        .changeset
-        .adds
-        .first()
-        .map(|a| a.inner_path.rsplit('/').next().unwrap_or(&a.inner_path).to_string());
-
-    let request = ArchiveEditRequest {
+    // Plan AND apply inside the managed op, against the working copy — the real
+    // archive for a LOCAL parent, or the pulled-local copy for a REMOTE one. The
+    // changeset must NOT be planned up front against `archive_path`: for a REMOTE
+    // parent that path has no local file, so `LocalFileSource::open` fails (MTP) or
+    // opens the OS mount the design routes around (direct SMB, hang risk). Both
+    // policies plan inside the op's closure via `run_managed_edit`: a pre-resolved
+    // policy resolves non-interactively; Stop prompts per file (the op is
+    // registered, so `resolve_write_conflict(op_id)` reaches the oneshot).
+    archive_copy_into_start(
+        events,
+        absolute_sources,
         archive_path,
+        dest_inner,
         parent_volume_id,
-        changeset: plan.changeset,
-        summary: OperationSummaryText {
-            source: summary_source,
-            destination: None,
-        },
-        move_sources_to_delete,
-        skipped_count: plan.skipped_count,
-    };
-    archive_edit_start(events, request, progress_interval_ms).await
+        conflict,
+        is_move,
+        progress_interval_ms,
+    )
+    .await
 }
 
 /// The planned changeset for a copy/move-into, plus how many source entries were
@@ -764,17 +754,25 @@ fn join_inner_str(parent: &str, child: &str) -> String {
     }
 }
 
-/// Starts an INTERACTIVE copy/move INTO a zip (Stop policy) as a managed op. The
-/// changeset is planned inside the op's deferred (on the blocking pool) so that
-/// each in-archive file collision can emit a `write-conflict` and block on the
-/// user's answer via the op's registered oneshot; only after planning resolves
-/// does the mutator rewrite the archive. Dir-vs-dir collisions merge silently.
-async fn archive_copy_into_interactive_start(
+/// Starts a copy/move INTO a zip as a managed op, planning AND applying inside the
+/// op's deferred (on the blocking pool) against the working copy `run_managed_edit`
+/// hands the closure — the real archive for a LOCAL parent, the pulled-local copy
+/// for a REMOTE one. Planning inside the op is what lets a remote edit plan against
+/// the pulled bytes (never the unopenable remote path) and lets a Stop collision
+/// emit a `write-conflict` and block on the op's registered oneshot. A pre-resolved
+/// policy resolves each collision without prompting; Stop prompts per file.
+/// Dir-vs-dir collisions merge silently under both.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the copy-into seam threads the sources, archive path, dest, parent id, policy, and move flag; a struct would just shuffle them"
+)]
+async fn archive_copy_into_start(
     events: Arc<dyn OperationEventSink>,
     absolute_sources: Vec<PathBuf>,
     archive_path: PathBuf,
     dest_inner: String,
     parent_volume_id: String,
+    conflict: ConflictResolution,
     is_move: bool,
     progress_interval_ms: u64,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
@@ -841,14 +839,22 @@ async fn archive_copy_into_interactive_start(
                 archive_path.clone(),
                 Arc::clone(&state),
                 move |working: &Path| -> Result<(Vec<PathBuf>, usize), PlanError> {
-                    let plan = build_copy_into_changeset_interactive(
-                        working,
-                        &absolute_sources,
-                        &dest_inner,
-                        &*events_for_blocking,
-                        &op_id_for_blocking,
-                        &state_for_blocking,
-                    )?;
+                    // Stop → interactive per-file prompts; any pre-resolved policy →
+                    // non-interactive. Both plan against `working` (the pulled-local
+                    // copy for a remote parent), never the raw remote path.
+                    let plan = if matches!(conflict, ConflictResolution::Stop) {
+                        build_copy_into_changeset_interactive(
+                            working,
+                            &absolute_sources,
+                            &dest_inner,
+                            &*events_for_blocking,
+                            &op_id_for_blocking,
+                            &state_for_blocking,
+                        )?
+                    } else {
+                        build_copy_into_changeset(working, &absolute_sources, &dest_inner, conflict)
+                            .map_err(PlanError::Op)?
+                    };
                     let move_sources = if is_move && plan.skipped_count == 0 {
                         absolute_sources.clone()
                     } else {

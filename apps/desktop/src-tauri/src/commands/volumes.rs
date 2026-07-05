@@ -59,7 +59,7 @@ pub async fn get_volume_space(path: String) -> TimedOut<Option<VolumeSpaceInfo>>
 #[tauri::command]
 #[specta::specta]
 pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
-    let (volume, timed_out) = resolve_path_to_volume(path).await;
+    let (volume, timed_out) = resolve_path_to_volume(path, VOLUME_TIMEOUT).await;
     PathVolumeResolution { volume, timed_out }
 }
 
@@ -72,7 +72,15 @@ pub async fn resolve_path_volume(path: String) -> PathVolumeResolution {
 #[tauri::command]
 #[specta::specta]
 pub async fn resolve_location(path: String) -> ResolveLocationResult {
-    let (volume, timed_out) = resolve_path_to_volume(path.clone()).await;
+    resolve_location_inner(path, VOLUME_TIMEOUT).await
+}
+
+/// Shared body of [`resolve_location`] with an injectable filesystem timeout.
+/// Production passes `VOLUME_TIMEOUT`; tests pass a generous timeout so a
+/// CPU-saturated box can't trip `timed_out` before the (sub-millisecond) `statfs`
+/// closure is even scheduled onto the blocking pool — the flake source.
+async fn resolve_location_inner(path: String, fs_timeout: Duration) -> ResolveLocationResult {
+    let (volume, timed_out) = resolve_path_to_volume(path.clone(), fs_timeout).await;
     ResolveLocationResult {
         location: volume.map(|v| Location { volume_id: v.id, path }),
         timed_out,
@@ -82,8 +90,8 @@ pub async fn resolve_location(path: String) -> ResolveLocationResult {
 /// Shared body for `resolve_path_volume` and `resolve_location`: resolves a path
 /// to its containing volume via protocol dispatch (`mtp://` → matching connected
 /// storage, `smb://` → the virtual `network` volume) or, for filesystem paths,
-/// `statfs` under a timeout. Returns the volume (if any) and whether it timed out.
-async fn resolve_path_to_volume(path: String) -> (Option<VolumeInfo>, bool) {
+/// `statfs` under `fs_timeout`. Returns the volume (if any) and whether it timed out.
+async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<VolumeInfo>, bool) {
     // MTP protocol dispatch
     if path.starts_with("mtp://") {
         return (find_mtp_volume_for_path(&path).await, false);
@@ -115,7 +123,7 @@ async fn resolve_path_to_volume(path: String) -> (Option<VolumeInfo>, bool) {
     // drive id, never a per-archive id), so statfs the `.zip`'s real location, not
     // the inner path (which isn't a real FS path). The boundary check runs inside
     // the timeout-wrapped closure so its stat can't block IPC on a hung mount.
-    let result = blocking_with_timeout_flag(VOLUME_TIMEOUT, None, move || {
+    let result = blocking_with_timeout_flag(fs_timeout, None, move || {
         let fs_path = match crate::file_system::volume::backends::archive::confirm_archive_boundary(
             std::path::Path::new(&path),
         ) {
@@ -199,12 +207,18 @@ async fn get_mtp_space_info(path: &str) -> Option<VolumeSpaceInfo> {
 mod tests {
     use super::*;
 
+    /// A generous filesystem timeout for the resolve tests: the local `statfs`
+    /// completes in well under a millisecond, but the production 2 s `VOLUME_TIMEOUT`
+    /// can elapse before the blocking closure is scheduled on a CPU-saturated box,
+    /// flaking the `timed_out` assertion. An hour is deterministic for this work.
+    const TEST_FS_TIMEOUT: Duration = Duration::from_secs(3600);
+
     #[tokio::test]
     async fn resolve_location_local_dir_returns_root_volume() {
         let dir = tempfile::tempdir().expect("create temp dir");
         let path = dir.path().to_string_lossy().to_string();
 
-        let result = resolve_location(path.clone()).await;
+        let result = resolve_location_inner(path.clone(), TEST_FS_TIMEOUT).await;
 
         assert!(!result.timed_out);
         let location = result.location.expect("local dir should resolve to a volume");
@@ -221,7 +235,7 @@ mod tests {
         std::fs::write(&file_path, b"hi").expect("write temp file");
         let path = file_path.to_string_lossy().to_string();
 
-        let result = resolve_location(path.clone()).await;
+        let result = resolve_location_inner(path.clone(), TEST_FS_TIMEOUT).await;
 
         assert!(!result.timed_out);
         let location = result.location.expect("local file should resolve to a volume");
@@ -241,7 +255,7 @@ mod tests {
         let inner = zip.join("docs/readme.txt");
         let path = inner.to_string_lossy().to_string();
 
-        let result = resolve_location(path.clone()).await;
+        let result = resolve_location_inner(path.clone(), TEST_FS_TIMEOUT).await;
 
         assert!(!result.timed_out);
         let location = result
