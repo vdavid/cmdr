@@ -105,7 +105,19 @@ export interface VolumeCapabilities {
   hasParentRow: boolean
   /** Mirrors pane state to the MCP `PaneState` store (network/search panes are skipped — they have other owners). */
   syncsToMcp: boolean
-  /** Path namespace the pane's URLs use. Drives the drop-foreign-listings prefix + display, where converting removes a literal. */
+  /**
+   * Path namespace the pane's URLs use. NOTE: nearly vestigial — the only runtime
+   * reader is `clipboard-operations.ts` (a `!== 'search-results'` gate, which
+   * reads the PARENT volume's row via id-only `capabilitiesFor`, never the archive
+   * row). The drop-foreign-listings prefix is computed from an id compare in
+   * `navigate.ts`, not from this field. So the `archive` row's `'filesystem'` is
+   * HARMLESS today even for an SMB/MTP-backed archive. But it's a latent trap:
+   * `capabilitiesForPane` returns the frozen `archive` row wholesale, so a remote-
+   * backed archive pane reports `'filesystem'` regardless of its parent scheme. Any
+   * FUTURE consumer routing clipboard/transfer/display off `caps.pathScheme` for an
+   * archive pane must NOT trust this — blend in the parent volume's scheme in
+   * `capabilitiesForPane` first.
+   */
   pathScheme: 'filesystem' | 'smb' | 'mtp' | 'search-results'
 }
 
