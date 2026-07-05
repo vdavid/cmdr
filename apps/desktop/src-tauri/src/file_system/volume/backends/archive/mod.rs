@@ -39,6 +39,7 @@ mod boundary;
 mod cache;
 mod error;
 mod index;
+mod mutator;
 mod name;
 mod read;
 mod source;
