@@ -310,6 +310,24 @@ An `ArchiveVolume` is never constructed here directly in production — it's min
   adds the I/O: the component must be a real FILE (a directory named `foo.zip` loses to normal navigation) whose first
   bytes are a zip signature (a mislabeled file isn't routed). Extension-only feeds `FileEntry.is_archive` at listing time
   (no per-entry byte read — that's a round-trip-per-file on a remote backend); confirm runs once at navigation time.
+- **Confirm is parent-aware, so `resolve` is `async`.** `confirm_archive_boundary` is `std::fs`-only, so it can confirm
+  only a LOCAL parent. For a REMOTE parent (direct SMB / MTP), the `.zip` isn't reachable through the local filesystem,
+  so `VolumeManager::resolve` confirms through the parent volume's OWN I/O (`manager.rs::confirm_remote_archive_boundary`):
+  `parent.get_metadata(zip)` (must be a file, not a directory) plus a four-byte `parent.read_range(zip, 0, 4)` sniffed
+  with the SAME `bytes_start_with_zip_signature` predicate the local path uses — one shared detector, never forked.
+  `resolve` picks local-vs-remote confirm by `parent.supports_local_fs_access()`, keeping the local path's zero-I/O fast
+  filter (no archive-extension component ⇒ no I/O at all) byte-identical.
+  - **Refuse-typed when the primitive is missing.** If `read_range` is `NotSupported` (a backend without a positioned
+    read) or hits a transient remote fault, we can't rule the file out, so we route it anyway. The archive layer then
+    re-attempts the read while parsing and surfaces a clean typed "unreadable archive" (`NotSupported`/`IoError` →
+    `ArchiveUnreadable`) rather than mis-listing the `.zip` as a plain file — and it starts browsing for real, with no
+    code change, the moment the backend's `read_range` works. Only a *successful* read whose bytes AREN'T a zip
+    signature (a genuinely mislabeled remote file) declines the route.
+  - **The sync `resolve_local_only`** confirms only LOCAL boundaries (no async I/O) for the one caller that can't
+    `.await`: the write-op fresh-listing oracle (`listing::caching::try_get_watched_listing`), which runs on sync
+    recursive scan walkers. That oracle guards a REMOTE archive-inner path itself (a non-local parent's volume-level
+    `listing_is_watched` would falsely claim freshness for an archive whose content watch is local-only and never
+    established), declining the cache so the pre-op scan reruns honestly.
 - **`SUPPORTED_ARCHIVE_EXTENSIONS` is the one source of truth** shared by `is_archive` and boundary detection; the later
   tar/7z read milestone extends it (and confirm's magic check gains sibling signatures).
 
@@ -384,6 +402,24 @@ briefly overlap, both fire idempotent refreshes). `active_watch_count` (incremen
 `Drop`) lets `lru_eviction_releases_the_archive_and_its_watch` prove eviction leaks no watcher. `listing_is_watched` is
 `true` only while the handle is present, so a listing never claims freshness the backend can't back; if the watch fails
 to establish (`notify` refuses the path — e.g. a non-local parent), it stays `false`.
+
+### Decision: remote archives have NO live watch — freshness is "as of last read"
+
+The content watch is a LOCAL `notify` watch on the backing `.zip`'s parent directory. A REMOTE parent (direct SMB / MTP)
+has no local path for `notify` to watch, so `start_watch` returns `None` and a remote `ArchiveVolume`'s
+`listing_is_watched` is permanently `false`. Two consequences, both correct-by-construction rather than a gap to close:
+
+- **The write-op fresh-listing oracle never serves a remote archive listing from cache.** `listing_is_watched == false`
+  means every pre-flight scan of a remote archive re-reads it honestly (and `try_get_watched_listing` also guards a
+  remote archive-inner path explicitly — see `volume/CLAUDE.md` § `resolve`). So a copy/delete inside a remote archive
+  always sizes against a fresh parse, never a stale cache.
+- **No push-refresh for an EXTERNAL edit of a remote `.zip`.** Nothing forwards an out-of-band change (another app
+  rewriting the zip on the share/device) to an open remote-archive listing; the pane shows the archive as of its last
+  read until the user re-navigates or refreshes (F5). This is the accepted freshness model: a remote archive changes
+  rarely, and the app's OWN edit refreshes the pane through the normal listing-cache path (the edit's driver invalidates
+  the `(parent_id, archive_path)` listing on completion, same as any remote write). Deliberately NOT worth an
+  SMB-watcher event on the `.zip` for v1 — the `(path, size, mtime)` cache key still forces a re-parse on the next read,
+  so a stale render can never outlive a navigation. Revisit only if remote multi-writer scenarios become common.
 
 **Interaction with the mutation milestone (M4).** When zip mutation lands via temp+rename, the edit's FINAL atomic rename
 over `foo.zip` is a change event this watch catches — that IS the desired post-edit refresh. A concurrent browse in the

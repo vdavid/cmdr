@@ -76,9 +76,11 @@ Depth, rationale, and full test list: [DETAILS.md](DETAILS.md); read before non-
   paste). Capability flags + typed `ArchiveError → VolumeError` mapping: [DETAILS.md](DETAILS.md) § "The `ArchiveVolume`
   layer".
 
-- **This layer is headless: it never registers itself.** `VolumeManager::resolve` routes a `.zip`-crossing path here
-  (on-demand, archive LRU, backend-internal id). Full model + routing-vs-display id split: [DETAILS.md](DETAILS.md)
-  § "Routing and lifecycle".
+- **This layer is headless: it never registers itself.** `VolumeManager::resolve` (async — a REMOTE `.zip` is confirmed
+  through the parent's `get_metadata` + a four-byte `read_range`, not `std::fs`) routes a `.zip`-crossing path here
+  (on-demand, archive LRU, backend-internal id). A backend that can't do positioned reads yet routes anyway and refuses
+  typed. The sync `resolve_local_only` is for the write-op oracle alone. Full model + routing-vs-display id split:
+  [DETAILS.md](DETAILS.md) § "Routing and lifecycle".
 
 - **Live watch (`watch.rs`): refresh via `refresh_archive_listings` (PARENT DRIVE id + full `/…/foo.zip/inner` path),
   never the archive id or `notify_directory_changed`** — the listing cache keys on the parent and re-resolves. Watches
