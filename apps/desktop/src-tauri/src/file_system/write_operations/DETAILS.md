@@ -275,6 +275,13 @@ the mutation mechanism (`ArchiveMutator`, temp+rename safe-overwrite) lives in t
   `write-conflict` and blocks on the answer, reusing the pure `ApplyToAll` latch + the oneshot plumbing (store the sender
   BEFORE the emit). Dir-vs-dir collisions merge silently — only files prompt (the app-wide rule). A cancel during a
   pending prompt drops the sender → the planner bails → the archive is untouched. Pinned by the `interactive_*` tests.
+- **Mutation-test coverage (`cargo mutants` on `archive_edit.rs`).** Every conflict-resolution and routing/data-path
+  mutant is killed (Rename numbering incl. dotfiles, OverwriteSmaller/Older strict `<` incl. the equal-size/mtime
+  boundary, move-source deletion gating, all-or-nothing move-out, dir-merge mkdir guard, settle payloads). The only
+  deliberately-unkilled survivors are in `MutatorHooks` — progress-emit THROTTLING, pause parking, and the
+  cancel-during-rewrite bridge. These are UX/timing, data-safe by construction (the mutator's own cancel-abandons-temp
+  and progress semantics are pinned in `backends/archive/mutator_test.rs`), and killing them would need flaky
+  timing-based tests — not worth it per the mutation-score guidance.
 
 ## Busy-volumes set
 

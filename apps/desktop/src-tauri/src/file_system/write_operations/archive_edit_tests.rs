@@ -99,6 +99,8 @@ async fn a_successful_edit_rewrites_the_archive_and_emits_complete_then_settled(
         wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await,
         "write-settled should fire"
     );
+    // A `root`-parent edit settles with no volume id (`None`, not `"root"`).
+    assert_eq!(events.settled.lock_ignore_poison()[0].volume_id, None);
 }
 
 #[tokio::test]
@@ -230,7 +232,8 @@ impl Volume for FailingWriteVolume {
         &'a self,
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::listing::FileEntry>, VolumeError>> + Send + 'a>>
+    {
         self.inner.list_directory(path, on_progress)
     }
     fn get_metadata<'a>(
@@ -327,8 +330,17 @@ async fn move_out_lands_files_at_dest_deletes_entries_and_keeps_the_remainder() 
         Some(b"keep".as_slice()),
         "the untouched sibling must remain in the archive"
     );
-    let complete = events.complete.lock_ignore_poison();
-    assert_eq!(complete[0].operation_type, WriteOperationType::Move);
+    {
+        let complete = events.complete.lock_ignore_poison();
+        assert_eq!(complete[0].operation_type, WriteOperationType::Move);
+    }
+    // A `root`-parent op carries no settle volume id (it's `None`, not `"root"`).
+    assert!(wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await);
+    assert_eq!(
+        events.settled.lock_ignore_poison()[0].volume_id,
+        None,
+        "a root-parent move-out settles with no volume id"
+    );
 }
 
 #[tokio::test]
@@ -522,6 +534,284 @@ async fn a_missing_archive_emits_a_write_error_not_a_panic() {
     );
 }
 
+// ---- Non-interactive policy coverage (Rename / conditional / move gating) --
+
+/// Runs a non-interactive copy/move INTO `archive` of local dir `src_rel` under a
+/// pre-resolved `policy`, landing at the archive root. Returns the collector.
+async fn run_policy_copy_into(
+    archive: &Path,
+    src_root: &Path,
+    src_rel: &str,
+    policy: ConflictResolution,
+    is_move: bool,
+) -> Arc<CollectorEventSink> {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    use crate::file_system::write_operations::route_archive_copy_into;
+
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.to_path_buf()));
+    let events = Arc::new(CollectorEventSink::new());
+    route_archive_copy_into(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        source_volume,
+        vec![PathBuf::from(src_rel)],
+        archive.to_path_buf(),
+        "root".to_string(),
+        policy,
+        0,
+        is_move,
+    )
+    .await
+    .expect("start policy copy-into");
+    events
+}
+
+#[tokio::test]
+async fn rename_policy_picks_the_next_free_numbered_name() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let archive = tmp.path().join("a.zip");
+    // Both `existing.txt` AND `existing (1).txt` are taken, so Rename must land on
+    // `existing (2).txt` — pinning the extension placement AND the skip-taken loop.
+    write_multi_zip(
+        &archive,
+        &[
+            ("d/existing.txt", b"OLD"),
+            ("d/existing (1).txt", b"OLD1"),
+            ("d/.env", b"OLD_ENV"),
+        ],
+    );
+
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(src_root.join("d")).expect("mkdir src");
+    std::fs::write(src_root.join("d/existing.txt"), b"NEW").expect("w1");
+    // A DOTFILE has no stem before its dot, so the whole name (incl. the leading
+    // dot) is the stem and the ` (n)` suffix goes at the END: `.env (1)`, not
+    // ` (1).env`. Pins the extension-placement guard.
+    std::fs::write(src_root.join("d/.env"), b"ENV").expect("w2");
+
+    let events = run_policy_copy_into(&archive, &src_root, "d", ConflictResolution::Rename, false).await;
+
+    assert!(
+        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
+        "rename copy-into should complete"
+    );
+    // Originals untouched; the incoming file lands under the next free name with
+    // the extension kept BEFORE the ` (n)` suffix.
+    assert_eq!(
+        read_entry(&archive, "d/existing.txt").as_deref(),
+        Some(b"OLD".as_slice())
+    );
+    assert_eq!(
+        read_entry(&archive, "d/existing (1).txt").as_deref(),
+        Some(b"OLD1".as_slice())
+    );
+    assert_eq!(
+        read_entry(&archive, "d/existing (2).txt").as_deref(),
+        Some(b"NEW".as_slice()),
+        "Rename must pick the next free ` (n)` name and keep the extension in place"
+    );
+    assert_eq!(
+        read_entry(&archive, "d/.env").as_deref(),
+        Some(b"OLD_ENV".as_slice()),
+        "the original dotfile is kept"
+    );
+    assert_eq!(
+        read_entry(&archive, "d/.env (1)").as_deref(),
+        Some(b"ENV".as_slice()),
+        "a renamed dotfile keeps its whole name as the stem: `.env (1)`, not ` (1).env`"
+    );
+}
+
+#[tokio::test]
+async fn overwrite_smaller_overwrites_only_a_strictly_smaller_entry() {
+    // Case A: the archive entry is LARGER than the source → skip (kept).
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let archive_a = tmp.path().join("a.zip");
+    write_multi_zip(&archive_a, &[("d/f.txt", b"BIGDATA")]); // 7 bytes
+    let src_a = tmp.path().join("srca");
+    std::fs::create_dir_all(src_a.join("d")).expect("mkdir");
+    std::fs::write(src_a.join("d/f.txt"), b"hi").expect("w"); // 2 bytes
+    let events_a = run_policy_copy_into(&archive_a, &src_a, "d", ConflictResolution::OverwriteSmaller, false).await;
+    assert!(wait_until(|| !events_a.complete.lock_ignore_poison().is_empty()).await);
+    assert_eq!(
+        read_entry(&archive_a, "d/f.txt").as_deref(),
+        Some(b"BIGDATA".as_slice()),
+        "a larger destination must NOT be overwritten under OverwriteSmaller"
+    );
+
+    // Case B: the archive entry is SMALLER than the source → overwrite.
+    let archive_b = tmp.path().join("b.zip");
+    write_multi_zip(&archive_b, &[("d/f.txt", b"hi")]); // 2 bytes
+    let src_b = tmp.path().join("srcb");
+    std::fs::create_dir_all(src_b.join("d")).expect("mkdir");
+    std::fs::write(src_b.join("d/f.txt"), b"BIGDATA").expect("w"); // 7 bytes
+    let events_b = run_policy_copy_into(&archive_b, &src_b, "d", ConflictResolution::OverwriteSmaller, false).await;
+    assert!(wait_until(|| !events_b.complete.lock_ignore_poison().is_empty()).await);
+    assert_eq!(
+        read_entry(&archive_b, "d/f.txt").as_deref(),
+        Some(b"BIGDATA".as_slice()),
+        "a strictly smaller destination must be overwritten under OverwriteSmaller"
+    );
+
+    // Case C: EQUAL sizes → skip (the comparison is strict `<`, not `<=`).
+    let archive_c = tmp.path().join("c.zip");
+    write_multi_zip(&archive_c, &[("d/f.txt", b"AB")]); // 2 bytes
+    let src_c = tmp.path().join("srcc");
+    std::fs::create_dir_all(src_c.join("d")).expect("mkdir");
+    std::fs::write(src_c.join("d/f.txt"), b"XY").expect("w"); // 2 bytes, equal
+    let events_c = run_policy_copy_into(&archive_c, &src_c, "d", ConflictResolution::OverwriteSmaller, false).await;
+    assert!(wait_until(|| !events_c.complete.lock_ignore_poison().is_empty()).await);
+    assert_eq!(
+        read_entry(&archive_c, "d/f.txt").as_deref(),
+        Some(b"AB".as_slice()),
+        "an equal-size destination must NOT be overwritten (strict `<`, never `<=`)"
+    );
+}
+
+#[tokio::test]
+async fn overwrite_older_overwrites_only_a_strictly_older_entry() {
+    use zip::DateTime;
+    use zip::write::SimpleFileOptions;
+
+    // Build a zip whose single entry carries a controlled modification date.
+    fn write_zip_with_mtime(path: &Path, name: &str, content: &[u8], dt: DateTime) {
+        let file = std::fs::File::create(path).expect("create zip");
+        let mut writer = ZipWriter::new(file);
+        writer
+            .start_file(name, SimpleFileOptions::default().last_modified_time(dt))
+            .expect("start");
+        writer.write_all(content).expect("write");
+        writer.finish().expect("finish");
+    }
+    let old = DateTime::from_date_and_time(2020, 1, 1, 0, 0, 0).expect("2020 date");
+    let new = DateTime::from_date_and_time(2024, 1, 1, 0, 0, 0).expect("2024 date");
+    let src_2020 = filetime::FileTime::from_unix_time(1_577_836_800, 0); // 2020-01-01Z
+    let src_2024 = filetime::FileTime::from_unix_time(1_704_067_200, 0); // 2024-01-01Z
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+
+    // Case A: archive entry is NEWER (2024) than the source (2020) → skip.
+    let archive_a = tmp.path().join("a.zip");
+    write_zip_with_mtime(&archive_a, "d/f.txt", b"KEEP", new);
+    let src_a = tmp.path().join("srca");
+    std::fs::create_dir_all(src_a.join("d")).expect("mkdir");
+    std::fs::write(src_a.join("d/f.txt"), b"INCOMING").expect("w");
+    filetime::set_file_mtime(src_a.join("d/f.txt"), src_2020).expect("mtime");
+    let events_a = run_policy_copy_into(&archive_a, &src_a, "d", ConflictResolution::OverwriteOlder, false).await;
+    assert!(wait_until(|| !events_a.complete.lock_ignore_poison().is_empty()).await);
+    assert_eq!(
+        read_entry(&archive_a, "d/f.txt").as_deref(),
+        Some(b"KEEP".as_slice()),
+        "a newer destination must NOT be overwritten under OverwriteOlder"
+    );
+
+    // Case B: archive entry is OLDER (2020) than the source (2024) → overwrite.
+    let archive_b = tmp.path().join("b.zip");
+    write_zip_with_mtime(&archive_b, "d/f.txt", b"KEEP", old);
+    let src_b = tmp.path().join("srcb");
+    std::fs::create_dir_all(src_b.join("d")).expect("mkdir");
+    std::fs::write(src_b.join("d/f.txt"), b"INCOMING").expect("w");
+    filetime::set_file_mtime(src_b.join("d/f.txt"), src_2024).expect("mtime");
+    let events_b = run_policy_copy_into(&archive_b, &src_b, "d", ConflictResolution::OverwriteOlder, false).await;
+    assert!(wait_until(|| !events_b.complete.lock_ignore_poison().is_empty()).await);
+    assert_eq!(
+        read_entry(&archive_b, "d/f.txt").as_deref(),
+        Some(b"INCOMING".as_slice()),
+        "a strictly older destination must be overwritten under OverwriteOlder"
+    );
+
+    // Case C: EQUAL mtimes → skip (the comparison is strict `<`, not `<=`). Derive
+    // the source mtime from the archive entry's ACTUAL parsed value so the two are
+    // bit-for-bit equal regardless of DOS-datetime timezone conversion.
+    use crate::file_system::volume::backends::archive::{ArchiveIndex, LocalFileSource};
+    let archive_c = tmp.path().join("c.zip");
+    write_zip_with_mtime(&archive_c, "d/f.txt", b"KEEP", old);
+    let parsed_mtime = {
+        let src = LocalFileSource::open(&archive_c).expect("open archive");
+        let index = ArchiveIndex::parse(&src).expect("parse index");
+        index.get("d/f.txt").and_then(|n| n.modified).expect("entry mtime")
+    };
+    let src_c = tmp.path().join("srcc");
+    std::fs::create_dir_all(src_c.join("d")).expect("mkdir");
+    std::fs::write(src_c.join("d/f.txt"), b"INCOMING").expect("w");
+    filetime::set_file_mtime(
+        src_c.join("d/f.txt"),
+        filetime::FileTime::from_unix_time(parsed_mtime, 0),
+    )
+    .expect("mtime");
+    let events_c = run_policy_copy_into(&archive_c, &src_c, "d", ConflictResolution::OverwriteOlder, false).await;
+    assert!(wait_until(|| !events_c.complete.lock_ignore_poison().is_empty()).await);
+    assert_eq!(
+        read_entry(&archive_c, "d/f.txt").as_deref(),
+        Some(b"KEEP".as_slice()),
+        "an equal-mtime destination must NOT be overwritten (strict `<`, never `<=`)"
+    );
+}
+
+#[tokio::test]
+async fn move_into_deletes_the_source_only_on_a_clean_transfer() {
+    // Clean move (no collision) → the top-level source is deleted after commit.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let archive = tmp.path().join("a.zip");
+    write_multi_zip(&archive, &[("placeholder.txt", b"x")]);
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(src_root.join("d")).expect("mkdir");
+    std::fs::write(src_root.join("d/a.txt"), b"aaa").expect("w");
+
+    let events = run_policy_copy_into(&archive, &src_root, "d", ConflictResolution::Overwrite, true).await;
+    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    assert_eq!(read_entry(&archive, "d/a.txt").as_deref(), Some(b"aaa".as_slice()));
+    assert!(
+        wait_until(|| !src_root.join("d").exists()).await,
+        "a clean move INTO the archive must delete the source after commit"
+    );
+}
+
+#[tokio::test]
+async fn move_into_with_a_skipped_collision_keeps_the_source() {
+    // A move where a collision is Skipped must NOT delete the source (its bytes
+    // didn't fully land) — the move invariant. Pins `is_move && !any_skipped`.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let archive = tmp.path().join("a.zip");
+    write_multi_zip(&archive, &[("d/a.txt", b"OLD")]);
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(src_root.join("d")).expect("mkdir");
+    std::fs::write(src_root.join("d/a.txt"), b"NEW").expect("w1"); // collides → Skip
+    std::fs::write(src_root.join("d/b.txt"), b"bbb").expect("w2"); // lands
+
+    let events = run_policy_copy_into(&archive, &src_root, "d", ConflictResolution::Skip, true).await;
+    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    // The non-colliding file landed, the colliding one kept its OLD bytes, and the
+    // source survives because something was skipped.
+    assert_eq!(read_entry(&archive, "d/b.txt").as_deref(), Some(b"bbb".as_slice()));
+    assert_eq!(read_entry(&archive, "d/a.txt").as_deref(), Some(b"OLD".as_slice()));
+    assert!(
+        src_root.join("d/a.txt").exists() && src_root.join("d/b.txt").exists(),
+        "a partial (skipped) move must NOT delete the source"
+    );
+}
+
+#[tokio::test]
+async fn copy_into_preserves_an_empty_source_directory() {
+    // An empty source subdir must materialize as an explicit archive dir entry —
+    // pins the `!index.exists(&inner) && planned.insert(...)` mkdir guard.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let archive = tmp.path().join("a.zip");
+    write_multi_zip(&archive, &[("placeholder.txt", b"x")]);
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(src_root.join("d/empty_sub")).expect("mkdir empty subdir");
+    std::fs::write(src_root.join("d/f.txt"), b"f").expect("w");
+
+    let events = run_policy_copy_into(&archive, &src_root, "d", ConflictResolution::Skip, false).await;
+    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    // The empty directory survives as an explicit `d/empty_sub/` entry.
+    let file = std::fs::File::open(&archive).expect("open");
+    let mut zip = ZipArchive::new(file).expect("zip");
+    assert!(
+        zip.by_name("d/empty_sub/").is_ok(),
+        "an empty source directory must be preserved as an explicit archive entry"
+    );
+}
+
 // ---- Interactive in-archive conflict prompt (Stop policy) -----------------
 
 /// Starts an interactive (Stop-policy) copy INTO `archive` of local dir `src_rel`
@@ -587,6 +877,13 @@ async fn interactive_copy_into_prompts_on_a_file_collision_and_overwrite_replace
         read_entry(&archive, "d/fresh.txt").as_deref(),
         Some(b"fresh".as_slice()),
         "the non-colliding file is added"
+    );
+    // A `root`-parent op carries no settle volume id (it's `None`, not `"root"`).
+    assert!(wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await);
+    assert_eq!(
+        events.settled.lock_ignore_poison()[0].volume_id,
+        None,
+        "a root-parent archive edit settles with no volume id"
     );
 }
 
@@ -701,6 +998,82 @@ async fn interactive_cancel_during_a_prompt_leaves_the_archive_intact() {
 }
 
 #[tokio::test]
+async fn interactive_conflict_event_carries_both_sides_metadata() {
+    use crate::file_system::write_operations::resolve_write_conflict;
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let archive = tmp.path().join("a.zip");
+    write_multi_zip(&archive, &[("d/existing.txt", b"OLDDD")]); // 5 bytes
+
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(src_root.join("d")).expect("mkdir src");
+    std::fs::write(src_root.join("d/existing.txt"), b"NN").expect("w1"); // 2 bytes
+
+    let (events, op_id) = start_interactive_copy_into(&archive, &src_root, "d").await;
+
+    assert!(
+        wait_until(|| !events.conflicts.lock_ignore_poison().is_empty()).await,
+        "a file collision must prompt"
+    );
+    {
+        let conflicts = events.conflicts.lock_ignore_poison();
+        let ev = &conflicts[0];
+        assert_eq!(ev.source_size, Some(2), "source size = incoming file length");
+        assert_eq!(ev.destination_size, Some(5), "destination size = archive entry length");
+        assert_eq!(ev.size_difference, Some(3), "size_difference = dest - source (5 - 2)");
+        assert!(!ev.source_is_directory, "the incoming side is a file");
+        assert!(
+            !ev.destination_is_directory,
+            "the colliding archive entry is a file, not a folder"
+        );
+    }
+    resolve_write_conflict(&op_id, ConflictResolution::Skip, false);
+    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+}
+
+#[tokio::test]
+async fn interactive_move_into_with_a_skipped_collision_keeps_the_source() {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    use crate::file_system::write_operations::{resolve_write_conflict, route_archive_copy_into};
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let archive = tmp.path().join("a.zip");
+    write_multi_zip(&archive, &[("d/a.txt", b"OLD")]);
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(src_root.join("d")).expect("mkdir src");
+    std::fs::write(src_root.join("d/a.txt"), b"NEW").expect("w1"); // collides
+    std::fs::write(src_root.join("d/b.txt"), b"bbb").expect("w2"); // lands
+
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.to_path_buf()));
+    let events = Arc::new(CollectorEventSink::new());
+    let start = route_archive_copy_into(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        source_volume,
+        vec![PathBuf::from("d")],
+        archive.clone(),
+        "root".to_string(),
+        ConflictResolution::Stop,
+        0,
+        true, // is_move
+    )
+    .await
+    .expect("start interactive move-into");
+
+    assert!(
+        wait_until(|| !events.conflicts.lock_ignore_poison().is_empty()).await,
+        "the collision must prompt"
+    );
+    resolve_write_conflict(&start.operation_id, ConflictResolution::Skip, false);
+
+    assert!(wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await);
+    // Something was skipped → the move invariant keeps the source intact.
+    assert!(
+        src_root.join("d/a.txt").exists() && src_root.join("d/b.txt").exists(),
+        "an interactive move with a skipped collision must NOT delete the source"
+    );
+}
+
+#[tokio::test]
 async fn interactive_dir_vs_dir_merges_without_prompting() {
     let tmp = tempfile::tempdir().expect("tempdir");
     let archive = tmp.path().join("a.zip");
@@ -724,4 +1097,12 @@ async fn interactive_dir_vs_dir_merges_without_prompting() {
     );
     assert_eq!(read_entry(&archive, "d/new.txt").as_deref(), Some(b"new".as_slice()));
     assert_eq!(read_entry(&archive, "d/keep.txt").as_deref(), Some(b"keep".as_slice()));
+    // Merging into a dir that ALREADY exists in the archive must NOT synthesize a
+    // redundant explicit `d/` directory entry (the mkdir guard skips existing dirs).
+    let file = std::fs::File::open(&archive).expect("open");
+    let mut zip = ZipArchive::new(file).expect("zip");
+    assert!(
+        zip.by_name("d/").is_err(),
+        "a merge into a pre-existing archive dir must not add a redundant explicit dir entry"
+    );
 }

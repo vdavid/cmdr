@@ -508,7 +508,12 @@ fn resolve_effective(
                 archive_path,
                 is_file_to_folder,
             )?;
-            apply_to_all_record(apply_to_all, is_file_to_folder, response.resolution, response.apply_to_all);
+            apply_to_all_record(
+                apply_to_all,
+                is_file_to_folder,
+                response.resolution,
+                response.apply_to_all,
+            );
             Ok(response.resolution)
         }
     }
@@ -748,7 +753,11 @@ async fn archive_copy_into_interactive_start(
                     });
                 }
                 Ok(Err(PlanError::Op(err))) => {
-                    events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::ArchiveEdit, err));
+                    events.emit_error(WriteErrorEvent::new(
+                        op_id.clone(),
+                        WriteOperationType::ArchiveEdit,
+                        err,
+                    ));
                 }
                 Err(join_error) => {
                     events.emit_error(WriteErrorEvent::new(
