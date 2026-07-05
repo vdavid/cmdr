@@ -263,7 +263,9 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
     const idA = state.listingId
 
     completeCb(0)({ listingId: idA, totalCount: 5, volumeRoot: '/' })
-    await vi.waitFor(() => { expect(state.totalCount).toBe(5); })
+    await vi.waitFor(() => {
+      expect(state.totalCount).toBe(5)
+    })
     expect(state.loading).toBe(false)
     expect(spies.onPathChange).toHaveBeenCalledWith('/a')
   })
@@ -288,7 +290,9 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
 
     // Load B's complete is accepted.
     completeCb(1)({ listingId: idB, totalCount: 7, volumeRoot: '/' })
-    await vi.waitFor(() => { expect(state.totalCount).toBe(7); })
+    await vi.waitFor(() => {
+      expect(state.totalCount).toBe(7)
+    })
     expect(spies.onPathChange).toHaveBeenCalledWith('/b')
   })
 
@@ -339,7 +343,9 @@ describe('createListingLoader — generation / drop-foreign token model', () => 
 
     const loadA = loader.loadDirectory('/a')
     // Load A is parked at `await listDirectoryStart`. Grab its listingId from the call.
-    await vi.waitFor(() => { expect(h.listDirectoryStart).toHaveBeenCalled(); })
+    await vi.waitFor(() => {
+      expect(h.listDirectoryStart).toHaveBeenCalled()
+    })
     const idA = String(h.listDirectoryStart.mock.calls[0][5])
 
     // Supersede via adoptListing: it advances the generation but does NOT itself
@@ -384,7 +390,9 @@ describe('createListingLoader — async-tail behavior lock (deliberately unguard
 
     // The path "exists", so the tail shows the original error + pushes history — unguarded.
     existsA.resolve({ data: true, timedOut: false })
-    await vi.waitFor(() => { expect(spies.onPathChange).toHaveBeenCalledWith('/a'); })
+    await vi.waitFor(() => {
+      expect(spies.onPathChange).toHaveBeenCalledWith('/a')
+    })
   })
 })
 
@@ -408,8 +416,12 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
     await loader.loadDirectory('/a/gone')
     const idA = state.listingId
     h.listeners.error[0]({ listingId: idA, message: 'no such dir' })
-    await vi.waitFor(() => { expect(h.resolveValidPath).toHaveBeenCalled(); })
-    await vi.waitFor(() => { expect(state.currentPath).toBe('/a'); })
+    await vi.waitFor(() => {
+      expect(h.resolveValidPath).toHaveBeenCalled()
+    })
+    await vi.waitFor(() => {
+      expect(state.currentPath).toBe('/a')
+    })
   })
 
   it('shows the friendly error (and pushes history) when the path still exists', async () => {
@@ -417,7 +429,9 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
     await loader.loadDirectory('/a')
     const idA = state.listingId
     h.listeners.error[0]({ listingId: idA, message: 'permission denied', error: { code: 'EACCES' } })
-    await vi.waitFor(() => { expect(state.error).toBe('permission denied'); })
+    await vi.waitFor(() => {
+      expect(state.error).toBe('permission denied')
+    })
     expect(state.friendlyError).toEqual({ rendered: { code: 'EACCES' } })
     expect(spies.onPathChange).toHaveBeenCalledWith('/a')
   })
@@ -443,12 +457,16 @@ describe('createListingLoader — pendingLoad / navigateToPath / whenLoadSettles
 
     // A second navigation supersedes the first: loadDirectory rejects the prior pending load.
     const second = loader.navigateToPath('/b')
-    await vi.waitFor(() => { expect(firstRejected).toHaveBeenCalled(); })
+    await vi.waitFor(() => {
+      expect(firstRejected).toHaveBeenCalled()
+    })
     expect(firstRejected.mock.calls[0][0]).toBeInstanceOf(Error)
     expect((firstRejected.mock.calls[0][0] as Error).message).toBe('Superseded by new navigation')
 
     // Wait for the second load to finish registering, then complete it.
-    await vi.waitFor(() => { expect(h.listeners.complete.length).toBeGreaterThan(1); })
+    await vi.waitFor(() => {
+      expect(h.listeners.complete.length).toBeGreaterThan(1)
+    })
     completeCb(h.listeners.complete.length - 1)({ listingId: state.listingId, totalCount: 3, volumeRoot: '/' })
     await expect(second).resolves.toBeUndefined()
   })
@@ -461,7 +479,9 @@ describe('createListingLoader — pendingLoad / navigateToPath / whenLoadSettles
     await Promise.resolve()
 
     loader.resetLoadingState('kaboom')
-    await vi.waitFor(() => { expect(rejected).toHaveBeenCalled(); })
+    await vi.waitFor(() => {
+      expect(rejected).toHaveBeenCalled()
+    })
     expect((rejected.mock.calls[0][0] as Error).message).toBe('kaboom')
   })
 
@@ -473,7 +493,9 @@ describe('createListingLoader — pendingLoad / navigateToPath / whenLoadSettles
   it('whenLoadSettles chains onto a pending navigateToPath without disturbing it', async () => {
     const { loader, state } = makeHarness({ loading: true })
     const nav = loader.navigateToPath('/a')
-    await vi.waitFor(() => { expect(h.listeners.complete.length).toBeGreaterThan(0); })
+    await vi.waitFor(() => {
+      expect(h.listeners.complete.length).toBeGreaterThan(0)
+    })
     const settles = loader.whenLoadSettles()
     const navResolved = vi.fn()
     const settlesResolved = vi.fn()
@@ -501,7 +523,9 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
     loader.navigateToFallback('/some/dir')
     expect(spies.onVolumeChange).not.toHaveBeenCalled()
     expect(state.currentPath).toBe('/some/dir')
-    await vi.waitFor(() => { expect(h.listDirectoryStart).toHaveBeenCalled(); })
+    await vi.waitFor(() => {
+      expect(h.listDirectoryStart).toHaveBeenCalled()
+    })
   })
 
   it('handleCancelLoading is a no-op when not loading or without a listing', () => {

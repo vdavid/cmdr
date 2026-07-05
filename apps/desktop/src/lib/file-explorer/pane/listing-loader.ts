@@ -295,86 +295,81 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
       const captured = { listingId: newListingId, generation: thisGeneration }
 
       // Register all event listeners in parallel (no ordering dependency between them)
-      ;[
-        unlistenOpening,
-        unlistenProgress,
-        unlistenReadComplete,
-        unlistenComplete,
-        unlistenError,
-        unlistenCancelled,
-      ] = await Promise.all([
-        onListingOpening((payload) => {
-          if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
-            deps.setOpeningFolder(true)
-          }
-        }),
-        onListingProgress((payload) => {
-          if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
-            deps.setLoadingCount(payload.loadedCount)
-          }
-        }),
-        onListingReadComplete((payload) => {
-          if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
-            deps.setFinalizingCount(payload.totalCount)
-          }
-        }),
-        onListingComplete((payload) => {
-          if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
-            void handleListingComplete(payload, loadPath, loadSelectName)
-          }
-        }),
-        onListingError((payload) => {
-          if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
-            // For MTP volumes, trigger fallback on error (device likely disconnected)
-            if (deps.getIsMtpView()) {
-              resetLoadingState(payload.message)
-              log.warn('MTP listing error, triggering fallback: {error}', {
-                error: payload.message,
-              })
-              deps.onMtpFatalError?.(payload.message)
-              return
+      ;[unlistenOpening, unlistenProgress, unlistenReadComplete, unlistenComplete, unlistenError, unlistenCancelled] =
+        await Promise.all([
+          onListingOpening((payload) => {
+            if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
+              deps.setOpeningFolder(true)
             }
-
-            // For local volumes, check if the path was deleted.
-            // Use the checked variant so a connection-blip "false" doesn't get treated as
-            // "deleted": show the error pane in that case instead of walking up.
-            void pathExistsChecked(loadPath).then(({ data: exists, timedOut }) => {
-              if (!exists && !timedOut) {
-                // Path is gone: auto-navigate to nearest valid parent
-                log.info('Listing error for deleted path, navigating to valid parent: {path}', {
-                  path: loadPath,
+          }),
+          onListingProgress((payload) => {
+            if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
+              deps.setLoadingCount(payload.loadedCount)
+            }
+          }),
+          onListingReadComplete((payload) => {
+            if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
+              deps.setFinalizingCount(payload.totalCount)
+            }
+          }),
+          onListingComplete((payload) => {
+            if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
+              void handleListingComplete(payload, loadPath, loadSelectName)
+            }
+          }),
+          onListingError((payload) => {
+            if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
+              // For MTP volumes, trigger fallback on error (device likely disconnected)
+              if (deps.getIsMtpView()) {
+                resetLoadingState(payload.message)
+                log.warn('MTP listing error, triggering fallback: {error}', {
+                  error: payload.message,
                 })
-                void resolveValidPath(loadPath, { volumeRoot: deps.getVolumePath() }).then((validPath) => {
-                  navigateToFallback(validPath)
-                })
-              } else {
-                // Path exists, or we couldn't tell: show the original listing error
-                const rendered = payload.error ? renderListingError(payload.error) : undefined
-                resetLoadingState(payload.message, false, rendered)
-                // Record the failed path in history so Cmd+[ goes back one step,
-                // not two. The success path pushes via the `onPathChange` call in
-                // `handleListingComplete`; without this call, an error pane would
-                // be visually displayed but absent from history, so Back would
-                // skip over it. `pushPath` deduplicates same-path retries.
-                deps.onPathChange?.(loadPath)
+                deps.onMtpFatalError?.(payload.message)
+                return
               }
-            })
-          }
-        }),
-        onListingCancelled((payload) => {
-          if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
-            // Cancellation handled by onCancelLoading callback
-            resetLoadingState(undefined, true)
-          }
-        }),
-      ])
+
+              // For local volumes, check if the path was deleted.
+              // Use the checked variant so a connection-blip "false" doesn't get treated as
+              // "deleted": show the error pane in that case instead of walking up.
+              void pathExistsChecked(loadPath).then(({ data: exists, timedOut }) => {
+                if (!exists && !timedOut) {
+                  // Path is gone: auto-navigate to nearest valid parent
+                  log.info('Listing error for deleted path, navigating to valid parent: {path}', {
+                    path: loadPath,
+                  })
+                  void resolveValidPath(loadPath, { volumeRoot: deps.getVolumePath() }).then((validPath) => {
+                    navigateToFallback(validPath)
+                  })
+                } else {
+                  // Path exists, or we couldn't tell: show the original listing error
+                  const rendered = payload.error ? renderListingError(payload.error) : undefined
+                  resetLoadingState(payload.message, false, rendered)
+                  // Record the failed path in history so Cmd+[ goes back one step,
+                  // not two. The success path pushes via the `onPathChange` call in
+                  // `handleListingComplete`; without this call, an error pane would
+                  // be visually displayed but absent from history, so Back would
+                  // skip over it. `pushPath` deduplicates same-path retries.
+                  deps.onPathChange?.(loadPath)
+                }
+              })
+            }
+          }),
+          onListingCancelled((payload) => {
+            if (isEventForCurrentLoad(payload.listingId, captured, loadGeneration)) {
+              // Cancellation handled by onCancelLoading callback
+              resetLoadingState(undefined, true)
+            }
+          }),
+        ])
 
       // Now start streaming listing - listeners are already set up
       benchmark.logEvent('IPC listDirectoryStart CALL')
-      log.debug(
-        '[FilePane] calling listDirectoryStart: volumeId={volumeId}, path={loadPath}, listingId={listingId}',
-        { volumeId, loadPath, listingId: newListingId },
-      )
+      log.debug('[FilePane] calling listDirectoryStart: volumeId={volumeId}, path={loadPath}, listingId={listingId}', {
+        volumeId,
+        loadPath,
+        listingId: newListingId,
+      })
       const result = await listDirectoryStart(
         volumeId,
         path,
