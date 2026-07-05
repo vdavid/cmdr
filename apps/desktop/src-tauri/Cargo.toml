@@ -128,8 +128,11 @@ rc-zip = { version = "5.4.1", features = ["deflate", "bzip2", "lzma", "zstd"] }
 positioned-io = "0.3.5"
 # Archive browsing (read side, tar + 7z formats): all pure-Rust, decode-only, and
 # driven as pull-model `Read` decoders so the whole-file decompress streams in
-# bounded chunks (never whole-buffered). `tar` + `flate2` (below, shared with the
-# updater) cover `.tar`/`.tar.gz`; these three cover the other tar codecs and 7z.
+# bounded chunks (never whole-buffered). `tar` + `flate2` (gzip, pure-Rust
+# `miniz_oxide` backend) cover `.tar`/`.tar.gz` and must stay in this untargeted
+# block: the archive code uses them on every target (gating them macOS-only broke
+# the Linux build). The macOS-only custom updater reuses them for its tarball path.
+# The rest cover the other tar codecs and 7z.
 # `bzip2` defaults to the pure-Rust `libbz2-rs-sys` backend (no C libbz2). `ruzstd`
 # is a pure-Rust zstd DECODER (`StreamingDecoder: Read`). `lzma-rust2` gives a
 # pure-Rust `.xz` streaming `Read` (`XzReader`) that `lzma-rs` lacks. `sevenz-rust2`
@@ -137,6 +140,8 @@ positioned-io = "0.3.5"
 # then per-block streaming). Pinned latest stable, all >3 days old (verified
 # crates.io 2026-07-05: bzip2 0.6.1 2025-10-16, ruzstd 0.8.3 2026-05-08,
 # lzma-rust2 0.16.4 2026-05-31, sevenz-rust2 0.21.2 2026-07-01).
+flate2 = "1"
+tar = "0.4"
 bzip2 = "0.6.1"
 ruzstd = "0.8.3"
 lzma-rust2 = "0.16.4"
@@ -260,12 +265,9 @@ security-framework = "3.2"
 security-framework-sys = "2.17"
 # Drive indexing: macOS FSEvents watcher with event IDs and sinceWhen replay
 cmdr-fsevent-stream = { path = "../../../crates/fsevent-stream" }
-# Custom updater: signature verification, tarball extraction, version comparison.
-# `flate2` (gzip, pure-Rust `miniz_oxide` backend) and `tar` are ALSO the archive
-# browser's `.tar`/`.tar.gz` read path (see the archive codec block above).
+# Custom updater: signature verification (tarball extraction uses `tar` + `flate2`
+# from the untargeted archive codec block above).
 minisign-verify = "0.2"
-flate2 = "1"
-tar = "0.4"
 
 
 [dev-dependencies]
