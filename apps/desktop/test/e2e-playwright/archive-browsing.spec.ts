@@ -30,6 +30,7 @@ import {
   openViewerWindow,
   closeScopedWindow,
   expectAndDismissToast,
+  dismissOverlay,
   TRANSFER_DIALOG,
   MKDIR_DIALOG,
 } from './helpers.js'
@@ -639,5 +640,81 @@ test.describe('Archive Enter-behavior menu', () => {
     } finally {
       await closeScopedWindow(main, settings, settingsLabel)
     }
+  })
+})
+
+// The read-only formats: a `.tar.gz` browses and extracts like a zip, but every
+// mutation is refused (tar/7z are browse + extract only). `sample.tar.gz` carries
+// the same `inner.txt` + `nested/deep.txt` as `sample.zip`.
+test.describe('Archive browsing — read-only tar.gz', () => {
+  test.beforeEach(async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    await navigatePaneTo(tauriPage, 'left', `${getFixtureRoot()}/left`)
+    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${getFixtureRoot()}/left`)
+    // tar/7z ride the same `zip` Enter policy (backend `is_archive`), so Browse
+    // steps into them too. Wait for the fixture so the watcher has caught up.
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'sample.tar.gz'), { timeout: 5000 }).toBeTruthy()
+    await setArchiveEnterBehavior({ zip: 'browse', bundle: 'browse' })
+  })
+
+  test('pressing Enter on a tar.gz lists its inner entries with a transparent path', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const archivePath = `${getFixtureRoot()}/left/sample.tar.gz`
+
+    await enterEntry(tauriPage, 'sample.tar.gz')
+
+    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(archivePath)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'nested'), { timeout: 5000 }).toBeTruthy()
+  })
+
+  test('copying a file out of the tar.gz extracts it to the other pane', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    await enterEntry(tauriPage, 'sample.tar.gz')
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
+
+    const found = await moveCursorToFile(tauriPage, 'inner.txt')
+    expect(found).toBe(true)
+    await tauriPage.keyboard.press('F5')
+    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+    await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
+    await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
+    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 5000 }).toBeTruthy()
+
+    await expect.poll(() => fs.existsSync(path.join(fixtureRoot, 'right', 'inner.txt')), { timeout: 5000 }).toBeTruthy()
+    expect(fs.readFileSync(path.join(fixtureRoot, 'right', 'inner.txt'), 'utf8')).toContain(
+      'hello from inside the archive',
+    )
+    await expectAndDismissToast(tauriPage, 'Copied 1 file')
+  })
+
+  test('creating a folder inside the tar.gz is refused (read-only)', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+
+    await enterEntry(tauriPage, 'sample.tar.gz')
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, 'inner.txt'), { timeout: 5000 }).toBeTruthy()
+
+    // F7 must surface the read-only-archive alert up front, NOT the mkdir dialog:
+    // tar/7z can't be edited (only zip is writable).
+    await tauriPage.keyboard.press('F7')
+    await expect.poll(async () => tauriPage.isVisible('[data-dialog-id="alert"]'), { timeout: 5000 }).toBeTruthy()
+    expect(await tauriPage.isVisible(MKDIR_DIALOG)).toBe(false)
+
+    const alertText = await tauriPage.evaluate<string>(`(function() {
+            var msg = document.querySelector('[data-dialog-id="alert"] .message, [data-dialog-id="alert"] #alert-dialog-message');
+            return msg ? msg.textContent : '';
+        })()`)
+    expect(alertText.toLowerCase()).toContain('zip archives can be edited')
+
+    await dismissOverlay(tauriPage)
+
+    // Nothing was written into the archive.
+    expect(await fileExistsInFocusedPane(tauriPage, 'inner.txt')).toBe(true)
   })
 })

@@ -42,12 +42,16 @@ function copyMediaFixtures(rootPath: string): void {
   }
 }
 
-// A committed real zip (`inner.txt` + `nested/deep.txt`) copied into `left/` so
-// the archive-browsing E2E specs can enter it like a folder, preview an entry,
-// and copy one out. Committed (not generated) so the central-directory bytes the
-// backend magic-sniffs stay deterministic and reviewable.
+// Committed real archives (each `inner.txt` + `nested/deep.txt`) copied into
+// `left/` so the archive-browsing E2E specs can enter them like a folder, preview
+// an entry, and copy one out. `sample.tar.gz` is the read-only (non-zip) format —
+// browse + extract work, mutations are refused. Committed (not generated) so the
+// bytes the backend magic-sniffs stay deterministic and reviewable.
 const archiveFixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'archive-fixtures')
-const archiveFixtures = [{ rel: 'left/sample.zip', source: 'sample.zip' }] as const
+const archiveFixtures = [
+  { rel: 'left/sample.zip', source: 'sample.zip' },
+  { rel: 'left/sample.tar.gz', source: 'sample.tar.gz' },
+] as const
 
 function copyArchiveFixtures(rootPath: string): void {
   for (const file of archiveFixtures) {
