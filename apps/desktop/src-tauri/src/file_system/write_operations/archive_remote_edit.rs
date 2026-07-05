@@ -119,7 +119,10 @@ async fn pull_archive(
     local_working: &Path,
     state: &WriteOperationState,
 ) -> Result<(), RemoteEditError> {
-    let mut stream = parent.open_read_stream(remote_path).await.map_err(vol_op(remote_path))?;
+    let mut stream = parent
+        .open_read_stream(remote_path)
+        .await
+        .map_err(vol_op(remote_path))?;
     let mut file = tokio::fs::File::create(local_working)
         .await
         .map_err(|e| io_op(&local_working.display().to_string(), &e.to_string()))?;
@@ -195,8 +198,7 @@ async fn swap_into_place(parent: &dyn Volume, remote_temp: &Path, archive_path: 
     // through to delete-then-rename. A backend that ALLOWS same-name siblings
     // (MTP) must NOT attempt this — a rename onto the live name would duplicate,
     // not replace — so it goes straight to delete-then-rename.
-    if parent.create_directory_errors_on_existing_dir()
-        && parent.rename(remote_temp, archive_path, true).await.is_ok()
+    if parent.create_directory_errors_on_existing_dir() && parent.rename(remote_temp, archive_path, true).await.is_ok()
     {
         return Ok(());
     }

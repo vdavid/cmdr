@@ -17,11 +17,9 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use super::pull_apply_upload_swap;
 use super::super::state::{OperationIntent, WriteOperationState};
-use crate::file_system::volume::backends::archive::mutator::{
-    self, AddEntry, AddSource, Changeset, MutationHooks,
-};
+use super::pull_apply_upload_swap;
+use crate::file_system::volume::backends::archive::mutator::{self, AddEntry, AddSource, Changeset, MutationHooks};
 use crate::file_system::volume::{InMemoryVolume, Volume};
 
 /// A no-op `MutationHooks`: the mutator never pauses/cancels in these tests, so
@@ -94,7 +92,10 @@ async fn remote_parent_with_zip(archive_path: &Path, zip_bytes: &[u8]) -> Arc<In
     if let Some(dir) = archive_path.parent() {
         parent.create_directory(dir).await.expect("seed parent dir");
     }
-    parent.create_file(archive_path, zip_bytes).await.expect("seed remote zip");
+    parent
+        .create_file(archive_path, zip_bytes)
+        .await
+        .expect("seed remote zip");
     Arc::new(parent)
 }
 
@@ -131,7 +132,10 @@ async fn remote_edit_adds_an_entry_and_swaps_it_into_place() {
     // The remote archive now reflects the edit...
     let back = read_remote_zip(parent.as_ref(), &archive_path).await;
     assert_eq!(back.get("keep.txt").map(Vec::as_slice), Some(b"keep me".as_slice()));
-    assert_eq!(back.get("added.txt").map(Vec::as_slice), Some(b"fresh bytes".as_slice()));
+    assert_eq!(
+        back.get("added.txt").map(Vec::as_slice),
+        Some(b"fresh bytes".as_slice())
+    );
 
     // ...and no upload temp lingers next to it.
     let names = sibling_names(parent.as_ref(), &archive_path).await;
@@ -215,11 +219,17 @@ async fn remote_edit_swaps_via_delete_then_rename_on_a_sibling_allowing_backend(
         },
     )
     .await;
-    assert!(result.is_ok(), "the remote edit should commit on a sibling-allowing backend");
+    assert!(
+        result.is_ok(),
+        "the remote edit should commit on a sibling-allowing backend"
+    );
 
     let back = read_remote_zip(parent.as_ref(), &archive_path).await;
     assert!(!back.contains_key("keep.txt"), "the deleted entry is gone");
-    assert_eq!(back.get("added.txt").map(Vec::as_slice), Some(b"fresh bytes".as_slice()));
+    assert_eq!(
+        back.get("added.txt").map(Vec::as_slice),
+        Some(b"fresh bytes".as_slice())
+    );
 
     let names = sibling_names(parent.as_ref(), &archive_path).await;
     assert_eq!(

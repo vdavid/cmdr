@@ -1080,11 +1080,7 @@ pub(crate) async fn route_archive_move_out(
                             // rewritten. The originals are intact and the copies
                             // are at the destination (no data loss), so surface
                             // the failure — the move degraded to a copy.
-                            events.emit_error(WriteErrorEvent::new(
-                                op_id.clone(),
-                                WriteOperationType::Move,
-                                err,
-                            ));
+                            events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, err));
                         }
                     }
                 }
