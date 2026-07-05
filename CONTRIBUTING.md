@@ -238,12 +238,15 @@ The API server is a Cloudflare Worker. To deploy it or run `wrangler` commands, 
    - `Zone / Workers Routes / Edit`
    - `Zone / DNS / Edit`
 3. Account resources: the Cmdr account only
-4. Add to macOS Keychain:
+4. Add to the sops secrets store as `CLOUDFLARE_API_TOKEN`. The one-liner below opens the store in your editor; add the
+   key under `shell_env:` at 2-space indent:
    ```sh
-   security add-generic-password -a "$USER" -s "CLOUDFLARE_API_TOKEN" -w "your-token"
+   (cd ~/projects-git/vdavid/infra && export SOPS_AGE_KEY=$(security find-generic-password -a "$USER" -s SOPS_AGE_KEY -w) && mise exec -- sops secrets/shared.sops.yaml)
    ```
+   Fetch any stored key later with `secret NAME`.
 
-Wrangler picks up `CLOUDFLARE_API_TOKEN` from the environment; the shell profile exports it from Keychain on startup.
+Wrangler picks up `CLOUDFLARE_API_TOKEN` from the environment; export it for the session with
+`export CLOUDFLARE_API_TOKEN=$(secret CLOUDFLARE_API_TOKEN)`, or prefix individual commands with it.
 
 ## PostHog access (website analytics)
 
@@ -252,10 +255,7 @@ update project settings), you need a personal API key.
 
 1. Go to https://eu.posthog.com/settings/user-api-keys → **Create personal API key**
 2. Scope it to the Cmdr project
-3. Add to macOS Keychain:
-   ```sh
-   security add-generic-password -a "$USER" -s "POSTHOG_API_KEY" -w "phx_your-key"
-   ```
+3. Add to the sops secrets store as `POSTHOG_API_KEY` (sops one-liner in the Cloudflare section above)
 
 See [posthog.md](docs/tooling/posthog.md) for API recipes.
 
@@ -265,11 +265,8 @@ Paddle handles payments and subscriptions. Two API keys are needed: one for live
 
 1. Go to https://vendors.paddle.com → **Developer tools** → **Authentication** → **Generate API key**
 2. Repeat for sandbox at https://sandbox-vendors.paddle.com
-3. Add both to macOS Keychain:
-   ```sh
-   security add-generic-password -a "$USER" -s "PADDLE_LIVE_API_KEY" -w "your-live-key"
-   security add-generic-password -a "$USER" -s "PADDLE_SANDBOX_API_KEY" -w "your-sandbox-key"
-   ```
+3. Add both to the sops secrets store as `PADDLE_LIVE_API_KEY` and `PADDLE_SANDBOX_API_KEY` (sops one-liner in the
+   Cloudflare section above)
 
 See the Paddle generic tooling doc for API recipes.
 
@@ -279,11 +276,8 @@ The analytics dashboard at `analdash.getcmdr.com` is behind Cloudflare Access. T
 service token.
 
 1. Go to https://one.dash.cloudflare.com → **Access** → **Service Auth** → **Create Service Token**
-2. Add both values to macOS Keychain:
-   ```sh
-   security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22" -w "your-client-id"
-   security add-generic-password -a "$USER" -s "CF_ACCESS_CLIENT_SECRET_EXPIRES_2027_03_22" -w "your-client-secret"
-   ```
+2. Add both values to the sops secrets store as `CF_ACCESS_CLIENT_ID_EXPIRES_2027_03_22` and
+   `CF_ACCESS_CLIENT_SECRET_EXPIRES_2027_03_22` (sops one-liner in the Cloudflare section above)
 
 The token expires 2027-03-22. See [analytics-dashboard.md](docs/tooling/analytics-dashboard.md) for usage.
 
@@ -293,10 +287,7 @@ ngrok exposes local servers to the internet, useful for testing webhooks (for ex
 server.
 
 1. Go to https://dashboard.ngrok.com → **Your Authtoken** (or **API** → **API Keys** for the API key)
-2. Add to macOS Keychain:
-   ```sh
-   security add-generic-password -a "$USER" -s "NGROK_API_KEY" -w "your-api-key"
-   ```
+2. Add to the sops secrets store as `NGROK_API_KEY` (sops one-liner in the Cloudflare section above)
 
 See the ngrok generic tooling doc for API recipes.
 
