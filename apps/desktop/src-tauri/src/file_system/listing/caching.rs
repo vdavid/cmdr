@@ -727,6 +727,63 @@ async fn notify_full_refresh(
     }
 }
 
+/// Finds every cached listing at or inside `root` on `volume_id`.
+///
+/// `Path::starts_with` is component-wise, so `/a/foo.zip` matches the archive
+/// root listing (`/a/foo.zip`) and any inner listing (`/a/foo.zip/sub`) but never
+/// a prefix-similar sibling (`/a/foo.zipper`) or the containing directory (`/a`).
+fn find_listings_under_path_on_volume(
+    volume_id: &str,
+    root: &Path,
+) -> Vec<(String, PathBuf, SortColumn, SortOrder, DirectorySortMode)> {
+    let cache = match LISTING_CACHE.read() {
+        Ok(c) => c,
+        Err(_) => return Vec::new(),
+    };
+    cache
+        .iter()
+        .filter(|(_, listing)| listing.volume_id == volume_id && listing.path.starts_with(root))
+        .map(|(id, listing)| {
+            (
+                id.clone(),
+                listing.path.clone(),
+                listing.sort_by,
+                listing.sort_order,
+                listing.directory_sort_mode,
+            )
+        })
+        .collect()
+}
+
+/// Refreshes every open listing at or inside the archive at `archive_path` on its
+/// parent drive `volume_id`, re-reading each through the freshly re-resolved
+/// `ArchiveVolume`.
+///
+/// The archive content watcher calls this when the backing `.zip` changes on
+/// disk. It deliberately does NOT go through [`notify_directory_changed`]: that
+/// function runs the drive-index sync (`apply_smb_change`) up front, and an
+/// archive-inner path (`/…/foo.zip/dir`) isn't a real filesystem path, so feeding
+/// it to the index would be meaningless. Here we only refresh the pane listings.
+///
+/// A listing whose re-read fails (a mid-write, truncated central directory) is
+/// left untouched by [`notify_full_refresh`] — it keeps its previous entries
+/// rather than blanking the pane, and the next change event retries. The FE only
+/// surfaces the damaged-archive banner at navigation time, never from this
+/// refresh path.
+pub async fn refresh_archive_listings(volume_id: &str, archive_path: &Path) {
+    let listings = find_listings_under_path_on_volume(volume_id, archive_path);
+    for (listing_id, path, sort_by, sort_order, dir_sort_mode) in listings {
+        // Each inner listing lives at its own path, so refresh per listing path
+        // (two panes on the same inner dir share a path and coalesce naturally).
+        notify_full_refresh(
+            volume_id.to_string(),
+            path,
+            vec![(listing_id, sort_by, sort_order, dir_sort_mode)],
+        )
+        .await;
+    }
+}
+
 /// Increments and returns the sequence number for a cached listing.
 ///
 /// Uses the `AtomicU64` on `CachedListing` so it works for all volume types,
@@ -753,6 +810,9 @@ pub(crate) fn increment_sequence(listing_id: &str) -> Option<u64> {
 /// - MTP: 500 ms event debouncer plus per-device polling. Many MTP devices (cameras especially)
 ///   never emit per-object events, so "watched" there means only "the device is reachable and would
 ///   forward changes if it sent any."
+/// - Archive (`.zip`): 200 ms debounce on a watch of the backing file's parent directory, plus a
+///   re-parse of the central directory. A mid-write (truncated) archive keeps the previous listing
+///   until a clean re-read, so "watched" here means "the last clean parse," never a half-written one.
 ///
 /// Callers must treat the result as "fresh as our most recent observation," which
 /// is the same guarantee a `list_directory` call gives: it sees the device's state
@@ -798,9 +858,9 @@ pub fn try_get_watched_listing(volume_id: &str, path: &Path) -> Option<Vec<FileE
 
     // Step 2: ask the volume whether this listing is being kept fresh by a watcher.
     // Resolve (not plain `get`) so a `.zip`-crossing listing asks the ArchiveVolume,
-    // which reports `listing_is_watched = false` (no live archive watcher yet) — so
-    // an archive listing correctly falls back to a real read rather than reusing a
-    // possibly-stale cache. We hold the Arc across the sync call; no await between.
+    // which reports `listing_is_watched` from its live content watch on the backing
+    // `.zip` (true once the watch is established, false if it couldn't start). We
+    // hold the Arc across the sync call; no await between.
     let volume = crate::file_system::get_volume_manager()
         .resolve(volume_id, path)
         .volume?;

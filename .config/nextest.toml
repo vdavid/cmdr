@@ -69,7 +69,13 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 #      one class the global `retries = 0` intentionally exempts ("useful for flaky
 #      tests"). Coverage isn't lost: the assertions are unchanged, only real-OS
 #      event timing is tolerated for these specific real-delivery tests.
-filter = 'test(file_viewer::watcher_test::) + test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event)'
+#   The archive live-content watch tests (`a_live_watch_refreshes_…`,
+#   `a_temp_rename_swap_…`) are the same class: they start a real `notify` watch
+#   on a temp dir and block on FSEvents delivery after rewriting the backing
+#   `.zip`. Their internal poll waits up to 15 s; without this override the global
+#   8 s cap would SIGTERM them under a saturated run, and they want the same retry
+#   tolerance for a starved event.
+filter = 'test(file_viewer::watcher_test::) + test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(archive::watch_integration_test::a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk) + test(archive::watch_integration_test::a_temp_rename_swap_refreshes_the_listing)'
 slow-timeout = { period = "20s", terminate-after = 1 }
 retries = 2
 

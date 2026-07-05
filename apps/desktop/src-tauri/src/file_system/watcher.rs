@@ -107,6 +107,18 @@ pub fn init_watcher_manager(app: AppHandle) {
     }
 }
 
+/// Whether the app handle is registered yet (set once during app setup).
+///
+/// A watcher whose only job is to refresh open frontend listings has nothing to
+/// do before this is true: the diff emit is a no-op with no app handle. The
+/// archive content watch uses this to skip starting an OS watch in headless /
+/// pre-init contexts (unit tests), which also keeps the test suite from
+/// oversubscribing FSEvents. Production sets the handle at startup, before any
+/// browsing, so archive watches always start when a user opens a `.zip`.
+pub fn app_handle_present() -> bool {
+    WATCHER_MANAGER.read().ok().and_then(|m| m.app_handle.clone()).is_some()
+}
+
 /// Start watching a directory for a given listing.
 ///
 /// # Arguments

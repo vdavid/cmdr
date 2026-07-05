@@ -35,7 +35,7 @@
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use tokio::task::spawn_blocking;
 
@@ -46,6 +46,7 @@ use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{
     CopyScanResult, LaneKey, ListingProgress, SpaceInfo, Volume, VolumeError, VolumeReadStream,
 };
+use crate::ignore_poison::IgnorePoison;
 
 /// A read-only [`Volume`] that presents a zip archive as a browsable folder.
 pub struct ArchiveVolume {
@@ -61,6 +62,12 @@ pub struct ArchiveVolume {
     /// blocking parse can run inside `spawn_blocking`; an external edit to the
     /// `.zip` (size/mtime change) is a natural miss and re-parse.
     cache: Arc<ArchiveIndexCache>,
+    /// Live content watch on the backing `.zip`. `None` until
+    /// [`start_content_watch`](Self::start_content_watch) runs (the routing layer
+    /// starts it once, when the volume first registers), or when the watch can't
+    /// be established. Its presence is what [`listing_is_watched`](Volume::listing_is_watched)
+    /// reports; dropping it (on LRU eviction) stops the OS watch.
+    watch: Mutex<Option<super::watch::ArchiveContentWatch>>,
 }
 
 impl ArchiveVolume {
@@ -79,7 +86,31 @@ impl ArchiveVolume {
             archive_path,
             name,
             cache: Arc::new(ArchiveIndexCache::new()),
+            watch: Mutex::new(None),
         }
+    }
+
+    /// Starts the live content watch on the backing `.zip` so an external edit
+    /// (an editor rewriting it, a `cp` over it, a future in-app mutation's final
+    /// rename) refreshes any open listing inside the zip.
+    ///
+    /// Called once by the routing layer ([`VolumeManager::resolve`]) when this
+    /// volume first registers, so repeated resolves of an already-registered
+    /// archive don't churn watchers; a no-op if a watch is already live.
+    /// `parent_volume_id` is the drive id the listing cache keys on, threaded
+    /// through so the refresh re-resolves back to this archive.
+    ///
+    /// [`VolumeManager::resolve`]: crate::file_system::volume::VolumeManager::resolve
+    pub fn start_content_watch(&self, parent_volume_id: &str) {
+        let mut watch = self.watch.lock_ignore_poison();
+        if watch.is_some() {
+            return;
+        }
+        *watch = super::watch::start_watch(
+            self.archive_path.clone(),
+            parent_volume_id.to_string(),
+            Arc::clone(&self.cache),
+        );
     }
 
     /// Maps a path from the volume's namespace to the archive-inner path the
@@ -388,9 +419,13 @@ impl Volume for ArchiveVolume {
         Box::pin(async move { self.parent.get_space_info().await })
     }
 
-    // `listing_is_watched` stays the `false` default: there's no live watcher on
-    // the archive yet (live watching adds one later). A backend without a real
-    // watcher must not claim listing freshness.
+    /// `true` only while the content watch is genuinely live (established by
+    /// [`start_content_watch`](Self::start_content_watch) and not yet dropped by
+    /// LRU eviction). If the watch failed to establish, this stays `false`, so a
+    /// listing never claims freshness the backend can't back.
+    fn listing_is_watched(&self, _path: &Path) -> bool {
+        self.watch.lock_ignore_poison().is_some()
+    }
 }
 
 /// Wraps an [`ArchiveEntryReader`] as a [`VolumeReadStream`], mapping the core's

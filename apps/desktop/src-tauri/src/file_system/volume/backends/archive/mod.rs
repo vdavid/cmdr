@@ -43,11 +43,14 @@ mod name;
 mod read;
 mod source;
 mod volume;
+mod watch;
 
 #[cfg(test)]
 mod archive_test;
 #[cfg(test)]
 mod test_fixtures;
+#[cfg(test)]
+mod watch_integration_test;
 
 pub use boundary::{
     SUPPORTED_ARCHIVE_EXTENSIONS, archive_boundary_candidate, confirm_archive_boundary,
@@ -60,3 +63,4 @@ pub use name::{QuarantineReason, SanitizedName, sanitize_entry_name};
 pub use read::ArchiveEntryReader;
 pub use source::{ArchiveByteSource, BytesSource, LocalFileSource};
 pub use volume::ArchiveVolume;
+pub use watch::active_watch_count;

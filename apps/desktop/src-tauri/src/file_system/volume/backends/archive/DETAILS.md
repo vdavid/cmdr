@@ -20,6 +20,8 @@ any write path — those live in the `ArchiveVolume` impl built on top of this.
 - `name.rs`: `sanitize_entry_name` — the Zip Slip defense (pure).
 - `read.rs`: `ArchiveEntryReader` — chunked, off-executor decompression.
 - `cache.rs`: `ArchiveIndexCache` — parsed indexes keyed by `(path, size, mtime)`.
+- `watch.rs`: the live content watch on the backing `.zip` (parent-directory `notify` watch + event filter). See
+  § "Live content watch".
 - `test_fixtures.rs` / `archive_test.rs`: fixture builders and behaviour tests.
 
 ## Decision: drive rc-zip's sans-IO fsm directly, not `rc-zip-tokio`
@@ -197,8 +199,10 @@ A single file is one entry at its uncompressed size; a directory walks the subtr
 **Capability flags (set explicitly, not inherited).** `local_path = None` and `supports_local_fs_access = false` (inner
 paths aren't reachable via `std::fs`, so no `copyfile` fast path and the legacy synthetic-diff path is skipped);
 `space_poll_interval = None` (a read-only archive's space never changes — the default `Some(2s)` would poll pointlessly);
-`max_concurrent_ops = 1`; `supports_export`/`supports_streaming = true`; `listing_is_watched = false` (no live watcher
-yet, so it must not claim listing freshness).
+`max_concurrent_ops = 1`; `supports_export`/`supports_streaming = true`. `listing_is_watched` is `true` only while the
+live content watch is established (§ "Live content watch"), `false` otherwise. `supports_watching` stays `false`: that
+flag drives the generic per-listing FSEvents dir-watcher, which can't watch an archive-inner path — the archive
+self-watches its backing `.zip` instead.
 
 ### Decision: `get_space_info` delegates to the parent volume
 
@@ -272,6 +276,62 @@ against an archive target: the local `copy`/`move`/`delete`/`trash` fast-paths a
 `rename_managed`) return a clean refusal. Move also rejects an archive SOURCE (a move deletes the source side). These
 seams become archive-edit routing when mutation lands.
 
+## Live content watch (`watch.rs`)
+
+An external edit to the backing `.zip` (an editor rewriting it, a `cp` over it, a future in-app mutation's final rename)
+refreshes any open listing inside the archive. The watch lives on the `ArchiveVolume`.
+
+**Watch the parent directory, not the file.** macOS editors and every safe-overwrite (including this app's own planned
+temp+rename mutation) replace the file's inode: write `foo.zip.tmp`, then atomically rename over `foo.zip`. A `notify`
+watch pinned to the OLD inode goes silent after such a swap. So `start_watch` watches the archive's PARENT DIRECTORY
+(`RecursiveMode::NonRecursive`) — the directory inode is stable across the swap, so no re-arming is needed — and filters
+the directory's child events down to the archive file (`event_path_targets_archive`). The filter compares on the
+firmlink-normalized forms (`indexing::firmlinks::normalize_path`), the same rebasing `file_system::watcher` does, because
+FSEvents reports canonical `/private/tmp/…` paths while the archive path is the user-navigated `/tmp/…` form. This
+mirrors the local listing watcher's own parent-directory-non-recursive shape.
+
+**Notification identity: parent drive id + full path, never the archive id.** The listing cache keys archive listings on
+the PARENT DRIVE id plus the full `/…/foo.zip/inner` path (see § "Routing and lifecycle"). On a matching event the
+callback drops the stale parsed index (`cache.clear()`) and calls `caching::refresh_archive_listings(parent_drive_id,
+archive_path)`, which finds every open listing at or inside the archive path (`Path::starts_with`, component-wise — so
+`/a/foo.zip` matches the root and inner listings but not a `/a/foo.zipper` sibling or the containing `/a`) and re-reads
+each through `notify_full_refresh`. That re-resolves `(parent_id, inner_path)` back to this `ArchiveVolume`, so an
+LRU-evicted archive re-registers lazily. It deliberately does NOT go through `notify_directory_changed`: that runs the
+drive-index sync (`apply_smb_change`) up front, and an archive-inner path isn't a real filesystem path, so feeding it to
+the index would be meaningless.
+
+**Cache invalidation.** The `(path, size, mtime)` key already misses after any edit, so `cache.clear()` isn't needed for
+correctness — but it releases the old `Arc<ArchiveIndex>` instead of leaking one parsed index per edit. Clearing runs in
+the (synchronous) `notify` callback before the async refresh spawns, so the re-read re-parses the new bytes.
+
+**Off the executor.** The debouncer callback runs on notify-rs's own thread, which has no Tokio runtime, so it uses
+`tauri::async_runtime::spawn` (never `tokio::spawn`, which would panic) — the same rule as `file_system::watcher`.
+
+**Mid-write safety (keep the old listing).** A writer mid-rewrite leaves a truncated central directory. On such a
+refresh, `list_directory` errors (`ArchiveError::Corrupt`/`NotAnArchive` → `VolumeError`), and `notify_full_refresh`
+returns early WITHOUT touching the cache — so the pane keeps its last-good entries rather than blanking, and the next
+event (when the write settles) retries. The damaged-archive banner is produced only at NAVIGATION time (the listing seam,
+§ "Decision: typed `ArchiveError → VolumeError` mapping"), never from this refresh path, so a transient mid-write never
+flashes an error. Pinned by `a_truncated_midwrite_archive_keeps_the_previous_listing`.
+
+**Lifecycle (leak-free).** `VolumeManager::resolve` starts the watch exactly once, gated on the `register_if_absent`
+winner, so repeated resolves of an already-registered archive don't churn watchers. The `ArchiveContentWatch` handle
+lives on the `ArchiveVolume`; when the archive LRU evicts the volume (`unregister` drops the registry's `Arc`) or the app
+tears down, the handle drops and the `Debouncer`'s own `Drop` stops the OS watch. A held `Arc` (an in-flight read)
+keeps the watch alive until the last reference drops — harmless (a re-resolve after eviction starts a fresh watch; two
+briefly overlap, both fire idempotent refreshes). `active_watch_count` (incremented on start, decremented in the handle's
+`Drop`) lets `lru_eviction_releases_the_archive_and_its_watch` prove eviction leaks no watcher. `listing_is_watched` is
+`true` only while the handle is present, so a listing never claims freshness the backend can't back; if the watch fails
+to establish (`notify` refuses the path — e.g. a non-local parent), it stays `false`.
+
+**Interaction with the mutation milestone (M4).** When zip mutation lands via temp+rename, the edit's FINAL atomic rename
+over `foo.zip` is a change event this watch catches — that IS the desired post-edit refresh. A concurrent browse in the
+other pane reading the archive mid-edit sees either the old-complete or the new-complete file, never a torn read, because
+the rename is atomic on one filesystem: the reader's `LocalFileSource` opens whichever inode the rename has published.
+The read isn't serialized on the edit's lane, but it doesn't need to be — atomicity, not lane serialization, is what
+prevents the torn read. The `(path, size, mtime)` key plus the watch's `cache.clear()` guarantee the post-rename read
+re-parses the new file.
+
 ## Testing
 
 `volume_test.rs` drives `ArchiveVolume` against real zips written to a temp file (the local source needs a real path):
@@ -289,6 +349,13 @@ archive typed errors, streaming (bounded chunks + decompression correctness + tr
 concurrent reads, best-effort encoding, and cache hit/invalidation. `name.rs` and `index.rs` carry pure unit tests for
 the sanitizer (incl. the depth cap) and the tree builder (incl. the node-count cap and the collision orders).
 
+`watch.rs` unit-tests the pure event filter (`event_path_targets_archive`: exact match, the `/private` firmlink
+normalization, sibling and prefix-similar rejection). `watch_integration_test.rs` drives the whole refresh through
+`VolumeManager::resolve` + `LISTING_CACHE` against real temp zips: an on-disk edit reflected in the listing while an
+outside listing is left untouched (scoping), a truncated mid-write keeping the previous listing, the real-notify
+end-to-end refresh (polls a condition with a generous timeout, no fixed sleep), and LRU eviction releasing the archive's
+watch (`Arc::strong_count` drops to the test's own after eviction).
+
 ## Left for the follow-up milestones
 
 `ArchiveVolume` (browse + extract + `scan_for_copy`, read-only) exists in `volume.rs`, and backend routing (§ "Routing
@@ -297,14 +364,15 @@ read-only write guards. What's still ahead (sequencing lives in `/docs/specs/arc
 
 Landed since: the FE `'archive'` capabilities `VolumeKind` (kind-from-path), the Enter-into-archive fork, the
 breadcrumb/path-bar `…/foo.zip/inner` rendering, the bounded temp-extract viewer preview, the listing-path
-`ArchiveUnreadable` friendly copy (§ "Decision: typed `ArchiveError → VolumeError` mapping"), and the M2 Enter-behavior
-menu + per-format Settings (`docs/specs/archive-browsing-plan.md` § M2). What's still ahead:
+`ArchiveUnreadable` friendly copy (§ "Decision: typed `ArchiveError → VolumeError` mapping"), the M2 Enter-behavior
+menu + per-format Settings (`docs/specs/archive-browsing-plan.md` § M2), and the live content watch (§ "Live content
+watch": `listing_is_watched` reflects it, the backing `.zip` is watched for external edits). What's still ahead:
 
 - **Open-with-external-app for a file INSIDE an archive (deferred, M2 carried-over item b).** Enter on a file inside a
   `.zip` still opens the VIEWER (bounded temp-extract), not the OS default app. Extract-then-launch isn't a clean reuse
   of `file_viewer/archive_extract.rs`: that extractor is viewer-`pub(super)`-scoped and its temp is reaped on VIEWER
   SESSION close, whereas a detached launched app holds the file for an unknown lifetime and has no close event to hook —
   it needs its own extract-and-persist-until-startup-reaper lifecycle. Deferred deliberately; the viewer interim stands.
-- **Live watching**: flip `listing_is_watched` to `true` and watch the parent `.zip` for external edits.
 - **Mutation**: turn the mutation methods and the `'archive'` VolumeKind writable (add/delete/rename/mkdir/mkfile
-  via temp+rename). The write-guard seams (§ "Routing and lifecycle") become the mutation routing points.
+  via temp+rename). The write-guard seams (§ "Routing and lifecycle") become the mutation routing points, and the edit's
+  final atomic rename is the change event the live watch (§ "Live content watch") turns into the post-edit refresh.

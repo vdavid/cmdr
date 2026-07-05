@@ -213,7 +213,7 @@ async fn list_directory_reports_one_cumulative_progress_tick() {
     let archive = TestArchive::from_entries(&[stored("a.txt", "hi"), stored("b.txt", "there"), dir("sub/")]);
     let volume = archive.volume();
 
-    let seen = std::sync::Mutex::new(Vec::<ListingProgress>::new());
+    let seen = Mutex::new(Vec::<ListingProgress>::new());
     let callback = |p: ListingProgress| seen.lock_ignore_poison().push(p);
     volume.list_directory(Path::new(""), Some(&callback)).await.unwrap();
 

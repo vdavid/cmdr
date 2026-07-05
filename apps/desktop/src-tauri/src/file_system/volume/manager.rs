@@ -146,7 +146,19 @@ impl VolumeManager {
         };
 
         let archive_id = archive_volume_id(&zip_path);
-        self.register_if_absent(&archive_id, Arc::new(ArchiveVolume::new(parent, zip_path)));
+        let archive = Arc::new(ArchiveVolume::new(parent, zip_path));
+        // Only the resolve that actually registered starts the content watch, so
+        // repeated resolves of an already-registered archive don't churn notify
+        // watchers. The watch lives on the registered `ArchiveVolume` and stops
+        // when the LRU evicts it (the volume's `Arc` drops). `volume_id` is the
+        // parent drive id the listing cache keys on. Gated on the app handle: the
+        // watch only refreshes frontend listings, so there's nothing to watch
+        // before the frontend exists — and this keeps headless unit tests from
+        // starting real OS watches (production sets the handle at startup, before
+        // any archive is browsed).
+        if self.register_if_absent(&archive_id, archive.clone()) && crate::file_system::watcher::app_handle_present() {
+            archive.start_content_watch(volume_id);
+        }
         self.touch_archive_lru(&archive_id);
 
         match self.get(&archive_id) {
