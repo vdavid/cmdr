@@ -29,6 +29,7 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 use walkdir::WalkDir;
 
+use super::OperationEventSink;
 use super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
 use super::operation_intent::is_cancelled;
 use super::state::{WriteOperationState, WriteSettledGuard};
@@ -36,7 +37,6 @@ use super::types::{
     ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
     WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
-use super::OperationEventSink;
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::{
@@ -161,7 +161,10 @@ fn read_only_error(path: &Path) -> WriteOperationError {
 ///
 /// v1 handles LOCAL sources only; a non-local source (MTP/SMB → zip) is refused
 /// (the mutator streams adds from a local path).
-#[allow(clippy::too_many_arguments, reason = "the cross-volume→archive seam threads the source handle, paths, dest, parent id, and policy; a struct would just shuffle them")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the cross-volume→archive seam threads the source handle, paths, dest, parent id, and policy; a struct would just shuffle them"
+)]
 pub(crate) async fn route_archive_copy_into(
     events: Arc<dyn OperationEventSink>,
     source_volume: Arc<dyn Volume>,
@@ -316,7 +319,10 @@ fn build_copy_into_changeset(
 /// Resolves one file's conflict against the index + already-planned paths and
 /// appends the resulting add (and a delete, for an overwrite). Mutates the
 /// accumulators in place.
-#[allow(clippy::too_many_arguments, reason = "shared accumulators for one pass; bundling them into a struct adds ceremony without clarity")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "shared accumulators for one pass; bundling them into a struct adds ceremony without clarity"
+)]
 fn plan_file_add(
     inner: String,
     src_path: &Path,
@@ -399,7 +405,9 @@ fn conditional_overwrites(conflict: ConflictResolution, index: &ArchiveIndex, in
 fn find_unique_inner(inner: &str, index: &ArchiveIndex, planned: &HashSet<String>) -> String {
     let (stem, ext) = match inner.rsplit_once('.') {
         // Keep an extension only when there's a stem before the dot (not a dotfile).
-        Some((stem, ext)) if !stem.rsplit('/').next().unwrap_or(stem).is_empty() => (stem.to_string(), format!(".{ext}")),
+        Some((stem, ext)) if !stem.rsplit('/').next().unwrap_or(stem).is_empty() => {
+            (stem.to_string(), format!(".{ext}"))
+        }
         _ => (inner.to_string(), String::new()),
     };
     for n in 1..=9999 {
@@ -473,7 +481,12 @@ pub(crate) async fn archive_edit_start(
             // `on_settled`). `root` local edits carry no volume id (matches the
             // local-op convention).
             let settle_volume = (parent_volume_id != "root").then(|| parent_volume_id.clone());
-            let _settled = WriteSettledGuard::new(Arc::clone(&events), op_id.clone(), WriteOperationType::ArchiveEdit, settle_volume);
+            let _settled = WriteSettledGuard::new(
+                Arc::clone(&events),
+                op_id.clone(),
+                WriteOperationType::ArchiveEdit,
+                settle_volume,
+            );
 
             let hooks = Arc::new(MutatorHooks {
                 state: Arc::clone(&state),

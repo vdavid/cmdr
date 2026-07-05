@@ -139,7 +139,10 @@ impl std::fmt::Display for MutationError {
             MutationError::OpenOriginal(e) => write!(f, "couldn't open the archive: {e}"),
             MutationError::Zip(e) => write!(f, "the archive couldn't be rewritten: {e}"),
             MutationError::EncryptedEntryRetained { name } => {
-                write!(f, "the archive can't be edited because it contains an encrypted entry ('{name}')")
+                write!(
+                    f,
+                    "the archive can't be edited because it contains an encrypted entry ('{name}')"
+                )
             }
             MutationError::ReadSource { inner_path, source } => {
                 write!(f, "couldn't read the source for '{inner_path}': {source}")
@@ -389,10 +392,7 @@ fn path_matches_or_under(path: &str, target: &str) -> bool {
 
 /// A fresh same-directory temp path: `foo.zip` -> `foo.zip.cmdr-tmp-<uuid>`.
 fn temp_sibling_path(archive_path: &Path) -> PathBuf {
-    let mut name = archive_path
-        .file_name()
-        .map(|s| s.to_os_string())
-        .unwrap_or_default();
+    let mut name = archive_path.file_name().map(|s| s.to_os_string()).unwrap_or_default();
     name.push(TEMP_INFIX);
     name.push(Uuid::new_v4().to_string());
     archive_path.with_file_name(name)

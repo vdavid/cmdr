@@ -224,7 +224,10 @@ async fn rename_managed_routes_an_in_archive_rename_to_the_edit_driver() {
         .expect_err("routing needs an app handle the unit test doesn't wire");
     // allowed-error-string-match: the fn returns a String; the "archive" wording is
     // how we tell the routing fork fired from a natural rename failure.
-    assert!(err.contains("archive"), "expected the archive-routing signal, got: {err}");
+    assert!(
+        err.contains("archive"),
+        "expected the archive-routing signal, got: {err}"
+    );
 
     // A cross-boundary rename (OUT of the archive) is refused as a move, a
     // deterministic routing decision that needs no app handle.
