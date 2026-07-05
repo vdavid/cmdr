@@ -153,8 +153,11 @@ impl ArchiveVolume {
         // key. Second granularity is enough to catch an external edit (size also
         // guards), and it round-trips the same way on every browse.
         let mtime_nanos = meta.modified_at.map(|s| i128::from(s) * 1_000_000_000);
-        let raw: Arc<dyn ArchiveByteSource> =
-            Arc::new(VolumeByteSource::new(Arc::clone(&self.parent), self.archive_path.clone(), size));
+        let raw: Arc<dyn ArchiveByteSource> = Arc::new(VolumeByteSource::new(
+            Arc::clone(&self.parent),
+            self.archive_path.clone(),
+            size,
+        ));
         // Cache the file's tail so the central-directory parse costs one ranged
         // read of the backend, not many small ones (entry reads mid-file fall
         // through to the raw parent-backed source).

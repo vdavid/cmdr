@@ -154,7 +154,9 @@ impl TailCachedSource {
         let mut buf = vec![0u8; len];
         let mut filled = 0usize;
         while filled < len {
-            let n = self.inner.read_at(self.tail_start + filled as u64, &mut buf[filled..])?;
+            let n = self
+                .inner
+                .read_at(self.tail_start + filled as u64, &mut buf[filled..])?;
             if n == 0 {
                 break;
             }
