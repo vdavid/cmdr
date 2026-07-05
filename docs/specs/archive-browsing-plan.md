@@ -162,7 +162,10 @@ changeset `{ add, delete, rename }` applied in a single pass by a new `ArchiveEd
 **Default and only v1 strategy: build the edited archive to a `.cmdr-` temp, then atomic-rename over the original** —
 the app's mandated safe-overwrite (AGENTS.md principle 4). Retained entries are copied with the `zip` crate's
 `raw_copy_file` (verified: no decompress/recompress, preserves entries byte-for-byte); only newly added entries are
-compressed. This is:
+compressed. **Correction (found during mutation implementation): encrypted entries are the exception** — `zip` 8.6's
+`raw_copy_file` path drops the traditional-PKWARE encryption GP flag, leaving ciphertext under a "not encrypted" header
+(semantic corruption). So an edit that would RETAIN an encrypted entry is REFUSED with a typed error (original
+untouched); deleting encrypted entries is allowed. Consistent with the "encrypted: detect + reject" scope. This is:
 
 - **Cancel/crash-safe by construction**: the original is untouched until the final rename; cancel abandons the temp.
   This is what makes the cancellation David wants actually work (naive in-place append corrupts on cancel — verified).
