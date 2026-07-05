@@ -86,13 +86,17 @@ install. Full install testing needs a clean machine or a VM.
 The tap is the live channel until `vdavid/cmdr` clears Homebrew's notability bar. Then the goal is a tap-free
 `brew install --cask cmdr` straight from `Homebrew/homebrew-cask`.
 
-The self-submission bar is 90 forks / 90 watchers / 225 stars. PR
+The self-submission bar is 90 forks / 90 watchers / 225 stars; for a non-owner submitter it's 30 forks / 30 watchers /
+75 stars. The audit fails only when the repo is under ALL three thresholds (`&&`-chained in brew's
+`Library/Homebrew/utils/shared_audits.rb`; verified reading the source, 2026-07-05), so clearing stars alone passes the
+automated check — watchers and forks don't need to move. PR
 [#268854](https://github.com/Homebrew/homebrew-cask/pull/268854) was rejected at ~15 stars under that bar. The cask
 points at a domain-served download URL rather than a `github.com` one, which avoids only the **automated** notability
 check, not the maintainer's human "is this repo notable?" judgment. So a domain URL alone doesn't clear the bar.
 
-Resubmit when the repo clears ~225 stars. The cask file needs no changes for that: its shape already passes `brew audit`
-and `brew style`. The submission PR is opened by a human, never an agent (`no-external-actions`). Steps for the human:
+Resubmit when the repo clears ~225 stars — or already at 75+ stars if a community member (not David) opens the PR, since
+the lower non-owner bar applies to the PR author. The cask file needs no changes for that: its shape already passes
+`brew audit` and `brew style`. The submission PR is opened by a human, never an agent (`no-external-actions`). Steps for the human:
 
 1. Fork `Homebrew/homebrew-cask`, add the cask as `Casks/c/cmdr.rb`, one commit named `cmdr <version> (new cask)` (their
    convention: `token version (new cask)`).
