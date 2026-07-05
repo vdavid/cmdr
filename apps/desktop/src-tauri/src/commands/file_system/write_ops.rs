@@ -39,12 +39,13 @@ use super::expand_tilde;
 ///
 /// `None` means "scan the local filesystem directly" (the `std::fs` fast path);
 /// `Some` means scan through the `Volume` trait.
-fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathBuf>) -> Option<Arc<dyn Volume>> {
+async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathBuf>) -> Option<Arc<dyn Volume>> {
     // Route to the ArchiveVolume only for a source INSIDE the archive. The `.zip`
     // file itself is scanned as a plain file (one entry), not its contents.
-    let archive_source = first_source
-        .filter(|first| archive::path_is_inside_archive(first))
-        .and_then(|first| get_volume_manager().resolve(volume_id, first).volume);
+    let archive_source = match first_source.filter(|first| archive::path_is_inside_archive(first)) {
+        Some(first) => get_volume_manager().resolve(volume_id, first).await.volume,
+        None => None,
+    };
     if archive_source.is_some() {
         archive_source
     } else if volume_id == "root" {
@@ -256,7 +257,7 @@ pub async fn start_scan_preview(
         sources.iter().map(PathBuf::from).collect()
     };
 
-    let source_volume = scan_preview_source_volume(&volume_id, sources.first());
+    let source_volume = scan_preview_source_volume(&volume_id, sources.first()).await;
 
     let progress_interval = progress_interval_ms.unwrap_or(500);
     ops_start_scan_preview(
@@ -401,8 +402,8 @@ mod tests {
         );
     }
 
-    #[test]
-    fn scan_preview_routes_an_archive_source_to_the_archive_volume() {
+    #[tokio::test]
+    async fn scan_preview_routes_an_archive_source_to_the_archive_volume() {
         use crate::file_system::volume::InMemoryVolume;
 
         let dir = tempfile::tempdir().expect("tempdir");
@@ -410,18 +411,21 @@ mod tests {
         std::fs::write(&zip, b"PK\x03\x04rest").expect("write zip magic");
 
         // resolve needs the parent drive registered to build the ArchiveVolume.
+        // The `.zip` is a real temp file, so the parent is LOCAL (std::fs confirm).
         // (nextest runs each test in its own process, so this global is isolated.)
-        get_volume_manager().register("root", Arc::new(InMemoryVolume::new("Root")));
+        get_volume_manager().register("root", Arc::new(InMemoryVolume::new("Root").with_local_fs_access()));
 
         // An archive-inner source resolves to the ArchiveVolume (its root() is the
         // `.zip`), so the preview scans INSIDE the zip instead of via `std::fs`
         // (which would find 0 files and stall extract-out).
         let inner = zip.join("inner.txt");
-        let source = scan_preview_source_volume("root", Some(&inner)).expect("archive source volume");
+        let source = scan_preview_source_volume("root", Some(&inner))
+            .await
+            .expect("archive source volume");
         assert_eq!(source.root(), zip);
 
         // A plain local source stays `None` — the `std::fs` fast path.
         let plain = dir.path().join("plain.txt");
-        assert!(scan_preview_source_volume("root", Some(&plain)).is_none());
+        assert!(scan_preview_source_volume("root", Some(&plain)).await.is_none());
     }
 }

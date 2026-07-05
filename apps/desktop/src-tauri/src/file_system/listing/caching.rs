@@ -671,7 +671,9 @@ async fn notify_full_refresh(
     // Re-resolve from `(volume_id, parent_path)` so a `.zip`-crossing listing hits
     // the same `ArchiveVolume` the read used (the cache keys on the parent drive
     // id, and a re-resolve re-registers a lazily-evicted archive).
-    let resolved = crate::file_system::get_volume_manager().resolve(&volume_id, &parent_path);
+    let resolved = crate::file_system::get_volume_manager()
+        .resolve(&volume_id, &parent_path)
+        .await;
     let is_archive = resolved.is_archive;
     let vol = match resolved.volume {
         Some(v) => v,
@@ -857,13 +859,30 @@ pub fn try_get_watched_listing(volume_id: &str, path: &Path) -> Option<Vec<FileE
     };
 
     // Step 2: ask the volume whether this listing is being kept fresh by a watcher.
-    // Resolve (not plain `get`) so a `.zip`-crossing listing asks the ArchiveVolume,
-    // which reports `listing_is_watched` from its live content watch on the backing
-    // `.zip` (true once the watch is established, false if it couldn't start). We
-    // hold the Arc across the sync call; no await between.
-    let volume = crate::file_system::get_volume_manager()
-        .resolve(volume_id, path)
-        .volume?;
+    // `resolve_local_only` (the sync sibling of `resolve`) routes a LOCAL `.zip`
+    // listing to its ArchiveVolume, whose live content watch answers
+    // `listing_is_watched` honestly (true once established, false if it couldn't
+    // start). This oracle runs on sync recursive scan walkers, so it can't `.await`
+    // the async remote confirm — hence the local-only variant.
+    let resolved = crate::file_system::get_volume_manager().resolve_local_only(volume_id, path);
+    let volume = resolved.volume?;
+
+    // Honesty guard for a REMOTE archive-inner path. `resolve_local_only` can't
+    // confirm a remote boundary, so such a path stays a passthrough to its parent
+    // (a direct-SMB / MTP volume). That parent's `listing_is_watched` is
+    // VOLUME-level ("device reachable"), which would falsely claim freshness for an
+    // archive whose content watch is local-only and never established. Decline, so
+    // the write-op pre-flight rescans through the ArchiveVolume rather than reusing
+    // a possibly-stale cached inner listing. A local dir merely NAMED `foo.zip`
+    // isn't affected (its parent is local), nor is a genuine local archive (routed,
+    // `is_archive` true).
+    if !resolved.is_archive
+        && !volume.supports_local_fs_access()
+        && crate::file_system::volume::backends::archive::archive_boundary_candidate(path).is_some()
+    {
+        return None;
+    }
+
     if volume.listing_is_watched(path) {
         Some(entries)
     } else {

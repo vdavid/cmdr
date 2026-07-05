@@ -126,7 +126,7 @@ pub(super) fn extract_if_archive_inner_with(
     if !crate::file_system::volume::backends::archive::path_is_inside_archive(requested) {
         return Ok(None);
     }
-    let resolved = crate::file_system::get_volume_manager().resolve("root", requested);
+    let resolved = tauri::async_runtime::block_on(crate::file_system::get_volume_manager().resolve("root", requested));
     if !resolved.is_archive {
         return Ok(None);
     }

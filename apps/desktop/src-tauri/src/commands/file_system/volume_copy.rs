@@ -32,11 +32,11 @@ fn expand_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: String) -> PathBu
 /// — so the first path decides. The `bool` is "source is inside an archive": the
 /// `.zip` file itself is a plain file (copied/moved as a file, via its parent
 /// volume), so only a genuinely-inner source flips it true.
-fn resolve_source(volume_id: &str, first_path: Option<&PathBuf>) -> Option<(Arc<dyn Volume>, bool)> {
+async fn resolve_source(volume_id: &str, first_path: Option<&PathBuf>) -> Option<(Arc<dyn Volume>, bool)> {
     let manager = get_volume_manager();
     match first_path {
         Some(path) if archive::path_is_inside_archive(path) => {
-            manager.resolve(volume_id, path).volume.map(|v| (v, true))
+            manager.resolve(volume_id, path).await.volume.map(|v| (v, true))
         }
         Some(_) | None => manager.get(volume_id).map(|v| (v, false)),
     }
@@ -56,15 +56,18 @@ pub async fn copy_between_volumes(
     let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
 
     // Route an archive-inner source batch to its ArchiveVolume (extract-out).
-    let (source_volume, _source_is_archive) =
-        resolve_source(&source_volume_id, source_paths.first()).ok_or_else(|| WriteOperationError::IoError {
+    let (source_volume, _source_is_archive) = resolve_source(&source_volume_id, source_paths.first())
+        .await
+        .ok_or_else(|| WriteOperationError::IoError {
             path: source_volume_id.clone(),
             message: format!("Source volume '{}' not found", source_volume_id),
         })?;
 
     // Resolve the destination. A `.zip`-crossing dest routes the whole copy to
     // the managed archive-edit driver (one `{ add }` changeset).
-    let dest_resolved = get_volume_manager().resolve(&dest_volume_id, Path::new(&dest_path));
+    let dest_resolved = get_volume_manager()
+        .resolve(&dest_volume_id, Path::new(&dest_path))
+        .await;
     let dest_volume = dest_resolved.volume.ok_or_else(|| WriteOperationError::IoError {
         path: dest_volume_id.clone(),
         message: format!("Destination volume '{}' not found", dest_volume_id),
@@ -117,13 +120,16 @@ pub async fn move_between_volumes(
 
     // An archive SOURCE routes to the compound move-out op (extract via the copy
     // engine, then a batch `{ delete }` archive rewrite once the extract lands).
-    let (source_volume, source_is_archive) =
-        resolve_source(&source_volume_id, source_paths.first()).ok_or_else(|| WriteOperationError::IoError {
+    let (source_volume, source_is_archive) = resolve_source(&source_volume_id, source_paths.first())
+        .await
+        .ok_or_else(|| WriteOperationError::IoError {
             path: source_volume_id.clone(),
             message: format!("Source volume '{}' not found", source_volume_id),
         })?;
 
-    let dest_resolved = get_volume_manager().resolve(&dest_volume_id, Path::new(&dest_path));
+    let dest_resolved = get_volume_manager()
+        .resolve(&dest_volume_id, Path::new(&dest_path))
+        .await;
     let dest_volume = dest_resolved.volume.ok_or_else(|| WriteOperationError::IoError {
         path: dest_volume_id.clone(),
         message: format!("Destination volume '{}' not found", dest_volume_id),
@@ -195,10 +201,12 @@ pub async fn scan_volume_for_copy(
     // Resolve both so an archive-inner source scans through its ArchiveVolume
     // (sizing an extract-out) and the dest routes consistently with the copy op.
     let (source_volume, _) = resolve_source(&source_volume_id, source_paths.first())
+        .await
         .ok_or_else(|| IpcError::from_err(format!("Source volume '{}' not found", source_volume_id)))?;
 
     let dest_volume = get_volume_manager()
         .resolve(&dest_volume_id, &dest_path)
+        .await
         .volume
         .ok_or_else(|| IpcError::from_err(format!("Destination volume '{}' not found", dest_volume_id)))?;
 
@@ -238,6 +246,7 @@ pub async fn scan_volume_for_conflicts(
     // routes to its ArchiveVolume (consistent with the copy op's routing).
     let volume = get_volume_manager()
         .resolve(&volume_id, &dest_path)
+        .await
         .volume
         .ok_or_else(|| IpcError::from_err(format!("Volume '{}' not found", volume_id)))?;
 
@@ -256,7 +265,7 @@ pub async fn scan_volume_for_conflicts(
     // routes an archive-inner source through its ArchiveVolume.
     if let (Some(src_volume_id), Some(src_paths)) = (source_volume_id, source_paths) {
         let paths: Vec<PathBuf> = src_paths.iter().map(PathBuf::from).collect();
-        if let Some((src_volume, _)) = resolve_source(&src_volume_id, paths.first()) {
+        if let Some((src_volume, _)) = resolve_source(&src_volume_id, paths.first()).await {
             match tokio::time::timeout(Duration::from_secs(30), src_volume.scan_for_copy_batch(&paths)).await {
                 Ok(Ok(batch)) => merge_source_types_from_batch(&mut source_items, &batch),
                 // A failed source-side stat is non-fatal: fall back to the
@@ -334,8 +343,8 @@ mod tests {
     use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo};
     use std::path::PathBuf;
 
-    #[test]
-    fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {
+    #[tokio::test]
+    async fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {
         use crate::file_system::get_volume_manager;
         use crate::file_system::volume::LocalPosixVolume;
         use std::sync::Arc;
@@ -352,12 +361,14 @@ mod tests {
         // The `.zip` FILE itself is copied as a plain file: routed to the PARENT
         // volume, `is_inside = false` (NOT the ArchiveVolume, which would scan its
         // contents instead of copying the file).
-        let (vol, is_inside) = resolve_source("root", Some(&zip)).expect("source volume");
+        let (vol, is_inside) = resolve_source("root", Some(&zip)).await.expect("source volume");
         assert!(!is_inside, "the .zip file itself is not archive-inner");
         assert_eq!(vol.name(), "Root", "routed to the parent volume, not the archive");
 
         // A path INSIDE the archive routes to the ArchiveVolume, is_inside = true.
-        let (inner_vol, inner_is_inside) = resolve_source("root", Some(&zip.join("entry.txt"))).expect("inner volume");
+        let (inner_vol, inner_is_inside) = resolve_source("root", Some(&zip.join("entry.txt")))
+            .await
+            .expect("inner volume");
         assert!(inner_is_inside, "an inner path is archive-inner");
         assert_eq!(inner_vol.root(), zip, "the archive volume's root is the .zip");
     }

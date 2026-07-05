@@ -52,6 +52,11 @@ pub struct InMemoryVolume {
     /// central-directory tail-read strategy: one tail read, a second only if the
     /// directory exceeds the first window). See [`Self::read_range_log`].
     read_range_log: std::sync::Mutex<Vec<(u64, usize)>>,
+    /// When `true`, [`Volume::read_range`] returns `NotSupported` (as a real
+    /// backend without a positioned-read primitive does — `SmbVolume` before its
+    /// smb2 primitive lands). Models the "refuse typed" remote-archive path.
+    /// Default `false` (positioned reads work). Set via [`Self::with_read_range_unsupported`].
+    read_range_unsupported: bool,
     /// Raw errno to inject on the next `list_directory` call. Cleared after use.
     #[cfg(feature = "playwright-e2e")]
     injected_error: std::sync::Mutex<Option<i32>>,
@@ -68,9 +73,20 @@ impl InMemoryVolume {
             lane_key: None,
             local_fs_access: false,
             read_range_log: std::sync::Mutex::new(Vec::new()),
+            read_range_unsupported: false,
             #[cfg(feature = "playwright-e2e")]
             injected_error: std::sync::Mutex::new(None),
         }
+    }
+
+    /// Makes [`Volume::read_range`] return `NotSupported`, modeling a remote
+    /// backend without a positioned-read primitive (`SmbVolume` before its smb2
+    /// primitive lands). `get_metadata` still works, so `VolumeManager::resolve`
+    /// exercises its "route on an unavailable primitive, refuse typed downstream"
+    /// path.
+    pub fn with_read_range_unsupported(mut self) -> Self {
+        self.read_range_unsupported = true;
+        self
     }
 
     /// Records a `read_range` call for the request-count assertions in the
@@ -589,6 +605,9 @@ impl Volume for InMemoryVolume {
         len: usize,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            if self.read_range_unsupported {
+                return Err(VolumeError::NotSupported);
+            }
             let normalized = self.normalize(path);
             self.record_read_range(offset, len);
             let entries = self.entries.read().map_err(|_| VolumeError::IoError {

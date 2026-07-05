@@ -422,7 +422,7 @@ pub(crate) async fn read_directory_with_progress(
     // `ArchiveVolume`. The cache still keys on the FE-provided `volume_id` (the
     // parent drive), so the downstream re-read sites re-resolve the same archive
     // from `(volume_id, path)` — eviction-safe (see `caching.rs`).
-    let resolved = crate::file_system::get_volume_manager().resolve(volume_id, path);
+    let resolved = crate::file_system::get_volume_manager().resolve(volume_id, path).await;
     let is_archive = resolved.is_archive;
     let volume = resolved
         .volume

@@ -73,7 +73,8 @@ pub async fn stat_paths_kinds(paths: Vec<String>) -> TimedOut<Vec<Option<bool>>>
                 continue;
             }
             let resolved = crate::file_system::get_volume_manager()
-                .resolve(crate::file_system::volume::DEFAULT_VOLUME_ID, Path::new(path));
+                .resolve(crate::file_system::volume::DEFAULT_VOLUME_ID, Path::new(path))
+                .await;
             if let Some(volume) = resolved.volume
                 && let Ok(is_dir) = volume.is_directory(&resolved.path).await
             {

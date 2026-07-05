@@ -391,6 +391,7 @@ pub async fn handle_directory_change(listing_id: &str) {
     // once live archive watching lands.)
     let volume = crate::file_system::get_volume_manager()
         .resolve(&volume_id, &path)
+        .await
         .volume;
 
     // Get app handle for emitting events

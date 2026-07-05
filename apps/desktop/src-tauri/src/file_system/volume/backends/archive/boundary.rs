@@ -136,10 +136,9 @@ pub fn path_targets_archive_file(path: &Path) -> bool {
     std::fs::metadata(&archive_path).is_ok_and(|meta| meta.is_file())
 }
 
-/// Reads the first four bytes and checks them against the three zip start-of-file
-/// signatures: a local file header (`PK\x03\x04`), an empty archive's end-of-
-/// central-directory (`PK\x05\x06`), or the spanned-archive marker (`PK\x07\x08`).
-/// A file shorter than four bytes, or one that can't be opened, isn't a zip.
+/// Reads the first four bytes and checks them against the zip start-of-file
+/// signatures (see [`bytes_start_with_zip_signature`]). A file shorter than four
+/// bytes, or one that can't be opened, isn't a zip.
 fn file_starts_with_zip_signature(path: &Path) -> bool {
     use std::io::Read;
     let Ok(mut file) = std::fs::File::open(path) else {
@@ -149,7 +148,23 @@ fn file_starts_with_zip_signature(path: &Path) -> bool {
     if file.read_exact(&mut buf).is_err() {
         return false;
     }
-    matches!(&buf, b"PK\x03\x04" | b"PK\x05\x06" | b"PK\x07\x08")
+    bytes_start_with_zip_signature(&buf)
+}
+
+/// Whether `bytes` (a file's first four bytes) match one of the three zip
+/// start-of-file signatures: a local file header (`PK\x03\x04`), an empty
+/// archive's end-of-central-directory (`PK\x05\x06`), or the spanned-archive
+/// marker (`PK\x07\x08`). Fewer than four bytes isn't a zip.
+///
+/// The single magic-byte predicate shared by the local sniff
+/// ([`file_starts_with_zip_signature`]) and the REMOTE confirm in
+/// `VolumeManager::resolve` (which reads the first four bytes over the parent
+/// volume's `read_range`), so local and remote agree on what "is a zip" means.
+pub fn bytes_start_with_zip_signature(bytes: &[u8]) -> bool {
+    matches!(
+        bytes.get(..4),
+        Some(b"PK\x03\x04") | Some(b"PK\x05\x06") | Some(b"PK\x07\x08")
+    )
 }
 
 #[cfg(test)]

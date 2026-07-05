@@ -57,7 +57,7 @@ pub async fn list_directory_start_with_volume(
     // Resolve the volume, routing a `.zip`-crossing path to its read-only
     // `ArchiveVolume`. The cache keeps the FE-provided `volume_id` (parent drive);
     // the downstream re-read sites re-resolve the archive from `(volume_id, path)`.
-    let resolved = crate::file_system::get_volume_manager().resolve(volume_id, path);
+    let resolved = crate::file_system::get_volume_manager().resolve(volume_id, path).await;
     let is_archive = resolved.is_archive;
     let volume = resolved.volume.ok_or_else(|| {
         std::io::Error::new(

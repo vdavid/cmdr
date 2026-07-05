@@ -56,7 +56,7 @@ mod test_fixtures;
 mod watch_integration_test;
 
 pub use boundary::{
-    SUPPORTED_ARCHIVE_EXTENSIONS, archive_boundary_candidate, confirm_archive_boundary,
+    SUPPORTED_ARCHIVE_EXTENSIONS, archive_boundary_candidate, bytes_start_with_zip_signature, confirm_archive_boundary,
     has_supported_archive_extension, path_crosses_archive_boundary, path_is_inside_archive, path_targets_archive_file,
 };
 pub use cache::ArchiveIndexCache;

@@ -119,11 +119,14 @@ fn drop_listing(listing_id: &str) {
 async fn refresh_reflects_a_new_entry_and_leaves_outside_listings_alone() {
     let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec())]);
     let volume_id = format!("test-vol-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent").with_local_fs_access()));
+    get_volume_manager().register(
+        &volume_id,
+        Arc::new(InMemoryVolume::new("parent").with_local_fs_access()),
+    );
 
     // Resolve once so the zip is recognized as an archive (this test drives the
     // refresh directly, so it needs no live watch).
-    let resolved = get_volume_manager().resolve(&volume_id, &fixture.zip_path);
+    let resolved = get_volume_manager().resolve(&volume_id, &fixture.zip_path).await;
     assert!(resolved.is_archive, "the zip path must resolve to an ArchiveVolume");
 
     // A listing at the archive root, plus a sibling listing on the same drive
@@ -165,8 +168,11 @@ async fn refresh_reflects_a_new_entry_and_leaves_outside_listings_alone() {
 async fn a_truncated_midwrite_archive_keeps_the_previous_listing() {
     let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
     let volume_id = format!("test-vol-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent").with_local_fs_access()));
-    get_volume_manager().resolve(&volume_id, &fixture.zip_path);
+    get_volume_manager().register(
+        &volume_id,
+        Arc::new(InMemoryVolume::new("parent").with_local_fs_access()),
+    );
+    get_volume_manager().resolve(&volume_id, &fixture.zip_path).await;
 
     let listing = seed_listing(
         &volume_id,
@@ -201,11 +207,14 @@ async fn a_truncated_midwrite_archive_keeps_the_previous_listing() {
 async fn a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk() {
     let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec())]);
     let volume_id = format!("test-vol-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent").with_local_fs_access()));
+    get_volume_manager().register(
+        &volume_id,
+        Arc::new(InMemoryVolume::new("parent").with_local_fs_access()),
+    );
 
     // Resolve registers the archive; without an app handle it doesn't auto-start
     // the watch, so start it directly (see `start_watch_on`).
-    let resolved = get_volume_manager().resolve(&volume_id, &fixture.zip_path);
+    let resolved = get_volume_manager().resolve(&volume_id, &fixture.zip_path).await;
     let archive = resolved.volume.expect("archive volume");
     assert!(
         !archive.listing_is_watched(&fixture.zip_path),
@@ -259,9 +268,12 @@ async fn a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk() {
 async fn a_temp_rename_swap_refreshes_the_listing() {
     let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec())]);
     let volume_id = format!("test-vol-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(&volume_id, Arc::new(InMemoryVolume::new("parent").with_local_fs_access()));
+    get_volume_manager().register(
+        &volume_id,
+        Arc::new(InMemoryVolume::new("parent").with_local_fs_access()),
+    );
 
-    let resolved = get_volume_manager().resolve(&volume_id, &fixture.zip_path);
+    let resolved = get_volume_manager().resolve(&volume_id, &fixture.zip_path).await;
     let archive = resolved.volume.expect("archive volume");
     start_watch_on(&archive, &volume_id);
 
@@ -297,8 +309,8 @@ async fn a_temp_rename_swap_refreshes_the_listing() {
 /// LRU eviction releases the evicted archive (and thus its watch): the registry
 /// drops its reference, so the only remaining strong count is the test's own.
 /// Uses a private `VolumeManager` so the eviction is deterministic.
-#[test]
-fn lru_eviction_releases_the_archive_and_its_watch() {
+#[tokio::test]
+async fn lru_eviction_releases_the_archive_and_its_watch() {
     let base = tempfile::tempdir().expect("tempdir");
     let manager = VolumeManager::new();
     manager.register("root", Arc::new(InMemoryVolume::new("root").with_local_fs_access()));
@@ -306,7 +318,7 @@ fn lru_eviction_releases_the_archive_and_its_watch() {
     // Resolve archive A, start its watch, and hold its Arc.
     let zip_a = base.path().join("a.zip");
     std::fs::write(&zip_a, build_zip(&[stored("x.txt", b"x".to_vec())])).expect("write a.zip");
-    let a = manager.resolve("root", &zip_a).volume.expect("archive a");
+    let a = manager.resolve("root", &zip_a).await.volume.expect("archive a");
     start_watch_on(&a, "root");
     assert!(a.listing_is_watched(&zip_a), "A's watch must be live while registered");
     assert_eq!(Arc::strong_count(&a), 2, "the registry and the test each hold one Arc");
@@ -315,7 +327,7 @@ fn lru_eviction_releases_the_archive_and_its_watch() {
     for i in 0..20 {
         let zip = base.path().join(format!("more-{i}.zip"));
         std::fs::write(&zip, build_zip(&[stored("y.txt", b"y".to_vec())])).expect("write filler zip");
-        manager.resolve("root", &zip.join("inner"));
+        manager.resolve("root", &zip.join("inner")).await;
     }
 
     // The registry has dropped A: nothing but the test's own Arc remains, so

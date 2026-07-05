@@ -112,6 +112,7 @@ pub async fn path_exists(volume_id: Option<String>, path: String) -> TimedOut<bo
     // Resolve so an archive-inner path checks existence inside the `.zip`.
     if let Some(volume) = get_volume_manager()
         .resolve(&volume_id, Path::new(&expanded_path))
+        .await
         .volume
     {
         // For SMB volumes, an immediate `false` from `exists()` may be the connection
@@ -408,16 +409,19 @@ pub fn list_directory_end(listing_id: String) {
 #[tauri::command]
 #[specta::specta]
 pub async fn refresh_listing(listing_id: String) -> TimedOut<()> {
-    if let Some((volume_id, path)) = crate::file_system::listing::get_listing_volume_id_and_path(&listing_id)
-        && let Some(volume) = get_volume_manager().resolve(&volume_id, &path).volume
+    let resolved = match crate::file_system::listing::get_listing_volume_id_and_path(&listing_id) {
+        Some((volume_id, path)) => Some((get_volume_manager().resolve(&volume_id, &path).await, path)),
+        None => None,
+    };
+    if let Some((resolved, path)) = resolved
+        && let Some(volume) = resolved.volume
         && volume.local_path().is_none()
         && volume.listing_is_watched(&path)
     {
         log::debug!(
             target: "refresh_listing",
-            "refresh_listing: short-circuit, watcher-backed non-local listing (listing_id={}, volume_id={}, path={})",
+            "refresh_listing: short-circuit, watcher-backed non-local listing (listing_id={}, path={})",
             listing_id,
-            volume_id,
             path.display(),
         );
         return TimedOut {
