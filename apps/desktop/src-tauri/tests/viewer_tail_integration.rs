@@ -10,12 +10,17 @@
 //! the subscription channel. Asserting on the subscription is the closest
 //! BE-side check we can do without standing up Tauri runtime.
 //!
-//! Runs in the default suite. The test self-bounds its wait at 5 s (12+ debounce
-//! windows of settle time), comfortably under nextest's 8 s per-test hard cap, so
-//! it fails fast and cleanly if the watcher pipeline ever breaks instead of hanging.
+//! The appender keeps writing until the test observes a `Grew`, so a
+//! just-registered-watch arming window (which drops the first writes under host
+//! saturation) can't starve the test: a later write's event still arrives. The
+//! test is in the `real-notify` nextest group (serialized, 20 s cap) alongside
+//! the other real-FSEvents-delivery tests; its 15 s budget fails cleanly below
+//! that cap if the watcher pipeline ever breaks, instead of hanging.
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use cmdr_lib::file_viewer::watcher::{VIEWER_WATCHER_MANAGER, WatcherEvent};
@@ -28,27 +33,36 @@ async fn tail_watcher_sees_appender_task_events_within_debounce() {
 
     let sub = VIEWER_WATCHER_MANAGER.subscribe(&path).expect("subscribe");
 
-    // Spawn a Tokio task that appends to the file every 50 ms. The debouncer
-    // (300 ms window) coalesces these into roughly one event per window.
+    // Append every 50 ms until told to stop. The debouncer (300 ms window)
+    // coalesces these into roughly one event per window. Writing continuously
+    // (rather than a fixed 10 lines that finish in ~500 ms) means the FSEvents
+    // stream can arm late under saturation and still catch a later write — the
+    // arming window can't drop every write and leave nothing to observe.
+    let stop = Arc::new(AtomicBool::new(false));
     let writer_path = path.clone();
+    let writer_stop = Arc::clone(&stop);
     let writer = tokio::spawn(async move {
-        for i in 0..10 {
+        let mut i = 0;
+        while !writer_stop.load(Ordering::Relaxed) {
             tokio::time::sleep(Duration::from_millis(50)).await;
             let mut f = OpenOptions::new().append(true).open(&writer_path).unwrap();
             writeln!(f, "line {}", i).unwrap();
+            i += 1;
         }
     });
 
-    // Wait for at least one event within (debounce + writer ramp-up + slack).
-    // Total budget: 5 s. Real settle time on a quiet machine is ~400 ms.
+    // Wait for at least one Grew. Real settle time on a quiet machine is ~400 ms;
+    // the 15 s budget absorbs seconds-long FSEvents lag under a saturated suite
+    // (below the group's 20 s cap).
     let start = Instant::now();
     let mut saw_grew = false;
-    while start.elapsed() < Duration::from_secs(5) {
+    while start.elapsed() < Duration::from_secs(15) {
         if let Some(WatcherEvent::Grew(_)) = sub.recv_timeout(Duration::from_millis(250)) {
             saw_grew = true;
             break;
         }
     }
+    stop.store(true, Ordering::Relaxed);
     writer.await.expect("writer task");
 
     assert!(

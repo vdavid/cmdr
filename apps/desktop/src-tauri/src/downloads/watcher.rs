@@ -822,6 +822,82 @@ mod tests {
     /// SIGTERM-ing the whole process at the tight global 8 s cap.
     const EVENT_TIMEOUT: Duration = Duration::from_secs(15);
 
+    /// Drive a real FSEvents-observed mutation to a reliable emit, defeating
+    /// both the just-registered-watch arming window and FSEvents' habit of
+    /// coalescing or dropping a lone event under host saturation.
+    ///
+    /// `Debouncer::watch` returns before macOS finishes arming the FSEvents
+    /// stream, and a mutation landing inside that arming window is dropped
+    /// entirely, not merely delayed. Separately, once the stream IS live, a
+    /// single create/rename can still be coalesced away or dropped when every
+    /// core is busy (a full-suite run pins all of them). Both are unrecoverable
+    /// by waiting — the event is gone — so we redo the real mutation on a fresh
+    /// name until the watch delivers a matching emit, all inside ONE
+    /// `EVENT_TIMEOUT` budget (kept under the 20 s nextest cap; there's no
+    /// second budget to stack, which is what blew the cap when a priming step
+    /// and a long wait were separate).
+    ///
+    /// `mutate(attempt)` performs the genuine operation for a given attempt
+    /// (a create, or a partial→final rename). `matches` accepts ANY attempt's
+    /// emit, not just the latest, so a merely-slow event from an earlier attempt
+    /// still counts instead of being discarded — which would otherwise turn slow
+    /// delivery into a spurious failure. Returns the matched event.
+    fn observe_mutation(
+        rx: &mpsc::Receiver<DownloadDetectedEvent>,
+        mut mutate: impl FnMut(u32),
+        matches: impl Fn(&DownloadDetectedEvent) -> bool,
+    ) -> DownloadDetectedEvent {
+        let deadline = Instant::now() + EVENT_TIMEOUT;
+        let mut attempt = 0u32;
+        loop {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            assert!(
+                !remaining.is_zero(),
+                "no download-detected within {EVENT_TIMEOUT:?} (FSEvents watch starved)"
+            );
+            mutate(attempt);
+            attempt += 1;
+            // A live stream delivers within the 200 ms debounce plus slack; cap
+            // each wait so a dropped event triggers a redo rather than burning
+            // the whole budget, but never exceed the overall deadline.
+            let per_attempt = remaining.min(Duration::from_secs(3));
+            if let Some(ev) = wait_for(rx, per_attempt, &matches) {
+                return ev;
+            }
+        }
+    }
+
+    /// Prove a freshly-registered FSEvents watch is delivering, then drain the
+    /// proof events. Used by tests whose assertion depends on ring ORDER
+    /// (`latest_download`), which the redo-on-fresh-name shape of
+    /// [`observe_mutation`] can't offer. Bounded by `deadline` so priming plus
+    /// the caller's own wait share one budget and can't stack past the 20 s cap.
+    ///
+    /// Repeatedly creates a throwaway eligible file (a fresh name each time, so
+    /// each is a distinct `Create` the sink emits) until one is observed. A
+    /// rewrite of the same name is a `Modify`, which never emits, so the name
+    /// must change each iteration. Sentinels pass through the `LatestRing`, but
+    /// the caller mutates its real file last, so ordered FSEvents delivery lands
+    /// it at the back and it wins.
+    fn prime_watch(dir: &Path, rx: &mpsc::Receiver<DownloadDetectedEvent>, deadline: Instant) {
+        let mut n = 0u32;
+        loop {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            assert!(
+                !remaining.is_zero(),
+                "FSEvents watch never began delivering before the deadline (arming never completed)"
+            );
+            let _ = fs::write(dir.join(format!("cmdr-prime-sentinel-{n}.dat")), b"x");
+            n += 1;
+            if rx.recv_timeout(remaining.min(Duration::from_millis(500))).is_ok() {
+                break;
+            }
+        }
+        // Drain sentinel events already in flight so they can't shadow the
+        // caller's real event.
+        while rx.try_recv().is_ok() {}
+    }
+
     #[test]
     fn dropping_a_file_emits_one_event() {
         let td = unhidden_tempdir();
@@ -829,10 +905,17 @@ mod tests {
         let (sink, rx) = ChannelSink::new();
         let watcher = DownloadsWatcher::start_at(td.path().to_path_buf(), sink).unwrap();
 
-        touch(td.path(), "foo.txt");
-        let ev =
-            wait_for(&rx, EVENT_TIMEOUT, |e| e.file_name == "foo.txt").expect("expected one download-detected event");
-        let expected_path = canon_root.join("foo.txt");
+        // A direct create of a final-form file must emit for that file. Redo the
+        // create on a fresh name until the watch delivers one (see
+        // `observe_mutation` for why a single create can be lost under load).
+        let ev = observe_mutation(
+            &rx,
+            |n| {
+                touch(td.path(), &format!("drop-{n}.txt"));
+            },
+            |e| e.file_name.starts_with("drop-") && e.file_name.ends_with(".txt"),
+        );
+        let expected_path = canon_root.join(&ev.file_name);
         assert_eq!(ev.path, expected_path.to_string_lossy());
         assert_eq!(ev.parent_dir, canon_root.to_string_lossy());
         assert!(!ev.in_subdir);
@@ -848,17 +931,27 @@ mod tests {
         let (sink, rx) = ChannelSink::new();
         let watcher = DownloadsWatcher::start_at(td.path().to_path_buf(), sink).unwrap();
 
-        let partial = td.path().join("foo.zip.crdownload");
-        let final_path = td.path().join("foo.zip");
-        fs::write(&partial, b"data").unwrap();
-        // Let the create event flush before the rename. Without this, some
-        // platforms coalesce both into a single ambiguous event.
-        thread::sleep(Duration::from_millis(400));
-        fs::rename(&partial, &final_path).unwrap();
-
-        let ev = wait_for(&rx, EVENT_TIMEOUT, |e| e.file_name == "foo.zip")
-            .expect("expected download-detected for the renamed final-path");
-        let expected_final = canon_root.join("foo.zip");
+        // A partial-suffix → final-name rename must surface the FINAL path. A
+        // lone rename is the event class FSEvents most readily coalesces or
+        // drops under saturation, so redo the genuine `.crdownload` → `.zip`
+        // rename on a fresh name until the watch delivers one. Every attempt is
+        // a real partial→final rename, so the assertion is unchanged. The 400 ms
+        // gap lets the create flush first, so platforms don't coalesce create +
+        // rename into one ambiguous event. A `.crdownload` partial ends with
+        // `.crdownload`, so `ends_with(".zip")` matches only the final form.
+        let ev = observe_mutation(
+            &rx,
+            |n| {
+                let partial = td.path().join(format!("dl-{n}.zip.crdownload"));
+                let final_path = td.path().join(format!("dl-{n}.zip"));
+                fs::write(&partial, b"data").unwrap();
+                thread::sleep(Duration::from_millis(400));
+                fs::rename(&partial, &final_path).unwrap();
+            },
+            |e| e.file_name.starts_with("dl-") && e.file_name.ends_with(".zip"),
+        );
+        // The surfaced path is a final-form `.zip`, under the canonical root.
+        let expected_final = canon_root.join(&ev.file_name);
         assert_eq!(ev.path, expected_final.to_string_lossy());
 
         drop(watcher);
@@ -889,9 +982,18 @@ mod tests {
         let (sink, rx) = ChannelSink::new();
         let watcher = DownloadsWatcher::start_at(td.path().to_path_buf(), sink).unwrap();
 
+        // This test asserts ring ORDER (the LAST observed download wins), so it
+        // can't use `observe_mutation`'s redo-on-fresh-name shape. Prime the
+        // watch to prove it's live (defeating the arming window), then create
+        // `ring.txt` last so ordered FSEvents delivery lands it at the ring's
+        // back. Priming and the real wait share one deadline so they can't stack
+        // past the 20 s nextest cap.
+        let deadline = Instant::now() + EVENT_TIMEOUT;
+        prime_watch(td.path(), &rx, deadline);
+
         touch(td.path(), "ring.txt");
-        let _ =
-            wait_for(&rx, EVENT_TIMEOUT, |e| e.file_name == "ring.txt").expect("expected event before checking ring");
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        wait_for(&rx, remaining, |e| e.file_name == "ring.txt").expect("expected event before checking ring");
 
         assert_eq!(watcher.latest_download(), Some(canon_root.join("ring.txt")));
         drop(watcher);

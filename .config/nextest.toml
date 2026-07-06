@@ -34,9 +34,10 @@ virtual-mtp = { max-threads = 1 }
 # Tests that block on REAL OS file-watcher delivery (FSEvents). Running several
 # at once multiplies live watches and event storms, and under a saturated suite
 # (which grew with the archive milestones' real zip I/O) delivery starvation
-# started beating even the per-test retries. Serializing them removes the
-# self-interference; the 20 s cap + retries below still cover load from the
-# rest of the suite.
+# beats a single delivery attempt. Serializing them removes the
+# self-interference; the 20 s cap (plus, for the tests that still block on one
+# delivery, retries) covers load from the rest of the suite. See the two
+# overrides below for which tests self-heal in-test and which lean on retries.
 real-notify = { max-threads = 1 }
 
 [[profile.default.overrides]]
@@ -54,35 +55,49 @@ test-group = 'virtual-mtp'
 filter = 'test(smb_integration_)'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
-[[profile.default.overrides]]
 # Real OS file-watcher delivery is inherently laggy AND lossy under load on
 # macOS: FSEvents is documented as "~100 ms idle, seconds under load" (see
-# `file_viewer/CLAUDE.md`). These tests subscribe to a live watcher (`file_viewer`
-# viewer watcher, and the `downloads` `notify` integration tests) and block on
-# real event delivery, so under a saturated full-suite run two things go wrong
-# that never happen in isolation or on a lighter suite:
-#   1. Delivery lags past the tight global 8 s cap — which also equals each test's
-#      own internal event-wait, leaving no slack (this timed out
-#      `partial_rename_to_final_emits_for_final_path` at 8 s and pushed
-#      `watcher_observes_inode_replace` to ~5.3 s). Fixed by raising the tests'
-#      internal waits to 15 s (recv fails cleanly BELOW this 20 s cap) so a merely
-#      slow event still arrives; the 20 s cap stays a hang-catcher.
-#   2. The event is occasionally lost/starved entirely (FSEvents delivery to a
-#      just-registered watch can miss the mutation when the CPU is saturated by
-#      num-cpus test threads) — `partial_rename_to_final_emits_for_final_path`
-#      then waits the full 15 s and gets nothing. A raised timeout can't help a
-#      lost event, so grant retries: each retry re-runs the single test in a fresh
-#      process with a fresh watch, which reliably catches the event. This is the
-#      one class the global `retries = 0` intentionally exempts ("useful for flaky
-#      tests"). Coverage isn't lost: the assertions are unchanged, only real-OS
-#      event timing is tolerated for these specific real-delivery tests.
-#   The archive live-content watch tests (`a_live_watch_refreshes_…`,
-#   `a_temp_rename_swap_…`) are the same class: they start a real `notify` watch
-#   on a temp dir and block on FSEvents delivery after rewriting the backing
-#   `.zip`. Their internal poll waits up to 15 s; without this override the global
-#   8 s cap would SIGTERM them under a saturated run, and they want the same retry
-#   tolerance for a starved event.
-filter = 'test(file_viewer::watcher_test::) + test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(archive::watch_integration_test::a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk) + test(archive::watch_integration_test::a_temp_rename_swap_refreshes_the_listing)'
+# `file_viewer/CLAUDE.md`). Under a saturated full-suite run (every core busy)
+# two things go wrong that never happen in isolation: the mutation right after a
+# just-registered watch is dropped outright (arming isn't finished), and even on
+# a live watch a lone create/rename can be coalesced away. Both are unrecoverable
+# by waiting — the event is gone. The tests below all block on real delivery and
+# use a 15 s internal wait (recv fails cleanly BELOW the 20 s cap so a merely-slow
+# event still arrives; the cap stays a hang-catcher). They split into two classes.
+
+[[profile.default.overrides]]
+# SELF-HEALING real-FSEvents tests — no retries. Each keeps producing the
+# observable mutation until the watch delivers, so neither the just-registered
+# arming window nor a lone coalesced/dropped event can starve it, all inside one
+# 15 s budget (no second budget stacks). A real regression — the watcher stops
+# emitting — therefore surfaces immediately here instead of being masked by a
+# retry. Mechanisms:
+#   - `downloads/watcher.rs` tests: `observe_mutation` redoes the real
+#     create/rename on a fresh name until a matching emit; `prime_watch` proves
+#     the watch live before the ring-order mutation.
+#   - `viewer_tail_integration`: the appender writes continuously until the test
+#     sees a `Grew`.
+# They still need this override: the redo/continuous loops can run ~11 s under
+# saturation, past the global 8 s cap, and `real-notify` serialization keeps
+# their live watches from multiplying each other's starvation. Proof: 10/10
+# saturated full-suite runs of the downloads trio green at `retries = 0`
+# (verified 2026-07 on a 16-core M-series, full `cargo nextest run` looped;
+# baseline before the in-test fix was ~2/3 runs failing).
+filter = 'test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(tail_watcher_sees_appender_task_events_within_debounce)'
+test-group = 'real-notify'
+slow-timeout = { period = "20s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# Archive live-content and file-viewer tail watchers — same real-FSEvents class,
+# but these still block on a SINGLE delivery (subscribe/start a watch, then
+# rewrite/append/rename once and wait). They haven't been restructured to redo
+# the mutation, so a starved or coalesced event is unrecoverable within the run.
+# Grant retries: each retry re-runs the one test in a fresh process with a fresh
+# watch, which reliably catches the event. Coverage isn't lost — the assertions
+# are unchanged, only real-OS event timing is tolerated. If these ever get the
+# `observe_mutation` redo treatment (see the downloads override above), drop the
+# retries.
+filter = 'test(file_viewer::watcher_test::) + test(archive::watch_integration_test::a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk) + test(archive::watch_integration_test::a_temp_rename_swap_refreshes_the_listing)'
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 retries = 2
