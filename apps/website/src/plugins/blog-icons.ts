@@ -6,18 +6,17 @@
  * palette stays consistent. Add an entry here to add an icon; the colors live in global.css
  * (`.md-icon--<name>`).
  *
- * Shared by the rehype plugin (blog-media.mjs, builds hast) and the dev-editor preview (entry.ts,
+ * Shared by the rehype plugin (blog-media.ts, builds hast) and the dev-editor preview (entry.ts,
  * builds DOM) so both render identically. Each icon is one or more Lucide `<path d>` strings. Icons
  * are decorative (`aria-hidden`); keep the cell's text so screen readers still get the meaning.
  */
 
-/**
- * @typedef {Object} InlineIcon
- * @property {string[]} paths One or more Lucide `<path d>` strings drawn at a 24×24 viewBox.
- */
+export interface InlineIcon {
+  /** One or more Lucide `<path d>` strings drawn at a 24×24 viewBox. */
+  paths: string[]
+}
 
-/** @type {Record<string, InlineIcon>} */
-export const INLINE_ICONS = {
+export const INLINE_ICONS: Record<string, InlineIcon> = {
   yes: { paths: ['M20 6 9 17l-5-5'] }, // lucide check — green
   no: { paths: ['M18 6 6 18', 'm6 6 12 12'] }, // lucide x — red
   warn: {
@@ -33,14 +32,10 @@ export const INLINE_ICONS = {
   }, // lucide hourglass — blue
 }
 
-/** @type {string[]} */
-export const ICON_NAMES = Object.keys(INLINE_ICONS)
+export const ICON_NAMES: string[] = Object.keys(INLINE_ICONS)
 
-/**
- * Build a fresh global matcher for `:name:` of registered names (callers need their own lastIndex).
- * @returns {RegExp}
- */
-export function inlineIconMatcher() {
+/** Build a fresh global matcher for `:name:` of registered names (callers need their own lastIndex). */
+export function inlineIconMatcher(): RegExp {
   return new RegExp(`:(${ICON_NAMES.join('|')}):`, 'g')
 }
 

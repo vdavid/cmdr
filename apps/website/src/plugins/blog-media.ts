@@ -30,44 +30,64 @@
  * entry.ts `expandBlogMedia` / `activateCompareSliders`). Keep the two in sync.
  */
 
-import { INLINE_ICONS, inlineIconMatcher } from './blog-icons.mjs'
+import type { Root, Element, Text, ElementContent, Properties } from 'hast'
+import { INLINE_ICONS, inlineIconMatcher } from './blog-icons.ts'
 
 const THEME_TOKEN = '{theme}'
 
+/** A hast parent whose children we walk (Root or Element). */
+type Parent = Root | Element
+
+/**
+ * The children we care about are always elements/text; a `Root` can technically hold a doctype, but
+ * markdown never produces one and any non-element passes through untouched, so viewing every parent's
+ * children as `ElementContent[]` is safe and keeps the walkers uniform.
+ */
+function childrenOf(node: Parent): ElementContent[] {
+  return node.children as ElementContent[]
+}
+
 /** remark/rehype percent-encodes the `{` `}` in image URLs, so accept both `{theme}` and `%7Btheme%7D`. */
-function normalizeThemeToken(src) {
+function normalizeThemeToken(src: string): string {
   return src.replace(/%7b/gi, '{').replace(/%7d/gi, '}')
 }
 
-function el(tagName, properties, children = []) {
+function el(tagName: string, properties: Properties, children: ElementContent[] = []): Element {
   return { type: 'element', tagName, properties, children }
 }
 
-function text(value) {
+function text(value: string): Text {
   return { type: 'text', value }
 }
 
-function isImage(node) {
-  return node?.type === 'element' && node.tagName === 'img'
+function isImage(node: ElementContent): node is Element {
+  return node.type === 'element' && node.tagName === 'img'
 }
 
-function isThemeImageSpan(node) {
+function isText(node: ElementContent): node is Text {
+  return node.type === 'text'
+}
+
+function isThemeImageSpan(node: ElementContent): node is Element {
   return (
-    node?.type === 'element' && node.tagName === 'span' && (node.properties?.className ?? []).includes('theme-image')
+    node.type === 'element' &&
+    node.tagName === 'span' &&
+    Array.isArray(node.properties.className) &&
+    node.properties.className.includes('theme-image')
   )
 }
 
 /** A whitespace-only text node, the line break remark leaves between two images in one paragraph. */
-function isBlank(node) {
-  return node?.type === 'text' && node.value.trim() === ''
+function isBlank(node: ElementContent): boolean {
+  return node.type === 'text' && node.value.trim() === ''
 }
 
 /** Build the light/dark pair from a single `{theme}` image node. */
-function themePair(img) {
-  const src = normalizeThemeToken(img.properties.src)
+function themePair(img: Element): Element {
+  const src = normalizeThemeToken(String(img.properties.src ?? ''))
   const alt = img.properties.alt ?? ''
   const title = img.properties.title
-  const variant = (theme) =>
+  const variant = (theme: 'light' | 'dark'): Element =>
     el('img', {
       src: src.replaceAll(THEME_TOKEN, theme),
       alt,
@@ -78,31 +98,36 @@ function themePair(img) {
 }
 
 /** Caption text for a comparison cell: the image (or theme pair's) `title`. */
-function captionOf(node) {
-  if (isImage(node)) return node.properties.title ?? ''
-  if (isThemeImageSpan(node)) return node.children.find(isImage)?.properties?.title ?? ''
+function captionOf(node: ElementContent): string {
+  if (node.type !== 'element') return ''
+  if (node.tagName === 'img') {
+    return typeof node.properties.title === 'string' ? node.properties.title : ''
+  }
+  if (isThemeImageSpan(node)) {
+    const inner = node.children.find(isImage)
+    return inner && typeof inner.properties.title === 'string' ? inner.properties.title : ''
+  }
   return ''
 }
 
-function expandThemeImages(node) {
-  const children = node.children
-  if (!children) return
+function expandThemeImages(node: Parent): void {
+  const children = childrenOf(node)
   for (let i = 0; i < children.length; i++) {
     const child = children[i]
     if (
       isImage(child) &&
-      typeof child.properties?.src === 'string' &&
+      typeof child.properties.src === 'string' &&
       normalizeThemeToken(child.properties.src).includes(THEME_TOKEN)
     ) {
       children[i] = themePair(child)
-    } else {
+    } else if (child.type === 'element') {
       expandThemeImages(child)
     }
   }
 }
 
 /** One captioned cell of a side-by-side comparison row. */
-function figureCell(cell) {
+function figureCell(cell: ElementContent): Element {
   const caption = captionOf(cell)
   return el('span', { className: ['blog-figure'] }, [
     cell,
@@ -111,7 +136,7 @@ function figureCell(cell) {
 }
 
 /** A line-art SVG icon (currentColor stroke), matching the site's Lucide style. */
-function icon(className, children) {
+function icon(className: string, children: ElementContent[]): Element {
   return el(
     'svg',
     {
@@ -129,11 +154,11 @@ function icon(className, children) {
 }
 
 /** Deep-clone a hast node (plain JSON), so the lightbox can reuse a slider image without sharing it. */
-function deepClone(node) {
+function deepClone<T extends ElementContent>(node: T): T {
   return JSON.parse(JSON.stringify(node))
 }
 
-function lightboxFigure(cell, featured) {
+function lightboxFigure(cell: ElementContent, featured: boolean): Element {
   const caption = captionOf(cell)
   const className = ['img-compare__lightbox-figure', ...(featured ? ['img-compare__lightbox-figure--feature'] : [])]
   return el('figure', { className }, [deepClone(cell), ...(caption ? [el('figcaption', {}, [text(caption)])] : [])])
@@ -146,11 +171,11 @@ function lightboxFigure(cell, featured) {
  * BlogCompareSlider.astro; without JS it falls back to a static 50/50 split (and the lightbox dialog
  * still opens natively).
  */
-function buildSlider(beforeCell, afterCell) {
+function buildSlider(beforeCell: ElementContent, afterCell: ElementContent): Element {
   const beforeCap = captionOf(beforeCell)
   const afterCap = captionOf(afterCell)
   const both = beforeCap && afterCap ? `${beforeCap} and ${afterCap}` : 'the two images'
-  const label = (caption, side) =>
+  const label = (caption: string, side: 'before' | 'after'): ElementContent[] =>
     caption ? [el('span', { className: ['img-compare__label', `img-compare__label--${side}`] }, [text(caption)])] : []
   return el(
     'div',
@@ -226,16 +251,15 @@ function buildSlider(beforeCell, afterCell) {
  * slider; otherwise two or more images become a captioned side-by-side row. Parent-driven so a slider
  * (a block `<div>`) can replace the `<p>`.
  */
-function buildComparisons(node) {
-  const children = node.children
-  if (!children) return
+function buildComparisons(node: Parent): void {
+  const children = childrenOf(node)
   for (let i = 0; i < children.length; i++) {
     const child = children[i]
     if (child.type === 'element' && child.tagName === 'p') {
       const meaningful = child.children.filter((grandchild) => !isBlank(grandchild))
       const cells = meaningful.filter((grandchild) => isImage(grandchild) || isThemeImageSpan(grandchild))
       const token = meaningful
-        .filter((grandchild) => grandchild.type === 'text')
+        .filter(isText)
         .map((grandchild) => grandchild.value.trim())
         .join('')
       if (cells.length === 2 && token === '[slider]') {
@@ -248,12 +272,12 @@ function buildComparisons(node) {
         continue
       }
     }
-    buildComparisons(child)
+    if (child.type === 'element') buildComparisons(child)
   }
 }
 
-/** An inline colored icon span for a `:name:` token (see blog-icons.mjs). */
-function iconSpan(name) {
+/** An inline colored icon span for a `:name:` token (see blog-icons.ts). */
+function iconSpan(name: string): Element {
   return el('span', { className: ['md-icon', `md-icon--${name}`] }, [
     icon(
       'md-icon__svg',
@@ -263,17 +287,16 @@ function iconSpan(name) {
 }
 
 /** Replace `:name:` tokens in text nodes with icon spans, skipping code/pre. */
-function expandInlineIcons(node) {
-  if (node.tagName === 'code' || node.tagName === 'pre') return
-  const children = node.children
-  if (!children) return
+function expandInlineIcons(node: Parent): void {
+  if (node.type === 'element' && (node.tagName === 'code' || node.tagName === 'pre')) return
+  const children = childrenOf(node)
   for (let i = 0; i < children.length; i++) {
     const child = children[i]
     if (child.type === 'text' && child.value.includes(':')) {
       const matcher = inlineIconMatcher()
-      const parts = []
+      const parts: ElementContent[] = []
       let last = 0
-      let m
+      let m: RegExpExecArray | null
       while ((m = matcher.exec(child.value))) {
         if (m.index > last) parts.push(text(child.value.slice(last, m.index)))
         parts.push(iconSpan(m[1]))
@@ -291,22 +314,20 @@ function expandInlineIcons(node) {
 }
 
 /** Wrap each table in a horizontally scrollable container so wide tables don't overflow on mobile. */
-function wrapTables(node) {
-  const children = node.children
-  if (!children) return
+function wrapTables(node: Parent): void {
+  const children = childrenOf(node)
   for (let i = 0; i < children.length; i++) {
     const child = children[i]
     if (child.type === 'element' && child.tagName === 'table') {
       children[i] = el('div', { className: ['table-scroll'] }, [child])
-    } else {
+    } else if (child.type === 'element') {
       wrapTables(child)
     }
   }
 }
 
-/** @returns {import('unified').Plugin} */
-export function rehypeBlogMedia() {
-  return (tree) => {
+export function rehypeBlogMedia(): (tree: Root) => void {
+  return (tree: Root) => {
     expandThemeImages(tree)
     buildComparisons(tree)
     wrapTables(tree)

@@ -1,4 +1,3 @@
-// @ts-check
 import { defineConfig } from 'astro/config'
 import { unified } from '@astrojs/markdown-remark'
 import tailwindcss from '@tailwindcss/vite'
@@ -7,8 +6,8 @@ import rehypeExternalLinks from 'rehype-external-links'
 import remarkSmartypants from 'remark-smartypants'
 import sitemap from '@astrojs/sitemap'
 import { smartQuotesIntegration } from './src/plugins/smart-quotes.mjs'
-import { rehypeDownloadDropdown } from './src/plugins/download-dropdown.mjs'
-import { rehypeBlogMedia } from './src/plugins/blog-media.mjs'
+import { rehypeDownloadDropdown } from './src/plugins/download-dropdown.ts'
+import { rehypeBlogMedia } from './src/plugins/blog-media.ts'
 import { blogEditorDevServer } from './src/dev/blog-editor/dev-server.mjs'
 
 // https://astro.build/config

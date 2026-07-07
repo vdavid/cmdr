@@ -1,6 +1,6 @@
 import { marked } from 'marked'
 import { serializeMarkdownFile } from './serialize.mjs'
-import { INLINE_ICONS, inlineIconMatcher } from '../../plugins/blog-icons.mjs'
+import { INLINE_ICONS, inlineIconMatcher } from '../../plugins/blog-icons.ts'
 
 type EntryKind = 'draft' | 'post'
 
@@ -561,7 +561,7 @@ async function renderPreview() {
   }
 }
 
-/** Mirror of blog-media.mjs `expandInlineIcons`: replace `:name:` tokens with colored icon spans. */
+/** Mirror of blog-media.ts `expandInlineIcons`: replace `:name:` tokens with colored icon spans. */
 function expandInlineIcons(container: HTMLElement) {
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
   const texts: Text[] = []
@@ -605,13 +605,13 @@ function rewritePreviewImageSources(container: HTMLElement) {
 }
 
 /**
- * Mirrors src/plugins/blog-media.mjs for the preview (the real rehype plugin only runs in the Astro
+ * Mirrors src/plugins/blog-media.ts for the preview (the real rehype plugin only runs in the Astro
  * build): expand `{theme}` images into a light/dark pair, then turn a paragraph of 2+ images into a
  * captioned comparison row. Keep in sync with the plugin.
  */
 function expandBlogMedia(container: HTMLElement) {
   for (const image of Array.from(container.querySelectorAll('img'))) {
-    // marked may percent-encode the `{` `}`, so accept both `{theme}` and `%7Btheme%7D` (see blog-media.mjs).
+    // marked may percent-encode the `{` `}`, so accept both `{theme}` and `%7Btheme%7D` (see blog-media.ts).
     const source = (image.getAttribute('src') ?? '').replace(/%7b/gi, '{').replace(/%7d/gi, '}')
     if (!source.includes('{theme}')) {
       continue
@@ -675,7 +675,7 @@ function figureCell(cell: HTMLElement): HTMLElement {
   return figure
 }
 
-/** Build a comparison slider (mirrors `buildSlider` in src/plugins/blog-media.mjs). */
+/** Build a comparison slider (mirrors `buildSlider` in src/plugins/blog-media.ts). */
 function buildSlider(before: HTMLElement, after: HTMLElement): HTMLElement {
   const beforeCap = captionFor(before)
   const afterCap = captionFor(after)

@@ -95,7 +95,7 @@ plain link (the plugin only runs in the real Astro build).
 
 ## Theme-aware images and comparison rows
 
-Two conveniences plain markdown can't express, handled by the `rehypeBlogMedia` plugin (`src/plugins/blog-media.mjs`):
+Two conveniences plain markdown can't express, handled by the `rehypeBlogMedia` plugin (`src/plugins/blog-media.ts`):
 
 - **Theme-aware image**: put the literal token `{theme}` in an image path and the post renders `…-light.webp` or
   `…-dark.webp` to match the visitor's theme (the header toggle, falling back to `prefers-color-scheme`):
@@ -161,7 +161,7 @@ scannability. Available: `:yes:` (green check), `:no:` (red x), `:warn:` (amber 
 
 There's no Markdown standard for inline colored icons, so this is a small controlled set (the `:name:` shortcode form,
 not a free-form `color="…"`) — concise to write and consistent in palette. Add an icon by extending the registry in
-`src/plugins/blog-icons.mjs` (one or more Lucide `<path d>` strings) and a `.md-icon--<name>` color in `global.css`.
+`src/plugins/blog-icons.ts` (one or more Lucide `<path d>` strings) and a `.md-icon--<name>` color in `global.css`.
 Icons are decorative (`aria-hidden`), so keep the cell's text for screen readers. They don't expand inside code spans.
 
 ## Tables

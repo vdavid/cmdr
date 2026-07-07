@@ -7,28 +7,42 @@
  * needed; the shared look lives in src/styles/download-button.css.
  *
  * Why read latest.json directly instead of importing src/lib/release.ts: this plugin is loaded by
- * Astro's config loader (Node), not the Vite module graph, so it can't import a `.ts` module or see
- * `import.meta.env`. The URL/size logic below mirrors release.ts. Both fall back to the GitHub
+ * Astro's config loader, whose `import.meta.env` carries only the built-in `BASE_URL`/`MODE`/`DEV`/
+ * `PROD`/`SSR` (no `PUBLIC_*` vars). release.ts derives its URLs from `PUBLIC_DOWNLOAD_BASE_URL`,
+ * which is therefore always undefined here, so it can't be the source of truth in this context. The
+ * URL/size logic below mirrors release.ts's GitHub-fallback branch. Both fall back to the GitHub
  * release URLs because `PUBLIC_DOWNLOAD_BASE_URL` is unset in every build (see apps/website/Dockerfile
  * and .env.example) — keep the two in sync if that ever changes.
  *
- * Register this AFTER rehype-external-links in astro.config.mjs: that way external-links never sees
+ * Register this AFTER rehype-external-links in astro.config.ts: that way external-links never sees
  * the GitHub option links we create, so it won't add `target="_blank"` (and the prose `↗` arrow) to
  * what are really download links.
  */
 
 import { readFileSync } from 'node:fs'
+import type { Root, Element, Text, ElementContent, Properties } from 'hast'
+
+interface LatestRelease {
+  version: string
+  dmgSizes?: {
+    aarch64: number
+    x86_64: number
+    universal: number
+  }
+}
 
 const MARKER = 'cmdr:download'
 
-const latest = JSON.parse(readFileSync(new URL('../../public/latest.json', import.meta.url), 'utf-8'))
+const latest: LatestRelease = JSON.parse(
+  readFileSync(new URL('../../public/latest.json', import.meta.url), 'utf-8'),
+)
 const version = latest.version
 
-function dmgUrl(arch) {
+function dmgUrl(arch: string): string {
   return `https://github.com/vdavid/cmdr/releases/download/v${version}/Cmdr_${version}_${arch}.dmg`
 }
 
-function formatBytes(bytes) {
+function formatBytes(bytes: number): string {
   return `${Math.round(bytes / (1024 * 1024))} MB`
 }
 
@@ -43,16 +57,16 @@ const sizes =
     : null
 
 /** Build a hast element node. */
-function el(tagName, properties, children = []) {
+function el(tagName: string, properties: Properties, children: ElementContent[] = []): Element {
   return { type: 'element', tagName, properties, children }
 }
 
-function text(value) {
+function text(value: string): Text {
   return { type: 'text', value }
 }
 
 /** Lucide `download` glyph (https://lucide.dev/icons/download), shared by the trigger and options. */
-function downloadIcon(className) {
+function downloadIcon(className: string): Element {
   return el(
     'svg',
     { className: [className], fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24', ariaHidden: 'true' },
@@ -68,7 +82,7 @@ function downloadIcon(className) {
 }
 
 /** One arch row in the dropdown. */
-function option(arch, label, size) {
+function option(arch: string, label: string, size: string | undefined): Element {
   return el(
     'a',
     {
@@ -91,7 +105,7 @@ function option(arch, label, size) {
 
 /** The full inline trigger + dropdown, mirroring DownloadButton.astro's menu in a prose-safe (no
  * block elements inside the host `<p>`) shape: spans throughout, displayed via CSS. */
-function buildDropdown() {
+function buildDropdown(): Element {
   return el('span', { className: ['split-btn', 'split-btn--inline'], 'data-download-split-btn': '' }, [
     el(
       'button',
@@ -116,20 +130,18 @@ function buildDropdown() {
 }
 
 /** Replace every `<a href="cmdr:download">` in the tree with the dropdown. */
-function replaceMarkers(node) {
-  const children = node.children
-  if (!children) return
+function replaceMarkers(node: Root | Element): void {
+  const children = node.children as ElementContent[]
   for (let i = 0; i < children.length; i++) {
     const child = children[i]
-    if (child.type === 'element' && child.tagName === 'a' && child.properties?.href === MARKER) {
+    if (child.type === 'element' && child.tagName === 'a' && child.properties.href === MARKER) {
       children[i] = buildDropdown()
-    } else {
+    } else if (child.type === 'element') {
       replaceMarkers(child)
     }
   }
 }
 
-/** @returns {import('unified').Plugin} */
-export function rehypeDownloadDropdown() {
-  return (tree) => replaceMarkers(tree)
+export function rehypeDownloadDropdown(): (tree: Root) => void {
+  return (tree: Root) => replaceMarkers(tree)
 }

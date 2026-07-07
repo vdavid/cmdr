@@ -104,7 +104,7 @@ in `public/fonts/`.
   open/close + keyboard JS is a global `astro:page-load` script in `Layout.astro`, both keyed off
   `[data-download-split-btn]`/`[data-download-chevron]`/`[data-download-dropdown]`. Arch auto-detection (the recommended
   ✓) is a separate inline script in `Layout.astro`. Because all three are global and attribute-driven, the dropdown also
-  works when the `rehypeDownloadDropdown` plugin (`src/plugins/download-dropdown.mjs`) emits an inline copy into a blog
+  works when the `rehypeDownloadDropdown` plugin (`src/plugins/download-dropdown.ts`) emits an inline copy into a blog
   post from the `[download](cmdr:download)` marker. That plugin must run after `rehype-external-links` (so its GitHub
   links don't get `target="_blank"`) and reads `public/latest.json` directly, mirroring `src/lib/release.ts`'s
   GitHub-fallback URL/size logic.
@@ -125,7 +125,7 @@ roadmap emoji; consolidating gives one look, one place to add a glyph, and real 
 How it's wired:
 
 - `unplugin-icons` + `@iconify-json/lucide` (devDeps) resolve `~icons/lucide/<name>` to inline-SVG Astro components. The
-  Vite plugin is `Icons({ compiler: 'astro' })` in `astro.config.mjs`; the `~icons/*` module type is declared in
+  Vite plugin is `Icons({ compiler: 'astro' })` in `astro.config.ts`; the `~icons/*` module type is declared in
   `src/env.d.ts` so `astro check` resolves the imports.
 - `src/components/icons/icon-map.ts` is the ONE place `~icons/lucide/*` is imported. It exports `ICONS` (a
   `name → glyph` registry, keyed by the Lucide kebab name) and `IconName` (the union of registered names).
@@ -168,7 +168,7 @@ All pages support both light and dark mode. Users can override their system pref
   color changes between modes but button text on accent should always be dark.
 - Blog code blocks stay dark in light mode: `blog-prose.css` forces Shiki's `--shiki-dark` variables on `pre` elements,
   and uses hardcoded dark surface/border colors.
-- Shiki is configured with dual themes (`github-dark` + `github-light`) and `defaultColor: false` in `astro.config.mjs`.
+- Shiki is configured with dual themes (`github-dark` + `github-light`) and `defaultColor: false` in `astro.config.ts`.
   The theme switching CSS is in `global.css`.
 - Remark42 comments detect `data-theme` attribute, falling back to `prefers-color-scheme`.
 - Hero images have dark and light variants; `Hero.astro` switches between them using the same CSS selector pattern.
