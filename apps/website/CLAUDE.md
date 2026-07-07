@@ -69,5 +69,9 @@ All pages support both modes; a header toggle (`ThemeToggle.astro`) overrides sy
   generic call, failing `website-eslint` and cascade-blocking typecheck/build/deploy. Single-line `foo<T>(...)` parses
   fine.
 - `site` must be set in `astro.config.mjs` for RSS and OG image URLs to work.
-- The `@ts-expect-error` in `astro.config.mjs` is for a Vite version mismatch between Astro and Tailwind; harmless.
+- The markdown pipeline runs through `markdown.processor: unified({...})` (Astro 7); the remark/rehype plugins
+  (ordering invariant in DETAILS.md § Patterns) live inside it, `shikiConfig` stays top-level.
+- `compressHTML: true` is deliberate: Astro 7's `'jsx'` default strips significant inter-element whitespace and
+  collapses the home + pricing layouts. Don't drop it.
+- The `@ts-expect-error` in `astro.config.mjs` covers remark-smartypants's generic-Node types vs Astro's Root; harmless.
 - Remark42 comments (`comments.getcmdr.com`) are disabled in dev. Setup: `docs/guides/deploying-remark42.md`.

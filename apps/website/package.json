@@ -18,20 +18,21 @@
     "test:lighthouse": "lhci autorun"
   },
   "dependencies": {
-    "@astrojs/rss": "4.0.18",
-    "@astrojs/sitemap": "^3.7.2",
+    "@astrojs/markdown-remark": "7.2.1",
+    "@astrojs/rss": "4.0.19",
+    "@astrojs/sitemap": "^3.7.3",
     "@resvg/resvg-js": "2.6.2",
-    "@tailwindcss/vite": "^4.2.4",
-    "astro": "6.1.9",
+    "@tailwindcss/vite": "^4.3.2",
+    "astro": "7.0.6",
     "marked": "^18.0.2",
     "rehype-external-links": "3.0.0",
     "remark-smartypants": "^3.0.2",
     "satori": "0.26.0",
     "sharp": "^0.34.5",
-    "tailwindcss": "^4.2.4"
+    "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.8",
+    "@astrojs/check": "^0.9.9",
     "@axe-core/playwright": "^4.11.2",
     "@eslint/js": "^10.0.1",
     "@iconify-json/lucide": "1.2.103",

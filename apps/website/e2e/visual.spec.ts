@@ -69,7 +69,9 @@ async function shoot(page: Page, url: string, name: string): Promise<void> {
     })
 }
 
-test.use({ viewport: VIEWPORT, deviceScaleFactor: 1, reducedMotion: 'reduce' })
+// Reduced motion is applied per-page via `emulateMedia` in `preparePage`; `test.use` has no
+// `reducedMotion` option in the installed Playwright types, so it stays out of here.
+test.use({ viewport: VIEWPORT, deviceScaleFactor: 1 })
 
 const pages: Array<{ path: string; slug: string }> = [
     { path: '/', slug: 'home' },
