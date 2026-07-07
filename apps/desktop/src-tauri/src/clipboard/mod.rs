@@ -30,6 +30,13 @@ pub use state::{get_cut_state, set_cut_state};
 /// noun (text / image / PDF); the file name's extension carries the finer detail
 /// (`.md` / `.txt` / `.png` / `.jpg` / `.pdf`). Ungated so the Linux command
 /// stub can name it in its signature.
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(
+        dead_code,
+        reason = "constructed only by the macOS paste path; Linux keeps the type for the stub command's wire signature"
+    )
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum PastedKind {
