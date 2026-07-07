@@ -27,10 +27,11 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 - [ ] 2026-07-03 [mcp-tool-registry-plan.md](mcp-tool-registry-plan.md) - Collapse the 4-way hand-synced MCP tool
       bookkeeping (schema, dispatch, auth gate) into one authored `mcp_tools!` registry, so the bearer-token gate is
       by-construction and a destructive tool can't ship ungated. Wire output stays byte-identical.
-- [ ] 2026-07-03 [archive-browsing-plan.md](archive-browsing-plan.md) - Browse + edit zip (and read-only tar/7z)
+- [x] 2026-07-03 [archive-browsing-plan.md](archive-browsing-plan.md) - Browse + edit zip (and read-only tar/7z)
       archives as folders: `ArchiveVolume` (rc-zip sans-IO read) + batch `ArchiveEditOperation` on the existing op
-      manager, transparent `/foo.zip/inner` paths, temp+rename mutation in v1 with in-place append as a fast-follow.
-      Executing on the `archive-browsing` worktree; lands as one feature, no partial merges. Supersedes the research in
+      manager, transparent `/foo.zip/inner` paths, temp+rename mutation. SHIPPED 2026-07-06 (merged to `main`, fully
+      i18n-ized, remaining polish captured in `later/archive-browsing-polish.md`); wipe once the durable intent is
+      confirmed captured in the colocated archive/write-ops C+D.md. Supersedes the research in
       `later/totalcmd-plugin-analysis.md`.
 
 ## Later
@@ -59,3 +60,7 @@ Deferred future work. Unchecked by default; the folder name is the status.
       faces, text→image) as an ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation
       Models), vectors in SQLite not Postgres, on-device by default with faces/cloud as separate opt-ins. Plan
       reviewed + the Core ML/Rust path spike-verified; backed by `docs/notes/clip-coreml-rust-spike.md`.
+- [ ] 2026-07-07 [later/archive-browsing-polish.md](later/archive-browsing-polish.md) - Ranked follow-ups to the shipped
+      archive-browsing feature: one-pass sequential extract (the O(n²) cliff), encrypted-archive password flow, M-append
+      in-place edits, open-with-external for inner files, remote-source copy-into, remote live refresh + temp reaping,
+      move-out per-entry delete, M6 MTP in-place, and the dev-side warn debt.
