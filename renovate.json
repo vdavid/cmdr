@@ -34,6 +34,16 @@
       "schedule": ["at any time"],
       "automerge": true,
       "groupName": null
+    },
+    {
+      "description": "rand_core stays 0.6.x: the test-only keygen must match ed25519-dalek 2.x's rand_core API, and the `getrandom` feature is gone in later versions, so a bump can't resolve.",
+      "matchPackageNames": ["rand_core"],
+      "allowedVersions": "<0.7.0"
+    },
+    {
+      "description": "The SMB benchmark harness pins sspi and smb-rpc in lockstep with smb 0.11's internal pins; independent bumps can never resolve, so leave the whole harness alone.",
+      "matchFileNames": ["benchmarks/smb/**"],
+      "enabled": false
     }
   ],
   "cargo": {
