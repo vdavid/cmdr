@@ -23,7 +23,7 @@ use rc_zip::Entry;
 use super::error::ArchiveError;
 use super::format::ArchiveFormat;
 use super::name::{QuarantineReason, SanitizedName, sanitize_entry_name};
-use super::read::ArchiveEntryReader;
+use super::reader::ArchiveEntryReader;
 use super::source::ArchiveByteSource;
 
 /// Maximum number of nodes (files plus synthesized directories) in one archive's

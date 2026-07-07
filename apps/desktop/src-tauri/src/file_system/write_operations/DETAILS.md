@@ -236,7 +236,7 @@ Rename, make-folder, and make-file (`WriteOperationType::Rename` / `CreateFolder
 Editing a `.zip` (mkdir/mkfile/rename/delete inside, or copy/move INTO one) is an O(archive) temp+rename rewrite, not a
 metadata syscall, so it runs as a managed op through `spawn_managed`, NOT `run_instant`. The `archive_edit/` module is the driver;
 the mutation mechanism (`ArchiveMutator`, temp+rename safe-overwrite) lives in the archive backend
-(`volume/backends/archive/DETAILS.md` § "Zip mutation").
+(`volume/backends/archive/mutation/DETAILS.md`).
 
 ### Reaching the edit driver: parent-aware write-routing
 

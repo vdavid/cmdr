@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use super::test_fixtures::{
+use super::super::test_fixtures::{
     build_zip, deflated, dir, overstate_record_count, patch_equal_len, set_first_entry_encrypted, stored, zip64_stored,
 };
 use super::*;

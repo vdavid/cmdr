@@ -21,7 +21,7 @@ use sevenz_rust2::{ArchiveReader, Password};
 use super::error::ArchiveError;
 use super::index::{MAX_TREE_NODES, RawEntry};
 use super::name::{SanitizedName, sanitize_entry_name};
-use super::read::{ArchiveEntryReader, pump_read};
+use super::reader::{ArchiveEntryReader, pump_read};
 use super::source::{ArchiveByteSource, SourceReader};
 
 /// The 7z entry store: the set of readable entry paths. A read re-opens the
@@ -101,7 +101,7 @@ fn unix_seconds(entry: &sevenz_rust2::ArchiveEntry) -> Option<i64> {
 
 /// Decodes to the entry named `target` (matching the sanitized inner path the
 /// index keyed it under) and streams its bytes.
-fn stream_entry(source: Arc<dyn ArchiveByteSource>, target: &str, tx: &super::read::ChunkTx) {
+fn stream_entry(source: Arc<dyn ArchiveByteSource>, target: &str, tx: &super::reader::ChunkTx) {
     let reader = SourceReader::new(source);
     let mut archive = match ArchiveReader::new(reader, Password::empty()) {
         Ok(a) => a,

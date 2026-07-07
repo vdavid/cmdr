@@ -25,7 +25,7 @@ use super::error::ArchiveError;
 use super::format::{TarCodec, open_tar_decoder};
 use super::index::{MAX_TREE_NODES, RawEntry};
 use super::name::{SanitizedName, sanitize_entry_name};
-use super::read::{ArchiveEntryReader, ChunkTx, pump_read};
+use super::reader::{ArchiveEntryReader, ChunkTx, pump_read};
 use super::source::{ArchiveByteSource, SourceRangeReader, SourceReader};
 
 /// One tar member's read handle: where its data lives.

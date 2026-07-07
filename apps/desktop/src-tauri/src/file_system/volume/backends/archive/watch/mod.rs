@@ -139,6 +139,9 @@ fn event_path_targets_archive(event_path: &Path, archive_path: &Path) -> bool {
 }
 
 #[cfg(test)]
+mod watch_integration_test;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

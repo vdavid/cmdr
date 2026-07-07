@@ -21,7 +21,7 @@
 
 use std::path::{Component, Path, PathBuf};
 
-use super::format::{ArchiveFormat, TarCodec, format_for_name, format_for_path};
+use super::read::{ArchiveFormat, TarCodec, format_for_name, format_for_path};
 
 /// Longest header prefix any format's magic check needs. A plain `.tar`'s ustar
 /// magic sits at offset 257, so one 512-byte tar block covers every format

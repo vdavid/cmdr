@@ -1,76 +1,57 @@
-//! Archive reading core (zip): parse a zip's central directory into a synthetic
-//! directory tree, and stream-decompress individual entries — the read-only
-//! foundation the `ArchiveVolume` backend is built on.
+//! The archive backend: presents a zip / tar / 7z file as a browsable, read-only
+//! folder (zip is also writable), minted on demand when a path crosses a `.zip`
+//! (or other supported archive) boundary.
 //!
-//! This module is deliberately decoupled from the `Volume` trait: it deals in
-//! archive-native types ([`ArchiveIndex`], [`ArchiveNode`], [`ArchiveError`]),
-//! and the volume layer maps those onto `FileEntry` / `VolumeError` / a
-//! `VolumeReadStream`. That keeps the reader unit-testable without any Tauri or
-//! volume machinery.
+//! Two layers, split so the reading engine is decoupled from Tauri and the
+//! `Volume` trait:
 //!
-//! ## Shape
+//! - [`read`] — the reading core: parse an archive's directory into a synthetic
+//!   tree and stream-decompress entries, in archive-native types
+//!   ([`ArchiveIndex`], [`ArchiveNode`], [`ArchiveError`]). Serves all formats.
+//! - [`volume`] — [`ArchiveVolume`], the one file that maps the core onto
+//!   `FileEntry` / `VolumeError` / a `VolumeReadStream` and holds the parent seam.
 //!
-//! - [`ArchiveByteSource`] is the byte-supply seam (sans-IO): [`LocalFileSource`]
-//!   reads a local file now; a remote parent volume's ranged read implements the
-//!   same trait later (remote-backed archives) with no change here.
-//! - [`ArchiveIndex::parse`] drives rc-zip's central-directory state machine over
-//!   a source, sanitizes every entry name ([Zip Slip](name) defense), and builds
-//!   the tree.
-//! - [`ArchiveIndex::open_read`] returns an [`ArchiveEntryReader`] that
-//!   decompresses one entry chunk-by-chunk off the async executor.
-//! - [`ArchiveIndexCache`] caches parsed indexes keyed by `(path, size, mtime)`.
+//! Around them: [`boundary`] (the routing detector `VolumeManager::resolve` uses
+//! to decide when to mint an `ArchiveVolume`), [`watch`] (the live content watch
+//! on the backing `.zip`), and [`mutation`] (the zip-only temp+rename write side).
 //!
 //! See [`CLAUDE.md`](CLAUDE.md) for the must-knows and [`DETAILS.md`](DETAILS.md)
-//! for the design rationale (why rc-zip's sans-IO fsm and not `rc-zip-tokio`,
-//! the Zip Slip guarantee, the cache key, off-executor decompression).
+//! for the `ArchiveVolume` layer, routing, and remote-backed archives; each
+//! subfolder carries its own `CLAUDE.md` / `DETAILS.md`.
 
-// A few of this module's public items are part of the reading core's API but
-// aren't referenced outside their own submodule or the tests yet (the Zip Slip
-// sanitizer surface, the in-memory `BytesSource`). `#![deny(unused)]` at the
-// crate root would flag those re-exports; relax `unused_imports` here. The
-// `ArchiveVolume` impl in `volume` now consumes the index / reader / source /
-// cache / error surface, so the allow no longer blankets the whole module.
+// This facade re-exports the reading core's full public surface for a uniform
+// `archive::` path, but some names are consumed only inside a subfolder or by
+// `#[cfg(test)]` code (e.g. `active_watch_count`, the Zip Slip sanitizer surface),
+// so `#![deny(unused)]` at the crate root would flag those re-exports.
 #![allow(
     unused_imports,
-    reason = "Zip Slip sanitizer surface and the in-memory BytesSource are public API not yet consumed outside this module"
+    reason = "facade re-exports the reading core's full surface; some names are consumed only within a subfolder or in tests"
 )]
 
 mod boundary;
-mod cache;
-mod error;
-mod format;
-mod index;
-/// The zip write side (temp+rename safe-overwrite). The write-ops archive-edit
-/// driver drives it; the read core above stays untouched.
-pub(crate) mod mutator;
-mod name;
+mod mutation;
 mod read;
-mod sevenz;
-mod source;
-mod tar;
 mod volume;
 mod watch;
-mod zip;
 
-#[cfg(test)]
-mod archive_test;
-#[cfg(test)]
-mod multiformat_test;
+// Shared zip-fixture builders for the subfolders' tests (read, mutation, watch,
+// and the `ArchiveVolume` layer). Lives at the archive root so every descendant
+// test module can reach it.
 #[cfg(test)]
 mod test_fixtures;
-#[cfg(test)]
-mod watch_integration_test;
+
+// `mutator` presents at this level (`archive::mutator`) — the write-ops
+// archive-edit driver reaches it there — while it lives under `mutation/`.
+pub(crate) use mutation::mutator;
 
 pub use boundary::{
     ARCHIVE_MAGIC_PREFIX_LEN, archive_boundary_candidate, bytes_match_archive_magic, confirm_archive_boundary,
     has_supported_archive_extension, path_crosses_archive_boundary, path_is_inside_archive, path_targets_archive_file,
 };
-pub use cache::ArchiveIndexCache;
-pub use error::ArchiveError;
-pub use format::{ArchiveFormat, TarCodec, format_for_name, format_for_path};
-pub use index::{ArchiveIndex, ArchiveNode};
-pub use name::{QuarantineReason, SanitizedName, sanitize_entry_name};
-pub use read::ArchiveEntryReader;
-pub use source::{ArchiveByteSource, BytesSource, DEFAULT_TAIL_CACHE_LEN, LocalFileSource, TailCachedSource};
+pub use read::{
+    ArchiveByteSource, ArchiveEntryReader, ArchiveError, ArchiveFormat, ArchiveIndex, ArchiveIndexCache, ArchiveNode,
+    BytesSource, DEFAULT_TAIL_CACHE_LEN, LocalFileSource, QuarantineReason, SanitizedName, TailCachedSource, TarCodec,
+    format_for_name, format_for_path, sanitize_entry_name,
+};
 pub use volume::ArchiveVolume;
 pub use watch::active_watch_count;

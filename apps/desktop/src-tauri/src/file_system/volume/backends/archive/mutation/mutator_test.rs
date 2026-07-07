@@ -11,8 +11,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use super::super::test_fixtures::{build_zip, deflated, dir, stored};
 use super::*;
+use crate::file_system::volume::backends::archive::test_fixtures::{build_zip, deflated, dir, stored};
 
 /// Writes `bytes` to `dir/name.zip` and returns the path.
 fn write_zip(dir: &Path, name: &str, bytes: &[u8]) -> PathBuf {
@@ -412,7 +412,7 @@ fn an_edit_preserves_the_archive_mode_mtime_and_xattrs() {
 
 #[test]
 fn an_edit_that_would_retain_an_encrypted_entry_is_refused_and_leaves_the_original_intact() {
-    use super::super::test_fixtures::set_first_entry_encrypted;
+    use crate::file_system::volume::backends::archive::test_fixtures::set_first_entry_encrypted;
 
     let tmp = tempfile::tempdir().expect("tempdir");
     let mut bytes = build_zip(&[
@@ -451,7 +451,7 @@ fn an_edit_that_would_retain_an_encrypted_entry_is_refused_and_leaves_the_origin
 
 #[test]
 fn deleting_an_encrypted_entry_is_allowed() {
-    use super::super::test_fixtures::set_first_entry_encrypted;
+    use crate::file_system::volume::backends::archive::test_fixtures::set_first_entry_encrypted;
 
     let tmp = tempfile::tempdir().expect("tempdir");
     let mut bytes = build_zip(&[

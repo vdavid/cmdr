@@ -14,8 +14,8 @@ The trait shape, capability matrix, streaming patterns, and "Building a new volu
   `SmbConnectionParams` for reconnect, global `AppHandle` for `smb-connection-changed` events. Same cfg gate.
 - `smb_watcher.rs`: background SMB change watcher on a dedicated smb2 session (separate TCP connection).
 - `in_memory.rs`: `InMemoryVolume`, `RwLock<HashMap>` store for tests + stress tests.
-- `archive/`: `ArchiveVolume` (read-only zip) + its reading core (parse, synthetic tree, streaming decompress, Zip
-  Slip). See [`archive/CLAUDE.md`](archive/CLAUDE.md).
+- `archive/`: `ArchiveVolume` (zip/tar/7z) + its reading core, zip write side, and live watch (subfolders). See
+  [`archive/CLAUDE.md`](archive/CLAUDE.md).
 
 ## Must-knows
 

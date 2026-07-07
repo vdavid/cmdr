@@ -20,7 +20,7 @@ use crate::file_system::volume::backends::InMemoryVolume;
 use crate::file_system::volume::backends::archive::{ArchiveVolume, active_watch_count};
 use crate::file_system::{VolumeManager, get_volume_manager};
 
-use super::test_fixtures::{FixtureFile, build_zip, stored};
+use super::super::test_fixtures::{FixtureFile, build_zip, stored};
 
 /// Starts the content watch on a resolved archive volume. `VolumeManager::resolve`
 /// only auto-starts the watch when an app handle is registered (production); a

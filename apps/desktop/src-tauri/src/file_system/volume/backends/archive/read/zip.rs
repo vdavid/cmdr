@@ -15,7 +15,7 @@ use rc_zip::{Entry, EntryKind};
 
 use super::error::ArchiveError;
 use super::index::RawEntry;
-use super::read::{ArchiveEntryReader, CHUNK_SIZE, ChunkTx};
+use super::reader::{ArchiveEntryReader, CHUNK_SIZE, ChunkTx};
 use super::source::ArchiveByteSource;
 
 /// General-purpose bit flag 0: the entry is encrypted (traditional PKWARE or
