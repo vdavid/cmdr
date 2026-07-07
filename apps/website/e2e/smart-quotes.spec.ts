@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-// The build-time smart-quotes integration (src/plugins/smart-quotes.mjs) must curl quotes
+// The build-time smart-quotes integration (src/plugins/smart-quotes.ts) must curl quotes
 // regardless of how the text reached the HTML: a literal `"` (via set:html, e.g. the homepage
 // feature list) or an HTML entity `&quot;`/`&#39;` (via Astro's `{text}` interpolation, e.g. the
 // /features cards). Playwright runs against the built `dist`, so the integration has run.
@@ -24,5 +24,14 @@ test.describe('Smart quotes', () => {
     const body = (await page.textContent('body')) ?? ''
     expect(body).toContain('“that PDF contract from last month”')
     expect(body).not.toContain('"that PDF contract from last month"')
+  })
+
+  test('homepage curls an apostrophe in plain .astro template text', async ({ page }) => {
+    // "what's next" is a literal apostrophe in Download.astro's template (not markdown, not an
+    // entity), so it exercises the word-apostrophe rule on the .astro template path.
+    await page.goto('/')
+    const body = (await page.textContent('body')) ?? ''
+    expect(body).toContain('feedback shapes what’s next')
+    expect(body).not.toContain("feedback shapes what's next")
   })
 })
