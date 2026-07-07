@@ -1,8 +1,8 @@
 # Website (getcmdr.com)
 
 Marketing site and blog for Cmdr. Astro + Tailwind v4 (CSS-first config in `src/styles/global.css`), Playwright E2E in
-`e2e/`, statically built. Full details: [DETAILS.md](DETAILS.md). This app is human-facing, so its markdown may use
-tables freely.
+`e2e/`, statically built. Full details: [DETAILS.md](DETAILS.md). This app is human-facing; its markdown may use tables
+freely.
 
 ## Module map
 
@@ -11,10 +11,10 @@ tables freely.
   `<img>`/raw `~icons`/decorative emoji. [DETAILS.md](DETAILS.md) § Icons.
 - `src/content/blog/{slug}/index.md`: blog posts with colocated images (schema in `src/content.config.ts`). Add a post:
   `docs/guides/writing-blog-posts.md`.
-- `src/dev/blog-editor/`: dev-only Markdown editor at `/dev/blog` (Vite middleware, not an Astro page, absent from prod
-  builds; via `pnpm dev:website`).
-- `src/pages/llms.txt.ts` / `llms-full.txt.ts`: agent-facing product descriptions. Keep in sync when product facts
-  (pricing, features, requirements) change.
+- `src/dev/blog-editor/`: dev-only Markdown editor at `/dev/blog` (Vite middleware, not an Astro page, absent from prod;
+  via `pnpm dev:website`).
+- `src/pages/llms.txt.ts` / `llms-full.txt.ts`: agent-facing product descriptions; keep synced with product facts
+  (pricing, features, requirements).
 
 ## Deployment
 
@@ -29,8 +29,7 @@ the Docker image. This is the ONLY deploy path. `release.yml` hits the same hook
 
 ## Analytics (must-knows)
 
-Full narrative (three analytics layers, first-touch `ref`, `?r=` expansion mechanics) in [DETAILS.md](DETAILS.md) §
-Analytics.
+Full narrative in [DETAILS.md](DETAILS.md) § Analytics.
 
 - **`window.__cmdrRReady` gates Umami, PostHog, AND the first-touch `ref` script.** All three await this Promise before
   recording a pageview or reading `utm_source`, so the async `?r=` code expansion (a fetch to
@@ -44,10 +43,9 @@ Analytics.
 - **Charset is the cross-repo attribution contract.** The client-side `?r=` sanitizer must normalize identically to the
   api-server's, or stored and pass-through values diverge (`docs/architecture.md` § Acquisition analytics).
 - **The site must never need a cookie consent banner.** Preference flags (theme, download arch, newsletter
-  dismissed/subscribed) in localStorage are fine and settled (don't flag as a compliance problem). Anything that
-  identifies, follows, or attributes a visitor must NOT use cookies/localStorage/sessionStorage: track anonymously in
-  aggregate. Apply the preference-vs-tracking test to new client-side persistence ([DETAILS.md](DETAILS.md) §
-  Client-side storage policy).
+  dismissed/subscribed) in localStorage are fine (not a compliance problem). Anything that identifies, follows, or
+  attributes a visitor must NOT use cookies/localStorage/sessionStorage: track anonymously in aggregate. The
+  preference-vs-tracking test for new client-side persistence: [DETAILS.md](DETAILS.md) § Client-side storage policy.
 - A new download link needs `data-download-link` (main) or `data-arch` inside `[data-download-dropdown]` so the ref
   script finds it.
 
@@ -69,9 +67,6 @@ All pages support both modes; a header toggle (`ThemeToggle.astro`) overrides sy
   generic call, failing `website-eslint` and cascade-blocking typecheck/build/deploy. Single-line `foo<T>(...)` parses
   fine.
 - `site` must be set in `astro.config.ts` for RSS and OG image URLs to work.
-- The markdown pipeline runs through `markdown.processor: unified({...})` (Astro 7); the remark/rehype plugins
-  (ordering invariant in DETAILS.md § Patterns) live inside it, `shikiConfig` stays top-level.
-- `compressHTML: true` is deliberate: Astro 7's `'jsx'` default strips significant inter-element whitespace and
-  collapses the home + pricing layouts. Don't drop it.
-- The `@ts-expect-error` in `astro.config.ts` covers remark-smartypants's generic-Node types vs Astro's Root; harmless.
+- `compressHTML: true` is deliberate — Astro 7's `'jsx'` default breaks home + pricing layouts; don't drop it.
+- Markdown pipeline (Astro 7 `processor: unified({…})`, plugin ordering, `@ts-expect-error`, empty-`srcset` fix): [DETAILS.md](DETAILS.md) § Patterns.
 - Remark42 comments (`comments.getcmdr.com`) are disabled in dev. Setup: `docs/guides/deploying-remark42.md`.

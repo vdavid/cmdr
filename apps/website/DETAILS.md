@@ -98,6 +98,15 @@ in `public/fonts/`.
 
 - **Layouts**: `Layout.astro` (base), `BlogLayout.astro` (posts), `LegalLayout.astro` (terms, privacy)
 - **CSS variables**: defined in `src/styles/global.css` under `@theme`. Use them everywhere.
+- **Markdown pipeline** (Astro 7): the remark/rehype plugins run inside `markdown.processor: unified({…})` in
+  `astro.config.ts` (Astro 7 requires an explicit processor); `shikiConfig` stays top-level and is handed to the
+  processor's renderer. `unified()`'s built-in gfm + SmartyPants stay on by default. The `@ts-expect-error` on
+  `remarkSmartypants` covers its generic-`Node` types vs Astro's `Root` — genuinely needed (`astro check` flags it as
+  unused if removed). `compressHTML: true` is deliberate: Astro 7's `'jsx'` default strips significant inter-element
+  whitespace and collapses the home + pricing layouts (which rely on it), so `true` (the classic minifier) is what keeps
+  the render correct. Astro's image service emits an invalid empty `srcset=""` on single-candidate markdown images; the
+  `stripEmptySrcsetIntegration` (`src/plugins/strip-empty-srcset.ts`) removes it at `astro:build:done` (a rehype plugin
+  can't — Astro injects the srcset after user plugins run).
 - **External links**: `rehype-external-links` auto-adds `target="_blank" rel="noopener noreferrer"`
 - **Download dropdown**: the split-button + arch menu. `DownloadButton.astro` holds only markup (variants
   `hero`/`card`/`header`/`mobile`/`pricing`); its styling is global in `src/styles/download-button.css` and its
