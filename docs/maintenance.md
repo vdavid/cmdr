@@ -55,6 +55,10 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
   feature lands.
 - **Replace AI-generated content with handcrafted**: Walk user-facing surfaces (icons, marketing copy, privacy policy,
   error messages) and replace anything that smells like AI slop. Frequency: ad hoc, but check at least quarterly.
+- **Review a11y-coverage exemptions**: Walk `scripts/check/checks/a11y-coverage-allowlist.json`; for each exempt
+  component, verify the reason still holds and whether a tier-3 a11y test is now practical. The automated check already
+  fails on dead/redundant entries, so this is a judgment pass only. Frequency: quarterly, batched with the allowlist
+  cutback.
 
 ### Documentation hygiene
 
@@ -86,15 +90,37 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
 - **Per release: scan for new fixed sleeps in E2E specs**. Run
   `grep -rE "await sleep\(" apps/desktop/test/e2e-playwright/*.spec.ts | grep -v "eslint-disable"` (should return
   empty). If not, the new sleeps got past the lint somehow and need attention.
-- **As needed: surviving `eslint-disable cmdr/no-arbitrary-sleep-in-e2e` annotations**. ~66 of these were added during
-  the Step 6 speedup as a legacy migration tool. Each is a candidate for replacement with `pollUntil`. Picking off a few
-  per quarter shrinks the technical-debt surface without forcing a single huge cleanup.
+- **As needed: surviving `eslint-disable cmdr/no-arbitrary-sleep-in-e2e` annotations**. ~66 were added during the Step 6
+  speedup; 8 remain as of 2026-07-01. Each is a candidate for replacement with `pollUntil`. Picking off a few per
+  quarter shrinks the technical-debt surface without forcing a single huge cleanup.
+- **Quarterly: i18n translation completeness**. After any batch of new strings lands, verify the 9 non-English locales
+  have translations for new keys (the automated stale-check catches outdated translations; the gap is new strings that
+  need fresh commissioning). Run `pnpm i18n:overflow` to catch UI clipping at 150% zoom + min window. Review the
+  translator-process guide if a new feature adds non-trivial message patterns. Frequency: quarterly, or immediately
+  after a feature that adds more than five new message keys.
 
 ## Log
 
 Newest-first. Tab-separated columns: `date`, `hash(es)`, `task`, `comment`.
 
 ```log
+2026-07-01	c335b2d0 3b14354b e7084aea	Per release: E2E suite health check	Releases v0.30-v0.32: de-flaked Linux focus race and transfer-error E2E tests; added per-test contention budget for borderline timings.
+2026-06-30	4c5ef483 714caeae	Bump pinned tool versions in .mise.toml	Node 25→26; @types/node 26 in the same pass.
+2026-06-27	e3b792a4 bf805da0	Purge old specs	Wiped shipped specs from docs/specs/; ticked off completed features in docs/specs/index.md.
+2026-06-27	23790976 6a4a2416 c85b826a d7cf14d7 8d06a15b	Cut back allowlists (the non-automated rest)	File-length entries for post-split residuals and cohesive large files; dropped 3 redundant coverage-allowlist entries and 2 stale a11y-coverage exemptions.
+2026-06-27	e5005ca9 2597038a 4138125b 6b6549c3 fe8b414d e199d87f	Split files that grew too big	SMB/MTP network scan extracted from the manager; transfer dialog state machine, volume module trait types, transfer test suites, write ops state.rs, and scan progress reporter each split into focused modules.
+2026-06-25	4d65dcd0 0117040c 37859f49 467cbe25 54f775ae	Split files that grew too big	Indexing splitting wave: store.rs, aggregator.rs, scanner.rs split into submodules; writer and store tests extracted to sibling files.
+2026-06-25	584aa27f	Security advisory sweep	Patched quinn-proto and memmap2 advisories.
+2026-06-25	962697cb 570f4ed1 03e37388	Tighten linter rules	i18n-coverage wired into CI as an error (stale translations now release-blocking); jscpd test-file ignore tightened to the repo's naming conventions.
+2026-06-20	191e076a b4674c70	Split files that grew too big	ai/manager.rs grab-bag split into single-responsibility modules behind a thin facade; indexing/state.rs split into lifecycle core, routing, and queries.
+2026-06-19	c24b7735 9d63c992	Refresh CLAUDE.md files	Condensed 20 over-budget CLAUDE.md files (from indexing, AI, and write-ops feature work) back under the 600-word push-tier ceiling.
+2026-06-18	375600ce	Tighten linter rules	Stale-translation detection (i18n tooling M2): stale translations made release-blocking in CI, warn-only in daily dev.
+2026-06-11	e856326e	AI-smell / inelegance review	Refactored FormattedDate: collapsed vestigial split-date structure (parts.left/parts.right) to a flat segments list across the date pipeline.
+2026-06-10	c9d45e09	Dead code sweep	Stripped stranded plaintext AI key from settings.json (security: was in Time Machine/cloud backups); deleted dead opt-out commands (ai.opts_out, is_ai_opted_out had no readers after the onboarding revamp).
+2026-06-04	e361cb4a b587de82 04b78b70	Split files that grew too big	FilePane watcher+MCP sync extracted into listing-diff-sync.svelte.ts and pane-mcp-sync.svelte.ts; SMB backend tests split into sibling files; MCP resources.rs split into per-resource modules.
+2026-06-04	55673222	Security advisory sweep	Go 1.25.11 for stdlib CVE fixes (security-driven toolchain bump; not the quarterly mise.toml pass).
+2026-05-27	aa3d4c6c e6974576	Review file structure	Moved copy/move/volume-transfer and delete/trash into feature-shaped subdirs inside write_operations/; mirrors the convention used by the rest of the backend.
+2026-05-14	2d7c27a3	Split files that grew too big	Batch split: menu/mod.rs (1496→604), indexing/mod.rs (1299→850), ipc.rs (985→535), error_reporter/mod.rs (1265→575), volume_copy.rs test block extracted; TransferProgressDialog, VolumeBreadcrumb, and viewer/+page trimmed on the frontend.
 2026-05-10	cee0aa08	Bump pinned tool versions in .mise.toml	Pinned pnpm 11.0.9 in .mise.toml and regenerated lockfile after CI lockfile drift; migrated allowBuilds config for pnpm 11.
 2026-05-09	51dff4c1	Split files that grew too big	Split friendly_error.rs (1410 lines) into a 5-file module directory.
 2026-05-09	64eb64dc	Cut back the file-length allowlist	Dropped stale friendly_error.rs entry (file became a directory after the split); clarified the allowlist rule in .claude/rules/.
