@@ -15,6 +15,7 @@
     import FileIcon from '../selection/FileIcon.svelte'
     import TagDots from '../selection/TagDots.svelte'
     import InlineRenameEditor from '../rename/InlineRenameEditor.svelte'
+    import { shouldMountRenameEditor } from '../rename/rename-mount'
     import {
         getSyncIconPath,
         createParentEntry,
@@ -917,12 +918,12 @@
                                 aria-selected={globalIndex === cursorIndex}
                             >
                                 <FileIcon {file} {syncIcon} />
-                                {#if renameState?.active && renameState.target?.index === globalIndex}
+                                {#if renameState?.active && shouldMountRenameEditor(renameState.target, { index: globalIndex, path: file.path })}
                                     <InlineRenameEditor
                                         value={renameState.currentName}
                                         severity={renameState.validation.severity}
                                         shaking={renameState.shaking}
-                                        ariaLabel={`Rename ${renameState.target.originalName}`}
+                                        ariaLabel={`Rename ${renameState.target?.originalName ?? ''}`}
                                         ariaInvalid={renameState.validation.severity === 'error'}
                                         validationMessage={renameState.validation.message}
                                         focusTrigger={renameState.focusTrigger}

@@ -15,6 +15,7 @@
     import FileIcon from '../selection/FileIcon.svelte'
     import TagDots from '../selection/TagDots.svelte'
     import InlineRenameEditor from '../rename/InlineRenameEditor.svelte'
+    import { shouldMountRenameEditor } from '../rename/rename-mount'
     import { fetchStatusMap, glyphFor, labelFor, type EntryStatusCode } from '../git/status-column'
     import {
         getSyncIconPath,
@@ -927,7 +928,7 @@
                         aria-selected={globalIndex === cursorIndex}
                     >
                         <FileIcon {file} {syncIcon} />
-                        {#if renameState?.active && renameState.target?.index === globalIndex}
+                        {#if renameState?.active && shouldMountRenameEditor(renameState.target, { index: globalIndex, path: file.path })}
                             <div
                                 class="col-rename"
                                 class:has-git={gitColumnVisible}
@@ -937,7 +938,7 @@
                                     value={renameState.currentName}
                                     severity={renameState.validation.severity}
                                     shaking={renameState.shaking}
-                                    ariaLabel={`Rename ${renameState.target.originalName}`}
+                                    ariaLabel={`Rename ${renameState.target?.originalName ?? ''}`}
                                     ariaInvalid={renameState.validation.severity === 'error'}
                                     validationMessage={renameState.validation.message}
                                     focusTrigger={renameState.focusTrigger}
