@@ -58,7 +58,6 @@ function buildFlow(getEntry: () => Entry | undefined = () => PASTED) {
     getTotalCount: () => 0, // 0 → loadSiblingNames returns [] without hitting getFileRange
     getIncludeHidden: () => false,
     getCurrentPath: () => '/dir',
-    getCursorIndex: () => 0,
     getShowHiddenFiles: () => true,
     getVolumeId: () => 'root',
     getEntryUnderCursor: () => getEntry() as never,

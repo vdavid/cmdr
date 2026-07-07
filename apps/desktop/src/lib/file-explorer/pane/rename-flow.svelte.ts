@@ -20,7 +20,6 @@ export interface RenameFlowDeps {
   getTotalCount: () => number
   getIncludeHidden: () => boolean
   getCurrentPath: () => string
-  getCursorIndex: () => number
   getShowHiddenFiles: () => boolean
   getVolumeId: () => string
   getEntryUnderCursor: () => FileEntry | undefined
@@ -85,7 +84,6 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       path: entry.path,
       originalName: entry.name,
       parentPath: deps.getCurrentPath(),
-      index: deps.getCursorIndex(),
       isDirectory: entry.isDirectory,
     }
 

@@ -928,7 +928,7 @@
                         aria-selected={globalIndex === cursorIndex}
                     >
                         <FileIcon {file} {syncIcon} />
-                        {#if renameState?.active && shouldMountRenameEditor(renameState.target, { index: globalIndex, path: file.path })}
+                        {#if renameState?.active && shouldMountRenameEditor(renameState.target, { path: file.path })}
                             <div
                                 class="col-rename"
                                 class:has-git={gitColumnVisible}

@@ -972,7 +972,6 @@
         getTotalCount: () => totalCount,
         getIncludeHidden: () => includeHidden,
         getCurrentPath: () => currentPath,
-        getCursorIndex: () => cursorIndex,
         getShowHiddenFiles: () => showHiddenFiles,
         getVolumeId: () => volumeId,
         getEntryUnderCursor,

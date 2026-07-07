@@ -5,7 +5,6 @@ const sampleTarget: RenameTarget = {
   path: '/Users/test/file.txt',
   originalName: 'file.txt',
   parentPath: '/Users/test',
-  index: 3,
   isDirectory: false,
 }
 

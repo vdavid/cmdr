@@ -120,8 +120,8 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
       // If a rename is active and the file being renamed was removed
       // externally, cancel the rename gracefully
       if (deps.rename.active && deps.rename.target) {
-        const targetName = deps.rename.target.originalName
-        const wasRemoved = diff.changes.some((c) => c.type === 'remove' && c.entry.name === targetName)
+        const targetPath = deps.rename.target.path
+        const wasRemoved = diff.changes.some((c) => c.type === 'remove' && c.entry.path === targetPath)
         if (wasRemoved) {
           deps.rename.cancel()
           deps.onRequestFocus?.()

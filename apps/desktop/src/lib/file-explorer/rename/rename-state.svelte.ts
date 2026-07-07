@@ -9,8 +9,6 @@ export interface RenameTarget {
   originalName: string
   /** Parent directory path */
   parentPath: string
-  /** Index in the file list (frontend index, includes ".." offset) */
-  index: number
   /** Whether the entry is a directory */
   isDirectory: boolean
 }

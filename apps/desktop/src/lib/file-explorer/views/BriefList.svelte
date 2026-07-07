@@ -918,7 +918,7 @@
                                 aria-selected={globalIndex === cursorIndex}
                             >
                                 <FileIcon {file} {syncIcon} />
-                                {#if renameState?.active && shouldMountRenameEditor(renameState.target, { index: globalIndex, path: file.path })}
+                                {#if renameState?.active && shouldMountRenameEditor(renameState.target, { path: file.path })}
                                     <InlineRenameEditor
                                         value={renameState.currentName}
                                         severity={renameState.validation.severity}

@@ -57,6 +57,18 @@ listing cache to update, query `findFileIndex()`, clean up the listener after a 
 
 ## Decisions
 
+- **The inline editor mounts BY PATH, not by index** (`shouldMountRenameEditor(target, row)` in `rename-mount.ts`,
+  shared by `FullList` and `BriefList`): it returns `target?.path === row.path`. `RenameTarget` carries no `index`. Why:
+  nothing reconciled a stored `target.index` after activation (`listing-diff-sync` reconciles cursor and selection
+  indices, never the rename target), so a watcher diff that inserted or removed a row ABOVE the renamed file shifted
+  every row's index while the editor stayed pinned to the stale one — rendering the editor, and on save writing the new
+  name, onto the WRONG file. That is a data-safety bug of the same class as the paste-rename latch fixed in `b0de3824f`,
+  latent only because diffs rarely shift rows mid-rename. Path is the natural key: the row `{#each}` is already keyed by
+  `file.path` and Svelte 5 throws on duplicate keys, so path uniqueness within a listing is an enforced invariant. A
+  diff that shifts OTHER rows now makes the editor FOLLOW its file; a diff that changes the TARGET's own path (external
+  rename/delete) is a removal → the existing `listing-diff-sync` cancel (which path-compares `c.entry.path`), not a
+  follow. The compiler enforces the switch: deleting `index` from `RenameTarget` turns any surviving index comparison
+  into a type error.
 - **Separate components in `file-explorer/rename/`**: rename is tightly coupled to FilePane rendering (replaces the name
   cell inline) and uses `$state()` (requires `.svelte.ts`). Transfer operations are self-contained dialogs that don't
   touch FilePane internals. The separation reflects the architectural boundary.

@@ -7,23 +7,34 @@ function target(overrides: Partial<RenameTarget> = {}): RenameTarget {
     path: '/dir/file.txt',
     originalName: 'file.txt',
     parentPath: '/dir',
-    index: 3,
     isDirectory: false,
     ...overrides,
   }
 }
 
-describe('shouldMountRenameEditor (index-based, current behavior)', () => {
-  it('mounts on the row whose index matches the target index', () => {
-    expect(shouldMountRenameEditor(target({ index: 3 }), { index: 3, path: '/dir/file.txt' })).toBe(true)
+describe('shouldMountRenameEditor (path-based identity)', () => {
+  it('mounts on the row whose path matches the target path', () => {
+    expect(shouldMountRenameEditor(target({ path: '/dir/a' }), { path: '/dir/a' })).toBe(true)
   })
 
-  it('does not mount on a row with a different index', () => {
-    expect(shouldMountRenameEditor(target({ index: 3 }), { index: 4, path: '/dir/file.txt' })).toBe(false)
+  it('does not mount on a row with a different path', () => {
+    expect(shouldMountRenameEditor(target({ path: '/dir/a' }), { path: '/dir/b' })).toBe(false)
   })
 
   it('does not mount when there is no target', () => {
-    expect(shouldMountRenameEditor(null, { index: 3, path: '/dir/file.txt' })).toBe(false)
-    expect(shouldMountRenameEditor(undefined, { index: 3, path: '/dir/file.txt' })).toBe(false)
+    expect(shouldMountRenameEditor(null, { path: '/dir/file.txt' })).toBe(false)
+    expect(shouldMountRenameEditor(undefined, { path: '/dir/file.txt' })).toBe(false)
+  })
+
+  // A watcher diff that inserts or removes OTHER rows shifts every row's position but
+  // never its path. Identity follows the file by path, so a different file that slid
+  // into the target's old row does NOT get the editor, and the target keeps it after
+  // moving. Pre-fix (index identity) both of these went the wrong way.
+  it('does not mount on a different file that slid into the target old row', () => {
+    expect(shouldMountRenameEditor(target({ path: '/dir/a' }), { path: '/dir/b' })).toBe(false)
+  })
+
+  it('still mounts on the target file after a diff moved it', () => {
+    expect(shouldMountRenameEditor(target({ path: '/dir/a' }), { path: '/dir/a' })).toBe(true)
   })
 })

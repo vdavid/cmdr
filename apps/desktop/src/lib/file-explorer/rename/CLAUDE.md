@@ -32,8 +32,12 @@ Full details (the three-stage save flow, permission/validation tiers, post-renam
 - **Thread `volumeId` through `renameFile` / `checkRenameValidity` / `checkRenamePermission`.** Validity (conflict)
   checks work for all volumes via the Volume trait, but permission checks are skipped for MTP (Unix `access()` doesn't
   work on MTP virtual paths).
-- **Cancel triggers**: Escape, click elsewhere, Tab, drag start, cumulative scroll > 200 px, and sort/hidden toggle all
-  discard the rename. Watcher events during editing do NOT cancel (the backend catches issues on save).
+- **Cancel triggers**: Escape, click elsewhere, Tab, drag start, and sort/hidden toggle all discard the rename. So does
+  the editor losing focus for any reason: scrolling the renamed row out of the virtual window UNMOUNTS the input, whose
+  `onblur` cancels (there's no scroll-distance threshold). The editor mounts BY PATH (`shouldMountRenameEditor`), so a
+  watcher diff that shifts OTHER rows makes it follow its file instead of cancelling; only a diff that removes the
+  renamed file itself cancels (`listing-diff-sync`). Watcher events otherwise do NOT cancel (the backend catches issues
+  on save).
 - **Double-click on the name area must open the file/folder, not activate rename.** The click-to-rename timer cancels on
   a double-click event.
 - **While rename is active, Cmd+C/A/Z/X/V act as text-editing shortcuts, not app commands** (same flag mechanism as
