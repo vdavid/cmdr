@@ -193,6 +193,24 @@ Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft termino
   them verbatim (MS tbx term ids 153889/153903 = "FAT32"; Finder "ExFAT") · confirmed. Don't translate; source EN
   capitalization ("FAT32", "exFAT") is preserved.
 
+### Paste-clipboard-as-file terms (paste-as-file feature)
+
+Cmdr can paste non-file clipboard content (text, an image, a PDF) into the current folder as a new file; this batch
+added the setting and the confirmation toast.
+
+- paste (verb) · **Colar** · macOS Finder (`N49_V1`/`ME3` "Paste" → "Colar", key-based EN→pt-BR) · confirmed. Reuses the
+  glossary copy/paste/cut row; clipboard = **área de transferência**.
+- Do nothing (behavior option) · **Não fazer nada** · standard pt-BR option label; no direct pile source (file managers
+  don't carry it) · high. Radio-button label in `settings...pasteClipboardAsFile.opt.doNothing`.
+- Create file / Create and rename (behavior options) · **Criar arquivo** / **Criar e renomear** · shipped pt catalog
+  ("Criar arquivo em…", "Criar novo arquivo") + rename→**Renomear** (glossary) · high.
+  `settings...pasteClipboardAsFile.opt.createFile/createFileAndRename`.
+- "Pasted clipboard {image/PDF/text} as {filename}" (toast) · **{kind, select, image {Imagem colada} pdf {PDF colado}
+  other {Texto colado}} da área de transferência como {filename}** · the participle (colada/colado) is placed inside
+  each select branch so it agrees with the noun's gender, keeping `{filename}` a gender-agnostic uncontrolled insert ·
+  high. `fileExplorer.clipboard.pastedAsFile`. The toast's Settings button (`pastedAsFileSettings`) → **Ajustes**
+  (glossary Settings-section term).
+
 ### Archive-browsing terms (archive-browsing feature)
 
 Cmdr browses zip/tar/7z archives like folders; this batch added the settings, menu, error, and warning strings for it.

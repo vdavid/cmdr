@@ -364,6 +364,26 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.fileOperations.pasteClipboardAsFile.label": "Pegar el contenido del portapapeles como archivo",
+  "@settings.fileOperations.pasteClipboardAsFile.label": {
+    "sourceHash": "bf8c48d"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.description": "Qué hace ⌘V en una carpeta cuando el portapapeles contiene texto, una imagen o un PDF en lugar de archivos copiados.",
+  "@settings.fileOperations.pasteClipboardAsFile.description": {
+    "sourceHash": "7513ae5"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "No hacer nada",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
+    "sourceHash": "e66b291"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "Crear archivo",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFile": {
+    "sourceHash": "6990d32"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": "Crear y renombrar",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
+    "sourceHash": "ed7b1b9"
+  },
   "settings.archives.enterBehavior.label": "Abrir archivos comprimidos y paquetes",
   "@settings.archives.enterBehavior.label": {
     "sourceHash": "554e1f7"

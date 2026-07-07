@@ -364,6 +364,26 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.fileOperations.pasteClipboardAsFile.label": "Colar o conteúdo da área de transferência como arquivo",
+  "@settings.fileOperations.pasteClipboardAsFile.label": {
+    "sourceHash": "bf8c48d"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.description": "O que o ⌘V faz em uma pasta quando a área de transferência tem texto, uma imagem ou um PDF em vez de arquivos copiados.",
+  "@settings.fileOperations.pasteClipboardAsFile.description": {
+    "sourceHash": "7513ae5"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Não fazer nada",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
+    "sourceHash": "e66b291"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "Criar arquivo",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFile": {
+    "sourceHash": "6990d32"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": "Criar e renomear",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
+    "sourceHash": "ed7b1b9"
+  },
   "settings.archives.enterBehavior.label": "Abrir arquivos compactados e pacotes",
   "@settings.archives.enterBehavior.label": {
     "sourceHash": "554e1f7"

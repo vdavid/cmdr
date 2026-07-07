@@ -1,6 +1,28 @@
 import type { FileEntry, FriendlyError, NetworkHost, ShareInfo } from '../types'
 import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/drag-auto-scroll'
 
+/** Options for `startRename`. */
+export interface StartRenameOptions {
+  /**
+   * Suppresses the extension-change confirmation for THIS auto-started rename
+   * only (used by paste-clipboard-as-file, where renaming a fresh `pasted.txt`
+   * to `notes.md` must not pop the dialog). User-initiated renames (F2) omit it
+   * and keep the warning.
+   */
+  suppressExtensionWarning?: boolean
+  /**
+   * The exact name the rename MUST activate on. For an auto-started rename
+   * (paste-clipboard-as-file), the optimistic cursor move can resolve before the
+   * FE row array applies the new file's synthetic diff, so the entry under the
+   * cursor may still be a DIFFERENT file — activating on it would let the user's
+   * next keystroke rename the wrong file. When set, `startRename` refuses to
+   * activate unless the entry under the cursor is exactly this name, retries
+   * briefly while the diff lands, then gives up silently (file kept, no rename).
+   * Omit it for user-initiated renames (F2), which activate on the cursor entry.
+   */
+  expectedName?: string
+}
+
 /** State snapshot for swapping panes without backend calls. */
 export interface SwapState {
   currentPath: string
@@ -85,7 +107,7 @@ export interface FilePaneAPI {
   clearOperationSnapshot(): string[] | 'all' | null
 
   isRenaming(): boolean
-  startRename(): void
+  startRename(options?: StartRenameOptions): void
   cancelRename(): void
 
   refreshView(): void

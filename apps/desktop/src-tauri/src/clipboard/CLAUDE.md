@@ -9,7 +9,9 @@ Cmd+X sets a Cmdr-internal cut flag, and the move-vs-copy decision happens at pa
   `snapshot_mock_clipboard` / `clear_mock_clipboard` under the `playwright-e2e` feature.
 - `pasteboard.rs`: macOS NSPasteboard FFI via `objc2`. Compiled when `target_os = "macos"` AND `playwright-e2e` is OFF.
 - `mock.rs`: in-process mock with the same fn signatures. Compiled when `target_os = "macos"` AND `playwright-e2e` is ON.
-- `store.rs`: `LazyLock<Mutex<Option<ClipboardEntry>>>` shared by the mock module and the prod env-driven override.
+- `store.rs`: TWO separate statics — `ClipboardEntry` (file-URL copy/cut) and `ClipboardData` (paste-content flavors).
+- `payload.rs`: pure paste-content core (flavor precedence, TIFF→PNG, markdown sniff, payload→content). Both prod and
+  E2E backends feed it a `ClipboardData`.
 - `state.rs`: cut state (`LazyLock<RwLock<Option<CutState>>>`).
 
 ## Gotchas
@@ -23,6 +25,10 @@ Cmd+X sets a Cmdr-internal cut flag, and the move-vs-copy decision happens at pa
   Finder).
 - **MTP paths are excluded**: they can't be a `public.file-url`. The UI suggests F5/F6.
 - **Linux is stubbed**: `#[cfg(target_os = "macos")]` gates all NSPasteboard code. Linux needs `text/uri-list` (future).
+- **Paste-content-as-file uses a SEPARATE `ClipboardData` static from the file-URL `ClipboardEntry`.** Don't merge them
+  — a content paste would clobber a pending file copy. Flavor precedence + the markdown sniff live in `payload.rs` (pure,
+  testable); the write is in `write_operations/paste_clipboard.rs`. See [DETAILS.md](DETAILS.md) § Paste clipboard
+  content as a file.
 - **Runtime `CMDR_CLIPBOARD_BACKEND=mock`** lives in `pasteboard.rs` (a prod-build debugging tool), sampled once via
   `LazyLock`. Both the compile-time mock and this runtime override share `store.rs`, so a test flipping the env in one
   process sees the same data the E2E mock module sees in another. See the "Mock-backend convention" in

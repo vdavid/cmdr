@@ -568,3 +568,29 @@ apostrophes; the RAW `errors.*` keys use single apostrophes:
 - fresh copy (ask the sender for one) → une nouvelle copie · macOS ("Une nouvelle copie de « %@ » a été créée.") · high
   — the sender phrased gender-neutrally as "la personne qui vous l''a envoyée" (name the person, past participle agrees
   with the feminine "archive" via the preceding "l''").
+
+Settled during the `paste-clipboard-as-file` pass (2026-07-07, ⌘V pastes clipboard text/image/PDF as a new file + its
+setting). None of these 7 values contain an apostrophe, so no ICU doubling arose. The terms:
+
+- paste clipboard content as a file → coller le contenu du presse-papiers en tant que fichier · settled `paste → coller`
+  - `clipboard → presse-papiers`; "as X" → "en tant que X" from macOS Finder ("Copier en tant que lien" = Copy as Link,
+    `LocalizableMerged.json` N48.1_V1) · high — infinitive label form matching the sibling
+    `allowFileExtensionChanges.label` ("Autoriser…").
+- as / saved as (naming a created file) → en tant que / enregistré sous · macOS Finder "Copier en tant que lien" for the
+  bare "as"; macOS AppKit save panel "Enregistrer sous…" / "Enregistrer sous :" for the Save-As "as {name}" sense · high
+- do nothing (radio option: ⌘V does nothing on non-file clipboard) → Ne rien faire · standard FR; no direct pile hit
+  (Double Commander lists "Do nothing" untranslated, the file-manager pofiles carry no "ne rien faire") · tentative
+  (standard FR, unambiguous, no source)
+- create file / create and rename (paste-as-file radio options) → Créer un fichier / Créer et renommer · reuses
+  `fileExplorer.functionKeyBar.newFileAction` ("Créer un fichier") and settled `create → créer` + `rename → renommer` ·
+  high
+
+Phrasing note for this pass:
+
+- The paste-confirmation toast `fileExplorer.clipboard.pastedAsFile` is an ICU `select` on `{kind}` (image/pdf/other)
+  with an uncontrolled `{filename}` → "Contenu du presse-papiers collé dans {filename} ({kind, select, image {image} pdf
+  {PDF} other {texte}})". GENDER-SAFE by anchoring the past participle "collé" to the masculine head noun "Contenu"
+  (invariant across every `kind` branch), keeping the varying `kind` noun in a bare parenthetical (no agreement needed),
+  and leaving `{filename}` in a neutral slot after "dans" (safe for any generated name). `text → texte`; `image`/`PDF`
+  unchanged. Branch NAMES `image`/`pdf`/`other` kept verbatim. This dodges the trap where a participle placed after the
+  varying `kind` would have to agree (image → collée vs texte → collé).

@@ -9,6 +9,7 @@ import { addToast, dismissTransientToasts } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { pathInsideArchive } from './volume-capabilities'
 import type { FileEntry } from '../types'
+import type { StartRenameOptions } from './types'
 import type { createRenameState } from '../rename/rename-state.svelte'
 
 export interface RenameFlowDeps {
@@ -44,6 +45,63 @@ export function createRenameFlow(deps: RenameFlowDeps) {
 
   // When true, suppress the blur-cancel (a dialog is about to open)
   let suppressBlurCancel = false
+
+  // When true, treat the extension-change policy as 'yes' for the current rename
+  // session (no warning/dialog). Set by an auto-started rename (paste-clipboard-
+  // as-file) and reset when the session ends. F2/user renames leave it false.
+  let suppressExtensionWarningOnce = false
+
+  /** The extension-change policy in effect for this rename session. */
+  function effectiveExtensionPolicy() {
+    return suppressExtensionWarningOnce ? 'yes' : getSetting('fileOperations.allowFileExtensionChanges')
+  }
+
+  // Auto-rename activation (paste-clipboard-as-file): the created file's row may
+  // not be under the cursor yet when startRename runs (the optimistic cursor move
+  // can beat the synthetic directory-diff), so we NEVER activate on a mismatched
+  // entry — we poll until the expected file is under the cursor, then activate,
+  // and give up silently after a bounded window (file kept, no rename). This makes
+  // "rename grabs the wrong file" impossible by construction, not by timing.
+  let pendingRenameActivation: ReturnType<typeof setInterval> | null = null
+  const RENAME_ACTIVATION_POLL_MS = 50
+  const RENAME_ACTIVATION_TIMEOUT_MS = 2000
+
+  function clearPendingRenameActivation() {
+    if (pendingRenameActivation !== null) {
+      clearInterval(pendingRenameActivation)
+      pendingRenameActivation = null
+    }
+  }
+
+  /** Activates the inline rename editor on `entry` (the real activation body). */
+  function activateRename(entry: FileEntry): void {
+    const target = {
+      path: entry.path,
+      originalName: entry.name,
+      parentPath: deps.getCurrentPath(),
+      index: deps.getCursorIndex(),
+      isDirectory: entry.isDirectory,
+    }
+
+    rename.activate(target)
+    renameSiblingNames = []
+
+    void loadSiblingNames(entry.name).then((names) => {
+      renameSiblingNames = names
+    })
+
+    // Skip the permission check for MTP AND archive-inner paths (see startRename below).
+    const currentVolumeId = deps.getVolumeId()
+    if (!currentVolumeId.startsWith('mtp-') && !pathInsideArchive(entry.path)) {
+      void checkPermission(entry.path).then((errorMsg) => {
+        if (errorMsg && rename.active && rename.target?.path === entry.path) {
+          rename.cancel()
+          addToast(errorMsg, { level: 'error' })
+          onRequestFocus()
+        }
+      })
+    }
+  }
 
   async function loadSiblingNames(excludeName: string): Promise<string[]> {
     const listingId = deps.getListingId()
@@ -104,9 +162,11 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   function finalizeRename(newName: string) {
     const wasHiddenRename = newName.startsWith('.') && !deps.getShowHiddenFiles()
 
+    clearPendingRenameActivation()
     rename.cancel()
     extensionDialogState = null
     conflictDialogState = null
+    suppressExtensionWarningOnce = false
     onRequestFocus()
 
     pendingCursorName = newName
@@ -121,7 +181,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     if (!target) return
 
     const trimmedName = rename.getTrimmedName()
-    const extensionPolicy = getSetting('fileOperations.allowFileExtensionChanges')
+    const extensionPolicy = effectiveExtensionPolicy()
     const currentVolumeId = deps.getVolumeId()
 
     const result = await executeRenameSave(target, trimmedName, extensionPolicy, skipExtensionCheck, currentVolumeId)
@@ -142,56 +202,59 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       pendingCursorName = v
     },
 
-    startRename(): void {
-      const entry = deps.getEntryUnderCursor()
-      if (!entry || entry.name === '..') return
+    startRename(options?: StartRenameOptions): void {
+      // A fresh startRename supersedes any pending auto-activation poll.
+      clearPendingRenameActivation()
 
-      const target = {
-        path: entry.path,
-        originalName: entry.name,
-        parentPath: deps.getCurrentPath(),
-        index: deps.getCursorIndex(),
-        isDirectory: entry.isDirectory,
+      // Scoped to this rename session; reset when it ends (finalize/cancel).
+      suppressExtensionWarningOnce = options?.suppressExtensionWarning ?? false
+      const expectedName = options?.expectedName
+
+      // Activate ONLY on the intended entry. The permission check (skipped for MTP
+      // and archive-inner paths) and sibling-name load live in `activateRename`.
+      // `expectedName` (auto-started rename) guards against latching a DIFFERENT
+      // file when the cursor move beats the new file's synthetic diff — a
+      // data-safety hazard, since the next keystroke would rename that other file.
+      const tryActivate = (): boolean => {
+        const entry = deps.getEntryUnderCursor()
+        if (!entry || entry.name === '..') return false
+        if (expectedName !== undefined && entry.name !== expectedName) return false
+        activateRename(entry)
+        return true
       }
 
-      rename.activate(target)
-      renameSiblingNames = []
+      if (tryActivate()) return
 
-      void loadSiblingNames(entry.name).then((names) => {
-        renameSiblingNames = names
-      })
+      // No expectedName = user-initiated rename (F2) with no valid entry under the
+      // cursor → bail (matches the prior no-entry behavior).
+      if (expectedName === undefined) return
 
-      // Skip the permission check for MTP AND archive-inner paths:
-      // `checkRenamePermission` uses `symlink_metadata` + Unix `access()`, which
-      // don't work on an MTP virtual path or a path INSIDE a zip (not a real FS
-      // path — it would report "doesn't exist" and cancel the rename). The backend
-      // rejects a genuinely disallowed rename; the validity check (conflict
-      // detection) IS volume-aware and still runs for all volumes.
-      const currentVolumeId = deps.getVolumeId()
-      if (!currentVolumeId.startsWith('mtp-') && !pathInsideArchive(entry.path)) {
-        void checkPermission(entry.path).then((errorMsg) => {
-          if (errorMsg && rename.active && rename.target?.path === entry.path) {
-            rename.cancel()
-            addToast(errorMsg, { level: 'error' })
-            onRequestFocus()
-          }
-        })
-      }
+      // Auto-rename whose target row hasn't landed under the cursor yet: poll until
+      // it does, then activate; give up silently after the bounded window.
+      let elapsed = 0
+      pendingRenameActivation = setInterval(() => {
+        elapsed += RENAME_ACTIVATION_POLL_MS
+        if (tryActivate() || elapsed >= RENAME_ACTIVATION_TIMEOUT_MS) {
+          clearPendingRenameActivation()
+        }
+      }, RENAME_ACTIVATION_POLL_MS)
     },
 
     cancelRename(): void {
+      clearPendingRenameActivation()
       cancelClickToRename()
       rename.cancel()
       renameSiblingNames = []
       extensionDialogState = null
       conflictDialogState = null
+      suppressExtensionWarningOnce = false
       onRequestFocus()
     },
 
     handleRenameInput(value: string) {
       rename.setCurrentName(value)
       dismissTransientToasts()
-      const extensionPolicy = getSetting('fileOperations.allowFileExtensionChanges')
+      const extensionPolicy = effectiveExtensionPolicy()
       const result = validateFilename(
         value,
         rename.target?.originalName ?? '',

@@ -123,6 +123,21 @@ the dispatch path can't rely on the keydown bail.
 - **`edit.paste` into a text input.** Reads via the `readClipboardText` Rust IPC, then writes with
   `document.execCommand('insertText')`. `navigator.clipboard.readText()` would surface a WebKit "Paste" confirmation the
   user must click each time, so it's avoided.
+- **`edit.paste` into a PANE (file-scope).** Routes `clipboard-handlers.ts` → `explorerRef.pasteFromClipboard`, which
+  reads file URLs off the clipboard. When there are file URLs it runs the transfer path as before. When there are NONE,
+  it falls back to "paste clipboard content as a file" (`pane/paste-clipboard-as-file.ts::pasteClipboardContentAsFile`),
+  gated by the `fileOperations.pasteClipboardAsFile` setting: `doNothing` → today's "No files on the clipboard" warn
+  toast, no command; else it calls the `paste_clipboard_as_file` command — a `null` result (nothing pasteable) shows the
+  same warn toast, a created file shows the info toast (and, for `createFileAndRename`, starts an inline rename with the
+  extension-change warning suppressed for that one auto-started rename). The auto-rename passes
+  `startRename({ expectedName })`: the optimistic cursor move can resolve before the FE row array applies the new file's
+  synthetic diff, so **the rename refuses to activate unless the entry under the cursor is exactly the created file** —
+  it polls briefly while the diff lands, then gives up silently. This is a DATA-SAFETY guard: without it the editor could
+  latch a DIFFERENT row and the user's next keystroke would rename the wrong file. (In a churning directory a
+  watcher-triggered `loadDirectory` reread may `renameCancel()` the auto-rename before it activates — that's fine; what
+  must be impossible is latching the WRONG entry.) `edit.pasteAsMove` behaves identically here (move semantics are
+  meaningless for clipboard bytes). Backend flavor precedence + the write:
+  [`clipboard/DETAILS.md`](../../../src-tauri/src/clipboard/DETAILS.md) § Paste clipboard content as a file.
 - **`view.showHidden` is local-first.** Flips frontend state via `explorerRef.toggleHiddenFiles()` synchronously, then
   pushes the check state to the native menu fire-and-forget. Routing the toggle through Rust adds an IPC + event hop and
   flaked the hidden-file E2E under slow-lane load.

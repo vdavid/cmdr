@@ -626,3 +626,23 @@ REVIEW FLAGS (archive-browsing pass):
   decision on which form wins for "alleen-lezen" + noun.
 - **preview (verb) → "bekijken"** in `viewer.error.archiveTooLarge` ("om vanuit het archief te bekijken"); macOS
   "Voorvertoning" is the Quick-Look noun, so the plain verb "bekijken" (view) is used. Subjective.
+
+From the paste-clipboard-as-file pass (5 `settings.fileOperations.pasteClipboardAsFile.*` + 2
+`fileExplorer.clipboard.pastedAsFile*`; mined `_ignored/i18n/nl/`, 2026-07-07):
+
+- paste (past participle, clipboard content saved as a file) → geplakt · macOS AppKit ("Paste"→"Plak"; PASTEBOARD
+  verification substring "plak"), Double Commander ("Plak wat werd geknipt"); glossary paste→Plak/plakken. Toast uses
+  the sibling `clipboard.copied` "… gekopieerd" object-then-participle order · high
+- clipboard content → klembordinhoud · compound of macOS "Klembord" ("Clipboard"→"Klembord") + "inhoud"; the label
+  "Klembordinhoud als bestand plakken" · high
+- clipboard image / clipboard text → Klembordafbeelding / Klembordtekst · compounds of macOS "Klembord" + in-catalog
+  "afbeelding" (settings.fileViewer "afbeelding, PDF, archief") / "tekst". Hyphenate before the acronym: Klembord-PDF
+  (Dutch rule, cf. "SMB-share", "macOS-versie"). The full compound sits INSIDE each select branch so PDF keeps its
+  hyphen; the branch is the sentence start so all three capitalize · high
+- do nothing → Niets doen · Double Commander ("Do nothing"→"Doe niets"); rendered infinitive "Niets doen" (not
+  imperative "Doe niets") to stay parallel with the sibling radio options "Bestand aanmaken" / "Aanmaken en naam
+  wijzigen" · high
+- create file → Bestand aanmaken · glossary create→aanmaken (macOS Finder "Maak … aan") + macOS "bestand"; radio-option
+  infinitive · high
+- create and rename → Aanmaken en naam wijzigen · glossary create→aanmaken + rename→naam wijzigen (macOS Finder "Wijzig
+  naam" / "naam wijzigen"); radio-option infinitive · high

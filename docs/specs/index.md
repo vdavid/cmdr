@@ -6,6 +6,9 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-07 [paste-clipboard-as-file-plan.md](paste-clipboard-as-file-plan.md) - Cmd+V with non-file clipboard
+      content (text/image/PDF) creates `pasted.*` in the pane, cursor lands on it, inline rename auto-starts
+      (setting-gated), info toast with Settings deep link (issue #35). Executing on the `paste-clipboard` worktree.
 - [ ] 2026-07-04 [listing-loader-extraction-plan.md](listing-loader-extraction-plan.md) - Drain FilePane's last deferred
       cluster (the listing loader: `loadDirectory`/`handleListingComplete`/reset + streaming listeners + pendingLoad +
       the generation/listingId drop-foreign-listings token model) into a tested `listing-loader.svelte.ts` factory,

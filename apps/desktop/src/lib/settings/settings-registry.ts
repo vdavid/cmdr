@@ -542,6 +542,27 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
       ],
     },
   },
+  {
+    id: 'fileOperations.pasteClipboardAsFile',
+    section: ['Behavior', 'Navigation & file ops'],
+    cardKey: 'settings.navigationAndFileOps.card.fileOperations',
+    labelKey: 'settings.fileOperations.pasteClipboardAsFile.label',
+    descriptionKey: 'settings.fileOperations.pasteClipboardAsFile.description',
+    keywords: ['paste', 'clipboard', 'image', 'text', 'pdf', 'screenshot', 'file', 'create'],
+    type: 'enum',
+    default: 'createFileAndRename',
+    component: 'radio',
+    constraints: {
+      options: [
+        { value: 'doNothing', labelKey: 'settings.fileOperations.pasteClipboardAsFile.opt.doNothing' },
+        { value: 'createFile', labelKey: 'settings.fileOperations.pasteClipboardAsFile.opt.createFile' },
+        {
+          value: 'createFileAndRename',
+          labelKey: 'settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename',
+        },
+      ],
+    },
+  },
 
   // ========================================================================
   // Behavior › Archives

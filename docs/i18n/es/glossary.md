@@ -499,3 +499,19 @@ AppKit + SystemSettings, 2026-06-21).
 - **queue.row.label `archive_edit` arm → Editando archivo comprimido** · gerund progress style of the sibling arms
   (Copiando/Moviendo); "Editing archive" = changing a zip's entries; edit→editar (glossary) + archive→archivo comprimido
   · high
+
+### Settled during the paste-clipboard-as-file pass (⌘V pastes text/image/PDF from the clipboard as a new file; Behavior > file-ops settings + paste-confirm toast; macOS Finder/AppKit + Double Commander, 2026-07-07)
+
+- **clipboard content → contenido del portapapeles** · macOS Finder exact string ("Contenido del portapapeles: ^0");
+  reuses settled clipboard→portapapeles. "Paste clipboard content as a file" → "Pegar el contenido del portapapeles como
+  archivo" (paste→pegar, glossary; "como archivo" drops the article, natural in es) · high
+- **do nothing (radio-option label) → No hacer nada** · Double Commander es (orthodox two-pane, exact concept: "Do
+  nothing"→"No hacer nada"); matches the infinitive option-label convention · high
+- **Create file (paste option) → Crear archivo** · reuses `fileExplorer.functionKeyBar.newFileAction` = "Crear archivo"
+  (create→crear + file→archivo) for cross-catalog consistency · high
+- **Create and rename (paste option) → Crear y renombrar** · composed from create→crear + rename→renombrar (glossary) ·
+  high
+- **paste-confirm toast (`Pasted clipboard {X} as {filename}`) → "Se pegó {X} del portapapeles como {filename}"** · the
+  ICU select fills X with the article+noun so it agrees ("la imagen"/"el PDF"/"el texto"); impersonal "Se pegó"
+  (preterite) matches the settled transfer-toast "Se movió" pattern and avoids gendering the user; "como {filename}"
+  reads correctly for any generated name · high

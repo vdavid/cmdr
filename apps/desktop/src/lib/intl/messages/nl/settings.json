@@ -365,6 +365,26 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.fileOperations.pasteClipboardAsFile.label": "Klembordinhoud als bestand plakken",
+  "@settings.fileOperations.pasteClipboardAsFile.label": {
+    "sourceHash": "bf8c48d"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.description": "Wat ⌘V in een map doet wanneer het klembord tekst, een afbeelding of een PDF bevat in plaats van gekopieerde bestanden.",
+  "@settings.fileOperations.pasteClipboardAsFile.description": {
+    "sourceHash": "7513ae5"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Niets doen",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
+    "sourceHash": "e66b291"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "Bestand aanmaken",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFile": {
+    "sourceHash": "6990d32"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": "Aanmaken en naam wijzigen",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
+    "sourceHash": "ed7b1b9"
+  },
   "settings.archives.enterBehavior.label": "Archieven en pakketten openen",
   "@settings.archives.enterBehavior.label": {
     "sourceHash": "554e1f7"

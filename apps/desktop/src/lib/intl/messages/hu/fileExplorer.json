@@ -704,6 +704,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.pastedAsFile": "A vágólap {kind, select, image {képe} pdf {PDF-je} other {szövege}} fájlként beillesztve: {filename}",
+  "@fileExplorer.clipboard.pastedAsFile": {
+    "sourceHash": "d61d4b5"
+  },
+  "fileExplorer.clipboard.pastedAsFileSettings": "Beállítások",
+  "@fileExplorer.clipboard.pastedAsFileSettings": {
+    "sourceHash": "74a883a"
+  },
   "fileExplorer.tabs.limitReached": "Elérted a lapok korlátját",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

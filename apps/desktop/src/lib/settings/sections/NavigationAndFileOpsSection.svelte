@@ -34,6 +34,7 @@
     const defaultDef = { label: '', description: '', disabled: false, disabledReason: '' }
     const doubleClickDef = getSettingDefinition('behavior.doubleClickPaneNavigatesToParent') ?? defaultDef
     const extensionChangesDef = getSettingDefinition('fileOperations.allowFileExtensionChanges') ?? defaultDef
+    const pasteAsFileDef = getSettingDefinition('fileOperations.pasteClipboardAsFile') ?? defaultDef
 </script>
 
 <SettingsSection title={tString('settings.section.navigationAndFileOps')}>
@@ -52,7 +53,7 @@
         </SectionCard>
     {/if}
 
-    {#if anyVisible(shouldShow, 'fileOperations.allowFileExtensionChanges')}
+    {#if anyVisible(shouldShow, 'fileOperations.allowFileExtensionChanges', 'fileOperations.pasteClipboardAsFile')}
         <SectionCard label={tString('settings.navigationAndFileOps.card.fileOperations')}>
             {#if shouldShow('fileOperations.allowFileExtensionChanges')}
                 <SettingRow
@@ -63,6 +64,17 @@
                     {searchQuery}
                 >
                     <SettingRadioGroup id="fileOperations.allowFileExtensionChanges" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('fileOperations.pasteClipboardAsFile')}
+                <SettingRow
+                    id="fileOperations.pasteClipboardAsFile"
+                    label={pasteAsFileDef.label}
+                    description={pasteAsFileDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingRadioGroup id="fileOperations.pasteClipboardAsFile" />
                 </SettingRow>
             {/if}
         </SectionCard>

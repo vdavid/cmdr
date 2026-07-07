@@ -172,6 +172,14 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 - "boring folders" (playful) → "langweilige Ordner" (kept the playful tone per @key) · product voice · high
 - comparator (size/date filter) → Vergleichsoperator · MS terminology · high
 - clipboard → Zwischenablage · macOS AppKit ("Zwischenablage") · high
+- "Do nothing" (radio/menu option for the no-op behavior) → Nichts tun · standard DE; Double Commander renders the terse
+  menu form as "Nichts", but "Nichts tun" is the idiomatic full option label · high
+- "paste clipboard content as a file" (settings label) → "Inhalt der Zwischenablage als Datei einsetzen" · paste →
+  einsetzen (settled, macOS "Einsetzen") + clipboard → Zwischenablage; the paste-as-file toast reads "{Bild/PDF/Text}
+  aus der Zwischenablage als {filename} eingesetzt" · high
+- PDF (as a document/file kind, needing an article) → neuter "ein PDF" (das PDF) · macOS renders it
+  "PDF-Dokument"/"PDF-Dokumente" (das Dokument, neuter), so PDF standalone takes das/ein; in the toast select the branch
+  stays article-less ("PDF aus der Zwischenablage …") to sidestep gender entirely · high
 - viewer (file viewer window) → Vorschau; "File viewer" → Dateivorschau; window title suffix keeps "| Vorschau" · style
   guide (viewer→Vorschau); MS "Zuschauer" is the wrong sense (a person watching), rejected · high
 - Quick Look → Übersicht · macOS German · high. The localized Apple feature name — Apple's German Finder uses

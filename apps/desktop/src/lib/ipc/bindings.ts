@@ -1877,6 +1877,26 @@ export const commands = {
    *  WebKit's `navigator.clipboard.readText()` permission popup.
    */
   readClipboardText: () => typedError<string | null, string>(__TAURI_INVOKE('read_clipboard_text')),
+  /**
+   *  Reads the highest-intent non-file clipboard flavor (image / PDF / text) and
+   *  writes it into `directory` as a new `pasted.<ext>` file, returning the created
+   *  file's name + kind. `Ok(None)` = nothing pasteable on the clipboard — the
+   *  typed no-op the frontend treats as "no file created", NOT an error toast.
+   *
+   *  Thin edge: reads the RAW pasteboard flavors on the main thread (NSPasteboard is
+   *  main-thread-only), then picks the flavor + converts TIFF→PNG OFF the main
+   *  thread (that decode can be hundreds of ms — never on the UI thread), and hands
+   *  the result to `write_operations::write_payload_to_dir` under the write timeout.
+   *  `directory` is tilde-expanded for the local `root` volume only.
+   */
+  pasteClipboardAsFile: (volumeId: string | null, directory: string) =>
+    typedError<
+      {
+        name: string
+        kind: PastedKind
+      } | null,
+      IpcError
+    >(__TAURI_INVOKE('paste_clipboard_as_file', { volumeId, directory })),
   // Clears the in-process cut state without touching the system clipboard.
   clearClipboardCutState: () => __TAURI_INVOKE<void>('clear_clipboard_cut_state'),
   /**
@@ -4836,6 +4856,24 @@ export type ParsedScope = {
   includePaths: string[]
   excludePatterns: string[]
 }
+
+/**
+ *  Result of pasting clipboard content as a file: the created file's name and
+ *  its content kind. At the command boundary, `Option<PastedClipboardFile>`'s
+ *  `None` is the typed "nothing pasteable" no-op (not an error).
+ */
+export type PastedClipboardFile = {
+  name: string
+  kind: PastedKind
+}
+
+/**
+ *  The kind of clipboard content pasted as a file. Drives the paste toast's
+ *  noun (text / image / PDF); the file name's extension carries the finer detail
+ *  (`.md` / `.txt` / `.png` / `.jpg` / `.pdf`). Ungated so the Linux command
+ *  stub can name it in its signature.
+ */
+export type PastedKind = 'text' | 'image' | 'pdf'
 
 export type PathLimits = {
   maxNameBytes: number

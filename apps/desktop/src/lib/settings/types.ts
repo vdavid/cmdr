@@ -147,6 +147,8 @@ export type DateTimeFormat = 'system' | 'iso' | 'short' | 'custom'
 export type NetworkTimeoutMode = 'normal' | 'slow' | 'custom'
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
+/** What ⌘V does in a pane when the clipboard holds no file URLs but has pasteable content (text, image, PDF). */
+export type PasteClipboardAsFileMode = 'doNothing' | 'createFile' | 'createFileAndRename'
 export type DirectorySortMode = 'likeFiles' | 'alwaysByName'
 export type SizeDisplayMode = 'smart' | 'logical' | 'physical'
 export type BriefColumnWidthMode = 'paneWidth' | 'limited'
@@ -248,6 +250,7 @@ export interface SettingsValues {
   'fileOperations.mtpEnabled': boolean
   'fileOperations.mtpConnectionWarning': boolean
   'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
+  'fileOperations.pasteClipboardAsFile': PasteClipboardAsFileMode
   'fileOperations.progressUpdateInterval': number
   'fileOperations.maxConflictsToShow': number
 

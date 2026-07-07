@@ -517,3 +517,31 @@ macOS Finder zh-CN + the two-pane/explorer file-manager family (Total/Double Com
 - **"removed from the zip for good" (delete-warning continuation)** · `将从 zip 中被永久移除` · `永久` = for good;
   `移除` = remove; `zip` kept verbatim (format token); reads as a natural continuation of `压缩文件里没有废纸篓。` ·
   `high`
+
+### Paste-clipboard-as-file catalog (2026-07-07)
+
+macOS zh-CN Tier 1 (AppKit MenuCommands / Accessibility for paste + image), Double Commander zh-CN for the two-pane
+paste op, Microsoft zh-Hans cross-check. Reuses settled `剪贴板`/`拷贝`/`重命名`/`设置` terms.
+
+- **paste (verb)** · `粘贴` · macOS AppKit MenuCommands (`Paste` → 粘贴) + Double Commander (`Paste`/`&Paste` → 粘贴) ·
+  `confirmed`. Reused from the search/commands pass (`粘贴` for the clipboard paste op; F5/F6 transfer ops keep
+  `拷贝`/`移动`).
+- **"paste clipboard content as a file" (settings label)** · `将剪贴板内容粘贴为文件` · composed from settled `剪贴板`
+  (clipboard) + `粘贴` (paste) + `内容` (content) + `文件` (file); `将…粘贴为文件` = "paste … as a file", active voice ·
+  `high`
+- **"do nothing" (radio option, previous no-op behavior)** · `什么都不做` · everyday spoken Mandarin per style.md's
+  friendly register (macOS has no single "do nothing" label; Microsoft `不执行任何操作` is stiffer). `high`
+- **create file / create and rename (radio options)** · `创建文件` / `创建并重命名` · `创建` = the create verb (Double
+  Commander `Create…` → 创建; macOS "未能创建文件夹" uses 创建; the `新建文件` menu label stays for the F-key bar) +
+  settled `重命名`; `并` joins the two actions · `high`
+- **"Pasted clipboard {image/PDF/text} as {filename}" (confirmation toast)** ·
+  `已将剪贴板{图像/PDF/文本}粘贴为 {filename}` · `已` = perfective (done) matching sibling toasts (`已拷贝`, `已装载`);
+  ICU `select` branch labels `image`/`pdf`/`other` kept verbatim; only the inside text (图像/PDF/文本) and framing
+  translated · `high`
+- **image (paste-kind branch)** · `图像` · macOS AppKit Accessibility (`Image` → 图像), Finder `GROUP_IMAGES` → 图像;
+  matches the viewer-pass image kind · `confirmed`
+- **text (paste-kind branch)** · `文本` · macOS Finder (`纯文本` for plain text) + existing zh viewer catalog
+  (`viewer.toolbar.viewMode.text` → 文本) · `confirmed`
+- **PDF (paste-kind branch)** · `PDF` · kept verbatim (format/brand token, like the settled `zip`/`FAT32`) · `confirmed`
+- **⌘V (paste shortcut glyph)** · `⌘V` · kept verbatim per SYSTEM_TOKENS / do-not-translate (matches the catalog's
+  `⌘C`/`⌘Enter` handling) · `confirmed`

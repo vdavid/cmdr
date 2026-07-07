@@ -539,3 +539,35 @@ Settled while translating the archive-browsing feature keys (`errors.json`, `fil
   tűnik", `errors.provider.veraCrypt.*` = "titkosított kötet") + macOS Finder ("Encrypted" = "Titkosítva") · high.
 - No `sameAsSourceJustification` needed in this batch: every one of the 28 values differs from English (the segmented
   cells Böngészés/Megnyitás/Rákérdezés all translate; no brand-only or unit-only values here).
+
+Settled while translating the paste-clipboard-as-a-file keys (`settings.json` + `fileExplorer.json`, 2026-07-07):
+
+- paste (the ⌘V action / pasting clipboard content) → `beillesztés` (verbal noun), inflects `beillesztve` (adverbial
+  participle for the done-toast) · macOS AppKit `MenuCommands` directly ("Paste" = `Beillesztés`), Total Commander
+  (`&Beillesztés`), reuses the settled `clipboard → vágólap`, `copy/cut/paste = Másolás/Kivágás/Beillesztés` · high. The
+  toast done-status `beillesztve` matches the sibling `fileExplorer.clipboard.copied` = "… másolva" participle style.
+- clipboard content (as a compound in the settings label) → `vágólaptartalom` (vágólap + tartalom) · transparent
+  compound on the settled `clipboard → vágólap` + `content → tartalom` (`dirSize.contentLabel` = `Tartalom`) · high.
+  Label `settings.fileOperations.pasteClipboardAsFile.label` = `Vágólaptartalom beillesztése fájlként` (verbal-noun,
+  article-free, matching sibling labels like `Repozitóriumcímke megjelenítése`; "as a file" = `fájlként`, essive-modal
+  `-ként`, invariant so no harmony worry). The description reuses the archives-picker frame "What Enter does…" =
+  `Mit tesz a(z) …`: `Mit tesz a ⌘V egy mappában, amikor a vágólapon szöveg, kép vagy PDF van másolt fájlok helyett.`
+  (article `a ⌘V`, matching the catalog's `a ⌘C`/`a ⌃⌥⌘J` shortcut-glyph articles; no comma before `vagy`, per HU
+  punctuation and the `suppressBinaryWarning` sibling).
+- image → `kép` · macOS AppKit `Accessibility` ("Image" = `Kép`) · high. text → `szöveg` · macOS AppKit `Services`
+  ("Text" = `Szöveg`) · high. PDF kept verbatim (format name).
+- paste-as-file settings options (radio/segmented, `pasteClipboardAsFile.opt.*`) rendered NOMINAL for register
+  consistency with the archives-picker segmented cells (`Böngészés`/`Megnyitás`/`Rákérdezés`) and the queue verbal-noun
+  arms, NOT the önözés form of the immediate sibling `allowFileExtensionChanges.opt`: "Do nothing" = `Nincs művelet`
+  (reuses settled `action → művelet`; Double Commander's `Ne csináljon semmit` is önözés, not matched here), "Create
+  file" = `Fájl létrehozása` (reuses `create → létrehoz` + `fájl`, mirrors `queue.row.label` create arm), "Create and
+  rename" = `Létrehozás és átnevezés` (reuses `rename → átnevezés`; keeps the English's terse drop of "file" in the
+  combined arm) · high.
+- pasted-as-file done toast (`fileExplorer.clipboard.pastedAsFile`, ICU select on `{kind}`) →
+  `A vágólap {kind, select, image {képe} pdf {PDF-je} other {szövege}} fájlként beillesztve: {filename}` · the branch
+  words carry the possessive suffix (`képe`/`PDF-je`/`szövege` = the clipboard's image/PDF/text) so "A vágólap X" is
+  grammatical; the uncontrolled `{filename}` sits after a colon in a neutral slot (no case suffix to vowel-harmonize
+  with an unknown runtime value, per style.md § Notes) · high. Branch NAMES `image`/`pdf`/`other` kept verbatim.
+  `PDF-je`: possessive `-je` on the front-vowel-pronounced abbreviation (pé-dé-ef), hyphen per abbreviation rule.
+- No `sameAsSourceJustification` needed in this batch: all 7 values differ from English (`pastedAsFileSettings` =
+  `Beállítások` differs from "Settings"; no brand-only or unit-only values).

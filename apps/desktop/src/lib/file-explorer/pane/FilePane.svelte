@@ -331,6 +331,7 @@
 
 
     import type { ListViewAPI, VolumeBreadcrumbAPI, NetworkMountViewAPI, NetworkCursorEntry } from './types'
+    import type { StartRenameOptions } from './types'
     import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/drag-auto-scroll'
 
     // Component refs for keyboard navigation
@@ -995,10 +996,10 @@
         return rename.active
     }
 
-    export function startRename(): void {
+    export function startRename(options?: StartRenameOptions): void {
         // Type-to-jump must not linger over the inline rename editor.
         jump.clear()
-        renameFlow.startRename()
+        renameFlow.startRename(options)
     }
 
     // noinspection JSUnusedGlobalSymbols -- Used dynamically

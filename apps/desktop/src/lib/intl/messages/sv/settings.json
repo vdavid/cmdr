@@ -363,6 +363,26 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.fileOperations.pasteClipboardAsFile.label": "Klistra in urklippsinnehåll som en fil",
+  "@settings.fileOperations.pasteClipboardAsFile.label": {
+    "sourceHash": "bf8c48d"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.description": "Vad ⌘V gör i en mapp när urklipp innehåller text, en bild eller en PDF i stället för kopierade filer.",
+  "@settings.fileOperations.pasteClipboardAsFile.description": {
+    "sourceHash": "7513ae5"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Gör ingenting",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
+    "sourceHash": "e66b291"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "Skapa fil",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFile": {
+    "sourceHash": "6990d32"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": "Skapa och byt namn",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
+    "sourceHash": "ed7b1b9"
+  },
   "settings.archives.enterBehavior.label": "Öppna arkiv och paket",
   "@settings.archives.enterBehavior.label": {
     "sourceHash": "554e1f7"

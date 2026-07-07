@@ -475,3 +475,24 @@ INTO a zip/tar/7z the way it steps into a folder, and offers browse/open/ask on 
 - **archive_edit (queue.row.label arm, "Editing archive"): `Redigerar arkiv`** · present-tense sibling-arm style
   (Kopierar, Flyttar); `redigera` = edit (glossary, macOS). Inserted before the `other` arm; sourceHash set to
   `9f18acf`. `high`.
+
+From the paste-clipboard-as-file pass (2026-07-07; the 5 `settings.fileOperations.pasteClipboardAsFile.*` keys + 2
+`fileExplorer.clipboard.pastedAsFile*` keys). What ⌘V does in a folder when the clipboard holds text/an image/a PDF
+instead of copied files. Reuses `klistra in` (paste), `urklipp` (clipboard), `Skapa`/`byt namn`, `Inställningar`. New
+ones:
+
+- **paste (verb), pasted (the toast, past tense): `klistra in` / `klistrade in`** · macOS AppKit ("Klistra in"),
+  Nautilus ("Klistra in", and "Pasted image" → "Inklistrad bild"). The confirmation toast uses the active past tense
+  "Klistrade in … som {filename}" (active voice over Nautilus's adjectival "Inklistrad"). `high`.
+- **clipboard content: `urklippsinnehåll`** · `urklipp` (glossary clipboard) + `innehåll` (content; MS "Innehåll",
+  Nautilus). Attested `urklipps-` compound pattern in Nautilus ("Urklippssträng", "urklippsdata"). Settings label
+  "Klistra in urklippsinnehåll som en fil". `high` (compound by attested pattern).
+- **do nothing (radio option): `Gör ingenting`** · natural Swedish; no direct UI source (no "Do Nothing" behavior option
+  in the pile). `tentative` (composed; low risk, unambiguous).
+- **create file / create and rename (radio options): `Skapa fil` / `Skapa och byt namn`** · `Skapa` (macOS/catalog
+  "Skapa ny fil", "Skapa mapp") + settled `byt namn`. `high`.
+- **"Pasted clipboard {image/PDF/text} as {filename}" (info toast):
+  `Klistrade in {en bild|en PDF|text} från urklipp som {filename}`** · the `{kind}` select branches carry the article
+  per phrase (image → "en bild", pdf → "en PDF", text → bare mass noun); "från urklipp" (from the clipboard) renders the
+  "clipboard" modifier uniformly across all three branches (compounding urklipps+bild/PDF/text wouldn't read cleanly).
+  `{filename}` is uncontrolled, so the sentence ends on it and reads correctly for any value. `high`.

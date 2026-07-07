@@ -308,7 +308,10 @@ pub(crate) async fn create_file_core(
 /// Returns true if a synthetic entry diff should be emitted for this volume.
 /// Protocol-only volumes (like MTP) don't support `std::fs` access, so synthetic
 /// diffs would fail. These volumes handle UI updates through their own event systems.
-fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
+///
+/// `pub(super)` so the sibling paste-clipboard writer reuses the same
+/// listing-cache update the create op emits (cursor-land parity with mkfile).
+pub(super) fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
     match volume_id {
         None => true, // No volume_id means local filesystem
         Some(id) => get_volume_manager()
@@ -321,7 +324,10 @@ fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
 ///
 /// Best-effort: if any step fails (stat, cache lookup, etc.) we log a warning
 /// and return. The watcher will pick up the change later.
-fn emit_synthetic_entry_diff(volume_id: Option<&str>, entry_path: &Path, parent_path: &Path) {
+///
+/// `pub(super)` so the sibling paste-clipboard writer reuses it (see
+/// `should_emit_synthetic_diff`).
+pub(super) fn emit_synthetic_entry_diff(volume_id: Option<&str>, entry_path: &Path, parent_path: &Path) {
     use crate::file_system::listing::diff_emitter::enqueue_diff;
     use crate::file_system::listing::reading::get_single_entry;
     use crate::file_system::listing::{find_listings_for_path, insert_entry_sorted};

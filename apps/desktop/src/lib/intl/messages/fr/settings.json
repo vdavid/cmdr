@@ -362,6 +362,26 @@
   "@settings.fileOperations.allowFileExtensionChanges.opt.ask": {
     "sourceHash": "3c42771"
   },
+  "settings.fileOperations.pasteClipboardAsFile.label": "Coller le contenu du presse-papiers en tant que fichier",
+  "@settings.fileOperations.pasteClipboardAsFile.label": {
+    "sourceHash": "bf8c48d"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.description": "Ce que fait ⌘V dans un dossier quand le presse-papiers contient du texte, une image, ou un PDF au lieu de fichiers copiés.",
+  "@settings.fileOperations.pasteClipboardAsFile.description": {
+    "sourceHash": "7513ae5"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Ne rien faire",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
+    "sourceHash": "e66b291"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "Créer un fichier",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFile": {
+    "sourceHash": "6990d32"
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": "Créer et renommer",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
+    "sourceHash": "ed7b1b9"
+  },
   "settings.archives.enterBehavior.label": "Ouverture des archives et des paquets",
   "@settings.archives.enterBehavior.label": {
     "sourceHash": "554e1f7"

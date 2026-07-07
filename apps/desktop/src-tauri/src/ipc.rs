@@ -645,6 +645,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::clipboard::cut_paths_to_clipboard,
         crate::commands::clipboard::read_clipboard_files,
         crate::commands::clipboard::read_clipboard_text,
+        crate::commands::clipboard::paste_clipboard_as_file,
         crate::commands::clipboard::clear_clipboard_cut_state,
         #[cfg(target_os = "macos")]
         crate::updater::check_for_update,

@@ -251,6 +251,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::clipboard::cut_paths_to_clipboard,
         crate::commands::clipboard::read_clipboard_files,
         crate::commands::clipboard::read_clipboard_text,
+        crate::commands::clipboard::paste_clipboard_as_file,
         crate::commands::clipboard::clear_clipboard_cut_state,
     ](types)
 }

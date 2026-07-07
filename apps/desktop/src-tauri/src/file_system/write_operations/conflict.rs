@@ -316,6 +316,20 @@ fn apply_resolution(
     }
 }
 
+/// Builds the `counter`-th candidate name under the shared ` (N)` dedup
+/// convention: `counter == 0` is the bare `stem[.ext]`, `1..` appends ` (N)`
+/// before the extension. This is the ONE place the convention lives —
+/// `find_unique_name` and the clipboard-paste writer both go through it so the
+/// two numbering paths can't drift.
+pub(super) fn numbered_name(stem: &str, ext: Option<&str>, counter: u32) -> String {
+    match (ext, counter) {
+        (Some(e), 0) => format!("{stem}.{e}"),
+        (None, 0) => stem.to_string(),
+        (Some(e), n) => format!("{stem} ({n}).{e}"),
+        (None, n) => format!("{stem} ({n})"),
+    }
+}
+
 /// Finds a unique filename by appending " (1)", " (2)", etc., **atomically
 /// reserving** the chosen name via `O_CREAT|O_EXCL` so a concurrent process
 /// (backup tool, cloud-sync agent, second Cmdr op) can't land a file at the
@@ -344,10 +358,7 @@ pub(super) fn find_unique_name(path: &Path) -> PathBuf {
 
     let mut counter: u32 = 1;
     loop {
-        let new_name = match &extension {
-            Some(ext) => format!("{} ({}).{}", stem, counter, ext),
-            None => format!("{} ({})", stem, counter),
-        };
+        let new_name = numbered_name(&stem, extension.as_deref(), counter);
         let new_path = parent.join(new_name);
 
         match fs::OpenOptions::new().write(true).create_new(true).open(&new_path) {

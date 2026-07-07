@@ -705,6 +705,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.pastedAsFile": "Klistrade in {kind, select, image {en bild} pdf {en PDF} other {text}} från urklipp som {filename}",
+  "@fileExplorer.clipboard.pastedAsFile": {
+    "sourceHash": "d61d4b5"
+  },
+  "fileExplorer.clipboard.pastedAsFileSettings": "Inställningar",
+  "@fileExplorer.clipboard.pastedAsFileSettings": {
+    "sourceHash": "74a883a"
+  },
   "fileExplorer.tabs.limitReached": "Gränsen för antal flikar nådd",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

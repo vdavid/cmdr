@@ -1093,6 +1093,19 @@
     "description": "Warning toast when the user pastes but the clipboard has no files. \"⌘C\" is the copy shortcut glyph; keep it."
   },
 
+  "fileExplorer.clipboard.pastedAsFile": "Pasted clipboard {kind, select, image {image} pdf {PDF} other {text}} as {filename}",
+  "@fileExplorer.clipboard.pastedAsFile": {
+    "description": "Info toast confirming that non-file clipboard content was saved into the current folder as a new file, e.g. \"Pasted clipboard text as pasted.txt\" or \"Pasted clipboard image as pasted.png\". The toast also carries a Settings button (labeled elsewhere).",
+    "placeholders": {
+      "kind": "the kind of content pasted: \"image\", \"pdf\", or otherwise text",
+      "filename": "the name of the created file, e.g. \"pasted.txt\" or \"pasted (2).png\""
+    }
+  },
+  "fileExplorer.clipboard.pastedAsFileSettings": "Settings",
+  "@fileExplorer.clipboard.pastedAsFileSettings": {
+    "description": "Button on the paste-as-file info toast that opens Settings (Behavior > Navigation & file ops) so the user can change or turn off this paste behavior."
+  },
+
   "fileExplorer.tabs.limitReached": "Tab limit reached",
   "@fileExplorer.tabs.limitReached": {
     "description": "Warning toast when the user tries to open another tab but the per-pane tab limit is already reached."

@@ -30,6 +30,8 @@ mod event_sinks;
 mod manager;
 mod operation_intent;
 mod overwrite;
+#[cfg(target_os = "macos")]
+mod paste_clipboard;
 mod rename;
 mod scan;
 mod scan_cache;
@@ -97,6 +99,8 @@ pub use manager::{
 // call these; `RenameValidityResult` rides into `bindings.ts` via the
 // `check_rename_validity` command signature.
 pub(crate) use create::{create_directory_managed, create_file_managed};
+#[cfg(target_os = "macos")]
+pub(crate) use paste_clipboard::write_payload_to_dir;
 pub(crate) use rename::{
     RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
 };

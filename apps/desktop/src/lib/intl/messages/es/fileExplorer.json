@@ -704,6 +704,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.pastedAsFile": "Se pegó {kind, select, image {la imagen} pdf {el PDF} other {el texto}} del portapapeles como {filename}",
+  "@fileExplorer.clipboard.pastedAsFile": {
+    "sourceHash": "d61d4b5"
+  },
+  "fileExplorer.clipboard.pastedAsFileSettings": "Ajustes",
+  "@fileExplorer.clipboard.pastedAsFileSettings": {
+    "sourceHash": "74a883a"
+  },
   "fileExplorer.tabs.limitReached": "Se alcanzó el límite de pestañas",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

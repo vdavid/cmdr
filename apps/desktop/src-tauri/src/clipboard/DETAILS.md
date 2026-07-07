@@ -34,3 +34,39 @@ Lives inside `pasteboard.rs` (not `mod.rs`) because it's a debugging tool for pr
 override share `store.rs`, so a test that flips the env in one process sees the same data the E2E mock module sees in
 another. See the "Mock-backend convention" in
 [`docs/tooling/instance-isolation.md`](../../../../../docs/tooling/instance-isolation.md).
+
+## Paste clipboard content as a file (issue #35)
+
+When Cmd+V lands in a pane with no file URLs on the clipboard but some other pasteable content (text, image, PDF), the
+backend writes that content to a new `pasted.<ext>` file. The pure core lives in `payload.rs` so precedence, the
+markdown sniff, and the flavor mapping are unit-testable with no Tauri runtime or `MainThreadMarker`:
+
+- **`ClipboardData`** (in `store.rs`) is the read bundle: `Option<Vec<u8>>` per image/pdf flavor plus `Option<String>`
+  text. It has its OWN static, separate from the file-URL `ClipboardEntry`, so a content paste never clobbers a pending
+  file copy (pinned by `payload_tests::injecting_clipboard_data_does_not_clobber_the_file_url_entry`).
+  `read_clipboard_data` is the read side (used by both the `playwright-e2e` mock module and the prod
+  `CMDR_CLIPBOARD_BACKEND=mock` env path). `write_clipboard_data` / `clear_clipboard_data` are `#[cfg(test)]`
+  unit-test-only injection (no prod / E2E caller exists yet; add an admin surface if E2E ever needs to inject content).
+- **`pick_clipboard_payload(ClipboardData) -> ClipboardPayload`** applies flavor precedence: image (`public.png` >
+  `public.tiff` > `public.jpeg`) > pdf (`com.adobe.pdf`) > text (`public.utf8-plain-text`). Real clipboards are
+  multi-flavor (a Finder image copy carries the URL as text; a browser image copy carries the page URL), so we pick the
+  highest-intent one.
+- **Why TIFF→PNG**: macOS screenshots and many apps put `public.tiff` on the pasteboard. We convert it to PNG
+  (`tiff_to_png`, via `NSBitmapImageRep` — a data class, so no main-thread requirement) and write `.png`, because a
+  `.tiff` file is a poor default (large, poorly supported). A failed decode falls through to the next flavor rather than
+  writing a broken file. `public.png` is written verbatim (no re-encode); `public.jpeg` is written verbatim as `.jpg`
+  (no recompression); `com.adobe.pdf` verbatim as `.pdf`.
+- **Markdown sniff** (`looks_like_markdown`, conservative): text becomes `.md` only on a strong signal (fenced code
+  block, or an ATX heading at line start) or ≥2 DISTINCT weak signal KINDS (link, emphasis pair, list marker,
+  blockquote) — "distinct" is by KIND, so two links are one kind. When in doubt it stays `.txt`; a wrong `.md` guess is
+  worse than a plain `.txt`.
+- **The read path** (`pasteboard::read_pasteboard_data`) does the minimum on the main thread: NSPasteboard is
+  main-thread-only, so it just copies each flavor's raw bytes (`dataForType:` per UTI + `stringForType:` for text) into a
+  `ClipboardData`. Flavor precedence and the TIFF→PNG decode (`pick_clipboard_payload`, hundreds of ms on a big image)
+  run OFF the main thread, in a `spawn_blocking` in the command, so the UI never janks (principle 3). The mock/env path
+  returns the injected `ClipboardData`; both feed the same `pick`, so precedence is identical across configurations.
+- **The write** lives in `file_system/write_operations/paste_clipboard.rs` (`write_payload_to_dir`), NOT here — see that
+  module's docs. The command (`commands/clipboard.rs::paste_clipboard_as_file`) reads the raw flavors on the main thread,
+  picks/converts off-main, then hands the payload to the writer under a 30 s write timeout (longer than the 5 s
+  empty-mkfile tier because the payload can be a large image; the partial-file-on-timeout edge is documented in the
+  write module's DETAILS).

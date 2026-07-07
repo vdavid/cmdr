@@ -466,3 +466,38 @@ describe('appearance.language (the UI language picker)', () => {
     }).toThrow()
   })
 })
+
+describe('fileOperations.pasteClipboardAsFile', () => {
+  it('registers a radio enum in Behavior > Navigation & file ops, defaulting to createFileAndRename', () => {
+    const def = getSettingDefinition('fileOperations.pasteClipboardAsFile')
+    expect(def).toBeDefined()
+    expect(def?.type).toBe('enum')
+    expect(def?.default).toBe('createFileAndRename')
+    expect(def?.section).toEqual(['Behavior', 'Navigation & file ops'])
+    expect(def?.component).toBe('radio')
+  })
+
+  it('offers exactly the three documented options in order', () => {
+    const options = getSettingDefinition('fileOperations.pasteClipboardAsFile')?.constraints?.options ?? []
+    expect(options.map((o) => o.value)).toEqual(['doNothing', 'createFile', 'createFileAndRename'])
+  })
+
+  it('validates the three enum values and rejects anything else', () => {
+    for (const value of ['doNothing', 'createFile', 'createFileAndRename']) {
+      expect(() => {
+        validateSettingValue('fileOperations.pasteClipboardAsFile', value)
+      }).not.toThrow()
+    }
+    expect(() => {
+      validateSettingValue('fileOperations.pasteClipboardAsFile', 'createAndDelete')
+    }).toThrow()
+  })
+
+  it('lives under Behavior > Navigation & file ops in the section tree', () => {
+    const tree = buildSectionTree()
+    const behavior = tree.find((s) => s.name === 'Behavior')
+    const navFileOps = behavior?.subsections.find((s) => s.name === 'Navigation & file ops')
+    const ids = (navFileOps?.settings ?? []).map((s) => s.id)
+    expect(ids).toContain('fileOperations.pasteClipboardAsFile')
+  })
+})

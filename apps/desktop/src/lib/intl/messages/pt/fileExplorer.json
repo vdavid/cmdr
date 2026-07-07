@@ -705,6 +705,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.pastedAsFile": "{kind, select, image {Imagem colada} pdf {PDF colado} other {Texto colado}} da área de transferência como {filename}",
+  "@fileExplorer.clipboard.pastedAsFile": {
+    "sourceHash": "d61d4b5"
+  },
+  "fileExplorer.clipboard.pastedAsFileSettings": "Ajustes",
+  "@fileExplorer.clipboard.pastedAsFileSettings": {
+    "sourceHash": "74a883a"
+  },
   "fileExplorer.tabs.limitReached": "Limite de abas atingido",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

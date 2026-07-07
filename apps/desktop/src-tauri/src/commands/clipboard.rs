@@ -248,11 +248,83 @@ pub async fn read_clipboard_text(app: tauri::AppHandle) -> Result<Option<String>
         .map_err(|e| format!("Couldn't receive pasteboard result: {e}"))
 }
 
+/// Reads the highest-intent non-file clipboard flavor (image / PDF / text) and
+/// writes it into `directory` as a new `pasted.<ext>` file, returning the created
+/// file's name + kind. `Ok(None)` = nothing pasteable on the clipboard — the
+/// typed no-op the frontend treats as "no file created", NOT an error toast.
+///
+/// Thin edge: reads the RAW pasteboard flavors on the main thread (NSPasteboard is
+/// main-thread-only), then picks the flavor + converts TIFF→PNG OFF the main
+/// thread (that decode can be hundreds of ms — never on the UI thread), and hands
+/// the result to `write_operations::write_payload_to_dir` under the write timeout.
+/// `directory` is tilde-expanded for the local `root` volume only.
+#[cfg(target_os = "macos")]
+#[tauri::command]
+#[specta::specta]
+pub async fn paste_clipboard_as_file(
+    app: tauri::AppHandle,
+    volume_id: Option<String>,
+    directory: String,
+) -> Result<Option<clipboard::PastedClipboardFile>, crate::commands::util::IpcError> {
+    use crate::commands::util::IpcError;
+
+    // 1. Read the RAW flavors on the main thread (NSPasteboard requires it). This
+    // does the minimum on-main: just copies bytes off the pasteboard.
+    let (tx, rx) = std::sync::mpsc::channel();
+    app.run_on_main_thread(move || {
+        let mtm = MainThreadMarker::new().expect("run_on_main_thread runs on the main thread");
+        let data = clipboard::read_pasteboard_data(mtm);
+        let _ = tx.send(data);
+    })
+    .map_err(|e| IpcError::from_err(format!("Couldn't run on main thread: {e}")))?;
+
+    let data = rx
+        .recv()
+        .map_err(|e| IpcError::from_err(format!("Couldn't receive pasteboard data: {e}")))?;
+
+    // 2. Pick the highest-intent flavor OFF the main thread, in a blocking task —
+    // the TIFF→PNG decode is CPU-bound and can be hundreds of ms, so it must not
+    // sit on the UI thread OR block the async reactor.
+    let payload = tokio::task::spawn_blocking(move || clipboard::pick_clipboard_payload(data))
+        .await
+        .map_err(|e| IpcError::from_err(format!("Clipboard decode task failed: {e}")))?;
+
+    // Tilde-expand for the local `root` volume only; volume paths are volume-relative.
+    let expanded = if volume_id.as_deref().unwrap_or("root") == "root" {
+        crate::commands::file_system::expand_tilde(&directory)
+    } else {
+        directory
+    };
+
+    // 3. Write. 30 s tier (not the 5 s empty-mkfile tier): the payload can be a
+    // large image written onto a slow network volume.
+    tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        crate::file_system::write_operations::write_payload_to_dir(volume_id, std::path::Path::new(&expanded), payload),
+    )
+    .await
+    .map_err(|_| IpcError::timeout())?
+    .map_err(IpcError::from_err)
+}
+
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
 #[specta::specta]
 pub async fn read_clipboard_text(_app: tauri::AppHandle) -> Result<Option<String>, String> {
     Err("Clipboard operations are not yet supported on this platform".to_string())
+}
+
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+#[specta::specta]
+pub async fn paste_clipboard_as_file(
+    _app: tauri::AppHandle,
+    _volume_id: Option<String>,
+    _directory: String,
+) -> Result<Option<clipboard::PastedClipboardFile>, crate::commands::util::IpcError> {
+    Err(crate::commands::util::IpcError::from_err(
+        "Clipboard operations are not yet supported on this platform",
+    ))
 }
 
 /// Clears the in-process cut state without touching the system clipboard.

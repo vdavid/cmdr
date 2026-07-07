@@ -15,6 +15,7 @@ use std::path::PathBuf;
 use objc2::MainThreadMarker;
 
 use super::store;
+use super::store::ClipboardData;
 
 /// Stores file URLs in the in-process clipboard mock instead of NSPasteboard.
 pub fn write_file_urls_to_clipboard(_mtm: MainThreadMarker, paths: &[PathBuf]) -> Result<(), String> {
@@ -34,4 +35,11 @@ pub fn read_file_urls_from_clipboard(_mtm: MainThreadMarker) -> Result<Vec<PathB
 /// Returns the most recently written newline-joined paths as text.
 pub fn read_text_from_clipboard(_mtm: MainThreadMarker) -> Option<String> {
     store::read_text()
+}
+
+/// Returns the injected raw clipboard flavors. Mirrors
+/// `pasteboard::read_pasteboard_data` for the E2E build (the picking runs
+/// off-main in the command, same as prod).
+pub fn read_pasteboard_data(_mtm: MainThreadMarker) -> ClipboardData {
+    store::read_clipboard_data()
 }

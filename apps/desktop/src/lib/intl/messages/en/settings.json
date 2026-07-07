@@ -462,6 +462,27 @@
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
 
+  "settings.fileOperations.pasteClipboardAsFile.label": "Paste clipboard content as a file",
+  "@settings.fileOperations.pasteClipboardAsFile.label": {
+    "description": "Settings label for what ⌘V (paste) does in a folder when the clipboard holds pasteable content (text, an image, or a PDF) rather than copied files. \"⌘V\" is the macOS paste shortcut glyph; keep it."
+  },
+  "settings.fileOperations.pasteClipboardAsFile.description": "What ⌘V does in a folder when the clipboard holds text, an image, or a PDF instead of copied files.",
+  "@settings.fileOperations.pasteClipboardAsFile.description": {
+    "description": "Settings description under the label. Explains that this controls pasting non-file clipboard content (like a screenshot or copied text) into the current folder as a new file. \"⌘V\" is the macOS paste shortcut glyph; keep it."
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.doNothing": "Do nothing",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.doNothing": {
+    "description": "Paste-as-file option: pressing ⌘V with non-file clipboard content does nothing (the previous behavior). Radio-button label. \"⌘V\" is the macOS paste shortcut; keep any glyph."
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "Create file",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFile": {
+    "description": "Paste-as-file option: pressing ⌘V creates a new file from the clipboard content, but does not start renaming it. Radio-button label."
+  },
+  "settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": "Create and rename",
+  "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
+    "description": "Paste-as-file option: pressing ⌘V creates a new file from the clipboard content and immediately starts an inline rename so the user can name it. Radio-button label. This is the default."
+  },
+
   "settings.archives.enterBehavior.label": "Opening archives and bundles",
   "@settings.archives.enterBehavior.label": {
     "description": "Search label for the Behavior > Archives settings section, which sets what pressing Enter does on an archive or a macOS app bundle. \"Enter\" is the Return/Enter key; do not translate the key name if your language keeps it in English."

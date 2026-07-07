@@ -27,6 +27,7 @@ use objc2_app_kit::{
 use objc2_foundation::{NSArray, NSDictionary, NSString, NSURL};
 
 use super::store;
+use super::store::ClipboardData;
 
 /// Sampled once at first access. `true` when `CMDR_CLIPBOARD_BACKEND=mock`
 /// was set in the process env at that point.
@@ -179,4 +180,37 @@ pub fn read_text_from_clipboard(_mtm: MainThreadMarker) -> Option<String> {
     // constant the framework initializes at load).
     let pasteboard_type = unsafe { NSPasteboardTypeString };
     pasteboard.stringForType(pasteboard_type).map(|s| s.to_string())
+}
+
+/// Reads the RAW clipboard flavors for the "paste content as a file" flow into a
+/// `ClipboardData`. Main-thread-only (NSPasteboard), so it does the minimum here:
+/// just copies the bytes off the pasteboard. Flavor precedence and the TIFF→PNG
+/// decode (which can be hundreds of ms) run OFF the main thread via
+/// `pick_clipboard_payload`, so this never janks the UI. Under
+/// `CMDR_CLIPBOARD_BACKEND=mock` it returns the injected in-process flavors.
+pub fn read_pasteboard_data(_mtm: MainThreadMarker) -> ClipboardData {
+    if use_mock() {
+        return store::read_clipboard_data();
+    }
+
+    let pasteboard = NSPasteboard::generalPasteboard();
+    ClipboardData {
+        png: read_flavor_bytes(&pasteboard, "public.png"),
+        tiff: read_flavor_bytes(&pasteboard, "public.tiff"),
+        jpeg: read_flavor_bytes(&pasteboard, "public.jpeg"),
+        pdf: read_flavor_bytes(&pasteboard, "com.adobe.pdf"),
+        text: {
+            // SAFETY: reading the AppKit-exported `NSPasteboardTypeString` global (a
+            // `&'static NSString` constant the framework initializes at load).
+            let pasteboard_type = unsafe { NSPasteboardTypeString };
+            pasteboard.stringForType(pasteboard_type).map(|s| s.to_string())
+        },
+    }
+}
+
+/// Reads the raw bytes for a pasteboard UTI (`public.png`, `com.adobe.pdf`, …),
+/// or `None` when the flavor isn't present.
+fn read_flavor_bytes(pasteboard: &NSPasteboard, uti: &str) -> Option<Vec<u8>> {
+    let ty = NSString::from_str(uti);
+    pasteboard.dataForType(&ty).map(|d| d.to_vec())
 }

@@ -63,6 +63,46 @@ pub fn snapshot() -> Option<ClipboardEntry> {
     guard.clone()
 }
 
+/// Typed pasteboard flavors for the "paste clipboard content as a file" flow
+/// (`public.png` / `public.tiff` / `public.jpeg` / `com.adobe.pdf` /
+/// `public.utf8-plain-text`). Injected by tests and the E2E mock, read by the
+/// payload picker (`super::payload::pick_clipboard_payload`). Kept in a separate
+/// static from the file-URL `ClipboardEntry` so the copy/cut/paste-files flow
+/// and this content-paste flow never clobber each other.
+#[derive(Clone, Debug, Default)]
+pub struct ClipboardData {
+    pub png: Option<Vec<u8>>,
+    pub tiff: Option<Vec<u8>>,
+    pub jpeg: Option<Vec<u8>>,
+    pub pdf: Option<Vec<u8>>,
+    pub text: Option<String>,
+}
+
+static DATA_STORE: LazyLock<Mutex<ClipboardData>> = LazyLock::new(|| Mutex::new(ClipboardData::default()));
+
+/// Replaces the injected clipboard flavors. The unit-test injection entry point
+/// that lets a paste-as-file test set several flavors at once (a real clipboard
+/// carries multiple), so precedence tests are honest. `#[cfg(test)]` is
+/// compile-time proof that no prod / E2E build includes it — no prod caller
+/// exists (the E2E mock and env-mock only READ, via `read_clipboard_data`).
+#[cfg(test)]
+pub fn write_clipboard_data(data: ClipboardData) {
+    *DATA_STORE.lock().unwrap_or_else(|e| e.into_inner()) = data;
+}
+
+/// Returns the injected clipboard flavors (default/empty when none set). Read by
+/// the E2E mock backend and the prod backend's `CMDR_CLIPBOARD_BACKEND=mock` override.
+pub fn read_clipboard_data() -> ClipboardData {
+    DATA_STORE.lock().unwrap_or_else(|e| e.into_inner()).clone()
+}
+
+/// Clears the injected clipboard flavors. Unit-test-only reset (see
+/// `write_clipboard_data`).
+#[cfg(test)]
+pub fn clear_clipboard_data() {
+    *DATA_STORE.lock().unwrap_or_else(|e| e.into_inner()) = ClipboardData::default();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -13,6 +13,7 @@ const {
   addToastSpy,
   resolveSnapshotPathsSpy,
   getCommonParentPathSpy,
+  pasteClipboardContentAsFileSpy,
   logErrorSpy,
 } = vi.hoisted(() => ({
   copyFilesToClipboardSpy: vi.fn<() => Promise<number>>(),
@@ -24,6 +25,7 @@ const {
   addToastSpy: vi.fn<(content: unknown, options?: unknown) => string>(),
   resolveSnapshotPathsSpy: vi.fn<() => string[]>(),
   getCommonParentPathSpy: vi.fn<() => string>(),
+  pasteClipboardContentAsFileSpy: vi.fn<(deps: { onNothingCreated: () => void }) => Promise<void>>(),
   logErrorSpy: vi.fn(),
 }))
 
@@ -38,6 +40,10 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
+
+// The no-file-URL fallback lives in its own module (unit-tested in
+// `paste-clipboard-as-file.test.ts`); here we only assert the DISPATCH into it.
+vi.mock('./paste-clipboard-as-file', () => ({ pasteClipboardContentAsFile: pasteClipboardContentAsFileSpy }))
 
 vi.mock('$lib/search/snapshot-store.svelte', () => ({ resolveSnapshotPaths: resolveSnapshotPathsSpy }))
 
@@ -297,15 +303,43 @@ describe('pasteFromClipboard', () => {
     expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
   })
 
-  it('warns and bails when the clipboard is empty', async () => {
+  it('routes a no-file-URL clipboard to the content-paste fallback with the pane destination', async () => {
+    // Empty file-URL result no longer warns directly: it hands off to the
+    // paste-content fallback (gated by the setting). The fallback's
+    // `onNothingCreated` closure is what replicates today's warn toast.
     readClipboardFilesSpy.mockResolvedValue({ paths: [], isCut: false })
-    const access = buildAccess({ volumeId: 'root' })
+    pasteClipboardContentAsFileSpy.mockResolvedValue(undefined)
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
 
     await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
 
-    expect(addToastSpy).toHaveBeenCalledWith('No files on the clipboard. Copy files first with ⌘C.', {
-      level: 'warn',
-    })
+    expect(pasteClipboardContentAsFileSpy).toHaveBeenCalledTimes(1)
+    expect(pasteClipboardContentAsFileSpy.mock.calls[0][0]).toMatchObject({ volumeId: 'root', directory: '/dest' })
+    // The wired onNothingCreated still shows today's exact warn toast.
+    pasteClipboardContentAsFileSpy.mock.calls[0][0].onNothingCreated()
+    expect(addToastSpy).toHaveBeenCalledWith('No files on the clipboard. Copy files first with ⌘C.', { level: 'warn' })
+    expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
+  })
+
+  it('does NOT run the content fallback when file URLs are present (transfer path owns it)', async () => {
+    readClipboardFilesSpy.mockResolvedValue({ paths: ['/x/a.txt'], isCut: false })
+    getCommonParentPathSpy.mockReturnValue('/x')
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(false)
+
+    expect(pasteClipboardContentAsFileSpy).not.toHaveBeenCalled()
+    expect(dialogsStub.startTransferProgress).toHaveBeenCalledTimes(1)
+  })
+
+  it('routes pasteAsMove (forceMove) with no file URLs to the SAME fallback (not a dead key)', async () => {
+    readClipboardFilesSpy.mockResolvedValue({ paths: [], isCut: false })
+    pasteClipboardContentAsFileSpy.mockResolvedValue(undefined)
+    const access = buildAccess({ volumeId: 'root', path: '/dest' })
+
+    await createClipboardOperations(access, buildDialogs()).pasteFromClipboard(true)
+
+    expect(pasteClipboardContentAsFileSpy).toHaveBeenCalledTimes(1)
     expect(dialogsStub.startTransferProgress).not.toHaveBeenCalled()
   })
 

@@ -16,6 +16,7 @@ import type { TransferOperationType } from '../types'
 import { getCommonParentPath } from './transfer-operations'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
+import { pasteClipboardContentAsFile } from './paste-clipboard-as-file'
 import type { createDialogState } from './dialog-state.svelte'
 import type { PaneAccess } from './pane-access'
 
@@ -210,6 +211,25 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
     }
   }
 
+  /**
+   * The no-file-URLs branch of paste: gathers the focused pane's destination
+   * state and runs `pasteClipboardContentAsFile` (create a file from text/image/
+   * PDF content, or replicate today's warn toast when nothing is created).
+   */
+  async function runContentPasteFallback() {
+    const focused = access.getFocusedPane()
+    const paneRef = access.getPaneRef(focused)
+    await pasteClipboardContentAsFile({
+      volumeId: access.getPaneVolumeId(focused),
+      directory: access.getPanePath(focused),
+      listingId: paneRef?.getListingId() ?? '',
+      hasParent: paneRef?.hasParentEntry() ?? false,
+      showHiddenFiles: access.getShowHiddenFiles(),
+      paneRef,
+      onNothingCreated: () => addToast(tString('fileExplorer.clipboard.empty'), { level: 'warn' }),
+    })
+  }
+
   /** Pastes files from the system clipboard into the current directory. */
   async function pasteFromClipboard(forceMove: boolean) {
     try {
@@ -240,7 +260,9 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       const result = await readClipboardFiles()
 
       if (result.paths.length === 0) {
-        addToast(tString('fileExplorer.clipboard.empty'), { level: 'warn' })
+        // No file URLs on the clipboard. Fall back to the "paste content as a
+        // file" flow (gated by `fileOperations.pasteClipboardAsFile`).
+        await runContentPasteFallback()
         return
       }
 

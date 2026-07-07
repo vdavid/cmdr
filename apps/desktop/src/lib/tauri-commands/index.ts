@@ -532,8 +532,9 @@ export {
   readClipboardFiles,
   readClipboardText,
   clearClipboardCutState,
+  pasteClipboardAsFile,
 } from './clipboard-files'
-export type { ClipboardReadResult } from './clipboard-files'
+export type { ClipboardReadResult, PastedClipboardFile } from './clipboard-files'
 
 // Search (whole-drive file search)
 export {

@@ -707,6 +707,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.pastedAsFile": "{kind, select, image {Klembordafbeelding} pdf {Klembord-PDF} other {Klembordtekst}} als {filename} geplakt",
+  "@fileExplorer.clipboard.pastedAsFile": {
+    "sourceHash": "d61d4b5"
+  },
+  "fileExplorer.clipboard.pastedAsFileSettings": "Instellingen",
+  "@fileExplorer.clipboard.pastedAsFileSettings": {
+    "sourceHash": "74a883a"
+  },
   "fileExplorer.tabs.limitReached": "Tabbladlimiet bereikt",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

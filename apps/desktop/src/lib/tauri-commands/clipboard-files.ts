@@ -1,5 +1,7 @@
-import { commands } from '$lib/ipc/bindings'
+import { commands, type PastedClipboardFile } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
+
+export type { PastedClipboardFile } from '$lib/ipc/bindings'
 
 export interface ClipboardReadResult {
   paths: string[]
@@ -69,4 +71,20 @@ export async function readClipboardText(): Promise<string | null> {
 
 export async function clearClipboardCutState(): Promise<void> {
   await commands.clearClipboardCutState()
+}
+
+/**
+ * Reads the highest-intent non-file clipboard flavor (image / PDF / text) and
+ * writes it into `directory` as a new `pasted.<ext>` file, returning the created
+ * file's name + kind. Resolves to `null` when nothing pasteable is on the
+ * clipboard — the caller treats that as "no file created" (today's warn toast),
+ * not an error.
+ */
+export async function pasteClipboardAsFile(
+  volumeId: string | null,
+  directory: string,
+): Promise<PastedClipboardFile | null> {
+  const res = await commands.pasteClipboardAsFile(volumeId, directory)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
