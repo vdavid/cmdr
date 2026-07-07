@@ -86,14 +86,48 @@ func shrinkwrapCoverageAllowlist(desktopDir string, allowlist *CoverageAllowlist
 	return writeJSONAllowlist(filepath.Join(desktopDir, "coverage-allowlist.json"), allowlist)
 }
 
+// coverageRun bundles a single svelte-tests invocation's vitest command with
+// its private coverage output location. Each run writes to its own temp
+// reportsDirectory (via VITEST_COVERAGE_DIR, read by vitest.config.ts) so two
+// concurrent `pnpm check svelte-tests` runs can't interact: v8 cleans
+// reportsDirectory/.tmp at run boundaries, so a shared directory means one
+// run's cleanup deletes the other's in-flight worker files, crashing it with
+// ENOENT. Isolation, not serialization, keeps both runs green.
+type coverageRun struct {
+	cmd        *exec.Cmd
+	reportsDir string
+	summary    string
+}
+
+// newCoverageRun creates a fresh per-invocation coverage output dir under the
+// OS temp dir and configures the vitest command to write there. The caller
+// removes reportsDir when done.
+func newCoverageRun(desktopDir string) (*coverageRun, error) {
+	reportsDir, err := os.MkdirTemp("", "cmdr-svelte-coverage-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create coverage temp dir: %w", err)
+	}
+	cmd := exec.Command("pnpm", "test:coverage")
+	cmd.Dir = desktopDir
+	cmd.Env = append(os.Environ(), "VITEST_COVERAGE_DIR="+reportsDir)
+	return &coverageRun{
+		cmd:        cmd,
+		reportsDir: reportsDir,
+		summary:    filepath.Join(reportsDir, "coverage-summary.json"),
+	}, nil
+}
+
 // RunSvelteTests runs Svelte unit tests with Vitest and checks coverage.
 func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
 
-	// Run tests with coverage using pnpm
-	cmd := exec.Command("pnpm", "test:coverage")
-	cmd.Dir = desktopDir
-	output, err := RunCommand(cmd, true)
+	// Run tests with coverage using pnpm, into a private per-invocation dir.
+	run, err := newCoverageRun(desktopDir)
+	if err != nil {
+		return CheckResult{}, err
+	}
+	defer os.RemoveAll(run.reportsDir)
+	output, err := RunCommand(run.cmd, true)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("svelte tests failed\n%s", indentOutput(output))
 	}
@@ -113,8 +147,7 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	// Parse coverage summary
-	coverageFile := filepath.Join(desktopDir, "coverage", "coverage-summary.json")
-	coverageData, err := os.ReadFile(coverageFile)
+	coverageData, err := os.ReadFile(run.summary)
 	if err != nil {
 		return CheckResult{}, fmt.Errorf("failed to read coverage summary: %w", err)
 	}
@@ -147,6 +180,14 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
+	return buildSvelteTestResult(ctx, testCount, staleNotes, madeChanges, stale), nil
+}
+
+// buildSvelteTestResult assembles the pass/warn CheckResult from the parsed
+// test count and the allowlist shrink-wrap outcome. Warn (not fail) when a
+// satisfied entry surfaced, or in CI when a dead entry would be auto-removed
+// locally.
+func buildSvelteTestResult(ctx *CheckContext, testCount string, staleNotes []string, madeChanges bool, stale coverageStaleness) CheckResult {
 	passMsg := "All tests passed"
 	count := 0
 	if testCount != "all" {
@@ -164,7 +205,7 @@ func RunSvelteTests(ctx *CheckContext) (CheckResult, error) {
 	if count > 0 {
 		result.Total = count
 	}
-	return result, nil
+	return result
 }
 
 // checkCoverageThresholds returns an error listing every non-allowlisted file

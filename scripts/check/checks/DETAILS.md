@@ -365,6 +365,19 @@ External tools enforce the same principle natively: knip (`treatConfigHintsAsErr
 slow eslint lane (`reportUnusedDisableDirectives`). The one list nothing can verify automatically is `audit.toml`'s
 RUSTSEC ignores — that's a quarterly task in `docs/maintenance.md`.
 
+## svelte-tests coverage isolation
+
+**Decision**: `svelte-tests` gives each invocation a private coverage `reportsDirectory` under the OS temp dir
+(`newCoverageRun` mints one with `os.MkdirTemp`, exports it as `VITEST_COVERAGE_DIR` which `vitest.config.ts` reads, and
+removes it when done). It reads `coverage-summary.json` back from that temp dir, not from `apps/desktop/coverage/`.
+**Why**: the v8 provider writes intermediate per-worker files to `reportsDirectory/.tmp/coverage-N.json` and wipes that
+directory at run boundaries. Two concurrent `pnpm check svelte-tests` runs (common with multiple agents/sessions
+checking at once) sharing the fixed `./coverage` path meant one run's cleanup deleted the other's in-flight worker
+files, crashing it with `ENOENT` and phantom test failures. Isolation (not serialization) lets both run green. Nothing
+depends on the canonical path persisting — no CI artifact upload, and thresholds live in this Go check, not in vitest
+config — so isolation applies everywhere, with no CI split. Manual `pnpm test:coverage` (no env var set) still writes
+`./coverage`.
+
 ## Apps and check counts
 
 Checks by app and tech:

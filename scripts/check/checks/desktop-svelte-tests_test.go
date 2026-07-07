@@ -7,6 +7,54 @@ import (
 	"testing"
 )
 
+func TestNewCoverageRun_IsolatesReportsDir(t *testing.T) {
+	desktopDir := t.TempDir()
+
+	a, err := newCoverageRun(desktopDir)
+	if err != nil {
+		t.Fatalf("newCoverageRun: %v", err)
+	}
+	defer os.RemoveAll(a.reportsDir)
+	b, err := newCoverageRun(desktopDir)
+	if err != nil {
+		t.Fatalf("newCoverageRun: %v", err)
+	}
+	defer os.RemoveAll(b.reportsDir)
+
+	// Two invocations must land in distinct directories, or a concurrent run's
+	// cleanup of reportsDir/.tmp deletes the other's in-flight v8 worker files.
+	if a.reportsDir == b.reportsDir {
+		t.Fatalf("expected distinct reports dirs, both were %q", a.reportsDir)
+	}
+	for _, run := range []*coverageRun{a, b} {
+		if !strings.HasPrefix(run.reportsDir, os.TempDir()) {
+			t.Errorf("expected reports dir under %q, got %q", os.TempDir(), run.reportsDir)
+		}
+		if info, err := os.Stat(run.reportsDir); err != nil || !info.IsDir() {
+			t.Errorf("expected reports dir to exist, stat err=%v", err)
+		}
+		if run.summary != filepath.Join(run.reportsDir, "coverage-summary.json") {
+			t.Errorf("summary %q not under reports dir %q", run.summary, run.reportsDir)
+		}
+		if run.cmd.Dir != desktopDir {
+			t.Errorf("expected cmd dir %q, got %q", desktopDir, run.cmd.Dir)
+		}
+		wantEnv := "VITEST_COVERAGE_DIR=" + run.reportsDir
+		if !containsEnv(run.cmd.Env, wantEnv) {
+			t.Errorf("expected env to contain %q, got %v", wantEnv, run.cmd.Env)
+		}
+	}
+}
+
+func containsEnv(env []string, want string) bool {
+	for _, e := range env {
+		if e == want {
+			return true
+		}
+	}
+	return false
+}
+
 func writeCoverageFixture(t *testing.T, desktopDir string, files []string) {
 	t.Helper()
 	for _, rel := range files {

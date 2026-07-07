@@ -44,6 +44,9 @@ see [`../CLAUDE.md`](../CLAUDE.md).
 - **Error output uses `indentOutput()`**: `fmt.Errorf("check failed\n%s", indentOutput(output))`. Success messages carry
   useful stats ("12 tests passed"), not generic "OK". Return `Skipped(reason)` when a check can't run,
   `SuccessWithChanges` when it made local fixes (CI mode must still error on the same drift).
+- **`svelte-tests` coverage runs in a private per-invocation temp `reportsDirectory`** (via `VITEST_COVERAGE_DIR`), not
+  the shared `apps/desktop/coverage/`. Don't revert to a fixed path: concurrent runs clobber each other's in-flight v8
+  worker files (`ENOENT`). See DETAILS.md "svelte-tests coverage isolation".
 - After authoring, run `pnpm check go-vet staticcheck` (staticcheck is strict about idiomatic Go), and update the "Apps
   and check counts" table in DETAILS.md. `--fast` membership is just the `IsFast` field in `registry.go` (editorially
   curated), so there's no separate list anywhere to keep in sync.

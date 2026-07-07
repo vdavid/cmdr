@@ -34,7 +34,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],
-      reportsDirectory: './coverage',
+      // The check runner sets VITEST_COVERAGE_DIR to a private per-invocation temp
+      // dir so concurrent `pnpm check svelte-tests` runs don't clobber each other's
+      // intermediate v8 files (v8 cleans reportsDirectory/.tmp at run boundaries).
+      // Manual `pnpm test:coverage` falls back to the local ./coverage.
+      reportsDirectory: process.env.VITEST_COVERAGE_DIR || './coverage',
       include: ['src/lib/**/*.ts', 'src/lib/**/*.svelte'],
       exclude: ['**/*.test.ts', '**/test-*.ts', '**/*.d.ts', '**/types.ts', '**/index.ts'],
     },
