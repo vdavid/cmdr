@@ -8,6 +8,7 @@ import sitemap from '@astrojs/sitemap'
 import { smartQuotesIntegration } from './src/plugins/smart-quotes.ts'
 import { rehypeDownloadDropdown } from './src/plugins/download-dropdown.ts'
 import { rehypeBlogMedia } from './src/plugins/blog-media.ts'
+import { stripEmptySrcsetIntegration } from './src/plugins/strip-empty-srcset.ts'
 import { blogEditorDevServer } from './src/dev/blog-editor/dev-server.mjs'
 
 // https://astro.build/config
@@ -24,7 +25,7 @@ export default defineConfig({
     // extra round trip on first paint.
     inlineStylesheets: 'always',
   },
-  integrations: [sitemap(), smartQuotesIntegration()],
+  integrations: [sitemap(), smartQuotesIntegration(), stripEmptySrcsetIntegration()],
   server: {
     port: parseInt(process.env.PORT || '4829', 10),
   },
