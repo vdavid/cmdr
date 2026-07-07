@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import type { ToastContent } from './toast-store.svelte'
-import { addToast, dismissToast, dismissTransientToasts, clearAllToasts, getToasts } from './toast-store.svelte'
+import {
+  addToast,
+  addToastForPane,
+  dismissToast,
+  dismissTransientToasts,
+  dismissTransientToastsForPane,
+  clearAllToasts,
+  getToasts,
+} from './toast-store.svelte'
 
 const dummyContent = (() => {}) as unknown as ToastContent
 
@@ -74,6 +82,82 @@ describe('dismissTransientToasts', () => {
     const toasts = getToasts()
     expect(toasts).toHaveLength(1)
     expect(toasts[0].dismissal).toBe('persistent')
+  })
+})
+
+describe('originPane', () => {
+  it('stores originPane on the toast when passed', () => {
+    addToast(dummyContent, { originPane: 'left' })
+    expect(getToasts()[0].originPane).toBe('left')
+  })
+
+  it('leaves originPane undefined when not passed (app-global)', () => {
+    addToast(dummyContent)
+    expect(getToasts()[0].originPane).toBeUndefined()
+  })
+
+  it('addToastForPane tags the toast with the given pane', () => {
+    addToastForPane('right', dummyContent)
+    expect(getToasts()[0].originPane).toBe('right')
+  })
+
+  it('keeps the FIRST toast originPane on same-id re-add (replaceExisting)', () => {
+    addToast(dummyContent, { id: 'dup', originPane: 'left' })
+    addToast(dummyContent, { id: 'dup', originPane: 'right' })
+    expect(getToasts()).toHaveLength(1)
+    expect(getToasts()[0].originPane).toBe('left')
+  })
+})
+
+describe('dismissTransientToastsForPane', () => {
+  it("dismisses the given pane's transient toasts but spares the other pane's", () => {
+    addToast(dummyContent, { id: 'left-t', originPane: 'left' })
+    addToast(dummyContent, { id: 'right-t', originPane: 'right' })
+
+    dismissTransientToastsForPane('left')
+
+    expect(getToasts().map((t) => t.id)).toEqual(['right-t'])
+  })
+
+  it('spares UNTAGGED (app-global) transient toasts', () => {
+    addToast(dummyContent, { id: 'global-t' })
+    addToast(dummyContent, { id: 'left-t', originPane: 'left' })
+
+    dismissTransientToastsForPane('left')
+
+    expect(getToasts().map((t) => t.id)).toEqual(['global-t'])
+  })
+
+  it('spares a PERSISTENT toast even when tagged with the dismissed pane', () => {
+    // A naive filter that forgets the `dismissal === 'transient'` guard fails this.
+    addToast(dummyContent, { id: 'left-persist', originPane: 'left', dismissal: 'persistent' })
+    addToast(dummyContent, { id: 'left-t', originPane: 'left' })
+
+    dismissTransientToastsForPane('left')
+
+    expect(getToasts().map((t) => t.id)).toEqual(['left-persist'])
+  })
+
+  it('global dismissTransientToasts (debug) still clears every transient regardless of origin', () => {
+    addToast(dummyContent, { id: 'left-t', originPane: 'left' })
+    addToast(dummyContent, { id: 'right-t', originPane: 'right' })
+    addToast(dummyContent, { id: 'global-t' })
+
+    dismissTransientToasts()
+
+    expect(getToasts()).toHaveLength(0)
+  })
+
+  it('leaves toastGroup eviction unaffected: origin does not change the cap behavior', () => {
+    for (const id of ['a1', 'a2', 'a3', 'a4', 'a5']) {
+      addToast(dummyContent, { id, toastGroup: 'A', originPane: 'left' })
+    }
+    addToast(dummyContent, { id: 'a6', toastGroup: 'A', originPane: 'right' })
+
+    const toasts = getToasts()
+    expect(toasts).toHaveLength(5)
+    expect(toasts.find((t) => t.id === 'a1')).toBeUndefined()
+    expect(toasts.find((t) => t.id === 'a6')).toBeDefined()
   })
 })
 

@@ -39,7 +39,12 @@ vi.mock('$lib/tauri-commands', () => ({
   clearClipboardCutState: clearClipboardCutStateSpy,
 }))
 
-vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
+vi.mock('$lib/ui/toast', () => ({
+  addToast: addToastSpy,
+  // Pane-tagged toasts (paste refusals, paste-as-file) funnel into the same spy,
+  // dropping the pane arg so the message/options assertions below cover both.
+  addToastForPane: (_pane: unknown, content: unknown, options?: unknown) => addToastSpy(content, options),
+}))
 
 // The no-file-URL fallback lives in its own module (unit-tested in
 // `paste-clipboard-as-file.test.ts`); here we only assert the DISPATCH into it.

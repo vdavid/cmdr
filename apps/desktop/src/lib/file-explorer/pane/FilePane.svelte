@@ -967,6 +967,7 @@
 
     const renameFlow = createRenameFlow({
         rename,
+        paneId,
         getListingId: () => listingId,
         getTotalCount: () => totalCount,
         getIncludeHidden: () => includeHidden,

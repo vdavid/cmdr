@@ -183,7 +183,8 @@ vi.mock('../navigation/path-resolution', () => ({
 // consumer here (`addToast`).
 vi.mock('$lib/ui/toast', () => ({
   addToast: vi.fn(),
-  dismissTransientToasts: vi.fn(),
+  addToastForPane: vi.fn(),
+  dismissTransientToastsForPane: vi.fn(),
 }))
 
 import DualPaneExplorer from './DualPaneExplorer.svelte'
@@ -281,8 +282,8 @@ describe('scenario 3: pinned-tab fork (L7)', () => {
   })
 
   it('at MAX_TABS_PER_PANE a pinned path-change navigates in-place and toasts "Tab limit reached"', async () => {
-    const { addToast } = await import('$lib/ui/toast')
-    const addToastSpy = vi.mocked(addToast)
+    const { addToastForPane } = await import('$lib/ui/toast')
+    const addToastSpy = vi.mocked(addToastForPane)
     addToastSpy.mockClear()
 
     await mountExplorer()
@@ -314,7 +315,7 @@ describe('scenario 3: pinned-tab fork (L7)', () => {
     expect(mgr.tabs.length).toBe(10)
     expect(getActiveTab(mgr).id).toBe(activeId)
     expect(getActiveTab(mgr).path).toBe('/Users/me/docs')
-    expect(addToastSpy).toHaveBeenCalledWith('Tab limit reached', { level: 'warn' })
+    expect(addToastSpy).toHaveBeenCalledWith('left', 'Tab limit reached', { level: 'warn' })
   })
 })
 

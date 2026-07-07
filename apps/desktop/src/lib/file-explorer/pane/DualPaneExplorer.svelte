@@ -102,7 +102,7 @@
     import { getSetting, onSettingChange } from '$lib/settings'
     import { setReopenClosedTabEnabled } from '$lib/tauri-commands'
     import DragOverlay from '../drag/DragOverlay.svelte'
-    import { addToast } from '$lib/ui/toast'
+    import { addToast, addToastForPane } from '$lib/ui/toast'
     import { tString } from '$lib/intl/messages.svelte'
 
     function saveTabsForPaneSide(pane: 'left' | 'right') {
@@ -405,7 +405,7 @@
                 persistence.persistLastUsedPath(event.record)
             }
         },
-        addToast: (message, opts) => addToast(message, opts),
+        addToast: (pane, message, opts) => addToastForPane(pane, message, opts),
         tokens: navTokens,
         correctionGen: navCorrectionGen,
     }

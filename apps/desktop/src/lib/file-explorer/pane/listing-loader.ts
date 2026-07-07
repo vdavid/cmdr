@@ -49,7 +49,7 @@ import { resolveValidPath } from '../navigation/path-resolution'
 import { renderListingError } from '$lib/errors/listing-error'
 import { evictPerPathIconsForDir } from '$lib/icon-cache'
 import { cancelClickToRename } from '../rename/rename-activation'
-import { dismissTransientToasts } from '$lib/ui/toast'
+import { dismissTransientToastsForPane } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { getSetting } from '$lib/settings'
 import type { DirectorySortMode } from '$lib/settings'
@@ -216,7 +216,10 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     // Cancel any active rename when navigating
     deps.renameCancel()
     cancelClickToRename()
-    dismissTransientToasts()
+    // Clear only THIS pane's stale transient feedback. App-global toasts (updater,
+    // transfer, downloads, indexing) and the other pane's toasts survive, so a
+    // background navigation (e.g. an SMB reconnect retry) can't wipe them.
+    dismissTransientToastsForPane(deps.paneId)
     // Directory change invalidates in-flight type-to-jump buffer (per plan § 6).
     deps.jumpClear()
 

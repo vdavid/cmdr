@@ -402,7 +402,7 @@ describe('pinned-tab fork (L7 — unified, both arms)', () => {
     expect(mgr.tabs.length).toBe(10) // no new tab
     expect(getActiveTab(mgr).id).toBe(activeId) // pinned tab stayed active
     expect(getActiveTab(mgr).path).toBe('/Users/me/docs')
-    expect(h.addToast).toHaveBeenCalledWith('Tab limit reached', { level: 'warn' })
+    expect(h.addToast).toHaveBeenCalledWith('left', 'Tab limit reached', { level: 'warn' })
   })
 })
 

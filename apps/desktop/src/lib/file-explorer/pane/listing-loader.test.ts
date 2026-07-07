@@ -78,7 +78,7 @@ vi.mock('../navigation/path-resolution', () => ({ resolveValidPath: h.resolveVal
 vi.mock('$lib/errors/listing-error', () => ({ renderListingError: (e: unknown) => ({ rendered: e }) }))
 vi.mock('$lib/icon-cache', () => ({ evictPerPathIconsForDir: vi.fn() }))
 vi.mock('../rename/rename-activation', () => ({ cancelClickToRename: vi.fn() }))
-vi.mock('$lib/ui/toast', () => ({ dismissTransientToasts: vi.fn() }))
+vi.mock('$lib/ui/toast', () => ({ dismissTransientToastsForPane: vi.fn() }))
 vi.mock('$lib/settings', () => ({ getSetting: h.getSetting }))
 vi.mock('$lib/benchmark', () => ({ resetEpoch: vi.fn(), logEvent: vi.fn(), logEventValue: vi.fn() }))
 vi.mock('$lib/logging/logger', () => ({

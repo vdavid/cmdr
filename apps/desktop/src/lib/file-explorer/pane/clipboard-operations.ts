@@ -7,7 +7,7 @@ import {
   readClipboardFiles,
   clearClipboardCutState,
 } from '$lib/tauri-commands'
-import { addToast } from '$lib/ui/toast'
+import { addToast, addToastForPane } from '$lib/ui/toast'
 import { resolveSnapshotPaths } from '$lib/search/snapshot-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
@@ -226,7 +226,9 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       hasParent: paneRef?.hasParentEntry() ?? false,
       showHiddenFiles: access.getShowHiddenFiles(),
       paneRef,
-      onNothingCreated: () => addToast(tString('fileExplorer.clipboard.empty'), { level: 'warn' }),
+      // Paste-as-file feedback describes the focused pane's directory, so tag it.
+      originPane: focused,
+      onNothingCreated: () => addToastForPane(focused, tString('fileExplorer.clipboard.empty'), { level: 'warn' }),
     })
   }
 
@@ -238,9 +240,10 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       // decides the refusal, not a `startsWith('mtp-')` string (A6). The
       // MTP-specific copy ("Use F5…") stays separate from the shared guard
       // because it points the user at the F5/F6 flow MTP paste lacks.
-      const volumeId = access.getPaneVolumeId(access.getFocusedPane())
+      const focused = access.getFocusedPane()
+      const volumeId = access.getPaneVolumeId(focused)
       if (isMtpClipboardRefusal(volumeId)) {
-        addToast(tString('fileExplorer.clipboard.useF5ToMtp'), { level: 'info' })
+        addToastForPane(focused, tString('fileExplorer.clipboard.useF5ToMtp'), { level: 'info' })
         return
       }
 
@@ -249,10 +252,10 @@ export function createClipboardOperations(access: PaneAccess, dialogs: DialogSta
       // read-only or archive destination gets the same alert instead of silently
       // queueing a transfer the backend would reject. The dest path drives the
       // archive kind-from-path check.
-      const destPath = access.getPanePath(access.getFocusedPane())
+      const destPath = access.getPanePath(focused)
       const guard = checkTransferDestinationGuard(volumeId, access.getVolumes(), destPath)
       if (!guard.ok) {
-        if (guard.toast) addToast(guard.toast.message, { level: guard.toast.level })
+        if (guard.toast) addToastForPane(focused, guard.toast.message, { level: guard.toast.level })
         else dialogs.showAlert(guard.alert.title, guard.alert.message)
         return
       }

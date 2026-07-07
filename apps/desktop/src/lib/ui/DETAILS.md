@@ -498,7 +498,28 @@ Pick the variant by what you want the user to do, not by button position:
 
 Dismissal: `transient` (4s timeout + nav-dismiss, default) or `persistent`.
 
-Call `dismissTransientToasts()` on pane navigation to clear stale feedback.
+### Origin pane and scoped dismissal
+
+A toast carries an optional `originPane?: 'left' | 'right'`. It marks a toast as describing THAT pane's directory or a
+pane-local action (rename validation/errors, navigate/paste refusals, paste-as-file feedback). Undefined means
+app-global: the toast belongs to no pane and no pane's navigation can dismiss it (updater, transfer, downloads,
+indexing, licensing, and — deliberately — the clipboard set/cut confirmations, which describe the SHARED clipboard the
+other pane consumes, and the SMB reconnect toast, whose own `loadDirectory` would otherwise wipe it instantly).
+
+Two dismissers, both skip persistent toasts:
+
+- `dismissTransientToastsForPane(pane)` removes only transient toasts with `originPane === pane`. This is what pane
+  navigation (`listing-loader.ts` `loadDirectory`) and per-keystroke rename validation (`rename-flow` `handleRenameInput`)
+  call. A background navigation in one pane (for example an SMB reconnect retry) therefore can no longer eat the other
+  pane's or the app's feedback — the incident this design fixes.
+- `dismissTransientToasts()` removes every transient regardless of origin. Only the debug panel calls it now.
+
+To make tagging impossible to forget, pane-owned code adds its toasts through `addToastForPane(pane, content, options)`
+(which injects `originPane`) rather than `addToast`. `FilePane` closes over its `paneId` to feed the pane-local
+controllers it owns (rename flow); DualPaneExplorer-level focused-pane actions (paste refusals, paste-as-file, the
+tab-limit refusal) resolve the focused pane at call time. Plain `addToast` stays for app-global toasts. `originPane` is
+independent of `toastGroup` (an eviction axis) — don't conflate them. On a same-id re-add, `replaceExisting` keeps the
+FIRST toast's `originPane` (consistent with its partial replace of other fields).
 
 `ToastOptions` extras for component-content toasts that have their own action buttons:
 

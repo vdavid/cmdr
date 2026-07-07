@@ -10,7 +10,7 @@ const { getSettingSpy, pasteClipboardAsFileSpy, findFileIndexSpy, onDirectoryDif
     pasteClipboardAsFileSpy: vi.fn<() => Promise<{ name: string; kind: 'text' | 'image' | 'pdf' } | null>>(),
     findFileIndexSpy: vi.fn(),
     onDirectoryDiffSpy: vi.fn(),
-    addToastSpy: vi.fn<(content: unknown, options?: unknown) => string>(),
+    addToastSpy: vi.fn<(pane: unknown, content: unknown, options?: unknown) => string>(),
     moveCursorSpy: vi.fn<() => Promise<void>>(),
   }))
 
@@ -20,7 +20,7 @@ vi.mock('$lib/tauri-commands', () => ({
   findFileIndex: findFileIndexSpy,
   onDirectoryDiff: onDirectoryDiffSpy,
 }))
-vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy }))
+vi.mock('$lib/ui/toast', () => ({ addToastForPane: addToastSpy }))
 vi.mock('$lib/file-operations/mkdir/new-folder-operations', () => ({ moveCursorToNewFolder: moveCursorSpy }))
 // The toast body is passed to addToast (mocked) as an opaque component; never rendered here.
 vi.mock('../PasteClipboardToastContent.svelte', () => ({ default: {} }))
@@ -38,6 +38,7 @@ function buildDeps(overrides: Record<string, unknown> = {}) {
     hasParent: false,
     showHiddenFiles: true,
     paneRef: { startRename: startRenameSpy } as unknown as FilePaneAPI,
+    originPane: 'left' as const,
     onNothingCreated: vi.fn(),
     ...overrides,
   }
@@ -80,7 +81,8 @@ describe('pasteClipboardContentAsFile — setting gating (three values)', () => 
       findFileIndexSpy,
     )
     expect(addToastSpy).toHaveBeenCalledTimes(1)
-    const [, opts] = addToastSpy.mock.calls[0]
+    const [pane, , opts] = addToastSpy.mock.calls[0]
+    expect(pane).toBe('left')
     expect(opts).toMatchObject({ level: 'info', timeoutMs: 7000, props: { filename: 'pasted.txt', kind: 'text' } })
     expect(startRenameSpy).not.toHaveBeenCalled()
     expect(deps.onNothingCreated).not.toHaveBeenCalled()

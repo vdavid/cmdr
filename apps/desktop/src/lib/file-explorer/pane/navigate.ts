@@ -247,8 +247,12 @@ export interface NavigateDeps {
   // --- side effects ---
   /** Persistence trigger fed to the single nav-state persistence subscriber (A5). */
   persist: (event: PersistEvent) => void
-  /** Warn toast (the `MAX_TABS_PER_PANE` "Tab limit reached" branch). */
-  addToast: (message: string, opts: { level: 'warn' }) => void
+  /**
+   * Warn toast (the `MAX_TABS_PER_PANE` "Tab limit reached" branch). Takes the
+   * forking pane so the refusal is tagged to it and clears on that pane's next
+   * navigation, not the other pane's.
+   */
+  addToast: (pane: 'left' | 'right', message: string, opts: { level: 'warn' }) => void
 
   // --- the per-pane transaction token map (caller-owned so it survives across calls) ---
   tokens: Map<'left' | 'right', number>
@@ -400,7 +404,7 @@ function tryPinnedVolumeFork(
   if (!activeTab.pinned || (target.volumeId === activeTab.volumeId && target.path === activeTab.path)) return false
 
   if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
-    deps.addToast(tString('fileExplorer.tabs.limitReached'), { level: 'warn' })
+    deps.addToast(pane, tString('fileExplorer.tabs.limitReached'), { level: 'warn' })
     return false // fall through to in-place
   }
 
@@ -734,7 +738,7 @@ function commitPinnedPathFork(deps: NavigateDeps, pane: 'left' | 'right', path: 
   if (!activeTab.pinned || path === activeTab.path) return false
 
   if (mgr.tabs.length >= MAX_TABS_PER_PANE) {
-    deps.addToast(tString('fileExplorer.tabs.limitReached'), { level: 'warn' })
+    deps.addToast(pane, tString('fileExplorer.tabs.limitReached'), { level: 'warn' })
     return false // fall through to in-place
   }
 

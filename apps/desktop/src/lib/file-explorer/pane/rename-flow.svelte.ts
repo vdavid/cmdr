@@ -5,7 +5,7 @@ import { cancelClickToRename } from '../rename/rename-activation'
 import { executeRenameSave, performRename, checkPermission, type RenameResult } from '../rename/rename-operations'
 import { getSetting } from '$lib/settings'
 import type { RenameConflictResolution } from '../rename/rename-operations'
-import { addToast, dismissTransientToasts } from '$lib/ui/toast'
+import { addToastForPane, dismissTransientToastsForPane, type ToastOriginPane } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { pathInsideArchive } from './volume-capabilities'
 import type { FileEntry } from '../types'
@@ -14,6 +14,8 @@ import type { createRenameState } from '../rename/rename-state.svelte'
 
 export interface RenameFlowDeps {
   rename: ReturnType<typeof createRenameState>
+  /** Owning pane, so rename feedback and per-keystroke dismissal stay pane-scoped. */
+  paneId: ToastOriginPane
   getListingId: () => string
   getTotalCount: () => number
   getIncludeHidden: () => boolean
@@ -27,6 +29,10 @@ export interface RenameFlowDeps {
 
 export function createRenameFlow(deps: RenameFlowDeps) {
   const { rename, onRequestFocus } = deps
+
+  // Rename feedback is pane-local: tag it so only this pane's navigation clears it.
+  const addToast = (content: Parameters<typeof addToastForPane>[1], options?: Parameters<typeof addToastForPane>[2]) =>
+    addToastForPane(deps.paneId, content, options)
 
   // Extension change dialog state
   let extensionDialogState = $state<{ oldExtension: string; newExtension: string } | null>(null)
@@ -253,7 +259,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
 
     handleRenameInput(value: string) {
       rename.setCurrentName(value)
-      dismissTransientToasts()
+      dismissTransientToastsForPane(deps.paneId)
       const extensionPolicy = effectiveExtensionPolicy()
       const result = validateFilename(
         value,

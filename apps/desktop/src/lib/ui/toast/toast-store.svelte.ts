@@ -2,6 +2,8 @@ import type { Component } from 'svelte'
 
 export type ToastLevel = 'default' | 'info' | 'success' | 'warn' | 'error'
 export type ToastDismissal = 'transient' | 'persistent'
+/** Which pane's feedback a toast describes. Undefined = app-global. */
+export type ToastOriginPane = 'left' | 'right'
 
 /** Content can be a plain string (rendered as text) or a Svelte component (mounted as-is). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- a toast holds any component; its prop types can't be enumerated here
@@ -77,6 +79,16 @@ export interface ToastOptions {
    * container's own max-width.
    */
   widthPx?: number
+  /**
+   * Which pane's directory or pane-local action this toast describes. When set,
+   * only that pane's navigation / rename-typing dismisses it
+   * ({@link dismissTransientToastsForPane}); the other pane and the app never do.
+   * Leave undefined for app-global toasts (updater, transfer, downloads, indexing,
+   * clipboard set/cut confirmations) so no pane's navigation can eat them.
+   * Pane-owned code should tag through {@link addToastForPane} rather than set this
+   * by hand. See ui/DETAILS.md § Toast system.
+   */
+  originPane?: ToastOriginPane
 }
 
 export interface Toast {
@@ -93,6 +105,7 @@ export interface Toast {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see ToastOptions.props
   props?: Record<string, any>
   widthPx?: number
+  originPane?: ToastOriginPane
 }
 
 const maxVisibleToasts = 5
@@ -211,8 +224,19 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
     maxInGroup,
     props: options?.props,
     widthPx: options?.widthPx,
+    originPane: options?.originPane,
   })
   return id
+}
+
+/**
+ * {@link addToast} bound to a pane, injecting `originPane`. Pane-owned code calls
+ * this (rather than passing `originPane` by hand) so a pane-local toast can't
+ * forget its tag and survive that pane's own navigation. FilePane closes over its
+ * `paneId` to expose it to the controllers it owns.
+ */
+export function addToastForPane(pane: ToastOriginPane, content: ToastContent, options?: ToastOptions): string {
+  return addToast(content, { ...options, originPane: pane })
 }
 
 export function dismissToast(id: string): void {
@@ -225,6 +249,21 @@ export function dismissToast(id: string): void {
 export function dismissTransientToasts(): void {
   for (let i = toasts.length - 1; i >= 0; i--) {
     if (toasts[i].dismissal === 'transient') {
+      removeAtIndex(i)
+    }
+  }
+}
+
+/**
+ * Dismiss only the transient toasts a given pane owns (`originPane === pane`).
+ * Untagged (app-global) transients and the other pane's transients survive, as
+ * do all persistent toasts. Called on that pane's navigation and rename typing so
+ * a background navigation in one pane can no longer wipe the other pane's or the
+ * app's feedback.
+ */
+export function dismissTransientToastsForPane(pane: ToastOriginPane): void {
+  for (let i = toasts.length - 1; i >= 0; i--) {
+    if (toasts[i].dismissal === 'transient' && toasts[i].originPane === pane) {
       removeAtIndex(i)
     }
   }

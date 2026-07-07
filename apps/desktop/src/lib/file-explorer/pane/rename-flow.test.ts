@@ -39,7 +39,7 @@ vi.mock('../rename/rename-operations', () => ({
   checkPermission: checkPermissionSpy,
 }))
 vi.mock('$lib/settings', () => ({ getSetting: getSettingSpy }))
-vi.mock('$lib/ui/toast', () => ({ addToast: addToastSpy, dismissTransientToasts: vi.fn() }))
+vi.mock('$lib/ui/toast', () => ({ addToastForPane: addToastSpy, dismissTransientToastsForPane: vi.fn() }))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: (k: string) => k }))
 vi.mock('./volume-capabilities', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
 
@@ -53,6 +53,7 @@ function buildFlow(getEntry: () => Entry | undefined = () => PASTED) {
   const rename = createRenameState()
   const flow = createRenameFlow({
     rename,
+    paneId: 'left',
     getListingId: () => 'lst-1',
     getTotalCount: () => 0, // 0 → loadSiblingNames returns [] without hitting getFileRange
     getIncludeHidden: () => false,

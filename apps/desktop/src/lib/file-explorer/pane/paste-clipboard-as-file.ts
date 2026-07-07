@@ -9,7 +9,7 @@
  */
 import { findFileIndex, onDirectoryDiff, pasteClipboardAsFile } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings'
-import { addToast } from '$lib/ui/toast'
+import { addToastForPane, type ToastOriginPane } from '$lib/ui/toast'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
 import PasteClipboardToastContent from '../PasteClipboardToastContent.svelte'
 import type { FilePaneAPI } from './types'
@@ -30,6 +30,8 @@ export interface PasteClipboardAsFileDeps {
   showHiddenFiles: boolean
   /** The focused pane, for cursor-land + optional rename. */
   paneRef: FilePaneAPI | undefined
+  /** The focused pane side, so the paste-as-file toast is tagged to it. */
+  originPane: ToastOriginPane
   /**
    * Replicates today's no-file paste feedback (the "No files on the clipboard"
    * warn toast). Called when no file is created: setting = `doNothing`, or the
@@ -72,7 +74,7 @@ export async function pasteClipboardContentAsFile(deps: PasteClipboardAsFileDeps
     findFileIndex,
   )
 
-  addToast(PasteClipboardToastContent, {
+  addToastForPane(deps.originPane, PasteClipboardToastContent, {
     level: 'info',
     timeoutMs: PASTE_TOAST_TIMEOUT_MS,
     props: { filename: created.name, kind: created.kind },
