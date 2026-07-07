@@ -55,12 +55,14 @@ live content watch is established ([`watch/DETAILS.md`](watch/DETAILS.md)), `fal
 `false`: that flag drives the generic per-listing FSEvents dir-watcher, which can't watch an archive-inner path — the
 archive self-watches its backing `.zip` instead.
 
-**The O(n²) bulk-extract caveat (deferred one-pass, a documented fast-follow).** The copy engine reads a directory
-extraction entry-by-entry via `open_read_stream`. For a compressed tar / solid 7z, each call re-decodes the prefix, so
-extracting a whole subtree is O(n²) in the worst case. `extraction_is_sequential` DECLARES the class (see
-[`read/DETAILS.md`](read/DETAILS.md)) for a future copy-planner one-pass strategy, but the planner does NOT yet consult
-it. This is a performance limitation, never a correctness/safety one: browse, preview, single-file and small extractions
-are fast; a plain `.tar` and zip are unaffected (random-access).
+**Bulk extract is one-pass for sequential archives.** Extracting a whole subtree from a compressed tar / solid 7z would
+be O(n²) if the copy engine read it entry-by-entry (each `open_read_stream` re-decodes the prefix). It doesn't:
+`Volume::extraction_is_sequential` declares the class, and the copy planner routes a sequential directory source through
+a one-pass extractor (`Volume::open_sequential_extract` → `ArchiveIndex::open_subtree_extract`) that decodes the stream
+ONCE. The extractor mechanism lives in [`read/DETAILS.md`](read/DETAILS.md) § "One-pass subtree extract"; the copy-engine
+dispatch (create dirs from the tree, then a single decode pass for the files) lives in
+[`write_operations/transfer/DETAILS.md`](../../../write_operations/transfer/DETAILS.md) § "One-pass sequential extract".
+A plain `.tar` and zip are random-access and keep the per-entry path unchanged.
 
 ### Decision: `get_space_info` delegates to the parent volume
 
@@ -234,4 +236,3 @@ in `/docs/specs/later/archive-browsing-polish.md`):
   it needs its own extract-and-persist-until-startup-reaper lifecycle. Deferred deliberately; the viewer interim stands.
 - **NON-LOCAL sources INTO a zip** — an MTP/SMB source copied into an archive (`route_archive_copy_into` still requires a
   `local_path()` source; the archive itself may be remote).
-- **The one-pass bulk extractor** for sequential archives (the O(n²) caveat above).

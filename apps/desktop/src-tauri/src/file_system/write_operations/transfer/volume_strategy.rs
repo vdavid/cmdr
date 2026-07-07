@@ -362,7 +362,7 @@ pub(super) struct CreatedPaths {
 }
 
 impl CreatedPaths {
-    fn record_file(&self, path: PathBuf) {
+    pub(super) fn record_file(&self, path: PathBuf) {
         self.files.lock_ignore_poison().push(path);
     }
 
@@ -406,6 +406,25 @@ pub(super) async fn copy_single_path(
     }
 
     if source_is_directory {
+        // A sequential source (compressed tar / solid 7z) would re-decode the
+        // whole prefix on every per-file `open_read_stream`, making a subtree
+        // extract O(n²). Route it to the one-pass extractor instead, which decodes
+        // the stream once. Random-access sources (a folder on any real FS, a plain
+        // `.tar`, a zip) keep the per-entry walk below — zero regression.
+        if source_volume.extraction_is_sequential(source_path) {
+            return Box::pin(super::volume_sequential_extract::extract_sequential_subtree(
+                source_volume,
+                source_path,
+                dest_volume,
+                dest_path,
+                state,
+                created,
+                on_file_progress,
+                on_file_complete,
+                merge,
+            ))
+            .await;
+        }
         Box::pin(copy_directory_streaming(
             source_volume,
             source_path,
@@ -416,6 +435,7 @@ pub(super) async fn copy_single_path(
             on_file_progress,
             on_file_complete,
             merge,
+            None,
         ))
         .await
     } else {
@@ -523,7 +543,7 @@ async fn stream_pipe_file(
 /// `dest_volume` isn't local-FS-backed (MTP, SMB, in-memory): those paths
 /// would never trigger the watcher anyway, and synthesizing a non-local
 /// path into the ignore set would just churn the map for no benefit.
-fn note_pending_for_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: &Path) {
+pub(super) fn note_pending_for_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: &Path) {
     let Some(root) = dest_volume.local_path() else {
         return;
     };
@@ -575,9 +595,9 @@ fn note_pending_for_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: &Path) 
 /// volume copy / cross-volume move pipelines pass so deep clashes honor policy.
 #[allow(
     clippy::too_many_arguments,
-    reason = "Mirrors copy_single_path's argument list plus the rollback ledger and merge context; bundling into a struct adds ceremony without cleaning anything up."
+    reason = "Mirrors copy_single_path's argument list plus the rollback ledger, merge context, and the sequential-extract plan sink; bundling into a struct adds ceremony without cleaning anything up."
 )]
-async fn copy_directory_streaming(
+pub(super) async fn copy_directory_streaming(
     source_volume: &Arc<dyn Volume>,
     source_path: &Path,
     dest_volume: &Arc<dyn Volume>,
@@ -587,6 +607,12 @@ async fn copy_directory_streaming(
     on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     on_file_complete: &(dyn Fn(u64) + Sync),
     merge: Option<&MergeCtx<'_>>,
+    // `Some` ⇒ PLAN MODE for the one-pass sequential extractor: create the
+    // destination directory structure and resolve every file's conflict as usual,
+    // but instead of streaming each file's bytes, record its resolved destination
+    // in the plan and leave the byte write to the caller's single decode pass.
+    // `None` ⇒ normal streaming copy.
+    plan: Option<&super::volume_sequential_extract::ExtractPlan>,
 ) -> Result<u64, VolumeError> {
     note_pending_for_local_dest(dest_volume, dest_path);
 
@@ -675,6 +701,7 @@ async fn copy_directory_streaming(
                     on_file_progress,
                     on_file_complete,
                     merge,
+                    plan,
                 ))
                 .await?;
                 continue;
@@ -712,8 +739,25 @@ async fn copy_directory_streaming(
                 on_file_progress,
                 on_file_complete,
                 merge,
+                plan,
             ))
             .await?;
+            continue;
+        }
+
+        // PLAN MODE (one-pass sequential extract): the destination + conflict are
+        // resolved; record the write and let the caller's single decode pass
+        // stream the bytes. Don't stream, count, record, or emit progress here —
+        // the data pass owns all of that. The directory structure and conflict
+        // prompts still happened above, exactly as a streaming copy would.
+        if let Some(plan) = plan {
+            plan.record(
+                child_source,
+                super::volume_sequential_extract::PlannedWrite {
+                    dest_path: write_dest,
+                    replace_after_write,
+                },
+            );
             continue;
         }
 
@@ -836,6 +880,9 @@ mod copy_tests;
 #[cfg(test)]
 #[path = "volume_strategy_pause_tests.rs"]
 mod pause_tests;
+#[cfg(test)]
+#[path = "volume_strategy_sequential_tests.rs"]
+mod sequential_tests;
 #[cfg(test)]
 #[path = "volume_strategy_stale_handle_tests.rs"]
 mod stale_handle_tests;

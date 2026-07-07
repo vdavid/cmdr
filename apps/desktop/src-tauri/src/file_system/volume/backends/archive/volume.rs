@@ -41,11 +41,12 @@ use tokio::task::spawn_blocking;
 
 use super::{
     ArchiveByteSource, ArchiveEntryReader, ArchiveError, ArchiveFormat, ArchiveIndex, ArchiveIndexCache, ArchiveNode,
-    DEFAULT_TAIL_CACHE_LEN, LocalFileSource, TailCachedSource,
+    DEFAULT_TAIL_CACHE_LEN, LocalFileSource, SubtreeExtractReader, TailCachedSource,
 };
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::{
-    CopyScanResult, LaneKey, ListingProgress, SpaceInfo, Volume, VolumeError, VolumeReadStream,
+    CopyScanResult, ExtractedFile, LaneKey, ListingProgress, SequentialExtract, SpaceInfo, Volume, VolumeError,
+    VolumeReadStream,
 };
 use crate::ignore_poison::IgnorePoison;
 
@@ -459,6 +460,24 @@ impl Volume for ArchiveVolume {
         self.open_stream(path, offset)
     }
 
+    /// Opens the one-pass subtree extractor for a compressed tar / solid 7z, so a
+    /// bulk extract decodes the stream ONCE instead of once per file. Parses the
+    /// index (cached) and opens a byte source, then hands both to
+    /// [`ArchiveIndex::open_subtree_extract`]. The returned
+    /// [`ArchiveSequentialExtract`] yields the subtree's files in archive order.
+    fn open_sequential_extract<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn SequentialExtract>, VolumeError>> + Send + 'a>> {
+        let inner = self.inner_path(path);
+        let archive_path = self.archive_path.clone();
+        Box::pin(async move {
+            let (index, source) = self.load().await?;
+            let reader = index.open_subtree_extract(&inner, source);
+            Ok(Box::new(ArchiveSequentialExtract::new(reader, archive_path)) as Box<dyn SequentialExtract>)
+        })
+    }
+
     // ---- Capability flags: set explicitly, don't inherit defaults -----------
 
     /// `None`: an archive isn't a local FS path. Inner entries aren't reachable
@@ -538,6 +557,95 @@ impl VolumeReadStream for ArchiveVolumeReadStream {
     /// transfer's progress stays anchored to the whole file, per the trait.
     fn total_size(&self) -> u64 {
         self.reader.total_size()
+    }
+
+    fn bytes_read(&self) -> u64 {
+        self.delivered
+    }
+}
+
+/// The [`SequentialExtract`] over an archive subtree: the [`Volume`] adapter for
+/// the reading core's one-pass [`SubtreeExtractReader`]. Maps the core's
+/// [`ArchiveError`] to [`VolumeError`] and each core member's inner path back to a
+/// full source path (`archive_path/inner`, matching what `list_directory`
+/// reports, so the copy planner's per-file lookup keys line up).
+///
+/// The core reader is shared behind an `Arc<tokio::sync::Mutex<…>>` so
+/// [`current_stream`](SequentialExtract::current_stream) can hand out an OWNED
+/// [`VolumeReadStream`] (what `write_from_stream` takes) that still pulls from the
+/// one decoder. Usage is strictly serial (advance, then drain the member's
+/// stream, then advance), so the mutex is never contended — it's there for
+/// ownership and `Send`, not concurrency.
+struct ArchiveSequentialExtract {
+    reader: Arc<tokio::sync::Mutex<SubtreeExtractReader>>,
+    archive_path: PathBuf,
+    /// Uncompressed size of the member the last `next_file` returned, so
+    /// `current_stream` can report `total_size()` without touching the reader.
+    current_size: u64,
+}
+
+impl ArchiveSequentialExtract {
+    fn new(reader: SubtreeExtractReader, archive_path: PathBuf) -> Self {
+        Self {
+            reader: Arc::new(tokio::sync::Mutex::new(reader)),
+            archive_path,
+            current_size: 0,
+        }
+    }
+}
+
+impl SequentialExtract for ArchiveSequentialExtract {
+    fn next_file(&mut self) -> Pin<Box<dyn Future<Output = Result<Option<ExtractedFile>, VolumeError>> + Send + '_>> {
+        Box::pin(async move {
+            let mut reader = self.reader.lock().await;
+            match reader.next_member().await.map_err(to_volume_error)? {
+                Some(member) => {
+                    self.current_size = member.size;
+                    Ok(Some(ExtractedFile {
+                        source_path: self.archive_path.join(&member.inner_path),
+                        size: member.size,
+                    }))
+                }
+                None => Ok(None),
+            }
+        })
+    }
+
+    fn current_stream(&self) -> Box<dyn VolumeReadStream> {
+        Box::new(MemberStream {
+            reader: Arc::clone(&self.reader),
+            total: self.current_size,
+            delivered: 0,
+        })
+    }
+}
+
+/// A [`VolumeReadStream`] over ONE member of the shared one-pass extractor. Pulls
+/// the current member's chunks from the shared core reader until it ends (the
+/// core's `next_chunk` returns `None` at the member boundary), then reports EOF.
+struct MemberStream {
+    reader: Arc<tokio::sync::Mutex<SubtreeExtractReader>>,
+    total: u64,
+    delivered: u64,
+}
+
+impl VolumeReadStream for MemberStream {
+    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
+        Box::pin(async move {
+            let mut reader = self.reader.lock().await;
+            match reader.next_chunk().await {
+                Ok(Some(chunk)) => {
+                    self.delivered += chunk.len() as u64;
+                    Some(Ok(chunk))
+                }
+                Ok(None) => None,
+                Err(err) => Some(Err(to_volume_error(err))),
+            }
+        })
+    }
+
+    fn total_size(&self) -> u64 {
+        self.total
     }
 
     fn bytes_read(&self) -> u64 {

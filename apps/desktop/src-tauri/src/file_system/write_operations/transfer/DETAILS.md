@@ -23,6 +23,7 @@ Frontend counterpart: [`apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`
 - **`volume_preflight.rs`**: Scan helpers for volume copy and move. `scan_volume_sources` (cross-volume copy + cross-volume move) returns a `VolumePreflight { total_files, total_bytes, source_hints }`, reusing a cached `TransferDialog` preview when available, else `volume.scan_for_copy_batch_with_progress` (MTP group-by-parent, SMB pipelined-stat), emitting `Scanning`-phase tallies. `top_level_move_hints` (SAME-volume move) is the deliberate non-walking variant: it collects ONLY top-level `is_directory`/size hints (a same-volume move is a rename — zero bytes — so a deep walk is pure waste), via a cached preview or one `list_directory` per distinct parent. O(distinct parents), never O(subtree).
 - **`volume_rename_merge.rs`**: Same-volume rename-merge: `rename_merge_directory` recursively merges a source folder into an existing same-named dest folder via server-side `rename`s (whole subtrees ride along on one rename; only dir-vs-dir levels recurse). File / cross-type clashes route through `resolve_volume_conflict` (folders never prompt). Handles late-detected (case-insensitive / TOCTOU) `AlreadyExists` via a per-level `name → resolution` map. Inside-out empty-only source-dir cleanup.
 - **`volume_conflict.rs`, `volume_strategy.rs`**: Conflict resolution (Stop/Skip/Overwrite/Rename/OverwriteSmaller/OverwriteOlder) and copy strategy selection for volume operations. `volume_conflict.rs` mirrors the local-FS `reduce_conditional_resolution` from `../conflict.rs` with its own `reduce_volume_conditional_resolution` (async, uses size hints + `get_metadata` for mtime).
+- **`volume_sequential_extract.rs`**: The one-pass bulk-extract path for a SEQUENTIAL archive source (compressed tar / solid 7z). `copy_single_path` routes a directory source whose `Volume::extraction_is_sequential` is `true` to `extract_sequential_subtree` here; every other directory source keeps `volume_strategy.rs`'s per-entry walk. Reuses `copy_directory_streaming` in plan mode (dirs + conflicts, no bytes) then a single decode pass for the files. See § "One-pass sequential extract".
 - **`copy/copy_tests.rs`**: Unit tests for `copy_files_with_progress_inner` (local-FS copy via `CollectorEventSink` + tempdir). Pins per-file milestone emits and progress-event shape independently of the integration suite.
 - **`copy_integration_test.rs`**: Copy operation integration tests (permissions, symlinks, xattrs, edge cases).
 - **`move_integration_test.rs`**: Same-fs and cross-fs move integration tests.
@@ -34,7 +35,7 @@ Frontend counterpart: [`apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`
 - **`volume_copy_rollback_tests.rs`**: Rollback / dest-inside-source / cancel-mid-stream tests, with the `RollbackAfterFirstFileSink`, `TripIntentOnFirstByteSink`, and `TripIntentAtFilesDoneSink` doubles.
 - **`volume_copy_bench.rs`**: Network-gated SMB→local benchmark (`phase4_bench_baseline_smb_to_local_100_tiny_files`). `#[ignore]`d; needs a QNAP NAS and `SMB2_TEST_NAS_PASSWORD`, so it never runs in CI.
 - **`volume_move_tests.rs`**: Volume move tests (cross-volume and same-volume rename).
-- **`volume_strategy_*_tests.rs`**: Unit tests for `volume_strategy.rs`, split by concern — `volume_strategy_copy_tests.rs` (`copy_single_path` routing + single-file streaming with progress/cancel, empty/nonexistent sources, recursive walk), `volume_strategy_pause_tests.rs` (mid-file pause/resume, MTP bounded-window park-in-place), `volume_strategy_yield_tests.rs` (foreground auto-yield, debounce, min-progress floor), `volume_strategy_stale_handle_tests.rs` (stale-destination-handle retry). Shared doubles and tuning fixtures live in `volume_strategy_test_support.rs`. Shallow engine tests — the full merge + policy pipeline is pinned by `volume_merge_tests.rs`.
+- **`volume_strategy_*_tests.rs`**: Unit tests for `volume_strategy.rs`, split by concern — `volume_strategy_copy_tests.rs` (`copy_single_path` routing + single-file streaming with progress/cancel, empty/nonexistent sources, recursive walk), `volume_strategy_pause_tests.rs` (mid-file pause/resume, MTP bounded-window park-in-place), `volume_strategy_yield_tests.rs` (foreground auto-yield, debounce, min-progress floor), `volume_strategy_stale_handle_tests.rs` (stale-destination-handle retry), `volume_strategy_sequential_tests.rs` (the one-pass sequential-extract path: nested-subtree correctness against a real `.tar.gz` `ArchiveVolume` source, the random-vs-sequential routing gate, empty dirs + symlinks + out-of-order entries, cancel-between-members). Shared doubles and tuning fixtures live in `volume_strategy_test_support.rs`. Shallow engine tests — the full merge + policy pipeline is pinned by `volume_merge_tests.rs`.
 - **`volume_rename_merge_tests.rs`**: Same-volume rename-merge tests (driven through `move_within_same_volume_with_progress`): zero-folder-prompt merges, the file-policy matrix inside a merge, source-dir cleanup (all-moved / skip / error / all-Rename), cancel-mid-merge, dest-inside-source, case-fold prompts-once / no-double-prompt, symlinks, and the perf pin (a counting volume asserts no subtree walk + O(top-level) stats). Uses `LocalPosixVolume` over a tempdir for real subtree-rename + empty-only-delete semantics (`InMemoryVolume` models neither), plus a `CaseInsensitiveVolume` double for the case-fold cases.
 
 ## Copy + move semantics
@@ -124,6 +125,41 @@ The same ledger must flow out of the **interrupted-mid-stream** path, not just t
 **`write-error` carries a typed, word-free `WriteOperationError` for both move and copy.** Both `move_between_volumes` and `copy_volumes_with_progress` funnel every `?`-propagated failure through the shared `WriteFailure` struct (in `volume_copy.rs`). `WriteFailure::from_volume(path, e)` maps an originating `VolumeError + path` to a `WriteOperationError` (one spot to map, via `map_volume_error`); `WriteFailure::synthetic(write_err)` wraps an already-typed error (cancellation, validation, synthetic IoError). The shared `write_error_event_from(...)` helper builds the `WriteErrorEvent` via `WriteErrorEvent::new` from any `WriteFailure`. The FE renders all copy and classification (including provider-specific suggestions) from the typed `error` via `transfer-error-messages.ts`; no prose crosses IPC. Both move and copy paths land at the same FE quality.
 
 **Volume copy/move must skip `write-error` emit on `Cancelled`.** `copy_volumes_with_progress` / `move_*` inner handlers already emit `write-cancelled` before returning `Err(Cancelled)`, so the outer `copy_between_volumes` / `move_between_volumes` wrapper must match on `WriteOperationError::Cancelled { .. }` and NOT also emit `write-error`, otherwise the frontend logs a user-initiated cancel as an error. This mirrors `../mod.rs`'s `Ok(Err(Cancelled)) ⇒ no-op` branch for the generic `start_write_operation` path; the volume paths don't go through `../mod.rs`, so they carry their own version of the check. Related: cancellation must propagate as `VolumeError::Cancelled(msg)`, not `VolumeError::IoError { message: "Operation cancelled" }`; the `matches!(WriteOperationError::Cancelled)` check at the outer layer relies on the typed variant. `SmbVolume`'s streaming reader and `map_smb_error`'s `ErrorKind::Cancelled` arm both return `VolumeError::Cancelled` to stay consistent.
+
+## One-pass sequential extract (compressed tar / solid 7z sources)
+
+A directory source on a SEQUENTIAL archive (a compressed tar or solid 7z) can't be read entry-by-entry without
+re-decoding the prefix in front of each file, so the normal per-entry walk would extract a subtree in O(n²). The copy
+engine routes it to a one-pass path instead. `copy_single_path`'s directory branch checks
+`source_volume.extraction_is_sequential(source_path)`: when `true` it calls `extract_sequential_subtree`; otherwise
+(any real FS, a plain `.tar`, a zip) it keeps `copy_directory_streaming` unchanged — **zero regression for random-access
+sources**.
+
+`extract_sequential_subtree` runs two phases:
+
+1. **Plan** — it calls `copy_directory_streaming` in PLAN MODE (`plan: Some(&ExtractPlan)`). Plan mode reuses that
+   function's entire merge machinery — it creates the whole destination directory structure (walking the tree, so empty
+   and synthetic dirs land too), resolves every file's conflict (policy, Stop-prompt, apply-to-all latch, type
+   mismatches, safe-replace, Rename reservation), and records newly-created dirs in `created` for rollback — but instead
+   of streaming each file's bytes it records the resolved destination (`PlannedWrite { dest_path, replace_after_write }`)
+   in the plan, keyed by the file's full source path, and streams nothing.
+2. **Data** — it opens `source_volume.open_sequential_extract(source_path)` (the archive's one-pass extractor, decode
+   ONCE; mechanism in [archive `read/DETAILS.md`](../../volume/backends/archive/read/DETAILS.md) § "One-pass subtree
+   extract") and walks the files in ARCHIVE order. Each file the plan kept is streamed through the destination's
+   `write_from_stream` (same safe-overwrite temp+rename, downloads-watcher registration, fsync, and
+   `finalize_safe_replace` safe-replace as `stream_pipe_file`), recorded in `created`, and reported via `on_file_complete`
+   / `on_file_progress`. A file the plan SKIPPED (conflict resolution said skip) is drained and dropped.
+
+Why split plan from data: the merge decisions are naturally TREE-ordered (list each dest level once) while the one-pass
+decode is ARCHIVE-ordered; precomputing the plan lets the data pass be a simple archive-order lookup-and-write, and reuses
+the data-safety-critical merge/conflict/rollback code in `copy_directory_streaming` verbatim rather than reimplementing
+it. **Progress** is honest: the plan pass touches no bytes (a fast tree walk over the cached index), and the data pass
+emits real per-file byte progress as each member lands. **Cancellation** is checked between members in the data pass (and
+between entries in the plan pass, by `copy_directory_streaming`'s existing check), so a cancel stops cleanly between files
+— the in-flight partial is cleaned by `write_from_stream`'s abort, exactly as on the per-entry path. Archive sources
+report `max_concurrent_ops() == 1`, so this always runs on the serial copy path. Pinned by
+`volume_strategy_sequential_tests.rs` (nested-subtree correctness, the random-vs-sequential routing gate, empty
+dirs + symlinks + out-of-order entries, and cancel-between-members).
 
 ## Pause reaches between chunks (cross-volume streaming path)
 

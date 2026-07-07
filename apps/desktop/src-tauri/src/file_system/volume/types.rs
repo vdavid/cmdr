@@ -9,6 +9,18 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+/// One file the one-pass sequential extractor yields (see
+/// [`Volume::open_sequential_extract`](super::Volume::open_sequential_extract)):
+/// its full source path (in the source volume's namespace, matching what
+/// `list_directory` reports) and uncompressed size. Directories are not yielded —
+/// the copy engine creates the destination folders from the tree, and reserves the
+/// single decode pass for byte-carrying files.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExtractedFile {
+    pub source_path: PathBuf,
+    pub size: u64,
+}
+
 /// SMB connection state for the frontend indicator and the reconnect UI.
 ///
 /// `Direct` means Cmdr's smb2 session is active (fast path).

@@ -19,9 +19,10 @@ use std::sync::Arc;
 use sevenz_rust2::{ArchiveReader, Password};
 
 use super::error::ArchiveError;
+use super::extract::{SubtreeMember, SubtreeTx};
 use super::index::{MAX_TREE_NODES, RawEntry};
 use super::name::{SanitizedName, sanitize_entry_name};
-use super::reader::{ArchiveEntryReader, pump_read};
+use super::reader::{ArchiveEntryReader, pump_chunks, pump_read};
 use super::source::{ArchiveByteSource, SourceReader};
 
 /// The 7z entry store: the set of readable entry paths. A read re-opens the
@@ -135,6 +136,75 @@ fn stream_entry(source: Arc<dyn ArchiveByteSource>, target: &str, tx: &super::re
 /// Whether `name`'s sanitized inner path equals `target`.
 fn entry_matches(name: &str, target: &str) -> bool {
     matches!(sanitize_entry_name(name), SanitizedName::Accepted(p) if p == target)
+}
+
+/// One-pass subtree extract: decode the 7z stream ONCE and stream every file in
+/// `wanted` (sanitized inner path → uncompressed size) in archive order. 7z is
+/// natively single-pass via `for_each_entries`; a member not in `wanted` is still
+/// read to a sink so the SOLID-block decoder advances to the next member (skipping
+/// without reading desyncs it). Stops once every wanted file is delivered, so a
+/// subtree near the front doesn't decode trailing blocks.
+pub(super) fn stream_subtree(source: Arc<dyn ArchiveByteSource>, mut wanted: HashMap<String, u64>, tx: &SubtreeTx) {
+    if wanted.is_empty() {
+        return;
+    }
+    let reader = SourceReader::new(source);
+    let mut archive = match ArchiveReader::new(reader, Password::empty()) {
+        Ok(a) => a,
+        Err(err) => return tx.send_err(map_sevenz_err(err)),
+    };
+
+    // A send-side failure (consumer dropped) or a byte-source read error caught
+    // inside the closure; carried out so the outer match doesn't re-report the
+    // `for_each_entries` `Ok(false)` early-stop as an error.
+    let mut caught: Option<ArchiveError> = None;
+    let mut aborted = false;
+    let result = archive.for_each_entries(
+        &mut |entry: &sevenz_rust2::ArchiveEntry, entry_reader: &mut dyn std::io::Read| {
+            let sanitized = match sanitize_entry_name(entry.name()) {
+                SanitizedName::Accepted(path) => path,
+                // Quarantined/unnameable entry: consume so the solid decoder advances.
+                _ => {
+                    std::io::copy(entry_reader, &mut std::io::sink())?;
+                    return Ok(true);
+                }
+            };
+            match wanted.remove(&sanitized) {
+                Some(size) => {
+                    if !tx.send_member(SubtreeMember {
+                        inner_path: sanitized,
+                        size,
+                    }) {
+                        aborted = true;
+                        return Ok(false); // consumer gone: stop decoding
+                    }
+                    // The 7z entry reader yields exactly the entry's bytes (no limit).
+                    if let Err(err) = pump_chunks(entry_reader, None, |chunk| tx.send_chunk(chunk)) {
+                        caught = Some(err);
+                        return Ok(false);
+                    }
+                    // Early stop once the whole subtree is delivered.
+                    Ok(!wanted.is_empty())
+                }
+                None => {
+                    // Not wanted, but a solid block shares one stream, so it must be
+                    // consumed to advance the decoder to the next member.
+                    std::io::copy(entry_reader, &mut std::io::sink())?;
+                    Ok(true)
+                }
+            }
+        },
+    );
+
+    if let Some(err) = caught {
+        return tx.send_err(err);
+    }
+    if aborted {
+        return;
+    }
+    if let Err(err) = result {
+        tx.send_err(map_sevenz_err(err));
+    }
 }
 
 /// Maps a `sevenz-rust2` error to a typed [`ArchiveError`]. Encryption without

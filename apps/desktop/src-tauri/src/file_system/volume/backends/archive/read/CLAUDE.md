@@ -15,7 +15,8 @@ the `Volume` trait, capability flags, and any write path.
 - `format.rs`: `ArchiveFormat`, `format_for_name` (detection SoT), `is_sequential`, `open_tar_decoder` (the codecs).
 - `zip.rs` / `tar.rs` / `sevenz.rs`: per-format parse + producer + `EntryStore` arm.
 - `source.rs`: the `ArchiveByteSource` seam + `LocalFileSource` / `BytesSource` / `TailCachedSource`.
-- `reader.rs`: `ArchiveEntryReader` — chunked, off-executor decompression.
+- `reader.rs`: `ArchiveEntryReader` — chunked, off-executor decompression. `extract.rs`: `SubtreeExtractReader` — the
+  one-pass subtree extractor for sequential formats (compressed tar, 7z), decode-once bulk extract.
 - `name.rs`: `sanitize_entry_name` — the Zip Slip defense. `cache.rs`: `ArchiveIndexCache`. `error.rs`: `ArchiveError`.
 
 Depth, rationale, and the full test list: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,

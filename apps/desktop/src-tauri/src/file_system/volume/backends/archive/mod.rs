@@ -50,8 +50,8 @@ pub use boundary::{
 };
 pub use read::{
     ArchiveByteSource, ArchiveEntryReader, ArchiveError, ArchiveFormat, ArchiveIndex, ArchiveIndexCache, ArchiveNode,
-    BytesSource, DEFAULT_TAIL_CACHE_LEN, LocalFileSource, QuarantineReason, SanitizedName, TailCachedSource, TarCodec,
-    format_for_name, format_for_path, sanitize_entry_name,
+    BytesSource, DEFAULT_TAIL_CACHE_LEN, LocalFileSource, QuarantineReason, SanitizedName, SubtreeExtractReader,
+    SubtreeMember, TailCachedSource, TarCodec, format_for_name, format_for_path, sanitize_entry_name,
 };
 pub use volume::ArchiveVolume;
 pub use watch::active_watch_count;

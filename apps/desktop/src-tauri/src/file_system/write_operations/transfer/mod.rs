@@ -23,6 +23,7 @@ pub(super) mod volume_copy;
 pub(super) mod volume_move;
 pub(super) mod volume_preflight;
 pub(super) mod volume_rename_merge;
+pub(super) mod volume_sequential_extract;
 pub(super) mod volume_strategy;
 
 // Re-export for the nested integration tests below (and to mirror the

@@ -292,6 +292,52 @@ impl ArchiveIndex {
         let node = self.nodes.get(normalize_lookup(inner_path))?;
         (!node.is_dir).then_some(node.size.unwrap_or(0))
     }
+
+    /// Opens a ONE-PASS extractor over the file subtree rooted at `inner_path`,
+    /// decoding the archive stream a single time (see [`super::extract`]). Yields
+    /// each FILE member (files + symlinks) under the root in ARCHIVE order; the
+    /// directory structure is NOT yielded — the caller creates it from the tree.
+    ///
+    /// The set of wanted files (and their tree sizes, so they match the copy
+    /// scan totals) is computed here from the parsed tree, then handed to the
+    /// format's producer. Meant for SEQUENTIAL formats (compressed tar, 7z); a
+    /// random-access store yields an empty stream (the planner never routes those
+    /// here).
+    pub fn open_subtree_extract(
+        &self,
+        inner_path: &str,
+        source: Arc<dyn ArchiveByteSource>,
+    ) -> super::extract::SubtreeExtractReader {
+        let root = normalize_lookup(inner_path);
+        let mut wanted: HashMap<String, u64> = HashMap::new();
+
+        // A file root extracts just itself; a directory root walks its subtree.
+        // Either way, only FILE nodes carry bytes to stream.
+        match self.nodes.get(root) {
+            Some(node) if !node.is_dir => {
+                wanted.insert(root.to_string(), self.file_size(root).unwrap_or(0));
+            }
+            _ => {
+                let mut pending = vec![root.to_string()];
+                while let Some(dir) = pending.pop() {
+                    let Some(child_paths) = self.children.get(&dir) else {
+                        continue;
+                    };
+                    for child in child_paths {
+                        match self.nodes.get(child) {
+                            Some(node) if node.is_dir => pending.push(child.clone()),
+                            Some(_) => {
+                                wanted.insert(child.clone(), self.file_size(child).unwrap_or(0));
+                            }
+                            None => {}
+                        }
+                    }
+                }
+            }
+        }
+
+        super::extract::SubtreeExtractReader::spawn(&self.store, source, wanted)
+    }
 }
 
 /// Trims leading/trailing slashes so a caller's inner path (which may arrive as

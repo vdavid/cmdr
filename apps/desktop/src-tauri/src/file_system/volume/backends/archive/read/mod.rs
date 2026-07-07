@@ -37,6 +37,7 @@
 
 mod cache;
 mod error;
+mod extract;
 mod format;
 mod index;
 mod name;
@@ -53,6 +54,7 @@ mod multiformat_test;
 
 pub use cache::ArchiveIndexCache;
 pub use error::ArchiveError;
+pub use extract::{SubtreeExtractReader, SubtreeMember};
 pub use format::{ArchiveFormat, TarCodec, format_for_name, format_for_path};
 pub use index::{ArchiveIndex, ArchiveNode};
 pub use name::{QuarantineReason, SanitizedName, sanitize_entry_name};

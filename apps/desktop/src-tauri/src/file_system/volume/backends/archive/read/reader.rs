@@ -118,38 +118,52 @@ impl ArchiveEntryReader {
     }
 }
 
-/// Pumps a decoded byte stream (`reader`) into the chunk sink in ≤ [`CHUNK_SIZE`]
-/// blocks, so peak memory stays bounded regardless of the entry's size. Used by
-/// the tar and 7z producers, whose codecs expose a pull-model [`Read`]. Stops
-/// early (returns) if the consumer drops the reader — the cancel path. A read
-/// error is forwarded as a typed [`ArchiveError`].
+/// Pumps a decoded byte stream (`reader`) into `emit` in ≤ [`CHUNK_SIZE`] blocks,
+/// so peak memory stays bounded regardless of the entry's size. `emit` returns
+/// `false` once the consumer is gone (dropped the reader) — the cancel path, on
+/// which this returns `Ok(())` early. A read error surfaces as a typed
+/// [`ArchiveError`].
 ///
 /// `limit`, when `Some`, caps the number of bytes pumped: a tar member's data is
 /// followed by padding and the next header in the same stream, so the caller
-/// must stop at the member's exact size rather than reading to EOF.
-pub(super) fn pump_read(mut reader: impl Read, tx: &ChunkTx, limit: Option<u64>) {
+/// must stop at the member's exact size rather than reading to EOF. The 7z entry
+/// reader yields exactly the entry's bytes, so it passes `None`.
+///
+/// Shared by the per-entry [`pump_read`] and the one-pass subtree extractor (see
+/// [`super::extract`]).
+pub(super) fn pump_chunks(
+    mut reader: impl Read,
+    limit: Option<u64>,
+    mut emit: impl FnMut(Vec<u8>) -> bool,
+) -> Result<(), ArchiveError> {
     let mut remaining = limit;
     let mut buf = vec![0u8; CHUNK_SIZE];
     loop {
         let want = match remaining {
-            Some(0) => return,
+            Some(0) => return Ok(()),
             Some(n) => (n.min(CHUNK_SIZE as u64)) as usize,
             None => CHUNK_SIZE,
         };
         match reader.read(&mut buf[..want]) {
-            Ok(0) => return,
+            Ok(0) => return Ok(()),
             Ok(n) => {
                 if let Some(rem) = remaining.as_mut() {
                     *rem -= n as u64;
                 }
-                if !tx.send(buf[..n].to_vec()) {
-                    return; // consumer dropped the reader: cancel
+                if !emit(buf[..n].to_vec()) {
+                    return Ok(()); // consumer gone: cancel
                 }
             }
-            Err(err) => {
-                tx.send_err(ArchiveError::from(err));
-                return;
-            }
+            Err(err) => return Err(ArchiveError::from(err)),
         }
+    }
+}
+
+/// Pumps a decoded entry stream into the single-entry chunk sink [`ChunkTx`],
+/// forwarding a read error as a typed [`ArchiveError`]. Thin wrapper over
+/// [`pump_chunks`] for the per-entry [`ArchiveEntryReader`] producers.
+pub(super) fn pump_read(reader: impl Read, tx: &ChunkTx, limit: Option<u64>) {
+    if let Err(err) = pump_chunks(reader, limit, |chunk| tx.send(chunk)) {
+        tx.send_err(err);
     }
 }

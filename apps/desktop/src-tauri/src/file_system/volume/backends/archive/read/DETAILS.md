@@ -194,8 +194,27 @@ exact bytes (no decompression). A COMPRESSED tar and 7z are SEQUENTIAL: there's 
   CONSUMED (read to a sink) to advance the decoder to the target — skipping without reading desyncs it into a checksum
   failure. Reaching the target streams it, then stops.
 
-The O(n²) bulk-extract caveat for compressed tar / solid 7z (the copy engine re-decodes the prefix per entry) is a
-documented performance fast-follow, tracked with the volume layer in [`../DETAILS.md`](../DETAILS.md).
+**One-pass subtree extract (`extract.rs`).** A per-entry `open_read` re-decodes the prefix, so extracting a whole
+subtree file-by-file would be O(n²). `ArchiveIndex::open_subtree_extract(inner_root, source)` decodes the stream ONCE
+instead: a `spawn_blocking` producer (`tar::stream_subtree` / `sevenz::stream_subtree`) drives a single decoder and, for
+each wanted FILE member in ARCHIVE order, emits a header frame then its data chunks through one bounded channel. The
+consumer (`SubtreeExtractReader`) pulls members with `next_member()` and drains each with `next_chunk()`. Details that
+make it correct and bounded:
+
+- **Files only, never directories.** The wanted set is computed from the parsed tree (files under `inner_root`, with
+  their tree sizes so they match `scan_for_copy` totals). Directories — synthetic ones with no archive entry, and empty
+  explicit ones — carry no bytes, so the copy engine creates the destination folders from the tree and reserves the one
+  decode pass for byte-carrying entries (see the copy planner in
+  [`write_operations/transfer/DETAILS.md`](../../../../write_operations/transfer/DETAILS.md) § "One-pass sequential
+  extract").
+- **Early stop.** `stream_subtree` removes each delivered path from `wanted` and returns the moment it empties, so a
+  subtree near the front of a large archive doesn't decode the tail. A not-wanted entry is still skipped through the one
+  decoder (compressed tar) or read to a sink (7z solid block) — the honest single-pass cost of reaching later members.
+- **Bounded memory + drop-cancel.** Same channel discipline as `ArchiveEntryReader`: `pump_chunks` bounds each chunk to
+  `CHUNK_SIZE` and the channel to `CHANNEL_CAPACITY`, so peak memory is independent of the subtree size; dropping the
+  reader closes the channel and the producer's next `send` fails, stopping the decode.
+- **Random-access formats yield nothing.** A zip / plain-tar store has no producer (the planner never routes it here —
+  it gates on `Volume::extraction_is_sequential`), so `spawn` drops the sink and the stream is empty.
 
 **Remote (SMB/MTP).** tar/7z fall out of the remote seams naturally: `SourceReader` reads over any `ArchiveByteSource`,
 including the parent-backed `VolumeByteSource`, so a remote tar/7z browses and extracts through the parent's ranged
@@ -218,4 +237,7 @@ the sanitizer (incl. the depth cap) and the tree builder (incl. the node-count c
 `lzma-rust2`'s `XzWriter`, `zstd`, and `sevenz-rust2`'s `compress` feature — the shipped path stays decode-only) and
 covers the tar synthetic tree, a per-codec round-trip (plain/gzip/bzip2/xz/zstd), bounded-chunk streaming, the tar Zip
 Slip quarantine (a hostile `../evil.txt` injected as a raw ustar header), the symlink-extracts-to-nothing safety, and 7z
-browse + solid-block extract of a later member. `format.rs` unit-tests suffix detection and the sequential class.
+browse + solid-block extract of a later member. It also pins the ONE-PASS extractor: a `CountingSource` (counts
+offset-0 reads = decode passes) proves `open_subtree_extract` decodes a compressed tar / solid 7z subtree exactly once
+(not once per file), delivers only the subtree's files, and round-trips a later chunk-spanning member. `format.rs`
+unit-tests suffix detection and the sequential class.

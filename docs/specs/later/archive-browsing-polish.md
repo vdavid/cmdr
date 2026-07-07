@@ -9,15 +9,14 @@ Canonical docs (don't restate mechanisms here): `apps/desktop/src-tauri/src/file
 edits" (mutation, remote edit contract). The shipped plan (`../archive-browsing-plan.md`) holds the original decisions
 until it gets wiped; the durable ones are already in the colocated docs.
 
-## 1. One-pass bulk extract for sequential archives (perf, user-visible)
+## 1. One-pass bulk extract for sequential archives (perf, user-visible) — SHIPPED 2026-07-08
 
-Bulk-extracting a subtree from a compressed tar (`.tar.gz` / `.tar.xz` / `.tar.bz2` / `.tar.zst`) or a solid 7z is
-O(n²): the copy engine extracts entry-by-entry, and each single-entry extract prefix-decodes the stream to its target.
-`Volume::extraction_is_sequential` already DECLARES the access class, but the copy planner doesn't consult it yet. Fix:
-a one-pass strategy — decode the stream once, materialize the wanted entries as they stream by. Users extract big
-tarballs; this is the largest real-world perf cliff left. Design constraints: keep per-file progress honest, keep
-cancel-between-entries, and don't regress zip / plain `.tar` (random-access, unaffected). See archive `DETAILS.md` § the
-O(n²) copy caveat.
+Bulk-extracting a subtree from a compressed tar (`.tar.gz` / `.tar.xz` / `.tar.bz2` / `.tar.zst`) or a solid 7z is now
+one-pass instead of O(n²): the copy planner routes a sequential directory source through
+`Volume::open_sequential_extract`, which decodes the stream ONCE and materializes the wanted files as they stream by.
+Per-file progress stays honest, cancel-between-entries works, and zip / plain `.tar` (random-access) keep the per-entry
+path unchanged. Mechanism: archive `read/DETAILS.md` § "One-pass subtree extract" and
+`write_operations/transfer/DETAILS.md` § "One-pass sequential extract".
 
 ## 2. Encrypted archives: password-prompt extraction (UX, user-visible)
 

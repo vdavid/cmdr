@@ -69,6 +69,31 @@ pub trait VolumeReadStream: Send {
     }
 }
 
+/// A ONE-PASS extractor over a subtree of a SEQUENTIAL source (a compressed tar
+/// or solid 7z), where a per-entry random read re-decodes the prefix and makes a
+/// subtree extract O(n²). Decoding the stream a single time, it yields each file
+/// in ARCHIVE order: [`next_file`](Self::next_file) advances to the next member,
+/// then [`current_stream`](Self::current_stream) hands its bytes to the
+/// destination's `write_from_stream`.
+///
+/// The copy engine drives it after creating the destination directory structure
+/// from the tree (cheap, no decode), so this never yields directories. Dropping
+/// the extractor stops the underlying decoder (drop-based cancellation).
+pub trait SequentialExtract: Send {
+    /// Advances to the next file member (draining any unread bytes of the current
+    /// one), or `Ok(None)` at the end of the subtree.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn next_file(&mut self) -> Pin<Box<dyn Future<Output = Result<Option<ExtractedFile>, VolumeError>> + Send + '_>>;
+
+    /// An owned read stream over the CURRENT member's decoded bytes, to hand to
+    /// the destination's `write_from_stream`. Valid until the next
+    /// [`next_file`](Self::next_file); call exactly once per member.
+    fn current_stream(&self) -> Box<dyn VolumeReadStream>;
+}
+
 /// Bulk enumeration for drive indexing. Each volume type implements its optimal strategy.
 ///
 /// `LocalPosixVolume` uses jwalk for fast parallel traversal. Future volume types
@@ -572,6 +597,27 @@ pub trait Volume: Send + Sync {
     /// random-access backends.
     fn extraction_is_sequential(&self, _path: &Path) -> bool {
         false
+    }
+
+    /// Opens a ONE-PASS extractor over the subtree at `path`, for a SEQUENTIAL
+    /// source (see [`extraction_is_sequential`](Self::extraction_is_sequential)).
+    /// Decoding the stream once, it yields the subtree's files in archive order so
+    /// the copy engine can materialize them without the O(n²) per-entry prefix
+    /// re-decode.
+    ///
+    /// Default `NotSupported`: only a sequential backend (the archive volume)
+    /// implements it, and the copy planner calls it only after
+    /// `extraction_is_sequential` returns `true`.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn open_sequential_extract<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<Box<dyn SequentialExtract>, VolumeError>> + Send + 'a>> {
+        let _ = path;
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Scans a path recursively to get statistics for a copy operation.

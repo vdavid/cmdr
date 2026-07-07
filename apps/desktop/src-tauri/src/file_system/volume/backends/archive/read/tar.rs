@@ -22,10 +22,11 @@ use std::io::Read;
 use std::sync::Arc;
 
 use super::error::ArchiveError;
+use super::extract::{SubtreeMember, SubtreeTx};
 use super::format::{TarCodec, open_tar_decoder};
 use super::index::{MAX_TREE_NODES, RawEntry};
 use super::name::{SanitizedName, sanitize_entry_name};
-use super::reader::{ArchiveEntryReader, ChunkTx, pump_read};
+use super::reader::{ArchiveEntryReader, ChunkTx, pump_chunks, pump_read};
 use super::source::{ArchiveByteSource, SourceRangeReader, SourceReader};
 
 /// One tar member's read handle: where its data lives.
@@ -46,6 +47,12 @@ pub(super) struct TarStore {
 impl TarStore {
     pub(super) fn new(codec: TarCodec, members: HashMap<String, TarMember>) -> Self {
         Self { codec, members }
+    }
+
+    /// The outer codec, so the one-pass subtree extractor can reopen a single
+    /// decoder over the whole stream (see [`stream_subtree`]).
+    pub(super) fn codec(&self) -> TarCodec {
+        self.codec
     }
 
     /// Opens a streaming reader for the file at `inner`. Plain tar reads the
@@ -183,4 +190,60 @@ fn stream_compressed_member(
 fn entry_matches(entry: &tar::Entry<'_, impl Read>, target: &str) -> bool {
     let name = String::from_utf8_lossy(&entry.path_bytes()).into_owned();
     matches!(sanitize_entry_name(&name), SanitizedName::Accepted(p) if p == target)
+}
+
+/// One-pass subtree extract: decode the tar stream ONCE and stream every file in
+/// `wanted` (sanitized inner path → uncompressed size) in archive order. Members
+/// not in `wanted` are skipped (the `tar` iterator advances past their data,
+/// which for a compressed tar still flows through the one decoder — the honest
+/// single-pass cost). Stops as soon as every wanted file has been delivered, so a
+/// subtree near the front doesn't decode the whole tail.
+pub(super) fn stream_subtree(
+    source: Arc<dyn ArchiveByteSource>,
+    codec: TarCodec,
+    mut wanted: HashMap<String, u64>,
+    tx: &SubtreeTx,
+) {
+    if wanted.is_empty() {
+        return;
+    }
+    let decoded = match open_tar_decoder(codec, Box::new(SourceReader::new(source))) {
+        Ok(d) => d,
+        Err(err) => return tx.send_err(err),
+    };
+    let mut archive = tar::Archive::new(decoded);
+    let entries = match archive.entries() {
+        Ok(e) => e,
+        Err(err) => return tx.send_err(ArchiveError::from(err)),
+    };
+    for entry in entries {
+        let mut entry = match entry {
+            Ok(e) => e,
+            Err(err) => return tx.send_err(ArchiveError::from(err)),
+        };
+        let sanitized = match sanitize_entry_name(&String::from_utf8_lossy(&entry.path_bytes())) {
+            SanitizedName::Accepted(path) => path,
+            // Quarantined/unnameable entries never reach the tree, so they're
+            // never wanted; skip (the iterator advances past their data).
+            _ => continue,
+        };
+        // `remove` (not `get`) so a duplicate archive entry with the same name
+        // isn't delivered twice; the tree kept the last, but the first-in-stream
+        // occurrence is what the per-entry reader also matches.
+        let Some(size) = wanted.remove(&sanitized) else {
+            continue; // not in the subtree: skip, still one forward pass
+        };
+        if !tx.send_member(SubtreeMember {
+            inner_path: sanitized,
+            size,
+        }) {
+            return; // consumer gone: stop decoding
+        }
+        if let Err(err) = pump_chunks(&mut entry, Some(size), |chunk| tx.send_chunk(chunk)) {
+            return tx.send_err(err);
+        }
+        if wanted.is_empty() {
+            return; // whole subtree delivered: don't decode the tail
+        }
+    }
 }

@@ -2,10 +2,48 @@
 //! 7z), driven against fixtures built in memory (no checked-in blobs). Encoders
 //! come from dev-dependencies; the shipped path stays decode-only.
 
+use std::collections::HashMap;
 use std::io::Write;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::*;
+
+/// Wraps a byte source and counts reads that start at offset 0. A sequential
+/// decoder (compressed tar, 7z) reads front-to-back, so each independent decode
+/// pass begins with exactly one `read_at(0, …)`; counting those counts decode
+/// passes. Used to prove the one-pass extractor decodes the stream once, not
+/// once per file.
+struct CountingSource {
+    inner: Arc<dyn ArchiveByteSource>,
+    zero_offset_reads: Arc<AtomicUsize>,
+}
+
+impl ArchiveByteSource for CountingSource {
+    fn size(&self) -> u64 {
+        self.inner.size()
+    }
+
+    fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<usize> {
+        if offset == 0 && !buf.is_empty() {
+            self.zero_offset_reads.fetch_add(1, Ordering::SeqCst);
+        }
+        self.inner.read_at(offset, buf)
+    }
+}
+
+/// Drains a one-pass subtree extractor into a map of inner path → decoded bytes.
+async fn drain_subtree(reader: &mut SubtreeExtractReader) -> HashMap<String, Vec<u8>> {
+    let mut got: HashMap<String, Vec<u8>> = HashMap::new();
+    while let Some(member) = reader.next_member().await.expect("next_member") {
+        let mut data = Vec::new();
+        while let Some(chunk) = reader.next_chunk().await.expect("next_chunk") {
+            data.extend_from_slice(&chunk);
+        }
+        got.insert(member.inner_path, data);
+    }
+    got
+}
 
 // ---- Fixture builders ------------------------------------------------------
 
@@ -245,6 +283,109 @@ async fn tar_symlink_entry_is_marked_and_creates_no_symlink() {
         bytes.is_empty(),
         "a symlink entry extracts to no content, never a symlink"
     );
+}
+
+// ---- one-pass subtree extract (the O(n²) → one-pass fix) -------------------
+
+#[tokio::test]
+async fn one_pass_subtree_extract_decodes_a_compressed_tar_once() {
+    // A compressed tar has no random access: a per-entry read re-decodes the
+    // prefix, so extracting N files is N decode passes (O(n²)). The one-pass
+    // extractor must decode the stream ONCE for the whole subtree.
+    let big: Vec<u8> = (0..300_000u32).map(|i| (i % 251) as u8).collect();
+    let plain = build_tar(&[
+        TarItem::File("docs/a.txt", b"alpha"),
+        TarItem::File("docs/sub/b.txt", b"bravo"),
+        TarItem::File("docs/c.bin", &big),
+        // Outside the extracted subtree: must NOT be delivered.
+        TarItem::File("other/x.txt", b"nope"),
+    ]);
+    let bytes = compress(TarCodec::Gzip, &plain);
+    let zero_reads = Arc::new(AtomicUsize::new(0));
+    let src: Arc<dyn ArchiveByteSource> = Arc::new(CountingSource {
+        inner: Arc::new(BytesSource::new(bytes)),
+        zero_offset_reads: Arc::clone(&zero_reads),
+    });
+    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::Tar(TarCodec::Gzip)).expect("parse");
+
+    // The parse itself scans the whole stream once; measure only the extract.
+    let baseline = zero_reads.load(Ordering::SeqCst);
+    let mut reader = index.open_subtree_extract("docs", Arc::clone(&src));
+    let got = drain_subtree(&mut reader).await;
+    let extract_passes = zero_reads.load(Ordering::SeqCst) - baseline;
+
+    assert_eq!(
+        extract_passes, 1,
+        "a 3-file subtree must decode the stream exactly once; decode-pass count was {extract_passes}"
+    );
+    assert_eq!(
+        got.keys().cloned().collect::<std::collections::BTreeSet<_>>(),
+        ["docs/a.txt", "docs/c.bin", "docs/sub/b.txt"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<std::collections::BTreeSet<_>>(),
+        "only the subtree's files, never other/x.txt"
+    );
+    assert_eq!(got["docs/a.txt"], b"alpha");
+    assert_eq!(got["docs/sub/b.txt"], b"bravo");
+    assert_eq!(got["docs/c.bin"], big, "a later, chunk-spanning member round-trips");
+}
+
+#[tokio::test]
+async fn one_pass_subtree_extract_skipping_a_member_still_reads_the_rest() {
+    // The copy engine skips a subtree file (conflict resolution said skip) by
+    // advancing to the next member WITHOUT reading its bytes. `next_member` must
+    // drain the skipped member's unread chunks so the stream stays aligned and the
+    // following member decodes correctly.
+    let big: Vec<u8> = (0..200_000u32).map(|i| (i % 241) as u8).collect();
+    let (index, src) = parse_tar(
+        TarCodec::Gzip,
+        &[TarItem::File("docs/skip.bin", &big), TarItem::File("docs/keep.txt", b"kept")],
+    );
+    let mut reader = index.open_subtree_extract("docs", src);
+
+    // First member: take the header but DON'T drain its chunks (a skip).
+    let first = reader.next_member().await.expect("next_member").expect("a member");
+    assert_eq!(first.inner_path, "docs/skip.bin");
+
+    // Advancing must drain the skipped member's data, then hand us the next one.
+    let second = reader.next_member().await.expect("next_member").expect("a member");
+    assert_eq!(second.inner_path, "docs/keep.txt");
+    let mut data = Vec::new();
+    while let Some(chunk) = reader.next_chunk().await.expect("next_chunk") {
+        data.extend_from_slice(&chunk);
+    }
+    assert_eq!(data, b"kept", "the member after a skipped one decodes correctly");
+    assert!(reader.next_member().await.expect("next_member").is_none(), "subtree is exhausted");
+}
+
+#[tokio::test]
+async fn one_pass_subtree_extract_decodes_a_solid_7z_once() {
+    let big: Vec<u8> = (0..80_000u32).map(|i| (i % 247) as u8).collect();
+    let bytes = build_7z_solid(&[
+        ("docs/a.txt", b"alpha"),
+        ("docs/deep/b.bin", &big),
+        ("other/x.txt", b"nope"),
+    ]);
+    let zero_reads = Arc::new(AtomicUsize::new(0));
+    let src: Arc<dyn ArchiveByteSource> = Arc::new(CountingSource {
+        inner: Arc::new(BytesSource::new(bytes)),
+        zero_offset_reads: Arc::clone(&zero_reads),
+    });
+    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::SevenZ).expect("parse 7z");
+
+    let baseline = zero_reads.load(Ordering::SeqCst);
+    let mut reader = index.open_subtree_extract("docs", Arc::clone(&src));
+    let got = drain_subtree(&mut reader).await;
+    let extract_passes = zero_reads.load(Ordering::SeqCst) - baseline;
+
+    assert_eq!(
+        extract_passes, 1,
+        "a solid 7z subtree extract decodes once, got {extract_passes}"
+    );
+    assert_eq!(got.len(), 2, "only the subtree's two files");
+    assert_eq!(got["docs/a.txt"], b"alpha");
+    assert_eq!(got["docs/deep/b.bin"], big);
 }
 
 // ---- 7z --------------------------------------------------------------------
