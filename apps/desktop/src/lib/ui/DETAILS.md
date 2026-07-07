@@ -509,9 +509,9 @@ other pane consumes, and the SMB reconnect toast, whose own `loadDirectory` woul
 Two dismissers, both skip persistent toasts:
 
 - `dismissTransientToastsForPane(pane)` removes only transient toasts with `originPane === pane`. This is what pane
-  navigation (`listing-loader.ts` `loadDirectory`) and per-keystroke rename validation (`rename-flow` `handleRenameInput`)
-  call. A background navigation in one pane (for example an SMB reconnect retry) therefore can no longer eat the other
-  pane's or the app's feedback — the incident this design fixes.
+  navigation (`listing-loader.ts` `loadDirectory`) and per-keystroke rename validation (`rename-flow`
+  `handleRenameInput`) call. A background navigation in one pane (for example an SMB reconnect retry) therefore can no
+  longer eat the other pane's or the app's feedback — the incident this design fixes.
 - `dismissTransientToasts()` removes every transient regardless of origin. Only the debug panel calls it now.
 
 To make tagging impossible to forget, pane-owned code adds its toasts through `addToastForPane(pane, content, options)`

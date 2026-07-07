@@ -7,9 +7,9 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 ## In progress
 
 - [ ] 2026-07-07 [pane-toasts-and-rename-identity-plan.md](pane-toasts-and-rename-identity-plan.md) - Pane-scoped
-      transient-toast dismissal (background navigation events stop wiping unrelated toasts app-wide) + the inline
-      rename editor keyed by path instead of index (kills a latent wrong-row data-safety bug; rename follows its row
-      through diffs). Executing on the `toast-rename` worktree.
+      transient-toast dismissal (background navigation events stop wiping unrelated toasts app-wide) + the inline rename
+      editor keyed by path instead of index (kills a latent wrong-row data-safety bug; rename follows its row through
+      diffs). Executing on the `toast-rename` worktree.
 - [x] 2026-07-07 [paste-clipboard-as-file-plan.md](paste-clipboard-as-file-plan.md) - Cmd+V with non-file clipboard
       content (text/image/PDF) creates `pasted.*` in the pane, cursor lands on it, inline rename auto-starts
       (setting-gated), info toast with Settings deep link (issue #35). Shipped in b0de3824f.

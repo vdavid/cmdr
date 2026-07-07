@@ -37,10 +37,9 @@ non-trivial work here: editing, planning, reorganizing, or advising.
   `mouseleave`, so the 400 ms timer can fire against a detached node. Two guards must both stay: the action's
   `destroy()` cancels its timer, and `showTooltip` / `positionTooltip` bail on `isTriggerDetached(el)`
   (`!el.isConnected`, not a zero-rect heuristic: happy-dom reports zero rects on connected elements). DETAILS § Tooltip.
-- **Toasts (full guide — levels, action-button styling, scoped dismissal — in DETAILS § Toast system)**: pick a level
-  by feedback kind, not wording (lowest-intensity that fits). A full all-persistent stack silently drops new toasts
-  (they hold important state). Pane-local transient toasts MUST use `addToastForPane(pane, …)`, not `addToast`, or that
-  pane's navigation won't clear its stale feedback.
+- **Toasts (full guide in DETAILS § Toast system)**: pick a level by feedback kind, not wording (lowest-intensity that
+  fits). A full all-persistent stack silently drops new toasts (they hold important state). Pane-local transient toasts
+  go through `addToastForPane(pane, …)`, not `addToast`, or that pane's navigation won't clear them.
 - **`containerStyle` is one-off layout sizing (width/max-width) only** (it bypasses stylelint's non-token-CSS-var
   block); never for what belongs in design tokens.
 - **`StatusBadge` class is `feature-status-badge`, NOT `status-badge`** (the Debug window's `:global(.status-badge)`
