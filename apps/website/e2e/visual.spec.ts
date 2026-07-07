@@ -33,40 +33,40 @@ const FREEZE_CSS = `*,*::before,*::after{animation-duration:0s!important;animati
 // `.split-btn__sub` holds the "<version> · <size>" line; `.split-btn__option-size` the per-arch
 // sizes inside the dropdown.
 function volatileMasks(page: Page): Locator[] {
-    return [page.locator('.split-btn__sub'), page.locator('.split-btn__option-size')]
+  return [page.locator('.split-btn__sub'), page.locator('.split-btn__option-size')]
 }
 
 type Theme = 'light' | 'dark'
 
 /** Seed the forced theme + reduced motion, and block all cross-origin traffic, for this page. */
 async function preparePage(page: Page, theme: Theme): Promise<void> {
-    await page.route('**/*', (route) => {
-        const host = new URL(route.request().url()).host
-        if (host === `localhost:${VIEWPORT_PORT}`) return route.continue()
-        return route.abort()
-    })
-    await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
-    await page.addInitScript((t) => {
-        try {
-            localStorage.setItem('theme', t)
-        } catch {
-            /* localStorage unavailable */
-        }
-        // Backstop the inline FOUC script in case localStorage is ever unreadable.
-        document.documentElement.dataset.theme = t
-    }, theme)
+  await page.route('**/*', (route) => {
+    const host = new URL(route.request().url()).host
+    if (host === `localhost:${VIEWPORT_PORT}`) return route.continue()
+    return route.abort()
+  })
+  await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
+  await page.addInitScript((t) => {
+    try {
+      localStorage.setItem('theme', t)
+    } catch {
+      /* localStorage unavailable */
+    }
+    // Backstop the inline FOUC script in case localStorage is ever unreadable.
+    document.documentElement.dataset.theme = t
+  }, theme)
 }
 
 /** Navigate, settle (network + fonts), freeze animations, and full-page screenshot. */
 async function shoot(page: Page, url: string, name: string): Promise<void> {
-    await page.goto(url, { waitUntil: 'networkidle' })
-    await page.evaluate(() => document.fonts.ready)
-    await page.addStyleTag({ content: FREEZE_CSS })
-    await expect(page).toHaveScreenshot(name, {
-        fullPage: true,
-        mask: volatileMasks(page),
-        maxDiffPixelRatio: 0.01,
-    })
+  await page.goto(url, { waitUntil: 'networkidle' })
+  await page.evaluate(() => document.fonts.ready)
+  await page.addStyleTag({ content: FREEZE_CSS })
+  await expect(page).toHaveScreenshot(name, {
+    fullPage: true,
+    mask: volatileMasks(page),
+    maxDiffPixelRatio: 0.01,
+  })
 }
 
 // Reduced motion is applied per-page via `emulateMedia` in `preparePage`; `test.use` has no
@@ -74,44 +74,44 @@ async function shoot(page: Page, url: string, name: string): Promise<void> {
 test.use({ viewport: VIEWPORT, deviceScaleFactor: 1 })
 
 const pages: Array<{ path: string; slug: string }> = [
-    { path: '/', slug: 'home' },
-    { path: '/features', slug: 'features' },
-    { path: '/pricing', slug: 'pricing' },
-    { path: '/blog', slug: 'blog-index' },
-    // The critical post: exercises every custom markdown plugin (arch download dropdown,
-    // {theme} light/dark images, before/after comparison slider at its default 50%, inline
-    // :icon: tokens).
-    { path: '/blog/total-commander-for-macos', slug: 'blog-tc' },
-    // Download dropdown + inline icons.
-    { path: '/blog/35-years-of-file-managers', slug: 'blog-35years' },
+  { path: '/', slug: 'home' },
+  { path: '/features', slug: 'features' },
+  { path: '/pricing', slug: 'pricing' },
+  { path: '/blog', slug: 'blog-index' },
+  // The critical post: exercises every custom markdown plugin (arch download dropdown,
+  // {theme} light/dark images, before/after comparison slider at its default 50%, inline
+  // :icon: tokens).
+  { path: '/blog/total-commander-for-macos', slug: 'blog-tc' },
+  // Download dropdown + inline icons.
+  { path: '/blog/35-years-of-file-managers', slug: 'blog-35years' },
 ]
 
 const themes: Theme[] = ['light', 'dark']
 
 for (const theme of themes) {
-    for (const { path, slug } of pages) {
-        test(`${slug} (${theme})`, async ({ page }) => {
-            await preparePage(page, theme)
-            await shoot(page, path, `${slug}-${theme}.png`)
-        })
-    }
-
-    // Interaction state: the arch download dropdown opened on the Total Commander post.
-    test(`blog-tc dropdown open (${theme})`, async ({ page }) => {
-        await preparePage(page, theme)
-        await page.goto('/blog/total-commander-for-macos', { waitUntil: 'networkidle' })
-        await page.evaluate(() => document.fonts.ready)
-
-        // Open the first visible arch dropdown (the chevron is the only <button> in a split-btn).
-        const chevron = page.locator('[data-download-split-btn] button').filter({ visible: true }).first()
-        await chevron.click()
-        await expect(page.locator('[data-download-dropdown]:not([hidden])').first()).toBeVisible()
-
-        await page.addStyleTag({ content: FREEZE_CSS })
-        await expect(page).toHaveScreenshot(`blog-tc-dropdown-${theme}.png`, {
-            fullPage: true,
-            mask: volatileMasks(page),
-            maxDiffPixelRatio: 0.01,
-        })
+  for (const { path, slug } of pages) {
+    test(`${slug} (${theme})`, async ({ page }) => {
+      await preparePage(page, theme)
+      await shoot(page, path, `${slug}-${theme}.png`)
     })
+  }
+
+  // Interaction state: the arch download dropdown opened on the Total Commander post.
+  test(`blog-tc dropdown open (${theme})`, async ({ page }) => {
+    await preparePage(page, theme)
+    await page.goto('/blog/total-commander-for-macos', { waitUntil: 'networkidle' })
+    await page.evaluate(() => document.fonts.ready)
+
+    // Open the first visible arch dropdown (the chevron is the only <button> in a split-btn).
+    const chevron = page.locator('[data-download-split-btn] button').filter({ visible: true }).first()
+    await chevron.click()
+    await expect(page.locator('[data-download-dropdown]:not([hidden])').first()).toBeVisible()
+
+    await page.addStyleTag({ content: FREEZE_CSS })
+    await expect(page).toHaveScreenshot(`blog-tc-dropdown-${theme}.png`, {
+      fullPage: true,
+      mask: volatileMasks(page),
+      maxDiffPixelRatio: 0.01,
+    })
+  })
 }

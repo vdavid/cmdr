@@ -132,8 +132,8 @@ the dispatch path can't rely on the keydown bail.
   extension-change warning suppressed for that one auto-started rename). The auto-rename passes
   `startRename({ expectedName })`: the optimistic cursor move can resolve before the FE row array applies the new file's
   synthetic diff, so **the rename refuses to activate unless the entry under the cursor is exactly the created file** —
-  it polls briefly while the diff lands, then gives up silently. This is a DATA-SAFETY guard: without it the editor could
-  latch a DIFFERENT row and the user's next keystroke would rename the wrong file. (In a churning directory a
+  it polls briefly while the diff lands, then gives up silently. This is a DATA-SAFETY guard: without it the editor
+  could latch a DIFFERENT row and the user's next keystroke would rename the wrong file. (In a churning directory a
   watcher-triggered `loadDirectory` reread may `renameCancel()` the auto-rename before it activates — that's fine; what
   must be impossible is latching the WRONG entry.) `edit.pasteAsMove` behaves identically here (move semantics are
   meaningless for clipboard bytes). Backend flavor precedence + the write:

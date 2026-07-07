@@ -33,9 +33,7 @@ interface LatestRelease {
 
 const MARKER = 'cmdr:download'
 
-const latest: LatestRelease = JSON.parse(
-  readFileSync(new URL('../../public/latest.json', import.meta.url), 'utf-8'),
-)
+const latest: LatestRelease = JSON.parse(readFileSync(new URL('../../public/latest.json', import.meta.url), 'utf-8'))
 const version = latest.version
 
 function dmgUrl(arch: string): string {

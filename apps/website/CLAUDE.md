@@ -68,5 +68,6 @@ All pages support both modes; a header toggle (`ThemeToggle.astro`) overrides sy
   fine.
 - `site` must be set in `astro.config.ts` for RSS and OG image URLs to work.
 - `compressHTML: true` is deliberate — Astro 7's `'jsx'` default breaks home + pricing layouts; don't drop it.
-- Markdown pipeline (Astro 7 `processor: unified({…})`, plugin ordering, `@ts-expect-error`, empty-`srcset` fix): [DETAILS.md](DETAILS.md) § Patterns.
+- Markdown pipeline (Astro 7 `processor: unified({…})`, plugin ordering, `@ts-expect-error`, empty-`srcset` fix):
+  [DETAILS.md](DETAILS.md) § Patterns.
 - Remark42 comments (`comments.getcmdr.com`) are disabled in dev. Setup: `docs/guides/deploying-remark42.md`.
