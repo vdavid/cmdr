@@ -52,11 +52,70 @@ pub(crate) enum ScanState {
     Completed { generation: u64 },
 }
 
+/// A batch of directories whose listings changed while the app runs (live
+/// FSEvents, verifier corrections), for a volume.
+///
+/// The importance scheduler drives its INCREMENTAL recompute off this: rescore
+/// only the touched subtrees + their (capped) ancestor chains, instead of the
+/// full-volume pass a `ScanCompleted` triggers (plan Decision 5). A monotonically
+/// increasing `batch` lets a late subscriber tell the retained initial value from
+/// a real change and coalesce repeats.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub(crate) struct DirsChanged {
+    /// `0` is the retained initial value (nothing published yet); each publish
+    /// bumps it so a consumer can distinguish batches.
+    pub batch: u64,
+    /// The changed directory paths (absolute). A `"/"` sentinel means "refresh
+    /// everything" (a full-refresh emit); a consumer treats it as a full pass.
+    pub paths: Vec<String>,
+}
+
 /// The per-volume `watch` senders. A sender is created on first
 /// `publish`/`subscribe` for a volume and lives for the process, so a receiver
 /// keeps replaying the last state even after the volume's index instance is
 /// gone. Keyed by volume id, independent of `INDEX_REGISTRY`.
 static BUS: LazyLock<Mutex<HashMap<String, watch::Sender<ScanState>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// The per-volume dir-changed senders, separate from `BUS` for the same
+/// lifecycle-independence reason. A live listing change publishes the changed
+/// paths here.
+static DIR_BUS: LazyLock<Mutex<HashMap<String, watch::Sender<DirsChanged>>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Get (or lazily create) the dir-changed `watch::Sender` for a volume.
+fn with_dir_sender<T>(volume_id: &str, f: impl FnOnce(&watch::Sender<DirsChanged>) -> T) -> T {
+    let mut bus = DIR_BUS.lock_ignore_poison();
+    let sender = bus
+        .entry(volume_id.to_string())
+        .or_insert_with(|| watch::channel(DirsChanged::default()).0);
+    f(sender)
+}
+
+/// Publish a batch of changed directory paths for a volume.
+///
+/// Called from the live-change sites (`event_loop`, `verifier`) alongside the
+/// existing frontend `index-dir-updated` emit. `indexing/` publishes without
+/// knowing who listens (the one-way boundary); the importance scheduler
+/// subscribes and rescopes an incremental rescore to the touched paths. A no-op
+/// if `paths` is empty.
+pub(crate) fn publish_dirs_changed(volume_id: &str, paths: &[String]) {
+    if paths.is_empty() {
+        return;
+    }
+    with_dir_sender(volume_id, |sender| {
+        let batch = sender.borrow().batch + 1;
+        sender.send_replace(DirsChanged {
+            batch,
+            paths: paths.to_vec(),
+        });
+    });
+}
+
+/// Subscribe to a volume's dir-changed bus. The returned receiver carries the
+/// last published batch (or the empty initial value); a change bumps `batch`.
+pub(crate) fn subscribe_dirs_changed(volume_id: &str) -> watch::Receiver<DirsChanged> {
+    with_dir_sender(volume_id, |sender| sender.subscribe())
+}
 
 /// Get (or lazily create) the `watch::Sender` for a volume, running `f` with it.
 ///
@@ -195,6 +254,33 @@ mod tests {
         );
 
         reset(vid);
+    }
+
+    /// A dir-changed publish carries the paths and bumps the batch; an empty
+    /// publish is a no-op (no spurious rescore). A late subscriber sees the last
+    /// batch (the same late-subscriber replay as the scan bus).
+    #[test]
+    fn dir_changed_publishes_paths_and_coalesces_batch() {
+        let vid = "dir-bus-test";
+        DIR_BUS.lock_ignore_poison().remove(vid);
+
+        // An empty publish is a no-op: nothing to rescore.
+        publish_dirs_changed(vid, &[]);
+        assert_eq!(
+            subscribe_dirs_changed(vid).borrow().batch,
+            0,
+            "empty publish is a no-op"
+        );
+
+        // A real publish carries the paths and bumps the batch.
+        publish_dirs_changed(vid, &["/a".to_string(), "/b".to_string()]);
+        let rx = subscribe_dirs_changed(vid);
+        let state = rx.borrow();
+        assert_eq!(state.batch, 1);
+        assert_eq!(state.paths, vec!["/a".to_string(), "/b".to_string()]);
+        drop(state);
+
+        DIR_BUS.lock_ignore_poison().remove(vid);
     }
 
     /// Two volumes are independent: publishing on one never moves the other.

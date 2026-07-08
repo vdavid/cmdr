@@ -921,7 +921,9 @@ pub(super) async fn run_replay_event_loop(
                             &writer, &mut live_pending_paths,
                         );
                         if !live_pending_paths.is_empty() {
-                            reconciler::emit_dir_updated(&app, mark_pending_and_drain(&mut live_pending_paths));
+                            let changed = mark_pending_and_drain(&mut live_pending_paths);
+                            super::lifecycle_bus::publish_dirs_changed(&volume_id, &changed);
+                            reconciler::emit_dir_updated(&app, changed);
                         }
                         break;
                     }
@@ -955,7 +957,9 @@ pub(super) async fn run_replay_event_loop(
                     &writer, &mut live_pending_paths,
                 );
                 if !live_pending_paths.is_empty() {
-                    reconciler::emit_dir_updated(&app, mark_pending_and_drain(&mut live_pending_paths));
+                    let changed = mark_pending_and_drain(&mut live_pending_paths);
+                    super::lifecycle_bus::publish_dirs_changed(&volume_id, &changed);
+                    reconciler::emit_dir_updated(&app, changed);
                 }
             }
         }
@@ -1090,6 +1094,10 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
             .cloned()
             .collect();
         if !visible_new_dirs.is_empty() {
+            // Background verification is root-scoped (uses the root read pool), so
+            // its live corrections publish under the local root for the importance
+            // scheduler's incremental rescore (plan Decision 5).
+            super::lifecycle_bus::publish_dirs_changed(super::ROOT_VOLUME_ID, &visible_new_dirs);
             reconciler::emit_dir_updated(&app, visible_new_dirs);
         }
 
@@ -1155,7 +1163,9 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
         // `new_dir_paths` are not included here — they were already emitted
         // progressively above as each subtree's scan finished.
         if !affected_paths.is_empty() {
-            reconciler::emit_dir_updated(&app, affected_paths.into_iter().collect());
+            let changed: Vec<String> = affected_paths.into_iter().collect();
+            super::lifecycle_bus::publish_dirs_changed(super::ROOT_VOLUME_ID, &changed);
+            reconciler::emit_dir_updated(&app, changed);
         }
     }
 

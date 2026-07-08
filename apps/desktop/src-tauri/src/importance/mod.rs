@@ -12,15 +12,18 @@
 mod classify;
 pub mod commands;
 mod last_used;
+pub mod read;
 pub mod scheduler;
 pub mod scorer;
 pub mod signals;
 pub mod store;
 pub mod writer;
+pub mod writer_registry;
 
 #[cfg(test)]
 mod fixtures;
 
+pub use read::{ImportanceIndex, ScoredWeight};
 pub use scorer::{
     Explanation, FolderSignals, PathClass, Score, SignalContribution, SignalKind, SignalSet, Weights, explain, score,
 };

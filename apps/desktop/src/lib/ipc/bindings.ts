@@ -1661,10 +1661,11 @@ export const commands = {
    *  failure-silent: never blocks or breaks navigation.
    *
    *  M2 records only local (`root`) visits; SMB/MTP visit recording lands with
-   *  their scoring in M4. The write goes through a short-lived [`ImportanceWriter`]
-   *  so it honors the one-writer-per-DB invariant even though the recompute
-   *  scheduler may hold its own writer at other times (each opens its own thread on
-   *  the same WAL DB; the busy-timeout absorbs brief contention).
+   *  their scoring in M4. The write goes through the scheduler's SHARED long-lived
+   *  writer for the volume (one writer thread per DB — the subsystem invariant held
+   *  in spirit, not absorbed by WAL busy-timeouts), reached through Tauri managed
+   *  state. If the scheduler isn't managed yet (startup raced ahead of `start`),
+   *  the visit is silently dropped — the next navigation records it.
    */
   recordVisit: (location: Location) => typedError<null, string>(__TAURI_INVOKE('record_visit', { location })),
   /**

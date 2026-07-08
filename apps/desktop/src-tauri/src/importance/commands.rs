@@ -7,27 +7,30 @@
 //! local-only; privacy posture in `docs/security.md`). The scorer's visit-activity
 //! signal reads this on the next recompute.
 //!
-//! Thin per the commands-layer rule: resolve the DB path, hand off to the writer.
-//! Failure-silent by contract — a visit that can't be recorded must never break or
-//! block navigation, so the command returns `Ok(())` even on a write hiccup (it
-//! logs at debug). Local volumes only in M2 (a non-`root` volume id is ignored).
+//! Thin per the commands-layer rule: resolve the shared writer, hand off the
+//! visit. Failure-silent by contract — a visit that can't be recorded must never
+//! break or block navigation, so the command returns `Ok(())` even on a write
+//! hiccup (it logs at debug). Local volumes only in M2 (a non-`root` volume id is
+//! ignored).
 
-use tauri::AppHandle;
+use std::sync::Arc;
+
+use tauri::{AppHandle, Manager};
 
 use crate::indexing::ROOT_VOLUME_ID;
 use crate::location::Location;
 
-use super::store::importance_db_path;
-use super::writer::ImportanceWriter;
+use super::scheduler::ImportanceScheduler;
 
 /// Record that the user navigated into `location`. Fire-and-forget and
 /// failure-silent: never blocks or breaks navigation.
 ///
 /// M2 records only local (`root`) visits; SMB/MTP visit recording lands with
-/// their scoring in M4. The write goes through a short-lived [`ImportanceWriter`]
-/// so it honors the one-writer-per-DB invariant even though the recompute
-/// scheduler may hold its own writer at other times (each opens its own thread on
-/// the same WAL DB; the busy-timeout absorbs brief contention).
+/// their scoring in M4. The write goes through the scheduler's SHARED long-lived
+/// writer for the volume (one writer thread per DB — the subsystem invariant held
+/// in spirit, not absorbed by WAL busy-timeouts), reached through Tauri managed
+/// state. If the scheduler isn't managed yet (startup raced ahead of `start`),
+/// the visit is silently dropped — the next navigation records it.
 #[tauri::command]
 #[specta::specta]
 pub async fn record_visit(app: AppHandle, location: Location) -> Result<(), String> {
@@ -37,28 +40,24 @@ pub async fn record_visit(app: AppHandle, location: Location) -> Result<(), Stri
         return Ok(());
     }
 
-    let data_dir = match crate::config::resolved_app_data_dir(&app) {
-        Ok(d) => d,
-        Err(e) => {
-            log::debug!(target: "importance", "record_visit skipped (no data dir): {e}");
-            return Ok(());
-        }
+    let Some(scheduler) = app.try_state::<Arc<ImportanceScheduler>>().map(|s| Arc::clone(&s)) else {
+        log::debug!(target: "importance", "record_visit skipped (scheduler not managed yet)");
+        return Ok(());
     };
-    let db_path = importance_db_path(&data_dir, &location.volume_id);
+
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
 
-    // The write is quick, but do it off the IPC thread (it opens a DB + spawns a
-    // short-lived writer thread). A failure is swallowed to `Ok(())`: the visit
-    // signal is best-effort, and navigation must never depend on it.
+    // Do the enqueue off the IPC thread (the shared writer's channel send is quick
+    // but resolving/creating the writer can open a DB). A failure is swallowed to
+    // `Ok(())`: the visit signal is best-effort, navigation never depends on it.
     let path = location.path.clone();
+    let volume_id = location.volume_id.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        let writer = ImportanceWriter::spawn(&db_path)?;
+        let writer = scheduler.writer_for(&volume_id)?;
         writer.record_visit(&path, now)?;
-        writer.flush_blocking()?;
-        writer.shutdown();
         Ok::<(), super::store::ImportanceStoreError>(())
     })
     .await;

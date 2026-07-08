@@ -4,10 +4,11 @@ The deterministic, cheap folder-importance score that any expensive feature cons
 enrichment scheduler, future disk-cleanup / prefetch). Full design and milestone plan:
 [`docs/specs/importance-subsystem-plan.md`](../../../../../docs/specs/importance-subsystem-plan.md).
 
-M1 shipped the pure heart: the [`scorer`](scorer/mod.rs) and its tunable [`Weights`](scorer/weights.rs). **M2 adds
-storage (`importance.db`), the scheduler that fills it on scan completion, and the navigation-visit signal** (see
-"Storage", "The scheduler", and "The visit signal" below). The consumable read API and incremental recompute land in M3;
-SMB / offline-unmounted reads in M4 (see the plan).
+M1 shipped the pure heart: the [`scorer`](scorer/mod.rs) and its tunable [`Weights`](scorer/weights.rs). M2 added storage
+(`importance.db`), the scheduler that fills it on scan completion, and the navigation-visit signal. **M3 adds the
+consumable [`ImportanceIndex`](read/mod.rs) read API (the canonical "how consumers reach importance" — see "The read API"),
+incremental recompute on live listing changes, the shared per-volume writer registry, and the dev tuning surface.** SMB /
+offline-unmounted reads are M4 (see the plan).
 
 ## Why a separate subsystem
 
@@ -152,13 +153,97 @@ failure-silent by contract: a visit that can't be recorded must never block or b
 `Ok(())` even on a write hiccup. Local (`root`) only in M2. The agent spec's planned `user_action_log` is this signal's
 future superset — when it lands, `record_visit` folds into it (never two parallel recorders).
 
-## What M2 still leaves out
+## The read API (`read.rs`, M3) — the canonical consumer entry point
 
-- No consumable read API (`weight_for`/`top_n`/`above_threshold`/`explain`/`signals_for`), no recompute subscription (M3).
-- No incremental (changed-subtree) recompute — full-volume on scan completion only (M3).
-- No dev tuning surface (M3).
-- No SMB scoring, no offline-unmounted reads (M4).
-- No IPC surface beyond `record_visit`; no user-facing strings, no i18n (`record_visit` is invisible).
+`ImportanceIndex` is the ONE way any consumer (the agent, media-ML enrichment, future cleanup/prefetch) reaches folder
+importance — the agent and media-ML plans point here rather than restating (single-source, `docs.md`). It mirrors
+`search/`→`indexing/`: a read-only handle that owns a `platform_case`-registered read connection over `importance.db`
+(thread-local, reopened lazily), so no consumer takes a raw `rusqlite` dep on the store. Calls:
+
+- `weight_for(path)` — one folder's `ScoredWeight` (scalar + deserialized `FolderSignals` + as-of generation), or `None`.
+- `top_n(n)` / `above_threshold(t)` — ranked folders (score DESC, ties by path). `above_threshold` is INCLUSIVE at the
+  bound (a folder exactly at `t` is returned) — the agent's summary gate and media-ML's enrich-important-first, one
+  query with an optional `LIMIT` / `WHERE score >= t`.
+- `signals_for(path)` — the stored raw vector, for a consumer applying its own weighting profile (plan Decision 2).
+- `explain(path, now)` — the per-signal breakdown, **recomputed from the STORED signals via the pure scorer**
+  ([`explain`](scorer/mod.rs)), so there's ONE formula and the breakdown can't drift from the stored scalar.
+
+**Staleness is first-class.** Every result carries `as_of_generation`; a consumer compares it to `recompute_generation()`
+to caveat "as of the May 28 scan" (agent-spec D7; M4's offline-unmounted read leans on this). The read API never hides a
+stale weight.
+
+**The recompute subscription** (`read::subscribe(volume_id)`) is a `tokio::sync::watch<u64>` receiver carrying the last
+completed generation. The scheduler calls `notify_recompute_completed` after each full or incremental pass, so a consumer
+awaits `changed()` instead of polling (subscribe-don't-poll). It retains the last value for a late subscriber and fires
+exactly once per completion. The senders live in a process-global keyed by volume id (survives an unmount), like the
+indexing lifecycle bus.
+
+## Incremental recompute (`scheduler`, M3, plan Decision 5)
+
+A full-volume recompute on `ScanCompleted` stays the default. On top of it, live listing changes drive an **incremental
+rescore** of only the touched folders, so a single file edit doesn't re-walk-and-rescore the whole volume.
+
+**The event source (documented choice).** There is no clean in-process per-directory hook in `indexing/`: the reconciler
+reports directory changes only via `IndexDirUpdatedEvent` to the frontend, and the writer/aggregation `emit_dir_updated`
+sites aren't uniformly volume-aware. So — exactly as M2 added `publish_scan_completed` alongside the frontend `.emit` —
+M3 adds a per-volume `dir-changed` channel to [`indexing/lifecycle_bus`](../indexing/DETAILS.md)
+(`publish_dirs_changed`), published from the **live-change sites where `volume_id` is in scope**: the live event loop
+(FSEvents batches) and the per-navigation verifier. The scan-completion `/`-refresh emits are left on the full-recompute
+path (already covered by `ScanCompleted`), so incremental captures exactly the "listing changed while running" signal.
+The scheduler subscribes via `subscribe_dirs_changed` and coalesces bursts per volume (accumulating paths into a pending
+set, one pass plus at most one re-run — a distinct coordinator key from the full pass so the two don't block each other).
+
+**Rescoping + the ancestor cap.** For each changed path, the touched set is the folder itself plus its ancestor chain
+(`touched_folder_set`), because a project marker or size/mtime change can raise parents. The ancestor walk is capped at
+`ANCESTOR_WALK_CAP` (32) levels per changed path: a project marker appearing deep in a tree could otherwise raise every
+ancestor to the root and rescope half the volume (plan open-question). The pass walks the index once, filters to the
+touched subset, rescopes the scorer over just those, and writes them.
+
+**Generation semantics.** An incremental pass writes its rows at the CURRENT generation and does NOT bump it
+(`write_weights_incremental`, `advance_generation == false`), so every untouched folder keeps its as-of marker and the
+volume doesn't turn wholesale-stale after a one-file change. Only a full pass advances the generation. A `"/"` sentinel in
+the changed set (a full-refresh emit) escalates to a full pass rather than resolving `/` as one folder.
+
+## The shared writer registry (`writer_registry.rs`, M3)
+
+The subsystem's one-writer-per-DB invariant must hold in spirit, not be papered over by WAL busy-timeouts: both
+`record_visit` and every recompute write to a volume's `importance.db`. `WriterRegistry` (owned by the `ImportanceScheduler`,
+in Tauri managed state) hands both a SHARED long-lived `ImportanceWriter` per volume, created lazily on first use and
+living for the process. `record_visit` reaches it via `app.try_state::<Arc<ImportanceScheduler>>()`; the scheduler's
+recompute reaches it via `writer_for`. Creation reserves the slot then builds outside the map lock, so two concurrent
+first-uses can't race two threads onto one DB. `next_generation()` reads the current generation on the writer thread's own
+connection (not a separate reader), keeping the generation a single-writer-owned value.
+
+## Dev tuning surface (`crates/index-query`'s `importance-tune` bin, M3, plan Decision 6)
+
+A minimal dev-only binary extending the `index-query` pattern (a `cmdr_lib`-linking CLI with the collation registered).
+It reads a volume's `importance.db` through the SAME `ImportanceIndex` read API and prints the ranked folders WITH their
+`explain` breakdowns, so David can eyeball the ranking against his real home directory and tune `Weights` (agent-spec
+§18.3). No write path — it reads stored signals and re-scores. Usage:
+
+```
+cargo run -p index-query --bin importance-tune -- <path-to-importance-root.db> [top_n]
+```
+
+Find the DB under the app data dir as `importance-root.db` (beside `index-root.db`); `top_n` defaults to 30. The printout
+lists each folder's score, then per-signal `weight`, `raw`, and `contribution` (skipping signals redistributed to zero),
+so a mis-ranked folder's cause is visible.
+
+## Adding a signal (step-by-step)
+
+Add the field to [`FolderSignals`](scorer/types.rs) (+ `neutral()`), a `SignalKind` variant (+ `ALL`), a `Weights`
+coefficient (+ `additive_weight`), and a `raw_signal_value` arm in [`scorer`](scorer/mod.rs); if the signal is optional
+(backend-dependent), add a `SignalSet` flag + a `signal_available` arm so it redistributes when absent. Then cover its
+contribution DIRECTION with a test and keep the explain-sums invariant green. The categorical signals also need a
+`classify.rs` classifier (shared by prod + fixtures) and an assembly line in `signals.rs`.
+
+## What M3 still leaves out
+
+- No SMB scoring, no offline-unmounted reads (M4): the scheduler's sweep + bus + incremental all gate on the local
+  `root` for now; `ImportanceIndex` already reads any volume's `importance.db`, so the offline read is mostly a matter of
+  M4 wiring the availability mask + not requiring a live index.
+- No IPC surface beyond `record_visit`; no user-facing strings, no i18n (`record_visit` and the tuning bin are invisible
+  to the app UI).
 
 ## Testing
 

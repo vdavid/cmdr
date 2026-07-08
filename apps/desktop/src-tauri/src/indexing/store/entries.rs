@@ -35,6 +35,33 @@ impl IndexStore {
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
+    /// Read every entry in the index in one query.
+    ///
+    /// Lets a full-index consumer (the importance recompute) pull the whole tree
+    /// once and reconstruct paths / bucket children in memory, instead of issuing
+    /// per-directory point queries. Ordered by id only for determinism; callers
+    /// index it into their own maps.
+    pub fn all_entries(conn: &Connection) -> Result<Vec<EntryRow>, IndexStoreError> {
+        let mut stmt = conn.prepare_cached(
+            "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
+             FROM entries ORDER BY id",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(EntryRow {
+                id: row.get(0)?,
+                parent_id: row.get(1)?,
+                name: row.get(2)?,
+                is_directory: row.get::<_, i32>(3)? != 0,
+                is_symlink: row.get::<_, i32>(4)? != 0,
+                logical_size: row.get(5)?,
+                physical_size: row.get(6)?,
+                modified_at: row.get(7)?,
+                inode: row.get(8)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
     /// List `(id, name)` pairs of child directories for a given parent entry ID.
     ///
     /// Used by `enrich_entries_with_index` to batch-fetch dir_stats for all

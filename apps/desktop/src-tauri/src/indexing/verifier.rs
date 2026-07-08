@@ -104,6 +104,10 @@ pub(super) fn maybe_verify(dir_path: String, writer: IndexWriter, app: AppHandle
         let affected_paths = verify_and_correct(&dir_path, &writer).await;
 
         if !affected_paths.is_empty() {
+            // The per-navigation verifier is root-scoped, so its live corrections
+            // publish under the local root for the importance scheduler's
+            // incremental rescore (plan Decision 5), alongside the FE emit.
+            super::lifecycle_bus::publish_dirs_changed(super::ROOT_VOLUME_ID, &affected_paths);
             reconciler::emit_dir_updated(&app, affected_paths);
         }
     });
