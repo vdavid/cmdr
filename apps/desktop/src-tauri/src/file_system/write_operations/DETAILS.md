@@ -300,6 +300,28 @@ network per edit (the pull), documented and accepted — there is no remote rand
 future in-place-append optimization). Remote backends don't carry the archive file's mode/mtime/xattr across the rewrite
 the way local `copyfile` does; the upload mints a fresh remote object.
 
+**Stale upload-temp reaping.** A crash or kill in the swap's ONE window (between the upload finishing and the swap
+committing) can leave the fully-uploaded temp on the remote under its `<archive>.cmdr-tmp-<uuid>` name. It's harmless
+(the original is intact and the temp holds the NEW bytes), but untidy. `pull_apply_upload_swap` reaps it at the start of
+the next edit of the SAME remote archive — the mirror of the local mutator's `reap_sibling_temps` — via a single
+`list_directory` of the archive's parent, deleting siblings that match this archive's own temp shape. Best-effort and
+non-blocking (a listing/delete failure is logged at debug, never fails or delays the edit); one round-trip, nothing on
+the read path. Pinned by the four `remote_edit_*` reap tests in `archive_remote_edit_tests` (stale-same-archive reaped,
+fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
+
+- **Decision — age-gate the remote reap at 24 h (`REMOTE_TEMP_REAP_MIN_AGE`); the local reap has no threshold.** The
+  local reap deletes every matching sibling unconditionally because edits of one archive serialize on the parent lane, so
+  a local leftover is ALWAYS an abandoned build. A remote share is multi-machine: a `<archive>.cmdr-tmp-*` sibling with
+  this exact shape may be a LIVE upload from ANOTHER Cmdr instance mid-flight, so the remote reap deletes only leftovers
+  whose reported mtime is older than 24 h (an entry with no mtime is treated as fresh and spared). Why 24 h: it must
+  comfortably exceed the longest plausible single-archive upload (tens of GB over a slow link still finishes in well under
+  a day) PLUS clock skew between this machine and the remote's mtime clock (SMB reports server mtime, MTP the device's;
+  the dangerous direction is a server clock BEHIND local, which inflates the computed age). The leftover is harmless while
+  it waits and gets cleaned lazily at a later edit, so erring long costs almost nothing; erring short risks deleting a
+  legitimate in-flight upload. Consequence, accepted: a crash-then-immediate-retry of the same archive leaves the leftover
+  in place until an edit more than 24 h after the crash — mtime alone can't tell "my own crash seconds ago" from "another
+  instance uploading now."
+
 - **Driver shape.** `archive_edit_start(events, request, interval)` mirrors the volume-delete branch: a deferred async
   start owns the op end to end (a `WriteSettledGuard`, the `ArchiveMutator` run on the blocking pool, the terminal
   event, `on_settled`). The op takes the PARENT drive's lane (archive work shares the device's serialization lane) and

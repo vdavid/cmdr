@@ -35,6 +35,7 @@
 use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
@@ -42,6 +43,26 @@ use uuid::Uuid;
 use super::state::{WriteOperationState, is_cancelled};
 use super::types::WriteOperationError;
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
+
+/// Same-directory temp infix: `foo.zip` uploads as `foo.zip.cmdr-tmp-<uuid>`.
+/// Mirrors the local mutator's convention and the app-wide `.cmdr-` crash-
+/// recoverable-temp prefix. Used to BUILD the upload temp name and to MATCH stale
+/// leftovers for reaping — the two must stay in lockstep.
+const TEMP_INFIX: &str = ".cmdr-tmp-";
+
+/// The minimum age a remote `<archive>.cmdr-tmp-*` leftover must reach before the
+/// next edit of the same archive reaps it. Deliberately generous: unlike the LOCAL
+/// reap (edits of one archive serialize on the parent lane, so any local leftover
+/// is always an abandoned build), a remote share is multi-machine, so a temp with
+/// this exact shape may be a LIVE upload from another Cmdr instance mid-flight. The
+/// threshold must comfortably exceed the longest plausible single-archive upload
+/// (tens of GB over a slow link still finishes in well under a day) plus clock skew
+/// between this machine and the remote's mtime clock (SMB reports server mtime, MTP
+/// the device's). A leftover is harmless while it waits (the original is intact and
+/// the temp holds the fully-uploaded NEW bytes), so erring long costs almost
+/// nothing; erring short risks deleting a legitimate in-flight upload. See the
+/// module docs and `write_operations/DETAILS.md` § "Remote edit".
+const REMOTE_TEMP_REAP_MIN_AGE: Duration = Duration::from_secs(24 * 60 * 60);
 
 /// A failure from the remote pull / upload / swap orchestration. Structurally the
 /// twin of `archive_edit::engine::PlanError` (a `From` impl in that module bridges them),
@@ -81,6 +102,12 @@ where
     if is_cancelled(&state.intent) {
         return Err(RemoteEditError::Cancelled);
     }
+
+    // Reap any stale upload temp left on the remote by a prior crash between an
+    // upload and its swap. Mirrors the local mutator's start-of-edit sibling reap,
+    // but age-gated (see `reap_remote_temps`). Best-effort and non-blocking: it
+    // never fails or delays the edit.
+    reap_remote_temps(parent.as_ref(), &archive_path).await;
 
     // A private local scratch dir; its `Drop` removes the working copy however we
     // leave this function (success, error, or cancel).
@@ -217,19 +244,75 @@ async fn swap_into_place(parent: &dyn Volume, remote_temp: &Path, archive_path: 
     Ok(())
 }
 
-/// `foo.zip` → `foo.zip.cmdr-tmp-<uuid>` in the same remote directory. Matches the
-/// local mutator's temp convention and the `.cmdr-` recoverable-temp prefix. A
-/// fresh uuid each edit, so a leftover from a crashed prior edit (an abandoned
-/// build — the original is intact) is never mistaken for this one.
+/// `foo.zip` → `foo.zip.cmdr-tmp-<uuid>` in the same remote directory. A fresh uuid
+/// each edit, so a leftover from a crashed prior edit (an abandoned upload — the
+/// original is intact) is never mistaken for this one.
 fn remote_temp_sibling(archive_path: &Path) -> PathBuf {
     let name = archive_path
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_else(|| "archive.zip".to_string());
-    let temp_name = format!("{name}.cmdr-tmp-{}", Uuid::new_v4());
+    let temp_name = format!("{name}{TEMP_INFIX}{}", Uuid::new_v4());
     match archive_path.parent() {
         Some(parent) => parent.join(temp_name),
         None => PathBuf::from(temp_name),
+    }
+}
+
+/// Reaps stale upload temps left on the remote by a crash between a prior upload
+/// and its swap (a `<archive>.cmdr-tmp-*` sibling holding the fully-uploaded new
+/// bytes under a temp name — harmless, but untidy). Runs at the start of the next
+/// edit of the SAME remote archive, the mirror of the local mutator's
+/// `reap_sibling_temps`, but with two remote-specific guards:
+///
+/// - **One round-trip.** A single `list_directory` of the archive's parent, then a
+///   `delete` per stale match. Nothing on the read path, no polling.
+/// - **Age-gated.** Only leftovers older than [`REMOTE_TEMP_REAP_MIN_AGE`] are
+///   removed, so a live upload from another Cmdr instance (same temp-name shape, a
+///   fresh mtime) is never deleted mid-flight. An entry with no reported mtime is
+///   treated as fresh and spared.
+///
+/// Matches ONLY this archive's own temp shape (`<archive-name>.cmdr-tmp-…`, files
+/// only), so a sibling archive's temps and unrelated files are untouched.
+///
+/// Best-effort throughout: a listing or delete failure is logged at debug and
+/// never fails or delays the user's edit.
+async fn reap_remote_temps(parent: &dyn Volume, archive_path: &Path) {
+    let (Some(dir), Some(file_name)) = (archive_path.parent(), archive_path.file_name()) else {
+        return;
+    };
+    let prefix = format!("{}{TEMP_INFIX}", file_name.to_string_lossy());
+
+    let entries = match parent.list_directory(dir, None).await {
+        Ok(entries) => entries,
+        Err(err) => {
+            log::debug!(target: "archive_remote_edit", "skipping remote temp reap ({}): {err}", dir.display());
+            return;
+        }
+    };
+
+    let now_secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let min_age_secs = REMOTE_TEMP_REAP_MIN_AGE.as_secs();
+
+    for entry in entries {
+        if entry.is_directory || !entry.name.starts_with(&prefix) {
+            continue;
+        }
+        // Spare anything without a confirmably-old mtime: an unknown mtime, or one
+        // younger than the threshold (a possible live upload), is left alone.
+        let old_enough = entry
+            .modified_at
+            .is_some_and(|modified| now_secs.saturating_sub(modified) >= min_age_secs);
+        if !old_enough {
+            continue;
+        }
+        let temp_path = dir.join(&entry.name);
+        if let Err(err) = parent.delete(&temp_path).await {
+            log::debug!(target: "archive_remote_edit", "couldn't reap remote temp {}: {err}", temp_path.display());
+        }
     }
 }
 

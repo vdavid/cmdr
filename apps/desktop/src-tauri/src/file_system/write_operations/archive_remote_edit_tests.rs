@@ -103,6 +103,137 @@ fn running_state() -> Arc<WriteOperationState> {
     Arc::new(WriteOperationState::new(Duration::from_millis(50)))
 }
 
+/// Unix-seconds "now", for aging a seeded temp relative to the reaper threshold.
+fn now_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+/// Seeds a leftover temp file next to (or near) the archive with a chosen mtime,
+/// so a reap test can model a stale crash leftover vs a live concurrent upload.
+/// The bytes don't matter — the reaper only lists names and mtimes, then deletes.
+async fn seed_temp(parent: &InMemoryVolume, temp_path: &Path, modified_at_secs: u64) {
+    parent
+        .create_file(temp_path, b"partial upload")
+        .await
+        .expect("seed temp");
+    parent.set_modified_at(temp_path, Some(modified_at_secs));
+}
+
+/// A plain add edit, driven against `parent` through the remote orchestration.
+/// Returns whether the edit committed (the error type isn't `Debug`, so callers
+/// assert on the boolean rather than `.expect()`ing).
+async fn run_add_edit(parent: Arc<dyn Volume>, archive_path: PathBuf) -> bool {
+    pull_apply_upload_swap(
+        parent,
+        archive_path,
+        running_state(),
+        move |working: &Path| -> Result<(), super::RemoteEditError> {
+            let changeset = Changeset {
+                adds: vec![add_entry("added.txt", b"fresh bytes")],
+                ..Default::default()
+            };
+            mutator::apply(working, &changeset, &NoHooks).expect("local mutator apply");
+            Ok(())
+        },
+    )
+    .await
+    .is_ok()
+}
+
+#[tokio::test]
+async fn remote_edit_reaps_a_stale_temp_for_the_same_archive() {
+    // A crash between a prior upload and its swap left `bundle.zip.cmdr-tmp-<uuid>`
+    // on the remote, well older than the reap threshold. The next edit of the same
+    // archive must delete it.
+    let archive_path = PathBuf::from("/device/bundle.zip");
+    let stale_temp = PathBuf::from("/device/bundle.zip.cmdr-tmp-0000stale");
+    let parent = remote_parent_with_zip(&archive_path, &build_zip(&[("keep.txt", b"keep me")])).await;
+    seed_temp(parent.as_ref(), &stale_temp, now_secs() - 48 * 60 * 60).await;
+
+    assert!(
+        run_add_edit(parent.clone() as Arc<dyn Volume>, archive_path.clone()).await,
+        "the remote edit should commit"
+    );
+
+    let names = sibling_names(parent.as_ref(), &archive_path).await;
+    assert!(
+        !names.iter().any(|n| n.contains(".cmdr-tmp-")),
+        "the stale leftover temp should be reaped, got: {names:?}"
+    );
+    // The edit itself still landed.
+    let back = read_remote_zip(parent.as_ref(), &archive_path).await;
+    assert!(back.contains_key("added.txt"), "the edit committed");
+}
+
+#[tokio::test]
+async fn remote_edit_keeps_a_fresh_temp_for_the_same_archive() {
+    // A temp with a recent mtime models a live concurrent upload from ANOTHER Cmdr
+    // instance (another machine on the same share). It must NOT be reaped mid-flight.
+    let archive_path = PathBuf::from("/device/bundle.zip");
+    let fresh_temp = PathBuf::from("/device/bundle.zip.cmdr-tmp-1111fresh");
+    let parent = remote_parent_with_zip(&archive_path, &build_zip(&[("keep.txt", b"keep me")])).await;
+    seed_temp(parent.as_ref(), &fresh_temp, now_secs()).await;
+
+    assert!(
+        run_add_edit(parent.clone() as Arc<dyn Volume>, archive_path.clone()).await,
+        "the remote edit should commit"
+    );
+
+    let names = sibling_names(parent.as_ref(), &archive_path).await;
+    assert!(
+        names.iter().any(|n| n == "bundle.zip.cmdr-tmp-1111fresh"),
+        "a fresh temp (a live concurrent upload) must be spared, got: {names:?}"
+    );
+}
+
+#[tokio::test]
+async fn remote_edit_ignores_a_stale_temp_for_a_different_archive() {
+    // A stale temp belonging to a DIFFERENT archive in the same dir must never be
+    // touched — the reaper matches only this archive's own temp-name shape.
+    let archive_path = PathBuf::from("/device/bundle.zip");
+    let other_temp = PathBuf::from("/device/other.zip.cmdr-tmp-2222other");
+    let parent = remote_parent_with_zip(&archive_path, &build_zip(&[("keep.txt", b"keep me")])).await;
+    seed_temp(parent.as_ref(), &other_temp, now_secs() - 48 * 60 * 60).await;
+
+    assert!(
+        run_add_edit(parent.clone() as Arc<dyn Volume>, archive_path.clone()).await,
+        "the remote edit should commit"
+    );
+
+    let names = sibling_names(parent.as_ref(), &archive_path).await;
+    assert!(
+        names.iter().any(|n| n == "other.zip.cmdr-tmp-2222other"),
+        "a different archive's temp must be left alone, got: {names:?}"
+    );
+}
+
+#[tokio::test]
+async fn remote_edit_reap_delete_failure_does_not_fail_the_edit() {
+    // The reap is best-effort: even when deleting the stale temp fails, the edit
+    // must still commit (it swaps via rename-overwrite, which doesn't call delete).
+    let archive_path = PathBuf::from("/device/bundle.zip");
+    let stale_temp = PathBuf::from("/device/bundle.zip.cmdr-tmp-3333stuck");
+    let parent = InMemoryVolume::new("Remote").with_delete_failing();
+    parent.create_directory(Path::new("/device")).await.expect("seed dir");
+    parent
+        .create_file(&archive_path, &build_zip(&[("keep.txt", b"keep me")]))
+        .await
+        .expect("seed zip");
+    seed_temp(&parent, &stale_temp, now_secs() - 48 * 60 * 60).await;
+    let parent = Arc::new(parent);
+
+    assert!(
+        run_add_edit(parent.clone() as Arc<dyn Volume>, archive_path.clone()).await,
+        "the edit commits despite a reap delete failure"
+    );
+
+    let back = read_remote_zip(parent.as_ref(), &archive_path).await;
+    assert!(back.contains_key("added.txt"), "the edit committed");
+}
+
 #[tokio::test]
 async fn remote_edit_adds_an_entry_and_swaps_it_into_place() {
     let archive_path = PathBuf::from("/device/bundle.zip");

@@ -63,6 +63,11 @@ pub struct InMemoryVolume {
     /// an atomic rename-overwrite. Default `false` (rejects collisions, like SMB /
     /// local / a plain in-memory store).
     sibling_duplicates_allowed: bool,
+    /// When `true`, [`Volume::delete`] returns an `IoError` instead of removing the
+    /// entry. Lets the remote-temp-reaper test prove a best-effort reap DELETE
+    /// failure never fails the surrounding edit (the edit commits via a
+    /// rename-overwrite swap, which doesn't call `delete`). Default `false`.
+    delete_fails: bool,
     /// Raw errno to inject on the next `list_directory` call. Cleared after use.
     #[cfg(feature = "playwright-e2e")]
     injected_error: std::sync::Mutex<Option<i32>>,
@@ -81,6 +86,7 @@ impl InMemoryVolume {
             read_range_log: std::sync::Mutex::new(Vec::new()),
             read_range_unsupported: false,
             sibling_duplicates_allowed: false,
+            delete_fails: false,
             #[cfg(feature = "playwright-e2e")]
             injected_error: std::sync::Mutex::new(None),
         }
@@ -92,6 +98,27 @@ impl InMemoryVolume {
     pub fn with_sibling_duplicates_allowed(mut self) -> Self {
         self.sibling_duplicates_allowed = true;
         self
+    }
+
+    /// Makes [`Volume::delete`] fail with an `IoError`, modeling a backend that
+    /// can't remove an entry. Used by the remote-temp-reaper test to prove a reap
+    /// delete failure never fails or blocks the edit.
+    pub fn with_delete_failing(mut self) -> Self {
+        self.delete_fails = true;
+        self
+    }
+
+    /// Test helper: overwrites an existing entry's `modified_at` (unix seconds), so
+    /// a test can age a file into the past (or clear its mtime). Panics if the path
+    /// isn't present.
+    pub fn set_modified_at(&self, path: &Path, modified_at: Option<u64>) {
+        let normalized = self.normalize(path);
+        self.entries
+            .write_ignore_poison()
+            .get_mut(&normalized)
+            .expect("set_modified_at: entry must exist")
+            .metadata
+            .modified_at = modified_at;
     }
 
     /// Makes [`Volume::read_range`] return `NotSupported`, modeling a remote
@@ -459,6 +486,13 @@ impl Volume for InMemoryVolume {
 
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            if self.delete_fails {
+                return Err(VolumeError::IoError {
+                    message: "injected delete failure".into(),
+                    raw_os_error: None,
+                });
+            }
+
             let mut entries = self.entries.write().map_err(|_| VolumeError::IoError {
                 message: "Lock poisoned".into(),
                 raw_os_error: None,
