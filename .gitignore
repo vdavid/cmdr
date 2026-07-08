@@ -80,3 +80,9 @@ docs/specs/file-viewer-selection-progress.md
 # cargo-mutants output (tooling artifacts, never commit)
 mutants.out/
 mutants.out.old/
+
+# Importance eval corpus: anonymized dumps of David's REAL folder trees + his
+# labels, for personalized weight tuning. Never committed — they're derived from
+# personal data and are David's to keep locally. The eval suite is green with none
+# present (CI has none). See docs/guides/importance-evals.md.
+apps/desktop/src-tauri/tests/importance-corpus/

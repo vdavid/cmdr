@@ -25,11 +25,11 @@ use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 /// pre-aggregated summary ([`ChildAggregate`]), NOT the child rows — the walk
 /// folds each file into this so no file rows stay resident (the O(dirs) memory
 /// shape).
-pub(super) struct IndexFolder {
-    pub(super) entry: EntryRow,
-    pub(super) path: String,
-    pub(super) children: ChildAggregate,
-    pub(super) has_marker_below: bool,
+pub(crate) struct IndexFolder {
+    pub(crate) entry: EntryRow,
+    pub(crate) path: String,
+    pub(crate) children: ChildAggregate,
+    pub(crate) has_marker_below: bool,
 }
 
 /// Walk every directory in a volume's index and build each folder's row,
@@ -51,7 +51,7 @@ pub(super) struct IndexFolder {
 /// in-memory `id → (parent_id, name)` directory map (no per-directory point
 /// query). `has_marker_below` is a single upward propagation after the walk, so a
 /// `.git` deep in a tree raises its ancestors (plan Decision 3).
-pub(super) fn walk_index_folders(conn: &rusqlite::Connection, _home: &str) -> Result<Vec<IndexFolder>, String> {
+pub(crate) fn walk_index_folders(conn: &rusqlite::Connection, _home: &str) -> Result<Vec<IndexFolder>, String> {
     let dirs = IndexStore::all_directories(conn).map_err(|e| e.to_string())?;
 
     // Index the directory rows: a lookup for path reconstruction, keyed by id.

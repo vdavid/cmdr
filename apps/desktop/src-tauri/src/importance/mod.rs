@@ -11,6 +11,7 @@
 
 pub(crate) mod classify;
 pub mod commands;
+pub mod evals;
 mod last_used;
 pub mod read;
 pub mod scheduler;

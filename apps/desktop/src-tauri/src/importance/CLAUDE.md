@@ -14,7 +14,7 @@ the visit signal, and the `ImportanceIndex` read API — including SMB scoring a
 - `read.rs` — `ImportanceIndex`, the consumer read API + recompute subscription.
 - `scheduler/` — bus-driven full + incremental recompute (coalesced per volume); `signals.rs`, `classify.rs`,
   `last_used.rs`, `commands.rs`.
-- `fixtures.rs` (`cfg(test)`) — `SyntheticHome`. Dev tuning: `index-query`'s `importance-tune` bin.
+- `fixtures.rs` (`cfg(test)`) — `SyntheticHome`. `evals/` — ranking-quality suite + corpus tooling for weight tuning.
 
 ## Must-knows
 
@@ -27,7 +27,8 @@ the visit signal, and the `ImportanceIndex` read API — including SMB scoring a
   distinct from a `None` value.
 - **Classification is typed, never a string/substring branch** (`no-string-matching`): `PathClass`, `SignalSet`,
   `SignalKind` are enums; the denylist is set-membership on the folded name (reuses `search::SYSTEM_DIR_EXCLUDES`).
-- **The default `Weights` are UNVALIDATED** (tune with the `importance-tune` bin). Don't hardcode them; pass a `Weights`.
+- **The default `Weights` are UNVALIDATED**; don't hardcode them, pass a `Weights`. Changing them can fail the `evals/`
+  soft-score floor (the tuning instrument — see [DETAILS.md](DETAILS.md)).
 
 ### Storage + scheduler (depth in [DETAILS.md](DETAILS.md))
 
@@ -36,17 +37,17 @@ the visit signal, and the `ImportanceIndex` read API — including SMB scoring a
   `WriterRegistry`; `record_visit` + every recompute route through it (don't spawn a per-call writer). A full pass writes
   all rows AND bumps the generation in ONE transaction; staleness is `as_of_generation < recompute_generation()`.
 - **The full-recompute walk is O(dirs), NOT O(entries)**: materialize directories (`all_directories`), STREAM file rows
-  (`for_each_file_child`) into a per-parent `ChildAggregate`. Don't reintroduce an `all_entries` walk (hundreds of MB
-  transient on NAS-sized volumes).
-- **Categorical signals live in `classify.rs`, shared by `signals` (prod) AND `fixtures` (tests)** — they MUST agree; don't
+  (`for_each_file_child`) into a per-parent `ChildAggregate`. Don't reintroduce an `all_entries` walk (hundreds of MB on
+  NAS-sized volumes).
+- **Categorical signals live in `classify.rs`**, shared by `signals` (prod) AND `fixtures`/`evals` (tests) — don't
   re-derive denylist / path-class / marker.
 - **Drive full recompute off the bus's `ScanCompleted` + the sweep (`ready_volumes_with_kind`), NEVER off phase events**
   (network volumes never emit `Aggregating`/`Reconciling`). Coalesce per volume.
 - **Volume kind decides the policy TYPED, never by id string** (`ScoringPolicy::for_kind`): Local + SMB scored (SMB drops
-  Spotlight ⇒ `last_used` redistributes), **MTP an explicit exclusion** — `record_visit` shares the gate; late volumes
+  Spotlight ⇒ `last_used` redistributes), **MTP an explicit exclusion**; `record_visit` shares the gate, late volumes
   wire via the registration bus.
-- **NEVER a filesystem syscall against an SMB/MTP mount** — read only the local index DB. Spotlight sampling is gated on
-  the mask (never runs for SMB); local sampling is a dedicated OS thread + autoreleasepool, never rayon.
+- **NEVER a filesystem syscall against an SMB/MTP mount** — read only the local index DB. Spotlight sampling is
+  mask-gated (never for SMB); local sampling is a dedicated OS thread + autoreleasepool, never rayon.
 
 ### Read API + incremental (depth in [DETAILS.md](DETAILS.md))
 
@@ -55,6 +56,6 @@ the visit signal, and the `ImportanceIndex` read API — including SMB scoring a
   so weights stay queryable OFFLINE after a volume unmounts, each carrying its as-of generation.
 - **Incremental writes at the CURRENT generation and does NOT bump it** (`write_weights_incremental`) — untouched folders
   keep their as-of markers; never route it through `write_weights` (that bumps). Driven by the `dir-changed` bus; ancestor
-  walk capped (`ANCESTOR_WALK_CAP`). A burst can drop a batch (last-value-wins `watch`) — the next full pass heals it.
+  walk capped (`ANCESTOR_WALK_CAP`). A burst can drop a batch (last-value-wins `watch`); the next full pass heals it.
 
 Adding a signal, and the signal catalog: [DETAILS.md](DETAILS.md).

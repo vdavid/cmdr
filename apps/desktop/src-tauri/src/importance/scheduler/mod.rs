@@ -48,9 +48,10 @@ use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexVolumeKind;
 
 mod recompute;
-use recompute::{
-    IncrementalInputs, RecomputeInputs, incremental_rescore, load_visits, recompute_folders, walk_index_folders,
-};
+use recompute::{IncrementalInputs, RecomputeInputs, incremental_rescore, load_visits, recompute_folders};
+// Re-exported for the eval corpus tool, which walks a real index the SAME way a
+// recompute does (so dumped signals match production exactly).
+pub(crate) use recompute::walk_index_folders;
 
 // ── Volume kind → scoring policy (plan M4, typed, never string-matched) ────
 

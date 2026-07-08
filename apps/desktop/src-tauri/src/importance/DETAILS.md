@@ -247,6 +247,42 @@ Find the DB under the app data dir as `importance-root.db` (beside `index-root.d
 lists each folder's score, then per-signal `weight`, `raw`, and `contribution` (skipping signals redistributed to zero),
 so a mis-ranked folder's cause is visible.
 
+## Ranking-quality evals (`evals/`, the weight-tuning instrument)
+
+The `importance-tune` bin above eyeballs a ranking; the `evals/` module MEASURES ranking quality, so a weight change
+becomes a number instead of a vibe. It's the measurement instrument for the plan's open-question 1 (unvalidated default
+weights). The full David-facing how-to (running, reading the score, adding a scenario, the snapshot/label/tune loop, the
+privacy contract) is [`docs/guides/importance-evals.md`](../../../../../docs/guides/importance-evals.md); the design in
+brief:
+
+- **A `Scenario` is the shared unit**: folders + their derived `FolderSignals` + two tiers of ranking expectations
+  (`scenario.rs`). NOT a synthetic tree — the pure scorer only needs signals, and this is exactly what a real-index dump
+  can export. So synthetic scenarios (`scenarios.rs`) and anonymized corpus dumps (`corpus.rs`) load into the SAME type
+  and score through the same path.
+- **Hard vs. soft, and the floor** (`constraints.rs`): hard constraints are ordering facts asserted as `#[test]`s (a
+  violation fails CI); soft constraints are counted into a scalar quality score. The aggregate soft score is pinned to a
+  FIXED floor constant (`SOFT_SCORE_FLOOR` in `evals/tests.rs`), consciously raised when tuning improves quality — never
+  a self-updating ratchet. `score_scenario(scenario, weights) -> f64` is the pure, fast fitness function a grid-search
+  could optimize.
+- **The corpus tool reuses production signal-derivation** (`corpus.rs` calls `scheduler::walk_index_folders` +
+  `signals::signals_for_dir`), so a dumped scenario's signals match what the live scheduler computes. The
+  `importance-snapshot` bin (`crates/index-query`) wraps it: read a real `index-{volume_id}.db` READ-ONLY, derive
+  signals, anonymize every folder name, and write a `.scenario.json` + a `.labels.json` template into a GITIGNORED
+  corpus dir (`apps/desktop/src-tauri/tests/importance-corpus/`). Real dumps are NEVER committed; the suite is green with
+  zero corpus files present.
+- **Anonymization is the privacy crux** (`corpus.rs`): the scorer reads a folder name ONLY through the classifiers, so
+  every name that doesn't feed one becomes a stable `dir-<hash>` placeholder with zero effect on the score. Kept
+  verbatim: denylist hits, dot-prefixed names, path-class anchors (as home children), project markers. The home root
+  itself becomes a synthetic `/home` or `/volume`. Pinned by the `corpus/tests.rs` privacy tests.
+
+### Known default-weight gap the real-corpus evals surfaced
+
+Scoring David's real `index-root.db` (646k folders) with default weights ranks deep machine-output folders at the TOP:
+the denylist floors a folder NAMED `node_modules`/`.git`, but NOT its descendants, so a `node_modules/<pkg>/dist` (312k
+such descendant folders in the root tree) inherits a project-root prior from an ancestor `.git` and scores ~0.85. This
+is a scorer-LOGIC gap (the denylist doesn't propagate to descendants), not a weight-tuning problem — no `Weights` value
+fixes it. It's the top follow-up for the scorer itself; the evals make it visible and would regression-guard a fix.
+
 ## Adding a signal (step-by-step)
 
 Add the field to [`FolderSignals`](scorer/types.rs) (+ `neutral()`), a `SignalKind` variant (+ `ALL`), a `Weights`
