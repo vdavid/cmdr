@@ -30,9 +30,19 @@ Backend half (decrypt in the read path, the typed `ArchiveNeedsPassword` signal,
 `DETAILS.md` § "Archive-password prompt".
 
 **WinZip AES zip and 7z AES still deferred.** Enabling the `aes` crate (zip `aes-crypto` / sevenz `aes256`) pulls stable
-`aes 0.9.1`, which conflicts with `smb2`'s pinned `aes =0.9.0-rc.4` (its SMB3 AEAD stack) — Cargo can't unify. An AES
-entry returns a typed `Unsupported` (honest, not a prompt that can't succeed); the AES branch is stubbed for a one-line
-flip once the versions align.
+`aes 0.9.1`, which conflicts with `smb2`'s pinned `aes =0.9.0-rc.4` (its SMB3 AEAD stack) — Cargo can't unify. Both AES
+kinds refuse honestly as `Unsupported` today (never "damaged", never a prompt that can't succeed): zip via the stubbed
+AES branch in `zip::open_read`, 7z via `sevenz.rs::map_sevenz_err` (the unrecognized `AES256_SHA256` coder). The two
+follow-ups differ in size once the `aes` versions align:
+
+- **WinZip AES zip is close to a one-line flip:** turn on `aes-crypto` and fill the already-stubbed AES branch — the
+  password plumbing (per-archive storage, prompt, re-dispatch, wrong-password detection) is the same ZipCrypto path,
+  already shipped.
+- **7z AES is NOT a one-line flip.** Beyond the `aes256` feature, `sevenz-rust2` wants the password at
+  `ArchiveReader::new` time, so a real 7z-AES path must thread a per-archive password through `read/sevenz.rs`'s `parse`
+  AND every `open_read` / `stream_subtree` re-open (each currently passes `Password::empty()`), then surface
+  `Encrypted` / `WrongPassword` from `map_sevenz_err` instead of `Unsupported`. That's new parse/read plumbing, not a
+  flag.
 
 ## 3. M-append: fast in-place zip edits (perf, research spike)
 

@@ -39,7 +39,9 @@ planning, reorganizing, or advising.
   routed through the `zip` crate's `by_index_decrypt` by CENTRAL-DIRECTORY ORDINAL (rc-zip parses but can't decrypt; the
   ordinals align — pinned). No password ⇒ `Encrypted`; wrong ⇒ `WrongPassword` (ZipCrypto's wrong-password may surface
   late as an end-of-stream CRC, mapped by io-kind not message). WinZip AES and 7z AES are deferred (`aes` crate conflicts
-  with `smb2`) and return a typed refusal. Filename encoding is rc-zip's job — consume the decoded `entry.name`.
+  with `smb2`) and refuse honestly as `Unsupported` (→ `NotSupported`; never a "damaged archive", never a password
+  prompt that can't succeed) — for 7z via `sevenz.rs::map_sevenz_err`. Filename encoding is rc-zip's job — consume the
+  decoded `entry.name`.
 - **The index cache key is `(path, size, mtime)`** (external edits auto-invalidate); `index_for_local` is blocking, call
   it from `spawn_blocking`.
 - **Two DoS caps bound the synthetic tree**: per-entry depth (`name::MAX_COMPONENT_DEPTH`, over-deep entries quarantine)

@@ -11,8 +11,10 @@
 //!
 //! Encryption is out of scope: the `aes256` feature is off (it would pull an
 //! `aes` version conflicting with `smb2`'s pinned pre-release; see the archive
-//! `DETAILS.md`), so an AES-encrypted 7z surfaces a typed error rather than being
-//! decrypted — matching the deferral of WinZip AES zip.
+//! `DETAILS.md`), so an AES-encrypted 7z refuses honestly as `Unsupported` (a
+//! "can't open this kind" the user sees, never a "damaged archive" or a password
+//! prompt) rather than being decrypted. The classification lives in
+//! [`map_sevenz_err`]; matching the deferral of WinZip AES zip.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -208,9 +210,58 @@ pub(super) fn stream_subtree(source: Arc<dyn ArchiveByteSource>, mut wanted: Has
     }
 }
 
-/// Maps a `sevenz-rust2` error to a typed [`ArchiveError`]. Encryption without
-/// the `aes256` feature, and any unknown codec, surface as `Unsupported`; a
-/// malformed header as `Corrupt`.
+/// Maps a `sevenz-rust2` error to a typed [`ArchiveError`], classifying by enum
+/// variant (never message text, per `no-string-matching`).
+///
+/// The load-bearing case is encryption. We build `sevenz-rust2` with the
+/// `aes256` feature OFF (its `aes` crate conflicts with `smb2`'s pin; see the
+/// archive `DETAILS.md`), so an AES-encrypted 7z has an unrecognized coder and
+/// the crate returns `UnsupportedCompressionMethod("AES256_SHA256")` — for a
+/// header-encrypted archive at open (`ArchiveReader::new`), for a data-encrypted
+/// one at decode (`for_each_entries`). Both must land on [`ArchiveError::Unsupported`]
+/// (→ `VolumeError::NotSupported`, the honest "can't open this kind"), NOT
+/// [`ArchiveError::Corrupt`] (which reads to the user as a DAMAGED archive) and NOT
+/// [`ArchiveError::Encrypted`] (which prompts for a password a 7z read can never
+/// satisfy here). A genuinely-unknown codec produces the same variant and is
+/// honestly "unsupported" too, so no AES-specific coder-id check is needed.
+/// (Verified on sevenz-rust2 0.21.2, `aes256` off, against real `7z`-produced
+/// `-mhe=on`/`-mhe=off` fixtures, 2026-07-08.)
+///
+/// The `PasswordRequired` / `MaybeBadPassword` variants only arise with `aes256`
+/// ON; they're mapped to `Unsupported` too so encryption never reads as damaged
+/// if the feature is ever enabled without a matching password-threading path.
 fn map_sevenz_err(err: sevenz_rust2::Error) -> ArchiveError {
-    ArchiveError::Corrupt(format!("7z: {err}"))
+    use sevenz_rust2::Error as E;
+    match err {
+        // Encryption (our `aes256`-off build) and any unknown/unsupported coder:
+        // an honest "can't serve this kind", never "damaged".
+        E::UnsupportedCompressionMethod(method) => ArchiveError::Unsupported(format!("7z coder: {method}")),
+        E::Unsupported(msg) => ArchiveError::Unsupported(format!("7z: {msg}")),
+        E::ExternalUnsupported => ArchiveError::Unsupported("7z uses an unsupported external coder".to_string()),
+        E::UnsupportedVersion { major, minor } => ArchiveError::Unsupported(format!("7z format version {major}.{minor}")),
+        E::PasswordRequired | E::MaybeBadPassword(_) => ArchiveError::Unsupported("7z is encrypted".to_string()),
+        // A memory-limit refusal is a resource cap, not damage: reuse the tree-size
+        // rejection so it never reads as "damaged".
+        E::MaxMemLimited { max_kb, actaul_kb } => {
+            ArchiveError::TooLarge(format!("7z needs {actaul_kb} KB to decode, over the {max_kb} KB limit"))
+        }
+        // Underlying byte-source I/O: reuse the io-kind classifier (UnexpectedEof ⇒ Corrupt).
+        E::Io(io, _) | E::FileOpen(io, _) => ArchiveError::from(io),
+        // Everything else is a structurally broken or truncated archive. `err` is
+        // still owned here (every sub-pattern binds nothing), so format it whole.
+        E::BadSignature(_)
+        | E::ChecksumVerificationFailed
+        | E::NextHeaderCrcMismatch
+        | E::BadTerminatedStreamsInfo(_)
+        | E::BadTerminatedUnpackInfo
+        | E::BadTerminatedPackInfo(_)
+        | E::BadTerminatedSubStreamsInfo
+        | E::BadTerminatedHeader(_)
+        | E::Other(_)
+        | E::FileNotFound => ArchiveError::Corrupt(format!("7z: {err}")),
+    }
 }
+
+#[cfg(test)]
+#[path = "sevenz_test.rs"]
+mod sevenz_test;

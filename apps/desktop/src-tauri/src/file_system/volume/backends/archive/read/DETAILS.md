@@ -157,8 +157,10 @@ the per-entry decrypt engine.
   feature. **WinZip AES** (the `Method::Aex` marker) would need the `zip` crate's `aes-crypto` feature, and **7z AES**
   the `sevenz-rust2` `aes256` feature — both pull `aes ^0.9` (stable 0.9.1), which CONFLICTS with `smb2`'s pinned
   `aes =0.9.0-rc.4` (its SMB3 AEAD stack), so Cargo can't unify. Until the `aes` versions align, an AES zip entry returns
-  a typed `Unsupported` (honest — not a password prompt that could never succeed) and encrypted 7z stays a typed refusal.
-  Flipping the two features on (plus the AES branch in `zip::open_read`, already stubbed) is the whole AES follow-up.
+  a typed `Unsupported` (honest — not a password prompt that could never succeed), and an encrypted 7z refuses the same
+  way: `sevenz.rs::map_sevenz_err` classifies the unrecognized `AES256_SHA256` coder as `Unsupported`.
+  Flipping zip's `aes-crypto` on (plus the AES branch in `zip::open_read`, already stubbed) is the zip AES follow-up; 7z
+  AES needs more than the feature flag (see below).
 - **Wrong-password detection.** zip AES verifies a 2-byte password check at open (`InvalidPassword` → `WrongPassword`,
   instant) — relevant once AES lands. ZipCrypto checks a single byte at open, so ~1/256 of wrong passwords slip through
   and surface LATE as an end-of-stream CRC mismatch: the `zip` crate returns `io::ErrorKind::InvalidData` ("Invalid
@@ -205,8 +207,16 @@ at offset 0 — a plain tar's `ustar` at offset 257, so the confirm reads a 512-
 streaming `.xz` reader `lzma-rs` lacks), zstd → `ruzstd`'s `StreamingDecoder`. Each handles concatenated members
 (`gzip -c a b`). tar parsing/streaming rides the `tar` crate over a `SourceReader` (a `Read`+`Seek` cursor on the byte
 source); 7z uses `sevenz-rust2`'s `ArchiveReader` (needs `Read`+`Seek`, hence `SourceReader`). LZMA/LZMA2 (the common 7z
-codec) is built into `sevenz-rust2`; `bzip2`/`deflate`/`ppmd` are feature-enabled. `aes256` is OFF, so an encrypted 7z
-surfaces a typed error rather than being decrypted (matches zip's "encrypted → reject").
+codec) is built into `sevenz-rust2`; `bzip2`/`deflate`/`ppmd` are feature-enabled. `aes256` is OFF, so an AES-encrypted
+7z has an unrecognized coder: `sevenz-rust2` returns `UnsupportedCompressionMethod("AES256_SHA256")` — at open
+(`ArchiveReader::new`) for a header-encrypted archive (`7z -mhe=on`, browsing itself refused), at decode
+(`for_each_entries`) for a data-encrypted one (`7z -mhe=off`, browsing works, extraction refused). `map_sevenz_err`
+classifies both (plus the `aes256`-on-only `PasswordRequired` / `MaybeBadPassword`) as `Unsupported` → `NotSupported`:
+the honest "can't open this kind", NOT `Corrupt` ("damaged") and NOT `Encrypted` (a password prompt a 7z read can never
+satisfy here). Pinned by `sevenz_test.rs`. (Verified on sevenz-rust2 0.21.2, `aes256` off, against real `7z` fixtures,
+2026-07-08.) Enabling it isn't a one-line feature flip: `sevenz-rust2` needs the password at `ArchiveReader::new` time
+(a `Password`, not `Password::empty()`), so a real 7z-AES path must thread a per-archive password through `parse` AND
+every `open_read` / `stream_subtree` re-open — the parse/read plumbing zip's ZipCrypto path already has, which 7z lacks.
 
 **Access class — the sequential trap (`ArchiveFormat::is_sequential`, `Volume::extraction_is_sequential`).** A plain
 `.tar` is RANDOM-access: `TarStore` records each member's data offset, so `open_read` seeks and streams the member's
