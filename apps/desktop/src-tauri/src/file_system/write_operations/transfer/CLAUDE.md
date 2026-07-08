@@ -12,7 +12,8 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
 - Local-FS: `copy/` (orchestration, per-file `single_item.rs`, `CopyTransaction` rollback), `move_op.rs` (same-fs
   rename / cross-fs staging), `copy_strategy.rs` + `{macos,linux,chunked}_copy.rs` (per-file strategy + backends).
 - Shared driver: `transfer_driver/` (`drive_transfer_serial_sync` + `_async`, per-file progress builders).
-- Volume: `volume_{copy,move,preflight,rename_merge,conflict,strategy}.rs`.
+- Volume: `volume_{copy,move,preflight,rename_merge,conflict,strategy}.rs`, plus `checkpoint_stream.rs`
+  (`CheckpointStream`, described below).
 
 ## Must-knows (data-safety invariants)
 
@@ -49,12 +50,12 @@ Shared `WriteOperationState`, `OperationIntent`, cancel/rollback, ETA, and settl
 - **`stream_pipe_file` retries once on `VolumeError::StaleDestinationHandle`** (re-opens source, re-runs
   `write_from_stream`): the only layer that can retry an MTP stale-handle rejection (backend stream is single-use), so
   don't drop the loop. Why: [`mtp/connection/DETAILS.md`](../../../mtp/connection/DETAILS.md).
-- **Cross-volume copy parks/yields between windows** via `volume_strategy.rs`'s `CheckpointStream` (sync `on_progress`
+- **Cross-volume copy parks/yields between windows** via `checkpoint_stream.rs`'s `CheckpointStream` (sync `on_progress`
   can't `.await`; pause/yield in the wrapper, cancel in the backend's `on_progress`). MTP reads are bounded windows
   holding no session between them, so pause and yield both mean **don't start the next window** (park in place) — NO
   release/reopen. Triggers: **user pause** parks everyone; **auto-yield to foreground** — on
   `foreground_pending` the copy `background_yield_point`s before the next window (gated by `supports_foreground_yield()`,
-  MTP only), a yielding gate user like the scan, op stays **Running** (don't flip `OperationIntent`). A cancel-aware
+  MTP only), op stays **Running** (don't flip `OperationIntent`). A cancel-aware
   debounce + min-progress floor prevent park thrash and starvation. DETAILS §§ "Pause … chunks", "Foreground
   auto-yield".
 

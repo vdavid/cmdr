@@ -9,6 +9,7 @@
 //! resolution, transfer driver design, platform-specific copy backends, and
 //! volume-aware copy/move details.
 
+pub(super) mod checkpoint_stream;
 pub(super) mod chunked_copy;
 pub(super) mod copy;
 pub(super) mod copy_strategy;

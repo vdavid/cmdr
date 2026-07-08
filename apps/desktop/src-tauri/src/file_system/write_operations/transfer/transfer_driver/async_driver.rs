@@ -154,7 +154,7 @@ where
         // the op is paused, without blocking an executor thread. Returns
         // immediately if cancelled — the next iteration's `is_cancelled` bails.
         // The cross-volume streaming path ALSO parks between chunks
-        // (`volume_strategy.rs` `CheckpointStream`), so a paused single large
+        // (`checkpoint_stream.rs` `CheckpointStream`), so a paused single large
         // file stops mid-stream rather than streaming to completion. The
         // concurrent `copy_volumes_with_progress` `FuturesUnordered` path has no
         // between-files boundary and does NOT honor mid-batch pause (see

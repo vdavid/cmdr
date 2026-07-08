@@ -29,7 +29,6 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume_move.rs": 981,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume_move_tests.rs": 1466,
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume_rename_merge_tests.rs": 897,
-    "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume_strategy.rs": 847,
     "apps/desktop/src-tauri/src/file_viewer/session.rs": 1459,
     "apps/desktop/src-tauri/src/file_viewer/session_test.rs": 1777,
     "apps/desktop/src-tauri/src/indexing/event_loop.rs": 1377,
