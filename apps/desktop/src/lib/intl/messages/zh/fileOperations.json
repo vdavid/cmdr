@@ -547,6 +547,34 @@
   "@fileOperations.errorDialog.tooLargeAndMore": {
     "sourceHash": "ff109f8"
   },
+  "fileOperations.archivePassword.title": "需要密码",
+  "@fileOperations.archivePassword.title": {
+    "sourceHash": "54fd670"
+  },
+  "fileOperations.archivePassword.retryTitle": "还是不行",
+  "@fileOperations.archivePassword.retryTitle": {
+    "sourceHash": "dd30abb"
+  },
+  "fileOperations.archivePassword.message": "<archive>{name}</archive> 受密码保护。输入密码即可解锁。",
+  "@fileOperations.archivePassword.message": {
+    "sourceHash": "ba28841"
+  },
+  "fileOperations.archivePassword.retryMessage": "这个密码没能解锁 <archive>{name}</archive>。再试一次吧。",
+  "@fileOperations.archivePassword.retryMessage": {
+    "sourceHash": "88ef11a"
+  },
+  "fileOperations.archivePassword.inputAria": "压缩文件密码",
+  "@fileOperations.archivePassword.inputAria": {
+    "sourceHash": "3c652b7"
+  },
+  "fileOperations.archivePassword.placeholder": "密码",
+  "@fileOperations.archivePassword.placeholder": {
+    "sourceHash": "e7cf3ef"
+  },
+  "fileOperations.archivePassword.unlock": "解锁",
+  "@fileOperations.archivePassword.unlock": {
+    "sourceHash": "4ac709a"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {文件夹名中不能包含“/”或空字符} other {文件名中不能包含“/”或空字符}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

@@ -549,6 +549,34 @@
   "@fileOperations.errorDialog.tooLargeAndMore": {
     "sourceHash": "ff109f8"
   },
+  "fileOperations.archivePassword.title": "Jelszó szükséges",
+  "@fileOperations.archivePassword.title": {
+    "sourceHash": "54fd670"
+  },
+  "fileOperations.archivePassword.retryTitle": "Ez nem jött össze",
+  "@fileOperations.archivePassword.retryTitle": {
+    "sourceHash": "dd30abb"
+  },
+  "fileOperations.archivePassword.message": "A(z) <archive>{name}</archive> jelszóval védett. Add meg a jelszót a feloldásához.",
+  "@fileOperations.archivePassword.message": {
+    "sourceHash": "ba28841"
+  },
+  "fileOperations.archivePassword.retryMessage": "Ez a jelszó nem oldotta fel a(z) <archive>{name}</archive> fájlt. Próbáld meg újra.",
+  "@fileOperations.archivePassword.retryMessage": {
+    "sourceHash": "88ef11a"
+  },
+  "fileOperations.archivePassword.inputAria": "Archívum jelszava",
+  "@fileOperations.archivePassword.inputAria": {
+    "sourceHash": "3c652b7"
+  },
+  "fileOperations.archivePassword.placeholder": "Jelszó",
+  "@fileOperations.archivePassword.placeholder": {
+    "sourceHash": "e7cf3ef"
+  },
+  "fileOperations.archivePassword.unlock": "Feloldás",
+  "@fileOperations.archivePassword.unlock": {
+    "sourceHash": "4ac709a"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {A mappa neve nem tartalmazhat „/” vagy null karaktert} other {A fájlnév nem tartalmazhat „/” vagy null karaktert}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

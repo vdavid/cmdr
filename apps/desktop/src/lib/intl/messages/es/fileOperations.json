@@ -548,6 +548,34 @@
   "@fileOperations.errorDialog.tooLargeAndMore": {
     "sourceHash": "ff109f8"
   },
+  "fileOperations.archivePassword.title": "Contraseña necesaria",
+  "@fileOperations.archivePassword.title": {
+    "sourceHash": "54fd670"
+  },
+  "fileOperations.archivePassword.retryTitle": "No ha funcionado",
+  "@fileOperations.archivePassword.retryTitle": {
+    "sourceHash": "dd30abb"
+  },
+  "fileOperations.archivePassword.message": "<archive>{name}</archive> está protegido con contraseña. Introduce la contraseña para desbloquearlo.",
+  "@fileOperations.archivePassword.message": {
+    "sourceHash": "ba28841"
+  },
+  "fileOperations.archivePassword.retryMessage": "Esa contraseña no ha desbloqueado <archive>{name}</archive>. Inténtalo de nuevo.",
+  "@fileOperations.archivePassword.retryMessage": {
+    "sourceHash": "88ef11a"
+  },
+  "fileOperations.archivePassword.inputAria": "Contraseña del archivo comprimido",
+  "@fileOperations.archivePassword.inputAria": {
+    "sourceHash": "3c652b7"
+  },
+  "fileOperations.archivePassword.placeholder": "Contraseña",
+  "@fileOperations.archivePassword.placeholder": {
+    "sourceHash": "e7cf3ef"
+  },
+  "fileOperations.archivePassword.unlock": "Desbloquear",
+  "@fileOperations.archivePassword.unlock": {
+    "sourceHash": "4ac709a"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {El nombre de la carpeta no puede contener “/” ni caracteres nulos} other {El nombre del archivo no puede contener “/” ni caracteres nulos}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

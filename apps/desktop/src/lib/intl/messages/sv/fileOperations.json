@@ -549,6 +549,34 @@
   "@fileOperations.errorDialog.tooLargeAndMore": {
     "sourceHash": "ff109f8"
   },
+  "fileOperations.archivePassword.title": "Lösenord krävs",
+  "@fileOperations.archivePassword.title": {
+    "sourceHash": "54fd670"
+  },
+  "fileOperations.archivePassword.retryTitle": "Det fungerade inte",
+  "@fileOperations.archivePassword.retryTitle": {
+    "sourceHash": "dd30abb"
+  },
+  "fileOperations.archivePassword.message": "<archive>{name}</archive> är lösenordsskyddad. Ange lösenordet för att låsa upp den.",
+  "@fileOperations.archivePassword.message": {
+    "sourceHash": "ba28841"
+  },
+  "fileOperations.archivePassword.retryMessage": "Det lösenordet låste inte upp <archive>{name}</archive>. Försök igen.",
+  "@fileOperations.archivePassword.retryMessage": {
+    "sourceHash": "88ef11a"
+  },
+  "fileOperations.archivePassword.inputAria": "Arkivlösenord",
+  "@fileOperations.archivePassword.inputAria": {
+    "sourceHash": "3c652b7"
+  },
+  "fileOperations.archivePassword.placeholder": "Lösenord",
+  "@fileOperations.archivePassword.placeholder": {
+    "sourceHash": "e7cf3ef"
+  },
+  "fileOperations.archivePassword.unlock": "Lås upp",
+  "@fileOperations.archivePassword.unlock": {
+    "sourceHash": "4ac709a"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Mappnamn får inte innehålla ”/” eller nolltecken} other {Filnamn får inte innehålla ”/” eller nolltecken}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"

@@ -550,6 +550,34 @@
   "@fileOperations.errorDialog.tooLargeAndMore": {
     "sourceHash": "ff109f8"
   },
+  "fileOperations.archivePassword.title": "Mot de passe requis",
+  "@fileOperations.archivePassword.title": {
+    "sourceHash": "54fd670"
+  },
+  "fileOperations.archivePassword.retryTitle": "Ça n''a pas marché",
+  "@fileOperations.archivePassword.retryTitle": {
+    "sourceHash": "dd30abb"
+  },
+  "fileOperations.archivePassword.message": "L''archive <archive>{name}</archive> est protégée par un mot de passe. Saisissez le mot de passe pour la déverrouiller.",
+  "@fileOperations.archivePassword.message": {
+    "sourceHash": "ba28841"
+  },
+  "fileOperations.archivePassword.retryMessage": "Ce mot de passe n''a pas déverrouillé <archive>{name}</archive>. Réessayez.",
+  "@fileOperations.archivePassword.retryMessage": {
+    "sourceHash": "88ef11a"
+  },
+  "fileOperations.archivePassword.inputAria": "Mot de passe de l''archive",
+  "@fileOperations.archivePassword.inputAria": {
+    "sourceHash": "3c652b7"
+  },
+  "fileOperations.archivePassword.placeholder": "Mot de passe",
+  "@fileOperations.archivePassword.placeholder": {
+    "sourceHash": "e7cf3ef"
+  },
+  "fileOperations.archivePassword.unlock": "Déverrouiller",
+  "@fileOperations.archivePassword.unlock": {
+    "sourceHash": "4ac709a"
+  },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Le nom du dossier ne peut pas contenir « / » ni de caractère null} other {Le nom du fichier ne peut pas contenir « / » ni de caractère null}}",
   "@fileOperations.validation.disallowedChars": {
     "sourceHash": "d84512c"
