@@ -300,3 +300,11 @@ Cmdr browses zip/tar/7z archives like folders; this batch added the settings, me
 - **queue.row.label progress arms (rename / create folder / create file)** · `Renomeando` / `Criando pasta` /
   `Criando arquivo` · pt-BR gerund style of the sibling arms (NOT the pt-PT "A criar"/"A mudar o nome" Nautilus shows);
   settled `Renomear`→gerund, `pasta`/`arquivo` · high
+
+### Archive-password dialog terms (encrypted-zip unlock modal, `fileOperations.archivePassword.*`, 2026-07-08)
+
+- password-protected → `protegido por senha` · TC/DC pt-BR phrasing · high. Body: "… está protegido por senha."
+- password (noun) → `Senha` · macOS/MS pt-BR · high.
+- unlock (button + verb) → `Desbloquear` · macOS AppKit ("Desbloquear") · high. Verb form "desbloqueá-lo".
+- archive (the `{name}` head / input label) → `arquivo compactado` · settled pt glossary · high. Input aria-label "Senha
+  do arquivo compactado".

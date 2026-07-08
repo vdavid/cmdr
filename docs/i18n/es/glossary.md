@@ -515,3 +515,11 @@ AppKit + SystemSettings, 2026-06-21).
   ICU select fills X with the article+noun so it agrees ("la imagen"/"el PDF"/"el texto"); impersonal "Se pegó"
   (preterite) matches the settled transfer-toast "Se movió" pattern and avoids gendering the user; "como {filename}"
   reads correctly for any generated name · high
+
+### Settled during the archive-password dialog pass (encrypted-zip unlock modal, `fileOperations.archivePassword.*`; macOS AppKit + Total/Double Commander es, 2026-07-08)
+
+- password-protected → `protegido con contraseña` · TC/DC es phrasing · high. Body: "… está protegido con contraseña."
+- password (noun) → `Contraseña` · macOS/MS es · high.
+- unlock (button + verb) → `Desbloquear` · macOS AppKit ("Desbloquear") · high. Verb form "desbloquearlo".
+- archive (the `{name}` head / input label) → `archivo comprimido` · settled es glossary · high. Input aria-label
+  "Contraseña del archivo comprimido".

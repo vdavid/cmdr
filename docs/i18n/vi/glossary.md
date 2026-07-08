@@ -560,3 +560,12 @@ image → `hình ảnh`, folder → `thư mục`, rename → `đổi tên`, copy
   transform-into-a-file sense; the catalog also attests `dưới dạng` for "as" (git portal "dưới dạng thư mục ảo"), but
   `thành` is the tighter fit for content turning into a file and reads shorter in a label. `high`.
 - **do nothing (radio option): `Không làm gì`** · plain negation of `làm` (do); natural. `high`.
+
+Settled during the archive-password dialog pass (encrypted-zip unlock modal `fileOperations.archivePassword.*`,
+2026-07-08):
+
+- password-protected → `được bảo vệ bằng mật khẩu` · TC/DC vi phrasing · high. Body: "… được bảo vệ bằng mật khẩu."
+- password (noun) → `Mật khẩu` · macOS/MS · high.
+- unlock (button + verb) → `Mở khóa` · macOS AppKit ("Mở khóa") · high.
+- archive (the `{name}` head / input label) → `tệp nén` (compressed file) · settled vi glossary · high. Input aria-label
+  "Mật khẩu tệp nén".

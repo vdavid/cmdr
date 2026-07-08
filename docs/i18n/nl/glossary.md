@@ -646,3 +646,14 @@ From the paste-clipboard-as-file pass (5 `settings.fileOperations.pasteClipboard
   infinitive · high
 - create and rename → Aanmaken en naam wijzigen · glossary create→aanmaken + rename→naam wijzigen (macOS Finder "Wijzig
   naam" / "naam wijzigen"); radio-option infinitive · high
+
+## Archive-password dialog (2026-07-08)
+
+Terms settled while translating the encrypted-archive unlock modal (`fileOperations.archivePassword.*`; macOS AppKit +
+Total/Double Commander nl).
+
+- password-protected → `beveiligd met een wachtwoord` · TC/DC nl phrasing · high. Body: "… is beveiligd met een
+  wachtwoord."
+- password (noun) → `Wachtwoord` · macOS/MS · high. Input aria-label compounds to `Archiefwachtwoord`.
+- unlock (button + verb) → `Ontgrendelen` · macOS AppKit ("Ontgrendelen") · high. Verb "om het te ontgrendelen".
+- archive (the `{name}` head) → `archief` · settled nl glossary · high.

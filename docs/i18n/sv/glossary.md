@@ -496,3 +496,15 @@ ones:
   per phrase (image → "en bild", pdf → "en PDF", text → bare mass noun); "från urklipp" (from the clipboard) renders the
   "clipboard" modifier uniformly across all three branches (compounding urklipps+bild/PDF/text wouldn't read cleanly).
   `{filename}` is uncontrolled, so the sentence ends on it and reads correctly for any value. `high`.
+
+## Archive-password dialog (2026-07-08)
+
+Terms settled while translating the encrypted-archive unlock modal (`fileOperations.archivePassword.*`; macOS AppKit +
+Total/Double Commander sv).
+
+- password-protected → `lösenordsskyddad` · TC/DC sv phrasing · high. Body: "… är lösenordsskyddad."
+- password (noun) → `Lösenord` · macOS/MS · high. Input aria-label compounds to `Arkivlösenord`.
+- unlock (button + verb) → `Lås upp` · macOS AppKit ("Lås upp") · high. Verb "för att låsa upp den".
+- archive → `arkiv` · settled sv glossary · high.
+- COMMON GENDER: `arkiv` is treated common-gender here, so the predicate adjective takes the -ad/en-word form
+  `lösenordsskyddad` (not neuter `-skyddat`) and the pronoun is `den` ("låsa upp den"), not `det`.

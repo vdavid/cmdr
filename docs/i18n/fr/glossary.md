@@ -594,3 +594,15 @@ Phrasing note for this pass:
   and leaving `{filename}` in a neutral slot after "dans" (safe for any generated name). `text → texte`; `image`/`PDF`
   unchanged. Branch NAMES `image`/`pdf`/`other` kept verbatim. This dodges the trap where a participle placed after the
   varying `kind` would have to agree (image → collée vs texte → collé).
+
+Settled during the `archive-password` pass (2026-07-08, encrypted-zip unlock modal `fileOperations.archivePassword.*`).
+ICU values, so every apostrophe is doubled in the catalog.
+
+- password-protected → `protégé par un mot de passe` (fem. `protégée` when agreeing with `archive`) · TC/DC fr phrasing
+  · high.
+- password (noun) → `mot de passe` · macOS/MS fr · high. Input aria-label "Mot de passe de l''archive".
+- unlock (button + verb) → `Déverrouiller` · macOS AppKit ("Déverrouiller") · high. Verb form "la déverrouiller".
+- archive (fem.) → `archive` · settled fr glossary · high.
+- GENDER PATTERN: the body names the archive explicitly, `L''archive <archive>{name}</archive> est protégée…`, so the
+  feminine antecedent `archive` (not the uncontrolled `{name}`) drives every agreement — `protégée`, and the pronoun
+  `la` in "la déverrouiller". Never let agreement hang off `{name}`, whose gender is unknown at runtime.

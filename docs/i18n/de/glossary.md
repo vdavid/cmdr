@@ -408,3 +408,14 @@ Format, the confidence scale, and the full process: [i18n-translation.md](../../
 - read-only archive → Schreibgeschütztes Archiv · glossary read-only → schreibgeschützt + archive → Archiv · high
 - "There's no trash inside an archive." (bold delete-warning lead) → "In einem Archiv gibt es keinen Papierkorb." ·
   trash → Papierkorb + the catalog's settled "gibt es" existence idiom · high
+
+## Archive-password dialog (2026-07-08)
+
+Terms settled while translating the encrypted-archive unlock modal (`fileOperations.archivePassword.*`; macOS AppKit +
+Total/Double Commander de).
+
+- password-protected → `passwortgeschützt` · TC/DC de phrasing + macOS · high. Body: "… ist passwortgeschützt."
+- password (noun) → `Passwort` · macOS/MS · high. Input aria-label compounds to `Archivpasswort`.
+- unlock (button + verb) → `Entsperren` · macOS AppKit locked-item button ("Entsperren") · high. Reused for the verb
+  ("um es zu entsperren").
+- archive (the `{name}` head / input label) → `Archiv` · settled de glossary · high.

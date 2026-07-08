@@ -571,3 +571,14 @@ Settled while translating the paste-clipboard-as-a-file keys (`settings.json` + 
   `PDF-je`: possessive `-je` on the front-vowel-pronounced abbreviation (pé-dé-ef), hyphen per abbreviation rule.
 - No `sameAsSourceJustification` needed in this batch: all 7 values differ from English (`pastedAsFileSettings` =
   `Beállítások` differs from "Settings"; no brand-only or unit-only values).
+
+Settled while translating the archive-password dialog keys (`fileOperations.archivePassword.*`, 2026-07-08):
+
+- password-protected → `jelszóval védett` · TC/DC hu phrasing + macOS · high. Body: "A(z) <archive>{name}</archive>
+  jelszóval védett."
+- password (noun) → `Jelszó` · macOS/MS · high.
+- unlock (button + verb) → button `Feloldás`; verb `feloldásához` / `feloldotta` · macOS AppKit ("Feloldás") · high.
+- archive (input label) → `Archívum` (input aria-label "Archívum jelszava") · settled hu glossary · high.
+- ACCUSATIVE HEAD-NOUN: the retry body attaches the accusative to a `fájlt` head, "… nem oldotta fel a(z)
+  <archive>{name}</archive> fájlt", so no case suffix ever lands on the uncontrolled runtime `{name}` (per `style.md` §
+  Notes: never vowel-harmonize a suffix onto an unknown value). Same trick the paste-toast uses with the colon slot.
