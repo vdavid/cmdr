@@ -1,8 +1,14 @@
 //! Scheduler tests: the coalescing coordinator (pure), the full-volume recompute
 //! ranking (over a synthetic index, no FFI), and the startup-sweep path.
 
+use super::recompute::{
+    ANCESTOR_WALK_CAP, IncrementalInputs, RecomputeInputs, incremental_rescore, recompute_folders, score_folders,
+    touched_folder_set, walk_index_folders,
+};
 use super::*;
-use crate::importance::store::ImportanceStore;
+use crate::importance::signals::OptionalSignals;
+use crate::importance::store::{ImportanceStore, importance_db_path};
+use crate::importance::writer::WeightRow;
 use crate::indexing::ROOT_VOLUME_ID;
 
 // ── Coalescing coordinator (plan M2 TDD target) ──────────────────────────
