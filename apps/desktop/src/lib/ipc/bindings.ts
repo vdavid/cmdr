@@ -1660,12 +1660,15 @@ export const commands = {
    *  Record that the user navigated into `location`. Fire-and-forget and
    *  failure-silent: never blocks or breaks navigation.
    *
-   *  M2 records only local (`root`) visits; SMB/MTP visit recording lands with
-   *  their scoring in M4. The write goes through the scheduler's SHARED long-lived
-   *  writer for the volume (one writer thread per DB — the subsystem invariant held
-   *  in spirit, not absorbed by WAL busy-timeouts), reached through Tauri managed
-   *  state. If the scheduler isn't managed yet (startup raced ahead of `start`),
-   *  the visit is silently dropped — the next navigation records it.
+   *  Recorded for any background-scored volume — Local and SMB (plan M4). A volume
+   *  that isn't registered, or is MTP (on-demand only, never scored), is silently
+   *  ignored: recording a visit no recompute ever reads is dead weight, so the gate
+   *  is the volume's TYPED kind, never its id string (`no-string-matching`). The
+   *  write goes through the scheduler's SHARED long-lived writer for the volume (one
+   *  writer thread per DB — the subsystem invariant held in spirit, not absorbed by
+   *  WAL busy-timeouts), reached through Tauri managed state. If the scheduler isn't
+   *  managed yet (startup raced ahead of `start`), the visit is silently dropped —
+   *  the next navigation records it.
    */
   recordVisit: (location: Location) => typedError<null, string>(__TAURI_INVOKE('record_visit', { location })),
   /**

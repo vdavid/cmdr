@@ -166,7 +166,7 @@ impl SyntheticHome {
     }
 
     /// The direct children of `path` (entries whose parent is exactly `path`).
-    fn direct_children(&self, path: &str) -> impl Iterator<Item = &FileEntry> {
+    pub fn direct_children(&self, path: &str) -> impl Iterator<Item = &FileEntry> {
         let prefix = format!("{path}/");
         self.entries.iter().filter(move |e| {
             // A direct child starts with `path/` and has no further `/` after it.

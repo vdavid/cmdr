@@ -14,7 +14,8 @@ use crate::settings::FullDiskAccessChoice;
 use enrichment::{READ_POOL_TEST_MUTEX, THREAD_CONN, enrich_via_individual_paths_on, enrich_via_parent_id_on};
 use rusqlite::Connection;
 use state::{
-    INDEX_REGISTRY, IndexInstance, IndexPhase, ROOT_VOLUME_ID, is_initializing_phase, try_reserve_initializing_phase,
+    INDEX_REGISTRY, IndexInstance, IndexPhase, IndexVolumeKind, ROOT_VOLUME_ID, is_initializing_phase,
+    try_reserve_initializing_phase,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -943,8 +944,15 @@ fn reserve_initializing_for(volume_id: &str) -> tempfile::TempDir {
     let store = IndexStore::open(&db_path).expect("open init store");
     let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
     let pending = Arc::new(pending_sizes::PendingSizes::new());
-    try_reserve_initializing_phase(volume_id, store, pool, pending, Arc::new(std::sync::Mutex::new(None)))
-        .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
+    try_reserve_initializing_phase(
+        volume_id,
+        IndexVolumeKind::Local,
+        store,
+        pool,
+        pending,
+        Arc::new(std::sync::Mutex::new(None)),
+    )
+    .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
     dir
 }
 
@@ -984,6 +992,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     let pending2 = Arc::new(pending_sizes::PendingSizes::new());
     let res = try_reserve_initializing_phase(
         ROOT_VOLUME_ID,
+        IndexVolumeKind::Local,
         store2,
         pool2,
         pending2,
@@ -1012,6 +1021,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
             ROOT_VOLUME_ID.to_string(),
             IndexInstance {
                 phase: IndexPhase::ShuttingDown,
+                kind: IndexVolumeKind::Local,
                 read_pool: pool_sd,
                 pending_sizes: pending_sd,
                 freshness: Arc::new(std::sync::Mutex::new(None)),
@@ -1027,6 +1037,7 @@ fn try_reserve_initializing_succeeds_only_from_disabled() {
     let pending4 = Arc::new(pending_sizes::PendingSizes::new());
     let res = try_reserve_initializing_phase(
         ROOT_VOLUME_ID,
+        IndexVolumeKind::Local,
         store4,
         pool4,
         pending4,
@@ -1141,6 +1152,7 @@ fn shutdown_drain_does_not_hold_indexing_lock() {
             ROOT_VOLUME_ID.to_string(),
             IndexInstance {
                 phase: IndexPhase::ShuttingDown,
+                kind: IndexVolumeKind::Local,
                 read_pool: pool,
                 pending_sizes: pending,
                 freshness: Arc::new(std::sync::Mutex::new(None)),

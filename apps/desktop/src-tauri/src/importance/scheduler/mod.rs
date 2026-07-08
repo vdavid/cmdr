@@ -8,11 +8,15 @@
 //! 1. **The lifecycle bus** ([`crate::indexing::lifecycle_bus`]): a
 //!    `ScanCompleted` publish for a volume ⇒ recompute it. This catches every
 //!    scan that finishes while the app runs.
-//! 2. **The startup registry sweep** ([`crate::indexing::ready_volume_ids`]): a
-//!    volume already `Fresh` at launch (loaded from its persisted
+//! 2. **The startup registry sweep** ([`crate::indexing::ready_volumes_with_kind`]):
+//!    a volume already `Fresh` at launch (loaded from its persisted
 //!    `scan_completed_at`) never re-fires a `ScanCompleted`, so a bus-only
 //!    scheduler would never score it — the common restart case. The sweep
-//!    enqueues those once at startup.
+//!    enqueues those once at startup, each with its typed kind (so MTP is
+//!    excluded and SMB degrades correctly).
+//! 3. **The registration bus** ([`crate::indexing::lifecycle_bus::subscribe_registrations`]):
+//!    a volume that registers AFTER the sweep (a share mounted mid-session) is
+//!    wired then (plan M4 late-registering volumes).
 //!
 //! ## Coalescing (plan Decision 4)
 //!
@@ -39,12 +43,68 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
 use super::scorer::{SignalSet, Weights, score};
-use super::signals::{OptionalSignals, signals_for_dir};
+use super::signals::{ChildAggregate, OptionalSignals, signals_for_dir};
 use super::store::importance_db_path;
 use super::writer::{ImportanceWriter, WeightRow};
 use crate::ignore_poison::IgnorePoison;
-use crate::indexing::ROOT_VOLUME_ID;
+use crate::indexing::IndexVolumeKind;
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
+
+// ── Volume kind → scoring policy (plan M4, typed, never string-matched) ────
+
+/// How the importance scheduler treats a volume, decided by its typed
+/// [`IndexVolumeKind`] — never by inspecting the volume-id string (`no-string-matching`).
+///
+/// - **Local** and **SMB** are background-scored. They differ only in signal
+///   availability: SMB has no Spotlight, so `last_used` is UNAVAILABLE there and
+///   its weight redistributes (the scorer's `SignalSet` handles this since M1);
+///   local macOS produces both optional signals.
+/// - **MTP is an explicit exclusion, not an accident of gating** (plan / agent
+///   spec): a phone/camera is on-demand only, never background-scored. The scheduler
+///   skips it at every entry point (sweep, registration, bus subscription).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ScoringPolicy {
+    /// Background-scored, with the given signal-availability mask for the kind.
+    Scored { available: SignalSet },
+    /// Never background-scored (MTP: on-demand only).
+    Excluded,
+}
+
+/// Whether a volume of this kind is background-scored (Local/SMB), as opposed to
+/// on-demand only (MTP). The `record_visit` command uses it to skip persisting a
+/// visit for a volume that's never scored — typed, never a volume-id string check.
+pub(super) fn is_background_scored(kind: IndexVolumeKind) -> bool {
+    matches!(ScoringPolicy::for_kind(kind), ScoringPolicy::Scored { .. })
+}
+
+impl ScoringPolicy {
+    /// The scoring policy for a volume kind. The availability mask degrades
+    /// explicitly per kind — SMB drops Spotlight — so a missing signal
+    /// redistributes rather than fabricating (plan Decision 3).
+    fn for_kind(kind: IndexVolumeKind) -> Self {
+        match kind {
+            // Local macOS produces both optional signals (visits + Spotlight where
+            // the OS supports it; off macOS Spotlight is simply absent).
+            IndexVolumeKind::Local => ScoringPolicy::Scored {
+                available: SignalSet {
+                    visit_available: true,
+                    last_used_available: super::last_used::is_available(),
+                },
+            },
+            // SMB has NO Spotlight metadata: `last_used` is unavailable and its
+            // weight redistributes onto the listing signals. Visits still apply
+            // (they come from Cmdr navigation, not the mount).
+            IndexVolumeKind::Smb => ScoringPolicy::Scored {
+                available: SignalSet {
+                    visit_available: true,
+                    last_used_available: false,
+                },
+            },
+            // MTP: on-demand only, never background-scored.
+            IndexVolumeKind::Mtp => ScoringPolicy::Excluded,
+        }
+    }
+}
 
 // ── Coalescing coordinator (pure, testable) ──────────────────────────────
 
@@ -126,62 +186,104 @@ impl PassCoordinator {
 // ── Recompute (full-volume) ───────────────────────────────────────────────
 
 /// A folder discovered while walking the index, carrying everything the signal
-/// assembler needs. Built by [`walk_index_folders`].
+/// assembler needs. Built by [`walk_index_folders`]. Holds its children's
+/// pre-aggregated summary ([`ChildAggregate`]), NOT the child rows — the walk
+/// folds each file into this so no file rows stay resident (the O(dirs) memory
+/// shape).
 struct IndexFolder {
     entry: EntryRow,
     path: String,
-    children: Vec<EntryRow>,
+    children: ChildAggregate,
     has_marker_below: bool,
 }
 
-/// Walk every directory in a volume's index in a single pass and build each
-/// folder's row, reconstructed path, direct children, and marker-below flag.
+/// Walk every directory in a volume's index and build each folder's row,
+/// reconstructed path, aggregated child summary, and marker-below flag —
+/// materializing DIRECTORIES only, not the whole entries table.
 ///
-/// One bulk `SELECT` pulls the whole `entries` table into memory; paths are
-/// reconstructed from an in-memory `id → (parent_id, name)` map (no per-directory
-/// `reconstruct_path` point query), and each directory's children come from a
-/// `parent_id → Vec<child>` bucketing of that same single read. So the walk is
-/// O(entries) with one query, not O(dirs × depth) point queries (M2 cleanup).
+/// The memory shape matters: on a multi-million-entry NAS the directories are a
+/// small fraction of the rows, so this pulls only them into memory
+/// ([`all_directories`](IndexStore::all_directories)) and STREAMS file rows
+/// ([`for_each_file_child`](IndexStore::for_each_file_child)) into small per-parent
+/// accumulators (extension set, file count, direct-marker flag), which are then
+/// collapsed to a [`ChildAggregate`] per folder. So pass memory is O(dirs), not
+/// O(entries) — the earlier `all_entries` walk went transiently into the hundreds
+/// of MB on exactly the NAS-sized volumes SMB scoring now enables.
 ///
-/// `has_marker_below` is computed by a single upward propagation after the walk,
-/// so a `.git` deep in a tree raises its ancestors (plan Decision 3).
+/// Directory children still come from the directory set itself (a `.git`/`.hg`
+/// marker is a directory), so the direct-marker flag folds both the streamed file
+/// children and the sibling directory children. Paths are reconstructed from the
+/// in-memory `id → (parent_id, name)` directory map (no per-directory point
+/// query). `has_marker_below` is a single upward propagation after the walk, so a
+/// `.git` deep in a tree raises its ancestors (plan Decision 3).
 fn walk_index_folders(conn: &rusqlite::Connection, _home: &str) -> Result<Vec<IndexFolder>, String> {
-    let all = IndexStore::all_entries(conn).map_err(|e| e.to_string())?;
+    let dirs = IndexStore::all_directories(conn).map_err(|e| e.to_string())?;
 
-    // Index the flat entry list: a lookup for path reconstruction, and a
-    // parent → children bucketing so each directory finds its direct children
-    // without a query.
-    let by_id: HashMap<i64, &EntryRow> = all.iter().map(|e| (e.id, e)).collect();
-    let mut children_of: HashMap<i64, Vec<EntryRow>> = HashMap::new();
-    for e in &all {
-        children_of.entry(e.parent_id).or_default().push(e.clone());
+    // Index the directory rows: a lookup for path reconstruction, keyed by id.
+    let by_id: HashMap<i64, &EntryRow> = dirs.iter().map(|e| (e.id, e)).collect();
+
+    // Per-directory accumulator, folded from the streamed file children plus the
+    // sibling directory children. Kept tiny (a small extension set + two scalars)
+    // so the map is O(dirs), never O(files).
+    #[derive(Default)]
+    struct Accum {
+        extensions: std::collections::HashSet<String>,
+        file_count: u32,
+        has_direct_marker: bool,
     }
+    let mut accum: HashMap<i64, Accum> = HashMap::new();
+
+    // Directory children first: a `.git`/`.hg`/`.svn` marker is a DIRECTORY, so
+    // fold the directory set into each parent's direct-marker flag. (Directories
+    // never contribute to the extension count or file count.)
+    for d in dirs.iter().filter(|e| e.id != ROOT_ID) {
+        if super::classify::is_project_marker(&d.name.to_lowercase()) {
+            accum.entry(d.parent_id).or_default().has_direct_marker = true;
+        }
+    }
+
+    // File children streamed one row at a time: fold each into its parent's
+    // extension set, file count, and (for a `Cargo.toml`/`package.json`/… file)
+    // marker flag. The file rows are never all resident.
+    IndexStore::for_each_file_child(conn, |parent_id, name| {
+        let entry = accum.entry(parent_id).or_default();
+        entry.file_count += 1;
+        let ext = std::path::Path::new(name)
+            .extension()
+            .map(|e| e.to_string_lossy().to_lowercase())
+            .unwrap_or_default();
+        entry.extensions.insert(ext);
+        if super::classify::is_project_marker(&name.to_lowercase()) {
+            entry.has_direct_marker = true;
+        }
+    })
+    .map_err(|e| e.to_string())?;
 
     // One folder per directory entry (the root sentinel isn't a real folder).
     let mut folders: Vec<IndexFolder> = Vec::new();
     let mut dir_id_to_index: HashMap<i64, usize> = HashMap::new();
-    for entry in all.iter().filter(|e| e.is_directory && e.id != ROOT_ID) {
+    for entry in dirs.iter().filter(|e| e.id != ROOT_ID) {
         let path = reconstruct_path_from_map(entry.id, &by_id);
-        let children = children_of.remove(&entry.id).unwrap_or_default();
+        let a = accum.remove(&entry.id).unwrap_or_default();
         dir_id_to_index.insert(entry.id, folders.len());
         folders.push(IndexFolder {
             entry: entry.clone(),
             path,
-            children,
+            children: ChildAggregate {
+                distinct_extension_count: a.extensions.len() as u32,
+                file_count: a.file_count,
+                has_direct_marker: a.has_direct_marker,
+            },
             has_marker_below: false,
         });
     }
 
     // Propagate a direct project marker up to every ancestor: a `.git` deep in a
     // subtree marks the whole path above it as project-adjacent (plan Decision 3).
-    // Seed from each folder's own direct-marker check, then walk parent pointers.
+    // Seed from each folder's own direct-marker flag, then walk parent pointers.
     let marker_seed: Vec<i64> = folders
         .iter()
-        .filter(|f| {
-            f.children
-                .iter()
-                .any(|c| super::classify::is_project_marker(&c.name.to_lowercase()))
-        })
+        .filter(|f| f.children.has_direct_marker)
         .map(|f| f.entry.id)
         .collect();
     for seed in marker_seed {
@@ -203,7 +305,8 @@ fn walk_index_folders(conn: &rusqlite::Connection, _home: &str) -> Result<Vec<In
 /// Reconstruct an entry's absolute path from an in-memory `id → row` map, walking
 /// parent pointers up to the root sentinel. The in-memory twin of the store's
 /// `reconstruct_path` point query — used because a full recompute reconstructs
-/// every folder's path and the per-query cost would be O(dirs × depth).
+/// every folder's path and the per-query cost would be O(dirs × depth). The map
+/// holds only directory rows, which is all a path walk (dir → dir → …) needs.
 fn reconstruct_path_from_map(id: i64, by_id: &HashMap<i64, &EntryRow>) -> String {
     let mut components: Vec<&str> = Vec::new();
     let mut cursor = Some(id);
@@ -238,7 +341,7 @@ fn score_folders(
         .iter()
         .map(|f| {
             let optional = optional_for(&f.path);
-            let signals = signals_for_dir(&f.entry, &f.children, &f.path, home, f.has_marker_below, optional);
+            let signals = signals_for_dir(&f.entry, f.children, &f.path, home, f.has_marker_below, optional);
             let s = score(&signals, available, weights, now_secs);
             let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
             WeightRow {
@@ -411,7 +514,7 @@ impl ImportanceScheduler {
     /// that one walk's paths, and writes through the shared long-lived writer. The
     /// async driver calls this on a blocking task after a `request` returns
     /// `Start`.
-    pub fn run_pass_blocking(&self, volume_id: &str, now_secs: u64) -> Result<usize, String> {
+    pub fn run_pass_blocking(&self, volume_id: &str, available: SignalSet, now_secs: u64) -> Result<usize, String> {
         let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
             return Ok(0);
         };
@@ -428,15 +531,17 @@ impl ImportanceScheduler {
 
         let visits = load_visits(&self.data_dir, volume_id);
 
-        // The local macOS volume can produce both optional signals. The
-        // `kMDItemLastUsedDate` sample is capped and runs on a dedicated OS thread
-        // (never rayon — a macOS framework call). On non-macOS the sample map is
-        // empty and Spotlight is unavailable so its weight redistributes.
-        let paths: Vec<String> = folders.iter().map(|f| f.path.clone()).collect();
-        let last_used = super::last_used::sample_last_used(&paths);
-        let available = SignalSet {
-            visit_available: true,
-            last_used_available: super::last_used::is_available(),
+        // Spotlight sampling ONLY when the kind's availability mask says so — SMB
+        // has no Spotlight, and sampling would issue `MDItem` queries against the
+        // mount, which the scheduler must never do (it reads only the local index).
+        // The sample is capped and runs on a dedicated OS thread (never rayon — a
+        // macOS framework call). When unavailable, the map is empty and the
+        // `last_used` weight redistributes.
+        let last_used = if available.last_used_available {
+            let paths: Vec<String> = folders.iter().map(|f| f.path.clone()).collect();
+            super::last_used::sample_last_used(&paths)
+        } else {
+            HashMap::new()
         };
 
         let writer = self.writer_for(volume_id).map_err(|e| e.to_string())?;
@@ -470,13 +575,14 @@ impl ImportanceScheduler {
     pub fn run_incremental_blocking(
         &self,
         volume_id: &str,
+        available: SignalSet,
         changed_paths: &[String],
         now_secs: u64,
     ) -> Result<usize, String> {
         // A full-refresh sentinel means "everything changed" — fall back to the
         // full pass rather than resolving `/` as a single folder.
         if changed_paths.iter().any(|p| p == "/") {
-            return self.run_pass_blocking(volume_id, now_secs);
+            return self.run_pass_blocking(volume_id, available, now_secs);
         }
 
         let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
@@ -492,10 +598,6 @@ impl ImportanceScheduler {
         }
 
         let visits = load_visits(&self.data_dir, volume_id);
-        let available = SignalSet {
-            visit_available: true,
-            last_used_available: super::last_used::is_available(),
-        };
         let writer = self.writer_for(volume_id).map_err(|e| e.to_string())?;
 
         let count = incremental_rescore(
@@ -553,8 +655,15 @@ fn incremental_rescore(
         return Ok(0);
     }
 
-    let subset_paths: Vec<String> = subset.iter().map(|f| f.path.clone()).collect();
-    let last_used = super::last_used::sample_last_used(&subset_paths);
+    // Sample Spotlight only when the kind's mask allows it (SMB has none, and
+    // sampling would touch the mount). When unavailable the map is empty and the
+    // `last_used` weight redistributes.
+    let last_used = if inputs.available.last_used_available {
+        let subset_paths: Vec<String> = subset.iter().map(|f| f.path.clone()).collect();
+        super::last_used::sample_last_used(&subset_paths)
+    } else {
+        HashMap::new()
+    };
 
     let writer = inputs.writer;
     // The incremental rows carry the CURRENT generation (no bump), so they're
@@ -568,14 +677,7 @@ fn incremental_rescore(
                 visit_count: inputs.visits.get(&f.path).copied(),
                 last_used_secs: last_used.get(&f.path).copied(),
             };
-            let signals = signals_for_dir(
-                &f.entry,
-                &f.children,
-                &f.path,
-                inputs.home,
-                f.has_marker_below,
-                optional,
-            );
+            let signals = signals_for_dir(&f.entry, f.children, &f.path, inputs.home, f.has_marker_below, optional);
             let s = score(&signals, &inputs.available, inputs.weights, inputs.now_secs);
             let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
             WeightRow {
@@ -621,12 +723,17 @@ fn touched_folder_set(changed_paths: &[String]) -> std::collections::HashSet<Str
     set
 }
 
-/// Wire the scheduler to the app: sweep the registry for ready volumes and
-/// subscribe to the bus, running a coalesced recompute per volume on the tokio
-/// runtime. Called from `setup()` after `indexing::init`.
+/// Wire the scheduler to the app: subscribe to volume registrations, sweep the
+/// registry for already-ready volumes, and wire each scored volume's
+/// scan-completion + dir-changed subscriptions. Called from `setup()` after
+/// `indexing::init`.
 ///
-/// Local volumes only in M2 (SMB is M4): the sweep and the per-volume bus
-/// subscription both gate on the volume being the local `root` for now.
+/// Multi-volume + kind-aware (plan M4): Local and SMB volumes are background-scored
+/// (SMB with Spotlight unavailable, so its weight redistributes); MTP is an
+/// explicit typed exclusion (on-demand only). The registration bus catches a share
+/// mounted MID-SESSION; the startup sweep catches volumes already ready at launch —
+/// subscribing to the bus BEFORE the sweep closes the gap so no registration is
+/// missed.
 pub fn start(app: &AppHandle) {
     let data_dir = match crate::config::resolved_app_data_dir(app) {
         Ok(d) => d,
@@ -642,42 +749,79 @@ pub fn start(app: &AppHandle) {
     // thread per DB), rather than spawning a short-lived writer per navigation.
     app.manage(Arc::clone(&scheduler));
 
-    // Startup sweep: any volume already Fresh at launch (loaded from its
-    // persisted scan_completed_at) never re-fires ScanCompleted, so catch it here.
-    // M2: local `root` only.
-    let ready = crate::indexing::ready_volume_ids();
-    for volume_id in ready {
-        if volume_id != ROOT_VOLUME_ID {
-            continue; // SMB/MTP scored in M4.
-        }
-        spawn_recompute(Arc::clone(&scheduler), volume_id);
-    }
-
-    // Incremental recompute: subscribe to the per-volume dir-changed bus and
-    // rescore only the touched subtrees + capped ancestor chains as live listing
-    // changes land (plan Decision 5). Full-volume recompute stays the
-    // scan-completion default above. M2/M3: local `root` only.
-    start_incremental(Arc::clone(&scheduler), ROOT_VOLUME_ID);
-
-    // Subscribe to the bus for the local volume and recompute on each completion.
-    // A subscription created here retains the last state, so a ScanCompleted fired
-    // during setup (before this line) is still observed (late-subscriber replay).
-    let sub_scheduler = Arc::clone(&scheduler);
-    let mut rx = crate::indexing::lifecycle_bus::subscribe(ROOT_VOLUME_ID);
+    // Subscribe to registrations FIRST (before the sweep), so a volume that
+    // registers during the sweep isn't dropped in the gap (plan M4
+    // late-registering volumes). Each registration wires that volume's per-volume
+    // subscriptions and scores it if it's already ready.
+    let reg_scheduler = Arc::clone(&scheduler);
+    let mut reg_rx = crate::indexing::lifecycle_bus::subscribe_registrations();
     tauri::async_runtime::spawn(async move {
-        // Observe the retained value first (covers a completion before subscribe).
+        loop {
+            match reg_rx.recv().await {
+                Ok(reg) => wire_volume(Arc::clone(&reg_scheduler), reg.volume_id, reg.kind),
+                // A lag only skips a registration the next scan-completion covers
+                // anyway; keep listening. A closed bus (never, it's process-global)
+                // ends the task.
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+            }
+        }
+    });
+
+    // Startup sweep: any volume already ready at launch (loaded from its persisted
+    // scan_completed_at) never re-fires ScanCompleted, so catch it here — WITH its
+    // typed kind so MTP is excluded and SMB degrades correctly.
+    for (volume_id, kind) in crate::indexing::ready_volumes_with_kind() {
+        wire_volume(Arc::clone(&scheduler), volume_id, kind);
+    }
+}
+
+/// Wire one volume into the scheduler by its typed kind: skip MTP (on-demand
+/// only), and for Local/SMB set up its scan-completion subscription (full
+/// recompute) and its dir-changed subscription (incremental rescore), then score
+/// it once if it's already ready.
+///
+/// Idempotent per volume in practice: the coalescing coordinator collapses a
+/// re-wire's duplicate recompute into the running one, and the underlying `watch`
+/// buses are per-volume, so re-subscribing spawns a second listener but each drives
+/// the same coalesced pass. A volume is wired from at most two places (the sweep
+/// and one registration), so no unbounded listener growth.
+fn wire_volume(scheduler: Arc<ImportanceScheduler>, volume_id: String, kind: IndexVolumeKind) {
+    let available = match ScoringPolicy::for_kind(kind) {
+        ScoringPolicy::Scored { available } => available,
+        // MTP: on-demand only, never background-scored (plan M4 typed exclusion).
+        ScoringPolicy::Excluded => {
+            log::debug!(target: "importance", "importance skips '{volume_id}' ({kind:?}): on-demand only");
+            return;
+        }
+    };
+
+    // Incremental recompute: rescore only the touched subtrees + capped ancestor
+    // chains as live listing changes land (plan Decision 5). Full-volume recompute
+    // stays the scan-completion default below.
+    start_incremental(Arc::clone(&scheduler), volume_id.clone(), available);
+
+    // Subscribe to the scan bus for this volume; a subscription retains the last
+    // state, so a ScanCompleted fired before this line is still observed
+    // (late-subscriber replay). Recompute on each completion.
+    let sub_scheduler = Arc::clone(&scheduler);
+    let sub_volume = volume_id.clone();
+    let mut rx = crate::indexing::lifecycle_bus::subscribe(&volume_id);
+    tauri::async_runtime::spawn(async move {
+        // Observe the retained value first (covers a completion before subscribe,
+        // and a sweep-ready volume that already loaded Completed).
         if matches!(
             *rx.borrow_and_update(),
             crate::indexing::lifecycle_bus::ScanState::Completed { .. }
         ) {
-            spawn_recompute(Arc::clone(&sub_scheduler), ROOT_VOLUME_ID.to_string());
+            spawn_recompute(Arc::clone(&sub_scheduler), sub_volume.clone(), available);
         }
         while rx.changed().await.is_ok() {
             if matches!(
                 *rx.borrow_and_update(),
                 crate::indexing::lifecycle_bus::ScanState::Completed { .. }
             ) {
-                spawn_recompute(Arc::clone(&sub_scheduler), ROOT_VOLUME_ID.to_string());
+                spawn_recompute(Arc::clone(&sub_scheduler), sub_volume.clone(), available);
             }
         }
     });
@@ -687,8 +831,7 @@ pub fn start(app: &AppHandle) {
 /// for each batch of live listing changes (plan Decision 5). Coalesces overlapping
 /// batches per volume (accumulating their paths) so a burst of FSEvents collapses
 /// to one pass plus at most one re-run, never a pass per event.
-fn start_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: &str) {
-    let volume_id = volume_id.to_string();
+fn start_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, available: SignalSet) {
     let mut rx = crate::indexing::lifecycle_bus::subscribe_dirs_changed(&volume_id);
     tauri::async_runtime::spawn(async move {
         // The retained initial value is the empty batch (nothing published yet);
@@ -699,7 +842,7 @@ fn start_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: &str) {
             if paths.is_empty() {
                 continue;
             }
-            spawn_incremental(Arc::clone(&scheduler), volume_id.clone(), paths);
+            spawn_incremental(Arc::clone(&scheduler), volume_id.clone(), available, paths);
         }
     });
 }
@@ -714,7 +857,7 @@ fn incremental_key(volume_id: &str) -> String {
 /// Request a coalesced incremental rescore, accumulating `paths` into the pending
 /// set. If this request starts the pass, drive it (plus any coalesced re-run,
 /// draining whatever accumulated meanwhile) on a blocking background task.
-fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, paths: Vec<String>) {
+fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, available: SignalSet, paths: Vec<String>) {
     let key = incremental_key(&volume_id);
     scheduler.pending_incremental_paths(&volume_id, paths);
     if scheduler.coordinator.request(&key) == BeginOutcome::Coalesced {
@@ -732,7 +875,7 @@ fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, pat
                         .duration_since(std::time::UNIX_EPOCH)
                         .map(|d| d.as_secs())
                         .unwrap_or(0);
-                    sched.run_incremental_blocking(&vid, &batch, now)
+                    sched.run_incremental_blocking(&vid, available, &batch, now)
                 })
                 .await;
                 match result {
@@ -755,7 +898,7 @@ fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, pat
 
 /// Request a coalesced recompute for a volume and, if this request starts the
 /// pass, drive it (plus any coalesced re-run) on a blocking background task.
-fn spawn_recompute(scheduler: Arc<ImportanceScheduler>, volume_id: String) {
+fn spawn_recompute(scheduler: Arc<ImportanceScheduler>, volume_id: String, available: SignalSet) {
     if scheduler.coordinator.request(&volume_id) == BeginOutcome::Coalesced {
         // A pass is already running for this volume; it will re-run once when it
         // finishes (the coordinator set the flag). Nothing to spawn.
@@ -772,7 +915,7 @@ fn spawn_recompute(scheduler: Arc<ImportanceScheduler>, volume_id: String) {
                     .duration_since(std::time::UNIX_EPOCH)
                     .map(|d| d.as_secs())
                     .unwrap_or(0);
-                sched.run_pass_blocking(&vid, now)
+                sched.run_pass_blocking(&vid, available, now)
             })
             .await;
             match result {

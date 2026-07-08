@@ -10,34 +10,38 @@
 //! Thin per the commands-layer rule: resolve the shared writer, hand off the
 //! visit. Failure-silent by contract — a visit that can't be recorded must never
 //! break or block navigation, so the command returns `Ok(())` even on a write
-//! hiccup (it logs at debug). Local volumes only in M2 (a non-`root` volume id is
-//! ignored).
+//! hiccup (it logs at debug). Recorded for any background-scored volume
+//! (Local/SMB), skipped for MTP (on-demand only, never scored — a typed check on
+//! the registered kind, not the volume-id string).
 
 use std::sync::Arc;
 
 use tauri::{AppHandle, Manager};
 
-use crate::indexing::ROOT_VOLUME_ID;
 use crate::location::Location;
 
-use super::scheduler::ImportanceScheduler;
+use super::scheduler::{ImportanceScheduler, is_background_scored};
 
 /// Record that the user navigated into `location`. Fire-and-forget and
 /// failure-silent: never blocks or breaks navigation.
 ///
-/// M2 records only local (`root`) visits; SMB/MTP visit recording lands with
-/// their scoring in M4. The write goes through the scheduler's SHARED long-lived
-/// writer for the volume (one writer thread per DB — the subsystem invariant held
-/// in spirit, not absorbed by WAL busy-timeouts), reached through Tauri managed
-/// state. If the scheduler isn't managed yet (startup raced ahead of `start`),
-/// the visit is silently dropped — the next navigation records it.
+/// Recorded for any background-scored volume — Local and SMB (plan M4). A volume
+/// that isn't registered, or is MTP (on-demand only, never scored), is silently
+/// ignored: recording a visit no recompute ever reads is dead weight, so the gate
+/// is the volume's TYPED kind, never its id string (`no-string-matching`). The
+/// write goes through the scheduler's SHARED long-lived writer for the volume (one
+/// writer thread per DB — the subsystem invariant held in spirit, not absorbed by
+/// WAL busy-timeouts), reached through Tauri managed state. If the scheduler isn't
+/// managed yet (startup raced ahead of `start`), the visit is silently dropped —
+/// the next navigation records it.
 #[tauri::command]
 #[specta::specta]
 pub async fn record_visit(app: AppHandle, location: Location) -> Result<(), String> {
-    // Local only in M2. A non-root volume id is silently ignored (its scoring,
-    // and thus its visit signal, arrives in M4).
-    if location.volume_id != ROOT_VOLUME_ID {
-        return Ok(());
+    // Gate on the registered volume's typed kind: record for a background-scored
+    // volume (Local/SMB), skip an unregistered or on-demand-only (MTP) one.
+    match crate::indexing::volume_kind(&location.volume_id) {
+        Some(kind) if is_background_scored(kind) => {}
+        _ => return Ok(()),
     }
 
     let Some(scheduler) = app.try_state::<Arc<ImportanceScheduler>>().map(|s| Arc::clone(&s)) else {

@@ -13,10 +13,13 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 - [x] 2026-07-07 [paste-clipboard-as-file-plan.md](paste-clipboard-as-file-plan.md) - Cmd+V with non-file clipboard
       content (text/image/PDF) creates `pasted.*` in the pane, cursor lands on it, inline rename auto-starts
       (setting-gated), info toast with Settings deep link (issue #35). Shipped in b0de3824f.
-- [ ] 2026-07-08 [importance-subsystem-plan.md](importance-subsystem-plan.md) - A neutral, deterministic folder-importance
-      subsystem (pure Rust scorer over listing metadata) exposed as a general read API for any feature: separate per-volume
-      `importance.db`, a minimal neutral lifecycle bus in `indexing/`, an explain call, and offline-unmounted reads. Known
-      consumers (agent, media-ML enrichment) wire in via their own plans.
+- [x] 2026-07-08 [importance-subsystem-plan.md](importance-subsystem-plan.md) - A neutral, deterministic
+      folder-importance subsystem (pure Rust scorer over listing metadata) exposed as a general read API for any
+      feature: separate per-volume `importance.db`, a minimal neutral lifecycle bus in `indexing/`, an explain call, and
+      offline-unmounted reads. Known consumers (agent, media-ML enrichment) wire in via their own plans. SHIPPED
+      2026-07-08 (M1–M4); durable intent lives in `importance/` and `indexing/` C+D.md. Follow-ups (weight tuning, the
+      `kMDItemLastUsedDate` sampling cost) survive in the plan's open-questions. Wipe once the C+D.md capture is
+      confirmed.
 - [ ] 2026-07-04 [listing-loader-extraction-plan.md](listing-loader-extraction-plan.md) - Drain FilePane's last deferred
       cluster (the listing loader: `loadDirectory`/`handleListingComplete`/reset + streaming listeners + pendingLoad +
       the generation/listingId drop-foreign-listings token model) into a tested `listing-loader.svelte.ts` factory,

@@ -89,6 +89,8 @@ The folder-importance subsystem records a lightweight navigation-visit signal to
   analytics, not in error reports. It's not telemetry.
 - **Counts and timestamps only, no content.** Each row is `(folder path, visit count, last-visit seconds)`. No file
   contents, no file names beyond the folder path itself, no per-file data.
-- **Local volumes only.** Only the local disk (`root`) records visits today; network/removable volumes don't.
+- **Background-scored volumes only.** The local disk and SMB shares record visits (the volumes importance scores);
+  on-demand-only MTP devices and unregistered volumes don't. The signal is still the same counts-and-timestamps shape on
+  every volume, always local to the user's disk.
 - **Fire-and-forget and failure-silent.** The `record_visit` command never blocks or breaks navigation, and a visit that
   can't be written is silently dropped. Recording a visit is best-effort, never load-bearing.

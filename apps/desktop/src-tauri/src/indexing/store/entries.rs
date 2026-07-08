@@ -62,6 +62,55 @@ impl IndexStore {
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
+    /// Read every DIRECTORY entry in the index in one query (files excluded).
+    ///
+    /// The memory-lean half of the importance recompute walk: on a multi-million-
+    /// entry NAS the directories are a small fraction of the rows, so materializing
+    /// only them keeps the walk O(dirs). Files stream separately through
+    /// [`for_each_file_child`](IndexStore::for_each_file_child) into per-parent
+    /// accumulators, so the whole entries table is never resident at once (which
+    /// [`all_entries`](IndexStore::all_entries) does — hundreds of MB transient on a
+    /// NAS). Ordered by id for determinism; callers index it into their own maps.
+    pub fn all_directories(conn: &Connection) -> Result<Vec<EntryRow>, IndexStoreError> {
+        let mut stmt = conn.prepare_cached(
+            "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
+             FROM entries WHERE is_directory = 1 ORDER BY id",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(EntryRow {
+                id: row.get(0)?,
+                parent_id: row.get(1)?,
+                name: row.get(2)?,
+                is_directory: row.get::<_, i32>(3)? != 0,
+                is_symlink: row.get::<_, i32>(4)? != 0,
+                logical_size: row.get(5)?,
+                physical_size: row.get(6)?,
+                modified_at: row.get(7)?,
+                inode: row.get(8)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    /// Stream every FILE entry's `(parent_id, name)` through `f`, one row at a time.
+    ///
+    /// The streaming half of the memory-lean importance walk: file rows are the
+    /// bulk of a NAS index, and the recompute only needs each file's parent and
+    /// name (to fold into its parent's extension set / count / marker flag), never
+    /// the whole row. Passing them through a callback means the file rows are never
+    /// all resident — the caller folds each into a small per-parent accumulator and
+    /// drops it. So a full pass holds O(dirs) memory, not O(entries).
+    pub fn for_each_file_child(conn: &Connection, mut f: impl FnMut(i64, &str)) -> Result<(), IndexStoreError> {
+        let mut stmt = conn.prepare_cached("SELECT parent_id, name FROM entries WHERE is_directory = 0")?;
+        let mut rows = stmt.query([])?;
+        while let Some(row) = rows.next()? {
+            let parent_id: i64 = row.get(0)?;
+            let name: String = row.get(1)?;
+            f(parent_id, &name);
+        }
+        Ok(())
+    }
+
     /// List `(id, name)` pairs of child directories for a given parent entry ID.
     ///
     /// Used by `enrich_entries_with_index` to batch-fetch dir_stats for all

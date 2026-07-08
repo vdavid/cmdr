@@ -119,16 +119,30 @@ Recomputes a volume's folder weights when its index finishes scanning. Two trigg
 
 - **The lifecycle bus** ([`indexing/lifecycle_bus.rs`](../indexing/DETAILS.md) — the mechanism is documented there,
   single-source): the scheduler subscribes per volume; a `ScanCompleted` publish ⇒ recompute.
-- **The startup registry sweep** (`indexing::ready_volume_ids`): a volume already Fresh at launch never re-fires
-  `ScanCompleted`, so a bus-only scheduler would miss the common restart case. The sweep enqueues those once.
+- **The startup registry sweep** (`indexing::ready_volumes_with_kind`): a volume already Fresh at launch never re-fires
+  `ScanCompleted`, so a bus-only scheduler would miss the common restart case. The sweep enqueues those once, WITH each
+  volume's typed kind (so MTP is excluded and SMB degrades correctly — see "Multi-volume" below).
+- **The registration bus** (`indexing::lifecycle_bus::subscribe_registrations`): a volume that registers AFTER the sweep
+  (a share mounted mid-session) is wired then. The scheduler subscribes to it BEFORE the sweep, so no volume registering
+  in the gap is lost (plan M4 late-registering volumes).
 
 `PassCoordinator` is the pure, unit-tested coalescing core: it guarantees ONE pass per `volume_id` at a time — a request
 arriving mid-pass sets a single re-run flag rather than starting a second pass (so the sweep + a concurrent
-`ScanCompleted` collapse to one pass, then at most one re-run). The recompute itself (`recompute_from_pool`) is
-full-volume: walk the index tree through the read pool (`get_read_pool_for`), assemble a `FolderSignals` per folder
-(`signals::signals_for_dir`), run the pure scorer, and write every row at a freshly-bumped generation. It runs on a
-blocking background task (SQLite + scoring), never on the IPC thread; a `None` read pool (index not registered) is a
-no-op. **Local (`root`) only in M2** — SMB scoring is M4.
+`ScanCompleted` collapse to one pass, then at most one re-run). The recompute itself is full-volume: walk the index tree
+through the read pool (`get_read_pool_for`), assemble a `FolderSignals` per folder (`signals::signals_for_dir`), run the
+pure scorer, and write every row at a freshly-bumped generation. It runs on a blocking background task (SQLite +
+scoring), never on the IPC thread; a `None` read pool (index not registered) is a no-op.
+
+### The walk is O(dirs), not O(entries) (`walk_index_folders`)
+
+The full-recompute walk materializes **directories only** (`IndexStore::all_directories`) and STREAMS file rows
+(`IndexStore::for_each_file_child`) into a small per-parent accumulator — distinct-extension set, file count, and the
+direct-marker flag — collapsed to a `ChildAggregate` per folder. So pass memory is O(dirs), a small fraction of a
+multi-million-entry NAS index, not O(entries) (an `all_entries` walk went transiently into the hundreds of MB on exactly
+the NAS-sized volumes SMB scoring now enables). Directory children still come from the directory set (a `.git`/`.hg`/`.svn`
+marker is a directory), so `has_direct_marker` folds both the streamed file children and the sibling directory children.
+`signals_for_dir` takes the `ChildAggregate`, not child rows. `has_marker_below` is one upward propagation after the walk
+(a `.git` deep in a tree raises its ancestors, plan Decision 3).
 
 **Signal assembly agrees with the fixtures by construction.** The categorical signals (denylist, path class, project
 marker, hidden) come from the shared [`classify`](classify.rs) module that BOTH `signals::signals_for_dir` (production)
@@ -141,7 +155,9 @@ The one potentially-slow input. We SAMPLE, not sweep: cap at `SAMPLE_CAP` folder
 on a DEDICATED 8 MB-stack OS thread wrapped in `objc2::rc::autoreleasepool` (never rayon — a synchronous macOS-framework
 round-trip; `src-tauri/CLAUDE.md`). An un-sampled local folder is *available but unsampled* (contributes 0, drags the
 reachable max down), distinct from an SMB folder where the signal is *unavailable* and its weight redistributes — the
-`SignalSet` the scheduler passes encodes which. Off macOS the sample is empty and `last_used` is unavailable.
+`SignalSet` the scheduler passes encodes which. **Sampling runs ONLY when the volume's mask says `last_used_available`**:
+SMB has no Spotlight, and sampling would issue `MDItem` queries against the mount, which the scheduler must never do (it
+reads only the local index). Off macOS the sample is empty and `last_used` is unavailable.
 
 ## The visit signal (`commands.rs` + `store` visits table, M2, plan Decision 3)
 
@@ -150,8 +166,10 @@ A typed `record_visit(Location)` IPC command the frontend's navigation-commit po
 persists a compact per-volume `visits` row: **counts and timestamps only, no content, local-only** (the privacy-sane shape
 — noted in `docs/security.md`). The scorer's visit-activity signal reads it on the next recompute. Fire-and-forget and
 failure-silent by contract: a visit that can't be recorded must never block or break navigation, so the command returns
-`Ok(())` even on a write hiccup. Local (`root`) only in M2. The agent spec's planned `user_action_log` is this signal's
-future superset — when it lands, `record_visit` folds into it (never two parallel recorders).
+`Ok(())` even on a write hiccup. **Recorded for any background-scored volume — Local and SMB** (M4); an unregistered or
+MTP volume is skipped (recording a visit no recompute reads is dead weight), gated on the registered volume's TYPED kind
+(`indexing::volume_kind`), never its id string. The agent spec's planned `user_action_log` is this signal's future
+superset — when it lands, `record_visit` folds into it (never two parallel recorders).
 
 ## The read API (`read.rs`, M3) — the canonical consumer entry point
 
@@ -237,16 +255,62 @@ coefficient (+ `additive_weight`), and a `raw_signal_value` arm in [`scorer`](sc
 contribution DIRECTION with a test and keep the explain-sums invariant green. The categorical signals also need a
 `classify.rs` classifier (shared by prod + fixtures) and an assembly line in `signals.rs`.
 
-## What M3 still leaves out
+## Multi-volume, kind-aware scoring + offline-unmounted reads (M4)
 
-- No SMB scoring, no offline-unmounted reads (M4): the scheduler's sweep + bus + incremental all gate on the local
-  `root` for now; `ImportanceIndex` already reads any volume's `importance.db`, so the offline read is mostly a matter of
-  M4 wiring the availability mask + not requiring a live index.
+The scheduler scores **any** background-scored volume, not just the local `root`. The typed volume kind
+(`indexing::IndexVolumeKind`, retained on the registry instance) decides the policy at a single seam
+(`ScoringPolicy::for_kind`), never by inspecting the volume-id string (`no-string-matching`):
+
+- **Local** — background-scored; both optional signals available (visits + Spotlight where the OS has it).
+- **SMB** — background-scored, but **Spotlight is unavailable** (no `kMDItemLastUsedDate` over a share), so `last_used`'s
+  weight redistributes onto the listing signals (the M1 scorer's redistribution makes this honest: a missing signal
+  spreads, never fabricates). Visits still apply — they come from Cmdr navigation, not the mount.
+- **MTP** — an explicit **exclusion**, not an accident of gating: a phone/camera is on-demand only, never
+  background-scored. The scheduler skips it at every entry point (sweep, registration, bus subscription), and
+  `record_visit` skips it too.
+
+**Network-mount discipline.** The scheduler never issues a filesystem syscall against an SMB/MTP mount — it reads only
+the local index DB. Spotlight sampling is gated on the mask (`last_used_available`), so it never runs for SMB (which would
+have meant `MDItem` queries against the mount).
+
+**Offline-unmounted reads (the headline, plan Decision 2).** `ImportanceIndex` reads a volume's `importance.db` (a local
+per-volume file) directly and NEVER touches the index registry — so a volume's weights stay queryable after it unmounts
+(its index registration gone, `get_read_pool_for` now `None`). `weight_for`/`top_n`/`recompute_generation` answer from the
+on-disk store, each weight carrying the **as-of generation** it was scored at (the staleness caveat: "as of the last scan
+before the NAS went offline"). Proven end to end by `offline_unmounted_read_returns_stored_weights_after_index_gone`
+(score a volume, delete its index DB, assert the read API still returns weights at the right generation). When the OS
+purges the cache the file vanishes and the read returns `None`; the next mount + scan regenerates it — weights are
+disposable, identical to the index-purge path.
+
+**Late-registering volumes.** A share mounted mid-session registers on the lifecycle bus
+([`indexing/DETAILS.md` § the bus](../indexing/DETAILS.md)); the scheduler subscribes to registrations once (before its
+startup sweep, closing the gap) and wires the new volume's scan-completion + dir-changed subscriptions on arrival. The
+registration event carries the typed kind so the scheduler applies the same score/degrade/exclude policy.
+
+## What v1 still leaves out
+
 - No IPC surface beyond `record_visit`; no user-facing strings, no i18n (`record_visit` and the tuning bin are invisible
   to the app UI).
+- Weight tuning against real trees, and the `kMDItemLastUsedDate` sampling cost, are unmeasured — see the plan's
+  open-questions.
+
+## The dir-changed `watch` can drop a batch under bursts (accepted)
+
+The incremental trigger rides the per-volume `dir-changed` `watch` channel (`indexing/lifecycle_bus`). A `watch` is
+last-value-wins: if two `publish_dirs_changed` batches land between the scheduler's `borrow_and_update` reads, the
+consumer sees only the later batch's paths — the earlier batch's paths can be dropped. This is **acceptable and by
+design**: importance is advisory, disposable derived data, and the next full recompute (on the next `ScanCompleted`)
+heals any folder a dropped incremental batch missed. We don't add an unbounded queue to make incremental lossless; the
+full pass is the backstop.
 
 ## Testing
 
 All M1 tests are pure (`scorer/tests.rs`): no FFI, no DB, a fixed `NOW`. They assert each signal's contribution
 DIRECTION (the plan's M1 list), the explain-sums-to-score invariant, missing-signal redistribution, the serde round-trip
 (load-bearing for M2), the fixture-tree shape, and a proptest that the score is always finite and in `[0,1]`.
+
+M4's scheduler tests (`scheduler/tests.rs`, over synthetic indexes, no FFI, no registry): `ScoringPolicy` scores
+Local/SMB and excludes MTP; SMB's recompute degrades Spotlight and redistributes (never fabricates); the O(dirs) walk's
+`ChildAggregate` matches a whole-tree oracle (the memory-fix characterization); the offline read returns stored weights
+at the right as-of generation after the index DB is deleted; a multi-volume recompute scores each volume into its own
+store. The registration bus's late-volume delivery is covered in `indexing/lifecycle_bus`.

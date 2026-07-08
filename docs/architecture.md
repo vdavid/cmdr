@@ -138,11 +138,11 @@ All under `apps/desktop/src-tauri/src/`.
   and stay live via smb2 `CHANGE_NOTIFY` / PTP events, with an "admittedly stale" model on launch and disconnect
 - `importance/`: Deterministic folder-importance scoring (pure `scorer/`: values-in/score-out `Weights` + explain
   breakdown) that expensive features (agent, media-ML enrichment) consume. A read-consumer of `indexing/`, sibling to
-  `search/`, with its own per-volume `importance.db` store, a scheduler that recomputes on scan completion (full) and on
-  live listing changes (incremental) — both driven by a neutral lifecycle bus in `indexing/` — and the consumable
-  `ImportanceIndex` read API consumers reach it through. See its
-  [`CLAUDE.md`](../apps/desktop/src-tauri/src/importance/CLAUDE.md) and
-  [`docs/specs/importance-subsystem-plan.md`](specs/importance-subsystem-plan.md)
+  `search/`, with its own per-volume `importance.db` store, a multi-volume kind-aware scheduler (Local + SMB scored, MTP
+  excluded) that recomputes on scan completion (full) and on live listing changes (incremental) — both driven by a
+  neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
+  (queryable even for an unmounted volume). See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/importance/CLAUDE.md)
+  and [`docs/specs/importance-subsystem-plan.md`](specs/importance-subsystem-plan.md)
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher

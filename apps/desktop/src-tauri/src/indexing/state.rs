@@ -84,6 +84,11 @@ pub(crate) enum IndexPhase {
 /// read-path fast handles and the registry never disagree.
 pub(crate) struct IndexInstance {
     pub(crate) phase: IndexPhase,
+    /// This volume's scan kind (Local / SMB / MTP). Retained so a consumer of the
+    /// registry (the importance scheduler's startup sweep) can branch typed on the
+    /// kind — score Local + SMB, exclude MTP — instead of re-deriving it from the
+    /// volume-id string (which the `no-string-matching` rule forbids).
+    pub(crate) kind: IndexVolumeKind,
     pub(crate) read_pool: Arc<ReadPool>,
     pub(crate) pending_sizes: Arc<PendingSizes>,
     /// This volume's freshness signal (gray = absent instance; blue/green/yellow
@@ -332,6 +337,7 @@ pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
 /// registry never disagree about freshness.
 pub(crate) fn try_reserve_initializing_phase(
     volume_id: &str,
+    kind: IndexVolumeKind,
     store: IndexStore,
     read_pool: Arc<ReadPool>,
     pending_sizes: Arc<PendingSizes>,
@@ -347,6 +353,7 @@ pub(crate) fn try_reserve_initializing_phase(
         volume_id.to_string(),
         IndexInstance {
             phase: IndexPhase::Initializing { store },
+            kind,
             read_pool,
             pending_sizes,
             freshness,
@@ -579,6 +586,7 @@ fn start_indexing_for(
 
     if try_reserve_initializing_phase(
         volume_id,
+        kind,
         init_store,
         Arc::clone(&pool),
         Arc::clone(&pending),
@@ -589,6 +597,15 @@ fn start_indexing_for(
         log::info!("start_indexing: '{volume_id}' already Initializing/Running/ShuttingDown, no-op");
         return Ok(());
     }
+
+    // Announce the registration on the lifecycle bus so a backend subsystem (the
+    // importance scheduler) can wire up per-volume subscriptions for a volume that
+    // registered AFTER it did its startup sweep — a share mounted mid-session (plan
+    // M4 late-registering volumes). The kind rides along so the consumer branches
+    // typed (score Local + SMB, exclude MTP), never on the id string. Published
+    // once, right after the reservation wins, so an early scan completion still
+    // arrives on the (already-subscribed) scan bus afterwards.
+    super::lifecycle_bus::publish_volume_registered(volume_id, kind);
 
     let mut manager = match IndexManager::new_for_kind(
         volume_id.to_string(),
@@ -911,7 +928,14 @@ pub fn stop_scan(volume_id: &str) -> Result<(), String> {
 /// common restart case, plan Decision 4). `Scanning`/`Stale` volumes are excluded:
 /// a `Scanning` one will fire `ScanCompleted` on the bus when it finishes, and a
 /// `Stale` one has no authoritative scan to score yet.
-pub(crate) fn ready_volume_ids() -> Vec<VolumeId> {
+/// Snapshot the ready-to-score volume ids WITH their typed kind. The importance
+/// scheduler's startup sweep uses this to branch typed on the kind (score Local +
+/// SMB, exclude MTP — plan M4) without re-deriving the kind from the volume-id
+/// string (`no-string-matching`). Readiness filter: a registered instance whose
+/// freshness is `Fresh` (an authoritative completed scan). `Scanning`/`Stale`
+/// volumes are excluded (a `Scanning` one fires `ScanCompleted` on the bus when it
+/// finishes; a `Stale` one has nothing to score yet).
+pub(crate) fn ready_volumes_with_kind() -> Vec<(VolumeId, IndexVolumeKind)> {
     let reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
     reg.iter()
         .filter(|(_, instance)| {
@@ -922,7 +946,7 @@ pub(crate) fn ready_volume_ids() -> Vec<VolumeId> {
                 .and_then(|f| *f)
                 .is_some_and(|f| f == Freshness::Fresh)
         })
-        .map(|(vid, _)| vid.clone())
+        .map(|(vid, instance)| (vid.clone(), instance.kind))
         .collect()
 }
 
@@ -949,6 +973,15 @@ pub(crate) fn stop_all_indexing() {
             log::warn!("stop_all_indexing: stop_indexing('{volume_id}') failed: {e}");
         }
     }
+}
+
+/// The typed kind of a registered volume, or `None` if it has no index instance.
+///
+/// Lets a consumer (the `record_visit` command) branch on the kind — record a
+/// visit for a Local/SMB volume, skip an MTP one — without inspecting the
+/// volume-id string (`no-string-matching`).
+pub(crate) fn volume_kind(volume_id: &str) -> Option<IndexVolumeKind> {
+    INDEX_REGISTRY.lock().ok()?.get(volume_id).map(|i| i.kind)
 }
 
 /// Check whether a volume's index is active (initializing or running).
@@ -993,7 +1026,7 @@ mod tests {
             let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
             let pending = Arc::new(PendingSizes::new());
             assert!(
-                try_reserve_initializing_phase(name, store, pool, pending, fresh(None)).is_ok(),
+                try_reserve_initializing_phase(name, IndexVolumeKind::Local, store, pool, pending, fresh(None)).is_ok(),
                 "reserve {name} must succeed"
             );
         };
@@ -1039,8 +1072,8 @@ mod tests {
         let (s1, p1, pe1) = mk("vol-a");
         let (s2, p2, pe2) = mk("vol-b");
 
-        assert!(try_reserve_initializing_phase("vol-a", s1, p1, pe1, fresh(None)).is_ok());
-        assert!(try_reserve_initializing_phase("vol-b", s2, p2, pe2, fresh(None)).is_ok());
+        assert!(try_reserve_initializing_phase("vol-a", IndexVolumeKind::Local, s1, p1, pe1, fresh(None)).is_ok());
+        assert!(try_reserve_initializing_phase("vol-b", IndexVolumeKind::Local, s2, p2, pe2, fresh(None)).is_ok());
         assert!(is_active("vol-a"));
         assert!(is_active("vol-b"));
         // Each volume routes to ITS OWN pool, never the other's (no cross-talk).
@@ -1050,7 +1083,7 @@ mod tests {
         // on the same DB) while vol-b is untouched.
         let (s1b, p1b, pe1b) = mk("vol-a");
         assert!(
-            try_reserve_initializing_phase("vol-a", s1b, p1b, pe1b, fresh(None)).is_err(),
+            try_reserve_initializing_phase("vol-a", IndexVolumeKind::Local, s1b, p1b, pe1b, fresh(None)).is_err(),
             "double-start of the same volume must be rejected"
         );
         assert!(is_active("vol-b"), "vol-b unaffected by vol-a's rejected start");
@@ -1099,7 +1132,15 @@ mod tests {
         let pending = Arc::new(PendingSizes::new());
         let freshness = fresh(Some(Freshness::Stale));
         assert!(
-            try_reserve_initializing_phase("deadlock-test", store, pool, pending, Arc::clone(&freshness)).is_ok(),
+            try_reserve_initializing_phase(
+                "deadlock-test",
+                IndexVolumeKind::Local,
+                store,
+                pool,
+                pending,
+                Arc::clone(&freshness)
+            )
+            .is_ok(),
             "reserve must succeed"
         );
 
@@ -1161,8 +1202,15 @@ mod tests {
         // Reserve as Stale — the load-as-Stale-on-launch case for a persisted
         // SMB index.
         assert!(
-            try_reserve_initializing_phase("smb-fresh-test", store, pool, pending, fresh(Some(Freshness::Stale)))
-                .is_ok(),
+            try_reserve_initializing_phase(
+                "smb-fresh-test",
+                IndexVolumeKind::Smb,
+                store,
+                pool,
+                pending,
+                fresh(Some(Freshness::Stale))
+            )
+            .is_ok(),
             "reserve must succeed"
         );
         assert_eq!(get_freshness("smb-fresh-test"), Some(Freshness::Stale), "loads Stale");
@@ -1215,8 +1263,15 @@ mod tests {
 
         // Reserve, then drive to Fresh as if a scan just completed.
         assert!(
-            try_reserve_initializing_phase("smb-disco-test", store, pool, pending, fresh(Some(Freshness::Stale)))
-                .is_ok()
+            try_reserve_initializing_phase(
+                "smb-disco-test",
+                IndexVolumeKind::Smb,
+                store,
+                pool,
+                pending,
+                fresh(Some(Freshness::Stale))
+            )
+            .is_ok()
         );
         apply_freshness_event("smb-disco-test", FreshnessEvent::ScanStarted);
         apply_freshness_event("smb-disco-test", FreshnessEvent::ScanCompleted);
@@ -1279,8 +1334,15 @@ mod tests {
         // Reserve as Stale (the load-as-Stale-on-launch case, then re-enabled so
         // it's mid-scan / Initializing).
         assert!(
-            try_reserve_initializing_phase("smb-forget-test", store, pool, pending, fresh(Some(Freshness::Stale)))
-                .is_ok(),
+            try_reserve_initializing_phase(
+                "smb-forget-test",
+                IndexVolumeKind::Smb,
+                store,
+                pool,
+                pending,
+                fresh(Some(Freshness::Stale))
+            )
+            .is_ok(),
             "reserve must succeed"
         );
         assert_eq!(get_freshness("smb-forget-test"), Some(Freshness::Stale), "loads Stale");
@@ -1330,7 +1392,15 @@ mod tests {
             let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
             let pending = Arc::new(PendingSizes::new());
             assert!(
-                try_reserve_initializing_phase(vid, store, pool, pending, fresh(Some(Freshness::Stale))).is_ok(),
+                try_reserve_initializing_phase(
+                    vid,
+                    IndexVolumeKind::Smb,
+                    store,
+                    pool,
+                    pending,
+                    fresh(Some(Freshness::Stale))
+                )
+                .is_ok(),
                 "reserve {vid} must succeed (registry not wedged)"
             );
         };
@@ -1398,11 +1468,11 @@ mod tests {
     /// The startup-sweep source (the importance scheduler's `start` sweeps this):
     /// a volume that loaded `Fresh` at launch — from its persisted
     /// `scan_completed_at`, WITHOUT re-firing a `ScanCompleted` event — must still
-    /// be surfaced by `ready_volume_ids`, or a bus-only scheduler would never
+    /// be surfaced by `ready_volumes_with_kind`, or a bus-only scheduler would never
     /// score it (the common restart case, plan Decision 4). A `Scanning`/`Stale`
     /// volume is excluded (a `Scanning` one fires the bus when it finishes).
     #[test]
-    fn ready_volume_ids_surfaces_a_fresh_at_launch_volume() {
+    fn ready_volumes_with_kind_surfaces_a_fresh_at_launch_volume() {
         let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
         clear_registry_and_pools();
         for vid in ["sweep-fresh", "sweep-stale", "sweep-scanning"] {
@@ -1415,7 +1485,10 @@ mod tests {
             let store = IndexStore::open(&db_path).expect("open store");
             let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
             let pending = Arc::new(PendingSizes::new());
-            assert!(try_reserve_initializing_phase(vid, store, pool, pending, fresh(Some(initial))).is_ok());
+            assert!(
+                try_reserve_initializing_phase(vid, IndexVolumeKind::Local, store, pool, pending, fresh(Some(initial)))
+                    .is_ok()
+            );
         };
 
         // A Fresh-at-launch volume (loaded from a persisted completed scan), plus a
@@ -1424,7 +1497,7 @@ mod tests {
         reserve("sweep-stale", Freshness::Stale);
         reserve("sweep-scanning", Freshness::Scanning);
 
-        let ready = ready_volume_ids();
+        let ready: Vec<VolumeId> = ready_volumes_with_kind().into_iter().map(|(vid, _)| vid).collect();
         assert!(
             ready.iter().any(|v| v == "sweep-fresh"),
             "a Fresh-at-launch volume must be swept (it never re-fires ScanCompleted)"

@@ -9,7 +9,7 @@
 //! Read [`DETAILS.md`](DETAILS.md) before working here: the signal catalog, the
 //! formula shape, and the tunable-weights rationale.
 
-mod classify;
+pub(crate) mod classify;
 pub mod commands;
 mod last_used;
 pub mod read;

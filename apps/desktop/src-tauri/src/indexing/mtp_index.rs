@@ -85,7 +85,7 @@ mod tests {
     use crate::indexing::enrichment::{ReadPool, uninstall_read_pool};
     use crate::indexing::freshness::Freshness;
     use crate::indexing::pending_sizes::{PendingSizes, uninstall_pending_sizes};
-    use crate::indexing::state::{INDEX_REGISTRY, get_freshness, try_reserve_initializing_phase};
+    use crate::indexing::state::{INDEX_REGISTRY, IndexVolumeKind, get_freshness, try_reserve_initializing_phase};
     use crate::indexing::store::IndexStore;
 
     /// Reserve a volume's registry instance at a given freshness, run the body,
@@ -100,6 +100,7 @@ mod tests {
         assert!(
             try_reserve_initializing_phase(
                 vid,
+                IndexVolumeKind::Mtp,
                 store,
                 pool,
                 pending,

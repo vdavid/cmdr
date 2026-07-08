@@ -31,8 +31,10 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 use std::sync::Mutex;
 
+use tokio::sync::broadcast;
 use tokio::sync::watch;
 
+use super::state::IndexVolumeKind;
 use crate::ignore_poison::IgnorePoison;
 
 /// A volume's coarse scan-lifecycle state, as seen on the bus.
@@ -81,6 +83,28 @@ static BUS: LazyLock<Mutex<HashMap<String, watch::Sender<ScanState>>>> = LazyLoc
 /// paths here.
 static DIR_BUS: LazyLock<Mutex<HashMap<String, watch::Sender<DirsChanged>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// A volume that just registered with the index (reserved its
+/// `Initializing` slot), carrying its typed kind so a consumer branches on the
+/// kind (score Local + SMB, exclude MTP) without touching the volume-id string.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct RegisteredVolume {
+    pub volume_id: String,
+    pub kind: IndexVolumeKind,
+}
+
+/// The registration bus: a single fan-out `broadcast` of every volume that
+/// registers after subscribe. A `broadcast` (not a per-volume `watch`) fits
+/// because each registration is a distinct EVENT for a distinct volume, not a
+/// latest-state-per-volume a late subscriber must replay — and the consumer's
+/// startup registry sweep already covers volumes registered before it subscribed
+/// (plan M4). The scheduler subscribes ONCE (before its sweep, so no registration
+/// in the gap is lost) and reacts to each late-registering volume.
+///
+/// Capacity is generous: registrations are rare (one per mounted volume), so a
+/// receiver never lags. A lagged receiver only misses a registration whose volume
+/// the next scan-completion (on the scan bus) still covers, so a miss self-heals.
+static REGISTRATION_BUS: LazyLock<broadcast::Sender<RegisteredVolume>> = LazyLock::new(|| broadcast::channel(256).0);
 
 /// Get (or lazily create) the dir-changed `watch::Sender` for a volume.
 fn with_dir_sender<T>(volume_id: &str, f: impl FnOnce(&watch::Sender<DirsChanged>) -> T) -> T {
@@ -159,6 +183,27 @@ pub(crate) fn publish_scan_completed(volume_id: &str) {
 /// still sees the first completion.
 pub(crate) fn subscribe(volume_id: &str) -> watch::Receiver<ScanState> {
     with_sender(volume_id, |sender| sender.subscribe())
+}
+
+/// Announce that a volume registered (reserved its index slot), with its kind.
+///
+/// Published once from the neutral registration funnel (`state::start_indexing_for`,
+/// right after the reservation wins). A `send` with no receivers is a harmless
+/// no-op — the consumer's startup sweep covers any volume that registered before
+/// it subscribed, so nothing is lost.
+pub(crate) fn publish_volume_registered(volume_id: &str, kind: IndexVolumeKind) {
+    let _ = REGISTRATION_BUS.send(RegisteredVolume {
+        volume_id: volume_id.to_string(),
+        kind,
+    });
+}
+
+/// Subscribe to volume-registration events. The scheduler subscribes ONCE (before
+/// its startup sweep) and wires per-volume subscriptions for each late-registering
+/// volume. Only registrations AFTER this call are delivered (a `broadcast`); the
+/// pre-subscribe set is the sweep's job.
+pub(crate) fn subscribe_registrations() -> broadcast::Receiver<RegisteredVolume> {
+    REGISTRATION_BUS.subscribe()
 }
 
 #[cfg(test)]
@@ -281,6 +326,35 @@ mod tests {
         drop(state);
 
         DIR_BUS.lock_ignore_poison().remove(vid);
+    }
+
+    /// A late-registering volume (a share mounted mid-session) reaches a subscriber
+    /// through the registration bus, carrying its typed kind so the consumer can
+    /// branch (score SMB, exclude MTP) without touching the id string. A subscriber
+    /// created BEFORE the publish sees it; the kind rides along. This is the seam
+    /// the importance scheduler subscribes to for late volumes (plan M4).
+    #[test]
+    fn registration_bus_delivers_a_late_volume_with_its_kind() {
+        let mut rx = subscribe_registrations();
+
+        // A share registers AFTER the subscribe (the mid-session mount case).
+        publish_volume_registered("smb-late", IndexVolumeKind::Smb);
+
+        let got = rx.try_recv().expect("the late registration is delivered");
+        assert_eq!(
+            got,
+            RegisteredVolume {
+                volume_id: "smb-late".to_string(),
+                kind: IndexVolumeKind::Smb,
+            },
+            "the registration carries the volume id and its typed kind"
+        );
+
+        // An MTP registration is delivered too (the consumer, not the bus, applies
+        // the exclusion) — the bus stays a neutral publisher.
+        publish_volume_registered("mtp-cam:1", IndexVolumeKind::Mtp);
+        let mtp = rx.try_recv().expect("mtp registration delivered");
+        assert_eq!(mtp.kind, IndexVolumeKind::Mtp, "the bus reports the kind verbatim");
     }
 
     /// Two volumes are independent: publishing on one never moves the other.
