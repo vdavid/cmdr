@@ -430,6 +430,12 @@ test.describe('Archive browsing', () => {
 
     // A large source file gives a window to cancel mid-write. Create it directly
     // (the shared bulk cache isn't populated for a single manual instance).
+    // This spec runs ~4 s, well over the sub-second suite norm, and that's
+    // inherent, not a stray sleep: pinning a MID-TRANSFER cancel needs a transfer
+    // long enough to catch mid-write, so the 24 MB write + zip-compress window is
+    // load-bearing. Don't shrink it to "speed it up" — a file small enough to
+    // finish before the cancel lands turns this into a completed-copy test and
+    // stops exercising the cancel path.
     const bigName = 'big-to-cancel.dat'
     fs.writeFileSync(path.join(fixtureRoot, 'left', bigName), Buffer.alloc(24 * 1024 * 1024, 7))
 

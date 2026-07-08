@@ -184,9 +184,17 @@ Notes: `../archive-browsing-plan.md` § M6.
 - Four archive-area `CLAUDE.md`s sit at 595–599 words against the 600 ceiling (volume/, backends/archive/,
   write_operations/, pane/). The next few added sentences re-trip the warn; the honest fix then is a folder split
   (backends/archive/ is the candidate: 20+ files spanning read core, formats, and mutation), not another squeeze.
-- `smb.spec.ts` `recreateFixturesAndSettle()` uses a rationale-documented `sleep(1000)`; likely convertible to
-  `flushFileWatcher()` + a `fileExistsInFocusedPane` poll, but verifying needs the SMB Docker E2E lane.
-- One E2E duration warn: the cancel-paste spec runs ~4.4 s (suite target: well under a second per test).
+- `smb.spec.ts` `recreateFixturesAndSettle()` uses a rationale-documented `sleep(1000)`. Investigated: the settle it
+  provides is already done by the `ensureAppReady()` both call sites run right after it (it navigates, polls the fresh
+  `left/` fixtures present, calls `flushFileWatcher()`, then re-confirms stability — see `helpers/app-lifecycle.ts`
+  ~L158). So the `sleep` is redundant and the fix is to drop it (replace `recreateFixturesAndSettle()` with a bare
+  `recreateFixtures(getFixtureRoot())`), NOT to add a second `flushFileWatcher()` + poll. LEFT AS-IS for now: the SMB
+  Docker E2E lane couldn't run on this machine (port collision — a pre-existing `smb-consumer` stack held the ports),
+  and a rationale-documented sleep beats an unverified conversion. Apply the drop once the lane is free and green.
+- ~~One E2E duration warn: the cancel-paste spec runs ~4.4 s (suite target: well under a second per test).~~ Resolved
+  (investigated, left as-is with a rationale): no stray sleep. The duration is inherent to what it pins — a mid-transfer
+  cancel needs a transfer long enough to catch mid-write, so the 24 MB write + zip-compress window is load-bearing. A
+  guardrail comment in the test now says not to shrink it. Documented in `archive-browsing.spec.ts`.
 
 ## 11. Awaiting David (no agent action)
 
