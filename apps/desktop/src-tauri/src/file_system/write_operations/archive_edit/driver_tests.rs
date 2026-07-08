@@ -14,9 +14,14 @@ async fn a_successful_edit_rewrites_the_archive_and_emits_complete_then_settled(
     write_simple_zip(&path, "keep.txt", b"keep");
 
     let events = Arc::new(CollectorEventSink::new());
+    // A unique parent keeps this op off any shared operation-manager lane (see
+    // `test_support::unique_lane_id`). The root-parent → `None`-settle special
+    // case is pinned by `move_out_tests`, which can pass a `"root"` settle id
+    // WITHOUT reserving the `"root"` lane (its lanes come from the volume objects).
+    let parent = unique_lane_id();
     let request = ArchiveEditRequest {
         archive_path: path.clone(),
-        parent_volume_id: "root".to_string(),
+        parent_volume_id: parent.clone(),
         changeset: Changeset {
             adds: vec![AddEntry {
                 inner_path: "added.txt".to_string(),
@@ -57,8 +62,10 @@ async fn a_successful_edit_rewrites_the_archive_and_emits_complete_then_settled(
         wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await,
         "write-settled should fire"
     );
-    // A `root`-parent edit settles with no volume id (`None`, not `"root"`).
-    assert_eq!(events.settled.lock_ignore_poison()[0].volume_id, None);
+    // A NON-root parent carries its volume id in the settle event (the FE clears
+    // that drive's eject guard on it). The `root` → `None` case is pinned by
+    // `move_out_tests`.
+    assert_eq!(events.settled.lock_ignore_poison()[0].volume_id, Some(parent));
 }
 
 #[tokio::test]
@@ -78,7 +85,8 @@ async fn route_archive_delete_removes_entries_and_completes() {
     let events = Arc::new(CollectorEventSink::new());
     // The FE sends full paths inside the archive.
     let sources = vec![path.join("drop.txt")];
-    route_archive_delete(Arc::clone(&events) as Arc<dyn OperationEventSink>, &sources, "root", 0)
+    let parent = unique_lane_id();
+    route_archive_delete(Arc::clone(&events) as Arc<dyn OperationEventSink>, &sources, &parent, 0)
         .await
         .expect("start delete");
 
@@ -103,10 +111,11 @@ async fn route_archive_delete_reports_the_deleted_count_not_the_retained_count()
     );
 
     let events = Arc::new(CollectorEventSink::new());
+    let parent = unique_lane_id();
     route_archive_delete(
         Arc::clone(&events) as Arc<dyn OperationEventSink>,
         &[path.join("drop.txt")],
-        "root",
+        &parent,
         0,
     )
     .await
@@ -129,7 +138,7 @@ async fn a_missing_archive_emits_a_write_error_not_a_panic() {
     let events = Arc::new(CollectorEventSink::new());
     let request = ArchiveEditRequest {
         archive_path: path.clone(),
-        parent_volume_id: "root".to_string(),
+        parent_volume_id: unique_lane_id(),
         changeset: Changeset {
             mkdirs: vec!["dir".to_string()],
             ..Default::default()

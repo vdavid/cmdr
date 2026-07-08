@@ -62,15 +62,31 @@ impl Volume for FailingWriteVolume {
     fn supports_export(&self) -> bool {
         true
     }
+    fn lane_key(&self) -> crate::file_system::volume::LaneKey {
+        // Delegate to the inner volume so the injected unique lane key (below)
+        // wins over the trait default (root `/`, shared across instances).
+        self.inner.lane_key()
+    }
     // `write_from_stream` deliberately NOT implemented — the trait default
     // returns `NotSupported`, which is the dest-side failure this double injects.
 }
 
 /// Builds a local-backed `ArchiveVolume` over `archive_path` for move-out tests.
+///
+/// The parent carries a UNIQUE lane key (via `with_lane_key`) so each test's
+/// move-out gets its own operation-manager lane. The move-out reserves
+/// `source_volume.lane_key()` (the archive's parent), and an `InMemoryVolume`
+/// otherwise defaults its lane to its root `/` — shared across every instance,
+/// serializing the whole move-out suite onto one lane (see
+/// `test_support::unique_lane_id` for the isolation rationale).
 fn archive_source_volume(archive_path: &Path) -> Arc<dyn Volume> {
     use crate::file_system::volume::InMemoryVolume;
     use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveVolume};
-    let parent: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("parent").with_local_fs_access());
+    let parent: Arc<dyn Volume> = Arc::new(
+        InMemoryVolume::new("parent")
+            .with_local_fs_access()
+            .with_lane_key(unique_lane_id()),
+    );
     Arc::new(ArchiveVolume::new(
         parent,
         archive_path.to_path_buf(),
@@ -158,7 +174,7 @@ async fn move_out_dest_failure_deletes_nothing_and_leaves_the_archive_readable()
 
     let source_volume = archive_source_volume(&archive);
     let dest_volume: Arc<dyn Volume> = Arc::new(FailingWriteVolume {
-        inner: Arc::new(InMemoryVolume::new("dest")),
+        inner: Arc::new(InMemoryVolume::new("dest").with_lane_key(unique_lane_id())),
     });
 
     let events = Arc::new(CollectorEventSink::new());

@@ -513,6 +513,76 @@ async fn single_op_with_free_lanes_behaves_like_immediate_spawn() {
     assert!(!manager().lane_use_snapshot().contains_key(&lane));
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn admitted_op_runs_even_if_the_admitting_runtime_is_dropped() {
+    // The manager is a process-global singleton, but its admission pass runs on
+    // whatever runtime triggered it (a `spawn_managed`, or a concurrent op's
+    // `on_settled`). If it spawned admitted work onto that caller runtime and the
+    // caller runtime went away, the op would be orphaned — it would never run,
+    // never settle, and leak its lane forever. The manager instead spawns on the
+    // app's long-lived runtime (`tauri::async_runtime::spawn`), so an op admitted
+    // by a short-lived runtime still runs to completion after that runtime dies.
+    //
+    // Here a throwaway current-thread runtime admits the op and is then dropped
+    // WITHOUT ever driving it. With a bare `tokio::spawn` in the admission pass,
+    // `ran` would stay false and this test would hang to its deadline.
+    use std::sync::atomic::AtomicBool;
+
+    let op = unique("survives-runtime-drop");
+    let lane = unique("lane");
+    let ran = Arc::new(AtomicBool::new(false));
+
+    let ran_in_task = Arc::clone(&ran);
+    let op_id = op.clone();
+    let deferred: Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send> = Box::new(move || {
+        Box::pin(async move {
+            let guard = ManagedTaskGuard::new(op_id.clone());
+            // Yield first, so this only finishes if a LIVE runtime keeps polling
+            // it after the admitting runtime is gone.
+            tokio::task::yield_now().await;
+            ran_in_task.store(true, Ordering::SeqCst);
+            guard.disarm();
+            manager().on_settled(&op_id);
+        })
+    });
+
+    let desc = descriptor(&op, vec![&lane]);
+    let state = fresh_state();
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .expect("build throwaway runtime");
+        // `spawn_managed` admits the op (lane free) and spawns its start; the
+        // throwaway runtime then drops the instant `block_on` returns.
+        rt.block_on(async {
+            manager().spawn_managed(desc, state, deferred);
+        });
+    })
+    .join()
+    .expect("throwaway runtime thread joins");
+
+    // The op runs on the app runtime, not the dropped one, so it completes and
+    // settles (removed from the registry).
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    while !ran.load(Ordering::SeqCst) {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "an admitted op must run on the app runtime, not die with the admitting runtime"
+        );
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    // Give `on_settled` a beat to remove the record.
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    while manager().status_of(&op).is_some() {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the op must settle and be removed"
+        );
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    assert!(!manager().lane_use_snapshot().contains_key(&lane), "its lane is freed");
+}
+
 // ============================================================================
 // Managed instant ops (`run_instant`): scan-free, near-instant, result-returning
 // metadata ops that register + mark-busy but NEVER reserve a lane or queue.

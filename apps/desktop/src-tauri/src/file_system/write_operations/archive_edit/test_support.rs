@@ -55,15 +55,34 @@ pub(super) fn read_entry(path: &Path, name: &str) -> Option<Vec<u8>> {
 }
 
 /// Polls until `predicate` holds or a bounded timeout elapses, yielding to the
-/// runtime so the spawned op makes progress.
+/// runtime so the spawned op makes progress. The cap only bites on a genuine
+/// hang — success returns early, so a comfortable cap costs nothing.
 pub(super) async fn wait_until(mut predicate: impl FnMut() -> bool) -> bool {
-    for _ in 0..3000 {
+    for _ in 0..5_000 {
         if predicate() {
             return true;
         }
         tokio::time::sleep(Duration::from_millis(1)).await;
     }
     false
+}
+
+/// A unique id giving one archive-edit test op its OWN operation-manager lane,
+/// instead of a lane shared with other concurrently-running tests. Used as a
+/// LOCAL parent-drive id (an unregistered id resolves to a local in-place edit,
+/// exactly like the production `"root"` disk, so its fallback lane is the id
+/// itself), or as an explicit `with_lane_key` on a test volume.
+///
+/// This is for test ISOLATION and parallel speed, mirroring the manager's own
+/// `tests.rs` ("unique operation ids + lane keys"): the operation manager is a
+/// process-global singleton, so a shared global lane (like `"root"`, or an
+/// `InMemoryVolume`'s default root-`/` lane) serializes otherwise-unrelated tests
+/// and couples their timing. Keep new local tests on this, NOT `"root"`. It is
+/// NOT the orphan-safety mechanism — that's the manager spawning admitted ops on
+/// the app runtime (`manager.rs` § the admission pass), which holds regardless of
+/// lanes.
+pub(super) fn unique_lane_id() -> String {
+    format!("test-lane-{}", Uuid::new_v4())
 }
 
 /// A real zip as in-memory bytes, for seeding a remote parent's store.
@@ -88,7 +107,13 @@ pub(super) async fn register_remote_zip(
     entries: &[(&str, &[u8])],
 ) -> (String, Arc<crate::file_system::volume::InMemoryVolume>) {
     use crate::file_system::volume::InMemoryVolume;
-    let parent = InMemoryVolume::new("Remote");
+    let id = format!("remote-test-{}", Uuid::new_v4());
+    // The lane key is the unique volume id so each remote-parent op gets its own
+    // operation-manager lane. An `InMemoryVolume` otherwise defaults its lane to
+    // its root `/`, shared across every instance — and a copy-into reserves the
+    // parent's lane, so two such ops would serialize otherwise-unrelated tests
+    // (see `unique_lane_id` for the isolation rationale).
+    let parent = InMemoryVolume::new("Remote").with_lane_key(id.clone());
     if let Some(dir) = archive_path.parent() {
         parent.create_directory(dir).await.expect("seed parent dir");
     }
@@ -97,7 +122,6 @@ pub(super) async fn register_remote_zip(
         .await
         .expect("seed remote zip");
     let parent = Arc::new(parent);
-    let id = format!("remote-test-{}", Uuid::new_v4());
     get_volume_manager().register(&id, Arc::clone(&parent) as Arc<dyn Volume>);
     (id, parent)
 }

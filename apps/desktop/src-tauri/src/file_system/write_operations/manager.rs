@@ -357,7 +357,18 @@ impl OperationManager {
 
             match deferred {
                 Some(start) => {
-                    tokio::spawn(start());
+                    // Spawn on the app's long-lived runtime, NOT the ambient one
+                    // (`tokio::spawn`). The admission pass runs on whatever runtime
+                    // triggered it — this op's own `spawn_managed`, or a CONCURRENT
+                    // op's `on_settled` that reached the pass first (admission is
+                    // global, and there's a lock-free window between an op's
+                    // registration and its own pass). In production that's always
+                    // the single Tauri runtime, so this is a no-op; but under the
+                    // per-test-runtime harness, spawning onto a caller runtime that
+                    // is then torn down orphans the task, leaks its lane, and wedges
+                    // every later same-lane op. `async_runtime::spawn` pins every op
+                    // to the one process-global runtime that outlives them all.
+                    tauri::async_runtime::spawn(start());
                 }
                 None => {
                     // Should never happen: a Queued op always has its deferred

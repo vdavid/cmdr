@@ -23,7 +23,7 @@ async fn start_interactive_copy_into(
         source_volume,
         vec![PathBuf::from(src_rel)],
         archive.to_path_buf(),
-        "root".to_string(),
+        unique_lane_id(),
         ConflictResolution::Stop,
         0,
         false,
@@ -69,12 +69,13 @@ async fn interactive_copy_into_prompts_on_a_file_collision_and_overwrite_replace
         Some(b"fresh".as_slice()),
         "the non-colliding file is added"
     );
-    // A `root`-parent op carries no settle volume id (it's `None`, not `"root"`).
+    // A NON-root parent carries its volume id in the settle event (so the FE can
+    // clear that drive's eject guard); a `root` local disk settles with `None`,
+    // pinned by `driver_tests` and `move_out_tests`.
     assert!(wait_until(|| !events.settled.lock_ignore_poison().is_empty()).await);
-    assert_eq!(
-        events.settled.lock_ignore_poison()[0].volume_id,
-        None,
-        "a root-parent archive edit settles with no volume id"
+    assert!(
+        events.settled.lock_ignore_poison()[0].volume_id.is_some(),
+        "a non-root parent archive edit carries its volume id in the settle event"
     );
 }
 
@@ -242,7 +243,7 @@ async fn interactive_move_into_with_a_skipped_collision_keeps_the_source() {
         source_volume,
         vec![PathBuf::from("d")],
         archive.clone(),
-        "root".to_string(),
+        unique_lane_id(),
         ConflictResolution::Stop,
         0,
         true, // is_move
