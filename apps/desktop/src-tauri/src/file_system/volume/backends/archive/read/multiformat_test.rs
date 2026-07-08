@@ -340,7 +340,10 @@ async fn one_pass_subtree_extract_skipping_a_member_still_reads_the_rest() {
     let big: Vec<u8> = (0..200_000u32).map(|i| (i % 241) as u8).collect();
     let (index, src) = parse_tar(
         TarCodec::Gzip,
-        &[TarItem::File("docs/skip.bin", &big), TarItem::File("docs/keep.txt", b"kept")],
+        &[
+            TarItem::File("docs/skip.bin", &big),
+            TarItem::File("docs/keep.txt", b"kept"),
+        ],
     );
     let mut reader = index.open_subtree_extract("docs", src);
 
@@ -356,7 +359,10 @@ async fn one_pass_subtree_extract_skipping_a_member_still_reads_the_rest() {
         data.extend_from_slice(&chunk);
     }
     assert_eq!(data, b"kept", "the member after a skipped one decodes correctly");
-    assert!(reader.next_member().await.expect("next_member").is_none(), "subtree is exhausted");
+    assert!(
+        reader.next_member().await.expect("next_member").is_none(),
+        "subtree is exhausted"
+    );
 }
 
 #[tokio::test]
