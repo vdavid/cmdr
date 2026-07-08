@@ -1,7 +1,7 @@
 # Agent: v1.0 spec (with v1.5+ outlook)
 
-Status: design complete, not yet implemented. 2026-06-04; codebase claims revised 2026-07-08 against the live tree
-(a month of shipping satisfied the execution-queue prerequisite, consolidated the MCP tool registry, shipped archive
+Status: design complete, not yet implemented. 2026-06-04; codebase claims revised 2026-07-08 against the live tree (a
+month of shipping satisfied the execution-queue prerequisite, consolidated the MCP tool registry, shipped archive
 browsing, and landed the `Location` type). The spec went through three fresh-eyes review rounds (including verification
 of its codebase claims against the live tree) before landing.
 
@@ -165,10 +165,10 @@ both the drive index and the agent: APFS UUID for local volumes, server+share fo
 endpoint+bucket for S3. The need for non-local volumes arrives within weeks of v1 (NAS indexing is a personal target),
 so the keying ships in v1 even though only the local volume is active.
 
-Navigation now has a first-class `Location` type (`src/location.rs`, a `(volume_id, path)` pair with a `resolve_location`
-resolver; the `location-type-nav` effort that kills bare-path navigation is in progress). The agent's `(volume_id,
-rel_path)` keying should reuse that vocabulary rather than mint a parallel pair type, so navigation and the agent name
-the same thing the same way.
+Navigation now has a first-class `Location` type (`src/location.rs`, a `(volume_id, path)` pair with a
+`resolve_location` resolver; the `location-type-nav` effort that kills bare-path navigation is in progress). The agent's
+`(volume_id, rel_path)` keying should reuse that vocabulary rather than mint a parallel pair type, so navigation and the
+agent name the same thing the same way.
 
 Per-volume staleness is a first-class property, not an error: summaries carry their `as_of` fingerprint, volumes carry
 `last_reconciled_at`, and the agent caveats answers ("as of May 28").
@@ -199,8 +199,9 @@ A fast, pure-Rust algorithm assigning each folder an interest weight. Inputs (ha
 - Path class priors: Downloads, Desktop, Documents, project roots high; `~/Library`, caches low.
 
 Weights live in the importance subsystem's separate per-volume `importance.db` (a regenerable cache; see
-`docs/specs/importance-subsystem-plan.md`, a confirmed refinement of D8) and recompute cheaply when listings change. The weight serves three consumers: summary generation gating, event-bundle interest (§6.2), and as an
-input the LLM sees when reasoning about folders.
+`docs/specs/importance-subsystem-plan.md`, a confirmed refinement of D8) and recompute cheaply when listings change. The
+weight serves three consumers: summary generation gating, event-bundle interest (§6.2), and as an input the LLM sees
+when reasoning about folders.
 
 Expectation check: David expects a typical user to have only dozens to a few hundred genuinely important folders. The
 design does not depend on that guess being right: the pre-scan counts before anything costs money, and budgets cap the
@@ -460,9 +461,9 @@ placeholders; the implementing agent owns the final list.
   (created/updated/invalidated/expired), `agent-notify` (the notification payload with actions),
   `agent-preflight-progress`, `agent-chat-delta` (streamed replies), `agent-status-changed` (degraded modes, §6.5).
 - All of it goes through the typed bindings per the AGENTS.md IPC rules. Frontend IPC routes through the
-  `src/lib/tauri-commands/` wrapper layer, with a lint (`cmdr/no-raw-bindings-import`) forbidding raw `bindings`
-  imports outside it, so the agent's frontend commands get a `tauri-commands/agent.ts` wrapper rather than calling
-  generated bindings directly. The review dialog and activity panel are pure consumers of these commands and events.
+  `src/lib/tauri-commands/` wrapper layer, with a lint (`cmdr/no-raw-bindings-import`) forbidding raw `bindings` imports
+  outside it, so the agent's frontend commands get a `tauri-commands/agent.ts` wrapper rather than calling generated
+  bindings directly. The review dialog and activity panel are pure consumers of these commands and events.
 
 ## 10. The LLM provider layer
 
@@ -490,10 +491,10 @@ Single-shot prompts are interchangeable across providers; agent loops are not. T
 ### 10.2 Architecture
 
 **The provider layer already exists in the codebase.** The tree ships the `genai` crate (pinned `=0.6.0-beta.19` in
-`Cargo.toml`, which is authoritative) wrapped by
-`src/ai/client.rs`, with `src/ai/CLAUDE.md` and `DETAILS.md` documenting the same per-provider quirk rationale this spec
-describes (Responses-API routing, per-provider temperature handling, ~20 providers normalized). Do NOT run an adoption
-spike and do NOT hand-roll adapters in parallel to it. The work is:
+`Cargo.toml`, which is authoritative) wrapped by `src/ai/client.rs`, with `src/ai/CLAUDE.md` and `DETAILS.md`
+documenting the same per-provider quirk rationale this spec describes (Responses-API routing, per-provider temperature
+handling, ~20 providers normalized). Do NOT run an adoption spike and do NOT hand-roll adapters in parallel to it. The
+work is:
 
 - **A small owned trait** (e.g. `AgentLlm`) as the agent-facing seam over the existing client: messages carrying an
   opaque per-message provider-state blob, tool declarations, normalized tool calls and stop reasons. Provider types
@@ -693,8 +694,8 @@ Settings > Advanced, or dropping some, is a later editing decision, not a v1 gat
 
 ### From the 2026-07 design review (proposed, not decided)
 
-These came out of a later review pass and are captured as open items, not settled decisions. They may change the shape of
-sections above; treat them as inputs to the next planning round.
+These came out of a later review pass and are captured as open items, not settled decisions. They may change the shape
+of sections above; treat them as inputs to the next planning round.
 
 15. **Importance scorer as a standalone neutral subsystem — decided and planned.** The scorer (§5.1) is its own
     subsystem with its own plan (`docs/specs/importance-subsystem-plan.md`), serving multiple consumers: the agent, the

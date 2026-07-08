@@ -238,7 +238,9 @@ fn map_sevenz_err(err: sevenz_rust2::Error) -> ArchiveError {
         E::UnsupportedCompressionMethod(method) => ArchiveError::Unsupported(format!("7z coder: {method}")),
         E::Unsupported(msg) => ArchiveError::Unsupported(format!("7z: {msg}")),
         E::ExternalUnsupported => ArchiveError::Unsupported("7z uses an unsupported external coder".to_string()),
-        E::UnsupportedVersion { major, minor } => ArchiveError::Unsupported(format!("7z format version {major}.{minor}")),
+        E::UnsupportedVersion { major, minor } => {
+            ArchiveError::Unsupported(format!("7z format version {major}.{minor}"))
+        }
         E::PasswordRequired | E::MaybeBadPassword(_) => ArchiveError::Unsupported("7z is encrypted".to_string()),
         // A memory-limit refusal is a resource cap, not damage: reuse the tree-size
         // rejection so it never reads as "damaged".

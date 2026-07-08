@@ -48,17 +48,32 @@ fn unknown_7z_codec_also_unsupported() {
 fn aes256_on_password_shapes_map_to_unsupported() {
     // These only arise with the `aes256` feature ON; mapped defensively so
     // encryption never reads as damaged if the feature is ever enabled.
-    assert!(matches!(map_sevenz_err(E::PasswordRequired), ArchiveError::Unsupported(_)));
+    assert!(matches!(
+        map_sevenz_err(E::PasswordRequired),
+        ArchiveError::Unsupported(_)
+    ));
     let io = std::io::Error::new(std::io::ErrorKind::InvalidData, "bad pw");
-    assert!(matches!(map_sevenz_err(E::MaybeBadPassword(io)), ArchiveError::Unsupported(_)));
+    assert!(matches!(
+        map_sevenz_err(E::MaybeBadPassword(io)),
+        ArchiveError::Unsupported(_)
+    ));
 }
 
 #[test]
 fn broken_7z_structure_still_reads_as_corrupt() {
     // The fix must not over-reach: a genuinely damaged archive stays Corrupt.
-    assert!(matches!(map_sevenz_err(E::NextHeaderCrcMismatch), ArchiveError::Corrupt(_)));
-    assert!(matches!(map_sevenz_err(E::ChecksumVerificationFailed), ArchiveError::Corrupt(_)));
-    assert!(matches!(map_sevenz_err(E::BadSignature([0; 6])), ArchiveError::Corrupt(_)));
+    assert!(matches!(
+        map_sevenz_err(E::NextHeaderCrcMismatch),
+        ArchiveError::Corrupt(_)
+    ));
+    assert!(matches!(
+        map_sevenz_err(E::ChecksumVerificationFailed),
+        ArchiveError::Corrupt(_)
+    ));
+    assert!(matches!(
+        map_sevenz_err(E::BadSignature([0; 6])),
+        ArchiveError::Corrupt(_)
+    ));
 }
 
 #[test]
@@ -74,7 +89,10 @@ fn memory_limit_maps_to_too_large() {
 fn byte_source_io_classifies_by_io_kind() {
     // A truncated stream (UnexpectedEof) is a damaged archive, not a live fault.
     let eof = std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "short read");
-    assert!(matches!(map_sevenz_err(E::Io(eof, "".into())), ArchiveError::Corrupt(_)));
+    assert!(matches!(
+        map_sevenz_err(E::Io(eof, "".into())),
+        ArchiveError::Corrupt(_)
+    ));
     // A real I/O fault stays Io.
     let denied = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "denied");
     assert!(matches!(map_sevenz_err(E::Io(denied, "".into())), ArchiveError::Io(_)));

@@ -40,9 +40,8 @@ follow-ups differ in size once the `aes` versions align:
   already shipped.
 - **7z AES is NOT a one-line flip.** Beyond the `aes256` feature, `sevenz-rust2` wants the password at
   `ArchiveReader::new` time, so a real 7z-AES path must thread a per-archive password through `read/sevenz.rs`'s `parse`
-  AND every `open_read` / `stream_subtree` re-open (each currently passes `Password::empty()`), then surface
-  `Encrypted` / `WrongPassword` from `map_sevenz_err` instead of `Unsupported`. That's new parse/read plumbing, not a
-  flag.
+  AND every `open_read` / `stream_subtree` re-open (each currently passes `Password::empty()`), then surface `Encrypted`
+  / `WrongPassword` from `map_sevenz_err` instead of `Unsupported`. That's new parse/read plumbing, not a flag.
 
 ## 3. M-append: fast in-place zip edits (perf, research spike)
 
