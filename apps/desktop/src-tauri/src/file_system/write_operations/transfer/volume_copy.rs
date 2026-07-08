@@ -269,6 +269,19 @@ pub async fn copy_between_volumes(
                     // write-error (the FE would log a user cancel as an error).
                     log::info!("copy_between_volumes: operation {} cancelled", op_id);
                 }
+                Err(failure) if failure.error.is_expected_recoverable() => {
+                    // Expected, recoverable control flow (an encrypted-archive
+                    // source prompting for a password), NOT a reportable failure:
+                    // log at `warn` so it stays below the error-reporter's
+                    // auto-report threshold. See `WriteOperationError::is_expected_recoverable`.
+                    log::warn!(
+                        target: "copy",
+                        "copy_between_volumes: operation {} needs user input: {:?}",
+                        op_id,
+                        failure.error
+                    );
+                    events.emit_error(write_error_event_from(op_id.clone(), WriteOperationType::Copy, failure));
+                }
                 Err(failure) => {
                     // Toast-visible failure for cross-volume copy (Local↔SMB↔MTP).
                     crate::log_error!("copy_between_volumes: operation {} failed: {:?}", op_id, failure.error,);

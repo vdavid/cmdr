@@ -70,3 +70,61 @@ impl From<std::io::Error> for WriteOperationError {
         classify_io_error(&err, String::new())
     }
 }
+
+impl WriteOperationError {
+    /// Whether this outcome is expected, recoverable control flow rather than a
+    /// genuine failure.
+    ///
+    /// Callers log expected-recoverable outcomes at `warn`, not `error`, so they
+    /// stay below the error-reporter's auto-report threshold (error level IS that
+    /// threshold — see [`crate::error_reporter`]'s `CLAUDE.md`). Without this an
+    /// encrypted-archive extract would queue a false-positive auto error report on
+    /// every password prompt and every wrong attempt.
+    ///
+    /// `ArchiveNeedsPassword` is the sole case today: extracting from an encrypted
+    /// archive raises it purely to prompt the user for a password and retry.
+    pub(crate) fn is_expected_recoverable(&self) -> bool {
+        matches!(self, WriteOperationError::ArchiveNeedsPassword { .. })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn archive_needs_password_is_expected_recoverable() {
+        // Both the fresh prompt and the wrong-attempt re-prompt are recoverable.
+        for wrong_attempt in [false, true] {
+            let err = WriteOperationError::ArchiveNeedsPassword {
+                path: "/secret.zip".to_string(),
+                wrong_attempt,
+            };
+            assert!(
+                err.is_expected_recoverable(),
+                "needs-password must stay below the auto-report threshold (wrong_attempt={wrong_attempt})"
+            );
+        }
+    }
+
+    #[test]
+    fn genuine_failures_are_not_expected_recoverable() {
+        let failures = [
+            WriteOperationError::IoError {
+                path: "/x".to_string(),
+                message: "boom".to_string(),
+            },
+            WriteOperationError::SourceNotFound { path: "/x".to_string() },
+            WriteOperationError::PermissionDenied {
+                path: "/x".to_string(),
+                message: "denied".to_string(),
+            },
+        ];
+        for err in failures {
+            assert!(
+                !err.is_expected_recoverable(),
+                "genuine failure must still log at error and auto-report: {err:?}"
+            );
+        }
+    }
+}
