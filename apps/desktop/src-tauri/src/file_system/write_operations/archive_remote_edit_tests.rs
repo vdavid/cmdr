@@ -1,5 +1,5 @@
 //! Data-safety tests for the remote zip-edit orchestration (pull → apply →
-//! upload → swap). The red-first anchor for the core M5 remote-edit guarantee:
+//! upload → swap). The red-first anchor for the core remote-edit guarantee:
 //! the remote ORIGINAL is intact until the final swap, and a cancel anywhere
 //! before it leaves the original untouched with no debris.
 //!
