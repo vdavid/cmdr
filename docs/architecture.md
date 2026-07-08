@@ -136,6 +136,11 @@ All under `apps/desktop/src-tauri/src/`.
 - `indexing/`: Background drive indexing (SQLite, jwalk, FSEvents), recursive directory sizes. Per-volume registry (one
   index DB per drive, not just local) with a per-volume freshness model (Fresh/Stale/gray); SMB and MTP drives index too
   and stay live via smb2 `CHANGE_NOTIFY` / PTP events, with an "admittedly stale" model on launch and disconnect
+- `importance/`: Deterministic folder-importance scoring (pure `scorer/`: values-in/score-out `Weights` + explain
+  breakdown) that expensive features (agent, media-ML enrichment) consume. A read-consumer of `indexing/`, sibling to
+  `search/`. M1 (scorer only) shipped; storage + scheduler + read API are later milestones. See its
+  [`CLAUDE.md`](../apps/desktop/src-tauri/src/importance/CLAUDE.md) and
+  [`docs/specs/importance-subsystem-plan.md`](specs/importance-subsystem-plan.md)
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher

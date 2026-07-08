@@ -106,6 +106,7 @@ pub mod file_viewer;
 mod font_metrics;
 mod go_to_path;
 pub mod icons;
+pub mod importance;
 pub mod indexing;
 mod install_id;
 pub mod licensing;
