@@ -109,14 +109,17 @@ plan does not create it.** The `media.db` precedent (media-ML Decision 3) is exa
 "one writer thread per DB" (no contention with the size-index writer), gives importance its own disposable lifecycle, and
 slots SMB/MTP volumes in naturally through the per-volume registry pattern. It carries the index's disposable-cache
 discipline verbatim: `platform_case` collation on every connection, delete-and-recreate on schema mismatch (no
-migrations), path-keyed rows. **Offline-unmounted reads fall out for free:** `importance.db` is a local file that
+migrations), path-keyed rows. Beyond the scalar, each row also persists the **raw signal vector** (the `FolderSignals`
+the score was computed from): consumers don't all mean the same thing by importance (the agent's "worth attention" vs
+media-ML's "contains meaningful content"), so storing the signals lets a future consumer apply its own weighting profile
+over them without a redesign or a rescan. The default scalar stays the common currency. **Offline-unmounted reads fall out for free:** `importance.db` is a local file that
 outlives the mount, so a consumer opens it and queries a NAS share's weights while the NAS is off. **When the OS purges
 the cache:** the file vanishes, the read API returns "no weights for this volume," and the next mount + scan regenerates
 them — weights are disposable, identical to the index-purge path. **Reconcile with agent-spec D8** ("weights cache in the
 drive index"): D8 predates this general-subsystem framing; a separate `importance.db` satisfies D8's real intent
 (regenerable cache placement, split from durable data) better than an index column, since it also serves media-ML and
-survives an index-schema wipe. Recorded as an intentional refinement of D8, noted in the handoff for the agent-spec
-author. **Location-independence:** the agent spec plans to relocate index DBs to `~/Library/Caches/` later; `importance.db`
+survives an index-schema wipe. This is a confirmed, intentional refinement of agent-spec D8 (David approved the
+separate-DB placement); the agent spec points here. **Location-independence:** the agent spec plans to relocate index DBs to `~/Library/Caches/` later; `importance.db`
 sits beside whatever the index's cache directory is at the time and neither depends on nor blocks that move.
 
 **D3 — The scorer is pure functions over listing metadata; navigation signals enter through a small typed backend store,
@@ -135,7 +138,9 @@ and never fabricates a missing signal. **Navigation signals:** since they live i
 feeding "folders the user visits" needs a new backend-visible signal. This plan specs it **small** — a typed
 `record_visit(Location)` that the frontend already-existing navigation commit calls, persisted as a compact
 per-volume visit-count/recency table (privacy-sane: counts and timestamps only, no content, local-only, in
-`importance.db`) — and **gates it to M2** so M1's pure scorer lands without it (the scorer treats the visit signal as
+`importance.db`). The agent spec's `user_action_log` is the planned superset of this signal; that effort is queued right
+after this subsystem, and when it lands it becomes the visit signal's feeder (`record_visit` folds into it) — never two
+parallel recorders. This plan **gates the visit signal to M2** so M1's pure scorer lands without it (the scorer treats the visit signal as
 just another optional input, `None` in M1). If wiring the frontend call proves larger than a thin command, it defers to a
 named follow-up and the visit signal stays `None`; the scorer is designed so its absence only removes one term.
 
@@ -177,6 +182,9 @@ registers `platform_case`, enforces one-writer) exposes:
 - `above_threshold(volume_id, threshold) -> Vec<ScoredWeight>` — threshold queries (the agent's summary gate).
 - `explain(location) -> Option<Explanation>` — per-signal contribution breakdown, for consumer transparency and David's
   tuning loop.
+- `signals_for(location) -> Option<FolderSignals>` — the stored raw signal vector, for a consumer that applies its own
+  weighting profile instead of the default scalar. Per-consumer profiles are the documented extension path; the scalar
+  remains the common currency.
 - A **subscription** (a `watch` or a callback the read API exposes) so a consumer that needs change notifications learns
   when a volume's weights were recomputed, rather than polling.
 - **Staleness semantics:** every `ScoredWeight` carries the **scan generation / as-of marker** it was computed from, so a
@@ -253,8 +261,8 @@ Give the scorer a home and make it fire on scan completion.
 
 - New `src-tauri/src/importance/store/`: per-volume `importance.db` with the index's disposable-cache discipline
   (`platform_case` on every connection, delete-and-recreate on schema mismatch, `SCHEMA_VERSION`, one writer thread);
-  **path-keyed** weight rows tagged with the **as-of scan generation**; the `ImportanceWriter` command surface (write a
-  volume's weights, purge a volume).
+  **path-keyed** weight rows tagged with the **as-of scan generation**, each carrying the scalar plus the serialized
+  raw signal vector (Decision 2); the `ImportanceWriter` command surface (write a volume's weights, purge a volume).
 - **Minimal neutral lifecycle bus in `indexing/`** (Decision 4): a per-volume `watch` published from
   `apply_freshness_event_on`, subscribe-before-publish ordering, documented in `indexing/DETAILS.md`. This is the shared
   infrastructure media-ML will also consume.
@@ -285,7 +293,8 @@ Give the scorer a home and make it fire on scan completion.
 The consumable API and the tuning loop.
 
 - **`ImportanceIndex` read API** (Decision 6, mirroring `IndexStore`/`ReadPool`): `weight_for`, `top_n`,
-  `above_threshold`, `explain`, each returning `ScoredWeight`/`Explanation` carrying the as-of generation; a **subscription**
+  `above_threshold`, `explain`, `signals_for`, each returning `ScoredWeight`/`Explanation`/`FolderSignals` carrying the
+  as-of generation; a **subscription**
   (`watch`/callback) firing when a volume's weights are recomputed. Owns the `importance.db` read pool and the
   `platform_case` registration; no consumer takes a raw `rusqlite` dep.
 - **Incremental recompute** (Decision 5): rescore only the changed folders (+ affected ancestors) off the reconciler's
@@ -355,8 +364,9 @@ Extend past local, and prove the headline offline capability.
   `dependencies` rule and `use-latest-dep-versions`.
 - **Consumer contract (stated, not built here).** The agent gates summaries via `above_threshold`, scores event interest
   via `weight_for`, and passes the weight to the LLM; media-ML orders enrichment via `top_n` and gates expensive passes
-  via `above_threshold`; both subscribe to recompute notifications and read the as-of generation. They wire in through
-  their own plans against the `ImportanceIndex` API.
+  via `above_threshold`; both subscribe to recompute notifications and read the as-of generation. A consumer whose notion
+  of importance differs from the default scalar weights the stored signal vector itself (`signals_for`) rather than
+  asking for a new scalar. They wire in through their own plans against the `ImportanceIndex` API.
 
 ## Open questions / risks (resolve during impl, before the dependent milestone)
 

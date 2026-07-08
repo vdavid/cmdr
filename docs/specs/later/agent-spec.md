@@ -198,8 +198,8 @@ A fast, pure-Rust algorithm assigning each folder an interest weight. Inputs (ha
 - A `.git` root (or similar project marker) raises the subtree: projects are important.
 - Path class priors: Downloads, Desktop, Documents, project roots high; `~/Library`, caches low.
 
-Weights are cached in the drive index (they are regenerable, so cache placement is correct) and recomputed cheaply when
-listings change. The weight serves three consumers: summary generation gating, event-bundle interest (§6.2), and as an
+Weights live in the importance subsystem's separate per-volume `importance.db` (a regenerable cache; see
+`docs/specs/importance-subsystem-plan.md`, a confirmed refinement of D8) and recompute cheaply when listings change. The weight serves three consumers: summary generation gating, event-bundle interest (§6.2), and as an
 input the LLM sees when reasoning about folders.
 
 Expectation check: David expects a typical user to have only dozens to a few hundred genuinely important folders. The
@@ -696,10 +696,11 @@ Settings > Advanced, or dropping some, is a later editing decision, not a v1 gat
 These came out of a later review pass and are captured as open items, not settled decisions. They may change the shape of
 sections above; treat them as inputs to the next planning round.
 
-15. **Importance scorer as a standalone neutral subsystem.** The scorer (§5.1) becomes its own subsystem with its own
-    plan (`docs/specs/importance-subsystem-plan.md`, being written now), serving multiple consumers: the agent, the
+15. **Importance scorer as a standalone neutral subsystem — decided and planned.** The scorer (§5.1) is its own
+    subsystem with its own plan (`docs/specs/importance-subsystem-plan.md`), serving multiple consumers: the agent, the
     media-ML enrichment scheduler (`docs/specs/later/media-ml-index-plan.md`), and future ones. §5.1 stays the
-    requirements source, but its placement under `src/agent/` is superseded by the neutral-subsystem home.
+    requirements source; placement under `src/agent/` and D8's "cached in the drive index" are superseded (separate
+    per-volume `importance.db`, storing the raw signal vector alongside the scalar, confirmed).
 16. **Per-folder "capability enrollment."** A concept for which folders are enrolled in which expensive analyses (e.g.
     deep photo analysis). Suggested vehicle: the agent's settings-suggestions via `notify_user` action buttons, NOT via
     `proposal_ops` (the freeze/drift semantics of §8.2 fit file ops, not settings changes).
