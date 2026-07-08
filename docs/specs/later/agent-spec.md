@@ -1,7 +1,9 @@
 # Agent: v1.0 spec (with v1.5+ outlook)
 
-Status: design complete, not yet implemented. 2026-06-04. The spec went through three fresh-eyes review rounds
-(including verification of its codebase claims against the live tree) before landing.
+Status: design complete, not yet implemented. 2026-06-04; codebase claims revised 2026-07-08 against the live tree
+(a month of shipping satisfied the execution-queue prerequisite, consolidated the MCP tool registry, shipped archive
+browsing, and landed the `Location` type). The spec went through three fresh-eyes review rounds (including verification
+of its codebase claims against the live tree) before landing.
 
 This spec captures a full design session between David and an AI agent. It is written so that a fresh agent (or human)
 can pick it up with no other context. Decisions below are settled unless they appear in §18 (open questions); intentions
@@ -74,7 +76,9 @@ notifications. This spec is about agent behavior, inputs, outputs, storage, cont
 - Multi-volume summaries opt-in (NAS/SMB first), with per-volume staleness and reconciliation.
 - Memory mining from implicit signals (rejections, manual moves) into proposed memory entries.
 - Natural-language search integration: the search box's AI path uses `search_summaries` as a tool.
-- Archive ops in proposals (extract/compress) once the zip-handling feature ships.
+- Archive ops in proposals (extract/compress). No longer blocked: zip browse + edit shipped, with read-only tar/7z and
+  remote-hosted zips (`file_system/write_operations/archive_edit/`, `ArchiveVolume`). The proposal `op` enum grows the
+  archive verbs and the executor routes them through the existing archive-edit driver.
 - Eval harness v1 doubling as the provider/model regression suite with pinned certified models.
 
 ### v2 / later
@@ -160,6 +164,11 @@ Everything keys by `(volume_id, rel_path)`, never absolute paths. The `Volume` t
 both the drive index and the agent: APFS UUID for local volumes, server+share for SMB, device serial for MTP,
 endpoint+bucket for S3. The need for non-local volumes arrives within weeks of v1 (NAS indexing is a personal target),
 so the keying ships in v1 even though only the local volume is active.
+
+Navigation now has a first-class `Location` type (`src/location.rs`, a `(volume_id, path)` pair with a `resolve_location`
+resolver; the `location-type-nav` effort that kills bare-path navigation is in progress). The agent's `(volume_id,
+rel_path)` keying should reuse that vocabulary rather than mint a parallel pair type, so navigation and the agent name
+the same thing the same way.
 
 Per-volume staleness is a first-class property, not an error: summaries carry their `as_of` fingerprint, volumes carry
 `last_reconciled_at`, and the agent caveats answers ("as of May 28").
@@ -357,11 +366,19 @@ where possible, and queues an inbox bundle so the agent learns its earlier sugge
 
 ### 8.4 Execution
 
-"Approve" means "apply". Applied batches are enqueued into the execution queue, which is a separate effort and an
-explicit **prerequisite** of the proposals milestone (design the apply call against its API), and run through the
-existing `write_operations` pipeline: preflight, conflict handling, progress, cancellation, rollback. Destructive ops
-default to **trash**, not delete. Batches are capped (a few hundred ops) to keep review usable; large cleanups chunk
-into multiple batches.
+"Approve" means "apply". Applied batches run through the existing `write_operations` pipeline: preflight, conflict
+handling, progress, cancellation, rollback. Destructive ops default to **trash**, not delete. Batches are capped (a few
+hundred ops) to keep review usable; large cleanups chunk into multiple batches.
+
+The queue this depends on has shipped: `file_system/write_operations/manager.rs` (`OperationManager`) is a lane-based
+queue with a transfer-queue window, copy/move/delete spawn via `spawn_managed`, and rename/mkdir/mkfile run as managed
+instant ops via `run_instant`. Crucially the pipeline is headless-callable: writes emit through the `OperationEventSink`
+trait (`event_sinks.rs`), built only at the IPC edge and injected in (production `TauriEventSink`, test
+`CollectorEventSink`), so the managed write path no longer needs Tauri. That is what a proposal executor needs. The
+remaining work is therefore a **fit-check against the shipped manager, not a prerequisite effort**: whether it accepts a
+batch of ops as one unit with per-op statuses and partial apply (the `proposal_ops` table keys apply on the op subset),
+and whether it reports a per-op result the `proposal_ops` table can consume. Design the apply call against
+`OperationManager`'s API, and file any batch-semantics gaps as small extensions to it.
 
 Dropped from the earlier sketch, deliberately: a `priority` column (YAGNI) and any logic on model "authoritativeness"
 (`created_by_model` is kept as provenance only).
@@ -442,8 +459,10 @@ placeholders; the implementing agent owns the final list.
 - Events (push, never poll): `agent-activity` (new activity-log rows), `agent-proposal-changed`
   (created/updated/invalidated/expired), `agent-notify` (the notification payload with actions),
   `agent-preflight-progress`, `agent-chat-delta` (streamed replies), `agent-status-changed` (degraded modes, §6.5).
-- All of it goes through the typed bindings per the AGENTS.md IPC rules; the review dialog and activity panel are pure
-  consumers of these commands and events.
+- All of it goes through the typed bindings per the AGENTS.md IPC rules. Frontend IPC routes through the
+  `src/lib/tauri-commands/` wrapper layer, with a lint (`cmdr/no-raw-bindings-import`) forbidding raw `bindings`
+  imports outside it, so the agent's frontend commands get a `tauri-commands/agent.ts` wrapper rather than calling
+  generated bindings directly. The review dialog and activity panel are pure consumers of these commands and events.
 
 ## 10. The LLM provider layer
 
@@ -470,9 +489,9 @@ Single-shot prompts are interchangeable across providers; agent loops are not. T
 
 ### 10.2 Architecture
 
-**The provider layer already exists in the codebase.** The tree ships the `genai` crate (pinned `=0.6.0-beta.19` at the
-time of writing; note that `src/ai/CLAUDE.md`'s version line is stale and says 0.5.3, `Cargo.toml` is authoritative)
-wrapped by `src/ai/client.rs`, with `src/ai/CLAUDE.md` documenting the same per-provider quirk rationale this spec
+**The provider layer already exists in the codebase.** The tree ships the `genai` crate (pinned `=0.6.0-beta.19` in
+`Cargo.toml`, which is authoritative) wrapped by
+`src/ai/client.rs`, with `src/ai/CLAUDE.md` and `DETAILS.md` documenting the same per-provider quirk rationale this spec
 describes (Responses-API routing, per-provider temperature handling, ~20 providers normalized). Do NOT run an adoption
 spike and do NOT hand-roll adapters in parallel to it. The work is:
 
@@ -518,12 +537,24 @@ tooling, Claude Code driving the app, automated tests) are secondary and get the
 the proposal-gated write path (§8.1). The interface should feel natural for the agent first; everything else adapts to
 that.
 
-For context: the previously shipped MCP server was built on "security via parity" (external agents act through the same
-UI actions a user performs, deliberately without raw fs tools, per `src/mcp/CLAUDE.md`). That UI-control surface remains
-useful for UI-driving use cases (testing, automation), but it is the secondary surface: the agent-first registry
-(knowledge, proposals, memory, notify) is the main interface, consumed in-process by the agent and exposed over MCP to
-AI clients. Fine-grained per-consumer capability gating stays available where it genuinely matters, with parity as the
-default posture.
+For context: the shipped MCP server is built on "security via parity" (external agents act through the same UI actions a
+user performs, deliberately without raw fs tools, per `src/mcp/CLAUDE.md`). Its tools are now single-sourced through one
+authored registry (`src/mcp/tool_registry.rs`): a `mcp_tools!` table authors each tool once (name, description, JSON
+input schema, bearer-token gate, and handler) and expands to every consumer, so name, schema, capability/destructive
+gating, and dispatch can't drift, and the gate is a per-entry `TokenGate` rather than a hand-list. That UI-control
+surface remains useful for UI-driving use cases (testing, automation), but it is the secondary surface: the agent-first
+registry (knowledge, proposals, memory, notify) is the main interface, consumed in-process by the agent and exposed over
+MCP to AI clients. The agent-first registry should **extend this consolidated registry rather than stand up a parallel
+one**, keeping one authored source for every AI-callable tool. Fine-grained per-consumer capability gating stays
+available where it genuinely matters, with parity as the default posture.
+
+One open check on that reuse, and the answer is determinable from the code: the consolidated registry core is currently
+**MCP- and Tauri-shaped, not transport-agnostic**. `get_all_tools()` emits a `tools/list` payload with raw JSON
+`input_schema` blobs, `execute_tool()` is generic over the Tauri `Runtime`, and the `executor/` handlers take an
+`&AppHandle<R>` plus a `serde_json::Value` params object. An in-process agent consumer wants typed params and no Tauri
+handle. So extending the registry means first factoring a transport-agnostic core (authored tool + typed params +
+handler) out of the MCP/Tauri wire adapter, then re-expressing the MCP surface as one adapter over that core and the
+in-process agent surface as another. This is a real (bounded) refactor, not a drop-in.
 
 In docs, "the agent" means this feature; external MCP consumers are "AI clients" to avoid term collision.
 
@@ -531,7 +562,8 @@ In docs, "the agent" means this feature; external MCP consumers are "AI clients"
 
 Knowledge: `get_folder_summary`, `search_summaries` (FTS), `list_stale_summaries(min_interest)`, drive-index queries
 (sizes, counts, recency). Proposals: `create_proposal_batch`, list/withdraw. Memory: scoped write (logged). Interaction:
-`notify_user`. Files: `read_file` (below), and an archive-listing tool when zip support ships.
+`notify_user`. Files: `read_file` (below), and an archive-listing tool (zip browse + edit and read-only tar/7z have
+shipped, so this reads the existing `ArchiveVolume` listing rather than waiting on a feature).
 
 One-shot AI features (natural-language search, AI rename) are not "the agent" but use the same substrate: e.g. the
 search box's NL path calls `search_summaries`. The registry and knowledge DB are shared infrastructure; the agent is
@@ -626,8 +658,8 @@ Settings > Advanced, or dropping some, is a later editing decision, not a v1 gat
    Depends on milestone 4 for FDA and consent.
 6. **Event pipeline**: coalescer, inbox, deadlines, digest compaction, restart reconciliation.
 7. **Wake loop** + budgets + single-flight + degraded modes + activity log.
-8. **Proposals**: schema, freeze-at-creation, drift, invalidation; review dialog + apply via the execution queue (a
-   separate effort and a prerequisite of this milestone); notify tool + dial.
+8. **Proposals**: schema, freeze-at-creation, drift, invalidation; review dialog + apply via the shipped
+   `OperationManager` (a fit-check for batch-of-ops semantics, not a prerequisite effort); notify tool + dial.
 9. **Chat** surface wiring; `~/.cmdr` files; memory writes.
 10. **Evals v0** alongside 5-9, not after.
 
@@ -658,6 +690,26 @@ Settings > Advanced, or dropping some, is a later editing decision, not a v1 gat
     the agent copies the weight at summary time.)
 14. Event tap point (§6.1): exactly where the agent's coalescer subscribes on the indexer's corrected event stream, and
     how the standalone `downloads/` watcher and the agent's Downloads-related detectors relate (merge? coexist?).
+
+### From the 2026-07 design review (proposed, not decided)
+
+These came out of a later review pass and are captured as open items, not settled decisions. They may change the shape of
+sections above; treat them as inputs to the next planning round.
+
+15. **Importance scorer as a standalone neutral subsystem.** The scorer (§5.1) becomes its own subsystem with its own
+    plan (`docs/specs/importance-subsystem-plan.md`, being written now), serving multiple consumers: the agent, the
+    media-ML enrichment scheduler (`docs/specs/later/media-ml-index-plan.md`), and future ones. §5.1 stays the
+    requirements source, but its placement under `src/agent/` is superseded by the neutral-subsystem home.
+16. **Per-folder "capability enrollment."** A concept for which folders are enrolled in which expensive analyses (e.g.
+    deep photo analysis). Suggested vehicle: the agent's settings-suggestions via `notify_user` action buttons, NOT via
+    `proposal_ops` (the freeze/drift semantics of §8.2 fit file ops, not settings changes).
+17. **FTS5 over `messages` for searchable chat history**, alongside the summaries FTS index (§4.2).
+18. **A "vertical slice" milestone**: chat plus read-only knowledge tools over the existing drive index, inserted after
+    the provider layer and before summaries, for early user-visible value ahead of the full knowledge layer.
+19. **Activity log and chat likely share one surface.** The shipped transfer-queue window (the native panel from the
+    execution-queue work) is the precedent for a native-panel surface both could reuse.
+20. **D58 flagged for revisit.** "Every agent tunable in Settings from v1" (§16, D58) may be too much: the main UI keeps
+    ~3 dials, with the long tail moved to an advanced section.
 
 ## 19. Decision log
 
@@ -785,10 +837,11 @@ sequencing notes that are easy to lose otherwise:
    (decisions settled, intent captured), but the planning step still exists: repo context, exact DDL, module layout,
    migration-code shape, and IPC bindings belong in a milestone plan, not here. Coding off the spec forces the
    implementer to make planning calls mid-flight.
-3. **Start the execution-queue effort early, in parallel.** It is a prerequisite for the proposals milestone (8) but
-   unrelated to milestones 1-7, so there is runway. If it has not started by the time milestones 5-6 are underway,
-   proposals will stall behind it. Capture the agent's requirements on it (batch enqueue, per-op results, cancellation)
-   as input to that effort's own design.
+3. **Fit-check the shipped `OperationManager` before the proposals milestone (8), not a from-scratch queue effort.** The
+   lane-based queue, transfer-queue window, managed instant ops, and the IPC-edge-injected `OperationEventSink` (the
+   headless-callable write path) are all in the tree. What is left is confirming batch-of-ops apply with per-op statuses
+   and per-op result reporting, and filing any gap as a small extension to the manager. Capture the agent's requirements
+   (batch apply, per-op results, cancellation) against its current API rather than a future effort's design.
 4. **Pull the synthetic-home fixture generator earlier than milestone 10.** The importance scorer (milestone 2) needs
    iteration against realistic directory trees (§18.3); fixtures plus the developer's own home directory as the first
    corpus give it a real feedback loop from day one, rather than waiting for the eval work that currently sits alongside
