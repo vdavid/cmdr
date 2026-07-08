@@ -1657,6 +1657,17 @@ export const commands = {
   rescanDriveIndex: (volumeId: string) =>
     typedError<EnableIndexingOutcome, string>(__TAURI_INVOKE('rescan_drive_index', { volumeId })),
   /**
+   *  Record that the user navigated into `location`. Fire-and-forget and
+   *  failure-silent: never blocks or breaks navigation.
+   *
+   *  M2 records only local (`root`) visits; SMB/MTP visit recording lands with
+   *  their scoring in M4. The write goes through a short-lived [`ImportanceWriter`]
+   *  so it honors the one-writer-per-DB invariant even though the recompute
+   *  scheduler may hold its own writer at other times (each opens its own thread on
+   *  the same WAL DB; the busy-timeout absorbs brief contention).
+   */
+  recordVisit: (location: Location) => typedError<null, string>(__TAURI_INVOKE('record_visit', { location })),
+  /**
    *  Called when the search dialog opens. Starts loading the index in the background.
    *  Returns immediately with `{ ready, entryCount }`.
    */

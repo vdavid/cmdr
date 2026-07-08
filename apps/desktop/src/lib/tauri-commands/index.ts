@@ -580,6 +580,7 @@ export {
   forgetDriveIndex,
   rescanDriveIndex,
   clearDriveIndex,
+  recordVisit,
 } from './indexing'
 
 // Drive-indexing event listeners

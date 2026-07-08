@@ -420,7 +420,6 @@ fn reset_schema(conn: &Connection) -> Result<(), IndexStoreError> {
 ///
 /// Returns `/` for the root sentinel itself, and `/component/component/...`
 /// for all other entries.
-#[cfg(test)]
 fn reconstruct_path(conn: &Connection, entry_id: i64) -> Result<String, IndexStoreError> {
     if entry_id == ROOT_ID {
         return Ok("/".to_string());

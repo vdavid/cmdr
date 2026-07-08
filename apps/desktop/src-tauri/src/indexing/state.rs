@@ -423,6 +423,16 @@ pub(crate) fn apply_freshness_event_on(
         }
         .emit(app);
     }
+
+    // Publish scan completion on the neutral in-process lifecycle bus, alongside
+    // the frontend `.emit` above. A backend subsystem (the importance scheduler)
+    // drives its full-volume recompute off this, without `indexing/` depending on
+    // it (plan Decision 4). We fire on the EVENT, not on a freshness change: a
+    // Fresh→Fresh rescan completion still means new data to rescore, and it must
+    // notify the bus even though the badge didn't move.
+    if event == FreshnessEvent::ScanCompleted {
+        super::lifecycle_bus::publish_scan_completed(volume_id);
+    }
 }
 
 /// Bump a volume's `current_epoch` on a continuity break that does NOT rescan
@@ -893,6 +903,29 @@ pub fn stop_scan(volume_id: &str) -> Result<(), String> {
     }
 }
 
+/// Snapshot the volume ids that are ready to score right now: a registered
+/// instance whose freshness is `Fresh` (a completed, authoritative scan). Used by
+/// the importance scheduler's startup sweep — a volume that loaded `Fresh` at
+/// launch from its persisted `scan_completed_at` never re-fires a `ScanCompleted`
+/// event, so a scheduler that only waited on the bus would never score it (the
+/// common restart case, plan Decision 4). `Scanning`/`Stale` volumes are excluded:
+/// a `Scanning` one will fire `ScanCompleted` on the bus when it finishes, and a
+/// `Stale` one has no authoritative scan to score yet.
+pub(crate) fn ready_volume_ids() -> Vec<VolumeId> {
+    let reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
+    reg.iter()
+        .filter(|(_, instance)| {
+            instance
+                .freshness
+                .lock()
+                .ok()
+                .and_then(|f| *f)
+                .is_some_and(|f| f == Freshness::Fresh)
+        })
+        .map(|(vid, _)| vid.clone())
+        .collect()
+}
+
 /// Snapshot every registered volume id. Used by the global memory watchdog to
 /// stop EVERY volume's index (not just `root`) when the global budget is hit.
 pub(crate) fn all_registered_volume_ids() -> Vec<VolumeId> {
@@ -1360,6 +1393,74 @@ mod tests {
         );
 
         clear_registry_and_pools();
+    }
+
+    /// The startup-sweep source (the importance scheduler's `start` sweeps this):
+    /// a volume that loaded `Fresh` at launch — from its persisted
+    /// `scan_completed_at`, WITHOUT re-firing a `ScanCompleted` event — must still
+    /// be surfaced by `ready_volume_ids`, or a bus-only scheduler would never
+    /// score it (the common restart case, plan Decision 4). A `Scanning`/`Stale`
+    /// volume is excluded (a `Scanning` one fires the bus when it finishes).
+    #[test]
+    fn ready_volume_ids_surfaces_a_fresh_at_launch_volume() {
+        let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+        clear_registry_and_pools();
+        for vid in ["sweep-fresh", "sweep-stale", "sweep-scanning"] {
+            INDEX_REGISTRY.lock().unwrap().remove(vid);
+        }
+
+        let dir = tempfile::tempdir().expect("temp dir");
+        let reserve = |vid: &str, initial: Freshness| {
+            let db_path = dir.path().join(format!("index-{vid}.db"));
+            let store = IndexStore::open(&db_path).expect("open store");
+            let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+            let pending = Arc::new(PendingSizes::new());
+            assert!(try_reserve_initializing_phase(vid, store, pool, pending, fresh(Some(initial))).is_ok());
+        };
+
+        // A Fresh-at-launch volume (loaded from a persisted completed scan), plus a
+        // Stale and a Scanning one that must NOT be swept.
+        reserve("sweep-fresh", Freshness::Fresh);
+        reserve("sweep-stale", Freshness::Stale);
+        reserve("sweep-scanning", Freshness::Scanning);
+
+        let ready = ready_volume_ids();
+        assert!(
+            ready.iter().any(|v| v == "sweep-fresh"),
+            "a Fresh-at-launch volume must be swept (it never re-fires ScanCompleted)"
+        );
+        assert!(
+            !ready.iter().any(|v| v == "sweep-stale"),
+            "a Stale volume has no authoritative scan to score yet"
+        );
+        assert!(
+            !ready.iter().any(|v| v == "sweep-scanning"),
+            "a Scanning volume will fire ScanCompleted on the bus when it finishes"
+        );
+
+        clear_registry_and_pools();
+    }
+
+    /// The scan-completion chokepoint publishes on the lifecycle bus: firing
+    /// `ScanCompleted` through `apply_freshness_event_on` (both the local and
+    /// network paths funnel here) must advance the bus so the importance scheduler
+    /// sees it — even for a late subscriber (the `watch` retains the last value).
+    #[test]
+    fn scan_completed_publishes_on_the_lifecycle_bus() {
+        use super::super::lifecycle_bus::{ScanState, subscribe};
+
+        let freshness = fresh(Some(Freshness::Scanning));
+        // Fire completion through the neutral chokepoint (no registry needed — the
+        // publish keys off the volume id directly).
+        apply_freshness_event_on(&freshness, "bus-chokepoint-test", FreshnessEvent::ScanCompleted);
+
+        // A subscriber created AFTER the publish still sees the completion (the
+        // late-subscriber replay the scheduler relies on).
+        let rx = subscribe("bus-chokepoint-test");
+        assert!(
+            matches!(*rx.borrow(), ScanState::Completed { .. }),
+            "ScanCompleted through the chokepoint must publish on the bus"
+        );
     }
 
     /// Wrap an initial freshness in the `Arc<Mutex<…>>` the reservation now

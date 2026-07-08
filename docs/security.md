@@ -78,3 +78,17 @@ Each upload triggers a one-line Discord notification to the private `#error-repo
 embedded. **TTL: 7 days** (R2's max for presigned URLs). Rationale: only the maintainer has access to the Cmdr Discord
 server, and the channel is not shared, so the convenience of a click-to-download link outweighs the theoretical risk of
 URL leakage. If access widens later, flip to short-TTL + admin re-mint endpoint (~50 LOC).
+
+## Folder-importance visit signal
+
+The folder-importance subsystem records a lightweight navigation-visit signal to learn which folders the user works in
+(feeding the importance scorer). Privacy posture:
+
+- **Local-only, never transmitted.** Visits live in the per-volume `importance.db` on the user's disk (a disposable
+  cache, purged with the index). Nothing about visits is sent anywhere — not to the maintainer, not to PostHog
+  analytics, not in error reports. It's not telemetry.
+- **Counts and timestamps only, no content.** Each row is `(folder path, visit count, last-visit seconds)`. No file
+  contents, no file names beyond the folder path itself, no per-file data.
+- **Local volumes only.** Only the local disk (`root`) records visits today; network/removable volumes don't.
+- **Fire-and-forget and failure-silent.** The `record_visit` command never blocks or breaks navigation, and a visit that
+  can't be written is silently dropped. Recording a visit is best-effort, never load-bearing.

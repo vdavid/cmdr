@@ -136,7 +136,10 @@ impl IndexStore {
     }
 
     /// Reconstruct the full path for an entry by walking up the parent chain.
-    #[cfg(test)]
+    ///
+    /// Used by the importance scheduler to key each scored folder by its absolute
+    /// path (the index's real identity is the path, not the rebuild-unstable id),
+    /// and by tests.
     pub fn reconstruct_path(conn: &Connection, entry_id: i64) -> Result<String, IndexStoreError> {
         reconstruct_path(conn, entry_id)
     }

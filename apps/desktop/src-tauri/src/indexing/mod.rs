@@ -15,6 +15,7 @@ mod events;
 pub mod expected_totals;
 pub mod firmlinks;
 pub mod freshness;
+pub(crate) mod lifecycle_bus;
 mod local_reconcile;
 mod manager;
 mod network_scan;
@@ -64,7 +65,7 @@ mod reconcile_bench;
 #[cfg(test)]
 mod reconcile_correctness;
 
-pub(crate) use enrichment::{ReadPool, get_read_pool};
+pub(crate) use enrichment::{ReadPool, get_read_pool, get_read_pool_for};
 pub use enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};
 pub(crate) use events::DEBUG_STATS;
 pub use events::*;
@@ -74,6 +75,7 @@ pub use queries::{
     get_volume_index_status_for_path,
 };
 pub(crate) use state::ROOT_VOLUME_ID;
+pub(crate) use state::ready_volume_ids;
 pub use state::{
     clear_index, force_scan, init, is_active, should_auto_start, should_auto_start_indexing, start_indexing,
     stop_indexing, stop_scan, trigger_verification,

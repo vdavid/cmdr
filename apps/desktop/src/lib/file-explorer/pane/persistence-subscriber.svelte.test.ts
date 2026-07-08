@@ -19,14 +19,19 @@ import { flushSync } from 'svelte'
 import type { ViewMode } from '$lib/app-status-store'
 import type { SortColumn, SortOrder } from '../types'
 
-const { saveAppStatusSpy, saveLastUsedPathSpy } = vi.hoisted(() => ({
+const { saveAppStatusSpy, saveLastUsedPathSpy, recordVisitSpy } = vi.hoisted(() => ({
   saveAppStatusSpy: vi.fn(),
   saveLastUsedPathSpy: vi.fn().mockResolvedValue(undefined),
+  recordVisitSpy: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('$lib/app-status-store', () => ({
   saveAppStatus: saveAppStatusSpy,
   saveLastUsedPathForVolume: saveLastUsedPathSpy,
+}))
+
+vi.mock('$lib/tauri-commands', () => ({
+  recordVisit: recordVisitSpy,
 }))
 
 import { initPersistenceSubscriber } from './persistence-subscriber.svelte'
@@ -194,5 +199,12 @@ describe('persistence-subscriber', () => {
     sub.persistLastUsedPath({ volumeId: 'mtp-x:1', path: '/dcim' })
     expect(saveLastUsedPathSpy).toHaveBeenCalledTimes(1)
     expect(saveLastUsedPathSpy).toHaveBeenCalledWith('mtp-x:1', '/dcim')
+  })
+
+  it('persistLastUsedPath also feeds the importance visit signal (fire-and-forget)', () => {
+    const { sub } = create()
+    sub.persistLastUsedPath({ volumeId: 'root', path: '/Users/me/project' })
+    expect(recordVisitSpy).toHaveBeenCalledTimes(1)
+    expect(recordVisitSpy).toHaveBeenCalledWith('root', '/Users/me/project')
   })
 })

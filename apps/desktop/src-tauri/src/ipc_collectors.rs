@@ -214,6 +214,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::indexing::disable_drive_index,
         crate::commands::indexing::forget_drive_index,
         crate::commands::indexing::rescan_drive_index,
+        crate::importance::commands::record_visit,
         crate::commands::search::prepare_search_index,
         crate::commands::search::search_files,
         crate::commands::search::release_search_index,

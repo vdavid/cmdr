@@ -14,7 +14,8 @@
 
 #![cfg(test)]
 
-use super::scorer::{FolderSignals, PathClass, extension_count};
+use super::classify::{is_denylisted, is_hidden_or_system, leaf_name, path_class};
+use super::scorer::{FolderSignals, extension_count};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::InMemoryVolume;
 use std::collections::BTreeSet;
@@ -158,6 +159,12 @@ impl SyntheticHome {
         InMemoryVolume::with_entries("synthetic-home", self.entries.clone())
     }
 
+    /// Every entry in the tree, for a test that materializes a real drive index
+    /// over the same tree (the scheduler's full-recompute integration test).
+    pub fn all_entries(&self) -> &[FileEntry] {
+        &self.entries
+    }
+
     /// The direct children of `path` (entries whose parent is exactly `path`).
     fn direct_children(&self, path: &str) -> impl Iterator<Item = &FileEntry> {
         let prefix = format!("{path}/");
@@ -180,8 +187,7 @@ impl SyntheticHome {
 
         let name = leaf_name(path);
         let name_denylisted = is_denylisted(&name);
-        let hidden_or_system =
-            name.starts_with('.') || matches!(path_class(path, &self.home), PathClass::SystemOrCache);
+        let hidden_or_system = is_hidden_or_system(path, &name, &self.home);
 
         let mtime_secs = self.entries.iter().find(|e| e.path == path).and_then(|e| e.modified_at);
 
@@ -204,39 +210,4 @@ impl SyntheticHome {
             .iter()
             .any(|root| root == path || path.starts_with(&format!("{root}/")) || root.starts_with(&format!("{path}/")))
     }
-}
-
-/// The last path component (folder name).
-fn leaf_name(path: &str) -> String {
-    std::path::Path::new(path)
-        .file_name()
-        .map(|s| s.to_string_lossy().into_owned())
-        .unwrap_or_else(|| path.to_string())
-}
-
-/// The M1 name denylist: a set-membership check on the folded leaf name (never a
-/// substring match, per the `no-string-matching` rule). Reuses the project-wide
-/// system-dir exclude list so importance and search agree on what counts as
-/// machine output.
-fn is_denylisted(name: &str) -> bool {
-    let folded = name.to_lowercase();
-    crate::search::SYSTEM_DIR_EXCLUDES
-        .iter()
-        .any(|d| d.to_lowercase() == folded)
-}
-
-/// Classifies a path into its [`PathClass`] relative to `home`.
-fn path_class(path: &str, home: &str) -> PathClass {
-    // System/cache first: a Library/Caches subtree stays low even under the home.
-    let library = format!("{home}/Library");
-    if path == library || path.starts_with(&format!("{library}/")) {
-        return PathClass::SystemOrCache;
-    }
-    for content in ["Downloads", "Desktop", "Documents"] {
-        let root = format!("{home}/{content}");
-        if path == root || path.starts_with(&format!("{root}/")) {
-            return PathClass::UserContent;
-        }
-    }
-    PathClass::Neutral
 }

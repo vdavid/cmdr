@@ -169,3 +169,13 @@ export function rescanDriveIndex(volumeId: string) {
 export function clearDriveIndex() {
   return commands.clearDriveIndex()
 }
+
+/**
+ * Records that the user navigated into a folder, feeding the folder-importance
+ * subsystem's visit signal. Fire-and-forget and failure-silent by design: the
+ * backend command never throws and never blocks navigation (counts + timestamps
+ * only, local `root` volume only in M2). Call it without awaiting.
+ */
+export function recordVisit(volumeId: string, path: string) {
+  return commands.recordVisit({ volumeId, path })
+}

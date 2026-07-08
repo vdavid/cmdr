@@ -817,6 +817,14 @@ pub fn run() {
                 );
             }
 
+            // Start the importance scheduler: it sweeps the index registry for
+            // already-ready volumes and subscribes to the scan-completion bus, so a
+            // volume's folder weights recompute when its index finishes scanning (or
+            // is Fresh at launch). Independent of whether indexing auto-starts here —
+            // the bus fires whenever any scan completes. See
+            // `importance/scheduler.rs` and the plan (Decision 4 / 5).
+            importance::scheduler::start(app.handle());
+
             Ok(())
         })
         .on_menu_event(menu::handle_menu_event)

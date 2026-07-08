@@ -76,6 +76,7 @@
 
 import { saveAppStatus, saveLastUsedPathForVolume } from '$lib/app-status-store'
 import type { ViewMode } from '$lib/app-status-store'
+import { recordVisit } from '$lib/tauri-commands'
 import type { SortColumn, SortOrder } from '../types'
 import type { LastUsedPathRecord } from './navigate'
 
@@ -209,6 +210,10 @@ export function initPersistenceSubscriber(deps: PersistenceSubscriberDeps): Pers
   return {
     persistLastUsedPath: (record) => {
       void saveLastUsedPathForVolume(record.volumeId, record.path)
+      // Feed the folder-importance visit signal from the same navigation-commit
+      // point. Fire-and-forget and failure-silent (the wrapper never throws): a
+      // visit that can't be recorded must never affect navigation.
+      void recordVisit(record.volumeId, record.path)
     },
     persistLayout: (leftPaneWidthPercent) => {
       saveAppStatus({ leftPaneWidthPercent })
