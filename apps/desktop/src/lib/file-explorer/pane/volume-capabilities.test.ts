@@ -31,6 +31,7 @@ import {
   capabilitiesFor,
   capabilitiesForPane,
   pathInsideArchive,
+  archiveNameFromPath,
 } from './volume-capabilities'
 
 function vol(partial: Partial<VolumeInfo> & { id: string }): VolumeInfo {
@@ -336,5 +337,20 @@ describe('pathInsideArchive — tar family and 7z', () => {
   it('does NOT treat a bare compressed file (not a tar) as an archive', () => {
     expect(pathInsideArchive('/dir/photo.gz')).toBe(false)
     expect(pathInsideArchive('/dir/data.zst/x')).toBe(false)
+  })
+})
+
+describe('archiveNameFromPath — the archive display name for a prompt', () => {
+  it('returns the archive segment for the archive root and any inner path', () => {
+    expect(archiveNameFromPath('/a/photos.zip')).toBe('photos.zip')
+    expect(archiveNameFromPath('/a/photos.zip/inner/x.jpg')).toBe('photos.zip')
+  })
+
+  it('picks the LEFTMOST archive segment (outer archive governs)', () => {
+    expect(archiveNameFromPath('/x/foo.tar/bar.zip/y')).toBe('foo.tar')
+  })
+
+  it('falls back to the basename when no segment is an archive', () => {
+    expect(archiveNameFromPath('/a/b/c.txt')).toBe('c.txt')
   })
 })

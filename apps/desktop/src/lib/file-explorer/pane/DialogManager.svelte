@@ -2,6 +2,7 @@
     import TransferDialog from '../../file-operations/transfer/TransferDialog.svelte'
     import TransferProgressDialog from '../../file-operations/transfer/TransferProgressDialog.svelte'
     import TransferErrorDialog from '../../file-operations/transfer/TransferErrorDialog.svelte'
+    import ArchivePasswordDialog from '../../file-operations/transfer/ArchivePasswordDialog.svelte'
     import DeleteDialog from '$lib/file-operations/delete/DeleteDialog.svelte'
     import NewFolderDialog from '$lib/file-operations/mkdir/NewFolderDialog.svelte'
     import NewFileDialog from '$lib/file-operations/mkfile/NewFileDialog.svelte'
@@ -13,6 +14,7 @@
         NewFileDialogPropsData,
         AlertDialogPropsData,
         TransferErrorPropsData,
+        ArchivePasswordPropsData,
         DeleteDialogPropsData,
     } from './dialog-state.svelte'
     import type { ConflictResolution, FriendlyError, TransferOperationType, WriteOperationError } from '../types'
@@ -30,6 +32,8 @@
         alertDialogProps,
         showTransferErrorDialog,
         transferErrorProps,
+        showArchivePasswordDialog,
+        archivePasswordProps,
         showDeleteDialog,
         deleteDialogProps,
         onTransferConfirm,
@@ -39,6 +43,8 @@
         onTransferError,
         onTransferQueue,
         onTransferErrorClose,
+        onArchivePasswordSubmit,
+        onArchivePasswordCancel,
         onNewFolderCreated,
         onNewFolderCancel,
         onNewFileCreated,
@@ -59,6 +65,8 @@
         alertDialogProps: AlertDialogPropsData | null
         showTransferErrorDialog: boolean
         transferErrorProps: TransferErrorPropsData | null
+        showArchivePasswordDialog: boolean
+        archivePasswordProps: ArchivePasswordPropsData | null
         showDeleteDialog: boolean
         deleteDialogProps: DeleteDialogPropsData | null
         onTransferConfirm: (
@@ -76,6 +84,8 @@
         onTransferError: (error: WriteOperationError, friendly?: FriendlyError) => void
         onTransferQueue: () => void
         onTransferErrorClose: () => void
+        onArchivePasswordSubmit: (password: string) => void
+        onArchivePasswordCancel: () => void
         onNewFolderCreated: (folderName: string) => void
         onNewFolderCancel: () => void
         onNewFileCreated: (fileName: string) => void
@@ -185,5 +195,14 @@
         operationType={transferErrorProps.operationType}
         error={transferErrorProps.error}
         onClose={onTransferErrorClose}
+    />
+{/if}
+
+{#if showArchivePasswordDialog && archivePasswordProps}
+    <ArchivePasswordDialog
+        archiveName={archivePasswordProps.archiveName}
+        wrongAttempt={archivePasswordProps.wrongAttempt}
+        onSubmit={onArchivePasswordSubmit}
+        onCancel={onArchivePasswordCancel}
     />
 {/if}

@@ -341,6 +341,21 @@ export function pathInsideArchive(path: string): boolean {
 }
 
 /**
+ * The display name of the archive a path is at or inside: the FIRST path segment
+ * carrying a supported archive extension (leftmost wins, matching the backend's
+ * boundary resolution and `pathInsideArchive`), so `/a/photos.zip/inner/x.jpg`
+ * returns `photos.zip`. Falls back to the path's basename when no segment is an
+ * archive (a caller should only reach here for an in-archive path, but the
+ * fallback keeps it total). Pure, no I/O.
+ */
+export function archiveNameFromPath(path: string): string {
+  const segments = path.split('/').filter((s) => s.length > 0)
+  const archiveSegment = segments.find((s) => hasSupportedArchiveExtension(s))
+  if (archiveSegment) return archiveSegment
+  return segments.length > 0 ? segments[segments.length - 1] : path
+}
+
+/**
  * Capabilities for a PANE, resolving the kind from BOTH the volume id and the
  * path (kind-from-path). A path inside a supported archive is the `archive` kind
  * regardless of the parent-drive `volumeId`; otherwise this defers to

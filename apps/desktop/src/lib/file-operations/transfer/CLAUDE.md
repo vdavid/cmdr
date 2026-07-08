@@ -45,6 +45,11 @@ ETA/throughput, settle contract).
 - **Cancel close waits for both `write-cancelled` AND `write-settled`** for the `operationId` before closing. Don't
   close on cancel alone: the original incident was an MTP delete cancel followed by an immediate second F8 that wedged
   the USB session mid-teardown.
+- **The `archive_needs_password` write-error is intercepted UPSTREAM, not rendered by `TransferErrorDialog`.**
+  `handleTransferError` (`pane/dialog-state.svelte.ts`) branches on it: shows `ArchivePasswordDialog`, keeps
+  `transferProgressProps` alive, and on unlock re-dispatches the same op (`previewId: null`); on cancel it forgets the
+  password and settles. So its `errorDisplayMetaMap` entry is a fallback only. Don't route it into the generic dialog.
+  DETAILS § "Archive-password prompt".
 - **Source pane refresh.** Move refreshes BOTH panes post-completion (source files gone); copy only refreshes
   destination.
 - **Flushing phase** (`phase: 'flushing'`): title shows "Writing the last piece..." (exact copy). It's the backend's

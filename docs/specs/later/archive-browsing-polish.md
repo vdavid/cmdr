@@ -18,15 +18,21 @@ Per-file progress stays honest, cancel-between-entries works, and zip / plain `.
 path unchanged. Mechanism: archive `read/DETAILS.md` § "One-pass subtree extract" and
 `write_operations/transfer/DETAILS.md` § "One-pass sequential extract".
 
-## 2. Encrypted archives: password-prompt extraction (UX, user-visible)
+## 2. Encrypted archives: password-prompt extraction (UX, user-visible) — ZipCrypto SHIPPED 2026-07-08, AES deferred
 
-Today: browsing an encrypted zip works, extraction returns a typed `Encrypted` refusal; 7z AES stays off (`sevenz-rust2`
-`aes256` feature). Users do hit password-protected archives in the wild, and the current experience is a dead end (an
-honest one, but still a dead end). Shipping this means: a password prompt flow (dialog + retry on wrong password +
-remember-for-this-archive), decrypt support in the read path (7z: flip the `aes256` feature; zip: `rc-zip` does NOT
-decrypt, so this needs a decrypt layer or another crate — spike first), and the mutation-side interaction is already
-settled (edits that would RETAIN an encrypted entry stay refused; see archive `CLAUDE.md`). Biggest effort of the
-user-facing items; rank it by demand signals from beta users.
+Extracting from a legacy PKWARE ZipCrypto zip (what macOS Archive Utility / `zip -e` produce) now works end to end:
+copying or moving a source out of an encrypted zip surfaces a password prompt, stores the password per-archive, and
+re-dispatches the operation so the extract decrypts. A wrong password re-prompts (caught at open, or late at
+end-of-stream CRC, so the re-prompt can arrive mid-transfer too); cancel forgets the password and settles the operation.
+Backend half (decrypt in the read path, the typed `ArchiveNeedsPassword` signal, per-archive password storage): archive
+`read/DETAILS.md` § "Decryption" and archive `DETAILS.md` § "Password-protected archives". Frontend half (the
+`ArchivePasswordDialog`, the interception + re-dispatch seam, the mid-transfer wrong-password case): transfer
+`DETAILS.md` § "Archive-password prompt".
+
+**WinZip AES zip and 7z AES still deferred.** Enabling the `aes` crate (zip `aes-crypto` / sevenz `aes256`) pulls stable
+`aes 0.9.1`, which conflicts with `smb2`'s pinned `aes =0.9.0-rc.4` (its SMB3 AEAD stack) — Cargo can't unify. An AES
+entry returns a typed `Unsupported` (honest, not a prompt that can't succeed); the AES branch is stubbed for a one-line
+flip once the versions align.
 
 ## 3. M-append: fast in-place zip edits (perf, research spike)
 

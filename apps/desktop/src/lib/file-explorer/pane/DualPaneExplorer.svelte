@@ -1359,6 +1359,8 @@
     alertDialogProps={dialogs.alertDialogProps}
     showTransferErrorDialog={dialogs.showTransferErrorDialog}
     transferErrorProps={dialogs.transferErrorProps}
+    showArchivePasswordDialog={dialogs.showArchivePasswordDialog}
+    archivePasswordProps={dialogs.archivePasswordProps}
     onTransferConfirm={(
         dest: string,
         volId: string,
@@ -1387,6 +1389,12 @@
     }}
     onTransferErrorClose={() => {
         dialogs.handleTransferErrorClose()
+    }}
+    onArchivePasswordSubmit={(password: string) => {
+        dialogs.handleArchivePasswordSubmit(password)
+    }}
+    onArchivePasswordCancel={() => {
+        dialogs.handleArchivePasswordCancel()
     }}
     onNewFolderCreated={(name: string) => {
         dialogs.handleNewFolderCreated(name)

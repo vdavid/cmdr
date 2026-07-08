@@ -1,11 +1,12 @@
 import { formatBytes, refreshListing } from '$lib/tauri-commands'
 import { onDirectoryDiff, findFileIndex } from '$lib/tauri-commands'
+import { setArchivePassword, clearArchivePassword } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
 import { removeEntryFromAllSnapshots } from '$lib/search/snapshot-store.svelte'
-import { pathInsideArchive } from './volume-capabilities'
+import { pathInsideArchive, archiveNameFromPath } from './volume-capabilities'
 import type { TransferDialogPropsData } from './transfer-operations'
 import type { DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
@@ -70,6 +71,17 @@ export interface AlertDialogPropsData {
 export interface TransferErrorPropsData {
   operationType: TransferOperationType
   error: WriteOperationError
+}
+
+export interface ArchivePasswordPropsData {
+  /** Display name of the archive being unlocked (e.g. "photos.zip"). */
+  archiveName: string
+  /** True when the stored password was rejected: re-prompt with distinct copy. */
+  wrongAttempt: boolean
+  /** Volume the archive lives on (the archive pane's parent-drive volume id). */
+  parentVolumeId: string
+  /** The archive path (or an inner path) to store the password against. */
+  archivePath: string
 }
 
 export interface DeleteDialogPropsData {
@@ -137,6 +149,14 @@ export function createDialogState(deps: DialogStateDeps) {
   // Transfer error dialog state
   let showTransferErrorDialog = $state(false)
   let transferErrorProps = $state<TransferErrorPropsData | null>(null)
+
+  // Archive-password prompt state. Shown instead of the generic error dialog when
+  // a copy/move out of an encrypted archive needs a password. `transferProgressProps`
+  // is deliberately kept alive alongside this (the progress dialog is unmounted but
+  // its props stay) so a successful unlock can re-dispatch the same operation and a
+  // cancel can settle it through the normal refresh/selection paths.
+  let showArchivePasswordDialog = $state(false)
+  let archivePasswordProps = $state<ArchivePasswordPropsData | null>(null)
 
   // Delete dialog state
   let showDeleteDialog = $state(false)
@@ -232,6 +252,12 @@ export function createDialogState(deps: DialogStateDeps) {
     },
     get transferErrorProps() {
       return transferErrorProps
+    },
+    get showArchivePasswordDialog() {
+      return showArchivePasswordDialog
+    },
+    get archivePasswordProps() {
+      return archivePasswordProps
     },
     get showDeleteDialog() {
       return showDeleteDialog
@@ -440,6 +466,30 @@ export function createDialogState(deps: DialogStateDeps) {
     handleTransferError(error: WriteOperationError) {
       const op = transferProgressProps?.operationType ?? 'copy'
       const opLabel = transferOpLabel(op)
+
+      // An encrypted-archive source needs a password: intercept BEFORE the generic
+      // error dialog and prompt instead. Keep `transferProgressProps` alive (only
+      // unmount the progress dialog) so an unlock can re-dispatch the same op and a
+      // cancel can settle through the normal refresh/selection paths. The parent
+      // volume the archive lives on is the source pane's volume id (an archive pane
+      // keeps its parent drive's id); the archive path is the errored source path.
+      if (error.type === 'archive_needs_password' && transferProgressProps) {
+        log.info('{op} needs an archive password ({state}): {path}', {
+          op: opLabel,
+          state: error.wrongAttempt ? 'rejected' : 'first prompt',
+          path: error.path,
+        })
+        archivePasswordProps = {
+          archiveName: archiveNameFromPath(error.path),
+          wrongAttempt: error.wrongAttempt,
+          parentVolumeId: transferProgressProps.sourceVolumeId,
+          archivePath: error.path,
+        }
+        showTransferProgressDialog = false
+        showArchivePasswordDialog = true
+        return
+      }
+
       log.error('{op} failed: {errorType}', {
         op: opLabel,
         errorType: error.type,
@@ -455,6 +505,55 @@ export function createDialogState(deps: DialogStateDeps) {
 
       transferErrorProps = { operationType: op, error }
       showTransferErrorDialog = true
+    },
+
+    /** Stores the entered password on the backend, then re-dispatches the same
+     *  copy/move so the extract path can decrypt. A fresh scan runs (the previous
+     *  preview was consumed), so `previewId` is cleared and `scanInProgress` off.
+     *  If the password is wrong again, the backend raises `archive_needs_password`
+     *  with `wrongAttempt: true` and the interception re-prompts. */
+    handleArchivePasswordSubmit(password: string) {
+      const pw = archivePasswordProps
+      const props = transferProgressProps
+      if (!pw || !props) return
+
+      showArchivePasswordDialog = false
+      archivePasswordProps = null
+
+      void (async () => {
+        try {
+          await setArchivePassword(pw.parentVolumeId, pw.archivePath, password)
+        } catch (err) {
+          // A store failure just means the retry will re-prompt (the password
+          // never landed); surface nothing beyond the log.
+          log.warn('Failed to store archive password: {error}', { error: err })
+        }
+        transferProgressProps = { ...props, previewId: null, scanInProgress: false }
+        snapshotSourcePaneSelection()
+        showTransferProgressDialog = true
+      })()
+    },
+
+    /** The user dismissed the password prompt: forget any stored password and
+     *  settle the operation exactly as a dismissed transfer error would (refresh
+     *  panes, drop the source-pane snapshot and selection), so nothing looks stuck. */
+    handleArchivePasswordCancel() {
+      const pw = archivePasswordProps
+      if (pw) {
+        void clearArchivePassword(pw.parentVolumeId, pw.archivePath)
+      }
+      const op = transferProgressProps?.operationType ?? 'copy'
+      log.info('{op} archive-password prompt cancelled', { op: transferOpLabel(op) })
+
+      refreshPanesAfterTransfer()
+      getSourcePaneRef()?.clearOperationSnapshot()
+      clearSourcePaneSelection()
+
+      showArchivePasswordDialog = false
+      archivePasswordProps = null
+      showTransferProgressDialog = false
+      transferProgressProps = null
+      deps.onRefocus()
     },
 
     handleTransferErrorClose() {

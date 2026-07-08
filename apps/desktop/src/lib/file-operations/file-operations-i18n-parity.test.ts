@@ -269,3 +269,25 @@ describe('error dialog chrome (en)', () => {
     expect(tString('fileOperations.errorDialog.close')).toBe('Close')
   })
 })
+
+describe('archive-password dialog chrome (en)', () => {
+  it('resolves the titles, buttons, and field labels', () => {
+    expect(tString('fileOperations.archivePassword.title')).toBe('Password needed')
+    expect(tString('fileOperations.archivePassword.retryTitle')).toBe("That didn't work")
+    expect(tString('fileOperations.archivePassword.inputAria')).toBe('Archive password')
+    expect(tString('fileOperations.archivePassword.placeholder')).toBe('Password')
+    expect(tString('fileOperations.archivePassword.unlock')).toBe('Unlock')
+  })
+
+  it('renders the prompt bodies (Trans <archive> tag strips to text in en)', () => {
+    const archive = (c: unknown[]) => c.join('')
+    const first = t('fileOperations.archivePassword.message', { name: 'photos.zip', archive })
+    expect(Array.isArray(first) ? first.join('') : first).toBe(
+      'photos.zip is password-protected. Enter its password to unlock it.',
+    )
+    const retry = t('fileOperations.archivePassword.retryMessage', { name: 'photos.zip', archive })
+    expect(Array.isArray(retry) ? retry.join('') : retry).toBe(
+      "That password didn't unlock photos.zip. Give it another go.",
+    )
+  })
+})

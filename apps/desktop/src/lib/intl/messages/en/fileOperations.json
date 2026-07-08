@@ -878,6 +878,47 @@
     }
   },
 
+  "fileOperations.archivePassword.title": "Password needed",
+  "@fileOperations.archivePassword.title": {
+    "description": "Title of the dialog that asks for an encrypted archive''s password before copying or moving files out of it. Shown the first time (no wrong attempt yet). Short heading."
+  },
+
+  "fileOperations.archivePassword.retryTitle": "That didn''t work",
+  "@fileOperations.archivePassword.retryTitle": {
+    "description": "Title of the archive-password dialog when the password the user just entered was rejected, so they''re being asked again. Friendly and light, not scolding. Avoid the words \"error\" and \"failed\". Short heading."
+  },
+
+  "fileOperations.archivePassword.message": "<archive>{name}</archive> is password-protected. Enter its password to unlock it.",
+  "@fileOperations.archivePassword.message": {
+    "description": "Body of the archive-password dialog, shown the first time. Names the archive being unlocked. <archive> wraps the archive filename, which is styled (bold); keep the tag around the name only. \"unlock\" pairs with the Unlock button.",
+    "placeholders": {
+      "name": "the archive filename, e.g. photos.zip"
+    }
+  },
+
+  "fileOperations.archivePassword.retryMessage": "That password didn''t unlock <archive>{name}</archive>. Give it another go.",
+  "@fileOperations.archivePassword.retryMessage": {
+    "description": "Body of the archive-password dialog after a rejected password, asking the user to try again. Friendly and encouraging, not scolding. Avoid the words \"error\" and \"failed\". <archive> wraps the archive filename, which is styled (bold); keep the tag around the name only.",
+    "placeholders": {
+      "name": "the archive filename, e.g. photos.zip"
+    }
+  },
+
+  "fileOperations.archivePassword.inputAria": "Archive password",
+  "@fileOperations.archivePassword.inputAria": {
+    "description": "Accessible label for the masked password input in the archive-password dialog (there is no visible label next to the field). Short."
+  },
+
+  "fileOperations.archivePassword.placeholder": "Password",
+  "@fileOperations.archivePassword.placeholder": {
+    "description": "Placeholder text inside the empty masked password input in the archive-password dialog. Short."
+  },
+
+  "fileOperations.archivePassword.unlock": "Unlock",
+  "@fileOperations.archivePassword.unlock": {
+    "description": "Primary button in the archive-password dialog that submits the entered password and retries the copy/move. Short control label, active verb."
+  },
+
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Folder name can''t contain \"/\" or null characters} other {Filename can''t contain \"/\" or null characters}}",
   "@fileOperations.validation.disallowedChars": {
     "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the name includes a slash or a null character (both forbidden on the file system). The \"/\" is a literal slash character and must stay as-is. Write each branch as a complete, natural sentence for a file versus a folder (the noun and its agreement differ across languages).",
