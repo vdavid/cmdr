@@ -77,27 +77,30 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 #     the watch live before the ring-order mutation.
 #   - `viewer_tail_integration`: the appender writes continuously until the test
 #     sees a `Grew`.
+#   - `archive::watch_integration_test` live-watch + temp-rename tests:
+#     `drive_refresh_until` redoes the zip rewrite (in place, or via temp+rename)
+#     until the watch-driven refresh lands the new entry in the listing.
 # They still need this override: the redo/continuous loops can run ~11 s under
 # saturation, past the global 8 s cap, and `real-notify` serialization keeps
 # their live watches from multiplying each other's starvation. Proof: 10/10
 # saturated full-suite runs of the downloads trio green at `retries = 0`
 # (verified 2026-07 on a 16-core M-series, full `cargo nextest run` looped;
 # baseline before the in-test fix was ~2/3 runs failing).
-filter = 'test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(tail_watcher_sees_appender_task_events_within_debounce)'
+filter = 'test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(tail_watcher_sees_appender_task_events_within_debounce) + test(archive::watch::watch_integration_test::a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk) + test(archive::watch::watch_integration_test::a_temp_rename_swap_refreshes_the_listing)'
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# Archive live-content and file-viewer tail watchers — same real-FSEvents class,
-# but these still block on a SINGLE delivery (subscribe/start a watch, then
-# rewrite/append/rename once and wait). They haven't been restructured to redo
-# the mutation, so a starved or coalesced event is unrecoverable within the run.
-# Grant retries: each retry re-runs the one test in a fresh process with a fresh
-# watch, which reliably catches the event. Coverage isn't lost — the assertions
-# are unchanged, only real-OS event timing is tolerated. If these ever get the
-# `observe_mutation` redo treatment (see the downloads override above), drop the
-# retries.
-filter = 'test(file_viewer::watcher_test::) + test(archive::watch_integration_test::a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk) + test(archive::watch_integration_test::a_temp_rename_swap_refreshes_the_listing)'
+# File-viewer session watchers — same real-FSEvents class, but these still block
+# on a SINGLE delivery (subscribe/start a watch, then rewrite/append/rename once
+# and wait). They haven't been restructured to redo the mutation, so a starved or
+# coalesced event is unrecoverable within the run. Grant retries: each retry
+# re-runs the one test in a fresh process with a fresh watch, which reliably
+# catches the event. Coverage isn't lost — the assertions are unchanged, only
+# real-OS event timing is tolerated. If these ever get the `observe_mutation` /
+# `drive_refresh_until` redo treatment (see the self-healing override above),
+# drop the retries. (The archive live-watch tests already made that move.)
+filter = 'test(file_viewer::watcher_test::)'
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 retries = 2

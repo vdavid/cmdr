@@ -3,9 +3,12 @@
 //! These drive real temp `.zip` files through `VolumeManager::resolve` (which
 //! starts the watch) and the listing cache, so they exercise the whole
 //! refresh path: an external edit → drop the stale index → re-read through the
-//! re-resolved `ArchiveVolume` → update the pane listing. The real-notify test
-//! polls a condition with a generous timeout rather than sleeping a fixed
-//! duration (FSEvents latency is unpredictable).
+//! re-resolved `ArchiveVolume` → update the pane listing. The two real-notify
+//! tests redo the rewrite until the watch delivers a refresh
+//! (`drive_refresh_until`, mirroring `downloads::watcher::observe_mutation`), so
+//! neither the just-registered arming window nor a coalesced/dropped event under
+//! a saturated suite can starve them — they self-heal within one budget and need
+//! no nextest retries.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -113,6 +116,40 @@ fn drop_listing(listing_id: &str) {
     LISTING_CACHE.write().expect("cache lock").remove(listing_id);
 }
 
+/// Drives a real-FSEvents-observed archive rewrite to a reliable refresh,
+/// defeating both the just-registered-watch arming window and FSEvents' habit of
+/// coalescing or dropping a lone event when the host is saturated (a full-suite
+/// run pins every core). `Debouncer::watch` returns before macOS finishes arming
+/// the stream, and a rewrite landing inside that window is dropped outright, not
+/// merely delayed — unrecoverable by waiting. So `rewrite` is redone each round
+/// until an event lands and the refresh puts `target` in the listing, all inside
+/// ONE 15 s budget (kept under the 20 s nextest cap so a merely-slow delivery
+/// still lands here instead of racing a SIGTERM). Mirrors
+/// `downloads::watcher::observe_mutation`; this is what lets both callers sit in
+/// the retries=0 self-healing nextest group.
+async fn drive_refresh_until(listing_id: &str, target: &str, mut rewrite: impl FnMut()) {
+    const BUDGET: Duration = Duration::from_secs(15);
+    let deadline = Instant::now() + BUDGET;
+    loop {
+        assert!(
+            Instant::now() < deadline,
+            "the live watch never refreshed the listing to include `{target}` within {BUDGET:?} (FSEvents watch starved)"
+        );
+        rewrite();
+        // A live stream refreshes within the debounce (a few hundred ms) plus the
+        // async re-read; cap each round so a dropped event triggers another
+        // rewrite rather than burning the whole budget, but never exceed the
+        // overall deadline.
+        let round_deadline = (Instant::now() + Duration::from_millis(750)).min(deadline);
+        while Instant::now() < round_deadline {
+            if listing_names(listing_id).iter().any(|n| n == target) {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+    }
+}
+
 /// Re-reading through the re-resolved `ArchiveVolume` picks up an entry added to
 /// the backing zip, and a listing NOT inside the archive is left untouched.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -201,8 +238,9 @@ async fn a_truncated_midwrite_archive_keeps_the_previous_listing() {
 }
 
 /// End-to-end through the real notify machinery: an on-disk edit to the zip makes
-/// the live watch fire, which refreshes the open listing. Polls a condition with
-/// a generous timeout (FSEvents/inotify latency varies).
+/// the live watch fire, which refreshes the open listing. Redoes the rewrite
+/// until the refresh lands (see `drive_refresh_until`), so it self-heals under a
+/// saturated suite instead of leaning on nextest retries.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk() {
     let fixture = ArchiveFixture::new(&[stored("a.txt", b"a".to_vec())]);
@@ -236,26 +274,12 @@ async fn a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk() {
         vec![stub_entry(&fixture.zip_path, "a.txt")],
     );
 
-    // Edit the zip on disk; the parent-directory watch should notice.
-    fixture.rewrite(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
-
-    // Poll until the watch-driven refresh lands the new entry. 15 s stays below
-    // the 20 s nextest cap for this test (`.config/nextest.toml`) so a merely-slow
-    // FSEvents delivery fails cleanly here (and retries) instead of racing a
-    // SIGTERM; a fully-starved event is absorbed by that override's retries.
-    let deadline = Instant::now() + Duration::from_secs(15);
-    let mut saw_b = false;
-    while Instant::now() < deadline {
-        if listing_names(&listing).iter().any(|n| n == "b.txt") {
-            saw_b = true;
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(50)).await;
-    }
-    assert!(
-        saw_b,
-        "the live watch never refreshed the listing after the zip changed"
-    );
+    // Edit the zip on disk (redone until an event lands); the parent-directory
+    // watch should notice and refresh the listing to include the new entry.
+    drive_refresh_until(&listing, "b.txt", || {
+        fixture.rewrite(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
+    })
+    .await;
 
     drop_listing(&listing);
     get_volume_manager().unregister(&volume_id);
@@ -283,24 +307,13 @@ async fn a_temp_rename_swap_refreshes_the_listing() {
         vec![stub_entry(&fixture.zip_path, "a.txt")],
     );
 
-    // Swap the archive's inode via temp+rename (the editor / safe-overwrite path).
-    fixture.rewrite_via_temp_rename(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
-
-    // Poll (15 s, below the 20 s nextest cap) for the refresh; see the sibling
-    // real-notify test for the timeout rationale.
-    let deadline = Instant::now() + Duration::from_secs(15);
-    let mut saw_b = false;
-    while Instant::now() < deadline {
-        if listing_names(&listing).iter().any(|n| n == "b.txt") {
-            saw_b = true;
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(50)).await;
-    }
-    assert!(
-        saw_b,
-        "the parent-dir watch never refreshed after the temp+rename inode swap"
-    );
+    // Swap the archive's inode via temp+rename (the editor / safe-overwrite
+    // path), redone until an event lands; the parent-dir watch must catch the
+    // inode swap a file-pinned watch would miss and refresh the listing.
+    drive_refresh_until(&listing, "b.txt", || {
+        fixture.rewrite_via_temp_rename(&[stored("a.txt", b"a".to_vec()), stored("b.txt", b"bb".to_vec())]);
+    })
+    .await;
 
     drop_listing(&listing);
     get_volume_manager().unregister(&volume_id);

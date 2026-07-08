@@ -91,6 +91,13 @@ key plus this watch's `cache.clear()` guarantee the post-rename read re-parses t
 The pure event filter (`event_path_targets_archive`: exact match, the `/private` firmlink normalization, sibling and
 prefix-similar rejection) is unit-tested inline. `watch_integration_test.rs` drives the whole refresh through
 `VolumeManager::resolve` + `LISTING_CACHE` against real temp zips: an on-disk edit reflected in the listing while an
-outside listing is left untouched (scoping), a truncated mid-write keeping the previous listing, the real-notify
-end-to-end refresh (polls a condition with a generous timeout, no fixed sleep), and LRU eviction releasing the archive's
+outside listing is left untouched (scoping), a truncated mid-write keeping the previous listing, the two real-notify
+end-to-end refresh tests (an in-place rewrite and a temp+rename inode swap), and LRU eviction releasing the archive's
 watch (`Arc::strong_count` drops to the test's own after eviction).
+
+The two real-notify tests are **self-healing** under a saturated suite, not retry-dependent:
+`drive_refresh_until` redoes the zip rewrite until the watch delivers a refresh and the new entry lands in the listing,
+all inside one 15 s budget. This defeats both the just-registered-watch arming window (a mutation landing before macOS
+finishes arming FSEvents is dropped outright, not delayed) and a lone coalesced/dropped event when every core is busy —
+both unrecoverable by waiting. It mirrors `downloads::watcher::observe_mutation`; the shared `real-notify` nextest group
+(serialized, `retries = 0`) lives in [`.config/nextest.toml`](../../../../../../../../../.config/nextest.toml).
