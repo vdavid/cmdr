@@ -413,7 +413,11 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       // Expected, recoverable flow: the write-error only exists to prompt for a
       // password and retry (intercepted upstream in `handleTransferError`), so
       // log at warn to keep it out of prod error-report bundles (error+ only).
-      log.warn('{op} needs a password: {errorType}', { op: operationLabel, errorType: event.error.type, error: event.error })
+      log.warn('{op} operation needs an archive password: {errorType}', {
+        op: operationLabel,
+        errorType: event.error.type,
+        error: event.error,
+      })
     } else {
       log.error('{op} error: {errorType}', { op: operationLabel, errorType: event.error.type, error: event.error })
     }

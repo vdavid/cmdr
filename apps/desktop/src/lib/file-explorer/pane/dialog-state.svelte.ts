@@ -474,7 +474,7 @@ export function createDialogState(deps: DialogStateDeps) {
       // volume the archive lives on is the source pane's volume id (an archive pane
       // keeps its parent drive's id); the archive path is the errored source path.
       if (error.type === 'archive_needs_password' && transferProgressProps) {
-        log.info('{op} needs an archive password ({state}): {path}', {
+        log.info('{op} operation needs an archive password ({state}): {path}', {
           op: opLabel,
           state: error.wrongAttempt ? 'rejected' : 'first prompt',
           path: error.path,
