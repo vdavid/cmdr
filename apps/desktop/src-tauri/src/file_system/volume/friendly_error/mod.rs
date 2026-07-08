@@ -492,6 +492,17 @@ mod tests {
                 true,
                 |r| matches!(r, ListingErrorReason::IoSerious { .. }),
             ),
+            (
+                // A password-protected archive never fails on the LISTING path in
+                // the ZipCrypto-only build (browsing an encrypted zip works; only
+                // extraction needs a password, on the write-op path). Its listing
+                // arm exists for exhaustiveness and falls back to the existing
+                // "unreadable archive" reason.
+                VolumeError::NeedsPassword { wrong_attempt: false },
+                ErrorCategory::Serious,
+                false,
+                |r| matches!(r, ListingErrorReason::ArchiveUnreadable),
+            ),
         ];
 
         for (err, expected_category, expected_retry, reason_matches) in cases {

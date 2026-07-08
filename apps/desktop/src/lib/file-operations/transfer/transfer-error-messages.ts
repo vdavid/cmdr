@@ -173,6 +173,10 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   name_too_long: { category: 'needs_action', retryHint: false },
   invalid_name: { category: 'needs_action', retryHint: false },
   files_too_large_for_filesystem: { category: 'needs_action', retryHint: false },
+  // A password-protected archive source. The FE prompts for a password and
+  // retries, so this classification is only the fallback if the prompt is
+  // bypassed; retryHint stays on so the generic dialog still offers a retry.
+  archive_needs_password: { category: 'needs_action', retryHint: true },
 }
 
 export function getErrorDisplayMeta(error: WriteOperationError): ErrorDisplayMeta {

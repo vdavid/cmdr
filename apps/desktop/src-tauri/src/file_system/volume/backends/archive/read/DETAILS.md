@@ -137,9 +137,34 @@ routing layer's job, not ours), other `Format → Corrupt`, `Unsupported → Uns
 or an LZMA variant), `Decompression → Corrupt`, `IO(UnexpectedEof) → Corrupt` (truncated) else `Io`.
 
 **Encryption** isn't in `rc_zip::Error` — we detect it ourselves from general-purpose flag bit 0 or the AE-x marker
-method. Browsing an encrypted archive works (names live in the central directory); `open_read` on an encrypted entry
-returns `Encrypted`, and `has_encrypted_entries()` lets the volume layer gate extraction up front. The
-`ArchiveError → VolumeError` mapping (a mid-browse backstop) lives in [`../DETAILS.md`](../DETAILS.md).
+method. Browsing an encrypted archive always works (names live in the central directory). Extraction is covered below.
+
+## Decryption (zip only): a `zip`-crate seam alongside rc-zip
+
+rc-zip parses the index but does NOT decrypt, so an encrypted entry's bytes are read through the `zip` crate (zip2)
+instead — `zip.rs`'s `run_decrypt_producer` opens a `ZipArchive` over the same `SourceReader` and calls
+`by_index_decrypt(ordinal, password)`. Two crates, one archive: rc-zip stays the index/tree authority, the `zip` crate is
+the per-entry decrypt engine.
+
+- **Decrypt by ORDINAL, not name.** `ZipHandle` stores each entry's zero-based central-directory position (assigned in
+  `zip::parse` via `enumerate`). rc-zip and the `zip` crate both parse the SAME central directory in the SAME physical
+  order, so the ordinal addresses the identical entry in `by_index_decrypt`. This sidesteps cross-crate filename-decoding
+  drift (a name that decodes differently in each crate would miss). **This alignment is the spike's one load-bearing
+  assumption — pinned by `archive_test::zip_crate_ordinals_align_with_rc_zip`** (a mixed archive, distinct per-entry
+  content, decrypt-by-ordinal must yield each entry's own bytes). It holds; if it ever breaks, fall back to
+  `by_name_decrypt` with the RAW name bytes.
+- **Scope: legacy PKWARE ZipCrypto only.** That's what macOS Archive Utility / `zip -e` produce, and it needs no cargo
+  feature. **WinZip AES** (the `Method::Aex` marker) would need the `zip` crate's `aes-crypto` feature, and **7z AES**
+  the `sevenz-rust2` `aes256` feature — both pull `aes ^0.9` (stable 0.9.1), which CONFLICTS with `smb2`'s pinned
+  `aes =0.9.0-rc.4` (its SMB3 AEAD stack), so Cargo can't unify. Until the `aes` versions align, an AES zip entry returns
+  a typed `Unsupported` (honest — not a password prompt that could never succeed) and encrypted 7z stays a typed refusal.
+  Flipping the two features on (plus the AES branch in `zip::open_read`, already stubbed) is the whole AES follow-up.
+- **Wrong-password detection.** zip AES verifies a 2-byte password check at open (`InvalidPassword` → `WrongPassword`,
+  instant) — relevant once AES lands. ZipCrypto checks a single byte at open, so ~1/256 of wrong passwords slip through
+  and surface LATE as an end-of-stream CRC mismatch: the `zip` crate returns `io::ErrorKind::InvalidData` ("Invalid
+  checksum"), which `pump_decrypt` maps to `WrongPassword` by the io KIND (not the message — `no-string-matching`). No
+  password on an encrypted entry ⇒ `Encrypted` (the needs-password signal). The `ArchiveError → VolumeError` mapping (both
+  to typed `NeedsPassword { wrong_attempt }`) lives in [`../DETAILS.md`](../DETAILS.md).
 
 ## Filename encoding
 

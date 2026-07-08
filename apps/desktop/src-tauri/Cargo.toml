@@ -113,6 +113,11 @@ time = { version = "0.3", features = ["parsing", "macros", "formatting"] }
 tauri-plugin-playwright = { version = "0.4.1", optional = true }
 # Error reporter: zip the bundle (manifest + redacted log files). `deflate` is the default
 # compression algorithm; we don't need bzip2/zstd/etc. for log text.
+# Also the archive read side's decrypt path: rc-zip parses the index but does NOT decrypt, so
+# a legacy PKWARE ZipCrypto entry's bytes are read through this crate's `by_index_decrypt`
+# (ZipCrypto needs no feature — it's what macOS Archive Utility / `zip -e` produce). WinZip AES
+# would need the `aes-crypto` feature (crate `aes`), which currently CONFLICTS with `smb2`'s
+# pinned `aes =0.9.0-rc.4` (its SMB3 AEAD stack), so AES decrypt is deferred — see DETAILS.
 zip = { version = "8.6", default-features = false, features = ["deflate"] }
 # Archive browsing (read side): rc-zip is a sans-IO zip reader whose state machines
 # (`ArchiveFsm` for the central directory, `EntryFsm` for per-entry decompression) request byte
@@ -146,10 +151,16 @@ bzip2 = "0.6.1"
 ruzstd = "0.8.3"
 lzma-rust2 = "0.16.4"
 # LZMA/LZMA2 decode is built in (via `lzma-rust2`); `bzip2`/`deflate`/`ppmd` add
-# the other common 7z codecs (all pure-Rust). `aes256` is deliberately OFF, so an
-# encrypted 7z surfaces a typed refusal instead of decrypting (encrypted archives
-# are out of scope, matching zip). `compress` (encoders) stays off — decode only.
+# the other common 7z codecs (all pure-Rust). `aes256` (7z AES decrypt) stays OFF:
+# it pulls `aes ^0.9` (stable 0.9.1), which conflicts with `smb2`'s pinned
+# `aes =0.9.0-rc.4`, so an encrypted 7z still surfaces a typed refusal for now
+# (see DETAILS — deferred with WinZip AES zip until the `aes` versions align).
+# `compress` (encoders) stays off — decode only.
 sevenz-rust2 = { version = "0.21.2", default-features = false, features = ["bzip2", "deflate", "ppmd", "util"] }
+# Wipes the per-archive password from memory on drop (`Zeroizing<String>` on the
+# `ArchiveVolume`). Already in the tree transitively; pinned to the locked 1.9.0
+# so no new crate is added.
+zeroize = "1.9.0"
 # Error reporter: short-ID generation (`ERR-XXXXX`) using rejection sampling.
 rand = "0.10"
 # Pure-Rust git library for the git browser (M1: discover, repo info, status).

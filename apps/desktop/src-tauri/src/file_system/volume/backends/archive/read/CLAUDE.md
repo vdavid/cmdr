@@ -35,8 +35,11 @@ planning, reorganizing, or advising.
   `Vec` to the read path.
 - **Compressed tar and 7z are SEQUENTIAL-access**; plain `.tar` and zip are random. `ArchiveFormat::is_sequential`
   declares the class (the volume layer surfaces it via `Volume::extraction_is_sequential`).
-- **Encryption: browsing works, extraction doesn't** (`has_encrypted_entries()` gates it at the volume layer). Filename
-  encoding is rc-zip's job — consume the decoded `entry.name`, don't re-decode.
+- **Encryption: browsing always works; extraction decrypts a legacy ZipCrypto entry with a per-archive password**,
+  routed through the `zip` crate's `by_index_decrypt` by CENTRAL-DIRECTORY ORDINAL (rc-zip parses but can't decrypt; the
+  ordinals align — pinned). No password ⇒ `Encrypted`; wrong ⇒ `WrongPassword` (ZipCrypto's wrong-password may surface
+  late as an end-of-stream CRC, mapped by io-kind not message). WinZip AES and 7z AES are deferred (`aes` crate conflicts
+  with `smb2`) and return a typed refusal. Filename encoding is rc-zip's job — consume the decoded `entry.name`.
 - **The index cache key is `(path, size, mtime)`** (external edits auto-invalidate); `index_for_local` is blocking, call
   it from `spawn_blocking`.
 - **Two DoS caps bound the synthetic tree**: per-entry depth (`name::MAX_COMPONENT_DEPTH`, over-deep entries quarantine)

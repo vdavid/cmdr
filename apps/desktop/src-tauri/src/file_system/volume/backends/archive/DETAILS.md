@@ -83,8 +83,10 @@ pinned for this phase. Raise it later if a real workload wants parallel extract.
 
 **Why** (`no-string-matching`): `to_volume_error` maps the path-shaped errors to their `VolumeError` twins
 (`NotFound → NotFound`, `IsADirectory → IsADirectory`) so path-aware callers keep working, the I/O family
-(`Corrupt` / `Io → IoError`), and the rejection family (`NotAnArchive` / `Encrypted` / `Unsupported` / the `TooLarge`
-DoS cap `→ NotSupported`). This is a **mid-browse backstop** (the archive was swapped or corrupted after navigation).
+(`Corrupt` / `Io → IoError`), the encryption pair (`Encrypted → NeedsPassword { wrong_attempt: false }`,
+`WrongPassword → NeedsPassword { wrong_attempt: true }` — the typed signal the frontend prompts on, see below), and the
+rejection family (`NotAnArchive` / `Unsupported` / the `TooLarge` DoS cap `→ NotSupported`). This is a **mid-browse
+backstop** (the archive was swapped or corrupted after navigation).
 The user-facing "damaged archive" copy is NOT produced here: the listing seam (`listing/streaming.rs`) turns a failed
 `.zip` browse into `ListingErrorReason::ArchiveUnreadable` from the PATH + this collapsed error kind (an integrity
 collapse — `NotSupported`/`IoError` — on a path that `archive::boundary::path_targets_archive_file` says targets a real
@@ -148,6 +150,35 @@ second-granularity `modified_at` widened to nanos) — a remote `.zip` can't be 
 `apps/desktop/src-tauri/Cargo.toml` pulls it straight from crates.io; there is no workspace `[patch.crates-io]` override.
 (A hand-rolled `read_at` would need `Tree::close_handle`, which stays `pub(crate)`, so it'd leak an SMB handle per call —
 `FileReader` owns the close.)
+
+## Password-protected archives (decryption)
+
+Browsing an encrypted archive always works (names live in the central directory). EXTRACTING an encrypted entry needs a
+password, decrypted per entry in the reading core (zip only; ZipCrypto only — see [`read/DETAILS.md`](read/DETAILS.md)
+§ "Decryption"). The `ArchiveVolume` layer owns the password lifetime and the typed frontend signal.
+
+**Password-on-volume = remember-for-this-archive.** `ArchiveVolume` holds an interior-mutable
+`password: Mutex<Option<Zeroizing<String>>>` (`Zeroizing` wipes it on drop). `set_password` / `clear_password` are the
+`set_archive_password` / `clear_archive_password` IPC commands' targets; `password_snapshot` clones it into the blocking
+read closure. Because `VolumeManager::resolve` mints ONE `ArchiveVolume` per archive and LRU-caches it (cap 16), that
+instance's lifetime IS "remember for this archive". **LRU eviction forgets the password**: a re-minted instance starts
+empty, so the frontend re-prompts (pinned by `volume_test`'s LRU-semantic test). A wrong password never persists —
+`set_password` overwrites, and the frontend overwrites-then-retries after a `WrongPassword`.
+
+**Where the password threads in.** Only into `open_read` (the per-entry extract path): `open_stream` passes
+`password_snapshot()` to `ArchiveIndex::open_read`. It is deliberately NOT threaded into `index()`/`load()` parse (zip
+browsing needs no password) nor `open_sequential_extract` (that serves compressed tar / solid 7z, which a random-access
+zip never routes through, and neither is decryptable today). The `Volume` trait's read methods are NOT widened with a
+password param — the password stays internal to the backend.
+
+**Typed signal to the frontend.** `Encrypted` / `WrongPassword` map to `VolumeError::NeedsPassword { wrong_attempt }`
+(above). In the ZipCrypto-only build this only ever surfaces on the EXTRACT path (a copy whose source is inside the zip),
+riding `WriteOperationError::ArchiveNeedsPassword { path, wrong_attempt }` (mapped in
+`transfer/volume_copy.rs::map_volume_error`) — machine-readable (`no-string-matching`), so the frontend dispatches its
+password dialog and, after `set_archive_password`, retries the copy. The BROWSE/listing path never produces
+`NeedsPassword` here (browsing an encrypted zip works without a password); its `friendly_error` arm exists only for
+exhaustiveness and falls back to the "unreadable archive" reason. When header-encrypted archives (7z AES) land and DO
+need a password to browse, give that arm a dedicated `ListingErrorReason` + browse-time prompt.
 
 ## Routing and lifecycle (`boundary.rs` + `VolumeManager::resolve`)
 

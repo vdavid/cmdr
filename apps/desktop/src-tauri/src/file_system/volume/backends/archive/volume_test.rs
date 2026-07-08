@@ -9,7 +9,8 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 use super::super::test_fixtures::{
-    FixtureFile, build_zip, deflated, dir, overstate_record_count, set_first_entry_encrypted, stored,
+    FixtureFile, build_zip, build_zipcrypto_zip, deflated, dir, encrypted_entry, overstate_record_count,
+    set_first_entry_encrypted, stored,
 };
 use super::*;
 use crate::file_system::volume::backends::InMemoryVolume;
@@ -388,7 +389,7 @@ async fn every_mutation_is_unsupported() {
 // ---- Typed errors surfaced through the Volume API -------------------------
 
 #[tokio::test]
-async fn browsing_works_but_extracting_an_encrypted_entry_is_refused() {
+async fn browsing_works_but_extracting_an_encrypted_entry_needs_a_password() {
     let mut bytes = build_zip(&[deflated("secret.txt", "classified")]);
     set_first_entry_encrypted(&mut bytes);
     let archive = TestArchive::from_bytes(bytes);
@@ -399,10 +400,75 @@ async fn browsing_works_but_extracting_an_encrypted_entry_is_refused() {
         names(&volume.list_directory(Path::new(""), None).await.unwrap()),
         vec!["secret.txt"]
     );
-    // Extraction of the encrypted entry maps to a typed `NotSupported`.
+    // Extraction with no password maps to the typed needs-password signal (not
+    // "damaged"), so the frontend prompts.
     assert!(matches!(
         volume.open_read_stream(Path::new("secret.txt")).await,
-        Err(VolumeError::NotSupported)
+        Err(VolumeError::NeedsPassword { wrong_attempt: false })
+    ));
+}
+
+// ---- ZipCrypto password flow through the Volume API ------------------------
+
+#[tokio::test]
+async fn set_password_lets_the_volume_extract_an_encrypted_entry() {
+    let bytes = build_zipcrypto_zip(&[encrypted_entry("secret.txt", "classified payload")], "hunter2");
+    let archive = TestArchive::from_bytes(bytes);
+    let volume = archive.volume();
+
+    // No password yet: typed needs-password.
+    assert!(matches!(
+        volume.open_read_stream(Path::new("secret.txt")).await,
+        Err(VolumeError::NeedsPassword { wrong_attempt: false })
+    ));
+
+    // After storing the password, the same read decrypts.
+    volume.set_password("hunter2".to_string());
+    assert_eq!(
+        read_all(&volume, Path::new("secret.txt")).await.unwrap(),
+        b"classified payload"
+    );
+
+    // The stored password persists across reads on this instance.
+    assert_eq!(
+        read_all(&volume, Path::new("secret.txt")).await.unwrap(),
+        b"classified payload"
+    );
+}
+
+#[tokio::test]
+async fn a_wrong_password_surfaces_as_needs_password_wrong_attempt() {
+    let bytes = build_zipcrypto_zip(&[encrypted_entry("secret.txt", "classified payload")], "hunter2");
+    let archive = TestArchive::from_bytes(bytes);
+    let volume = archive.volume();
+    volume.set_password("not-the-password".to_string());
+
+    // The stream opens, then fails on decode — drained here to the typed error.
+    let mut stream = volume.open_read_stream(Path::new("secret.txt")).await.unwrap();
+    let err = drain(stream.as_mut()).await.unwrap_err();
+    assert!(
+        matches!(err, VolumeError::NeedsPassword { wrong_attempt: true }),
+        "got {err:?}"
+    );
+}
+
+#[tokio::test]
+async fn a_freshly_minted_volume_forgets_the_password_lru_eviction_semantic() {
+    // Storing a password lives on the ArchiveVolume INSTANCE. `VolumeManager`
+    // LRU-caches one instance per archive, so eviction + re-mint (modelled here as
+    // a second `volume()`) starts empty and the frontend must re-prompt.
+    let bytes = build_zipcrypto_zip(&[encrypted_entry("secret.txt", "payload")], "pw");
+    let archive = TestArchive::from_bytes(bytes);
+
+    let unlocked = archive.volume();
+    unlocked.set_password("pw".to_string());
+    assert_eq!(read_all(&unlocked, Path::new("secret.txt")).await.unwrap(), b"payload");
+
+    // A fresh instance (an LRU re-mint) has no password.
+    let reminted = archive.volume();
+    assert!(matches!(
+        reminted.open_read_stream(Path::new("secret.txt")).await,
+        Err(VolumeError::NeedsPassword { wrong_attempt: false })
     ));
 }
 

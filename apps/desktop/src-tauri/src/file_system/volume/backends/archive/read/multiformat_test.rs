@@ -163,7 +163,7 @@ fn set_octal(field: &mut [u8], val: u64) {
 
 /// Drains an entry reader to completion.
 async fn read_all(index: &ArchiveIndex, src: Arc<dyn ArchiveByteSource>, inner: &str) -> Result<Vec<u8>, ArchiveError> {
-    let mut reader = index.open_read(inner, src)?;
+    let mut reader = index.open_read(inner, src, None)?;
     let mut out = Vec::new();
     while let Some(chunk) = reader.next_chunk().await {
         out.extend_from_slice(&chunk?);
@@ -223,7 +223,7 @@ async fn tar_extract_streams_in_bounded_chunks() {
     // A large member must arrive in several ≤128 KiB chunks (never whole-buffered).
     let content: Vec<u8> = (0..400_000u32).map(|i| (i % 253) as u8).collect();
     let (index, src) = parse_tar(TarCodec::Gzip, &[TarItem::File("big.bin", &content)]);
-    let mut reader = index.open_read("big.bin", src).unwrap();
+    let mut reader = index.open_read("big.bin", src, None).unwrap();
     let mut chunk_sizes = Vec::new();
     let mut data = Vec::new();
     while let Some(chunk) = reader.next_chunk().await {

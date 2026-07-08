@@ -37,6 +37,8 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::file_system::stat_paths_kinds,
         crate::commands::file_system::create_directory,
         crate::commands::file_system::create_file,
+        crate::commands::file_system::set_archive_password,
+        crate::commands::file_system::clear_archive_password,
         crate::commands::file_system::benchmark_log,
         crate::commands::file_system::copy_files,
         crate::commands::file_system::move_files,

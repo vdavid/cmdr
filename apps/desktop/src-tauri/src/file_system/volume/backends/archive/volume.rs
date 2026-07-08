@@ -38,6 +38,7 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 use tokio::task::spawn_blocking;
+use zeroize::Zeroizing;
 
 use super::{
     ArchiveByteSource, ArchiveEntryReader, ArchiveError, ArchiveFormat, ArchiveIndex, ArchiveIndexCache, ArchiveNode,
@@ -74,6 +75,14 @@ pub struct ArchiveVolume {
     /// be established. Its presence is what [`listing_is_watched`](Volume::listing_is_watched)
     /// reports; dropping it (on LRU eviction) stops the OS watch.
     watch: Mutex<Option<super::watch::ArchiveContentWatch>>,
+    /// The password for a password-protected archive, remembered for the lifetime
+    /// of THIS `ArchiveVolume` instance. `VolumeManager::resolve` mints one per
+    /// archive and LRU-caches it, so this is exactly "remember for this archive"
+    /// — and it's gone when the LRU evicts (a re-minted instance starts empty, so
+    /// the frontend re-prompts). `Zeroizing` wipes the bytes on drop. A wrong
+    /// password never persists: `set_password` overwrites, and a detected wrong
+    /// attempt clears it (see [`clear_password_if_wrong`](Self::clear_password_if_wrong)).
+    password: Mutex<Option<Zeroizing<String>>>,
 }
 
 impl ArchiveVolume {
@@ -95,7 +104,28 @@ impl ArchiveVolume {
             name,
             cache: Arc::new(ArchiveIndexCache::new()),
             watch: Mutex::new(None),
+            password: Mutex::new(None),
         }
+    }
+
+    /// Stores the password for this archive, overwriting any previous one (so a
+    /// fresh attempt replaces a rejected password). Called by the
+    /// `set_archive_password` IPC command after the frontend prompts.
+    pub fn set_password(&self, password: String) {
+        *self.password.lock_ignore_poison() = Some(Zeroizing::new(password));
+    }
+
+    /// Forgets any stored password (the `clear_archive_password` IPC command, and
+    /// the internal wrong-password reset).
+    pub fn clear_password(&self) {
+        *self.password.lock_ignore_poison() = None;
+    }
+
+    /// A cloned snapshot of the stored password to move into the blocking read
+    /// closure. Cloning keeps it `Zeroizing`, so the transient copy is wiped when
+    /// the closure ends.
+    fn password_snapshot(&self) -> Option<Zeroizing<String>> {
+        self.password.lock_ignore_poison().clone()
     }
 
     /// Starts the live content watch on the backing `.zip` so an external edit
@@ -241,7 +271,14 @@ impl ArchiveVolume {
             let (index, source) = self.load().await?;
             // `open_read` only looks the entry up and spawns the decompress
             // producer (which itself uses `spawn_blocking`), so it's cheap here.
-            let reader = index.open_read(&inner, source).map_err(to_volume_error)?;
+            // With no password an encrypted entry fails fast here (`Encrypted` →
+            // `NeedsPassword`); a WRONG password surfaces later, during streaming
+            // (the decrypt/verify runs inside the producer), as the same typed
+            // signal — the frontend retries after `set_archive_password`.
+            let password = self.password_snapshot();
+            let reader = index
+                .open_read(&inner, source, password.as_deref().map(String::as_str))
+                .map_err(to_volume_error)?;
             Ok(Box::new(ArchiveVolumeReadStream {
                 reader,
                 skip_remaining: offset,
@@ -473,6 +510,9 @@ impl Volume for ArchiveVolume {
         let archive_path = self.archive_path.clone();
         Box::pin(async move {
             let (index, source) = self.load().await?;
+            // Sequential extract serves compressed tar / solid 7z only (a random-
+            // access zip never routes here), and neither is decryptable today, so
+            // no password is threaded.
             let reader = index.open_subtree_extract(&inner, source);
             Ok(Box::new(ArchiveSequentialExtract::new(reader, archive_path)) as Box<dyn SequentialExtract>)
         })
@@ -767,8 +807,9 @@ fn node_to_entry(archive_path: &Path, volume_name: &str, node: &ArchiveNode) -> 
 /// message-string classification, per `no-string-matching`).
 ///
 /// The path-shaped errors map to their native `VolumeError` twins so
-/// path-aware callers keep working. The rejection family
-/// (not-a-zip / encrypted / unsupported / too-large) collapses to
+/// path-aware callers keep working. Encryption maps to the typed
+/// `NeedsPassword { wrong_attempt }` the frontend prompts on; the rejection
+/// family (not-a-zip / unsupported / too-large) collapses to
 /// `NotSupported`, and a broken/faulted read to `IoError`: this is the
 /// mid-browse **backstop**. The user-facing "damaged archive" friendly copy
 /// (`ListingErrorReason::ArchiveUnreadable`) is produced downstream at the
@@ -794,13 +835,17 @@ fn to_volume_error(err: ArchiveError) -> VolumeError {
             message,
             raw_os_error: None,
         },
+        // Password-protected: a typed signal the frontend prompts on (distinct
+        // from the rejection family below so it never reads as "damaged"). No
+        // password tried yet vs. a rejected one:
+        ArchiveError::Encrypted => VolumeError::NeedsPassword { wrong_attempt: false },
+        ArchiveError::WrongPassword => VolumeError::NeedsPassword { wrong_attempt: true },
         // The rejection family — "this backend can't or won't serve this
-        // archive": not-a-zip, encrypted, an unsupported codec, or a synthesized
-        // tree past the node-count DoS cap. All collapse to `NotSupported`.
-        ArchiveError::NotAnArchive
-        | ArchiveError::Encrypted
-        | ArchiveError::Unsupported(_)
-        | ArchiveError::TooLarge(_) => VolumeError::NotSupported,
+        // archive": not-a-zip, an unsupported codec, or a synthesized tree past
+        // the node-count DoS cap. All collapse to `NotSupported`.
+        ArchiveError::NotAnArchive | ArchiveError::Unsupported(_) | ArchiveError::TooLarge(_) => {
+            VolumeError::NotSupported
+        }
     }
 }
 

@@ -21,10 +21,18 @@ pub enum ArchiveError {
     /// didn't parse, or the file ended mid-record.
     Corrupt(String),
 
-    /// The requested entry is encrypted. We don't support extracting encrypted
-    /// entries (browsing still works — the names live in the central directory);
-    /// opening one for read is rejected here.
+    /// The requested entry is encrypted and no password is available to decrypt
+    /// it (browsing still works — the names live in the central directory). The
+    /// volume layer maps this to a typed "needs a password" signal the frontend
+    /// prompts on; supply a password (per-archive) and the read is retried.
     Encrypted,
+
+    /// A password was supplied but it's wrong. Distinct from [`Self::Encrypted`]
+    /// (no password) so the frontend can say "that password didn't work" rather
+    /// than re-prompting from scratch. Detected at open for zip AES (2-byte
+    /// verifier) and 7z, and late (end-of-stream CRC mismatch) for legacy
+    /// ZipCrypto, whose 1-byte open check false-accepts ~1/256 of wrong passwords.
+    WrongPassword,
 
     /// The archive is a valid zip but uses something we can't handle: a
     /// compression method this build doesn't decode, or an unsupported LZMA
@@ -53,6 +61,7 @@ impl std::fmt::Display for ArchiveError {
             Self::NotAnArchive => f.write_str("not a zip archive"),
             Self::Corrupt(msg) => write!(f, "corrupt archive: {msg}"),
             Self::Encrypted => f.write_str("archive entry is encrypted"),
+            Self::WrongPassword => f.write_str("archive password is incorrect"),
             Self::Unsupported(msg) => write!(f, "unsupported archive feature: {msg}"),
             Self::TooLarge(msg) => write!(f, "archive is too large to browse: {msg}"),
             Self::NotFound(path) => write!(f, "no such entry: {path}"),

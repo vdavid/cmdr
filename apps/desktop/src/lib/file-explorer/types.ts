@@ -520,6 +520,10 @@ export type WriteOperationError =
       totalCount: number
     }
   | { type: 'io_error'; path: string; message: string }
+  // Extracting from a password-protected archive. `wrongAttempt` is true when the
+  // stored password was rejected. The FE should intercept this before the generic
+  // error dialog and prompt for a password (then retry via `setArchivePassword`).
+  | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
 
 // ============================================================================
 // Scan preview types (for Copy dialog live stats)

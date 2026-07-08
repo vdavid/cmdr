@@ -121,3 +121,199 @@ pub fn overstate_record_count(bytes: &mut [u8]) {
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack.windows(needle.len()).position(|w| w == needle)
 }
+
+// ── Legacy PKWARE ZipCrypto fixtures ─────────────────────────────────────────
+//
+// The `zip` crate can't WRITE ZipCrypto from external code (its
+// `with_deprecated_encryption` is `pub(crate)`, and AES writing needs the
+// `aes-crypto` feature we don't enable), so a minimal, spec-correct STORED-entry
+// serializer builds encrypted fixtures here. ZipCrypto is a fixed, simple stream
+// cipher, so this stays compatible with the `zip` crate's `by_index_decrypt` (the
+// production read path) and with rc-zip's central-directory parse. STORED only
+// (compressed == uncompressed) keeps the serializer trivial; the decrypt path is
+// identical for stored and deflated entries.
+
+/// One entry for [`build_zipcrypto_zip`]: name, plaintext content, and whether to
+/// ZipCrypto-encrypt it (so a single fixture can mix encrypted and plain entries).
+pub struct CryptoFixtureFile {
+    pub name: String,
+    pub content: Vec<u8>,
+    pub encrypted: bool,
+}
+
+pub fn encrypted_entry(name: impl Into<String>, content: impl Into<Vec<u8>>) -> CryptoFixtureFile {
+    CryptoFixtureFile {
+        name: name.into(),
+        content: content.into(),
+        encrypted: true,
+    }
+}
+
+pub fn plain_entry(name: impl Into<String>, content: impl Into<Vec<u8>>) -> CryptoFixtureFile {
+    CryptoFixtureFile {
+        name: name.into(),
+        content: content.into(),
+        encrypted: false,
+    }
+}
+
+/// General-purpose bit-flag 0 (entry is encrypted).
+const GP_ENCRYPTED: u16 = 1 << 0;
+/// The ZipCrypto encryption header prepended to each encrypted entry's data.
+const ZIPCRYPTO_HEADER_LEN: usize = 12;
+
+/// Serializes a minimal STORED-entry zip, ZipCrypto-encrypting the flagged
+/// entries with `password`. Entry order is preserved, so the central-directory
+/// ordinal of each entry is its index here — exactly what the ordinal-alignment
+/// test relies on.
+pub fn build_zipcrypto_zip(entries: &[CryptoFixtureFile], password: &str) -> Vec<u8> {
+    let mut body = Vec::new();
+    let mut central = Vec::new();
+    let pw = password.as_bytes();
+
+    for entry in entries {
+        let name = entry.name.as_bytes();
+        let crc = crc32(&entry.content);
+        let local_offset = body.len() as u32;
+        let flags = if entry.encrypted { GP_ENCRYPTED } else { 0 };
+
+        // The stored bytes: for an encrypted entry, the 12-byte ZipCrypto header
+        // (11 arbitrary bytes + a check byte = the CRC's high byte) followed by the
+        // encrypted content, all run through the same keystream.
+        let stored = if entry.encrypted {
+            let mut cipher = ZipCrypto::new(pw);
+            let mut header = [0u8; ZIPCRYPTO_HEADER_LEN];
+            header[..11].copy_from_slice(&[0x41; 11]); // deterministic "random" prefix
+            header[11] = (crc >> 24) as u8; // check byte the reader validates
+            let mut out = Vec::with_capacity(ZIPCRYPTO_HEADER_LEN + entry.content.len());
+            for &b in header.iter().chain(entry.content.iter()) {
+                out.push(cipher.encrypt(b));
+            }
+            out
+        } else {
+            entry.content.clone()
+        };
+        let compressed_size = stored.len() as u32;
+        let uncompressed_size = entry.content.len() as u32;
+
+        // Local file header (signature PK\x03\x04), method 0 (stored), no data
+        // descriptor (so the reader validates the check byte against the CRC).
+        body.extend_from_slice(&[0x50, 0x4b, 0x03, 0x04]);
+        body.extend_from_slice(&20u16.to_le_bytes()); // version needed
+        body.extend_from_slice(&flags.to_le_bytes());
+        body.extend_from_slice(&0u16.to_le_bytes()); // method: stored
+        body.extend_from_slice(&0u16.to_le_bytes()); // mod time
+        body.extend_from_slice(&0x21u16.to_le_bytes()); // mod date (1980-01-01, valid)
+        body.extend_from_slice(&crc.to_le_bytes());
+        body.extend_from_slice(&compressed_size.to_le_bytes());
+        body.extend_from_slice(&uncompressed_size.to_le_bytes());
+        body.extend_from_slice(&(name.len() as u16).to_le_bytes());
+        body.extend_from_slice(&0u16.to_le_bytes()); // extra len
+        body.extend_from_slice(name);
+        body.extend_from_slice(&stored);
+
+        // Central-directory header (signature PK\x01\x02).
+        central.extend_from_slice(&[0x50, 0x4b, 0x01, 0x02]);
+        central.extend_from_slice(&20u16.to_le_bytes()); // version made by
+        central.extend_from_slice(&20u16.to_le_bytes()); // version needed
+        central.extend_from_slice(&flags.to_le_bytes());
+        central.extend_from_slice(&0u16.to_le_bytes()); // method
+        central.extend_from_slice(&0u16.to_le_bytes()); // mod time
+        central.extend_from_slice(&0x21u16.to_le_bytes()); // mod date
+        central.extend_from_slice(&crc.to_le_bytes());
+        central.extend_from_slice(&compressed_size.to_le_bytes());
+        central.extend_from_slice(&uncompressed_size.to_le_bytes());
+        central.extend_from_slice(&(name.len() as u16).to_le_bytes());
+        central.extend_from_slice(&0u16.to_le_bytes()); // extra len
+        central.extend_from_slice(&0u16.to_le_bytes()); // comment len
+        central.extend_from_slice(&0u16.to_le_bytes()); // disk number start
+        central.extend_from_slice(&0u16.to_le_bytes()); // internal attrs
+        central.extend_from_slice(&0u32.to_le_bytes()); // external attrs
+        central.extend_from_slice(&local_offset.to_le_bytes());
+        central.extend_from_slice(name);
+    }
+
+    let cd_offset = body.len() as u32;
+    let cd_size = central.len() as u32;
+    let count = entries.len() as u16;
+    body.extend_from_slice(&central);
+    // End of central directory (signature PK\x05\x06).
+    body.extend_from_slice(&[0x50, 0x4b, 0x05, 0x06]);
+    body.extend_from_slice(&0u16.to_le_bytes()); // disk number
+    body.extend_from_slice(&0u16.to_le_bytes()); // cd start disk
+    body.extend_from_slice(&count.to_le_bytes()); // records this disk
+    body.extend_from_slice(&count.to_le_bytes()); // total records
+    body.extend_from_slice(&cd_size.to_le_bytes());
+    body.extend_from_slice(&cd_offset.to_le_bytes());
+    body.extend_from_slice(&0u16.to_le_bytes()); // comment len
+    body
+}
+
+/// The traditional PKWARE ZipCrypto stream cipher (three 32-bit keys). Matches
+/// what the `zip` crate decrypts, so a fixture built here round-trips through
+/// `by_index_decrypt`.
+struct ZipCrypto {
+    key0: u32,
+    key1: u32,
+    key2: u32,
+}
+
+impl ZipCrypto {
+    fn new(password: &[u8]) -> Self {
+        let mut keys = Self {
+            key0: 0x1234_5678,
+            key1: 0x2345_6789,
+            key2: 0x3456_7890,
+        };
+        for &b in password {
+            keys.update(b);
+        }
+        keys
+    }
+
+    fn update(&mut self, byte: u8) {
+        self.key0 = crc32_byte(self.key0, byte);
+        self.key1 = self
+            .key1
+            .wrapping_add(self.key0 & 0xff)
+            .wrapping_mul(134_775_813)
+            .wrapping_add(1);
+        self.key2 = crc32_byte(self.key2, (self.key1 >> 24) as u8);
+    }
+
+    fn keystream_byte(&self) -> u8 {
+        let temp = (self.key2 | 2) & 0xffff;
+        ((temp.wrapping_mul(temp ^ 1)) >> 8) as u8
+    }
+
+    fn encrypt(&mut self, plain: u8) -> u8 {
+        let cipher = plain ^ self.keystream_byte();
+        self.update(plain);
+        cipher
+    }
+}
+
+/// One CRC-32 table entry, computed on the fly (no static table needed for tiny
+/// fixtures).
+fn crc32_table(index: u32) -> u32 {
+    let mut c = index;
+    for _ in 0..8 {
+        c = if c & 1 != 0 { 0xEDB8_8320 ^ (c >> 1) } else { c >> 1 };
+    }
+    c
+}
+
+/// One-byte CRC-32 update (the ZipCrypto/zip polynomial).
+fn crc32_byte(crc: u32, byte: u8) -> u32 {
+    (crc >> 8) ^ crc32_table((crc ^ byte as u32) & 0xff)
+}
+
+/// Standard CRC-32 of `data` (init `0xFFFFFFFF`, final inversion) — the value that
+/// goes in the zip headers and whose high byte is the ZipCrypto check byte.
+fn crc32(data: &[u8]) -> u32 {
+    let mut crc = 0xFFFF_FFFFu32;
+    for &b in data {
+        crc = crc32_byte(crc, b);
+    }
+    !crc
+}

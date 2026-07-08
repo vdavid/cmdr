@@ -9,9 +9,10 @@
 //! prefix in front of it. `sevenz-rust2` drives that decode; we stop at the
 //! target ([`super::format::ArchiveFormat::is_sequential`] is `true` for 7z).
 //!
-//! Encryption is out of scope: the `aes256` feature is off, so an AES-encrypted
-//! 7z surfaces a typed error (header-encrypted archives fail to parse; data-only
-//! encryption fails at extract) rather than being decrypted.
+//! Encryption is out of scope: the `aes256` feature is off (it would pull an
+//! `aes` version conflicting with `smb2`'s pinned pre-release; see the archive
+//! `DETAILS.md`), so an AES-encrypted 7z surfaces a typed error rather than being
+//! decrypted — matching the deferral of WinZip AES zip.
 
 use std::collections::HashMap;
 use std::sync::Arc;

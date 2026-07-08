@@ -200,6 +200,23 @@ fn test_map_volume_error_delete_pending() {
     assert!(matches!(err, WriteOperationError::DeletePending { path } if path == "/ctx"));
 }
 
+#[test]
+fn test_map_volume_error_needs_password() {
+    // Extracting from a password-protected archive must become the typed
+    // `ArchiveNeedsPassword` (carrying the wrong-attempt flag) so the FE prompts
+    // and retries via `set_archive_password`, never a generic read error.
+    let fresh = map_volume_error("/ctx", VolumeError::NeedsPassword { wrong_attempt: false });
+    assert!(matches!(
+        fresh,
+        WriteOperationError::ArchiveNeedsPassword { path, wrong_attempt: false } if path == "/ctx"
+    ));
+    let retried = map_volume_error("/ctx", VolumeError::NeedsPassword { wrong_attempt: true });
+    assert!(matches!(
+        retried,
+        WriteOperationError::ArchiveNeedsPassword { path, wrong_attempt: true } if path == "/ctx"
+    ));
+}
+
 // ========================================
 // LocalPosixVolume integration tests
 // ========================================

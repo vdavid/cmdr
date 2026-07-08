@@ -253,6 +253,16 @@ pub enum VolumeError {
         message: String,
         raw_os_error: Option<i32>,
     },
+    /// A password-protected archive needs a password to browse (header-encrypted
+    /// 7z) or extract (any encrypted entry). `wrong_attempt` is `false` when no
+    /// password has been tried and `true` when the supplied one was rejected, so
+    /// the frontend can prompt afresh vs. say "that password didn't work". The
+    /// archive backend raises this; the frontend supplies a per-archive password
+    /// via `set_archive_password` and retries. Carries no path — the failing path
+    /// is the one the caller was reading.
+    NeedsPassword {
+        wrong_attempt: bool,
+    },
     /// Structured git-layer failure.
     ///
     /// Carries the full `FriendlyGitError` (kind + path + optional raw detail)
@@ -280,6 +290,13 @@ impl std::fmt::Display for VolumeError {
             Self::DeletePending(path) => write!(f, "Delete pending: {}", path),
             Self::StaleDestinationHandle(path) => write!(f, "Destination folder handle was stale: {}", path),
             Self::IoError { message, .. } => write!(f, "I/O error: {}", message),
+            Self::NeedsPassword { wrong_attempt } => {
+                if *wrong_attempt {
+                    f.write_str("Archive password is incorrect")
+                } else {
+                    f.write_str("Archive is password-protected")
+                }
+            }
             Self::FriendlyGit(err) => write!(f, "git: {}", err),
         }
     }

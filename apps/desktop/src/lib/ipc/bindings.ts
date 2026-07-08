@@ -342,6 +342,23 @@ export const commands = {
   createFile: (volumeId: string | null, parentPath: string, name: string) =>
     typedError<string, IpcError>(__TAURI_INVOKE('create_file', { volumeId, parentPath, name })),
   /**
+   *  Stores `password` for the archive at `archive_path` on `parent_volume_id`,
+   *  overwriting any previous one (so a fresh attempt replaces a rejected password).
+   *
+   *  `archive_path` may be the archive file itself OR any path inside it — both
+   *  resolve to the same `ArchiveVolume`, so the frontend can pass whichever it has
+   *  in hand (the `.zip` path when prompting on a browse, an inner source path when
+   *  prompting on an extract).
+   */
+  setArchivePassword: (parentVolumeId: string, archivePath: string, password: string) =>
+    typedError<null, string>(__TAURI_INVOKE('set_archive_password', { parentVolumeId, archivePath, password })),
+  /**
+   *  Forgets any stored password for the archive (the user cancelled the prompt, or
+   *  the frontend is resetting state).
+   */
+  clearArchivePassword: (parentVolumeId: string, archivePath: string) =>
+    typedError<null, string>(__TAURI_INVOKE('clear_archive_password', { parentVolumeId, archivePath })),
+  /**
    *  Logs a frontend benchmark event to stderr (unified timeline with Rust events).
    *  Only logs if RUSTY_COMMANDER_BENCHMARK=1 is set.
    */
@@ -6415,6 +6432,14 @@ export type WriteOperationError =
       // Total number of offending files (may exceed `files.len()`).
       totalCount: number
     }
+  /**
+   *  Extracting from a password-protected archive needs a password. Raised when
+   *  a copy/move source is inside an encrypted archive: `wrong_attempt` is
+   *  `true` when the stored password was rejected (so the FE re-prompts rather
+   *  than prompting fresh). The FE sets a per-archive password via
+   *  `set_archive_password` and retries the operation.
+   */
+  | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
   // Catch-all for genuinely unexpected IO errors.
   | { type: 'io_error'; path: string; message: string }
 

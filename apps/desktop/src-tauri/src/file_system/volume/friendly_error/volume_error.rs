@@ -99,5 +99,12 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
             raw_os_error: None,
             message,
         } => kinds::io_serious(&path_display, message, raw),
+        // A password-protected archive can't reach the LISTING path today
+        // (browsing an encrypted zip works; only extraction needs a password, on
+        // the write-op path — which maps `NeedsPassword` to
+        // `WriteOperationError::ArchiveNeedsPassword`). This arm exists for
+        // exhaustiveness; the day header-encrypted archives browse-prompt, give it
+        // a dedicated reason + password dialog. For now it reads as unreadable.
+        VolumeError::NeedsPassword { .. } => archive_unreadable_listing_error(),
     }
 }

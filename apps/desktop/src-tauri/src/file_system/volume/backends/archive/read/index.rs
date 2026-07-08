@@ -18,8 +18,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use rc_zip::Entry;
-
 use super::error::ArchiveError;
 use super::format::ArchiveFormat;
 use super::name::{QuarantineReason, SanitizedName, sanitize_entry_name};
@@ -115,7 +113,7 @@ pub(super) struct RawEntry {
 /// dispatches. The zip store IS the rc-zip entry map; tar and 7z carry their own
 /// location/metadata handles plus the format state their reader needs.
 pub(super) enum EntryStore {
-    Zip(HashMap<String, Entry>),
+    Zip(HashMap<String, super::zip::ZipHandle>),
     Tar(super::tar::TarStore),
     SevenZ(super::sevenz::SevenZStore),
 }
@@ -124,19 +122,23 @@ impl EntryStore {
     /// Opens a streaming reader for the file at the already-normalized `inner`
     /// path. The caller ([`ArchiveIndex::open_read`]) has confirmed it's a file,
     /// not a directory, and passes the tree's `size` so every format reports the
-    /// same uncompressed total for progress. Maps a missing handle to `NotFound`.
+    /// same uncompressed total for progress. `password` decrypts an encrypted zip
+    /// entry (ZipCrypto); it's ignored for a plaintext entry, for tar (never
+    /// encrypted), and for 7z (AES decrypt deferred). Maps a missing handle to
+    /// `NotFound`.
     fn open_read(
         &self,
         inner: &str,
         size: u64,
         source: Arc<dyn ArchiveByteSource>,
+        password: Option<&str>,
     ) -> Result<ArchiveEntryReader, ArchiveError> {
         match self {
             EntryStore::Zip(files) => {
-                let entry = files
+                let handle = files
                     .get(inner)
                     .ok_or_else(|| ArchiveError::NotFound(inner.to_string()))?;
-                super::zip::open_read(entry, source)
+                super::zip::open_read(handle, source, password.map(str::as_bytes))
             }
             EntryStore::Tar(store) => store.open_read(inner, size, source),
             EntryStore::SevenZ(store) => store.open_read(inner, size, source),
@@ -201,6 +203,11 @@ impl ArchiveIndex {
     /// Parses `source` into an index for the given `format`: reads the format's
     /// directory (zip central directory, one tar scan, or the 7z header),
     /// sanitizes names identically for every format, and synthesizes the tree.
+    ///
+    /// No password is needed to build the index: browsing an encrypted zip works
+    /// (names live in the central directory), and decryption happens later, per
+    /// entry, at [`open_read`](Self::open_read). (A HEADER-encrypted 7z would need
+    /// a password here, but 7z decrypt is deferred — see [`super::sevenz`].)
     pub fn parse(source: Arc<dyn ArchiveByteSource>, format: ArchiveFormat) -> Result<Self, ArchiveError> {
         match format {
             ArchiveFormat::Zip => {
@@ -270,19 +277,21 @@ impl ArchiveIndex {
     /// the file at `inner_path`, pulling compressed bytes from `source`.
     ///
     /// Errors: `NotFound` (no such path), `IsADirectory` (path is a directory),
-    /// `Encrypted` (we don't decrypt). Decompression runs off the async
-    /// executor; see [`ArchiveEntryReader`].
+    /// `Encrypted` (encrypted, no `password` supplied), `WrongPassword` (the
+    /// supplied one didn't work). Decompression runs off the async executor; see
+    /// [`ArchiveEntryReader`].
     pub fn open_read(
         &self,
         inner_path: &str,
         source: Arc<dyn ArchiveByteSource>,
+        password: Option<&str>,
     ) -> Result<ArchiveEntryReader, ArchiveError> {
         let key = normalize_lookup(inner_path);
         if self.nodes.get(key).is_some_and(|n| n.is_dir) {
             return Err(ArchiveError::IsADirectory(key.to_string()));
         }
         let size = self.nodes.get(key).and_then(|n| n.size).unwrap_or(0);
-        self.store.open_read(key, size, source)
+        self.store.open_read(key, size, source, password)
     }
 
     /// The uncompressed size of the file at `inner_path`, or `None` for a missing

@@ -2014,6 +2014,13 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
             path: context_path.to_string(),
             message,
         },
+        // Extracting from a password-protected archive: a typed signal the FE
+        // prompts on (then retries via `set_archive_password`), never a generic
+        // read error.
+        VolumeError::NeedsPassword { wrong_attempt } => WriteOperationError::ArchiveNeedsPassword {
+            path: context_path.to_string(),
+            wrong_attempt,
+        },
         VolumeError::FriendlyGit(git_err) => WriteOperationError::IoError {
             path: context_path.to_string(),
             message: git_err.to_string(),

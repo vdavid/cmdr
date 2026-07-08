@@ -4,7 +4,8 @@
 use std::sync::Arc;
 
 use super::super::test_fixtures::{
-    build_zip, deflated, dir, overstate_record_count, patch_equal_len, set_first_entry_encrypted, stored, zip64_stored,
+    build_zip, build_zipcrypto_zip, deflated, dir, encrypted_entry, overstate_record_count, patch_equal_len,
+    plain_entry, set_first_entry_encrypted, stored, zip64_stored,
 };
 use super::*;
 
@@ -121,9 +122,97 @@ async fn encrypted_entry_is_detected_and_rejected() {
     assert!(index.has_encrypted_entries());
     assert!(index.get("secret.txt").unwrap().encrypted);
 
-    // Browsing still worked (name is listed); extraction is rejected.
+    // Browsing still worked (name is listed); extraction with no password is
+    // rejected with the typed needs-password signal.
     let src = bytes_source(zip);
-    let err = index.open_read("secret.txt", src).unwrap_err();
+    let err = index.open_read("secret.txt", src, None).unwrap_err();
+    assert!(matches!(err, ArchiveError::Encrypted), "got {err:?}");
+}
+
+// ---- ZipCrypto decryption (legacy PKWARE; the macOS `zip -e` format) --------
+
+#[tokio::test]
+async fn zipcrypto_entry_decrypts_with_correct_password() {
+    let zip = build_zipcrypto_zip(&[encrypted_entry("secret.txt", "classified payload")], "hunter2");
+    let index = parse(&zip).unwrap();
+    // rc-zip flags the entry encrypted from the central directory.
+    assert!(index.has_encrypted_entries());
+    assert!(index.get("secret.txt").unwrap().encrypted);
+
+    let src = bytes_source(zip);
+    let mut reader = index.open_read("secret.txt", src, Some("hunter2")).unwrap();
+    let (data, _) = read_all(&mut reader).await.unwrap();
+    assert_eq!(data, b"classified payload", "correct password must yield the plaintext");
+}
+
+#[tokio::test]
+async fn zipcrypto_wrong_password_is_typed_wrong_password() {
+    let zip = build_zipcrypto_zip(&[encrypted_entry("secret.txt", "classified payload")], "hunter2");
+    let index = parse(&zip).unwrap();
+    let src = bytes_source(zip);
+    // A wrong password is rejected either at open (ZipCrypto's 1-byte check) or,
+    // for the ~1/256 that slip through, late at the end-of-stream CRC — both map
+    // to the SAME typed WrongPassword the frontend re-prompts on.
+    let mut reader = index.open_read("secret.txt", src, Some("wrong-password")).unwrap();
+    let err = read_all(&mut reader).await.unwrap_err();
+    assert!(matches!(err, ArchiveError::WrongPassword), "got {err:?}");
+}
+
+#[tokio::test]
+async fn zipcrypto_no_password_is_the_encrypted_signal() {
+    let zip = build_zipcrypto_zip(&[encrypted_entry("secret.txt", "x")], "hunter2");
+    let index = parse(&zip).unwrap();
+    let src = bytes_source(zip);
+    let err = index.open_read("secret.txt", src, None).unwrap_err();
+    assert!(matches!(err, ArchiveError::Encrypted), "got {err:?}");
+}
+
+/// The spike's one unverified assumption: rc-zip's central-directory ordinals
+/// align with the `zip` crate's `by_index_decrypt` indexing. A mixed archive
+/// interleaves encrypted entries at several ordinals with plain ones, each with
+/// DISTINCT content — so a misaligned ordinal decrypts the WRONG entry's bytes and
+/// is caught by a content mismatch.
+#[tokio::test]
+async fn zip_crate_ordinals_align_with_rc_zip() {
+    let entries = [
+        plain_entry("a-plain.txt", "alpha"),
+        encrypted_entry("b-secret.txt", "bravo-secret-body"),
+        plain_entry("c-plain.txt", "charlie"),
+        encrypted_entry("d-secret.txt", "delta-secret-body"),
+        encrypted_entry("e-secret.txt", "echo-secret-body"),
+    ];
+    let zip = build_zipcrypto_zip(&entries, "pw");
+    let index = parse(&zip).unwrap();
+    let src = bytes_source(zip);
+    for entry in &entries {
+        let password = entry.encrypted.then_some("pw");
+        let mut reader = index.open_read(&entry.name, Arc::clone(&src), password).unwrap();
+        let (data, _) = read_all(&mut reader).await.unwrap();
+        assert_eq!(
+            data, entry.content,
+            "entry '{}' decoded wrong bytes — rc-zip/zip-crate ordinal misalignment",
+            entry.name
+        );
+    }
+}
+
+#[tokio::test]
+async fn mixed_archive_plain_entries_extract_without_password() {
+    let zip = build_zipcrypto_zip(
+        &[
+            plain_entry("open.txt", "readable"),
+            encrypted_entry("locked.txt", "secret"),
+        ],
+        "pw",
+    );
+    let index = parse(&zip).unwrap();
+    let src = bytes_source(zip);
+    // The plain entry reads with no password at all.
+    let mut reader = index.open_read("open.txt", Arc::clone(&src), None).unwrap();
+    let (data, _) = read_all(&mut reader).await.unwrap();
+    assert_eq!(data, b"readable");
+    // The encrypted sibling still needs one.
+    let err = index.open_read("locked.txt", src, None).unwrap_err();
     assert!(matches!(err, ArchiveError::Encrypted), "got {err:?}");
 }
 
@@ -149,9 +238,9 @@ async fn opening_a_directory_or_missing_path_is_a_typed_error() {
     let index = parse(&zip).unwrap();
     let src = bytes_source(zip);
 
-    let dir_err = index.open_read("dir", Arc::clone(&src)).unwrap_err();
+    let dir_err = index.open_read("dir", Arc::clone(&src), None).unwrap_err();
     assert!(matches!(dir_err, ArchiveError::IsADirectory(_)), "got {dir_err:?}");
-    let missing_err = index.open_read("nope.txt", src).unwrap_err();
+    let missing_err = index.open_read("nope.txt", src, None).unwrap_err();
     assert!(matches!(missing_err, ArchiveError::NotFound(_)), "got {missing_err:?}");
 }
 
@@ -166,7 +255,7 @@ async fn streams_large_entry_in_bounded_chunks() {
     let index = parse(&zip).unwrap();
     let src = bytes_source(zip);
 
-    let mut reader = index.open_read("big.bin", src).unwrap();
+    let mut reader = index.open_read("big.bin", src, None).unwrap();
     assert_eq!(reader.total_size(), content.len() as u64);
 
     let (data, chunk_sizes) = read_all(&mut reader).await.unwrap();
@@ -186,7 +275,7 @@ async fn reads_stored_entry_bytes_exactly() {
     let index = parse(&zip).unwrap();
     let src = bytes_source(zip);
 
-    let mut reader = index.open_read("plain.txt", src).unwrap();
+    let mut reader = index.open_read("plain.txt", src, None).unwrap();
     let (data, _) = read_all(&mut reader).await.unwrap();
     assert_eq!(data, content);
 }
@@ -202,7 +291,7 @@ async fn truncated_entry_data_errors_instead_of_hanging() {
 
     let truncated = full[..full.len() / 2].to_vec();
     let src = bytes_source(truncated);
-    let mut reader = index.open_read("big.bin", src).unwrap();
+    let mut reader = index.open_read("big.bin", src, None).unwrap();
 
     let result = read_all(&mut reader).await;
     assert!(matches!(result, Err(ArchiveError::Corrupt(_))), "got {result:?}");
@@ -220,8 +309,8 @@ async fn concurrent_reads_are_independent() {
     let src = bytes_source(zip);
 
     // Two readers over one shared source, driven concurrently.
-    let mut ra = index.open_read("a.bin", Arc::clone(&src)).unwrap();
-    let mut rb = index.open_read("b.bin", Arc::clone(&src)).unwrap();
+    let mut ra = index.open_read("a.bin", Arc::clone(&src), None).unwrap();
+    let mut rb = index.open_read("b.bin", Arc::clone(&src), None).unwrap();
     let (a_res, b_res) = tokio::join!(read_all(&mut ra), read_all(&mut rb));
 
     assert_eq!(a_res.unwrap().0, a_content);
@@ -293,10 +382,10 @@ async fn file_shadowing_a_directory_path_file_first_drops_the_child() {
     assert_eq!(index.is_directory("foo"), Some(false));
     assert!(index.get("foo/bar").is_none());
     // The dropped child must not be readable either (files map stays consistent).
-    let err = index.open_read("foo/bar", Arc::clone(&src)).unwrap_err();
+    let err = index.open_read("foo/bar", Arc::clone(&src), None).unwrap_err();
     assert!(matches!(err, ArchiveError::NotFound(_)), "got {err:?}");
     // The winning file still reads.
-    let mut reader = index.open_read("foo", src).unwrap();
+    let mut reader = index.open_read("foo", src, None).unwrap();
     assert_eq!(read_all(&mut reader).await.unwrap().0, b"iamafile");
 }
 
@@ -310,9 +399,9 @@ async fn file_shadowing_a_directory_path_subfile_first_keeps_the_directory() {
 
     assert_eq!(index.is_directory("foo"), Some(true));
     assert_eq!(names(&index, "foo"), vec!["bar"]);
-    let err = index.open_read("foo", Arc::clone(&src)).unwrap_err();
+    let err = index.open_read("foo", Arc::clone(&src), None).unwrap_err();
     assert!(matches!(err, ArchiveError::IsADirectory(_)), "got {err:?}");
-    let mut reader = index.open_read("foo/bar", src).unwrap();
+    let mut reader = index.open_read("foo/bar", src, None).unwrap();
     assert_eq!(read_all(&mut reader).await.unwrap().0, b"child");
 }
 
@@ -326,7 +415,7 @@ async fn zip64_archive_parses_and_reads() {
     assert_eq!(index.get("z.txt").unwrap().size, Some(11));
 
     let src = bytes_source(zip);
-    let mut reader = index.open_read("z.txt", src).unwrap();
+    let mut reader = index.open_read("z.txt", src, None).unwrap();
     assert_eq!(read_all(&mut reader).await.unwrap().0, b"hello zip64");
 }
 

@@ -459,6 +459,15 @@ pub enum WriteOperationError {
         /// Total number of offending files (may exceed `files.len()`).
         total_count: usize,
     },
+    /// Extracting from a password-protected archive needs a password. Raised when
+    /// a copy/move source is inside an encrypted archive: `wrong_attempt` is
+    /// `true` when the stored password was rejected (so the FE re-prompts rather
+    /// than prompting fresh). The FE sets a per-archive password via
+    /// `set_archive_password` and retries the operation.
+    ArchiveNeedsPassword {
+        path: String,
+        wrong_attempt: bool,
+    },
     /// Catch-all for genuinely unexpected IO errors.
     IoError {
         path: String,

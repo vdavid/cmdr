@@ -7,21 +7,38 @@
 //! Everything zip-specific (rc-zip's `ArchiveFsm` / `EntryFsm`, the encryption GP
 //! flag) lives here; the index and volume layers stay format-agnostic.
 
+use std::io::Read;
 use std::sync::Arc;
 
 use rc_zip::fsm::{ArchiveFsm, EntryFsm, FsmResult};
 use rc_zip::parse::Method;
 use rc_zip::{Entry, EntryKind};
+use zip::ZipArchive;
+use zip::result::ZipError;
 
 use super::error::ArchiveError;
 use super::index::RawEntry;
 use super::reader::{ArchiveEntryReader, CHUNK_SIZE, ChunkTx};
-use super::source::ArchiveByteSource;
+use super::source::{ArchiveByteSource, SourceReader};
 
-/// General-purpose bit flag 0: the entry is encrypted (traditional PKWARE or
-/// strong encryption). We don't decrypt, so extraction of such an entry is
-/// rejected.
+/// General-purpose bit flag 0: the entry is encrypted (traditional PKWARE
+/// ZipCrypto or WinZip AES). rc-zip parses the entry but does NOT decrypt, so an
+/// encrypted entry's bytes are read through the `zip` crate's `by_index_decrypt`
+/// (see [`open_read`]).
 const GP_FLAG_ENCRYPTED: u16 = 1 << 0;
+
+/// A zip entry's read handle: the rc-zip [`Entry`] (drives the plaintext decode)
+/// plus its zero-based position in the central directory.
+///
+/// The ordinal addresses the `zip` crate's `by_index_decrypt` for the decrypt
+/// path. rc-zip and the `zip` crate both parse the SAME central directory in the
+/// SAME physical order, so the ordinal aligns across the two crates — pinned by
+/// `archive_test::zip_crate_ordinals_align_with_rc_zip`. Decrypting by ordinal
+/// (not by name) also sidesteps any cross-crate filename-decoding drift.
+pub(super) struct ZipHandle {
+    entry: Entry,
+    ordinal: usize,
+}
 
 /// Whether the entry is encrypted: general-purpose flag bit 0, or the AE-x
 /// (WinZip AES) marker method.
@@ -29,14 +46,22 @@ fn is_encrypted(entry: &Entry) -> bool {
     entry.flags & GP_FLAG_ENCRYPTED != 0 || entry.method == Method::Aex
 }
 
+/// Whether an encrypted entry uses legacy PKWARE ZipCrypto (not WinZip AES). Only
+/// ZipCrypto false-accepts a wrong password at open (a ~1/256 chance from its
+/// 1-byte check), so only it needs the late end-of-stream CRC check to catch one.
+fn is_zipcrypto(entry: &Entry) -> bool {
+    entry.method != Method::Aex
+}
+
 /// Parses the central directory into the format-neutral entry list the tree
-/// builder consumes, each paired with its rc-zip [`Entry`] (the read handle a
-/// later [`open_read`] uses). This is the only I/O in the zip parse path.
-pub(super) fn parse(source: &dyn ArchiveByteSource) -> Result<Vec<(RawEntry, Entry)>, ArchiveError> {
+/// builder consumes, each paired with its [`ZipHandle`] (the read handle a later
+/// [`open_read`] uses). This is the only I/O in the zip parse path.
+pub(super) fn parse(source: &dyn ArchiveByteSource) -> Result<Vec<(RawEntry, ZipHandle)>, ArchiveError> {
     let entries = parse_central_directory(source)?;
     Ok(entries
         .into_iter()
-        .map(|entry| {
+        .enumerate()
+        .map(|(ordinal, entry)| {
             let encrypted = is_encrypted(&entry);
             let is_symlink = entry.kind() == EntryKind::Symlink;
             // A directory is signalled either by the mode bits or (very commonly)
@@ -51,7 +76,7 @@ pub(super) fn parse(source: &dyn ArchiveByteSource) -> Result<Vec<(RawEntry, Ent
                 modified: Some(entry.modified.timestamp()),
                 encrypted,
             };
-            (raw, entry)
+            (raw, ZipHandle { entry, ordinal })
         })
         .collect())
 }
@@ -85,15 +110,44 @@ fn parse_central_directory(source: &dyn ArchiveByteSource) -> Result<Vec<Entry>,
     }
 }
 
-/// Opens a streaming reader over the decompressed bytes of `entry`, pulling
-/// compressed bytes from `source`. Rejects an encrypted entry up front (we don't
-/// decrypt).
-pub(super) fn open_read(entry: &Entry, source: Arc<dyn ArchiveByteSource>) -> Result<ArchiveEntryReader, ArchiveError> {
-    if is_encrypted(entry) {
-        return Err(ArchiveError::Encrypted);
+/// Opens a streaming reader over the decompressed bytes of `handle`'s entry,
+/// pulling compressed bytes from `source`.
+///
+/// A plaintext entry drives rc-zip's `EntryFsm` (`password` is ignored). An
+/// encrypted entry needs the `zip` crate's decrypt path:
+///
+/// - **Legacy ZipCrypto** (what macOS Archive Utility / `zip -e` produce): with
+///   no `password`, returns [`ArchiveError::Encrypted`] (the "needs a password"
+///   signal); with one, decrypts by central-directory ordinal (see
+///   [`run_decrypt_producer`]).
+/// - **WinZip AES** (AE-1/AE-2): decrypting needs the `zip` crate's `aes-crypto`
+///   feature, currently OFF (its `aes` crate conflicts with `smb2`'s pinned
+///   version — see `Cargo.toml`). So an AES entry returns a typed
+///   [`ArchiveError::Unsupported`] rather than a password prompt that could never
+///   succeed. Flipping the feature on (once the `aes` versions align) turns this
+///   into the same ordinal-based decrypt.
+pub(super) fn open_read(
+    handle: &ZipHandle,
+    source: Arc<dyn ArchiveByteSource>,
+    password: Option<&[u8]>,
+) -> Result<ArchiveEntryReader, ArchiveError> {
+    let total_size = handle.entry.uncompressed_size;
+    if is_encrypted(&handle.entry) {
+        if !is_zipcrypto(&handle.entry) {
+            return Err(ArchiveError::Unsupported(
+                "WinZip AES-encrypted entry (AES decrypt not enabled)".to_string(),
+            ));
+        }
+        let Some(password) = password else {
+            return Err(ArchiveError::Encrypted);
+        };
+        let ordinal = handle.ordinal;
+        let password = password.to_vec();
+        return Ok(ArchiveEntryReader::spawn_with(total_size, move |tx| {
+            run_decrypt_producer(source, ordinal, &password, &tx);
+        }));
     }
-    let total_size = entry.uncompressed_size;
-    let entry = entry.clone();
+    let entry = handle.entry.clone();
     Ok(ArchiveEntryReader::spawn_with(total_size, move |tx| {
         run_producer(source, entry, tx)
     }))
@@ -152,5 +206,72 @@ fn run_producer(source: Arc<dyn ArchiveByteSource>, entry: Entry, tx: ChunkTx) {
                 return;
             }
         }
+    }
+}
+
+/// The decrypt producer for a legacy ZipCrypto entry: opens the entry at
+/// central-directory `ordinal` through the `zip` crate over a fresh
+/// [`SourceReader`] and streams the decrypted, decompressed bytes. Runs on a
+/// `spawn_blocking` thread.
+///
+/// The `zip` crate re-parses the central directory itself; `ordinal` is the same
+/// index rc-zip assigned (identical CD order — see [`ZipHandle`]). ZipCrypto's
+/// open-time check is a single byte, so a wrong password slips through ~1/256 of
+/// the time and surfaces late as an end-of-stream CRC mismatch, handled in
+/// [`pump_decrypt`].
+fn run_decrypt_producer(source: Arc<dyn ArchiveByteSource>, ordinal: usize, password: &[u8], tx: &ChunkTx) {
+    let reader = SourceReader::new(source);
+    let mut archive = match ZipArchive::new(reader) {
+        Ok(archive) => archive,
+        Err(err) => return tx.send_err(map_zip_err(err)),
+    };
+    let mut file = match archive.by_index_decrypt(ordinal, password) {
+        Ok(file) => file,
+        Err(err) => return tx.send_err(map_zip_err(err)),
+    };
+    pump_decrypt(&mut file, tx);
+}
+
+/// Pumps a decrypted ZipCrypto entry stream into the chunk sink in bounded blocks
+/// (peak memory `CHANNEL_CAPACITY × CHUNK_SIZE`, never the whole entry).
+///
+/// An `InvalidData` I/O error at end of stream is the CRC check failing — i.e. the
+/// ~1/256 wrong password that slipped past ZipCrypto's 1-byte open check — so it
+/// maps to [`ArchiveError::WrongPassword`]. Classifying by the io ERROR KIND (not
+/// its message) keeps this within the `no-string-matching` rule.
+fn pump_decrypt(mut reader: impl Read, tx: &ChunkTx) {
+    let mut buf = vec![0u8; CHUNK_SIZE];
+    loop {
+        match reader.read(&mut buf) {
+            Ok(0) => return,
+            Ok(n) => {
+                if !tx.send(buf[..n].to_vec()) {
+                    return; // consumer dropped the reader: cancel
+                }
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::InvalidData => {
+                return tx.send_err(ArchiveError::WrongPassword);
+            }
+            Err(err) => return tx.send_err(ArchiveError::from(err)),
+        }
+    }
+}
+
+/// Maps a `zip`-crate error (from the decrypt path only) to a typed
+/// [`ArchiveError`]. A wrong password is the headline case; the rest are
+/// structural. The "password required" sentinel can't occur here (we only call
+/// `by_index_decrypt` WITH a password), so it isn't matched — avoiding a
+/// message-string comparison the `no-string-matching` rule forbids.
+fn map_zip_err(err: ZipError) -> ArchiveError {
+    match err {
+        ZipError::InvalidPassword => ArchiveError::WrongPassword,
+        ZipError::UnsupportedArchive(msg) => ArchiveError::Unsupported(msg.to_string()),
+        ZipError::CompressionMethodNotSupported(id) => ArchiveError::Unsupported(format!("compression method {id}")),
+        ZipError::FileNotFound => ArchiveError::NotFound(String::new()),
+        ZipError::InvalidArchive(msg) => ArchiveError::Corrupt(msg.to_string()),
+        ZipError::Io(io) => ArchiveError::from(io),
+        // `ZipError` is `#[non_exhaustive]`; any future variant is a structural
+        // fault on the path being read.
+        other => ArchiveError::Corrupt(other.to_string()),
     }
 }
