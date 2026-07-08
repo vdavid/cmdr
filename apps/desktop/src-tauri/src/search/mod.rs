@@ -9,6 +9,7 @@ pub(crate) mod engine;
 pub mod history;
 pub(crate) mod index;
 pub(crate) mod query;
+pub(crate) mod ranking;
 pub(crate) mod types;
 
 // Flat re-exports so consumers can `use crate::search::{SearchQuery, search, ...}`
@@ -18,8 +19,8 @@ pub use types::{ParsedScope, PatternType, SearchQuery, SearchResult, SearchResul
 
 // index.rs
 pub(crate) use index::{
-    DIALOG_OPEN, SEARCH_INDEX, SearchIndexState, drop_search_index, load_search_index, start_backstop_timer,
-    start_idle_timer, touch_activity,
+    DIALOG_OPEN, SEARCH_INDEX, SearchIndexState, drop_search_index, importance_weights_snapshot, load_search_index,
+    start_backstop_timer, start_idle_timer, start_importance_weight_subscriber, touch_activity,
 };
 pub use index::{SearchEntry, SearchIndex};
 

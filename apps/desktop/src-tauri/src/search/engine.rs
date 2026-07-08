@@ -11,6 +11,7 @@ use crate::indexing::store::{self, ROOT_ID};
 
 use super::index::SearchIndex;
 use super::query::{SYSTEM_DIR_EXCLUDES, glob_to_regex, summarize_query};
+use super::ranking::{self, ImportanceWeights};
 use super::types::{PatternType, SearchQuery, SearchResult, SearchResultEntry};
 
 // ── Scope filter (pre-resolved for the hot loop) ─────────────────────
@@ -194,8 +195,23 @@ fn prepare_scope_filter(query: &SearchQuery) -> ScopeFilter {
 // ── Search execution ─────────────────────────────────────────────────
 
 /// Execute a search query against the in-memory index. Pure function.
-pub(crate) fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchResult, String> {
+///
+/// `weights` supplies per-volume folder importance for ranking; an empty map ranks
+/// on match quality + recency alone (the degradation contract). See `ranking.rs`.
+pub(crate) fn search(
+    index: &SearchIndex,
+    query: &SearchQuery,
+    weights: &ImportanceWeights,
+) -> Result<SearchResult, String> {
     let t = std::time::Instant::now();
+
+    // Case-folding rule (shared by pattern matching and ranking): platform default
+    // is insensitive on macOS, sensitive on Linux, overridable per query.
+    let case_insensitive = match query.case_sensitive {
+        Some(true) => false,
+        Some(false) => true,
+        None => cfg!(target_os = "macos"),
+    };
 
     // Guard: reject unfiltered scans on large indexes. Without a namePattern,
     // size filter, or directory filter, we'd scan every entry (~60s for 5M entries).
@@ -238,11 +254,6 @@ pub(crate) fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchR
                     glob_to_regex(&glob)
                 }
                 PatternType::Regex => pattern.to_string(),
-            };
-            let case_insensitive = match query.case_sensitive {
-                Some(true) => false,
-                Some(false) => true,
-                None => cfg!(target_os = "macos"),
             };
             let re = RegexBuilder::new(&regex_str)
                 .case_insensitive(case_insensitive)
@@ -322,13 +333,11 @@ pub(crate) fn search(index: &SearchIndex, query: &SearchQuery) -> Result<SearchR
 
     let total_count = matching_indices.len() as u32;
 
-    // Sort by recency (most recently modified first)
+    // Rank by match-quality band first, then importance-boosted recency within a
+    // band (empty weights ⇒ pure recency, today's order). See `ranking.rs`.
+    let stem = ranking::stem_for(query);
     let mut sorted = matching_indices;
-    sorted.sort_unstable_by(|&a, &b| {
-        let ma = index.entries[a].modified_at.unwrap_or(0);
-        let mb = index.entries[b].modified_at.unwrap_or(0);
-        mb.cmp(&ma)
-    });
+    ranking::rank(index, &mut sorted, &stem, case_insensitive, weights);
 
     // Take first `limit` entries. When size filters are active and directories
     // are included, collect extra candidates because some directories may be
@@ -583,7 +592,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // "ote" should match "notes.txt" as a substring
         assert_eq!(result.total_count, 1);
         assert_eq!(result.entries[0].name, "notes.txt");
@@ -607,7 +616,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // "repo" should match "report.pdf" and "Q1-report.pdf"
         assert_eq!(result.total_count, 2);
         assert!(result.entries.iter().all(|e| e.name.contains("report")));
@@ -632,7 +641,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // "report*" matches "report.pdf" but NOT "Q1-report.pdf"
         assert_eq!(result.total_count, 1);
         assert_eq!(result.entries[0].name, "report.pdf");
@@ -658,7 +667,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         assert_eq!(result.total_count, 2);
         assert!(result.entries.iter().all(|e| e.name.ends_with(".pdf")));
     }
@@ -681,7 +690,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         assert_eq!(result.total_count, 1);
         assert_eq!(result.entries[0].name, "Q1-report.pdf");
     }
@@ -707,7 +716,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // On macOS, matching is case-insensitive
         assert_eq!(result.total_count, 1);
         assert_eq!(result.entries[0].name, "notes.txt");
@@ -733,7 +742,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         assert_eq!(result.total_count, 1);
         assert_eq!(result.entries[0].name, "Q1-report.pdf");
     }
@@ -756,7 +765,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query);
+        let result = search(&index, &query, &ImportanceWeights::empty());
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Invalid pattern"));
     }
@@ -781,7 +790,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // photo.jpg (5M) and Q1-report.pdf (2M)
         assert_eq!(result.total_count, 2);
         assert!(result.entries.iter().all(|e| e.size.unwrap() >= 2_000_000));
@@ -805,7 +814,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         assert_eq!(result.total_count, 1);
         assert_eq!(result.entries[0].name, "notes.txt");
     }
@@ -828,7 +837,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // report.pdf (1M) and Q1-report.pdf (2M)
         assert_eq!(result.total_count, 2);
     }
@@ -853,7 +862,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // photo.jpg (4000), notes.txt (5000), Q1-report.pdf (6000)
         assert_eq!(result.total_count, 3);
     }
@@ -876,7 +885,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // Users (1000), alice (2000), Documents (1500)
         assert_eq!(result.total_count, 3);
     }
@@ -899,7 +908,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // report.pdf (3000), photo.jpg (4000), notes.txt (5000)
         assert_eq!(result.total_count, 3);
     }
@@ -924,7 +933,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         assert_eq!(result.total_count, 1);
         assert_eq!(result.entries[0].name, "Q1-report.pdf");
     }
@@ -949,7 +958,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // All entries except root sentinel (7 entries)
         assert_eq!(result.total_count, 7);
         // First result should be most recent (Q1-report.pdf, modified_at=6000)
@@ -976,7 +985,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         assert_eq!(result.entries.len(), 3);
         assert_eq!(result.total_count, 7); // total matches, not limited
     }
@@ -1001,7 +1010,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // Users, alice, Documents (root excluded)
         assert_eq!(result.total_count, 3);
         assert!(result.entries.iter().all(|e| e.is_directory));
@@ -1025,7 +1034,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         assert_eq!(result.total_count, 4);
         assert!(result.entries.iter().all(|e| !e.is_directory));
     }
@@ -1209,7 +1218,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // Should find app.rs and pkg.json (both under /Users/alice/projects)
         // but NOT config (under /Users/alice/.git)
         assert_eq!(result.total_count, 2);
@@ -1236,7 +1245,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // Should find app.rs and config, but NOT pkg.json (under node_modules)
         assert_eq!(result.total_count, 2);
         let names: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();
@@ -1263,7 +1272,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // Only app.rs: under projects but not under node_modules
         assert_eq!(result.total_count, 1);
         assert_eq!(result.entries[0].name, "app.rs");
@@ -1287,7 +1296,7 @@ mod tests {
             case_sensitive: None,
             exclude_system_dirs: Some(false),
         };
-        let result = search(&index, &query).unwrap();
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
         // Should exclude config (under .git) but keep app.rs and pkg.json
         assert_eq!(result.total_count, 2);
         let names: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();

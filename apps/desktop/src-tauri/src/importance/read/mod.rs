@@ -128,6 +128,26 @@ impl ImportanceIndex {
         self.with_conn(|conn| read_ordered(conn, None, Some(threshold)))
     }
 
+    /// Every scored folder's `(path, score)` with a NON-ZERO score, as a bulk
+    /// path→weight map. The search ranker's entry point: it loads one snapshot per
+    /// volume and blends the weights into result ordering. Zero-scored folders
+    /// (floored: `node_modules`, caches, hidden/system, and their subtrees) are
+    /// OMITTED — a `0.0` weight is the neutral default a consumer's lookup already
+    /// returns, so storing those rows would only bloat the map (on a 646k-folder
+    /// home, the ~312k folders under `node_modules` alone all floor to `0.0`).
+    /// This keeps the map to the folders that actually carry a ranking signal.
+    pub fn all_nonzero_weights(&self) -> Result<HashMap<String, f64>, ImportanceStoreError> {
+        // A never-scored volume has no `importance.db` at all (fresh install,
+        // offline volume, purged cache). That's the neutral "no weights" state, not
+        // an error the ranker must decode — a read-only open of a missing file would
+        // fail `CannotOpen`, so short-circuit to an empty map. A present-but-empty DB
+        // still opens and returns an empty map through the normal path.
+        if !self.db_path.exists() {
+            return Ok(HashMap::new());
+        }
+        self.with_conn(read_nonzero_weight_map)
+    }
+
     /// The stored raw signal vector for one folder, or `None` if unscored. For a
     /// consumer applying its own weighting profile instead of the default scalar
     /// (plan Decision 2). The scalar stays the common currency.
@@ -217,6 +237,21 @@ fn read_ordered(
     Ok(out)
 }
 
+/// Read every non-zero-scored folder into a `path → score` map. One statement, no
+/// per-row deserialization (the search ranker needs only the scalar, not the
+/// signal vector), and the `score > 0.0` filter drops the floored folders so the
+/// map holds only folders that carry a ranking signal.
+fn read_nonzero_weight_map(conn: &rusqlite::Connection) -> Result<HashMap<String, f64>, ImportanceStoreError> {
+    let mut stmt = conn.prepare_cached("SELECT path, score FROM weights WHERE score > 0.0")?;
+    let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?)))?;
+    let mut map = HashMap::new();
+    for row in rows {
+        let (path, score) = row?;
+        map.insert(path, score);
+    }
+    Ok(map)
+}
+
 /// Map a `(path, score, signals, as_of_generation)` row to a [`ScoredWeight`],
 /// deserializing the stored signal JSON. A malformed signal vector degrades to
 /// `FolderSignals::neutral()` rather than failing the read (the scalar is still
@@ -257,6 +292,14 @@ pub(super) fn notify_recompute_completed(volume_id: &str, generation: u64) {
     with_recompute_sender(volume_id, |sender| {
         sender.send_replace(generation);
     });
+}
+
+/// Test-only crate-visible shim for [`notify_recompute_completed`], so a consumer's
+/// subscribe→reload wiring (the search importance weight subscriber) can be tested
+/// without widening the production notifier past the scheduler.
+#[cfg(test)]
+pub(crate) fn notify_recompute_completed_for_test(volume_id: &str, generation: u64) {
+    notify_recompute_completed(volume_id, generation);
 }
 
 /// Subscribe to a volume's recompute-completed notifications. The receiver

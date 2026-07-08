@@ -825,6 +825,17 @@ pub fn run() {
             // `importance/scheduler.rs` and the plan (Decision 4 / 5).
             importance::scheduler::start(app.handle());
 
+            // Keep the search ranker's importance weight map fresh: subscribe to the
+            // root volume's recompute-completed notifications and (re)load the
+            // path→weight snapshot the search engine blends into result ordering
+            // (subscribe-don't-poll). A missing/empty `importance.db` degrades search
+            // ranking to match-quality + recency — today's behavior. See
+            // `search/DETAILS.md` § importance ranking.
+            match config::resolved_app_data_dir(app.handle()) {
+                Ok(data_dir) => search::start_importance_weight_subscriber(data_dir),
+                Err(e) => log::warn!("search importance weights not wired: {e}"),
+            }
+
             Ok(())
         })
         .on_menu_event(menu::handle_menu_event)

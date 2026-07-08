@@ -52,11 +52,11 @@ the visit signal, and the `ImportanceIndex` read API — including SMB scoring a
 
 ### Read API + incremental (depth in [DETAILS.md](DETAILS.md))
 
-- **`ImportanceIndex` (`read.rs`) is the ONLY consumer entry point** (no raw `rusqlite` dep). `explain` re-scores the
-  STORED `FolderSignals` via the pure scorer (one formula, no drift). It reads the DB directly, never the index registry,
-  so weights stay queryable OFFLINE after a volume unmounts, each with its as-of generation.
+- **`ImportanceIndex` (`read/`) is the ONLY consumer entry point** (no raw `rusqlite` dep). `explain` re-scores the STORED
+  `FolderSignals` via the pure scorer (one formula, no drift). It reads the DB directly, never the index registry, so
+  weights stay queryable OFFLINE after a volume unmounts, each with its as-of generation.
 - **Incremental writes at the CURRENT generation and does NOT bump it** (`write_weights_incremental`) — untouched folders
   keep their as-of markers; never route it through `write_weights` (that bumps). Driven by the `dir-changed` bus; ancestor
-  walk capped (`ANCESTOR_WALK_CAP`). A burst can drop a batch (last-value-wins `watch`); the next full pass heals it.
+  walk capped (`ANCESTOR_WALK_CAP`).
 
 Adding a signal, and the signal catalog: [DETAILS.md](DETAILS.md).

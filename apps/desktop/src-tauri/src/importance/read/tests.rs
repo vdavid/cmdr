@@ -156,6 +156,37 @@ fn explain_round_trips_the_stored_signals_and_sums_to_score() {
     assert!(!explanation.floored, "a UserContent folder isn't floored");
 }
 
+/// `all_nonzero_weights` returns the bulk path→score map the search ranker loads,
+/// OMITTING zero-scored (floored) folders so the map holds only ranking signal.
+#[test]
+fn all_nonzero_weights_omits_zero_scores() {
+    let (index, _dir) = populated_index(&[
+        ("/Users/me/Documents", 0.72, PathClass::UserContent),
+        ("/Users/me/proj", 0.88, PathClass::ProjectRoot),
+        // A floored folder (node_modules subtree, cache, etc.) scores exactly 0.0.
+        ("/Users/me/proj/node_modules", 0.0, PathClass::SystemOrCache),
+    ]);
+    let map = index.all_nonzero_weights().expect("bulk read");
+    assert_eq!(map.len(), 2, "the two non-zero folders, the floored one omitted");
+    assert_eq!(map.get("/Users/me/Documents").copied(), Some(0.72));
+    assert_eq!(map.get("/Users/me/proj").copied(), Some(0.88));
+    assert_eq!(
+        map.get("/Users/me/proj/node_modules"),
+        None,
+        "a 0.0-scored folder is omitted (its lookup defaults to 0.0 anyway)"
+    );
+}
+
+/// An `all_nonzero_weights` on a never-scored volume (no `importance.db`) is an
+/// empty map, not an error — the search degradation contract's data source.
+#[test]
+fn all_nonzero_weights_missing_db_is_empty() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let index = ImportanceIndex::open(dir.path(), "never-scored", SignalSet::all());
+    let map = index.all_nonzero_weights().expect("bulk read on missing db is Ok");
+    assert!(map.is_empty(), "no db ⇒ empty weight map");
+}
+
 /// `signals_for` hands back the stored raw vector for a re-weighting consumer.
 #[test]
 fn signals_for_returns_the_stored_vector() {

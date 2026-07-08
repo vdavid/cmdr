@@ -175,10 +175,14 @@ pub async fn search_files(mut query: SearchQuery) -> Result<SearchResult, String
         search::resolve_include_paths(&mut query, &pool);
     }
 
+    // Load the per-volume importance weight map (empty when unavailable, which
+    // degrades ranking to match-quality + recency — today's behavior).
+    let weights = search::importance_weights_snapshot();
+
     // Run search on a blocking thread (rayon parallel scan)
     let query_clone = query.clone();
     let index_clone = index.clone();
-    let mut result = tokio::task::spawn_blocking(move || search::search(&index_clone, &query_clone))
+    let mut result = tokio::task::spawn_blocking(move || search::search(&index_clone, &query_clone, &weights))
         .await
         .map_err(|e| format!("Search task failed: {e}"))??;
 

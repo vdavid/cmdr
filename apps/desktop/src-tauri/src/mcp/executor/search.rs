@@ -185,7 +185,11 @@ pub fn format_search_results(result: &SearchResult, limit: u32) -> String {
 
 /// Run search and post-process (fill dir sizes, post-filter, truncate).
 fn run_search_and_postprocess(index: &search::SearchIndex, query: &SearchQuery) -> Result<SearchResult, ToolError> {
-    let mut result = search::search(index, query).map_err(ToolError::internal)?;
+    // Blend the live importance weights into ranking, same as the dialog's
+    // `search_files` (one integration point for both). Empty when unavailable ⇒
+    // match-quality + recency ranking.
+    let weights = search::importance_weights_snapshot();
+    let mut result = search::search(index, query, &weights).map_err(ToolError::internal)?;
 
     // Fill directory sizes from the DB
     if result.entries.iter().any(|e| e.is_directory)

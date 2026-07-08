@@ -189,8 +189,15 @@ importance — the agent and media-ML plans point here rather than restating (si
   bound (a folder exactly at `t` is returned) — the agent's summary gate and media-ML's enrich-important-first, one
   query with an optional `LIMIT` / `WHERE score >= t`.
 - `signals_for(path)` — the stored raw vector, for a consumer applying its own weighting profile (plan Decision 2).
+- `all_nonzero_weights()` — the bulk `path → score` map (non-zero scores only; floored folders omitted), for a consumer
+  that loads one snapshot and ranks many candidates in memory rather than querying per item.
 - `explain(path, now)` — the per-signal breakdown, **recomputed from the STORED signals via the pure scorer**
   ([`explain`](scorer/mod.rs)), so there's ONE formula and the breakdown can't drift from the stored scalar.
+
+**First consumer: search ranking.** `search/` blends these weights into result ordering (a file takes its parent
+folder's weight), loading one `all_nonzero_weights` snapshot per recompute via `subscribe`. Match quality dominates;
+importance is a within-band boost. The blend design, weight-map lifecycle, and degradation contract live in
+[`search/DETAILS.md`](../search/DETAILS.md) § Importance ranking (single-source).
 
 **Staleness is first-class.** Every result carries `as_of_generation`; a consumer compares it to `recompute_generation()`
 to caveat "as of the May 28 scan" (agent-spec D7; M4's offline-unmounted read leans on this). The read API never hides a
