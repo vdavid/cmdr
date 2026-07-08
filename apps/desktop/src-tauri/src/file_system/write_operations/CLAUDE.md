@@ -18,9 +18,9 @@ cross-cutting machinery both subdirs share.
 
 - **A zip edit (`ArchiveEdit`) is a managed op, NOT instant.** Editing a `.zip` (mutations inside, or copy/move INTO
   one) routes to the `archive_edit/` driver, running `ArchiveMutator` (temp+rename, O(archive) rewrite) via
-  `spawn_managed` on the PARENT drive's lane. **Move OUT is all-or-nothing**: extract via the copy engine first, then a
-  batch `{ delete }` rewrite only on a fully clean, durable extract (any skip/error/cancel deletes nothing). DETAILS §
-  "Archive edits".
+  `spawn_managed` on the PARENT drive's lane. **Move OUT converges per-source**: extract, then batch-delete
+  exactly the sources that extracted in FULL (durable, no deep skip); a skipped or errored source stays,
+  cancel/rollback delete nothing. DETAILS § "Archive edits".
 - **Every archive apply site runs through `run_managed_edit`, never a bare `spawn_blocking(mutator::apply)`.** It
   dispatches on `parent.supports_local_fs_access()`: a LOCAL parent edits in place; a REMOTE parent (SMB / MTP) pulls the
   `.zip`, edits a local copy, and swaps — original untouched until the swap. Don't reintroduce an in-place remote edit

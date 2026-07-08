@@ -1,8 +1,9 @@
 //! The MOVE whose SOURCE is inside a zip: a compound op that extracts the
-//! selected entries through the ordinary cross-volume copy engine, then — only on
-//! a fully clean extract — rewrites the archive with a batch `{ delete }`. The
-//! archive-side delete runs ONLY after every destination file is durably
-//! committed, so a crash or cancel can never lose both copies (all-or-nothing).
+//! selected entries through the ordinary cross-volume copy engine, then rewrites
+//! the archive with a batch `{ delete }` of exactly the sources that extracted in
+//! FULL. The archive-side delete runs ONLY on durably-committed, non-rolled-back
+//! extractions, so a crash or cancel can never lose both copies, and a
+//! partially-interrupted move CONVERGES on retry instead of restarting.
 
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -29,23 +30,29 @@ use crate::ignore_poison::IgnorePoison;
 
 /// Routes a MOVE whose SOURCE is inside a zip (extract-out + delete-inside) to a
 /// single managed compound op. The op extracts the selected entries to the
-/// destination through the ordinary cross-volume copy engine, then — only if the
-/// whole extract landed cleanly — rewrites the archive with a `{ delete }` of
-/// those entries. This is the MOVE INVARIANT for archives: the archive-side
-/// delete runs ONLY after every destination file is durably committed (the copy
-/// engine's `write_from_stream` fsyncs each file), so a crash or cancel can never
-/// lose both copies.
+/// destination through the ordinary cross-volume copy engine, then rewrites the
+/// archive with a `{ delete }` of exactly the sources that extracted in FULL.
+/// This is the MOVE INVARIANT for archives: an entry is deleted ONLY after its
+/// destination copy is durably committed (the copy engine fsyncs each file) AND
+/// won't be rolled back, so a crash can never lose both copies.
 ///
-/// **Partial-move policy: batch all-or-nothing (skip / error / cancel aware).**
-/// The archive entries are deleted ONLY when the extract completed with zero
-/// skips, zero errors, and no cancel. Any skip (a destination collision the
-/// policy resolved to Skip), any failure, or a cancel leaves the archive
-/// byte-for-byte intact and deletes nothing — the landed copies stay at the
-/// destination and the move degrades to a copy for that run. The archive delete
-/// is itself one atomic O(archive) rewrite, so batch granularity is the natural
-/// unit and this sidesteps the partial-merge-skip hazard (a directory source with
-/// an inner skipped child must not have its whole subtree deleted). Per-entry
-/// deletion is a future refinement.
+/// **Partial-move policy: per-source convergence.** The copy engine reports
+/// (via `note_source_landed_clean`) each top-level source that extracted with
+/// zero deep skips; the batch `{ delete }` drops exactly those. So:
+/// - A source with a deep-merge skip stays in the archive — deleting its subtree
+///   would drop the un-landed child (the partial-merge-skip hazard). The DEEP
+///   skip is what the copy engine now counts (`CreatedPaths::skipped_file_count`);
+///   an uncounted deep skip would let the old all-or-nothing gate delete the whole
+///   subtree and lose data.
+/// - On a HARD error the durable PREFIX (sources that completed before the
+///   failure) is deleted, so a retry moves only the remainder — the move converges
+///   instead of restarting from zero.
+/// - On CANCEL or ROLLBACK nothing is deleted from the archive: cancel matches the
+///   plain cross-volume move (its source-delete never runs on cancel), and a
+///   rollback deletes the dest copies so nothing durable remains to move out.
+///
+/// The delete is still ONE atomic O(archive) rewrite over the converged subset (a
+/// directory source deletes by prefix), never n per-entry rewrites.
 ///
 /// `source_volume` is the read-only `ArchiveVolume`; `source_volume_id` is the
 /// parent drive's id (the FE tab volume) used for the lane + busy set. All
@@ -75,7 +82,10 @@ pub(crate) async fn route_archive_move_out(
     // Moving OUT of a read-only archive would need to DELETE the source entries;
     // tar/7z can't be edited, so refuse (copy-out still works via the read path).
     ensure_zip_writable(&archive_path)?;
-    let mut inner_deletes = Vec::with_capacity(source_paths.len());
+    // The inner (archive-root-relative) path of each top-level source, kept
+    // paired with the source so the delete batch can be filtered to exactly the
+    // sources that extract in full.
+    let mut inner_by_source: Vec<(PathBuf, String)> = Vec::with_capacity(source_paths.len());
     for source in &source_paths {
         let (source_archive, inner) =
             archive::archive_boundary_candidate(source).ok_or_else(|| read_only_error(source))?;
@@ -85,7 +95,7 @@ pub(crate) async fn route_archive_move_out(
                 message: "can't move entries out of more than one archive at once".to_string(),
             });
         }
-        inner_deletes.push(normalize_inner_path(&inner));
+        inner_by_source.push((source.clone(), normalize_inner_path(&inner)));
     }
 
     let operation_id = Uuid::new_v4().to_string();
@@ -134,6 +144,7 @@ pub(crate) async fn route_archive_move_out(
             let suppress = Arc::new(SuppressTerminalsSink {
                 inner: Arc::clone(&events),
                 captured_complete: Mutex::new(None),
+                landed_clean: Mutex::new(Vec::new()),
             });
             let extract = crate::file_system::write_operations::copy_volumes_with_progress(
                 Arc::clone(&suppress) as Arc<dyn OperationEventSink>,
@@ -152,9 +163,16 @@ pub(crate) async fn route_archive_move_out(
             let bytes_extracted = captured.as_ref().map(|c| c.bytes_processed).unwrap_or(0);
             let files_skipped = captured.as_ref().map(|c| c.files_skipped).unwrap_or(0);
 
-            // A cancel that landed in the window between a clean extract and the
-            // delete phase must still leave the archive untouched.
-            if is_cancelled(&state.intent) {
+            // Cancel / rollback: leave the archive byte-for-byte intact. This
+            // matches the plain cross-volume move, whose source-delete phase never
+            // runs on cancel — the least-surprising outcome is "nothing was removed
+            // from my archive". The extract already kept (cancel) or rolled back
+            // (rollback) its own destination copies. A cancel can land mid-extract
+            // (the extract returns `Cancelled`) or in the window after a clean
+            // extract (`is_cancelled` true, extract `Ok`); both route here.
+            let cancelled = is_cancelled(&state.intent)
+                || matches!(&extract, Err(f) if matches!(f.error, WriteOperationError::Cancelled { .. }));
+            if cancelled {
                 events.emit_cancelled(WriteCancelledEvent {
                     operation_id: op_id.clone(),
                     operation_type: WriteOperationType::Move,
@@ -166,82 +184,93 @@ pub(crate) async fn route_archive_move_out(
                 return;
             }
 
-            match extract {
-                Ok(()) if files_skipped == 0 => {
-                    // Phase 2 — durable extract confirmed; rewrite the archive to
-                    // drop the moved entries (the move invariant is satisfied: the
-                    // copy engine fsynced every destination file before returning).
-                    let changeset = Changeset {
-                        deletes: inner_deletes,
-                        ..Default::default()
-                    };
-                    let hooks = Arc::new(MutatorHooks::new(
-                        Arc::clone(&state),
-                        Arc::clone(&events),
-                        op_id.clone(),
-                        WriteOperationType::Move,
-                        progress_interval,
-                    ));
-                    let hooks_for_blocking = Arc::clone(&hooks);
-                    let delete_result = run_managed_edit(
-                        &source_volume_id,
-                        archive_path.clone(),
-                        Arc::clone(&state),
-                        move |working: &Path| {
-                            mutator::apply(working, &changeset, &*hooks_for_blocking).map_err(|e| match e {
-                                MutationError::Cancelled => PlanError::Cancelled,
-                                other => PlanError::Op(to_write_error(working, other)),
-                            })
-                        },
-                    )
-                    .await;
-                    match delete_result {
-                        Ok(()) => {
-                            events.emit_complete(WriteCompleteEvent {
-                                operation_id: op_id.clone(),
-                                operation_type: WriteOperationType::Move,
-                                files_processed: files_extracted,
-                                files_skipped: 0,
-                                bytes_processed: bytes_extracted,
-                            });
-                        }
-                        Err(PlanError::Cancelled) => {
-                            // Cancelled during the archive rewrite: the extract
-                            // already landed, the archive is intact (temp
-                            // abandoned) — effectively a completed copy.
-                            events.emit_cancelled(WriteCancelledEvent {
-                                operation_id: op_id.clone(),
-                                operation_type: WriteOperationType::Move,
-                                files_processed: files_extracted,
-                                rolled_back: false,
-                            });
-                        }
-                        Err(PlanError::Op(err)) => {
-                            // The extract landed but the archive couldn't be
-                            // rewritten. The originals are intact and the copies
-                            // are at the destination (no data loss), so surface
-                            // the failure — the move degraded to a copy.
-                            events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, err));
-                        }
-                    }
-                }
-                Ok(()) => {
-                    // Extract completed but something was skipped (a destination
-                    // collision the policy resolved to Skip). All-or-nothing:
-                    // delete nothing, leave the archive intact. The landed copies
-                    // stay at the destination.
-                    events.emit_complete(WriteCompleteEvent {
+            // Build the delete batch: the inner paths of exactly the sources that
+            // extracted in full. On `Ok` that's every non-skipped source; on a hard
+            // error it's the durable prefix that completed before the failure. A
+            // source with a deep skip, one that errored, or one never reached stays
+            // in the archive — deleting it would drop an un-landed child (data
+            // loss). This is the per-source refinement of the old all-or-nothing
+            // batch: still ONE O(archive) rewrite, but over the converged subset.
+            // `suppress` collected the top-level sources that extracted in FULL
+            // (every file durably written, zero deep skips) via its
+            // `note_source_landed_clean` override.
+            let landed = suppress.landed_clean.lock_ignore_poison().clone();
+            let inner_deletes: Vec<String> = inner_by_source
+                .iter()
+                .filter(|(src, _)| landed.contains(src))
+                .map(|(_, inner)| inner.clone())
+                .collect();
+            let extract_error = match &extract {
+                Ok(()) => None,
+                Err(f) => Some(f.error.clone()),
+            };
+
+            // Nothing extracted cleanly (every source skipped, or the first source
+            // errored): leave the archive intact and surface the outcome.
+            if inner_deletes.is_empty() {
+                match extract_error {
+                    None => events.emit_complete(WriteCompleteEvent {
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::Move,
                         files_processed: files_extracted,
                         files_skipped,
                         bytes_processed: bytes_extracted,
-                    });
+                    }),
+                    Some(err) => events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, err)),
                 }
-                Err(failure) if matches!(failure.error, WriteOperationError::Cancelled { .. }) => {
-                    // Cancel mid-extract: nothing was deleted, the archive is
-                    // untouched. The copy engine already emitted nothing terminal
-                    // (suppressed), so emit the Move cancel here.
+                task_guard.disarm();
+                manager::manager().on_settled(&op_id);
+                return;
+            }
+
+            // Phase 2 — rewrite the archive to drop the fully-extracted sources.
+            // The MOVE INVARIANT holds: the copy engine fsynced every destination
+            // file, and cancel/rollback was handled above, so no entry is deleted
+            // whose bytes aren't durably on disk and staying there.
+            let changeset = Changeset {
+                deletes: inner_deletes,
+                ..Default::default()
+            };
+            let hooks = Arc::new(MutatorHooks::new(
+                Arc::clone(&state),
+                Arc::clone(&events),
+                op_id.clone(),
+                WriteOperationType::Move,
+                progress_interval,
+            ));
+            let hooks_for_blocking = Arc::clone(&hooks);
+            let delete_result = run_managed_edit(
+                &source_volume_id,
+                archive_path.clone(),
+                Arc::clone(&state),
+                move |working: &Path| {
+                    mutator::apply(working, &changeset, &*hooks_for_blocking).map_err(|e| match e {
+                        MutationError::Cancelled => PlanError::Cancelled,
+                        other => PlanError::Op(to_write_error(working, other)),
+                    })
+                },
+            )
+            .await;
+            match delete_result {
+                Ok(()) => match extract_error {
+                    // Fully clean, or a partial converge (some sources skipped):
+                    // the moved entries are gone from the archive.
+                    None => events.emit_complete(WriteCompleteEvent {
+                        operation_id: op_id.clone(),
+                        operation_type: WriteOperationType::Move,
+                        files_processed: files_extracted,
+                        files_skipped,
+                        bytes_processed: bytes_extracted,
+                    }),
+                    // The durable prefix moved out, but a later source failed to
+                    // extract — surface the failure. A retry moves the rest (it
+                    // CONVERGES: the prefix is already gone from the archive).
+                    Some(err) => events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, err)),
+                },
+                Err(PlanError::Cancelled) => {
+                    // Cancelled during the archive rewrite: the extract already
+                    // landed and the archive is intact (temp abandoned) —
+                    // effectively a completed copy.
                     events.emit_cancelled(WriteCancelledEvent {
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::Move,
@@ -249,13 +278,11 @@ pub(crate) async fn route_archive_move_out(
                         rolled_back: false,
                     });
                 }
-                Err(failure) => {
-                    // Extract failed: nothing deleted, archive untouched.
-                    events.emit_error(WriteErrorEvent::new(
-                        op_id.clone(),
-                        WriteOperationType::Move,
-                        failure.error,
-                    ));
+                Err(PlanError::Op(err)) => {
+                    // The extract landed but the archive couldn't be rewritten. The
+                    // originals are intact and the copies are at the destination (no
+                    // data loss), so surface the failure — the move degraded to a copy.
+                    events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Move, err));
                 }
             }
 
@@ -280,6 +307,10 @@ pub(crate) async fn route_archive_move_out(
 struct SuppressTerminalsSink {
     inner: Arc<dyn OperationEventSink>,
     captured_complete: Mutex<Option<WriteCompleteEvent>>,
+    /// Top-level sources that extracted in FULL (every file durably written,
+    /// zero deep skips), collected via `note_source_landed_clean`. The compound
+    /// op deletes exactly these from the archive.
+    landed_clean: Mutex<Vec<PathBuf>>,
 }
 
 impl OperationEventSink for SuppressTerminalsSink {
@@ -308,5 +339,8 @@ impl OperationEventSink for SuppressTerminalsSink {
     }
     fn emit_settled(&self, event: super::super::types::WriteSettledEvent) {
         self.inner.emit_settled(event);
+    }
+    fn note_source_landed_clean(&self, source: &Path) {
+        self.landed_clean.lock_ignore_poison().push(source.to_path_buf());
     }
 }

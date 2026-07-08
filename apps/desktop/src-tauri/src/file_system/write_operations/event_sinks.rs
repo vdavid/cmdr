@@ -116,6 +116,12 @@ pub trait OperationEventSink: Send + Sync {
     /// its `Drop`, so every op settles through the injected sink. See
     /// `WriteSettledEvent` for the ordering contract.
     fn emit_settled(&self, event: WriteSettledEvent);
+
+    /// Notes that a top-level source extracted in FULL (every file durably
+    /// written, zero deep skips). Only the out-of-zip move op cares: it collects
+    /// these to delete exactly the fully-extracted sources from the archive, so a
+    /// partial move converges on retry. Default no-op for every other sink.
+    fn note_source_landed_clean(&self, _source: &std::path::Path) {}
 }
 
 /// Tauri-backed event sink: calls `app.emit()` for each event.

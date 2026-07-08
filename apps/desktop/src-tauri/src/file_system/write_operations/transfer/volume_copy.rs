@@ -72,6 +72,13 @@ struct CopyTaskSuccess {
     bytes: u64,
     created_files: Vec<PathBuf>,
     created_dirs: Vec<PathBuf>,
+    /// The top-level source this task copied, and how many children a deep
+    /// merge skipped in its subtree. `skipped_count == 0` means the whole
+    /// subtree landed durably, so the out-of-zip move op may drop it from the
+    /// archive; any deep skip keeps it.
+    source_path: PathBuf,
+    skipped_count: usize,
+    skipped_bytes: u64,
 }
 
 /// Failure payload for one concurrent copy task.
@@ -561,8 +568,8 @@ pub(crate) async fn copy_volumes_with_progress(
     let last_progress_mutex = Arc::new(std::sync::Mutex::new(Instant::now()));
     let files_done;
     let bytes_done;
-    let files_skipped;
-    let bytes_skipped;
+    let mut files_skipped;
+    let mut bytes_skipped;
     let progress_interval = Duration::from_millis(config.progress_interval_ms);
 
     // Determine concurrency for this batch.
@@ -710,6 +717,12 @@ pub(crate) async fn copy_volumes_with_progress(
     // mode keeps the legacy single-slot behavior via a 1-element vec.
     let in_flight_partials: Arc<std::sync::Mutex<Vec<PathBuf>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
     let mut last_dest_path: Option<PathBuf> = None;
+    // Deep-merge skips (children a merge resolved to Skip) are invisible to the
+    // driver's top-level skip accounting, so both paths fold each source's
+    // `CreatedPaths::skipped_file_count` in here; the totals are added to the
+    // op-wide `files_skipped` / `bytes_skipped` after the loop.
+    let deep_skipped_files = Arc::new(AtomicUsize::new(0));
+    let deep_skipped_bytes = Arc::new(AtomicU64::new(0));
     let mut copy_error: Option<WriteFailure> = None;
 
     if use_concurrent_path {
@@ -953,6 +966,11 @@ pub(crate) async fn copy_volumes_with_progress(
                     .await;
                     let created_files = std::mem::take(&mut *created.files.lock_ignore_poison());
                     let created_dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
+                    // Deep-merge skips in this source's subtree; `0` means the
+                    // whole subtree landed durably (the move op may drop it from
+                    // the archive).
+                    let task_skipped_count = created.skipped_file_count();
+                    let task_skipped_bytes = created.skipped_byte_count();
                     match result {
                         Ok(bytes) => {
                             // If the volume didn't call the progress callback,
@@ -997,6 +1015,9 @@ pub(crate) async fn copy_volumes_with_progress(
                                     bytes,
                                     created_files,
                                     created_dirs,
+                                    source_path: source_owned,
+                                    skipped_count: task_skipped_count,
+                                    skipped_bytes: task_skipped_bytes,
                                 });
                             }
                             Ok(CopyTaskSuccess {
@@ -1006,6 +1027,9 @@ pub(crate) async fn copy_volumes_with_progress(
                                 bytes,
                                 created_files,
                                 created_dirs,
+                                source_path: source_owned,
+                                skipped_count: task_skipped_count,
+                                skipped_bytes: task_skipped_bytes,
                             })
                         }
                         // Stream failure (incl. mid-stream cancel): the dest/temp
@@ -1039,7 +1063,18 @@ pub(crate) async fn copy_volumes_with_progress(
                     bytes: _bytes,
                     created_files,
                     created_dirs: task_created_dirs,
+                    source_path: done_source,
+                    skipped_count: task_skipped_count,
+                    skipped_bytes: task_skipped_bytes,
                 })) => {
+                    // Fold this source's deep-merge skips into the op-wide tally,
+                    // and — when the source landed with ZERO skips — record it as
+                    // fully extracted so the out-of-zip move op may drop it.
+                    deep_skipped_files.fetch_add(task_skipped_count, Ordering::Relaxed);
+                    deep_skipped_bytes.fetch_add(task_skipped_bytes, Ordering::Relaxed);
+                    if task_skipped_count == 0 {
+                        events.note_source_landed_clean(&done_source);
+                    }
                     // Remove the in-flight partial (the temp under safe-replace,
                     // else the dest) and record what the op wrote for rollback.
                     let mut partials = in_flight_partials.lock_ignore_poison();
@@ -1325,6 +1360,8 @@ pub(crate) async fn copy_volumes_with_progress(
                 let config_for_merge = config_owned.clone();
                 let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
                 let leaf_files_done = Arc::clone(&leaf_files_done);
+                let deep_skipped_files = Arc::clone(&deep_skipped_files);
+                let deep_skipped_bytes = Arc::clone(&deep_skipped_bytes);
                 move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                     let source_volume = Arc::clone(&source_volume);
                     let dest_volume = Arc::clone(&dest_volume);
@@ -1338,6 +1375,8 @@ pub(crate) async fn copy_volumes_with_progress(
                     let config_for_merge = config_for_merge.clone();
                     let merge_apply_to_all = Arc::clone(&merge_apply_to_all);
                     let leaf_files_done = Arc::clone(&leaf_files_done);
+                    let deep_skipped_files = Arc::clone(&deep_skipped_files);
+                    let deep_skipped_bytes = Arc::clone(&deep_skipped_bytes);
                     let source_path = ctx.source_path.to_path_buf();
                     let dest_item_path = ctx
                         .dest_path
@@ -1463,6 +1502,15 @@ pub(crate) async fn copy_volumes_with_progress(
                                 } else {
                                     copied_paths.lock_ignore_poison().push(landed_path);
                                 }
+                                // Fold this source's deep-merge skips into the op-wide
+                                // tally; a source that landed with ZERO skips is fully
+                                // extracted, so the out-of-zip move op may drop it.
+                                let source_skipped = created.skipped_file_count();
+                                deep_skipped_files.fetch_add(source_skipped, Ordering::Relaxed);
+                                deep_skipped_bytes.fetch_add(created.skipped_byte_count(), Ordering::Relaxed);
+                                if source_skipped == 0 {
+                                    events.note_source_landed_clean(&source_path);
+                                }
                                 Ok(TransferOutcome::Transferred { bytes: bytes_copied })
                             }
                             Err(e) => {
@@ -1534,6 +1582,11 @@ pub(crate) async fn copy_volumes_with_progress(
             }
         }
     }
+
+    // Fold the deep-merge skips (invisible to the driver's top-level accounting)
+    // into the op-wide skip tally so the terminal `files_skipped` is honest.
+    files_skipped += deep_skipped_files.load(Ordering::Relaxed);
+    bytes_skipped += deep_skipped_bytes.load(Ordering::Relaxed);
 
     // Unwrap shared containers for post-loop logic.
     let mut copied_paths: Vec<PathBuf> = Arc::try_unwrap(copied_paths)

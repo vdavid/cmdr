@@ -359,6 +359,12 @@ pub(super) struct MergeCtx<'a> {
 pub(super) struct CreatedPaths {
     pub files: Mutex<Vec<PathBuf>>,
     pub dirs: Mutex<Vec<PathBuf>>,
+    // Children a DEEP merge resolved to Skip (a conflict the user/policy
+    // declined). Invisible to the top-level driver, so tallied here; the
+    // move-out op reads the count to keep a not-fully-extracted source in the
+    // archive (see `skipped_file_count`).
+    pub skipped_files: std::sync::atomic::AtomicUsize,
+    pub skipped_bytes: std::sync::atomic::AtomicU64,
 }
 
 impl CreatedPaths {
@@ -368,6 +374,26 @@ impl CreatedPaths {
 
     fn record_dir(&self, path: PathBuf) {
         self.dirs.lock_ignore_poison().push(path);
+    }
+
+    /// Tally one child a deep merge skipped (conflict resolved to Skip).
+    fn record_skip(&self, size: u64) {
+        use std::sync::atomic::Ordering;
+        self.skipped_files.fetch_add(1, Ordering::Relaxed);
+        self.skipped_bytes.fetch_add(size, Ordering::Relaxed);
+    }
+
+    /// How many children this copy skipped (deep merge Skips). `0` means the
+    /// whole subtree landed; the move-out op keys its per-source archive delete
+    /// on this.
+    pub(super) fn skipped_file_count(&self) -> usize {
+        self.skipped_files.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Total byte size of the skipped children, for folding into the op-wide
+    /// skipped-bytes tally.
+    pub(super) fn skipped_byte_count(&self) -> u64 {
+        self.skipped_bytes.load(std::sync::atomic::Ordering::Relaxed)
     }
 }
 
@@ -762,7 +788,13 @@ pub(super) async fn copy_directory_streaming(
             && let Some(ctx) = merge
         {
             match resolve_merge_child(ctx, source_volume, &child_source, entry, dest_volume, &child_dest).await? {
-                MergeChildDecision::Skip => continue,
+                MergeChildDecision::Skip => {
+                    // A DEEP skip: record it so the caller knows this subtree did
+                    // not extract in full (the move-out op must keep the source in
+                    // the archive; deleting it would drop this un-landed child).
+                    created.record_skip(entry.size.unwrap_or(0));
+                    continue;
+                }
                 MergeChildDecision::Proceed { write_path, replace } => {
                     write_dest = write_path;
                     replace_after_write = replace;

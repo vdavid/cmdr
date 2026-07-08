@@ -152,13 +152,16 @@ under its remote name; local leftover temps get reaped at the next edit of the s
 (documented non-reap). A next-edit-of-same-remote-archive reap (list siblings, delete `*.cmdr-tmp-*` older than a
 threshold) closes it. Small, bounded, and the crash window already never loses NEW data.
 
-## 8. Move-out per-entry delete refinement (edge-case correctness)
+## 8. Move-out per-source delete convergence (edge-case correctness) — SHIPPED 2026-07-08
 
-Move OUT of a zip is all-or-nothing: any skip/error/cancel during extract deletes nothing from the archive (correct, no
-data loss, but a partially-moved tree stays fully inside the zip). A per-entry refinement — delete exactly the entries
-whose extraction proved durable — would make partial moves converge instead of restarting. Guarded by the same
-delete-only-after-durable-commit invariant; the batch shape was chosen to dodge a partial-merge-skip hazard, so revisit
-that analysis first (write_operations `DETAILS.md` § archive edits).
+Move OUT of a zip now converges: the batch `{ delete }` drops exactly the top-level sources that extracted in FULL
+(durable, zero deep skips), so a partially-interrupted move deletes the moved subset and a retry handles the remainder
+instead of restarting from zero. A skipped or errored source stays in the archive; a hard error deletes the durable
+prefix; cancel/rollback delete nothing (cancel matches the plain cross-volume move). This also fixed a latent DATA-LOSS
+bug: a deep-merge Skip inside a directory source was uncounted, so the old all-or-nothing gate saw zero skips and
+deleted the whole subtree including the un-landed child. The copy engine now folds `CreatedPaths::skipped_file_count`
+into `files_skipped` and reports fully-extracted sources via `note_source_landed_clean`. Mechanism: `write_operations`
+`DETAILS.md` § "Archive edits".
 
 ## 9. M6: MTP in-place editing (stretch, cross-repo)
 

@@ -377,15 +377,21 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
 - **Move OUT of a zip is a compound op** (`route_archive_move_out`), NOT a per-file `Volume::delete` (the `ArchiveVolume`
   is read-only). One managed Move op runs two phases on ONE lifecycle: (1) extract the selected entries to the
   destination through the ordinary cross-volume copy engine (`copy_volumes_with_progress`, wrapped in a
-  `SuppressTerminalsSink` that withholds the copy's terminal event so the compound op emits the single Move terminal and
-  reads `files_skipped`); (2) a batch `{ delete }` archive rewrite via the mutator. **MOVE INVARIANT**: the archive
-  delete runs ONLY after the extract is durably committed (the copy engine fsyncs each destination file), so a crash or
-  cancel never loses both copies. **Partial-move policy: batch all-or-nothing (skip / error / cancel aware).** The
-  entries are deleted ONLY on a fully clean extract (zero skips, zero errors, not cancelled); any skip, failure, or
-  cancel leaves the archive byte-for-byte intact and deletes nothing (the landed copies stay at the destination — the
-  move degrades to a copy for that run). Batch granularity matches the single atomic archive rewrite and sidesteps the
-  partial-merge-skip hazard; per-entry deletion is a future refinement. Progress is two honest phases (extract bytes,
-  then rewrite bytes). Pinned by the `move_out_*` tests.
+  `SuppressTerminalsSink` that withholds the copy's terminal event so the compound op emits the single Move terminal,
+  reads `files_skipped`, and collects the fully-extracted sources via `note_source_landed_clean`); (2) a batch
+  `{ delete }` archive rewrite via the mutator. **MOVE INVARIANT**: an entry is deleted ONLY after its destination copy
+  is durably committed (the copy engine fsyncs each file) AND won't be rolled back, so a crash or cancel never loses both
+  copies. **Partial-move policy: per-source convergence.** The batch drops exactly the top-level sources that extracted
+  with ZERO deep skips: a source with a skipped child stays in the archive (deleting its subtree would drop the un-landed
+  child — the partial-merge-skip hazard); a HARD error deletes the durable PREFIX so a retry moves only the remainder;
+  CANCEL and ROLLBACK delete nothing (cancel matches the plain cross-volume move, whose source-delete never runs on
+  cancel; rollback removes the dest copies, so nothing durable remains). The delete stays ONE atomic O(archive) rewrite
+  over the converged subset (a dir source deletes by prefix), never n per-entry rewrites. **The deep-skip count is
+  load-bearing**: a merge child resolved to Skip is invisible to the driver's top-level accounting, so the copy engine
+  folds each source's `CreatedPaths::skipped_file_count` into `files_skipped`; without that fold a directory source with
+  a deep skip would report zero skips and the delete would drop its whole subtree (data loss). Progress is two honest
+  phases (extract bytes, then rewrite bytes). Pinned by the `move_out_*` tests (incl. the deep-skipped-child,
+  partial-converge, durable-prefix-on-error, and rollback pins).
 - **Conflicts.** An add whose inner path already exists is resolved against the archive index. BOTH the pre-resolved
   policies and Stop PLAN inside the managed op (`archive_copy_into_start`), against the working copy `run_managed_edit`
   hands the closure — the real archive for a LOCAL parent, the pulled-local copy for a REMOTE one. Planning up front
@@ -404,7 +410,7 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   the `interactive_*` tests.
 - **Mutation-test coverage (`cargo mutants` on `archive_edit/`).** Every conflict-resolution and routing/data-path
   mutant is killed (Rename numbering incl. dotfiles, OverwriteSmaller/Older strict `<` incl. the equal-size/mtime
-  boundary, move-source deletion gating, all-or-nothing move-out, dir-merge mkdir guard, settle payloads). The only
+  boundary, move-source deletion gating, per-source move-out convergence (deep-skip count, durable-prefix delete), dir-merge mkdir guard, settle payloads). The only
   deliberately-unkilled survivors are in `MutatorHooks` — progress-emit THROTTLING, pause parking, and the
   cancel-during-rewrite bridge. These are UX/timing, data-safe by construction (the mutator's own cancel-abandons-temp
   and progress semantics are pinned in `backends/archive/mutator_test.rs`), and killing them would need flaky
