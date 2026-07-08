@@ -121,10 +121,11 @@ fires. It's a no-op when no inner listing is open (it scans `LISTING_CACHE` for 
 `volume_id` here IS the parent drive id, which is what archive listings key on, so it lines up with no rekeying. Cost is
 near-zero: the watcher already runs, and the re-parse only happens when the `.zip` actually changes AND an inner listing
 is open.
-  - **Keep `ArchiveVolume::listing_is_watched` FALSE for a remote parent regardless.** The SMB watcher is documented
-    lossy-under-load (`backends/CLAUDE.md`, `volume/CLAUDE.md`), so the write-op fresh-listing oracle must still re-read
-    pre-flight scans honestly. The push-refresh above is a VISIBLE-listing UX nicety; it's a SEPARATE consumer from the
-    data-safety oracle — don't conflate them by flipping `listing_is_watched` to true.
+
+- **Keep `ArchiveVolume::listing_is_watched` FALSE for a remote parent regardless.** The SMB watcher is documented
+  lossy-under-load (`backends/CLAUDE.md`, `volume/CLAUDE.md`), so the write-op fresh-listing oracle must still re-read
+  pre-flight scans honestly. The push-refresh above is a VISIBLE-listing UX nicety; it's a SEPARATE consumer from the
+  data-safety oracle — don't conflate them by flipping `listing_is_watched` to true.
 
 **MTP — manual refresh (F5).** No poll, no watch. Rationale: `MtpVolume::get_metadata` lists the ENTIRE parent directory
 (MTP has no single-file stat — `backends/CLAUDE.md`), so a visible-pane metadata poll is expensive per tick; the MTP
