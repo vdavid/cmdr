@@ -12,11 +12,22 @@
  * `viewer-wordwrap-persistence` Playwright spec.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearIpcMocks, installIpcMock, type IpcRecorder } from '$lib/ipc/test-helpers'
 import type { RestrictedWindowSettings } from '$lib/ipc/bindings'
 
 let ipc: IpcRecorder
+
+// Warm Vite's transform cache for the modules each test dynamically re-imports.
+// `settings-store` transitively pulls the whole intl catalog (the eager
+// `messages/*/*.json` glob in `messages.svelte.ts`) plus `intl-messageformat`,
+// so a cold transform runs ~5-6 s. Paying that inside the first test body would
+// race the 5 s per-test timeout; a `beforeAll` gets the 10 s hook timeout, and
+// the per-test `vi.resetModules()` + re-import then hit a warm transform cache.
+beforeAll(async () => {
+  await import('./settings-store')
+  await import('./restricted-settings-bridge')
+})
 
 const snapshot: RestrictedWindowSettings = {
   viewerWordWrap: true,

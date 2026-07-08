@@ -11,11 +11,16 @@ import { resolveStorePath } from './store-path'
 import { getAppLogger } from '$lib/logging/logger'
 import { pluralize } from '$lib/utils/pluralize'
 import type { RestrictedWindowPersistableSetting, SettingValue } from '$lib/ipc/bindings'
+// Import from the specific submodule, not the `$lib/tauri-commands` barrel: the
+// barrel re-exports the entire IPC surface (mtp, search, indexing, licensing, …),
+// so pulling it in for three functions drags that whole graph into every
+// settings-store consumer. The submodule keeps the dependency (and its transform
+// graph) tight.
 import {
   getRestrictedWindowSettings,
   persistRestrictedWindowSetting,
   recordSettingsDefaults,
-} from '$lib/tauri-commands'
+} from '$lib/tauri-commands/settings'
 
 const log = getAppLogger('settings')
 
