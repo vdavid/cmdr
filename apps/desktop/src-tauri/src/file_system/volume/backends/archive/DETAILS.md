@@ -234,5 +234,7 @@ in `/docs/specs/later/archive-browsing-polish.md`):
   `file_viewer/archive_extract.rs`: that extractor is viewer-`pub(super)`-scoped and its temp is reaped on VIEWER
   SESSION close, whereas a detached launched app holds the file for an unknown lifetime and has no close event to hook —
   it needs its own extract-and-persist-until-startup-reaper lifecycle. Deferred deliberately; the viewer interim stands.
-- **NON-LOCAL sources INTO a zip** — an MTP/SMB source copied into an archive (`route_archive_copy_into` still requires a
-  `local_path()` source; the archive itself may be remote).
+
+A REMOTE source copied INTO a zip (an MTP/SMB file dropped onto an archive) now works: the source subtree is pulled to a
+local scratch dir first, then the ordinary local ingest runs against the pulled bytes (source-side pull in
+`write_operations/DETAILS.md` § "Archive edits"). The archive itself may be local or remote independently.

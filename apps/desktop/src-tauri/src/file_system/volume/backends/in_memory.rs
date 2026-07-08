@@ -172,6 +172,19 @@ impl InMemoryVolume {
         self
     }
 
+    /// Overrides the `get_metadata` / listing size of an existing file so it
+    /// DISAGREES with the file's real streamed byte count, modeling a remote
+    /// source whose listed size lies (a stale or racy directory entry). The
+    /// content is untouched — `open_read_stream` still yields the real bytes — so
+    /// a transfer that plans against the real stream lands correct bytes. Test-only.
+    pub fn set_reported_size(&self, path: &Path, reported_size: u64) {
+        let normalized = self.normalize(path);
+        let mut entries = self.entries.write_ignore_poison();
+        if let Some(entry) = entries.get_mut(&normalized) {
+            entry.metadata.size = Some(reported_size);
+        }
+    }
+
     /// Creates an in-memory volume pre-populated with entries.
     pub fn with_entries(name: impl Into<String>, entries: Vec<FileEntry>) -> Self {
         let volume = Self::new(name);

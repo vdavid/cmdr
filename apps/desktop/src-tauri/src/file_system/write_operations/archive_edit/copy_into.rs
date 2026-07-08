@@ -1,8 +1,9 @@
-//! Copy/move INTO a zip: the routing entry, the changeset planning (walk the
-//! local sources, resolve each collision via [`super::conflicts`], build one
-//! `{ add + mkdir + delete }` batch), and the managed-op driver that plans and
-//! applies inside the op — LOCAL in place, or against the pulled-local working
-//! copy for a REMOTE parent.
+//! Copy/move INTO a zip: the routing entry, source materialization (a remote
+//! source is streamed into a scratch dir first, a local one is used in place),
+//! the changeset planning (walk the local sources, resolve each collision via
+//! [`super::conflicts`], build one `{ add + mkdir + delete }` batch), and the
+//! managed-op driver that plans and applies inside the op — against the real
+//! archive for a LOCAL parent, or the pulled-local working copy for a REMOTE one.
 
 use std::collections::HashSet;
 use std::future::Future;
@@ -17,7 +18,10 @@ use walkdir::WalkDir;
 use super::super::OperationEventSink;
 use super::super::conflict::ApplyToAll;
 use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
+use super::super::scratch_dir::ScratchDir;
 use super::super::state::{WriteOperationState, WriteSettledGuard};
+use super::super::transfer::volume_copy::delete_volume_path_recursive;
+use super::super::transfer::volume_strategy::pull_path_to_local;
 use super::super::types::{
     ConflictResolution, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent, WriteOperationError,
     WriteOperationStartResult, WriteOperationType,
@@ -29,11 +33,19 @@ use crate::file_system::get_volume_manager;
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::{self, AddEntry, AddSource, Changeset, MutationError};
 use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
-use crate::file_system::volume::{LaneKey, Volume};
+use crate::file_system::volume::{LaneKey, LocalPosixVolume, Volume, VolumeError};
 
-/// Routes a copy/move INTO a zip (a local-FS source dropped onto an archive
-/// destination) to the managed edit driver as a SINGLE `{ add + mkdir }`
-/// changeset — the whole transfer becomes one archive rewrite, not one per file.
+/// Routes a copy/move INTO a zip (a source dropped onto an archive destination)
+/// to the managed edit driver as a SINGLE `{ add + mkdir }` changeset — the whole
+/// transfer becomes one archive rewrite, not one per file.
+///
+/// The SOURCE may be LOCAL or REMOTE. A local-FS source gives real filesystem
+/// paths the changeset walks directly. A REMOTE source (MTP / SMB) has no local
+/// path, so its subtree is streamed into a scratch dir inside the op first, and
+/// the ordinary local ingest then runs against the pulled bytes (see
+/// [`materialize_sources`]). The archive PARENT is a separate axis: local or
+/// remote, `run_managed_edit` handles it independently, so all four
+/// source×parent combinations work.
 ///
 /// Conflicts (an added inner path that already exists) are resolved
 /// non-interactively from `conflict` against the archive's index (Skip drops the
@@ -43,9 +55,6 @@ use crate::file_system::volume::{LaneKey, Volume};
 /// `copy_between_volumes` passes them. For a MOVE, the top-level sources are
 /// deleted after the commit — but only when nothing was skipped, so a partial
 /// (conflict-skipped) move never deletes a source whose bytes didn't land.
-///
-/// v1 handles LOCAL sources only; a non-local source (MTP/SMB → zip) is refused
-/// (the mutator streams adds from a local path).
 #[allow(
     clippy::too_many_arguments,
     reason = "the cross-volume→archive seam threads the source handle, paths, dest, parent id, and policy; a struct would just shuffle them"
@@ -60,11 +69,9 @@ pub(crate) async fn route_archive_copy_into(
     progress_interval_ms: u64,
     is_move: bool,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let src_root = source_volume.local_path().ok_or_else(|| WriteOperationError::IoError {
-        path: String::new(),
-        message: "copying into an archive from this source isn't supported yet".to_string(),
-    })?;
-    let absolute_sources: Vec<PathBuf> = source_paths.iter().map(|p| src_root.join(p)).collect();
+    // A LOCAL source volume's root — `Some` skips the pull (the changeset walks
+    // real paths); `None` (a remote source) triggers the in-op pull-to-scratch.
+    let src_local_root = source_volume.local_path();
 
     // Confirmation already happened at the routing site (`dest_resolved.is_archive`
     // from the async, parent-aware `resolve`), so a pure string split is enough
@@ -75,17 +82,20 @@ pub(crate) async fn route_archive_copy_into(
     ensure_zip_writable(&archive_path)?;
     let dest_inner = normalize_inner_path(&dest_inner);
 
-    // Plan AND apply inside the managed op, against the working copy — the real
-    // archive for a LOCAL parent, or the pulled-local copy for a REMOTE one. The
-    // changeset must NOT be planned up front against `archive_path`: for a REMOTE
-    // parent that path has no local file, so `LocalFileSource::open` fails (MTP) or
-    // opens the OS mount the design routes around (direct SMB, hang risk). Both
-    // policies plan inside the op's closure via `run_managed_edit`: a pre-resolved
-    // policy resolves non-interactively; Stop prompts per file (the op is
-    // registered, so `resolve_write_conflict(op_id)` reaches the oneshot).
+    // Materialize sources AND plan+apply inside the managed op. The pull (remote
+    // source) streams into a scratch dir; then the changeset is planned against
+    // the working copy — the real archive for a LOCAL parent, or the pulled-local
+    // copy for a REMOTE one. Planning must NOT run up front against `archive_path`:
+    // for a REMOTE parent that path has no local file, so `LocalFileSource::open`
+    // fails (MTP) or opens the OS mount the design routes around (direct SMB, hang
+    // risk). A pre-resolved policy resolves non-interactively; Stop prompts per
+    // file (the op is registered, so `resolve_write_conflict(op_id)` reaches the
+    // oneshot).
     archive_copy_into_start(
         events,
-        absolute_sources,
+        source_volume,
+        source_paths,
+        src_local_root,
         archive_path,
         dest_inner,
         parent_volume_id,
@@ -94,6 +104,134 @@ pub(crate) async fn route_archive_copy_into(
         progress_interval_ms,
     )
     .await
+}
+
+/// The sources materialized as LOCAL paths the changeset walk and mutator read
+/// with `std::fs`. A local source volume is already local (no pull, no scratch);
+/// a remote one is streamed into a scratch dir whose guard lives for the whole
+/// op. `origin` records where the ORIGINAL sources live so an into-archive MOVE
+/// deletes the real user files, not the local scratch copies.
+struct MaterializedSources {
+    /// Absolute LOCAL paths, one per top-level source, in the caller's order.
+    /// What the changeset walks and the mutator reads via `AddSource::LocalPath`.
+    absolute: Vec<PathBuf>,
+    origin: SourceOrigin,
+    /// Keeps the pulled copies alive for the op; `None` for a local source.
+    _scratch: Option<ScratchDir>,
+}
+
+/// Where an into-archive MOVE finds the ORIGINAL sources to delete after the
+/// rewrite commits — the absolute local paths for a local source, or the remote
+/// volume + volume-relative paths for a pulled remote one.
+enum SourceOrigin {
+    Local,
+    Remote {
+        volume: Arc<dyn Volume>,
+        paths: Vec<PathBuf>,
+    },
+}
+
+impl MaterializedSources {
+    /// Deletes the ORIGINAL sources after an into-archive MOVE's rewrite durably
+    /// commits (the move invariant — never delete a source before its bytes are
+    /// safe). Local originals go straight off the FS; remote originals go through
+    /// the source volume (recursive for trees). Best-effort per source: a failure
+    /// leaves an incomplete move (a copy in both places), never data loss.
+    async fn delete_originals(&self) {
+        match &self.origin {
+            SourceOrigin::Local => delete_move_sources(&self.absolute).await,
+            SourceOrigin::Remote { volume, paths } => {
+                for path in paths {
+                    if let Err(e) = delete_volume_path_recursive(volume, path).await {
+                        log::warn!(target: "archive_edit", "couldn't remove moved remote source {}: {e}", path.display());
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Makes the copy's sources available as LOCAL paths. A local source volume needs
+/// no work (the absolute paths are `root.join(rel)`). A REMOTE source is streamed
+/// into a fresh scratch dir through the shared copy engine's `copy_single_path`,
+/// so the pull inherits its streaming (never whole-file-buffered), nested-tree
+/// recursion, cancel, and pause — then the changeset walks real bytes with
+/// `std::fs`. The pull emits no progress (this is the pull stage; the archive
+/// rewrite drives the progress bar, matching the remote-PARENT flow).
+async fn materialize_sources(
+    source_volume: &Arc<dyn Volume>,
+    source_paths: &[PathBuf],
+    src_local_root: Option<PathBuf>,
+    state: &Arc<WriteOperationState>,
+) -> Result<MaterializedSources, PlanError> {
+    if let Some(root) = src_local_root {
+        return Ok(MaterializedSources {
+            absolute: source_paths.iter().map(|p| root.join(p)).collect(),
+            origin: SourceOrigin::Local,
+            _scratch: None,
+        });
+    }
+
+    let scratch = ScratchDir::new("cmdr-archive-source-pull").map_err(|e| {
+        PlanError::Op(WriteOperationError::IoError {
+            path: String::new(),
+            message: e.to_string(),
+        })
+    })?;
+    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new(
+        "archive-source-pull",
+        scratch.path().to_path_buf(),
+    ));
+
+    let mut absolute = Vec::with_capacity(source_paths.len());
+    for src in source_paths {
+        let Some(name) = src.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        let dest_path = scratch.path().join(name);
+        pull_one_source(source_volume, src, &dest_volume, &dest_path, state).await?;
+        absolute.push(dest_path);
+    }
+
+    Ok(MaterializedSources {
+        absolute,
+        origin: SourceOrigin::Remote {
+            volume: Arc::clone(source_volume),
+            paths: source_paths.to_vec(),
+        },
+        _scratch: Some(scratch),
+    })
+}
+
+/// Streams one remote source (a file or a whole subtree) into the local scratch
+/// dir through the copy engine's `pull_path_to_local` seam, so the pull inherits
+/// its streaming (never whole-file-buffered), nested-tree recursion, cancel, and
+/// pause. A cancel surfaces as `PlanError::Cancelled`; any other fault surfaces
+/// typed. The pull is silent — the archive rewrite stage drives the progress bar.
+async fn pull_one_source(
+    source_volume: &Arc<dyn Volume>,
+    source_path: &Path,
+    dest_volume: &Arc<dyn Volume>,
+    dest_path: &Path,
+    state: &Arc<WriteOperationState>,
+) -> Result<(), PlanError> {
+    let is_directory = source_volume.is_directory(source_path).await.map_err(|e| {
+        PlanError::Op(WriteOperationError::ReadError {
+            path: source_path.display().to_string(),
+            message: e.to_string(),
+        })
+    })?;
+
+    pull_path_to_local(source_volume, source_path, is_directory, dest_volume, dest_path, state)
+        .await
+        .map(|_bytes| ())
+        .map_err(|e| match e {
+            VolumeError::Cancelled(_) => PlanError::Cancelled,
+            other => PlanError::Op(WriteOperationError::ReadError {
+                path: source_path.display().to_string(),
+                message: other.to_string(),
+            }),
+        })
 }
 
 /// The planned changeset for a copy/move-into, plus how many source entries were
@@ -330,21 +468,25 @@ fn join_inner_str(parent: &str, child: &str) -> String {
     }
 }
 
-/// Starts a copy/move INTO a zip as a managed op, planning AND applying inside the
-/// op's deferred (on the blocking pool) against the working copy `run_managed_edit`
-/// hands the closure — the real archive for a LOCAL parent, the pulled-local copy
-/// for a REMOTE one. Planning inside the op is what lets a remote edit plan against
-/// the pulled bytes (never the unopenable remote path) and lets a Stop collision
-/// emit a `write-conflict` and block on the op's registered oneshot. A pre-resolved
-/// policy resolves each collision without prompting; Stop prompts per file.
-/// Dir-vs-dir collisions merge silently under both.
+/// Starts a copy/move INTO a zip as a managed op. Inside the op's deferred (so
+/// the dialog opened the instant we returned the id), two stages run: (1)
+/// materialize the sources locally — a no-op for a local source, a streamed pull
+/// into a scratch dir for a remote one; (2) plan AND apply the changeset against
+/// the working copy `run_managed_edit` hands the closure — the real archive for a
+/// LOCAL parent, the pulled-local copy for a REMOTE one. Planning inside the op is
+/// what lets a remote edit plan against the pulled bytes (never the unopenable
+/// remote path) and lets a Stop collision emit a `write-conflict` and block on the
+/// op's registered oneshot. A pre-resolved policy resolves each collision without
+/// prompting; Stop prompts per file. Dir-vs-dir collisions merge silently.
 #[allow(
     clippy::too_many_arguments,
-    reason = "the copy-into seam threads the sources, archive path, dest, parent id, policy, and move flag; a struct would just shuffle them"
+    reason = "the copy-into seam threads the source volume, paths, locality, dest, parent id, policy, and move flag; a struct would just shuffle them"
 )]
 async fn archive_copy_into_start(
     events: Arc<dyn OperationEventSink>,
-    absolute_sources: Vec<PathBuf>,
+    source_volume: Arc<dyn Volume>,
+    source_paths: Vec<PathBuf>,
+    src_local_root: Option<PathBuf>,
     archive_path: PathBuf,
     dest_inner: String,
     parent_volume_id: String,
@@ -359,7 +501,7 @@ async fn archive_copy_into_start(
         .get(&parent_volume_id)
         .map(|v| v.lane_key())
         .unwrap_or_else(|| LaneKey::new(parent_volume_id.clone()));
-    let summary_source = absolute_sources
+    let summary_source = source_paths
         .first()
         .and_then(|p| p.file_name())
         .map(|n| n.to_string_lossy().into_owned());
@@ -401,54 +543,59 @@ async fn archive_copy_into_start(
                 progress_interval,
             ));
 
-            // Plan (with prompting) then apply against the archive — LOCAL in place,
-            // or pulled-local then uploaded+swapped for a REMOTE parent. Returns
-            // the move sources to delete after a committed MOVE (empty otherwise).
-            let hooks_for_blocking = Arc::clone(&hooks);
-            let events_for_blocking = Arc::clone(&events);
-            let state_for_blocking = Arc::clone(&state);
-            let op_id_for_blocking = op_id.clone();
-            let result = run_managed_edit(
-                &parent_volume_id,
-                archive_path.clone(),
-                Arc::clone(&state),
-                move |working: &Path| -> Result<(Vec<PathBuf>, usize), PlanError> {
-                    // Stop → interactive per-file prompts; any pre-resolved policy →
-                    // non-interactive. Both plan against `working` (the pulled-local
-                    // copy for a remote parent), never the raw remote path.
-                    let plan = if matches!(conflict, ConflictResolution::Stop) {
-                        build_copy_into_changeset_interactive(
-                            working,
-                            &absolute_sources,
-                            &dest_inner,
-                            &*events_for_blocking,
-                            &op_id_for_blocking,
-                            &state_for_blocking,
-                        )?
-                    } else {
-                        build_copy_into_changeset(working, &absolute_sources, &dest_inner, conflict)
-                            .map_err(PlanError::Op)?
-                    };
-                    let move_sources = if is_move && plan.skipped_count == 0 {
-                        absolute_sources.clone()
-                    } else {
-                        Vec::new()
-                    };
-                    mutator::apply(working, &plan.changeset, &*hooks_for_blocking).map_err(|e| match e {
-                        MutationError::Cancelled => PlanError::Cancelled,
-                        other => PlanError::Op(to_write_error(working, other)),
-                    })?;
-                    Ok((move_sources, plan.skipped_count))
-                },
-            )
+            // Materialize sources (pull if remote), then plan+apply against the
+            // archive. One `Result<skipped_count, PlanError>` funnels into a single
+            // terminal emit below. A cancel/fault in the PULL returns before
+            // `run_managed_edit` ever opens the zip, so the archive stays untouched.
+            let outcome: Result<usize, PlanError> = async {
+                let materialized = materialize_sources(&source_volume, &source_paths, src_local_root, &state).await?;
+                let absolute_sources = materialized.absolute.clone();
+
+                let (should_delete_sources, skipped_count) =
+                    run_managed_edit(&parent_volume_id, archive_path.clone(), Arc::clone(&state), {
+                        let events_for_blocking = Arc::clone(&events);
+                        let state_for_blocking = Arc::clone(&state);
+                        let op_id_for_blocking = op_id.clone();
+                        let hooks_for_blocking = Arc::clone(&hooks);
+                        let dest_inner = dest_inner.clone();
+                        move |working: &Path| -> Result<(bool, usize), PlanError> {
+                            // Stop → interactive per-file prompts; any pre-resolved
+                            // policy → non-interactive. Both plan against `working`
+                            // (the pulled-local copy for a remote parent), never the
+                            // raw remote path.
+                            let plan = if matches!(conflict, ConflictResolution::Stop) {
+                                build_copy_into_changeset_interactive(
+                                    working,
+                                    &absolute_sources,
+                                    &dest_inner,
+                                    &*events_for_blocking,
+                                    &op_id_for_blocking,
+                                    &state_for_blocking,
+                                )?
+                            } else {
+                                build_copy_into_changeset(working, &absolute_sources, &dest_inner, conflict)
+                                    .map_err(PlanError::Op)?
+                            };
+                            let should_delete = is_move && plan.skipped_count == 0;
+                            mutator::apply(working, &plan.changeset, &*hooks_for_blocking).map_err(|e| match e {
+                                MutationError::Cancelled => PlanError::Cancelled,
+                                other => PlanError::Op(to_write_error(working, other)),
+                            })?;
+                            Ok((should_delete, plan.skipped_count))
+                        }
+                    })
+                    .await?;
+
+                if should_delete_sources {
+                    materialized.delete_originals().await;
+                }
+                Ok(skipped_count)
+            }
             .await;
 
             let final_progress = hooks.latest_progress();
-            match result {
-                Ok((move_sources, skipped_count)) => {
-                    // Move invariant: delete the local sources only now that the
-                    // archive rewrite is durably committed.
-                    delete_move_sources(&move_sources).await;
+            match outcome {
+                Ok(skipped_count) => {
                     events.emit_complete(WriteCompleteEvent {
                         operation_id: op_id.clone(),
                         operation_type: WriteOperationType::ArchiveEdit,

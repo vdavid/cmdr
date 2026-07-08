@@ -40,6 +40,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
+use super::scratch_dir::ScratchDir;
 use super::state::{WriteOperationState, is_cancelled};
 use super::types::WriteOperationError;
 use crate::file_system::volume::{LocalPosixVolume, Volume, VolumeError};
@@ -111,7 +112,7 @@ where
 
     // A private local scratch dir; its `Drop` removes the working copy however we
     // leave this function (success, error, or cancel).
-    let scratch = ScratchDir::new()?;
+    let scratch = ScratchDir::new("cmdr-remote-archive-edit").map_err(|e| io_op("scratch dir", &e.to_string()))?;
     let working = scratch.path().join("archive.zip");
 
     // 1) Pull the remote `.zip` to the local working copy (streamed, cancelable).
@@ -332,29 +333,6 @@ fn io_op(path: &str, message: &str) -> RemoteEditError {
         path: path.to_string(),
         message: message.to_string(),
     })
-}
-
-/// A local scratch dir for the pulled/edited working copy, removed on `Drop`
-/// however the edit ends (success, error, or cancel) — the local temp never
-/// outlives the operation.
-struct ScratchDir(PathBuf);
-
-impl ScratchDir {
-    fn new() -> Result<Self, RemoteEditError> {
-        let dir = std::env::temp_dir().join(format!("cmdr-remote-archive-edit-{}", Uuid::new_v4()));
-        std::fs::create_dir_all(&dir).map_err(|e| io_op(&dir.display().to_string(), &e.to_string()))?;
-        Ok(Self(dir))
-    }
-
-    fn path(&self) -> &Path {
-        &self.0
-    }
-}
-
-impl Drop for ScratchDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
 }
 
 #[cfg(test)]

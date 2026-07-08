@@ -36,6 +36,7 @@ mod rename;
 mod scan;
 mod scan_cache;
 mod scan_preview;
+mod scratch_dir;
 mod state;
 mod transfer;
 mod types;

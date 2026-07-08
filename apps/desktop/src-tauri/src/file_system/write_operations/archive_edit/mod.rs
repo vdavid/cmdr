@@ -57,6 +57,8 @@ mod test_support;
 #[cfg(test)]
 mod copy_into_interactive_tests;
 #[cfg(test)]
+mod copy_into_remote_tests;
+#[cfg(test)]
 mod copy_into_tests;
 #[cfg(test)]
 mod driver_tests;

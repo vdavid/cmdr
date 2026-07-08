@@ -462,6 +462,51 @@ pub(super) async fn copy_single_path(
     }
 }
 
+/// Pulls one source path (a file or a whole subtree) from `source_volume` into
+/// `dest_volume` at `dest_path` with NO conflict resolution — the destination is
+/// assumed empty (a fresh scratch dir), so nothing is merged or overwritten.
+/// Cancel and pause ride the op's `state` (checked per chunk); the transfer is
+/// otherwise silent (no progress events). This is the seam the archive copy-into
+/// flow uses to materialize a REMOTE source locally before ingesting it into a
+/// zip, so it reuses the exact streaming, recursion, and cancel of the copy
+/// engine without exposing the conflict machinery. Returns bytes transferred.
+pub(in crate::file_system::write_operations) async fn pull_path_to_local(
+    source_volume: &Arc<dyn Volume>,
+    source_path: &Path,
+    source_is_directory: bool,
+    dest_volume: &Arc<dyn Volume>,
+    dest_path: &Path,
+    state: &Arc<WriteOperationState>,
+) -> Result<u64, VolumeError> {
+    // A throwaway rollback ledger: on any failure the caller discards the whole
+    // scratch dir, so per-file rollback bookkeeping is moot.
+    let created = CreatedPaths::default();
+    let on_progress = |_written: u64, _total: u64| {
+        if super::super::state::is_cancelled(&state.intent) {
+            ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
+        }
+    };
+    let on_complete = |_bytes: u64| {};
+    copy_single_path(
+        source_volume,
+        source_path,
+        source_is_directory,
+        // No size hint: the stream reports the REAL length, so a source whose
+        // listed metadata size lies still pulls its true bytes.
+        None,
+        dest_volume,
+        dest_path,
+        state,
+        &created,
+        &on_progress,
+        &on_complete,
+        None,
+    )
+    .await
+}
+
 /// Streams one file from source to destination via `open_read_stream` /
 /// `write_from_stream`. Per-chunk progress and cancellation are enforced by
 /// the destination's `write_from_stream` implementation, which calls

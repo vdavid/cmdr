@@ -45,12 +45,12 @@ extract-and-persist lifecycle plus a startup reaper that doesn't exist yet (the 
 next-edit-scoped). Design the temp lifecycle first (where, how long, when reaped), then the menu wiring is small. See
 archive `DETAILS.md` § the deferred open-with item.
 
-## 5. Copy from remote sources INTO a zip (completeness)
+## 5. Copy from remote sources INTO a zip (completeness) — SHIPPED 2026-07-08
 
-Copy/move INTO a zip currently requires a local-FS source; a remote (SMB / MTP) source gets a typed refusal. The mutator
-ingests from local paths only, so the fix is a pull-to-temp prologue on the source side of `archive_copy_into_start`
-(mirroring how remote PARENTS already pull-edit-upload). Niche flow; effort is moderate; data-safety invariants
-(plan-inside-closure against real bytes) must carry over.
+Copying/moving a remote (SMB / MTP) source INTO a zip now works: `archive_copy_into_start` runs a source-side pull-to-
+scratch prologue (via the copy engine's `pull_path_to_local` seam) before the ordinary local ingest, orthogonal to the
+archive parent's local-vs-remote handling. Move deletes the remote originals after the durable commit. Canonical docs:
+`write_operations/DETAILS.md` § "Archive edits" (source-side pull bullet).
 
 ## 6. Remote-backed archive live refresh (UX, niche)
 

@@ -1834,7 +1834,10 @@ async fn volume_rollback_with_progress(
 /// For files: calls `volume.delete()` directly.
 /// For directories: lists contents, deletes children (files first, then subdirs),
 /// then deletes the directory itself. Best-effort: logs errors but continues.
-pub(super) async fn delete_volume_path_recursive(volume: &Arc<dyn Volume>, path: &Path) -> Result<(), VolumeError> {
+pub(in crate::file_system::write_operations) async fn delete_volume_path_recursive(
+    volume: &Arc<dyn Volume>,
+    path: &Path,
+) -> Result<(), VolumeError> {
     let is_dir = match volume.is_directory(path).await {
         Ok(true) => true,
         Ok(false) => false,

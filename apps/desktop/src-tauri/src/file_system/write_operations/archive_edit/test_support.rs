@@ -102,6 +102,33 @@ pub(super) async fn register_remote_zip(
     (id, parent)
 }
 
+/// Registers a NON-local `InMemoryVolume` (a remote SOURCE stand-in — MTP / SMB)
+/// pre-populated with `files` (each `(relative_path, bytes)`), creating every
+/// parent directory the paths imply. Returns the volume id and the handle;
+/// unregister with `get_volume_manager().unregister(&id)` when done.
+pub(super) async fn register_remote_source(
+    files: &[(&str, &[u8])],
+) -> (String, Arc<crate::file_system::volume::InMemoryVolume>) {
+    use crate::file_system::volume::InMemoryVolume;
+    let source = InMemoryVolume::new("RemoteSource");
+    for (rel, bytes) in files {
+        let path = PathBuf::from("/").join(rel);
+        if let Some(parent) = path.parent() {
+            let mut acc = PathBuf::from("/");
+            for comp in parent.strip_prefix("/").unwrap_or(parent).components() {
+                acc = acc.join(comp);
+                // Ignore "already exists" for shared ancestors across files.
+                let _ = source.create_directory(&acc).await;
+            }
+        }
+        source.create_file(&path, bytes).await.expect("seed remote source file");
+    }
+    let source = Arc::new(source);
+    let id = format!("remote-source-{}", Uuid::new_v4());
+    get_volume_manager().register(&id, Arc::clone(&source) as Arc<dyn Volume>);
+    (id, source)
+}
+
 /// Streams the archive back out of a (remote) parent and returns one entry's bytes.
 pub(super) async fn read_remote_entry(parent: &dyn Volume, archive_path: &Path, name: &str) -> Option<Vec<u8>> {
     let mut stream = parent.open_read_stream(archive_path).await.ok()?;
