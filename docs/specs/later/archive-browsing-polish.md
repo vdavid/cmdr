@@ -42,8 +42,57 @@ temp+rename is correct today.
 Enter on a file inside an archive offers the built-in viewer (temp-extract, 256 MiB cap, per-instance reaper). "Open
 with <external app>" is deferred: an external app needs the temp to OUTLIVE the viewer session, which means an
 extract-and-persist lifecycle plus a startup reaper that doesn't exist yet (the current reaper is per-instance,
-next-edit-scoped). Design the temp lifecycle first (where, how long, when reaped), then the menu wiring is small. See
-archive `DETAILS.md` § the deferred open-with item.
+next-edit-scoped). See archive `DETAILS.md` § the deferred open-with item.
+
+**Spiked 2026-07-08.** Recommend cloning the viewer's proven persist-extract shape (`file_viewer/archive_extract.rs`)
+into a sibling open-with-persist module, with a startup-ONLY reaper (no session-close reap, because a detached launched
+app has no close event to hook). Concretely:
+
+- **Where.** A NEW per-instance dir `<app_data_dir>/open-with-extract/`, initialized at startup right next to
+  `file_viewer::init_archive_extract_dir` in `lib.rs` (today `data_dir.join("viewer-extract")`, `lib.rs:458`). SEPARATE
+  from the viewer dir with its OWN subdir prefix (e.g. `.cmdr-openwith-<uuid>/`) so the viewer's session-close reap
+  (`session::close_session`) never removes a live open-with temp, and vice-versa. Per-instance (not shared) so
+  side-by-side dev/prod/worktree instances never reap each other's LIVE temps — the exact reasoning behind the viewer
+  dir. Reuse `archive_extract.rs`'s `ExtractedEntry` / `extract_entry` / `stream_to_file` shape (bounded,
+  refuse-before-extract on the central-directory-declared size, streaming byte-cap zip-bomb backstop); only the reap
+  lifecycle differs.
+- **How long / when reaped.** The temp lives until the NEXT app startup. A launched external app holds it for an unknown
+  lifetime with no close signal, so it can't be session-scoped. But the process boundary already marks every prior-run
+  open-with temp abandoned (its launched app belongs to a dead session), so a startup "reap the whole dir"
+  (`reap_orphan_extracts`-shaped, matching `.cmdr-openwith-*`) is both sufficient and safe — the same model as the
+  viewer's crash-orphan reaper, minus the session-close reap. No age/TTL timer and no refcount (a live temp is never
+  older than its own process).
+- **FDA gate (`src-tauri/CLAUDE.md`).** No constraint hit: the dir is under the app data dir, which is NOT
+  TCC-protected, so the startup reaper is a plain `read_dir` + `remove_dir_all` — the IDENTICAL launch operation
+  `init_archive_extract_dir` already runs at `lib.rs:458`. No `is_fda_pending_runtime()` guard needed.
+- **Collision / versioning.** A uuid subdir per open (like the viewer's "one temp per open"): opening the same inner
+  file twice yields two independent temps, no collision, no dedup cache to invalidate on archive edit. On archive
+  edit/close/navigation the temp is a detached snapshot — the launched app keeps its copy, correctly. There is NO
+  write-back to the archive (inner files are read-only preview): edits the user makes in the external app are lost. Flag
+  that as a product decision (read-only semantics, or a future watch-the-temp-and-mutate story), NOT a lifecycle
+  blocker.
+- **Menu wiring (small, reuses the existing machinery).** Launch reuses
+  `file_system::open_with::open_paths_with(paths, app_path)` UNCHANGED — the only change is that for an archive-inner
+  selection the launch path is the extracted temp, not the inner path. Extract on the click, in `menu_handlers.rs`'s
+  `open-with:<bundle-id>` branch (`open_with::OPEN_WITH_ID_PREFIX`) and the `OPEN_WITH_OTHER_ID` branch: swap each
+  archive-inner path for its freshly-extracted temp (on `spawn_blocking`, the same blocking `resolve`+stream the viewer
+  uses) before `open_paths_with`.
+- **One seam to verify.** Candidate LISTING at menu-build time (`commands/menu.rs::compute_open_with_choices` →
+  `open_with.rs`'s `URLsForApplicationsToOpenURL:`) queries the inner path, which is NOT a real FS file. Verify whether
+  LaunchServices resolves candidates for a non-existent file URL by its path extension (it generally maps
+  extension→UTType without a stat, so it likely does). If it doesn't, list against a path carrying the right extension
+  (the inner basename under the persist dir, no content needed) or key off the extension cache (`extension_cache_key`).
+  This is the only unknown; everything else is direct reuse.
+
+Rejected alternatives: session/refcount-scoped temp with a close hook (no close event exists for a detached app — the
+very reason it was deferred); a dedup cache keyed by inner path (adds archive-edit invalidation for no real gain); an
+age/TTL background reaper (redundant — the process boundary already marks prior temps abandoned); a shared (non
+per-instance) extract dir (a second instance's startup reap deletes the first's live temps); write-back to the archive
+on external-app save (out of scope — inner files are read-only preview).
+
+Rough effort: small. One module cloned from `archive_extract.rs` (dir init + startup reaper + reused extract path), one
+`lib.rs` init line, and the click-handler path-swap in `menu_handlers.rs`. The candidate-listing seam is the only
+investigation.
 
 ## 5. Copy from remote sources INTO a zip (completeness) — SHIPPED 2026-07-08
 
@@ -56,8 +105,44 @@ archive parent's local-vs-remote handling. Move deletes the remote originals aft
 
 A LOCAL archive listing live-refreshes when the backing file changes on disk (real `notify` watch on the `.zip`). A
 REMOTE archive doesn't (no watch transport over SMB / MTP). Options: poll `get_metadata` (size + mtime) on a
-visible-pane cadence, or accept manual refresh as the contract. Decide deliberately; today's behavior is stale-until-
-refresh with no indicator.
+visible-pane cadence, or accept manual refresh as the contract. Today's behavior is stale-until-refresh with no
+indicator.
+
+**Spiked 2026-07-08.** Recommend SMB: reuse the existing recursive CHANGE_NOTIFY watcher (push, not poll). MTP: accept
+manual refresh (F5) as the contract.
+
+**SMB — reuse `smb_watcher.rs`, no poll.** The SMB watcher already opens CHANGE_NOTIFY on the share root RECURSIVELY for
+the whole volume lifetime (it feeds the drive index), so it ALREADY receives a `FileNotifyAction::Modified` for any
+changed `.zip` and forwards it to `notify_directory_changed(volume_id, parent_dir, DirectoryChange::Modified)`. That
+refreshes the DIRECTORY listing (the `.zip`'s new size/mtime) but not the archive-INNER listings. The fix: in the
+smb_watcher Modified/Renamed handlers, when the changed path has a supported archive extension, ALSO call
+`caching::refresh_archive_listings(volume_id, &zip_path)` — the exact refresh the local `archive/watch.rs` already
+fires. It's a no-op when no inner listing is open (it scans `LISTING_CACHE` for keys at/inside the archive path), and
+`volume_id` here IS the parent drive id, which is what archive listings key on, so it lines up with no rekeying. Cost is
+near-zero: the watcher already runs, and the re-parse only happens when the `.zip` actually changes AND an inner listing
+is open.
+  - **Keep `ArchiveVolume::listing_is_watched` FALSE for a remote parent regardless.** The SMB watcher is documented
+    lossy-under-load (`backends/CLAUDE.md`, `volume/CLAUDE.md`), so the write-op fresh-listing oracle must still re-read
+    pre-flight scans honestly. The push-refresh above is a VISIBLE-listing UX nicety; it's a SEPARATE consumer from the
+    data-safety oracle — don't conflate them by flipping `listing_is_watched` to true.
+
+**MTP — manual refresh (F5).** No poll, no watch. Rationale: `MtpVolume::get_metadata` lists the ENTIRE parent directory
+(MTP has no single-file stat — `backends/CLAUDE.md`), so a visible-pane metadata poll is expensive per tick; the MTP
+event loop's `ObjectInfoChanged` is absent on many devices (cameras especially — `mtp.rs` `listing_is_watched` note), so
+it's not a dependable transport; MTP zip editing is itself a stretch (item 9 / M6); and an out-of-band rewrite of a
+`.zip` on a connected device while it's being browsed is rare. The `(path, size, mtime)` index-cache key already forces
+a re-parse on the next navigation/refresh, so a stale render never outlives an F5. If the MTP event loop DOES already
+emit an `mtp-directory-changed` for the `.zip`'s object on a given device, hooking the same `refresh_archive_listings`
+opportunistically is a cheap bonus — but don't build a poll and don't promise freshness (`listing_is_watched` stays as
+is).
+
+Rejected alternatives: polling `get_metadata` on a visible-pane cadence for SMB (strictly worse than the CHANGE_NOTIFY
+we already receive — adds latency and periodic round-trips for a push signal that already exists); polling for MTP (a
+full parent-dir listing per tick for a rare event); flipping SMB archives to `listing_is_watched = true` (would let the
+write-op oracle trust a lossy watcher's cache for pre-flight sizing — a data-safety regression).
+
+Rough effort: SMB small (a few lines in `smb_watcher.rs` plus the reused `refresh_archive_listings` call); MTP zero
+(document the manual-refresh contract; the cache key already guarantees correctness on the next read).
 
 ## 7. Remote edit temp reaping (data hygiene, small)
 
