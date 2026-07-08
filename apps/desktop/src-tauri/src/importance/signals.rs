@@ -53,13 +53,17 @@ pub struct ChildAggregate {
 /// user's home dir for path classification. `has_marker_below` lets the caller
 /// raise a folder whose project marker sits in a DESCENDANT (a `.git` deeper in
 /// the subtree still marks the root, plan Decision 3) — `children.has_direct_marker`
-/// handles the marker-in-this-folder case.
+/// handles the marker-in-this-folder case. `under_floored_ancestor` is the mirror
+/// image on the floor side: the caller sets it when a self-flooring ancestor (a
+/// denylisted / hidden / system folder) sits above this one, so the whole subtree
+/// under a `node_modules` floors, not just the named folder.
 pub fn signals_for_dir(
     dir: &EntryRow,
     children: ChildAggregate,
     path: &str,
     home: &str,
     has_marker_below: bool,
+    under_floored_ancestor: bool,
     optional: OptionalSignals,
 ) -> FolderSignals {
     let name = leaf_name(path);
@@ -80,6 +84,7 @@ pub fn signals_for_dir(
     FolderSignals {
         name_denylisted,
         hidden_or_system,
+        under_floored_ancestor,
         distinct_extension_count: children.distinct_extension_count,
         file_count: children.file_count,
         mtime_secs: dir.modified_at,
@@ -121,6 +126,7 @@ mod tests {
             "/Users/me/proj/node_modules",
             "/Users/me",
             false,
+            false,
             Default::default(),
         );
         assert!(s.name_denylisted, "a node_modules folder is denylisted by name");
@@ -135,7 +141,15 @@ mod tests {
             file_count: 1,
             has_direct_marker: true,
         };
-        let s = signals_for_dir(&d, children, "/Users/me/proj", "/Users/me", false, Default::default());
+        let s = signals_for_dir(
+            &d,
+            children,
+            "/Users/me/proj",
+            "/Users/me",
+            false,
+            false,
+            Default::default(),
+        );
         assert!(s.has_project_marker, "a direct marker child marks a project root");
         assert_eq!(
             s.path_class,
@@ -158,6 +172,7 @@ mod tests {
             "/Users/me/proj",
             "/Users/me",
             true,
+            false,
             Default::default(),
         );
         assert!(s.has_project_marker, "a marker in a descendant still raises the folder");
@@ -171,7 +186,15 @@ mod tests {
             file_count: 3,
             has_direct_marker: false,
         };
-        let s = signals_for_dir(&d, children, "/Users/me/mixed", "/Users/me", false, Default::default());
+        let s = signals_for_dir(
+            &d,
+            children,
+            "/Users/me/mixed",
+            "/Users/me",
+            false,
+            false,
+            Default::default(),
+        );
         assert_eq!(s.file_count, 3, "the aggregated file count carries through");
         assert_eq!(s.distinct_extension_count, 3, "three distinct extensions");
     }
@@ -188,6 +211,7 @@ mod tests {
             ChildAggregate::default(),
             "/Users/me/Documents/docs",
             "/Users/me",
+            false,
             false,
             opt,
         );

@@ -40,6 +40,60 @@ pub fn is_hidden_or_system(path: &str, name: &str, home: &str) -> bool {
     name.starts_with('.') || matches!(path_class(path, home), PathClass::SystemOrCache)
 }
 
+/// Whether a folder floors ON ITS OWN — a denylisted name OR hidden/system. This
+/// is the seed for the descendant-floor propagation: a folder that self-floors
+/// floors every folder below it too (`under_floored_ancestor`). Kept here, shared
+/// by the production walk and the fixtures/evals derivation, so the two agree on
+/// exactly which folders anchor a floored subtree.
+pub fn self_floors(path: &str, name: &str, home: &str) -> bool {
+    is_denylisted(name) || is_hidden_or_system(path, name, home)
+}
+
+/// Given every folder path (in any order) and the home root, return the subset
+/// that sits UNDER a self-flooring ancestor — the `under_floored_ancestor` signal
+/// for each. A folder is under-floored when any PROPER ancestor of it self-floors
+/// (denylisted / hidden / system), whether or not that ancestor is itself in
+/// `paths`. Pure string + classifier math over the folder set, so a scenario
+/// derives it identically to how the production walk does — the shared derivation
+/// the `classify` must-know calls for.
+///
+/// The self-flooring folders themselves are NOT returned (they floor via their own
+/// flag, not this one); only their descendants are. Detection walks each folder's
+/// own ancestor path components rather than the sibling set, so a floored ancestor
+/// missing from `paths` (a `node_modules` the index pruned but whose children
+/// remain) still floors the descendants.
+pub fn under_floored_paths<'a>(
+    paths: impl IntoIterator<Item = &'a str>,
+    home: &str,
+) -> std::collections::HashSet<String> {
+    let mut under = std::collections::HashSet::new();
+    for path in paths {
+        if any_ancestor_self_floors(path, home) {
+            under.insert(path.to_string());
+        }
+    }
+    under
+}
+
+/// Whether any PROPER ancestor directory of `path` self-floors. Walks the path's
+/// own components from the second-to-last up, classifying each ancestor by its own
+/// name + full ancestor path. The folder itself is excluded (start above it).
+fn any_ancestor_self_floors(path: &str, home: &str) -> bool {
+    let mut current = path;
+    while let Some(pos) = current.rfind('/') {
+        if pos == 0 {
+            break; // reached the root `/`; no folder ancestor above it.
+        }
+        let ancestor = &current[..pos];
+        let name = leaf_name(ancestor);
+        if self_floors(ancestor, &name, home) {
+            return true;
+        }
+        current = ancestor;
+    }
+    false
+}
+
 /// The project markers whose presence in a folder (or a descendant) marks it as
 /// at/above a project root, raising the whole subtree (plan Decision 3). A
 /// set-membership check on the folded child name.
@@ -122,5 +176,66 @@ mod tests {
         assert!(is_project_marker("cargo.toml"));
         assert!(is_project_marker("package.json"));
         assert!(!is_project_marker("readme.md"));
+    }
+
+    #[test]
+    fn self_floors_covers_denylist_and_hidden_system() {
+        let home = "/Users/test";
+        assert!(
+            self_floors("/Users/test/proj/node_modules", "node_modules", home),
+            "a denylisted folder self-floors"
+        );
+        assert!(
+            self_floors("/Users/test/.config", ".config", home),
+            "a dotfile self-floors"
+        );
+        assert!(
+            self_floors("/Users/test/Library/Caches", "Caches", home),
+            "a system/cache folder self-floors"
+        );
+        assert!(
+            !self_floors("/Users/test/projects/webapp", "webapp", home),
+            "an ordinary folder doesn't self-floor"
+        );
+    }
+
+    #[test]
+    fn under_floored_paths_marks_descendants_of_a_floored_ancestor() {
+        let home = "/Users/test";
+        let paths = [
+            "/Users/test/projects/webapp",
+            "/Users/test/projects/webapp/node_modules",
+            "/Users/test/projects/webapp/node_modules/react",
+            "/Users/test/projects/webapp/node_modules/react/cjs",
+            "/Users/test/projects/webapp/.git",
+            "/Users/test/projects/webapp/.git/refs/heads",
+            "/Users/test/Documents/invoices",
+        ];
+        let under = under_floored_paths(paths.iter().copied(), home);
+
+        // Descendants of node_modules and .git are under-floored.
+        assert!(under.contains("/Users/test/projects/webapp/node_modules/react"));
+        assert!(under.contains("/Users/test/projects/webapp/node_modules/react/cjs"));
+        assert!(under.contains("/Users/test/projects/webapp/.git/refs/heads"));
+
+        // The self-flooring anchors themselves are NOT in the set (they floor via
+        // their own flag, not this one).
+        assert!(!under.contains("/Users/test/projects/webapp/node_modules"));
+        assert!(!under.contains("/Users/test/projects/webapp/.git"));
+
+        // Folders outside any floored subtree are untouched.
+        assert!(!under.contains("/Users/test/projects/webapp"));
+        assert!(!under.contains("/Users/test/Documents/invoices"));
+    }
+
+    #[test]
+    fn under_floored_detects_an_ancestor_absent_from_the_path_set() {
+        // The ancestor `node_modules` isn't in the input list (say the index pruned
+        // it), but its descendant still floors — detection walks the path's own
+        // components, not the sibling set.
+        let home = "/Users/test";
+        let paths = ["/Users/test/x/node_modules/pkg/dist"];
+        let under = under_floored_paths(paths.iter().copied(), home);
+        assert!(under.contains("/Users/test/x/node_modules/pkg/dist"));
     }
 }

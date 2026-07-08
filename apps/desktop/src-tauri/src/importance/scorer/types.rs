@@ -77,6 +77,16 @@ pub struct FolderSignals {
     /// `true` when the folder is hidden (dotfile) or OS/system-owned. Lowers the
     /// score: hidden/system folders are rarely what a person means by "important".
     pub hidden_or_system: bool,
+    /// `true` when a floored ancestor (a denylisted, hidden, or system folder) sits
+    /// somewhere above this folder — so the whole subtree under a `node_modules`,
+    /// a `.git`, or a cache is floored, not just the named folder itself. A FLOOR
+    /// override like the two above.
+    ///
+    /// `#[serde(default)]` so a `FolderSignals` persisted before this field existed
+    /// still deserializes (its absence reads as `false`); such a stored vector is a
+    /// stale generation anyway and gets overwritten on the next full pass.
+    #[serde(default)]
+    pub under_floored_ancestor: bool,
     /// Distinct file extensions directly under this folder. A folder with many
     /// kinds of files reads as a working area; a monoculture (one extension) reads
     /// as machine output (a logs folder, a frame dump). See [`extension_count`].
@@ -112,6 +122,7 @@ impl FolderSignals {
         Self {
             name_denylisted: false,
             hidden_or_system: false,
+            under_floored_ancestor: false,
             distinct_extension_count: 0,
             file_count: 0,
             mtime_secs: None,
@@ -229,9 +240,9 @@ pub struct Explanation {
     pub score: Score,
     /// Per-signal contributions. Their sum (clamped) equals `score`.
     pub contributions: Vec<SignalContribution>,
-    /// `true` when a FLOOR override (denylist or hidden/system) capped the score,
-    /// so a reader understands why the additive terms don't sum to the score in
-    /// that case.
+    /// `true` when a FLOOR override (denylist, hidden/system, or a floored
+    /// ancestor) capped the score, so a reader understands why the additive terms
+    /// don't sum to the score in that case.
     pub floored: bool,
 }
 

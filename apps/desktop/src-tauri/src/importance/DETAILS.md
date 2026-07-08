@@ -37,6 +37,10 @@ stay `None` until M2 wires their sources.
   (`no-string-matching` rule).
 - **hidden / system** (`hidden_or_system`): also a FLOOR override. A dotfile or system-owned folder scores `0.0`. The
   soft, non-floor side ("being visible is mildly positive") is the separate additive `Visibility` term.
+- **under a floored ancestor** (`under_floored_ancestor`): the third FLOOR override — `true` when a self-flooring
+  ancestor (denylisted / hidden / system) sits above this folder, so the whole subtree under a `node_modules`, a `.git`,
+  or a cache floors, not just the named folder. See "The floor propagates to descendants" below for the derivation and
+  the vendored-repo nuance.
 - **extension diversity** (`distinct_extension_count` + `file_count`): mixed folders score above monocultures. Normalized
   as `distinct / min(file_count, 5)`, so three files of three kinds already reads as diverse while 200 `.log` files (one
   extension) reads as a monoculture. Zero files is neutral (`0.0`).
@@ -142,7 +146,9 @@ multi-million-entry NAS index, not O(entries) (an `all_entries` walk went transi
 the NAS-sized volumes SMB scoring now enables). Directory children still come from the directory set (a `.git`/`.hg`/`.svn`
 marker is a directory), so `has_direct_marker` folds both the streamed file children and the sibling directory children.
 `signals_for_dir` takes the `ChildAggregate`, not child rows. `has_marker_below` is one upward propagation after the walk
-(a `.git` deep in a tree raises its ancestors, plan Decision 3).
+(a `.git` deep in a tree raises its ancestors, plan Decision 3); `under_floored_ancestor` is its downward twin, a second
+pass over the same parent map that floors every folder below a self-flooring one (see "The floor propagates to
+descendants").
 
 **Signal assembly agrees with the fixtures by construction.** The categorical signals (denylist, path class, project
 marker, hidden) come from the shared [`classify`](classify.rs) module that BOTH `signals::signals_for_dir` (production)
@@ -275,13 +281,28 @@ brief:
   verbatim: denylist hits, dot-prefixed names, path-class anchors (as home children), project markers. The home root
   itself becomes a synthetic `/home` or `/volume`. Pinned by the `corpus/tests.rs` privacy tests.
 
-### Known default-weight gap the real-corpus evals surfaced
+### The floor propagates to descendants (the descendant-floor rule)
 
-Scoring David's real `index-root.db` (646k folders) with default weights ranks deep machine-output folders at the TOP:
-the denylist floors a folder NAMED `node_modules`/`.git`, but NOT its descendants, so a `node_modules/<pkg>/dist` (312k
-such descendant folders in the root tree) inherits a project-root prior from an ancestor `.git` and scores ~0.85. This
-is a scorer-LOGIC gap (the denylist doesn't propagate to descendants), not a weight-tuning problem — no `Weights` value
-fixes it. It's the top follow-up for the scorer itself; the evals make it visible and would regression-guard a fix.
+A floored folder floors its whole SUBTREE, not just the named folder. Three flags floor a folder to `0.0`:
+`name_denylisted`, `hidden_or_system`, and `under_floored_ancestor` — the last is `true` when any self-flooring ancestor
+(a denylisted, hidden, or system folder) sits above it. So a `node_modules/<pkg>/dist` floors even though `dist` isn't
+itself denylisted, and a `.git/refs/heads` floors under the `.git`. Without this, scoring David's real `index-root.db`
+(646k folders) ranked deep machine-output folders at the TOP: the 312k folders living under a `node_modules` inherited a
+project-root prior from an ancestor `.git` and scored ~0.85, dwarfing real content.
+
+- **Derivation is shared** (the `classify.rs` must-know): `classify::self_floors` decides the seed, and both the
+  production walk (`scheduler/recompute.rs`, a downward propagation over the same `id → parent_id` map path
+  reconstruction uses — the twin of the upward `has_marker_below`) and the fixtures / evals scenario builder
+  (`classify::under_floored_paths`, pure path math) derive `under_floored_ancestor` from it, so synthetic scenarios
+  exercise the exact rule production applies.
+- **Floor beats marker (the vendored-repo nuance).** A folder that IS itself a project root — a repo vendored inside a
+  `node_modules`, carrying its own `.git` — stays floored when it sits under a floored ancestor. The floor is a hard cap
+  outside the additive sum, so `has_project_marker`/`ProjectRoot` can't rescue it. That's the intended behavior: a
+  vendored dependency is machine output, project markers and all.
+- **Persistence.** `under_floored_ancestor` is a `#[serde(default)]` field on `FolderSignals`, so a vector persisted
+  before it existed still deserializes (its absence reads as `false`); such a row is a stale generation and gets
+  overwritten on the next full pass. The eval scenarios' hard constraints (a `ScoreAtMost 0.0` on every folder under a
+  `node_modules`/`.git`/cache, plus the vendored-repo case) regression-guard the rule.
 
 ## Adding a signal (step-by-step)
 

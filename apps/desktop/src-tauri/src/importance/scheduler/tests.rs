@@ -221,6 +221,178 @@ fn odirs_walk_aggregates_children_like_a_whole_tree_walk() {
     }
 }
 
+// ── Descendant-floor: a floored ancestor floors its whole subtree ─────────
+
+/// The walk marks every folder UNDER a self-flooring ancestor (a denylisted /
+/// hidden / system folder) as `under_floored_ancestor`, and the recompute floors
+/// it to 0 — so a `node_modules`'s whole subtree floors, not just the folder named
+/// `node_modules`. Pre-fix, a deep `node_modules/pkg/dist` inherited a project-root
+/// prior and scored near the top; this pins that it now floors.
+#[test]
+fn descendants_of_a_floored_folder_floor_too() {
+    use crate::indexing::store::{IndexStore, ROOT_ID};
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let index_path = dir.path().join("index-root.db");
+    let home = "/Users/test";
+
+    // Build a tiny index: a project with a .git (so the project root is marked),
+    // and a node_modules holding a nested package with a `dist` and a vendored repo
+    // (its own .git) — the folders that must all floor as node_modules descendants.
+    {
+        let store = IndexStore::open(&index_path).expect("open index");
+        let conn = store.read_conn();
+        let mut path_to_id: HashMap<String, i64> = HashMap::new();
+        let mut next_id: i64 = ROOT_ID + 1;
+        let mkdir =
+            |conn: &rusqlite::Connection, path: &str, path_to_id: &mut HashMap<String, i64>, next_id: &mut i64| {
+                let parent = std::path::Path::new(path)
+                    .parent()
+                    .map(|p| p.to_string_lossy().to_string());
+                let parent_id = match parent.as_deref() {
+                    Some("") | Some("/") | None => ROOT_ID,
+                    Some(pp) => *path_to_id.get(pp).unwrap_or(&ROOT_ID),
+                };
+                let name = std::path::Path::new(path)
+                    .file_name()
+                    .map(|s| s.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                let id = *next_id;
+                *next_id += 1;
+                IndexStore::insert_entry_v2_with_id(
+                    conn,
+                    id,
+                    parent_id,
+                    &name,
+                    true,
+                    false,
+                    None,
+                    None,
+                    Some(1_000_000_000),
+                    None,
+                )
+                .expect("insert dir");
+                path_to_id.insert(path.to_string(), id);
+                id
+            };
+        // Directories, parent-first.
+        for d in [
+            "/Users",
+            "/Users/test",
+            "/Users/test/proj",
+            "/Users/test/proj/.git",
+            "/Users/test/proj/node_modules",
+            "/Users/test/proj/node_modules/react",
+            "/Users/test/proj/node_modules/react/dist",
+            "/Users/test/proj/node_modules/vendored",
+            "/Users/test/proj/node_modules/vendored/.git",
+        ] {
+            mkdir(conn, d, &mut path_to_id, &mut next_id);
+        }
+        // A package.json under proj so it reads as a project root, and a mixed file
+        // under the deep dist so it'd score high absent the fix.
+        let proj_id = *path_to_id.get("/Users/test/proj").expect("proj");
+        IndexStore::insert_entry_v2_with_id(
+            conn,
+            next_id,
+            proj_id,
+            "package.json",
+            false,
+            false,
+            Some(1),
+            Some(1),
+            Some(1_000_000_000),
+            None,
+        )
+        .expect("insert file");
+        next_id += 1;
+        let dist_id = *path_to_id
+            .get("/Users/test/proj/node_modules/react/dist")
+            .expect("dist");
+        for fname in ["a.js", "b.ts", "c.css"] {
+            IndexStore::insert_entry_v2_with_id(
+                conn,
+                next_id,
+                dist_id,
+                fname,
+                false,
+                false,
+                Some(1),
+                Some(1),
+                Some(1_000_000_000),
+                None,
+            )
+            .expect("insert file");
+            next_id += 1;
+        }
+    }
+
+    let pool = crate::indexing::ReadPool::new(index_path).expect("read pool");
+    let folders = pool
+        .with_conn(|conn| walk_index_folders(conn, home))
+        .expect("pool")
+        .expect("walk");
+
+    let by_path = |p: &str| {
+        folders
+            .iter()
+            .find(|f| f.path == p)
+            .unwrap_or_else(|| panic!("missing {p}"))
+    };
+
+    // The project root itself is NOT under-floored.
+    assert!(
+        !by_path("/Users/test/proj").under_floored_ancestor,
+        "the project root itself is not floored"
+    );
+    // Every folder under node_modules is under-floored, including the vendored repo.
+    for p in [
+        "/Users/test/proj/node_modules/react",
+        "/Users/test/proj/node_modules/react/dist",
+        "/Users/test/proj/node_modules/vendored",
+        "/Users/test/proj/node_modules/vendored/.git",
+    ] {
+        assert!(
+            by_path(p).under_floored_ancestor,
+            // allowed-pluralize-noun: `{p}` is a path, not a count.
+            "expected under-floored (lives under node_modules): {p}"
+        );
+    }
+
+    // Score the walk and assert the deep dist floors to 0 despite mixed, recent files.
+    let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID)).expect("writer");
+    let weights = Weights::default();
+    recompute_folders(
+        &RecomputeInputs {
+            writer: &writer,
+            weights: &weights,
+            home,
+            now_secs: 1_000_000_000,
+            available: SignalSet::listing_only(),
+            visits: &HashMap::new(),
+            last_used: &HashMap::new(),
+        },
+        &folders,
+    )
+    .expect("recompute");
+    writer.flush_blocking().expect("flush");
+
+    let store = ImportanceStore::open(&importance_db_path(dir.path(), ROOT_VOLUME_ID)).expect("open");
+    let score_of = |p: &str| store.weight_for(p).expect("read").map(|w| w.score).unwrap_or(-1.0);
+    assert_eq!(
+        score_of("/Users/test/proj/node_modules/react/dist"),
+        0.0,
+        "a deep node_modules dir floors"
+    );
+    assert_eq!(
+        score_of("/Users/test/proj/node_modules/vendored"),
+        0.0,
+        "a vendored repo under node_modules stays floored"
+    );
+    assert!(score_of("/Users/test/proj") > 0.0, "the real project root still scores");
+    writer.shutdown();
+}
+
 // ── Incremental recompute (plan M3 TDD target) ────────────────────────────
 
 /// The touched set is the changed folders PLUS their ancestor chains (so a marker

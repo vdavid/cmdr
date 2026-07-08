@@ -30,6 +30,11 @@ pub(crate) struct IndexFolder {
     pub(crate) path: String,
     pub(crate) children: ChildAggregate,
     pub(crate) has_marker_below: bool,
+    /// `true` when a self-flooring ancestor (a denylisted, hidden, or system
+    /// folder) sits above this one — so the whole subtree under a `node_modules`
+    /// or a cache floors, not just the named folder. The downward twin of
+    /// `has_marker_below`'s upward marker propagation.
+    pub(crate) under_floored_ancestor: bool,
 }
 
 /// Walk every directory in a volume's index and build each folder's row,
@@ -51,7 +56,7 @@ pub(crate) struct IndexFolder {
 /// in-memory `id → (parent_id, name)` directory map (no per-directory point
 /// query). `has_marker_below` is a single upward propagation after the walk, so a
 /// `.git` deep in a tree raises its ancestors (plan Decision 3).
-pub(crate) fn walk_index_folders(conn: &rusqlite::Connection, _home: &str) -> Result<Vec<IndexFolder>, String> {
+pub(crate) fn walk_index_folders(conn: &rusqlite::Connection, home: &str) -> Result<Vec<IndexFolder>, String> {
     let dirs = IndexStore::all_directories(conn).map_err(|e| e.to_string())?;
 
     // Index the directory rows: a lookup for path reconstruction, keyed by id.
@@ -110,7 +115,38 @@ pub(crate) fn walk_index_folders(conn: &rusqlite::Connection, _home: &str) -> Re
                 has_direct_marker: a.has_direct_marker,
             },
             has_marker_below: false,
+            under_floored_ancestor: false,
         });
+    }
+
+    // Propagate the floor DOWN to descendants: a folder under a self-flooring
+    // ancestor (a denylisted / hidden / system folder) floors too, so a
+    // `node_modules`'s whole subtree floors, not just the folder named
+    // `node_modules` (the descendant-floor fix). The downward twin of the
+    // marker-below upward propagation above.
+    //
+    // Seed the self-flooring folders (classified from each folder's own path via
+    // the shared `classify` predicate), then mark every DESCENDANT of a seed by
+    // walking each folder's parent chain and checking whether any ancestor is a
+    // seed. Uses the same `id → parent_id` directory map path reconstruction uses,
+    // so it's robust to the entries map not being parent-before-child sorted.
+    let self_floored: std::collections::HashSet<i64> = folders
+        .iter()
+        .filter(|f| crate::importance::classify::self_floors(&f.path, &f.entry.name, home))
+        .map(|f| f.entry.id)
+        .collect();
+    for folder in &mut folders {
+        let mut cursor = by_id.get(&folder.entry.id).map(|e| e.parent_id);
+        while let Some(pid) = cursor {
+            if pid == ROOT_ID {
+                break;
+            }
+            if self_floored.contains(&pid) {
+                folder.under_floored_ancestor = true;
+                break;
+            }
+            cursor = by_id.get(&pid).map(|e| e.parent_id);
+        }
     }
 
     // Propagate a direct project marker up to every ancestor: a `.git` deep in a
@@ -176,7 +212,15 @@ pub(super) fn score_folders(
         .iter()
         .map(|f| {
             let optional = optional_for(&f.path);
-            let signals = signals_for_dir(&f.entry, f.children, &f.path, home, f.has_marker_below, optional);
+            let signals = signals_for_dir(
+                &f.entry,
+                f.children,
+                &f.path,
+                home,
+                f.has_marker_below,
+                f.under_floored_ancestor,
+                optional,
+            );
             let s = score(&signals, available, weights, now_secs);
             let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
             WeightRow {
@@ -330,7 +374,15 @@ pub(super) fn incremental_rescore(
                 visit_count: inputs.visits.get(&f.path).copied(),
                 last_used_secs: last_used.get(&f.path).copied(),
             };
-            let signals = signals_for_dir(&f.entry, f.children, &f.path, inputs.home, f.has_marker_below, optional);
+            let signals = signals_for_dir(
+                &f.entry,
+                f.children,
+                &f.path,
+                inputs.home,
+                f.has_marker_below,
+                f.under_floored_ancestor,
+                optional,
+            );
             let s = score(&signals, &inputs.available, inputs.weights, inputs.now_secs);
             let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
             WeightRow {

@@ -48,6 +48,47 @@ fn hidden_or_system_folder_floors() {
     assert_eq!(score_of(&signals), 0.0, "hidden/system folder must floor to 0.0");
 }
 
+#[test]
+fn under_floored_ancestor_floors_a_healthy_looking_folder() {
+    // A folder that is NOT itself denylisted or hidden, and looks genuinely
+    // important (recent, mixed, project-root prior) — but lives under a floored
+    // ancestor (a node_modules/.git/cache). It must floor: the descendant of a
+    // floored folder is floored (importance plan D3, agent spec §5.1).
+    let mut signals = FolderSignals::neutral();
+    signals.under_floored_ancestor = true;
+    signals.mtime_secs = Some(NOW);
+    signals.distinct_extension_count = 5;
+    signals.file_count = 8;
+    signals.path_class = PathClass::ProjectRoot;
+    signals.has_project_marker = true;
+
+    assert_eq!(
+        score_of(&signals),
+        0.0,
+        "a folder under a floored ancestor must floor to 0.0 even with strong signals"
+    );
+    // And the explain breakdown reports the floor.
+    let explanation = explain(&signals, &all(), &Weights::default(), NOW);
+    assert!(explanation.floored, "explain marks it floored");
+}
+
+#[test]
+fn a_vendored_repo_under_a_floored_ancestor_stays_floored() {
+    // The nuance: a folder that IS itself a project root (a repo vendored inside a
+    // node_modules) stays floored when it sits under a floored ancestor. Floor
+    // beats marker — the whole floored subtree is out, project markers and all.
+    let mut signals = FolderSignals::neutral();
+    signals.has_project_marker = true;
+    signals.path_class = PathClass::ProjectRoot;
+    signals.under_floored_ancestor = true;
+
+    assert_eq!(
+        score_of(&signals),
+        0.0,
+        "a project root under a floored ancestor stays floored (floor beats marker)"
+    );
+}
+
 // ── Project root scores high ─────────────────────────────────────────────────
 
 #[test]
@@ -347,6 +388,35 @@ fn folder_signals_serde_roundtrips() {
     assert_eq!(back, signals, "FolderSignals must round-trip through serde");
 }
 
+/// A `FolderSignals` persisted BEFORE `under_floored_ancestor` existed (its JSON
+/// has no such key) still deserializes, defaulting the field to `false`. The
+/// `#[serde(default)]` on the field is what makes an old stored vector readable
+/// instead of a parse failure — a stale row like this is overwritten on the next
+/// full pass, but it must not break the read in the meantime.
+#[test]
+fn folder_signals_deserializes_without_under_floored_ancestor() {
+    // A pre-fix vector: every field EXCEPT `underFlooredAncestor`.
+    let legacy_json = r#"{
+        "nameDenylisted": false,
+        "hiddenOrSystem": false,
+        "distinctExtensionCount": 3,
+        "fileCount": 9,
+        "mtimeSecs": 1700000000,
+        "hasProjectMarker": true,
+        "pathClass": "projectRoot",
+        "visitCount": 2,
+        "lastUsedSecs": null
+    }"#;
+
+    let parsed: FolderSignals = serde_json::from_str(legacy_json).expect("legacy vector still deserializes");
+    assert!(
+        !parsed.under_floored_ancestor,
+        "a missing under_floored_ancestor defaults to false"
+    );
+    assert_eq!(parsed.distinct_extension_count, 3, "the other fields parse normally");
+    assert!(parsed.has_project_marker);
+}
+
 // ── Property: score is always a valid, finite [0,1] ──────────────────────────
 
 proptest::proptest! {
@@ -354,6 +424,7 @@ proptest::proptest! {
     fn score_is_always_finite_and_in_range(
         name_denylisted in proptest::bool::ANY,
         hidden_or_system in proptest::bool::ANY,
+        under_floored_ancestor in proptest::bool::ANY,
         distinct in 0u32..500,
         files in 0u32..5000,
         mtime in proptest::option::of(0u64..2_000_000_000),
@@ -369,6 +440,7 @@ proptest::proptest! {
         let signals = FolderSignals {
             name_denylisted,
             hidden_or_system,
+            under_floored_ancestor,
             distinct_extension_count: distinct,
             file_count: files,
             mtime_secs: mtime,

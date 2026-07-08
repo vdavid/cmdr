@@ -27,19 +27,21 @@ pub fn score(inputs: &FolderSignals, available: &SignalSet, weights: &Weights, n
 ///
 /// The single source of truth for the formula: [`score`] delegates here and
 /// returns only the scalar. The returned contributions sum (then clamp) to the
-/// score whenever no floor override fires; when the denylist or the hidden/system
-/// flag floors the score, [`Explanation::floored`] is `true` and the additive
-/// terms are reported at the values they *would* have contributed, so a tuner can
-/// still see the underlying signal shape.
+/// score whenever no floor override fires; when the denylist, the hidden/system
+/// flag, or a floored ancestor floors the score, [`Explanation::floored`] is
+/// `true` and the additive terms are reported at the values they *would* have
+/// contributed, so a tuner can still see the underlying signal shape.
 pub fn explain(inputs: &FolderSignals, available: &SignalSet, weights: &Weights, now_secs: u64) -> Explanation {
     let contributions = per_signal_contributions(inputs, available, weights, now_secs);
 
     let additive: f64 = contributions.iter().map(|c| c.contribution).sum();
 
-    // FLOOR overrides: a denylisted name or a hidden/system folder caps the score
-    // at the floor regardless of its other signals (plan Decision 3). These are
-    // hard caps, not additive terms, so they live outside the weighted sum.
-    let floored = inputs.name_denylisted || inputs.hidden_or_system;
+    // FLOOR overrides: a denylisted name, a hidden/system folder, OR a folder under
+    // a floored ancestor caps the score at the floor regardless of its other signals
+    // (plan Decision 3). These are hard caps, not additive terms, so they live
+    // outside the weighted sum. The ancestor case is what keeps a `node_modules`'s
+    // whole subtree floored, not just the folder named `node_modules`.
+    let floored = inputs.name_denylisted || inputs.hidden_or_system || inputs.under_floored_ancestor;
     let score = if floored {
         Score::FLOOR
     } else {

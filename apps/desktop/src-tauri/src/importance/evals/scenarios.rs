@@ -19,7 +19,7 @@
 
 use super::constraints::Constraint;
 use super::scenario::{Availability, Scenario, ScenarioFolder};
-use crate::importance::classify::{is_denylisted, is_hidden_or_system, leaf_name, path_class};
+use crate::importance::classify::{is_denylisted, is_hidden_or_system, leaf_name, path_class, under_floored_paths};
 use crate::importance::scorer::{FolderSignals, PathClass, extension_count};
 
 /// Seconds in a day, for readable age offsets.
@@ -136,11 +136,16 @@ impl ScenarioBuilder {
     /// Derive signals for every folder and finish the scenario.
     pub fn build(self) -> Scenario {
         let now = SYNTHETIC_NOW;
+        // Derive the descendant-floor signal once over the whole folder set, the
+        // same shared derivation production uses (a folder under a self-flooring
+        // ancestor floors too). Computed here rather than per-spec so a scenario
+        // exercises the exact cross-folder logic the scheduler walk does.
+        let under_floored = under_floored_paths(self.folders.iter().map(|s| s.path.as_str()), &self.home);
         let folders = self
             .folders
             .iter()
             .map(|spec| {
-                let signals = derive_signals(spec, &self.home, now);
+                let signals = derive_signals(spec, &self.home, now, under_floored.contains(&spec.path));
                 ScenarioFolder {
                     path: spec.path.clone(),
                     signals,
@@ -163,7 +168,7 @@ impl ScenarioBuilder {
 /// synthetic folder classifies exactly as the live scheduler would. A folder with
 /// a project marker is a project root (the strongest prior); otherwise the path
 /// alone classifies it.
-fn derive_signals(spec: &FolderSpec, home: &str, now: u64) -> FolderSignals {
+fn derive_signals(spec: &FolderSpec, home: &str, now: u64, under_floored_ancestor: bool) -> FolderSignals {
     let name = leaf_name(&spec.path);
     let file_refs: Vec<&str> = spec.files.iter().map(|s| s.as_str()).collect();
     let path_class = if spec.has_marker {
@@ -174,6 +179,7 @@ fn derive_signals(spec: &FolderSpec, home: &str, now: u64) -> FolderSignals {
     FolderSignals {
         name_denylisted: is_denylisted(&name),
         hidden_or_system: is_hidden_or_system(&spec.path, &name, home),
+        under_floored_ancestor,
         distinct_extension_count: extension_count(file_refs.iter().copied()),
         file_count: spec.files.len() as u32,
         mtime_secs: spec.age_days.map(|d| now.saturating_sub(d * DAY)),
@@ -232,8 +238,50 @@ fn dev_home() -> Scenario {
         &["index.js", "react.js"],
         30,
     ))
+    // Deep node_modules internals: these live UNDER a node_modules, so they floor
+    // even though their name isn't denylisted. Recent, mixed-extension, and (for
+    // the .bin dir) even carrying what looks like project structure — exactly the
+    // folders that climbed to the top before the descendant-floor fix.
+    .folder(FolderSpec::new(
+        &p("projects/webapp/node_modules/react/cjs"),
+        &["react.development.js", "react.production.js", "react.min.js"],
+        1,
+    ))
+    .folder(FolderSpec::new(
+        &p("projects/webapp/node_modules/.bin"),
+        &["tsc", "eslint", "vite"],
+        1,
+    ))
+    // A vendored repo inside node_modules: it has a .git, so absent the fix it would
+    // read as a project root and score near the top. Floor beats marker — it stays
+    // floored because it lives under node_modules.
+    .folder(
+        FolderSpec::new(
+            &p("projects/webapp/node_modules/vendored-lib"),
+            &["package.json", "index.ts", "README.md"],
+            1,
+        )
+        .with_marker(),
+    )
+    .folder(FolderSpec::new(
+        &p("projects/webapp/node_modules/vendored-lib/src"),
+        &["core.ts", "utils.ts", "types.ts"],
+        1,
+    ))
     .folder(FolderSpec::new(&p("projects/webapp/.git"), &["HEAD", "config"], 1))
+    // A .git internal subtree: floored as a descendant of a floored .git dir.
+    .folder(FolderSpec::new(
+        &p("projects/webapp/.git/refs/heads"),
+        &["main", "dev", "release"],
+        1,
+    ))
     .folder(FolderSpec::new(&p("projects/webapp/target"), &["app.o"], 2))
+    // A build-output subtree: floored as a descendant of a denylisted `target`.
+    .folder(FolderSpec::new(
+        &p("projects/webapp/target/debug/deps"),
+        &["a.rlib", "b.rlib", "c.d"],
+        1,
+    ))
     // A logs monoculture: 200 .log files, one extension, stale — machine output.
     .folder(FolderSpec {
         path: p("projects/webapp/logs"),
@@ -279,6 +327,37 @@ fn dev_home() -> Scenario {
     })
     .hard(Constraint::ScoreAtMost {
         path: p("Library/Caches/com.apple.Safari"),
+        max: 0.0,
+    })
+    // Descendant-floor: every folder living UNDER a node_modules / .git / target
+    // floors to 0, not just the denylisted folder itself.
+    .hard(Constraint::ScoreAtMost {
+        path: p("projects/webapp/node_modules/react"),
+        max: 0.0,
+    })
+    .hard(Constraint::ScoreAtMost {
+        path: p("projects/webapp/node_modules/react/cjs"),
+        max: 0.0,
+    })
+    .hard(Constraint::ScoreAtMost {
+        path: p("projects/webapp/node_modules/.bin"),
+        max: 0.0,
+    })
+    // A vendored repo inside node_modules stays floored: floor beats project marker.
+    .hard(Constraint::ScoreAtMost {
+        path: p("projects/webapp/node_modules/vendored-lib"),
+        max: 0.0,
+    })
+    .hard(Constraint::ScoreAtMost {
+        path: p("projects/webapp/node_modules/vendored-lib/src"),
+        max: 0.0,
+    })
+    .hard(Constraint::ScoreAtMost {
+        path: p("projects/webapp/.git/refs/heads"),
+        max: 0.0,
+    })
+    .hard(Constraint::ScoreAtMost {
+        path: p("projects/webapp/target/debug/deps"),
         max: 0.0,
     })
     // ── Soft constraints: desirable orderings ──
@@ -371,11 +450,25 @@ fn media_home() -> Scenario {
         &["t0.bin", "t1.bin"],
         5,
     ))
+    // An app's on-disk cache tree under Pictures: the `.cache` dir self-floors
+    // (denylisted + dot-prefixed), and its internals floor as descendants — even
+    // though they're recent and mixed-extension.
+    .folder(FolderSpec::new(&p("Pictures/.cache"), &["v0.dat"], 1))
+    .folder(FolderSpec::new(
+        &p("Pictures/.cache/thumbnails/large"),
+        &["a.jpg", "b.png", "c.webp"],
+        1,
+    ))
     // A neutral misc folder for contrast.
     .folder(FolderSpec::new(&p("Desktop"), &["todo.txt", "sketch.png"], 1).with_visits(3))
     // ── Hard constraints ──
     .hard(Constraint::ScoreAtMost {
         path: p("Library/Caches/Thumbnails"),
+        max: 0.0,
+    })
+    // Descendant-floor: a recent, mixed cache-internal subtree still floors.
+    .hard(Constraint::ScoreAtMost {
+        path: p("Pictures/.cache/thumbnails/large"),
         max: 0.0,
     })
     .hard(Constraint::Above {
@@ -462,6 +555,14 @@ fn downloads_heavy() -> Scenario {
     })
     // Installer leftovers: a mounted-dmg staging dir, disposable.
     .folder(FolderSpec::new(&p("Downloads/.installer-tmp"), &["payload.pkg"], 1))
+    // A browser/download-manager cache under Downloads: `.cache` self-floors and
+    // its recent, mixed internals floor as descendants.
+    .folder(FolderSpec::new(&p("Downloads/.cache"), &["state.db"], 1))
+    .folder(FolderSpec::new(
+        &p("Downloads/.cache/partials"),
+        &["a.part", "b.tmp", "c.bin"],
+        1,
+    ))
     // A genuinely-useful doc folder outside Downloads, for contrast.
     .folder(
         FolderSpec::new(
@@ -475,6 +576,11 @@ fn downloads_heavy() -> Scenario {
     // ── Hard constraints ──
     .hard(Constraint::ScoreAtMost {
         path: p("Downloads/.installer-tmp"),
+        max: 0.0,
+    })
+    // Descendant-floor: a recent, mixed cache-internal subtree still floors.
+    .hard(Constraint::ScoreAtMost {
+        path: p("Downloads/.cache/partials"),
         max: 0.0,
     })
     .hard(Constraint::Above {
@@ -540,6 +646,13 @@ fn nas_archive() -> Scenario {
         visits: None,
         last_used_days: None,
     })
+    // A per-title subdir of the transcode cache: floors as a descendant of the
+    // self-flooring `.transcodes` dir even over a listing-only NAS.
+    .folder(FolderSpec::new(
+        &p("media/movies/.transcodes/1080p"),
+        &["a.ts", "b.ts", "index.m3u8"],
+        5,
+    ))
     // A cache dir on the share: floored (hidden/system by name convention).
     .folder(FolderSpec::new(&p("media/@eaDir"), &["thumb.jpg"], 30))
     // ── Hard constraints ──
@@ -553,6 +666,11 @@ fn nas_archive() -> Scenario {
     })
     .hard(Constraint::ScoreAtMost {
         path: p("media/movies/.transcodes"),
+        max: 0.0,
+    })
+    // Descendant-floor over a listing-only NAS: the transcode subdir floors too.
+    .hard(Constraint::ScoreAtMost {
+        path: p("media/movies/.transcodes/1080p"),
         max: 0.0,
     })
     // ── Soft constraints ──

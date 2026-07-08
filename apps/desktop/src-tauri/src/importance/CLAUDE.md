@@ -20,13 +20,14 @@ the visit signal, and the `ImportanceIndex` read API — including SMB scoring a
 
 - **The scorer is PURE** (no `rusqlite`/`Volume`/filesystem/clock; "now" is a `u64` arg). `score` delegates to `explain`,
   so there's ONE formula; the breakdown sums to the score when unfloored — hold that when adding a signal.
-- **`FolderSignals` is the persisted raw signal vector; its serde shape is load-bearing** — keep it `serde` +
-  `specta::Type`, camelCase, roundtrip test green (a field rename changes what the store reads).
-- **Denylist and hidden/system are FLOOR overrides** (cap at `0.0`, OUTSIDE the `SignalContribution` sum), not the
-  additive `Visibility` term. **Missing optional signals REDISTRIBUTE, never fabricate** — availability (`SignalSet`) is
-  distinct from a `None` value.
+- **`FolderSignals` is the persisted raw signal vector; its serde shape is load-bearing** — `serde` + `specta::Type`,
+  camelCase, roundtrip test green (a rename changes what the store reads; new fields need `#[serde(default)]`).
+- **Three FLOOR overrides cap the score at `0.0`, OUTSIDE the `SignalContribution` sum**: `name_denylisted`,
+  `hidden_or_system`, and `under_floored_ancestor` (a denylisted/hidden/system ancestor floors its whole subtree; floor
+  beats marker; see [DETAILS.md](DETAILS.md)). **Missing optional signals REDISTRIBUTE, never fabricate** — availability
+  (`SignalSet`) is distinct from a `None` value.
 - **Classification is typed, never a string/substring branch** (`no-string-matching`): `PathClass`, `SignalSet`,
-  `SignalKind` are enums; the denylist is set-membership on the folded name (reuses `search::SYSTEM_DIR_EXCLUDES`).
+  `SignalKind` are enums; the denylist is folded-name set-membership (reuses `search::SYSTEM_DIR_EXCLUDES`).
 - **The default `Weights` are UNVALIDATED**; don't hardcode them, pass a `Weights`. Changing them can fail the `evals/`
   soft-score floor (the tuning instrument — see [DETAILS.md](DETAILS.md)).
 
@@ -34,13 +35,13 @@ the visit signal, and the `ImportanceIndex` read API — including SMB scoring a
 
 - **`store/` carries the index's disposable-cache discipline verbatim** (`platform_case`, delete-and-recreate on
   `SCHEMA_VERSION` mismatch, path-keyed rows). ONE shared long-lived `ImportanceWriter` per volume from the scheduler's
-  `WriterRegistry`; `record_visit` + every recompute route through it (don't spawn a per-call writer). A full pass writes
-  all rows AND bumps the generation in ONE transaction; staleness is `as_of_generation < recompute_generation()`.
+  `WriterRegistry`; `record_visit` + every recompute route through it (no per-call writer). A full pass writes all rows
+  AND bumps the generation in ONE transaction; staleness is `as_of_generation < recompute_generation()`.
 - **The full-recompute walk is O(dirs), NOT O(entries)**: materialize directories (`all_directories`), STREAM file rows
   (`for_each_file_child`) into a per-parent `ChildAggregate`. Don't reintroduce an `all_entries` walk (hundreds of MB on
   NAS-sized volumes).
 - **Categorical signals live in `classify.rs`**, shared by `signals` (prod) AND `fixtures`/`evals` (tests) — don't
-  re-derive denylist / path-class / marker.
+  re-derive denylist / path-class / marker / descendant-floor (`self_floors` + `under_floored_paths`).
 - **Drive full recompute off the bus's `ScanCompleted` + the sweep (`ready_volumes_with_kind`), NEVER off phase events**
   (network volumes never emit `Aggregating`/`Reconciling`). Coalesce per volume.
 - **Volume kind decides the policy TYPED, never by id string** (`ScoringPolicy::for_kind`): Local + SMB scored (SMB drops
@@ -52,8 +53,8 @@ the visit signal, and the `ImportanceIndex` read API — including SMB scoring a
 ### Read API + incremental (depth in [DETAILS.md](DETAILS.md))
 
 - **`ImportanceIndex` (`read.rs`) is the ONLY consumer entry point** (no raw `rusqlite` dep). `explain` re-scores the
-  STORED `FolderSignals` via the pure scorer (one formula, no drift). It reads the DB directly, never the index registry —
-  so weights stay queryable OFFLINE after a volume unmounts, each carrying its as-of generation.
+  STORED `FolderSignals` via the pure scorer (one formula, no drift). It reads the DB directly, never the index registry,
+  so weights stay queryable OFFLINE after a volume unmounts, each with its as-of generation.
 - **Incremental writes at the CURRENT generation and does NOT bump it** (`write_weights_incremental`) — untouched folders
   keep their as-of markers; never route it through `write_weights` (that bumps). Driven by the `dir-changed` bus; ancestor
   walk capped (`ANCESTOR_WALK_CAP`). A burst can drop a batch (last-value-wins `watch`); the next full pass heals it.

@@ -14,7 +14,7 @@
 
 #![cfg(test)]
 
-use super::classify::{is_denylisted, is_hidden_or_system, leaf_name, path_class};
+use super::classify::{is_denylisted, is_hidden_or_system, leaf_name, path_class, under_floored_paths};
 use super::scorer::{FolderSignals, extension_count};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::InMemoryVolume;
@@ -191,9 +191,15 @@ impl SyntheticHome {
 
         let mtime_secs = self.entries.iter().find(|e| e.path == path).and_then(|e| e.modified_at);
 
+        // A folder under a self-flooring ancestor (a denylisted / hidden / system
+        // folder) floors too. Derived through the shared `classify` helper so the
+        // fixture agrees with production on which subtrees floor.
+        let under_floored_ancestor = under_floored_paths(std::iter::once(path), &self.home).contains(path);
+
         FolderSignals {
             name_denylisted,
             hidden_or_system,
+            under_floored_ancestor,
             distinct_extension_count,
             file_count: files.len() as u32,
             mtime_secs,
