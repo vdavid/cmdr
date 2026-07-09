@@ -5,6 +5,60 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+1. Cmdr now handles archives: browse `.zip`, `.tar`, `.tar.gz`, and `.7z` files like folders, edit them in place, even
+   ones stored on a phone or SMB share. 2. Can now paste text or images straight into new files with ⌘V. 3. Search now
+   ranks your most interesting files first.
+
+### Added
+
+- Browse, extract, edit archives: `.zip`, `.tar`, `.tar.gz`, and `.7z`. Fully edit zips (create, rename, delete, and
+  move files inside), unlock password-protected zips, even on SMB and MTP
+  ([179466f8](https://github.com/vdavid/cmdr/commit/179466f8),
+  [8e15d86b](https://github.com/vdavid/cmdr/commit/8e15d86b),
+  [f4fa09a4](https://github.com/vdavid/cmdr/commit/f4fa09a4),
+  [8d80f012](https://github.com/vdavid/cmdr/commit/8d80f012),
+  [2103b2fa](https://github.com/vdavid/cmdr/commit/2103b2fa),
+  [778dddfd](https://github.com/vdavid/cmdr/commit/778dddfd),
+  [8e001cb9](https://github.com/vdavid/cmdr/commit/8e001cb9),
+  [e85cc448](https://github.com/vdavid/cmdr/commit/e85cc448),
+  [f5c97511](https://github.com/vdavid/cmdr/commit/f5c97511),
+  [5efe4ba1](https://github.com/vdavid/cmdr/commit/5efe4ba1),
+  [82f39461](https://github.com/vdavid/cmdr/commit/82f39461),
+  [54d20851](https://github.com/vdavid/cmdr/commit/54d20851))
+- Paste clipboard text, an image, or a PDF as a file into the current folder with ⌘V
+  ([b0de3824](https://github.com/vdavid/cmdr/commit/b0de3824))
+- Add a folder-importance subsystem: a tunable scoring API any expensive feature can consume, with a measured eval suite
+  for weight tuning ([08d1d6dc](https://github.com/vdavid/cmdr/commit/08d1d6dc),
+  [a435fb39](https://github.com/vdavid/cmdr/commit/a435fb39),
+  [513ff76b](https://github.com/vdavid/cmdr/commit/513ff76b),
+  [60fd27df](https://github.com/vdavid/cmdr/commit/60fd27df),
+  [02d156c3](https://github.com/vdavid/cmdr/commit/02d156c3))
+
+### Changed
+
+- Rank your more interesting files higher in search results ([1a998e47](https://github.com/vdavid/cmdr/commit/1a998e47))
+- Extract large folders from compressed `.tar` and solid `.7z` archives much faster
+  ([be11894e](https://github.com/vdavid/cmdr/commit/be11894e))
+
+### Fixed
+
+- Fix a moved or deleted file lingering in the source pane on MTP devices until manual refresh
+  ([bd8dc8de](https://github.com/vdavid/cmdr/commit/bd8dc8de))
+- Keep the inline rename box on the right file when the folder reorders underneath it
+  ([5e5ee92d](https://github.com/vdavid/cmdr/commit/5e5ee92d))
+- Stop a background folder load in one pane from clearing the other pane's messages
+  ([d22ab4c9](https://github.com/vdavid/cmdr/commit/d22ab4c9))
+- Say "not supported" instead of "damaged archive" when a `.7z` uses encryption Cmdr can't read
+  ([b7ae624e](https://github.com/vdavid/cmdr/commit/b7ae624e))
+
+### Non-app
+
+- Upgrade the website to Astro 7 for even more Rust! ([81d0f575](https://github.com/vdavid/cmdr/commit/81d0f575))
+- Consume smb2 0.12.0 from crates.io, dropping the local FileReader patch
+  ([481d6834](https://github.com/vdavid/cmdr/commit/481d6834))
+
 ## [0.32.0] - 2026-07-01
 
 Design tweaks: colors, icons, dropdown design, and text alignment. Detect and display file systems, disallow copying

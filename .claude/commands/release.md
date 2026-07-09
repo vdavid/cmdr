@@ -141,9 +141,17 @@ Prepare a release based on docs/guides/releasing.md.
    fi
    ```
 
-4. Suggest updates to the roadmap.
-   - Read @apps/website/src/pages/roadmap.astro as well. Is there anything to tick off (with a date!) or a major
-     development worth mentioning?
+4. Apply the roadmap and feature-status updates (edit the files, don't just advise; the user reviews before committing).
+   - **Roadmap** (@apps/website/src/pages/roadmap.astro): add a dated milestone (with a date!) for each major
+     development this release, and tick off / remove any "coming soon" item that just shipped. Match the existing
+     curation: milestones only, not every release. Group under the right month heading (add a new `<h3>` when the month
+     rolls over) and not the release date but the actual main development date based on the commits.
+   - **Feature status** (`feature-status.json` at the repo root, the single source of truth behind the `/features` page
+     and the in-app badges): review every feature against what shipped. Flip `planned` → `alpha` for a feature that just
+     launched, graduate `alpha` → `beta` → `stable` as one matures, and refresh any note the release made stale. Keep
+     notes to one honest line, website voice (no "I"/"we"). Schema and consumers: @docs/feature-status.md. Graduating
+     `search` or `select-files` out of `alpha` also means updating the pinned assertion in
+     `apps/desktop/src/lib/feature-status.test.ts`. Present the diff for review.
 5. Based on the changes, advise what the next version should be (patch: bug fixes, minor: new features, major: major
    launches), and give the user the `./scripts/release.sh x.x.x` command to run.
 6. **Offer to run the release script** for the user. Wait for confirmation before running.

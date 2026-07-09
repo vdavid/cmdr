@@ -20,6 +20,12 @@
       "note": "Wildcard and regex matching work well; AI selection is cloud-only and still misses edge cases."
     },
     {
+      "id": "archives",
+      "name": "Archives",
+      "status": "alpha",
+      "note": "Browse, edit, extract zip, tar, and 7z archives like folders."
+    },
+    {
       "id": "network-drives",
       "name": "Network drives (SMB)",
       "status": "beta",
@@ -114,12 +120,6 @@
       "name": "AI file organization",
       "status": "planned",
       "note": "Say \"clean up my Downloads folder\" and approve or reject each suggested move."
-    },
-    {
-      "id": "archives",
-      "name": "Archives",
-      "status": "planned",
-      "note": "Compress, extract, and browse zips like folders."
     },
     {
       "id": "more-file-systems",
