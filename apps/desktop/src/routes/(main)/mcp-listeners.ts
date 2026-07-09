@@ -192,7 +192,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const validModes: SearchMode[] = ['ai', 'filename', 'regex']
     const requestedMode =
       typeof raw.mode === 'string' && validModes.includes(raw.mode as SearchMode) ? (raw.mode as SearchMode) : undefined
-    // Default mode per plan §3.11 tool docs: 'ai' if AI on, else 'filename'.
+    // Default mode: 'ai' if AI on, else 'filename'.
     const defaultedMode: SearchMode = requestedMode ?? (isAiEnabled() ? 'ai' : 'filename')
 
     const prefill: SearchPrefill = {

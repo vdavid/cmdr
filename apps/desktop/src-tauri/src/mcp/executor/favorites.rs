@@ -5,7 +5,7 @@
 //! / thin frontend). Each mutation persists `favorites.json` and re-emits
 //! `volumes-changed` itself, so both panes' switchers refresh live — the handler
 //! invents no ack and returns the backend result directly (the `indexing` /
-//! `queue` precedent, plan §3.5). Gate `Always`: persistent app-config mutation
+//! `queue` precedent, so there is no FE action to ack). Gate `Always`: persistent app-config mutation
 //! with no confirmation dialog to piggyback on.
 //!
 //! Ids are discoverable via `cmdr://state` under `favorites:`.

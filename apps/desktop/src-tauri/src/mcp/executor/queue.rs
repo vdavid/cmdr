@@ -4,7 +4,7 @@
 //! Thin adapter over the typed `write_operations` manager functions (smart
 //! backend / thin frontend). It dispatches no FE action and invents no ack — it
 //! calls the backend directly and returns OK (the `connect_to_server` /
-//! `indexing` precedent, plan §3.5). These are transient runtime actions on a
+//! `indexing` precedent, so there is no FE action to ack). These are transient runtime actions on a
 //! crash-safe pipeline, so pause / resume / plain cancel are `Open`; only a
 //! `rollback: true` cancel (which DELETES already-copied files) is token-gated
 //! (`TokenGate::IfRollback`).

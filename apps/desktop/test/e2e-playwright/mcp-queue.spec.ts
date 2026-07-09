@@ -1,5 +1,5 @@
 /**
- * E2E for the MCP operation-queue surface (M3): the `queue` tool, the
+ * E2E for the MCP operation-queue surface: the `queue` tool, the
  * `operations:` section of `cmdr://state`, and `await operation_complete`.
  *
  * Drives the whole agent loop end to end: start a throttled copy via the MCP
@@ -42,7 +42,7 @@ function makeSourceDir(fixtureRoot: string, name: string): void {
 }
 
 /** Pulls the spawned operationId out of the `copy` tool's OK text
- *  ("... (operationId: op-xyz).") — the M3 correlation this spec proves. */
+ *  ("... (operationId: op-xyz).") — the operationId correlation this spec proves. */
 function parseOperationId(copyResult: string): string {
   const match = /operationId: ([^)]+)\)/.exec(copyResult)
   if (!match) throw new Error(`copy result carried no operationId: ${copyResult}`)
@@ -92,7 +92,7 @@ test.describe('MCP operation queue', () => {
     // `select` focuses the target pane, so the subsequent `copy` acts on it.
     await mcpCall('select', { pane: 'left', names: [SOURCE] })
 
-    // Auto-confirmed copy returns the spawned operationId in its OK text (M3).
+    // Auto-confirmed copy returns the spawned operationId in its OK text.
     const copyResult = await mcpCall('copy', { autoConfirm: true })
     const operationId = parseOperationId(copyResult)
 

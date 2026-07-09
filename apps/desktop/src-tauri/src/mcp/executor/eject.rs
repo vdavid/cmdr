@@ -3,7 +3,7 @@
 //! Thin adapter over the typed `file_system::volume::eject::eject` (smart backend
 //! / thin frontend). It dispatches no FE action and invents no ack — it calls the
 //! backend directly and returns OK (the `connect_to_server` / `indexing` / `queue`
-//! precedent, plan §3.5). Gate `Open`: parity with the one-click Eject button, and
+//! precedent, so there is no FE action to ack). Gate `Open`: parity with the one-click Eject button, and
 //! the backend refuses honestly while a write op touches the volume (`Busy`) or
 //! when the volume isn't ejectable, surfaced as errors rather than false OKs.
 

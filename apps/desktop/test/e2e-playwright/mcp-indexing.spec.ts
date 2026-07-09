@@ -1,5 +1,5 @@
 /**
- * E2E for the MCP indexing surface (M1): the cross-layer wiring an agent uses to
+ * E2E for the MCP indexing surface: the cross-layer wiring an agent uses to
  * inspect and control drive indexing through the real MCP server.
  *
  *   1. cmdr://indexing renders per-volume (one block per known volume, with

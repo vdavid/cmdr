@@ -4,7 +4,7 @@
 //! Thin adapter over the typed `commands::indexing` functions (smart backend /
 //! thin frontend). It dispatches no FE action and invents no ack — it returns
 //! the backend result directly (the `connect_to_server` / `remove_manual_server`
-//! precedent, plan §3.5). The one deliberate wait is the ordering contract:
+//! precedent, so there is no FE action to ack). The one deliberate wait is the ordering contract:
 //! `enable` / `rescan` don't return until the volume's freshness has left its
 //! pre-scan state, so a follow-up `await index_status <volume> fresh` can't
 //! instantly match the pre-rescan Fresh state.
