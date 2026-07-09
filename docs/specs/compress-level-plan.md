@@ -21,6 +21,7 @@ reflect the chosen level.
 ## Goal
 
 **Feature 1.** A single "compression level" setting (deflate 1–9, default 6) that:
+
 - Renders as a slider in Settings under **Behavior › Archives** (the section already exists), with "Faster"/"Smaller"
   end labels.
 - Renders as the same slider inside the Compress dialog; moving it there persists the same setting immediately (dialog
@@ -29,9 +30,9 @@ reflect the chosen level.
   also governs regular copy/move **into** an existing archive (one uniform "compression level" concept for all
   user-driven zip writes). Internal zips (crash/error-report bundles) keep their own fixed level and are out of scope.
 
-**Feature 2.** A live estimate of the compressed output size in the Compress dialog (e.g. an explicitly approximate
-"~ 42 MB" beside the scanned byte total), driven off the existing deep byte-scan by cheap deflate sampling, hard-capped
-in bytes and time, cancellable with the scan, never blocking or destabilizing the scan/conflict flow. Ships only if the
+**Feature 2.** A live estimate of the compressed output size in the Compress dialog (e.g. an explicitly approximate "~
+42 MB" beside the scanned byte total), driven off the existing deep byte-scan by cheap deflate sampling, hard-capped in
+bytes and time, cancellable with the scan, never blocking or destabilizing the scan/conflict flow. Ships only if the
 spike proves it reliable and cheap enough.
 
 ---
@@ -53,8 +54,8 @@ Cmdr builds `zip` with `default-features = false, features = ["deflate", "aes-cr
    becomes `Err(ZipError::UnsupportedArchive("Unsupported compression level"))` at the FIRST entry write (in
    `get_compressor`, `write.rs:2076-2080`). Cmdr surfaces this as `MutationError::Zip`. **So the level MUST be
    constrained to 1..=9 before it reaches the mutator** — defend it in Rust (clamp), not only via the UI constraint.
-4. `None` (the default) maps to deflate level **6** (`flate2::Compression::default().level()`, `write.rs:2061-2065`).
-   So "default = 6" and "unset" are the same output; the setting's default of 6 is the crate's current behavior.
+4. `None` (the default) maps to deflate level **6** (`flate2::Compression::default().level()`, `write.rs:2061-2065`). So
+   "default = 6" and "unset" are the same output; the setting's default of 6 is the crate's current behavior.
 
 ### The single production zip-write site that must follow the setting
 
@@ -68,6 +69,7 @@ There is exactly **one** production `FileOptions` site that should follow the us
   only to newly added data. This is the thread-in point.
 
 Everything else that builds `FileOptions` is either internal or test-only and stays fixed:
+
 - `error_reporter/bundle_builder.rs` (lines 200-202, 262-264) and `error_reporter/bundle_capper.rs` (95-96, 143-144)
   deliberately use fixed level 1 for crash/error bundles — **out of scope, do not touch.**
 - The file viewer has **no** production zip-write path (its only `FileOptions` use is a `#[cfg(test)]` fixture in
@@ -76,16 +78,15 @@ Everything else that builds `FileOptions` is either internal or test-only and st
 ### The call chain the level threads through
 
 `compress_start` and the copy/move-into-archive routing both funnel through **`route_archive_copy_into`**
-(`write_operations/archive_edit/copy_into.rs:62`). It builds a `Changeset` of `AddEntry` items (via
-`plan_copy_into` → `adds.push(AddEntry { ... })` around copy_into.rs:452) and applies it with
-`mutator::apply(working, &changeset, hooks)` (invoked through the managed-edit engine; see `archive_edit_start` in
-`driver.rs:105` and `mutator::apply` at `driver.rs:174`). `add_entry_options` is called inside `mutator::apply` per
-add. So the level must reach `mutator::apply` — cleanest via a field on the `Changeset` (one level per edit), read by
-`add_entry_options`.
+(`write_operations/archive_edit/copy_into.rs:62`). It builds a `Changeset` of `AddEntry` items (via `plan_copy_into` →
+`adds.push(AddEntry { ... })` around copy_into.rs:452) and applies it with `mutator::apply(working, &changeset, hooks)`
+(invoked through the managed-edit engine; see `archive_edit_start` in `driver.rs:105` and `mutator::apply` at
+`driver.rs:174`). `add_entry_options` is called inside `mutator::apply` per add. So the level must reach
+`mutator::apply` — cleanest via a field on the `Changeset` (one level per edit), read by `add_entry_options`.
 
-`AddEntry`, `AddSource`, `Changeset`, `MutationError` live in
-`backends/archive/mutation/mutator.rs`; `route_archive_copy_into` and `compress_start` are re-exported through
-`write_operations/mod.rs` and `file_system/mod.rs`.
+`AddEntry`, `AddSource`, `Changeset`, `MutationError` live in `backends/archive/mutation/mutator.rs`;
+`route_archive_copy_into` and `compress_start` are re-exported through `write_operations/mod.rs` and
+`file_system/mod.rs`.
 
 ### The write-operation config carrying the level from the frontend
 
@@ -103,17 +104,17 @@ during M1, don't add speculatively.)
   operation time and passed to the backend via the operation config. The backend never reads it independently, so there
   is **NO** `commands/settings.rs` command, **NO** `settings/loader.rs` field, and **NO** `settings-applier` entry.
   (That whole live-apply chain is only for settings Rust reads on its own; this one isn't.)
-- **Registry**: `settings/settings-registry.ts`. Closest analog for a stepped 1–9 slider is `appearance.textSize`
-  (lines 281-296: `type: 'number'`, `component: 'slider'`, `constraints: { min, max, step, sliderStops }`,
-  `default`). The existing Archives entry is `behavior.archiveEnterBehavior` (registry ~572-585;
-  `section: ['Behavior', 'Archives']`).
+- **Registry**: `settings/settings-registry.ts`. Closest analog for a stepped 1–9 slider is `appearance.textSize` (lines
+  281-296: `type: 'number'`, `component: 'slider'`, `constraints: { min, max, step, sliderStops }`, `default`). The
+  existing Archives entry is `behavior.archiveEnterBehavior` (registry ~572-585; `section: ['Behavior', 'Archives']`).
 - **Typed value map**: `settings/types.ts` — add the key to `interface SettingsValues` (a missing key is a
   `svelte-check` error). Additive key; do **not** bump `SCHEMA_VERSION`.
 - **Slider component**: `settings/components/SettingSlider.svelte` — self-contained: reads `getSetting(id)`, writes
   `setSetting(id, ...)` on change, subscribes via `onSpecificSettingChange` for external resets, double-click thumb
   resets to default, snaps to `sliderStops`. It bundles an Ark UI `Slider` + a paired `NumberInput` and tick marks.
-  Because it reads and writes the setting purely by `id`, dropping `<SettingSlider id="behavior.archiveCompressionLevel" />`
-  into the Compress dialog gives the dialog and Settings the same value for free.
+  Because it reads and writes the setting purely by `id`, dropping
+  `<SettingSlider id="behavior.archiveCompressionLevel" />` into the Compress dialog gives the dialog and Settings the
+  same value for free.
 - **Section component**: `settings/sections/ArchivesSection.svelte` (a custom, hand-rendered section using
   `SettingsSection` + `SectionCard`). It currently renders per-format Enter-behavior `ToggleGroup`s; add the
   compression-level row here.
@@ -201,17 +202,17 @@ The core of Feature 1. Purely backend; no UI yet. Prove the level actually chang
   (None = crate default 6). Update the `Default` impl and the `From<&WriteOperationConfig>` impl (types.rs:682) — if you
   add the field to `WriteOperationConfig` too, carry it there; if not, map to `None`. Regenerate specta bindings (the
   binding-gen step; the check lane flags staleness) so `VolumeCopyConfig` on the TS side gains the field.
-- **`compress_start`** (`write_operations/archive_edit/compress.rs`): add a `compression_level: Option<i64>` param,
-  pass it to `route_archive_copy_into`.
+- **`compress_start`** (`write_operations/archive_edit/compress.rs`): add a `compression_level: Option<i64>` param, pass
+  it to `route_archive_copy_into`.
 - **`route_archive_copy_into`** (`archive_edit/copy_into.rs:62`): add a `compression_level: Option<i64>` param; store it
   on the `Changeset` it builds. Update all callers (compress_start, and the copy/move-into-archive routing in
   `commands/file_system/volume_copy.rs` — `copy_between_volumes`/`move_between_volumes` extract
   `config.compression_level`). A caller that has no opinion passes `None`.
 - **`Changeset`** (`backends/archive/mutation/mutator.rs`): add `compression_level: Option<i64>`.
 - **`add_entry_options`** (mutator.rs:375): take the level (either as a param `add_entry_options(add, level)` or read it
-  off the changeset) and set `.compression_level(Some(clamped))`. **Clamp to 1..=9 in Rust** (`level.map(|l|
-  l.clamp(1, 9))`) so an out-of-range value can never reach `get_compressor` and hard-fail the edit (see Verified
-  findings). Keep `CompressionMethod::Deflated`.
+  off the changeset) and set `.compression_level(Some(clamped))`. **Clamp to 1..=9 in Rust**
+  (`level.map(|l| l.clamp(1, 9))`) so an out-of-range value can never reach `get_compressor` and hard-fail the edit (see
+  Verified findings). Keep `CompressionMethod::Deflated`.
 - **TDD (red first, for the right reason):**
   - Unit-test `add_entry_options`: level `Some(1)` and `Some(9)` produce `FileOptions` with the expected
     `get_compression_level()`; `None` yields `None` (crate default); out-of-range (`Some(0)`, `Some(42)`) clamps into
@@ -294,8 +295,8 @@ dialog caption).
 - Locales: 10 non-English (`de`, `es`, `fr`, `hu`, `nl`, `pt`, `sv`, `vi`, `zh`) plus `en` — 11 dirs under
   `src/lib/intl/messages/`.
 - Follow `docs/guides/i18n-translation.md` § "New feature → add strings and translate to ALL languages":
-  1. Confirm every new `en` key has a `@key.description` meeting the bar (surface, trigger, meaning of "Faster"/"Smaller"
-     as compression tradeoff ends, not speed/size of the UI).
+  1. Confirm every new `en` key has a `@key.description` meeting the bar (surface, trigger, meaning of
+     "Faster"/"Smaller" as compression tradeoff ends, not speed/size of the UI).
   2. `node apps/desktop/scripts/sync-locale-keys.js` to propagate skeletons with correct `sourceHash`.
   3. Per locale: read `docs/i18n/<tag>/style.md`, mine the reference pile at the **absolute main-clone path**
      `~/projects-git/vdavid/cmdr/_ignored/i18n/<tag>/` (NOT the worktree — the pile isn't copied in; the worktree path
@@ -347,9 +348,9 @@ No dialog UI in M6.
   2. a photo folder (JPEGs — near-incompressible),
   3. mixed office docs / PDFs (medium),
   4. an already-compressed pile (zips/videos — incompressible),
-  5. a large mixed real folder (whatever's handy on the machine).
-  Record: median and worst-case absolute % error per mix and overall; the scan wall-time overhead added by sampling
-  (with vs without); the sampled-byte totals hit against the cap.
+  5. a large mixed real folder (whatever's handy on the machine). Record: median and worst-case absolute % error per mix
+     and overall; the scan wall-time overhead added by sampling (with vs without); the sampled-byte totals hit against
+     the cap.
 - **Kill criterion (gate — put the measured numbers in the plan/notes and decide):**
   - **Accuracy bar:** median absolute error ≤ **15%** overall, worst-mix median ≤ **30%**, with the estimate always
     shown as explicitly approximate ("~") and styled as an estimate.
@@ -370,12 +371,12 @@ Only if M6 cleared the gate. Otherwise skip entirely.
   when unavailable (non-compress scan, or estimate suppressed).
 - **Scan state:** add `estimatedBytes` to `transfer-scan-state.svelte.ts` (updated in the progress/complete listeners,
   reset in `cancelPreview`/`freeAndCleanup` — so it cancels with the scan). Expose via a getter.
-- **Dialog UI:** in `TransferDialog.svelte`, in compress mode only, render the estimate beside the scanned total
-  (near line 560) as `~ <Size bytes={estimatedBytes} />`, styled to read as an estimate. States: while scanning show a
-  loading/updating affordance; if unavailable (remote sources / suppressed / null), show nothing or a subtle
-  "estimate unavailable" — do NOT show a wrong number. Moving the level slider re-scales the shown estimate via the M6
-  curve (no re-scan). **It must never delay or block the scan/conflict/confirm flow — it's additive and best-effort.**
-  Keep TransferDialog net growth ≤ 0 (push formatting/scaling into a helper).
+- **Dialog UI:** in `TransferDialog.svelte`, in compress mode only, render the estimate beside the scanned total (near
+  line 560) as `~ <Size bytes={estimatedBytes} />`, styled to read as an estimate. States: while scanning show a
+  loading/updating affordance; if unavailable (remote sources / suppressed / null), show nothing or a subtle "estimate
+  unavailable" — do NOT show a wrong number. Moving the level slider re-scales the shown estimate via the M6 curve (no
+  re-scan). **It must never delay or block the scan/conflict/confirm flow — it's additive and best-effort.** Keep
+  TransferDialog net growth ≤ 0 (push formatting/scaling into a helper).
 - **i18n:** any new string (e.g. "estimate unavailable", the "~" caption if worded) across all 11 locales via the M4
   process.
 - **E2E:** extend `compress-basic.spec.ts` to assert the estimate line appears for a compressible local fixture; keep it
@@ -407,10 +408,10 @@ Only if M6 cleared the gate. Otherwise skip entirely.
 
 1. **The setting is frontend-owned, threaded via the operation config — NOT a backend-read setting.** Like
    `behavior.archiveEnterBehavior`: the FE reads it at dispatch and passes `compression_level` in `VolumeCopyConfig`. So
-   no `commands/settings.rs` command, no `loader.rs` field, no applier entry. Rationale: the level is only ever needed at
-   operation time, and threading it explicitly keeps the backend stateless and the value testable. (If a future feature
-   needs Rust to read the level without an operation — e.g. a non-interactive MCP compress that bypasses the config —
-   revisit and add a loader field then.)
+   no `commands/settings.rs` command, no `loader.rs` field, no applier entry. Rationale: the level is only ever needed
+   at operation time, and threading it explicitly keeps the backend stateless and the value testable. (If a future
+   feature needs Rust to read the level without an operation — e.g. a non-interactive MCP compress that bypasses the
+   config — revisit and add a loader field then.)
 2. **One uniform "compression level" for all user-driven zip writes** (compress AND copy/move-into-archive), because the
    mutator is shared and threading it to the copy path is nearly free (one FE config field). Internal zips
    (crash/error-report bundles) keep their fixed level 1 and are out of scope — they're diagnostic artifacts, not user
@@ -419,8 +420,8 @@ Only if M6 cleared the gate. Otherwise skip entirely.
    actual deflate range and the house `appearance.textSize` stepped-slider pattern; 6 is the crate default so the
    setting's default is a no-op vs today. The number input from `SettingSlider` shows the exact level for power users.
 4. **Reuse `SettingSlider` in the dialog rather than a bespoke control.** It reads/writes the setting by `id`, so the
-   dialog and Settings share state with zero extra wiring, satisfying "changing it in the dialog saves to config."
-   Frame it with "Faster"/"Smaller" labels in a thin `CompressLevelControl.svelte`. If `SettingSlider`'s paired
+   dialog and Settings share state with zero extra wiring, satisfying "changing it in the dialog saves to config." Frame
+   it with "Faster"/"Smaller" labels in a thin `CompressLevelControl.svelte`. If `SettingSlider`'s paired
    NumberInput/ticks look too heavy in the dialog, the fallback is a minimal slider in that wrapper that still calls
    `setSetting` — decide visually in M3, but try the reuse first (elegance + single-source).
 5. **Clamp the level to 1..=9 in Rust**, at `add_entry_options` (or just before). The zip crate hard-errors on an
@@ -429,12 +430,14 @@ Only if M6 cleared the gate. Otherwise skip entirely.
    edit.
 6. **MCP: the compress tool gains no new parameter.** The level is a persisted setting, so MCP `compress` uses whatever
    the setting is; MCP `set_setting` already sets it generically. Rationale: keeps the MCP surface minimal and matches
-   "setting-driven." (If an MCP caller later needs a per-call override, add an optional param then and thread it into the
-   same config field.)
+   "setting-driven." (If an MCP caller later needs a per-call override, add an optional param then and thread it into
+   the same config field.)
 7. **Feature 2 is genuinely spike-gated and may ship as nothing.** The estimator is only cheap and clean on the local-FS
-   walk; remote/oracle-cached sources fall back to extension ratios, which is rougher. M6 measures real accuracy and
-   cost against explicit bars (median ≤ 15%, worst-mix ≤ 30%, +time ≤ 20%); a miss means the notes go to `docs/notes/`
-   and no UI ships. Do not build M7 UI before M6 passes.
+   walk. M6 measures real accuracy and cost against explicit bars (median ≤ 15%, worst-mix ≤ 30%, +time ≤ 20%); a miss
+   means the notes go to `docs/notes/` and no UI ships. Do not build M7 UI before M6 passes. **Remote sources (lead
+   decision): SUPPRESS the estimate by default** — no sampling over SMB/MTP (it would do real remote reads and defeat
+   the scan oracle's budget), and no extension-ratio guess UNLESS the M6 data shows extension ratios alone clear the
+   SAME bars on realistic mixes. An absent estimate is honest; a wide guess styled like a measurement is not.
 8. **The estimate reflects the selected level via a measured scaling curve, sampled once at level 6** — not re-sampled
    per slider tick (David's "not too wasteful" constraint). M6 quantifies the scaling error and folds it into the
    accuracy bar.

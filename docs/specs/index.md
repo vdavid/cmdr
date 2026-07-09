@@ -6,11 +6,11 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
-- [ ] 2026-07-09 [compress-level-plan.md](compress-level-plan.md) - Extend the shipped Compress feature: a compression-level
-      slider (deflate 1-9, default 6) in both the Compress dialog and Settings › Behavior › Archives, one FE-owned setting
-      threaded through `route_archive_copy_into` → the mutator's `FileOptions` (governs copy/move-into-archive too);
-      plus a spike-gated estimated-result-size line driven off the byte-scan by cheap deflate sampling, shipping only if it
-      clears an accuracy + resource bar.
+- [ ] 2026-07-09 [compress-level-plan.md](compress-level-plan.md) - Extend the shipped Compress feature: a
+      compression-level slider (deflate 1-9, default 6) in both the Compress dialog and Settings › Behavior › Archives,
+      one FE-owned setting threaded through `route_archive_copy_into` → the mutator's `FileOptions` (governs
+      copy/move-into-archive too); plus a spike-gated estimated-result-size line driven off the byte-scan by cheap
+      deflate sampling, shipping only if it clears an accuracy + resource bar.
 - [ ] 2026-07-04 [listing-loader-extraction-plan.md](listing-loader-extraction-plan.md) - Drain FilePane's last deferred
       cluster (the listing loader: `loadDirectory`/`handleListingComplete`/reset + streaming listeners + pendingLoad +
       the generation/listingId drop-foreign-listings token model) into a tested `listing-loader.svelte.ts` factory,
