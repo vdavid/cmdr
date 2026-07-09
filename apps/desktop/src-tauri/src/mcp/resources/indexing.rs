@@ -103,6 +103,15 @@ pub(crate) fn freshness_token(freshness: Option<Freshness>) -> &'static str {
     }
 }
 
+/// The status token shown for a whole volume: `off` when its index isn't
+/// registered/active, else the freshness token. The one place `enabled` +
+/// `freshness` collapse into a single agent-facing word, shared by the
+/// `cmdr://indexing` summary and the `cmdr://state` volumes `indexStatus` field
+/// so the two can never disagree.
+pub(crate) fn status_token(enabled: bool, freshness: Option<Freshness>) -> &'static str {
+    if enabled { freshness_token(freshness) } else { "off" }
+}
+
 /// Format a duration in milliseconds as a human-readable string.
 pub fn format_duration_human(ms: u64) -> String {
     if ms < 1_000 {
@@ -209,12 +218,7 @@ fn push_volume_summary(lines: &mut Vec<String>, snap: &VolumeIndexingSnapshot, n
     };
     lines.push(header);
 
-    let status = if snap.enabled {
-        freshness_token(snap.freshness)
-    } else {
-        "off"
-    };
-    lines.push(format!("  status: {status}"));
+    lines.push(format!("  status: {}", status_token(snap.enabled, snap.freshness)));
 
     // An off / not-indexed volume has nothing more worth showing.
     if !snap.enabled {

@@ -12,6 +12,7 @@ pub(crate) mod importance;
 pub(crate) mod indexing;
 pub(crate) mod logs;
 pub(crate) mod operations;
+pub(crate) mod volumes;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -23,8 +24,6 @@ use super::dialog_state::SoftDialogTracker;
 use super::pane_state::{PaneFileEntry, PaneState, PaneStateStore, TabInfo};
 use crate::ignore_poison::IgnorePoison;
 use crate::search::format_size;
-#[cfg(target_os = "macos")]
-use crate::volumes;
 
 /// A resource definition for MCP.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -556,61 +555,7 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
     }
 
     if opts.includes("volumes") {
-        yaml.push_str("volumes:\n");
-        #[cfg(target_os = "macos")]
-        {
-            let mut locations = volumes::list_locations();
-            // Enrich with VolumeManager-derived SMB connection state so agents
-            // can see whether an SMB share is `direct` (smb2), `os_mount`
-            // (fallback through macOS), or `disconnected` (smb2 dropped, FE
-            // reconnect cycle running). Non-SMB volumes omit the field.
-            volumes::enrich_smb_connection_state(&mut locations);
-            for loc in &locations {
-                if let Some(state) = loc.smb_connection_state {
-                    let state_str = match state {
-                        volumes::SmbConnectionState::Direct => "direct",
-                        volumes::SmbConnectionState::OsMount => "os_mount",
-                        volumes::SmbConnectionState::Disconnected => "disconnected",
-                    };
-                    yaml.push_str(&format!(
-                        "  - name: {}\n    id: {}\n    smbConnectionState: {}\n",
-                        loc.name, loc.id, state_str
-                    ));
-                } else {
-                    yaml.push_str(&format!("  - {}\n", loc.name));
-                }
-            }
-            yaml.push_str("  - Network\n");
-        }
-        #[cfg(not(target_os = "macos"))]
-        {
-            yaml.push_str("  - root\n");
-        }
-
-        #[cfg(any(target_os = "macos", target_os = "linux"))]
-        {
-            let devices = crate::mtp::connection::connection_manager()
-                .get_all_connected_devices()
-                .await;
-            for device_info in &devices {
-                let has_multiple = device_info.storages.len() > 1;
-                let device_name = device_info
-                    .device
-                    .product
-                    .as_deref()
-                    .or(device_info.device.manufacturer.as_deref())
-                    .unwrap_or(&device_info.device.id);
-                for storage in &device_info.storages {
-                    let display_name = if has_multiple {
-                        format!("{} - {}", device_name, storage.name)
-                    } else {
-                        device_name.to_string()
-                    };
-                    let volume_id = format!("{}:{}", device_info.device.id, storage.id);
-                    yaml.push_str(&format!("  - name: {}\n    id: {}\n", display_name, volume_id));
-                }
-            }
-        }
+        yaml.push_str(&volumes::build_volumes_yaml(&volumes::snapshot_volumes().await));
     }
 
     if opts.includes("dialogs") {
