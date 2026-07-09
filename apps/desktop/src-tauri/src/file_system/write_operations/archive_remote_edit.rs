@@ -131,15 +131,32 @@ where
         return Err(RemoteEditError::Cancelled);
     }
 
-    // 3) Upload the edited local copy under a remote TEMP name. The original keeps
-    //    its name and bytes throughout; a cancel/fault deletes the partial temp.
-    let remote_temp = remote_temp_sibling(&archive_path);
-    upload_archive(parent.as_ref(), &working, &remote_temp, &state).await?;
-
-    // 4) Swap the remote temp into place. The only step that touches the original.
-    swap_into_place(parent.as_ref(), &remote_temp, &archive_path).await?;
+    // 3+4) Upload the edited local copy under a remote TEMP name, then swap it into
+    //       place — the only step that touches the original. See `place_local_file`.
+    place_local_file(parent.as_ref(), &working, &archive_path, &state).await?;
 
     Ok(value)
+}
+
+/// Durably places a LOCAL file at a REMOTE path via the SAME upload-to-temp + swap
+/// discipline a remote edit commits with: stream the local file to a
+/// `.cmdr-tmp-<uuid>` sibling, then swap it into place. The remote target keeps its
+/// old bytes — or its ABSENCE, for a brand-new target — until the atomic swap, so a
+/// cancel/fault before the swap leaves it untouched with no torn file. Used to SEED
+/// a remote compress target with a valid empty zip (see `archive_edit::compress`),
+/// and as `pull_apply_upload_swap`'s own commit.
+///
+/// `pub(crate)` so the compress seed (in `archive_edit`) can reuse it.
+pub(crate) async fn place_local_file(
+    parent: &dyn Volume,
+    local_file: &Path,
+    remote_path: &Path,
+    state: &WriteOperationState,
+) -> Result<(), RemoteEditError> {
+    let remote_temp = remote_temp_sibling(remote_path);
+    upload_archive(parent, local_file, &remote_temp, state).await?;
+    swap_into_place(parent, &remote_temp, remote_path).await?;
+    Ok(())
 }
 
 /// Streams the remote `.zip` to a local file, checking cancel between chunks.
@@ -235,9 +252,16 @@ async fn swap_into_place(parent: &dyn Volume, remote_temp: &Path, archive_path: 
         return Ok(());
     }
 
-    // Delete-then-rename. The crash window (between the two) leaves the NEW,
-    // fully-uploaded data under the temp name: recoverable, never lost.
-    parent.delete(archive_path).await.map_err(vol_op(archive_path))?;
+    // Delete-then-rename. Tolerate a MISSING original: a brand-new seed target has
+    // nothing to delete (and `place_local_file` reaches here for MTP, which allows
+    // same-name siblings). Any OTHER delete fault is real. The crash window (between
+    // the two) leaves the NEW, fully-uploaded data under the temp name: recoverable,
+    // never lost.
+    match parent.delete(archive_path).await {
+        Ok(()) => {}
+        Err(VolumeError::NotFound(_)) => {}
+        Err(err) => return Err(RemoteEditError::Op(to_write_error(archive_path, &err))),
+    }
     parent
         .rename(remote_temp, archive_path, false)
         .await

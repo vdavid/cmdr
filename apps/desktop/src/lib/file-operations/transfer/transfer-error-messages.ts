@@ -177,10 +177,6 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // retries, so this classification is only the fallback if the prompt is
   // bypassed; retryHint stays on so the generic dialog still offers a retry.
   archive_needs_password: { category: 'needs_action', retryHint: true },
-  // Compress refused a remote destination (creating a new zip on SMB/MTP isn't
-  // supported until the remote-destination work seeds through the parent volume).
-  // Nothing to retry as-is; the user picks a local destination.
-  remote_archive_creation_unsupported: { category: 'needs_action', retryHint: false },
 }
 
 export function getErrorDisplayMeta(error: WriteOperationError): ErrorDisplayMeta {
@@ -299,7 +295,6 @@ const pathOnlyTypes = new Set<WriteOperationError['type']>([
   'connection_interrupted',
   'name_too_long',
   'delete_pending',
-  'remote_archive_creation_unsupported',
 ])
 
 /** Error types where technical details include path + error message. */

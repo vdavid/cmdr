@@ -57,6 +57,8 @@ pub(crate) use routing::{
 mod test_support;
 
 #[cfg(test)]
+mod compress_remote_tests;
+#[cfg(test)]
 mod compress_tests;
 #[cfg(test)]
 mod copy_into_interactive_tests;

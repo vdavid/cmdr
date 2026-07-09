@@ -10,6 +10,14 @@
  *    archive (temp+rename never tears the file), never partial garbage, and no
  *    `.cmdr-tmp-` scratch survives.
  *
+ * A REMOTE destination (compress onto an SMB/MTP share) is NOT covered here: the
+ * dialog and confirm path don't branch on local-vs-remote (they just pass a
+ * destination path), so a remote E2E would only re-exercise this same UI while
+ * needing an SMB share mounted into the Playwright harness. The remote
+ * seed-through-volume round-trip is covered by the Rust integration test
+ * `smb_integration_compress_local_files_onto_the_share` (a real Docker Samba
+ * share) plus the `compress_remote_tests` unit suite (both swap shapes).
+ *
  * Fixture (at $CMDR_E2E_START_PATH, recreated per test): `left/` holds
  * `file-a.txt`, `file-b.txt`, `sub-dir/`, etc.; `right/` is empty.
  */

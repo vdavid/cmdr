@@ -526,10 +526,6 @@ export type WriteOperationError =
   // stored password was rejected. The FE should intercept this before the generic
   // error dialog and prompt for a password (then retry via `setArchivePassword`).
   | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
-  // Compress refused a remote (SMB/MTP) destination: creating a NEW zip there needs
-  // a seed through the parent volume, which ships in M8. Interim state; renders via
-  // the generic fallback. Kept in sync with the specta `WriteOperationError` union.
-  | { type: 'remote_archive_creation_unsupported'; path: string }
 
 // ============================================================================
 // Scan preview types (for Copy dialog live stats)

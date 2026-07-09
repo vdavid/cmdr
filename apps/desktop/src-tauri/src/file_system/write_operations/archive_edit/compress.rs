@@ -16,12 +16,17 @@ use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Duration;
 
 use uuid::Uuid;
 
 use super::super::OperationEventSink;
+use super::super::archive_remote_edit::{self, RemoteEditError};
+use super::super::scratch_dir::ScratchDir;
+use super::super::state::WriteOperationState;
 use super::super::types::{ConflictResolution, WriteOperationError, WriteOperationStartResult};
 use super::route_archive_copy_into;
+use crate::file_system::get_volume_manager;
 use crate::file_system::volume::Volume;
 
 /// Same-directory temp infix, mirroring the mutator's: `foo.zip` seeds through
@@ -71,6 +76,38 @@ pub(crate) fn seed_empty_zip(path: &Path) -> Result<(), WriteOperationError> {
     // Best-effort: fsync the parent dir so the rename itself survives a power loss.
     fsync_parent_dir(path);
     Ok(())
+}
+
+/// Seeds a valid empty zip at a REMOTE target THROUGH the parent volume. The
+/// remote copy-into path (`route_archive_copy_into` -> `pull_apply_upload_swap`)
+/// PULLS the target before editing, so a local-FS seed would be invisible to it —
+/// the seed must be a real file on the remote. Writes the 22-byte empty zip to a
+/// local scratch file, then places it at `dest_zip_full_path` via the remote
+/// edit's own durable upload+swap (temp sibling -> atomic swap), so a crash never
+/// leaves a torn seed at the user's destination and an overwrite is atomic.
+async fn seed_empty_zip_remote(parent: &dyn Volume, dest_zip_full_path: &Path) -> Result<(), WriteOperationError> {
+    // Stage the 22 bytes in a private scratch dir; its `Drop` removes the file.
+    let scratch = ScratchDir::new("cmdr-compress-seed").map_err(|e| WriteOperationError::WriteError {
+        path: dest_zip_full_path.display().to_string(),
+        message: e.to_string(),
+    })?;
+    let local_seed = scratch.path().join("seed.zip");
+    std::fs::write(&local_seed, empty_zip_bytes()).map_err(|e| WriteOperationError::WriteError {
+        path: local_seed.display().to_string(),
+        message: e.to_string(),
+    })?;
+
+    // A fresh, never-cancelled state: the seed is a 22-byte write that runs BEFORE
+    // the managed op exists, so there is no live cancel to thread through it.
+    let state = WriteOperationState::new(Duration::from_millis(0));
+    archive_remote_edit::place_local_file(parent, &local_seed, dest_zip_full_path, &state)
+        .await
+        .map_err(|e| match e {
+            RemoteEditError::Cancelled => WriteOperationError::Cancelled {
+                message: "the compress seed was cancelled".to_string(),
+            },
+            RemoteEditError::Op(w) => w,
+        })
 }
 
 /// A fresh same-directory temp path: `foo.zip` -> `foo.zip.cmdr-tmp-<uuid>`,
@@ -131,12 +168,19 @@ pub(crate) async fn compress_start(
     conflict: ConflictResolution,
     progress_interval_ms: u64,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    // Local-only seed. A REMOTE parent would need the seed written THROUGH the
-    // parent volume (the remote edit PULLS the existing `.zip` before editing, so a
-    // local-FS seed is invisible to it). v1 doesn't do that — the command layer
-    // refuses a remote destination. Remote dest: see
-    // compress-feature-plan.md § Decided questions (the remote-destination work, M8).
-    seed_empty_zip(&dest_zip_full_path)?;
+    // Seed a valid empty zip at the target so the copy-into has a real archive to
+    // open. The seed must be visible to `route_archive_copy_into`'s parent-aware
+    // path: a LOCAL parent edits the file in place, so a local-FS seed works; a
+    // REMOTE parent PULLS the target before editing (`pull_apply_upload_swap`), so
+    // its seed must be a real file ON the remote, written THROUGH the parent volume.
+    match get_volume_manager().get(&parent_volume_id) {
+        Some(parent) if !parent.supports_local_fs_access() => {
+            seed_empty_zip_remote(parent.as_ref(), &dest_zip_full_path).await?;
+        }
+        // Local parent, or an unregistered id (`route_archive_copy_into` falls back
+        // to a local in-place edit for it) — seed the local filesystem.
+        _ => seed_empty_zip(&dest_zip_full_path)?,
+    }
 
     route_archive_copy_into(
         events,

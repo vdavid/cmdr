@@ -652,8 +652,8 @@ export const commands = {
    *  Compresses `source_paths` into a NEW zip at `dest_zip_path` on `dest_volume_id`.
    *  Reuses the archive-edit machinery: seed a valid empty zip, then copy the sources
    *  in as one changeset (`compress_start`). Same events as `copy_between_volumes`.
-   *  Local destination only in v1 — a remote parent is refused with a typed error
-   *  (`RemoteArchiveCreationUnsupported`), replaced by seed-through-Volume in M8.
+   *  The destination may be LOCAL or REMOTE (SMB/MTP): `compress_start` seeds a local
+   *  target on the FS and a remote one THROUGH the parent volume.
    */
   compressFiles: (
     sourceVolumeId: string,
@@ -6495,15 +6495,6 @@ export type WriteOperationError =
    *  `set_archive_password` and retries the operation.
    */
   | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
-  /**
-   *  Compress refused because the destination isn't backed by a local
-   *  filesystem. Creating a NEW zip seeds a valid empty archive at the target,
-   *  which the v1 path writes through `std::fs`; a remote parent (direct
-   *  SMB/MTP) can't see that seed. INTERIM: M8 replaces this refusal with a
-   *  seed-through-the-parent-volume path, at which point this variant and its
-   *  guard (`ensure_local_compress_dest`) are removed.
-   */
-  | { type: 'remote_archive_creation_unsupported'; path: string }
   // Catch-all for genuinely unexpected IO errors.
   | { type: 'io_error'; path: string; message: string }
 

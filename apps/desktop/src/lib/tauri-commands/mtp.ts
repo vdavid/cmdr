@@ -519,8 +519,8 @@ export async function moveBetweenVolumes(
 /**
  * Compresses files into a NEW zip at `destZipPath` on `destVolumeId`, reusing the
  * archive-edit machinery (seed a valid empty zip, then pack the sources in). Same
- * events as `copyBetweenVolumes`. Local destination only in v1 — a remote parent
- * rejects with `RemoteArchiveCreationUnsupported`.
+ * events as `copyBetweenVolumes`. The destination may be local or remote (SMB/MTP):
+ * a local target is seeded on the filesystem, a remote one through the parent volume.
  *
  * @param sourceVolumeId - ID of the source volume (like "root" for local filesystem)
  * @param sourcePaths - Source file/directory paths relative to the source volume

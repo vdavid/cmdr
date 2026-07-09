@@ -468,15 +468,6 @@ pub enum WriteOperationError {
         path: String,
         wrong_attempt: bool,
     },
-    /// Compress refused because the destination isn't backed by a local
-    /// filesystem. Creating a NEW zip seeds a valid empty archive at the target,
-    /// which the v1 path writes through `std::fs`; a remote parent (direct
-    /// SMB/MTP) can't see that seed. INTERIM: M8 replaces this refusal with a
-    /// seed-through-the-parent-volume path, at which point this variant and its
-    /// guard (`ensure_local_compress_dest`) are removed.
-    RemoteArchiveCreationUnsupported {
-        path: String,
-    },
     /// Catch-all for genuinely unexpected IO errors.
     IoError {
         path: String,

@@ -1,8 +1,8 @@
 # Compress feature plan
 
-Status: ready to execute (survey verified against the live tree 2026-07-09 by three exploration passes; every path,
-symbol, and line number below was confirmed on `main` at `a309164ca`). Worktree: `.claude/worktrees/compress-feature`,
-branch `david/compress-feature` off local `main`.
+Status: all milestones (M1-M8) landed; pending final lead review. Worktree: `.claude/worktrees/compress-feature`, branch
+`david/compress-feature` off local `main`. (Survey verified against the live tree 2026-07-09 by three exploration
+passes; every path, symbol, and line number below was confirmed on `main` at `a309164ca`.)
 
 ## Goal
 
@@ -345,11 +345,20 @@ helpers and refactor the toggle rather than adding lines. Never bump the allowli
 - **Full check:** `pnpm check` (plus `--include-slow` for the E2E lane). Acceptable pre-existing red: the `quick-xml`
   cargo-audit advisory (Renovate's to close).
 
-### M8 — Remote destination (compress onto SMB/MTP)
+### M8 — Remote destination (compress onto SMB/MTP) — LANDED
 
 Replaces M2's typed refusal with the real thing. The machinery composes: `route_archive_copy_into` already handles a
 remote PARENT via `pull_apply_upload_swap` (pull the remote `.zip` to scratch, apply the edit, upload, swap) — shipped
 for the copy-into-existing-zip case. What's new here is only the seed:
+
+**As landed:** `compress_start` branches on `parent.supports_local_fs_access()` — a remote parent seeds through
+`seed_empty_zip_remote`, which places the 22-byte empty zip via the new reusable `archive_remote_edit::place_local_file`
+(the remote edit's own upload-to-temp + atomic-swap, generalized to tolerate a missing original for a brand-new target).
+The M2 refusal (`ensure_local_compress_dest` + the `RemoteArchiveCreationUnsupported` variant and its FE entries) is
+gone; bindings regenerated. MTP composes with no MTP-specific work (its delete-then-rename swap is the same shared path,
+unit-covered). Coverage: `compress_remote_tests` (both swap shapes + overwrite-replaces-not-merges, red→green vs the
+local seed), the live-Samba `smb_integration_compress_local_files_onto_the_share`, and a coverage note in
+`compress-basic.spec.ts` (no remote E2E — the dialog doesn't branch on dest locality). Original plan detail below:
 
 - **Seed through the parent `Volume`, not the local FS.** For a remote parent, write the 22-byte EOCD seed via the
   parent volume's write API (`write_from_stream` or the smallest existing write seam — read how `pull_apply_upload_swap`

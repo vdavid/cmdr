@@ -398,3 +398,108 @@ async fn smb_integration_copy_creates_missing_nested_dest() {
 
     ensure_clean(&smb_vol, &base).await;
 }
+
+/// COMPRESS onto a real SMB share: local files packed into a NEW zip that lands on
+/// the server. This is the end-to-end proof of the remote seed-through-volume path
+/// — the 22-byte empty zip is written THROUGH the SMB volume (upload temp → swap),
+/// then `route_archive_copy_into` pulls it, adds the sources, and swaps the full
+/// archive into place. Reading the zip back off the share and parsing it proves the
+/// result is a valid archive holding the sources, and no `.cmdr-tmp-*` upload temp
+/// is left at the destination.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_compress_local_files_onto_the_share() {
+    use crate::file_system::get_volume_manager;
+    use crate::file_system::write_operations::{CollectorEventSink, ConflictResolution, compress_start};
+    use std::io::Read;
+    use std::time::Duration;
+
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+
+    // Register the share under a unique id so `compress_start` resolves it as the
+    // (remote) parent and routes through the seed-through-volume path.
+    let parent_id = format!("smb-compress-{base}");
+    get_volume_manager().register(&parent_id, smb_vol.clone() as Arc<dyn Volume>);
+
+    // Local sources: two files to pack.
+    let local_dir = tempfile::TempDir::new().expect("create TempDir");
+    std::fs::write(local_dir.path().join("one.txt"), b"first").unwrap();
+    std::fs::write(local_dir.path().join("two.txt"), b"second").unwrap();
+    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+        "src",
+        local_dir.path().to_path_buf(),
+    ));
+
+    let dest_zip = format!("{base}/bundle.zip");
+    let events = Arc::new(CollectorEventSink::new());
+    compress_start(
+        events.clone() as Arc<dyn crate::file_system::OperationEventSink>,
+        Arc::clone(&source_vol),
+        vec![PathBuf::from("one.txt"), PathBuf::from("two.txt")],
+        PathBuf::from(&dest_zip),
+        parent_id.clone(),
+        ConflictResolution::Overwrite,
+        100,
+    )
+    .await
+    .expect("start SMB compress");
+
+    // Poll for completion (bounded); surface an error event loudly.
+    let mut done = false;
+    for _ in 0..600 {
+        // Snapshot both queues in a tight scope so no lock guard is held across the
+        // await below (`clippy::await_holding_lock`).
+        let (completed, err_msg) = {
+            let completed = !events.complete.lock().unwrap().is_empty();
+            let errs = events.errors.lock().unwrap();
+            let err_msg = (!errs.is_empty()).then(|| format!("{errs:?}"));
+            (completed, err_msg)
+        };
+        assert!(
+            err_msg.is_none(),
+            "SMB compress errored: {}",
+            err_msg.unwrap_or_default()
+        );
+        if completed {
+            done = true;
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    assert!(done, "SMB compress should complete within the timeout");
+
+    // Read the zip back off the share and parse it: it must be a valid archive
+    // holding both sources with their exact bytes.
+    let dest_vol: Arc<dyn Volume> = smb_vol.clone();
+    let mut stream = dest_vol.open_read_stream(Path::new(&dest_zip)).await.unwrap();
+    let mut bytes = Vec::new();
+    while let Some(Ok(chunk)) = stream.next_chunk().await {
+        bytes.extend_from_slice(&chunk);
+    }
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes)).expect("the SMB zip must parse");
+    let read = |archive: &mut zip::ZipArchive<std::io::Cursor<Vec<u8>>>, name: &str| -> Vec<u8> {
+        let mut entry = archive.by_name(name).expect("entry present");
+        let mut buf = Vec::new();
+        entry.read_to_end(&mut buf).expect("read entry");
+        buf
+    };
+    assert_eq!(read(&mut archive, "one.txt"), b"first");
+    assert_eq!(read(&mut archive, "two.txt"), b"second");
+
+    // No upload temp debris left at the destination.
+    let leftovers: Vec<String> = smb_vol
+        .list_directory_impl(Path::new(&base))
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|e| e.name)
+        .filter(|n| n.contains(".cmdr-tmp-"))
+        .collect();
+    assert!(leftovers.is_empty(), "no upload temp should remain, got: {leftovers:?}");
+
+    get_volume_manager().unregister(&parent_id);
+    ensure_clean(&smb_vol, &base).await;
+}

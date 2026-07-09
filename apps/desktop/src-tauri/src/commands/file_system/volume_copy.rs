@@ -199,27 +199,11 @@ pub async fn move_between_volumes(
     .await
 }
 
-/// Interim guard: compress creates a NEW zip by seeding a valid empty archive
-/// at the target through the local filesystem, so the destination must be
-/// local-backed. A remote parent (direct SMB/MTP, `local_path() == None`) can't see
-/// that local seed, so refuse it with a typed error. The remote-destination
-/// milestone (M8) replaces this with a seed-through-the-parent-volume path and
-/// removes this guard and its error variant.
-fn ensure_local_compress_dest(dest_volume: &Arc<dyn Volume>, dest_zip_path: &str) -> Result<(), WriteOperationError> {
-    if dest_volume.local_path().is_none() {
-        return Err(WriteOperationError::RemoteArchiveCreationUnsupported {
-            path: dest_zip_path.to_string(),
-        });
-    }
-    Ok(())
-}
-
 /// Compresses `source_paths` into a NEW zip at `dest_zip_path` on `dest_volume_id`.
 /// Reuses the archive-edit machinery: seed a valid empty zip, then copy the sources
 /// in as one changeset (`compress_start`). Same events as `copy_between_volumes`.
-/// Local destination only in v1 — a remote parent is refused with a typed error
-/// (`RemoteArchiveCreationUnsupported`), replaced by seed-through-Volume in the
-/// remote-destination milestone (M8).
+/// The destination may be LOCAL or REMOTE (SMB/MTP): `compress_start` seeds a local
+/// target on the FS and a remote one THROUGH the parent volume.
 #[tauri::command]
 #[specta::specta]
 pub async fn compress_files(
@@ -251,9 +235,6 @@ pub async fn compress_files(
             path: dest_volume_id.clone(),
             message: format!("Destination volume '{}' not found", dest_volume_id),
         })?;
-
-    // Interim: refuse a remote destination until the remote work seeds through the parent volume.
-    ensure_local_compress_dest(&dest_volume, &dest_zip_path)?;
 
     let config = config.unwrap_or_default();
     let dest_zip_path = expand_local_dest(&dest_volume, dest_zip_path);
@@ -425,44 +406,9 @@ pub struct SourceItemInput {
 
 #[cfg(test)]
 mod tests {
-    use super::{ensure_local_compress_dest, merge_source_types_from_batch, resolve_source};
-    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo, Volume, WriteOperationError};
+    use super::{merge_source_types_from_batch, resolve_source};
+    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo};
     use std::path::PathBuf;
-    use std::sync::Arc;
-
-    /// A remote (non-local-backed) compress destination is refused with the typed
-    /// `RemoteArchiveCreationUnsupported` variant, not a stringly error — the
-    /// interim local-only state (the remote milestone seeds through the parent
-    /// volume). Matches on the variant, never on a message.
-    #[test]
-    fn compress_refuses_a_remote_destination_with_a_typed_error() {
-        use crate::file_system::volume::backends::InMemoryVolume;
-
-        // `InMemoryVolume` reports `local_path() == None`, standing in for a direct
-        // SMB/MTP share: compress can't seed a local empty zip a remote parent sees.
-        let remote: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Remote share"));
-
-        let err = ensure_local_compress_dest(&remote, "/share/bundle.zip")
-            .expect_err("a remote compress destination must be refused");
-
-        assert!(
-            matches!(err, WriteOperationError::RemoteArchiveCreationUnsupported { .. }),
-            "expected the typed remote-unsupported refusal, got {err:?}"
-        );
-    }
-
-    /// A local-backed destination passes the guard (the common case: compress into
-    /// the other pane's local folder).
-    #[test]
-    fn compress_allows_a_local_destination() {
-        use crate::file_system::volume::LocalPosixVolume;
-
-        let dir = tempfile::tempdir().expect("tempdir");
-        let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Root", dir.path().to_str().unwrap()));
-
-        ensure_local_compress_dest(&local, &dir.path().join("out.zip").to_string_lossy())
-            .expect("a local compress destination is allowed");
-    }
 
     #[tokio::test]
     async fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {
