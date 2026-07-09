@@ -2,13 +2,18 @@
  * E2E tests for the Compress command (⌥F5): pack the cursor item into a NEW zip
  * in the other pane, via the Transfer dialog's third mode.
  *
- * Covers the two flows that matter end to end:
+ * Covers the flows that matter end to end:
  *  - Happy path: trigger Compress, the dialog opens in Compress mode with a
  *    `.zip` suggestion, confirm, the zip lands in the other pane, and browsing
  *    INTO it (archive-as-folder) shows the source inside.
  *  - Cancel safety: cancel mid-compress; the target is at worst a valid empty
  *    archive (temp+rename never tears the file), never partial garbage, and no
  *    `.cmdr-tmp-` scratch survives.
+ *  - Compression level: the `behavior.archiveCompressionLevel` setting actually
+ *    shapes the output — packing the same source at level 9 yields a strictly
+ *    smaller zip than level 1 (the setting-to-disk contract, end to end). The
+ *    mutator-level proof (added-entries-only, clamping, default) is the Rust
+ *    `compress_tests.rs` suite; this asserts the setting reaches the write.
  *
  * A REMOTE destination (compress onto an SMB/MTP share) is NOT covered here: the
  * dialog and confirm path don't branch on local-vs-remote (they just pass a
@@ -33,6 +38,7 @@ import {
   ensureAppReady,
   expectAndDismissToast,
   fileExistsInFocusedPane,
+  focusPane,
   getFixtureRoot,
   moveCursorToFile,
   TRANSFER_DIALOG,
@@ -184,5 +190,87 @@ test.describe('Compress (⌥F5)', () => {
     const rightDir = path.join(fixtureRoot, 'right')
     const leftover = fs.readdirSync(rightDir).filter((n) => n.includes('.cmdr-tmp-'))
     expect(leftover, `.cmdr-tmp- scratch left under ${rightDir}: ${leftover.join(', ')}`).toEqual([])
+  })
+
+  test('the compression-level setting shapes the output: level 9 packs smaller than level 1', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    const sourceName = 'compressible.txt'
+    const destZip = path.join(fixtureRoot, 'right', `${sourceName}.zip`)
+
+    // A genuinely compressible payload where deflate's match-finding EFFORT pays
+    // off, so level 9 stores fewer bytes than level 1. ~3 MB of semi-repetitive
+    // word text (a small vocabulary drawn by a seeded LCG for determinism): the
+    // frequent short/medium-distance matches are exactly what the higher level's
+    // longer hash chains + lazy matching exploit. This is load-bearing — random
+    // bytes deflate the same at every level (nothing to find) and a single
+    // repeated byte likewise (both levels catch the run), so neither would show a
+    // gap. The seed keeps the payload identical across runs (stable 3/3).
+    const vocab = [
+      'the',
+      'quick',
+      'brown',
+      'fox',
+      'jumps',
+      'over',
+      'lazy',
+      'dog',
+      'compression',
+      'level',
+      'archive',
+      'deflate',
+      'window',
+      'redundancy',
+      'matches',
+      'entropy',
+      'stockholm',
+      'commander',
+    ]
+    let seed = 0x1234_5678
+    const parts: string[] = []
+    let approxBytes = 0
+    while (approxBytes < 3 * 1024 * 1024) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff
+      const word = vocab[seed % vocab.length]
+      parts.push(word)
+      approxBytes += word.length + 1
+    }
+    fs.writeFileSync(path.join(fixtureRoot, 'left', sourceName), parts.join(' '))
+
+    // Compress the SAME source at one level, returning the produced zip's byte
+    // size. Deletes the target afterwards so the next level writes a fresh
+    // archive (no dest-exists overwrite prompt to steer).
+    const compressAtLevel = async (level: number): Promise<number> => {
+      await mcpCall('set_setting', { id: 'behavior.archiveCompressionLevel', value: level })
+      // The op is triggered from the source (left) pane; re-anchor focus there
+      // since the previous compress left focus wherever it landed.
+      await focusPane(tauriPage, 0)
+      const found = await moveCursorToFile(tauriPage, sourceName)
+      expect(found).toBe(true)
+      await dispatchMenuCommand(tauriPage, 'file.compress')
+
+      await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+      await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
+      await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
+      await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 15000 }).toBeTruthy()
+      await expectAndDismissToast(tauriPage, 'Compressed')
+
+      await expect.poll(() => fs.existsSync(destZip), { timeout: 5000 }).toBeTruthy()
+      const size = fs.statSync(destZip).size
+      fs.rmSync(destZip)
+      return size
+    }
+
+    const sizeAtLevel1 = await compressAtLevel(1)
+    const sizeAtLevel9 = await compressAtLevel(9)
+
+    // The whole point of the setting: a higher level packs the same data smaller.
+    expect(sizeAtLevel9, `level 9 (${sizeAtLevel9} B) should beat level 1 (${sizeAtLevel1} B)`).toBeLessThan(
+      sizeAtLevel1,
+    )
+
+    // Restore the default so the level doesn't leak into other specs sharing the store.
+    await mcpCall('set_setting', { id: 'behavior.archiveCompressionLevel', value: 6 })
   })
 })

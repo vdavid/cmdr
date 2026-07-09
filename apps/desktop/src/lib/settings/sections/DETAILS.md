@@ -30,7 +30,11 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
   Two labeled `SectionCard`s — Archives (the zip row) and App bundles — each a `lib/ui/ToggleGroup`
   (`semantics="toggles"`) bound to the parsed override, writing the merged JSON back. Defaults + the pure classification
   live in `file-explorer/pane/archive-enter-policy.ts`; this file only renders and persists. Both cards gated via
-  `anyVisible(shouldShow, 'behavior.archiveEnterBehavior')`.
+  `anyVisible(shouldShow, 'behavior.archiveEnterBehavior')`. The Archives card ALSO holds a "Compression level" row: a
+  registry-backed `behavior.archiveCompressionLevel` slider (1–9, default 6) framed with "Faster"/"Smaller" end labels,
+  hand-rendered here like the rest. It's the SAME setting the Compress dialog's `CompressLevelControl.svelte` binds by
+  id, and it governs every user-driven zip write; the effect on the archive is single-sourced in the backend mutation
+  `DETAILS.md` (via `write_operations/DETAILS.md` § "Archive edits").
 - **`FileSystemWatchingSection.svelte`**: `Behavior > File system watching`: three `SectionCard` card groups — Drive
   indexing (toggle + clear-index action, the hidden `indexing.indexSize` search anchor), Downloads (BOTH
   Downloads-folder features in one card: the 4-option `downloadsNotifications` ToggleGroup, plus the on/off go-to-latest
