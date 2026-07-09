@@ -359,6 +359,30 @@ pub fn remove_entry_by_path(listing_id: &str, path: &Path) -> Option<(usize, Fil
     Some((idx, entry))
 }
 
+/// Removes the entry whose file name equals `name` from a listing, returning its
+/// index and value.
+///
+/// A cached listing is exactly one directory, so entry names are unique — matching
+/// by name (not full path) makes the `Removed` patch robust to the path-space the
+/// notifier resolves the parent into. This matters for MTP: `MtpVolume` stores each
+/// entry's `path` as the storage-relative inner form (`/Documents/notes.txt`), while
+/// `notify_mutation` resolves the parent to the absolute `mtp://…` URL to match the
+/// listing itself. Comparing full paths never matched, so `notify_mutation(Deleted)`
+/// silently no-oped and a moved/deleted MTP file lingered in the source pane until a
+/// manual refresh. Local/SMB entries store the same path space the notifier builds,
+/// so name matching is equivalent there (a directory has no duplicate names).
+pub fn remove_entry_by_name(listing_id: &str, name: &std::ffi::OsStr) -> Option<(usize, FileEntry)> {
+    let mut cache = LISTING_CACHE.write().ok()?;
+    let listing = cache.get_mut(listing_id)?;
+    listing.touch();
+    let idx = listing
+        .entries
+        .iter()
+        .position(|e| Path::new(&e.path).file_name() == Some(name))?;
+    let entry = listing.entries.remove(idx);
+    Some((idx, entry))
+}
+
 /// Checks whether a cached listing contains an entry with the given path.
 pub fn has_entry(listing_id: &str, path: &str) -> bool {
     let cache = match LISTING_CACHE.read() {
@@ -600,11 +624,19 @@ pub(super) fn notify_added(listing_id: &str, entry: FileEntry) {
 }
 
 /// Removes an entry from the cache and queues a single-remove change.
-fn notify_removed(listing_id: &str, full_path: &Path) {
+///
+/// Matches by file name within the listing (its directory), NOT the full path, so
+/// it works when the listing's stored entry paths use a different path space than
+/// the notifier's resolved parent (MTP: inner `/Dir/file` entries vs `mtp://…`
+/// parent). See `remove_entry_by_name`.
+pub(super) fn notify_removed(listing_id: &str, full_path: &Path) {
     use crate::file_system::listing::diff_emitter::enqueue_diff;
     use crate::file_system::watcher::DiffChange;
 
-    let Some((index, removed_entry)) = remove_entry_by_path(listing_id, full_path) else {
+    let Some(name) = full_path.file_name() else {
+        return;
+    };
+    let Some((index, removed_entry)) = remove_entry_by_name(listing_id, name) else {
         return; // Not in cache or listing gone
     };
 

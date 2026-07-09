@@ -118,7 +118,14 @@ Used by the watcher's incremental path and synthetic mkdir to patch listings wit
   cache lock across an await and blocks pane navigation). See the freshness-contract section in `volume/CLAUDE.md` for
   per-backend debounce windows callers must tolerate.
 - `insert_entry_sorted(listing_id, entry)`: inserts in sorted position, returns the insertion index.
-- `remove_entry_by_path(listing_id, path)`: removes by file path, returns the removed index and entry.
+- `remove_entry_by_path(listing_id, path)`: removes by exact file-path match, returns the removed index and entry. Used
+  by the local FSEvents incremental path, where the event path shares the entries' path space.
+- `remove_entry_by_name(listing_id, name)`: removes by file NAME within the listing (its directory, so names are
+  unique). This is what the `Removed` change patch uses, so it works even when the listing's stored entry paths use a
+  different path space than the notifier's resolved parent. That's the case for MTP: `MtpVolume` stores each entry's
+  `path` as the storage-relative inner form (`/Documents/notes.txt`) while `notify_mutation` resolves the parent to the
+  absolute `mtp://…` URL, so a full-path match never matched and `notify_mutation(Deleted)` silently no-oped (moved or
+  deleted MTP files lingered in the source pane until a manual refresh).
 - `update_entry_sorted(listing_id, entry)`: updates an existing entry (remove + re-insert if sort position changed),
   returns `ModifyResult`.
 - `has_entry(listing_id, path)`: whether a path exists in the cached listing (classifies watcher events add vs modify).
@@ -130,13 +137,13 @@ Used by the watcher's incremental path and synthetic mkdir to patch listings wit
 directory changed on a volume. `DirectoryChange` variants:
 
 - `Added(FileEntry)`: single add, patches via `insert_entry_sorted`.
-- `Removed(String)`: single remove by name, patches via `remove_entry_by_path`.
+- `Removed(String)`: single remove by name, patches via `remove_entry_by_name` (name match, not full path — see above).
 - `Modified(FileEntry)`: single modify, patches via `update_entry_sorted`.
 - `Renamed { old_name, new_entry }`: same-dir rename (remove old + insert new).
 - `FullRefresh`: re-reads via the Volume trait, computes a diff against the cache.
 
 All variants enrich entries with index data and queue `directory-diff` events through `diff_emitter::enqueue_diff`.
-Natural deduplication: `insert_entry_sorted` returns `None` for duplicates, `remove_entry_by_path` returns `None` if
+Natural deduplication: `insert_entry_sorted` returns `None` for duplicates, `remove_entry_by_name` returns `None` if
 already removed. Callers: `Volume::notify_mutation()` (after each successful create/delete/rename on all volume types)
 and the `rename_file` command (local FS renames). `emit_synthetic_entry_diff` remains a legacy fallback for
 `create_file` / `create_directory` on volumes where `supports_local_fs_access()` is `true`.

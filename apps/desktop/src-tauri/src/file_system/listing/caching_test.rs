@@ -4,8 +4,8 @@ use std::path::PathBuf;
 
 use super::caching::{
     CachedListing, LISTING_CACHE, ModifyResult, apply_tags_to_listing, carry_forward_tags, find_listings_for_path,
-    find_listings_for_path_on_volume, has_entry, insert_entry_sorted, notify_added, remove_entry_by_path,
-    update_entry_sorted,
+    find_listings_for_path_on_volume, has_entry, insert_entry_sorted, notify_added, notify_removed,
+    remove_entry_by_name, remove_entry_by_path, update_entry_sorted,
 };
 use super::metadata::{FileEntry, TagRef};
 use super::sorting::{DirectorySortMode, SortColumn, SortOrder};
@@ -339,6 +339,104 @@ fn test_remove_entry_by_path_returns_none_for_missing_entry() {
 fn test_remove_entry_by_path_returns_none_for_missing_listing() {
     let result = remove_entry_by_path("nonexistent_listing", &PathBuf::from("/test/foo.txt"));
     assert!(result.is_none());
+}
+
+// ============================================================================
+// Removed patch matches by NAME, not full path (MTP inner-path vs URL notifier)
+// ============================================================================
+
+/// Builds an MTP-shaped listing: the directory is the absolute `mtp://…` URL (as
+/// pane navigation stores it), while each entry's `path` is the storage-relative
+/// INNER form (as `MtpVolume::list_directory` produces it).
+fn insert_mtp_style_listing(id: &str) -> String {
+    let inner_notes = FileEntry::new("notes.txt".to_string(), "/Documents/notes.txt".to_string(), false, false);
+    let inner_report = FileEntry::new("report.txt".to_string(), "/Documents/report.txt".to_string(), false, false);
+    insert_test_listing_on_volume(
+        id,
+        "mtp-dev:65537",
+        "mtp://mtp-dev/65537/Documents",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![inner_notes, inner_report],
+    )
+}
+
+/// Pre-fix regression anchor: matching by the notifier's full URL path never found
+/// the inner-path entry, which is why `notify_mutation(Deleted)` silently no-oped for
+/// MTP and a moved/deleted file lingered in the source pane.
+#[test]
+fn full_path_match_misses_inner_mtp_entry_from_url_notifier() {
+    let id = insert_mtp_style_listing("mtp_fullpath_miss");
+    let url = PathBuf::from("mtp://mtp-dev/65537/Documents/notes.txt");
+    assert!(
+        remove_entry_by_path("mtp_fullpath_miss", &url).is_none(),
+        "URL full-path can't match an inner-path entry — the silent no-op this fix removes"
+    );
+    cleanup_listing(&id);
+}
+
+/// The fix: `remove_entry_by_name` matches by the entry's file name within the
+/// directory listing, so the inner-path entry is found from the URL notifier path.
+#[test]
+fn name_match_removes_inner_mtp_entry() {
+    let id = insert_mtp_style_listing("mtp_name_hit");
+    let removed = remove_entry_by_name("mtp_name_hit", std::ffi::OsStr::new("notes.txt"));
+    assert!(removed.is_some(), "name match removes the inner-path entry");
+    assert_eq!(removed.unwrap().1.name, "notes.txt");
+    {
+        let cache = LISTING_CACHE.read().unwrap();
+        let names: Vec<&str> = cache
+            .get("mtp_name_hit")
+            .unwrap()
+            .entries
+            .iter()
+            .map(|e| e.name.as_str())
+            .collect();
+        assert_eq!(names, vec!["report.txt"], "only the named entry is removed");
+    }
+    cleanup_listing(&id);
+}
+
+/// End-to-end on the real patch function: `notify_removed` is called by
+/// `notify_directory_changed` with the URL full path (`parent_url.join(name)`).
+/// It must drop the inner-path entry from the cache. Pre-fix (full-path match) this
+/// left the entry in place; post-fix (name match) it is removed.
+#[test]
+fn notify_removed_drops_inner_mtp_entry_via_url_path() {
+    let id = insert_mtp_style_listing("mtp_notify_removed");
+    // Exactly what notify_directory_changed builds: parent URL joined with the name.
+    let url = PathBuf::from("mtp://mtp-dev/65537/Documents").join("notes.txt");
+    notify_removed("mtp_notify_removed", &url);
+    {
+        let cache = LISTING_CACHE.read().unwrap();
+        let names: Vec<&str> = cache
+            .get("mtp_notify_removed")
+            .unwrap()
+            .entries
+            .iter()
+            .map(|e| e.name.as_str())
+            .collect();
+        assert_eq!(names, vec!["report.txt"], "notify_removed drops notes.txt from the MTP listing");
+    }
+    cleanup_listing(&id);
+}
+
+/// Name matching stays correct for local/SMB listings, whose entry paths already
+/// share the notifier's path space (unique names in a directory).
+#[test]
+fn name_match_removes_local_style_entry() {
+    let id = insert_test_listing(
+        "local_name_hit",
+        "/test",
+        SortColumn::Name,
+        SortOrder::Ascending,
+        DirectorySortMode::LikeFiles,
+        vec![make_entry("alpha.txt", false, Some(1)), make_entry("beta.txt", false, Some(2))],
+    );
+    let removed = remove_entry_by_name("local_name_hit", std::ffi::OsStr::new("beta.txt"));
+    assert_eq!(removed.expect("removed").1.name, "beta.txt");
+    cleanup_listing(&id);
 }
 
 // ============================================================================
