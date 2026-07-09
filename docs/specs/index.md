@@ -6,6 +6,10 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-09 [compress-feature-plan.md](compress-feature-plan.md) - Add a Compress command (menu, palette, ⌥F5, MCP)
+      that opens the Transfer dialog as a third mode (Copy/Move/Compress) and packs the cursor item or selection into a
+      new local zip at the other pane's path. Backend seeds a 22-byte valid empty zip at the target and routes through
+      the existing `route_archive_copy_into` machinery; v1 is zip-only, local-destination-only (remote refuses typed).
 - [ ] 2026-07-04 [listing-loader-extraction-plan.md](listing-loader-extraction-plan.md) - Drain FilePane's last deferred
       cluster (the listing loader: `loadDirectory`/`handleListingComplete`/reset + streaming listeners + pendingLoad +
       the generation/listingId drop-foreign-listings token model) into a tested `listing-loader.svelte.ts` factory,
