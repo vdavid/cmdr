@@ -425,8 +425,9 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
   await listenTauri('mcp-compress', (event) => {
     const raw = asRecord(event.payload)
     const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
-    const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
-    void dispatch(fileCompressCommand, { autoConfirm, onConflict })
+    // No onConflict, unlike copy/move: compress has no inner-file conflicts, and an
+    // existing target archive is the dialog's overwrite affordance, not a policy.
+    void dispatch(fileCompressCommand, { autoConfirm })
   })
 
   await listenTauri('mcp-mkdir', () => {

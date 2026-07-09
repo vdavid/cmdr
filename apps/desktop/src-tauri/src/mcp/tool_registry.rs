@@ -331,11 +331,6 @@ mcp_tools! {
                 "autoConfirm": {
                     "type": "boolean",
                     "description": "When true, the dialog opens and immediately confirms without waiting for user interaction, returning once the compress starts. Exception: if the target archive already exists, the dialog stays open for the user to confirm the overwrite rather than replacing it silently."
-                },
-                "onConflict": {
-                    "type": "string",
-                    "enum": ["skip_all", "overwrite_all", "rename_all"],
-                    "description": "Carried for shape-uniformity with copy/move. Compress creates ONE new archive, so there are no inner-file conflicts to resolve; an existing target archive is surfaced by the dialog's overwrite affordance instead. Default: skip_all"
                 }
             },
             "required": []

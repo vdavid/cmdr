@@ -6,11 +6,6 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
-- [ ] 2026-07-09 [compress-feature-plan.md](compress-feature-plan.md) - Add a Compress command (menu, palette, ⌥F5, MCP)
-      that opens the Transfer dialog as a third mode (Copy/Move/Compress) and packs the cursor item or selection into a
-      new zip at the other pane's path. Backend seeds a 22-byte valid empty zip at the target and routes through the
-      existing `route_archive_copy_into` machinery; zip-only, LOCAL and REMOTE (SMB/MTP) destinations (a remote parent
-      seeds through the parent volume). All eight milestones (M1-M8) landed; pending final lead review.
 - [ ] 2026-07-04 [listing-loader-extraction-plan.md](listing-loader-extraction-plan.md) - Drain FilePane's last deferred
       cluster (the listing loader: `loadDirectory`/`handleListingComplete`/reset + streaming listeners + pendingLoad +
       the generation/listingId drop-foreign-listings token model) into a tested `listing-loader.svelte.ts` factory,
@@ -35,6 +30,13 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 Done and merged; each entry stays until its durable intent is confirmed captured in the colocated C+D.md, then gets
 wiped.
 
+- [x] 2026-07-09 [compress-feature-plan.md](compress-feature-plan.md) - Add a Compress command (menu, palette, ⌥F5, MCP)
+      that opens the Transfer dialog as a third mode (Copy/Move/Compress) and packs the cursor item or selection into a
+      new zip at the other pane's path. Backend seeds a 22-byte valid empty zip at the target and routes through the
+      existing `route_archive_copy_into` machinery; zip-only, LOCAL and REMOTE (SMB/MTP) destinations (a remote parent
+      seeds through the parent volume). SHIPPED 2026-07-09 (all milestones, final review passed); wipe once the durable
+      intent is confirmed captured in the transfer/, archive_edit, and mcp C+D.md. Future work stays in the plan's
+      "Decided questions" (tar/7z creation, compression-level option).
 - [x] 2026-07-07 [pane-toasts-and-rename-identity-plan.md](pane-toasts-and-rename-identity-plan.md) - Pane-scoped
       transient-toast dismissal (background navigation events stop wiping unrelated toasts app-wide) + the inline rename
       editor keyed by path instead of index (kills a latent wrong-row data-safety bug; rename follows its row through

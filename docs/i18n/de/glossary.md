@@ -420,7 +420,7 @@ Total/Double Commander de).
   ("um es zu entsperren").
 - archive (the `{name}` head / input label) → `Archiv` · settled de glossary · high.
 
-Settled while translating the Compress feature (M6, 2026-07-09):
+Settled while translating the Compress feature:
 
 - compress (verb / control label) → `Komprimieren` · Finder `de/macOS` ("Komprimieren", `Compress ${sources}` →
   „${sources}“ komprimieren) · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and

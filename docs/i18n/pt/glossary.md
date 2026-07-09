@@ -309,7 +309,7 @@ Cmdr browses zip/tar/7z archives like folders; this batch added the settings, me
 - archive (the `{name}` head / input label) → `arquivo compactado` · settled pt glossary · high. Input aria-label "Senha
   do arquivo compactado".
 
-Settled while translating the Compress feature (M6, 2026-07-09):
+Settled while translating the Compress feature:
 
 - compress (verb / control label) → `Comprimir` · pt Double Commander / Thunar / Nautilus ("Comprimir ficheiros", "A
   comprimir…"); Finder pt-BR has no `Finder/` dir in the pile, so the file-manager corpora carry it · high. Used for

@@ -524,7 +524,7 @@ AppKit + SystemSettings, 2026-06-21).
 - archive (the `{name}` head / input label) → `archivo comprimido` · settled es glossary · high. Input aria-label
   "Contraseña del archivo comprimido".
 
-Settled while translating the Compress feature (M6, 2026-07-09):
+Settled while translating the Compress feature:
 
 - compress (verb / control label) → `Comprimir` · Finder `es/macOS` ("Comprimir", `Compress ${sources}` → "Comprimir
   ${sources}") · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb

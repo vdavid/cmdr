@@ -509,7 +509,7 @@ Total/Double Commander sv).
 - COMMON GENDER: `arkiv` is treated common-gender here, so the predicate adjective takes the -ad/en-word form
   `lösenordsskyddad` (not neuter `-skyddat`) and the pronoun is `den` ("låsa upp den"), not `det`.
 
-Settled while translating the Compress feature (M6, 2026-07-09):
+Settled while translating the Compress feature:
 
 - compress (verb / control label) → `Komprimera` · Finder `sv/macOS` ("Komprimera", `Compress ${sources}` → "Komprimera
   ${sources}") · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb

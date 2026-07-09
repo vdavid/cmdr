@@ -658,7 +658,7 @@ Total/Double Commander nl).
 - unlock (button + verb) → `Ontgrendelen` · macOS AppKit ("Ontgrendelen") · high. Verb "om het te ontgrendelen".
 - archive (the `{name}` head) → `archief` · settled nl glossary · high.
 
-Settled while translating the Compress feature (M6, 2026-07-09):
+Settled while translating the Compress feature:
 
 - compress (verb / control label) → `Comprimeer` (imperative, matching the sibling `Kopieer`/`Verplaats`) · Finder
   `nl/macOS` ("Comprimeer", `Compress ${sources}` → "Comprimeer ${sources}") · high. Used for

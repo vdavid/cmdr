@@ -570,7 +570,7 @@ Settled during the archive-password dialog pass (encrypted-zip unlock modal `fil
 - archive (the `{name}` head / input label) → `tệp nén` (compressed file) · settled vi glossary · high. Input aria-label
   "Mật khẩu tệp nén".
 
-Settled while translating the Compress feature (M6, 2026-07-09):
+Settled while translating the Compress feature:
 
 - compress (verb / control label) → `Nén` · Finder `vi/macOS` ("Nén các mục", `Compress ${sources}` → "Nén ${sources}")
   · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb branches.

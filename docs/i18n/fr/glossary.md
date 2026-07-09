@@ -607,7 +607,7 @@ ICU values, so every apostrophe is doubled in the catalog.
   feminine antecedent `archive` (not the uncontrolled `{name}`) drives every agreement — `protégée`, and the pronoun
   `la` in "la déverrouiller". Never let agreement hang off `{name}`, whose gender is unknown at runtime.
 
-Settled while translating the Compress feature (M6, 2026-07-09):
+Settled while translating the Compress feature:
 
 - compress (verb / control label) → `Compresser` · Finder `fr/macOS` ("Compresser", `Compress ${sources}` → "Compresser
   ${sources}"), NOT "Comprimer" · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and

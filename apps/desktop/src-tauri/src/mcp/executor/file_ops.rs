@@ -174,19 +174,12 @@ pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
     // `autoConfirm: true` skips the user's confirmation dialog; the POST-handler token
     // gate (`tool_call_requires_token` in `mcp/server.rs`) protects this case.
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
-    let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
-
-    if auto_confirm && !["skip_all", "overwrite_all", "rename_all"].contains(&on_conflict) {
-        return Err(ToolError::invalid_params(
-            "onConflict must be 'skip_all', 'overwrite_all', or 'rename_all'",
-        ));
-    }
-
+    // No `onConflict` param, unlike copy/move: compress creates ONE new archive, so
+    // there are no inner-file conflicts to resolve, and an existing TARGET archive is
+    // the dialog's overwrite affordance, not a policy. A param here would imply
+    // behavior the backend doesn't have.
     let pre_gen = snapshot_generation(app);
-    app.emit(
-        "mcp-compress",
-        json!({"autoConfirm": auto_confirm, "onConflict": on_conflict}),
-    )?;
+    app.emit("mcp-compress", json!({"autoConfirm": auto_confirm}))?;
 
     if auto_confirm {
         wait_for_ack(

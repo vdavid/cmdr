@@ -583,7 +583,7 @@ Settled while translating the archive-password dialog keys (`fileOperations.arch
   <archive>{name}</archive> fájlt", so no case suffix ever lands on the uncontrolled runtime `{name}` (per `style.md` §
   Notes: never vowel-harmonize a suffix onto an unknown value). Same trick the paste-toast uses with the colon slot.
 
-Settled while translating the Compress feature (M6, 2026-07-09):
+Settled while translating the Compress feature:
 
 - compress (verb / control label) → `Tömörítés` (verbal noun) · Finder `hu/macOS` ("Elemek tömörítése",
   `Compress ${sources}` → "${sources} tömörítése") · high. Used for `commands.fileCompress.label`, `toggleCompress`,
