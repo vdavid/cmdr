@@ -95,7 +95,7 @@
       "reason": "Extracted from FilePane, depends on Tauri commands and rename operations"
     },
     "file-explorer/pane/tab-mcp-sync.svelte.ts": {
-      "reason": "Debounced Tauri updatePaneTabs mirror inside an $effect factory; same shape as pane-mcp-sync, exercised via DualPaneExplorer integration"
+      "reason": "Debounced Tauri updatePaneTabs mirror inside an $effect factory; same shape as pane-mcp-sync, exercised via DualPaneExplorer integration. Coverage is load-dependent (68.2% standalone, higher under full-suite parallelism); stays allowlisted so a standalone svelte-tests run doesn't dip red."
     },
     "file-explorer/pane/tab-operations.ts": {
       "reason": "Extracted from DualPaneExplorer, depends on Tauri commands and confirmDialog"
