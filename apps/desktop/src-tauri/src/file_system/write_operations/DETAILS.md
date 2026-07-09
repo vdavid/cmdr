@@ -180,6 +180,8 @@ See also: [`apps/desktop/src-tauri/src/downloads/CLAUDE.md`](../../downloads/CLA
 - **`scan-preview-error`**: Preview scan failed
 - **`scan-preview-cancelled`**: Preview scan cancelled
 
+**MCP consumer note**: the MCP server records each op's terminal outcome into a bounded ring (`mcp::terminal_ops`) at the `TauriEventSink` emit sites for `write-complete` / `write-cancelled` / `write-error`, so its `await operation_complete` can report a settled op's status. It has to tap these terminal events specifically — `operations-changed` fires AFTER removal-on-terminal, so its snapshot never carries a terminal status. See `mcp/DETAILS.md` § State stores.
+
 ## Operation manager
 
 The full model and the why behind each decision are captured in this section. Design history is in git (former `docs/specs/2026-06-21-transfer-queue-pause-plan.md`).

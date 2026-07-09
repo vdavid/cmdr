@@ -282,7 +282,7 @@ async fn await_operation_complete(params: &Value, timeout_s: u64) -> ToolResult 
                     .map(|op| (operation_type_token(op.operation_type), op.settled_at_unix_ms))
                     .unwrap_or(("operation", 0));
                 return Ok(json!(format!(
-                    "OK: {kind} '{operation_id}' settled — {} (at {settled_at} unix-ms)",
+                    "OK: {kind} '{operation_id}' settled — {} (settledAtUnixMs={settled_at})",
                     status.as_token()
                 )));
             }
@@ -524,7 +524,10 @@ mod operation_await_tests {
         // A running or queued op blocks idle.
         assert!(!operations_are_idle(&[LifecycleStatus::Running]));
         assert!(!operations_are_idle(&[LifecycleStatus::Queued]));
-        assert!(!operations_are_idle(&[LifecycleStatus::Paused, LifecycleStatus::Running]));
+        assert!(!operations_are_idle(&[
+            LifecycleStatus::Paused,
+            LifecycleStatus::Running
+        ]));
         // A lone paused op is idle: it's parked, so requiring it to drain would hang forever.
         assert!(operations_are_idle(&[LifecycleStatus::Paused]));
     }

@@ -391,7 +391,10 @@ pub(crate) fn build_importance_resource(data_dir: &Path, query: Option<&str>, no
         return match snapshot_top(data_dir, n, volume) {
             Ok(folders) => {
                 let scope = volume.map(|v| format!(" on volume '{v}'")).unwrap_or_default();
-                let header = format!("Top {n} folders by importance{scope}:");
+                let header = format!(
+                    "Top {} by importance{scope}:",
+                    crate::pluralize::pluralize(n as u64, "folder")
+                );
                 build_ranked_text(&header, &folders, None)
             }
             Err(msg) => msg,

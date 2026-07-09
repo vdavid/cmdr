@@ -79,8 +79,8 @@ fn execute_cancel(params: &Value) -> ToolResult {
             ));
         }
         cancel_operations(&ids);
-        let count = ids.len();
-        return Ok(json!(format!("OK: Cancelled {count} operations (kept already-copied files).")));
+        let summary = crate::pluralize::pluralize(ids.len() as u64, "operation");
+        return Ok(json!(format!("OK: Cancelled {summary} (kept already-copied files).")));
     }
 
     let id = require_operation_id(params)?;
