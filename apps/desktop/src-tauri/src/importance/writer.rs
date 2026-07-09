@@ -52,12 +52,20 @@ enum WriteMessage {
     /// Write a recompute pass's weights at `generation`, advancing the stored
     /// recompute generation to it. Rows upsert on the path PK.
     WriteWeights { generation: u64, rows: Vec<WeightRow> },
-    /// Write an INCREMENTAL rescore's weights at `generation` WITHOUT advancing
-    /// the stored generation. Only the touched folders' rows are upserted (stamped
-    /// at the current generation, so they stay as-fresh-as the last full pass);
-    /// every untouched folder keeps its existing as-of generation. Used by the
-    /// changed-subtree recompute (plan Decision 5).
-    WriteWeightsIncremental { generation: u64, rows: Vec<WeightRow> },
+    /// Write an INCREMENTAL rescore's weights at `generation` WITHOUT advancing the
+    /// stored generation, keeping untouched folders' as-of markers. In ONE
+    /// transaction it first CLEARS each subtree in `delete_subtrees` (a changed path
+    /// and everything under it), then upserts `rows` (the non-floored folders in the
+    /// touched set, at the current generation). Clearing the subtree first purges
+    /// rows for folders that were renamed away, deleted, or became floored, so only
+    /// the currently-scored folders survive — the incremental analog of a full
+    /// pass's replace-the-table. Used by the changed-subtree recompute (plan
+    /// Decision 5).
+    WriteWeightsIncremental {
+        generation: u64,
+        rows: Vec<WeightRow>,
+        delete_subtrees: Vec<String>,
+    },
     /// Drop all weight and visit rows (a consumer forgot the volume).
     PurgeVolume,
     /// Record a navigation visit: bump the path's count and set its last-visit
@@ -119,14 +127,27 @@ impl ImportanceWriter {
         self.send(WriteMessage::WriteWeights { generation, rows })
     }
 
-    /// Upsert an INCREMENTAL rescore's rows at `generation` without advancing the
-    /// stored generation, so untouched folders keep their as-of marker. The
-    /// caller reads the current generation (via [`next_generation`] minus one, or
-    /// the read API) and passes it here (plan Decision 5).
+    /// Clear each subtree in `delete_subtrees` and upsert `rows` at `generation`
+    /// (without advancing the stored generation) in one transaction. Clearing the
+    /// changed subtrees first purges rows for folders renamed away, deleted, or now
+    /// floored; re-inserting only the non-floored `rows` leaves the store holding
+    /// exactly the currently-scored folders. Untouched folders (outside every
+    /// cleared subtree) keep their rows and as-of markers. The caller reads the
+    /// current generation (via [`next_generation`] minus one, or the read API) and
+    /// passes it here (plan Decision 5).
     ///
     /// [`next_generation`]: ImportanceWriter::next_generation
-    pub fn write_weights_incremental(&self, generation: u64, rows: Vec<WeightRow>) -> Result<(), ImportanceStoreError> {
-        self.send(WriteMessage::WriteWeightsIncremental { generation, rows })
+    pub fn write_weights_incremental(
+        &self,
+        generation: u64,
+        rows: Vec<WeightRow>,
+        delete_subtrees: Vec<String>,
+    ) -> Result<(), ImportanceStoreError> {
+        self.send(WriteMessage::WriteWeightsIncremental {
+            generation,
+            rows,
+            delete_subtrees,
+        })
     }
 
     /// Drop every weight and visit row for this volume (forget). Schema stays.
@@ -191,12 +212,16 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
     while let Ok(msg) = receiver.recv() {
         match msg {
             WriteMessage::WriteWeights { generation, rows } => {
-                if let Err(e) = apply_weights(&mut conn, generation, &rows, true) {
+                if let Err(e) = apply_full_pass(&mut conn, generation, &rows) {
                     log::warn!(target: "importance", "write_weights failed (generation {generation}): {e}");
                 }
             }
-            WriteMessage::WriteWeightsIncremental { generation, rows } => {
-                if let Err(e) = apply_weights(&mut conn, generation, &rows, false) {
+            WriteMessage::WriteWeightsIncremental {
+                generation,
+                rows,
+                delete_subtrees,
+            } => {
+                if let Err(e) = apply_incremental(&mut conn, generation, &rows, &delete_subtrees) {
                     log::warn!(target: "importance", "write_weights_incremental failed (generation {generation}): {e}");
                 }
             }
@@ -225,43 +250,86 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
     }
 }
 
-/// Apply a recompute's weights under one transaction: upsert every row at
-/// `generation`, and (for a full pass, `advance_generation`) bump the stored
-/// generation. Doing both in one transaction keeps the generation and the rows
-/// consistent — a reader never sees a bumped generation with un-written rows.
+/// Apply a FULL recompute pass under one transaction: REPLACE the whole weights
+/// table with `rows` (stamped at `generation`) and bump the stored generation.
 ///
-/// An INCREMENTAL pass (`advance_generation == false`) upserts only the touched
-/// folders' rows stamped at the CURRENT generation and does NOT bump it, so every
-/// untouched folder keeps its as-of marker and doesn't turn stale (plan Decision
-/// 5).
-fn apply_weights(
+/// A full pass rewrites every folder, so it clears the table first — otherwise a
+/// folder that was scored last pass but now floors (or vanished from the index)
+/// would leave a stale row behind, and the compacted store must never carry a row
+/// for a floored folder. Clearing + inserting + bumping in ONE transaction keeps
+/// the generation and the rows consistent — a reader never sees a bumped generation
+/// with un-written (or stale) rows.
+fn apply_full_pass(conn: &mut Connection, generation: u64, rows: &[WeightRow]) -> Result<(), ImportanceStoreError> {
+    let tx = conn.transaction()?;
+    {
+        tx.execute("DELETE FROM weights", [])?;
+        insert_rows(&tx, generation, rows)?;
+        tx.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
+            rusqlite::params![RECOMPUTE_GENERATION_KEY, generation.to_string()],
+        )?;
+    }
+    tx.commit()?;
+    Ok(())
+}
+
+/// Apply an INCREMENTAL rescore under one transaction: CLEAR each subtree in
+/// `delete_subtrees` (a changed path and every descendant), then upsert the touched
+/// folders' `rows` at the CURRENT `generation` (no bump, so untouched folders keep
+/// their as-of marker). Clearing before inserting purges rows for folders renamed
+/// away, deleted, or now floored, so only the currently-scored folders survive.
+/// Both in one transaction so a reader never sees a half-applied transition.
+///
+/// The subtree clear is a literal-prefix delete (`path = P OR path LIKE P/%`).
+/// `LIKE` is case-sensitive and doesn't use the `platform_case` collation, which is
+/// correct here: stored paths and the changed path come from the same index in the
+/// same verbatim form, so the literal prefix matches the descendants exactly (the
+/// collation only folds the PK equality lookup, not the stored path string). The
+/// `/` guard means clearing `/a` never touches a sibling like `/ab`.
+fn apply_incremental(
     conn: &mut Connection,
     generation: u64,
     rows: &[WeightRow],
-    advance_generation: bool,
+    delete_subtrees: &[String],
 ) -> Result<(), ImportanceStoreError> {
     let tx = conn.transaction()?;
     {
-        let mut stmt = tx.prepare_cached(
-            "INSERT INTO weights (path, score, signals, as_of_generation) VALUES (?1, ?2, ?3, ?4)
-             ON CONFLICT(path) DO UPDATE SET score = ?2, signals = ?3, as_of_generation = ?4",
-        )?;
-        for row in rows {
-            stmt.execute(rusqlite::params![
-                row.path,
-                row.score,
-                row.signals_json,
-                generation as i64
-            ])?;
+        if !delete_subtrees.is_empty() {
+            let mut del =
+                tx.prepare_cached("DELETE FROM weights WHERE path = ?1 OR path LIKE ?2 || '/%' ESCAPE '\\'")?;
+            for prefix in delete_subtrees {
+                // `?1` is the exact prefix (the changed folder itself); `?2` is the
+                // same prefix with LIKE metacharacters escaped, so a `%` or `_` in a
+                // real folder name can't widen the descendant match.
+                let escaped = prefix.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
+                del.execute(rusqlite::params![prefix, escaped])?;
+            }
         }
-        if advance_generation {
-            tx.execute(
-                "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
-                rusqlite::params![RECOMPUTE_GENERATION_KEY, generation.to_string()],
-            )?;
-        }
+        insert_rows(&tx, generation, rows)?;
     }
     tx.commit()?;
+    Ok(())
+}
+
+/// Upsert `rows` on the path PK, stamping each at `generation`. Shared by the full
+/// pass and the incremental rescore.
+fn insert_rows(
+    tx: &rusqlite::Transaction<'_>,
+    generation: u64,
+    rows: &[WeightRow],
+) -> Result<(), ImportanceStoreError> {
+    let mut stmt = tx.prepare_cached(
+        "INSERT INTO weights (path, score, signals, as_of_generation) VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT(path) DO UPDATE SET score = ?2, signals = ?3, as_of_generation = ?4",
+    )?;
+    for row in rows {
+        stmt.execute(rusqlite::params![
+            row.path,
+            row.score,
+            row.signals_json,
+            generation as i64
+        ])?;
+    }
     Ok(())
 }
 

@@ -78,10 +78,11 @@ reloaded on each recompute — never queried per result (a search ranks tens of 
   volume's [`read::subscribe`](../importance/read/mod.rs) recompute-completed `watch` and reloads the map on each pass,
   plus once up front. Search is root-only (it loads `get_read_pool()`, the root drive index), so the map mirrors
   `importance-root.db`.
-- **Only non-zero weights are stored.** `all_nonzero_weights` omits floored folders (score `0.0`), whose lookup already
-  defaults to `0.0` — so the ~312k folders under `node_modules` on a 646k-folder home never enter the map. Footprint is
-  a `HashMap<String, f64>` over the non-floored folders: absolute-path keys plus an `f64`, order tens of MB on a large
-  home. If it ever grows heavy, switch to folder-id or hashed-path keys.
+- **Only non-zero weights enter the map.** Floored folders have NO row in `importance.db` (the store's compaction — see
+  [`importance/DETAILS.md`](../importance/DETAILS.md) storage model), and `all_nonzero_weights` also filters `score > 0`,
+  so the ~312k folders under `node_modules` on a 646k-folder home never enter the map (their lookup defaults to `0.0`
+  anyway). Footprint is a `HashMap<String, f64>` over the non-floored folders: absolute-path keys plus an `f64`, order
+  tens of MB on a large home. If it ever grows heavy, switch to folder-id or hashed-path keys.
 - **A missing DB is empty, not an error.** `all_nonzero_weights` short-circuits to an empty map when the file is absent
   (a read-only open would fail `CannotOpen`), so an unscored volume degrades cleanly.
 

@@ -63,6 +63,46 @@ pub struct ScoredWeight {
     pub as_of_generation: u64,
 }
 
+/// A typed classification of what the store knows about a path (the documented
+/// lookup surface, distinct from the bare-scalar [`ImportanceIndex::weight_for`]).
+///
+/// The store holds a row ONLY for scored (non-floored) folders. A path with no row
+/// is one of two very different things, and this enum keeps them apart:
+///
+/// - [`Scored`](WeightLookup::Scored): the folder has a stored weight.
+/// - [`Floored`](WeightLookup::Floored): the folder has no row *because it floors*
+///   (denylisted / hidden / under a floored ancestor), derived live from the path
+///   via the shared classifiers — a `node_modules`, a `.git` subtree, a cache. Its
+///   effective weight is `0.0`, but it's floored-by-design, not simply unseen.
+/// - [`Unscored`](WeightLookup::Unscored): the folder has no row and doesn't floor
+///   — it's genuinely not in the store (never scored, an unrelated path, a purged
+///   cache). Also effectively `0.0` to a scalar consumer.
+///
+/// A scalar consumer that only wants the number can use [`WeightLookup::score`] (or
+/// [`ImportanceIndex::weight_for`], which flattens floored ⇒ absent ⇒ `0.0`); a
+/// consumer that cares WHY a folder scores nothing reads the variant.
+#[derive(Debug, Clone, PartialEq)]
+pub enum WeightLookup {
+    /// The folder has a stored weight.
+    Scored(ScoredWeight),
+    /// The folder floors by its path (no row stored; derived live). Effective
+    /// weight `0.0`.
+    Floored,
+    /// The folder isn't in the store and doesn't floor. Effective weight `0.0`.
+    Unscored,
+}
+
+impl WeightLookup {
+    /// The effective scalar score for this lookup: the stored score when scored,
+    /// `0.0` for floored or unscored (both contribute nothing to ranking).
+    pub fn score(&self) -> f64 {
+        match self {
+            WeightLookup::Scored(w) => w.score.value(),
+            WeightLookup::Floored | WeightLookup::Unscored => 0.0,
+        }
+    }
+}
+
 /// A read handle over a volume's `importance.db`.
 ///
 /// Constructed per volume from the app data dir. Cheap to hold; the actual read
@@ -75,6 +115,11 @@ pub struct ImportanceIndex {
     /// `SignalSet::all()`; a network volume degrades (M4).
     available: SignalSet,
     weights: Weights,
+    /// The user's home dir, for deriving a floored-vs-unscored classification of a
+    /// path with no stored row (the compaction's derive-on-read). Path-class and
+    /// hidden/system priors are home-relative, so the derivation needs it. Defaults
+    /// to `$HOME`; a caller measuring an arbitrary volume can override it.
+    home: String,
 }
 
 impl ImportanceIndex {
@@ -93,7 +138,15 @@ impl ImportanceIndex {
             db_path,
             available,
             weights: Weights::default(),
+            home: std::env::var("HOME").unwrap_or_default(),
         }
+    }
+
+    /// Override the home dir used to derive a floored-vs-unscored classification
+    /// (see [`lookup`](ImportanceIndex::lookup)). Defaults to `$HOME`.
+    pub fn with_home(mut self, home: impl Into<String>) -> Self {
+        self.home = home.into();
+        self
     }
 
     /// Override the weights used by [`explain`]. The dev tuning surface sets a
@@ -110,10 +163,30 @@ impl ImportanceIndex {
         self.with_conn(super::store::read_generation)
     }
 
-    /// The weight for one folder, or `None` if unscored. Path-keyed via
-    /// `platform_case`, so a case/normalization variant resolves to the same row.
+    /// The weight for one folder, or `None` if it has no stored row. A floored
+    /// folder has no row, so it reads `None` here too (its effective weight is
+    /// `0.0`); a consumer that needs to tell *floored* from *unscored* uses
+    /// [`lookup`](ImportanceIndex::lookup) instead. Path-keyed via `platform_case`,
+    /// so a case/normalization variant resolves to the same row.
     pub fn weight_for(&self, path: &str) -> Result<Option<ScoredWeight>, ImportanceStoreError> {
         self.with_conn(|conn| read_scored_weight(conn, path))
+    }
+
+    /// The typed [`WeightLookup`] for one folder — the documented lookup surface.
+    ///
+    /// Resolves a stored row to [`WeightLookup::Scored`]; for a path with NO row, it
+    /// derives whether the folder floors (from the path, via the shared classifiers)
+    /// and returns [`WeightLookup::Floored`] or [`WeightLookup::Unscored`]
+    /// accordingly. This is how a consumer distinguishes "this is machine output we
+    /// deliberately floor" from "we simply haven't scored this" — the store no longer
+    /// persists a `0.0` row for the floored case (storage compaction), so the read
+    /// side reconstructs it.
+    pub fn lookup(&self, path: &str) -> Result<WeightLookup, ImportanceStoreError> {
+        match self.weight_for(path)? {
+            Some(w) => Ok(WeightLookup::Scored(w)),
+            None if crate::importance::classify::floors_by_path(path, &self.home) => Ok(WeightLookup::Floored),
+            None => Ok(WeightLookup::Unscored),
+        }
     }
 
     /// The `n` most important folders on the volume, highest score first (ties
@@ -155,14 +228,48 @@ impl ImportanceIndex {
         Ok(self.weight_for(path)?.map(|w| w.signals))
     }
 
-    /// The per-signal contribution breakdown for one folder, or `None` if
-    /// unscored. Recomputes the breakdown from the STORED signals via the pure
-    /// scorer — the SAME formula the score was written from, so the breakdown and
-    /// the stored scalar can't drift (plan Decision 6).
+    /// The per-signal contribution breakdown for one folder, or `None` if the
+    /// folder is genuinely unscored (no row and doesn't floor).
+    ///
+    /// For a SCORED folder, recomputes the breakdown from the STORED signals via the
+    /// pure scorer — the SAME formula the score was written from, so the breakdown
+    /// and the stored scalar can't drift (plan Decision 6). For a FLOORED folder
+    /// (no row, floors by path), reports a floored `Explanation` (score `0.0`,
+    /// `floored == true`) whose flag reflects WHY it floors, derived live from the
+    /// path. The floored breakdown loses the stored "would-have-contributed" additive
+    /// terms — the store no longer keeps them for floored folders — which is
+    /// acceptable: tuning cares about the non-floored ranking, and the floored-with-
+    /// reason answer is what a consumer needs.
     pub fn explain(&self, path: &str, now_secs: u64) -> Result<Option<Explanation>, ImportanceStoreError> {
+        if let Some(w) = self.weight_for(path)? {
+            return Ok(Some(explain(&w.signals, &self.available, &self.weights, now_secs)));
+        }
+        // No row: floored folders carry no stored signals, so derive a floored
+        // explanation from the path (which flag fired), rather than reporting the
+        // stored breakdown it no longer has.
         Ok(self
-            .weight_for(path)?
-            .map(|w| explain(&w.signals, &self.available, &self.weights, now_secs)))
+            .derived_floored_signals(path)
+            .map(|signals| explain(&signals, &self.available, &self.weights, now_secs)))
+    }
+
+    /// The floored-flag `FolderSignals` for a path that floors purely by its path,
+    /// or `None` when the path doesn't floor. Only the FLOOR flags are set (the
+    /// listing-derived signals aren't stored for a floored folder, so they can't be
+    /// reconstructed); that's enough for `explain` to report `floored == true` with
+    /// the reason, which is all a floored folder's breakdown carries.
+    fn derived_floored_signals(&self, path: &str) -> Option<FolderSignals> {
+        use crate::importance::classify::{is_denylisted, is_hidden_or_system, leaf_name};
+        if !crate::importance::classify::floors_by_path(path, &self.home) {
+            return None;
+        }
+        let name = leaf_name(path);
+        let mut signals = FolderSignals::neutral();
+        signals.name_denylisted = is_denylisted(&name);
+        signals.hidden_or_system = is_hidden_or_system(path, &name, &self.home);
+        // If neither the folder itself is denylisted nor hidden/system, it floors
+        // because an ANCESTOR does — the under-floored-ancestor flag.
+        signals.under_floored_ancestor = !signals.name_denylisted && !signals.hidden_or_system;
+        Some(signals)
     }
 
     /// Run `f` with a thread-local read connection to this volume's

@@ -24,7 +24,7 @@ pub mod writer_registry;
 #[cfg(test)]
 mod fixtures;
 
-pub use read::{ImportanceIndex, ScoredWeight};
+pub use read::{ImportanceIndex, ScoredWeight, WeightLookup};
 pub use scorer::{
     Explanation, FolderSignals, PathClass, Score, SignalContribution, SignalKind, SignalSet, Weights, explain, score,
 };

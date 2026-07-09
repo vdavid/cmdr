@@ -59,59 +59,94 @@ pub enum PathClass {
     Neutral,
 }
 
+impl PathClass {
+    /// Whether this is the default `Neutral` class — the serde skip predicate for
+    /// the `path_class` field, so a neutral prior never hits the wire.
+    pub fn is_neutral(&self) -> bool {
+        matches!(self, PathClass::Neutral)
+    }
+}
+
 /// The raw signal vector a folder scores from (agent-spec §5.1).
 ///
-/// This is the **serde-serializable** type M2 persists as the stored raw signal
-/// vector (plan Decision 2), so a future consumer can re-weight the same signals
-/// under its own profile without a rescan. Optional fields model signals that
-/// are not always available: a signal that is `None` is redistributed by the
-/// scorer, never fabricated (plan Decision 3). `visit_count` and
-/// `last_used_secs` are typed here but stay `None` in M1 — they wire in M2.
+/// This is the **serde-serializable** type the store persists as the stored raw
+/// signal vector (plan Decision 2), so a future consumer can re-weight the same
+/// signals under its own profile without a rescan. Optional fields model signals
+/// that are not always available: a signal that is `None` is redistributed by the
+/// scorer, never fabricated (plan Decision 3). `visit_count` and `last_used_secs`
+/// are typed here but stay `None` until their sources wire in.
+///
+/// **Storage is compact.** Every field is `#[serde(default)]` (so any subset
+/// deserializes — a shape written before a field existed reads its absence as the
+/// default) AND `#[serde(skip_serializing_if = "…is default")]`, so a folder only
+/// serializes the fields that differ from neutral. On a real home most kept rows
+/// carry two or three set fields, shrinking the stored JSON by roughly half versus
+/// the full form; the deserialized value is byte-for-byte identical either way
+/// (pinned by the sparse-vs-full round-trip test). The three FLOOR flags are never
+/// serialized as `true` in practice — a floored folder gets no row at all (see the
+/// store's storage model) — but stay skippable-when-false for shape symmetry.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FolderSignals {
     /// `true` when the folded folder name is on the known-unimportant denylist
     /// (`node_modules`, `.git`, caches, build output). A denylisted folder is
     /// floored regardless of its other signals.
+    #[serde(default, skip_serializing_if = "is_false")]
     pub name_denylisted: bool,
     /// `true` when the folder is hidden (dotfile) or OS/system-owned. Lowers the
     /// score: hidden/system folders are rarely what a person means by "important".
+    #[serde(default, skip_serializing_if = "is_false")]
     pub hidden_or_system: bool,
     /// `true` when a floored ancestor (a denylisted, hidden, or system folder) sits
     /// somewhere above this folder — so the whole subtree under a `node_modules`,
     /// a `.git`, or a cache is floored, not just the named folder itself. A FLOOR
     /// override like the two above.
-    ///
-    /// `#[serde(default)]` so a `FolderSignals` persisted before this field existed
-    /// still deserializes (its absence reads as `false`); such a stored vector is a
-    /// stale generation anyway and gets overwritten on the next full pass.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "is_false")]
     pub under_floored_ancestor: bool,
     /// Distinct file extensions directly under this folder. A folder with many
     /// kinds of files reads as a working area; a monoculture (one extension) reads
     /// as machine output (a logs folder, a frame dump). See [`extension_count`].
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
     pub distinct_extension_count: u32,
     /// Total files directly under this folder. Pairs with
     /// `distinct_extension_count` to compute diversity: 200 files of one extension
     /// is a strong monoculture signal; three files of one extension is not.
+    #[serde(default, skip_serializing_if = "is_zero_u32")]
     pub file_count: u32,
     /// Seconds since the Unix epoch of the folder's most recent modification, if
     /// known. Recency raises the score. `None` when the source has no mtime.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mtime_secs: Option<u64>,
     /// `true` when a project marker (`.git`, `Cargo.toml`, `package.json`, …) sits
     /// in this folder or a descendant, marking this as (at or above) a project
     /// root. Raises the whole subtree (plan Decision 3).
+    #[serde(default, skip_serializing_if = "is_false")]
     pub has_project_marker: bool,
     /// The typed path-class prior for this folder (see [`PathClass`]).
+    #[serde(default, skip_serializing_if = "PathClass::is_neutral")]
     pub path_class: PathClass,
     /// How many times the user has navigated into this folder, if the visit
-    /// signal is available. `None` in M1 (the backend visit store lands in M2);
-    /// the scorer treats its absence as one missing term.
+    /// signal is available. `None` when the backend visit store has none yet; the
+    /// scorer treats its absence as one missing term.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visit_count: Option<u32>,
     /// Seconds since the Unix epoch of the folder's sampled `kMDItemLastUsedDate`
     /// (macOS Spotlight last-used), if available. `None` on SMB/MTP (no Spotlight)
-    /// and `None` in M1 (sampling lands in M2).
+    /// and `None` before sampling has run.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_used_secs: Option<u64>,
+}
+
+/// `true` when a bool field is `false` — the serde skip predicate for the flag
+/// fields, so a neutral flag never hits the wire.
+fn is_false(b: &bool) -> bool {
+    !*b
+}
+
+/// `true` when a count field is `0` — the serde skip predicate for the count
+/// fields.
+fn is_zero_u32(n: &u32) -> bool {
+    *n == 0
 }
 
 impl FolderSignals {

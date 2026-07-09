@@ -111,11 +111,65 @@ Three tables. `weights` is **path-keyed** (the index's real identity is the path
 row holds the scalar `score`, the serialized raw `FolderSignals` vector (so a future consumer can re-weight under its own
 profile without a rescan — plan Decision 2), and the **as-of `recompute_generation`** the pass stamped. `visits` holds the
 navigation-visit signal (see below). `meta` holds `schema_version` and the per-volume `recompute_generation` counter, bumped
-once per full pass. **The staleness predicate is `row.as_of_generation < store.recompute_generation()`** — a weight from an
-older pass than the current one is stale (the honest as-of marker consumers caveat with; M3's read API surfaces it, M4 uses
-it for offline-unmounted reads). `ImportanceWriter`'s surface: `write_weights(generation, rows)` (one transaction: upsert
-every row + advance the generation, so a reader never sees a bumped generation with un-written rows), `purge_volume`
-(forget), `record_visit`.
+once per full pass. Every weight carries the **as-of `recompute_generation`** it was scored at — the honest staleness marker
+an offline-unmounted read caveats with (all rows from the last full pass share it; the read API surfaces it). A full pass
+REPLACES the whole `weights` table (see below), so a surviving row is never at an older generation than the store's.
+`ImportanceWriter`'s surface: `write_weights(generation, rows)` (a full pass: clear + insert + advance the generation in one
+transaction, so a reader never sees a bumped generation with un-written rows), `write_weights_incremental(generation, rows,
+delete_subtrees)` (an incremental pass, below), `purge_volume` (forget), `record_visit`.
+
+### Storage model: no floored rows, trimmed JSON (compaction)
+
+Two decisions keep the store small (`SCHEMA_VERSION = 2`; an older, un-compacted DB just recreates fresh on the next scan
+— it's a disposable cache):
+
+- **A floored folder gets NO row.** On a dev home ~76% of folders floor (a `node_modules`, a `.git`, a cache, and their
+  whole subtrees), and storing a `0.0` weight plus a full signal blob for each is pure waste. Floored-ness is derivable
+  from the PATH STRING alone (`classify::self_floors` + the ancestor walk — pure name/path classification, no index or
+  listing data), so the store simply omits floored folders and the read side re-derives them:
+  - The full recompute skips writing a floored folder; the incremental pass clears a changed subtree and re-inserts only
+    its non-floored folders (below).
+  - `ImportanceIndex::lookup(path)` returns a typed `WeightLookup::{Scored, Floored, Unscored}`: `Scored` when a row
+    exists, else `Floored` when the path floors by the shared classifiers (`classify::floors_by_path`), else `Unscored`.
+    The scalar helpers stay compatible (`weight_for` reads `None` for a floored path, `WeightLookup::score()` flattens
+    floored/unscored to `0.0`), but the typed `lookup` is the documented surface. `all_nonzero_weights` already omitted
+    zeros, so search ranking is unaffected — the map just has fewer rows.
+  - `explain` on a floored path reports a floored breakdown DERIVED LIVE from the path (score `0.0`, `floored == true`,
+    the flag reflecting which classifier fired), not the stored "would-have-contributed" additive terms — a floored folder
+    no longer stores those. Acceptable and documented: tuning cares about the non-floored ranking.
+  - **The derive-on-read invariant that makes deletion safe**: for every folder the walk produces,
+    `classify::floors_by_path(path)` (what the read side uses when a row is absent) agrees with the pure scorer's floor
+    over that folder's full signals (what the pre-compaction store would have persisted). Pinned by
+    `floored_by_path_matches_the_scorer_floor_for_every_walked_folder` over the whole synthetic home.
+- **Trimmed JSON for kept rows.** `FolderSignals` serializes only its non-default fields (`#[serde(skip_serializing_if)]`
+  on every field, plus `#[serde(default)]` so any subset deserializes). A neutral vector serializes to `{}`; a typical
+  kept row carries two or three set fields, roughly halving the stored JSON. Deserialization is compatible in both
+  directions — a verbose pre-compaction row and a trimmed one parse to the identical value (pinned by the
+  full-vs-sparse round-trip test), so the store can hold a mix without a migration.
+
+### Transition semantics on the incremental path (the subtle part)
+
+An incremental pass (`write_weights_incremental`) CLEARS each changed subtree (`path = P OR path LIKE P/%`), then inserts
+only the non-floored folders in the touched set (the changed subtrees plus each changed path's capped ancestor chain), at
+the CURRENT generation without bumping it. Clearing-then-inserting handles every floor transition in one model:
+
+- a folder RENAMED AWAY or DELETED: its old-path row is cleared and never re-inserted (it's not in the current walk);
+- a folder that BECAME floored (e.g. renamed to `node_modules`) and its now-under-floored descendants: cleared, then
+  skipped on re-insert because they floor — so no stale positive-score row survives under a fresh `node_modules`;
+- a folder that STOPPED being floored (e.g. `node_modules` renamed to an ordinary name) and its descendants: cleared (they
+  had no row anyway), then inserted because they now score.
+
+The clear is a literal-prefix `LIKE` (case-sensitive, not the `platform_case` collation — correct, since stored paths and
+the changed path come from the same index verbatim; the collation only folds the PK equality lookup). Both directions are
+TDD'd (`incremental_deletes_rows_that_become_floored`, `incremental_scores_rows_that_stop_being_floored`) — the likeliest
+bug site. A full pass replaces the whole table instead (a full pass rewrites every folder, so clearing first purges any
+folder that floored or vanished since the last pass).
+
+The measurement/tuning entry point for this is `scheduler::recompute_index_to_db` (walk a real index read-only, score,
+write an `importance.db` — the full-pass core without the registry), wrapped by the `importance-measure` dev bin, which
+reports the row count, store size, and the phase wall-clock split (walk+score vs write+flush). The live full pass logs
+that same split at info (`run_pass_blocking`, `target: "importance"`), so a regression in a real recompute's cost shows
+up in the logs — the write phase dominates on a local root (compaction roughly halves it there by dropping ~76% of rows).
 
 ## The scheduler (`scheduler/`, M2)
 
@@ -224,16 +278,18 @@ path (already covered by `ScanCompleted`), so incremental captures exactly the "
 The scheduler subscribes via `subscribe_dirs_changed` and coalesces bursts per volume (accumulating paths into a pending
 set, one pass plus at most one re-run — a distinct coordinator key from the full pass so the two don't block each other).
 
-**Rescoping + the ancestor cap.** For each changed path, the touched set is the folder itself plus its ancestor chain
-(`touched_folder_set`), because a project marker or size/mtime change can raise parents. The ancestor walk is capped at
-`ANCESTOR_WALK_CAP` (32) levels per changed path: a project marker appearing deep in a tree could otherwise raise every
-ancestor to the root and rescope half the volume (plan open-question). The pass walks the index once, filters to the
-touched subset, rescopes the scorer over just those, and writes them.
+**Rescoping + the ancestor cap.** For each changed path the touched set is the folder itself plus its ancestor chain
+(`touched_folder_set`, because a project marker or size/mtime change can raise parents) UNION each changed path's whole
+descendant subtree (because a floor transition flips the whole subtree — see the storage model's transition semantics).
+The ancestor walk is capped at `ANCESTOR_WALK_CAP` (32) levels per changed path: a project marker appearing deep in a tree
+could otherwise raise every ancestor to the root and rescope half the volume (plan open-question); the downward side is
+bounded by the subtree that actually changed. The pass walks the index once, filters to the touched subset, clears each
+changed subtree, and re-inserts only its non-floored folders.
 
-**Generation semantics.** An incremental pass writes its rows at the CURRENT generation and does NOT bump it
-(`write_weights_incremental`, `advance_generation == false`), so every untouched folder keeps its as-of marker and the
-volume doesn't turn wholesale-stale after a one-file change. Only a full pass advances the generation. A `"/"` sentinel in
-the changed set (a full-refresh emit) escalates to a full pass rather than resolving `/` as one folder.
+**Generation semantics.** An incremental pass writes its rows at the CURRENT generation and does NOT bump it, so every
+untouched folder keeps its as-of marker and the volume doesn't turn wholesale-stale after a one-file change. Only a full
+pass advances the generation. A `"/"` sentinel in the changed set (a full-refresh emit) escalates to a full pass rather
+than resolving `/` as one folder.
 
 ## The shared writer registry (`writer_registry.rs`, M3)
 

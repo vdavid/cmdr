@@ -128,38 +128,55 @@ fn weight_lookup_is_platform_case_insensitive() {
     writer.shutdown();
 }
 
-/// THE AS-OF-GENERATION STALENESS PREDICATE (plan M2 TDD target). A weight is
-/// stale relative to the current recompute generation when the generation it was
-/// stamped at is older than the store's current generation. This is the predicate
-/// a consumer uses to caveat "this weight is from an older pass".
+/// A FULL PASS REPLACES THE WHOLE TABLE at its new generation. A folder scored in
+/// an earlier pass but not the later one leaves NO stale row (the compaction never
+/// keeps a row a fresh pass wouldn't write — a folder that became floored or
+/// vanished from the index), and every surviving row carries the current
+/// generation (the honest as-of marker). This is stronger than the old
+/// upsert-and-leave-stale semantics.
 #[test]
-fn as_of_generation_marks_a_weight_stale_after_a_newer_pass() {
+fn a_full_pass_replaces_the_table_and_restamps_the_generation() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = importance_db_path(dir.path(), "root");
     let writer = ImportanceWriter::spawn(&path).expect("spawn");
 
-    // Pass 1 writes /old at generation 1.
+    // Pass 1 writes /old and /keep at generation 1.
     writer
         .write_weights(
             1,
-            vec![WeightRow {
-                path: "/old".to_string(),
-                score: 0.3,
-                signals_json: "{}".to_string(),
-            }],
+            vec![
+                WeightRow {
+                    path: "/old".to_string(),
+                    score: 0.3,
+                    signals_json: "{}".to_string(),
+                },
+                WeightRow {
+                    path: "/keep".to_string(),
+                    score: 0.5,
+                    signals_json: "{}".to_string(),
+                },
+            ],
         )
         .expect("write pass 1");
     writer.flush_blocking().expect("flush");
 
-    // Pass 2 bumps the generation to 2 and writes /fresh, leaving /old untouched.
+    // Pass 2 bumps to generation 2 and rewrites /keep + /fresh — but NOT /old (it
+    // floored or vanished). The full pass replaces the table, so /old is gone.
     writer
         .write_weights(
             2,
-            vec![WeightRow {
-                path: "/fresh".to_string(),
-                score: 0.9,
-                signals_json: "{}".to_string(),
-            }],
+            vec![
+                WeightRow {
+                    path: "/keep".to_string(),
+                    score: 0.6,
+                    signals_json: "{}".to_string(),
+                },
+                WeightRow {
+                    path: "/fresh".to_string(),
+                    score: 0.9,
+                    signals_json: "{}".to_string(),
+                },
+            ],
         )
         .expect("write pass 2");
     writer.flush_blocking().expect("flush");
@@ -168,18 +185,18 @@ fn as_of_generation_marks_a_weight_stale_after_a_newer_pass() {
     let current = store.recompute_generation().expect("gen");
     assert_eq!(current, 2, "two passes ⇒ generation 2");
 
-    let old = store.weight_for("/old").expect("read").expect("present");
-    let fresh = store.weight_for("/fresh").expect("read").expect("present");
-
-    // The staleness predicate: stamped-generation < current-generation ⇒ stale.
-    assert!(
-        old.as_of_generation < current,
-        "/old was written at gen {} but current is {current} ⇒ stale",
-        old.as_of_generation
+    assert_eq!(
+        store.weight_for("/old").expect("read"),
+        None,
+        "a folder dropped from the second full pass leaves no stale row (the table is replaced)"
     );
+    let keep = store.weight_for("/keep").expect("read").expect("present");
+    let fresh = store.weight_for("/fresh").expect("read").expect("present");
+    assert_eq!(keep.score, 0.6, "a rewritten folder carries the new pass's score");
+    assert_eq!(keep.as_of_generation, current, "and the current generation");
     assert_eq!(
         fresh.as_of_generation, current,
-        "/fresh was written at the current generation ⇒ not stale"
+        "a newly-scored folder is at the current generation"
     );
     writer.shutdown();
 }

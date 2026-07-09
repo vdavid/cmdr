@@ -52,6 +52,9 @@ use recompute::{IncrementalInputs, RecomputeInputs, incremental_rescore, load_vi
 // Re-exported for the eval corpus tool, which walks a real index the SAME way a
 // recompute does (so dumped signals match production exactly).
 pub(crate) use recompute::walk_index_folders;
+// The measurement/tuning entry point: walk a real index, score, write an
+// `importance.db` — the full-pass core without the registry or async driver.
+pub use recompute::{MeasureOutcome, recompute_index_to_db};
 
 // ── Volume kind → scoring policy (plan M4, typed, never string-matched) ────
 
@@ -270,6 +273,11 @@ impl ImportanceScheduler {
         };
         let home = Self::home_dir();
 
+        // Time the two phases so real numbers surface any drift (a full pass on a
+        // NAS-sized volume is the cost to watch): the READ phase (walk + visit load
+        // + Spotlight sampling) vs the SCORE+WRITE phase (`recompute_folders`).
+        let read_started = std::time::Instant::now();
+
         // Walk the index ONCE; reuse the result for both the `kMDItemLastUsedDate`
         // path-set and the score (no second traversal — M2 cleanup).
         let folders = pool
@@ -293,7 +301,9 @@ impl ImportanceScheduler {
         } else {
             HashMap::new()
         };
+        let read_elapsed = read_started.elapsed();
 
+        let write_started = std::time::Instant::now();
         let writer = self.writer_for(volume_id).map_err(|e| e.to_string())?;
         let outcome = recompute_folders(
             &RecomputeInputs {
@@ -307,6 +317,19 @@ impl ImportanceScheduler {
             },
             &folders,
         )?;
+        let write_elapsed = write_started.elapsed();
+
+        // One info line so a full pass's cost (and any regression) is visible in the
+        // logs — the walk-dominated read phase vs the score+write phase.
+        log::info!(
+            target: "importance",
+            "recompute of '{volume_id}' scored {} of {} folders in {:.2?} (walk+sample {:.2?}, score+write {:.2?}); floored folders omitted",
+            outcome.count,
+            folders.len(),
+            read_elapsed + write_elapsed,
+            read_elapsed,
+            write_elapsed,
+        );
 
         // Announce the completed full pass so a read-API consumer reacts instead
         // of polling (plan Decision 6, subscribe-don't-poll).

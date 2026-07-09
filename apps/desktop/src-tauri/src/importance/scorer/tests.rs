@@ -367,8 +367,8 @@ fn fixture_ranking_matches_expected_importance_order() {
 
 #[test]
 fn folder_signals_serde_roundtrips() {
-    // M2 persists `FolderSignals` as the raw signal vector (plan Decision 2). If
-    // its serde shape drifts, stored vectors become unreadable, so pin it here.
+    // The store persists `FolderSignals` as the raw signal vector (plan Decision 2).
+    // If its serde shape drifts, stored vectors become unreadable, so pin it here.
     let mut signals = FolderSignals::neutral();
     signals.name_denylisted = true;
     signals.distinct_extension_count = 7;
@@ -386,6 +386,94 @@ fn folder_signals_serde_roundtrips() {
 
     let back: FolderSignals = serde_json::from_str(&json).expect("deserialize FolderSignals");
     assert_eq!(back, signals, "FolderSignals must round-trip through serde");
+}
+
+/// The compact serialization: a field at its neutral default is SKIPPED on the
+/// wire (that's what shrinks the store), so a neutral vector serializes to `{}`
+/// and a folder with a couple of set signals serializes only those. Both round-trip
+/// back to the same value — the sparse form is exactly the full form minus the
+/// default fields.
+#[test]
+fn folder_signals_serialization_is_compact() {
+    // A wholly-neutral vector serializes to the empty object (every field skipped).
+    let neutral = FolderSignals::neutral();
+    assert_eq!(
+        serde_json::to_string(&neutral).expect("serialize"),
+        "{}",
+        "a neutral FolderSignals skips every field (default-valued)"
+    );
+    // And `{}` deserializes back to neutral (every field defaults).
+    let back: FolderSignals = serde_json::from_str("{}").expect("deserialize empty");
+    assert_eq!(back, neutral, "an empty object is the neutral vector");
+
+    // A typical kept row (non-floored, some files, a path class) serializes ONLY the
+    // set fields — the neutral flags and empty optionals never hit the wire.
+    let mut sparse = FolderSignals::neutral();
+    sparse.distinct_extension_count = 3;
+    sparse.file_count = 4;
+    sparse.mtime_secs = Some(1_700_000_000);
+    sparse.path_class = PathClass::UserContent;
+    let json = serde_json::to_string(&sparse).expect("serialize sparse");
+    for absent in [
+        "nameDenylisted",
+        "hiddenOrSystem",
+        "underFlooredAncestor",
+        "hasProjectMarker",
+        "visitCount",
+        "lastUsedSecs",
+    ] {
+        assert!(
+            !json.contains(absent),
+            "a default-valued field must be skipped, but '{absent}' is present in {json}"
+        );
+    }
+    for present in ["distinctExtensionCount", "fileCount", "mtimeSecs", "pathClass"] {
+        assert!(
+            json.contains(present),
+            "a set field must be present, but '{present}' is missing from {json}"
+        );
+    }
+    assert_eq!(
+        serde_json::from_str::<FolderSignals>(&json).expect("deserialize sparse"),
+        sparse,
+        "the sparse form round-trips to the same value"
+    );
+}
+
+/// The FULL form (every field written explicitly, as a pre-compaction row would
+/// have stored it) and the SPARSE form (only the set fields, as the compact
+/// serializer now writes) deserialize to the IDENTICAL value. This is the
+/// deserialization-compatibility guarantee: an old, verbose stored row and a new,
+/// trimmed one are indistinguishable after parsing, so the store can hold a mix.
+#[test]
+fn folder_signals_full_and_sparse_forms_deserialize_identically() {
+    let full_json = r#"{
+        "nameDenylisted": false,
+        "hiddenOrSystem": false,
+        "underFlooredAncestor": false,
+        "distinctExtensionCount": 3,
+        "fileCount": 4,
+        "mtimeSecs": 1700000000,
+        "hasProjectMarker": false,
+        "pathClass": "userContent",
+        "visitCount": null,
+        "lastUsedSecs": null
+    }"#;
+    // The sparse form drops every default-valued key (false flags, zero counts,
+    // null optionals, the neutral-by-omission `hasProjectMarker`).
+    let sparse_json = r#"{
+        "distinctExtensionCount": 3,
+        "fileCount": 4,
+        "mtimeSecs": 1700000000,
+        "pathClass": "userContent"
+    }"#;
+
+    let from_full: FolderSignals = serde_json::from_str(full_json).expect("full form deserializes");
+    let from_sparse: FolderSignals = serde_json::from_str(sparse_json).expect("sparse form deserializes");
+    assert_eq!(
+        from_full, from_sparse,
+        "the verbose and trimmed forms parse to the same FolderSignals"
+    );
 }
 
 /// A `FolderSignals` persisted BEFORE `under_floored_ancestor` existed (its JSON

@@ -187,6 +187,80 @@ fn all_nonzero_weights_missing_db_is_empty() {
     assert!(map.is_empty(), "no db ⇒ empty weight map");
 }
 
+/// THE typed-lookup target: a stored row reads `Scored`; a path with no row that
+/// floors by its path reads `Floored`; a path with no row that doesn't floor reads
+/// `Unscored`. This is the distinction the compacted store leans on — a floored
+/// folder has no row, so the read side re-derives its floored-ness from the path.
+#[test]
+fn lookup_distinguishes_scored_floored_and_unscored() {
+    use super::WeightLookup;
+    // A scored folder under the home. Give the index a real home so the classifiers
+    // agree with production.
+    let (index, dir) = populated_index(&[("/Users/me/proj", 0.8, PathClass::ProjectRoot)]);
+    let index = index.with_home("/Users/me");
+    let _ = dir; // keep the temp dir alive
+
+    // Scored: a stored row.
+    match index.lookup("/Users/me/proj").expect("lookup") {
+        WeightLookup::Scored(w) => assert_eq!(w.score.value(), 0.8),
+        other => panic!("expected Scored, got {other:?}"),
+    }
+
+    // Floored: no row, but the path self-floors (a node_modules) or lives under one.
+    assert_eq!(
+        index.lookup("/Users/me/proj/node_modules").expect("lookup"),
+        WeightLookup::Floored,
+        "a node_modules path floors by name (no row stored)"
+    );
+    assert_eq!(
+        index.lookup("/Users/me/proj/node_modules/react/dist").expect("lookup"),
+        WeightLookup::Floored,
+        "a path under a node_modules floors by ancestor (no row stored)"
+    );
+
+    // Unscored: no row, and the path doesn't floor — genuinely not in the store.
+    assert_eq!(
+        index.lookup("/Users/me/some/ordinary/folder").expect("lookup"),
+        WeightLookup::Unscored,
+        "an ordinary unscored path is Unscored, not Floored"
+    );
+
+    // The scalar accessor flattens both no-row cases to 0.0.
+    assert_eq!(index.lookup("/Users/me/proj").expect("l").score(), 0.8);
+    assert_eq!(index.lookup("/Users/me/proj/node_modules").expect("l").score(), 0.0);
+    assert_eq!(index.lookup("/Users/me/ordinary").expect("l").score(), 0.0);
+}
+
+/// `explain` on a FLOORED path (no stored row) reports a floored breakdown derived
+/// live from the path — `floored == true`, score `0.0`, and the flag reflecting WHY
+/// it floors — rather than `None`. A genuinely unscored path still reads `None`.
+#[test]
+fn explain_derives_a_floored_breakdown_for_a_rowless_floored_path() {
+    let (index, dir) = populated_index(&[("/Users/me/proj", 0.8, PathClass::ProjectRoot)]);
+    let index = index.with_home("/Users/me");
+    let _ = dir;
+
+    let node_modules = index
+        .explain("/Users/me/proj/node_modules", 1_000)
+        .expect("explain")
+        .expect("a floored path still explains (derived)");
+    assert!(node_modules.floored, "a node_modules explains as floored");
+    assert_eq!(node_modules.score.value(), 0.0, "a floored folder scores 0.0");
+
+    let under = index
+        .explain("/Users/me/proj/node_modules/react/dist", 1_000)
+        .expect("explain")
+        .expect("an under-floored path explains (derived)");
+    assert!(under.floored, "a path under node_modules explains as floored");
+
+    // A genuinely unscored, unfloored path has nothing to explain.
+    assert_eq!(
+        index.explain("/Users/me/ordinary", 1_000).expect("explain"),
+        None,
+        "an unscored, unfloored path explains to None"
+    );
+}
+
 /// `signals_for` hands back the stored raw vector for a re-weighting consumer.
 #[test]
 fn signals_for_returns_the_stored_vector() {
@@ -197,9 +271,12 @@ fn signals_for_returns_the_stored_vector() {
 }
 
 /// A weight from an older pass is stale relative to the store's current
-/// generation; the read API surfaces both so a consumer can caveat.
+/// generation; the read API surfaces the as-of generation so a consumer can
+/// caveat. A full pass REPLACES the whole table at its new generation (a folder
+/// only in the earlier pass is gone, not left stale), so every surviving row reads
+/// back at the current generation — the honest as-of marker offline reads rely on.
 #[test]
-fn staleness_is_visible_via_as_of_generation() {
+fn as_of_generation_reflects_the_latest_full_pass() {
     let dir = tempfile::tempdir().expect("temp dir");
     let db_path = importance_db_path(dir.path(), "root");
     let writer = ImportanceWriter::spawn(&db_path).expect("spawn");
@@ -214,7 +291,8 @@ fn staleness_is_visible_via_as_of_generation() {
             }],
         )
         .expect("write 1");
-    // Full pass 2 bumps to gen 2, leaving /old at gen 1.
+    // Full pass 2 bumps to gen 2 and REPLACES the table (a full pass rewrites every
+    // folder, so a folder no longer scored — like /old — leaves no stale row).
     writer
         .write_weights(
             2,
@@ -231,8 +309,16 @@ fn staleness_is_visible_via_as_of_generation() {
     let index = ImportanceIndex::open(dir.path(), "root", SignalSet::all());
     let current = index.recompute_generation().expect("gen");
     assert_eq!(current, 2);
-    let old = index.weight_for("/old").expect("read").expect("present");
-    assert!(old.as_of_generation < current, "/old is stale (gen 1 < current 2)");
+    assert_eq!(
+        index.weight_for("/old").expect("read"),
+        None,
+        "a folder dropped from the second full pass leaves no stale row (the table is replaced)"
+    );
+    let new = index.weight_for("/new").expect("read").expect("present");
+    assert_eq!(
+        new.as_of_generation, current,
+        "a surviving row carries the current generation (the honest as-of marker)"
+    );
 }
 
 /// THE M3 subscription target: the recompute subscription fires exactly once per

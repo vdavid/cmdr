@@ -75,6 +75,18 @@ pub fn under_floored_paths<'a>(
     under
 }
 
+/// Whether a folder floors purely by its PATH — it self-floors (denylisted /
+/// hidden / system name) OR sits under a self-flooring ancestor. This is the
+/// derive-on-read predicate the store's compaction leans on: a floored folder gets
+/// no row, and the read API reconstructs its floored-ness from the path alone with
+/// this, rather than storing a `0.0` blob. Pure string + name classification, no
+/// index or listing data — the exact rule the recompute walk applies when deciding
+/// to skip a row, so read and write agree by construction.
+pub fn floors_by_path(path: &str, home: &str) -> bool {
+    let name = leaf_name(path);
+    self_floors(path, &name, home) || any_ancestor_self_floors(path, home)
+}
+
 /// Whether any PROPER ancestor directory of `path` self-floors. Walks the path's
 /// own components from the second-to-last up, classifying each ancestor by its own
 /// name + full ancestor path. The folder itself is excluded (start above it).

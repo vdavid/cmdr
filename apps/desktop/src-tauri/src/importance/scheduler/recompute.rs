@@ -12,7 +12,7 @@
 
 use std::collections::HashMap;
 
-use crate::importance::scorer::{SignalSet, Weights, score};
+use crate::importance::scorer::{SignalSet, Weights, explain};
 use crate::importance::signals::{ChildAggregate, OptionalSignals, signals_for_dir};
 use crate::importance::store::importance_db_path;
 use crate::importance::writer::{ImportanceWriter, WeightRow};
@@ -193,13 +193,18 @@ fn reconstruct_path_from_map(id: i64, by_id: &HashMap<i64, &EntryRow>) -> String
     format!("/{}", components.join("/"))
 }
 
-/// Score every folder in `folders` and return the weight rows to persist.
+/// Score every folder in `folders` and return the weight rows to persist —
+/// OMITTING floored folders, which get no row at all (the storage-compaction
+/// discipline; see the store's storage model).
 ///
 /// Pure over the walked folders + the optional-signal lookups: given a function
 /// that resolves a folder's visit count and last-used timestamp (from
 /// `importance.db` + Spotlight sampling), it assembles each `FolderSignals`, runs
-/// the scorer, and produces a `WeightRow`. Split out so a test can drive it with
-/// synthetic folders and no index.
+/// the scorer, and produces a `WeightRow` for every folder whose score is NOT
+/// floored. A floored folder (denylisted / hidden / under a floored ancestor) is
+/// derivable from its path alone at read time, so persisting its full signal blob
+/// would only bloat the store — on a dev home ~76% of folders floor. Split out so a
+/// test can drive it with synthetic folders and no index.
 pub(super) fn score_folders(
     folders: &[IndexFolder],
     home: &str,
@@ -210,7 +215,7 @@ pub(super) fn score_folders(
 ) -> Vec<WeightRow> {
     folders
         .iter()
-        .map(|f| {
+        .filter_map(|f| {
             let optional = optional_for(&f.path);
             let signals = signals_for_dir(
                 &f.entry,
@@ -221,13 +226,18 @@ pub(super) fn score_folders(
                 f.under_floored_ancestor,
                 optional,
             );
-            let s = score(&signals, available, weights, now_secs);
-            let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
-            WeightRow {
-                path: f.path.clone(),
-                score: s.value(),
-                signals_json,
+            let explanation = explain(&signals, available, weights, now_secs);
+            // A floored folder gets no row: its floored-ness is re-derivable from the
+            // path at read time (`WeightLookup::Floored`), so the signal blob is waste.
+            if explanation.floored {
+                return None;
             }
+            let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
+            Some(WeightRow {
+                path: f.path.clone(),
+                score: explanation.score.value(),
+                signals_json,
+            })
         })
         .collect()
 }
@@ -301,6 +311,72 @@ pub(super) struct RecomputeOutcome {
     pub(super) generation: u64,
 }
 
+/// The result of a measurement recompute: rows written plus the phase wall-clock
+/// split (walk-and-score vs write-and-flush), for the `importance-measure` dev bin.
+pub struct MeasureOutcome {
+    /// Weight rows written (floored folders omitted).
+    pub rows_written: usize,
+    /// Total folders the walk produced (rows + floored-omitted).
+    pub folders_walked: usize,
+    /// Reading the index and scoring every folder (the walk + `score_folders`).
+    pub walk_and_score: std::time::Duration,
+    /// Writing the rows through the writer and flushing to disk.
+    pub write_and_flush: std::time::Duration,
+}
+
+/// Walk a real `index-{volume_id}.db` READ-ONLY, score every folder, and write the
+/// weights into `importance_db` through a fresh writer — the whole full-pass core
+/// without the registry, read-pool registry, or async driver.
+///
+/// The measurement/tuning entry point: a dev tool points it at a real index and a
+/// scratch `importance.db` to see how many rows a pass writes, how large the store
+/// is, and the phase wall-clock split, exercising the SAME walk + score + write path
+/// a live recompute uses (so the floored-skip and trimmed-JSON shape are measured
+/// faithfully). Spotlight is never sampled here (the tool has no live volume;
+/// `last_used` redistributes per `available`), and visits come from the target
+/// `importance.db` if it already holds any.
+pub fn recompute_index_to_db(
+    index_db: &std::path::Path,
+    importance_db: &std::path::Path,
+    home: &str,
+    available: SignalSet,
+    now_secs: u64,
+) -> Result<MeasureOutcome, String> {
+    // Walk + score (the read/compute phase).
+    let walk_started = std::time::Instant::now();
+    let conn = IndexStore::open_read_connection(index_db).map_err(|e| e.to_string())?;
+    let folders = walk_index_folders(&conn, home)?;
+    if folders.is_empty() {
+        return Ok(MeasureOutcome {
+            rows_written: 0,
+            folders_walked: 0,
+            walk_and_score: walk_started.elapsed(),
+            write_and_flush: std::time::Duration::ZERO,
+        });
+    }
+    let rows = score_folders(&folders, home, &Weights::default(), &available, now_secs, |_| {
+        OptionalSignals::default()
+    });
+    let walk_and_score = walk_started.elapsed();
+
+    // Write + flush (the write phase).
+    let write_started = std::time::Instant::now();
+    let writer = ImportanceWriter::spawn(importance_db).map_err(|e| e.to_string())?;
+    let generation = writer.next_generation().map_err(|e| e.to_string())?;
+    let rows_written = rows.len();
+    writer.write_weights(generation, rows).map_err(|e| e.to_string())?;
+    writer.flush_blocking().map_err(|e| e.to_string())?;
+    writer.shutdown();
+    let write_and_flush = write_started.elapsed();
+
+    Ok(MeasureOutcome {
+        rows_written,
+        folders_walked: folders.len(),
+        walk_and_score,
+        write_and_flush,
+    })
+}
+
 /// Read the visit table into a path→count map for the recompute pass. A missing
 /// or unopenable DB yields an empty map (the visit signal is absent, not an
 /// error).
@@ -330,10 +406,23 @@ pub(super) struct IncrementalInputs<'a> {
     pub(super) visits: &'a HashMap<String, u32>,
 }
 
-/// Rescore only the folders whose paths are in the touched set (changed paths +
-/// their capped ancestors) and upsert them WITHOUT advancing the generation, so
-/// every untouched folder keeps its as-of marker (plan Decision 5). Returns the
-/// number of folders rescored.
+/// Rescore the changed subtrees WITHOUT advancing the generation, so every
+/// untouched folder keeps its as-of marker (plan Decision 5). Returns the number of
+/// (non-floored) folders written.
+///
+/// The touched set is each changed path's capped ancestor chain (upward: a marker
+/// or size change can raise parents) UNION each changed path's whole descendant
+/// subtree (downward: a folder that became — or stopped being — floored flips its
+/// entire subtree's floor status). The write CLEARS each changed subtree first,
+/// then inserts only the NON-FLOORED folders in the touched set. Clearing before
+/// inserting is what makes transitions correct in ONE model:
+///
+/// - a folder renamed away or deleted: its old-path row is cleared and never
+///   re-inserted (it's not in the current walk);
+/// - a folder that BECAME floored (and its now-under-floored descendants): cleared,
+///   and skipped on re-insert because it floors;
+/// - a folder that STOPPED being floored: cleared (it had no row anyway), then
+///   inserted because it now scores.
 ///
 /// Split from the pool/registry resolution so a test drives it with a synthetic
 /// walk and a directly-built writer (no registry, no FFI). Samples
@@ -343,12 +432,16 @@ pub(super) fn incremental_rescore(
     folders: &[IndexFolder],
     changed_paths: &[String],
 ) -> Result<usize, String> {
-    // The set of folders to rescore: each changed path plus its ancestors up to
-    // the cap. Bounding the ancestor walk keeps a deep project marker from
-    // rescoping half the volume (plan open-question / Decision 5).
+    // The set of folders to (re)insert: each changed path's capped ancestor chain
+    // (upward propagation) plus every walked folder in a changed path's subtree
+    // (downward floor propagation). The ancestor cap bounds the upward walk; the
+    // downward side is bounded by the subtree that actually changed.
     let touched = touched_folder_set(changed_paths);
-    let subset: Vec<&IndexFolder> = folders.iter().filter(|f| touched.contains(&f.path)).collect();
-    if subset.is_empty() {
+    let subset: Vec<&IndexFolder> = folders
+        .iter()
+        .filter(|f| touched.contains(&f.path) || is_in_changed_subtree(&f.path, changed_paths))
+        .collect();
+    if subset.is_empty() && changed_paths.is_empty() {
         return Ok(0);
     }
 
@@ -362,14 +455,11 @@ pub(super) fn incremental_rescore(
         HashMap::new()
     };
 
-    let writer = inputs.writer;
-    // The incremental rows carry the CURRENT generation (no bump), so they're
-    // as-fresh-as the last full pass and untouched folders don't turn stale.
-    let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
-
+    // Assemble each touched folder's signals; only the NON-FLOORED ones get a row
+    // (floored folders are cleared by the subtree delete and never re-inserted).
     let rows: Vec<WeightRow> = subset
         .iter()
-        .map(|f| {
+        .filter_map(|f| {
             let optional = OptionalSignals {
                 visit_count: inputs.visits.get(&f.path).copied(),
                 last_used_secs: last_used.get(&f.path).copied(),
@@ -383,22 +473,42 @@ pub(super) fn incremental_rescore(
                 f.under_floored_ancestor,
                 optional,
             );
-            let s = score(&signals, &inputs.available, inputs.weights, inputs.now_secs);
-            let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
-            WeightRow {
-                path: f.path.clone(),
-                score: s.value(),
-                signals_json,
+            let explanation = explain(&signals, &inputs.available, inputs.weights, inputs.now_secs);
+            if explanation.floored {
+                return None;
             }
+            let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
+            Some(WeightRow {
+                path: f.path.clone(),
+                score: explanation.score.value(),
+                signals_json,
+            })
         })
         .collect();
     let count = rows.len();
 
+    let writer = inputs.writer;
+    // The incremental rows carry the CURRENT generation (no bump), so they're
+    // as-fresh-as the last full pass and untouched folders don't turn stale. The
+    // changed subtrees are cleared first so renamed-away / deleted / now-floored
+    // folders leave no orphan row.
+    let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
+
     writer
-        .write_weights_incremental(generation, rows)
+        .write_weights_incremental(generation, rows, changed_paths.to_vec())
         .map_err(|e| e.to_string())?;
     writer.flush_blocking().map_err(|e| e.to_string())?;
     Ok(count)
+}
+
+/// Whether `path` sits at or under any of `changed_paths` — the downward subtree
+/// expansion for incremental rescoring. A folder whose ancestor's listing changed
+/// may have flipped floored-ness (a `node_modules` renamed, or a plain folder
+/// renamed to one), so its whole subtree must be revisited. Pure path math.
+fn is_in_changed_subtree(path: &str, changed_paths: &[String]) -> bool {
+    changed_paths
+        .iter()
+        .any(|changed| path == changed || path.starts_with(&format!("{changed}/")))
 }
 
 /// The maximum number of ancestor levels an incremental rescore walks up from a

@@ -120,6 +120,8 @@ fn full_recompute_ranks_meaningful_folders_above_machine_output() {
     // Read the resulting weights back.
     let imp_path = importance_db_path(dir.path(), ROOT_VOLUME_ID);
     let store = ImportanceStore::open(&imp_path).expect("open importance store");
+    // A scored folder's stored score, or `-1.0` when it has NO row. Floored folders
+    // deliberately get no row (storage compaction), so their lookup is absent.
     let w = |rel: &str| -> f64 {
         store
             .weight_for(&format!("{}/{rel}", home.home))
@@ -127,29 +129,37 @@ fn full_recompute_ranks_meaningful_folders_above_machine_output() {
             .map(|w| w.score)
             .unwrap_or(-1.0)
     };
+    let has_row = |rel: &str| -> bool {
+        store
+            .weight_for(&format!("{}/{rel}", home.home))
+            .expect("read")
+            .is_some()
+    };
 
     let webapp = w("projects/webapp");
     let downloads = w("Downloads");
-    let node_modules = w("projects/webapp/node_modules");
-    let logs = w("logs");
-    let caches = w("Library/Caches");
+    let invoices = w("Documents/invoices");
 
-    assert!(webapp >= 0.0 && downloads >= 0.0, "the meaningful folders were scored");
-    assert_eq!(
-        node_modules, 0.0,
-        "a node_modules folder is floored to 0.0 (denylisted), got {node_modules}"
-    );
-    assert_eq!(
-        caches, 0.0,
-        "a Library/Caches folder is floored to 0.0 (system/hidden), got {caches}"
+    assert!(webapp > 0.0 && downloads > 0.0, "the meaningful folders were scored");
+    // Floored folders get NO row at all — their floored-ness is re-derivable from
+    // the path. A denylisted node_modules, a system/hidden Library/Caches, and the
+    // denylisted `logs` monoculture all floor.
+    assert!(
+        !has_row("projects/webapp/node_modules"),
+        "a node_modules folder is floored, so it has no stored row"
     );
     assert!(
-        webapp > logs,
-        "the project root ({webapp}) must outrank the monoculture logs folder ({logs})"
+        !has_row("Library/Caches"),
+        "a Library/Caches folder is floored (system/hidden), so it has no stored row"
     );
     assert!(
-        downloads > logs,
-        "the mixed Downloads ({downloads}) must outrank the monoculture logs ({logs})"
+        !has_row("logs"),
+        "the denylisted `logs` folder is floored, so it has no stored row"
+    );
+    // The project root outranks a plain user-content subtree (both scored, both rows).
+    assert!(
+        webapp > invoices,
+        "the project root ({webapp}) must outrank a plain user-content folder ({invoices})"
     );
 
     // Every written weight carries the pass generation (as-of marker), and the
@@ -379,15 +389,16 @@ fn descendants_of_a_floored_folder_floor_too() {
 
     let store = ImportanceStore::open(&importance_db_path(dir.path(), ROOT_VOLUME_ID)).expect("open");
     let score_of = |p: &str| store.weight_for(p).expect("read").map(|w| w.score).unwrap_or(-1.0);
-    assert_eq!(
-        score_of("/Users/test/proj/node_modules/react/dist"),
-        0.0,
-        "a deep node_modules dir floors"
+    let has_row = |p: &str| store.weight_for(p).expect("read").is_some();
+    // Floored folders get no row at all (storage compaction), so their subtree
+    // never carries a stored weight — the strongest form of "floored".
+    assert!(
+        !has_row("/Users/test/proj/node_modules/react/dist"),
+        "a deep node_modules dir floors, so it has no stored row"
     );
-    assert_eq!(
-        score_of("/Users/test/proj/node_modules/vendored"),
-        0.0,
-        "a vendored repo under node_modules stays floored"
+    assert!(
+        !has_row("/Users/test/proj/node_modules/vendored"),
+        "a vendored repo under node_modules stays floored, so it has no stored row"
     );
     assert!(score_of("/Users/test/proj") > 0.0, "the real project root still scores");
     writer.shutdown();
@@ -519,15 +530,286 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
         "touched rows carry the current generation"
     );
 
-    // An UNTOUCHED folder (the logs folder, not under Downloads) keeps its gen-1
-    // as-of marker — the incremental pass didn't rewrite it, and the generation
-    // didn't move, so it isn't spuriously stale.
-    let logs = store
-        .weight_for(&format!("{}/logs", home.home))
+    // An UNTOUCHED, unfloored folder (Documents/invoices, not under Downloads)
+    // keeps its gen-1 as-of marker — the incremental pass didn't rewrite it, and the
+    // generation didn't move, so it isn't spuriously stale. (The fixture's `logs`
+    // folder is denylisted, so it has no row to check — floored folders are omitted.)
+    let untouched = store
+        .weight_for(&format!("{}/Documents/invoices", home.home))
         .expect("read")
         .expect("scored");
-    assert_eq!(logs.as_of_generation, 1, "an untouched folder keeps its as-of marker");
+    assert_eq!(
+        untouched.as_of_generation, 1,
+        "an untouched folder keeps its as-of marker"
+    );
     writer.shutdown();
+}
+
+// ── Floored transitions on the incremental path (storage compaction) ───────
+
+/// Build a synthetic `IndexFolder` for a directory path with a couple of mixed
+/// files (so an un-floored one scores above zero), computing `under_floored_ancestor`
+/// from the shared classifier over the whole path set. Lets a transition test drive
+/// `incremental_rescore` directly with a hand-built walk (no index needed).
+fn folder_at(id: i64, path: &str, home: &str, all_paths: &[&str]) -> recompute::IndexFolder {
+    use crate::importance::classify::under_floored_paths;
+    use crate::importance::signals::ChildAggregate;
+    use crate::indexing::store::EntryRow;
+    let name = std::path::Path::new(path)
+        .file_name()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_else(|| path.to_string());
+    let under = under_floored_paths(all_paths.iter().copied(), home).contains(path);
+    recompute::IndexFolder {
+        entry: EntryRow {
+            id,
+            parent_id: 0,
+            name,
+            is_directory: true,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: Some(1_000_000_000),
+            inode: None,
+        },
+        path: path.to_string(),
+        children: ChildAggregate {
+            distinct_extension_count: 3,
+            file_count: 4,
+            has_direct_marker: false,
+        },
+        has_marker_below: false,
+        under_floored_ancestor: under,
+    }
+}
+
+/// Full-pass a hand-built walk, returning the writer + store path for a follow-up
+/// incremental. Shared by the two transition tests.
+fn full_pass_walk(dir: &std::path::Path, home: &str, folders: &[recompute::IndexFolder]) -> ImportanceWriter {
+    let writer = ImportanceWriter::spawn(&importance_db_path(dir, ROOT_VOLUME_ID)).expect("writer");
+    recompute_folders(
+        &RecomputeInputs {
+            writer: &writer,
+            weights: &Weights::default(),
+            home,
+            now_secs: 1_000_000_000,
+            available: SignalSet::listing_only(),
+            visits: &HashMap::new(),
+            last_used: &HashMap::new(),
+        },
+        folders,
+    )
+    .expect("full pass");
+    writer.flush_blocking().expect("flush");
+    writer
+}
+
+/// TRANSITION → floored: a scored folder (and its scored descendant) that BECOMES
+/// floored — its subtree renamed to `node_modules` — must have its stored rows
+/// DELETED by the incremental pass, so the compacted store never keeps a floored
+/// row. THE likeliest bug site, so pinned both ways (this is the delete direction).
+#[test]
+fn incremental_deletes_rows_that_become_floored() {
+    let home = "/Users/test";
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = importance_db_path(dir.path(), ROOT_VOLUME_ID);
+
+    // BEFORE: `/Users/test/proj/pkg` and `/Users/test/proj/pkg/sub` are ordinary
+    // (unfloored) folders with rows.
+    let before_paths = ["/Users/test/proj", "/Users/test/proj/pkg", "/Users/test/proj/pkg/sub"];
+    let before: Vec<_> = before_paths
+        .iter()
+        .enumerate()
+        .map(|(i, p)| folder_at(i as i64 + 1, p, home, &before_paths))
+        .collect();
+    let writer = full_pass_walk(dir.path(), home, &before);
+
+    let store = ImportanceStore::open(&db_path).expect("open");
+    assert!(
+        store.weight_for("/Users/test/proj/pkg").expect("read").is_some(),
+        "pkg starts with a row (it isn't floored yet)"
+    );
+    assert!(
+        store.weight_for("/Users/test/proj/pkg/sub").expect("read").is_some(),
+        "pkg/sub starts with a row"
+    );
+
+    // AFTER: `pkg` is renamed to `node_modules`. The new walk has `node_modules`
+    // (self-floored) and its child `sub` (now under-floored). The incremental sees
+    // the parent `proj`'s listing changed.
+    let after_paths = [
+        "/Users/test/proj",
+        "/Users/test/proj/node_modules",
+        "/Users/test/proj/node_modules/sub",
+    ];
+    let after: Vec<_> = after_paths
+        .iter()
+        .enumerate()
+        .map(|(i, p)| folder_at(i as i64 + 1, p, home, &after_paths))
+        .collect();
+    // The changed path is the renamed folder's parent (its listing changed) — the
+    // subtree expansion then revisits everything under it.
+    let changed = vec!["/Users/test/proj".to_string()];
+    incremental_rescore(
+        &IncrementalInputs {
+            writer: &writer,
+            weights: &Weights::default(),
+            home,
+            now_secs: 1_000_000_000,
+            available: SignalSet::listing_only(),
+            visits: &HashMap::new(),
+        },
+        &after,
+        &changed,
+    )
+    .expect("incremental");
+    writer.flush_blocking().expect("flush");
+
+    let store = ImportanceStore::open(&db_path).expect("reopen");
+    // The renamed folder and its descendant both lost their rows (now floored).
+    assert!(
+        store
+            .weight_for("/Users/test/proj/node_modules")
+            .expect("read")
+            .is_none(),
+        "a folder that became a node_modules loses its row"
+    );
+    assert!(
+        store
+            .weight_for("/Users/test/proj/node_modules/sub")
+            .expect("read")
+            .is_none(),
+        "its now-under-floored descendant loses its row too"
+    );
+    // The stale pre-rename `pkg` rows are gone as well (the paths no longer exist).
+    assert!(
+        store.weight_for("/Users/test/proj/pkg").expect("read").is_none(),
+        "the pre-rename pkg path no longer has a row"
+    );
+    // The project root itself stays scored (it didn't floor).
+    assert!(
+        store.weight_for("/Users/test/proj").expect("read").is_some(),
+        "the unfloored project root keeps its row"
+    );
+    writer.shutdown();
+}
+
+/// TRANSITION → unfloored: a floored folder (and its floored descendant) that STOPS
+/// flooring — a `node_modules` renamed to an ordinary name — gets SCORED and
+/// INSERTED by the incremental pass, gaining rows it never had while floored. The
+/// insert direction of the same transition.
+#[test]
+fn incremental_scores_rows_that_stop_being_floored() {
+    let home = "/Users/test";
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = importance_db_path(dir.path(), ROOT_VOLUME_ID);
+
+    // BEFORE: `node_modules` and its child floor, so they have NO rows after a full
+    // pass (only the unfloored `proj` root does).
+    let before_paths = [
+        "/Users/test/proj",
+        "/Users/test/proj/node_modules",
+        "/Users/test/proj/node_modules/sub",
+    ];
+    let before: Vec<_> = before_paths
+        .iter()
+        .enumerate()
+        .map(|(i, p)| folder_at(i as i64 + 1, p, home, &before_paths))
+        .collect();
+    let writer = full_pass_walk(dir.path(), home, &before);
+
+    let store = ImportanceStore::open(&db_path).expect("open");
+    assert!(
+        store
+            .weight_for("/Users/test/proj/node_modules")
+            .expect("read")
+            .is_none(),
+        "a node_modules has no row (floored)"
+    );
+
+    // AFTER: `node_modules` is renamed to `pkg` (ordinary). Both it and its child
+    // stop flooring and should gain rows.
+    let after_paths = ["/Users/test/proj", "/Users/test/proj/pkg", "/Users/test/proj/pkg/sub"];
+    let after: Vec<_> = after_paths
+        .iter()
+        .enumerate()
+        .map(|(i, p)| folder_at(i as i64 + 1, p, home, &after_paths))
+        .collect();
+    let changed = vec!["/Users/test/proj".to_string()];
+    incremental_rescore(
+        &IncrementalInputs {
+            writer: &writer,
+            weights: &Weights::default(),
+            home,
+            now_secs: 1_000_000_000,
+            available: SignalSet::listing_only(),
+            visits: &HashMap::new(),
+        },
+        &after,
+        &changed,
+    )
+    .expect("incremental");
+    writer.flush_blocking().expect("flush");
+
+    let store = ImportanceStore::open(&db_path).expect("reopen");
+    let pkg = store
+        .weight_for("/Users/test/proj/pkg")
+        .expect("read")
+        .expect("pkg gained a row after un-flooring");
+    assert!(pkg.score > 0.0, "the un-floored folder scores above zero");
+    assert!(
+        store.weight_for("/Users/test/proj/pkg/sub").expect("read").is_some(),
+        "its descendant gained a row too (no longer under a floored ancestor)"
+    );
+    writer.shutdown();
+}
+
+/// THE derive-on-read parity invariant that makes floored-row deletion safe: for
+/// EVERY folder the real walk produces, whether the path-only classifier
+/// (`classify::floors_by_path`, what the read side uses when a row is absent) says
+/// "floored" must MATCH whether the pure scorer floors that folder's full signals
+/// (what the pre-compaction store would have persisted as a `0.0` row). If they
+/// ever disagreed, a folder could be dropped-as-floored on write yet read back as
+/// unscored (or vice versa). Checked over the canonical synthetic home's whole
+/// walk, so every fixture folder — floored and not — is a case.
+#[test]
+fn floored_by_path_matches_the_scorer_floor_for_every_walked_folder() {
+    use crate::importance::classify::floors_by_path;
+    use crate::importance::fixtures::SyntheticHome;
+    use crate::importance::signals::{OptionalSignals, signals_for_dir};
+
+    let now = 1_000_000_000;
+    let home = SyntheticHome::canonical(now);
+    let dir = tempfile::tempdir().expect("temp dir");
+    let index_path = dir.path().join("index-root.db");
+    build_index_from_home(&index_path, &home);
+    let pool = crate::indexing::ReadPool::new(index_path).expect("read pool");
+    let folders = pool
+        .with_conn(|conn| walk_index_folders(conn, &home.home))
+        .expect("pool")
+        .expect("walk");
+
+    let weights = Weights::default();
+    for f in &folders {
+        // What the pre-compaction store would have seen: the full signals' floor.
+        let signals = signals_for_dir(
+            &f.entry,
+            f.children,
+            &f.path,
+            &home.home,
+            f.has_marker_below,
+            f.under_floored_ancestor,
+            OptionalSignals::default(),
+        );
+        let scorer_floored = crate::importance::explain(&signals, &SignalSet::listing_only(), &weights, now).floored;
+        // What the read side derives from the path alone (no row).
+        let path_floored = floors_by_path(&f.path, &home.home);
+        assert_eq!(
+            path_floored, scorer_floored,
+            "derive-on-read disagreed with the scorer floor for {}: path={path_floored}, scorer={scorer_floored}",
+            f.path
+        );
+    }
 }
 
 // ── M4: multi-volume, SMB degradation, offline reads ──────────────────────

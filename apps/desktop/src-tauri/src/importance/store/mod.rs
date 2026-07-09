@@ -41,8 +41,13 @@ pub(crate) use connection::open_write_connection;
 
 /// Bump to invalidate on-disk `importance.db` files. A mismatch deletes the DB
 /// file and recreates it fresh (the cache is disposable, no migrations — plan
-/// Decision 2). Start at 1; bump on any schema change to the tables below.
-const SCHEMA_VERSION: &str = "1";
+/// Decision 2). Start at 1; bump on any schema change to the tables below OR a
+/// change to what rows/JSON the store persists.
+///
+/// `2`: storage compaction — floored folders no longer get a row (they're derived
+/// on read), and `FolderSignals` serializes only its non-default fields. An older
+/// DB (full of floored rows and verbose JSON) recreates fresh on the next scan.
+const SCHEMA_VERSION: &str = "2";
 
 /// Meta key for the per-volume recompute generation: a monotonically increasing
 /// counter bumped once per full-volume recompute pass. Every weight row is
