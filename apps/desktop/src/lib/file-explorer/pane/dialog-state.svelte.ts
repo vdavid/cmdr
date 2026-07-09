@@ -126,7 +126,15 @@ export interface DialogStateDeps {
 
 /** Human-readable label for a transfer op, used in log lines. */
 function transferOpLabel(op: TransferOperationType): string {
-  return op === 'copy' ? 'Copy' : op === 'move' ? 'Move' : op === 'trash' ? 'Trash' : 'Delete'
+  return op === 'copy'
+    ? 'Copy'
+    : op === 'move'
+      ? 'Move'
+      : op === 'compress'
+        ? 'Compress'
+        : op === 'trash'
+          ? 'Trash'
+          : 'Delete'
 }
 
 /** Force a backend re-read on a pane's listing so file diffs are emitted promptly. */
@@ -187,8 +195,9 @@ export function createDialogState(deps: DialogStateDeps) {
   /** Adjusts source pane selection after a cancelled operation based on the snapshot state. */
   function adjustSelectionAfterCancel(op: TransferOperationType): void {
     const prevSnapshot = getSourcePaneRef()?.clearOperationSnapshot()
-    if (prevSnapshot === 'all' && op !== 'copy') {
-      // Re-select all survivors (move/delete/trash changed the source listing)
+    if (prevSnapshot === 'all' && op !== 'copy' && op !== 'compress') {
+      // Re-select all survivors (move/delete/trash changed the source listing;
+      // copy and compress leave the source listing intact, so indices still hold)
       getSourcePaneRef()?.selectAll()
     } else if (prevSnapshot == null) {
       // No snapshot taken; fall back to milestone 1 behavior

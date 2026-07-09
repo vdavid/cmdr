@@ -139,7 +139,7 @@ interface MountOpts {
   autoConfirm?: boolean
   autoConfirmOnConflict?: string
   onConfirm?: ConfirmFn
-  operationType?: 'copy' | 'move'
+  operationType?: 'copy' | 'move' | 'compress'
   sourceVolumeId?: string
   /** The destination volume the dialog starts on (= `selectedVolumeId`). */
   currentVolumeId?: string
@@ -777,5 +777,74 @@ describe('TransferDialog destination path', () => {
     // Structurally invalid → red error shows, yellow warning suppressed.
     expect(target.querySelector('.path-error')).not.toBeNull()
     expect(target.querySelector('.path-warning')).toBeNull()
+  })
+})
+
+/* ------------------------------------------------------------------------- */
+/* Compress mode: third operation type                                       */
+/* ------------------------------------------------------------------------- */
+
+describe('TransferDialog compress mode', () => {
+  function pathInput(target: HTMLElement): HTMLInputElement {
+    return target.querySelector<HTMLInputElement>('.path-input')!
+  }
+
+  it('suggests a `.zip` filename in the destination folder', async () => {
+    // Two sources under /Users/test → the source-directory basename ("test") wins.
+    const target = mountDialog({ operationType: 'compress', destinationPath: '/Users/test/dest' })
+    await flushMicrotasks()
+    expect(pathInput(target).value).toBe('/Users/test/dest/test.zip')
+  })
+
+  it('labels the confirm button "Compress"', async () => {
+    const target = mountDialog({ operationType: 'compress' })
+    await flushMicrotasks()
+    const confirm = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Compress')
+    expect(confirm).toBeTruthy()
+  })
+
+  it('does NOT run the multi-file conflict check (one new file has no dest conflicts)', async () => {
+    const target = mountDialog({ operationType: 'compress' })
+    await flushMicrotasks()
+    expect(scanVolumeForConflictsMock).not.toHaveBeenCalled()
+    expect(radioGroup(target)).toBeNull()
+  })
+
+  it('warns that an existing archive will be replaced', async () => {
+    // The target zip already exists at the destination.
+    pathExistsCheckedMock.mockResolvedValue({ data: true, timedOut: false })
+    const target = mountDialog({ operationType: 'compress' })
+    await settleExistsCheck()
+    const warning = target.querySelector('.path-warning')
+    expect(warning?.textContent).toContain('already here')
+    // The copy/move "folder will be created" wording must NOT appear here.
+    expect(warning?.textContent).not.toContain('create')
+  })
+
+  it('shows no overwrite warning when the target does not exist yet', async () => {
+    pathExistsCheckedMock.mockResolvedValue({ data: false, timedOut: false })
+    const target = mountDialog({ operationType: 'compress' })
+    await settleExistsCheck()
+    expect(target.querySelector('.path-warning')).toBeNull()
+  })
+
+  it('auto-confirm does NOT overwrite an existing archive (surfaces the dialog instead)', async () => {
+    // Auto-confirm (MCP) with the target zip already present: the dialog must NOT
+    // dispatch — it stays open so the user decides.
+    pathExistsCheckedMock.mockResolvedValue({ data: true, timedOut: false })
+    const onConfirm = vi.fn()
+    mountDialog({ operationType: 'compress', autoConfirm: true, onConfirm })
+    await flushMicrotasks()
+    expect(onConfirm).not.toHaveBeenCalled()
+  })
+
+  it('auto-confirm proceeds when the target archive does not exist', async () => {
+    pathExistsCheckedMock.mockResolvedValue({ data: false, timedOut: false })
+    const onConfirm = vi.fn()
+    mountDialog({ operationType: 'compress', autoConfirm: true, onConfirm })
+    await flushMicrotasks()
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+    // Compress dispatches with an empty conflict list (no multi-file conflicts).
+    expect(onConfirm.mock.calls[0][6]).toEqual([])
   })
 })

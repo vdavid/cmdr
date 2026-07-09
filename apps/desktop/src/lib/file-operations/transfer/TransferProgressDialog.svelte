@@ -103,6 +103,7 @@
         move: 'fileOperations.transferProgress.scanTitleMove',
         delete: 'fileOperations.transferProgress.scanTitleDelete',
         trash: 'fileOperations.transferProgress.scanTitleTrash',
+        compress: 'fileOperations.transferProgress.scanTitleCompress',
     }
     // Archive edits have no scan phase, so no scan title ever renders for them.
     const scanTitle = $derived(operationType === 'archive_edit' ? '' : tString(scanTitleMap[operationType]))

@@ -35,6 +35,7 @@
 import {
   copyBetweenVolumes,
   moveBetweenVolumes,
+  compressFiles,
   moveFiles,
   deleteFiles,
   trashFiles,
@@ -124,6 +125,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     delete: 'Delete',
     trash: 'Trash',
     archive_edit: 'Archive edit',
+    compress: 'Compress',
   }
   const operationLabel = operationLabelMap[config.operationType]
 
@@ -628,7 +630,14 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
         preKnownConflicts: config.preKnownConflicts ?? [],
       })
     }
-    // Copy: always use copyBetweenVolumes; the backend handles local-to-local optimization
+    if (config.operationType === 'compress') {
+      return dispatchCompress(progressIntervalMs, maxConflictsToShow)
+    }
+    return dispatchCopy(progressIntervalMs, maxConflictsToShow)
+  }
+
+  /** Copy: always via `copyBetweenVolumes`; the backend optimizes local-to-local. */
+  function dispatchCopy(progressIntervalMs: number, maxConflictsToShow: number): Promise<{ operationId: string }> {
     return copyBetweenVolumes(
       config.sourceVolumeId,
       config.sourcePaths,
@@ -641,6 +650,23 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
         previewId: config.previewId,
         preKnownConflicts: config.preKnownConflicts ?? [],
       },
+    )
+  }
+
+  /**
+   * Compress: pack the sources into a NEW zip at the target. One command handles
+   * local and (M8) remote sources; the backend seeds a valid empty zip then packs.
+   * The inner-conflict policy is moot (a fresh zip has no entries and two sources
+   * in one folder can't share a name), so `overwrite` is a safe constant; an
+   * existing target FILE was already resolved in the dialog.
+   */
+  function dispatchCompress(progressIntervalMs: number, maxConflictsToShow: number): Promise<{ operationId: string }> {
+    return compressFiles(
+      config.sourceVolumeId,
+      config.sourcePaths,
+      config.destVolumeId ?? DEFAULT_VOLUME_ID,
+      config.destinationPath ?? '',
+      { conflictResolution: 'overwrite', progressIntervalMs, maxConflictsToShow, previewId: config.previewId },
     )
   }
 

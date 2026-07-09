@@ -19,6 +19,23 @@
     "screenshot": "transfer-complete-toast.png"
   },
 
+  "transfer.compress.split": "Compressed {phrase}.",
+  "@transfer.compress.split": {
+    "description": "Success toast after the user compresses files into a new zip, when Cmdr knows the file-vs-folder breakdown. {phrase} is the already-built '2 files and 1 folder' fragment (shared with copy/move via transfer.movedPhrase). Compress never skips items, so there's no skipped variant.",
+    "placeholders": {
+      "phrase": "the file/folder count fragment, e.g. '2 files and 1 folder'"
+    }
+  },
+
+  "transfer.compress.fileOnly": "Compressed {countText} {count, plural, one {file} other {files}}.",
+  "@transfer.compress.fileOnly": {
+    "description": "Success toast after the user compresses files into a new zip, used when only a flat file count is available (no file-vs-folder split). Confirms how many files were packed.",
+    "placeholders": {
+      "countText": "number of files compressed, ready to drop into the sentence (e.g. 1,234)",
+      "count": "the same number of files (decides whether the noun is singular or plural)"
+    }
+  },
+
   "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {file} other {files}} and {foldersText} {folders, plural, one {folder} other {folders}}} foldersOnly {{foldersText} {folders, plural, one {folder} other {folders}}} other {{filesText} {files, plural, one {file} other {files}}}}",
   "@transfer.movedPhrase": {
     "description": "A reusable sentence fragment, not a full sentence: the \"2 files and 1 folder\" part of a copy/move success toast. Another message wraps it with a verb (\"Copied …\", \"Moved …\"). When only files or only folders were transferred, just that side appears, so the phrase never reads \"0 files and 3 folders\". Build the wording so each branch stands alone grammatically in your language.",

@@ -10,10 +10,11 @@
     import Button from '$lib/ui/Button.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
     import {
+        confirmLabelKey,
         deriveTransferLabel,
         generateTitle,
+        initialEditedPath,
         shouldShowHardlinkNote,
-        toVolumeRelativePath,
     } from './transfer-dialog-utils'
     import { getPathValidationError, formatSpaceInfo } from './transfer-dialog-logic'
     import { createTransferScanState } from './transfer-scan-state.svelte'
@@ -92,10 +93,19 @@
 
     let activeOperationType = $state<TransferOperationType>(initialOperationType)
 
+    // The segmented action toggle, `{#each}`-rendered; `as const` keeps the label keys literal.
+    const operationModes = [
+        { type: 'copy', labelKey: 'fileOperations.transferDialog.toggleCopy' },
+        { type: 'move', labelKey: 'fileOperations.transferDialog.toggleMove' },
+        { type: 'compress', labelKey: 'fileOperations.transferDialog.toggleCompress' },
+    ] as const
+
     // Compute initial volume-relative path. Can't use $derived selectedVolume here (not yet available),
     // so look up the volume path directly from the props.
     const initialVolumePath = volumes.find((v) => v.id === currentVolumeId)?.path ?? '/'
-    let editedPath = $state(toVolumeRelativePath(destinationPath, initialVolumePath))
+    let editedPath = $state(
+        initialEditedPath(initialOperationType, destinationPath, initialVolumePath, sourcePaths, sourceFolderPath),
+    )
     log.debug(
         'Initial path resolution: destinationPath={destinationPath}, currentVolumeId={currentVolumeId}, initialVolumePath={initialVolumePath}, editedPath={editedPath}',
         {
@@ -232,11 +242,7 @@
         }),
     )
 
-    const confirmLabel = $derived(
-        activeOperationType === 'copy'
-            ? tString('fileOperations.transferDialog.confirmCopy')
-            : tString('fileOperations.transferDialog.confirmMove'),
-    )
+    const confirmLabel = $derived(tString(confirmLabelKey(activeOperationType)))
 
     /** Counting state for the tallies element, exposed as `data-scan-state` so
      *  E2E tests can wait race-free for the scan to settle before asserting the
@@ -269,17 +275,20 @@
         log,
     })
 
-    // Yellow "this folder doesn't exist yet, we'll create it" warning. A red
-    // structural/path error always wins: we never show both, and a path we can't
-    // even parse shouldn't claim it'll be created. Shown for every destination:
-    // the backend's volume-aware transfer auto-creates a missing destination
-    // folder (and its ancestors) on every backend via `create_directory_all`.
-    const showTargetWarning = $derived(!pathError && destExists.targetMissing)
-    const targetWarningText = $derived(
-        activeOperationType === 'copy'
-            ? tString('fileOperations.transferDialog.targetWillBeCreatedCopy')
-            : tString('fileOperations.transferDialog.targetWillBeCreatedMove'),
-    )
+    // Inline path warning beneath the box (red path error always wins). Copy/move:
+    // "folder will be created" (backend auto-creates via `create_directory_all`).
+    // Compress targets a new zip FILE, so the inverse — replacing an existing file.
+    const targetWarning = $derived.by<string | null>(() => {
+        if (pathError) return null
+        if (activeOperationType === 'compress')
+            return destExists.targetExists ? tString('fileOperations.transferDialog.targetWillBeOverwritten') : null
+        if (!destExists.targetMissing) return null
+        return tString(
+            activeOperationType === 'copy'
+                ? 'fileOperations.transferDialog.targetWillBeCreatedCopy'
+                : 'fileOperations.transferDialog.targetWillBeCreatedMove',
+        )
+    })
 
     // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
     const spaceInfoText = $derived(
@@ -361,17 +370,17 @@
         // onConfirm fires.
         scan.start()
 
-        // Run the cheap top-level conflict check in parallel with the scan
-        // preview (it's one dest listing, not the recursive byte scan). MUST be
-        // assigned BEFORE the auto-confirm branch so the fast path's
-        // `handleConfirm` await guard sees a real promise and dispatches with
-        // `conflictNames` populated. Mirrors how the scan promise is tracked above.
-        conflictCheckPromise = conflicts.check()
+        // Run the cheap top-level conflict check in parallel with the scan preview
+        // (one dest listing, not the recursive byte scan). Assigned BEFORE the
+        // auto-confirm branch so the fast path's `handleConfirm` await guard sees a
+        // real promise. Compress makes ONE new file, so multi-file dest conflicts
+        // are meaningless — it skips the check and uses the dest-exists affordance.
+        conflictCheckPromise = activeOperationType === 'compress' ? null : conflicts.check()
 
         // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
         if (autoConfirm) {
             await tick()
-            await handleConfirm()
+            await handleConfirm(true)
         }
     })
 
@@ -393,20 +402,22 @@
         }
     })
 
-    async function handleConfirm() {
+    async function handleConfirm(isAuto = false) {
         if (pathError || confirmed) return
         confirmed = true
+        // Compress auto-confirm must not silently overwrite an existing archive:
+        // proceed unattended only when the target doesn't exist; else stay open.
+        if (activeOperationType === 'compress' && isAuto && (await destExists.probeExists())) {
+            confirmed = false
+            return
+        }
         // Same-volume move: dispatch IMMEDIATELY. No deep scan ever ran (the
         // backend renames server-side, zero bytes), so there's nothing to wait
         // for and no cached preview to consume — pass `previewId = null` and
-        // `scanInProgress = false` so the progress dialog dispatches without
-        // gating on a scan. The conflict check still runs, so we await it for
-        // `conflictNames`. This is the FE half of the perf fix.
+        // `scanInProgress = false`. Await the conflict check for `conflictNames`.
         if (isSameVolumeMove) {
             scan.cancelPreview()
-            if (conflictCheckPromise) {
-                await conflictCheckPromise
-            }
+            await conflictCheckPromise
             onConfirm(
                 editedPath,
                 selectedVolumeId,
@@ -418,19 +429,12 @@
             )
             return
         }
-        // Wait for startScanPreview IPC to return so previewId is set. Without this,
-        // a fast confirm (auto-confirm, Playwright test, rapid Enter keypress) races
-        // with the IPC and leaves the progress dialog with a null previewId that it
-        // cannot recover from once scan events have already been emitted.
+        // Wait for startScanPreview IPC so previewId is set (a fast confirm — MCP,
+        // Playwright, rapid Enter — otherwise strands the progress dialog with a
+        // null previewId), then for the conflict scan (`await null` is a no-op, so
+        // compress falls straight through) so we never dispatch `conflicts: []`.
         await scan.scanStarted
-        // Also wait for the conflict scan if it's still running. Without this, a fast
-        // confirm sends `conflicts: []` to the backend even when conflicts exist,
-        // the user never sees the radio policy section, and the operation runs with
-        // whatever default `conflictPolicy` was set ("stop" by default, so it'd still
-        // prompt per-file via the backend, but only because of the default).
-        if (conflictCheckPromise) {
-            await conflictCheckPromise
-        }
+        await conflictCheckPromise
         onConfirm(
             editedPath,
             selectedVolumeId,
@@ -479,18 +483,14 @@
         <div class="field">
             <span class="field-label">{tString('fileOperations.shared.actionLabel')}</span>
             <div class="operation-toggle">
-                <button
-                    class="toggle-option"
-                    class:active={activeOperationType === 'copy'}
-                    onclick={() => (activeOperationType = 'copy')}
-                    >{tString('fileOperations.transferDialog.toggleCopy')}</button
-                >
-                <button
-                    class="toggle-option"
-                    class:active={activeOperationType === 'move'}
-                    onclick={() => (activeOperationType = 'move')}
-                    >{tString('fileOperations.transferDialog.toggleMove')}</button
-                >
+                {#each operationModes as mode (mode.type)}
+                    <button
+                        class="toggle-option"
+                        class:active={activeOperationType === mode.type}
+                        onclick={() => (activeOperationType = mode.type)}
+                        >{tString(mode.labelKey)}</button
+                    >
+                {/each}
             </div>
         </div>
 
@@ -535,11 +535,11 @@
                 type="text"
                 class="path-input"
                 class:has-error={!!pathError}
-                class:has-warning={showTargetWarning}
+                class:has-warning={targetWarning}
                 aria-label={tString('fileOperations.transferDialog.destPathAria')}
                 aria-describedby={pathError
                     ? 'transfer-path-error'
-                    : showTargetWarning
+                    : targetWarning
                       ? 'transfer-path-warning'
                       : undefined}
                 aria-invalid={!!pathError}
@@ -549,8 +549,8 @@
             />
             {#if pathError}
                 <p id="transfer-path-error" class="path-error" role="alert">{pathError}</p>
-            {:else if showTargetWarning}
-                <p id="transfer-path-warning" class="path-warning">{targetWarningText}</p>
+            {:else if targetWarning}
+                <p id="transfer-path-warning" class="path-warning">{targetWarning}</p>
             {/if}
         </div>
 
@@ -683,7 +683,7 @@
 
     {#snippet footer()}
         <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
-        <Button variant="primary" onclick={handleConfirm} disabled={!!pathError}>{confirmLabel}</Button>
+        <Button variant="primary" onclick={() => handleConfirm()} disabled={!!pathError}>{confirmLabel}</Button>
     {/snippet}
 </ModalDialog>
 

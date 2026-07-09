@@ -362,6 +362,11 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     await openTransferDialog('move', autoConfirm, onConflict)
   }
 
+  /** Opens the compress dialog (convenience wrapper for the ⌥F5 command/MCP). */
+  async function openCompressDialog(autoConfirm?: boolean, onConflict?: string) {
+    await openTransferDialog('compress', autoConfirm, onConflict)
+  }
+
   /**
    * Search-results pane delete path (M8c). The focused pane is on the
    * `search-results://<id>` virtual volume, so there's no backend listing to
@@ -569,6 +574,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     openTransferDialog,
     openCopyDialog,
     openMoveDialog,
+    openCompressDialog,
     openDeleteDialog,
   }
 }

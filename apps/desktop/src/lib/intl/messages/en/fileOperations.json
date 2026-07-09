@@ -289,6 +289,11 @@
     "screenshot": "conflict-dialog.png"
   },
 
+  "fileOperations.transferDialog.toggleCompress": "Compress",
+  "@fileOperations.transferDialog.toggleCompress": {
+    "description": "Label of the segmented-control option that sets the operation to compress (pack the selected files into a new zip). Short control label, sits next to Copy and Move."
+  },
+
   "fileOperations.transferDialog.routeLabel": "Route:",
   "@fileOperations.transferDialog.routeLabel": {
     "description": "Field label shown before the source-to-destination line (e.g. ''Downloads -> Home'') in the copy/move dialog. Keep the trailing colon.",
@@ -330,6 +335,11 @@
   "fileOperations.transferDialog.targetWillBeCreatedMove": "This folder doesn''t exist yet. Cmdr will create it during the move.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "description": "Yellow inline warning beneath the destination path box in the Copy/Move dialog, shown when the typed destination folder doesn''t exist yet and the Move action is selected. Reassures the user the folder will be made automatically. Active voice, friendly. Keep the product name 'Cmdr' as-is. There''s a separate '...Copy' variant for the Copy action."
+  },
+
+  "fileOperations.transferDialog.targetWillBeOverwritten": "A file with this name is already here. Cmdr will replace it.",
+  "@fileOperations.transferDialog.targetWillBeOverwritten": {
+    "description": "Yellow inline warning beneath the destination path box in the Compress dialog, shown when a file with the typed archive name already exists at the destination. Confirming replaces it with the new zip. Active voice, friendly. Keep the product name 'Cmdr' as-is."
   },
 
   "fileOperations.transferDialog.scanFile": "{count, plural, one {file} other {files}}",
@@ -434,7 +444,7 @@
     "description": "Red warning in the transfer dialog when 'Overwrite all' is chosen and at least one clash pairs a file with a same-named folder. Stresses the destructive swap. Keep it firm."
   },
 
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Copy} move {Move} delete {Delete} other {Move to trash}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to trash}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
     "description": "Transfer/delete dialog title verb alone, used when there is nothing to count. 'Move to trash' is the trash variant. Matches the operation chosen.",
     "placeholders": {
@@ -442,7 +452,7 @@
     }
   },
 
-  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Copy} move {Move} delete {Delete} other {Move to trash}} {phrase}",
+  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to trash}} {phrase}",
   "@fileOperations.transferDialog.titleWithCounts": {
     "description": "Transfer/delete dialog title combining the operation verb with a counts phrase, e.g. 'Copy 2 files and 3 folders'. {phrase} is already built.",
     "placeholders": {
@@ -488,6 +498,11 @@
     }
   },
 
+  "fileOperations.transferDialog.pathErrorNotZip": "The archive name must end in \".zip\".",
+  "@fileOperations.transferDialog.pathErrorNotZip": {
+    "description": "Validation error under the destination-path field in the Compress dialog when the typed target file name doesn't end in the .zip extension. Cmdr only creates zip archives for now. Keep \".zip\" in straight double quotes."
+  },
+
   "fileOperations.transferDialog.confirmCopy": "Copy",
   "@fileOperations.transferDialog.confirmCopy": {
     "description": "Primary confirm button in the transfer dialog when the operation is copy. Control label.",
@@ -497,6 +512,11 @@
   "fileOperations.transferDialog.confirmMove": "Move",
   "@fileOperations.transferDialog.confirmMove": {
     "description": "Primary confirm button in the transfer dialog when the operation is move. Control label."
+  },
+
+  "fileOperations.transferDialog.confirmCompress": "Compress",
+  "@fileOperations.transferDialog.confirmCompress": {
+    "description": "Primary confirm button in the transfer dialog when the operation is compress (create a new zip from the selected files). Control label."
   },
 
   "fileOperations.scanPhase.fromLabel": "From:",
@@ -541,6 +561,11 @@
     "description": "Progress-dialog title while counting files before a move. Keep the trailing ellipsis."
   },
 
+  "fileOperations.transferProgress.scanTitleCompress": "Verifying before compressing...",
+  "@fileOperations.transferProgress.scanTitleCompress": {
+    "description": "Progress-dialog title while counting files before compressing them into a new zip. Keep the trailing ellipsis."
+  },
+
   "fileOperations.transferProgress.scanTitleDelete": "Counting items to delete...",
   "@fileOperations.transferProgress.scanTitleDelete": {
     "description": "Progress-dialog title while counting items before a permanent delete. Keep the trailing ellipsis."
@@ -583,7 +608,7 @@
     "screenshot": "toast-transfer-complete.png"
   },
 
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} delete {Deleting} other {Moving to trash}}...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to trash}}...",
   "@fileOperations.transferProgress.titleActive": {
     "description": "Progress-dialog title during the operation itself, in the -ing form of the verb. 'Moving to trash' is the trash variant. Keep the trailing ellipsis.",
     "placeholders": {
@@ -598,7 +623,7 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copying} move {Moving} delete {Deleting} other {Moving to trash}}",
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to trash}}",
   "@fileOperations.transferProgress.stageActive": {
     "description": "Label of the second step chip in the progress dialog's two-step indicator: the operation in progress, in the -ing form. No trailing ellipsis (this is a step chip, not the title).",
     "placeholders": {

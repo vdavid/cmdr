@@ -789,6 +789,11 @@
         await fileOps.openMoveDialog(autoConfirm, onConflict)
     }
 
+    /** Opens the compress dialog (convenience wrapper for the ⌥F5 command/MCP). */
+    export async function openCompressDialog(autoConfirm?: boolean, onConflict?: string) {
+        await fileOps.openCompressDialog(autoConfirm, onConflict)
+    }
+
     /** Copies selected files (or cursor file) to the system clipboard. */
     export async function copyToClipboard() {
         await clipboardOps.copyToClipboard()

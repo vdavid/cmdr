@@ -1,5 +1,5 @@
 /**
- * Composes the toast shown when a copy/move/trash/delete operation completes.
+ * Composes the toast shown when a copy/move/compress/trash/delete operation completes.
  *
  * This is the i18n pilot (the hardest existing multi-variable case): every
  * wording lives in `transfer.*` catalog keys resolved through `t()` and ICU
@@ -53,6 +53,15 @@ export function composeTransferCompleteToast(input: TransferCompleteToastInput):
   }
   if (operationType === 'delete') {
     return tString('transfer.delete', { countText: formatNumber(filesProcessed), count: filesProcessed })
+  }
+  // Compress packs sources into ONE new zip and never skips, so it gets its own
+  // dedicated wording rather than the copy/move "Copied/Moved" verb select.
+  if (operationType === 'compress') {
+    if (fileCount !== undefined && folderCount !== undefined) {
+      const phrase = describeCounts(fileCount, folderCount)
+      if (phrase !== null) return tString('transfer.compress.split', { phrase })
+    }
+    return tString('transfer.compress.fileOnly', { countText: formatNumber(filesProcessed), count: filesProcessed })
   }
 
   const verb = verbParam(operationType)

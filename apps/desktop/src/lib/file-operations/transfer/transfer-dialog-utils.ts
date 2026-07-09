@@ -4,7 +4,9 @@
  */
 
 import type { TransferOperationType } from '$lib/file-explorer/types'
+import type { MessageKey } from '$lib/intl/keys.gen'
 import { tString } from '$lib/intl/messages.svelte'
+import { suggestCompressArchiveName } from './transfer-compress-name'
 
 /**
  * Generates a dialog title with proper pluralization for files and folders.
@@ -140,4 +142,32 @@ export function shouldShowHardlinkNote(args: {
 }): boolean {
   const { operationType, scanComplete, writeBytes, dedupBytes } = args
   return operationType === 'copy' && scanComplete && dedupBytes > 0 && dedupBytes < writeBytes
+}
+
+/** The i18n key for the transfer dialog's primary confirm button, per mode. */
+export function confirmLabelKey(operationType: TransferOperationType): MessageKey {
+  if (operationType === 'copy') return 'fileOperations.transferDialog.confirmCopy'
+  if (operationType === 'compress') return 'fileOperations.transferDialog.confirmCompress'
+  return 'fileOperations.transferDialog.confirmMove'
+}
+
+/**
+ * The dialog's initial volume-relative destination path. For copy/move it's the
+ * other pane's folder; for compress it's that folder plus a suggested `.zip`
+ * filename (the field stays editable). Keeping the join here lets the dialog set
+ * `editedPath` in one line and unit-test the compress default via
+ * `suggestCompressArchiveName`.
+ */
+export function initialEditedPath(
+  operationType: TransferOperationType,
+  destinationPath: string,
+  volumePath: string,
+  sourcePaths: string[],
+  sourceFolderPath: string,
+): string {
+  const folder = toVolumeRelativePath(destinationPath, volumePath)
+  if (operationType !== 'compress') return folder
+  const name = suggestCompressArchiveName(sourcePaths, sourceFolderPath)
+  const base = folder === '/' ? '' : folder.replace(/\/+$/, '')
+  return `${base}/${name}`
 }

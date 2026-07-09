@@ -29,6 +29,20 @@ export function getPathValidationError(
   operationType: TransferOperationType,
 ): string | null {
   const normDest = destination.replace(/\/+$/, '')
+
+  // Compress creates ONE new `.zip` file, so the copy/move checks below (moving a
+  // folder into itself, "already in this location") don't apply. The only rule is
+  // that the target names a zip archive; the leaf is a new file, and the dialog's
+  // dest-exists check surfaces an overwrite of an existing archive separately.
+  if (operationType === 'compress') {
+    const leaf = normDest.split('/').pop() ?? ''
+    const lower = leaf.toLowerCase()
+    if (!lower.endsWith('.zip') || lower === '.zip') {
+      return tString('fileOperations.transferDialog.pathErrorNotZip')
+    }
+    return null
+  }
+
   const verb = operationType === 'copy' ? 'copy' : 'move'
 
   for (const source of sources) {

@@ -37,6 +37,12 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
   // so the error always wins.
   let targetMissing = $state(false)
 
+  // `true` when the resolved destination path DEFINITIVELY exists (not a timeout).
+  // Compress uses this for its overwrite warning: the target is a new zip FILE, so
+  // "already exists" is the noteworthy case, the inverse of copy/move's "will be
+  // created". A timeout leaves both flags false (inconclusive).
+  let targetExists = $state(false)
+
   // Monotonic guard: only the newest probe may write `targetMissing`.
   let checkSeq = 0
 
@@ -47,6 +53,7 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
     // A structurally invalid path already shows the red error; don't probe it.
     if (validateDirectoryPath(path).severity === 'error') {
       targetMissing = false
+      targetExists = false
       return
     }
     try {
@@ -54,11 +61,13 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
       // Drop a stale result (a newer keystroke superseded this probe) or one that
       // landed after the dialog closed.
       if (seq !== checkSeq || deps.getDestroyed()) return
-      // Warn only on a definitive "missing". A timeout is inconclusive.
+      // Warn only on a definitive answer. A timeout is inconclusive (both false).
       targetMissing = !result.timedOut && !result.data
+      targetExists = !result.timedOut && result.data
     } catch (err) {
       if (seq !== checkSeq) return
       targetMissing = false
+      targetExists = false
       deps.log.debug('Destination existence check failed: {error}', { error: err })
     }
   }
@@ -75,6 +84,28 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
   return {
     get targetMissing() {
       return targetMissing
+    },
+    get targetExists() {
+      return targetExists
+    },
+    /**
+     * One-shot, non-debounced existence probe for the compress auto-confirm gate:
+     * MCP auto-confirm must not silently overwrite an existing archive, so it needs
+     * a deterministic answer at confirm time rather than the debounced reactive
+     * state. Returns `true` when the target exists OR the answer is indeterminate
+     * (timeout / error) — the conservative choice, since "proceed only when it
+     * definitely doesn't exist" must NOT proceed on uncertainty.
+     */
+    async probeExists(): Promise<boolean> {
+      const path = deps.getEditedPath()
+      if (validateDirectoryPath(path).severity === 'error') return false
+      try {
+        const result = await pathExistsChecked(path, deps.getSelectedVolumeId())
+        return result.timedOut || result.data
+      } catch (err) {
+        deps.log.debug('Destination existence probe failed: {error}', { error: err })
+        return true
+      }
     },
     /** Cancels a pending debounced probe (call on dialog destroy). */
     cancel() {

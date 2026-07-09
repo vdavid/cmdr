@@ -437,8 +437,10 @@ export type WriteOperationType =
   | 'archive_edit'
 
 /** Transfer-style operations that share the progress UI. `archive_edit` (a zip
- *  temp+rename rewrite) reports progress like a transfer, so it rides this set. */
-export type TransferOperationType = 'copy' | 'move' | 'delete' | 'trash' | 'archive_edit'
+ *  temp+rename rewrite) reports progress like a transfer, so it rides this set.
+ *  `compress` packs sources into a NEW zip; it's a frontend-only identity over
+ *  the same backend archive-edit machinery (no distinct `WriteOperationType`). */
+export type TransferOperationType = 'copy' | 'move' | 'delete' | 'trash' | 'archive_edit' | 'compress'
 
 /** Phase of a write operation. */
 export type WriteOperationPhase = 'scanning' | 'copying' | 'deleting' | 'trashing' | 'rolling_back' | 'flushing'
@@ -524,6 +526,10 @@ export type WriteOperationError =
   // stored password was rejected. The FE should intercept this before the generic
   // error dialog and prompt for a password (then retry via `setArchivePassword`).
   | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
+  // Compress refused a remote (SMB/MTP) destination: creating a NEW zip there needs
+  // a seed through the parent volume, which ships in M8. Interim state; renders via
+  // the generic fallback. Kept in sync with the specta `WriteOperationError` union.
+  | { type: 'remote_archive_creation_unsupported'; path: string }
 
 // ============================================================================
 // Scan preview types (for Copy dialog live stats)

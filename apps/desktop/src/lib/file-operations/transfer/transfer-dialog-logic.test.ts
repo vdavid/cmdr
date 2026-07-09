@@ -68,6 +68,32 @@ describe('getPathValidationError', () => {
     // exact match.
     expect(getPathValidationError(['/a/photos'], '/a/photos', 'copy')).toContain('into its own subfolder')
   })
+
+  describe('compress mode', () => {
+    it('accepts a target path ending in .zip', () => {
+      expect(getPathValidationError(['/a/photos'], '/b/photos.zip', 'compress')).toBeNull()
+    })
+
+    it('accepts .zip regardless of case', () => {
+      expect(getPathValidationError(['/a/photos'], '/b/photos.ZIP', 'compress')).toBeNull()
+    })
+
+    it('rejects a target that does not end in .zip', () => {
+      expect(getPathValidationError(['/a/photos'], '/b/photos.tar', 'compress')).toBe(
+        'The archive name must end in ".zip".',
+      )
+    })
+
+    it('rejects a bare ".zip" with no archive name', () => {
+      expect(getPathValidationError(['/a/photos'], '/b/.zip', 'compress')).toBe('The archive name must end in ".zip".')
+    })
+
+    it('does NOT apply the copy/move subfolder rule (compress makes one new file)', () => {
+      // The target sits inside a source folder — forbidden for copy/move, fine for
+      // compress (it's a distinct new archive, not the folder moving into itself).
+      expect(getPathValidationError(['/a/photos'], '/a/photos/backup.zip', 'compress')).toBeNull()
+    })
+  })
 })
 
 describe('formatSpaceInfo', () => {
