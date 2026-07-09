@@ -72,6 +72,7 @@ async fn compress_onto_a_remote_parent_seeds_and_packs_local_files() {
         parent_id.clone(),
         ConflictResolution::Overwrite,
         0,
+        None,
     )
     .await
     .expect("start remote compress");
@@ -124,6 +125,7 @@ async fn compress_onto_a_remote_parent_overwrites_an_existing_zip_with_a_fresh_a
         parent_id.clone(),
         ConflictResolution::Overwrite,
         0,
+        None,
     )
     .await
     .expect("start remote compress over existing");
@@ -170,6 +172,7 @@ async fn compress_onto_an_mtp_style_remote_parent_seeds_and_packs() {
         parent_id.clone(),
         ConflictResolution::Overwrite,
         0,
+        None,
     )
     .await
     .expect("start mtp-style remote compress");

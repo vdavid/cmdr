@@ -99,6 +99,7 @@ pub async fn copy_between_volumes(
             config.conflict_resolution,
             config.progress_interval_ms,
             false,
+            config.compression_level,
         )
         .await;
     }
@@ -181,6 +182,7 @@ pub async fn move_between_volumes(
             config.conflict_resolution,
             config.progress_interval_ms,
             true,
+            config.compression_level,
         )
         .await;
     }
@@ -248,6 +250,7 @@ pub async fn compress_files(
         dest_volume_id,
         config.conflict_resolution,
         config.progress_interval_ms,
+        config.compression_level,
     )
     .await
 }

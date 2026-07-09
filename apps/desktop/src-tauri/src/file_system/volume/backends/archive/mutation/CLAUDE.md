@@ -17,3 +17,7 @@ editing, planning, reorganizing, or advising.
   is byte-for-byte intact until the final atomic rename.
 - **An edit that would RETAIN an encrypted entry is refused** (`zip`'s raw copy drops the PKWARE flag → silent
   corruption). Deleting an encrypted entry is fine.
+- **`Changeset::compression_level` applies to ADDED entries only, clamped 1..=9 in `add_entry_options`.** The `zip`
+  crate HARD-ERRORS on an out-of-range Deflated level (it doesn't clamp), failing the whole edit at the first entry —
+  so keep the clamp; don't set a raw level on `FileOptions` elsewhere. `None` = crate default (level 6). See
+  [DETAILS.md](DETAILS.md) § "Compression level applies to ADDED entries only".

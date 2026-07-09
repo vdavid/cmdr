@@ -609,6 +609,14 @@ export const commands = {
        *  conflicts.
        */
       preKnownConflicts?: string[]
+      /**
+       *  Deflate level (1..=9) for zip writes this op produces (compress, or
+       *  copy/move INTO an archive); `None` = the crate default (level 6). The
+       *  frontend reads the `behavior.archiveCompressionLevel` setting at dispatch
+       *  and passes it here; non-archive copies ignore it. The mutator clamps to
+       *  1..=9 (an out-of-range level hard-errors the edit, not clamps).
+       */
+      compressionLevel?: number | null
     } | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
@@ -643,6 +651,14 @@ export const commands = {
        *  conflicts.
        */
       preKnownConflicts?: string[]
+      /**
+       *  Deflate level (1..=9) for zip writes this op produces (compress, or
+       *  copy/move INTO an archive); `None` = the crate default (level 6). The
+       *  frontend reads the `behavior.archiveCompressionLevel` setting at dispatch
+       *  and passes it here; non-archive copies ignore it. The mutator clamps to
+       *  1..=9 (an out-of-range level hard-errors the edit, not clamps).
+       */
+      compressionLevel?: number | null
     } | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
@@ -679,6 +695,14 @@ export const commands = {
        *  conflicts.
        */
       preKnownConflicts?: string[]
+      /**
+       *  Deflate level (1..=9) for zip writes this op produces (compress, or
+       *  copy/move INTO an archive); `None` = the crate default (level 6). The
+       *  frontend reads the `behavior.archiveCompressionLevel` setting at dispatch
+       *  and passes it here; non-archive copies ignore it. The mutator clamps to
+       *  1..=9 (an out-of-range level hard-errors the edit, not clamps).
+       */
+      compressionLevel?: number | null
     } | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
@@ -6183,6 +6207,14 @@ export type VolumeCopyConfig = {
    *  conflicts.
    */
   preKnownConflicts?: string[]
+  /**
+   *  Deflate level (1..=9) for zip writes this op produces (compress, or
+   *  copy/move INTO an archive); `None` = the crate default (level 6). The
+   *  frontend reads the `behavior.archiveCompressionLevel` setting at dispatch
+   *  and passes it here; non-archive copies ignore it. The mutator clamps to
+   *  1..=9 (an out-of-range level hard-errors the edit, not clamps).
+   */
+  compressionLevel?: number | null
 }
 
 // Result of a pre-flight scan for volume copy.

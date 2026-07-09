@@ -72,6 +72,10 @@ pub struct Changeset {
     pub deletes: Vec<String>,
     /// `(from, to)` inner-path renames. A directory target rewrites every descendant's prefix.
     pub renames: Vec<(String, String)>,
+    /// Deflate level (1..=9) for NEWLY added entries; `None` = the `zip` crate
+    /// default (level 6). Retained entries are raw-copied and unaffected. Set once
+    /// per edit from the user's compression-level setting; see [`add_entry_options`].
+    pub compression_level: Option<i64>,
 }
 
 /// Progress snapshot passed to [`MutationHooks::on_progress`]. Two axes: entries
@@ -272,7 +276,10 @@ pub fn apply(archive_path: &Path, changeset: &Changeset, hooks: &dyn MutationHoo
     for add in &changeset.adds {
         checkpoint(hooks)?;
         writer
-            .start_file(add.inner_path.trim_matches('/'), add_entry_options(add))
+            .start_file(
+                add.inner_path.trim_matches('/'),
+                add_entry_options(add, changeset.compression_level),
+            )
             .map_err(MutationError::Zip)?;
         stream_added_entry(&mut writer, add, hooks, &mut progress)?;
         progress.entries_done += 1;
@@ -366,14 +373,21 @@ fn stream_added_entry(
     Ok(())
 }
 
-/// The write options for an added entry: Deflated compression, plus the source
-/// file's modification time for a `LocalPath` add (a copy/move INTO the archive),
-/// so the archived copy carries the original's mtime rather than "now". Zip stores
-/// time in MS-DOS format (2-second granularity, 1980-2107 range); an mtime outside
-/// that range — or an in-memory `Bytes` add (mkfile / resident payload, which has
-/// no source file) — keeps the `zip` default (write time).
-fn add_entry_options(add: &AddEntry) -> SimpleFileOptions {
-    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+/// The write options for an added entry: Deflated compression at `compression_level`
+/// (`None` = the crate default, level 6), plus the source file's modification time
+/// for a `LocalPath` add (a copy/move INTO the archive), so the archived copy carries
+/// the original's mtime rather than "now". Zip stores time in MS-DOS format (2-second
+/// granularity, 1980-2107 range); an mtime outside that range — or an in-memory `Bytes`
+/// add (mkfile / resident payload, which has no source file) — keeps the `zip` default
+/// (write time).
+///
+/// The level is CLAMPED to 1..=9: the `zip` crate hard-errors (`UnsupportedArchive`)
+/// on an out-of-range deflate level at the first entry write rather than clamping, so
+/// a bad setting value or MCP `set_setting` must not be able to fail the whole edit.
+fn add_entry_options(add: &AddEntry, compression_level: Option<i64>) -> SimpleFileOptions {
+    let options = SimpleFileOptions::default()
+        .compression_method(CompressionMethod::Deflated)
+        .compression_level(compression_level.map(|level| level.clamp(1, 9)));
     let AddSource::LocalPath(path) = &add.source else {
         return options;
     };

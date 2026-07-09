@@ -167,6 +167,7 @@ pub(crate) async fn compress_start(
     parent_volume_id: String,
     conflict: ConflictResolution,
     progress_interval_ms: u64,
+    compression_level: Option<i64>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Seed a valid empty zip at the target so the copy-into has a real archive to
     // open. The seed must be visible to `route_archive_copy_into`'s parent-aware
@@ -191,6 +192,7 @@ pub(crate) async fn compress_start(
         conflict,
         progress_interval_ms,
         false,
+        compression_level,
     )
     .await
 }

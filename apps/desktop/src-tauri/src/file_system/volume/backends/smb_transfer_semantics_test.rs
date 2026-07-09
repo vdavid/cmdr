@@ -443,6 +443,7 @@ async fn smb_integration_compress_local_files_onto_the_share() {
         parent_id.clone(),
         ConflictResolution::Overwrite,
         100,
+        None,
     )
     .await
     .expect("start SMB compress");

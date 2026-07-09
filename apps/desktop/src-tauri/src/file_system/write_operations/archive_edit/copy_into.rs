@@ -68,6 +68,7 @@ pub(crate) async fn route_archive_copy_into(
     conflict: ConflictResolution,
     progress_interval_ms: u64,
     is_move: bool,
+    compression_level: Option<i64>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // A LOCAL source volume's root — `Some` skips the pull (the changeset walks
     // real paths); `None` (a remote source) triggers the in-op pull-to-scratch.
@@ -102,6 +103,7 @@ pub(crate) async fn route_archive_copy_into(
         conflict,
         is_move,
         progress_interval_ms,
+        compression_level,
     )
     .await
 }
@@ -385,6 +387,9 @@ fn build_copy_into_changeset_inner(
             mkdirs,
             deletes,
             renames: Vec::new(),
+            // The per-edit level is set on this changeset later, in
+            // `archive_copy_into_start`, from the operation config.
+            compression_level: None,
         },
         skipped_count,
     })
@@ -493,6 +498,7 @@ async fn archive_copy_into_start(
     conflict: ConflictResolution,
     is_move: bool,
     progress_interval_ms: u64,
+    compression_level: Option<i64>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let operation_id = Uuid::new_v4().to_string();
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)));
@@ -563,7 +569,7 @@ async fn archive_copy_into_start(
                             // policy → non-interactive. Both plan against `working`
                             // (the pulled-local copy for a remote parent), never the
                             // raw remote path.
-                            let plan = if matches!(conflict, ConflictResolution::Stop) {
+                            let mut plan = if matches!(conflict, ConflictResolution::Stop) {
                                 build_copy_into_changeset_interactive(
                                     working,
                                     &absolute_sources,
@@ -576,6 +582,9 @@ async fn archive_copy_into_start(
                                 build_copy_into_changeset(working, &absolute_sources, &dest_inner, conflict)
                                     .map_err(PlanError::Op)?
                             };
+                            // The user's compression level governs every newly added
+                            // entry in this edit (the mutator clamps it to 1..=9).
+                            plan.changeset.compression_level = compression_level;
                             let should_delete = is_move && plan.skipped_count == 0;
                             mutator::apply(working, &plan.changeset, &*hooks_for_blocking).map_err(|e| match e {
                                 MutationError::Cancelled => PlanError::Cancelled,

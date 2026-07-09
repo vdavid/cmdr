@@ -24,6 +24,16 @@ sink, pause gate, cancel intent via the `MutationHooks` seam, and the remote pul
   it as MS-DOS date/time (2-second granularity, 1980–2107 range; an mtime outside that range keeps the default). The
   decompose is done in UTC because `rc-zip` reads the DOS fields back as UTC, so the mtime round-trips through the index
   parse.
+- **Compression level applies to ADDED entries only.** `add_entry_options` sets the deflate level from
+  `Changeset::compression_level` on each newly added entry; retained entries are raw-copied and keep their original
+  compression untouched. `None` (the default) means the `zip` crate default, level 6 — so an unset level is byte-stable
+  with pre-setting behavior. The level is set once per edit, sourced from the user's `behavior.archiveCompressionLevel`
+  setting and threaded in via the operation config (see `write_operations/DETAILS.md` § "Archive edits"). The level is
+  **clamped to 1..=9** inside `add_entry_options`: `zip`'s `get_compressor` returns `UnsupportedArchive("Unsupported
+  compression level")` for an out-of-range Deflated level at the FIRST entry write (it does NOT clamp), which would fail
+  the whole edit — so a bad config value or an MCP `set_setting` with a wild number is clamped, never propagated. Pinned
+  by `add_entry_options_applies_and_clamps_the_compression_level` (unit) and the `compress_tests.rs` level cases (level
+  9 beats level 1; default None equals explicit 6; out-of-range clamps instead of failing).
 - **Metadata preservation (the archive FILE, not the entries).** A rewrite yields a fresh inode, so the original `.zip`'s
   mode, timestamps, and xattrs are carried onto the temp before the swap: macOS `copyfile` with
   `COPYFILE_STAT | COPYFILE_ACL | COPYFILE_XATTR`. `COPYFILE_STAT` carries mode and all timestamps INCLUDING the

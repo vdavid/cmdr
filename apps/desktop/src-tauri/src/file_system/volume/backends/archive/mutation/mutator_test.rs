@@ -649,6 +649,7 @@ fn entries_changed_counts_added_deleted_and_renamed_not_retained() {
             mkdirs: vec!["newdir".to_string()],
             deletes: vec!["del.txt".to_string()],
             renames: vec![("ren.txt".to_string(), "ren2.txt".to_string())],
+            ..Default::default()
         },
         &hooks,
     )
@@ -744,4 +745,30 @@ fn a_local_path_add_carries_the_source_files_mtime() {
         (reported - mtime_secs).abs() <= 2,
         "the added entry's mtime {reported} must match the source's {mtime_secs} within DOS-time granularity"
     );
+}
+
+// ---- Compression level on added entries ---------------------------------------
+
+/// `add_entry_options` sets the deflate level on a NEW entry from the per-edit
+/// setting. `None` keeps the crate default (level 6, reported as `None`), an
+/// in-range level passes through, and an out-of-range level is CLAMPED into
+/// 1..=9 rather than reaching `get_compressor` (which hard-errors, not clamps).
+#[test]
+fn add_entry_options_applies_and_clamps_the_compression_level() {
+    let add = add_bytes("x.txt", b"payload");
+
+    assert_eq!(
+        add_entry_options(&add, None).get_compression_level(),
+        None,
+        "None keeps the crate default (level 6)"
+    );
+    assert_eq!(add_entry_options(&add, Some(1)).get_compression_level(), Some(1));
+    assert_eq!(add_entry_options(&add, Some(9)).get_compression_level(), Some(9));
+
+    // Below 1 clamps up to 1; above 9 clamps down to 9 — so a wild setting value
+    // or MCP `set_setting` can never fail the edit at the first entry write.
+    assert_eq!(add_entry_options(&add, Some(0)).get_compression_level(), Some(1));
+    assert_eq!(add_entry_options(&add, Some(-5)).get_compression_level(), Some(1));
+    assert_eq!(add_entry_options(&add, Some(42)).get_compression_level(), Some(9));
+    assert_eq!(add_entry_options(&add, Some(i64::MAX)).get_compression_level(), Some(9));
 }

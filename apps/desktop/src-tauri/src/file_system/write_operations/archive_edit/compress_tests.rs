@@ -85,6 +85,7 @@ async fn compress_start_packs_local_files_into_a_new_zip() {
         unique_lane_id(),
         ConflictResolution::Overwrite,
         0,
+        None,
     )
     .await
     .expect("start compress");
@@ -125,6 +126,7 @@ async fn compress_start_packs_a_directory_subtree() {
         unique_lane_id(),
         ConflictResolution::Overwrite,
         0,
+        None,
     )
     .await
     .expect("start compress");
@@ -137,5 +139,128 @@ async fn compress_start_packs_a_directory_subtree() {
     assert_eq!(
         read_entry(&dest, "project/sub/deep.txt").as_deref(),
         Some(b"nested".as_slice())
+    );
+}
+
+// ---- Compression level ---------------------------------------------------------
+
+/// A genuinely compressible payload: varied enough that a higher deflate effort
+/// can find better matches, so level 1 and level 9 produce different stored sizes.
+fn compressible_payload() -> Vec<u8> {
+    let mut out = Vec::new();
+    for i in 0..4_000u32 {
+        out.extend_from_slice(
+            format!("line {i}: the quick brown fox jumps over the lazy dog #{}\n", i % 97).as_bytes(),
+        );
+    }
+    out
+}
+
+/// The stored (compressed) size of one entry in a zip.
+fn entry_compressed_size(path: &Path, name: &str) -> u64 {
+    let file = std::fs::File::open(path).expect("open result zip");
+    let mut archive = ZipArchive::new(file).expect("parse result zip");
+    archive.by_name(name).expect("entry present").compressed_size()
+}
+
+/// Compresses one file holding `payload` at `level` into a fresh zip and returns
+/// its path. The entry lands at the archive root as `data.txt`.
+async fn compress_payload_at(dir: &Path, tag: &str, level: Option<i64>, payload: &[u8]) -> PathBuf {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+
+    let src_root = dir.join(format!("src-{tag}"));
+    std::fs::create_dir_all(&src_root).expect("mkdir src");
+    std::fs::write(src_root.join("data.txt"), payload).expect("write payload");
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+
+    let dest = dir.join(format!("out-{tag}.zip"));
+    let events = Arc::new(CollectorEventSink::new());
+    compress_start(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        source_volume,
+        vec![PathBuf::from("data.txt")],
+        dest.clone(),
+        unique_lane_id(),
+        ConflictResolution::Overwrite,
+        0,
+        level,
+    )
+    .await
+    .expect("start compress");
+    assert!(
+        wait_until(|| !events.complete.lock_ignore_poison().is_empty()).await,
+        "compress at level {level:?} should complete"
+    );
+    // Every level must round-trip to the exact original bytes.
+    assert_eq!(
+        read_entry(&dest, "data.txt").as_deref(),
+        Some(payload),
+        "level {level:?} must round-trip the payload"
+    );
+    dest
+}
+
+/// Level 9 (Smaller) produces a strictly smaller entry than level 1 (Faster) on
+/// this compressible payload, and both round-trip. Strict `<` (not `<=`) is the
+/// real proof the level threads end-to-end: if it didn't, every level would fall
+/// back to the crate default and the two sizes would match. Deterministic for a
+/// fixed payload, so `<` is not flaky.
+#[tokio::test]
+async fn compress_level_9_is_smaller_than_level_1() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let payload = compressible_payload();
+
+    let at_1 = compress_payload_at(tmp.path(), "l1", Some(1), &payload).await;
+    let at_9 = compress_payload_at(tmp.path(), "l9", Some(9), &payload).await;
+
+    let size_1 = entry_compressed_size(&at_1, "data.txt");
+    let size_9 = entry_compressed_size(&at_9, "data.txt");
+    assert!(
+        size_9 < size_1,
+        "level 9 ({size_9} bytes) must beat level 1 ({size_1} bytes) — else the level isn't threading"
+    );
+}
+
+/// The default (`None`) is byte-stable with today's behavior: it maps to the crate
+/// default level 6, so an unset level and an explicit 6 produce the same stored size.
+#[tokio::test]
+async fn compress_default_none_matches_explicit_level_6() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let payload = compressible_payload();
+
+    let default = compress_payload_at(tmp.path(), "def", None, &payload).await;
+    let explicit_6 = compress_payload_at(tmp.path(), "six", Some(6), &payload).await;
+
+    assert_eq!(
+        entry_compressed_size(&default, "data.txt"),
+        entry_compressed_size(&explicit_6, "data.txt"),
+        "the default (None) must equal explicit level 6 — no byte-level behavior change"
+    );
+}
+
+/// An out-of-range level must CLAMP into 1..=9, not fail the edit: the zip crate
+/// hard-errors on a raw out-of-range deflate level at the first entry write. A
+/// wild value (a bad config, an MCP `set_setting` with a huge number) still
+/// produces a valid archive, sized as the nearest in-range level.
+#[tokio::test]
+async fn compress_out_of_range_level_clamps_instead_of_failing() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let payload = compressible_payload();
+
+    let too_low = compress_payload_at(tmp.path(), "low", Some(0), &payload).await;
+    let too_high = compress_payload_at(tmp.path(), "high", Some(42), &payload).await;
+    let at_1 = compress_payload_at(tmp.path(), "one", Some(1), &payload).await;
+    let at_9 = compress_payload_at(tmp.path(), "nine", Some(9), &payload).await;
+
+    // Clamped to the boundary levels: 0 -> 1, 42 -> 9.
+    assert_eq!(
+        entry_compressed_size(&too_low, "data.txt"),
+        entry_compressed_size(&at_1, "data.txt"),
+        "level 0 must clamp to level 1"
+    );
+    assert_eq!(
+        entry_compressed_size(&too_high, "data.txt"),
+        entry_compressed_size(&at_9, "data.txt"),
+        "level 42 must clamp to level 9"
     );
 }
