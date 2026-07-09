@@ -48,7 +48,10 @@ fn running_op_shows_status_progress_speed_and_eta() {
     assert!(yaml.contains("- operationId: op-1"), "yaml: {yaml}");
     assert!(yaml.contains("type: copy"), "yaml: {yaml}");
     assert!(yaml.contains("status: running"), "yaml: {yaml}");
-    assert!(yaml.contains("progress: 200 MB / 1 GB (19%), 3/10 files"), "yaml: {yaml}");
+    assert!(
+        yaml.contains("progress: 200 MB / 1 GB (19%), 3/10 files"),
+        "yaml: {yaml}"
+    );
     assert!(yaml.contains("currentFile: \"photo.jpg\""), "yaml: {yaml}");
     assert!(yaml.contains("speed: 50 MB/s"), "yaml: {yaml}");
     assert!(yaml.contains("etaSeconds: 16"), "yaml: {yaml}");
@@ -78,7 +81,10 @@ fn queued_op_has_status_but_no_progress_fields() {
     let yaml = build_operations_yaml(&rows, 12_000);
     assert!(yaml.contains("- operationId: op-3"), "yaml: {yaml}");
     assert!(yaml.contains("status: queued"), "yaml: {yaml}");
-    assert!(!yaml.contains("progress:"), "queued op must have no progress line: {yaml}");
+    assert!(
+        !yaml.contains("progress:"),
+        "queued op must have no progress line: {yaml}"
+    );
     assert!(!yaml.contains("etaSeconds"), "yaml: {yaml}");
 }
 

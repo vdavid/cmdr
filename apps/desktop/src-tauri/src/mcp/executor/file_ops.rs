@@ -203,7 +203,9 @@ pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
         )
         .await?;
         match operation_id {
-            Some(id) => Ok(json!(format!("OK: Compress started with auto-confirm (operationId: {id})."))),
+            Some(id) => Ok(json!(format!(
+                "OK: Compress started with auto-confirm (operationId: {id})."
+            ))),
             None => Ok(json!(
                 "OK: The confirmation dialog opened because the target archive already exists; confirm it to overwrite."
             )),
@@ -235,13 +237,8 @@ pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
 
     if auto_confirm {
-        let operation_id = mcp_await_operation_start(
-            app,
-            "mcp-delete",
-            json!({"autoConfirm": true}),
-            OPERATION_START_TIMEOUT,
-        )
-        .await?;
+        let operation_id =
+            mcp_await_operation_start(app, "mcp-delete", json!({"autoConfirm": true}), OPERATION_START_TIMEOUT).await?;
         Ok(operation_started_ok("Delete", operation_id))
     } else {
         app.emit("mcp-delete", json!({"autoConfirm": false}))?;

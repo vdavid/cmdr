@@ -59,8 +59,7 @@ pub struct TerminalOp {
 
 const CAPACITY: usize = 20;
 
-static BUFFER: LazyLock<Mutex<VecDeque<TerminalOp>>> =
-    LazyLock::new(|| Mutex::new(VecDeque::with_capacity(CAPACITY)));
+static BUFFER: LazyLock<Mutex<VecDeque<TerminalOp>>> = LazyLock::new(|| Mutex::new(VecDeque::with_capacity(CAPACITY)));
 
 /// Record a settled operation. Called from `TauriEventSink`'s terminal emit
 /// sites right where the `write-complete` / `write-cancelled` / `write-error`
@@ -136,7 +135,11 @@ mod tests {
     fn buffer_drops_oldest_past_capacity() {
         clear_for_test();
         for i in 0..(CAPACITY + 5) {
-            record(&format!("op-{i}"), WriteOperationType::Delete, TerminalStatus::Completed);
+            record(
+                &format!("op-{i}"),
+                WriteOperationType::Delete,
+                TerminalStatus::Completed,
+            );
         }
         // The five oldest are gone; the earliest surviving id is `op-5`.
         assert!(lookup("op-4").is_none(), "op-4 should have been evicted");

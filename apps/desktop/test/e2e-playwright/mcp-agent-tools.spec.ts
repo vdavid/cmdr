@@ -10,7 +10,7 @@
  *      filename / out-of-range index, copy with the cursor on `..` — each must
  *      fail with the real cause, never a false OK or a generic ack timeout.
  *   3. refresh as a round-trip that forces a backend re-read.
- *   4. The `transfers:` section exists in `cmdr://state` (empty at idle).
+ *   4. The `operations:` section exists in `cmdr://state` (empty at idle).
  *
  * Unit coverage for the pieces lives in `mcp/executor/tests.rs` and
  * `pane-commands.test.ts`; this spec pins the cross-layer wiring (backend tool
@@ -112,8 +112,8 @@ test.describe('MCP agent tools', () => {
     expect(refreshResult).toContain('re-read')
     await mcpAwaitItem('left', fileName, 5)
 
-    // transfers: present in the state resource, empty at idle
-    const state = await mcpReadResource('cmdr://state?include=transfers')
-    expect(state).toContain('transfers: []')
+    // operations: present in the state resource, empty at idle
+    const state = await mcpReadResource('cmdr://state?include=operations')
+    expect(state).toContain('operations: []')
   })
 })

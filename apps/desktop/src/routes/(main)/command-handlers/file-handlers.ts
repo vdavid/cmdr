@@ -75,7 +75,11 @@ export const fileHandlers = {
 
   'file.compress': ({ explorerRef, dispatchArgs }) => {
     const compressArgs = dispatchArgs as CommandArgs['file.compress'] | undefined
-    void explorerRef?.openCompressDialog(compressArgs?.autoConfirm, compressArgs?.onConflict, compressArgs?.mcpRequestId)
+    void explorerRef?.openCompressDialog(
+      compressArgs?.autoConfirm,
+      compressArgs?.onConflict,
+      compressArgs?.mcpRequestId,
+    )
   },
 
   'file.newFolder': ({ explorerRef }) => {

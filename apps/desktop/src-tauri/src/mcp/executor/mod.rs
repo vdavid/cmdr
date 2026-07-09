@@ -181,10 +181,7 @@ fn parse_operation_start_response(payload: &str, expected_id: &str) -> Option<Re
         return None;
     }
     if resp.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
-        let operation_id = resp
-            .get("operationId")
-            .and_then(|v| v.as_str())
-            .map(str::to_string);
+        let operation_id = resp.get("operationId").and_then(|v| v.as_str()).map(str::to_string);
         Some(Ok(operation_id))
     } else {
         let err = resp

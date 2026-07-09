@@ -780,18 +780,18 @@
     }
 
     /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
-    export async function openCopyDialog(autoConfirm?: boolean, onConflict?: string) {
-        await fileOps.openCopyDialog(autoConfirm, onConflict)
+    export async function openCopyDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
+        await fileOps.openCopyDialog(autoConfirm, onConflict, mcpRequestId)
     }
 
     /** Opens the move dialog (convenience wrapper for MCP/key binding). */
-    export async function openMoveDialog(autoConfirm?: boolean, onConflict?: string) {
-        await fileOps.openMoveDialog(autoConfirm, onConflict)
+    export async function openMoveDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
+        await fileOps.openMoveDialog(autoConfirm, onConflict, mcpRequestId)
     }
 
     /** Opens the compress dialog (convenience wrapper for the ⌥F5 command/MCP). */
-    export async function openCompressDialog(autoConfirm?: boolean, onConflict?: string) {
-        await fileOps.openCompressDialog(autoConfirm, onConflict)
+    export async function openCompressDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
+        await fileOps.openCompressDialog(autoConfirm, onConflict, mcpRequestId)
     }
 
     /** Copies selected files (or cursor file) to the system clipboard. */
@@ -810,8 +810,8 @@
     }
 
     /** Opens the delete confirmation dialog for the current selection or cursor item. */
-    export async function openDeleteDialog(permanent: boolean, autoConfirm?: boolean) {
-        await fileOps.openDeleteDialog(permanent, autoConfirm)
+    export async function openDeleteDialog(permanent: boolean, autoConfirm?: boolean, mcpRequestId?: string) {
+        await fileOps.openDeleteDialog(permanent, autoConfirm, mcpRequestId)
     }
 
     // Focus the container after initialization so keyboard events work
