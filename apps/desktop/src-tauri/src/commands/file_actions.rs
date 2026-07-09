@@ -72,10 +72,17 @@ pub fn get_info(_path: String) -> Result<(), String> {
     Ok(())
 }
 
-/// Open file in the system's default text editor (macOS only)
+/// Open file in the system's default text editor (macOS only).
+///
+/// Backs the `file.edit` command and the "open the freshly created file" step of the
+/// new-file flow. Like `open_path`, the `playwright-e2e` build swaps in a launch-free
+/// variant: `open -t` spawns a TextEdit window per call, and the E2E suite (which
+/// creates files and opens them in the editor) has no way to close them, so they pile
+/// up across runs. The E2E variant records into the same `open_mock` store as
+/// `open_path`, so specs assert intent via `e2e_opened_paths`.
 #[tauri::command]
 #[specta::specta]
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", not(feature = "playwright-e2e")))]
 pub fn open_in_editor(path: String) -> Result<(), String> {
     Command::new("open")
         .arg("-t")
@@ -87,7 +94,7 @@ pub fn open_in_editor(path: String) -> Result<(), String> {
 
 #[tauri::command]
 #[specta::specta]
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(feature = "playwright-e2e")))]
 pub fn open_in_editor(path: String) -> Result<(), String> {
     Command::new("xdg-open").arg(&path).spawn().map_err(|e| e.to_string())?;
     Ok(())
@@ -95,9 +102,19 @@ pub fn open_in_editor(path: String) -> Result<(), String> {
 
 #[tauri::command]
 #[specta::specta]
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(all(not(any(target_os = "macos", target_os = "linux")), not(feature = "playwright-e2e")))]
 pub fn open_in_editor(_path: String) -> Result<(), String> {
     Err("Open in editor is not available on this platform".to_string())
+}
+
+/// E2E variant: record the editor-open request instead of launching TextEdit,
+/// funneling into the same `open_mock` store as `open_path` so no orphan windows leak.
+#[tauri::command]
+#[specta::specta]
+#[cfg(feature = "playwright-e2e")]
+pub fn open_in_editor(path: String) -> Result<(), String> {
+    open_mock::record(path);
+    Ok(())
 }
 
 /// Open a file (or folder) with the system's default application.
@@ -141,9 +158,10 @@ pub fn open_path(path: String) -> Result<(), String> {
     Ok(())
 }
 
-/// In-process record of `open_path` requests for the `playwright-e2e` build.
-/// Mirrors the clipboard mock (`crate::clipboard`): compiled only under the
-/// feature so prod/dev binaries never link it, and it never touches the OS.
+/// In-process record of external-open requests (`open_path` and `open_in_editor`)
+/// for the `playwright-e2e` build. Mirrors the clipboard mock (`crate::clipboard`):
+/// compiled only under the feature so prod/dev binaries never link it, and it never
+/// touches the OS.
 #[cfg(feature = "playwright-e2e")]
 mod open_mock {
     use std::path::PathBuf;
@@ -155,7 +173,7 @@ mod open_mock {
 
     /// Records an open request without launching anything.
     pub fn record(path: String) {
-        log::info!(target: "file_actions", "[mock] open_path recorded (not launched): {path}");
+        log::info!(target: "file_actions", "[mock] external open recorded (not launched): {path}");
         OPENED.lock_ignore_poison().push(PathBuf::from(path));
     }
 

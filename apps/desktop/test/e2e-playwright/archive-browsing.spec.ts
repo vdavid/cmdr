@@ -31,6 +31,8 @@ import {
   closeScopedWindow,
   expectAndDismissToast,
   dismissOverlay,
+  getOpenedPaths,
+  clearOpenedPaths,
   TRANSFER_DIALOG,
   MKDIR_DIALOG,
 } from './helpers.js'
@@ -108,18 +110,6 @@ const ENTER_MENU = '.menu-content'
  */
 async function setArchiveEnterBehavior(behavior: Record<string, string>): Promise<void> {
   await mcpCall('set_setting', { id: 'behavior.archiveEnterBehavior', value: JSON.stringify(behavior) })
-}
-
-/** The paths `open_path` recorded in the E2E build (LaunchServices is mocked, never launched). */
-async function getOpenedPaths(tauriPage: PageLike): Promise<string[]> {
-  return tauriPage.evaluate<string[]>(
-    `(async function(){ return await window.__TAURI_INTERNALS__.invoke('e2e_opened_paths'); })()`,
-  )
-}
-
-/** Resets the recorded open requests (per-test isolation). */
-async function clearOpenedPaths(tauriPage: PageLike): Promise<void> {
-  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('e2e_clear_opened_paths')`)
 }
 
 test.describe('Archive browsing', () => {

@@ -23,6 +23,8 @@ import {
   expectDialogCounters,
   getEntryName,
   getFixtureRoot,
+  getOpenedPaths,
+  clearOpenedPaths,
   fileExistsInFocusedPane,
   fileExistsInPane,
   moveCursorToFile,
@@ -279,6 +281,11 @@ test.describe('Create folder round-trip', () => {
 test.describe('New file round-trip', () => {
   test('creates a new file via the file.newFile command and lands the cursor on it', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
+    // The new-file flow opens the freshly created file in the default editor. In the
+    // `playwright-e2e` build that open is mocked (records instead of launching), so
+    // reset the record here and assert the intent below — proving the open goes
+    // through the mock, not a real `open -t` that would leak a TextEdit window.
+    await clearOpenedPaths(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
     const fileName = `new-test-file-${String(Date.now())}.txt`
@@ -310,6 +317,11 @@ test.describe('New file round-trip', () => {
     const filePath = path.join(fixtureRoot, 'left', fileName)
     expect(fs.existsSync(filePath)).toBe(true)
     expect(fs.statSync(filePath).isFile()).toBe(true)
+
+    // The flow opened the new file in the editor through the mocked `open_in_editor`
+    // (never a real `open -t`). Without the mock this launches a TextEdit window the
+    // suite can't close.
+    await expect.poll(async () => getOpenedPaths(tauriPage), { timeout: 5000 }).toContain(filePath)
 
     // The cursor lands on the new file and stays there. Same 50 ms trailing-window
     // synthetic-diff coalesce race the mkdir cursor test guards against; five

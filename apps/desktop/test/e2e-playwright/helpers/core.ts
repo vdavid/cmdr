@@ -343,6 +343,24 @@ export async function flushFileWatcher(tauriPage: PageLike): Promise<void> {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('flush_file_watcher')`)
 }
 
+/**
+ * The paths the app handed to an external launcher (`open_path` default-open, and
+ * `open_in_editor` for the `file.edit` / new-file flows), oldest first. Both are
+ * mocked in the `playwright-e2e` build: nothing launches, the requests just land in
+ * an in-process store, so a spec can assert open intent instead of leaking TextEdit
+ * windows. `e2e_opened_paths` isn't in the typed bindings, so we raw-invoke it.
+ */
+export async function getOpenedPaths(tauriPage: PageLike): Promise<string[]> {
+  return tauriPage.evaluate<string[]>(
+    `(async function(){ return await window.__TAURI_INTERNALS__.invoke('e2e_opened_paths'); })()`,
+  )
+}
+
+/** Resets the recorded external-open requests (per-test isolation). */
+export async function clearOpenedPaths(tauriPage: PageLike): Promise<void> {
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('e2e_clear_opened_paths')`)
+}
+
 // ── Utility ─────────────────────────────────────────────────────────────────
 
 export function sleep(ms: number): Promise<void> {

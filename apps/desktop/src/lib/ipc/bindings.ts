@@ -1028,7 +1028,16 @@ export const commands = {
   quickLookClose: () => typedError<null, string>(__TAURI_INVOKE('quick_look_close')),
   // Open the Get Info window for a file (macOS only, no-op on other platforms)
   getInfo: (path: string) => typedError<null, string>(__TAURI_INVOKE('get_info', { path })),
-  // Open file in the system's default text editor (macOS only)
+  /**
+   *  Open file in the system's default text editor (macOS only).
+   *
+   *  Backs the `file.edit` command and the "open the freshly created file" step of the
+   *  new-file flow. Like `open_path`, the `playwright-e2e` build swaps in a launch-free
+   *  variant: `open -t` spawns a TextEdit window per call, and the E2E suite (which
+   *  creates files and opens them in the editor) has no way to close them, so they pile
+   *  up across runs. The E2E variant records into the same `open_mock` store as
+   *  `open_path`, so specs assert intent via `e2e_opened_paths`.
+   */
   openInEditor: (path: string) => typedError<null, string>(__TAURI_INVOKE('open_in_editor', { path })),
   /**
    *  Open a file (or folder) with the system's default application.
