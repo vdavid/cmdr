@@ -245,6 +245,8 @@ export interface SettingsValues {
 
   // Archives (Enter behavior per format: pinned-shape JSON, `{ zip: 'ask', … }`)
   'behavior.archiveEnterBehavior': string
+  // Deflate level (1..=9, default 6) for user-driven zip writes; read at dispatch and passed in the operation config
+  'behavior.archiveCompressionLevel': number
 
   // File operations
   'fileOperations.mtpEnabled': boolean

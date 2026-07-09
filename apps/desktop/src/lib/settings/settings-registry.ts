@@ -582,6 +582,17 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     default: '{}',
     component: 'text-input',
   },
+  {
+    id: 'behavior.archiveCompressionLevel',
+    section: ['Behavior', 'Archives'],
+    labelKey: 'settings.archives.compressionLevel.label',
+    descriptionKey: 'settings.archives.compressionLevel.description',
+    keywords: ['compression', 'level', 'zip', 'deflate', 'archive', 'size', 'faster', 'smaller'],
+    type: 'number',
+    default: 6,
+    component: 'slider',
+    constraints: { min: 1, max: 9, step: 1, sliderStops: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
+  },
 
   // ========================================================================
   // Behavior › File system watching

@@ -48,6 +48,7 @@ const noopUnlisten = () => {}
 vi.mock('$lib/tauri-commands', () => ({
   copyBetweenVolumes: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'copy' })),
   moveBetweenVolumes: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'move' })),
+  compressFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'copy' })),
   moveFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'move' })),
   deleteFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'delete' })),
   trashFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'trash' })),
@@ -114,7 +115,9 @@ vi.mock('$lib/ui/toast', () => ({
 }))
 
 vi.mock('$lib/settings', () => ({
-  getSetting: vi.fn(() => 200),
+  // Key-aware so the archive compression level is distinguishable from the
+  // progress-interval / max-conflicts settings (all others resolve to 200).
+  getSetting: vi.fn((key: string) => (key === 'behavior.archiveCompressionLevel' ? 6 : 200)),
 }))
 
 vi.mock('$lib/intl/messages.svelte', () => ({
@@ -134,6 +137,7 @@ import { createTransferProgressState, type TransferProgressStateConfig } from '.
 import {
   copyBetweenVolumes,
   moveBetweenVolumes,
+  compressFiles,
   moveFiles,
   deleteFiles,
   trashFiles,
@@ -283,6 +287,44 @@ describe('createTransferProgressState: dispatch routing', () => {
   it('dispatches trash through trashFiles', async () => {
     await startedState({ operationType: 'trash' })
     expect(trashFiles).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('createTransferProgressState: compression-level threading', () => {
+  // The FE reads `behavior.archiveCompressionLevel` once at dispatch (mocked to 6)
+  // and passes it in the operation config for every zip-writing path, so the
+  // backend applies the chosen deflate level. Non-archive copies simply ignore it.
+  it('passes the compression level to compressFiles', async () => {
+    await startedState({ operationType: 'compress' })
+    expect(compressFiles).toHaveBeenCalledWith(
+      'root',
+      ['/src/file.txt'],
+      'root',
+      '/dst',
+      expect.objectContaining({ compressionLevel: 6 }),
+    )
+  })
+
+  it('passes the compression level to copyBetweenVolumes (copy INTO an archive uses the same level)', async () => {
+    await startedState({ operationType: 'copy' })
+    expect(copyBetweenVolumes).toHaveBeenCalledWith(
+      'root',
+      ['/src/file.txt'],
+      'root',
+      '/dst',
+      expect.objectContaining({ compressionLevel: 6 }),
+    )
+  })
+
+  it('passes the compression level to moveBetweenVolumes (move INTO an archive uses the same level)', async () => {
+    await startedState({ operationType: 'move', sourceVolumeId: 'mtp-1', destVolumeId: 'root' })
+    expect(moveBetweenVolumes).toHaveBeenCalledWith(
+      'mtp-1',
+      ['/src/file.txt'],
+      'root',
+      '/dst',
+      expect.objectContaining({ compressionLevel: 6 }),
+    )
   })
 })
 

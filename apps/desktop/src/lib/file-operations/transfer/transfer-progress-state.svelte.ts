@@ -591,6 +591,10 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   async function dispatchOperation(): Promise<{ operationId: string }> {
     const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
     const maxConflictsToShow = getSetting('fileOperations.maxConflictsToShow')
+    // Read once at dispatch (not reactively). Threaded into every zip-writing path
+    // (Compress, and copy/move INTO an archive); the backend clamps it to 1..=9 and
+    // ignores it for non-archive copies.
+    const compressionLevel = getSetting('behavior.archiveCompressionLevel')
 
     if (config.operationType === 'trash') {
       return trashFiles(config.sourcePaths, config.itemSizes, { progressIntervalMs, previewId: config.previewId })
@@ -616,6 +620,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
             maxConflictsToShow,
             previewId: config.previewId,
             preKnownConflicts: config.preKnownConflicts ?? [],
+            compressionLevel,
           },
         )
       }
@@ -631,13 +636,17 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       })
     }
     if (config.operationType === 'compress') {
-      return dispatchCompress(progressIntervalMs, maxConflictsToShow)
+      return dispatchCompress(progressIntervalMs, maxConflictsToShow, compressionLevel)
     }
-    return dispatchCopy(progressIntervalMs, maxConflictsToShow)
+    return dispatchCopy(progressIntervalMs, maxConflictsToShow, compressionLevel)
   }
 
   /** Copy: always via `copyBetweenVolumes`; the backend optimizes local-to-local. */
-  function dispatchCopy(progressIntervalMs: number, maxConflictsToShow: number): Promise<{ operationId: string }> {
+  function dispatchCopy(
+    progressIntervalMs: number,
+    maxConflictsToShow: number,
+    compressionLevel: number,
+  ): Promise<{ operationId: string }> {
     return copyBetweenVolumes(
       config.sourceVolumeId,
       config.sourcePaths,
@@ -649,6 +658,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
         maxConflictsToShow,
         previewId: config.previewId,
         preKnownConflicts: config.preKnownConflicts ?? [],
+        compressionLevel,
       },
     )
   }
@@ -660,13 +670,23 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
    * in one folder can't share a name), so `overwrite` is a safe constant; an
    * existing target FILE was already resolved in the dialog.
    */
-  function dispatchCompress(progressIntervalMs: number, maxConflictsToShow: number): Promise<{ operationId: string }> {
+  function dispatchCompress(
+    progressIntervalMs: number,
+    maxConflictsToShow: number,
+    compressionLevel: number,
+  ): Promise<{ operationId: string }> {
     return compressFiles(
       config.sourceVolumeId,
       config.sourcePaths,
       config.destVolumeId ?? DEFAULT_VOLUME_ID,
       config.destinationPath ?? '',
-      { conflictResolution: 'overwrite', progressIntervalMs, maxConflictsToShow, previewId: config.previewId },
+      {
+        conflictResolution: 'overwrite',
+        progressIntervalMs,
+        maxConflictsToShow,
+        previewId: config.previewId,
+        compressionLevel,
+      },
     )
   }
 

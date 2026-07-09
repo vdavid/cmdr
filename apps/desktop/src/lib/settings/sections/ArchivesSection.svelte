@@ -22,8 +22,10 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import ToggleGroup, { type ToggleGroupOption } from '$lib/ui/ToggleGroup.svelte'
+    import SettingRow from '../components/SettingRow.svelte'
+    import SettingSlider from '../components/SettingSlider.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
+    import { getSetting, setSetting, onSpecificSettingChange, getSettingDefinition } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import {
         ARCHIVE_ENTER_FORMATS,
@@ -41,6 +43,9 @@
     const shouldShow = $derived(createShouldShow(searchQuery))
 
     const SETTING_ID = 'behavior.archiveEnterBehavior'
+    const COMPRESSION_LEVEL_ID = 'behavior.archiveCompressionLevel'
+
+    const compressionLevelDef = getSettingDefinition(COMPRESSION_LEVEL_ID) ?? { label: '', description: '' }
 
     // Local mirror of the stored JSON, seeded once and kept in sync with the store
     // (a change from another window, or a reset, reflects live).
@@ -84,23 +89,43 @@
 </script>
 
 <SettingsSection title={tString('settings.section.archives')}>
-    {#if anyVisible(shouldShow, SETTING_ID)}
+    {#if anyVisible(shouldShow, SETTING_ID, COMPRESSION_LEVEL_ID)}
         <SectionCard label={tString('settings.archives.card.archives')}>
-            <div class="archive-row">
-                <div class="archive-label-wrapper">
-                    <span class="archive-label">{tString('settings.archives.zip.label')}</span>
-                    <p class="archive-description">{tString('settings.archives.zip.description')}</p>
+            {#if shouldShow(SETTING_ID)}
+                <div class="archive-row">
+                    <div class="archive-label-wrapper">
+                        <span class="archive-label">{tString('settings.archives.zip.label')}</span>
+                        <p class="archive-description">{tString('settings.archives.zip.description')}</p>
+                    </div>
+                    <ToggleGroup
+                        semantics="toggles"
+                        value={actionFor('zip')}
+                        {options}
+                        onChange={setZip}
+                        ariaLabel={tString('settings.archives.zip.label')}
+                    />
                 </div>
-                <ToggleGroup
-                    semantics="toggles"
-                    value={actionFor('zip')}
-                    {options}
-                    onChange={setZip}
-                    ariaLabel={tString('settings.archives.zip.label')}
-                />
-            </div>
-        </SectionCard>
+            {/if}
 
+            {#if shouldShow(COMPRESSION_LEVEL_ID)}
+                <SettingRow
+                    id={COMPRESSION_LEVEL_ID}
+                    label={compressionLevelDef.label}
+                    description={compressionLevelDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <div class="level-frame">
+                        <span class="level-end-label">{tString('settings.archives.compressionLevel.faster')}</span>
+                        <SettingSlider id={COMPRESSION_LEVEL_ID} />
+                        <span class="level-end-label">{tString('settings.archives.compressionLevel.smaller')}</span>
+                    </div>
+                </SettingRow>
+            {/if}
+        </SectionCard>
+    {/if}
+
+    {#if shouldShow(SETTING_ID)}
         <SectionCard label={tString('settings.archives.card.bundles')}>
             <div class="archive-row">
                 <div class="archive-label-wrapper">
@@ -142,5 +167,18 @@
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
         line-height: 1.4;
+    }
+
+    .level-frame {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        width: 100%;
+    }
+
+    .level-end-label {
+        flex-shrink: 0;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
     }
 </style>

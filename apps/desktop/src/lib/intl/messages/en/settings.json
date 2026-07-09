@@ -527,6 +527,22 @@
   "@settings.archives.opt.ask": {
     "description": "Toggle option in Settings > Behavior > Archives: pressing Enter shows a small popup asking whether to browse or open. Keep it short (one segmented-control cell)."
   },
+  "settings.archives.compressionLevel.label": "Compression level",
+  "@settings.archives.compressionLevel.label": {
+    "description": "Row label in Settings > Behavior > Archives for a 1-to-9 slider that sets how hard Cmdr compresses when it makes a zip (the Compress command, and copying or moving files into an existing zip). Higher means a smaller file but slower packing. \"Cmdr\" is the product name; do not translate it."
+  },
+  "settings.archives.compressionLevel.description": "How hard to compress when Cmdr makes a zip. Higher levels make a smaller file but take longer to pack. This applies to the Compress command and to copying or moving files into a zip.",
+  "@settings.archives.compressionLevel.description": {
+    "description": "Help text under the compression-level slider in Settings > Behavior > Archives. \"Cmdr\" is the product name; do not translate it. \"zip\" is a file format; do not translate it."
+  },
+  "settings.archives.compressionLevel.faster": "Faster",
+  "@settings.archives.compressionLevel.faster": {
+    "description": "End label on the LEFT (low) end of the compression-level slider, at level 1. It marks the tradeoff end where packing is quicker but the zip is larger. It describes packing speed, not the speed of the app. Keep it very short (one or two words)."
+  },
+  "settings.archives.compressionLevel.smaller": "Smaller",
+  "@settings.archives.compressionLevel.smaller": {
+    "description": "End label on the RIGHT (high) end of the compression-level slider, at level 9. It marks the tradeoff end where the resulting zip file is smaller but packing takes longer. It describes the output file size, not the size of the app. Keep it very short (one or two words)."
+  },
 
   "settings.indexing.enabled.label": "Drive indexing",
   "@settings.indexing.enabled.label": {

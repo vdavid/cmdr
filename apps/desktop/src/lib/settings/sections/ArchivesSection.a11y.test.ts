@@ -10,6 +10,7 @@ import { expectNoA11yViolations } from '$lib/test-a11y'
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'behavior.archiveEnterBehavior') return '{}'
+    if (key === 'behavior.archiveCompressionLevel') return 6
     return undefined
   }),
   setSetting: vi.fn(() => Promise.resolve()),

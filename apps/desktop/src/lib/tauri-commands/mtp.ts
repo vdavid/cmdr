@@ -462,6 +462,13 @@ export interface VolumeCopyConfig {
    * loop re-discovers them. Ignored for other resolution modes.
    */
   preKnownConflicts?: string[]
+  /**
+   * Deflate compression level (1..=9) for zip writes the operation performs
+   * (Compress, and copy/move INTO an archive). `null`/omitted uses the zip
+   * crate default (level 6). The backend clamps out-of-range values and ignores
+   * it for non-archive copies. See `behavior.archiveCompressionLevel`.
+   */
+  compressionLevel?: number | null
 }
 
 /** Input for source item in conflict scanning. */
