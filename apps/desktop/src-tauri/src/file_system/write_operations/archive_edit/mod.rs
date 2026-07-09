@@ -37,6 +37,11 @@
 //! Conflicts are resolved into the changeset before it reaches here, so the
 //! mutator stays deterministic.
 
+#[allow(
+    dead_code,
+    reason = "compress_start has no production caller until M2 wires the compress_files IPC command (which re-exports it up through write_operations / file_system like route_archive_copy_into); until then only tests exercise it. Drop this in M2."
+)]
+mod compress;
 mod conflicts;
 mod copy_into;
 mod driver;
@@ -54,6 +59,8 @@ pub(crate) use routing::{
 #[cfg(test)]
 mod test_support;
 
+#[cfg(test)]
+mod compress_tests;
 #[cfg(test)]
 mod copy_into_interactive_tests;
 #[cfg(test)]

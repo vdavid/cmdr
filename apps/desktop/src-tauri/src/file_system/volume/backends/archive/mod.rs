@@ -45,8 +45,9 @@ pub(crate) mod test_fixtures;
 pub(crate) use mutation::mutator;
 
 pub use boundary::{
-    ARCHIVE_MAGIC_PREFIX_LEN, archive_boundary_candidate, bytes_match_archive_magic, confirm_archive_boundary,
-    has_supported_archive_extension, path_crosses_archive_boundary, path_is_inside_archive, path_targets_archive_file,
+    ARCHIVE_MAGIC_PREFIX_LEN, archive_boundary_candidate, bytes_match_archive_magic, bytes_start_with_zip_signature,
+    confirm_archive_boundary, has_supported_archive_extension, path_crosses_archive_boundary, path_is_inside_archive,
+    path_targets_archive_file,
 };
 pub use read::{
     ArchiveByteSource, ArchiveEntryReader, ArchiveError, ArchiveFormat, ArchiveIndex, ArchiveIndexCache, ArchiveNode,

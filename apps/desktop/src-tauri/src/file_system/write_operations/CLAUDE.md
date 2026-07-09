@@ -1,6 +1,6 @@
 # Write operations
 
-Copy, move, delete, and trash with progress, cancellation, conflicts, and rollback. macOS and Linux. Documents the
+Copy, move, delete, and trash with progress, cancellation, conflicts, and rollback (macOS and Linux). The
 cross-cutting machinery both subdirs share.
 
 ## Module map
@@ -18,9 +18,10 @@ cross-cutting machinery both subdirs share.
 
 - **A zip edit (`ArchiveEdit`) is a managed op, NOT instant.** Editing a `.zip` (mutations inside, or copy/move INTO
   one) routes to the `archive_edit/` driver, running `ArchiveMutator` (temp+rename, O(archive) rewrite) via
-  `spawn_managed` on the PARENT drive's lane. **Move OUT converges per-source**: extract, then batch-delete
-  exactly the sources that extracted in FULL (durable, no deep skip); a skipped or errored source stays,
-  cancel/rollback delete nothing. DETAILS § "Archive edits".
+  `spawn_managed` on the PARENT drive's lane. **Move OUT converges per-source** (batch-delete only
+  fully-extracted sources; cancel/rollback delete nothing). **Compress** = seed a
+  valid empty zip (`seed_empty_zip`) then copy-into; load-bearing since `ZipArchive::new` rejects a 0-byte
+  target. DETAILS § "Archive edits".
 - **Every archive apply site runs through `run_managed_edit`, never a bare `spawn_blocking(mutator::apply)`.** It
   dispatches on `parent.supports_local_fs_access()`: a LOCAL parent edits in place; a REMOTE parent (SMB / MTP) pulls the
   `.zip`, edits a local copy, and swaps — original untouched until the swap. Don't reintroduce an in-place remote edit
