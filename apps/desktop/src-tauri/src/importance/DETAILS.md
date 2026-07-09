@@ -129,8 +129,9 @@ Two decisions keep the store small (`SCHEMA_VERSION = 2`; an older, un-compacted
   listing data), so the store simply omits floored folders and the read side re-derives them:
   - The full recompute skips writing a floored folder; the incremental pass clears a changed subtree and re-inserts only
     its non-floored folders (below).
-  - `ImportanceIndex::lookup(path)` returns a typed `WeightLookup::{Scored, Floored, Unscored}`: `Scored` when a row
-    exists, else `Floored` when the path floors by the shared classifiers (`classify::floors_by_path`), else `Unscored`.
+  - `ImportanceIndex::lookup(path)` returns a typed `WeightLookup::{Scored, Floored(FloorReason), Unscored}`: `Scored`
+    when a row exists, else `Floored` (carrying WHY, derived live) when the path floors by the shared classifiers
+    (`classify::floors_by_path`), else `Unscored`.
     The scalar helpers stay compatible (`weight_for` reads `None` for a floored path, `WeightLookup::score()` flattens
     floored/unscored to `0.0`), but the typed `lookup` is the documented surface. `all_nonzero_weights` already omitted
     zeros, so search ranking is unaffected — the map just has fewer rows.
@@ -239,9 +240,14 @@ importance — the agent and media-ML plans point here rather than restating (si
 (thread-local, reopened lazily), so no consumer takes a raw `rusqlite` dep on the store. Calls:
 
 - `weight_for(path)` — one folder's `ScoredWeight` (scalar + deserialized `FolderSignals` + as-of generation), or `None`.
-- `top_n(n)` / `above_threshold(t)` — ranked folders (score DESC, ties by path). `above_threshold` is INCLUSIVE at the
-  bound (a folder exactly at `t` is returned) — the agent's summary gate and media-ML's enrich-important-first, one
-  query with an optional `LIMIT` / `WHERE score >= t`.
+- `lookup(path)` — the typed `WeightLookup::{Scored, Floored(FloorReason), Unscored}`. A floored folder has no row, so
+  the reason (`nameDenylisted` / `hiddenOrSystem` / `underFlooredAncestor`, in that precedence) is derived live from the
+  path — the single derivation `explain`'s floored breakdown also uses.
+- `top_n(n)` / `above_threshold(t)` / `top_above_threshold(n, t)` — ranked folders (score DESC, ties by path).
+  `above_threshold` is INCLUSIVE at the bound (a folder exactly at `t` is returned); `top_above_threshold` combines the
+  `LIMIT` and `WHERE score >= t` in one bounded query (the resource's capped threshold read fetches `cap + 1` to detect
+  truncation). The agent's summary gate and media-ML's enrich-important-first.
+- `scored_folder_count()` — the `weights` row count (a `COUNT(*)`, no deserialization), for the overview surface.
 - `signals_for(path)` — the stored raw vector, for a consumer applying its own weighting profile (plan Decision 2).
 - `all_nonzero_weights()` — the bulk `path → score` map (non-zero scores only; floored folders omitted), for a consumer
   that loads one snapshot and ranks many candidates in memory rather than querying per item.
@@ -252,6 +258,12 @@ importance — the agent and media-ML plans point here rather than restating (si
 folder's weight), loading one `all_nonzero_weights` snapshot per recompute via `subscribe`. Match quality dominates;
 importance is a within-band boost. The blend design, weight-map lifecycle, and degradation contract live in
 [`search/DETAILS.md`](../search/DETAILS.md) § Importance ranking (single-source).
+
+**Second consumer: the MCP `cmdr://importance` resource.** It exposes `lookup` / `top_n` / `above_threshold` /
+`top_above_threshold` / `explain` / `scored_folder_count` to agents, enumerating scored volumes offline via
+`read::scored_volume_ids` (the `importance-{id}.db` files on disk) and opening each index with the kind's
+`signal_availability` mask so `explain` sums to the stored score. It's the offline-unmounted read made a user-facing
+feature. Builder + modes: [`mcp/DETAILS.md`](../mcp/DETAILS.md) § Resources (`cmdr://importance`).
 
 **Staleness is first-class.** Every result carries `as_of_generation`; a consumer compares it to `recompute_generation()`
 to caveat "as of the May 28 scan" (agent-spec D7; M4's offline-unmounted read leans on this). The read API never hides a

@@ -8,6 +8,7 @@
 //! independently-evolving plain-text builders live in their own modules:
 //! [`logs`] (`cmdr://logs`) and [`indexing`] (`cmdr://indexing`).
 
+pub(crate) mod importance;
 pub(crate) mod indexing;
 pub(crate) mod logs;
 pub(crate) mod transfers;
@@ -71,6 +72,17 @@ pub fn get_all_resources() -> Vec<Resource> {
                           (fresh/scanning/stale/off), current phase, scan progress, last scan, and DB \
                           stats. Add `?volume=<id>` for a single volume's deep debug view (phase \
                           timeline, trigger history, watcher stats)."
+                .to_string(),
+            mime_type: "text/plain".to_string(),
+        },
+        Resource {
+            uri: "cmdr://importance".to_string(),
+            name: "Folder importance".to_string(),
+            description: "Folder-importance scores (which folders matter), offline-capable so it answers about \
+                          unmounted drives. `?path=<abs-path>` gives one folder's score with its signal breakdown, \
+                          or why it floors; `?top=<n>&volume=<id>` the top-N folders (volume optional); \
+                          `?threshold=<f>` folders scoring at or above `f`. No query returns usage plus a \
+                          per-volume overview. `~` expands to home."
                 .to_string(),
             mime_type: "text/plain".to_string(),
         },
@@ -454,6 +466,14 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
                 None => indexing::build_indexing_text(&indexing::snapshot_indexing(), now),
             };
             (text, "text/plain")
+        }
+        "cmdr://importance" => {
+            let data_dir = crate::config::resolved_app_data_dir(app)?;
+            let now = indexing::now_unix_seconds();
+            (
+                importance::build_importance_resource(&data_dir, query, now),
+                "text/plain",
+            )
         }
         "cmdr://settings" => {
             let text = resource_round_trip(app, "mcp-get-all-settings", json!({})).await?;

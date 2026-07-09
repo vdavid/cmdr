@@ -5,8 +5,9 @@ fn test_resource_count() {
     let resources = get_all_resources();
     assert_eq!(
         resources.len(),
-        5,
-        "Expected 5 resources (cmdr://state, cmdr://dialogs/available, cmdr://indexing, cmdr://settings, cmdr://logs)"
+        6,
+        "Expected 6 resources (cmdr://state, cmdr://dialogs/available, cmdr://indexing, cmdr://importance, \
+         cmdr://settings, cmdr://logs)"
     );
 }
 
@@ -44,6 +45,7 @@ fn test_resources_exist() {
         "cmdr://state",
         "cmdr://dialogs/available",
         "cmdr://indexing",
+        "cmdr://importance",
         "cmdr://settings",
         "cmdr://logs",
     ];

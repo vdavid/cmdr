@@ -13,7 +13,8 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
 - `tool_registry.rs`: single source for all 34 tools — one `mcp_tools!` table generates the list, dispatch, and auth
   gate (`tool_gate`/`TokenGate`). `tools.rs` is a shim (`Tool` struct + re-export). Handlers + ack contract in
   `executor/` (see [`executor/CLAUDE.md`](executor/CLAUDE.md)).
-- `resources/`: read-only YAML/text resources (`cmdr://state`, `logs`, `indexing` (per-volume), `settings`). State
+- `resources/`: read-only YAML/text resources (`cmdr://state`, `logs`, `indexing` (per-volume), `importance`,
+  `settings`). State
   stores: `PaneStateStore`, `SoftDialogTracker` (`dialog_state.rs`), `listing_errors`. Config: `config.rs`,
   `port_file.rs`.
 

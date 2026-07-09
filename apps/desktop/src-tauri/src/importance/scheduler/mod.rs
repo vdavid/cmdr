@@ -83,6 +83,19 @@ pub(super) fn is_background_scored(kind: IndexVolumeKind) -> bool {
     matches!(ScoringPolicy::for_kind(kind), ScoringPolicy::Scored { .. })
 }
 
+/// The scorer's signal-availability mask for a volume kind, or `None` when the kind
+/// isn't background-scored (MTP). A read consumer (`cmdr://importance`) opens an
+/// [`ImportanceIndex`](super::read::ImportanceIndex) with this so its `explain`
+/// redistributes exactly as the recompute that wrote the weights did — otherwise an
+/// SMB volume's breakdown (no Spotlight `last_used`) wouldn't sum to the stored
+/// score. Single-sources the kind→availability policy that lives in `ScoringPolicy`.
+pub(crate) fn signal_availability(kind: IndexVolumeKind) -> Option<SignalSet> {
+    match ScoringPolicy::for_kind(kind) {
+        ScoringPolicy::Scored { available } => Some(available),
+        ScoringPolicy::Excluded => None,
+    }
+}
+
 impl ScoringPolicy {
     /// The scoring policy for a volume kind. The availability mask degrades
     /// explicitly per kind — SMB drops Spotlight — so a missing signal

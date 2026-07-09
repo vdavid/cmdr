@@ -24,7 +24,8 @@ pub mod writer_registry;
 #[cfg(test)]
 mod fixtures;
 
-pub use read::{ImportanceIndex, ScoredWeight, WeightLookup};
+pub use read::{FloorReason, ImportanceIndex, ScoredWeight, WeightLookup};
+pub(crate) use scheduler::signal_availability;
 pub use scorer::{
     Explanation, FolderSignals, PathClass, Score, SignalContribution, SignalKind, SignalSet, Weights, explain, score,
 };

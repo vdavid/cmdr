@@ -80,14 +80,15 @@ pub struct ScoredWeight {
 ///
 /// A scalar consumer that only wants the number can use [`WeightLookup::score`] (or
 /// [`ImportanceIndex::weight_for`], which flattens floored ⇒ absent ⇒ `0.0`); a
-/// consumer that cares WHY a folder scores nothing reads the variant.
+/// consumer that cares WHY a folder scores nothing reads the variant (and, for a
+/// floored folder, the [`FloorReason`]).
 #[derive(Debug, Clone, PartialEq)]
 pub enum WeightLookup {
     /// The folder has a stored weight.
     Scored(ScoredWeight),
-    /// The folder floors by its path (no row stored; derived live). Effective
-    /// weight `0.0`.
-    Floored,
+    /// The folder floors by its path (no row stored; derived live), carrying WHY
+    /// it floors. Effective weight `0.0`.
+    Floored(FloorReason),
     /// The folder isn't in the store and doesn't floor. Effective weight `0.0`.
     Unscored,
 }
@@ -98,8 +99,41 @@ impl WeightLookup {
     pub fn score(&self) -> f64 {
         match self {
             WeightLookup::Scored(w) => w.score.value(),
-            WeightLookup::Floored | WeightLookup::Unscored => 0.0,
+            WeightLookup::Floored(_) | WeightLookup::Unscored => 0.0,
         }
+    }
+}
+
+/// Why a rowless folder floors, derived live from its path (the store keeps no row
+/// for a floored folder). The three FLOOR overrides, in the precedence the read
+/// side reports: a folder that both denylists and hides reports the denylist. A
+/// consumer explaining "why does this score nothing" reads this instead of
+/// re-deriving from `classify`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FloorReason {
+    /// The folder's own name is denylisted (`node_modules`, `.git`, a cache dir).
+    NameDenylisted,
+    /// The folder is hidden (dot-prefixed) or system-owned.
+    HiddenOrSystem,
+    /// A denylisted / hidden / system ANCESTOR floors this whole subtree.
+    UnderFlooredAncestor,
+}
+
+/// Derive why a path floors, or `None` when it doesn't. The single derivation the
+/// read side uses for both [`ImportanceIndex::lookup`]'s [`WeightLookup::Floored`]
+/// reason and the floored-signals reconstruction, so the two agree by construction.
+fn floor_reason_for(path: &str, home: &str) -> Option<FloorReason> {
+    use crate::importance::classify::{is_denylisted, is_hidden_or_system, leaf_name};
+    if !crate::importance::classify::floors_by_path(path, home) {
+        return None;
+    }
+    let name = leaf_name(path);
+    if is_denylisted(&name) {
+        Some(FloorReason::NameDenylisted)
+    } else if is_hidden_or_system(path, &name, home) {
+        Some(FloorReason::HiddenOrSystem)
+    } else {
+        Some(FloorReason::UnderFlooredAncestor)
     }
 }
 
@@ -169,7 +203,25 @@ impl ImportanceIndex {
     /// [`lookup`](ImportanceIndex::lookup) instead. Path-keyed via `platform_case`,
     /// so a case/normalization variant resolves to the same row.
     pub fn weight_for(&self, path: &str) -> Result<Option<ScoredWeight>, ImportanceStoreError> {
+        // A never-scored volume has no `importance.db` at all (offline/unmounted,
+        // fresh install, purged cache). A read-only open of a missing file fails
+        // `CannotOpen`, so short-circuit to "no row": an offline lookup then derives
+        // floored-vs-unscored from the path instead of erroring (the offline read
+        // the plan makes a feature). Mirrors the guard in `all_nonzero_weights`.
+        if !self.db_path.exists() {
+            return Ok(None);
+        }
         self.with_conn(|conn| read_scored_weight(conn, path))
+    }
+
+    /// The number of scored (non-floored) folders stored for this volume — the
+    /// `weights` table row count. `0` for a never-scored / missing DB. Cheap (a
+    /// `COUNT(*)`, no per-row deserialization); the `cmdr://importance` overview.
+    pub fn scored_folder_count(&self) -> Result<u64, ImportanceStoreError> {
+        if !self.db_path.exists() {
+            return Ok(0);
+        }
+        self.with_conn(read_folder_count)
     }
 
     /// The typed [`WeightLookup`] for one folder — the documented lookup surface.
@@ -184,21 +236,43 @@ impl ImportanceIndex {
     pub fn lookup(&self, path: &str) -> Result<WeightLookup, ImportanceStoreError> {
         match self.weight_for(path)? {
             Some(w) => Ok(WeightLookup::Scored(w)),
-            None if crate::importance::classify::floors_by_path(path, &self.home) => Ok(WeightLookup::Floored),
-            None => Ok(WeightLookup::Unscored),
+            None => Ok(match floor_reason_for(path, &self.home) {
+                Some(reason) => WeightLookup::Floored(reason),
+                None => WeightLookup::Unscored,
+            }),
         }
     }
 
     /// The `n` most important folders on the volume, highest score first (ties
-    /// broken by path for determinism). Media-ML's "enrich important first".
+    /// broken by path for determinism). Media-ML's "enrich important first". A
+    /// missing DB (offline/never-scored volume) reads empty, not an error.
     pub fn top_n(&self, n: usize) -> Result<Vec<ScoredWeight>, ImportanceStoreError> {
+        if !self.db_path.exists() {
+            return Ok(Vec::new());
+        }
         self.with_conn(|conn| read_ordered(conn, Some(n), None))
     }
 
     /// Every folder scoring at or above `threshold`, highest first. The agent's
-    /// summary gate. An inclusive bound: a folder exactly at `threshold` is in.
+    /// summary gate. An inclusive bound: a folder exactly at `threshold` is in. A
+    /// missing DB reads empty, not an error.
     pub fn above_threshold(&self, threshold: f64) -> Result<Vec<ScoredWeight>, ImportanceStoreError> {
+        if !self.db_path.exists() {
+            return Ok(Vec::new());
+        }
         self.with_conn(|conn| read_ordered(conn, None, Some(threshold)))
+    }
+
+    /// The top `n` folders scoring at or above `threshold`, highest first — the
+    /// `top_n` cap and the `above_threshold` filter in one bounded query. The
+    /// `cmdr://importance?threshold=` read fetches `cap + 1` this way to detect
+    /// truncation without loading the whole tail (a low threshold can match every
+    /// scored folder). A missing DB reads empty, not an error.
+    pub fn top_above_threshold(&self, n: usize, threshold: f64) -> Result<Vec<ScoredWeight>, ImportanceStoreError> {
+        if !self.db_path.exists() {
+            return Ok(Vec::new());
+        }
+        self.with_conn(|conn| read_ordered(conn, Some(n), Some(threshold)))
     }
 
     /// Every scored folder's `(path, score)` with a NON-ZERO score, as a bulk
@@ -258,17 +332,15 @@ impl ImportanceIndex {
     /// reconstructed); that's enough for `explain` to report `floored == true` with
     /// the reason, which is all a floored folder's breakdown carries.
     fn derived_floored_signals(&self, path: &str) -> Option<FolderSignals> {
-        use crate::importance::classify::{is_denylisted, is_hidden_or_system, leaf_name};
-        if !crate::importance::classify::floors_by_path(path, &self.home) {
-            return None;
-        }
-        let name = leaf_name(path);
         let mut signals = FolderSignals::neutral();
-        signals.name_denylisted = is_denylisted(&name);
-        signals.hidden_or_system = is_hidden_or_system(path, &name, &self.home);
-        // If neither the folder itself is denylisted nor hidden/system, it floors
-        // because an ANCESTOR does — the under-floored-ancestor flag.
-        signals.under_floored_ancestor = !signals.name_denylisted && !signals.hidden_or_system;
+        // One flag, the precedence winner — `explain`'s `floored` is the OR of the
+        // three, so setting only the reported reason is enough to floor the score,
+        // and it keeps this in lockstep with `lookup`'s reported reason.
+        match floor_reason_for(path, &self.home)? {
+            FloorReason::NameDenylisted => signals.name_denylisted = true,
+            FloorReason::HiddenOrSystem => signals.hidden_or_system = true,
+            FloorReason::UnderFlooredAncestor => signals.under_floored_ancestor = true,
+        }
         Some(signals)
     }
 
@@ -344,6 +416,14 @@ fn read_ordered(
     Ok(out)
 }
 
+/// Count the stored (non-floored) weight rows. One aggregate query, no per-row
+/// deserialization — the overview surface's "how many folders scored" answer.
+fn read_folder_count(conn: &rusqlite::Connection) -> Result<u64, ImportanceStoreError> {
+    let mut stmt = conn.prepare_cached("SELECT COUNT(*) FROM weights")?;
+    let count: i64 = stmt.query_row([], |row| row.get(0))?;
+    Ok(count as u64)
+}
+
 /// Read every non-zero-scored folder into a `path → score` map. One statement, no
 /// per-row deserialization (the search ranker needs only the scalar, not the
 /// signal vector), and the `score > 0.0` filter drops the floored folders so the
@@ -375,6 +455,32 @@ fn row_to_scored_weight(row: &rusqlite::Row<'_>) -> rusqlite::Result<ScoredWeigh
         signals,
         as_of_generation,
     })
+}
+
+/// Enumerate the volume ids that have an `importance.db` on disk under `data_dir`,
+/// root first then the rest sorted (a stable roster). The importance stores outlive
+/// their volume's mount by design, so this is the offline-capable answer to "which
+/// volumes have importance data" without a live scheduler, index registry, or mount
+/// — the roster the `cmdr://importance` resource iterates. MTP is never
+/// background-scored, so no `importance-mtp-*.db` exists to list.
+pub fn scored_volume_ids(data_dir: &std::path::Path) -> Vec<String> {
+    let mut ids: Vec<String> = match std::fs::read_dir(data_dir) {
+        Ok(entries) => entries
+            .filter_map(|e| e.ok())
+            .filter_map(|e| e.file_name().into_string().ok())
+            .filter_map(|name| {
+                // `importance-{volume_id}.db`. The `-wal` / `-shm` sidecars end
+                // `.db-wal` / `.db-shm`, so the `.db` suffix check drops them.
+                name.strip_prefix("importance-")
+                    .and_then(|rest| rest.strip_suffix(".db"))
+                    .map(str::to_string)
+            })
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+    ids.sort();
+    ids.sort_by_key(|id| id != crate::indexing::ROOT_VOLUME_ID);
+    ids
 }
 
 // ── Recompute subscription ──────────────────────────────────────────────────

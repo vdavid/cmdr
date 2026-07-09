@@ -193,7 +193,7 @@ fn all_nonzero_weights_missing_db_is_empty() {
 /// folder has no row, so the read side re-derives its floored-ness from the path.
 #[test]
 fn lookup_distinguishes_scored_floored_and_unscored() {
-    use super::WeightLookup;
+    use super::{FloorReason, WeightLookup};
     // A scored folder under the home. Give the index a real home so the classifiers
     // agree with production.
     let (index, dir) = populated_index(&[("/Users/me/proj", 0.8, PathClass::ProjectRoot)]);
@@ -207,14 +207,15 @@ fn lookup_distinguishes_scored_floored_and_unscored() {
     }
 
     // Floored: no row, but the path self-floors (a node_modules) or lives under one.
+    // The variant carries WHY — the denylisted name vs the floored ancestor.
     assert_eq!(
         index.lookup("/Users/me/proj/node_modules").expect("lookup"),
-        WeightLookup::Floored,
+        WeightLookup::Floored(FloorReason::NameDenylisted),
         "a node_modules path floors by name (no row stored)"
     );
     assert_eq!(
-        index.lookup("/Users/me/proj/node_modules/react/dist").expect("lookup"),
-        WeightLookup::Floored,
+        index.lookup("/Users/me/proj/node_modules/react").expect("lookup"),
+        WeightLookup::Floored(FloorReason::UnderFlooredAncestor),
         "a path under a node_modules floors by ancestor (no row stored)"
     );
 
