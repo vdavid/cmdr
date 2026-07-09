@@ -11,6 +11,11 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
       one FE-owned setting threaded through `route_archive_copy_into` → the mutator's `FileOptions` (governs
       copy/move-into-archive too); plus a spike-gated estimated-result-size line driven off the byte-scan by cheap
       deflate sampling, shipping only if it clears an accuracy + resource bar.
+- [ ] 2026-07-09 [operation-log-plan.md](operation-log-plan.md) - Durable, cross-volume journal of file mutations with
+      rollback: a new `operation-log.db` (the app's first durable DB, with a forward-migration ladder + retention),
+      per-item capture at the operation-manager chokepoint, two-axis status (execution + rollback) plus initiator
+      provenance (user / ai_client / agent), rollback as inverse ops through the managed pipeline, indexed name search,
+      MCP query+rollback tools, retention settings, a Debug panel, and a thin alpha "Operation log" dialog.
 - [ ] 2026-07-04 [listing-loader-extraction-plan.md](listing-loader-extraction-plan.md) - Drain FilePane's last deferred
       cluster (the listing loader: `loadDirectory`/`handleListingComplete`/reset + streaming listeners + pendingLoad +
       the generation/listingId drop-foreign-listings token model) into a tested `listing-loader.svelte.ts` factory,
