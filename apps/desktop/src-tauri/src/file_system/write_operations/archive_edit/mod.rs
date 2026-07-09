@@ -37,10 +37,6 @@
 //! Conflicts are resolved into the changeset before it reaches here, so the
 //! mutator stays deterministic.
 
-#[allow(
-    dead_code,
-    reason = "compress_start has no production caller until M2 wires the compress_files IPC command (which re-exports it up through write_operations / file_system like route_archive_copy_into); until then only tests exercise it. Drop this in M2."
-)]
 mod compress;
 mod conflicts;
 mod copy_into;
@@ -49,6 +45,7 @@ mod engine;
 mod move_out;
 mod routing;
 
+pub(crate) use compress::compress_start;
 pub(crate) use copy_into::route_archive_copy_into;
 pub(crate) use driver::{ArchiveEditRequest, archive_edit_start, route_archive_delete};
 pub(crate) use move_out::route_archive_move_out;

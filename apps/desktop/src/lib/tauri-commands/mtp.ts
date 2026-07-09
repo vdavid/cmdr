@@ -517,6 +517,31 @@ export async function moveBetweenVolumes(
 }
 
 /**
+ * Compresses files into a NEW zip at `destZipPath` on `destVolumeId`, reusing the
+ * archive-edit machinery (seed a valid empty zip, then pack the sources in). Same
+ * events as `copyBetweenVolumes`. Local destination only in v1 — a remote parent
+ * rejects with `RemoteArchiveCreationUnsupported`.
+ *
+ * @param sourceVolumeId - ID of the source volume (like "root" for local filesystem)
+ * @param sourcePaths - Source file/directory paths relative to the source volume
+ * @param destVolumeId - ID of the destination (parent) volume holding the new zip
+ * @param destZipPath - Full path of the new `.zip` on the destination volume
+ * @param config - Optional copy configuration
+ * @returns Operation start result with operation ID
+ */
+export async function compressFiles(
+  sourceVolumeId: string,
+  sourcePaths: string[],
+  destVolumeId: string,
+  destZipPath: string,
+  config?: VolumeCopyConfig,
+): Promise<WriteOperationStartResult> {
+  const res = await commands.compressFiles(sourceVolumeId, sourcePaths, destVolumeId, destZipPath, config ?? null)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
  * Scans source files for a volume copy operation without executing it.
  * Performs a "pre-flight" scan to determine:
  * - Total file count and bytes to copy

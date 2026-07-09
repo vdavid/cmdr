@@ -150,6 +150,11 @@ pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
 // (the whole transfer becomes one `{ add }` changeset) instead of the per-file
 // cross-volume engine.
 pub(crate) use archive_edit::route_archive_copy_into;
+// Compress: create a NEW zip at a target and pack the sources into it (seed a
+// valid empty archive, then reuse the copy-into flow). The `compress_files` IPC
+// command routes here. Local dest only in v1; the command refuses a remote
+// destination (M8 seeds through the parent volume). See `archive_edit/compress.rs`.
+pub(crate) use archive_edit::compress_start;
 // Move OUT of a zip: the command layer routes an archive SOURCE here. It runs a
 // compound op — extract via the cross-volume copy engine, then (only on a fully
 // clean extract) a batch `{ delete }` archive rewrite (the move invariant). See

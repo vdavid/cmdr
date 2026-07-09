@@ -61,6 +61,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::file_system::resume_all,
         crate::commands::file_system::copy_between_volumes,
         crate::commands::file_system::move_between_volumes,
+        crate::commands::file_system::compress_files,
         crate::commands::file_system::scan_volume_for_copy,
         crate::commands::file_system::scan_volume_for_conflicts,
         crate::commands::file_system::get_listing_stats,

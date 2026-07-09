@@ -3,9 +3,9 @@
 use crate::file_system::Volume;
 use crate::file_system::{
     OperationEventSink, ScanConflict, TauriEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteOperationError,
-    WriteOperationStartResult, copy_between_volumes as ops_copy_between_volumes, get_volume_manager,
-    move_between_volumes as ops_move_between_volumes, route_archive_copy_into as ops_route_archive_copy_into,
-    scan_for_volume_copy as ops_scan_for_volume_copy,
+    WriteOperationStartResult, compress_start as ops_compress_start, copy_between_volumes as ops_copy_between_volumes,
+    get_volume_manager, move_between_volumes as ops_move_between_volumes,
+    route_archive_copy_into as ops_route_archive_copy_into, scan_for_volume_copy as ops_scan_for_volume_copy,
 };
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -199,6 +199,76 @@ pub async fn move_between_volumes(
     .await
 }
 
+/// INTERIM guard (M2): compress creates a NEW zip by seeding a valid empty archive
+/// at the target through the local filesystem, so the destination must be
+/// local-backed. A remote parent (direct SMB/MTP, `local_path() == None`) can't see
+/// that local seed, so refuse it with a typed error. M8 replaces this with a
+/// seed-through-the-parent-volume path and removes this guard and its error variant.
+fn ensure_local_compress_dest(dest_volume: &Arc<dyn Volume>, dest_zip_path: &str) -> Result<(), WriteOperationError> {
+    if dest_volume.local_path().is_none() {
+        return Err(WriteOperationError::RemoteArchiveCreationUnsupported {
+            path: dest_zip_path.to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Compresses `source_paths` into a NEW zip at `dest_zip_path` on `dest_volume_id`.
+/// Reuses the archive-edit machinery: seed a valid empty zip, then copy the sources
+/// in as one changeset (`compress_start`). Same events as `copy_between_volumes`.
+/// Local destination only in v1 — a remote parent is refused with a typed error
+/// (`RemoteArchiveCreationUnsupported`), replaced by seed-through-Volume in M8.
+#[tauri::command]
+#[specta::specta]
+pub async fn compress_files(
+    app: tauri::AppHandle,
+    source_volume_id: String,
+    source_paths: Vec<String>,
+    dest_volume_id: String,
+    dest_zip_path: String,
+    config: Option<VolumeCopyConfig>,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
+
+    // Route an archive-inner source batch to its ArchiveVolume (compress-from-zip).
+    let (source_volume, _source_is_archive) = resolve_source(&source_volume_id, source_paths.first())
+        .await
+        .ok_or_else(|| WriteOperationError::IoError {
+            path: source_volume_id.clone(),
+            message: format!("Source volume '{}' not found", source_volume_id),
+        })?;
+
+    // The new `.zip` doesn't exist yet, so `resolve` returns the PARENT drive volume
+    // (`is_archive = false` for a non-existent path) — the drive the seed is written
+    // to. `compress_start` bypasses the archive-boundary resolve on its own.
+    let dest_volume = get_volume_manager()
+        .resolve(&dest_volume_id, Path::new(&dest_zip_path))
+        .await
+        .volume
+        .ok_or_else(|| WriteOperationError::IoError {
+            path: dest_volume_id.clone(),
+            message: format!("Destination volume '{}' not found", dest_volume_id),
+        })?;
+
+    // Interim: refuse a remote destination until M8 seeds through the parent volume.
+    ensure_local_compress_dest(&dest_volume, &dest_zip_path)?;
+
+    let config = config.unwrap_or_default();
+    let dest_zip_path = expand_local_dest(&dest_volume, dest_zip_path);
+    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
+
+    ops_compress_start(
+        events,
+        source_volume,
+        source_paths,
+        dest_zip_path,
+        dest_volume_id,
+        config.conflict_resolution,
+        config.progress_interval_ms,
+    )
+    .await
+}
+
 /// Pre-flight scan: total count/bytes, available space, conflicts. Doesn't copy anything.
 #[tauri::command]
 #[specta::specta]
@@ -353,9 +423,44 @@ pub struct SourceItemInput {
 
 #[cfg(test)]
 mod tests {
-    use super::{merge_source_types_from_batch, resolve_source};
-    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo};
+    use super::{ensure_local_compress_dest, merge_source_types_from_batch, resolve_source};
+    use crate::file_system::{BatchScanResult, CopyScanResult, SourceItemInfo, Volume, WriteOperationError};
     use std::path::PathBuf;
+    use std::sync::Arc;
+
+    /// A remote (non-local-backed) compress destination is refused with the typed
+    /// `RemoteArchiveCreationUnsupported` variant, not a stringly error — the
+    /// interim M2 state (M8 seeds through the parent volume). Matches on the
+    /// variant, never on a message.
+    #[test]
+    fn compress_refuses_a_remote_destination_with_a_typed_error() {
+        use crate::file_system::volume::backends::InMemoryVolume;
+
+        // `InMemoryVolume` reports `local_path() == None`, standing in for a direct
+        // SMB/MTP share: compress can't seed a local empty zip a remote parent sees.
+        let remote: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Remote share"));
+
+        let err = ensure_local_compress_dest(&remote, "/share/bundle.zip")
+            .expect_err("a remote compress destination must be refused");
+
+        assert!(
+            matches!(err, WriteOperationError::RemoteArchiveCreationUnsupported { .. }),
+            "expected the typed remote-unsupported refusal, got {err:?}"
+        );
+    }
+
+    /// A local-backed destination passes the guard (the common case: compress into
+    /// the other pane's local folder).
+    #[test]
+    fn compress_allows_a_local_destination() {
+        use crate::file_system::volume::LocalPosixVolume;
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Root", dir.path().to_str().unwrap()));
+
+        ensure_local_compress_dest(&local, &dir.path().join("out.zip").to_string_lossy())
+            .expect("a local compress destination is allowed");
+    }
 
     #[tokio::test]
     async fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {

@@ -79,6 +79,7 @@ pub use write_operations::{
 // Re-export volume copy types and functions
 /// Copy/move INTO a zip routing (the command layer routes an archive destination
 /// here). Crate-internal — not part of the public write-ops surface.
+pub(crate) use write_operations::compress_start;
 pub(crate) use write_operations::route_archive_copy_into;
 pub(crate) use write_operations::route_archive_move_out;
 pub use write_operations::{

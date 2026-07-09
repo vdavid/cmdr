@@ -648,6 +648,42 @@ export const commands = {
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('move_between_volumes', { sourceVolumeId, sourcePaths, destVolumeId, destPath, config }),
     ),
+  /**
+   *  Compresses `source_paths` into a NEW zip at `dest_zip_path` on `dest_volume_id`.
+   *  Reuses the archive-edit machinery: seed a valid empty zip, then copy the sources
+   *  in as one changeset (`compress_start`). Same events as `copy_between_volumes`.
+   *  Local destination only in v1 — a remote parent is refused with a typed error
+   *  (`RemoteArchiveCreationUnsupported`), replaced by seed-through-Volume in M8.
+   */
+  compressFiles: (
+    sourceVolumeId: string,
+    sourcePaths: string[],
+    destVolumeId: string,
+    destZipPath: string,
+    config: {
+      // In milliseconds.
+      progressIntervalMs: number
+      conflictResolution: ConflictResolution
+      // Maximum returned in pre-flight scan.
+      maxConflictsToShow: number
+      // Preview scan ID to reuse cached scan results (from start_scan_preview).
+      previewId?: string | null
+      /**
+       *  Source filenames already known to conflict at the destination (from the
+       *  pre-flight `scan_for_conflicts` call). When `conflict_resolution == Skip`,
+       *  the copy pipeline bulk-skips these upfront so the progress bar jumps to
+       *  reflect them immediately, rather than discovering each one serially via
+       *  per-file `get_metadata` stats while non-conflict copies run in between.
+       *  Ignored for other resolution modes (Stop still prompts; Overwrite still
+       *  proceeds normally). Empty if the FE didn't pre-scan or found no
+       *  conflicts.
+       */
+      preKnownConflicts?: string[]
+    } | null,
+  ) =>
+    typedError<WriteOperationStartResult, WriteOperationError>(
+      __TAURI_INVOKE('compress_files', { sourceVolumeId, sourcePaths, destVolumeId, destZipPath, config }),
+    ),
   // Pre-flight scan: total count/bytes, available space, conflicts. Doesn't copy anything.
   scanVolumeForCopy: (
     sourceVolumeId: string,
@@ -6459,6 +6495,15 @@ export type WriteOperationError =
    *  `set_archive_password` and retries the operation.
    */
   | { type: 'archive_needs_password'; path: string; wrongAttempt: boolean }
+  /**
+   *  Compress refused because the destination isn't backed by a local
+   *  filesystem. Creating a NEW zip seeds a valid empty archive at the target,
+   *  which the v1 path writes through `std::fs`; a remote parent (direct
+   *  SMB/MTP) can't see that seed. INTERIM: M8 replaces this refusal with a
+   *  seed-through-the-parent-volume path, at which point this variant and its
+   *  guard (`ensure_local_compress_dest`) are removed.
+   */
+  | { type: 'remote_archive_creation_unsupported'; path: string }
   // Catch-all for genuinely unexpected IO errors.
   | { type: 'io_error'; path: string; message: string }
 

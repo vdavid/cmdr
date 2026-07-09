@@ -436,6 +436,7 @@ export {
   scanMtpForCopy,
   copyBetweenVolumes,
   moveBetweenVolumes,
+  compressFiles,
   scanVolumeForCopy,
   scanVolumeForConflicts,
 } from './mtp'
