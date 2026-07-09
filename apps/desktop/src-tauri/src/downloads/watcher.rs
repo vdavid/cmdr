@@ -501,6 +501,23 @@ mod tests {
     use notify::Event;
     use tempfile::TempDir;
 
+    use crate::ignore_poison::IgnorePoison;
+
+    /// Serializes the real-FSEvents integration tests within one process. Under
+    /// plain `cargo test` the whole `#[cfg(test)]` module runs as parallel
+    /// threads in a SINGLE process, so several concurrent recursive FSEvents
+    /// watches start at once and starve each other's delivery — badly enough
+    /// that even the `observe_mutation` redo loop's 15 s budget can't recover the
+    /// starved victim (~40% of `cargo test --lib downloads::watcher` runs failed
+    /// "FSEvents watch starved" before this lock). Holding it for each
+    /// real-watcher test's whole duration keeps exactly ONE live watch at a time,
+    /// leaving only the single-watch arming window and lone-event coalescing —
+    /// both of which the in-test self-heal already defeats. Under `cargo nextest`
+    /// each test runs in its own process, so this lock is uncontended there and
+    /// the `real-notify` group in `.config/nextest.toml` does the equivalent
+    /// cross-process serialization.
+    static WATCH_SERIAL: Mutex<()> = Mutex::new(());
+
     /// `tempfile::TempDir::new` creates a hidden `.tmpXXX` dir on macOS, which
     /// trips our hidden-component eligibility check on every contained path.
     /// Use a non-dot prefix so positive-path assertions work.
@@ -805,16 +822,6 @@ mod tests {
         }
     }
 
-    fn expect_silence(
-        rx: &mpsc::Receiver<DownloadDetectedEvent>,
-        timeout: Duration,
-    ) -> Result<(), DownloadDetectedEvent> {
-        match rx.recv_timeout(timeout) {
-            Ok(ev) => Err(ev),
-            Err(_) => Ok(()),
-        }
-    }
-
     /// Longer than the 200 ms debounce + filesystem-flush slack. Real macOS
     /// `notify`/FSEvents delivery lags seconds under load, so wait generously.
     /// Kept below the 20 s nextest cap these integration tests get in
@@ -842,12 +849,22 @@ mod tests {
     /// emit, not just the latest, so a merely-slow event from an earlier attempt
     /// still counts instead of being discarded — which would otherwise turn slow
     /// delivery into a spurious failure. Returns the matched event.
+    ///
+    /// Primes the watch (via [`prime_watch`] on `dir`) before the first real
+    /// mutation: throwaway creates prove the stream is armed and delivering, so
+    /// the redo loop below only has to defeat coalescing on a KNOWN-live watch,
+    /// not gamble on when arming finishes. Priming shares this one `EVENT_TIMEOUT`
+    /// deadline, so it never stacks a second budget past the 20 s nextest cap.
+    /// This matters most for the lone-rename test, whose event class FSEvents
+    /// drops most readily during the arming window.
     fn observe_mutation(
+        dir: &Path,
         rx: &mpsc::Receiver<DownloadDetectedEvent>,
         mut mutate: impl FnMut(u32),
         matches: impl Fn(&DownloadDetectedEvent) -> bool,
     ) -> DownloadDetectedEvent {
         let deadline = Instant::now() + EVENT_TIMEOUT;
+        prime_watch(dir, rx, deadline);
         let mut attempt = 0u32;
         loop {
             let remaining = deadline.saturating_duration_since(Instant::now());
@@ -857,10 +874,15 @@ mod tests {
             );
             mutate(attempt);
             attempt += 1;
-            // A live stream delivers within the 200 ms debounce plus slack; cap
-            // each wait so a dropped event triggers a redo rather than burning
-            // the whole budget, but never exceed the overall deadline.
-            let per_attempt = remaining.min(Duration::from_secs(3));
+            // A live stream delivers within the 200 ms debounce plus slack, so a
+            // short per-attempt wait re-triggers a fresh mutation quickly when an
+            // event was coalesced/dropped — more redo cycles per budget is the
+            // self-heal lever (a lone rename, the most coalesce-prone class,
+            // needs several tries under load). Losing nothing by going short:
+            // `matches` accepts ANY attempt's emit, so a merely-slow event from
+            // an earlier attempt still lands in a later wait. Never exceed the
+            // overall deadline.
+            let per_attempt = remaining.min(Duration::from_secs(1));
             if let Some(ev) = wait_for(rx, per_attempt, &matches) {
                 return ev;
             }
@@ -868,10 +890,11 @@ mod tests {
     }
 
     /// Prove a freshly-registered FSEvents watch is delivering, then drain the
-    /// proof events. Used by tests whose assertion depends on ring ORDER
-    /// (`latest_download`), which the redo-on-fresh-name shape of
-    /// [`observe_mutation`] can't offer. Bounded by `deadline` so priming plus
-    /// the caller's own wait share one budget and can't stack past the 20 s cap.
+    /// proof events. Called by [`observe_mutation`] before its redo loop, and
+    /// directly by the ring-ORDER test (`latest_download`), whose assertion the
+    /// redo-on-fresh-name shape can't offer. Bounded by `deadline` so priming
+    /// plus the caller's own wait share one budget and can't stack past the 20 s
+    /// cap.
     ///
     /// Repeatedly creates a throwaway eligible file (a fresh name each time, so
     /// each is a distinct `Create` the sink emits) until one is observed. A
@@ -900,6 +923,7 @@ mod tests {
 
     #[test]
     fn dropping_a_file_emits_one_event() {
+        let _serial = WATCH_SERIAL.lock_ignore_poison();
         let td = unhidden_tempdir();
         let canon_root = td.path().canonicalize().unwrap();
         let (sink, rx) = ChannelSink::new();
@@ -909,6 +933,7 @@ mod tests {
         // create on a fresh name until the watch delivers one (see
         // `observe_mutation` for why a single create can be lost under load).
         let ev = observe_mutation(
+            td.path(),
             &rx,
             |n| {
                 touch(td.path(), &format!("drop-{n}.txt"));
@@ -926,6 +951,7 @@ mod tests {
 
     #[test]
     fn partial_rename_to_final_emits_for_final_path() {
+        let _serial = WATCH_SERIAL.lock_ignore_poison();
         let td = unhidden_tempdir();
         let canon_root = td.path().canonicalize().unwrap();
         let (sink, rx) = ChannelSink::new();
@@ -940,6 +966,7 @@ mod tests {
         // rename into one ambiguous event. A `.crdownload` partial ends with
         // `.crdownload`, so `ends_with(".zip")` matches only the final form.
         let ev = observe_mutation(
+            td.path(),
             &rx,
             |n| {
                 let partial = td.path().join(format!("dl-{n}.zip.crdownload"));
@@ -959,17 +986,49 @@ mod tests {
 
     #[test]
     fn note_pending_write_suppresses_matching_event() {
+        let _serial = WATCH_SERIAL.lock_ignore_poison();
         let td = unhidden_tempdir();
         let (sink, rx) = ChannelSink::new();
         let watcher = DownloadsWatcher::start_at(td.path().to_path_buf(), sink).unwrap();
 
-        let p = td.path().join("cmdr-own.txt");
-        watcher.note_pending_write(p.clone(), Duration::from_secs(5));
-        fs::write(&p, b"hi").unwrap();
+        // A Cmdr-own write (registered via `note_pending_write`) must produce no
+        // toast, while a sibling Cmdr did NOT register still surfaces. Each round
+        // writes both: the registered `cmdr-own-{n}.txt` and an unregistered
+        // control `control-{n}.txt`. Observing the control's emit is what proves
+        // the watch is live and delivering THIS round, so the test can't pass
+        // vacuously on a watch that never armed (the old fixed-silence wait
+        // could). Because the control is written after `own` and FSEvents keeps
+        // per-stream order, a broken suppression would surface the `cmdr-own-`
+        // event at or before the control — caught by the drain-loop assert.
+        // Redoing on fresh names defeats the arming window and lone-event
+        // coalescing (see `observe_mutation`); one `EVENT_TIMEOUT` budget, no
+        // second budget stacks, so it stays under the 20 s nextest cap.
+        let deadline = Instant::now() + EVENT_TIMEOUT;
+        let mut n = 0u32;
+        'seeking_control: loop {
+            assert!(
+                Instant::now() < deadline,
+                "the control file never surfaced within {EVENT_TIMEOUT:?}, so suppression couldn't be proven (FSEvents watch starved)"
+            );
+            let own = td.path().join(format!("cmdr-own-{n}.txt"));
+            let control = td.path().join(format!("control-{n}.txt"));
+            watcher.note_pending_write(own.clone(), Duration::from_secs(5));
+            fs::write(&own, b"hi").unwrap();
+            // Written after `own` so its event can't precede the suppressed one
+            // in FSEvents' ordered stream.
+            fs::write(&control, b"hi").unwrap();
+            n += 1;
 
-        // Wait long enough that any normal event would have arrived.
-        if let Err(unexpected) = expect_silence(&rx, Duration::from_secs(2)) {
-            panic!("expected silence, got event: {unexpected:?}");
+            let round_deadline = (Instant::now() + Duration::from_secs(3)).min(deadline);
+            while let Some(ev) = wait_for(&rx, round_deadline.saturating_duration_since(Instant::now()), |_| true) {
+                assert!(
+                    !ev.file_name.starts_with("cmdr-own-"),
+                    "a Cmdr-own write surfaced despite note_pending_write: {ev:?}"
+                );
+                if ev.file_name.starts_with("control-") {
+                    break 'seeking_control;
+                }
+            }
         }
 
         drop(watcher);
@@ -977,6 +1036,7 @@ mod tests {
 
     #[test]
     fn latest_download_returns_ring_value_after_event() {
+        let _serial = WATCH_SERIAL.lock_ignore_poison();
         let td = unhidden_tempdir();
         let canon_root = td.path().canonicalize().unwrap();
         let (sink, rx) = ChannelSink::new();
@@ -1001,6 +1061,10 @@ mod tests {
 
     #[test]
     fn scan_latest_fallback_finds_file_with_no_events() {
+        // Delivery-independent (it never waits for an event), but it still opens
+        // a live watch, so serialize it too: a watch left running alongside the
+        // delivery tests adds to their FSEvents starvation.
+        let _serial = WATCH_SERIAL.lock_ignore_poison();
         let td = unhidden_tempdir();
         let canon_root = td.path().canonicalize().unwrap();
         // Drop a file BEFORE starting the watcher so its mtime is set.

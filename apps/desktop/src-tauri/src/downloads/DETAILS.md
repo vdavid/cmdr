@@ -78,3 +78,26 @@ add visible toast latency. Revisit if real-world feedback says CLI downloads mat
 
 Both tiers share the same `is_eligible` filter (hidden and partial-suffix files excluded; a regular file or a symlink to
 one accepted), so an event-detected "latest" and a scanned "latest" can't disagree.
+
+## Real-FSEvents test determinism
+
+`watcher.rs`'s five integration tests drive a real `notify` watch on a temp dir, so they inherit FSEvents' two
+under-load failure modes: a mutation landing in the just-registered-watch arming window is dropped outright (not
+delayed), and even a live watch can coalesce or drop a lone create/rename. Both are unrecoverable by waiting, so the
+tests **self-heal** rather than wait-and-hope:
+
+- `observe_mutation` primes the watch (`prime_watch` writes throwaway creates until one is observed, proving the stream
+  armed), then redoes the real mutation on a fresh name until a matching emit — all inside one 15 s budget so priming
+  and the redo never stack a second budget past the 20 s nextest cap. `matches` accepts ANY attempt's emit, so a
+  merely-slow event is never discarded as a spurious failure. Used by the create and partial→final-rename tests.
+- `note_pending_write_suppresses_matching_event` redoes a registered-write + unregistered-control pair until the control
+  emits (proving the watch is live THIS round, so it can't pass vacuously on a watch that never armed), then asserts the
+  registered sibling stayed silent. FSEvents' per-stream ordering plus writing the control after the registered file
+  means a broken suppression surfaces the registered event first — caught, not masked.
+
+**Two serialization layers, one per test runner.** Concurrent live watches multiply each other's starvation, so only one
+runs at a time: under `cargo nextest` (process-per-test) the `real-notify` group in
+[`.config/nextest.toml`](../../../../../.config/nextest.toml) caps the group at one thread; under plain `cargo test` (the
+whole `#[cfg(test)]` module shares one process) a `WATCH_SERIAL` mutex the five tests hold for their duration does the
+equivalent. The self-heal above is what actually defeats the residual single-watch arming/coalescing; serialization just
+removes the mutual interference. Verified 10×+ green on both `cargo test --lib downloads::watcher` and `cargo nextest`.

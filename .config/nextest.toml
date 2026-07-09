@@ -74,7 +74,13 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 # retry. Mechanisms:
 #   - `downloads/watcher.rs` tests: `observe_mutation` redoes the real
 #     create/rename on a fresh name until a matching emit; `prime_watch` proves
-#     the watch live before the ring-order mutation.
+#     the watch live before the ring-order mutation;
+#     `note_pending_write_suppresses_matching_event` redoes a
+#     registered-write + unregistered-control pair until the control emits, then
+#     asserts the registered sibling stayed silent (proves suppression against a
+#     provably-live watch, no vacuous pass); `scan_latest_fallback_...` is
+#     delivery-independent but opens a live watch, so it's grouped to not add to
+#     the others' starvation.
 #   - `viewer_tail_integration`: the appender writes continuously until the test
 #     sees a `Grew`.
 #   - `archive::watch_integration_test` live-watch + temp-rename tests:
@@ -82,11 +88,14 @@ slow-timeout = { period = "30s", terminate-after = 1 }
 #     until the watch-driven refresh lands the new entry in the listing.
 # They still need this override: the redo/continuous loops can run ~11 s under
 # saturation, past the global 8 s cap, and `real-notify` serialization keeps
-# their live watches from multiplying each other's starvation. Proof: 10/10
-# saturated full-suite runs of the downloads trio green at `retries = 0`
-# (verified 2026-07 on a 16-core M-series, full `cargo nextest run` looped;
-# baseline before the in-test fix was ~2/3 runs failing).
-filter = 'test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(tail_watcher_sees_appender_task_events_within_debounce) + test(archive::watch::watch_integration_test::a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk) + test(archive::watch::watch_integration_test::a_temp_rename_swap_refreshes_the_listing)'
+# their live watches from multiplying each other's starvation. NOTE this group
+# only serializes under `cargo nextest` (process-per-test); under plain
+# `cargo test` the whole module shares one process, where a `WATCH_SERIAL` mutex
+# in `downloads::watcher::tests` does the equivalent. Proof: 10/10 saturated
+# full-suite `cargo nextest run` loops green at `retries = 0`, and 10/10
+# `cargo test --lib downloads::watcher` loops green (verified 2026-07 on a
+# 16-core M-series; baseline before the in-test fix was ~2/3 runs failing).
+filter = 'test(downloads::watcher::tests::dropping_a_file_emits_one_event) + test(downloads::watcher::tests::partial_rename_to_final_emits_for_final_path) + test(downloads::watcher::tests::latest_download_returns_ring_value_after_event) + test(downloads::watcher::tests::note_pending_write_suppresses_matching_event) + test(downloads::watcher::tests::scan_latest_fallback_finds_file_with_no_events) + test(tail_watcher_sees_appender_task_events_within_debounce) + test(archive::watch::watch_integration_test::a_live_watch_refreshes_the_listing_when_the_zip_changes_on_disk) + test(archive::watch::watch_integration_test::a_temp_rename_swap_refreshes_the_listing)'
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 
