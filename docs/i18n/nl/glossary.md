@@ -669,4 +669,10 @@ Settled while translating the Compress feature:
   · high.
 - replace (overwrite warning) → `vervangt` · Finder `Replace` → "Vervang" · high.
 - archive (name) → `archief` · Finder `Zip archive` → "Zip-archief" · high. `.zip` in straight double quotes.
+- compression level (slider label) → `Compressieniveau` · TC `nl` "Interne ZIP-compressie (0-9)" + `niveau`; standard nl
+  7-Zip `Compressieniveau` · high. `settings.archives.compressionLevel.label`.
+- faster (slider low end, level 1) → `Sneller` · TC `nl` "snelste compressie (1)" (root `snel`) · high. Marks quicker
+  packing, not app speed. `.faster`.
+- smaller (slider high end, level 9) → `Kleiner` · pairs with `Sneller`; marks the smaller output file (TC `nl` high end
+  "maximale compressie") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.

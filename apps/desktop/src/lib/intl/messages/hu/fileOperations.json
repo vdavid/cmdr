@@ -229,6 +229,10 @@
   "@fileOperations.transferDialog.hardlinkNote": {
     "sourceHash": "af8a4c9"
   },
+  "fileOperations.transferDialog.compressLevelCaption": "A magasabb szint kisebb zip fájlt eredményez, de tovább tart a tömörítés.",
+  "@fileOperations.transferDialog.compressLevelCaption": {
+    "sourceHash": "58924a1"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Ütközések keresése…",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

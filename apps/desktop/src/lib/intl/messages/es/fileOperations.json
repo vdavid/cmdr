@@ -228,6 +228,10 @@
   "@fileOperations.transferDialog.hardlinkNote": {
     "sourceHash": "af8a4c9"
   },
+  "fileOperations.transferDialog.compressLevelCaption": "Los niveles más altos generan un zip más pequeño, pero tardan más en comprimir.",
+  "@fileOperations.transferDialog.compressLevelCaption": {
+    "sourceHash": "58924a1"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Comprobando conflictos...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

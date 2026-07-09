@@ -227,6 +227,10 @@
   "@fileOperations.transferDialog.hardlinkNote": {
     "sourceHash": "af8a4c9"
   },
+  "fileOperations.transferDialog.compressLevelCaption": "级别越高，生成的 zip 越小，但打包耗时越长。",
+  "@fileOperations.transferDialog.compressLevelCaption": {
+    "sourceHash": "58924a1"
+  },
   "fileOperations.transferDialog.checkingConflicts": "正在检查冲突…",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

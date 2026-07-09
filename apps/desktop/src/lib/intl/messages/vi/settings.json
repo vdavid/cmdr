@@ -423,6 +423,22 @@
   "@settings.archives.opt.ask": {
     "sourceHash": "b8c209c"
   },
+  "settings.archives.compressionLevel.label": "Mức nén",
+  "@settings.archives.compressionLevel.label": {
+    "sourceHash": "9889378"
+  },
+  "settings.archives.compressionLevel.description": "Mức độ nén khi Cmdr tạo một tệp zip. Mức cao hơn tạo ra tệp nhỏ hơn nhưng nén lâu hơn. Áp dụng cho lệnh Nén và khi sao chép hoặc di chuyển tệp vào một tệp zip.",
+  "@settings.archives.compressionLevel.description": {
+    "sourceHash": "0ebedaf"
+  },
+  "settings.archives.compressionLevel.faster": "Nhanh hơn",
+  "@settings.archives.compressionLevel.faster": {
+    "sourceHash": "8d0160c"
+  },
+  "settings.archives.compressionLevel.smaller": "Nhỏ hơn",
+  "@settings.archives.compressionLevel.smaller": {
+    "sourceHash": "0041719"
+  },
   "settings.indexing.enabled.label": "Lập chỉ mục ổ đĩa",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"

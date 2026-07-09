@@ -619,4 +619,11 @@ Settled while translating the Compress feature:
 - replace (overwrite warning) → `remplacera` · Finder `Replace` → "Remplacer" · high.
 - archive (name) → `l''archive` (ICU-doubled apostrophe) · Finder `Zip archive` → "Archive ZIP" · high. `.zip` in
   straight double quotes.
+- compression level (slider label) → `Niveau de compression` · fr Finder/DC `compression` + `niveau`; standard 7-Zip
+  term `Niveau de compression` · high. TC `fr` LNG lacks the pack-dialog IDs.
+  `settings.archives.compressionLevel.label`.
+- faster (slider low end, level 1) → `Plus rapide` · fr comparative, MS/archiver usage · high. Marks quicker packing,
+  not app speed. `.faster`.
+- smaller (slider high end, level 9) → `Plus petit` · pairs with `Plus rapide`; marks the smaller output file · high.
+  `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.

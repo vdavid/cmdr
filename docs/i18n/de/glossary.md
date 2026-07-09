@@ -435,4 +435,10 @@ Settled while translating the Compress feature:
   Datei mit diesem Namen ist bereits hier. Cmdr ersetzt sie."
 - archive (name) → `Archiv`/`Archivname` · Finder `Zip archive` → "Zip-Archiv" · high. `.zip` kept in straight double
   quotes per the en key's do-not-restyle note.
+- compression level (slider label) → `Komprimierungsstufe` · TC `de` "Kompressionsrate (0-9)"; archiver UIs use
+  `-stufe`/`-grad` for the 1–9 level · high. `settings.archives.compressionLevel.label`.
+- faster (slider low end, level 1) → `Schneller` · TC `de` "schnellste Komprimierung (1)" (root `schnell`) · high. Marks
+  quicker packing, not app speed. `.faster`.
+- smaller (slider high end, level 9) → `Kleiner` · comparative of `klein`, pairs with `Schneller`; marks the smaller
+  output file (TC `de` high end "maximale Komprimierung") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.

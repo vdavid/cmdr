@@ -320,4 +320,10 @@ Settled while translating the Compress feature:
   ("Copiado: {phrase}") and the `one`/`many`/`other` shape of `fileOnly.allDone` · high.
 - replace (overwrite warning) → `substituí-lo` · Finder `Replace` → "Substituir" · high.
 - archive (name) → `arquivo` (pt-BR for file; the zip is a file) · high. `.zip` in straight double quotes.
+- compression level (slider label) → `Nível de compressão` · pt DC/Thunar `compressão` + `nível`; standard pt 7-Zip
+  `Nível de compressão` · high. pt pile has no Total Commander. `settings.archives.compressionLevel.label`.
+- faster (slider low end, level 1) → `Mais rápido` · pt comparative · high. Marks quicker packing, not app speed.
+  `.faster`.
+- smaller (slider high end, level 9) → `Menor` · pairs with `Mais rápido`; marks the smaller output file · high.
+  `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.

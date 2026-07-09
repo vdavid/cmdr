@@ -427,6 +427,22 @@
   "@settings.archives.opt.ask": {
     "sourceHash": "b8c209c"
   },
+  "settings.archives.compressionLevel.label": "Komprimeringsnivå",
+  "@settings.archives.compressionLevel.label": {
+    "sourceHash": "9889378"
+  },
+  "settings.archives.compressionLevel.description": "Hur hårt Cmdr komprimerar när en zip skapas. Högre nivåer ger en mindre fil men tar längre tid att packa. Gäller för kommandot Komprimera och för att kopiera eller flytta filer till en zip.",
+  "@settings.archives.compressionLevel.description": {
+    "sourceHash": "0ebedaf"
+  },
+  "settings.archives.compressionLevel.faster": "Snabbare",
+  "@settings.archives.compressionLevel.faster": {
+    "sourceHash": "8d0160c"
+  },
+  "settings.archives.compressionLevel.smaller": "Mindre",
+  "@settings.archives.compressionLevel.smaller": {
+    "sourceHash": "0041719"
+  },
   "settings.indexing.enabled.label": "Indexering av enhet",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"

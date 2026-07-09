@@ -427,6 +427,22 @@
   "@settings.archives.opt.ask": {
     "sourceHash": "b8c209c"
   },
+  "settings.archives.compressionLevel.label": "Niveau de compression",
+  "@settings.archives.compressionLevel.label": {
+    "sourceHash": "9889378"
+  },
+  "settings.archives.compressionLevel.description": "Intensité de compression lorsque Cmdr crée un zip. Les niveaux plus élevés produisent un fichier plus petit, mais la compression prend plus de temps. Concerne la commande Compresser ainsi que la copie ou le déplacement de fichiers vers un zip.",
+  "@settings.archives.compressionLevel.description": {
+    "sourceHash": "0ebedaf"
+  },
+  "settings.archives.compressionLevel.faster": "Plus rapide",
+  "@settings.archives.compressionLevel.faster": {
+    "sourceHash": "8d0160c"
+  },
+  "settings.archives.compressionLevel.smaller": "Plus petit",
+  "@settings.archives.compressionLevel.smaller": {
+    "sourceHash": "0041719"
+  },
   "settings.indexing.enabled.label": "Indexation du disque",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"

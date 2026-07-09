@@ -597,4 +597,10 @@ Settled while translating the Compress feature:
   `targetWillBeOverwritten` = "Már van itt egy ilyen nevű fájl. A Cmdr lecseréli."
 - archive (name) → `archívum` · settled hu glossary + Finder "Zip archívum" · high. `.zip` in straight double quotes;
   the `-re` case suffix attaches to the quoted literal (".zip"-re) not to a runtime value.
+- compression level (slider label) → `Tömörítési szint` · TC `hu` "Tömörítési arány (0-9)" (arány = ratio); `szint`
+  (level) chosen for the 1–9 step slider, standard hu 7-Zip term · high. `settings.archives.compressionLevel.label`.
+- faster (slider low end, level 1) → `Gyorsabb` · TC `hu` "Leggyorsabb tömörítés (1)" (root `gyors`) · high. Marks
+  quicker packing, not app speed. `.faster`.
+- smaller (slider high end, level 9) → `Kisebb` · comparative of `kis`, pairs with `Gyorsabb`; marks the smaller output
+  file (TC `hu` high end "Maximális tömörítés") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.

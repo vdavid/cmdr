@@ -425,6 +425,22 @@
   "@settings.archives.opt.ask": {
     "sourceHash": "b8c209c"
   },
+  "settings.archives.compressionLevel.label": "压缩级别",
+  "@settings.archives.compressionLevel.label": {
+    "sourceHash": "9889378"
+  },
+  "settings.archives.compressionLevel.description": "Cmdr 创建 zip 时的压缩强度。级别越高，文件越小，但打包耗时越长。此设置适用于压缩命令，以及将文件复制或移动到 zip 中。",
+  "@settings.archives.compressionLevel.description": {
+    "sourceHash": "0ebedaf"
+  },
+  "settings.archives.compressionLevel.faster": "更快",
+  "@settings.archives.compressionLevel.faster": {
+    "sourceHash": "8d0160c"
+  },
+  "settings.archives.compressionLevel.smaller": "更小",
+  "@settings.archives.compressionLevel.smaller": {
+    "sourceHash": "0041719"
+  },
   "settings.indexing.enabled.label": "驱动器索引",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"

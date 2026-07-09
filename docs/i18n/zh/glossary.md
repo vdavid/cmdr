@@ -565,4 +565,10 @@ Settled while translating the Compress feature:
 - replace (overwrite warning) → `替换` · Finder `Replace` → "替换" · high.
 - archive (name) → `归档` · Finder `Zip archive` → "Zip归档" · high. `.zip` in straight double quotes, spaced from the
   surrounding Han text.
+- compression level (slider label) → `压缩级别` · TC `zh` "内部 ZIP 压缩级别(0-9)" (exact term) · high.
+  `settings.archives.compressionLevel.label`.
+- faster (slider low end, level 1) → `更快` · TC `zh` "最快压缩(1)" (最快 = fastest); `更快` (faster) for the slider end
+  · high. Marks quicker packing, not app speed. `.faster`.
+- smaller (slider high end, level 9) → `更小` · pairs with `更快`; marks the smaller output file (TC `zh` high end
+  "最大压缩") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.

@@ -230,6 +230,10 @@
   "@fileOperations.transferDialog.hardlinkNote": {
     "sourceHash": "af8a4c9"
   },
+  "fileOperations.transferDialog.compressLevelCaption": "Hogere niveaus geven een kleinere zip, maar het comprimeren duurt langer.",
+  "@fileOperations.transferDialog.compressLevelCaption": {
+    "sourceHash": "58924a1"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Bezig met controleren op conflicten...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

@@ -430,6 +430,22 @@
   "@settings.archives.opt.ask": {
     "sourceHash": "b8c209c"
   },
+  "settings.archives.compressionLevel.label": "Compressieniveau",
+  "@settings.archives.compressionLevel.label": {
+    "sourceHash": "9889378"
+  },
+  "settings.archives.compressionLevel.description": "Hoe sterk Cmdr comprimeert bij het maken van een zip. Hogere niveaus geven een kleiner bestand, maar het comprimeren duurt langer. Dit geldt voor de opdracht Comprimeer en voor het kopiëren of verplaatsen van bestanden naar een zip.",
+  "@settings.archives.compressionLevel.description": {
+    "sourceHash": "0ebedaf"
+  },
+  "settings.archives.compressionLevel.faster": "Sneller",
+  "@settings.archives.compressionLevel.faster": {
+    "sourceHash": "8d0160c"
+  },
+  "settings.archives.compressionLevel.smaller": "Kleiner",
+  "@settings.archives.compressionLevel.smaller": {
+    "sourceHash": "0041719"
+  },
   "settings.indexing.enabled.label": "Schijf indexeren",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"

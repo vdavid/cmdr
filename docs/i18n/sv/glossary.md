@@ -520,4 +520,10 @@ Settled while translating the Compress feature:
   high.
 - replace (overwrite warning) → `ersätter` · Finder `Replace` → "Ersätt" · high.
 - archive (name) → `arkiv`/`Arkivets` · Finder `Zip archive` → "Zip-arkiv" · high. `.zip` in straight double quotes.
+- compression level (slider label) → `Komprimeringsnivå` · TC `sv` "Komprimering (0-9)" + `nivå`; standard sv term
+  `Komprimeringsnivå` · high. `settings.archives.compressionLevel.label`.
+- faster (slider low end, level 1) → `Snabbare` · TC `sv` "Snabbast komprimering (1)" (root `snabb`) · high. Marks
+  quicker packing, not app speed. `.faster`.
+- smaller (slider high end, level 9) → `Mindre` · pairs with `Snabbare`; marks the smaller output file (TC `sv` high end
+  "Maximal komprimering") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.

@@ -230,6 +230,10 @@
   "@fileOperations.transferDialog.hardlinkNote": {
     "sourceHash": "af8a4c9"
   },
+  "fileOperations.transferDialog.compressLevelCaption": "Höhere Stufen ergeben ein kleineres Zip, brauchen aber länger zum Packen.",
+  "@fileOperations.transferDialog.compressLevelCaption": {
+    "sourceHash": "58924a1"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Konflikte werden geprüft …",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

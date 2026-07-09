@@ -580,4 +580,10 @@ Settled while translating the Compress feature:
   only the `other` CLDR category (Vietnamese has no plural distinction), matching the sibling toasts.
 - replace (overwrite warning) → `thay thế` · Finder `Replace` → "Thay thế" · high.
 - archive (name) → `tệp lưu trữ` · Finder `Zip archive` → "Tệp lưu trữ Zip" · high. `.zip` in straight double quotes.
+- compression level (slider label) → `Mức nén` · TC `vi` "Sự nén ZIP nội (0-9)"; `mức` (level) + `nén` (compress),
+  standard vi 7-Zip `Mức nén` · high. `settings.archives.compressionLevel.label`.
+- faster (slider low end, level 1) → `Nhanh hơn` · TC `vi` "nén nhanh nhất (1)" (root `nhanh`) · high. Marks quicker
+  packing, not app speed. `.faster`.
+- smaller (slider high end, level 9) → `Nhỏ hơn` · pairs with `Nhanh hơn`; marks the smaller output file (TC `vi` high
+  end "nén tối đa") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.

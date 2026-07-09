@@ -425,6 +425,22 @@
   "@settings.archives.opt.ask": {
     "sourceHash": "b8c209c"
   },
+  "settings.archives.compressionLevel.label": "Tömörítési szint",
+  "@settings.archives.compressionLevel.label": {
+    "sourceHash": "9889378"
+  },
+  "settings.archives.compressionLevel.description": "Mennyire tömörít a Cmdr egy zip létrehozásakor. A magasabb szint kisebb fájlt eredményez, de tovább tart a tömörítés. A Tömörítés parancsra, valamint a fájlok zip archívumba másolására vagy áthelyezésére vonatkozik.",
+  "@settings.archives.compressionLevel.description": {
+    "sourceHash": "0ebedaf"
+  },
+  "settings.archives.compressionLevel.faster": "Gyorsabb",
+  "@settings.archives.compressionLevel.faster": {
+    "sourceHash": "8d0160c"
+  },
+  "settings.archives.compressionLevel.smaller": "Kisebb",
+  "@settings.archives.compressionLevel.smaller": {
+    "sourceHash": "0041719"
+  },
   "settings.indexing.enabled.label": "Meghajtó indexelése",
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"

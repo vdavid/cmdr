@@ -229,6 +229,10 @@
   "@fileOperations.transferDialog.hardlinkNote": {
     "sourceHash": "af8a4c9"
   },
+  "fileOperations.transferDialog.compressLevelCaption": "Högre nivåer ger en mindre zip men tar längre tid att packa.",
+  "@fileOperations.transferDialog.compressLevelCaption": {
+    "sourceHash": "58924a1"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Söker efter konflikter...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

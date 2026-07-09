@@ -228,6 +228,10 @@
   "@fileOperations.transferDialog.hardlinkNote": {
     "sourceHash": "af8a4c9"
   },
+  "fileOperations.transferDialog.compressLevelCaption": "Mức cao hơn tạo ra tệp zip nhỏ hơn nhưng nén lâu hơn.",
+  "@fileOperations.transferDialog.compressLevelCaption": {
+    "sourceHash": "58924a1"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Đang kiểm tra xung đột...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"
