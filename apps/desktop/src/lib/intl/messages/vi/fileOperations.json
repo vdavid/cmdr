@@ -180,6 +180,10 @@
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
   },
+  "fileOperations.transferDialog.toggleCompress": "Nén",
+  "@fileOperations.transferDialog.toggleCompress": {
+    "sourceHash": "033fc04"
+  },
   "fileOperations.transferDialog.routeLabel": "Lộ trình:",
   "@fileOperations.transferDialog.routeLabel": {
     "sourceHash": "8ccda30"
@@ -207,6 +211,10 @@
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Thư mục này chưa tồn tại. Cmdr sẽ tạo nó khi di chuyển.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
+  },
+  "fileOperations.transferDialog.targetWillBeOverwritten": "Đã có một tệp trùng tên ở đây. Cmdr sẽ thay thế nó.",
+  "@fileOperations.transferDialog.targetWillBeOverwritten": {
+    "sourceHash": "32c9a21"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, other {tệp}}",
   "@fileOperations.transferDialog.scanFile": {
@@ -260,13 +268,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Sao chép} move {Di chuyển} delete {Xóa} other {Chuyển vào thùng rác}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Sao chép} move {Di chuyển} compress {Nén} delete {Xóa} other {Chuyển vào thùng rác}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "3f4ca13"
+    "sourceHash": "b18b6e3"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Sao chép} move {Di chuyển} delete {Xóa} other {Chuyển vào thùng rác}} {phrase}",
+  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Sao chép} move {Di chuyển} compress {Nén} delete {Xóa} other {Chuyển vào thùng rác}} {phrase}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "3cf7a5e"
+    "sourceHash": "d21c910"
   },
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, other {tệp}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -284,6 +292,10 @@
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
     "sourceHash": "1030a7a"
   },
+  "fileOperations.transferDialog.pathErrorNotZip": "Tên tệp lưu trữ phải kết thúc bằng \".zip\".",
+  "@fileOperations.transferDialog.pathErrorNotZip": {
+    "sourceHash": "c85c6f8"
+  },
   "fileOperations.transferDialog.confirmCopy": "Sao chép",
   "@fileOperations.transferDialog.confirmCopy": {
     "sourceHash": "e21f935"
@@ -291,6 +303,10 @@
   "fileOperations.transferDialog.confirmMove": "Di chuyển",
   "@fileOperations.transferDialog.confirmMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.confirmCompress": "Nén",
+  "@fileOperations.transferDialog.confirmCompress": {
+    "sourceHash": "033fc04"
   },
   "fileOperations.scanPhase.fromLabel": "Từ:",
   "@fileOperations.scanPhase.fromLabel": {
@@ -315,6 +331,10 @@
   "fileOperations.transferProgress.scanTitleMove": "Đang xác minh trước khi di chuyển...",
   "@fileOperations.transferProgress.scanTitleMove": {
     "sourceHash": "5e79da2"
+  },
+  "fileOperations.transferProgress.scanTitleCompress": "Đang xác minh trước khi nén...",
+  "@fileOperations.transferProgress.scanTitleCompress": {
+    "sourceHash": "f01b959"
   },
   "fileOperations.transferProgress.scanTitleDelete": "Đang đếm các mục cần xóa...",
   "@fileOperations.transferProgress.scanTitleDelete": {
@@ -348,17 +368,17 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} delete {Đang xóa} other {Đang chuyển vào thùng rác}}...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} compress {Đang nén} delete {Đang xóa} other {Đang chuyển vào thùng rác}}...",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "8aed5dc"
+    "sourceHash": "fe64f70"
   },
   "fileOperations.transferProgress.stageScanning": "Đang quét",
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} delete {Đang xóa} other {Đang chuyển vào thùng rác}}",
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} compress {Đang nén} delete {Đang xóa} other {Đang chuyển vào thùng rác}}",
   "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "4f1aa07"
+    "sourceHash": "f45924a"
   },
   "fileOperations.transferProgress.warningFileOverFolder": "Đích đã tồn tại và là một <strong>thư mục</strong>. Bạn sắp ghi đè nó bằng một <strong>tệp</strong> trùng tên. Toàn bộ nội dung của thư mục đích sẽ bị xóa và thay bằng tệp đó. Làm gì đây?",
   "@fileOperations.transferProgress.warningFileOverFolder": {

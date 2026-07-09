@@ -419,3 +419,12 @@ Total/Double Commander de).
 - unlock (button + verb) → `Entsperren` · macOS AppKit locked-item button ("Entsperren") · high. Reused for the verb
   ("um es zu entsperren").
 - archive (the `{name}` head / input label) → `Archiv` · settled de glossary · high.
+
+Settled while translating the Compress feature (M6, 2026-07-09):
+
+- compress (verb / control label) → `Komprimieren` · Finder `de/macOS` ("Komprimieren", `Compress ${sources}` → „${sources}“ komprimieren) · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and the `compress` branch of `titleVerbOnly`. `titleWithCounts` uses the lowercase infinitive `komprimieren` to match the sibling `kopieren`/`bewegen` pattern.
+- compressing (progress -ing form) → `Wird komprimiert` · derived on the sibling `Wird kopiert`/`Wird bewegt` pattern · high. Used in `titleActive`, `stageActive`, and the noun form `Komprimieren` in `scanTitleCompress` ("Prüfung vor dem Komprimieren …").
+- compressed (result toast) → `komprimiert` (past participle) · mirrors `transfer.split.clean` (`{phrase} kopiert`) · high.
+- replace (overwrite warning) → `ersetzt` · Finder `Replace` → "Ersetzen" · high. `targetWillBeOverwritten` = "Eine Datei mit diesem Namen ist bereits hier. Cmdr ersetzt sie."
+- archive (name) → `Archiv`/`Archivname` · Finder `Zip archive` → "Zip-Archiv" · high. `.zip` kept in straight double quotes per the en key's do-not-restyle note.
+- No `sameAsSourceJustification` needed: all values differ from English.

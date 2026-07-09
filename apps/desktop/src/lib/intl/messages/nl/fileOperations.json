@@ -181,6 +181,10 @@
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
   },
+  "fileOperations.transferDialog.toggleCompress": "Comprimeer",
+  "@fileOperations.transferDialog.toggleCompress": {
+    "sourceHash": "033fc04"
+  },
   "fileOperations.transferDialog.routeLabel": "Route:",
   "@fileOperations.transferDialog.routeLabel": {
     "sourceHash": "8ccda30",
@@ -209,6 +213,10 @@
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Deze map bestaat nog niet. Cmdr maakt hem aan tijdens het verplaatsen.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
+  },
+  "fileOperations.transferDialog.targetWillBeOverwritten": "Er staat hier al een bestand met deze naam. Cmdr vervangt het.",
+  "@fileOperations.transferDialog.targetWillBeOverwritten": {
+    "sourceHash": "32c9a21"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, one {bestand} other {bestanden}}",
   "@fileOperations.transferDialog.scanFile": {
@@ -262,13 +270,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Kopieer} move {Verplaats} delete {Verwijder} other {Naar prullenmand}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Kopieer} move {Verplaats} compress {Comprimeer} delete {Verwijder} other {Naar prullenmand}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "3f4ca13"
+    "sourceHash": "b18b6e3"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Kopieer} move {Verplaats} delete {Verwijder} other {Naar prullenmand}} {phrase}",
+  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Kopieer} move {Verplaats} compress {Comprimeer} delete {Verwijder} other {Naar prullenmand}} {phrase}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "3cf7a5e"
+    "sourceHash": "d21c910"
   },
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {bestand} other {bestanden}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -286,6 +294,10 @@
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
     "sourceHash": "1030a7a"
   },
+  "fileOperations.transferDialog.pathErrorNotZip": "De naam van het archief moet eindigen op \".zip\".",
+  "@fileOperations.transferDialog.pathErrorNotZip": {
+    "sourceHash": "c85c6f8"
+  },
   "fileOperations.transferDialog.confirmCopy": "Kopieer",
   "@fileOperations.transferDialog.confirmCopy": {
     "sourceHash": "e21f935"
@@ -293,6 +305,10 @@
   "fileOperations.transferDialog.confirmMove": "Verplaats",
   "@fileOperations.transferDialog.confirmMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.confirmCompress": "Comprimeer",
+  "@fileOperations.transferDialog.confirmCompress": {
+    "sourceHash": "033fc04"
   },
   "fileOperations.scanPhase.fromLabel": "Vanuit:",
   "@fileOperations.scanPhase.fromLabel": {
@@ -317,6 +333,10 @@
   "fileOperations.transferProgress.scanTitleMove": "Controleren voor het verplaatsen...",
   "@fileOperations.transferProgress.scanTitleMove": {
     "sourceHash": "5e79da2"
+  },
+  "fileOperations.transferProgress.scanTitleCompress": "Controleren voor het comprimeren...",
+  "@fileOperations.transferProgress.scanTitleCompress": {
+    "sourceHash": "f01b959"
   },
   "fileOperations.transferProgress.scanTitleDelete": "Onderdelen tellen om te verwijderen...",
   "@fileOperations.transferProgress.scanTitleDelete": {
@@ -350,17 +370,17 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} delete {Bezig met verwijderen} other {Naar prullenmand verplaatsen}}...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} compress {Bezig met comprimeren} delete {Bezig met verwijderen} other {Naar prullenmand verplaatsen}}...",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "8aed5dc"
+    "sourceHash": "fe64f70"
   },
   "fileOperations.transferProgress.stageScanning": "Doorzoeken",
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} delete {Bezig met verwijderen} other {Naar prullenmand verplaatsen}}",
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} compress {Bezig met comprimeren} delete {Bezig met verwijderen} other {Naar prullenmand verplaatsen}}",
   "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "4f1aa07"
+    "sourceHash": "f45924a"
   },
   "fileOperations.transferProgress.warningFileOverFolder": "Het doel bestaat en is een <strong>map</strong>. Je staat op het punt het te overschrijven met een <strong>bestand</strong> met dezelfde naam. De volledige inhoud van de doelmap zou worden verwijderd en vervangen door het bestand. Wat wil je doen?",
   "@fileOperations.transferProgress.warningFileOverFolder": {

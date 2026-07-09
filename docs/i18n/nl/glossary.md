@@ -657,3 +657,12 @@ Total/Double Commander nl).
 - password (noun) → `Wachtwoord` · macOS/MS · high. Input aria-label compounds to `Archiefwachtwoord`.
 - unlock (button + verb) → `Ontgrendelen` · macOS AppKit ("Ontgrendelen") · high. Verb "om het te ontgrendelen".
 - archive (the `{name}` head) → `archief` · settled nl glossary · high.
+
+Settled while translating the Compress feature (M6, 2026-07-09):
+
+- compress (verb / control label) → `Comprimeer` (imperative, matching the sibling `Kopieer`/`Verplaats`) · Finder `nl/macOS` ("Comprimeer", `Compress ${sources}` → "Comprimeer ${sources}") · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb branches.
+- compressing (progress form) → `Bezig met comprimeren` · derived on `Bezig met kopiëren`/`verplaatsen` · high. `scanTitleCompress` = "Controleren voor het comprimeren...".
+- compressed (result toast) → `gecomprimeerd` (past participle) · mirrors `transfer.split.clean` ("{phrase} gekopieerd") · high.
+- replace (overwrite warning) → `vervangt` · Finder `Replace` → "Vervang" · high.
+- archive (name) → `archief` · Finder `Zip archive` → "Zip-archief" · high. `.zip` in straight double quotes.
+- No `sameAsSourceJustification` needed: all values differ from English.

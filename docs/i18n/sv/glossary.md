@@ -508,3 +508,12 @@ Total/Double Commander sv).
 - archive → `arkiv` · settled sv glossary · high.
 - COMMON GENDER: `arkiv` is treated common-gender here, so the predicate adjective takes the -ad/en-word form
   `lösenordsskyddad` (not neuter `-skyddat`) and the pronoun is `den` ("låsa upp den"), not `det`.
+
+Settled while translating the Compress feature (M6, 2026-07-09):
+
+- compress (verb / control label) → `Komprimera` · Finder `sv/macOS` ("Komprimera", `Compress ${sources}` → "Komprimera ${sources}") · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb branches.
+- compressing (progress form) → `Komprimerar` · derived on the sibling `Kopierar`/`Flyttar` · high. `scanTitleCompress` = "Verifierar före komprimering...".
+- compressed (result toast) → `Komprimerade` (past tense) · mirrors `transfer.split.clean` ("Kopierade {phrase}") · high.
+- replace (overwrite warning) → `ersätter` · Finder `Replace` → "Ersätt" · high.
+- archive (name) → `arkiv`/`Arkivets` · Finder `Zip archive` → "Zip-arkiv" · high. `.zip` in straight double quotes.
+- No `sameAsSourceJustification` needed: all values differ from English.

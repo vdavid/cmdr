@@ -181,6 +181,10 @@
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
   },
+  "fileOperations.transferDialog.toggleCompress": "Comprimir",
+  "@fileOperations.transferDialog.toggleCompress": {
+    "sourceHash": "033fc04"
+  },
   "fileOperations.transferDialog.routeLabel": "Rota:",
   "@fileOperations.transferDialog.routeLabel": {
     "sourceHash": "8ccda30"
@@ -208,6 +212,10 @@
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Esta pasta ainda não existe. O Cmdr vai criá-la durante a movimentação.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
+  },
+  "fileOperations.transferDialog.targetWillBeOverwritten": "Já existe um arquivo com este nome aqui. O Cmdr vai substituí-lo.",
+  "@fileOperations.transferDialog.targetWillBeOverwritten": {
+    "sourceHash": "32c9a21"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, one {arquivo} many {arquivos} other {arquivos}}",
   "@fileOperations.transferDialog.scanFile": {
@@ -261,13 +269,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Copiar} move {Mover} delete {Apagar} other {Mover para o Lixo}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Copiar} move {Mover} compress {Comprimir} delete {Apagar} other {Mover para o Lixo}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "3f4ca13"
+    "sourceHash": "b18b6e3"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Copiar} move {Mover} delete {Apagar} other {Mover para o Lixo}} {phrase}",
+  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Copiar} move {Mover} compress {Comprimir} delete {Apagar} other {Mover para o Lixo}} {phrase}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "3cf7a5e"
+    "sourceHash": "d21c910"
   },
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -285,6 +293,10 @@
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
     "sourceHash": "1030a7a"
   },
+  "fileOperations.transferDialog.pathErrorNotZip": "O nome do arquivo precisa terminar em \".zip\".",
+  "@fileOperations.transferDialog.pathErrorNotZip": {
+    "sourceHash": "c85c6f8"
+  },
   "fileOperations.transferDialog.confirmCopy": "Copiar",
   "@fileOperations.transferDialog.confirmCopy": {
     "sourceHash": "e21f935"
@@ -292,6 +304,10 @@
   "fileOperations.transferDialog.confirmMove": "Mover",
   "@fileOperations.transferDialog.confirmMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.confirmCompress": "Comprimir",
+  "@fileOperations.transferDialog.confirmCompress": {
+    "sourceHash": "033fc04"
   },
   "fileOperations.scanPhase.fromLabel": "De:",
   "@fileOperations.scanPhase.fromLabel": {
@@ -316,6 +332,10 @@
   "fileOperations.transferProgress.scanTitleMove": "Verificando antes de mover...",
   "@fileOperations.transferProgress.scanTitleMove": {
     "sourceHash": "5e79da2"
+  },
+  "fileOperations.transferProgress.scanTitleCompress": "Verificando antes de comprimir...",
+  "@fileOperations.transferProgress.scanTitleCompress": {
+    "sourceHash": "f01b959"
   },
   "fileOperations.transferProgress.scanTitleDelete": "Contando itens a apagar...",
   "@fileOperations.transferProgress.scanTitleDelete": {
@@ -349,17 +369,17 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copiando} move {Movendo} delete {Apagando} other {Movendo para o Lixo}}...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copiando} move {Movendo} compress {Comprimindo} delete {Apagando} other {Movendo para o Lixo}}...",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "8aed5dc"
+    "sourceHash": "fe64f70"
   },
   "fileOperations.transferProgress.stageScanning": "Analisando",
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copiando} move {Movendo} delete {Apagando} other {Movendo para o Lixo}}",
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copiando} move {Movendo} compress {Comprimindo} delete {Apagando} other {Movendo para o Lixo}}",
   "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "4f1aa07"
+    "sourceHash": "f45924a"
   },
   "fileOperations.transferProgress.warningFileOverFolder": "O destino já existe e é uma <strong>pasta</strong>. Você está prestes a substituí-la por um <strong>arquivo</strong> com o mesmo nome. Todo o conteúdo da pasta de destino seria excluído e substituído pelo arquivo. O que deseja fazer?",
   "@fileOperations.transferProgress.warningFileOverFolder": {

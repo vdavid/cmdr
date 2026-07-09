@@ -181,6 +181,10 @@
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
   },
+  "fileOperations.transferDialog.toggleCompress": "Tömörítés",
+  "@fileOperations.transferDialog.toggleCompress": {
+    "sourceHash": "033fc04"
+  },
   "fileOperations.transferDialog.routeLabel": "Útvonal:",
   "@fileOperations.transferDialog.routeLabel": {
     "sourceHash": "8ccda30"
@@ -208,6 +212,10 @@
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Ez a mappa még nem létezik. A Cmdr létrehozza az áthelyezés során.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
+  },
+  "fileOperations.transferDialog.targetWillBeOverwritten": "Már van itt egy ilyen nevű fájl. A Cmdr lecseréli.",
+  "@fileOperations.transferDialog.targetWillBeOverwritten": {
+    "sourceHash": "32c9a21"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, one {fájl} other {fájl}}",
   "@fileOperations.transferDialog.scanFile": {
@@ -261,13 +269,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Másolás} move {Áthelyezés} delete {Törlés} other {Áthelyezés a Kukába}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Másolás} move {Áthelyezés} compress {Tömörítés} delete {Törlés} other {Áthelyezés a Kukába}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "3f4ca13"
+    "sourceHash": "b18b6e3"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{phrase} {verb, select, copy {másolása} move {áthelyezése} delete {törlése} other {áthelyezése a Kukába}}",
+  "fileOperations.transferDialog.titleWithCounts": "{phrase} {verb, select, copy {másolása} move {áthelyezése} compress {tömörítése} delete {törlése} other {áthelyezése a Kukába}}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "3cf7a5e"
+    "sourceHash": "d21c910"
   },
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {fájl} other {fájl}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -285,6 +293,10 @@
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
     "sourceHash": "1030a7a"
   },
+  "fileOperations.transferDialog.pathErrorNotZip": "Az archívum nevének \".zip\"-re kell végződnie.",
+  "@fileOperations.transferDialog.pathErrorNotZip": {
+    "sourceHash": "c85c6f8"
+  },
   "fileOperations.transferDialog.confirmCopy": "Másolás",
   "@fileOperations.transferDialog.confirmCopy": {
     "sourceHash": "e21f935"
@@ -292,6 +304,10 @@
   "fileOperations.transferDialog.confirmMove": "Áthelyezés",
   "@fileOperations.transferDialog.confirmMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.confirmCompress": "Tömörítés",
+  "@fileOperations.transferDialog.confirmCompress": {
+    "sourceHash": "033fc04"
   },
   "fileOperations.scanPhase.fromLabel": "Innen:",
   "@fileOperations.scanPhase.fromLabel": {
@@ -316,6 +332,10 @@
   "fileOperations.transferProgress.scanTitleMove": "Ellenőrzés az áthelyezés előtt…",
   "@fileOperations.transferProgress.scanTitleMove": {
     "sourceHash": "5e79da2"
+  },
+  "fileOperations.transferProgress.scanTitleCompress": "Ellenőrzés a tömörítés előtt…",
+  "@fileOperations.transferProgress.scanTitleCompress": {
+    "sourceHash": "f01b959"
   },
   "fileOperations.transferProgress.scanTitleDelete": "Törlendő elemek számolása…",
   "@fileOperations.transferProgress.scanTitleDelete": {
@@ -349,17 +369,17 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Másolás} move {Áthelyezés} delete {Törlés} other {Áthelyezés a Kukába}}…",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Másolás} move {Áthelyezés} compress {Tömörítés} delete {Törlés} other {Áthelyezés a Kukába}}…",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "8aed5dc"
+    "sourceHash": "fe64f70"
   },
   "fileOperations.transferProgress.stageScanning": "Átvizsgálás",
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Másolás} move {Áthelyezés} delete {Törlés} other {Áthelyezés a Kukába}}",
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Másolás} move {Áthelyezés} compress {Tömörítés} delete {Törlés} other {Áthelyezés a Kukába}}",
   "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "4f1aa07"
+    "sourceHash": "f45924a"
   },
   "fileOperations.transferProgress.warningFileOverFolder": "A cél létezik, és egy <strong>mappa</strong>. Egy azonos nevű <strong>fájllal</strong> készülsz felülírni. A célmappa teljes tartalma törlődne, és a fájl lépne a helyébe. Mi legyen?",
   "@fileOperations.transferProgress.warningFileOverFolder": {

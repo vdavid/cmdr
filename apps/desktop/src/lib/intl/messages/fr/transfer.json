@@ -7,6 +7,14 @@
   "@transfer.delete": {
     "sourceHash": "dc69b52"
   },
+  "transfer.compress.split": "{phrase} compressés.",
+  "@transfer.compress.split": {
+    "sourceHash": "daf7381"
+  },
+  "transfer.compress.fileOnly": "{count, plural, one {{countText} fichier compressé} many {{countText} fichiers compressés} other {{countText} fichiers compressés}}.",
+  "@transfer.compress.fileOnly": {
+    "sourceHash": "af9d928"
+  },
   "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {fichier} many {fichiers} other {fichiers}} et {foldersText} {folders, plural, one {dossier} many {dossiers} other {dossiers}}} foldersOnly {{foldersText} {folders, plural, one {dossier} many {dossiers} other {dossiers}}} other {{filesText} {files, plural, one {fichier} many {fichiers} other {fichiers}}}}",
   "@transfer.movedPhrase": {
     "sourceHash": "e43d866"

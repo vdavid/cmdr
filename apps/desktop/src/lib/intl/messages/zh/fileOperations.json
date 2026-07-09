@@ -179,6 +179,10 @@
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
   },
+  "fileOperations.transferDialog.toggleCompress": "压缩",
+  "@fileOperations.transferDialog.toggleCompress": {
+    "sourceHash": "033fc04"
+  },
   "fileOperations.transferDialog.routeLabel": "路线：",
   "@fileOperations.transferDialog.routeLabel": {
     "sourceHash": "8ccda30"
@@ -206,6 +210,10 @@
   "fileOperations.transferDialog.targetWillBeCreatedMove": "这个文件夹还不存在。Cmdr 会在移动时自动创建它。",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
+  },
+  "fileOperations.transferDialog.targetWillBeOverwritten": "这里已经有一个同名文件了。Cmdr 会替换它。",
+  "@fileOperations.transferDialog.targetWillBeOverwritten": {
+    "sourceHash": "32c9a21"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, other {个文件}}",
   "@fileOperations.transferDialog.scanFile": {
@@ -259,13 +267,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {拷贝} move {移动} delete {删除} other {移到废纸篓}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {拷贝} move {移动} compress {压缩} delete {删除} other {移到废纸篓}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "3f4ca13"
+    "sourceHash": "b18b6e3"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {拷贝} move {移动} delete {删除} other {移到废纸篓}} {phrase}",
+  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {拷贝} move {移动} compress {压缩} delete {删除} other {移到废纸篓}} {phrase}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "3cf7a5e"
+    "sourceHash": "d21c910"
   },
   "fileOperations.transferDialog.filesPart": "{countText} 个{count, plural, other {文件}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -283,6 +291,10 @@
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
     "sourceHash": "1030a7a"
   },
+  "fileOperations.transferDialog.pathErrorNotZip": "归档名称必须以 \".zip\" 结尾。",
+  "@fileOperations.transferDialog.pathErrorNotZip": {
+    "sourceHash": "c85c6f8"
+  },
   "fileOperations.transferDialog.confirmCopy": "拷贝",
   "@fileOperations.transferDialog.confirmCopy": {
     "sourceHash": "e21f935"
@@ -290,6 +302,10 @@
   "fileOperations.transferDialog.confirmMove": "移动",
   "@fileOperations.transferDialog.confirmMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.confirmCompress": "压缩",
+  "@fileOperations.transferDialog.confirmCompress": {
+    "sourceHash": "033fc04"
   },
   "fileOperations.scanPhase.fromLabel": "来自：",
   "@fileOperations.scanPhase.fromLabel": {
@@ -314,6 +330,10 @@
   "fileOperations.transferProgress.scanTitleMove": "移动前正在核对…",
   "@fileOperations.transferProgress.scanTitleMove": {
     "sourceHash": "5e79da2"
+  },
+  "fileOperations.transferProgress.scanTitleCompress": "压缩前正在核对…",
+  "@fileOperations.transferProgress.scanTitleCompress": {
+    "sourceHash": "f01b959"
   },
   "fileOperations.transferProgress.scanTitleDelete": "正在统计要删除的项目…",
   "@fileOperations.transferProgress.scanTitleDelete": {
@@ -347,17 +367,17 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {正在拷贝} move {正在移动} delete {正在删除} other {正在移到废纸篓}}…",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {正在拷贝} move {正在移动} compress {正在压缩} delete {正在删除} other {正在移到废纸篓}}…",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "8aed5dc"
+    "sourceHash": "fe64f70"
   },
   "fileOperations.transferProgress.stageScanning": "扫描",
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {正在拷贝} move {正在移动} delete {正在删除} other {正在移到废纸篓}}",
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {正在拷贝} move {正在移动} compress {正在压缩} delete {正在删除} other {正在移到废纸篓}}",
   "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "4f1aa07"
+    "sourceHash": "f45924a"
   },
   "fileOperations.transferProgress.warningFileOverFolder": "目标已存在，是一个<strong>文件夹</strong>。你即将用同名的<strong>文件</strong>覆盖它。目标文件夹的全部内容会被删除，并由该文件取代。要怎么做？",
   "@fileOperations.transferProgress.warningFileOverFolder": {

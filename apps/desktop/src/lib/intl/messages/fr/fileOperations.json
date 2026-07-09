@@ -181,6 +181,10 @@
   "@fileOperations.transferDialog.toggleMove": {
     "sourceHash": "6ecc3df"
   },
+  "fileOperations.transferDialog.toggleCompress": "Compresser",
+  "@fileOperations.transferDialog.toggleCompress": {
+    "sourceHash": "033fc04"
+  },
   "fileOperations.transferDialog.routeLabel": "Trajet :",
   "@fileOperations.transferDialog.routeLabel": {
     "sourceHash": "8ccda30"
@@ -208,6 +212,10 @@
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Ce dossier n''existe pas encore. Cmdr le créera lors du déplacement.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
+  },
+  "fileOperations.transferDialog.targetWillBeOverwritten": "Un fichier portant ce nom existe déjà ici. Cmdr le remplacera.",
+  "@fileOperations.transferDialog.targetWillBeOverwritten": {
+    "sourceHash": "32c9a21"
   },
   "fileOperations.transferDialog.scanFile": "{count, plural, one {fichier} many {fichiers} other {fichiers}}",
   "@fileOperations.transferDialog.scanFile": {
@@ -261,13 +269,13 @@
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
-  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Copier} move {Déplacer} delete {Supprimer} other {Placer dans la corbeille}}",
+  "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Copier} move {Déplacer} compress {Compresser} delete {Supprimer} other {Placer dans la corbeille}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
-    "sourceHash": "3f4ca13"
+    "sourceHash": "b18b6e3"
   },
-  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Copier} move {Déplacer} delete {Supprimer} other {Placer dans la corbeille}} {phrase}",
+  "fileOperations.transferDialog.titleWithCounts": "{verb, select, copy {Copier} move {Déplacer} compress {Compresser} delete {Supprimer} other {Placer dans la corbeille}} {phrase}",
   "@fileOperations.transferDialog.titleWithCounts": {
-    "sourceHash": "3cf7a5e"
+    "sourceHash": "d21c910"
   },
   "fileOperations.transferDialog.filesPart": "{countText} {count, plural, one {fichier} many {fichiers} other {fichiers}}",
   "@fileOperations.transferDialog.filesPart": {
@@ -285,6 +293,10 @@
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
     "sourceHash": "1030a7a"
   },
+  "fileOperations.transferDialog.pathErrorNotZip": "Le nom de l''archive doit se terminer par \".zip\".",
+  "@fileOperations.transferDialog.pathErrorNotZip": {
+    "sourceHash": "c85c6f8"
+  },
   "fileOperations.transferDialog.confirmCopy": "Copier",
   "@fileOperations.transferDialog.confirmCopy": {
     "sourceHash": "e21f935"
@@ -292,6 +304,10 @@
   "fileOperations.transferDialog.confirmMove": "Déplacer",
   "@fileOperations.transferDialog.confirmMove": {
     "sourceHash": "6ecc3df"
+  },
+  "fileOperations.transferDialog.confirmCompress": "Compresser",
+  "@fileOperations.transferDialog.confirmCompress": {
+    "sourceHash": "033fc04"
   },
   "fileOperations.scanPhase.fromLabel": "Depuis :",
   "@fileOperations.scanPhase.fromLabel": {
@@ -316,6 +332,10 @@
   "fileOperations.transferProgress.scanTitleMove": "Vérification avant le déplacement...",
   "@fileOperations.transferProgress.scanTitleMove": {
     "sourceHash": "5e79da2"
+  },
+  "fileOperations.transferProgress.scanTitleCompress": "Vérification avant la compression...",
+  "@fileOperations.transferProgress.scanTitleCompress": {
+    "sourceHash": "f01b959"
   },
   "fileOperations.transferProgress.scanTitleDelete": "Décompte des éléments à supprimer...",
   "@fileOperations.transferProgress.scanTitleDelete": {
@@ -349,17 +369,17 @@
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "e0ba096"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copie} move {Déplacement} delete {Suppression} other {Placement dans la corbeille}} en cours...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copie} move {Déplacement} compress {Compression} delete {Suppression} other {Placement dans la corbeille}} en cours...",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "8aed5dc"
+    "sourceHash": "fe64f70"
   },
   "fileOperations.transferProgress.stageScanning": "Analyse",
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copie} move {Déplacement} delete {Suppression} other {Placement dans la corbeille}}",
+  "fileOperations.transferProgress.stageActive": "{gerund, select, copy {Copie} move {Déplacement} compress {Compression} delete {Suppression} other {Placement dans la corbeille}}",
   "@fileOperations.transferProgress.stageActive": {
-    "sourceHash": "4f1aa07"
+    "sourceHash": "f45924a"
   },
   "fileOperations.transferProgress.warningFileOverFolder": "La cible existe et c''est un <strong>dossier</strong>. Vous êtes sur le point de l''écraser avec un <strong>fichier</strong> portant le même nom. Tout le contenu du dossier cible serait supprimé et remplacé par le fichier. Que faire ?",
   "@fileOperations.transferProgress.warningFileOverFolder": {

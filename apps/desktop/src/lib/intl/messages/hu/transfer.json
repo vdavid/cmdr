@@ -7,6 +7,14 @@
   "@transfer.delete": {
     "sourceHash": "dc69b52"
   },
+  "transfer.compress.split": "Tömörítve: {phrase}.",
+  "@transfer.compress.split": {
+    "sourceHash": "daf7381"
+  },
+  "transfer.compress.fileOnly": "{countText} {count, plural, one {fájl} other {fájl}} tömörítve.",
+  "@transfer.compress.fileOnly": {
+    "sourceHash": "af9d928"
+  },
   "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, one {fájl} other {fájl}} és {foldersText} {folders, plural, one {mappa} other {mappa}}} foldersOnly {{foldersText} {folders, plural, one {mappa} other {mappa}}} other {{filesText} {files, plural, one {fájl} other {fájl}}}}",
   "@transfer.movedPhrase": {
     "sourceHash": "e43d866"

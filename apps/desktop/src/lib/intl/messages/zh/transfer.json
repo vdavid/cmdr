@@ -7,6 +7,14 @@
   "@transfer.delete": {
     "sourceHash": "dc69b52"
   },
+  "transfer.compress.split": "已压缩 {phrase}。",
+  "@transfer.compress.split": {
+    "sourceHash": "daf7381"
+  },
+  "transfer.compress.fileOnly": "已压缩 {countText} {count, plural, other {个文件}}。",
+  "@transfer.compress.fileOnly": {
+    "sourceHash": "af9d928"
+  },
   "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, other {个文件}}和 {foldersText} {folders, plural, other {个文件夹}}} foldersOnly {{foldersText} {folders, plural, other {个文件夹}}} other {{filesText} {files, plural, other {个文件}}}}",
   "@transfer.movedPhrase": {
     "sourceHash": "e43d866"

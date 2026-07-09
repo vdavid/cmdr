@@ -7,6 +7,14 @@
   "@transfer.delete": {
     "sourceHash": "dc69b52"
   },
+  "transfer.compress.split": "Đã nén {phrase}.",
+  "@transfer.compress.split": {
+    "sourceHash": "daf7381"
+  },
+  "transfer.compress.fileOnly": "Đã nén {countText} {count, plural, other {tệp}}.",
+  "@transfer.compress.fileOnly": {
+    "sourceHash": "af9d928"
+  },
   "transfer.movedPhrase": "{kind, select, both {{filesText} {files, plural, other {tệp}} và {foldersText} {folders, plural, other {thư mục}}} foldersOnly {{foldersText} {folders, plural, other {thư mục}}} other {{filesText} {files, plural, other {tệp}}}}",
   "@transfer.movedPhrase": {
     "sourceHash": "e43d866"

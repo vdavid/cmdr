@@ -351,6 +351,10 @@
   "@commands.fileMove.label": {
     "sourceHash": "6ecc3df"
   },
+  "commands.fileCompress.label": "Komprimieren",
+  "@commands.fileCompress.label": {
+    "sourceHash": "033fc04"
+  },
   "commands.editCopy.label": "In die Zwischenablage kopieren",
   "@commands.editCopy.label": {
     "sourceHash": "b749e20"
