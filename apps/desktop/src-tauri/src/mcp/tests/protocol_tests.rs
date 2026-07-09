@@ -91,7 +91,7 @@ fn test_total_tool_count() {
     assert_eq!(
         tools.len(),
         39,
-        "Expected 35 tools, got {}. Did you add/remove tools?",
+        "Expected 39 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
 }

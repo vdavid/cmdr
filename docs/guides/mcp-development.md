@@ -93,9 +93,10 @@ schema/dispatch/auth can't fall out of sync.
 
 - **`gate`** classifies the tool for the bearer token: `Open` (no token — reads, nav, search, and destructive ops that
   still prompt the user), `Always` (always gated — config mutation with no confirmation, like `set_setting`),
-  `IfAutoConfirm` (gated when `arguments.autoConfirm == true`, like `copy`/`move`/`delete`), or `IfConfirmAction` (gated
-  when `arguments.action == "confirm"`, like `dialog`). A structural test fails if a tool exposing `autoConfirm` is left
-  `Open`, so a destructive tool can't ship ungated by accident.
+  `IfAutoConfirm` (gated when `arguments.autoConfirm == true`, like `copy`/`move`/`delete`), `IfConfirmAction` (gated
+  when `arguments.action == "confirm"`, like `dialog`), or `IfRollback` (gated when `arguments.rollback == true`, the
+  `queue` tool's file-deleting rollback cancel). Structural tests fail if a tool exposing `autoConfirm` or `rollback` is
+  left `Open`, so a destructive tool can't ship ungated by accident.
 - **`run`** is a shape tag then the handler path. The tag tells the generated dispatch how to call the handler:
   `app_params` (`handler(app, params).await`, most tools), `app_only` (`handler(app).await`, no params), `params_only`
   (`handler(params).await`, no `app` — `search`, `ai_search`), `sync_app` / `sync_app_params` (sync handlers, no

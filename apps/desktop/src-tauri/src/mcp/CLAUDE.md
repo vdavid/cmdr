@@ -10,9 +10,10 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
 - `server.rs`: HTTP server, bind/lifecycle, request dispatch (`process_request`), and response formatting only.
 - `auth.rs`: token lifecycle and per-request validation (`tool_call_requires_token`, `validate_token`,
   `validate_origin`, header/protocol checks). One-directional: `server` uses `auth`, never the reverse.
-- `tool_registry.rs`: single source for all 35 tools — one `mcp_tools!` table generates the list, dispatch, and auth
-  gate (`tool_gate`/`TokenGate`). `tools.rs` is a shim (`Tool` struct + re-export). Handlers + ack contract in
-  `executor/` (see [`executor/CLAUDE.md`](executor/CLAUDE.md)).
+- `tool_registry.rs`: single source for all 39 tools — one `mcp_tools!` table generates the list, dispatch, and auth
+  gate (`tool_gate`/`TokenGate`). `tools.rs` is a shim (`Tool` struct + re-export). Its schema/gate tests live in
+  `tests/tool_registry_tests.rs` (kept out of the table file). Handlers + ack contract in `executor/` (see
+  [`executor/CLAUDE.md`](executor/CLAUDE.md)).
 - `resources/`: read-only YAML/text resources (`cmdr://state`, `logs`, `indexing` (per-volume), `importance`,
   `settings`). State
   stores: `PaneStateStore`, `SoftDialogTracker` (`dialog_state.rs`), `listing_errors`, `terminal_ops` (settled-op ring
