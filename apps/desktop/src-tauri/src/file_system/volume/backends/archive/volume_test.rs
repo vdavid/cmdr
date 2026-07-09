@@ -607,6 +607,31 @@ async fn remote_central_directory_parse_is_a_single_tail_read() {
 }
 
 #[tokio::test]
+async fn remote_backed_archive_never_reports_listing_is_watched() {
+    // Data-safety guardrail: a remote parent has no local `notify` transport, so
+    // the content watch can't arm and `listing_is_watched` must stay `false` even
+    // after `start_content_watch`. The SMB push-refresh (`smb_watcher`) is a
+    // SEPARATE, visible-listing-only consumer; it must never flip this flag, or
+    // the write-op fresh-listing oracle would trust a lossy watcher's cache for
+    // pre-flight sizing. See `watch/DETAILS.md` § remote-no-watch.
+    let bytes = build_zip(&[stored("a.txt", "x")]);
+    let (_parent, volume) = remote_archive(bytes).await;
+    let archive_path = PathBuf::from("/remote/archive.zip");
+
+    assert!(
+        !volume.listing_is_watched(&archive_path),
+        "a remote-backed archive must never claim listing freshness"
+    );
+    // Starting the content watch is a no-op for a remote parent (no local path);
+    // the flag must remain false.
+    volume.start_content_watch("remote");
+    assert!(
+        !volume.listing_is_watched(&archive_path),
+        "start_content_watch must not arm a watch for a remote parent"
+    );
+}
+
+#[tokio::test]
 async fn remote_archive_reports_a_damaged_zip_typed_not_a_panic() {
     // A remote "archive" whose bytes aren't a zip surfaces as a typed error
     // (NotSupported/IoError), never a panic — the mid-browse backstop still holds

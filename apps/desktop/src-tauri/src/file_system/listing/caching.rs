@@ -793,8 +793,11 @@ fn find_listings_under_path_on_volume(
 /// parent drive `volume_id`, re-reading each through the freshly re-resolved
 /// `ArchiveVolume`.
 ///
-/// The archive content watcher calls this when the backing `.zip` changes on
-/// disk. It deliberately does NOT go through [`notify_directory_changed`]: that
+/// Two callers fire this when the backing `.zip` changes: the local archive
+/// content watch (`archive::watch`, a `notify` watch on a LOCAL parent) and the
+/// SMB share watcher (`smb_watcher`, for a REMOTE parent that has no local
+/// `notify` transport — see `backends/DETAILS.md` § "SMB archive push-refresh").
+/// It deliberately does NOT go through [`notify_directory_changed`]: that
 /// function runs the drive-index sync (`apply_smb_change`) up front, and an
 /// archive-inner path (`/…/foo.zip/dir`) isn't a real filesystem path, so feeding
 /// it to the index would be meaningless. Here we only refresh the pane listings.

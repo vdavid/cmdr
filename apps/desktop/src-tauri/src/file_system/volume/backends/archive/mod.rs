@@ -35,10 +35,10 @@ mod volume;
 mod watch;
 
 // Shared zip-fixture builders for the subfolders' tests (read, mutation, watch,
-// and the `ArchiveVolume` layer). Lives at the archive root so every descendant
-// test module can reach it.
+// and the `ArchiveVolume` layer), plus the sibling `smb_watcher` archive-refresh
+// test. Lives at the archive root; `pub(crate)` so those callers can reach it.
 #[cfg(test)]
-mod test_fixtures;
+pub(crate) mod test_fixtures;
 
 // `mutator` presents at this level (`archive::mutator`) — the write-ops
 // archive-edit driver reaches it there — while it lives under `mutation/`.

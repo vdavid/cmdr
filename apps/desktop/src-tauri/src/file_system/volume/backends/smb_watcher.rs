@@ -11,7 +11,7 @@
 //! re-establishing the session — it respawns the watcher when it succeeds.
 
 use crate::file_system::listing::FileEntry;
-use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed};
+use crate::file_system::listing::caching::{DirectoryChange, notify_directory_changed, refresh_archive_listings};
 use log::{debug, info, warn};
 use smb2::{ClientConfig, FileNotifyAction, SmbClient};
 use std::collections::HashMap;
@@ -24,6 +24,161 @@ const WATCHER_BATCH_THRESHOLD: usize = 50;
 
 /// Debounce window: after receiving a batch of events, wait this long for more.
 const WATCHER_DEBOUNCE: Duration = Duration::from_millis(200);
+
+/// Converts a watcher filename (NFC from server) to an NFD display path
+/// suitable for macOS mount paths.
+fn to_nfd_display_path(mount_path: &Path, relative: &str) -> PathBuf {
+    let nfd: String = relative.nfd().collect();
+    if nfd.is_empty() {
+        mount_path.to_path_buf()
+    } else {
+        mount_path.join(&nfd)
+    }
+}
+
+/// Stats a file via the main SmbVolume connection (through VolumeManager).
+async fn stat_via_volume(volume_id: &str, path: &Path) -> Option<FileEntry> {
+    let vm = crate::file_system::get_volume_manager();
+    let vol = vm.get(volume_id)?;
+    vol.get_metadata(path).await.ok()
+}
+
+/// When a changed SMB path is a supported archive, refreshes any open listing
+/// INSIDE it. The recursive share watch already refreshes the directory listing
+/// showing the `.zip` itself (its new size/mtime); this adds the archive-inner
+/// refresh a REMOTE parent otherwise never gets — a remote `.zip` has no local
+/// `notify` transport, so `archive::watch` (the local-parent equivalent) can't
+/// arm. Same `refresh_archive_listings` consumer, same parent-drive `volume_id`
+/// the listing cache keys archive listings on, so no rekeying.
+///
+/// A no-op when the path isn't an archive or no inner listing is open (the
+/// refresh scans the listing cache for keys at/inside the archive path). This is
+/// purely a visible-listing UX nicety and a SEPARATE consumer from the write-op
+/// fresh-listing oracle: `ArchiveVolume::listing_is_watched` stays `false` for a
+/// remote parent regardless, because the SMB watcher is lossy under load and the
+/// oracle must keep re-reading pre-flight scans honestly.
+///
+/// `archive_path` must already be the normalized display path (backslash→slash,
+/// NFC→NFD) the cache lookups use — pass the `to_nfd_display_path` result, the
+/// same normalization every other cache-facing path in this file goes through.
+async fn maybe_refresh_archive_listings(volume_id: &str, archive_path: &Path) {
+    let is_archive = archive_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(super::archive::has_supported_archive_extension);
+    if is_archive {
+        refresh_archive_listings(volume_id, archive_path).await;
+    }
+}
+
+/// Processes a batch of collected events per directory into `DirectoryChange` notifications.
+async fn process_event_batch(
+    events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>>,
+    volume_id: &str,
+    mount_path: &Path,
+) {
+    for (parent_path, events) in &events_by_dir {
+        if events.len() > WATCHER_BATCH_THRESHOLD {
+            debug!(
+                "smb_watcher: {} events for {}, emitting FullRefresh",
+                events.len(),
+                parent_path.display()
+            );
+            notify_directory_changed(volume_id, parent_path, DirectoryChange::FullRefresh);
+            continue;
+        }
+
+        let mut pending_old_name: Option<String> = None;
+
+        for (action, filename) in events {
+            let file_name_only: String = Path::new(filename)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| filename.clone());
+
+            // Skip macOS safe-save temp files (like "file.txt.sb-1e64c894-vFWIzN").
+            // These are transient artifacts from TextEdit/Preview/etc. that create a
+            // temp dir, write the new version, then atomically swap. Showing them in
+            // the listing confuses users. Controlled by advanced.filterSafeSaveArtifacts.
+            if crate::file_system::is_filter_safe_save_artifacts_enabled() && file_name_only.contains(".sb-") {
+                continue;
+            }
+
+            match action {
+                FileNotifyAction::Added => {
+                    let entry_path = to_nfd_display_path(mount_path, filename);
+                    match stat_via_volume(volume_id, &entry_path).await {
+                        Some(entry) => {
+                            notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
+                        }
+                        None => {
+                            debug!(
+                                "smb_watcher: couldn't stat added file {}, skipping",
+                                entry_path.display()
+                            );
+                        }
+                    }
+                }
+                FileNotifyAction::Removed => {
+                    notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(file_name_only));
+                }
+                FileNotifyAction::Modified => {
+                    let entry_path = to_nfd_display_path(mount_path, filename);
+                    match stat_via_volume(volume_id, &entry_path).await {
+                        Some(entry) => {
+                            notify_directory_changed(volume_id, parent_path, DirectoryChange::Modified(entry));
+                        }
+                        None => {
+                            debug!(
+                                "smb_watcher: couldn't stat modified file {}, skipping",
+                                entry_path.display()
+                            );
+                        }
+                    }
+                    // An in-place rewrite of the backing `.zip` also refreshes any
+                    // open archive-inner listing (independent of the stat above,
+                    // which may fail mid-write — the refresh handles a truncated
+                    // archive gracefully).
+                    maybe_refresh_archive_listings(volume_id, &entry_path).await;
+                }
+                FileNotifyAction::RenamedOldName => {
+                    pending_old_name = Some(file_name_only);
+                }
+                FileNotifyAction::RenamedNewName => {
+                    let entry_path = to_nfd_display_path(mount_path, filename);
+                    if let Some(old_name) = pending_old_name.take() {
+                        match stat_via_volume(volume_id, &entry_path).await {
+                            Some(new_entry) => {
+                                notify_directory_changed(
+                                    volume_id,
+                                    parent_path,
+                                    DirectoryChange::Renamed { old_name, new_entry },
+                                );
+                            }
+                            None => {
+                                // Couldn't stat new name: emit remove + skip add
+                                notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(old_name));
+                            }
+                        }
+                    } else {
+                        // Got new name without old name, treating as add
+                        if let Some(entry) = stat_via_volume(volume_id, &entry_path).await {
+                            notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
+                        }
+                    }
+                    // A temp+rename swap over the backing `.zip` (the editor /
+                    // safe-overwrite path) also refreshes any open inner listing.
+                    maybe_refresh_archive_listings(volume_id, &entry_path).await;
+                }
+            }
+        }
+
+        // If we have a dangling old name with no new name, treat as remove
+        if let Some(old_name) = pending_old_name {
+            notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(old_name));
+        }
+    }
+}
 
 /// Runs the SMB change watcher on a dedicated smb2 session.
 ///
@@ -40,129 +195,6 @@ pub(super) async fn run_smb_watcher(
     mount_path: PathBuf,
     cancel_rx: tokio::sync::oneshot::Receiver<()>,
 ) {
-    /// Converts a watcher filename (NFC from server) to an NFD display path
-    /// suitable for macOS mount paths.
-    fn to_nfd_display_path(mount_path: &Path, relative: &str) -> PathBuf {
-        let nfd: String = relative.nfd().collect();
-        if nfd.is_empty() {
-            mount_path.to_path_buf()
-        } else {
-            mount_path.join(&nfd)
-        }
-    }
-
-    /// Processes a batch of collected events per directory into `DirectoryChange` notifications.
-    async fn process_event_batch(
-        events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>>,
-        volume_id: &str,
-        mount_path: &Path,
-    ) {
-        for (parent_path, events) in &events_by_dir {
-            if events.len() > WATCHER_BATCH_THRESHOLD {
-                debug!(
-                    "smb_watcher: {} events for {}, emitting FullRefresh",
-                    events.len(),
-                    parent_path.display()
-                );
-                notify_directory_changed(volume_id, parent_path, DirectoryChange::FullRefresh);
-                continue;
-            }
-
-            let mut pending_old_name: Option<String> = None;
-
-            for (action, filename) in events {
-                let file_name_only: String = Path::new(filename)
-                    .file_name()
-                    .map(|n| n.to_string_lossy().to_string())
-                    .unwrap_or_else(|| filename.clone());
-
-                // Skip macOS safe-save temp files (like "file.txt.sb-1e64c894-vFWIzN").
-                // These are transient artifacts from TextEdit/Preview/etc. that create a
-                // temp dir, write the new version, then atomically swap. Showing them in
-                // the listing confuses users. Controlled by advanced.filterSafeSaveArtifacts.
-                if crate::file_system::is_filter_safe_save_artifacts_enabled() && file_name_only.contains(".sb-") {
-                    continue;
-                }
-
-                match action {
-                    FileNotifyAction::Added => {
-                        let entry_path = to_nfd_display_path(mount_path, filename);
-                        match stat_via_volume(volume_id, &entry_path).await {
-                            Some(entry) => {
-                                notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
-                            }
-                            None => {
-                                debug!(
-                                    "smb_watcher: couldn't stat added file {}, skipping",
-                                    entry_path.display()
-                                );
-                            }
-                        }
-                    }
-                    FileNotifyAction::Removed => {
-                        notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(file_name_only));
-                    }
-                    FileNotifyAction::Modified => {
-                        let entry_path = to_nfd_display_path(mount_path, filename);
-                        match stat_via_volume(volume_id, &entry_path).await {
-                            Some(entry) => {
-                                notify_directory_changed(volume_id, parent_path, DirectoryChange::Modified(entry));
-                            }
-                            None => {
-                                debug!(
-                                    "smb_watcher: couldn't stat modified file {}, skipping",
-                                    entry_path.display()
-                                );
-                            }
-                        }
-                    }
-                    FileNotifyAction::RenamedOldName => {
-                        pending_old_name = Some(file_name_only);
-                    }
-                    FileNotifyAction::RenamedNewName => {
-                        let entry_path = to_nfd_display_path(mount_path, filename);
-                        if let Some(old_name) = pending_old_name.take() {
-                            match stat_via_volume(volume_id, &entry_path).await {
-                                Some(new_entry) => {
-                                    notify_directory_changed(
-                                        volume_id,
-                                        parent_path,
-                                        DirectoryChange::Renamed { old_name, new_entry },
-                                    );
-                                }
-                                None => {
-                                    // Couldn't stat new name: emit remove + skip add
-                                    notify_directory_changed(
-                                        volume_id,
-                                        parent_path,
-                                        DirectoryChange::Removed(old_name),
-                                    );
-                                }
-                            }
-                        } else {
-                            // Got new name without old name, treating as add
-                            if let Some(entry) = stat_via_volume(volume_id, &entry_path).await {
-                                notify_directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
-                            }
-                        }
-                    }
-                }
-            }
-
-            // If we have a dangling old name with no new name, treat as remove
-            if let Some(old_name) = pending_old_name {
-                notify_directory_changed(volume_id, parent_path, DirectoryChange::Removed(old_name));
-            }
-        }
-    }
-
-    /// Stats a file via the main SmbVolume connection (through VolumeManager).
-    async fn stat_via_volume(volume_id: &str, path: &Path) -> Option<FileEntry> {
-        let vm = crate::file_system::get_volume_manager();
-        let vol = vm.get(volume_id)?;
-        vol.get_metadata(path).await.ok()
-    }
-
     // ── Main watcher loop ──────────────────────────────────────────
 
     let mut cancel_rx = cancel_rx;
@@ -353,3 +385,6 @@ pub(super) async fn run_smb_watcher(
         }
     }
 }
+
+#[cfg(test)]
+mod archive_refresh_test;

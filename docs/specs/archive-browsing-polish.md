@@ -116,15 +116,22 @@ scratch prologue (via the copy engine's `pull_path_to_local` seam) before the or
 archive parent's local-vs-remote handling. Move deletes the remote originals after the durable commit. Canonical docs:
 `write_operations/DETAILS.md` § "Archive edits" (source-side pull bullet).
 
-## 6. Remote-backed archive live refresh (UX, niche)
+## 6. Remote-backed archive live refresh (UX, niche) — SMB SHIPPED 2026-07-09, MTP manual by contract
 
 A LOCAL archive listing live-refreshes when the backing file changes on disk (real `notify` watch on the `.zip`). A
 REMOTE archive doesn't (no watch transport over SMB / MTP). Options: poll `get_metadata` (size + mtime) on a
 visible-pane cadence, or accept manual refresh as the contract. Today's behavior is stale-until-refresh with no
 indicator.
 
-**Spiked 2026-07-08.** Recommend SMB: reuse the existing recursive CHANGE_NOTIFY watcher (push, not poll). MTP: accept
-manual refresh (F5) as the contract.
+**SMB shipped 2026-07-09; MTP stays manual by contract.** SMB reuses the existing recursive CHANGE_NOTIFY watcher (push,
+not poll): `smb_watcher.rs`'s Modified/Renamed handlers now call `caching::refresh_archive_listings` for a
+supported-archive path, so an out-of-band edit of a remote `.zip` refreshes any open inner listing.
+`ArchiveVolume::listing_is_watched` stays `false` for a remote parent (the push-refresh is a separate,
+visible-listing-only consumer from the write-op oracle). Canonical mechanism: `backends/DETAILS.md` § "SMB archive
+push-refresh"; the remote-freshness decision and guardrail test: `archive/watch/DETAILS.md`. MTP kept manual refresh
+(F5): its `ObjectInfoChanged` is absent on many devices and hooking the event-loop's targeted refresh isn't a clean
+few-liner (it would need to reverse-derive the parent MTP volume id and reconcile the `mtp://` vs `/`-rooted archive
+path form), while the `(path, size, mtime)` cache key already forces a re-parse on the next navigation.
 
 **SMB — reuse `smb_watcher.rs`, no poll.** The SMB watcher already opens CHANGE_NOTIFY on the share root RECURSIVELY for
 the whole volume lifetime (it feeds the drive index), so it ALREADY receives a `FileNotifyAction::Modified` for any

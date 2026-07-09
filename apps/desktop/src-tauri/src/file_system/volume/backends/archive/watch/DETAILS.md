@@ -71,13 +71,18 @@ has no local path for `notify` to watch, so `start_watch` returns `None` and a r
   means every pre-flight scan of a remote archive re-reads it honestly (and `try_get_watched_listing` also guards a
   remote archive-inner path explicitly — see `volume/CLAUDE.md` § `resolve`). So a copy/delete inside a remote archive
   always sizes against a fresh parse, never a stale cache.
-- **No push-refresh for an EXTERNAL edit of a remote `.zip`.** Nothing forwards an out-of-band change (another app
-  rewriting the zip on the share/device) to an open remote-archive listing; the pane shows the archive as of its last
-  read until the user re-navigates or refreshes (F5). This is the accepted freshness model: a remote archive changes
-  rarely, and the app's OWN edit refreshes the pane through the normal listing-cache path (the edit's driver invalidates
-  the `(parent_id, archive_path)` listing on completion, same as any remote write). The `(path, size, mtime)` cache key
-  still forces a re-parse on the next read, so a stale render can never outlive a navigation. Revisit only if remote
-  multi-writer scenarios become common.
+- **Push-refresh for an EXTERNAL edit of a remote `.zip`: SMB yes, MTP no.** SMB: the recursive share watcher
+  (`smb_watcher.rs`) already receives a `CHANGE_NOTIFY` for any changed `.zip` on the share, so its Modified/Renamed
+  handlers ALSO call `caching::refresh_archive_listings` for a supported-archive path, pushing an out-of-band edit to
+  any open inner listing. That refresh is a SEPARATE, visible-listing-only consumer from this `listing_is_watched`
+  oracle: the flag stays `false` for a remote parent regardless (the SMB watcher is lossy under load, so the write-op
+  oracle must keep re-reading pre-flight scans honestly — see `backends/DETAILS.md` § "SMB archive push-refresh" for the
+  mechanism and `backends/archive/volume_test.rs::remote_backed_archive_never_reports_listing_is_watched` pinning it).
+  MTP: nothing forwards an out-of-band change to an open inner listing (MTP's `ObjectInfoChanged` is absent on many
+  devices and hooking it isn't a clean few-liner), so an MTP-backed archive pane shows the zip as of its last read until
+  the user re-navigates or refreshes (F5). For both, the app's OWN edit refreshes the pane through the normal
+  listing-cache path (the edit's driver invalidates the `(parent_id, archive_path)` listing on completion), and the
+  `(path, size, mtime)` cache key forces a re-parse on the next read, so a stale render can never outlive a navigation.
 
 **Interaction with mutation.** A zip edit's FINAL atomic rename over `foo.zip` is a change event this watch catches —
 that IS the desired post-edit refresh. A concurrent browse in the other pane reading the archive mid-edit sees either

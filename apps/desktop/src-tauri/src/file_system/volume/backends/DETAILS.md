@@ -97,6 +97,19 @@ updated them.
 **Decision**: `LocalPosixVolume::write_from_stream` `sync_data`s each file (+ best-effort parent-dir fsync) before it returns
 **Why**: Every cross-volume copy/move that lands on a local disk (MTP → Local, SMB → Local, USB import) flows through this one method. A bare `file.flush()` finish is a userspace no-op on a raw `std::fs::File`, so the bytes would sit only in the OS page cache when the op reports "complete" — letting the user eject / sleep and lose data (on a move, from both sides, since the source delete runs after the copy reports Ok). The `sync_data` (fdatasync) gives the "durable as each file completes" property the local-FS chunked copy already has (`transfer/chunked_copy.rs`), so a crash mid-batch leaves earlier files safe. The parent-dir fsync makes the file's directory entry durable too. Both are best-effort on error: a failure logs under `target: "write_durability"` and continues rather than failing a completed multi-GB transfer at the final fsync (matching `durability::flush_created_destinations`). Non-local backends (MTP/SMB/InMemory) need no equivalent — durability there is the device/server's concern. Pinned by `local_posix_test::test_write_from_stream_multichunk_is_durable_and_correct` (content-correctness regression guard; the fdatasync itself isn't observable from a unit test).
 
+## SMB archive push-refresh
+
+The recursive share watcher already refreshes the DIRECTORY listing showing a changed `.zip` (its new size/mtime). On top of that, `process_event_batch`'s Modified and RenamedNewName handlers call `maybe_refresh_archive_listings(volume_id, entry_path)`: when `entry_path`'s name is a supported archive (`archive::has_supported_archive_extension`, the single-source predicate `format_for_name` backs), it fires the same `caching::refresh_archive_listings` the local `archive::watch` fires, pushing an out-of-band edit of the `.zip` to any open archive-INNER listing.
+
+Why this is the whole fix, cheaply:
+
+- **Same consumer, same key.** `refresh_archive_listings` scans `LISTING_CACHE` for keys at/inside the archive path and re-reads them; `volume_id` here is the parent DRIVE id, which is exactly what archive listings key on, so no rekeying. It's a no-op when the path isn't an archive or no inner listing is open, and the watcher already runs for the whole volume lifetime — so the only added cost is a re-parse when a `.zip` actually changes AND an inner pane is open.
+- **`entry_path` is already normalized.** It's the `to_nfd_display_path` result, so it went through the same backslash→slash + NFC→NFD normalization every other cache-facing path in `smb_watcher.rs` uses. Passing the raw event filename would miss the cache.
+- **Fires independent of the stat.** The refresh runs even when the pre-refresh `get_metadata` fails (a mid-write, truncated `.zip`): `refresh_archive_listings` keeps the previous inner listing on an unreadable parse rather than blanking the pane, and the next change event retries.
+- **NOT a freshness claim.** This is a visible-listing UX nicety, a SEPARATE consumer from the write-op fresh-listing oracle. `ArchiveVolume::listing_is_watched` stays `false` for a remote parent regardless (the SMB watcher is lossy under load, so the oracle must keep re-reading pre-flight scans honestly). The remote-archive freshness decision and the guardrail test are in [`archive/watch/DETAILS.md`](archive/watch/DETAILS.md) § "remote archives have NO live watch". MTP keeps manual refresh (F5) as its contract.
+
+Tests: `smb_watcher/archive_refresh_test.rs` (a Modified `.zip` event refreshes the inner listing; a non-archive change doesn't — the extension gate).
+
 ## Gotchas
 
 **Gotcha**: `MtpReadStream` holds nothing scarce between windows, so dropping it mid-read is safe and needs no `Drop` impl
