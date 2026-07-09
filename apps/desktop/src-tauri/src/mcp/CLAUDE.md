@@ -11,9 +11,8 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
 - `auth.rs`: token lifecycle and per-request validation (`tool_call_requires_token`, `validate_token`,
   `validate_origin`, header/protocol checks). One-directional: `server` uses `auth`, never the reverse.
 - `tool_registry.rs`: single source for all 39 tools — one `mcp_tools!` table generates the list, dispatch, and auth
-  gate (`tool_gate`/`TokenGate`). `tools.rs` is a shim (`Tool` struct + re-export). Its schema/gate tests live in
-  `tests/tool_registry_tests.rs` (kept out of the table file). Handlers + ack contract in `executor/` (see
-  [`executor/CLAUDE.md`](executor/CLAUDE.md)).
+  gate (`tool_gate`/`TokenGate`); its schema/gate tests live in `tests/tool_registry_tests.rs`. `tools.rs` is a shim
+  (`Tool` struct + re-export). Handlers + ack contract in `executor/` (see [`executor/CLAUDE.md`](executor/CLAUDE.md)).
 - `resources/`: read-only YAML/text resources (`cmdr://state`, `logs`, `indexing` (per-volume), `importance`,
   `settings`). State
   stores: `PaneStateStore`, `SoftDialogTracker` (`dialog_state.rs`), `listing_errors`, `terminal_ops` (settled-op ring
@@ -35,9 +34,8 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
 - **Param naming is camelCase** (`tabId`, `autoConfirm`); tool names stay snake_case. Don't add snake_case params:
   agents pattern-match across tools and every inconsistency is a guessed-wrong call.
 - **Action tools wait for a typed ack before returning `OK`** (1500 ms budget, 5 s for nav). `OK` means "the FE accepted
-  the dispatched action," not "the operation completed"; for long ops the agent polls via the `await` tool. Don't return
-  `OK` without waiting for the ack signal (a stalled FE silently drops the action). Details in
-  [`executor/CLAUDE.md`](executor/CLAUDE.md).
+  the dispatched action," not "the operation completed"; poll `await` for completion. Don't return `OK` without waiting
+  for the ack (a stalled FE silently drops the action). Details in [`executor/CLAUDE.md`](executor/CLAUDE.md).
 - **`cmdr://state` and `cmdr://logs` redact through `crate::redact::redact_line`** before serialization (state's
   `recentErrors` `path`/`message`, every returned log line). These run on a loopback caller without filesystem read, so
   redaction is the only thing keeping home paths / SMB URIs / emails out. Don't remove it. `cmdr://logs` `filter` matches

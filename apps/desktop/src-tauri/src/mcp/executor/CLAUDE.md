@@ -28,10 +28,8 @@ ack signal before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
   `resource_round_trip`. Per-tool timeouts in DETAILS.md.
 - **`move_cursor` and `select` flush the MCP state push (`syncStateToMcpNow`) before replying.** Without the flush, the
   new cursor/selection lives only in FE state until the debounced sync, so a follow-up `copy`/`move`/`delete` reads
-  stale state and `check_operation_has_target` wrongly rejects with "Nothing to copy". Don't drop the flush. A tool that
-  only READS `PaneStateStore` to resolve targets (no cursor/selection action of its own, e.g. `tag`) gets the same
-  freshness by calling `flush_pane_state(app, pane)` first (the `mcp-sync-state` round-trip) — else a bare `nav` leaves
-  it resolving against the pane's previous directory.
+  stale state and `check_operation_has_target` wrongly rejects with "Nothing to copy". Don't drop the flush. A read-only
+  name-resolving tool (`tag`) has no such action, so it calls `flush_pane_state(app, pane)` first for the same freshness.
 - **Read filesystem path params through `user_path_param` / `expand_user_path` (in `mod.rs`), never raw
   `params.get(...)`.** Agents routinely send `~/Downloads`; the FE and existence checks need absolute paths, and a
   literal `~` either fails validation or silently never matches and burns the full timeout. Validate existence via
@@ -40,10 +38,10 @@ ack signal before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
 - **`copy`/`move`/`delete` fast-fail on empty operations** via `check_operation_has_target` (pure unit-tested
   `empty_operation_error`) before dispatching: cursor on `..` or an empty pane means the FE would silently drop the
   dialog, so the tool rejects fast with the real cause instead of a generic timeout. Unsynced state (`path` empty)
-  passes through (the FE is the authority). This is why `select` and `move_cursor` flush before replying.
+  passes through (the FE is the authority).
 - **`dialog close settings` requires FE opt-in.** The settings window must listen for `mcp-settings-close` and close
-  itself (`apps/desktop/src/routes/settings/+page.svelte`); without that listener the backend polls for
-  `WindowDisappeared("settings")` and times out at 1500 ms. Same shape for any new window-based dialog.
+  itself; without that listener the backend polls for `WindowDisappeared("settings")` and times out at 1500 ms. Same
+  shape for any new window-based dialog.
 - **Tab mutations must go through `update_pane_tabs`** (delegates to `PaneStateStore::set_tabs`, the single place tab
   mutation + generation bump live). Any bypass makes the `tab` MCP tool's ack time out.
 
