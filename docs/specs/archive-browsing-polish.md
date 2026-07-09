@@ -43,14 +43,38 @@ follow-ups differ in size once the `aes` versions align:
   AND every `open_read` / `stream_subtree` re-open (each currently passes `Password::empty()`), then surface `Encrypted`
   / `WrongPassword` from `map_sevenz_err` instead of `Unsupported`. That's new parse/read plumbing, not a flag.
 
-## 3. M-append: fast in-place zip edits (perf, research spike)
+## 3. Fast tail-add zip edits (perf) — design settled by spike, implementation deferred
 
 Every zip edit is an O(archive) temp+rename rewrite — safe and uniform, but adding one small file to a 2 GB zip rewrites
-2 GB. True append-past-EOF (hand-rolled: append entries + fresh CD + new EOCD, old CD left as dead bytes) gives O(new
-file) adds and O(CD) deletes, with real reader-compat risk (must verify Archive Utility, Quick Look, `unzip`, 7-Zip
-accept the layout) and a compaction story (dead-space threshold + repack via `raw_copy_file`). The original plan's spike
-notes live in `archive-browsing-plan.md` § M-append. Do this only after real archives feel slow in practice; temp+rename
-is correct today.
+2 GB (and for a NAS-hosted zip, round-trips the whole archive over the wire).
+
+**Spiked 2026-07-09; full evidence in [`../notes/m-append-spike.md`](../notes/m-append-spike.md).** The original
+append-past-EOF design (append entries + fresh CD + new EOCD, old CD left as dead bytes) is a **no-go**: `ditto -x -k`
+(the programmatic Archive Utility path) forward-scans local file headers, stops dead at the old central directory, and
+silently drops every appended entry (exit 0) — unfixable within the layout, since crash-safety requires that old CD to
+survive. CD-rewrite deletes also leave deleted bytes recoverable in the file (a data-remanence regression vs
+temp+rename).
+
+**The design to ship instead — "clone + tail-rewrite", same speed, zero downsides:**
+
+- **Local:** `clonefile` (APFS copy-on-write, ~0 s for 2 GB) the archive to a sibling temp, truncate at the old CD
+  offset, append the new entries + a fresh contiguous CD + EOCD, atomic-rename. Result is a normal-structure zip every
+  tested reader accepts (incl. `ditto`), zero dead bytes, **no compaction machinery needed at all**. Measured: 0.149 s
+  to add 1 MB to a 2 GB zip vs 5.05 s full rewrite (~34x). Fall back to plain byte-copy temp+rename when `clonefile`
+  fails (non-APFS target).
+- **Remote (SMB, the real motivation):** the server-side-copy analog — create the temp on the share,
+  `FSCTL_SRV_COPYCHUNK` the retained bytes server-side, upload only the new entry + CD, rename. ~4 GB of wire traffic
+  drops to ~1 MB (~3600x); sub-second vs ~72 s on gigabit. **Prerequisite: smb2 client work** — the crate has the
+  copychunk message layer but no client-level server-side-copy API, no `FSCTL_SRV_REQUEST_RESUME_KEY` request, and its
+  write path hardcodes `offset: 0`. Needs a capability probe + graceful fallback to today's pull-round-trip (old
+  Samba/NAS firmware may lack copychunk).
+- **Scope:** only tail-ADDS get the fast path. Delete/rename/mid-archive edits stay on the O(archive) temp+rename
+  mutator (physical removal, no remanence).
+- **Before shipping:** manual Quick Look + Spotlight check on a real desktop (the spike's headless QL daemon hung on
+  every zip, layout-independent), and property tests for the zip64 / data-descriptor paths.
+
+Trigger unchanged: build it when real archives feel slow in practice (or when the NAS case starts to matter);
+temp+rename is correct today.
 
 ## 4. Open-with-external-app for archive-inner files (UX)
 

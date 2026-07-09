@@ -55,7 +55,8 @@ wiped.
       ZipCrypto password-prompt extraction (dialog + retry + remember-per-archive, 10 locales), remote-source copy-into,
       remote temp reaping, move-out per-entry convergence (+ a latent data-loss fix), the archive folder split, and the
       dev-side warn debt. Still deferred IN the spec, each with a settled design or trigger: WinZip-AES/7z decrypt
-      (blocked on `smb2`'s `aes` pin), M-append in-place edits (trigger: real-world slowness), open-with-external for
+      (unblocked by `smb2` 0.12.1, in progress), fast tail-add zip edits (clone+tail-rewrite design spike-validated
+      2026-07-09, see `notes/m-append-spike.md`; SMB path needs an smb2 copychunk client API), open-with-external for
       inner files (design spiked), and MTP in-place editing (stretch). SMB push-refresh for remote archives SHIPPED
       2026-07-09 (the share watcher forwards a changed `.zip` to open inner listings; MTP stays manual by contract).
       Wipe the shipped sections once the C+D.md capture is confirmed; the deferred items then move back under `later/`.
