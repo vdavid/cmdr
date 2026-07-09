@@ -84,7 +84,16 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 vi.mock('$lib/settings', () => ({
-  getSetting: vi.fn(() => 500),
+  getSetting: vi.fn((key: string) => (key === 'behavior.archiveCompressionLevel' ? 6 : 500)),
+  // Compress mode renders `CompressLevelControl` → `SettingSlider`, which reads
+  // its metadata and default through the barrel and writes via `setSetting`.
+  setSetting: vi.fn(),
+  getDefaultValue: vi.fn(() => 6),
+  onSpecificSettingChange: vi.fn(() => () => {}),
+  getSettingDefinition: vi.fn(() => ({
+    label: 'Compression level',
+    constraints: { min: 1, max: 9, step: 1, sliderStops: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
+  })),
 }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({

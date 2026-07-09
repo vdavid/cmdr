@@ -365,6 +365,11 @@
     "description": "Note explaining why the bytes a copy will write exceed the source's on-disk size: hardlinked files become separate copies on another drive. <written> renders the to-be-written size and <ondisk> renders the source's on-disk size, both as inline size widgets (no inner text to translate). 'hardlinked' is a filesystem term. The dash is an en dash."
   },
 
+  "fileOperations.transferDialog.compressLevelCaption": "Higher levels make a smaller zip but take longer to pack.",
+  "@fileOperations.transferDialog.compressLevelCaption": {
+    "description": "Caption under the compression-level slider shown in the Compress mode of the transfer dialog. Explains the tradeoff: a higher level packs a smaller zip but is slower. \"zip\" is a file format; do not translate it."
+  },
+
   "fileOperations.transferDialog.checkingConflicts": "Checking for conflicts...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "description": "Status shown while the transfer dialog scans the destination for name clashes before the copy/move. Keep the trailing ellipsis.",

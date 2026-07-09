@@ -6,6 +6,7 @@
     import { validateDirectoryPath } from '$lib/utils/filename-validation'
     import { createTransferDestExistsCheck } from './transfer-dest-exists.svelte'
     import DirectionIndicator from './DirectionIndicator.svelte'
+    import CompressLevelControl from './CompressLevelControl.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
@@ -98,6 +99,15 @@
         { type: 'copy', labelKey: 'fileOperations.transferDialog.toggleCopy' },
         { type: 'move', labelKey: 'fileOperations.transferDialog.toggleMove' },
         { type: 'compress', labelKey: 'fileOperations.transferDialog.toggleCompress' },
+    ] as const
+
+    // The file-conflict policy radios, `{#each}`-rendered; `as const` keeps the values and label keys literal.
+    const conflictPolicies = [
+        { value: 'skip', labelKey: 'fileOperations.transferDialog.policySkip' },
+        { value: 'overwrite', labelKey: 'fileOperations.transferDialog.policyOverwrite' },
+        { value: 'overwrite_smaller', labelKey: 'fileOperations.transferDialog.policyOverwriteSmaller' },
+        { value: 'overwrite_older', labelKey: 'fileOperations.transferDialog.policyOverwriteOlder' },
+        { value: 'stop', labelKey: 'fileOperations.transferDialog.policyStop' },
     ] as const
 
     // Compute initial volume-relative path. Can't use $derived selectedVolume here (not yet available),
@@ -590,6 +600,11 @@
             {/if}
         </div>
 
+        <!-- Compression level: Compress mode only. Persists to the shared setting. -->
+        {#if activeOperationType === 'compress'}
+            <CompressLevelControl />
+        {/if}
+
         <!-- Hardlink note: copy writes every hardlink as a full file, so the bytes
          written exceed the source's on-disk size. Clarify the gap so the
          headline size doesn't look wrong against Finder's number. Copy-only:
@@ -633,34 +648,12 @@
                  a folder merge: a merge can surface file clashes mid-operation
                  the upfront check can't see, and the radios pre-answer them. -->
                 <div class="conflict-policy">
-                    <label class="policy-option">
-                        <input type="radio" bind:group={conflictPolicy} value="skip" />
-                        <span>{t('fileOperations.transferDialog.policySkip', { count: totalConflictCount })}</span>
-                    </label>
-                    <label class="policy-option">
-                        <input type="radio" bind:group={conflictPolicy} value="overwrite" />
-                        <span>{t('fileOperations.transferDialog.policyOverwrite', { count: totalConflictCount })}</span>
-                    </label>
-                    <label class="policy-option">
-                        <input type="radio" bind:group={conflictPolicy} value="overwrite_smaller" />
-                        <span
-                            >{t('fileOperations.transferDialog.policyOverwriteSmaller', {
-                                count: totalConflictCount,
-                            })}</span
-                        >
-                    </label>
-                    <label class="policy-option">
-                        <input type="radio" bind:group={conflictPolicy} value="overwrite_older" />
-                        <span
-                            >{t('fileOperations.transferDialog.policyOverwriteOlder', {
-                                count: totalConflictCount,
-                            })}</span
-                        >
-                    </label>
-                    <label class="policy-option">
-                        <input type="radio" bind:group={conflictPolicy} value="stop" />
-                        <span>{t('fileOperations.transferDialog.policyStop', { count: totalConflictCount })}</span>
-                    </label>
+                    {#each conflictPolicies as policy (policy.value)}
+                        <label class="policy-option">
+                            <input type="radio" bind:group={conflictPolicy} value={policy.value} />
+                            <span>{t(policy.labelKey, { count: totalConflictCount })}</span>
+                        </label>
+                    {/each}
                 </div>
 
                 <!-- Cross-type guardrail: when a clash mixes a file and a same-named

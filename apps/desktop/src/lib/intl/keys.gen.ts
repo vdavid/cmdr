@@ -1112,6 +1112,7 @@ export type MessageKey =
   | 'fileOperations.shared.scanCompleteTooltip'
   | 'fileOperations.shared.scanningTooltip'
   | 'fileOperations.transferDialog.checkingConflicts'
+  | 'fileOperations.transferDialog.compressLevelCaption'
   | 'fileOperations.transferDialog.confirmCompress'
   | 'fileOperations.transferDialog.confirmCopy'
   | 'fileOperations.transferDialog.confirmMove'
