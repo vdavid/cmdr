@@ -6,7 +6,7 @@ impact (highest first). Each item stands alone; pick from the top.
 
 Canonical docs (don't restate mechanisms here): `apps/desktop/src-tauri/src/file_system/volume/backends/archive/` C+D.md
 (read core, formats, remote sources), `apps/desktop/src-tauri/src/file_system/write_operations/` C+D.md § "Archive
-edits" (mutation, remote edit contract). The shipped plan (`../archive-browsing-plan.md`) holds the original decisions
+edits" (mutation, remote edit contract). The shipped plan (`archive-browsing-plan.md`) holds the original decisions
 until it gets wiped; the durable ones are already in the colocated docs.
 
 ## 1. One-pass bulk extract for sequential archives (perf, user-visible) — SHIPPED 2026-07-08
@@ -49,8 +49,8 @@ Every zip edit is an O(archive) temp+rename rewrite — safe and uniform, but ad
 2 GB. True append-past-EOF (hand-rolled: append entries + fresh CD + new EOCD, old CD left as dead bytes) gives O(new
 file) adds and O(CD) deletes, with real reader-compat risk (must verify Archive Utility, Quick Look, `unzip`, 7-Zip
 accept the layout) and a compaction story (dead-space threshold + repack via `raw_copy_file`). The original plan's spike
-notes live in `../archive-browsing-plan.md` § M-append. Do this only after real archives feel slow in practice;
-temp+rename is correct today.
+notes live in `archive-browsing-plan.md` § M-append. Do this only after real archives feel slow in practice; temp+rename
+is correct today.
 
 ## 4. Open-with-external-app for archive-inner files (UX)
 
@@ -182,7 +182,7 @@ into `files_skipped` and reports fully-extracted sources via `note_source_landed
 
 In-place remote editing for MTP devices (today: pull-edit-upload-swap, which is correct but O(archive) over USB both
 ways). Touches `mtp-rs` (first-party). Stretch from the original plan; only worth it if MTP zip editing sees real use.
-Notes: `../archive-browsing-plan.md` § M6.
+Notes: `archive-browsing-plan.md` § M6.
 
 ## 10. Dev-side debt (warns and tight margins)
 

@@ -6,20 +6,6 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
-- [x] 2026-07-07 [pane-toasts-and-rename-identity-plan.md](pane-toasts-and-rename-identity-plan.md) - Pane-scoped
-      transient-toast dismissal (background navigation events stop wiping unrelated toasts app-wide) + the inline rename
-      editor keyed by path instead of index (kills a latent wrong-row data-safety bug; rename follows its row through
-      diffs). SHIPPED 2026-07-07; wipe once the durable intent is confirmed captured in the ui/ and rename/ C+D.md.
-- [x] 2026-07-07 [paste-clipboard-as-file-plan.md](paste-clipboard-as-file-plan.md) - Cmd+V with non-file clipboard
-      content (text/image/PDF) creates `pasted.*` in the pane, cursor lands on it, inline rename auto-starts
-      (setting-gated), info toast with Settings deep link (issue #35). Shipped in b0de3824f.
-- [x] 2026-07-08 [importance-subsystem-plan.md](importance-subsystem-plan.md) - A neutral, deterministic
-      folder-importance subsystem (pure Rust scorer over listing metadata) exposed as a general read API for any
-      feature: separate per-volume `importance.db`, a minimal neutral lifecycle bus in `indexing/`, an explain call, and
-      offline-unmounted reads. Known consumers (agent, media-ML enrichment) wire in via their own plans. SHIPPED
-      2026-07-08 (M1–M4); durable intent lives in `importance/` and `indexing/` C+D.md. Follow-ups (weight tuning, the
-      `kMDItemLastUsedDate` sampling cost) survive in the plan's open-questions. Wipe once the C+D.md capture is
-      confirmed.
 - [ ] 2026-07-04 [listing-loader-extraction-plan.md](listing-loader-extraction-plan.md) - Drain FilePane's last deferred
       cluster (the listing loader: `loadDirectory`/`handleListingComplete`/reset + streaming listeners + pendingLoad +
       the generation/listingId drop-foreign-listings token model) into a tested `listing-loader.svelte.ts` factory,
@@ -38,12 +24,41 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 - [ ] 2026-07-03 [mcp-tool-registry-plan.md](mcp-tool-registry-plan.md) - Collapse the 4-way hand-synced MCP tool
       bookkeeping (schema, dispatch, auth gate) into one authored `mcp_tools!` registry, so the bearer-token gate is
       by-construction and a destructive tool can't ship ungated. Wire output stays byte-identical.
+
+## Shipped, awaiting wipe
+
+Done and merged; each entry stays until its durable intent is confirmed captured in the colocated C+D.md, then gets
+wiped.
+
+- [x] 2026-07-07 [pane-toasts-and-rename-identity-plan.md](pane-toasts-and-rename-identity-plan.md) - Pane-scoped
+      transient-toast dismissal (background navigation events stop wiping unrelated toasts app-wide) + the inline rename
+      editor keyed by path instead of index (kills a latent wrong-row data-safety bug; rename follows its row through
+      diffs). SHIPPED 2026-07-07; wipe once the durable intent is confirmed captured in the ui/ and rename/ C+D.md.
+- [x] 2026-07-07 [paste-clipboard-as-file-plan.md](paste-clipboard-as-file-plan.md) - Cmd+V with non-file clipboard
+      content (text/image/PDF) creates `pasted.*` in the pane, cursor lands on it, inline rename auto-starts
+      (setting-gated), info toast with Settings deep link (issue #35). Shipped in b0de3824f.
+- [x] 2026-07-08 [importance-subsystem-plan.md](importance-subsystem-plan.md) - A neutral, deterministic
+      folder-importance subsystem (pure Rust scorer over listing metadata) exposed as a general read API for any
+      feature: separate per-volume `importance.db`, a minimal neutral lifecycle bus in `indexing/`, an explain call, and
+      offline-unmounted reads. Known consumers (agent, media-ML enrichment) wire in via their own plans. SHIPPED
+      2026-07-08 (M1–M4); durable intent lives in `importance/` and `indexing/` C+D.md. Follow-ups (weight tuning, the
+      `kMDItemLastUsedDate` sampling cost) survive in the plan's open-questions. Wipe once the C+D.md capture is
+      confirmed.
 - [x] 2026-07-03 [archive-browsing-plan.md](archive-browsing-plan.md) - Browse + edit zip (and read-only tar/7z)
       archives as folders: `ArchiveVolume` (rc-zip sans-IO read) + batch `ArchiveEditOperation` on the existing op
       manager, transparent `/foo.zip/inner` paths, temp+rename mutation. SHIPPED 2026-07-06 (merged to `main`, fully
-      i18n-ized, remaining polish captured in `later/archive-browsing-polish.md`); wipe once the durable intent is
-      confirmed captured in the colocated archive/write-ops C+D.md. Supersedes the research in
+      i18n-ized, remaining polish captured in `archive-browsing-polish.md`); wipe once the durable intent is confirmed
+      captured in the colocated archive/write-ops C+D.md. Supersedes the research in
       `later/totalcmd-plugin-analysis.md`.
+- [x] 2026-07-07 [archive-browsing-polish.md](archive-browsing-polish.md) - Ranked follow-ups to the shipped
+      archive-browsing feature. SHIPPED 2026-07-08 (the executed batch): one-pass sequential extract (the O(n²) cliff),
+      ZipCrypto password-prompt extraction (dialog + retry + remember-per-archive, 10 locales), remote-source copy-into,
+      remote temp reaping, move-out per-entry convergence (+ a latent data-loss fix), the archive folder split, and the
+      dev-side warn debt. Still deferred IN the spec, each with a settled design or trigger: WinZip-AES/7z decrypt
+      (blocked on `smb2`'s `aes` pin), M-append in-place edits (trigger: real-world slowness), open-with-external for
+      inner files (design spiked), SMB push-refresh for remote archives (design spiked; MTP stays manual by contract),
+      and MTP in-place editing (stretch). Wipe the shipped sections once the C+D.md capture is confirmed; the deferred
+      items then move back under `later/`.
 
 ## Later
 
@@ -71,7 +86,3 @@ Deferred future work. Unchecked by default; the folder name is the status.
       faces, text→image) as an ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation
       Models), vectors in SQLite not Postgres, on-device by default with faces/cloud as separate opt-ins. Plan
       reviewed + the Core ML/Rust path spike-verified; backed by `docs/notes/clip-coreml-rust-spike.md`.
-- [ ] 2026-07-07 [later/archive-browsing-polish.md](later/archive-browsing-polish.md) - Ranked follow-ups to the shipped
-      archive-browsing feature: one-pass sequential extract (the O(n²) cliff), encrypted-archive password flow, M-append
-      in-place edits, open-with-external for inner files, remote-source copy-into, remote live refresh + temp reaping,
-      move-out per-entry delete, M6 MTP in-place, and the dev-side warn debt.
