@@ -116,8 +116,9 @@ payload into a typed command and dispatches on the command bus. No business logi
 
 ### Step 4: add tests
 
-Look tools up by name in `get_all_tools()`; there are no per-category list functions. Schema-shape tests live inline in
-`tool_registry.rs`; cross-cutting checks (name charset, no `fs.`/`shell.` tools) live in `tests/`.
+Look tools up by name in `get_all_tools()`; there are no per-category list functions. Schema-shape and token-gate tests
+live in `tests/tool_registry_tests.rs` (beside the other suites, so the authored `mcp_tools!` table stays a lean,
+single-purpose source); cross-cutting checks (name charset, no `fs.`/`shell.` tools) live in `tests/security_tests.rs`.
 
 ```rust
 #[test]

@@ -291,7 +291,10 @@ mod tests {
             smb_connection_state: None,
         };
         let yaml = build_volumes_yaml(&[network]);
-        assert_eq!(yaml, "volumes:\n  - name: Network\n    id: network\n    kind: virtual\n");
+        assert_eq!(
+            yaml,
+            "volumes:\n  - name: Network\n    id: network\n    kind: virtual\n"
+        );
     }
 
     #[test]

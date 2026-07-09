@@ -123,10 +123,12 @@ Frontend syncs state to these stores via Tauri commands (`update_left_pane_state
 
 Directory module split by test category:
 - `protocol_tests.rs`: tool name validation, schema checks, tool count
+- `tool_registry_tests.rs`: the `mcp_tools!` table's schema-shape and token-gate tests (moved out of `tool_registry.rs` so the authored table stays lean)
 - `resource_tests.rs`: resource URI validation, count, mime types (the public `get_all_resources` surface)
 - `resource_state_tests.rs`: `cmdr://state` builder — URI/query parsing, pane/tab/file formatting
 - `resource_log_tests.rs`: `cmdr://logs` builder — option parsing, line selection, `since` filter, the PII-redaction contract
 - `resource_indexing_tests.rs`: `cmdr://indexing` builder — duration/number formatting helpers
+- `resource_operations_tests.rs`: `cmdr://state` `operations:` builder — running/paused/queued formatting
 - `tool_category_tests.rs`: tool existence by category, schema checks
 - `security_tests.rs`: shell injection, forbidden tool patterns, input injection
 - `request_response_tests.rs`: McpRequest parsing, McpResponse serialization
