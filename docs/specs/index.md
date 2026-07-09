@@ -29,6 +29,11 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 - [ ] 2026-07-03 [mcp-tool-registry-plan.md](mcp-tool-registry-plan.md) - Collapse the 4-way hand-synced MCP tool
       bookkeeping (schema, dispatch, auth gate) into one authored `mcp_tools!` registry, so the bearer-token gate is
       by-construction and a destructive tool can't ship ungated. Wire output stays byte-identical.
+- [ ] 2026-07-09 [mcp-agent-surface-plan.md](mcp-agent-surface-plan.md) - Catch the MCP server up with ~2 months of
+      features and ready it as the future in-app agent's substrate: per-volume indexing status + control, a
+      `cmdr://importance` resource, operation-queue visibility + control, `rename`/named-create/trash-mode/tag/eject/
+      favorites tools, race-free `await` conditions (operation, indexing, dialogs), and a tool-description pass.
+      Parity + `TokenGate` model unchanged; wire compat deliberately broken where it streamlines.
 
 ## Shipped, awaiting wipe
 
