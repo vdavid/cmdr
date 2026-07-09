@@ -786,7 +786,9 @@ describe('TransferDialog destination path', () => {
 
 describe('TransferDialog compress mode', () => {
   function pathInput(target: HTMLElement): HTMLInputElement {
-    return target.querySelector<HTMLInputElement>('.path-input')!
+    const input = target.querySelector<HTMLInputElement>('.path-input')
+    if (!input) throw new Error('path input not rendered')
+    return input
   }
 
   it('suggests a `.zip` filename in the destination folder', async () => {
