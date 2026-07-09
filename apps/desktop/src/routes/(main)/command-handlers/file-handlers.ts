@@ -102,7 +102,11 @@ export const fileHandlers = {
     // The MCP `delete` tool may pass `permanent` (from its `mode`); F8 omits it
     // (trash-default). The dialog still clamps to permanent on no-trash volumes.
     const deleteArgs = dispatchArgs as CommandArgs['file.delete'] | undefined
-    void explorerRef?.openDeleteDialog(deleteArgs?.permanent ?? false, deleteArgs?.autoConfirm, deleteArgs?.mcpRequestId)
+    void explorerRef?.openDeleteDialog(
+      deleteArgs?.permanent ?? false,
+      deleteArgs?.autoConfirm,
+      deleteArgs?.mcpRequestId,
+    )
   },
 
   'file.deletePermanently': ({ explorerRef }) => {

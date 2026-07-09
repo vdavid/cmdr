@@ -314,9 +314,7 @@ test.describe('MCP named create', () => {
     const result = await mcpCall('mkdir', { name: 'mcp-made', autoConfirm: true })
     expect(result).toContain('OK')
 
-    await expect
-      .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'mcp-made')), { timeout: 5000 })
-      .toBeTruthy()
+    await expect.poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'mcp-made')), { timeout: 5000 }).toBeTruthy()
     // Not created in the previous (stale) directory.
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'sub-dir', 'mcp-made'))).toBe(false)
   })

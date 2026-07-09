@@ -55,8 +55,8 @@ fn pane_state_with(
     files: Vec<(&str, bool)>,
     cursor_index: usize,
     selected: Vec<usize>,
-) -> crate::mcp::pane_state::PaneState {
-    crate::mcp::pane_state::PaneState {
+) -> PaneState {
+    PaneState {
         path: "/test".to_string(),
         files: files
             .into_iter()
