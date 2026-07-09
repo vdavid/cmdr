@@ -20,11 +20,16 @@ use super::indexing::status_token;
 pub(crate) enum VolumeKind {
     /// A local disk, favorite folder, or cloud-drive mount (a real filesystem path).
     Local,
-    /// An SMB share (direct smb2 or an OS mount).
+    /// An SMB share (direct smb2 or an OS mount). Constructed only in the macOS
+    /// `snapshot_volumes` path (the Linux snapshot surfaces only root + MTP), so
+    /// off macOS it's genuinely unconstructed — the `token` match still needs it.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     Smb,
     /// An MTP device storage (Android / camera over USB).
     Mtp,
-    /// A synthetic entry with no backing device (the `Network` browser root).
+    /// A synthetic entry with no backing device (the `Network` browser root). Also
+    /// macOS-path-only today, so off macOS it's unconstructed — see `Smb`.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     Virtual,
 }
 
