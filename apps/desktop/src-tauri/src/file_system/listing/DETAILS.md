@@ -60,6 +60,19 @@ watcher/notify cache patch (`insert_entry_sorted` / `remove_entry_by_path` / `up
 `refresh_listing_index_sizes` intentionally does NOT touch it: it's driven by background indexing, not user/FS activity,
 so touching there could keep a truly-orphaned listing alive indefinitely.
 
+#### Reaper test serialization
+
+`reap_orphaned_listings_at` sweeps the process-global `LISTING_CACHE` and evicts EVERY listing idle past the (injected)
+window. The tests that drive the wired sweep therefore mutate shared global state destructively. Under `cargo nextest`
+each test runs in its own process (a fresh global cache), so they're isolated for free — but `cargo test --lib
+listing::caching` (the module-run command) shares one process and runs tests as parallel threads, where two concurrent
+sweeps cross-evict each other's freshly-inserted stale listings and a "the listing I just inserted is still cached"
+precondition flakes (rotating victim). A `REAPER_SERIAL` mutex in `reaper_tests`, held for the duration of every test
+that calls the wired `reap_orphaned_listings_at`, keeps exactly one global sweep running at a time under `cargo test` —
+the in-process equivalent of nextest's process-per-test. The pure `orphan_ids` tests pass explicit stamps and never
+touch the global cache, so they stay lock-free. This mirrors `downloads/DETAILS.md` § the `WATCH_SERIAL` convention:
+serialize the process-global-state tests for `cargo test`; nextest's process isolation covers itself.
+
 ## Decisions
 
 - **Streaming with a background task, not chunked IPC**: chunked needs multiple IPC calls and complex state tracking.

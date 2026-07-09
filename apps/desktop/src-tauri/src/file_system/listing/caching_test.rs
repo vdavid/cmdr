@@ -349,8 +349,18 @@ fn test_remove_entry_by_path_returns_none_for_missing_listing() {
 /// pane navigation stores it), while each entry's `path` is the storage-relative
 /// INNER form (as `MtpVolume::list_directory` produces it).
 fn insert_mtp_style_listing(id: &str) -> String {
-    let inner_notes = FileEntry::new("notes.txt".to_string(), "/Documents/notes.txt".to_string(), false, false);
-    let inner_report = FileEntry::new("report.txt".to_string(), "/Documents/report.txt".to_string(), false, false);
+    let inner_notes = FileEntry::new(
+        "notes.txt".to_string(),
+        "/Documents/notes.txt".to_string(),
+        false,
+        false,
+    );
+    let inner_report = FileEntry::new(
+        "report.txt".to_string(),
+        "/Documents/report.txt".to_string(),
+        false,
+        false,
+    );
     insert_test_listing_on_volume(
         id,
         "mtp-dev:65537",
@@ -417,7 +427,11 @@ fn notify_removed_drops_inner_mtp_entry_via_url_path() {
             .iter()
             .map(|e| e.name.as_str())
             .collect();
-        assert_eq!(names, vec!["report.txt"], "notify_removed drops notes.txt from the MTP listing");
+        assert_eq!(
+            names,
+            vec!["report.txt"],
+            "notify_removed drops notes.txt from the MTP listing"
+        );
     }
     cleanup_listing(&id);
 }
@@ -432,7 +446,10 @@ fn name_match_removes_local_style_entry() {
         SortColumn::Name,
         SortOrder::Ascending,
         DirectorySortMode::LikeFiles,
-        vec![make_entry("alpha.txt", false, Some(1)), make_entry("beta.txt", false, Some(2))],
+        vec![
+            make_entry("alpha.txt", false, Some(1)),
+            make_entry("beta.txt", false, Some(2)),
+        ],
     );
     let removed = remove_entry_by_name("local_name_hit", std::ffi::OsStr::new("beta.txt"));
     assert_eq!(removed.expect("removed").1.name, "beta.txt");
@@ -1092,6 +1109,7 @@ mod oracle_tests {
 // proves a freshly-touched listing survives even when it was created long ago.
 mod reaper_tests {
     use std::path::PathBuf;
+    use std::sync::Mutex;
     use std::sync::atomic::{AtomicU64, Ordering};
 
     use super::super::caching::{
@@ -1099,6 +1117,22 @@ mod reaper_tests {
     };
     use super::super::sorting::{DirectorySortMode, SortColumn, SortOrder};
     use crate::file_system::watcher::{WATCHER_MANAGER, start_watching};
+    use crate::ignore_poison::IgnorePoison;
+
+    /// Serializes the tests that call the WIRED `reap_orphaned_listings_at`, which
+    /// sweeps the process-global `LISTING_CACHE` and evicts every listing idle past
+    /// the (injected) window. Two such sweeps racing as parallel threads under plain
+    /// `cargo test` cross-evict each other's freshly-inserted stale listings, so a
+    /// precondition like "the listing I just inserted is still cached" flakes
+    /// (rotating victim; `reaper_evicts_...` most often). `cargo nextest` sidesteps
+    /// this by running each test in its own process (fresh global cache); this mutex
+    /// is the in-process equivalent, so exactly one global sweep runs at a time under
+    /// `cargo test`. Mirrors `downloads::watcher::tests`' `WATCH_SERIAL`
+    /// (`lock_ignore_poison`, so one panicking test can't cascade-poison the rest).
+    /// The pure `orphan_ids` tests take explicit stamps and never touch the global
+    /// cache, so they don't need it. See `listing/DETAILS.md` § "Reaper test
+    /// serialization".
+    static REAPER_SERIAL: Mutex<()> = Mutex::new(());
 
     fn unique(suffix: &str) -> String {
         static N: AtomicU64 = AtomicU64::new(0);
@@ -1185,6 +1219,7 @@ mod reaper_tests {
 
     #[test]
     fn reaper_evicts_stale_listing_and_its_watcher_together() {
+        let _serial = REAPER_SERIAL.lock_ignore_poison();
         // A real directory so `start_watching` can attach an FSEvents watcher. No
         // AppHandle is needed to STORE the watcher in WATCHER_MANAGER; the handle only
         // matters for emitting events, which this test doesn't exercise.
@@ -1214,6 +1249,7 @@ mod reaper_tests {
 
     #[test]
     fn reaper_keeps_recently_touched_listing_even_if_created_long_ago() {
+        let _serial = REAPER_SERIAL.lock_ignore_poison();
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().to_string_lossy().to_string();
         let lid = unique("live");
@@ -1246,6 +1282,7 @@ mod reaper_tests {
 
     #[test]
     fn touch_rescues_a_listing_that_would_otherwise_be_orphaned() {
+        let _serial = REAPER_SERIAL.lock_ignore_poison();
         let lid = unique("touch");
         let window_ms = ORPHAN_IDLE_WINDOW.as_millis() as u64;
         let now = 50 * window_ms;
