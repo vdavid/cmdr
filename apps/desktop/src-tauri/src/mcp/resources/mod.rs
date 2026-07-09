@@ -52,10 +52,11 @@ pub fn get_all_resources() -> Vec<Resource> {
             uri: "cmdr://state".to_string(),
             name: "App state".to_string(),
             description: "Complete app state (both panes, volumes, dialogs, listings, recent listing errors, \
-                          queued/running/paused operations with progress/speed/ETA). Supports \
-                          `?include=panes,volumes,dialogs,listings,recentErrors,operations` to project only \
-                          listed sections, and `?compact=true` to drop the per-pane file lists. Examples: \
-                          `cmdr://state?include=operations` or `cmdr://state?compact=true`."
+                          queued/running/paused operations with progress/speed/ETA, favorites). Supports \
+                          `?include=panes,volumes,dialogs,listings,recentErrors,operations,favorites` to project \
+                          only listed sections, and `?compact=true` to drop the per-pane file lists. Examples: \
+                          `cmdr://state?include=operations` or `cmdr://state?compact=true`. File entries carry a \
+                          `[tags:red,blue]` marker when they have Finder tags."
                 .to_string(),
             mime_type: "text/yaml".to_string(),
         },
@@ -214,8 +215,44 @@ pub(crate) fn format_file_compact(
     if file.recursive_size_pending == Some(true) {
         parts.push("[size-pending]".to_string());
     }
+    if let Some(marker) = tags_marker(&file.tags) {
+        parts.push(marker);
+    }
 
     parts.join(" ")
+}
+
+/// The `[tags:...]` marker for a file's Finder tags, or `None` when it has none
+/// (zero cost in the common case). Colored tags render as their color name (the
+/// dot the UI shows); a colorless custom tag renders as its own name. Pure, so
+/// it's unit-testable.
+pub(crate) fn tags_marker(tags: &[crate::file_system::listing::metadata::TagRef]) -> Option<String> {
+    if tags.is_empty() {
+        return None;
+    }
+    let labels: Vec<String> = tags
+        .iter()
+        .map(|t| match tag_color_name(t.color) {
+            Some(color) => color.to_string(),
+            None => t.name.clone(),
+        })
+        .collect();
+    Some(format!("[tags:{}]", labels.join(",")))
+}
+
+/// The lowercase color name for a Finder color index (1..=7), or `None` for the
+/// colorless index 0.
+fn tag_color_name(color: u8) -> Option<&'static str> {
+    Some(match color {
+        1 => "gray",
+        2 => "green",
+        3 => "purple",
+        4 => "blue",
+        5 => "yellow",
+        6 => "red",
+        7 => "orange",
+        _ => return None,
+    })
 }
 
 /// Build YAML for a single pane.
@@ -617,6 +654,25 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
                 yaml.push_str(&format!(
                     "  - id: {}\n    volumeId: {}\n    path: {:?}\n    entries: {}\n    ageMs: {}\n",
                     l.listing_id, l.volume_id, l.path, l.entry_count, l.age_ms
+                ));
+            }
+        }
+    }
+
+    if opts.includes("favorites") {
+        // The user's favorites (id, name, path) so agents can discover the ids
+        // the `favorites` tool's rename / remove / reorder actions take. Paths
+        // are user-chosen navigation targets shown in the switcher, so — like the
+        // `listings:` section — they render unredacted.
+        let favorites = crate::favorites::store::list();
+        if favorites.is_empty() {
+            yaml.push_str("favorites: []\n");
+        } else {
+            yaml.push_str("favorites:\n");
+            for fav in &favorites {
+                yaml.push_str(&format!(
+                    "  - id: {}\n    name: {:?}\n    path: {:?}\n",
+                    fav.id, fav.name, fav.path
                 ));
             }
         }

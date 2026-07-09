@@ -11,11 +11,14 @@ pub(crate) mod app;
 pub(crate) mod async_tools;
 pub(crate) mod dialogs;
 pub(crate) mod downloads;
+pub(crate) mod eject;
+pub(crate) mod favorites;
 pub(crate) mod file_ops;
 pub(crate) mod indexing;
 pub(crate) mod nav;
 pub(crate) mod queue;
 pub(crate) mod search;
+pub(crate) mod tags;
 pub(crate) mod view;
 
 pub(crate) use ack::{
@@ -28,9 +31,9 @@ mod tests;
 use std::sync::Mutex;
 
 use serde_json::{Value, json};
-use tauri::{AppHandle, Emitter, Listener, Runtime};
+use tauri::{AppHandle, Emitter, Listener, Manager, Runtime};
 
-use super::pane_state::PaneStateStore;
+use super::pane_state::{PaneState, PaneStateStore};
 use super::protocol::{INTERNAL_ERROR, INVALID_PARAMS};
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
@@ -65,6 +68,98 @@ impl From<tauri::Error> for ToolError {
     fn from(e: tauri::Error) -> Self {
         Self::internal(e.to_string())
     }
+}
+
+/// Resolve the target pane from an optional `pane` param, defaulting to the
+/// focused pane, and return its name plus the last-synced state snapshot.
+///
+/// Shared by the pane-scoped mutating tools (`tag`, `rename`) that resolve
+/// names/selection/cursor to paths off the pane state the FE pushes (the same
+/// source `copy`/`move`'s `check_operation_has_target` reads).
+pub(super) fn target_pane_state<R: Runtime>(
+    app: &AppHandle<R>,
+    params: &Value,
+) -> Result<(String, PaneState), ToolError> {
+    let store = app
+        .try_state::<PaneStateStore>()
+        .ok_or_else(|| ToolError::internal("Pane state not available yet"))?;
+    let pane = match params.get("pane").and_then(|v| v.as_str()) {
+        Some("left") => "left".to_string(),
+        Some("right") => "right".to_string(),
+        Some(other) => {
+            return Err(ToolError::invalid_params(format!(
+                "pane must be 'left' or 'right' (got '{other}')"
+            )));
+        }
+        None => store.get_focused_pane(),
+    };
+    let state = if pane == "right" {
+        store.get_right()
+    } else {
+        store.get_left()
+    };
+    Ok((pane, state))
+}
+
+/// Resolve the absolute paths a pane tool should act on: explicit `names` win,
+/// else the current selection, else the item under the cursor.
+///
+/// Paths come from the last-synced pane state, so the loaded window is the
+/// authority: a `name` not in the listing, or a selection/cursor outside the
+/// loaded window, is an honest error rather than a silent miss.
+pub(super) fn resolve_pane_target_paths(state: &PaneState, names: Option<&[String]>) -> Result<Vec<String>, ToolError> {
+    if let Some(names) = names {
+        if names.is_empty() {
+            return Err(ToolError::invalid_params("'names' must be a non-empty array"));
+        }
+        let mut paths = Vec::with_capacity(names.len());
+        let mut missing = Vec::new();
+        for name in names {
+            match state.files.iter().find(|f| &f.name == name) {
+                Some(entry) => paths.push(entry.path.clone()),
+                None => missing.push(name.clone()),
+            }
+        }
+        if !missing.is_empty() {
+            return Err(ToolError::invalid_params(format!(
+                "not in the {} listing: {}",
+                if state.path.is_empty() { "current" } else { &state.path },
+                missing.join(", ")
+            )));
+        }
+        return Ok(paths);
+    }
+
+    if !state.selected_indices.is_empty() {
+        let mut paths = Vec::new();
+        let mut unresolved = false;
+        for &global in &state.selected_indices {
+            match global.checked_sub(state.loaded_start).and_then(|i| state.files.get(i)) {
+                Some(entry) => paths.push(entry.path.clone()),
+                None => unresolved = true,
+            }
+        }
+        if unresolved || paths.is_empty() {
+            return Err(ToolError::invalid_params(
+                "some selected items aren't in the loaded window; pass 'names' explicitly",
+            ));
+        }
+        return Ok(paths);
+    }
+
+    let entry = state
+        .cursor_index
+        .checked_sub(state.loaded_start)
+        .and_then(|i| state.files.get(i))
+        .ok_or_else(|| {
+            ToolError::invalid_params("nothing is selected and the cursor isn't on a listed item; pass 'names'")
+        })?;
+    if entry.name == ".." {
+        return Err(ToolError::invalid_params(
+            "the cursor is on the parent entry (..); select files or pass 'names'",
+        ));
+    }
+    Ok(vec![entry.path.clone()])
 }
 
 /// Expands a leading `~` in an agent-supplied path to the user's home directory.

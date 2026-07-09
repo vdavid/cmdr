@@ -27,6 +27,12 @@ story.
 - `pick_app_via_open_panel` shows an `NSOpenPanel` filtered to `.app` bundles for the "Open with → Other…" entry.
 - Worker threads use 8 MB stacks (FileProvider XPC depth), per the gotcha in `CLAUDE.md`.
 
+## Finder tags MCP consumer (`tags.rs`)
+
+The MCP `tag` tool wraps `tags::toggle_color` / `set_tags` (and `system_color_name` for canonical names), resolving
+target paths off the pane state and refreshing via `apply_tags_to_listing`. `cmdr://state` file entries also surface a
+`[tags:…]` marker mirrored from `PaneFileEntry.tags`. See `mcp/DETAILS.md`.
+
 ## Threading rationale
 
 The 8 MB-stack OS thread pattern (instead of rayon) for macOS framework calls is in `sync_status.rs` as the reference.

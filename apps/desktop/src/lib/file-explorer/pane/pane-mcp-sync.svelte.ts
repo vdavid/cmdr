@@ -124,6 +124,9 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
         // eslint-disable-next-line svelte/prefer-svelte-reactivity -- not reactive state, just formatting a timestamp
         modified: entry.modifiedAt != null ? new Date(entry.modifiedAt * 1000).toISOString() : null,
         recursiveSizePending: entry.recursiveSizePending ?? null,
+        // Finder tags (filled visible-range-first by enrich_tags). Surface the
+        // same dots the UI shows as a `[tags:…]` marker in cmdr://state.
+        tags: entry.tags ?? [],
       })
     }
     return files

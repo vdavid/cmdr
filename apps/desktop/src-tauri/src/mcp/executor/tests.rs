@@ -68,6 +68,7 @@ fn pane_state_with(
                 recursive_size: None,
                 recursive_size_pending: None,
                 modified: None,
+                tags: vec![],
             })
             .collect(),
         cursor_index,

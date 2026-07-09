@@ -121,3 +121,8 @@ Linux has no TCC, so its twin existence-checks everything and there's no gate.
 
 Favorites are local filesystem paths for now. Network and MTP favorites are deferred (mount-state
 complexity). The store doesn't enforce this; the add surfaces in the frontend gate it.
+
+## MCP consumer
+
+The MCP `favorites` tool wraps the `commands::favorites` pass-throughs (add / rename / remove / reorder), and
+`cmdr://state` `favorites:` reads `store::list()` for id discovery. See `mcp/DETAILS.md`.

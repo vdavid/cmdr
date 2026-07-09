@@ -23,7 +23,9 @@
 use serde_json::{Value, json};
 
 use super::executor::{ToolError, ToolResult};
-use super::executor::{app, async_tools, dialogs, downloads, file_ops, indexing, nav, queue, search, view};
+use super::executor::{
+    app, async_tools, dialogs, downloads, eject, favorites, file_ops, indexing, nav, queue, search, tags, view,
+};
 use super::tools::Tool;
 
 /// How a tool relates to the bearer-token gate. Pure, non-generic, and unit-testable — it
@@ -379,6 +381,42 @@ mcp_tools! {
         schema: no_params_schema(),
         gate: TokenGate::Open,
         run: app_only file_ops::execute_refresh
+    },
+    "tag" => {
+        desc: "Set macOS Finder color tags on files by name (else selection, else cursor). set: \
+               make the colors exactly (keeps colorless tags). toggle: flip each color. clear: \
+               remove all. macOS only; tags show in cmdr://state as [tags:red,blue].",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "pane": {
+                    "type": "string",
+                    "enum": ["left", "right"],
+                    "description": "Which pane to act in. Defaults to the focused pane."
+                },
+                "action": {
+                    "type": "string",
+                    "enum": ["set", "toggle", "clear"],
+                    "description": "set | toggle | clear"
+                },
+                "names": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Filenames to tag. Defaults to the selection, else the cursor item. Errors if a name isn't in the listing."
+                },
+                "colors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": ["red", "orange", "yellow", "green", "blue", "purple", "gray"]
+                    },
+                    "description": "Finder color names. Required for set and toggle; ignored for clear."
+                }
+            },
+            "required": ["action"]
+        }),
+        gate: TokenGate::Always,
+        run: app_params tags::execute_tag
     },
 
     // ── View ────────────────────────────────────────────────────────────────
@@ -739,6 +777,43 @@ mcp_tools! {
         run: params_only queue::execute_queue
     },
 
+    // ── Favorites ───────────────────────────────────────────────────────────
+    "favorites" => {
+        desc: "Manage the user's favorites (the switcher's Favorites section). add: path (+ \
+               optional name). rename: id + name. remove: id. reorder: orderedIds, the COMPLETE \
+               new ordering. Discover ids in cmdr://state favorites.",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["add", "rename", "remove", "reorder"],
+                    "description": "add | rename | remove | reorder"
+                },
+                "path": {
+                    "type": "string",
+                    "description": "For add: the folder path to favorite (~ expands to home)."
+                },
+                "id": {
+                    "type": "string",
+                    "description": "For rename / remove: the favorite id. See cmdr://state favorites."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "For add (optional, defaults to the path's name) / rename (required): the display label."
+                },
+                "orderedIds": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "For reorder: the complete new ordering of favorite ids."
+                }
+            },
+            "required": ["action"]
+        }),
+        gate: TokenGate::Always,
+        run: params_only favorites::execute_favorites
+    },
+
     // ── Network ─────────────────────────────────────────────────────────────
     "connect_to_server" => {
         desc: "Add a manual SMB server by address. Checks TCP reachability then adds to the host list.",
@@ -786,6 +861,23 @@ mcp_tools! {
         }),
         gate: TokenGate::Open,
         run: app_params async_tools::execute_upgrade_smb_to_direct
+    },
+    "eject" => {
+        desc: "Eject an ejectable volume by id (disk or MTP). Refuses honestly while an operation \
+               is reading from or writing to the volume, and for non-ejectable volumes. See \
+               cmdr://state volumes for ids.",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "volumeId": {
+                    "type": "string",
+                    "description": "Volume ID to eject (for example 'smb-…' or 'mtp-…:1'). See cmdr://state volumes."
+                }
+            },
+            "required": ["volumeId"]
+        }),
+        gate: TokenGate::Open,
+        run: params_only eject::execute_eject
     },
 
     // ── Async ───────────────────────────────────────────────────────────────
@@ -865,6 +957,7 @@ mod tests {
         "mkdir",
         "mkfile",
         "refresh",
+        "tag",
         "toggle_hidden",
         "set_view_mode",
         "sort",
@@ -879,18 +972,21 @@ mod tests {
         "set_setting",
         "indexing",
         "queue",
+        "favorites",
         "connect_to_server",
         "remove_manual_server",
         "upgrade_smb_to_direct",
+        "eject",
         "await",
         "go_to_latest_download",
     ];
 
     #[test]
     fn test_all_tools_count() {
-        // 6 nav + 2 cursor + 1 selection + 7 file_op + 3 view + 1 tab + 2 dialog + 3 app + 2
-        // search + 1 settings + 1 indexing + 1 queue + 3 network + 1 await + 1 downloads = 35
-        assert_eq!(get_all_tools().len(), 35);
+        // 6 nav + 2 cursor + 1 selection + 7 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app
+        // + 2 search + 1 settings + 1 indexing + 1 queue + 1 favorites + 3 network + 1 eject + 1
+        // await + 1 downloads = 38
+        assert_eq!(get_all_tools().len(), 38);
     }
 
     #[test]
@@ -1211,6 +1307,70 @@ mod tests {
         assert_eq!(tool_gate("queue"), Some(TokenGate::IfRollback));
     }
 
+    #[test]
+    fn test_tag_tool_schema_and_gate() {
+        let tools = get_all_tools();
+        let schema = &tool(&tools, "tag").input_schema;
+        let props = schema.get("properties").unwrap();
+
+        assert!(props.get("pane").is_some());
+        assert!(props.get("action").is_some());
+        assert!(props.get("names").is_some());
+        assert!(props.get("colors").is_some());
+
+        let action_enum = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();
+        for action in ["set", "toggle", "clear"] {
+            assert!(action_enum.contains(&json!(action)), "missing action '{action}'");
+        }
+        let color_enum = props["colors"]["items"]["enum"].as_array().unwrap();
+        for color in ["red", "orange", "yellow", "green", "blue", "purple", "gray"] {
+            assert!(color_enum.contains(&json!(color)), "missing color '{color}'");
+        }
+
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert_eq!(required.len(), 1);
+        assert!(required.contains(&json!("action")));
+
+        // Silent metadata mutation on user files, no confirmation dialog → gated.
+        assert_eq!(tool_gate("tag"), Some(TokenGate::Always));
+    }
+
+    #[test]
+    fn test_favorites_tool_schema_and_gate() {
+        let tools = get_all_tools();
+        let schema = &tool(&tools, "favorites").input_schema;
+        let props = schema.get("properties").unwrap();
+
+        for key in ["action", "path", "id", "name", "orderedIds"] {
+            assert!(props.get(key).is_some(), "favorites schema missing '{key}'");
+        }
+        let action_enum = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();
+        for action in ["add", "rename", "remove", "reorder"] {
+            assert!(action_enum.contains(&json!(action)), "missing action '{action}'");
+        }
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert_eq!(required.len(), 1);
+        assert!(required.contains(&json!("action")));
+
+        // Persistent app-config mutation with no confirmation dialog → gated.
+        assert_eq!(tool_gate("favorites"), Some(TokenGate::Always));
+    }
+
+    #[test]
+    fn test_eject_tool_schema_and_gate() {
+        let tools = get_all_tools();
+        let schema = &tool(&tools, "eject").input_schema;
+        let props = schema.get("properties").unwrap();
+        assert!(props.get("volumeId").is_some());
+
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert_eq!(required.len(), 1);
+        assert!(required.contains(&json!("volumeId")));
+
+        // Reversible one-click runtime action with an honest busy refusal → open.
+        assert_eq!(tool_gate("eject"), Some(TokenGate::Open));
+    }
+
     /// Anti-footgun backstop mirroring `test_autoconfirm_tools_are_gated`: any tool whose schema
     /// exposes a `rollback` property (a destructive, file-deleting bypass) MUST declare the
     /// `IfRollback` gate, never `Open`. Adding such a tool and forgetting its gate fails here.
@@ -1240,6 +1400,9 @@ mod tests {
     fn test_gate_table_is_complete_and_correct() {
         use std::collections::BTreeMap;
         let expected: BTreeMap<&str, TokenGate> = [
+            ("tag", TokenGate::Always),
+            ("favorites", TokenGate::Always),
+            ("eject", TokenGate::Open),
             ("select_volume", TokenGate::Open),
             ("nav_to_path", TokenGate::Open),
             ("nav_to_parent", TokenGate::Open),

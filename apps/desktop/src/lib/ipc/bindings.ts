@@ -4958,6 +4958,13 @@ export type PaneFileEntry = {
    *  once the writer drains. Only meaningful for directories.
    */
   recursiveSizePending: boolean | null
+  /**
+   *  macOS Finder tags on the entry, mirrored from the FE listing (filled
+   *  visible-range-first by the deferred `enrich_tags` pass). Surfaced in
+   *  `cmdr://state` as a `[tags:red,blue]` marker only when non-empty, so an
+   *  agent sees the same colored dots the UI shows. Empty in the common case.
+   */
+  tags?: TagRef[]
 }
 
 // State of a single pane.

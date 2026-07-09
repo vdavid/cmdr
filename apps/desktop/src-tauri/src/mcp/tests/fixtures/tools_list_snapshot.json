@@ -289,6 +289,58 @@
       "name": "refresh"
     },
     {
+      "description": "Set macOS Finder color tags on files by name (else selection, else cursor). set: make the colors exactly (keeps colorless tags). toggle: flip each color. clear: remove all. macOS only; tags show in cmdr://state as [tags:red,blue].",
+      "inputSchema": {
+        "properties": {
+          "action": {
+            "description": "set | toggle | clear",
+            "enum": [
+              "set",
+              "toggle",
+              "clear"
+            ],
+            "type": "string"
+          },
+          "colors": {
+            "description": "Finder color names. Required for set and toggle; ignored for clear.",
+            "items": {
+              "enum": [
+                "red",
+                "orange",
+                "yellow",
+                "green",
+                "blue",
+                "purple",
+                "gray"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "names": {
+            "description": "Filenames to tag. Defaults to the selection, else the cursor item. Errors if a name isn't in the listing.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "pane": {
+            "description": "Which pane to act in. Defaults to the focused pane.",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "type": "object"
+      },
+      "name": "tag"
+    },
+    {
       "description": "Toggle hidden files visibility",
       "inputSchema": {
         "properties": {},
@@ -720,6 +772,47 @@
       "name": "queue"
     },
     {
+      "description": "Manage the user's favorites (the switcher's Favorites section). add: path (+ optional name). rename: id + name. remove: id. reorder: orderedIds, the COMPLETE new ordering. Discover ids in cmdr://state favorites.",
+      "inputSchema": {
+        "properties": {
+          "action": {
+            "description": "add | rename | remove | reorder",
+            "enum": [
+              "add",
+              "rename",
+              "remove",
+              "reorder"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "description": "For rename / remove: the favorite id. See cmdr://state favorites.",
+            "type": "string"
+          },
+          "name": {
+            "description": "For add (optional, defaults to the path's name) / rename (required): the display label.",
+            "type": "string"
+          },
+          "orderedIds": {
+            "description": "For reorder: the complete new ordering of favorite ids.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "path": {
+            "description": "For add: the folder path to favorite (~ expands to home).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "type": "object"
+      },
+      "name": "favorites"
+    },
+    {
       "description": "Add a manual SMB server by address. Checks TCP reachability then adds to the host list.",
       "inputSchema": {
         "properties": {
@@ -766,6 +859,22 @@
         "type": "object"
       },
       "name": "upgrade_smb_to_direct"
+    },
+    {
+      "description": "Eject an ejectable volume by id (disk or MTP). Refuses honestly while an operation is reading from or writing to the volume, and for non-ejectable volumes. See cmdr://state volumes for ids.",
+      "inputSchema": {
+        "properties": {
+          "volumeId": {
+            "description": "Volume ID to eject (for example 'smb-…' or 'mtp-…:1'). See cmdr://state volumes.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "volumeId"
+        ],
+        "type": "object"
+      },
+      "name": "eject"
     },
     {
       "description": "Wait until a condition is met, after fire-and-forget actions or async events. Pane conditions watch a pane; index_status watches a volume's indexing freshness; operation_complete / operations_idle watch the write-operation queue.",

@@ -4,7 +4,7 @@
 
 use crate::mcp::pane_state::{PaneFileEntry, PaneState, TabInfo};
 use crate::mcp::resources::{
-    build_pane_yaml_with_options, format_file_compact, format_tab_compact, parse_state_options, split_uri,
+    build_pane_yaml_with_options, format_file_compact, format_tab_compact, parse_state_options, split_uri, tags_marker,
 };
 use crate::search::format_size;
 
@@ -69,6 +69,7 @@ fn test_format_file_compact() {
         recursive_size: None,
         modified: Some("2024-01-15".to_string()),
         recursive_size_pending: None,
+        tags: vec![],
     };
 
     // Without details
@@ -96,6 +97,7 @@ fn test_format_file_compact() {
         recursive_size: None,
         modified: None,
         recursive_size_pending: None,
+        tags: vec![],
     };
     let formatted = format_file_compact(&dir, 1, false, false, false);
     assert_eq!(formatted, "i:1 d docs");
@@ -109,6 +111,7 @@ fn test_format_file_compact() {
         recursive_size: Some(169),
         modified: Some("2026-03-19T17:33:53.000Z".to_string()),
         recursive_size_pending: None,
+        tags: vec![],
     };
     let formatted = format_file_compact(&dir_with_size, 5, false, false, true);
     assert_eq!(formatted, "i:5 d src 169 B 2026-03-19T17:33:53.000Z");
@@ -123,12 +126,55 @@ fn test_format_file_compact() {
         recursive_size: Some(4096),
         modified: None,
         recursive_size_pending: Some(true),
+        tags: vec![],
     };
     let formatted = format_file_compact(&pending_dir, 2, false, false, true);
     assert_eq!(formatted, "i:2 d target 4 KB [size-pending]");
     // The marker shows even without details (it's a status, not a detail).
     let formatted = format_file_compact(&pending_dir, 2, false, false, false);
     assert_eq!(formatted, "i:2 d target [size-pending]");
+}
+
+#[test]
+fn test_tags_marker() {
+    use crate::file_system::listing::metadata::TagRef;
+    let tag = |name: &str, color: u8| TagRef {
+        name: name.to_string(),
+        color,
+    };
+
+    // No tags → no marker (zero cost in the common case).
+    assert_eq!(tags_marker(&[]), None);
+
+    // Colored tags render as their color name (the dot the UI shows).
+    assert_eq!(tags_marker(&[tag("Red", 6), tag("Blue", 4)]), Some("[tags:red,blue]".to_string()));
+
+    // A colorless custom tag renders as its own name.
+    assert_eq!(tags_marker(&[tag("Important", 0)]), Some("[tags:Important]".to_string()));
+
+    // A custom-named colored tag still renders as its color (matches the dot).
+    assert_eq!(tags_marker(&[tag("Urgent", 6)]), Some("[tags:red]".to_string()));
+}
+
+#[test]
+fn test_format_file_compact_appends_tags_marker() {
+    use crate::file_system::listing::metadata::TagRef;
+    let file = PaneFileEntry {
+        name: "photo.jpg".to_string(),
+        path: "/tmp/photo.jpg".to_string(),
+        is_directory: false,
+        size: Some(2048),
+        recursive_size: None,
+        modified: None,
+        recursive_size_pending: None,
+        tags: vec![TagRef {
+            name: "Green".to_string(),
+            color: 2,
+        }],
+    };
+    // The tags marker trails the cursor/selected markers.
+    let formatted = format_file_compact(&file, 3, true, false, false);
+    assert_eq!(formatted, "i:3 f photo.jpg [cur] [tags:green]");
 }
 
 #[test]
@@ -146,6 +192,7 @@ fn test_build_pane_yaml() {
                 recursive_size: None,
                 modified: Some("2024-01-15".to_string()),
                 recursive_size_pending: None,
+                tags: vec![],
             },
             PaneFileEntry {
                 name: "folder".to_string(),
@@ -155,6 +202,7 @@ fn test_build_pane_yaml() {
                 recursive_size: None,
                 modified: None,
                 recursive_size_pending: None,
+                tags: vec![],
             },
         ],
         cursor_index: 0,
@@ -218,6 +266,7 @@ fn test_brief_cursor_detail_respects_loaded_window() {
                 recursive_size: None,
                 modified: None,
                 recursive_size_pending: None,
+                tags: vec![],
             },
             PaneFileEntry {
                 name: "under-cursor.txt".to_string(),
@@ -227,6 +276,7 @@ fn test_brief_cursor_detail_respects_loaded_window() {
                 recursive_size: None,
                 modified: None,
                 recursive_size_pending: None,
+                tags: vec![],
             },
         ],
         cursor_index: 101, // global; window-relative index 1

@@ -93,7 +93,7 @@ fn parse_tag_string(s: &str) -> TagRef {
 /// built-in color tags, so a tag Cmdr adds is indistinguishable from one Finder
 /// added (and shows up in Finder's tag search).
 #[cfg(target_os = "macos")]
-fn system_color_name(color: u8) -> Option<&'static str> {
+pub(crate) fn system_color_name(color: u8) -> Option<&'static str> {
     Some(match color {
         1 => "Gray",
         2 => "Green",

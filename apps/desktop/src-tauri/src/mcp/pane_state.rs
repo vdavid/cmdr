@@ -34,6 +34,12 @@ pub struct PaneFileEntry {
     /// observe the "size updating" hourglass without DOM access. `None`/`false`
     /// once the writer drains. Only meaningful for directories.
     pub recursive_size_pending: Option<bool>,
+    /// macOS Finder tags on the entry, mirrored from the FE listing (filled
+    /// visible-range-first by the deferred `enrich_tags` pass). Surfaced in
+    /// `cmdr://state` as a `[tags:red,blue]` marker only when non-empty, so an
+    /// agent sees the same colored dots the UI shows. Empty in the common case.
+    #[serde(default)]
+    pub tags: Vec<crate::file_system::listing::metadata::TagRef>,
 }
 
 /// State of a single pane.
@@ -246,6 +252,7 @@ mod tests {
                 recursive_size: None,
                 modified: None,
                 recursive_size_pending: None,
+                tags: vec![],
             }],
             cursor_index: 0,
             view_mode: "brief".to_string(),

@@ -131,6 +131,7 @@ fn test_null_bytes_in_paths() {
         recursive_size: None,
         modified: None,
         recursive_size_pending: None,
+        tags: vec![],
     };
 
     // Should serialize without panic

@@ -104,6 +104,7 @@ fn generation_gate_flips_true_after_pane_push() {
             recursive_size: None,
             modified: None,
             recursive_size_pending: None,
+            tags: vec![],
         }],
         ..Default::default()
     });
