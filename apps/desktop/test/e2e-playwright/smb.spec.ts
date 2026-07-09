@@ -44,7 +44,7 @@ import {
   mcpAwaitItem,
   mcpAwaitPath,
 } from '../e2e-shared/mcp-client.js'
-import { ensureAppReady, getFixtureRoot, pollUntil, sleep, isStateClean } from './helpers.js'
+import { ensureAppReady, getFixtureRoot, pollUntil, isStateClean } from './helpers.js'
 
 import os from 'os'
 
@@ -82,9 +82,11 @@ test.beforeEach(async ({ tauriPage }) => {
   }
 
   // Fixture recreation is opt-in per test: only the two cross-storage copy
-  // tests below touch local files, so the unconditional 1 s watcher settle
-  // burned ~14 s across 14 SMB tests that never read from `left/` or `right/`.
-  // Those two tests call `recreateFixturesAndSettle()` themselves.
+  // tests below touch local files, so recreating fixtures for every SMB test
+  // would waste work on the 14 that never read from `left/` or `right/`.
+  // Those two tests call `recreateFixtures()` themselves; the `ensureAppReady()`
+  // they run right after navigates, polls the fresh fixtures present, flushes
+  // the file watcher, and re-confirms stability, so no extra settle is needed.
 
   // Navigate to the main route first: volume-select event listeners
   // only exist on the file explorer page, not on /settings.
@@ -131,21 +133,6 @@ test.beforeEach(async ({ tauriPage }) => {
     // so this defensive cleanup is no longer needed.
   }
 })
-
-/**
- * Refresh local `left/`/`right/` fixtures and let the file watcher's initial-scan
- * burst settle before the test reads them. Only the cross-storage copy tests
- * below need this; the rest of the file's tests never read local fixtures.
- *
- * There's no UI-side "watcher armed" signal to poll for (events fire into the
- * backend and are debounced there), so a fixed pre-nav settle is what actually
- * keeps these tests from racing the watcher's first burst.
- */
-async function recreateFixturesAndSettle(): Promise<void> {
-  recreateFixtures(getFixtureRoot())
-  // eslint-disable-next-line cmdr/no-arbitrary-sleep-in-e2e -- watcher initial-scan coalescing window; no UI-side signal, backend debounces watcher events with no observable "armed" marker
-  await sleep(1000)
-}
 
 // ── Helper ───────────────────────────────────────────────────────────────────
 
@@ -282,7 +269,7 @@ describeSmb('SMB mounting and file browsing', () => {
 
 describeSmb('SMB cross-storage copy', () => {
   test('copies file from local to mounted SMB share', async ({ tauriPage }) => {
-    await recreateFixturesAndSettle()
+    recreateFixtures(getFixtureRoot())
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
@@ -313,7 +300,7 @@ describeSmb('SMB cross-storage copy', () => {
   })
 
   test('copies file from mounted SMB share to local', async ({ tauriPage }) => {
-    await recreateFixturesAndSettle()
+    recreateFixtures(getFixtureRoot())
     await ensureAppReady(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
