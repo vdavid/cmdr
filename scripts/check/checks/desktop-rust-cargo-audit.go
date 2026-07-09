@@ -71,6 +71,8 @@ var cargoAuditIgnoredAdvisories = []string{
 	"RUSTSEC-2025-0098", // unic-ucd-version unmaintained
 	"RUSTSEC-2025-0100", // unic-ucd-ident unmaintained
 	"RUSTSEC-2026-0097", // rand unsound (0.7/0.8, not using rand::rng())
+	"RUSTSEC-2026-0194", // quick-xml 0.39 quadratic attr check: only via wayland-scanner (Linux build-time protocol parsing, not the shipped app); its latest release still requires ^0.39 — remove when wayland-scanner accepts >=0.41
+	"RUSTSEC-2026-0195", // quick-xml 0.39 NsReader memory DoS: same wayland-scanner-only path and same removal condition as -0194
 }
 
 // buildCargoAuditCmd constructs the cargo audit command with --json and all ignores.
