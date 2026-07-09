@@ -264,6 +264,14 @@ empty zip, then copy-into" for the seed mechanism. The user-visible differences 
   clamped 1..=9, `None` = crate default 6) is single-sourced in
   [`write_operations/DETAILS.md`](../../../../src-tauri/src/file_system/write_operations/DETAILS.md) § "Archive edits" →
   the mutation `DETAILS.md`.
+- **An explicitly-approximate estimated size shows in compress mode only** (`CompressEstimateLine.svelte`, beside the
+  scan tallies). The backend samples it once during the deep scan (local sources only; suppressed for remote) and ships
+  per-class level-6 subtotals on `scan-preview-complete`; `transfer-scan-state` exposes them as `estimatedBytes`. The
+  line re-scales to the selected level via `compress-estimate-scaling.ts` with no re-scan (it subscribes to the same
+  `behavior.archiveCompressionLevel` setting the slider writes), shows a loading affordance while a local scan runs, and
+  renders nothing when the estimate is absent. The sampler, budgets, and level curve are single-sourced in
+  [`write_operations/DETAILS.md`](../../../../src-tauri/src/file_system/write_operations/DETAILS.md) § "Compressed-size
+  estimate".
 
 ### Same-FS move optimization
 

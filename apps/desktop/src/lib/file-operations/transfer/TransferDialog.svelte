@@ -7,6 +7,7 @@
     import { createTransferDestExistsCheck } from './transfer-dest-exists.svelte'
     import DirectionIndicator from './DirectionIndicator.svelte'
     import CompressLevelControl from './CompressLevelControl.svelte'
+    import CompressEstimateLine from './CompressEstimateLine.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Select, { type SelectItem } from '$lib/ui/Select.svelte'
@@ -214,6 +215,7 @@
         getIsSameVolumeMove: () => isSameVolumeMove,
         getConfirmed: () => confirmed,
         getDestroyed: () => destroyed,
+        getSampleForEstimate: () => activeOperationType === 'compress',
     })
 
     // Cheap top-level conflict check (one dest listing). Runs in parallel with the
@@ -600,8 +602,9 @@
             {/if}
         </div>
 
-        <!-- Compression level: Compress mode only. Persists to the shared setting. -->
+        <!-- Compression level + live estimated size: Compress mode only. -->
         {#if activeOperationType === 'compress'}
+            <CompressEstimateLine estimate={scan.estimatedBytes} {isScanning} sourceIsLocal={sourceVolumeId === DEFAULT_VOLUME_ID} />
             <CompressLevelControl />
         {/if}
 

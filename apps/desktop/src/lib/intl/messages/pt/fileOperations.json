@@ -233,6 +233,16 @@
   "@fileOperations.transferDialog.compressLevelCaption": {
     "sourceHash": "58924a1"
   },
+
+  "fileOperations.transferDialog.estimatedSize": "Tamanho estimado",
+  "@fileOperations.transferDialog.estimatedSize": {
+    "sourceHash": "d5f39d7"
+  },
+
+  "fileOperations.transferDialog.estimatedSizeTooltip": "Uma estimativa aproximada do zip compactado. O tamanho real pode variar.",
+  "@fileOperations.transferDialog.estimatedSizeTooltip": {
+    "sourceHash": "2e8ba70"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Verificando conflitos...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

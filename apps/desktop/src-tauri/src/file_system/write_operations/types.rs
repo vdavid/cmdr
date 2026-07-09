@@ -582,6 +582,25 @@ pub struct ScanPreviewProgressEvent {
     pub expected_bytes_total: Option<u64>,
 }
 
+/// Estimated compressed output size for a Compress operation, split by
+/// compressibility class so the frontend can re-scale to the selected deflate
+/// level via its baked per-class curve without a re-scan. Each field is
+/// estimated **level-6** deflate bytes; at level 6 the shown estimate is their
+/// sum. `None` on the carrying event when unavailable (non-compress scan, or a
+/// remote source where sampling is suppressed). Built by
+/// `compress_estimate::CompressEstimator`; see
+/// `docs/notes/compress-size-estimate-spike.md` for the accuracy evidence.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct CompressedSizeEstimate {
+    /// Estimated level-6 bytes for files whose sampled ratio is < 0.35.
+    pub compressible_bytes: u64,
+    /// Estimated level-6 bytes for files whose sampled ratio is in [0.35, 0.8).
+    pub medium_bytes: u64,
+    /// Estimated level-6 bytes for files whose sampled ratio is >= 0.8.
+    pub incompressible_bytes: u64,
+}
+
 /// Completion event for scan preview.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
@@ -597,6 +616,12 @@ pub struct ScanPreviewCompleteEvent {
     /// `bytes_total` when there are no hardlinks; when it's smaller, the
     /// dialog shows a "X will be written, source is Y" hint.
     pub dedup_bytes_total: u64,
+    /// Estimated compressed size, present only for a compress-mode scan over a
+    /// local source. `None` for copy/move scans and for remote (SMB/MTP)
+    /// sources (sampling suppressed). The estimate rides the complete event
+    /// only; while scanning the dialog shows a loading affordance.
+    #[serde(default)]
+    pub estimated_compressed_bytes: Option<CompressedSizeEstimate>,
 }
 
 /// Error event for scan preview.
@@ -637,6 +662,12 @@ pub struct ScanPreviewTotals {
     /// `du`-equivalent source footprint (hardlinks counted once). See
     /// `ScanPreviewCompleteEvent::dedup_bytes_total`.
     pub dedup_bytes_total: u64,
+    /// Estimated compressed size, mirroring
+    /// `ScanPreviewCompleteEvent::estimated_compressed_bytes`, so the recovery
+    /// path (`check_scan_preview_status`) hydrates the estimate too when the FE
+    /// missed the complete event. `None` for non-compress or remote scans.
+    #[serde(default)]
+    pub estimated_compressed_bytes: Option<CompressedSizeEstimate>,
 }
 
 // ============================================================================

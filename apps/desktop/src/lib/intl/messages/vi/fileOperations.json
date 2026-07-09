@@ -232,6 +232,16 @@
   "@fileOperations.transferDialog.compressLevelCaption": {
     "sourceHash": "58924a1"
   },
+
+  "fileOperations.transferDialog.estimatedSize": "Kích thước ước tính",
+  "@fileOperations.transferDialog.estimatedSize": {
+    "sourceHash": "d5f39d7"
+  },
+
+  "fileOperations.transferDialog.estimatedSizeTooltip": "Ước tính sơ bộ kích thước tệp zip sau khi nén. Kích thước thực tế có thể khác.",
+  "@fileOperations.transferDialog.estimatedSizeTooltip": {
+    "sourceHash": "2e8ba70"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Đang kiểm tra xung đột...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

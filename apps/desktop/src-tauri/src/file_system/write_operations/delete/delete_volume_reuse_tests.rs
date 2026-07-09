@@ -243,6 +243,7 @@ async fn delete_consumes_preview_id_skips_rescan() {
                     },
                 ),
             ],
+            estimated_compressed_bytes: None,
             inserted_at: std::time::Instant::now(),
         },
     );

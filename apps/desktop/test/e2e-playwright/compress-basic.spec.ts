@@ -116,6 +116,19 @@ test.describe('Compress (⌥F5)', () => {
     expect(suggested.endsWith('/file-a.txt.zip')).toBe(true)
     expect(suggested.startsWith(path.join(fixtureRoot, 'right'))).toBe(true)
 
+    // The estimated-size line (Feature 2) appears for a LOCAL source: an
+    // explicitly-approximate "~ <size>" that rides the scan. Poll for it to
+    // settle (the estimate arrives on scan-complete).
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<string>(
+            `(document.querySelector('${TRANSFER_DIALOG} .estimate-value')?.textContent || '').trim()`,
+          ),
+        { timeout: 5000 },
+      )
+      .toContain('~')
+
     // Confirm.
     await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
@@ -266,9 +279,10 @@ test.describe('Compress (⌥F5)', () => {
     const sizeAtLevel9 = await compressAtLevel(9)
 
     // The whole point of the setting: a higher level packs the same data smaller.
-    expect(sizeAtLevel9, `level 9 (${sizeAtLevel9} B) should beat level 1 (${sizeAtLevel1} B)`).toBeLessThan(
-      sizeAtLevel1,
-    )
+    expect(
+      sizeAtLevel9,
+      `level 9 (${String(sizeAtLevel9)} B) should beat level 1 (${String(sizeAtLevel1)} B)`,
+    ).toBeLessThan(sizeAtLevel1)
 
     // Restore the default so the level doesn't leak into other specs sharing the store.
     await mcpCall('set_setting', { id: 'behavior.archiveCompressionLevel', value: 6 })

@@ -370,6 +370,16 @@
     "description": "Caption under the compression-level slider shown in the Compress mode of the transfer dialog. Explains the tradeoff: a higher level packs a smaller zip but is slower. \"zip\" is a file format; do not translate it."
   },
 
+  "fileOperations.transferDialog.estimatedSize": "Estimated size",
+  "@fileOperations.transferDialog.estimatedSize": {
+    "description": "Label next to an approximate compressed-size figure shown in the Compress mode of the transfer dialog, e.g. \"Estimated size ~ 42 MB\". Keep it short. \"zip\" is a file format; do not translate it."
+  },
+
+  "fileOperations.transferDialog.estimatedSizeTooltip": "A rough guess at the packed zip. The real size may differ.",
+  "@fileOperations.transferDialog.estimatedSizeTooltip": {
+    "description": "Tooltip on the \"Estimated size\" label in the Compress dialog, clarifying the number is a quick approximation and the real packed size may differ. \"zip\" is a file format; do not translate it."
+  },
+
   "fileOperations.transferDialog.checkingConflicts": "Checking for conflicts...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "description": "Status shown while the transfer dialog scans the destination for name clashes before the copy/move. Keep the trailing ellipsis.",

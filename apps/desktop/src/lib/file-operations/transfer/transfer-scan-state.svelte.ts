@@ -36,6 +36,7 @@ import {
   onScanPreviewError,
   onScanPreviewCancelled,
   type UnlistenFn,
+  type CompressedSizeEstimate,
 } from '$lib/tauri-commands'
 import type { SortColumn, SortOrder } from '$lib/file-explorer/types'
 import { getSetting } from '$lib/settings'
@@ -60,6 +61,12 @@ export interface TransferScanStateDeps {
   getConfirmed: () => boolean
   /** Whether the dialog is being destroyed (so the toggle effect doesn't restart a scan on teardown). */
   getDestroyed: () => boolean
+  /**
+   * Whether to sample a compressed-size estimate during the scan (Compress mode
+   * only). Read at scan start; the estimate rides the scan-complete event and is
+   * absent for remote sources (never sampled) and non-compress operations.
+   */
+  getSampleForEstimate: () => boolean
 }
 
 export function createTransferScanState(deps: TransferScanStateDeps) {
@@ -73,6 +80,11 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
   // dialog shows a one-line note clarifying the gap.
   let bytesFound = $state(0)
   let dedupBytesFound = $state(0)
+  // Compressed-size estimate (Compress mode, local sources only). `null` while
+  // scanning, for remote sources, and for copy/move. Carries the per-class
+  // level-6 subtotals so the dialog re-scales to the chosen level with no
+  // re-scan. Set from the complete event (and the recovery path).
+  let estimatedBytes = $state<CompressedSizeEstimate | null>(null)
   let isScanning = $state(false)
   let scanComplete = $state(false)
   let unlisteners: UnlistenFn[] = []
@@ -118,6 +130,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
         dirsFound = event.dirsTotal
         bytesFound = event.bytesTotal
         dedupBytesFound = event.dedupBytesTotal
+        estimatedBytes = event.estimatedCompressedBytes ?? null
         isScanning = false
         scanComplete = true
       }),
@@ -145,6 +158,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
       deps.getSortOrder(),
       progressIntervalMs,
       deps.getSourceVolumeId(),
+      deps.getSampleForEstimate(),
     )
     previewId = result.previewId
 
@@ -161,6 +175,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
         dirsFound = totals.dirsTotal
         bytesFound = totals.bytesTotal
         dedupBytesFound = totals.dedupBytesTotal
+        estimatedBytes = totals.estimatedCompressedBytes ?? null
         isScanning = false
         scanComplete = true
       }
@@ -183,6 +198,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
     dirsFound = 0
     bytesFound = 0
     dedupBytesFound = 0
+    estimatedBytes = null
     scanStarted = Promise.resolve()
   }
 
@@ -259,6 +275,10 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
     },
     get dedupBytesFound() {
       return dedupBytesFound
+    },
+    /** Compressed-size estimate (Compress + local only), or `null`. */
+    get estimatedBytes() {
+      return estimatedBytes
     },
     get isScanning() {
       return isScanning

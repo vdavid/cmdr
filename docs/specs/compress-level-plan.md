@@ -377,6 +377,17 @@ No dialog UI in M6.
 
 ### M7 — Feature 2: wire the estimate into the dialog (CONDITIONAL on M6 passing)
 
+> **M7 LANDED (2026-07-10) — Feature 2 shipped for local sources.** The compress scan samples a compressed-size estimate
+> off the walk thread (`compress_estimate::CompressEstimator`, fed by `WalkContext::on_file` from `run_scan_preview`
+> only), ships it as per-class level-6 subtotals (`CompressedSizeEstimate`) on `scan-preview-complete`, and the dialog
+> renders an explicitly-approximate "~ <size>" (`CompressEstimateLine.svelte`) that re-scales to the selected level via
+> `compress-estimate-scaling.ts` with no re-scan. Remote (SMB/MTP) sources are suppressed (estimate absent). Sampler +
+> budgets + level curve are single-sourced in `write_operations/DETAILS.md` § "Compressed-size estimate". Accuracy
+> (production estimator vs actual full-file level-6 deflate, opt-in `estimator_accuracy_*` harness over this crate's
+> 729-file `src` tree): predicted 3,112,424 B vs actual 3,114,389 B, **0.1% error** — matching the M6 spike. UI states
+> (render, live re-scale on slider move, loading, absent-on-remote) covered by `CompressEstimateLine.svelte.test.ts`;
+> real-app presence asserted in `compress-basic.spec.ts`. Definition of done met.
+
 Only if M6 cleared the gate. Otherwise skip entirely.
 
 - **Event payload:** add `estimated_compressed_bytes: Option<u64>` to `ScanPreviewProgressEvent` /

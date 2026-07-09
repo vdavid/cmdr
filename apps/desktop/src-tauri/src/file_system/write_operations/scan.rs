@@ -20,6 +20,9 @@ use crate::file_system::listing::caching::try_get_watched_listing;
 use crate::file_system::listing::{FileEntry, SortColumn, SortOrder};
 use crate::file_system::volume::{CopyScanResult, Volume, VolumeError};
 
+/// Per-regular-file hook fired by the walk, receiving the file path and size (the `WalkContext::on_file` field).
+type OnFileHook<'a> = &'a dyn Fn(&Path, u64);
+
 /// Callbacks for customizing `walk_dir_recursive` behavior per caller.
 ///
 /// `on_progress` is called as `(files_done, dirs_done, bytes_done, current_file, current_dir)`:
@@ -33,6 +36,12 @@ pub(super) struct WalkContext<'a, E> {
     pub(super) on_cancelled: &'a dyn Fn() -> E,
     pub(super) on_symlink_loop: &'a dyn Fn(&Path) -> E,
     pub(super) on_progress: &'a dyn Fn(usize, usize, u64, Option<String>, Option<String>),
+    /// Optional per-regular-file hook `(path, size)`, fired once for each file
+    /// (not dirs or symlinks) as the walk discovers it. The compress-size
+    /// estimator uses it to feed a sampling worker off the walk thread; all
+    /// other callers pass `None`. Must stay cheap (a channel push) so it never
+    /// lands on the walk's critical path.
+    pub(super) on_file: Option<OnFileHook<'a>>,
 }
 
 /// Recursively walks a directory tree, collecting files and directories.
@@ -103,6 +112,9 @@ pub(super) fn walk_dir_recursive<E>(
         let info = FileInfo::new(path.to_path_buf(), source_root.to_path_buf(), &metadata)
             .with_progress_bytes(if counts { size } else { 0 });
         files.push(info);
+        if let Some(on_file) = ctx.on_file {
+            on_file(path, size);
+        }
     } else if metadata.is_dir() {
         if is_symlink_loop(path, visited) {
             return Err((ctx.on_symlink_loop)(path));
@@ -237,6 +249,11 @@ fn walk_cached_entries<E>(
             *total_bytes += size;
             if counts {
                 *dedup_bytes += size;
+            }
+            if let Some(on_file) = ctx.on_file
+                && !entry.is_symlink
+            {
+                on_file(&child_path, size);
             }
             files.push(FileInfo {
                 path: child_path,
@@ -659,6 +676,8 @@ fn scan_sources_internal(
                 0,
             );
         },
+        // The real copy/move/delete scan never samples for a compress estimate.
+        on_file: None,
     };
 
     // Local FS scan goes through `LocalPosixVolume`, which is always registered as
@@ -1075,6 +1094,7 @@ mod tests {
             on_progress: &|_, _, _, cur_file, cur_dir| {
                 captured.borrow_mut().push((cur_file, cur_dir));
             },
+            on_file: None,
         };
         for source in sources {
             let source_root = source.parent().unwrap_or(source);

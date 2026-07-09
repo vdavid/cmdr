@@ -4,7 +4,7 @@
 //! the actual copy starts. Results are cached so the copy can skip a redundant scan.
 
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
@@ -34,6 +34,13 @@ use crate::file_system::volume::{BatchScanResult, CopyScanResult, Volume};
 /// fresh-listing oracle (`try_get_watched_listing`) to short-circuit re-reading
 /// directories that an open pane is already keeping in sync. Pass `"root"` for
 /// local-FS scans.
+/// `sample_for_estimate` turns on the compressed-size sampler for the LOCAL
+/// walk only (compress-mode scans). It's ignored for volume/remote scans, which
+/// never sample (the estimate is suppressed there). See `compress_estimate`.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "IPC pass-through mirroring the command's parameter list"
+)]
 pub fn start_scan_preview(
     app: tauri::AppHandle,
     sources: Vec<PathBuf>,
@@ -42,6 +49,7 @@ pub fn start_scan_preview(
     sort_column: SortColumn,
     sort_order: SortOrder,
     progress_interval_ms: u64,
+    sample_for_estimate: bool,
 ) -> ScanPreviewStartResult {
     let preview_id = Uuid::new_v4().to_string();
     let preview_id_clone = preview_id.clone();
@@ -66,7 +74,15 @@ pub fn start_scan_preview(
         });
     } else {
         std::thread::spawn(move || {
-            run_scan_preview(app, preview_id_clone, sources, sort_column, sort_order, state);
+            run_scan_preview(
+                app,
+                preview_id_clone,
+                sources,
+                sort_column,
+                sort_order,
+                state,
+                sample_for_estimate,
+            );
         });
     }
 
@@ -87,6 +103,7 @@ pub fn get_scan_preview_totals(preview_id: &str) -> Option<super::types::ScanPre
         dirs_total: cached.dirs.len(),
         bytes_total: cached.total_bytes,
         dedup_bytes_total: cached.dedup_bytes,
+        estimated_compressed_bytes: cached.estimated_compressed_bytes.clone(),
     })
 }
 
@@ -109,6 +126,14 @@ pub fn cancel_scan_preview(preview_id: &str) {
 }
 
 /// Internal function that runs the scan preview in a background thread.
+///
+/// When `sample_for_estimate` is set (compress-mode scans), a bounded worker
+/// thread computes a compressed-size estimate off the walk thread: the walk
+/// pushes `(path, size)` per regular file into a channel, the worker samples a
+/// head window under a byte budget (see `compress_estimate`), and the estimate
+/// rides the complete event. The worker is joined after the walk (usually
+/// already done, since it ran concurrently) and cancels with the scan; a
+/// sampling failure degrades to "no estimate" and never affects the scan.
 fn run_scan_preview(
     app: tauri::AppHandle,
     preview_id: String,
@@ -116,8 +141,11 @@ fn run_scan_preview(
     sort_column: SortColumn,
     sort_order: SortOrder,
     state: Arc<ScanPreviewState>,
+    sample_for_estimate: bool,
 ) {
     use tauri_specta::Event;
+
+    use super::compress_estimate::CompressEstimator;
 
     let mut files: Vec<FileInfo> = Vec::new();
     let mut dirs: Vec<PathBuf> = Vec::new();
@@ -137,7 +165,38 @@ fn run_scan_preview(
     // when any source isn't covered by the index.
     let expected = crate::indexing::expected_totals::expected_totals_for_sources(&sources);
 
+    // Compress-size estimator: a bounded worker samples file heads OFF the walk
+    // thread so the sampling CPU never lands on the scan's critical path. The
+    // per-file hook below pushes `(path, size)` into the channel; the worker
+    // deflates a head window under a byte budget and accumulates the estimate.
+    // `None` for non-compress scans (the estimate is suppressed). Cancels with
+    // the scan via the shared `cancelled` flag.
+    let (estimate_tx, estimate_worker) = if sample_for_estimate {
+        let (tx, rx) = std::sync::mpsc::channel::<(PathBuf, u64)>();
+        let cancel = Arc::clone(&state);
+        let handle = std::thread::spawn(move || {
+            let mut estimator = CompressEstimator::new();
+            while let Ok((path, size)) = rx.recv() {
+                if cancel.cancelled.load(Ordering::Relaxed) {
+                    break;
+                }
+                estimator.observe(&path, size);
+            }
+            estimator.finish()
+        });
+        (Some(tx), Some(handle))
+    } else {
+        (None, None)
+    };
+
     let result: Result<(), String> = (|| {
+        // Cheap per-file hook: a channel push, so it never delays the walk. A
+        // full channel or dropped receiver just drops the sample (best-effort).
+        let send_sample = |path: &Path, size: u64| {
+            if let Some(tx) = &estimate_tx {
+                let _ = tx.send((path.to_path_buf(), size));
+            }
+        };
         let ctx = WalkContext {
             progress_interval: state.progress_interval,
             is_cancelled: &|| state.cancelled.load(Ordering::Relaxed),
@@ -157,6 +216,7 @@ fn run_scan_preview(
                 }
                 .emit(&app);
             },
+            on_file: sample_for_estimate.then_some(&send_sample as &dyn Fn(&Path, u64)),
         };
         // Local FS scan preview uses the "root" volume ID. The oracle short-circuits
         // any subtree currently open in a pane with a live FSEvents watcher.
@@ -179,6 +239,12 @@ fn run_scan_preview(
         }
         Ok(())
     })();
+
+    // Close the channel (drop the only sender) so the worker drains and returns,
+    // then collect the estimate. The worker ran concurrently with the walk, so
+    // this join is usually already done; a sampling panic degrades to `None`.
+    drop(estimate_tx);
+    let estimate = estimate_worker.and_then(|handle| handle.join().ok());
 
     // Clean up state
     if let Ok(mut cache) = SCAN_PREVIEW_STATE.write() {
@@ -209,6 +275,7 @@ fn run_scan_preview(
                         total_bytes,
                         dedup_bytes,
                         per_path: Vec::new(),
+                        estimated_compressed_bytes: estimate.clone(),
                         inserted_at: Instant::now(),
                     },
                 );
@@ -220,6 +287,7 @@ fn run_scan_preview(
                     dirs_total: dirs_count,
                     bytes_total: total_bytes,
                     dedup_bytes_total: dedup_bytes,
+                    estimated_compressed_bytes: estimate,
                 }
                 .emit(&app);
             }
@@ -344,6 +412,8 @@ async fn run_volume_scan_preview(
                         total_bytes,
                         dedup_bytes,
                         per_path: batch.per_path,
+                        // Remote sources never sample: the estimate is suppressed.
+                        estimated_compressed_bytes: None,
                         inserted_at: Instant::now(),
                     },
                 );
@@ -354,6 +424,8 @@ async fn run_volume_scan_preview(
                     dirs_total: total_dirs,
                     bytes_total: total_bytes,
                     dedup_bytes_total: dedup_bytes,
+                    // Remote sources never sample: the estimate is suppressed.
+                    estimated_compressed_bytes: None,
                 }
                 .emit(&app);
             }
@@ -609,6 +681,7 @@ mod tests {
                 total_bytes: 12_345,
                 dedup_bytes: 12_345,
                 per_path: Vec::new(),
+                estimated_compressed_bytes: None,
                 inserted_at: Instant::now(),
             },
         );

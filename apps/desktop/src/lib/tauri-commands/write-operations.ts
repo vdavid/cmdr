@@ -16,6 +16,7 @@ import type {
 // Event payload types now come from the generated typed-events bindings, so the
 // Rust struct shapes (write-operations sink + scan-preview) drive the FE types.
 import type {
+  CompressedSizeEstimate,
   ConflictInfo,
   DryRunResult,
   OperationStatus,
@@ -60,6 +61,7 @@ export type {
   ScanPreviewErrorEvent,
   ScanPreviewCancelledEvent,
   ScanPreviewTotals,
+  CompressedSizeEstimate,
 }
 
 // ============================================================================
@@ -75,8 +77,18 @@ export async function startScanPreview(
   sortOrder: SortOrder,
   progressIntervalMs?: number,
   sourceVolumeId?: string,
+  // Compress-mode scans pass `true` so the local walk samples a compressed-size
+  // estimate. Ignored for remote sources (never sampled).
+  sampleForEstimate?: boolean,
 ): Promise<ScanPreviewStartResult> {
-  return commands.startScanPreview(sources, sourceVolumeId ?? null, sortColumn, sortOrder, progressIntervalMs ?? null)
+  return commands.startScanPreview(
+    sources,
+    sourceVolumeId ?? null,
+    sortColumn,
+    sortOrder,
+    progressIntervalMs ?? null,
+    sampleForEstimate ?? null,
+  )
 }
 
 export async function cancelScanPreview(previewId: string): Promise<void> {

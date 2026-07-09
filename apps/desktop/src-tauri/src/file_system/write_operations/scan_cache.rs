@@ -41,6 +41,10 @@ pub(super) struct CachedScanResult {
     /// pipeline's cached branch can rebuild `source_hints` without per-path
     /// `is_directory` probes (which on MTP each list the parent dir).
     pub per_path: Vec<(PathBuf, CopyScanResult)>,
+    /// Compressed-size estimate for a compress-mode local scan, carried so the
+    /// recovery path (`get_scan_preview_totals`) can hand it back when the FE
+    /// missed the complete event. `None` for copy/move and remote scans.
+    pub estimated_compressed_bytes: Option<super::types::CompressedSizeEstimate>,
     /// When this result was inserted into `SCAN_PREVIEW_RESULTS`. Drives the
     /// TTL safety net (`prune_expired_scan_results`): a forgetful caller that
     /// never consumes the cache (dialog dismissed, op never started) can't leak

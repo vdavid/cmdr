@@ -1,4 +1,4 @@
-import type { TagRef } from '$lib/ipc/bindings'
+import type { CompressedSizeEstimate, TagRef } from '$lib/ipc/bindings'
 
 export interface FileEntry {
   name: string
@@ -536,11 +536,15 @@ export interface ScanPreviewStartResult {
   previewId: string
 }
 
-/** Cached scan-preview totals (returned by `checkScanPreviewStatus`). */
+/** Cached scan-preview totals (returned by `checkScanPreviewStatus`). Mirrors the
+ *  generated `ScanPreviewTotals` binding. */
 export interface ScanPreviewTotals {
   filesTotal: number
   dirsTotal: number
   bytesTotal: number
   /** `du`-equivalent source footprint (hardlinks counted once). */
   dedupBytesTotal: number
+  /** Estimated compressed size (Compress mode, local sources only); `null`
+   *  otherwise. Mirrors `ScanPreviewCompleteEvent.estimatedCompressedBytes`. */
+  estimatedCompressedBytes?: CompressedSizeEstimate | null
 }

@@ -289,6 +289,7 @@ export type {
   ScanPreviewCompleteEvent,
   ScanPreviewErrorEvent,
   ScanPreviewCancelledEvent,
+  CompressedSizeEstimate,
 } from './write-operations'
 
 // Analytics (PostHog feature events through the single backend path)

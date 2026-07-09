@@ -257,6 +257,9 @@ pub async fn start_scan_preview(
     sort_column: SortColumn,
     sort_order: SortOrder,
     progress_interval_ms: Option<u64>,
+    // Compress-mode scans set this so the local walk samples a compressed-size
+    // estimate. Ignored for remote sources (never sampled). `None` == false.
+    sample_for_estimate: Option<bool>,
 ) -> ScanPreviewStartResult {
     let volume_id = source_volume_id.unwrap_or_else(|| "root".to_string());
     let is_local = volume_id == "root";
@@ -279,6 +282,7 @@ pub async fn start_scan_preview(
         sort_column,
         sort_order,
         progress_interval,
+        sample_for_estimate.unwrap_or(false),
     )
 }
 

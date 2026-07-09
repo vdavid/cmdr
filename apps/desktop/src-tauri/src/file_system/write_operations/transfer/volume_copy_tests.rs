@@ -1306,6 +1306,7 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
                     top_level_is_directory: false,
                 },
             )],
+            estimated_compressed_bytes: None,
             inserted_at: Instant::now(),
         },
     );
@@ -1366,6 +1367,7 @@ async fn test_stop_conflict_does_not_rescan_source_when_hint_provided() {
                     top_level_is_directory: false,
                 },
             )],
+            estimated_compressed_bytes: None,
             inserted_at: Instant::now(),
         },
     );

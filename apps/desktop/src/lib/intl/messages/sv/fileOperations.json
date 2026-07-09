@@ -233,6 +233,16 @@
   "@fileOperations.transferDialog.compressLevelCaption": {
     "sourceHash": "58924a1"
   },
+
+  "fileOperations.transferDialog.estimatedSize": "Uppskattad storlek",
+  "@fileOperations.transferDialog.estimatedSize": {
+    "sourceHash": "d5f39d7"
+  },
+
+  "fileOperations.transferDialog.estimatedSizeTooltip": "En grov uppskattning av den packade zip-filen. Den verkliga storleken kan skilja sig.",
+  "@fileOperations.transferDialog.estimatedSizeTooltip": {
+    "sourceHash": "2e8ba70"
+  },
   "fileOperations.transferDialog.checkingConflicts": "Söker efter konflikter...",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "bc10126"

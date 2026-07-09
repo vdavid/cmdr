@@ -1119,6 +1119,8 @@ export type MessageKey =
   | 'fileOperations.transferDialog.conflictsSummary'
   | 'fileOperations.transferDialog.destPathAria'
   | 'fileOperations.transferDialog.destVolumeAria'
+  | 'fileOperations.transferDialog.estimatedSize'
+  | 'fileOperations.transferDialog.estimatedSizeTooltip'
   | 'fileOperations.transferDialog.filesPart'
   | 'fileOperations.transferDialog.foldersPart'
   | 'fileOperations.transferDialog.hardlinkNote'

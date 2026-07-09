@@ -501,6 +501,7 @@ export const commands = {
     sortColumn: SortColumn,
     sortOrder: SortOrder,
     progressIntervalMs: number | null,
+    sampleForEstimate: boolean | null,
   ) =>
     __TAURI_INVOKE<ScanPreviewStartResult>('start_scan_preview', {
       sources,
@@ -508,6 +509,7 @@ export const commands = {
       sortColumn,
       sortOrder,
       progressIntervalMs,
+      sampleForEstimate,
     }),
   cancelScanPreview: (previewId: string) => __TAURI_INVOKE<void>('cancel_scan_preview', { previewId }),
   /**
@@ -527,6 +529,13 @@ export const commands = {
        *  `ScanPreviewCompleteEvent::dedup_bytes_total`.
        */
       dedupBytesTotal: number
+      /**
+       *  Estimated compressed size, mirroring
+       *  `ScanPreviewCompleteEvent::estimated_compressed_bytes`, so the recovery
+       *  path (`check_scan_preview_status`) hydrates the estimate too when the FE
+       *  missed the complete event. `None` for non-compress or remote scans.
+       */
+      estimatedCompressedBytes?: CompressedSizeEstimate | null
     } | null>('check_scan_preview_status', { previewId }),
   // In Stop mode, the operation pauses on conflict and waits for this call to proceed.
   resolveWriteConflict: (operationId: string, resolution: ConflictResolution, applyToAll: boolean) =>
@@ -3060,6 +3069,25 @@ export type CloseFileViewer = {
   path: string | null
 }
 
+/**
+ *  Estimated compressed output size for a Compress operation, split by
+ *  compressibility class so the frontend can re-scale to the selected deflate
+ *  level via its baked per-class curve without a re-scan. Each field is
+ *  estimated **level-6** deflate bytes; at level 6 the shown estimate is their
+ *  sum. `None` on the carrying event when unavailable (non-compress scan, or a
+ *  remote source where sampling is suppressed). Built by
+ *  `compress_estimate::CompressEstimator`; see
+ *  `docs/notes/compress-size-estimate-spike.md` for the accuracy evidence.
+ */
+export type CompressedSizeEstimate = {
+  // Estimated level-6 bytes for files whose sampled ratio is < 0.35.
+  compressibleBytes: number
+  // Estimated level-6 bytes for files whose sampled ratio is in [0.35, 0.8).
+  mediumBytes: number
+  // Estimated level-6 bytes for files whose sampled ratio is >= 0.8.
+  incompressibleBytes: number
+}
+
 export type CompressionInfoDto = {
   requested: boolean
   negotiated: boolean
@@ -5340,6 +5368,13 @@ export type ScanPreviewCompleteEvent = {
    *  dialog shows a "X will be written, source is Y" hint.
    */
   dedupBytesTotal: number
+  /**
+   *  Estimated compressed size, present only for a compress-mode scan over a
+   *  local source. `None` for copy/move scans and for remote (SMB/MTP)
+   *  sources (sampling suppressed). The estimate rides the complete event
+   *  only; while scanning the dialog shows a loading affordance.
+   */
+  estimatedCompressedBytes?: CompressedSizeEstimate | null
 }
 
 // Error event for scan preview.
@@ -5392,6 +5427,13 @@ export type ScanPreviewTotals = {
    *  `ScanPreviewCompleteEvent::dedup_bytes_total`.
    */
   dedupBytesTotal: number
+  /**
+   *  Estimated compressed size, mirroring
+   *  `ScanPreviewCompleteEvent::estimated_compressed_bytes`, so the recovery
+   *  path (`check_scan_preview_status`) hydrates the estimate too when the FE
+   *  missed the complete event. `None` for non-compress or remote scans.
+   */
+  estimatedCompressedBytes?: CompressedSizeEstimate | null
 }
 
 // Progress event during scanning phase (emitted in dry-run mode).
