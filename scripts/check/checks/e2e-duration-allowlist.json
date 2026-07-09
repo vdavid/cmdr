@@ -27,38 +27,6 @@
       "maxMs": 3000,
       "reason": "virtual MTP per-operation protocol overhead; ~2.6s under --include-slow contention on 2026-06-28, cap 3s"
     },
-    "conflict-dialog-matrix.spec.ts::Bucket spread: normal-first → file→folder::Overwrite all smaller does NOT carry normal → file→folder": {
-      "maxMs": 3000,
-      "reason": "multi-clash conflict-dialog matrix; ~2.5s under --include-slow contention on 2026-06-28, cap 3s"
-    },
-    "viewer.spec.ts::File viewer::shows file size in status bar": {
-      "maxMs": 3000,
-      "reason": "opens the viewer window; ~2.5s under --include-slow contention on 2026-06-28, cap 3s"
-    },
-    "conflict-dialog-matrix.spec.ts::Single clash: file→folder (existing folder, incoming file — destructive)::file→folder Overwrite swaps folder for file": {
-      "maxMs": 3000,
-      "reason": "cross-type conflict resolution + filesystem swap; ~2.5s under --include-slow contention on 2026-06-28, cap 3s"
-    },
-    "conflict-dialog-matrix.spec.ts::Cross-type Overwrite atomicity::file→folder Overwrite leaves no temp artifacts": {
-      "maxMs": 3000,
-      "reason": "cross-type overwrite atomicity assertions; ~2.5s under --include-slow contention on 2026-06-28, cap 3s"
-    },
-    "viewer-wordwrap-scroll.spec.ts::Viewer word-wrap scrolling::with wrap on, scrolling to the bottom shows the end of a short-first-line file": {
-      "maxMs": 3000,
-      "reason": "opens the viewer window + scroll assertions; ~2.4s under --include-slow contention on 2026-06-28, cap 3s"
-    },
-    "viewer.spec.ts::File viewer search::finds matches in file content": {
-      "maxMs": 3000,
-      "reason": "opens the viewer window + search; ~2.3s under --include-slow contention on 2026-06-28, cap 3s"
-    },
-    "conflict-dialog-matrix.spec.ts::Single clash: file→folder (existing folder, incoming file — destructive)::file→folder Skip all latches file_to_folder": {
-      "maxMs": 3000,
-      "reason": "cross-type conflict resolution + latch assertions; ~2.3s under --include-slow contention on 2026-06-28, cap 3s"
-    },
-    "viewer.spec.ts::File viewer search::shows \"No matches\" status for a query with no hits": {
-      "maxMs": 3000,
-      "reason": "opens the viewer window + search; ~2.2s under --include-slow contention on 2026-06-28, cap 3s"
-    },
     "whats-new.spec.ts::What's new popup::auto-shows on update, opts out, and stamps the running version": {
       "maxMs": 3000,
       "reason": "update flow drives a version stamp + popup lifecycle; ~2.2s under --include-slow contention on 2026-06-28, cap 3s"
@@ -74,10 +42,6 @@
     "mtp.spec.ts::MTP file operations::copies file from MTP to local": {
       "maxMs": 3000,
       "reason": "virtual MTP per-operation protocol overhead; ~2.1s under --include-slow contention on 2026-06-28, cap 3s"
-    },
-    "conflict-edge-cases.spec.ts::Edge cases::Sequential copy triggers conflict on second attempt": {
-      "maxMs": 3000,
-      "reason": "two sequential copy operations + conflict detection; ~2.0s under --include-slow contention on 2026-06-28, cap 3s"
     }
   },
   "linux": {
