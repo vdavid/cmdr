@@ -143,7 +143,7 @@ fn no_params_schema() -> Value {
 mcp_tools! {
     // ── Navigation ──────────────────────────────────────────────────────────
     "select_volume" => {
-        desc: "Switch pane to specified volume by name",
+        desc: "Switch a pane to a volume by name (as listed in cmdr://state volumes): a disk, SMB share, MTP device, or Network. To move within the current volume, use nav_to_path instead.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -163,7 +163,7 @@ mcp_tools! {
         run: nav_params nav::execute_nav_command_with_params
     },
     "nav_to_path" => {
-        desc: "Navigate pane to specified path",
+        desc: "Navigate a pane to a path: absolute, ~-relative, or virtual (mtp://, smb://). Prefer this over stepping with nav_to_parent when you know the target. Archive paths are transparent, so a path through foo.zip/inner navigates inside the archive.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -183,25 +183,25 @@ mcp_tools! {
         run: nav_params nav::execute_nav_command_with_params
     },
     "nav_to_parent" => {
-        desc: "Navigate to parent folder",
+        desc: "Navigate the focused pane up to its parent folder.",
         schema: no_params_schema(),
         gate: TokenGate::Open,
         run: nav nav::execute_nav_command
     },
     "nav_back" => {
-        desc: "Navigate back in history",
+        desc: "Go back to the focused pane's previous folder in its navigation history.",
         schema: no_params_schema(),
         gate: TokenGate::Open,
         run: nav nav::execute_nav_command
     },
     "nav_forward" => {
-        desc: "Navigate forward in history",
+        desc: "Go forward again (undo a nav_back) in the focused pane's navigation history.",
         schema: no_params_schema(),
         gate: TokenGate::Open,
         run: nav nav::execute_nav_command
     },
     "scroll_to" => {
-        desc: "Load region around specified index for large directories",
+        desc: "Load the file window around an index in a large (paginated) directory so those rows appear in cmdr://state. Needed before move_cursor / select can reach a row outside the currently loaded range.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -223,7 +223,7 @@ mcp_tools! {
 
     // ── Cursor ──────────────────────────────────────────────────────────────
     "move_cursor" => {
-        desc: "Focuses pane and moves cursor to index or filename. Provide either index or filename",
+        desc: "Focus a pane and move its cursor to a row, by zero-based index or by filename (give one). Flushes pane state, so a following copy / move / delete / rename acts on this row. A missing filename or out-of-range index is an honest error, never a silent no-op.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -247,7 +247,7 @@ mcp_tools! {
         run: nav_params nav::execute_nav_command_with_params
     },
     "open_under_cursor" => {
-        desc: "Open/enter the item (directory, file, network host, share) under the cursor",
+        desc: "Open the item under the cursor, like pressing Enter: enter a folder, open a file, or connect a network host / share.",
         schema: no_params_schema(),
         gate: TokenGate::Open,
         run: nav nav::execute_nav_command
@@ -255,7 +255,7 @@ mcp_tools! {
 
     // ── Selection ───────────────────────────────────────────────────────────
     "select" => {
-        desc: "Select files in pane. Use names for specific files, count for ranges, all for everything, count=0 to clear",
+        desc: "Select files in a pane by names, by an index range (start + count), or all; count=0 clears. Focuses the pane and flushes state, so a following copy / move / delete / compress acts on this selection. names errors if any name isn't in the listing.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -295,7 +295,7 @@ mcp_tools! {
 
     // ── File operations ─────────────────────────────────────────────────────
     "copy" => {
-        desc: "Copy selected files to other pane (opens confirmation dialog)",
+        desc: "Copy the selection (else the cursor item) to the other pane. Without autoConfirm, opens the confirm dialog. With autoConfirm, starts at once and returns the operationId (await operation_complete, or steer with queue). onConflict resolves file clashes.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -315,7 +315,7 @@ mcp_tools! {
         run: app_params file_ops::execute_copy
     },
     "move" => {
-        desc: "Move selected files to other pane (opens confirmation dialog)",
+        desc: "Move the selection (else the cursor item) to the other pane. Without autoConfirm, opens the confirm dialog. With autoConfirm, starts at once and returns the operationId (await operation_complete, or steer with queue). onConflict resolves file clashes.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -335,7 +335,7 @@ mcp_tools! {
         run: app_params file_ops::execute_move
     },
     "compress" => {
-        desc: "Compress selected files into a new zip in the other pane (opens confirmation dialog)",
+        desc: "Zip the selection into a new archive in the other pane. Without autoConfirm, opens the confirm dialog. With autoConfirm, starts and returns the operationId — unless the target archive exists, where the dialog stays open to confirm the overwrite.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -350,8 +350,7 @@ mcp_tools! {
         run: app_params file_ops::execute_compress
     },
     "delete" => {
-        desc: "Delete selected files (opens confirmation dialog). mode presets trash vs permanent; \
-               omit it to use the pane's default (trash where supported).",
+        desc: "Delete the selection (else the cursor item). Without autoConfirm, opens the confirm dialog. With autoConfirm, starts at once and returns the operationId (await operation_complete on it). mode presets trash vs permanent; omit for the pane's default.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -441,7 +440,7 @@ mcp_tools! {
         run: app_params file_ops::execute_mkfile
     },
     "refresh" => {
-        desc: "Refresh focused pane",
+        desc: "Force a re-read of the focused pane's listing (from disk on local volumes; the watcher cache short-circuits on MTP / SMB). Use after an out-of-band change; navigation and file ops already refresh on their own.",
         schema: no_params_schema(),
         gate: TokenGate::Open,
         run: app_only file_ops::execute_refresh
@@ -485,13 +484,13 @@ mcp_tools! {
 
     // ── View ────────────────────────────────────────────────────────────────
     "toggle_hidden" => {
-        desc: "Toggle hidden files visibility",
+        desc: "Toggle whether hidden (dotfile) files show in the file lists (the showHidden flag in cmdr://state).",
         schema: no_params_schema(),
         gate: TokenGate::Open,
         run: app_only view::execute_toggle_hidden
     },
     "set_view_mode" => {
-        desc: "Set view mode for pane",
+        desc: "Set a pane's view mode: brief (names, only the cursor row detailed) or full (size and date on every row). full makes cmdr://state carry those details for all rows, not just the cursor.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -512,7 +511,7 @@ mcp_tools! {
         run: app_params view::execute_set_view_mode
     },
     "sort" => {
-        desc: "Sort files in pane by field and order",
+        desc: "Sort a pane by a field (name, ext, size, modified, created) and order (asc / desc).",
         schema: json!({
             "type": "object",
             "properties": {
@@ -540,7 +539,7 @@ mcp_tools! {
 
     // ── Tabs ────────────────────────────────────────────────────────────────
     "tab" => {
-        desc: "Create, close, activate, pin, or reopen tabs",
+        desc: "Manage a pane's tabs: new, close, close_others, activate, set_pinned, or reopen (restore the last-closed tab). tabId defaults to the active tab where it applies; see each pane's tabs in cmdr://state.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -571,7 +570,7 @@ mcp_tools! {
 
     // ── Dialogs ─────────────────────────────────────────────────────────────
     "dialog" => {
-        desc: "Open, focus, close, or confirm dialogs",
+        desc: "Open, focus, close, or confirm a dialog (settings, file-viewer, about, or a confirmation dialog). action=confirm accepts an open confirmation on the user's behalf (token-gated). See cmdr://state (open) and cmdr://dialogs/available (types).",
         schema: json!({
             "type": "object",
             "properties": {
@@ -683,7 +682,7 @@ mcp_tools! {
 
     // ── Search ──────────────────────────────────────────────────────────────
     "search" => {
-        desc: "Structured file search across the entire drive index",
+        desc: "Search the drive index by filename pattern, size, date, or type; returns paths (no UI). Prefer over ai_search when the query is a plain pattern or filter (no LLM call), and over open_search_dialog for a programmatic lookup. Needs an indexed volume.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -740,7 +739,7 @@ mcp_tools! {
         run: params_only search::execute_search
     },
     "ai_search" => {
-        desc: "Natural language file search using the configured LLM to translate the query",
+        desc: "Search with a natural-language query; the configured LLM turns it into a structured search over the drive index and returns matching paths. Use search instead when you can express the query as a pattern or filter (it skips the LLM call).",
         schema: json!({
             "type": "object",
             "properties": {
