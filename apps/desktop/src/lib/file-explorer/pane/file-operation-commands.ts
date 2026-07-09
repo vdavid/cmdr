@@ -279,6 +279,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     pane: 'left' | 'right',
     autoConfirm?: boolean,
     onConflict?: string,
+    mcpRequestId?: string,
   ) {
     // Snapshot source pane: no backend listing exists, so the listing-id-driven
     // builders don't apply — build from the snapshot's selected (or cursor)
@@ -292,6 +293,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
         if (autoConfirm) {
           snapshotProps.autoConfirm = true
           snapshotProps.autoConfirmOnConflict = onConflict
+          snapshotProps.mcpRequestId = mcpRequestId
         }
         dialogs.showTransfer(snapshotProps)
       }
@@ -323,13 +325,19 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       if (autoConfirm) {
         props.autoConfirm = true
         props.autoConfirmOnConflict = onConflict
+        props.mcpRequestId = mcpRequestId
       }
       dialogs.showTransfer(props)
     }
   }
 
   /** Opens the transfer dialog with the current selection info. */
-  async function openTransferDialog(operationType: TransferOperationType, autoConfirm?: boolean, onConflict?: string) {
+  async function openTransferDialog(
+    operationType: TransferOperationType,
+    autoConfirm?: boolean,
+    onConflict?: string,
+    mcpRequestId?: string,
+  ) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const destPane = access.otherPane(access.getFocusedPane())
     const destVolId = access.getPaneVolumeId(destPane)
@@ -349,22 +357,29 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       return
     }
 
-    await openUnifiedTransferDialog(operationType, sourcePaneRef, access.getFocusedPane(), autoConfirm, onConflict)
+    await openUnifiedTransferDialog(
+      operationType,
+      sourcePaneRef,
+      access.getFocusedPane(),
+      autoConfirm,
+      onConflict,
+      mcpRequestId,
+    )
   }
 
   /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
-  async function openCopyDialog(autoConfirm?: boolean, onConflict?: string) {
-    await openTransferDialog('copy', autoConfirm, onConflict)
+  async function openCopyDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
+    await openTransferDialog('copy', autoConfirm, onConflict, mcpRequestId)
   }
 
   /** Opens the move dialog (convenience wrapper for MCP/key binding). */
-  async function openMoveDialog(autoConfirm?: boolean, onConflict?: string) {
-    await openTransferDialog('move', autoConfirm, onConflict)
+  async function openMoveDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
+    await openTransferDialog('move', autoConfirm, onConflict, mcpRequestId)
   }
 
   /** Opens the compress dialog (convenience wrapper for the ⌥F5 command/MCP). */
-  async function openCompressDialog(autoConfirm?: boolean, onConflict?: string) {
-    await openTransferDialog('compress', autoConfirm, onConflict)
+  async function openCompressDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
+    await openTransferDialog('compress', autoConfirm, onConflict, mcpRequestId)
   }
 
   /**
@@ -380,7 +395,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * search ever indexes external read-only volumes we'd need to look that
    * up per entry).
    */
-  function openDeleteFromSearchResults(permanent: boolean, autoConfirm?: boolean) {
+  function openDeleteFromSearchResults(permanent: boolean, autoConfirm?: boolean, mcpRequestId?: string) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
     const SEARCH_RESULTS_PREFIX = 'search-results://'
@@ -435,12 +450,13 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       sortOrder,
       sourceVolumeId: DEFAULT_VOLUME_ID,
       autoConfirm,
+      mcpRequestId,
     })
   }
 
   /** Opens the delete confirmation dialog for the current selection or cursor item. */
   // eslint-disable-next-line complexity -- Guard chain: each early-return is an independent precondition; splitting wouldn't add clarity.
-  async function openDeleteDialog(permanent: boolean, autoConfirm?: boolean) {
+  async function openDeleteDialog(permanent: boolean, autoConfirm?: boolean, mcpRequestId?: string) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const focusedVolId = access.getPaneVolumeId(access.getFocusedPane())
 
@@ -453,7 +469,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // not a `volumeId === 'search-results'` string compare (A6); search-results
     // is the only source-capable `!hasBackendListing` kind to reach here.
     if (!capabilitiesFor(focusedVolId).hasBackendListing) {
-      openDeleteFromSearchResults(permanent, autoConfirm)
+      openDeleteFromSearchResults(permanent, autoConfirm, mcpRequestId)
       return
     }
 
@@ -559,6 +575,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       sortOrder,
       sourceVolumeId: sourceVolId,
       autoConfirm,
+      mcpRequestId,
     })
   }
 

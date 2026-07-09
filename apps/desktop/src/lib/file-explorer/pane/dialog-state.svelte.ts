@@ -45,6 +45,9 @@ export interface TransferProgressPropsData {
   fileCount?: number
   /** Top-level folders the operation will transfer (for the completion toast's per-type split). */
   folderCount?: number
+  /** MCP round-trip id, present only for an auto-confirmed MCP op. Forwarded to
+   *  the progress state so it replies `mcp-response` with the spawned operationId. */
+  mcpRequestId?: string
 }
 
 export interface NewFolderDialogPropsData {
@@ -112,6 +115,9 @@ export interface DeleteDialogPropsData {
   isArchive?: boolean
   /** When true, dialog auto-confirms without user interaction (MCP auto-confirm). */
   autoConfirm?: boolean
+  /** MCP round-trip id, present only for an auto-confirmed MCP delete/trash.
+   *  Forwarded to the progress state so it replies with the spawned operationId. */
+  mcpRequestId?: string
 }
 
 export interface DialogStateDeps {
@@ -374,6 +380,7 @@ export function createDialogState(deps: DialogStateDeps) {
         preKnownConflicts,
         fileCount: transferDialogProps.fileCount,
         folderCount: transferDialogProps.folderCount,
+        mcpRequestId: transferDialogProps.mcpRequestId,
       }
       snapshotSourcePaneSelection()
 
@@ -413,6 +420,7 @@ export function createDialogState(deps: DialogStateDeps) {
         previewId,
         sourceVolumeId: deleteDialogProps.sourceVolumeId,
         itemSizes,
+        mcpRequestId: deleteDialogProps.mcpRequestId,
       }
       snapshotSourcePaneSelection()
 

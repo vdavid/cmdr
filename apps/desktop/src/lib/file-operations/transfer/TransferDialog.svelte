@@ -56,6 +56,11 @@
         autoConfirm?: boolean
         /** Conflict resolution policy for auto-confirm (MCP). */
         autoConfirmOnConflict?: string
+        /** MCP round-trip id, present only for an auto-confirmed MCP op. Only used
+         *  by the compress auto-confirm abort (target archive exists → dialog stays
+         *  open): the FE then acks the round-trip WITHOUT an operationId, since no
+         *  op spawned. The normal spawn reply happens in the progress state. */
+        mcpRequestId?: string
         onConfirm: (
             destination: string,
             volumeId: string,
@@ -89,6 +94,7 @@
         destVolumeId,
         autoConfirm = false,
         autoConfirmOnConflict,
+        mcpRequestId,
         onConfirm,
         onCancel,
     }: Props = $props()
@@ -421,6 +427,12 @@
         // proceed unattended only when the target doesn't exist; else stay open.
         if (activeOperationType === 'compress' && isAuto && (await destExists.probeExists())) {
             confirmed = false
+            // Ack the MCP round-trip WITHOUT an operationId: no op spawned, the
+            // dialog stays open for the user to confirm the overwrite.
+            if (mcpRequestId) {
+                const { emit } = await import('@tauri-apps/api/event')
+                void emit('mcp-response', { requestId: mcpRequestId, ok: true })
+            }
             return
         }
         // Same-volume move: dispatch IMMEDIATELY. No deep scan ever ran (the

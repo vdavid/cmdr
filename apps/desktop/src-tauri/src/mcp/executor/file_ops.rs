@@ -4,10 +4,27 @@ use serde_json::{Value, json};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use super::{
-    AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_round_trip, snapshot_generation,
+    AckSignal, DEFAULT_ACK_TIMEOUT, PaneStateStore, ToolError, ToolResult, mcp_await_operation_start, mcp_round_trip,
     wait_for_ack,
 };
 use crate::pluralize::pluralize;
+
+/// Budget for an auto-confirmed file op to report its spawned `operationId`. More
+/// generous than the 1500 ms ack budget because the round-trip spans the whole
+/// FE flow (open the dialog → auto-confirm → the write-op IPC that mints the id),
+/// which starts a scan preview on the way.
+const OPERATION_START_TIMEOUT: u64 = 10;
+
+/// Format the OK line for an auto-confirmed op, appending the spawned
+/// `operationId` so a follow-up `queue` / `await operation_complete` can target
+/// it. `None` (the compress-on-existing-target case that keeps its dialog open)
+/// falls back to the bare confirmation.
+fn operation_started_ok(verb: &str, operation_id: Option<String>) -> Value {
+    match operation_id {
+        Some(id) => json!(format!("OK: {verb} started with auto-confirm (operationId: {id}).")),
+        None => json!(format!("OK: {verb} started with auto-confirm.")),
+    }
+}
 
 /// Pre-checks that a copy/move/delete has something to act on, so an empty operation
 /// fails fast with the real cause instead of the generic 1500 ms "frontend may be
@@ -68,7 +85,9 @@ pub(super) fn empty_operation_error(
 /// Execute copy command.
 ///
 /// Ack contract:
-/// - `autoConfirm: true` → pane generation must advance (selection/state push after copy starts).
+/// - `autoConfirm: true` → round-trip: wait for the FE to reply with the spawned
+///   `operationId` (or an error), returned in the OK text so a follow-up `queue`
+///   / `await operation_complete` can target it.
 /// - `autoConfirm: false` → `transfer-confirmation` soft dialog must appear.
 ///
 /// `check_operation_has_target` fast-fails the cases the FE would silently drop
@@ -88,21 +107,19 @@ pub async fn execute_copy<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
         ));
     }
 
-    let pre_gen = snapshot_generation(app);
-    app.emit(
-        "mcp-copy",
-        json!({"autoConfirm": auto_confirm, "onConflict": on_conflict}),
-    )?;
-
     if auto_confirm {
-        wait_for_ack(
+        // Round-trip: the FE replies with the spawned operationId (or acks without
+        // one). Replaces the generation ack so the tool returns the exact id.
+        let operation_id = mcp_await_operation_start(
             app,
-            AckSignal::GenerationAdvanced { from: pre_gen },
-            DEFAULT_ACK_TIMEOUT,
+            "mcp-copy",
+            json!({"autoConfirm": true, "onConflict": on_conflict}),
+            OPERATION_START_TIMEOUT,
         )
         .await?;
-        Ok(json!("OK: Copy started with auto-confirm."))
+        Ok(operation_started_ok("Copy", operation_id))
     } else {
+        app.emit("mcp-copy", json!({"autoConfirm": false, "onConflict": on_conflict}))?;
         wait_for_ack(
             app,
             AckSignal::SoftDialogAppeared("transfer-confirmation"),
@@ -131,21 +148,17 @@ pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
         ));
     }
 
-    let pre_gen = snapshot_generation(app);
-    app.emit(
-        "mcp-move",
-        json!({"autoConfirm": auto_confirm, "onConflict": on_conflict}),
-    )?;
-
     if auto_confirm {
-        wait_for_ack(
+        let operation_id = mcp_await_operation_start(
             app,
-            AckSignal::GenerationAdvanced { from: pre_gen },
-            DEFAULT_ACK_TIMEOUT,
+            "mcp-move",
+            json!({"autoConfirm": true, "onConflict": on_conflict}),
+            OPERATION_START_TIMEOUT,
         )
         .await?;
-        Ok(json!("OK: Move started with auto-confirm."))
+        Ok(operation_started_ok("Move", operation_id))
     } else {
+        app.emit("mcp-move", json!({"autoConfirm": false, "onConflict": on_conflict}))?;
         wait_for_ack(
             app,
             AckSignal::SoftDialogAppeared("transfer-confirmation"),
@@ -178,23 +191,25 @@ pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
     // there are no inner-file conflicts to resolve, and an existing TARGET archive is
     // the dialog's overwrite affordance, not a policy. A param here would imply
     // behavior the backend doesn't have.
-    let pre_gen = snapshot_generation(app);
-    app.emit("mcp-compress", json!({"autoConfirm": auto_confirm}))?;
-
     if auto_confirm {
-        wait_for_ack(
+        // The FE replies with the spawned operationId, OR acks without one when the
+        // target archive already exists (compress mode keeps its dialog open rather
+        // than silently overwriting). `operation_started_ok(None)` covers that arm.
+        let operation_id = mcp_await_operation_start(
             app,
-            AckSignal::GenerationAdvancedOrSoftDialog {
-                from: pre_gen,
-                dialog: "transfer-confirmation",
-            },
-            DEFAULT_ACK_TIMEOUT,
+            "mcp-compress",
+            json!({"autoConfirm": true}),
+            OPERATION_START_TIMEOUT,
         )
         .await?;
-        Ok(json!(
-            "OK: Compress started with auto-confirm (or the confirmation dialog opened because the target archive already exists)."
-        ))
+        match operation_id {
+            Some(id) => Ok(json!(format!("OK: Compress started with auto-confirm (operationId: {id})."))),
+            None => Ok(json!(
+                "OK: The confirmation dialog opened because the target archive already exists; confirm it to overwrite."
+            )),
+        }
     } else {
+        app.emit("mcp-compress", json!({"autoConfirm": false}))?;
         wait_for_ack(
             app,
             AckSignal::SoftDialogAppeared("transfer-confirmation"),
@@ -219,18 +234,17 @@ pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
     // destructive auto-confirm (and the `dialog` confirm action), not the whole server.
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
 
-    let pre_gen = snapshot_generation(app);
-    app.emit("mcp-delete", json!({"autoConfirm": auto_confirm}))?;
-
     if auto_confirm {
-        wait_for_ack(
+        let operation_id = mcp_await_operation_start(
             app,
-            AckSignal::GenerationAdvanced { from: pre_gen },
-            DEFAULT_ACK_TIMEOUT,
+            "mcp-delete",
+            json!({"autoConfirm": true}),
+            OPERATION_START_TIMEOUT,
         )
         .await?;
-        Ok(json!("OK: Delete started with auto-confirm."))
+        Ok(operation_started_ok("Delete", operation_id))
     } else {
+        app.emit("mcp-delete", json!({"autoConfirm": false}))?;
         wait_for_ack(
             app,
             AckSignal::SoftDialogAppeared("delete-confirmation"),

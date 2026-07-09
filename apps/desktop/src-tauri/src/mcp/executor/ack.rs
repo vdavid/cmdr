@@ -88,14 +88,6 @@ const WINDOW_POLL_INTERVAL: Duration = Duration::from_millis(100);
 pub enum AckSignal {
     /// State generation strictly advanced past `from`.
     GenerationAdvanced { from: u64 },
-    /// EITHER the state generation advanced past `from`, OR a soft dialog with the
-    /// given ID appeared. The one legitimate two-arm `Any` (a general `Any` was
-    /// removed because it couldn't stay honest for a branch that produces NO signal,
-    /// e.g. `open_under_cursor`'s OS-open path). Both arms here are real, observable
-    /// signals, so the OR is honest. Used by auto-confirmed compress: the op normally
-    /// starts (generation advances), but when the target archive already exists the
-    /// dialog deliberately stays open instead of silently overwriting (dialog appears).
-    GenerationAdvancedOrSoftDialog { from: u64, dialog: &'static str },
     /// A soft dialog with this ID appeared in `SoftDialogTracker`.
     SoftDialogAppeared(&'static str),
     /// A soft dialog with this ID is no longer present in `SoftDialogTracker`.
@@ -124,9 +116,6 @@ impl AckSignal {
         match self {
             AckSignal::GenerationAdvanced { from } => {
                 format!("pane state generation > {from}")
-            }
-            AckSignal::GenerationAdvancedOrSoftDialog { from, dialog } => {
-                format!("pane state generation > {from} or soft dialog '{dialog}' opened")
             }
             AckSignal::SoftDialogAppeared(id) => format!("soft dialog '{id}' opened"),
             AckSignal::SoftDialogDisappeared(id) => format!("soft dialog '{id}' closed"),
@@ -186,10 +175,6 @@ fn check_signal<R: Runtime>(app: &AppHandle<R>, signal: &AckSignal) -> bool {
             .try_state::<PaneStateStore>()
             .map(|store| store.get_generation() > *from)
             .unwrap_or(false),
-        AckSignal::GenerationAdvancedOrSoftDialog { from, dialog } => {
-            check_signal(app, &AckSignal::GenerationAdvanced { from: *from })
-                || check_signal(app, &AckSignal::SoftDialogAppeared(dialog))
-        }
         AckSignal::SoftDialogAppeared(id) => app
             .try_state::<SoftDialogTracker>()
             .map(|tracker| tracker.get_open_types().iter().any(|d| d == id))
@@ -245,8 +230,7 @@ fn signal_uses_windows(signal: &AckSignal) -> bool {
         | AckSignal::WindowDisappeared(_)
         | AckSignal::WindowCountBelow { .. }
         | AckSignal::SoftDialogAppeared(_)
-        | AckSignal::SoftDialogDisappeared(_)
-        | AckSignal::GenerationAdvancedOrSoftDialog { .. } => true,
+        | AckSignal::SoftDialogDisappeared(_) => true,
         AckSignal::GenerationAdvanced { .. } => false,
     }
 }
@@ -295,14 +279,6 @@ mod tests {
         .describe();
         assert!(count.contains("viewer"));
         assert!(count.contains("3"));
-        let composed = AckSignal::GenerationAdvancedOrSoftDialog {
-            from: 7,
-            dialog: "transfer-confirmation",
-        }
-        .describe();
-        assert!(composed.contains("7"));
-        assert!(composed.contains("transfer-confirmation"));
-        assert!(composed.contains("or"));
     }
 
     #[test]
@@ -315,11 +291,6 @@ mod tests {
         assert!(signal_uses_windows(&AckSignal::WindowCountBelow {
             prefix: "viewer",
             threshold: 1,
-        }));
-        // The composed signal has a soft-dialog arm, so it takes the tighter cadence.
-        assert!(signal_uses_windows(&AckSignal::GenerationAdvancedOrSoftDialog {
-            from: 0,
-            dialog: "transfer-confirmation",
         }));
     }
 

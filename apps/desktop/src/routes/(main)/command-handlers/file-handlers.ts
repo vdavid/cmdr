@@ -65,17 +65,17 @@ export const fileHandlers = {
     // pre-answer the conflict policy. `dispatchArgs` is `undefined` in the
     // arg-less case, so the openers default both.
     const copyArgs = dispatchArgs as CommandArgs['file.copy'] | undefined
-    void explorerRef?.openCopyDialog(copyArgs?.autoConfirm, copyArgs?.onConflict)
+    void explorerRef?.openCopyDialog(copyArgs?.autoConfirm, copyArgs?.onConflict, copyArgs?.mcpRequestId)
   },
 
   'file.move': ({ explorerRef, dispatchArgs }) => {
     const moveArgs = dispatchArgs as CommandArgs['file.move'] | undefined
-    void explorerRef?.openMoveDialog(moveArgs?.autoConfirm, moveArgs?.onConflict)
+    void explorerRef?.openMoveDialog(moveArgs?.autoConfirm, moveArgs?.onConflict, moveArgs?.mcpRequestId)
   },
 
   'file.compress': ({ explorerRef, dispatchArgs }) => {
     const compressArgs = dispatchArgs as CommandArgs['file.compress'] | undefined
-    void explorerRef?.openCompressDialog(compressArgs?.autoConfirm, compressArgs?.onConflict)
+    void explorerRef?.openCompressDialog(compressArgs?.autoConfirm, compressArgs?.onConflict, compressArgs?.mcpRequestId)
   },
 
   'file.newFolder': ({ explorerRef }) => {
@@ -88,7 +88,7 @@ export const fileHandlers = {
 
   'file.delete': ({ explorerRef, dispatchArgs }) => {
     const deleteArgs = dispatchArgs as CommandArgs['file.delete'] | undefined
-    void explorerRef?.openDeleteDialog(false, deleteArgs?.autoConfirm)
+    void explorerRef?.openDeleteDialog(false, deleteArgs?.autoConfirm, deleteArgs?.mcpRequestId)
   },
 
   'file.deletePermanently': ({ explorerRef }) => {

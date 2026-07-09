@@ -30,6 +30,9 @@ export interface TransferDialogPropsData {
   autoConfirm?: boolean
   /** Conflict resolution policy for auto-confirm (MCP). Maps to ConflictResolution. */
   autoConfirmOnConflict?: string
+  /** MCP round-trip id, present only for an auto-confirmed MCP op. Threaded to the
+   *  progress state, which replies `mcp-response` with the spawned operationId. */
+  mcpRequestId?: string
 }
 
 export async function getSelectedFilePaths(

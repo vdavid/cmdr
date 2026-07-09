@@ -105,15 +105,15 @@ export interface ExplorerAPI {
    */
   handleMcpTabAction: (pane: 'left' | 'right', action: McpTabAction, tabId?: string, pinned?: boolean) => void
   startRename: () => void
-  openCopyDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
-  openMoveDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
-  openCompressDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
+  openCopyDialog: (autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) => Promise<void>
+  openMoveDialog: (autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) => Promise<void>
+  openCompressDialog: (autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) => Promise<void>
   copyToClipboard: () => Promise<void>
   cutToClipboard: () => Promise<void>
   pasteFromClipboard: (forceMove: boolean) => Promise<void>
   openNewFolderDialog: () => Promise<void>
   openNewFileDialog: () => Promise<void>
-  openDeleteDialog: (permanent: boolean, autoConfirm?: boolean) => Promise<void>
+  openDeleteDialog: (permanent: boolean, autoConfirm?: boolean, mcpRequestId?: string) => Promise<void>
   closeConfirmationDialog: () => void
   confirmDialog: (dialogType: ConfirmDialogType, onConflict?: string) => void
   isConfirmationDialogOpen: () => boolean

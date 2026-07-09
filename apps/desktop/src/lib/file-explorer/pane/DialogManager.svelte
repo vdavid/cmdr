@@ -113,6 +113,7 @@
             destVolumeId={transferDialogProps.destVolumeId}
             autoConfirm={transferDialogProps.autoConfirm}
             autoConfirmOnConflict={transferDialogProps.autoConfirmOnConflict}
+            mcpRequestId={transferDialogProps.mcpRequestId}
             onConfirm={onTransferConfirm}
             onCancel={onTransferCancel}
         />
@@ -135,6 +136,7 @@
         preKnownConflicts={transferProgressProps.preKnownConflicts}
         itemSizes={transferProgressProps.itemSizes}
         scanInProgress={transferProgressProps.scanInProgress}
+        mcpRequestId={transferProgressProps.mcpRequestId}
         onComplete={onTransferComplete}
         onCancelled={onTransferCancelled}
         onError={onTransferError}

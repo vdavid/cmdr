@@ -81,10 +81,10 @@ export interface CommandArgsOverrides {
  * resolves these to a `[args?]` tuple so both call shapes type-check.
  */
 export interface CommandArgsOptionalOverrides {
-  'file.copy': { autoConfirm?: boolean; onConflict?: string }
-  'file.move': { autoConfirm?: boolean; onConflict?: string }
-  'file.compress': { autoConfirm?: boolean; onConflict?: string }
-  'file.delete': { autoConfirm?: boolean }
+  'file.copy': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string }
+  'file.move': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string }
+  'file.compress': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string }
+  'file.delete': { autoConfirm?: boolean; mcpRequestId?: string }
 }
 
 /**

@@ -67,6 +67,7 @@ import {
   type OperationSnapshot,
   type UnlistenFn,
 } from '$lib/tauri-commands'
+import { emit } from '@tauri-apps/api/event'
 import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
 import { addToast } from '$lib/ui/toast'
 import type {
@@ -112,6 +113,11 @@ export interface TransferProgressStateConfig {
   onError: (error: WriteOperationError) => void
   /** Send this operation to the background: unmount the modal but keep the op running. */
   onQueue?: () => void
+  /** The MCP round-trip request id, present only for an auto-confirmed op started
+   *  via the MCP `copy`/`move`/`delete`/`compress` tool. When set, this state
+   *  replies `mcp-response` with the spawned `operationId` (or an error) so the
+   *  waiting tool can return the id — see `mcp/executor/file_ops.rs`. */
+  mcpRequestId?: string
 }
 
 export function createTransferProgressState(config: TransferProgressStateConfig) {
@@ -728,6 +734,14 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
         operationId,
       })
 
+      // Reply to the MCP round-trip (if this op was started via an auto-confirmed
+      // MCP tool) with the spawned operationId, so the waiting tool can return it
+      // for a follow-up `queue` / `await operation_complete`. Fire-and-forget: the
+      // op is already running regardless of whether the reply lands.
+      if (config.mcpRequestId) {
+        void emit('mcp-response', { requestId: config.mcpRequestId, ok: true, operationId })
+      }
+
       // If the dialog was destroyed/cancelled while waiting for the IPC response,
       // cancel the operation immediately and bail out. Crucially, we must call
       // `onCancelled` so the parent removes the dialog from state — otherwise
@@ -769,6 +783,11 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     } catch (err: unknown) {
       log.error('Failed to start {op} operation: {error}', { op: config.operationType, error: err })
       cleanup()
+      // Fail the MCP round-trip too (the op never spawned, so no operationId).
+      if (config.mcpRequestId) {
+        const message = err instanceof Error ? err.message : String(err)
+        void emit('mcp-response', { requestId: config.mcpRequestId, ok: false, error: message })
+      }
       // Tauri commands return structured WriteOperationError objects on validation failure
       // (e.g. destination_inside_source). Pass them through to preserve the specific error type.
       if (typeof err === 'object' && err !== null && 'type' in err) {

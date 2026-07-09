@@ -67,6 +67,9 @@
          *  dialog-scoped F2, and the auto-queue path (an op admitted as Queued).
          *  Optional so existing callers/tests that don't background stay valid. */
         onQueue?: () => void
+        /** MCP round-trip id, present only for an auto-confirmed MCP op. Passed to
+         *  the state machine so it replies with the spawned operationId. */
+        mcpRequestId?: string
     }
 
     const {
@@ -88,6 +91,7 @@
         onCancelled,
         onError,
         onQueue,
+        mcpRequestId,
     }: Props = $props()
 
     /** The select discriminator the catalog's gerund/verb messages key on. */
@@ -162,6 +166,7 @@
         onCancelled,
         onError,
         onQueue,
+        mcpRequestId,
     })
 
     // Local aliases over the factory getters so the markup reads the same names

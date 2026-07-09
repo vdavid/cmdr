@@ -331,3 +331,45 @@ fn parse_mcp_response_ignores_malformed_payloads() {
     assert_eq!(parse_mcp_response(r#"{"requestId":42,"ok":true}"#, "r-1"), None);
     assert_eq!(parse_mcp_response(r#"{"ok":true}"#, "r-1"), None);
 }
+
+// === parse_operation_start_response: the autoConfirm-op correlation ===
+//
+// The auto-confirmed copy/move/delete/compress paths wait for the FE to reply
+// with the spawned `operationId`, so the tool's OK carries the exact id (and a
+// follow-up `queue` / `await operation_complete` is directly sequenced). This is
+// the parser under that round-trip.
+
+#[test]
+fn parse_operation_start_response_extracts_the_spawned_operation_id() {
+    let payload = r#"{"requestId":"r-1","ok":true,"operationId":"op-42"}"#;
+    assert_eq!(
+        parse_operation_start_response(payload, "r-1"),
+        Some(Ok(Some("op-42".to_string())))
+    );
+}
+
+#[test]
+fn parse_operation_start_response_ok_without_id_is_a_spawnless_ack() {
+    // Compress auto-confirm on an existing target keeps its dialog open and mints
+    // no op: an OK with no operationId, not a failure.
+    let payload = r#"{"requestId":"r-1","ok":true}"#;
+    assert_eq!(parse_operation_start_response(payload, "r-1"), Some(Ok(None)));
+}
+
+#[test]
+fn parse_operation_start_response_maps_failure_to_error() {
+    let payload = r#"{"requestId":"r-1","ok":false,"error":"Nothing to copy"}"#;
+    assert_eq!(
+        parse_operation_start_response(payload, "r-1"),
+        Some(Err("Nothing to copy".to_string()))
+    );
+}
+
+#[test]
+fn parse_operation_start_response_ignores_other_requests_and_junk() {
+    assert_eq!(
+        parse_operation_start_response(r#"{"requestId":"r-2","ok":true,"operationId":"op-9"}"#, "r-1"),
+        None
+    );
+    assert_eq!(parse_operation_start_response("not json", "r-1"), None);
+}

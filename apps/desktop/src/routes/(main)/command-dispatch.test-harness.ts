@@ -435,27 +435,27 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'file.copy',
     expect: (e) => {
-      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined)
+      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined)
     },
   },
   {
     id: 'file.copy',
     args: { autoConfirm: true, onConflict: 'overwrite_all' },
     expect: (e) => {
-      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(true, 'overwrite_all')
+      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(true, 'overwrite_all', undefined)
     },
   },
   {
     id: 'file.move',
     expect: (e) => {
-      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined)
+      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined)
     },
   },
   {
     id: 'file.move',
     args: { autoConfirm: false, onConflict: 'skip_all' },
     expect: (e) => {
-      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(false, 'skip_all')
+      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(false, 'skip_all', undefined)
     },
   },
   {
@@ -473,14 +473,14 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'file.delete',
     expect: (e) => {
-      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(false, undefined)
+      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(false, undefined, undefined)
     },
   },
   {
     id: 'file.delete',
     args: { autoConfirm: true },
     expect: (e) => {
-      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(false, true)
+      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(false, true, undefined)
     },
   },
   {

@@ -412,14 +412,18 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const raw = asRecord(event.payload)
     const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
     const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
-    void dispatch(fileCopyCommand, { autoConfirm, onConflict })
+    // Auto-confirm carries a round-trip id: the FE replies `mcp-response` with the
+    // spawned operationId once the op starts (see transfer-progress-state).
+    const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    void dispatch(fileCopyCommand, { autoConfirm, onConflict, mcpRequestId })
   })
 
   await listenTauri('mcp-move', (event) => {
     const raw = asRecord(event.payload)
     const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
     const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
-    void dispatch(fileMoveCommand, { autoConfirm, onConflict })
+    const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    void dispatch(fileMoveCommand, { autoConfirm, onConflict, mcpRequestId })
   })
 
   await listenTauri('mcp-compress', (event) => {
@@ -427,7 +431,8 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
     // No onConflict, unlike copy/move: compress has no inner-file conflicts, and an
     // existing target archive is the dialog's overwrite affordance, not a policy.
-    void dispatch(fileCompressCommand, { autoConfirm })
+    const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    void dispatch(fileCompressCommand, { autoConfirm, mcpRequestId })
   })
 
   await listenTauri('mcp-mkdir', () => {
@@ -441,7 +446,8 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
   await listenTauri('mcp-delete', (event) => {
     const raw = asRecord(event.payload)
     const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
-    void dispatch(fileDeleteCommand, { autoConfirm })
+    const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    void dispatch(fileDeleteCommand, { autoConfirm, mcpRequestId })
   })
 
   await listenTauri('mcp-confirm-dialog', (event) => {
