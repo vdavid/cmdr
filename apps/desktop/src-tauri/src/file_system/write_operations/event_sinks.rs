@@ -144,12 +144,30 @@ impl OperationEventSink for TauriEventSink {
         // bucket, a bool); never names or paths. Copy/Move map to `file_transfer_completed`,
         // Delete/Trash to `delete_used`. Fires before the emit so it can read the moved event.
         emit_completion_analytics(&event);
+        // Record the terminal outcome for MCP's `await operation_complete` before the FE
+        // event fires (the emit-site pattern `listing_errors` uses), since the manager
+        // removes the op before `operations-changed` could carry a terminal status.
+        crate::mcp::terminal_ops::record(
+            &event.operation_id,
+            event.operation_type,
+            crate::mcp::terminal_ops::TerminalStatus::Completed,
+        );
         let _ = event.emit(&self.app);
     }
     fn emit_cancelled(&self, event: WriteCancelledEvent) {
+        crate::mcp::terminal_ops::record(
+            &event.operation_id,
+            event.operation_type,
+            crate::mcp::terminal_ops::TerminalStatus::Cancelled,
+        );
         let _ = event.emit(&self.app);
     }
     fn emit_error(&self, event: WriteErrorEvent) {
+        crate::mcp::terminal_ops::record(
+            &event.operation_id,
+            event.operation_type,
+            crate::mcp::terminal_ops::TerminalStatus::Failed,
+        );
         let _ = event.emit(&self.app);
     }
     fn emit_conflict(&self, event: WriteConflictEvent) {

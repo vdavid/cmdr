@@ -23,7 +23,7 @@
 use serde_json::{Value, json};
 
 use super::executor::{ToolError, ToolResult};
-use super::executor::{app, async_tools, dialogs, downloads, file_ops, indexing, nav, search, view};
+use super::executor::{app, async_tools, dialogs, downloads, file_ops, indexing, nav, queue, search, view};
 use super::tools::Tool;
 
 /// How a tool relates to the bearer-token gate. Pure, non-generic, and unit-testable — it
@@ -39,6 +39,11 @@ pub enum TokenGate {
     IfAutoConfirm,
     /// Gated iff `arguments.action == "confirm"`: the `dialog` tool.
     IfConfirmAction,
+    /// Gated iff `arguments.rollback == true`: the `queue` tool's cancel action.
+    /// Plain pause/resume/cancel are transient runtime actions (Open), but a
+    /// rollback cancel actively DELETES already-copied files with no confirmation
+    /// dialog — the same "auto-confirm a destructive thing" shape the token guards.
+    IfRollback,
 }
 
 impl TokenGate {
@@ -56,6 +61,10 @@ impl TokenGate {
             TokenGate::IfConfirmAction => {
                 arguments.and_then(|a| a.get("action")).and_then(|v| v.as_str()) == Some("confirm")
             }
+            TokenGate::IfRollback => arguments
+                .and_then(|a| a.get("rollback"))
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false),
         }
     }
 }
@@ -696,6 +705,40 @@ mcp_tools! {
         run: params_only indexing::execute_indexing
     },
 
+    // ── Queue ───────────────────────────────────────────────────────────────
+    "queue" => {
+        desc: "Control the operation queue: pause / resume / cancel one operationId, or \
+               pause_all / resume_all. cancel also takes operationIds (array) for several; \
+               rollback: true deletes already-copied files (single op, token-gated). See \
+               cmdr://state operations for ids.",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["pause", "resume", "cancel", "pause_all", "resume_all"],
+                    "description": "pause | resume | cancel | pause_all | resume_all"
+                },
+                "operationId": {
+                    "type": "string",
+                    "description": "Operation to act on (required for pause / resume / cancel unless operationIds is given). See cmdr://state operations."
+                },
+                "operationIds": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "For cancel only: several operations to cancel at once (keeps already-copied files)."
+                },
+                "rollback": {
+                    "type": "boolean",
+                    "description": "For cancel with a single operationId: delete already-copied files instead of keeping them. Requires the bearer token."
+                }
+            },
+            "required": ["action"]
+        }),
+        gate: TokenGate::IfRollback,
+        run: params_only queue::execute_queue
+    },
+
     // ── Network ─────────────────────────────────────────────────────────────
     "connect_to_server" => {
         desc: "Add a manual SMB server by address. Checks TCP reachability then adds to the host list.",
@@ -747,19 +790,19 @@ mcp_tools! {
 
     // ── Async ───────────────────────────────────────────────────────────────
     "await" => {
-        desc: "Wait until a condition is met. Use after fire-and-forget actions or to wait for async events like network discovery or an indexing rescan. Pane conditions watch a pane; index_status watches a volume's indexing freshness.",
+        desc: "Wait until a condition is met, after fire-and-forget actions or async events. Pane conditions watch a pane; index_status watches a volume's indexing freshness; operation_complete / operations_idle watch the write-operation queue.",
         schema: json!({
             "type": "object",
             "properties": {
                 "pane": {
                     "type": "string",
                     "enum": ["left", "right"],
-                    "description": "Which pane to watch. Required for the pane conditions; ignored for index_status."
+                    "description": "Which pane to watch. Required for the pane conditions; ignored for index_status / operation_complete / operations_idle."
                 },
                 "condition": {
                     "type": "string",
-                    "enum": ["has_item", "not_has_item", "item_count_gte", "item_count_lte", "path", "path_contains", "index_status"],
-                    "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value), index_status (volumeId's indexing freshness equals value: fresh / scanning / stale)"
+                    "enum": ["has_item", "not_has_item", "item_count_gte", "item_count_lte", "path", "path_contains", "index_status", "operation_complete", "operations_idle"],
+                    "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value), index_status (volumeId's indexing freshness equals value: fresh / scanning / stale), operation_complete (the operation whose id is value settled — completed / cancelled / failed, reported in the result), operations_idle (no operation is running or queued; takes no value)"
                 },
                 "volumeId": {
                     "type": "string",
@@ -767,7 +810,7 @@ mcp_tools! {
                 },
                 "value": {
                     "type": "string",
-                    "description": "Value for the condition (item name, count, path, substring, or for index_status a status: fresh / scanning / stale)"
+                    "description": "Value for the condition (item name, count, path, substring, an index_status status fresh / scanning / stale, or for operation_complete the operationId). Not used by operations_idle."
                 },
                 "timeoutSeconds": {
                     "type": "integer",
@@ -778,7 +821,7 @@ mcp_tools! {
                     "description": "Only consider state updates after this generation number. Prevents matching stale state from before an action. Get the current generation from cmdr://state or a previous await result. Pane conditions only."
                 }
             },
-            "required": ["condition", "value"]
+            "required": ["condition"]
         }),
         gate: TokenGate::Open,
         run: app_params async_tools::execute_await
@@ -835,6 +878,7 @@ mod tests {
         "ai_search",
         "set_setting",
         "indexing",
+        "queue",
         "connect_to_server",
         "remove_manual_server",
         "upgrade_smb_to_direct",
@@ -845,8 +889,8 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         // 6 nav + 2 cursor + 1 selection + 7 file_op + 3 view + 1 tab + 2 dialog + 3 app + 2
-        // search + 1 settings + 1 indexing + 3 network + 1 await + 1 downloads = 34
-        assert_eq!(get_all_tools().len(), 34);
+        // search + 1 settings + 1 indexing + 1 queue + 3 network + 1 await + 1 downloads = 35
+        assert_eq!(get_all_tools().len(), 35);
     }
 
     #[test]
@@ -854,7 +898,7 @@ mod tests {
         use std::collections::BTreeSet;
         let actual: BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();
         let expected: BTreeSet<String> = EXPECTED_TOOL_NAMES.iter().map(|s| (*s).to_owned()).collect();
-        assert_eq!(actual, expected, "tool name set drifted from the expected 34");
+        assert_eq!(actual, expected, "tool name set drifted from the expected 35");
     }
 
     #[test]
@@ -1086,11 +1130,16 @@ mod tests {
 
         let cond_enum = props.get("condition").unwrap().get("enum").unwrap().as_array().unwrap();
         assert!(cond_enum.contains(&json!("index_status")));
+        // The operation-queue conditions ride the same tool.
+        assert!(cond_enum.contains(&json!("operation_complete")));
+        assert!(cond_enum.contains(&json!("operations_idle")));
 
-        // pane is no longer required (index_status is volume-scoped, not pane-scoped).
+        // Only `condition` is required now: pane is scoped to the pane conditions and
+        // `value` is unused by `operations_idle`, so both are validated per-condition
+        // in the handler, not by the schema.
         let required = schema.get("required").unwrap().as_array().unwrap();
         assert!(required.contains(&json!("condition")));
-        assert!(required.contains(&json!("value")));
+        assert!(!required.contains(&json!("value")));
         assert!(!required.contains(&json!("pane")));
     }
 
@@ -1136,6 +1185,54 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_queue_tool_schema_and_gate() {
+        let tools = get_all_tools();
+        let schema = &tool(&tools, "queue").input_schema;
+        let props = schema.get("properties").unwrap();
+
+        assert!(props.get("action").is_some());
+        assert!(props.get("operationId").is_some());
+        assert!(props.get("operationIds").is_some());
+        assert!(props.get("rollback").is_some());
+
+        let action_enum = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();
+        for action in ["pause", "resume", "cancel", "pause_all", "resume_all"] {
+            assert!(action_enum.contains(&json!(action)), "missing action '{action}'");
+        }
+
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        // Only `action` is required; the per-op actions validate operationId in the handler
+        // (pause_all / resume_all need no id).
+        assert_eq!(required.len(), 1);
+        assert!(required.contains(&json!("action")));
+
+        // A rollback cancel deletes already-copied files → gated by the token.
+        assert_eq!(tool_gate("queue"), Some(TokenGate::IfRollback));
+    }
+
+    /// Anti-footgun backstop mirroring `test_autoconfirm_tools_are_gated`: any tool whose schema
+    /// exposes a `rollback` property (a destructive, file-deleting bypass) MUST declare the
+    /// `IfRollback` gate, never `Open`. Adding such a tool and forgetting its gate fails here.
+    #[test]
+    fn test_rollback_tools_are_gated() {
+        for t in get_all_tools() {
+            let has_rollback = t
+                .input_schema
+                .get("properties")
+                .and_then(|p| p.get("rollback"))
+                .is_some();
+            if has_rollback {
+                assert_eq!(
+                    tool_gate(&t.name),
+                    Some(TokenGate::IfRollback),
+                    "tool '{}' exposes rollback but isn't gated IfRollback",
+                    t.name
+                );
+            }
+        }
+    }
+
     /// Full-table expectation with set-equality: every tool's gate is pinned, AND the set of
     /// tools in the registry equals the set with a declared gate. Set-equality is load-bearing:
     /// it forces a conscious auth review for any new tool (a 33rd tool left `Open` fails here).
@@ -1172,6 +1269,7 @@ mod tests {
             ("ai_search", TokenGate::Open),
             ("set_setting", TokenGate::Always),
             ("indexing", TokenGate::Always),
+            ("queue", TokenGate::IfRollback),
             ("connect_to_server", TokenGate::Open),
             ("remove_manual_server", TokenGate::Open),
             ("upgrade_smb_to_direct", TokenGate::Open),
@@ -1205,6 +1303,11 @@ mod tests {
         assert!(TokenGate::IfConfirmAction.requires_token(Some(&json!({"action": "confirm"}))));
         assert!(!TokenGate::IfConfirmAction.requires_token(Some(&json!({"action": "open"}))));
         assert!(!TokenGate::IfConfirmAction.requires_token(None));
+        // IfRollback: only when rollback == true (a plain cancel stays open).
+        assert!(TokenGate::IfRollback.requires_token(Some(&json!({"action": "cancel", "rollback": true}))));
+        assert!(!TokenGate::IfRollback.requires_token(Some(&json!({"action": "cancel", "rollback": false}))));
+        assert!(!TokenGate::IfRollback.requires_token(Some(&json!({"action": "cancel"}))));
+        assert!(!TokenGate::IfRollback.requires_token(None));
         // Always / Open
         assert!(TokenGate::Always.requires_token(None));
         assert!(!TokenGate::Open.requires_token(Some(&json!({"autoConfirm": true}))));

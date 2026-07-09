@@ -682,6 +682,44 @@
       "name": "indexing"
     },
     {
+      "description": "Control the operation queue: pause / resume / cancel one operationId, or pause_all / resume_all. cancel also takes operationIds (array) for several; rollback: true deletes already-copied files (single op, token-gated). See cmdr://state operations for ids.",
+      "inputSchema": {
+        "properties": {
+          "action": {
+            "description": "pause | resume | cancel | pause_all | resume_all",
+            "enum": [
+              "pause",
+              "resume",
+              "cancel",
+              "pause_all",
+              "resume_all"
+            ],
+            "type": "string"
+          },
+          "operationId": {
+            "description": "Operation to act on (required for pause / resume / cancel unless operationIds is given). See cmdr://state operations.",
+            "type": "string"
+          },
+          "operationIds": {
+            "description": "For cancel only: several operations to cancel at once (keeps already-copied files).",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "rollback": {
+            "description": "For cancel with a single operationId: delete already-copied files instead of keeping them. Requires the bearer token.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "type": "object"
+      },
+      "name": "queue"
+    },
+    {
       "description": "Add a manual SMB server by address. Checks TCP reachability then adds to the host list.",
       "inputSchema": {
         "properties": {
@@ -730,7 +768,7 @@
       "name": "upgrade_smb_to_direct"
     },
     {
-      "description": "Wait until a condition is met. Use after fire-and-forget actions or to wait for async events like network discovery or an indexing rescan. Pane conditions watch a pane; index_status watches a volume's indexing freshness.",
+      "description": "Wait until a condition is met, after fire-and-forget actions or async events. Pane conditions watch a pane; index_status watches a volume's indexing freshness; operation_complete / operations_idle watch the write-operation queue.",
       "inputSchema": {
         "properties": {
           "afterGeneration": {
@@ -738,7 +776,7 @@
             "type": "integer"
           },
           "condition": {
-            "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value), index_status (volumeId's indexing freshness equals value: fresh / scanning / stale)",
+            "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value), index_status (volumeId's indexing freshness equals value: fresh / scanning / stale), operation_complete (the operation whose id is value settled — completed / cancelled / failed, reported in the result), operations_idle (no operation is running or queued; takes no value)",
             "enum": [
               "has_item",
               "not_has_item",
@@ -746,12 +784,14 @@
               "item_count_lte",
               "path",
               "path_contains",
-              "index_status"
+              "index_status",
+              "operation_complete",
+              "operations_idle"
             ],
             "type": "string"
           },
           "pane": {
-            "description": "Which pane to watch. Required for the pane conditions; ignored for index_status.",
+            "description": "Which pane to watch. Required for the pane conditions; ignored for index_status / operation_complete / operations_idle.",
             "enum": [
               "left",
               "right"
@@ -763,7 +803,7 @@
             "type": "integer"
           },
           "value": {
-            "description": "Value for the condition (item name, count, path, substring, or for index_status a status: fresh / scanning / stale)",
+            "description": "Value for the condition (item name, count, path, substring, an index_status status fresh / scanning / stale, or for operation_complete the operationId). Not used by operations_idle.",
             "type": "string"
           },
           "volumeId": {
@@ -772,8 +812,7 @@
           }
         },
         "required": [
-          "condition",
-          "value"
+          "condition"
         ],
         "type": "object"
       },

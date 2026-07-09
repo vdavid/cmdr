@@ -4,8 +4,10 @@ use serde_json::{Value, json};
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::{PaneStateStore, ToolError, ToolResult, mcp_round_trip};
+use crate::file_system::write_operations::{LifecycleStatus, WriteOperationType};
 use crate::indexing::freshness::Freshness;
 use crate::mcp::resources::indexing::freshness_token;
+use crate::mcp::terminal_ops::{self, TerminalStatus};
 
 // ── Await tool ────────────────────────────────────────────────────────
 
@@ -22,9 +24,16 @@ pub async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
         .unwrap_or(15)
         .min(60);
 
-    // The volume-scoped condition takes no pane; branch before pane parsing.
+    // The volume-scoped and operation-scoped conditions take no pane; branch
+    // before pane parsing.
     if condition == "index_status" {
         return await_index_status(params, timeout_s).await;
+    }
+    if condition == "operation_complete" {
+        return await_operation_complete(params, timeout_s).await;
+    }
+    if condition == "operations_idle" {
+        return await_operations_idle(timeout_s).await;
     }
 
     let pane = params
@@ -200,6 +209,127 @@ async fn await_index_status(params: &Value, timeout_s: u64) -> ToolResult {
     }
 }
 
+// ── Operation await conditions ───────────────────────────────────────
+
+/// How an `await operation_complete` tick resolves against the two sources: the
+/// terminal-ops ring (settled outcome) and the live registry (`list_operations`).
+#[derive(Debug, PartialEq, Eq)]
+enum CompleteResolution {
+    /// The op settled; carries its terminal outcome.
+    Settled(TerminalStatus),
+    /// The op is still queued / running / paused — keep polling.
+    StillRunning,
+    /// The op is in neither source: an unknown id (or one that settled and aged
+    /// off the bounded ring). Reported honestly instead of hanging.
+    Unknown,
+}
+
+/// The lower-case wire token for an operation kind (`copy`, `archive_edit`, …),
+/// matching the `type:` field in `cmdr://state operations`.
+fn operation_type_token(kind: WriteOperationType) -> &'static str {
+    match kind {
+        WriteOperationType::Copy => "copy",
+        WriteOperationType::Move => "move",
+        WriteOperationType::Delete => "delete",
+        WriteOperationType::Trash => "trash",
+        WriteOperationType::Rename => "rename",
+        WriteOperationType::CreateFolder => "create_folder",
+        WriteOperationType::CreateFile => "create_file",
+        WriteOperationType::ArchiveEdit => "archive_edit",
+    }
+}
+
+/// Pure classifier for one `operation_complete` tick. Ring outcome wins (a
+/// settled op leaves the live registry); otherwise a live membership means it's
+/// still going; neither means unknown.
+fn classify_operation_complete(terminal: Option<TerminalStatus>, is_live: bool) -> CompleteResolution {
+    match (terminal, is_live) {
+        (Some(status), _) => CompleteResolution::Settled(status),
+        (None, true) => CompleteResolution::StillRunning,
+        (None, false) => CompleteResolution::Unknown,
+    }
+}
+
+/// Whether the queue is idle: no operation is running or queued. Paused ops don't
+/// count — a paused op is parked indefinitely, so requiring it to drain would
+/// hang `operations_idle` forever.
+fn operations_are_idle(statuses: &[LifecycleStatus]) -> bool {
+    !statuses
+        .iter()
+        .any(|s| matches!(s, LifecycleStatus::Running | LifecycleStatus::Queued))
+}
+
+/// Poll until a specific operation settles (completed / cancelled / failed).
+/// Reads the terminal-ops ring and the live registry each tick; an id in neither
+/// errors honestly rather than hanging.
+async fn await_operation_complete(params: &Value, timeout_s: u64) -> ToolResult {
+    let operation_id = params
+        .get("value")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("operation_complete requires 'value' (the operationId)"))?;
+
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(timeout_s);
+    let poll_interval = std::time::Duration::from_millis(250);
+
+    loop {
+        let terminal = terminal_ops::lookup(operation_id);
+        let is_live = crate::file_system::list_operations()
+            .iter()
+            .any(|op| op.operation_id == operation_id);
+        match classify_operation_complete(terminal.as_ref().map(|op| op.status), is_live) {
+            CompleteResolution::Settled(status) => {
+                let (kind, settled_at) = terminal
+                    .map(|op| (operation_type_token(op.operation_type), op.settled_at_unix_ms))
+                    .unwrap_or(("operation", 0));
+                return Ok(json!(format!(
+                    "OK: {kind} '{operation_id}' settled — {} (at {settled_at} unix-ms)",
+                    status.as_token()
+                )));
+            }
+            CompleteResolution::Unknown => {
+                return Err(ToolError::invalid_params(format!(
+                    "Unknown operationId '{operation_id}': it isn't a currently running operation and hasn't recently settled. See cmdr://state operations."
+                )));
+            }
+            CompleteResolution::StillRunning => {
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(ToolError::internal(format!(
+                        "Timed out after {timeout_s}s waiting for operation '{operation_id}' to complete (still running)"
+                    )));
+                }
+                tokio::time::sleep(poll_interval).await;
+            }
+        }
+    }
+}
+
+/// Poll until no operation is running or queued (paused ops excluded — see
+/// `operations_are_idle`).
+async fn await_operations_idle(timeout_s: u64) -> ToolResult {
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(timeout_s);
+    let poll_interval = std::time::Duration::from_millis(250);
+
+    loop {
+        let statuses: Vec<LifecycleStatus> = crate::file_system::list_operations()
+            .iter()
+            .map(|op| op.status)
+            .collect();
+        if operations_are_idle(&statuses) {
+            return Ok(json!("OK: Condition met — no running or queued operations."));
+        }
+        if tokio::time::Instant::now() >= deadline {
+            let running = statuses
+                .iter()
+                .filter(|s| matches!(s, LifecycleStatus::Running | LifecycleStatus::Queued))
+                .count();
+            return Err(ToolError::internal(format!(
+                "Timed out after {timeout_s}s waiting for the queue to go idle ({running} still running or queued)"
+            )));
+        }
+        tokio::time::sleep(poll_interval).await;
+    }
+}
+
 // ── Network tools ────────────────────────────────────────────────────
 
 /// Execute `connect_to_server`: parse address, TCP check, persist, inject.
@@ -354,5 +484,48 @@ mod index_status_tests {
     fn requires_volume_id() {
         let params = json!({ "value": "fresh" });
         assert!(index_status_params(&params).is_err());
+    }
+}
+
+#[cfg(test)]
+mod operation_await_tests {
+    use super::*;
+
+    #[test]
+    fn settled_op_reports_its_terminal_status_even_if_not_live() {
+        assert_eq!(
+            classify_operation_complete(Some(TerminalStatus::Completed), false),
+            CompleteResolution::Settled(TerminalStatus::Completed)
+        );
+        // Ring outcome wins even over a (stale) live membership.
+        assert_eq!(
+            classify_operation_complete(Some(TerminalStatus::Failed), true),
+            CompleteResolution::Settled(TerminalStatus::Failed)
+        );
+    }
+
+    #[test]
+    fn live_op_with_no_terminal_record_keeps_polling() {
+        assert_eq!(
+            classify_operation_complete(None, true),
+            CompleteResolution::StillRunning
+        );
+    }
+
+    #[test]
+    fn id_in_neither_source_is_unknown_not_a_hang() {
+        assert_eq!(classify_operation_complete(None, false), CompleteResolution::Unknown);
+    }
+
+    #[test]
+    fn idle_iff_nothing_running_or_queued() {
+        // Empty registry is idle.
+        assert!(operations_are_idle(&[]));
+        // A running or queued op blocks idle.
+        assert!(!operations_are_idle(&[LifecycleStatus::Running]));
+        assert!(!operations_are_idle(&[LifecycleStatus::Queued]));
+        assert!(!operations_are_idle(&[LifecycleStatus::Paused, LifecycleStatus::Running]));
+        // A lone paused op is idle: it's parked, so requiring it to drain would hang forever.
+        assert!(operations_are_idle(&[LifecycleStatus::Paused]));
     }
 }

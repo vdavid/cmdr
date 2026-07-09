@@ -86,11 +86,11 @@ fn test_total_tool_count() {
     // property, not a hand-synced number: adding an `mcp_tools!` entry bumps the list, dispatch,
     // and gate together. It just flags an unintended add/remove.
     // 6 nav + 2 cursor + 1 select + 7 file_op + 3 view + 1 tab + 2 dialog + 3 app + 2 search + 1
-    // settings + 1 indexing + 3 network + 1 await + 1 downloads = 34
+    // settings + 1 indexing + 1 queue + 3 network + 1 await + 1 downloads = 35
     assert_eq!(
         tools.len(),
-        34,
-        "Expected 34 tools, got {}. Did you add/remove tools?",
+        35,
+        "Expected 35 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
 }
