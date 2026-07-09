@@ -438,10 +438,10 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
 
   await listenTauri('mcp-rename', (event) => {
     // Round-trip: the non-autoConfirm `rename` tool starts the inline editor
-    // prefilled with `newName` for the user to review. The Rust side resolves the
-    // target and sends its current `name` (so we move the cursor there — a no-op
-    // when it's already the cursor item, but it focuses the pane and pins
-    // activation via `expectedName`) plus the proposed `newName`.
+    // prefilled with `newName` for the user to review. Resolution lives here (the
+    // FE holds the live listing): when `name` is given we move the cursor to that
+    // row first (which errors honestly if it isn't in the listing and pins
+    // activation via `expectedName`); without a name we rename the cursor item.
     const raw = asRecord(event.payload)
     const pane = parsePane(raw.pane)
     const name = typeof raw.name === 'string' ? raw.name : undefined
@@ -450,14 +450,14 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     if (requestId === undefined) return
     void (async () => {
       const { emit } = await import('@tauri-apps/api/event')
-      if (!pane || name === undefined || newName === undefined) {
+      if (!pane || newName === undefined) {
         await emit('mcp-response', { requestId, ok: false, error: 'Invalid rename payload' })
         return
       }
       try {
-        // Move the cursor to the target row first (focuses the pane, settles the
-        // load), then start the editor pinned to that row and prefilled.
-        await dispatch(cursorMoveToCommand, { pane, to: name })
+        if (name !== undefined) {
+          await dispatch(cursorMoveToCommand, { pane, to: name })
+        }
         await dispatch(fileRenameCommand, { initialName: newName, expectedName: name })
         await emit('mcp-response', { requestId, ok: true })
       } catch (e) {

@@ -307,14 +307,27 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
         ));
     }
 
-    let (pane, state) = super::target_pane_state(app, params)?;
+    let (pane, _state) = super::target_pane_state(app, params)?;
     let name_param = params.get("name").and_then(|v| v.as_str());
-    let (current_name, from_path) = resolve_rename_target(&state, name_param)?;
-
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
 
     if auto_confirm {
-        // Same-name rename is a no-op the FE would silently drop; reject fast.
+        // Move the cursor to the target first: `move_cursor`'s FE round-trip flushes
+        // the MCP state push (`syncStateToMcpNow`), so the resolution below reads a
+        // fresh pane state even right after a nav (the `select` / `move_cursor`
+        // precedent). Without a `name` we rename the current cursor item and trust
+        // the agent positioned it (that move already flushed).
+        if let Some(name) = name_param {
+            mcp_round_trip(
+                app,
+                "mcp-move-cursor",
+                json!({"pane": pane, "to": name}),
+                "ok".to_string(),
+            )
+            .await?;
+        }
+        let (_pane, state) = super::target_pane_state(app, params)?;
+        let (current_name, from_path) = resolve_rename_target(&state, name_param)?;
         if current_name == new_name {
             return Err(ToolError::invalid_params(format!(
                 "'{new_name}' is already the item's name"
@@ -330,20 +343,27 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
             .map_err(|e| ToolError::internal(e.message))?;
         Ok(json!(format!("OK: Renamed to {new_name}.")))
     } else {
+        // Resolution lives in the FE (it holds the live listing): the mcp-rename
+        // handler moves the cursor to `name` (erroring honestly if it's not in the
+        // listing) and starts the editor prefilled with `newName`.
+        let mut payload = json!({"pane": pane, "newName": new_name});
+        if let Some(name) = name_param {
+            payload["name"] = json!(name);
+        }
         mcp_round_trip(
             app,
             "mcp-rename",
-            json!({"pane": pane, "name": current_name, "newName": new_name}),
-            format!("OK: Rename editor opened on {current_name}, prefilled with {new_name}. Waiting for the user to confirm."),
+            payload,
+            format!("OK: Rename editor opened, prefilled with {new_name}. Waiting for the user to confirm."),
         )
         .await
     }
 }
 
 /// Resolve the single rename target to its `(current_name, path)`: the named item
-/// (`name`), else the item under the cursor. Off the last-synced pane state, so a
-/// name not in the listing, or a cursor outside the loaded window / on `..`, is an
-/// honest error.
+/// (`name`), else the item under the cursor. Off the pane state (freshly flushed
+/// by the caller's cursor move), so a name not in the listing, or a cursor outside
+/// the loaded window / on `..`, is an honest error.
 fn resolve_rename_target(
     state: &crate::mcp::pane_state::PaneState,
     name: Option<&str>,
@@ -425,7 +445,9 @@ async fn execute_create<R: Runtime>(
         let volume_id = state.volume_id.clone();
         let parent = state.path.clone();
         let created = match kind {
-            CreateKind::Directory => crate::commands::file_system::create_directory(volume_id, parent, name.clone()).await,
+            CreateKind::Directory => {
+                crate::commands::file_system::create_directory(volume_id, parent, name.clone()).await
+            }
             CreateKind::File => crate::commands::file_system::create_file(volume_id, parent, name.clone()).await,
         };
         created.map_err(|e| ToolError::internal(e.message))?;
@@ -578,8 +600,14 @@ mod tests {
         // Omitted → None (the FE applies its per-volume default).
         assert_eq!(delete_permanent_from_mode(&json!({})).unwrap(), None);
         // trash → keep (false); delete → permanent (true).
-        assert_eq!(delete_permanent_from_mode(&json!({"mode": "trash"})).unwrap(), Some(false));
-        assert_eq!(delete_permanent_from_mode(&json!({"mode": "delete"})).unwrap(), Some(true));
+        assert_eq!(
+            delete_permanent_from_mode(&json!({"mode": "trash"})).unwrap(),
+            Some(false)
+        );
+        assert_eq!(
+            delete_permanent_from_mode(&json!({"mode": "delete"})).unwrap(),
+            Some(true)
+        );
         // An unknown mode is an honest error, not a silent default.
         assert!(delete_permanent_from_mode(&json!({"mode": "bin"})).is_err());
     }

@@ -147,10 +147,16 @@ fn test_tags_marker() {
     assert_eq!(tags_marker(&[]), None);
 
     // Colored tags render as their color name (the dot the UI shows).
-    assert_eq!(tags_marker(&[tag("Red", 6), tag("Blue", 4)]), Some("[tags:red,blue]".to_string()));
+    assert_eq!(
+        tags_marker(&[tag("Red", 6), tag("Blue", 4)]),
+        Some("[tags:red,blue]".to_string())
+    );
 
     // A colorless custom tag renders as its own name.
-    assert_eq!(tags_marker(&[tag("Important", 0)]), Some("[tags:Important]".to_string()));
+    assert_eq!(
+        tags_marker(&[tag("Important", 0)]),
+        Some("[tags:Important]".to_string())
+    );
 
     // A custom-named colored tag still renders as its color (matches the dot).
     assert_eq!(tags_marker(&[tag("Urgent", 6)]), Some("[tags:red]".to_string()));
