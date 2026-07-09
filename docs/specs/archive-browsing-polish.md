@@ -21,8 +21,8 @@ path unchanged. Mechanism: archive `read/DETAILS.md` § "One-pass subtree extrac
 ## 2. Encrypted archives: password-prompt extraction (UX, user-visible) — SHIPPED (ZipCrypto 2026-07-08, WinZip AES + 7z AES 2026-07-09)
 
 Extracting from a password-protected archive works end to end for every kind Cmdr browses: legacy PKWARE ZipCrypto (what
-macOS Archive Utility / `zip -e` produce), WinZip AES-128/256 (`7z -mem=AES256`, recent WinZip), and 7z AES (content- and
-header-encrypted). Copying or moving a source out surfaces a password prompt, stores the password per-archive, and
+macOS Archive Utility / `zip -e` produce), WinZip AES-128/256 (`7z -mem=AES256`, recent WinZip), and 7z AES (content-
+and header-encrypted). Copying or moving a source out surfaces a password prompt, stores the password per-archive, and
 re-dispatches the operation so the extract decrypts. A wrong password re-prompts (caught at open for AES's verifier, or
 late at end-of-stream CRC for ZipCrypto / a 7z integrity check, so the re-prompt can arrive mid-transfer too); cancel
 forgets the password. Backend half (decrypt in the read path, the typed `ArchiveNeedsPassword` signal, per-archive
@@ -35,10 +35,10 @@ the password. This flows through a dedicated `ListingErrorReason::ArchiveNeedsPa
 reason); the frontend listing-loader raises the same `ArchivePasswordDialog` at browse time and re-lists on unlock.
 Content-encrypted 7z and both AES zip kinds list fine and prompt only on extract, via the existing transfer path.
 
-**How the `aes` conflict was resolved.** The old deferral was `smb2`'s pinned pre-release `aes =0.9.0-rc.4`. `smb2 0.12.1`
-relaxed to stable `aes 0.9.1`, which unifies with zip's `aes-crypto` and sevenz's `aes256`. 7z also needed real
-plumbing (not just the flag): a per-archive password threads through `sevenz.rs`'s `parse` AND every
-`open_read` / `stream_subtree` re-open, with `PasswordRequired`/`MaybeBadPassword`/wrapped-checksum errors typed as
+**How the `aes` conflict was resolved.** The old deferral was `smb2`'s pinned pre-release `aes =0.9.0-rc.4`.
+`smb2 0.12.1` relaxed to stable `aes 0.9.1`, which unifies with zip's `aes-crypto` and sevenz's `aes256`. 7z also needed
+real plumbing (not just the flag): a per-archive password threads through `sevenz.rs`'s `parse` AND every `open_read` /
+`stream_subtree` re-open, with `PasswordRequired`/`MaybeBadPassword`/wrapped-checksum errors typed as
 `Encrypted`/`WrongPassword`.
 
 **Genuinely still deferred:** nothing in this item. (7z remains read-only — encrypted-7z WRITING was never in scope.)
