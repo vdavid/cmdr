@@ -365,6 +365,11 @@ mod tests {
     /// ground truth, and the error, and asserts the error stays well within the
     /// spike's realistic-mix bar. Not part of the normal run (walks the tree and
     /// reads files); run with `cargo test ... estimator_accuracy -- --ignored`.
+    // Single-mix regression guard only: this exercises the real observe/finish
+    // path against ground truth on the repo's own (compressible) source tree.
+    // The medium/incompressible classes and the extension table were validated
+    // across six mixes in the M-spike (docs/notes/compress-size-estimate-spike.md);
+    // this test exists to catch estimator-math regressions, not to re-prove those.
     #[test]
     #[ignore = "reads the crate src tree; opt-in accuracy check"]
     #[allow(

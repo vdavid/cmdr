@@ -127,7 +127,7 @@ pub fn cancel_scan_preview(preview_id: &str) {
 
 /// Internal function that runs the scan preview in a background thread.
 ///
-/// When `sample_for_estimate` is set (compress-mode scans), a bounded worker
+/// When `sample_for_estimate` is set (compress-mode scans), a budget-capped worker
 /// thread computes a compressed-size estimate off the walk thread: the walk
 /// pushes `(path, size)` per regular file into a channel, the worker samples a
 /// head window under a byte budget (see `compress_estimate`), and the estimate
@@ -165,7 +165,7 @@ fn run_scan_preview(
     // when any source isn't covered by the index.
     let expected = crate::indexing::expected_totals::expected_totals_for_sources(&sources);
 
-    // Compress-size estimator: a bounded worker samples file heads OFF the walk
+    // Compress-size estimator: a budget-capped worker samples file heads OFF the walk
     // thread so the sampling CPU never lands on the scan's critical path. The
     // per-file hook below pushes `(path, size)` into the channel; the worker
     // deflates a head window under a byte budget and accumulates the estimate.
@@ -191,7 +191,11 @@ fn run_scan_preview(
 
     let result: Result<(), String> = (|| {
         // Cheap per-file hook: a channel push, so it never delays the walk. A
-        // full channel or dropped receiver just drops the sample (best-effort).
+        // dropped receiver (worker gone) just drops the sample (best-effort). The
+        // channel is deliberately UNBOUNDED: a sync_channel would block the walk
+        // when the sampler falls behind (e.g. the oracle-cached fast-walk case),
+        // which violates the never-touch-the-critical-path contract. The queue is
+        // small in practice — post-budget the worker drains via hashmap lookups.
         let send_sample = |path: &Path, size: u64| {
             if let Some(tx) = &estimate_tx {
                 let _ = tx.send((path.to_path_buf(), size));
