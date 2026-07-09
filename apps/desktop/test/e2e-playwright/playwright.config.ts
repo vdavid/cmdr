@@ -35,11 +35,12 @@ const jsonReport = process.env.CMDR_E2E_JSON_REPORT ?? '/tmp/cmdr-e2e-report.jso
 // legacy single-run path.
 const outputDir = process.env.CMDR_E2E_OUTPUT_DIR ?? './test-results'
 
-// Step 6b: the MTP shard used to need `retries: 1` because the watcher's
-// resume window raced with delayed FSEvents from `recreateMtpFixtures`.
-// `resync_virtual_mtp_after_disk_change` (commands/mtp.rs) now drains those
-// events while the watcher is still paused, so no shard needs a retry for an
-// app-level race.
+// The MTP shard used to need `retries: 1` because the virtual watcher's resume
+// window raced with delayed FSEvents from `recreateMtpFixtures`. The watcher now
+// stays PAUSED for the whole test body (fixtures sync via the `rescan_virtual_mtp`
+// IPC, which reads the backing dir directly), so no late event can reach the tree
+// and no shard needs a retry for an app-level race. See
+// `src-tauri/src/mtp/DETAILS.md` § "Virtual device watcher in E2E".
 //
 // CI-only retry for load-induced environment flake on the shared Docker VM:
 // the Linux lane sets `CI=true` and runs this exact config, so it inherits one

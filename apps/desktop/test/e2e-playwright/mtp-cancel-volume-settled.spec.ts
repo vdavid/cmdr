@@ -21,7 +21,7 @@ import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { recreateMtpFixtures, writeMtpDrainSentinel, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
+import { recreateMtpFixtures, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
 import {
   initMcpClient,
   mcpCall,
@@ -86,13 +86,9 @@ test.beforeEach(async ({ tauriPage }) => {
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
   recreateMtpFixtures()
   seedDcimBatch()
-  // Sentinel goes LAST (after recreate + seed) so per-dir FS-event ordering
-  // guarantees the watcher has seen every preceding write when it sees the
-  // sentinel drop. See `writeMtpDrainSentinel` doc.
-  const sentinel = writeMtpDrainSentinel()
-  await tauriPage.evaluate(
-    `window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change', { sentinelSuffix: ${JSON.stringify(sentinel)} })`,
-  )
+  // Sync the object tree to disk. The watcher stays PAUSED (see mtp.spec.ts
+  // beforeEach and mtp/DETAILS.md § "Virtual device watcher in E2E").
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
 
   if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME))) {
     await tauriPage.evaluate(`(function() {

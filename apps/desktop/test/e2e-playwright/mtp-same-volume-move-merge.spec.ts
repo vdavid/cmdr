@@ -16,7 +16,7 @@ import os from 'os'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { recreateMtpFixtures, writeMtpDrainSentinel, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
+import { recreateMtpFixtures, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
 import {
   initMcpClient,
   mcpCall,
@@ -88,10 +88,7 @@ test.beforeEach(async ({ tauriPage }) => {
   fs.writeFileSync(path.join(INTERNAL, 'album', 'clash.txt'), 'DEST-clash')
   fs.writeFileSync(path.join(INTERNAL, 'album', 'keep.txt'), 'DEST-keep')
 
-  const sentinel = writeMtpDrainSentinel()
-  await tauriPage.evaluate(
-    `window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change', { sentinelSuffix: ${JSON.stringify(sentinel)} })`,
-  )
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
 
   if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME))) {
     await tauriPage.evaluate(`(function() {

@@ -734,7 +734,14 @@ Symptoms in the wild:
 
 ### Fix
 
-New IPC command `resync_virtual_mtp_after_disk_change` in `apps/desktop/src-tauri/src/commands/mtp.rs` does the whole
+> **Superseded (2026-07-09).** The `resync_virtual_mtp_after_disk_change` command and the later sentinel-drain that
+> replaced its sleeps have both been removed. Any resume-after-recreate reopens a race the drain can't fully close
+> (FSEvents give no cross-directory ordering), so the watcher now simply stays PAUSED for the whole test body — fixtures
+> sync via `rescan_virtual_mtp` (disk-truth, order-independent) and only the live-watch test resumes it. See
+> `apps/desktop/src-tauri/src/mtp/DETAILS.md` § "Virtual device watcher in E2E". The rest of this section is the
+> historical record of the earlier approach.
+
+New IPC command `resync_virtual_mtp_after_disk_change` in `apps/desktop/src-tauri/src/commands/mtp.rs` did the whole
 "settle + rescan + resume" dance atomically:
 
 1. Sleep 600 ms: drains the FSEvents queue while the watcher is still paused (events are silently dropped).

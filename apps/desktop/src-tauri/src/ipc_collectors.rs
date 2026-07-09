@@ -320,7 +320,6 @@ pub(super) fn collect_virtual_mtp_types(types: &mut Types) -> Vec<Function> {
         crate::commands::mtp::rescan_virtual_mtp,
         crate::commands::mtp::pause_virtual_mtp_watcher,
         crate::commands::mtp::resume_virtual_mtp_watcher,
-        crate::commands::mtp::resync_virtual_mtp_after_disk_change,
     ](types)
 }
 #[cfg(not(all(feature = "virtual-mtp", any(target_os = "macos", target_os = "linux"))))]

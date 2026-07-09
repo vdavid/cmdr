@@ -195,7 +195,10 @@ pub fn rescan_virtual_device() -> Option<(usize, usize)> {
 
 /// Pauses the virtual device's filesystem watcher. While paused, all OS-level
 /// filesystem events are silently dropped. Call before manipulating backing dir
-/// files externally, then call [`resume_virtual_watcher`] after rescanning.
+/// files externally, then sync the object tree with [`rescan_virtual_device`]
+/// (which reads the backing dir directly). In E2E the watcher deliberately
+/// stays paused for the whole test body so late FSEvents can't race the test;
+/// see `mtp/DETAILS.md` § "Virtual device watcher in E2E".
 pub fn pause_virtual_watcher() -> bool {
     let guard = mtp_rs::pause_watcher(VIRTUAL_DEVICE_SERIAL);
     let paused = guard.is_some();
@@ -207,29 +210,14 @@ pub fn pause_virtual_watcher() -> bool {
 }
 
 /// Resumes the virtual device's filesystem watcher by dropping the guard. The
-/// underlying mtp-rs pause is refcounted so this only flips the watcher back
-/// on when no other concurrent drain still holds a guard.
+/// underlying mtp-rs pause is refcounted so this only flips the watcher back on
+/// when no other concurrent pause still holds a guard. In E2E only the one test
+/// that verifies the live-watch pipeline calls this.
 pub fn resume_virtual_watcher() {
     let had_guard = WATCHER_GUARD.lock_ignore_poison().take().is_some();
     if had_guard {
         info!("Virtual MTP watcher resumed");
     }
-}
-
-/// Returns `true` if the watcher dropped (and recorded) any path ending with
-/// `suffix` since the pause began. Used by the test-only sentinel-drain flow:
-/// the test writes a uniquely-named file after recreating fixtures and polls
-/// this until it returns `true`, at which point per-directory FS-event
-/// ordering guarantees all earlier writes have been observed (and dropped) by
-/// the watcher too.
-pub fn was_path_dropped(suffix: &str) -> bool {
-    mtp_rs::was_path_dropped(VIRTUAL_DEVICE_SERIAL, suffix)
-}
-
-/// Clears the ring buffer of dropped paths. Called after a successful drain so
-/// the buffer stays scoped to in-flight pauses across long test runs.
-pub fn clear_dropped_paths() {
-    mtp_rs::clear_dropped_paths(VIRTUAL_DEVICE_SERIAL);
 }
 
 #[cfg(test)]

@@ -24,7 +24,7 @@ import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { recreateMtpFixtures, writeMtpDrainSentinel, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
+import { recreateMtpFixtures, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
 import {
   initMcpClient,
   mcpCall,
@@ -100,17 +100,13 @@ test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
   await initMcpClient(tauriPage)
 
-  // Pause the virtual MTP watcher across the disk swap, then resync. Mirrors
-  // mtp.spec.ts so the rescan can't race with stale FSEvents.
+  // Pause the watcher across the disk swap, then rescan. It stays PAUSED so
+  // the rescan can't race stale FSEvents (mirrors mtp.spec.ts).
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
   recreateMtpFixtures()
   seedDcimWithExtras()
-  // Sentinel goes LAST so per-dir FS-event ordering proves the watcher has
-  // observed every preceding write by the time it lands.
-  const sentinel = writeMtpDrainSentinel()
-  await tauriPage.evaluate(
-    `window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change', { sentinelSuffix: ${JSON.stringify(sentinel)} })`,
-  )
+  // Sync the object tree to disk. The watcher stays PAUSED (see mtp/DETAILS.md).
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
 
   // Reset both panes to the local volume so ensureAppReady's mcp-nav-to-path
   // events aren't rejected by a leftover MTP pane.

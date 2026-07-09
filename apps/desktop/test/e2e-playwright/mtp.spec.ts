@@ -14,7 +14,7 @@ import os from 'os'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { recreateMtpFixtures, writeMtpDrainSentinel, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
+import { recreateMtpFixtures, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
 import {
   initMcpClient,
   mcpCall,
@@ -133,21 +133,14 @@ test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot()) // Local fixtures for cross-storage tests
   await initMcpClient(tauriPage) // Discover MCP port
 
-  // Pause the filesystem watcher before recreating MTP fixtures. Without this,
-  // the watcher may process stale deletion events after the rescan, removing
-  // objects that were just re-added.
+  // Pause the watcher, recreate fixtures on disk, then sync the virtual
+  // device's object tree via an explicit rescan. The watcher stays PAUSED
+  // (we never resume it here) so late FSEvents from the wipe+recreate can't
+  // race the test by removing freshly rescanned handles. See
+  // `src-tauri/src/mtp/DETAILS.md` § "Virtual device watcher in E2E".
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
-
-  // Recreate fixtures, then write a unique sentinel file as the LAST disk
-  // write. The backend's `resync_virtual_mtp_after_disk_change` polls the
-  // watcher for that sentinel's drop event; per-directory FS-event ordering
-  // means seeing the sentinel proves every preceding write to the same dir
-  // already drained — no fixed FSEvents-latency sleep needed.
   recreateMtpFixtures()
-  const sentinel = writeMtpDrainSentinel()
-  await tauriPage.evaluate(
-    `window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change', { sentinelSuffix: ${JSON.stringify(sentinel)} })`,
-  )
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
 
   // Force both panes back to a local volume. Previous tests may have left a pane
   // on MTP, and ensureAppReady's mcp-nav-to-path events get rejected by
@@ -1013,8 +1006,14 @@ test.describe('MTP file watching', () => {
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
 
+    // This is the one test that exercises the live-watch pipeline, so resume
+    // the watcher (the beforeEach leaves it paused). By now the beforeEach's
+    // recreate FSEvents have long drained during the pause, so resuming here
+    // only surfaces the single clean write below — no stale-event race.
+    await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('resume_virtual_mtp_watcher')`)
+
     // Write a new file directly to the backing dir (simulating external change).
-    // mtp-rs 0.6.0 watches the backing dir and emits ObjectAdded events,
+    // The virtual device watches the backing dir and emits ObjectAdded events,
     // which Cmdr's event loop picks up and sends as directory-diff to the frontend.
     fs.writeFileSync(path.join(MTP_FIXTURE_ROOT, 'internal', 'Documents', 'new-file.txt'), 'hello from external write')
 

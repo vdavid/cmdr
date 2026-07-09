@@ -82,9 +82,11 @@ against handler attachment under parallel-shard load; this path doesn't.
 ### Virtual MTP device
 
 Feature flag `virtual-mtp`. Pure-Rust MTP device backed by `/tmp/cmdr-mtp-e2e-fixtures/`. Lets MTP tests run without
-real hardware. Helpers in `apps/desktop/test/e2e-shared/mtp-fixtures.ts` and `mcp-client.ts`. The
-`resync_virtual_mtp_after_disk_change` IPC command atomically pauses the watcher, recreates fixtures, drains pending
-FSEvents, rescans, and resumes. Use it from `beforeEach`, not the four-step manual sequence (race-prone).
+real hardware. Helpers in `apps/desktop/test/e2e-shared/mtp-fixtures.ts` and `mcp-client.ts`. In `beforeEach`, pause the
+watcher (`pause_virtual_mtp_watcher`), recreate fixtures, then sync the object tree with `rescan_virtual_mtp`. The
+watcher stays PAUSED for the test body so late FSEvents from the wipe+recreate can't remove freshly rescanned handles;
+only the one test that verifies the live-watch pipeline resumes it. See `src-tauri/src/mtp/DETAILS.md` § "Virtual device
+watcher in E2E".
 
 The same device is available in a normal dev session via `CMDR_VIRTUAL_MTP=1 pnpm dev` — see
 [virtual-mtp.md](virtual-mtp.md) for the dev workflow.
@@ -154,8 +156,8 @@ the bulk `.dat` files.
 ### MTP fixtures
 
 `apps/desktop/test/e2e-shared/mtp-fixtures.ts` populates the virtual MTP device's backing dir. Use
-`recreateMtpFixtures()` for cleanup (preferably wrapped by `resync_virtual_mtp_after_disk_change` so the watcher doesn't
-race).
+`recreateMtpFixtures()` for cleanup, bracketed by `pause_virtual_mtp_watcher` before and `rescan_virtual_mtp` after so
+the watcher stays paused and can't race the reset (see the "Virtual MTP device" section above).
 
 ## Process tooling
 

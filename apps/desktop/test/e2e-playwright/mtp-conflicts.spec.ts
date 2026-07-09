@@ -13,7 +13,7 @@ import os from 'os'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
-import { recreateMtpFixtures, writeMtpDrainSentinel, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
+import { recreateMtpFixtures, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixtures.js'
 import {
   initMcpClient,
   mcpCall,
@@ -71,15 +71,12 @@ test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
   await initMcpClient(tauriPage)
 
-  // Pause watcher → recreate fixtures → settle + rescan + resume (atomic).
-  // The combined IPC drains late FSEvents while still paused; see
-  // `resync_virtual_mtp_after_disk_change` in commands/mtp.rs.
+  // Pause the watcher, recreate fixtures, then sync the object tree via an
+  // explicit rescan. The watcher stays PAUSED (not resumed) so late FSEvents
+  // can't race the test. See mtp/DETAILS.md § "Virtual device watcher in E2E".
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
   recreateMtpFixtures()
-  const sentinel = writeMtpDrainSentinel()
-  await tauriPage.evaluate(
-    `window.__TAURI_INTERNALS__.invoke('resync_virtual_mtp_after_disk_change', { sentinelSuffix: ${JSON.stringify(sentinel)} })`,
-  )
+  await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
 
   // Reset both panes to local volume; short-circuit when already clean.
   if (!(await isStateClean(tauriPage, LOCAL_VOLUME_NAME))) {

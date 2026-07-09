@@ -20,6 +20,29 @@ none of those env vars stays inert and matches a plain build; the dev opt-in is 
 `CMDR_VIRTUAL_MTP=<dir>` backs it with a custom dir. The fixture tree mirrors `test/e2e-shared/mtp-fixtures.ts`. The
 gating logic (`decide_startup_root`) is pure and unit-tested in `virtual_device.rs::tests`.
 
+### Virtual device watcher in E2E
+
+The virtual device (via mtp-rs) runs a filesystem watcher over its backing dirs that turns out-of-band disk writes into
+`ObjectAdded` / `ObjectRemoved` events. This models nothing in production MTP: real MTP has no watcher, and Cmdr treats
+MTP listings as unwatched (`listing_is_watched(path) == false` — freshness comes from explicit `notify_mutation` +
+refresh, never a watcher). The virtual watcher exists only so one E2E test can exercise Cmdr's device-event → directory-
+diff pipeline.
+
+**Contract: in E2E the watcher stays PAUSED for the whole test body.** Each MTP spec's `beforeEach` calls
+`pause_virtual_mtp_watcher`, recreates the backing-dir fixtures, then syncs the object tree with `rescan_virtual_mtp`
+(which reads the backing dir directly — disk is the source of truth). It does NOT resume. The one test that verifies the
+live-watch pipeline (`mtp.spec.ts` "detects externally added file") resumes the watcher itself right before its single
+write, by which point the `beforeEach` FSEvents have long drained during the pause.
+
+**Gotcha / why (the flake this defends against):** `notify`/FSEvents deliver events asynchronously and don't preserve
+cross-directory ordering, so if the watcher is resumed right after a fixture wipe+recreate, late REMOVE events for
+REUSED paths (`report.txt`, `DCIM/photo-001.jpg`, seeded `cancel-*.jpg`, …) arrive after the resume and delete the
+handles the rescan just re-added. The pane then lists a near-empty directory and `has_item` polls time out (rotating
+victims across the MTP shard). An earlier sentinel-drain tried to resume safely by waiting for a marker file's event,
+but a single marker can't order events across the whole tree. Keeping the watcher paused removes the resume window
+entirely; the rescan is order-independent because it reads disk, not events. Don't reintroduce a resume in the
+fixture-sync path.
+
 ## Architecture / data flow
 
 ```
