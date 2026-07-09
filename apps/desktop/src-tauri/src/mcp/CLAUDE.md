@@ -41,11 +41,9 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
   `recentErrors` `path`/`message`, every returned log line). These run on a loopback caller without filesystem read, so
   redaction is the only thing keeping home paths / SMB URIs / emails out. Don't remove it. `cmdr://logs` `filter` matches
   the RAW pre-redaction line.
-- **Interactive rebinds use bind-new-before-stop** (`rebind_interactive`, `BindMode::Exact`): bind the new listener
-  before retiring the old one, so a busy port leaves the existing server up (`McpServerOutcome::PortInUse`) and drops no
-  in-flight request; startup uses `BindMode::ProbeOnCollision`. The two stop flavors differ load-bearingly
-  (`stop_mcp_server()` abort-only vs `stop_mcp_server_and_wait()` awaits the handle before a same-port re-enable); both
-  clear the token so `validate_token` fails closed. Full lifecycle in [DETAILS.md](DETAILS.md).
+- **Interactive rebinds use bind-new-before-stop** (`rebind_interactive`, `BindMode::Exact`): a busy port leaves the
+  existing server up (`McpServerOutcome::PortInUse`) and drops no in-flight request; startup uses `ProbeOnCollision`. The
+  two stop flavors and the token-clear-on-stop are in [DETAILS.md](DETAILS.md).
 - **Live MCP control (`set_mcp_enabled`/`set_mcp_port`) only works from the settings window**; the main window's
   `settings-applier.ts` deliberately ignores these settings to avoid double-firing. An MCP tool toggling its own server
   while settings is closed saves the setting but doesn't apply until restart (acceptable; it's circular).
