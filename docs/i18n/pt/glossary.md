@@ -311,9 +311,13 @@ Cmdr browses zip/tar/7z archives like folders; this batch added the settings, me
 
 Settled while translating the Compress feature (M6, 2026-07-09):
 
-- compress (verb / control label) → `Comprimir` · pt Double Commander / Thunar / Nautilus ("Comprimir ficheiros", "A comprimir…"); Finder pt-BR has no `Finder/` dir in the pile, so the file-manager corpora carry it · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb branches.
-- compressing (progress -ing form) → `Comprimindo` (pt-BR gerund, matching the sibling `Copiando`/`Movendo`) · high. `scanTitleCompress` = "Verificando antes de comprimir...".
-- compressed (result toast) → `Comprimido` / plural `comprimidos` (past participle) · mirrors `transfer.split.clean` ("Copiado: {phrase}") and the `one`/`many`/`other` shape of `fileOnly.allDone` · high.
+- compress (verb / control label) → `Comprimir` · pt Double Commander / Thunar / Nautilus ("Comprimir ficheiros", "A
+  comprimir…"); Finder pt-BR has no `Finder/` dir in the pile, so the file-manager corpora carry it · high. Used for
+  `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb branches.
+- compressing (progress -ing form) → `Comprimindo` (pt-BR gerund, matching the sibling `Copiando`/`Movendo`) · high.
+  `scanTitleCompress` = "Verificando antes de comprimir...".
+- compressed (result toast) → `Comprimido` / plural `comprimidos` (past participle) · mirrors `transfer.split.clean`
+  ("Copiado: {phrase}") and the `one`/`many`/`other` shape of `fileOnly.allDone` · high.
 - replace (overwrite warning) → `substituí-lo` · Finder `Replace` → "Substituir" · high.
 - archive (name) → `arquivo` (pt-BR for file; the zip is a file) · high. `.zip` in straight double quotes.
 - No `sameAsSourceJustification` needed: all values differ from English.

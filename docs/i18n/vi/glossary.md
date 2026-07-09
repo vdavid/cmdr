@@ -572,9 +572,12 @@ Settled during the archive-password dialog pass (encrypted-zip unlock modal `fil
 
 Settled while translating the Compress feature (M6, 2026-07-09):
 
-- compress (verb / control label) → `Nén` · Finder `vi/macOS` ("Nén các mục", `Compress ${sources}` → "Nén ${sources}") · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb branches.
-- compressing (progress form) → `Đang nén` · derived on the sibling `Đang sao chép`/`Đang di chuyển` · high. `scanTitleCompress` = "Đang xác minh trước khi nén...".
-- compressed (result toast) → `Đã nén` · mirrors `transfer.split.clean` ("Đã sao chép {phrase}") · high. Plural uses only the `other` CLDR category (Vietnamese has no plural distinction), matching the sibling toasts.
+- compress (verb / control label) → `Nén` · Finder `vi/macOS` ("Nén các mục", `Compress ${sources}` → "Nén ${sources}")
+  · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb branches.
+- compressing (progress form) → `Đang nén` · derived on the sibling `Đang sao chép`/`Đang di chuyển` · high.
+  `scanTitleCompress` = "Đang xác minh trước khi nén...".
+- compressed (result toast) → `Đã nén` · mirrors `transfer.split.clean` ("Đã sao chép {phrase}") · high. Plural uses
+  only the `other` CLDR category (Vietnamese has no plural distinction), matching the sibling toasts.
 - replace (overwrite warning) → `thay thế` · Finder `Replace` → "Thay thế" · high.
 - archive (name) → `tệp lưu trữ` · Finder `Zip archive` → "Tệp lưu trữ Zip" · high. `.zip` in straight double quotes.
 - No `sameAsSourceJustification` needed: all values differ from English.

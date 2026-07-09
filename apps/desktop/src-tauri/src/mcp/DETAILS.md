@@ -118,7 +118,7 @@ Directory module split by test category:
 
 ### MCP action tools wait for backend ack before returning success
 
-**Decision:** Every fire-and-forget action tool waits for a typed ack signal (`AckSignal::GenerationAdvanced`, `SoftDialogAppeared`/`Disappeared`, `WindowAppeared`/`Disappeared`, `WindowCountBelow`, or `Any`) within a 1500 ms budget (5 s for the nav family) before returning `OK`. On timeout, the tool returns a `ToolError::internal` whose message names the missing signal and elapsed budget.
+**Decision:** Every fire-and-forget action tool waits for a typed ack signal (`AckSignal::GenerationAdvanced`, `GenerationAdvancedOrSoftDialog` — the one honest two-arm OR, used by auto-confirmed `compress` where the op either starts OR the confirm dialog stays open on an existing target, see `executor/ack.rs`, `SoftDialogAppeared`/`Disappeared`, `WindowAppeared`/`Disappeared`, `WindowCountBelow`, or `Any`) within a 1500 ms budget (5 s for the nav family) before returning `OK`. On timeout, the tool returns a `ToolError::internal` whose message names the missing signal and elapsed budget.
 
 **Why.** Real QA hit a paper-cut: MCP tools were returning `OK` while the FE was stalled (modal blocking input, error pane up, race during startup), so the dispatched action was silently dropped. That made MCP unreliable as an automation surface. The ack contract makes `OK` a real promise: the FE actually processed the dispatched action.
 

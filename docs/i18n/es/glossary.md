@@ -526,9 +526,14 @@ AppKit + SystemSettings, 2026-06-21).
 
 Settled while translating the Compress feature (M6, 2026-07-09):
 
-- compress (verb / control label) → `Comprimir` · Finder `es/macOS` ("Comprimir", `Compress ${sources}` → "Comprimir ${sources}") · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb branches.
-- compressing (progress -ing form) → `Comprimiendo` · derived on the sibling `Copiando`/`Moviendo` gerunds · high. Used in `titleActive`, `stageActive`; `scanTitleCompress` = "Verificando antes de comprimir...".
-- compressed (result toast) → `Se comprimió` / plural `Se comprimieron` · mirrors `transfer.split.clean` ("Se copió: {phrase}") and the `one`/`many`/`other` shape of `fileOnly.allDone` · high.
+- compress (verb / control label) → `Comprimir` · Finder `es/macOS` ("Comprimir", `Compress ${sources}` → "Comprimir
+  ${sources}") · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb
+  branches.
+- compressing (progress -ing form) → `Comprimiendo` · derived on the sibling `Copiando`/`Moviendo` gerunds · high. Used
+  in `titleActive`, `stageActive`; `scanTitleCompress` = "Verificando antes de comprimir...".
+- compressed (result toast) → `Se comprimió` / plural `Se comprimieron` · mirrors `transfer.split.clean` ("Se copió:
+  {phrase}") and the `one`/`many`/`other` shape of `fileOnly.allDone` · high.
 - replace (overwrite warning) → `reemplazará` · Finder `Replace` → "Reemplazar" · high.
-- archive (name) → rendered as `archivo` (the zip is a file; avoids the archivo≈file ambiguity of "archivo comprimido") · high. `.zip` in straight double quotes.
+- archive (name) → rendered as `archivo` (the zip is a file; avoids the archivo≈file ambiguity of "archivo comprimido")
+  · high. `.zip` in straight double quotes.
 - No `sameAsSourceJustification` needed: all values differ from English.

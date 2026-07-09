@@ -178,8 +178,8 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // bypassed; retryHint stays on so the generic dialog still offers a retry.
   archive_needs_password: { category: 'needs_action', retryHint: true },
   // Compress refused a remote destination (creating a new zip on SMB/MTP isn't
-  // supported until M8 seeds through the parent volume). Nothing to retry as-is;
-  // the user picks a local destination. Remove with the variant in M8.
+  // supported until the remote-destination work seeds through the parent volume).
+  // Nothing to retry as-is; the user picks a local destination.
   remote_archive_creation_unsupported: { category: 'needs_action', retryHint: false },
 }
 

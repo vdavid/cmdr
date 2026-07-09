@@ -609,9 +609,14 @@ ICU values, so every apostrophe is doubled in the catalog.
 
 Settled while translating the Compress feature (M6, 2026-07-09):
 
-- compress (verb / control label) → `Compresser` · Finder `fr/macOS` ("Compresser", `Compress ${sources}` → "Compresser ${sources}"), NOT "Comprimer" · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb branches.
-- compression (progress form) → noun `Compression` in the select branch, assembled with the sibling "… en cours..." tail · derived on `Copie`/`Déplacement` · high. `scanTitleCompress` = "Vérification avant la compression...".
-- compressed (result toast) → past participle `compressés` · mirrors `transfer.split.clean` ("{phrase} copiés") and the `one`/`many`/`other` shape of `fileOnly.allDone` · high.
+- compress (verb / control label) → `Compresser` · Finder `fr/macOS` ("Compresser", `Compress ${sources}` → "Compresser
+  ${sources}"), NOT "Comprimer" · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and
+  both title-verb branches.
+- compression (progress form) → noun `Compression` in the select branch, assembled with the sibling "… en cours..." tail
+  · derived on `Copie`/`Déplacement` · high. `scanTitleCompress` = "Vérification avant la compression...".
+- compressed (result toast) → past participle `compressés` · mirrors `transfer.split.clean` ("{phrase} copiés") and the
+  `one`/`many`/`other` shape of `fileOnly.allDone` · high.
 - replace (overwrite warning) → `remplacera` · Finder `Replace` → "Remplacer" · high.
-- archive (name) → `l''archive` (ICU-doubled apostrophe) · Finder `Zip archive` → "Archive ZIP" · high. `.zip` in straight double quotes.
+- archive (name) → `l''archive` (ICU-doubled apostrophe) · Finder `Zip archive` → "Archive ZIP" · high. `.zip` in
+  straight double quotes.
 - No `sameAsSourceJustification` needed: all values differ from English.

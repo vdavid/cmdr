@@ -585,9 +585,16 @@ Settled while translating the archive-password dialog keys (`fileOperations.arch
 
 Settled while translating the Compress feature (M6, 2026-07-09):
 
-- compress (verb / control label) → `Tömörítés` (verbal noun) · Finder `hu/macOS` ("Elemek tömörítése", `Compress ${sources}` → "${sources} tömörítése") · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and `titleVerbOnly`; `titleWithCounts` uses the possessive `tömörítése` to match the sibling `másolása`/`áthelyezése`.
-- compressing (progress form) → `Tömörítés` (hu reuses the noun form for the -ing state, as `Másolás`/`Áthelyezés` do) · high. `scanTitleCompress` = "Ellenőrzés a tömörítés előtt…".
-- compressed (result toast) → `tömörítve` (adverbial participle) · mirrors `transfer.split.clean` ("Másolva: {phrase}") · high.
-- replace (overwrite warning) → `lecseréli` · Finder `Replace` → "Kicserélés", verb form `lecseréli` · high. `targetWillBeOverwritten` = "Már van itt egy ilyen nevű fájl. A Cmdr lecseréli."
-- archive (name) → `archívum` · settled hu glossary + Finder "Zip archívum" · high. `.zip` in straight double quotes; the `-re` case suffix attaches to the quoted literal (".zip"-re) not to a runtime value.
+- compress (verb / control label) → `Tömörítés` (verbal noun) · Finder `hu/macOS` ("Elemek tömörítése",
+  `Compress ${sources}` → "${sources} tömörítése") · high. Used for `commands.fileCompress.label`, `toggleCompress`,
+  `confirmCompress`, and `titleVerbOnly`; `titleWithCounts` uses the possessive `tömörítése` to match the sibling
+  `másolása`/`áthelyezése`.
+- compressing (progress form) → `Tömörítés` (hu reuses the noun form for the -ing state, as `Másolás`/`Áthelyezés` do) ·
+  high. `scanTitleCompress` = "Ellenőrzés a tömörítés előtt…".
+- compressed (result toast) → `tömörítve` (adverbial participle) · mirrors `transfer.split.clean` ("Másolva: {phrase}")
+  · high.
+- replace (overwrite warning) → `lecseréli` · Finder `Replace` → "Kicserélés", verb form `lecseréli` · high.
+  `targetWillBeOverwritten` = "Már van itt egy ilyen nevű fájl. A Cmdr lecseréli."
+- archive (name) → `archívum` · settled hu glossary + Finder "Zip archívum" · high. `.zip` in straight double quotes;
+  the `-re` case suffix attaches to the quoted literal (".zip"-re) not to a runtime value.
 - No `sameAsSourceJustification` needed: all values differ from English.

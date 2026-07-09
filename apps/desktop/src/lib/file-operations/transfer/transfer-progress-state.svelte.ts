@@ -655,7 +655,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
 
   /**
    * Compress: pack the sources into a NEW zip at the target. One command handles
-   * local and (M8) remote sources; the backend seeds a valid empty zip then packs.
+   * local and (later) remote sources; the backend seeds a valid empty zip then packs.
    * The inner-conflict policy is moot (a fresh zip has no entries and two sources
    * in one folder can't share a name), so `overwrite` is a safe constant; an
    * existing target FILE was already resolved in the dialog.

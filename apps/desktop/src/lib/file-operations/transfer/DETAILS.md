@@ -228,6 +228,34 @@ Copy and Move share 95%+ of UI/flow. Differences:
 
 Parameterizing by `operationType` avoids duplication and guarantees UX consistency.
 
+### Compress mode (the Transfer dialog's third operation)
+
+Compress rides the SAME dialog/progress/state components as copy/move via a third `operationType: 'compress'`; its
+"Compress" identity is frontend-only (title, toggle, confirm label, the `file.compress` command). The backend reuses
+`WriteOperationType::ArchiveEdit` — see
+[`write_operations/DETAILS.md`](../../../../src-tauri/src/file_system/write_operations/DETAILS.md) § "Compress = seed an
+empty zip, then copy-into" for the seed mechanism. The user-visible differences from copy/move:
+
+- **The path field is a new FILE, not a destination folder.** It defaults to the other pane's folder plus a suggested
+  `<name>.zip` (`initialEditedPath` + `suggestCompressArchiveName`) and stays editable. Suggested name: single source →
+  `<basename>.zip`; multiple → `<source-directory-basename>.zip`, falling back to the first selection's basename at a
+  volume root. The extension is never stripped, so a `.zip` source becomes `data.zip.zip` (a NEW archive) and a dotted
+  folder name is never mangled. `transfer-compress-name.ts` is a pure, unit-tested helper.
+- **Dest-exists overwrite, NOT the conflict-policy UI** (decided; the multi-file skip/overwrite/rename policy is about
+  files landing INTO a folder, which is meaningless when creating ONE new file). Compress skips
+  `transfer-conflict-check` entirely and instead runs `createTransferDestExistsCheck` on the target `.zip`, surfacing a
+  yellow "a file with this name is already here — Cmdr will replace it" warning (`targetWillBeOverwritten`); the
+  conflict-policy radios never render. The inner-conflict policy passed to the backend is a fixed `overwrite` constant
+  (a fresh empty zip has no entries, and two sources in one folder can't share a name).
+- **Auto-confirm never silently overwrites (data-safety gate).** For the MCP `compress {autoConfirm}` path,
+  `handleConfirm(isAuto=true)` proceeds unattended ONLY when the target doesn't already exist; if it does, it clears
+  `confirmed` and leaves the dialog open for the user to decide. The MCP tool's composed ack
+  (`GenerationAdvancedOrSoftDialog`) honestly reflects both outcomes — see
+  [`src-tauri/src/mcp/executor/ack.rs`](../../../../src-tauri/src/mcp/executor/ack.rs). Don't refactor this gate away.
+- **Confirm routes to `compressFiles`**, not `copyBetweenVolumes`
+  (`transfer-progress-state.svelte.ts::dispatchCompress`). One command handles local and (later) remote sources; the
+  scan preview still runs for the Size bar.
+
 ### Same-FS move optimization
 
 When source and destination are on the same filesystem (checked via `metadata.dev()`), backend uses instant `rename()`.

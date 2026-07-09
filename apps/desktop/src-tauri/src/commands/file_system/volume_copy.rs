@@ -199,11 +199,12 @@ pub async fn move_between_volumes(
     .await
 }
 
-/// INTERIM guard (M2): compress creates a NEW zip by seeding a valid empty archive
+/// Interim guard: compress creates a NEW zip by seeding a valid empty archive
 /// at the target through the local filesystem, so the destination must be
 /// local-backed. A remote parent (direct SMB/MTP, `local_path() == None`) can't see
-/// that local seed, so refuse it with a typed error. M8 replaces this with a
-/// seed-through-the-parent-volume path and removes this guard and its error variant.
+/// that local seed, so refuse it with a typed error. The remote-destination
+/// milestone (M8) replaces this with a seed-through-the-parent-volume path and
+/// removes this guard and its error variant.
 fn ensure_local_compress_dest(dest_volume: &Arc<dyn Volume>, dest_zip_path: &str) -> Result<(), WriteOperationError> {
     if dest_volume.local_path().is_none() {
         return Err(WriteOperationError::RemoteArchiveCreationUnsupported {
@@ -217,7 +218,8 @@ fn ensure_local_compress_dest(dest_volume: &Arc<dyn Volume>, dest_zip_path: &str
 /// Reuses the archive-edit machinery: seed a valid empty zip, then copy the sources
 /// in as one changeset (`compress_start`). Same events as `copy_between_volumes`.
 /// Local destination only in v1 — a remote parent is refused with a typed error
-/// (`RemoteArchiveCreationUnsupported`), replaced by seed-through-Volume in M8.
+/// (`RemoteArchiveCreationUnsupported`), replaced by seed-through-Volume in the
+/// remote-destination milestone (M8).
 #[tauri::command]
 #[specta::specta]
 pub async fn compress_files(
@@ -250,7 +252,7 @@ pub async fn compress_files(
             message: format!("Destination volume '{}' not found", dest_volume_id),
         })?;
 
-    // Interim: refuse a remote destination until M8 seeds through the parent volume.
+    // Interim: refuse a remote destination until the remote work seeds through the parent volume.
     ensure_local_compress_dest(&dest_volume, &dest_zip_path)?;
 
     let config = config.unwrap_or_default();
@@ -430,8 +432,8 @@ mod tests {
 
     /// A remote (non-local-backed) compress destination is refused with the typed
     /// `RemoteArchiveCreationUnsupported` variant, not a stringly error — the
-    /// interim M2 state (M8 seeds through the parent volume). Matches on the
-    /// variant, never on a message.
+    /// interim local-only state (the remote milestone seeds through the parent
+    /// volume). Matches on the variant, never on a message.
     #[test]
     fn compress_refuses_a_remote_destination_with_a_typed_error() {
         use crate::file_system::volume::backends::InMemoryVolume;

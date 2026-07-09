@@ -134,8 +134,8 @@ pub(crate) async fn compress_start(
     // Local-only seed. A REMOTE parent would need the seed written THROUGH the
     // parent volume (the remote edit PULLS the existing `.zip` before editing, so a
     // local-FS seed is invisible to it). v1 doesn't do that — the command layer
-    // (M2) refuses a remote destination. Remote dest: see
-    // compress-feature-plan.md § Open questions (M8).
+    // refuses a remote destination. Remote dest: see
+    // compress-feature-plan.md § Decided questions (the remote-destination work, M8).
     seed_empty_zip(&dest_zip_full_path)?;
 
     route_archive_copy_into(
