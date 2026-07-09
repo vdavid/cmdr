@@ -139,34 +139,32 @@ or an LZMA variant), `Decompression → Corrupt`, `IO(UnexpectedEof) → Corrupt
 **Encryption** isn't in `rc_zip::Error` — we detect it ourselves from general-purpose flag bit 0 or the AE-x marker
 method. Browsing an encrypted archive always works (names live in the central directory). Extraction is covered below.
 
-## Decryption (zip only): a `zip`-crate seam alongside rc-zip
+## Decryption (zip): a `zip`-crate seam alongside rc-zip
 
 rc-zip parses the index but does NOT decrypt, so an encrypted entry's bytes are read through the `zip` crate (zip2)
 instead — `zip.rs`'s `run_decrypt_producer` opens a `ZipArchive` over the same `SourceReader` and calls
 `by_index_decrypt(ordinal, password)`. Two crates, one archive: rc-zip stays the index/tree authority, the `zip` crate is
-the per-entry decrypt engine.
+the per-entry decrypt engine. (7z decryption is threaded through `sevenz-rust2` instead — see below.)
 
 - **Decrypt by ORDINAL, not name.** `ZipHandle` stores each entry's zero-based central-directory position (assigned in
   `zip::parse` via `enumerate`). rc-zip and the `zip` crate both parse the SAME central directory in the SAME physical
   order, so the ordinal addresses the identical entry in `by_index_decrypt`. This sidesteps cross-crate filename-decoding
-  drift (a name that decodes differently in each crate would miss). **This alignment is the spike's one load-bearing
-  assumption — pinned by `archive_test::zip_crate_ordinals_align_with_rc_zip`** (a mixed archive, distinct per-entry
-  content, decrypt-by-ordinal must yield each entry's own bytes). It holds; if it ever breaks, fall back to
-  `by_name_decrypt` with the RAW name bytes.
-- **Scope: legacy PKWARE ZipCrypto only.** That's what macOS Archive Utility / `zip -e` produce, and it needs no cargo
-  feature. **WinZip AES** (the `Method::Aex` marker) would need the `zip` crate's `aes-crypto` feature, and **7z AES**
-  the `sevenz-rust2` `aes256` feature — both pull `aes ^0.9` (stable 0.9.1), which CONFLICTS with `smb2`'s pinned
-  `aes =0.9.0-rc.4` (its SMB3 AEAD stack), so Cargo can't unify. Until the `aes` versions align, an AES zip entry returns
-  a typed `Unsupported` (honest — not a password prompt that could never succeed), and an encrypted 7z refuses the same
-  way: `sevenz.rs::map_sevenz_err` classifies the unrecognized `AES256_SHA256` coder as `Unsupported`.
-  Flipping zip's `aes-crypto` on (plus the AES branch in `zip::open_read`, already stubbed) is the zip AES follow-up; 7z
-  AES needs more than the feature flag (see below).
-- **Wrong-password detection.** zip AES verifies a 2-byte password check at open (`InvalidPassword` → `WrongPassword`,
-  instant) — relevant once AES lands. ZipCrypto checks a single byte at open, so ~1/256 of wrong passwords slip through
-  and surface LATE as an end-of-stream CRC mismatch: the `zip` crate returns `io::ErrorKind::InvalidData` ("Invalid
-  checksum"), which `pump_decrypt` maps to `WrongPassword` by the io KIND (not the message — `no-string-matching`). No
-  password on an encrypted entry ⇒ `Encrypted` (the needs-password signal). The `ArchiveError → VolumeError` mapping (both
-  to typed `NeedsPassword { wrong_attempt }`) lives in [`../DETAILS.md`](../DETAILS.md).
+  drift (a name that decodes differently in each crate would miss). **This alignment is load-bearing — pinned by
+  `archive_test::zip_crate_ordinals_align_with_rc_zip`** (a mixed archive, distinct per-entry content, decrypt-by-ordinal
+  must yield each entry's own bytes) for ZipCrypto and by `winzip_aes_mixed_archive_decrypts_each_by_ordinal` for AES. It
+  holds; if it ever breaks, fall back to `by_name_decrypt` with the RAW name bytes.
+- **Both zip encryption kinds decrypt through this one path.** Legacy PKWARE ZipCrypto (macOS Archive Utility / `zip -e`)
+  and WinZip AES (the `Method::Aex` marker; `7z -mem=AES256`, recent WinZip) share `by_index_decrypt` — the `zip` crate
+  picks the cipher from the entry's own metadata. `aes-crypto` is enabled; `aes 0.9.1` (stable) unifies with `smb2`'s
+  SMB3 AEAD stack (the pre-release pin that once forced deferral is gone). `open_read` routes any encrypted entry (flag
+  bit 0 or AE-x) through the decrypt producer.
+- **Wrong-password detection differs by cipher.** WinZip AES carries a 2-byte password-verification value, so a wrong
+  password fails at open (`by_index_decrypt` → `ZipError::InvalidPassword` → `WrongPassword`, deterministic). ZipCrypto
+  checks a single byte at open, so ~1/256 of wrong passwords slip through and surface LATE as an end-of-stream CRC
+  mismatch: `io::ErrorKind::InvalidData`, which `pump_decrypt` maps to `WrongPassword` by the io KIND (not the message —
+  `no-string-matching`); the same late path also catches an AES HMAC failure. No password on an encrypted entry ⇒
+  `Encrypted` (the needs-password signal). The `ArchiveError → VolumeError` mapping (both to typed
+  `NeedsPassword { wrong_attempt }`) lives in [`../DETAILS.md`](../DETAILS.md).
 
 ## Filename encoding
 
@@ -207,16 +205,21 @@ at offset 0 — a plain tar's `ustar` at offset 257, so the confirm reads a 512-
 streaming `.xz` reader `lzma-rs` lacks), zstd → `ruzstd`'s `StreamingDecoder`. Each handles concatenated members
 (`gzip -c a b`). tar parsing/streaming rides the `tar` crate over a `SourceReader` (a `Read`+`Seek` cursor on the byte
 source); 7z uses `sevenz-rust2`'s `ArchiveReader` (needs `Read`+`Seek`, hence `SourceReader`). LZMA/LZMA2 (the common 7z
-codec) is built into `sevenz-rust2`; `bzip2`/`deflate`/`ppmd` are feature-enabled. `aes256` is OFF, so an AES-encrypted
-7z has an unrecognized coder: `sevenz-rust2` returns `UnsupportedCompressionMethod("AES256_SHA256")` — at open
-(`ArchiveReader::new`) for a header-encrypted archive (`7z -mhe=on`, browsing itself refused), at decode
-(`for_each_entries`) for a data-encrypted one (`7z -mhe=off`, browsing works, extraction refused). `map_sevenz_err`
-classifies both (plus the `aes256`-on-only `PasswordRequired` / `MaybeBadPassword`) as `Unsupported` → `NotSupported`:
-the honest "can't open this kind", NOT `Corrupt` ("damaged") and NOT `Encrypted` (a password prompt a 7z read can never
-satisfy here). Pinned by `sevenz_test.rs`. (Verified on sevenz-rust2 0.21.2, `aes256` off, against real `7z` fixtures,
-2026-07-08.) Enabling it isn't a one-line feature flip: `sevenz-rust2` needs the password at `ArchiveReader::new` time
-(a `Password`, not `Password::empty()`), so a real 7z-AES path must thread a per-archive password through `parse` AND
-every `open_read` / `stream_subtree` re-open — the parse/read plumbing zip's ZipCrypto path already has, which 7z lacks.
+codec) is built into `sevenz-rust2`; `bzip2`/`deflate`/`ppmd` are feature-enabled.
+
+**7z decryption (`aes256` on).** A per-archive password threads through `sevenz.rs`'s `parse` AND every re-open
+(`SevenZStore::open_read` → `stream_entry`, `stream_subtree`) — each takes `Option<&str>` and builds a `Password` (empty
+⇒ plaintext). Two shapes: CONTENT-encrypted (`7z -mhe=off`) has a plaintext header, so `parse` (browsing) works with no
+password and only extraction needs one; HEADER-encrypted (`7z -mhe=on`) encrypts the metadata, so `parse` itself needs
+the password. `map_sevenz_err` types the crate's signals: `PasswordRequired` ⇒ `Encrypted` (the prompt), an unknown
+coder ⇒ `Unsupported`, structural faults ⇒ `Corrupt`. Wrong-password is the subtle case: 7z AES has NO password verifier
+(unlike zip AES), so a wrong password decrypts to garbage that first fails a downstream integrity check
+(`ChecksumVerificationFailed`, mid-stream wrapped in `io::Error::other`). `map_sevenz_err_pw` / `map_stream_err` recover
+the wrapped TYPED error (`io::Error::downcast`, never a message match) and — because a password WAS supplied — type it
+`WrongPassword` rather than `Corrupt`; the pump helpers (`reader.rs`) take an io-error classifier so tar keeps plain
+`ArchiveError::from` while 7z gets this password-aware mapping. Pinned by `multiformat_test`'s `sevenz_*_encrypted_*`
+cases (content + header, right/wrong/no password, plus a solid-block subtree extract) and by the volume-layer
+`header_encrypted_7z_*` tests. (Verified on sevenz-rust2 0.21.2, `aes256` on, against writer-built AES fixtures.)
 
 **Access class — the sequential trap (`ArchiveFormat::is_sequential`, `Volume::extraction_is_sequential`).** A plain
 `.tar` is RANDOM-access: `TarStore` records each member's data offset, so `open_read` seeks and streams the member's

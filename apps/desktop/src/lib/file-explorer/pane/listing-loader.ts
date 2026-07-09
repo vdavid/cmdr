@@ -124,6 +124,19 @@ export interface ListingLoaderDeps {
   onVolumeChange?: (volumeId: string, volumePath: string, targetPath: string) => void
   onMtpFatalError?: (error: string) => void
   onCancelLoading?: (cancelledPath: string, selectName?: string) => void
+  /**
+   * A header-encrypted archive (a `-mhe=on` 7z) needs its password even to LIST
+   * it: the whole metadata is encrypted. Fired instead of leaving only the
+   * fallback error pane, so the parent can raise the browse-time password prompt.
+   * `retry` re-lists the SAME directory (after the password is stored the re-list
+   * succeeds); `wrongAttempt` swaps the prompt copy after a rejected password.
+   */
+  onArchiveNeedsPassword?: (info: {
+    volumeId: string
+    archivePath: string
+    wrongAttempt: boolean
+    retry: () => void
+  }) => void
 }
 
 export interface ListingLoader {
@@ -354,6 +367,24 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
                   // be visually displayed but absent from history, so Back would
                   // skip over it. `pushPath` deduplicates same-path retries.
                   deps.onPathChange?.(loadPath)
+
+                  // A header-encrypted archive needs its password even to LIST it.
+                  // Raise the browse-time password prompt ON TOP of the fallback
+                  // error pane rendered above: on submit `retry` re-lists this same
+                  // path (which now succeeds); on cancel the prompt closes and the
+                  // "This archive needs a password" pane stays put (the user simply
+                  // doesn't get in).
+                  const reason = payload.error?.reason
+                  if (reason?.reason === 'archiveNeedsPassword') {
+                    deps.onArchiveNeedsPassword?.({
+                      volumeId: deps.getVolumeId(),
+                      archivePath: loadPath,
+                      wrongAttempt: reason.wrongAttempt,
+                      retry: () => {
+                        void loadDirectory(loadPath)
+                      },
+                    })
+                  }
                 }
               })
             }

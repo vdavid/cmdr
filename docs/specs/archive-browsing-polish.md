@@ -18,30 +18,30 @@ Per-file progress stays honest, cancel-between-entries works, and zip / plain `.
 path unchanged. Mechanism: archive `read/DETAILS.md` § "One-pass subtree extract" and
 `write_operations/transfer/DETAILS.md` § "One-pass sequential extract".
 
-## 2. Encrypted archives: password-prompt extraction (UX, user-visible) — ZipCrypto SHIPPED 2026-07-08, AES deferred
+## 2. Encrypted archives: password-prompt extraction (UX, user-visible) — SHIPPED (ZipCrypto 2026-07-08, WinZip AES + 7z AES 2026-07-09)
 
-Extracting from a legacy PKWARE ZipCrypto zip (what macOS Archive Utility / `zip -e` produce) now works end to end:
-copying or moving a source out of an encrypted zip surfaces a password prompt, stores the password per-archive, and
-re-dispatches the operation so the extract decrypts. A wrong password re-prompts (caught at open, or late at
-end-of-stream CRC, so the re-prompt can arrive mid-transfer too); cancel forgets the password and settles the operation.
-Backend half (decrypt in the read path, the typed `ArchiveNeedsPassword` signal, per-archive password storage): archive
-`read/DETAILS.md` § "Decryption" and archive `DETAILS.md` § "Password-protected archives". Frontend half (the
-`ArchivePasswordDialog`, the interception + re-dispatch seam, the mid-transfer wrong-password case): transfer
-`DETAILS.md` § "Archive-password prompt".
+Extracting from a password-protected archive works end to end for every kind Cmdr browses: legacy PKWARE ZipCrypto (what
+macOS Archive Utility / `zip -e` produce), WinZip AES-128/256 (`7z -mem=AES256`, recent WinZip), and 7z AES (content- and
+header-encrypted). Copying or moving a source out surfaces a password prompt, stores the password per-archive, and
+re-dispatches the operation so the extract decrypts. A wrong password re-prompts (caught at open for AES's verifier, or
+late at end-of-stream CRC for ZipCrypto / a 7z integrity check, so the re-prompt can arrive mid-transfer too); cancel
+forgets the password. Backend half (decrypt in the read path, the typed `ArchiveNeedsPassword` signal, per-archive
+password storage): archive `read/DETAILS.md` § "Decryption" and archive `DETAILS.md` § "Password-protected archives".
+Frontend half (the `ArchivePasswordDialog`, the interception + re-dispatch seam, the mid-transfer wrong-password case):
+transfer `DETAILS.md` § "Archive-password prompt".
 
-**WinZip AES zip and 7z AES still deferred.** Enabling the `aes` crate (zip `aes-crypto` / sevenz `aes256`) pulls stable
-`aes 0.9.1`, which conflicts with `smb2`'s pinned `aes =0.9.0-rc.4` (its SMB3 AEAD stack) — Cargo can't unify. Both AES
-kinds refuse honestly as `Unsupported` today (never "damaged", never a prompt that can't succeed): zip via the stubbed
-AES branch in `zip::open_read`, 7z via `sevenz.rs::map_sevenz_err` (the unrecognized `AES256_SHA256` coder). The two
-follow-ups differ in size once the `aes` versions align:
+**Header-encrypted 7z prompts at BROWSE time.** A `7z -mhe=on` archive encrypts its own metadata, so even LISTING needs
+the password. This flows through a dedicated `ListingErrorReason::ArchiveNeedsPassword` (not the unreadable-archive
+reason); the frontend listing-loader raises the same `ArchivePasswordDialog` at browse time and re-lists on unlock.
+Content-encrypted 7z and both AES zip kinds list fine and prompt only on extract, via the existing transfer path.
 
-- **WinZip AES zip is close to a one-line flip:** turn on `aes-crypto` and fill the already-stubbed AES branch — the
-  password plumbing (per-archive storage, prompt, re-dispatch, wrong-password detection) is the same ZipCrypto path,
-  already shipped.
-- **7z AES is NOT a one-line flip.** Beyond the `aes256` feature, `sevenz-rust2` wants the password at
-  `ArchiveReader::new` time, so a real 7z-AES path must thread a per-archive password through `read/sevenz.rs`'s `parse`
-  AND every `open_read` / `stream_subtree` re-open (each currently passes `Password::empty()`), then surface `Encrypted`
-  / `WrongPassword` from `map_sevenz_err` instead of `Unsupported`. That's new parse/read plumbing, not a flag.
+**How the `aes` conflict was resolved.** The old deferral was `smb2`'s pinned pre-release `aes =0.9.0-rc.4`. `smb2 0.12.1`
+relaxed to stable `aes 0.9.1`, which unifies with zip's `aes-crypto` and sevenz's `aes256`. 7z also needed real
+plumbing (not just the flag): a per-archive password threads through `sevenz.rs`'s `parse` AND every
+`open_read` / `stream_subtree` re-open, with `PasswordRequired`/`MaybeBadPassword`/wrapped-checksum errors typed as
+`Encrypted`/`WrongPassword`.
+
+**Genuinely still deferred:** nothing in this item. (7z remains read-only — encrypted-7z WRITING was never in scope.)
 
 ## 3. Fast tail-add zip edits (perf) — design settled by spike, implementation deferred
 

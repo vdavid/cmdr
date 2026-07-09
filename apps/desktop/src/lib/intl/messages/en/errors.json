@@ -984,6 +984,25 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
 
+  "errors.listing.archiveNeedsPassword.title": "This archive needs a password",
+  "errors.listing.archiveNeedsPassword.explanation": "This archive is protected, so its contents stay locked until you unlock it.",
+  "errors.listing.archiveNeedsPassword.suggestion": "Enter the password to browse it.",
+  "@errors.listing.archiveNeedsPassword.title": {
+    "description": "Title of the listing error panel shown as a fallback when browsing into a password-protected archive whose metadata is encrypted (a header-encrypted archive) needs the password even to list its contents. Plain text. \"archive\" = a zip or 7z file Cmdr browses like a folder. A password prompt normally appears first; this panel is the fallback if the prompt is dismissed.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.archiveNeedsPassword.explanation": {
+    "description": "Body of the listing error panel when a password-protected archive can't be browsed until it's unlocked. Markdown.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.archiveNeedsPassword.suggestion": {
+    "description": "Recovery suggestion telling the user to enter the archive's password to browse it. Markdown.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+
   "errors.listing.emptyRootICloud.title": "iCloud Drive looks empty",
   "errors.listing.emptyRootICloud.explanation": "Cmdr opened iCloud Drive but it came back with no files. macOS hides iCloud Drive contents from apps that don't have **{full_disk_access}**, so granting Cmdr that permission is the most likely fix.\n\nIf your iCloud Drive really is empty, you can ignore this hint.",
   "errors.listing.emptyRootICloud.suggestion": "Here's what to try:\n- Open [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) and pick **{full_disk_access}**\n- Add Cmdr (use the **+** button) and toggle it on\n- Quit and reopen Cmdr\n- Come back here to retry",

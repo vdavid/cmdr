@@ -623,6 +623,18 @@
   "@errors.listing.archiveUnreadable.suggestion": {
     "sourceHash": "67b7e70"
   },
+  "errors.listing.archiveNeedsPassword.title": "Dit archief vereist een wachtwoord",
+  "@errors.listing.archiveNeedsPassword.title": {
+    "sourceHash": "d6d0ad4"
+  },
+  "errors.listing.archiveNeedsPassword.explanation": "Dit archief is beveiligd, dus de inhoud blijft vergrendeld totdat je het ontgrendelt.",
+  "@errors.listing.archiveNeedsPassword.explanation": {
+    "sourceHash": "f566496"
+  },
+  "errors.listing.archiveNeedsPassword.suggestion": "Voer het wachtwoord in om erin te bladeren.",
+  "@errors.listing.archiveNeedsPassword.suggestion": {
+    "sourceHash": "4043af6"
+  },
   "errors.listing.emptyRootICloud.title": "iCloud Drive lijkt leeg",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

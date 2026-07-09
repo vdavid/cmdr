@@ -123,9 +123,9 @@ impl EntryStore {
     /// path. The caller ([`ArchiveIndex::open_read`]) has confirmed it's a file,
     /// not a directory, and passes the tree's `size` so every format reports the
     /// same uncompressed total for progress. `password` decrypts an encrypted zip
-    /// entry (ZipCrypto); it's ignored for a plaintext entry, for tar (never
-    /// encrypted), and for 7z (AES decrypt deferred). Maps a missing handle to
-    /// `NotFound`.
+    /// entry (ZipCrypto or WinZip AES) or a content-encrypted 7z entry; it's
+    /// ignored for a plaintext entry and for tar (never encrypted). Maps a missing
+    /// handle to `NotFound`.
     fn open_read(
         &self,
         inner: &str,
@@ -141,7 +141,7 @@ impl EntryStore {
                 super::zip::open_read(handle, source, password.map(str::as_bytes))
             }
             EntryStore::Tar(store) => store.open_read(inner, size, source),
-            EntryStore::SevenZ(store) => store.open_read(inner, size, source),
+            EntryStore::SevenZ(store) => store.open_read(inner, size, source, password),
         }
     }
 }
@@ -204,11 +204,16 @@ impl ArchiveIndex {
     /// directory (zip central directory, one tar scan, or the 7z header),
     /// sanitizes names identically for every format, and synthesizes the tree.
     ///
-    /// No password is needed to build the index: browsing an encrypted zip works
-    /// (names live in the central directory), and decryption happens later, per
-    /// entry, at [`open_read`](Self::open_read). (A HEADER-encrypted 7z would need
-    /// a password here, but 7z decrypt is deferred — see [`super::sevenz`].)
-    pub fn parse(source: Arc<dyn ArchiveByteSource>, format: ArchiveFormat) -> Result<Self, ArchiveError> {
+    /// `password` is needed only to build the index of a HEADER-encrypted 7z
+    /// (`-mhe=on`), whose metadata is itself encrypted. Browsing every other
+    /// archive needs none: a zip's names live in the plaintext central directory,
+    /// a content-encrypted 7z has a plaintext header, and decryption happens later,
+    /// per entry, at [`open_read`](Self::open_read).
+    pub fn parse(
+        source: Arc<dyn ArchiveByteSource>,
+        format: ArchiveFormat,
+        password: Option<&str>,
+    ) -> Result<Self, ArchiveError> {
         match format {
             ArchiveFormat::Zip => {
                 let entries = super::zip::parse(source.as_ref())?;
@@ -220,7 +225,7 @@ impl ArchiveIndex {
                     .into_index(|members| EntryStore::Tar(super::tar::TarStore::new(codec, members))))
             }
             ArchiveFormat::SevenZ => {
-                let (entries, meta) = super::sevenz::parse(source)?;
+                let (entries, meta) = super::sevenz::parse(source, password)?;
                 Ok(build_index(entries)?
                     .into_index(|members| EntryStore::SevenZ(super::sevenz::SevenZStore::new(meta, members))))
             }
@@ -316,6 +321,7 @@ impl ArchiveIndex {
         &self,
         inner_path: &str,
         source: Arc<dyn ArchiveByteSource>,
+        password: Option<&str>,
     ) -> super::extract::SubtreeExtractReader {
         let root = normalize_lookup(inner_path);
         let mut wanted: HashMap<String, u64> = HashMap::new();
@@ -345,7 +351,7 @@ impl ArchiveIndex {
             }
         }
 
-        super::extract::SubtreeExtractReader::spawn(&self.store, source, wanted)
+        super::extract::SubtreeExtractReader::spawn(&self.store, source, wanted, password)
     }
 }
 

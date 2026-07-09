@@ -75,6 +75,26 @@ pub fn build_zip(entries: &[FixtureFile]) -> Vec<u8> {
     writer.finish().unwrap().into_inner()
 }
 
+/// Serializes a zip whose flagged entries are WinZip-AES-encrypted (AE-2) with
+/// `password` at the given key size, using the `zip` crate's own writer (the
+/// `aes-crypto` feature the production decrypt path also relies on). Entry order
+/// is preserved, so each entry's central-directory ordinal is its index here —
+/// what the AES ordinal-alignment test relies on. Unlike ZipCrypto (hand-rolled
+/// below for an independent-implementation cross-check), AES has no trivial
+/// hand-serialization, so the writer is the fixture source.
+pub fn build_aes_zip(entries: &[CryptoFixtureFile], password: &str, mode: zip::AesMode) -> Vec<u8> {
+    let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+    for entry in entries {
+        let mut opts = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        if entry.encrypted {
+            opts = opts.with_aes_encryption(mode, password);
+        }
+        writer.start_file(&*entry.name, opts).unwrap();
+        writer.write_all(&entry.content).unwrap();
+    }
+    writer.finish().unwrap().into_inner()
+}
+
 /// Replaces every occurrence of `from` with `to` in `bytes`. Requires equal
 /// length so header offsets and record sizes are preserved (patching a name in
 /// both its local and central-directory headers without shifting the layout).
@@ -125,13 +145,13 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 // ── Legacy PKWARE ZipCrypto fixtures ─────────────────────────────────────────
 //
 // The `zip` crate can't WRITE ZipCrypto from external code (its
-// `with_deprecated_encryption` is `pub(crate)`, and AES writing needs the
-// `aes-crypto` feature we don't enable), so a minimal, spec-correct STORED-entry
-// serializer builds encrypted fixtures here. ZipCrypto is a fixed, simple stream
-// cipher, so this stays compatible with the `zip` crate's `by_index_decrypt` (the
-// production read path) and with rc-zip's central-directory parse. STORED only
-// (compressed == uncompressed) keeps the serializer trivial; the decrypt path is
-// identical for stored and deflated entries.
+// `with_deprecated_encryption` is `pub(crate)`), so a minimal, spec-correct
+// STORED-entry serializer builds encrypted fixtures here. ZipCrypto is a fixed,
+// simple stream cipher, so this stays compatible with the `zip` crate's
+// `by_index_decrypt` (the production read path) and with rc-zip's central-directory
+// parse. STORED only (compressed == uncompressed) keeps the serializer trivial; the
+// decrypt path is identical for stored and deflated entries. (AES fixtures, by
+// contrast, use the `zip` writer directly — see [`build_aes_zip`].)
 
 /// One entry for [`build_zipcrypto_zip`]: name, plaintext content, and whether to
 /// ZipCrypto-encrypt it (so a single fixture can mix encrypted and plain entries).
@@ -247,6 +267,34 @@ pub fn build_zipcrypto_zip(entries: &[CryptoFixtureFile], password: &str) -> Vec
     body.extend_from_slice(&cd_offset.to_le_bytes());
     body.extend_from_slice(&0u16.to_le_bytes()); // comment len
     body
+}
+
+// ── AES-encrypted 7z fixtures ────────────────────────────────────────────────
+//
+// Built with `sevenz-rust2`'s writer (dev-only `compress` + `aes256` features);
+// the shipped path stays decode-only. Round-tripping through the same crate the
+// read path decodes with is enough to exercise the decrypt seam — 7z AES is a
+// fixed spec (`AES256_SHA256`), so the writer output matches what `7z` produces.
+
+/// Builds an AES-256-encrypted 7z with `password`. `encrypt_header` picks the two
+/// real shapes `7z` produces: `false` = content-encrypted (`-mhe=off`; the metadata
+/// header stays plaintext, so listing needs no password, only extraction does);
+/// `true` = header-encrypted (`-mhe=on`; the metadata is itself encrypted, so even
+/// listing needs the password). Content methods run compress-then-encrypt.
+pub fn build_encrypted_7z(files: &[(&str, &[u8])], password: &str, encrypt_header: bool) -> Vec<u8> {
+    use sevenz_rust2::encoder_options::AesEncoderOptions;
+    use sevenz_rust2::{EncoderConfiguration, EncoderMethod, Password};
+    let mut writer = sevenz_rust2::ArchiveWriter::new(Cursor::new(Vec::new())).expect("7z writer");
+    writer.set_content_methods(vec![
+        EncoderConfiguration::new(EncoderMethod::LZMA2),
+        AesEncoderOptions::new(Password::new(password)).into(),
+    ]);
+    writer.set_encrypt_header(encrypt_header);
+    for (name, data) in files {
+        let entry = sevenz_rust2::ArchiveEntry::new_file(name);
+        writer.push_archive_entry(entry, Some(*data)).expect("push entry");
+    }
+    writer.finish().expect("finish 7z").into_inner()
 }
 
 /// The traditional PKWARE ZipCrypto stream cipher (three 32-bit keys). Matches

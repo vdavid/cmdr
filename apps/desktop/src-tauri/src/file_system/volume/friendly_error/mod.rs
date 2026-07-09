@@ -36,7 +36,9 @@ use crate::file_system::git::friendly::FriendlyGitErrorKind;
 // unchanged for callers regardless of how the module is split internally.
 pub use empty_root::listing_error_for_restricted_empty_root;
 pub use provider::{Provider, enrich_with_provider};
-pub use volume_error::{archive_unreadable_listing_error, listing_error_from_volume_error};
+pub use volume_error::{
+    archive_needs_password_listing_error, archive_unreadable_listing_error, listing_error_from_volume_error,
+};
 
 // ============================================================================
 // Data model
@@ -205,6 +207,16 @@ pub enum ListingErrorReason {
     /// classified at the listing seam from the path + error kind, not from a
     /// dedicated `VolumeError`.
     ArchiveUnreadable,
+    /// Browsing a HEADER-encrypted archive (a `-mhe=on` 7z) failed because its
+    /// metadata is itself encrypted, so even listing needs the password. The FE
+    /// renders the password prompt (not an error pane); `wrong_attempt` swaps the
+    /// copy to "that password didn't work" after a rejected try. Distinct from
+    /// `ArchiveUnreadable` (which is unrecoverable) — this one is retried by
+    /// supplying the password and re-navigating. (Content-encrypted archives list
+    /// fine and prompt only on extract, via the transfer path.)
+    ArchiveNeedsPassword {
+        wrong_attempt: bool,
+    },
     // ── empty-root hint ──
     EmptyRootICloud,
     // ── git (wire-only; FE routes to its parallel git factory) ──
@@ -493,15 +505,21 @@ mod tests {
                 |r| matches!(r, ListingErrorReason::IoSerious { .. }),
             ),
             (
-                // A password-protected archive never fails on the LISTING path in
-                // the ZipCrypto-only build (browsing an encrypted zip works; only
-                // extraction needs a password, on the write-op path). Its listing
-                // arm exists for exhaustiveness and falls back to the existing
-                // "unreadable archive" reason.
+                // A HEADER-encrypted archive fails browsing with `NeedsPassword`
+                // (its metadata is encrypted); the listing arm surfaces the dedicated
+                // needs-password reason the FE renders as a prompt, NeedsAction so
+                // it's recoverable by supplying the password.
                 VolumeError::NeedsPassword { wrong_attempt: false },
-                ErrorCategory::Serious,
+                ErrorCategory::NeedsAction,
                 false,
-                |r| matches!(r, ListingErrorReason::ArchiveUnreadable),
+                |r| matches!(r, ListingErrorReason::ArchiveNeedsPassword { wrong_attempt: false }),
+            ),
+            (
+                // The retry case carries `wrong_attempt: true` through to the FE copy.
+                VolumeError::NeedsPassword { wrong_attempt: true },
+                ErrorCategory::NeedsAction,
+                false,
+                |r| matches!(r, ListingErrorReason::ArchiveNeedsPassword { wrong_attempt: true }),
             ),
         ];
 

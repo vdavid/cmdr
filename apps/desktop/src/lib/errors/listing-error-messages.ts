@@ -113,6 +113,8 @@ export type ListingErrorReason =
   | { reason: 'isADirectory'; path: string }
   // ── archive (browsing a `.zip` that can't be read) ──
   | { reason: 'archiveUnreadable' }
+  // ── archive (a header-encrypted archive needs its password even to list it) ──
+  | { reason: 'archiveNeedsPassword'; wrongAttempt: boolean }
   // ── empty-root hint ──
   | { reason: 'emptyRootICloud' }
 

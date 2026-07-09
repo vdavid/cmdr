@@ -4,8 +4,8 @@
 use std::sync::Arc;
 
 use super::super::test_fixtures::{
-    build_zip, build_zipcrypto_zip, deflated, dir, encrypted_entry, overstate_record_count, patch_equal_len,
-    plain_entry, set_first_entry_encrypted, stored, zip64_stored,
+    build_aes_zip, build_zip, build_zipcrypto_zip, deflated, dir, encrypted_entry, overstate_record_count,
+    patch_equal_len, plain_entry, set_first_entry_encrypted, stored, zip64_stored,
 };
 use super::*;
 
@@ -15,7 +15,7 @@ fn bytes_source(bytes: Vec<u8>) -> Arc<dyn ArchiveByteSource> {
 
 fn parse(bytes: &[u8]) -> Result<ArchiveIndex, ArchiveError> {
     let src = BytesSource::new(bytes.to_vec());
-    ArchiveIndex::parse(Arc::new(src), ArchiveFormat::Zip)
+    ArchiveIndex::parse(Arc::new(src), ArchiveFormat::Zip, None)
 }
 
 fn names(index: &ArchiveIndex, dir_path: &str) -> Vec<String> {
@@ -214,6 +214,94 @@ async fn mixed_archive_plain_entries_extract_without_password() {
     // The encrypted sibling still needs one.
     let err = index.open_read("locked.txt", src, None).unwrap_err();
     assert!(matches!(err, ArchiveError::Encrypted), "got {err:?}");
+}
+
+// ---- WinZip AES decryption (AE-2; what `7z -mem=AES256` / recent WinZip make) ----
+
+#[tokio::test]
+async fn winzip_aes256_entry_decrypts_with_correct_password() {
+    let zip = build_aes_zip(
+        &[encrypted_entry("secret.txt", "classified payload")],
+        "hunter2",
+        ::zip::AesMode::Aes256,
+    );
+    let index = parse(&zip).unwrap();
+    // The AE-x marker method flags the entry encrypted in the central directory.
+    assert!(index.has_encrypted_entries());
+    assert!(index.get("secret.txt").unwrap().encrypted);
+
+    let src = bytes_source(zip);
+    let mut reader = index.open_read("secret.txt", src, Some("hunter2")).unwrap();
+    let (data, _) = read_all(&mut reader).await.unwrap();
+    assert_eq!(data, b"classified payload", "correct password must yield the plaintext");
+}
+
+#[tokio::test]
+async fn winzip_aes128_entry_decrypts_with_correct_password() {
+    let zip = build_aes_zip(
+        &[encrypted_entry("secret.txt", "aes-128 body")],
+        "pw",
+        ::zip::AesMode::Aes128,
+    );
+    let index = parse(&zip).unwrap();
+    let src = bytes_source(zip);
+    let mut reader = index.open_read("secret.txt", src, Some("pw")).unwrap();
+    let (data, _) = read_all(&mut reader).await.unwrap();
+    assert_eq!(data, b"aes-128 body");
+}
+
+#[tokio::test]
+async fn winzip_aes_wrong_password_is_typed_wrong_password() {
+    let zip = build_aes_zip(
+        &[encrypted_entry("secret.txt", "classified payload")],
+        "hunter2",
+        ::zip::AesMode::Aes256,
+    );
+    let index = parse(&zip).unwrap();
+    let src = bytes_source(zip);
+    // AES carries a 2-byte password-verification value, so a wrong password is
+    // caught deterministically at open (no ZipCrypto-style 1/256 false-accept) and
+    // surfaces as the typed WrongPassword the frontend re-prompts on.
+    let mut reader = index.open_read("secret.txt", src, Some("wrong-password")).unwrap();
+    let err = read_all(&mut reader).await.unwrap_err();
+    assert!(matches!(err, ArchiveError::WrongPassword), "got {err:?}");
+}
+
+#[tokio::test]
+async fn winzip_aes_no_password_is_the_encrypted_signal() {
+    let zip = build_aes_zip(&[encrypted_entry("secret.txt", "x")], "hunter2", ::zip::AesMode::Aes256);
+    let index = parse(&zip).unwrap();
+    let src = bytes_source(zip);
+    let err = index.open_read("secret.txt", src, None).unwrap_err();
+    assert!(matches!(err, ArchiveError::Encrypted), "got {err:?}");
+}
+
+/// The AES analogue of [`zip_crate_ordinals_align_with_rc_zip`]: a mixed archive
+/// interleaves AES entries at several ordinals with plain ones, each with DISTINCT
+/// content, so a misaligned ordinal decrypts the WRONG entry and a content mismatch
+/// catches it. Also confirms plain entries in an AES-bearing archive read with no
+/// password.
+#[tokio::test]
+async fn winzip_aes_mixed_archive_decrypts_each_by_ordinal() {
+    let entries = [
+        plain_entry("a-plain.txt", "alpha"),
+        encrypted_entry("b-secret.txt", "bravo-secret-body"),
+        plain_entry("c-plain.txt", "charlie"),
+        encrypted_entry("d-secret.txt", "delta-secret-body"),
+    ];
+    let zip = build_aes_zip(&entries, "pw", ::zip::AesMode::Aes256);
+    let index = parse(&zip).unwrap();
+    let src = bytes_source(zip);
+    for entry in &entries {
+        let password = entry.encrypted.then_some("pw");
+        let mut reader = index.open_read(&entry.name, Arc::clone(&src), password).unwrap();
+        let (data, _) = read_all(&mut reader).await.unwrap();
+        assert_eq!(
+            data, entry.content,
+            "entry '{}' decoded wrong bytes — AES ordinal misalignment",
+            entry.name
+        );
+    }
 }
 
 #[test]
@@ -427,15 +515,15 @@ fn cache_reuses_index_then_invalidates_on_change() {
     std::fs::write(&path, build_zip(&[stored("one.txt", "1")])).unwrap();
 
     let cache = ArchiveIndexCache::new();
-    let first = cache.index_for_local(&path, ArchiveFormat::Zip).unwrap();
-    let second = cache.index_for_local(&path, ArchiveFormat::Zip).unwrap();
+    let first = cache.index_for_local(&path, ArchiveFormat::Zip, None).unwrap();
+    let second = cache.index_for_local(&path, ArchiveFormat::Zip, None).unwrap();
     assert!(Arc::ptr_eq(&first, &second), "same file must hit the cache");
     assert_eq!(cache.len(), 1);
     assert_eq!(names(&first, ""), vec!["one.txt"]);
 
     // Rewrite the archive with a different entry set (different size ⇒ new key).
     std::fs::write(&path, build_zip(&[stored("two.txt", "22"), stored("three.txt", "333")])).unwrap();
-    let third = cache.index_for_local(&path, ArchiveFormat::Zip).unwrap();
+    let third = cache.index_for_local(&path, ArchiveFormat::Zip, None).unwrap();
     assert!(!Arc::ptr_eq(&first, &third), "an external edit must miss the cache");
     assert_eq!(names(&third, ""), vec!["three.txt", "two.txt"]);
 
@@ -449,7 +537,7 @@ fn cache_reports_a_typed_error_for_a_non_archive_file() {
     let path = std::env::temp_dir().join(format!("cmdr-archive-bad-{}.bin", uuid::Uuid::new_v4()));
     std::fs::write(&path, b"not a zip").unwrap();
     let cache = ArchiveIndexCache::new();
-    let err = cache.index_for_local(&path, ArchiveFormat::Zip).unwrap_err();
+    let err = cache.index_for_local(&path, ArchiveFormat::Zip, None).unwrap_err();
     assert!(matches!(err, ArchiveError::NotAnArchive), "got {err:?}");
     let _ = std::fs::remove_file(&path);
 }

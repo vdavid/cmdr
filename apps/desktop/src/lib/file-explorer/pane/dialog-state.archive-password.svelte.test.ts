@@ -110,6 +110,7 @@ describe('archive-password interception', () => {
       wrongAttempt: false,
       parentVolumeId: 'root',
       archivePath: '/Users/me/secret.zip/inner/report.pdf',
+      mode: 'transfer',
     })
   })
 
@@ -172,5 +173,73 @@ describe('archive-password cancel → settle', () => {
     expect(dialogs.transferProgressProps).toBeNull()
     expect(rightPane.spies.clearSelection).toHaveBeenCalled()
     expect(onRefocus).toHaveBeenCalled()
+  })
+})
+
+// Browse path: a directory listing of a header-encrypted archive needs the
+// password even to list it (no transfer op involved). `showArchivePasswordForBrowse`
+// opens the prompt; submit stores the password and re-lists via `retry`; cancel
+// forgets the password and leaves the fallback error pane in place.
+describe('archive-password browse path', () => {
+  const browseInfo = (wrongAttempt: boolean, retry = vi.fn()) => ({
+    volumeId: 'root',
+    archivePath: '/Users/me/locked.7z',
+    wrongAttempt,
+    retry,
+  })
+
+  it('opens the prompt in browse mode from a listing failure', () => {
+    const { dialogs } = makeState()
+    dialogs.showArchivePasswordForBrowse(browseInfo(false))
+
+    expect(dialogs.showArchivePasswordDialog).toBe(true)
+    // Browse mode carries no transfer op.
+    expect(dialogs.transferProgressProps).toBeNull()
+    expect(dialogs.archivePasswordProps).toMatchObject({
+      archiveName: 'locked.7z',
+      wrongAttempt: false,
+      parentVolumeId: 'root',
+      archivePath: '/Users/me/locked.7z',
+      mode: 'browse',
+    })
+  })
+
+  it('submit stores the password and re-lists via retry', async () => {
+    const { dialogs } = makeState()
+    const retry = vi.fn()
+    dialogs.showArchivePasswordForBrowse(browseInfo(false, retry))
+
+    dialogs.handleArchivePasswordSubmit('hunter2')
+
+    expect(setArchivePassword).toHaveBeenCalledWith('root', '/Users/me/locked.7z', 'hunter2')
+    expect(dialogs.showArchivePasswordDialog).toBe(false)
+    expect(dialogs.archivePasswordProps).toBeNull()
+    // The re-list runs after the store resolves.
+    await vi.waitFor(() => {
+      expect(retry).toHaveBeenCalled()
+    })
+    // No transfer dialog is ever involved on the browse path.
+    expect(dialogs.showTransferProgressDialog).toBe(false)
+  })
+
+  it('cancel forgets the password without touching the transfer path', () => {
+    const { dialogs, rightPane } = makeState()
+    dialogs.showArchivePasswordForBrowse(browseInfo(false))
+
+    dialogs.handleArchivePasswordCancel()
+
+    expect(clearArchivePassword).toHaveBeenCalledWith('root', '/Users/me/locked.7z')
+    expect(dialogs.showArchivePasswordDialog).toBe(false)
+    expect(dialogs.archivePasswordProps).toBeNull()
+    // No transfer op to settle: the source pane's selection is left untouched.
+    expect(rightPane.spies.clearSelection).not.toHaveBeenCalled()
+    expect(onRefocus).toHaveBeenCalled()
+  })
+
+  it('passes wrongAttempt through so a rejected password re-prompts with distinct copy', () => {
+    const { dialogs } = makeState()
+    dialogs.showArchivePasswordForBrowse(browseInfo(true))
+
+    expect(dialogs.archivePasswordProps?.wrongAttempt).toBe(true)
   })
 })

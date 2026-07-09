@@ -9,12 +9,16 @@
 //! prefix in front of it. `sevenz-rust2` drives that decode; we stop at the
 //! target ([`super::format::ArchiveFormat::is_sequential`] is `true` for 7z).
 //!
-//! Encryption is out of scope: the `aes256` feature is off (it would pull an
-//! `aes` version conflicting with `smb2`'s pinned pre-release; see the archive
-//! `DETAILS.md`), so an AES-encrypted 7z refuses honestly as `Unsupported` (a
-//! "can't open this kind" the user sees, never a "damaged archive" or a password
-//! prompt) rather than being decrypted. The classification lives in
-//! [`map_sevenz_err`]; matching the deferral of WinZip AES zip.
+//! Encryption: a password-protected 7z decrypts with the `aes256` feature (the
+//! `AES256_SHA256` coder). `sevenz-rust2` wants the password at
+//! `ArchiveReader::new` time, so a per-archive password is threaded through
+//! [`parse`] AND every re-open ([`SevenZStore::open_read`] → [`stream_entry`],
+//! [`stream_subtree`]). Two encryption shapes: CONTENT-encrypted (`7z -mhe=off`,
+//! plaintext header) lists with no password and needs one only to extract;
+//! HEADER-encrypted (`7z -mhe=on`) needs the password to even read the metadata,
+//! so `parse` fails without one. [`map_sevenz_err`] maps the missing/wrong password
+//! to the typed [`ArchiveError::Encrypted`] / [`ArchiveError::WrongPassword`] the
+//! volume layer surfaces as a prompt, at both open and decode time.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -42,27 +46,43 @@ impl SevenZStore {
     /// Opens a streaming reader for the file at `inner` by decoding its block up
     /// to the entry. O(block prefix) for a solid archive. `total` is the tree's
     /// uncompressed size (for progress); the reader streams exactly what 7z yields.
+    /// `password` decrypts a content-encrypted 7z (ignored for a plaintext one).
     pub(super) fn open_read(
         &self,
         inner: &str,
         total: u64,
         source: Arc<dyn ArchiveByteSource>,
+        password: Option<&str>,
     ) -> Result<ArchiveEntryReader, ArchiveError> {
         if !self.members.contains_key(inner) {
             return Err(ArchiveError::NotFound(inner.to_string()));
         }
         let target = inner.to_string();
+        let password = password.map(str::to_owned);
         Ok(ArchiveEntryReader::spawn_with(total, move |tx| {
-            stream_entry(source, &target, &tx);
+            stream_entry(source, &target, password.as_deref(), &tx);
         }))
     }
 }
 
+/// Turns an optional password string into the `sevenz-rust2` [`Password`]
+/// (`None` ⇒ empty, which reads a plaintext archive and makes an encrypted one
+/// report `PasswordRequired` — mapped to [`ArchiveError::Encrypted`]).
+fn to_password(password: Option<&str>) -> Password {
+    password.map(Password::new).unwrap_or_else(Password::empty)
+}
+
 /// Parses the 7z header into the format-neutral entry list. Metadata only — no
-/// block is decompressed here.
-pub(super) fn parse(source: Arc<dyn ArchiveByteSource>) -> Result<(Vec<(RawEntry, ())>, ()), ArchiveError> {
+/// block is decompressed here. `password` is needed only for a HEADER-encrypted
+/// 7z (`-mhe=on`), whose metadata is itself encrypted; a content-encrypted or
+/// plaintext archive parses with `None`.
+pub(super) fn parse(
+    source: Arc<dyn ArchiveByteSource>,
+    password: Option<&str>,
+) -> Result<(Vec<(RawEntry, ())>, ()), ArchiveError> {
     let reader = SourceReader::new(source);
-    let archive = ArchiveReader::new(reader, Password::empty()).map_err(map_sevenz_err)?;
+    let archive =
+        ArchiveReader::new(reader, to_password(password)).map_err(|e| map_sevenz_err_pw(e, password.is_some()))?;
     let archive = archive.archive();
 
     let mut out: Vec<(RawEntry, ())> = Vec::with_capacity(archive.files.len());
@@ -104,19 +124,21 @@ fn unix_seconds(entry: &sevenz_rust2::ArchiveEntry) -> Option<i64> {
 }
 
 /// Decodes to the entry named `target` (matching the sanitized inner path the
-/// index keyed it under) and streams its bytes.
-fn stream_entry(source: Arc<dyn ArchiveByteSource>, target: &str, tx: &super::reader::ChunkTx) {
+/// index keyed it under) and streams its bytes. `password` decrypts a
+/// content-encrypted archive.
+fn stream_entry(source: Arc<dyn ArchiveByteSource>, target: &str, password: Option<&str>, tx: &super::reader::ChunkTx) {
+    let had_password = password.is_some();
     let reader = SourceReader::new(source);
-    let mut archive = match ArchiveReader::new(reader, Password::empty()) {
+    let mut archive = match ArchiveReader::new(reader, to_password(password)) {
         Ok(a) => a,
-        Err(err) => return tx.send_err(map_sevenz_err(err)),
+        Err(err) => return tx.send_err(map_sevenz_err_pw(err, had_password)),
     };
 
     let mut streamed = false;
     let result = archive.for_each_entries(
         &mut |entry: &sevenz_rust2::ArchiveEntry, entry_reader: &mut dyn std::io::Read| {
             if entry_matches(entry.name(), target) {
-                pump_read(entry_reader, tx, None);
+                pump_read(entry_reader, tx, None, |io| map_stream_err(io, had_password));
                 streamed = true;
                 // Stop: the target is delivered, don't decode the rest.
                 return Ok(false);
@@ -132,7 +154,7 @@ fn stream_entry(source: Arc<dyn ArchiveByteSource>, target: &str, tx: &super::re
     match result {
         Ok(_) if streamed => {}
         Ok(_) => tx.send_err(ArchiveError::NotFound(target.to_string())),
-        Err(err) => tx.send_err(map_sevenz_err(err)),
+        Err(err) => tx.send_err(map_sevenz_err_pw(err, had_password)),
     }
 }
 
@@ -147,14 +169,20 @@ fn entry_matches(name: &str, target: &str) -> bool {
 /// read to a sink so the SOLID-block decoder advances to the next member (skipping
 /// without reading desyncs it). Stops once every wanted file is delivered, so a
 /// subtree near the front doesn't decode trailing blocks.
-pub(super) fn stream_subtree(source: Arc<dyn ArchiveByteSource>, mut wanted: HashMap<String, u64>, tx: &SubtreeTx) {
+pub(super) fn stream_subtree(
+    source: Arc<dyn ArchiveByteSource>,
+    mut wanted: HashMap<String, u64>,
+    password: Option<&str>,
+    tx: &SubtreeTx,
+) {
     if wanted.is_empty() {
         return;
     }
+    let had_password = password.is_some();
     let reader = SourceReader::new(source);
-    let mut archive = match ArchiveReader::new(reader, Password::empty()) {
+    let mut archive = match ArchiveReader::new(reader, to_password(password)) {
         Ok(a) => a,
-        Err(err) => return tx.send_err(map_sevenz_err(err)),
+        Err(err) => return tx.send_err(map_sevenz_err_pw(err, had_password)),
     };
 
     // A send-side failure (consumer dropped) or a byte-source read error caught
@@ -182,7 +210,12 @@ pub(super) fn stream_subtree(source: Arc<dyn ArchiveByteSource>, mut wanted: Has
                         return Ok(false); // consumer gone: stop decoding
                     }
                     // The 7z entry reader yields exactly the entry's bytes (no limit).
-                    if let Err(err) = pump_chunks(entry_reader, None, |chunk| tx.send_chunk(chunk)) {
+                    if let Err(err) = pump_chunks(
+                        entry_reader,
+                        None,
+                        |chunk| tx.send_chunk(chunk),
+                        |io| map_stream_err(io, had_password),
+                    ) {
                         caught = Some(err);
                         return Ok(false);
                     }
@@ -206,42 +239,75 @@ pub(super) fn stream_subtree(source: Arc<dyn ArchiveByteSource>, mut wanted: Has
         return;
     }
     if let Err(err) = result {
-        tx.send_err(map_sevenz_err(err));
+        tx.send_err(map_sevenz_err_pw(err, had_password));
+    }
+}
+
+/// Reclassifies a decode error when a password WAS supplied. 7z AES stores no
+/// password-verification value (unlike zip AES), so a wrong password isn't caught
+/// up front: it decrypts to garbage that first fails a downstream integrity check
+/// (`ChecksumVerificationFailed`, or `MaybeBadPassword` where the crate detects
+/// it). That's indistinguishable at the crypto layer from genuine corruption — but
+/// when the user just supplied a password, it's overwhelmingly a wrong one, so
+/// surface the typed [`ArchiveError::WrongPassword`] re-prompt rather than a
+/// "damaged archive". With no password supplied, these stay corruption
+/// ([`map_sevenz_err`]).
+fn map_sevenz_err_pw(err: sevenz_rust2::Error, had_password: bool) -> ArchiveError {
+    use sevenz_rust2::Error as E;
+    if had_password && matches!(err, E::ChecksumVerificationFailed | E::MaybeBadPassword(_)) {
+        return ArchiveError::WrongPassword;
+    }
+    map_sevenz_err(err)
+}
+
+/// The [`pump_chunks`] error classifier for the 7z stream. A decode read error
+/// wraps `sevenz-rust2`'s typed error (`io::Error::other(Error::…)`); recover the
+/// wrapped value and route it through [`map_sevenz_err_pw`], so a wrong-password
+/// integrity failure mid-stream is typed `WrongPassword` instead of a generic
+/// `Io`. Classifies by the recovered ENUM variant, never message text (within
+/// `no-string-matching`); a non-sevenz io error keeps the plain io classification.
+fn map_stream_err(err: std::io::Error, had_password: bool) -> ArchiveError {
+    match err.downcast::<sevenz_rust2::Error>() {
+        Ok(sevenz_err) => map_sevenz_err_pw(sevenz_err, had_password),
+        Err(io_err) => ArchiveError::from(io_err),
     }
 }
 
 /// Maps a `sevenz-rust2` error to a typed [`ArchiveError`], classifying by enum
 /// variant (never message text, per `no-string-matching`).
 ///
-/// The load-bearing case is encryption. We build `sevenz-rust2` with the
-/// `aes256` feature OFF (its `aes` crate conflicts with `smb2`'s pin; see the
-/// archive `DETAILS.md`), so an AES-encrypted 7z has an unrecognized coder and
-/// the crate returns `UnsupportedCompressionMethod("AES256_SHA256")` — for a
-/// header-encrypted archive at open (`ArchiveReader::new`), for a data-encrypted
-/// one at decode (`for_each_entries`). Both must land on [`ArchiveError::Unsupported`]
-/// (→ `VolumeError::NotSupported`, the honest "can't open this kind"), NOT
-/// [`ArchiveError::Corrupt`] (which reads to the user as a DAMAGED archive) and NOT
-/// [`ArchiveError::Encrypted`] (which prompts for a password a 7z read can never
-/// satisfy here). A genuinely-unknown codec produces the same variant and is
-/// honestly "unsupported" too, so no AES-specific coder-id check is needed.
-/// (Verified on sevenz-rust2 0.21.2, `aes256` off, against real `7z`-produced
-/// `-mhe=on`/`-mhe=off` fixtures, 2026-07-08.)
+/// The load-bearing case is encryption (`aes256` ON). A password-protected 7z
+/// surfaces two typed password signals:
 ///
-/// The `PasswordRequired` / `MaybeBadPassword` variants only arise with `aes256`
-/// ON; they're mapped to `Unsupported` too so encryption never reads as damaged
-/// if the feature is ever enabled without a matching password-threading path.
+/// - `PasswordRequired` ⇒ [`ArchiveError::Encrypted`] — no password supplied for
+///   an encrypted archive (header-encrypted at `ArchiveReader::new`, content-
+///   encrypted at decode). Maps to `VolumeError::NeedsPassword`, the prompt.
+/// - `MaybeBadPassword` ⇒ [`ArchiveError::WrongPassword`] — a supplied password
+///   decrypted to bytes that failed their integrity check. Maps to the "that
+///   password didn't work" re-prompt.
+///
+/// A still-unsupported coder (`aes256` genuinely absent, or an unknown codec)
+/// stays [`ArchiveError::Unsupported`] (→ `VolumeError::NotSupported`), never
+/// `Corrupt` (which reads as DAMAGED). A wrong password on a HEADER-encrypted
+/// archive can instead corrupt the decrypted header bytes and surface as a
+/// checksum/CRC error; those stay `Corrupt` below — the frontend still lets the
+/// user retry from the parent, just without the tailored "wrong password" copy.
+/// (Verified on sevenz-rust2 0.21.2, `aes256` on, against real `7z`-produced
+/// `-mhe=on`/`-mhe=off` fixtures — see the sevenz integration tests.)
 fn map_sevenz_err(err: sevenz_rust2::Error) -> ArchiveError {
     use sevenz_rust2::Error as E;
     match err {
-        // Encryption (our `aes256`-off build) and any unknown/unsupported coder:
-        // an honest "can't serve this kind", never "damaged".
+        // No password for an encrypted archive: the typed "needs a password" prompt.
+        E::PasswordRequired => ArchiveError::Encrypted,
+        // A supplied password that decrypted to bytes failing their integrity check.
+        E::MaybeBadPassword(_) => ArchiveError::WrongPassword,
+        // An unknown/unsupported coder: an honest "can't serve this kind", never "damaged".
         E::UnsupportedCompressionMethod(method) => ArchiveError::Unsupported(format!("7z coder: {method}")),
         E::Unsupported(msg) => ArchiveError::Unsupported(format!("7z: {msg}")),
         E::ExternalUnsupported => ArchiveError::Unsupported("7z uses an unsupported external coder".to_string()),
         E::UnsupportedVersion { major, minor } => {
             ArchiveError::Unsupported(format!("7z format version {major}.{minor}"))
         }
-        E::PasswordRequired | E::MaybeBadPassword(_) => ArchiveError::Unsupported("7z is encrypted".to_string()),
         // A memory-limit refusal is a resource cap, not damage: reuse the tree-size
         // rejection so it never reads as "damaged".
         E::MaxMemLimited { max_kb, actaul_kb } => {

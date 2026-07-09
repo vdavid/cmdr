@@ -102,8 +102,9 @@ pub(crate) async fn archive_inner_exists(parent_volume_id: &str, archive_path: &
         let Ok(source) = LocalFileSource::open(&archive_path) else {
             return false;
         };
-        // Mutation is zip-only, so the oracle always parses as zip.
-        let Ok(index) = ArchiveIndex::parse(Arc::new(source), ArchiveFormat::Zip) else {
+        // Mutation is zip-only, so the oracle always parses as zip (no password:
+        // a zip's central directory is plaintext even when its entries aren't).
+        let Ok(index) = ArchiveIndex::parse(Arc::new(source), ArchiveFormat::Zip, None) else {
             return false;
         };
         index.exists(&inner_path)

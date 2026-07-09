@@ -141,6 +141,17 @@
         onCancelLoading?: (cancelledPath: string, selectName?: string) => void
         /** Called when MTP connection fails fatally (device disconnected, timeout) - parent should fall back to previous volume */
         onMtpFatalError?: (error: string) => void
+        /**
+         * A header-encrypted archive needs a password even to browse it: bubble the
+         * browse-time prompt request to the parent (which owns the dialog state).
+         * `retry` re-lists the same directory after the password is stored.
+         */
+        onArchiveNeedsPassword?: (info: {
+            volumeId: string
+            archivePath: string
+            wrongAttempt: boolean
+            retry: () => void
+        }) => void
         /** Volume resolution timed out for this tab: show banner instead of file list */
         unreachable?: UnreachableState | null
         /** Called when user clicks "Retry" on the unreachable banner */
@@ -176,6 +187,7 @@
         onNetworkHostChange,
         onCancelLoading,
         onMtpFatalError,
+        onArchiveNeedsPassword,
         unreachable = null,
         onRetryUnreachable,
         onOpenHome,
@@ -318,6 +330,7 @@
         onVolumeChange: (id, path, target) => onVolumeChange?.(id, path, target),
         onMtpFatalError: (message) => onMtpFatalError?.(message),
         onCancelLoading: (cancelledPath, selectName) => onCancelLoading?.(cancelledPath, selectName),
+        onArchiveNeedsPassword: (info) => onArchiveNeedsPassword?.(info),
     })
 
     // File under the cursor fetched separately for SelectionInfo

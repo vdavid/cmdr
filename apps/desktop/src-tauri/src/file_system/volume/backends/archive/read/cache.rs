@@ -50,7 +50,12 @@ impl ArchiveIndexCache {
     /// Blocking: stats the file and (on a miss) reads and parses the central
     /// directory. Call from a blocking context (`spawn_blocking`), not directly
     /// on the async executor.
-    pub fn index_for_local(&self, path: &Path, format: ArchiveFormat) -> Result<Arc<ArchiveIndex>, ArchiveError> {
+    pub fn index_for_local(
+        &self,
+        path: &Path,
+        format: ArchiveFormat,
+        password: Option<&str>,
+    ) -> Result<Arc<ArchiveIndex>, ArchiveError> {
         let key = cache_key_for(path)?;
 
         if let Some(hit) = self.get(&key) {
@@ -58,7 +63,7 @@ impl ArchiveIndexCache {
         }
 
         let source: Arc<dyn ArchiveByteSource> = Arc::new(LocalFileSource::open(path)?);
-        let index = Arc::new(ArchiveIndex::parse(source, format)?);
+        let index = Arc::new(ArchiveIndex::parse(source, format, password)?);
         self.insert(key, Arc::clone(&index));
         Ok(index)
     }
@@ -80,6 +85,7 @@ impl ArchiveIndexCache {
         mtime_nanos: Option<i128>,
         source: Arc<dyn ArchiveByteSource>,
         format: ArchiveFormat,
+        password: Option<&str>,
     ) -> Result<Arc<ArchiveIndex>, ArchiveError> {
         let key = CacheKey {
             path: path.to_path_buf(),
@@ -89,7 +95,7 @@ impl ArchiveIndexCache {
         if let Some(hit) = self.get(&key) {
             return Ok(hit);
         }
-        let index = Arc::new(ArchiveIndex::parse(source, format)?);
+        let index = Arc::new(ArchiveIndex::parse(source, format, password)?);
         self.insert(key, Arc::clone(&index));
         Ok(index)
     }

@@ -210,13 +210,30 @@ impl ArchiveVolume {
         let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
         let format = self.format;
+        // Needed only for a HEADER-encrypted 7z, whose metadata is encrypted; every
+        // other archive parses (browses) with no password. `None` on a header-
+        // encrypted 7z fails the parse with `Encrypted` → `NeedsPassword`, the
+        // browse-time prompt.
+        let password = self.password_snapshot();
         if self.parent_is_local() {
-            parse_blocking(move || cache.index_for_local(&archive_path, format).map_err(to_volume_error)).await
+            parse_blocking(move || {
+                cache
+                    .index_for_local(&archive_path, format, password.as_deref().map(String::as_str))
+                    .map_err(to_volume_error)
+            })
+            .await
         } else {
             let (size, mtime_nanos, source) = self.open_remote_source().await?;
             parse_blocking(move || {
                 cache
-                    .index_for_source(&archive_path, size, mtime_nanos, source, format)
+                    .index_for_source(
+                        &archive_path,
+                        size,
+                        mtime_nanos,
+                        source,
+                        format,
+                        password.as_deref().map(String::as_str),
+                    )
                     .map_err(to_volume_error)
             })
             .await
@@ -231,10 +248,13 @@ impl ArchiveVolume {
         let cache = Arc::clone(&self.cache);
         let archive_path = self.archive_path.clone();
         let format = self.format;
+        let password = self.password_snapshot();
         if self.parent_is_local() {
             parse_blocking(
                 move || -> Result<(Arc<ArchiveIndex>, Arc<dyn ArchiveByteSource>), VolumeError> {
-                    let index = cache.index_for_local(&archive_path, format).map_err(to_volume_error)?;
+                    let index = cache
+                        .index_for_local(&archive_path, format, password.as_deref().map(String::as_str))
+                        .map_err(to_volume_error)?;
                     let source: Arc<dyn ArchiveByteSource> = Arc::new(LocalFileSource::open(&archive_path)?);
                     Ok((index, source))
                 },
@@ -246,7 +266,14 @@ impl ArchiveVolume {
             let path_for_parse = archive_path.clone();
             let index = parse_blocking(move || {
                 cache
-                    .index_for_source(&path_for_parse, size, mtime_nanos, parse_source, format)
+                    .index_for_source(
+                        &path_for_parse,
+                        size,
+                        mtime_nanos,
+                        parse_source,
+                        format,
+                        password.as_deref().map(String::as_str),
+                    )
                     .map_err(to_volume_error)
             })
             .await?;
@@ -511,9 +538,10 @@ impl Volume for ArchiveVolume {
         Box::pin(async move {
             let (index, source) = self.load().await?;
             // Sequential extract serves compressed tar / solid 7z only (a random-
-            // access zip never routes here), and neither is decryptable today, so
-            // no password is threaded.
-            let reader = index.open_subtree_extract(&inner, source);
+            // access zip never routes here). A content-encrypted 7z is decryptable,
+            // so the per-archive password is threaded; a plaintext tar ignores it.
+            let password = self.password_snapshot();
+            let reader = index.open_subtree_extract(&inner, source, password.as_deref().map(String::as_str));
             Ok(Box::new(ArchiveSequentialExtract::new(reader, archive_path)) as Box<dyn SequentialExtract>)
         })
     }

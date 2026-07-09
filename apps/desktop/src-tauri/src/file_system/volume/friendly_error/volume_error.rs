@@ -40,6 +40,23 @@ pub fn archive_unreadable_listing_error() -> ListingError {
     }
 }
 
+/// The "this archive needs a password to browse" listing error, produced when a
+/// HEADER-encrypted archive's metadata can't be read without the password
+/// (`VolumeError::NeedsPassword` on the LISTING path). The FE renders the password
+/// prompt rather than an error pane; `wrong_attempt` picks the retry copy. Not
+/// `Serious`/no-retry like `archive_unreadable` — supplying the password and
+/// re-navigating recovers it.
+pub fn archive_needs_password_listing_error(wrong_attempt: bool) -> ListingError {
+    ListingError {
+        category: ErrorCategory::NeedsAction,
+        reason: ListingErrorReason::ArchiveNeedsPassword { wrong_attempt },
+        provider: None,
+        action_kind: None,
+        retry_hint: false,
+        raw_detail: "archive needs a password".to_string(),
+    }
+}
+
 pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> ListingError {
     let path_display = path.display().to_string();
     let raw = err.to_string();
@@ -99,12 +116,11 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
             raw_os_error: None,
             message,
         } => kinds::io_serious(&path_display, message, raw),
-        // A password-protected archive can't reach the LISTING path today
-        // (browsing an encrypted zip works; only extraction needs a password, on
-        // the write-op path — which maps `NeedsPassword` to
-        // `WriteOperationError::ArchiveNeedsPassword`). This arm exists for
-        // exhaustiveness; the day header-encrypted archives browse-prompt, give it
-        // a dedicated reason + password dialog. For now it reads as unreadable.
-        VolumeError::NeedsPassword { .. } => archive_unreadable_listing_error(),
+        // A HEADER-encrypted archive (a `-mhe=on` 7z) reaches the LISTING path with
+        // `NeedsPassword`: its metadata is encrypted, so even browsing needs the
+        // password. Surface the dedicated reason the FE renders as a password prompt
+        // (content-encrypted archives list fine and prompt only on extract, via the
+        // write-op path's `WriteOperationError::ArchiveNeedsPassword`).
+        VolumeError::NeedsPassword { wrong_attempt } => archive_needs_password_listing_error(*wrong_attempt),
     }
 }

@@ -97,7 +97,12 @@ impl SubtreeExtractReader {
     /// tar) yields nothing — the copy planner never routes those here (it gates on
     /// [`Volume::extraction_is_sequential`](crate::file_system::volume::Volume::extraction_is_sequential)),
     /// so an empty stream is the correct defensive fallback.
-    pub(super) fn spawn(store: &EntryStore, source: Arc<dyn ArchiveByteSource>, wanted: HashMap<String, u64>) -> Self {
+    pub(super) fn spawn(
+        store: &EntryStore,
+        source: Arc<dyn ArchiveByteSource>,
+        wanted: HashMap<String, u64>,
+        password: Option<&str>,
+    ) -> Self {
         let (tx, rx) = mpsc::channel(CHANNEL_CAPACITY);
         let sink = SubtreeTx(tx);
         match store {
@@ -106,7 +111,8 @@ impl SubtreeExtractReader {
                 spawn_blocking(move || super::tar::stream_subtree(source, codec, wanted, &sink));
             }
             EntryStore::SevenZ(_) => {
-                spawn_blocking(move || super::sevenz::stream_subtree(source, wanted, &sink));
+                let password = password.map(str::to_owned);
+                spawn_blocking(move || super::sevenz::stream_subtree(source, wanted, password.as_deref(), &sink));
             }
             // Random-access: no one-pass producer. Dropping `sink` closes the
             // channel, so the reader yields no members.

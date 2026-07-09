@@ -15,8 +15,8 @@ use crate::file_system::listing::caching::{CachedListing, LISTING_CACHE};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::volume::VolumeError;
 use crate::file_system::volume::friendly_error::{
-    ListingError, archive_unreadable_listing_error, enrich_with_provider, listing_error_for_restricted_empty_root,
-    listing_error_from_volume_error,
+    ListingError, archive_needs_password_listing_error, archive_unreadable_listing_error, enrich_with_provider,
+    listing_error_for_restricted_empty_root, listing_error_from_volume_error,
 };
 use crate::file_system::watcher::start_watching;
 #[cfg(test)]
@@ -340,7 +340,12 @@ pub async fn list_directory_start_streaming(
                 // so the pane doesn't show a generic listing error. A valid archive
                 // with a missing inner path stays `NotFound` (not an integrity fault),
                 // and the archive case skips provider enrichment (no cloud suggestion).
-                let listing_error = if matches!(e, VolumeError::NotSupported | VolumeError::IoError { .. })
+                let listing_error = if let VolumeError::NeedsPassword { wrong_attempt } = e {
+                    // A HEADER-encrypted archive needs its password to even list; the
+                    // FE renders a password prompt, not an error pane. Skip provider
+                    // enrichment (no cloud suggestion on a password prompt).
+                    archive_needs_password_listing_error(wrong_attempt)
+                } else if matches!(e, VolumeError::NotSupported | VolumeError::IoError { .. })
                     && crate::file_system::volume::backends::archive::path_targets_archive_file(&path_for_error)
                 {
                     archive_unreadable_listing_error()

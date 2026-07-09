@@ -623,6 +623,18 @@
   "@errors.listing.archiveUnreadable.suggestion": {
     "sourceHash": "67b7e70"
   },
+  "errors.listing.archiveNeedsPassword.title": "Tệp nén này cần mật khẩu",
+  "@errors.listing.archiveNeedsPassword.title": {
+    "sourceHash": "d6d0ad4"
+  },
+  "errors.listing.archiveNeedsPassword.explanation": "Tệp nén này được bảo vệ, nên nội dung bên trong vẫn bị khóa cho đến khi bạn mở khóa nó.",
+  "@errors.listing.archiveNeedsPassword.explanation": {
+    "sourceHash": "f566496"
+  },
+  "errors.listing.archiveNeedsPassword.suggestion": "Nhập mật khẩu để duyệt qua nó.",
+  "@errors.listing.archiveNeedsPassword.suggestion": {
+    "sourceHash": "4043af6"
+  },
   "errors.listing.emptyRootICloud.title": "iCloud Drive trông như trống",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

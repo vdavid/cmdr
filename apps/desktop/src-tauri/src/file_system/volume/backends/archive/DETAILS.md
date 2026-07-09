@@ -153,9 +153,11 @@ second-granularity `modified_at` widened to nanos) — a remote `.zip` can't be 
 
 ## Password-protected archives (decryption)
 
-Browsing an encrypted archive always works (names live in the central directory). EXTRACTING an encrypted entry needs a
-password, decrypted per entry in the reading core (zip only; ZipCrypto only — see [`read/DETAILS.md`](read/DETAILS.md)
-§ "Decryption"). The `ArchiveVolume` layer owns the password lifetime and the typed frontend signal.
+Browsing an encrypted archive USUALLY works (names live in the plaintext central directory / 7z header) and only
+EXTRACTING needs a password — decrypted per entry in the reading core: zip (ZipCrypto AND WinZip AES) and 7z (content-
+and header-encrypted) — see [`read/DETAILS.md`](read/DETAILS.md) § "Decryption". The exception is a HEADER-encrypted 7z
+(`-mhe=on`), whose metadata is itself encrypted, so even BROWSING needs the password (below). The `ArchiveVolume` layer
+owns the password lifetime and the typed frontend signal.
 
 **Password-on-volume = remember-for-this-archive.** `ArchiveVolume` holds an interior-mutable
 `password: Mutex<Option<Zeroizing<String>>>` (`Zeroizing` wipes it on drop). `set_password` / `clear_password` are the
@@ -165,20 +167,23 @@ instance's lifetime IS "remember for this archive". **LRU eviction forgets the p
 empty, so the frontend re-prompts (pinned by `volume_test`'s LRU-semantic test). A wrong password never persists —
 `set_password` overwrites, and the frontend overwrites-then-retries after a `WrongPassword`.
 
-**Where the password threads in.** Only into `open_read` (the per-entry extract path): `open_stream` passes
-`password_snapshot()` to `ArchiveIndex::open_read`. It is deliberately NOT threaded into `index()`/`load()` parse (zip
-browsing needs no password) nor `open_sequential_extract` (that serves compressed tar / solid 7z, which a random-access
-zip never routes through, and neither is decryptable today). The `Volume` trait's read methods are NOT widened with a
-password param — the password stays internal to the backend.
+**Where the password threads in.** `password_snapshot()` flows into every parse and read seam that can hit encrypted
+bytes: `open_read` (per-entry extract, via `open_stream`), `open_sequential_extract` (compressed tar / solid 7z bulk
+extract — a content-encrypted solid 7z decrypts here), AND `index()`/`load()` parse (a header-encrypted 7z needs the
+password to read its metadata; zip and content-encrypted 7z ignore it at parse). Each seam takes `Option<&str>`; the
+`Volume` trait's read methods are NOT widened with a password param — the password stays internal to the backend.
 
-**Typed signal to the frontend.** `Encrypted` / `WrongPassword` map to `VolumeError::NeedsPassword { wrong_attempt }`
-(above). In the ZipCrypto-only build this only ever surfaces on the EXTRACT path (a copy whose source is inside the zip),
-riding `WriteOperationError::ArchiveNeedsPassword { path, wrong_attempt }` (mapped in
-`transfer/volume_copy.rs::map_volume_error`) — machine-readable (`no-string-matching`), so the frontend dispatches its
-password dialog and, after `set_archive_password`, retries the copy. The BROWSE/listing path never produces
-`NeedsPassword` here (browsing an encrypted zip works without a password); its `friendly_error` arm exists only for
-exhaustiveness and falls back to the "unreadable archive" reason. When header-encrypted archives (7z AES) land and DO
-need a password to browse, give that arm a dedicated `ListingErrorReason` + browse-time prompt.
+**Typed signal to the frontend — two paths.** `Encrypted` / `WrongPassword` map to
+`VolumeError::NeedsPassword { wrong_attempt }` (above). This surfaces on:
+- The EXTRACT path (a copy whose source is inside the archive) for any encrypted archive — riding
+  `WriteOperationError::ArchiveNeedsPassword { path, wrong_attempt }` (mapped in `transfer/volume_copy.rs::map_volume_error`),
+  so the frontend dispatches its password dialog and, after `set_archive_password`, retries the copy.
+- The BROWSE/listing path for a HEADER-encrypted 7z (even listing fails) — `friendly_error/volume_error.rs` maps
+  `NeedsPassword` to `ListingErrorReason::ArchiveNeedsPassword { wrong_attempt }` (NOT the unreadable-archive reason),
+  and `listing/streaming.rs` surfaces it without provider enrichment. The frontend's listing-loader intercepts that
+  reason and raises the SAME `ArchivePasswordDialog` at browse time; on unlock it re-lists the directory.
+
+Both are machine-readable (`no-string-matching`).
 
 ## Routing and lifecycle (`boundary.rs` + `VolumeManager::resolve`)
 

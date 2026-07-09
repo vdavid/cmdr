@@ -623,6 +623,18 @@
   "@errors.listing.archiveUnreadable.suggestion": {
     "sourceHash": "67b7e70"
   },
+  "errors.listing.archiveNeedsPassword.title": "Dieses Archiv benötigt ein Passwort",
+  "@errors.listing.archiveNeedsPassword.title": {
+    "sourceHash": "d6d0ad4"
+  },
+  "errors.listing.archiveNeedsPassword.explanation": "Dieses Archiv ist geschützt, deshalb bleibt sein Inhalt gesperrt, bis du es entsperrst.",
+  "@errors.listing.archiveNeedsPassword.explanation": {
+    "sourceHash": "f566496"
+  },
+  "errors.listing.archiveNeedsPassword.suggestion": "Gib das Passwort ein, um hineinzuschauen.",
+  "@errors.listing.archiveNeedsPassword.suggestion": {
+    "sourceHash": "4043af6"
+  },
   "errors.listing.emptyRootICloud.title": "iCloud Drive sieht leer aus",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

@@ -35,13 +35,16 @@ planning, reorganizing, or advising.
   `Vec` to the read path.
 - **Compressed tar and 7z are SEQUENTIAL-access**; plain `.tar` and zip are random. `ArchiveFormat::is_sequential`
   declares the class (the volume layer surfaces it via `Volume::extraction_is_sequential`).
-- **Encryption: browsing always works; extraction decrypts a legacy ZipCrypto entry with a per-archive password**,
-  routed through the `zip` crate's `by_index_decrypt` by CENTRAL-DIRECTORY ORDINAL (rc-zip parses but can't decrypt; the
-  ordinals align — pinned). No password ⇒ `Encrypted`; wrong ⇒ `WrongPassword` (ZipCrypto's wrong-password may surface
-  late as an end-of-stream CRC, mapped by io-kind not message). WinZip AES and 7z AES are deferred (`aes` crate conflicts
-  with `smb2`) and refuse honestly as `Unsupported` (→ `NotSupported`; never a "damaged archive", never a password
-  prompt that can't succeed) — for 7z via `sevenz.rs::map_sevenz_err`. Filename encoding is rc-zip's job — consume the
-  decoded `entry.name`.
+- **Encryption: browsing usually works; extraction decrypts with a per-archive password.** Zip (ZipCrypto AND WinZip
+  AES) routes through the `zip` crate's `by_index_decrypt` by CENTRAL-DIRECTORY ORDINAL (rc-zip parses but can't decrypt;
+  the ordinals align — pinned). 7z threads the password through `sevenz.rs`'s `parse` + every re-open. No password ⇒
+  `Encrypted`; wrong ⇒ `WrongPassword`. Wrong-password detection differs: AES zip has a 2-byte verifier (caught at open);
+  ZipCrypto may surface late as an end-of-stream CRC (io-kind, not message); 7z AES has NO verifier, so a wrong password
+  first fails an integrity check mid-decode — `sevenz.rs` recovers the wrapped typed error and, since a password WAS
+  supplied, types it `WrongPassword` (never string-matched). **A HEADER-encrypted 7z (`-mhe=on`) needs the password to
+  even BROWSE** (encrypted metadata), so `parse` — not just extraction — returns `Encrypted`/`WrongPassword`; the volume
+  layer surfaces it as `NeedsPassword` on the LISTING path (browse-time prompt). Filename encoding is rc-zip's job for
+  zip — consume the decoded `entry.name`.
 - **The index cache key is `(path, size, mtime)`** (external edits auto-invalidate); `index_for_local` is blocking, call
   it from `spawn_blocking`.
 - **Two DoS caps bound the synthetic tree**: per-entry depth (`name::MAX_COMPONENT_DEPTH`, over-deep entries quarantine)

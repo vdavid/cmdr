@@ -4240,6 +4240,16 @@ export type ListingErrorReason =
    *  dedicated `VolumeError`.
    */
   | { reason: 'archiveUnreadable' }
+  /**
+   *  Browsing a HEADER-encrypted archive (a `-mhe=on` 7z) failed because its
+   *  metadata is itself encrypted, so even listing needs the password. The FE
+   *  renders the password prompt (not an error pane); `wrong_attempt` swaps the
+   *  copy to "that password didn't work" after a rejected try. Distinct from
+   *  `ArchiveUnreadable` (which is unrecoverable) — this one is retried by
+   *  supplying the password and re-navigating. (Content-encrypted archives list
+   *  fine and prompt only on extract, via the transfer path.)
+   */
+  | { reason: 'archiveNeedsPassword'; wrongAttempt: boolean }
   | { reason: 'emptyRootICloud' }
   | { reason: 'git'; kind: FriendlyGitErrorKind }
 

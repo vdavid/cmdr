@@ -623,6 +623,18 @@
   "@errors.listing.archiveUnreadable.suggestion": {
     "sourceHash": "67b7e70"
   },
+  "errors.listing.archiveNeedsPassword.title": "Este arquivo compactado precisa de uma senha",
+  "@errors.listing.archiveNeedsPassword.title": {
+    "sourceHash": "d6d0ad4"
+  },
+  "errors.listing.archiveNeedsPassword.explanation": "Este arquivo compactado está protegido, então o conteúdo dele fica bloqueado até você desbloqueá-lo.",
+  "@errors.listing.archiveNeedsPassword.explanation": {
+    "sourceHash": "f566496"
+  },
+  "errors.listing.archiveNeedsPassword.suggestion": "Digite a senha para navegar por ele.",
+  "@errors.listing.archiveNeedsPassword.suggestion": {
+    "sourceHash": "4043af6"
+  },
   "errors.listing.emptyRootICloud.title": "O iCloud Drive parece vazio",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

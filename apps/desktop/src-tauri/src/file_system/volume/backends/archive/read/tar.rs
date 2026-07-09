@@ -75,7 +75,7 @@ impl TarStore {
                 let offset = member.data_offset;
                 Ok(ArchiveEntryReader::spawn_with(total, move |tx| {
                     let range = SourceRangeReader::new(source, offset, total);
-                    pump_read(range, &tx, Some(total));
+                    pump_read(range, &tx, Some(total), ArchiveError::from);
                 }))
             }
             codec => {
@@ -178,7 +178,7 @@ fn stream_compressed_member(
             Err(err) => return tx.send_err(ArchiveError::from(err)),
         };
         if entry_matches(&entry, target) {
-            return pump_read(&mut entry, tx, Some(total));
+            return pump_read(&mut entry, tx, Some(total), ArchiveError::from);
         }
     }
     tx.send_err(ArchiveError::NotFound(target.to_string()));
@@ -239,7 +239,7 @@ pub(super) fn stream_subtree(
         }) {
             return; // consumer gone: stop decoding
         }
-        if let Err(err) = pump_chunks(&mut entry, Some(size), |chunk| tx.send_chunk(chunk)) {
+        if let Err(err) = pump_chunks(&mut entry, Some(size), |chunk| tx.send_chunk(chunk), ArchiveError::from) {
             return tx.send_err(err);
         }
         if wanted.is_empty() {

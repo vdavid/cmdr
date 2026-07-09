@@ -735,7 +735,7 @@ fn a_local_path_add_carries_the_source_files_mtime() {
     // Re-parse via the app's index: the added entry reports the SOURCE mtime
     // (within DOS granularity), not the archive's write time.
     let source = LocalFileSource::open(&path).expect("open archive");
-    let index = ArchiveIndex::parse(std::sync::Arc::new(source), ArchiveFormat::Zip).expect("parse index");
+    let index = ArchiveIndex::parse(std::sync::Arc::new(source), ArchiveFormat::Zip, None).expect("parse index");
     let reported = index
         .get("added.txt")
         .and_then(|n| n.modified)

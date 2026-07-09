@@ -623,6 +623,18 @@
   "@errors.listing.archiveUnreadable.suggestion": {
     "sourceHash": "67b7e70"
   },
+  "errors.listing.archiveNeedsPassword.title": "Cette archive nécessite un mot de passe",
+  "@errors.listing.archiveNeedsPassword.title": {
+    "sourceHash": "d6d0ad4"
+  },
+  "errors.listing.archiveNeedsPassword.explanation": "Cette archive est protégée : son contenu reste verrouillé tant que vous ne l'avez pas déverrouillée.",
+  "@errors.listing.archiveNeedsPassword.explanation": {
+    "sourceHash": "f566496"
+  },
+  "errors.listing.archiveNeedsPassword.suggestion": "Saisissez le mot de passe pour la parcourir.",
+  "@errors.listing.archiveNeedsPassword.suggestion": {
+    "sourceHash": "4043af6"
+  },
   "errors.listing.emptyRootICloud.title": "iCloud Drive semble vide",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"

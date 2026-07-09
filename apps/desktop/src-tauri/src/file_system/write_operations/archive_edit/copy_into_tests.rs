@@ -262,7 +262,7 @@ async fn overwrite_older_overwrites_only_a_strictly_older_entry() {
     write_zip_with_mtime(&archive_c, "d/f.txt", b"KEEP", old);
     let parsed_mtime = {
         let src = LocalFileSource::open(&archive_c).expect("open archive");
-        let index = ArchiveIndex::parse(Arc::new(src), ArchiveFormat::Zip).expect("parse index");
+        let index = ArchiveIndex::parse(Arc::new(src), ArchiveFormat::Zip, None).expect("parse index");
         index.get("d/f.txt").and_then(|n| n.modified).expect("entry mtime")
     };
     let src_c = tmp.path().join("srcc");

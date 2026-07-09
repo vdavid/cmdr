@@ -9,8 +9,8 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 use super::super::test_fixtures::{
-    FixtureFile, build_zip, build_zipcrypto_zip, deflated, dir, encrypted_entry, overstate_record_count,
-    set_first_entry_encrypted, stored,
+    FixtureFile, build_encrypted_7z, build_zip, build_zipcrypto_zip, deflated, dir, encrypted_entry,
+    overstate_record_count, set_first_entry_encrypted, stored,
 };
 use super::*;
 use crate::file_system::volume::backends::InMemoryVolume;
@@ -45,6 +45,13 @@ impl TestArchive {
 
     fn volume_with_parent(&self, parent: Arc<dyn Volume>) -> ArchiveVolume {
         ArchiveVolume::new(parent, self.path.clone(), ArchiveFormat::Zip)
+    }
+
+    /// A local-backed volume over the fixture bytes read as a 7z (the path
+    /// extension is cosmetic; `ArchiveVolume` takes the format explicitly).
+    fn sevenz_volume(&self) -> ArchiveVolume {
+        let parent = Arc::new(InMemoryVolume::new("parent").with_local_fs_access());
+        ArchiveVolume::new(parent, self.path.clone(), ArchiveFormat::SevenZ)
     }
 }
 
@@ -450,6 +457,48 @@ async fn a_wrong_password_surfaces_as_needs_password_wrong_attempt() {
         matches!(err, VolumeError::NeedsPassword { wrong_attempt: true }),
         "got {err:?}"
     );
+}
+
+// ---- Header-encrypted 7z: password needed to BROWSE, not just extract -------
+
+#[tokio::test]
+async fn header_encrypted_7z_browse_prompts_then_lists_and_extracts() {
+    // A `-mhe=on` 7z encrypts its metadata, so even LISTING needs the password
+    // (unlike an encrypted zip, whose central directory is plaintext).
+    let bytes = build_encrypted_7z(&[("secret.txt", b"top secret 7z")], "hunter2", true);
+    let archive = TestArchive::from_bytes(bytes);
+    let volume = archive.sevenz_volume();
+
+    // No password: even the directory listing surfaces the typed needs-password
+    // signal — the browse-time prompt (a zip would have listed fine here).
+    assert!(matches!(
+        volume.list_directory(Path::new(""), None).await,
+        Err(VolumeError::NeedsPassword { wrong_attempt: false })
+    ));
+
+    // After storing the password, browsing AND extraction work.
+    volume.set_password("hunter2".to_string());
+    assert_eq!(
+        names(&volume.list_directory(Path::new(""), None).await.unwrap()),
+        vec!["secret.txt"]
+    );
+    assert_eq!(
+        read_all(&volume, Path::new("secret.txt")).await.unwrap(),
+        b"top secret 7z"
+    );
+}
+
+#[tokio::test]
+async fn header_encrypted_7z_wrong_password_browse_is_wrong_attempt() {
+    let bytes = build_encrypted_7z(&[("secret.txt", b"top secret")], "correct", true);
+    let archive = TestArchive::from_bytes(bytes);
+    let volume = archive.sevenz_volume();
+    volume.set_password("wrong".to_string());
+    // Browsing with the wrong password re-prompts with the wrong-attempt copy.
+    assert!(matches!(
+        volume.list_directory(Path::new(""), None).await,
+        Err(VolumeError::NeedsPassword { wrong_attempt: true })
+    ));
 }
 
 #[tokio::test]

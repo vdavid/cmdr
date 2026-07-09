@@ -114,11 +114,11 @@ tauri-plugin-playwright = { version = "0.4.1", optional = true }
 # Error reporter: zip the bundle (manifest + redacted log files). `deflate` is the default
 # compression algorithm; we don't need bzip2/zstd/etc. for log text.
 # Also the archive read side's decrypt path: rc-zip parses the index but does NOT decrypt, so
-# a legacy PKWARE ZipCrypto entry's bytes are read through this crate's `by_index_decrypt`
-# (ZipCrypto needs no feature — it's what macOS Archive Utility / `zip -e` produce). WinZip AES
-# would need the `aes-crypto` feature (crate `aes`), which currently CONFLICTS with `smb2`'s
-# pinned `aes =0.9.0-rc.4` (its SMB3 AEAD stack), so AES decrypt is deferred — see DETAILS.
-zip = { version = "8.6", default-features = false, features = ["deflate"] }
+# an encrypted entry's bytes are read through this crate's `by_index_decrypt`. `aes-crypto`
+# adds WinZip AES (AE-1/AE-2, crate `aes`) on top of the built-in legacy PKWARE ZipCrypto (what
+# macOS Archive Utility / `zip -e` produce); both decrypt by central-directory ordinal in the
+# archive read core. `aes 0.9.1` (stable) unifies with `smb2`'s SMB3 AEAD stack.
+zip = { version = "8.6", default-features = false, features = ["deflate", "aes-crypto"] }
 # Archive browsing (read side): rc-zip is a sans-IO zip reader whose state machines
 # (`ArchiveFsm` for the central directory, `EntryFsm` for per-entry decompression) request byte
 # ranges and let the caller supply them under any I/O model. We drive those fsms directly over
@@ -151,12 +151,11 @@ bzip2 = "0.6.1"
 ruzstd = "0.8.3"
 lzma-rust2 = "0.16.4"
 # LZMA/LZMA2 decode is built in (via `lzma-rust2`); `bzip2`/`deflate`/`ppmd` add
-# the other common 7z codecs (all pure-Rust). `aes256` (7z AES decrypt) stays OFF:
-# it pulls `aes ^0.9` (stable 0.9.1), which conflicts with `smb2`'s pinned
-# `aes =0.9.0-rc.4`, so an encrypted 7z still surfaces a typed refusal for now
-# (see DETAILS — deferred with WinZip AES zip until the `aes` versions align).
-# `compress` (encoders) stays off — decode only.
-sevenz-rust2 = { version = "0.21.2", default-features = false, features = ["bzip2", "deflate", "ppmd", "util"] }
+# the other common 7z codecs (all pure-Rust). `aes256` decrypts a password-protected
+# 7z (the `AES256_SHA256` coder, over `aes 0.9.1` stable, which unifies with `smb2`'s
+# SMB3 AEAD stack); the archive read core threads a per-archive password through parse
+# and every re-open. `compress` (encoders) stays off — decode only.
+sevenz-rust2 = { version = "0.21.2", default-features = false, features = ["aes256", "bzip2", "deflate", "ppmd", "util"] }
 # Wipes the per-archive password from memory on drop (`Zeroizing<String>` on the
 # `ArchiveVolume`). Already in the tree transitively; pinned to the locked 1.9.0
 # so no new crate is added.
@@ -307,10 +306,12 @@ tempfile = "3"
 # (no checked-in blobs), so tests need the ENCODERS the shipped decode-only path
 # omits. `zstd` (C, dev-only — already in the graph via rc-zip) encodes `.tar.zst`
 # fixtures (the shipped path decodes with pure-Rust `ruzstd`). `sevenz-rust2`'s
-# `compress` feature adds the 7z encoder for building 7z fixtures; dev-deps are
-# excluded from release builds, so the shipped binary stays decode-only.
+# `compress` feature adds the 7z encoder for building 7z fixtures; `aes256` lets those
+# fixtures be AES-encrypted (content or `-mhe`-style header encryption) so the decrypt
+# path is tested against real encrypted 7z bytes. Dev-deps are excluded from release
+# builds, so the shipped binary stays decode-only.
 zstd = "0.13"
-sevenz-rust2 = { version = "0.21.2", default-features = false, features = ["compress", "util"] }
+sevenz-rust2 = { version = "0.21.2", default-features = false, features = ["aes256", "compress", "util"] }
 # Property-based testing. Used for algorithmic functions where the input space
 # is too large for example tests to cover meaningfully (parser, glob→regex,
 # topological sort, Unicode collation). Pinned at 1.11.0 (published 2026-03-24,

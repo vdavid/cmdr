@@ -1312,6 +1312,12 @@
                     edgeFlow.handleCancelLoading(paneId, cancelledPath, selectName)
                 }}
                 onMtpFatalError={(msg: string) => edgeFlow.handleMtpFatalError(paneId, msg)}
+                onArchiveNeedsPassword={(info: {
+                    volumeId: string
+                    archivePath: string
+                    wrongAttempt: boolean
+                    retry: () => void
+                }) => { dialogs.showArchivePasswordForBrowse(info); }}
                 unreachable={getActiveTab(tabMgr).unreachable}
                 onRetryUnreachable={() => edgeFlow.handleRetryUnreachable(paneId)}
                 onOpenHome={() => edgeFlow.handleOpenHome(paneId)}

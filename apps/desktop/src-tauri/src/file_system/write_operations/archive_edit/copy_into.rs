@@ -298,7 +298,7 @@ fn build_copy_into_changeset_inner(
             message: e.to_string(),
         })
     })?;
-    let index = ArchiveIndex::parse(Arc::new(source), ArchiveFormat::Zip).map_err(|e| {
+    let index = ArchiveIndex::parse(Arc::new(source), ArchiveFormat::Zip, None).map_err(|e| {
         PlanError::Op(WriteOperationError::WriteError {
             path: archive_path.display().to_string(),
             message: e.to_string(),

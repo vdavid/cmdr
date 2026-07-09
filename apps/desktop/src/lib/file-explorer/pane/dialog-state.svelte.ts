@@ -82,6 +82,16 @@ export interface ArchivePasswordPropsData {
   parentVolumeId: string
   /** The archive path (or an inner path) to store the password against. */
   archivePath: string
+  /**
+   * Which flow raised the prompt:
+   * - `'transfer'`: a copy/move out of an encrypted archive; on unlock it
+   *   re-dispatches the same operation via `transferProgressProps`.
+   * - `'browse'`: a directory listing of a header-encrypted archive; on unlock it
+   *   re-lists the same directory via `retry`.
+   */
+  mode: 'transfer' | 'browse'
+  /** Browse mode only: re-load the same directory after the password is stored. */
+  retry?: () => void
 }
 
 export interface DeleteDialogPropsData {
@@ -300,6 +310,31 @@ export function createDialogState(deps: DialogStateDeps) {
       showDeleteDialog = true
     },
 
+    /** Raises the browse-time archive-password prompt: a directory listing of a
+     *  header-encrypted archive failed because its metadata is encrypted, so even
+     *  listing needs the password. Distinct from the transfer path (no
+     *  `transferProgressProps`); on unlock `retry` re-lists the same directory. */
+    showArchivePasswordForBrowse(info: {
+      volumeId: string
+      archivePath: string
+      wrongAttempt: boolean
+      retry: () => void
+    }) {
+      log.info('Directory listing needs an archive password ({state}): {path}', {
+        state: info.wrongAttempt ? 'rejected' : 'first prompt',
+        path: info.archivePath,
+      })
+      archivePasswordProps = {
+        archiveName: archiveNameFromPath(info.archivePath),
+        wrongAttempt: info.wrongAttempt,
+        parentVolumeId: info.volumeId,
+        archivePath: info.archivePath,
+        mode: 'browse',
+        retry: info.retry,
+      }
+      showArchivePasswordDialog = true
+    },
+
     // --- Handler functions (passed to DialogManager) ---
 
     handleTransferConfirm(
@@ -484,6 +519,7 @@ export function createDialogState(deps: DialogStateDeps) {
           wrongAttempt: error.wrongAttempt,
           parentVolumeId: transferProgressProps.sourceVolumeId,
           archivePath: error.path,
+          mode: 'transfer',
         }
         showTransferProgressDialog = false
         showArchivePasswordDialog = true
@@ -507,15 +543,40 @@ export function createDialogState(deps: DialogStateDeps) {
       showTransferErrorDialog = true
     },
 
-    /** Stores the entered password on the backend, then re-dispatches the same
-     *  copy/move so the extract path can decrypt. A fresh scan runs (the previous
-     *  preview was consumed), so `previewId` is cleared and `scanInProgress` off.
-     *  If the password is wrong again, the backend raises `archive_needs_password`
-     *  with `wrongAttempt: true` and the interception re-prompts. */
+    /** Stores the entered password on the backend, then retries whatever raised
+     *  the prompt: browse mode re-lists the directory, transfer mode re-dispatches
+     *  the copy/move. Either way a wrong password re-raises the prompt (with
+     *  `wrongAttempt: true`). */
     handleArchivePasswordSubmit(password: string) {
       const pw = archivePasswordProps
+      if (!pw) return
+
+      // Browse path: store the password, then re-list the SAME directory. A wrong
+      // password makes the re-list raise `archiveNeedsPassword` with
+      // `wrongAttempt: true`, so the loader re-invokes the browse prompt.
+      if (pw.mode === 'browse') {
+        const retry = pw.retry
+        showArchivePasswordDialog = false
+        archivePasswordProps = null
+        void (async () => {
+          try {
+            await setArchivePassword(pw.parentVolumeId, pw.archivePath, password)
+          } catch (err) {
+            // A store failure means the re-list will re-prompt (the password never
+            // landed); surface nothing beyond the log.
+            log.warn('Failed to store archive password: {error}', { error: err })
+          }
+          retry?.()
+        })()
+        return
+      }
+
+      // Transfer path: store the password, then re-dispatch the same copy/move so
+      // the extract path can decrypt. A fresh scan runs (the previous preview was
+      // consumed), so `previewId` is cleared and `scanInProgress` off. A wrong
+      // password again raises `archive_needs_password` with `wrongAttempt: true`.
       const props = transferProgressProps
-      if (!pw || !props) return
+      if (!props) return
 
       showArchivePasswordDialog = false
       archivePasswordProps = null
@@ -534,14 +595,26 @@ export function createDialogState(deps: DialogStateDeps) {
       })()
     },
 
-    /** The user dismissed the password prompt: forget any stored password and
-     *  settle the operation exactly as a dismissed transfer error would (refresh
-     *  panes, drop the source-pane snapshot and selection), so nothing looks stuck. */
+    /** The user dismissed the password prompt: forget any stored password. Browse
+     *  mode just closes the prompt, leaving the "This archive needs a password"
+     *  fallback pane in place (the loader already settled it), so the user simply
+     *  doesn't get in. Transfer mode settles the operation exactly as a dismissed
+     *  transfer error would (refresh panes, drop the source-pane snapshot and
+     *  selection), so nothing looks stuck. */
     handleArchivePasswordCancel() {
       const pw = archivePasswordProps
       if (pw) {
         void clearArchivePassword(pw.parentVolumeId, pw.archivePath)
       }
+
+      if (pw?.mode === 'browse') {
+        log.info('Browse archive-password prompt cancelled')
+        showArchivePasswordDialog = false
+        archivePasswordProps = null
+        deps.onRefocus()
+        return
+      }
+
       const op = transferProgressProps?.operationType ?? 'copy'
       log.info('{op} archive-password prompt cancelled', { op: transferOpLabel(op) })
 

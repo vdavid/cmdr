@@ -7,6 +7,7 @@ use std::io::Write;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use super::super::test_fixtures::build_encrypted_7z;
 use super::*;
 
 /// Wraps a byte source and counts reads that start at offset 0. A sequential
@@ -122,7 +123,7 @@ fn compress(codec: TarCodec, plain: &[u8]) -> Vec<u8> {
 fn parse_tar(codec: TarCodec, items: &[TarItem]) -> (ArchiveIndex, Arc<dyn ArchiveByteSource>) {
     let bytes = compress(codec, &build_tar(items));
     let src: Arc<dyn ArchiveByteSource> = Arc::new(BytesSource::new(bytes));
-    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::Tar(codec)).expect("parse tar");
+    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::Tar(codec), None).expect("parse tar");
     (index, src)
 }
 
@@ -252,7 +253,7 @@ fn tar_traversal_entry_is_quarantined_not_browsable() {
     bytes.extend(std::iter::repeat_n(0u8, 1024));
 
     let src: Arc<dyn ArchiveByteSource> = Arc::new(BytesSource::new(bytes));
-    let index = ArchiveIndex::parse(src, ArchiveFormat::Tar(TarCodec::Plain)).expect("parse");
+    let index = ArchiveIndex::parse(src, ArchiveFormat::Tar(TarCodec::Plain), None).expect("parse");
 
     assert_eq!(
         index.list("").unwrap().into_iter().map(|n| n.name).collect::<Vec<_>>(),
@@ -306,11 +307,11 @@ async fn one_pass_subtree_extract_decodes_a_compressed_tar_once() {
         inner: Arc::new(BytesSource::new(bytes)),
         zero_offset_reads: Arc::clone(&zero_reads),
     });
-    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::Tar(TarCodec::Gzip)).expect("parse");
+    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::Tar(TarCodec::Gzip), None).expect("parse");
 
     // The parse itself scans the whole stream once; measure only the extract.
     let baseline = zero_reads.load(Ordering::SeqCst);
-    let mut reader = index.open_subtree_extract("docs", Arc::clone(&src));
+    let mut reader = index.open_subtree_extract("docs", Arc::clone(&src), None);
     let got = drain_subtree(&mut reader).await;
     let extract_passes = zero_reads.load(Ordering::SeqCst) - baseline;
 
@@ -345,7 +346,7 @@ async fn one_pass_subtree_extract_skipping_a_member_still_reads_the_rest() {
             TarItem::File("docs/keep.txt", b"kept"),
         ],
     );
-    let mut reader = index.open_subtree_extract("docs", src);
+    let mut reader = index.open_subtree_extract("docs", src, None);
 
     // First member: take the header but DON'T drain its chunks (a skip).
     let first = reader.next_member().await.expect("next_member").expect("a member");
@@ -378,10 +379,10 @@ async fn one_pass_subtree_extract_decodes_a_solid_7z_once() {
         inner: Arc::new(BytesSource::new(bytes)),
         zero_offset_reads: Arc::clone(&zero_reads),
     });
-    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::SevenZ).expect("parse 7z");
+    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::SevenZ, None).expect("parse 7z");
 
     let baseline = zero_reads.load(Ordering::SeqCst);
-    let mut reader = index.open_subtree_extract("docs", Arc::clone(&src));
+    let mut reader = index.open_subtree_extract("docs", Arc::clone(&src), None);
     let got = drain_subtree(&mut reader).await;
     let extract_passes = zero_reads.load(Ordering::SeqCst) - baseline;
 
@@ -421,8 +422,23 @@ fn build_7z_solid(files: &[(&str, &[u8])]) -> Vec<u8> {
 
 fn parse_7z(bytes: Vec<u8>) -> (ArchiveIndex, Arc<dyn ArchiveByteSource>) {
     let src: Arc<dyn ArchiveByteSource> = Arc::new(BytesSource::new(bytes));
-    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::SevenZ).expect("parse 7z");
+    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::SevenZ, None).expect("parse 7z");
     (index, src)
+}
+
+/// Reads an inner entry WITH a password (the [`read_all`] variant for encrypted 7z).
+async fn read_all_pw(
+    index: &ArchiveIndex,
+    src: Arc<dyn ArchiveByteSource>,
+    inner: &str,
+    password: &str,
+) -> Result<Vec<u8>, ArchiveError> {
+    let mut reader = index.open_read(inner, src, Some(password))?;
+    let mut out = Vec::new();
+    while let Some(chunk) = reader.next_chunk().await {
+        out.extend_from_slice(&chunk?);
+    }
+    Ok(out)
 }
 
 #[tokio::test]
@@ -451,4 +467,98 @@ async fn sevenz_solid_block_extracts_a_later_member() {
 
     assert_eq!(read_all(&index, Arc::clone(&src), "a.txt").await.unwrap(), b"alpha");
     assert_eq!(read_all(&index, src, "c.bin").await.unwrap(), last);
+}
+
+// ---- 7z AES encryption -----------------------------------------------------
+
+#[tokio::test]
+async fn sevenz_content_encrypted_lists_without_password_and_decrypts_with_one() {
+    // Content-encrypted (`-mhe=off`): the metadata header is plaintext, so browsing
+    // works with no password; only extraction needs one.
+    let (index, src) = parse_7z(build_encrypted_7z(
+        &[("readme.txt", b"hello 7z"), ("dir/inner.bin", b"nested secret")],
+        "hunter2",
+        false,
+    ));
+    let names = |p: &str| -> Vec<String> { index.list(p).unwrap().into_iter().map(|n| n.name).collect() };
+    assert_eq!(names(""), vec!["dir", "readme.txt"], "listing works with no password");
+
+    let got = read_all_pw(&index, src, "dir/inner.bin", "hunter2")
+        .await
+        .expect("extract");
+    assert_eq!(got, b"nested secret", "correct password must yield the plaintext");
+}
+
+#[tokio::test]
+async fn sevenz_content_encrypted_no_password_is_the_encrypted_signal() {
+    let (index, src) = parse_7z(build_encrypted_7z(&[("s.txt", b"secret")], "pw", false));
+    // Extraction with no password is the typed needs-password prompt.
+    let err = read_all(&index, src, "s.txt").await.unwrap_err();
+    assert!(matches!(err, ArchiveError::Encrypted), "got {err:?}");
+}
+
+#[tokio::test]
+async fn sevenz_content_encrypted_wrong_password_is_typed_wrong_password() {
+    let (index, src) = parse_7z(build_encrypted_7z(&[("s.txt", b"secret")], "correct", false));
+    let err = read_all_pw(&index, src, "s.txt", "wrong").await.unwrap_err();
+    assert!(matches!(err, ArchiveError::WrongPassword), "got {err:?}");
+}
+
+#[tokio::test]
+async fn sevenz_header_encrypted_needs_password_to_even_list() {
+    // Header-encrypted (`-mhe=on`): the metadata is itself encrypted, so parsing
+    // (browsing) fails without the password — the browse-time prompt. With it, the
+    // archive lists AND extracts.
+    let bytes = build_encrypted_7z(&[("secret.txt", b"top secret 7z")], "hunter2", true);
+    let src: Arc<dyn ArchiveByteSource> = Arc::new(BytesSource::new(bytes));
+
+    // No password: parse itself yields the typed needs-password signal.
+    let err = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::SevenZ, None).unwrap_err();
+    assert!(
+        matches!(err, ArchiveError::Encrypted),
+        "browse without password: got {err:?}"
+    );
+
+    // Correct password: lists and extracts.
+    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::SevenZ, Some("hunter2")).expect("parse with pw");
+    let names: Vec<String> = index.list("").unwrap().into_iter().map(|n| n.name).collect();
+    assert_eq!(names, vec!["secret.txt"]);
+    let got = read_all_pw(&index, src, "secret.txt", "hunter2")
+        .await
+        .expect("extract");
+    assert_eq!(got, b"top secret 7z");
+}
+
+#[tokio::test]
+async fn sevenz_header_encrypted_wrong_password_is_typed_wrong_password() {
+    // A wrong password on a header-encrypted archive decrypts the metadata to
+    // garbage that fails its integrity check. Because a password WAS supplied, the
+    // read core types that as WrongPassword (the re-prompt), never a panic/hang and
+    // never Unsupported ("can't open this kind").
+    let bytes = build_encrypted_7z(&[("secret.txt", b"top secret")], "correct", true);
+    let src: Arc<dyn ArchiveByteSource> = Arc::new(BytesSource::new(bytes));
+    let err = ArchiveIndex::parse(src, ArchiveFormat::SevenZ, Some("wrong")).unwrap_err();
+    assert!(matches!(err, ArchiveError::WrongPassword), "got {err:?}");
+}
+
+#[tokio::test]
+async fn sevenz_encrypted_solid_subtree_extract_with_password() {
+    // The one-pass subtree extractor (solid 7z, content-encrypted) must thread the
+    // password through its single decode pass.
+    let bytes = build_encrypted_7z(
+        &[
+            ("docs/a.txt", b"alpha"),
+            ("docs/b.txt", b"bravo"),
+            ("other.txt", b"skip"),
+        ],
+        "pw",
+        false,
+    );
+    let src: Arc<dyn ArchiveByteSource> = Arc::new(BytesSource::new(bytes));
+    let index = ArchiveIndex::parse(Arc::clone(&src), ArchiveFormat::SevenZ, None).expect("parse");
+    let mut reader = index.open_subtree_extract("docs", src, Some("pw"));
+    let got = drain_subtree(&mut reader).await;
+    assert_eq!(got.get("docs/a.txt").map(Vec::as_slice), Some(b"alpha".as_ref()));
+    assert_eq!(got.get("docs/b.txt").map(Vec::as_slice), Some(b"bravo".as_ref()));
+    assert!(!got.contains_key("other.txt"), "only the requested subtree is yielded");
 }

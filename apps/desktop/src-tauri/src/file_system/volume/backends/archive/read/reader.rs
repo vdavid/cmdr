@@ -129,12 +129,19 @@ impl ArchiveEntryReader {
 /// must stop at the member's exact size rather than reading to EOF. The 7z entry
 /// reader yields exactly the entry's bytes, so it passes `None`.
 ///
+/// `map_err` classifies a read error into a typed [`ArchiveError`]. Most callers
+/// pass [`ArchiveError::from`]; the 7z path passes a password-aware classifier
+/// (a decode integrity failure under a supplied password is a wrong password —
+/// see `sevenz::map_stream_err`), which is why the mapper is a parameter rather
+/// than hardcoded.
+///
 /// Shared by the per-entry [`pump_read`] and the one-pass subtree extractor (see
 /// [`super::extract`]).
 pub(super) fn pump_chunks(
     mut reader: impl Read,
     limit: Option<u64>,
     mut emit: impl FnMut(Vec<u8>) -> bool,
+    map_err: impl Fn(std::io::Error) -> ArchiveError,
 ) -> Result<(), ArchiveError> {
     let mut remaining = limit;
     let mut buf = vec![0u8; CHUNK_SIZE];
@@ -154,16 +161,21 @@ pub(super) fn pump_chunks(
                     return Ok(()); // consumer gone: cancel
                 }
             }
-            Err(err) => return Err(ArchiveError::from(err)),
+            Err(err) => return Err(map_err(err)),
         }
     }
 }
 
 /// Pumps a decoded entry stream into the single-entry chunk sink [`ChunkTx`],
-/// forwarding a read error as a typed [`ArchiveError`]. Thin wrapper over
-/// [`pump_chunks`] for the per-entry [`ArchiveEntryReader`] producers.
-pub(super) fn pump_read(reader: impl Read, tx: &ChunkTx, limit: Option<u64>) {
-    if let Err(err) = pump_chunks(reader, limit, |chunk| tx.send(chunk)) {
+/// forwarding a read error as a typed [`ArchiveError`] via `map_err`. Thin wrapper
+/// over [`pump_chunks`] for the per-entry [`ArchiveEntryReader`] producers.
+pub(super) fn pump_read(
+    reader: impl Read,
+    tx: &ChunkTx,
+    limit: Option<u64>,
+    map_err: impl Fn(std::io::Error) -> ArchiveError,
+) {
+    if let Err(err) = pump_chunks(reader, limit, |chunk| tx.send(chunk), map_err) {
         tx.send_err(err);
     }
 }
