@@ -326,6 +326,19 @@ dialog caption).
 **This milestone decides whether Feature 2 ships. Build the estimator, measure it on real mixes, and stop at the gate.**
 No dialog UI in M6.
 
+> **M6 DONE (2026-07-09) — VERDICT: GO for the local sampling estimator; SUPPRESS the estimate on remote (SMB/MTP)
+> sources.** Full evidence, decision table, and recommended M7 parameters:
+> [`docs/notes/compress-size-estimate-spike.md`](../notes/compress-size-estimate-spike.md). Summary: on five real mixes
+> the local sampling estimator clears both bars with margin (overall median absolute error 1.3%, worst realistic mix
+> 6.9%); only the deliberately adversarial synthetic mix exceeds 30% (37%, in the safe overestimate direction).
+> Extension-only clears the realistic-mix bars too but has an unbounded silent failure (833% on one mistyped file) with
+> no sampling safety net, so remote stays suppressed per the lead default. Recommended M7 params: 32 KiB head window, 8
+> MiB byte budget, 4 KiB tiny threshold (running-average ratio), the incompressible-extension shortcut table, and the
+> measured per-class level-scaling curve applied arithmetically (no re-sampling per slider tick). Bounded added cost
+> ~105 ms worst case, near-zero for media-heavy folders; run the sample-deflate off the walk thread. **M7 is GO.** Side
+> finding for Feature 1: with `flate2`/`miniz_oxide`, levels 6–9 differ by < 0.5% (the "Smaller" half of the slider is
+> nearly inert; all real reduction is at levels 1–4).
+
 - **Build the Rust estimator behind the scan (local FS path only):** in `walk_dir_recursive`'s per-file branch
   (scan.rs:89-105), behind a `sample_for_estimate: bool` flag threaded from `start_scan_preview` (only set for compress
   scans), for each file:
