@@ -5,7 +5,7 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.33.0] - 2026-07-09
 
 1. Cmdr now handles archives: browse `.zip`, `.tar`, `.tar.gz`, and `.7z` files like folders, edit them in place, even
    ones stored on a phone or SMB share. 2. Can now paste text or images straight into new files with ⌘V. 3. Search now
