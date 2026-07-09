@@ -1,4 +1,4 @@
-import { DEFAULT_VOLUME_ID, getFileAt, getFilesAtIndices } from '$lib/tauri-commands'
+import { DEFAULT_VOLUME_ID, createDirectory, createFile, getFileAt, getFilesAtIndices } from '$lib/tauri-commands'
 import { pluralize } from '$lib/utils/pluralize'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
@@ -175,6 +175,29 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       initialName,
       volumeId: volumeIdForPane,
     })
+  }
+
+  /**
+   * Creates a folder directly on the focused pane (the MCP `mkdir` autoConfirm
+   * path), using the pane's LIVE path + volumeId so it can't land in a stale
+   * directory. Throws the read-only refusal or the backend conflict error, which
+   * the mcp-mkdir listener relays as the tool's failure.
+   */
+  async function createFolderDirect(name: string): Promise<void> {
+    const refusal = readOnlyRefusal('mkdir')
+    if (refusal) throw new Error(refusal.message)
+    const path = access.getPanePath(access.getFocusedPane())
+    const volumeId = access.getPaneVolumeId(access.getFocusedPane())
+    await createDirectory(path, name, volumeId)
+  }
+
+  /** Creates an empty file directly on the focused pane (MCP `mkfile` autoConfirm). */
+  async function createFileDirect(name: string): Promise<void> {
+    const refusal = readOnlyRefusal('mkfile')
+    if (refusal) throw new Error(refusal.message)
+    const path = access.getPanePath(access.getFocusedPane())
+    const volumeId = access.getPaneVolumeId(access.getFocusedPane())
+    await createFile(path, name, volumeId)
   }
 
   /** Closes any confirmation dialog (new folder, new file, or transfer) if open (for MCP). */
@@ -593,6 +616,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     isRenaming,
     openNewFolderDialog,
     openNewFileDialog,
+    createFolderDirect,
+    createFileDirect,
     closeConfirmationDialog,
     isConfirmationDialogOpen,
     openViewerForCursor,

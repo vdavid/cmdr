@@ -301,6 +301,43 @@ test.describe('MCP delete mode', () => {
   })
 })
 
+test.describe('MCP named create', () => {
+  test('mkdir autoConfirm creates in the freshly-navigated dir, not a stale one', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    // Nav into a subdir (warms the pane state there), then nav back up and create
+    // immediately — the create must land in `left/`, not the stale `left/sub-dir/`.
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left', 'sub-dir'))
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+    const result = await mcpCall('mkdir', { name: 'mcp-made', autoConfirm: true })
+    expect(result).toContain('OK')
+
+    await expect
+      .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'mcp-made')), { timeout: 5000 })
+      .toBeTruthy()
+    // Not created in the previous (stale) directory.
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'sub-dir', 'mcp-made'))).toBe(false)
+  })
+
+  test('mkfile autoConfirm creates an empty file, honest conflict on a duplicate', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+
+    const ok = await mcpCall('mkfile', { name: 'mcp-note.txt', autoConfirm: true })
+    expect(ok).toContain('OK')
+    await expect
+      .poll(() => fs.existsSync(path.join(fixtureRoot, 'left', 'mcp-note.txt')), { timeout: 5000 })
+      .toBeTruthy()
+
+    // A duplicate is an honest conflict error (create refuses an existing path).
+    await expect(mcpCall('mkfile', { name: 'mcp-note.txt', autoConfirm: true })).rejects.toThrow()
+  })
+})
+
 test.describe('Create folder round-trip', () => {
   test('creates a new folder via F7 and verifies on disk', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)

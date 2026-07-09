@@ -86,8 +86,8 @@ export interface CommandArgsOptionalOverrides {
   'file.compress': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string }
   'file.delete': { autoConfirm?: boolean; permanent?: boolean; mcpRequestId?: string }
   'file.rename': { initialName?: string; expectedName?: string }
-  'file.newFolder': { name?: string; autoConfirm?: boolean; mcpRequestId?: string }
-  'file.newFile': { name?: string; autoConfirm?: boolean; mcpRequestId?: string }
+  'file.newFolder': { name?: string }
+  'file.newFile': { name?: string }
 }
 
 /**

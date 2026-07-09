@@ -743,6 +743,16 @@
         await fileOps.openNewFileDialog(name)
     }
 
+    /** Creates a folder directly on the focused pane's live path (MCP autoConfirm). */
+    export async function createFolderDirect(name: string) {
+        await fileOps.createFolderDirect(name)
+    }
+
+    /** Creates an empty file directly on the focused pane's live path (MCP autoConfirm). */
+    export async function createFileDirect(name: string) {
+        await fileOps.createFileDirect(name)
+    }
+
     /** Closes any confirmation dialog (new folder, new file, or transfer) if open (for MCP). */
     export function closeConfirmationDialog() {
         fileOps.closeConfirmationDialog()

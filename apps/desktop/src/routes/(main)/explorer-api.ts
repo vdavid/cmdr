@@ -114,6 +114,8 @@ export interface ExplorerAPI {
   pasteFromClipboard: (forceMove: boolean) => Promise<void>
   openNewFolderDialog: (name?: string) => Promise<void>
   openNewFileDialog: (name?: string) => Promise<void>
+  createFolderDirect: (name: string) => Promise<void>
+  createFileDirect: (name: string) => Promise<void>
   openDeleteDialog: (permanent: boolean, autoConfirm?: boolean, mcpRequestId?: string) => Promise<void>
   closeConfirmationDialog: () => void
   confirmDialog: (dialogType: ConfirmDialogType, onConflict?: string) => void

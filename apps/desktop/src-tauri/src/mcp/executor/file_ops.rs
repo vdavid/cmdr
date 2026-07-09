@@ -413,8 +413,12 @@ enum CreateKind {
     File,
 }
 
-/// Shared body for `mkdir` / `mkfile`. The direct-create path calls the typed
-/// `create_directory` / `create_file` backend on the focused pane; the dialog
+/// Shared body for `mkdir` / `mkfile`.
+///
+/// The direct-create path (`autoConfirm`) is a round-trip: the FE creates using
+/// its LIVE focused-pane path + volumeId (never a backend `PaneStateStore` read,
+/// which lags a nav by the debounced sync — reading it could create in the pane's
+/// previous directory), then replies OK or an honest conflict error. The dialog
 /// path emits the create event (prefilled when `name` is given) and waits for the
 /// naming dialog to mount.
 async fn execute_create<R: Runtime>(
@@ -437,25 +441,17 @@ async fn execute_create<R: Runtime>(
                 "'name' is a name, not a path — it must not contain '/'",
             ));
         }
-        // Create on the FOCUSED pane (mkdir/mkfile have no pane param).
-        let (_pane, state) = super::target_pane_state(app, params)?;
-        if state.path.is_empty() {
-            return Err(ToolError::internal("The focused pane has no synced path yet"));
-        }
-        let volume_id = state.volume_id.clone();
-        let parent = state.path.clone();
-        let created = match kind {
-            CreateKind::Directory => {
-                crate::commands::file_system::create_directory(volume_id, parent, name.clone()).await
-            }
-            CreateKind::File => crate::commands::file_system::create_file(volume_id, parent, name.clone()).await,
-        };
-        created.map_err(|e| ToolError::internal(e.message))?;
         let noun = match kind {
             CreateKind::Directory => "folder",
             CreateKind::File => "file",
         };
-        return Ok(json!(format!("OK: Created {noun} {name}.")));
+        return mcp_round_trip(
+            app,
+            event,
+            json!({ "name": name, "autoConfirm": true }),
+            format!("OK: Created {noun} {name}."),
+        )
+        .await;
     }
 
     // Dialog path: prefill the name when given, else open with the FE's default.

@@ -149,6 +149,37 @@ const navOpenUnderCursorCommand: CommandId = 'nav.openUnderCursor'
 const searchOpenCommand: CommandId = 'search.open'
 const tabMcpActionCommand: CommandId = 'tab.mcpAction'
 
+/**
+ * Runs an MCP direct-create (mkdir/mkfile autoConfirm) and replies on the
+ * `requestId` round-trip: ok on success, or the backend conflict / read-only
+ * refusal error. `create` returns `undefined` when the explorer isn't ready
+ * (HMR / teardown), which we surface as a clean failure rather than a false ok.
+ */
+async function createDirectlyThenReply(
+  create: () => Promise<void> | undefined,
+  name: string | undefined,
+  requestId: string | undefined,
+): Promise<void> {
+  if (requestId === undefined) return
+  const { emit } = await import('@tauri-apps/api/event')
+  if (name === undefined) {
+    await emit('mcp-response', { requestId, ok: false, error: 'autoConfirm requires a name' })
+    return
+  }
+  const pending = create()
+  if (pending === undefined) {
+    await emit('mcp-response', { requestId, ok: false, error: 'Explorer is not ready' })
+    return
+  }
+  try {
+    await pending
+    await emit('mcp-response', { requestId, ok: true })
+  } catch (e) {
+    const error = e instanceof Error ? e.message : String(e)
+    await emit('mcp-response', { requestId, ok: false, error })
+  }
+}
+
 /** Register all MCP event listeners. Call from onMount after listenTauri is ready. */
 export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> {
   const { listenTauri, getExplorer, dispatch, isAiEnabled } = ctx
@@ -468,17 +499,28 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
   })
 
   await listenTauri('mcp-mkdir', (event) => {
-    // Only the dialog path reaches the FE (autoConfirm creates directly in Rust);
-    // `name` prefills the naming dialog.
+    // `name` prefills the naming dialog; with `autoConfirm` it's a round-trip that
+    // creates directly on the pane's LIVE path (so it can't land in a stale dir)
+    // and replies OK or the backend conflict error.
     const raw = asRecord(event.payload)
     const name = typeof raw.name === 'string' ? raw.name : undefined
-    void dispatch(fileNewFolderCommand, { name })
+    const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    if (raw.autoConfirm === true) {
+      void createDirectlyThenReply(() => getExplorer()?.createFolderDirect(name ?? ''), name, requestId)
+    } else {
+      void dispatch(fileNewFolderCommand, { name })
+    }
   })
 
   await listenTauri('mcp-mkfile', (event) => {
     const raw = asRecord(event.payload)
     const name = typeof raw.name === 'string' ? raw.name : undefined
-    void dispatch(fileNewFileCommand, { name })
+    const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    if (raw.autoConfirm === true) {
+      void createDirectlyThenReply(() => getExplorer()?.createFileDirect(name ?? ''), name, requestId)
+    } else {
+      void dispatch(fileNewFileCommand, { name })
+    }
   })
 
   await listenTauri('mcp-delete', (event) => {
