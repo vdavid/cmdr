@@ -18,9 +18,11 @@ This mirrors `file.copy` end to end. `file.copy` is the closest template and is 
 
 - **Zip only.** tar/7z creation is future work.
 - **Fixed compression.** Deflate at the `zip` crate's default level; no UI option in v1.
-- **Local destination only in v1.** Compressing ONTO a remote (SMB/MTP) parent is deferred: the machinery composes (see
-  M1 § remote), but the seed-through-Volume step plus SMB/MTP fixture testing is a separate cost. v1 refuses a remote
-  destination with a typed error; remote-dest compress is future work.
+- **Remote destination ships in M8, local-first until then.** M2 refuses a remote (SMB/MTP) destination with a typed
+  error as the interim state; M8 (the final milestone) replaces the refusal with a seed-through-Volume path riding
+  `pull_apply_upload_swap`. Rationale: the default target is the OTHER pane's path, which is often an SMB share in real
+  use — a shipped Compress that refuses the NAS case would miss the point. If M8 proves heavier than planned, stopping
+  after M7 still ships a safe, typed-refusal feature.
 - **Backend op type reuses `WriteOperationType::ArchiveEdit`.** Compress mechanically IS an archive edit (create a zip,
   copy sources into it), so it rides the existing `ArchiveEdit` op with no new enum variant. The "Compress" identity
   lives in the frontend (`TransferOperationType='compress'`, dialog title, command). See Open questions for the
@@ -334,6 +336,28 @@ helpers and refactor the toggle rather than adding lines. Never bump the allowli
 - **Full check:** `pnpm check` (plus `--include-slow` for the E2E lane). Acceptable pre-existing red: the `quick-xml`
   cargo-audit advisory (Renovate's to close).
 
+### M8 — Remote destination (compress onto SMB/MTP)
+
+Replaces M2's typed refusal with the real thing. The machinery composes: `route_archive_copy_into` already handles a
+remote PARENT via `pull_apply_upload_swap` (pull the remote `.zip` to scratch, apply the edit, upload, swap) — shipped
+for the copy-into-existing-zip case. What's new here is only the seed:
+
+- **Seed through the parent `Volume`, not the local FS.** For a remote parent, write the 22-byte EOCD seed via the
+  parent volume's write API (`write_from_stream` or the smallest existing write seam — read how `pull_apply_upload_swap`
+  uploads and mirror its durability discipline), so the subsequent pull sees a valid empty zip. Respect the existing
+  conflict/overwrite decision from the dialog (an existing remote file at the target was already surfaced by the
+  dest-exists check).
+- **Remove the M2 refusal** and its test; replace with a passing remote-dest test.
+- **Tests:** an SMB integration test compressing two local files onto a Docker-Samba share path (reuse the SMB fixture
+  harness; read `apps/desktop/test/` SMB fixture docs first). MTP: if the same code path composes with the virtual MTP
+  device fixture, add the happy-path test; if it needs MTP-specific work beyond the shared path, scope it out with a
+  typed refusal for MTP only and record why in the archive-edit `DETAILS.md`.
+- **E2E:** extend `compress-basic.spec.ts` with one remote-dest case only if the E2E SMB fixture makes it cheap;
+  otherwise the Rust integration test is the coverage and the spec records that.
+- **Docs:** update the archive-edit `DETAILS.md` compress subsection (seed-through-Volume path), drop the
+  local-only marker comment from M1.
+- **Checks:** `pnpm check clippy rust-test -q` scoped, then `pnpm check --fast`.
+
 ## File-length allowlist risk spots
 
 - **`TransferDialog.svelte` (pinned 976, over the 800 warn line).** The single biggest constraint. M3 must NET-SHRINK it
@@ -347,37 +371,28 @@ helpers and refactor the toggle rather than adding lines. Never bump the allowli
 - `transfer/volume_copy_tests.rs` is already an allowlisted growth warn (2461/2102) — don't pile compress tests into it;
   new backend tests live with `compress.rs` / the command module.
 
-## Open questions (each with a recommendation)
+## Decided questions (lead-reviewed; executors follow these, don't re-litigate)
 
-1. **Distinct `WriteOperationType::Compress` vs reusing `ArchiveEdit`?** The plan reuses `ArchiveEdit` (compress
-   mechanically IS create-zip + copy-into; minimal churn — a new variant touches every `match WriteOperationType` arm,
-   specta bindings, analytics, and the FE catalog). The cost is analytics buckets compress with other archive edits.
-   **Recommendation: reuse `ArchiveEdit` for v1.** If PostHog needs a distinct "compress" signal later, thread a boolean
-   on the op descriptor rather than forking the enum. Flag for David only if he wants compress broken out in analytics
-   from day one.
-2. **Target-file conflict UX: dest-exists overwrite/cancel vs the full conflict-policy UI?** The multi-file policy
-   (skip_all/overwrite_all/rename_all) is about files landing INTO a folder; compress creates ONE new file, so that UI is
-   surprising. **Recommendation: reuse `createTransferDestExistsCheck` for a simple overwrite/cancel (plus the always-
-   editable filename), and hide the conflict-policy control in compress mode.** Less code, less surprise.
-3. **Remote destination in v1?** The machinery composes (seed through the parent `Volume`, then `route_archive_copy_into`
-   handles the remote parent via `pull_apply_upload_swap`), but it adds a seed-through-Volume path plus SMB/MTP fixture
-   testing. **Recommendation: v1 local-dest only with a typed refusal; remote-dest as a fast follow** (small code, the
-   cost is fixtures/testing, not logic). If David wants remote-dest in v1, it's roughly +1 milestone (the seed-through-
-   Volume path + a remote E2E).
-4. **Multiple-selection default filename.** **Recommendation: `<source-directory-basename>.zip`** (predictable — all
-   selected items share the source pane's folder), falling back to the first selection's basename when the source dir is
-   a volume root. Single selection is always `<basename>.zip`. This matches the orthodox two-pane convention (Total
-   Commander defaults the archive name to the parent folder).
-5. **Does Cmdr localize native menu labels, or are they Rust string literals?** M5 verifies in `menu/macos.rs` — Copy is
-   the literal `"Copy..."`, which suggests native labels are NOT run through the i18n catalog, so Compress follows suit
-   with `"Compress..."` and M6 skips the menu label. **Recommendation: match whatever Copy/Move do today.** If native
-   menu localization exists elsewhere, wire the key instead.
+1. **Op type: reuse `WriteOperationType::ArchiveEdit`.** Compress mechanically IS create-zip + copy-into; a new variant
+   touches every `match` arm, specta bindings, analytics, and the FE catalog for no v1 gain. The "Compress" identity is
+   frontend-only (`TransferOperationType='compress'` drives all user-visible titles/labels). If analytics later needs a
+   distinct compress signal, thread a boolean on the op descriptor rather than forking the enum.
+2. **Target-file conflict UX: dest-exists overwrite/cancel.** The multi-file policy UI (skip_all/overwrite_all/...) is
+   about files landing INTO a folder; compress creates ONE new file. Use `createTransferDestExistsCheck` + a simple
+   overwrite/cancel affordance, hide the conflict-policy control in compress mode.
+3. **Remote destination: in scope, as M8** (see the milestone). M2's typed refusal is the interim state, not the
+   contract.
+4. **Multiple-selection default filename: `<source-directory-basename>.zip`**, falling back to the first selection's
+   basename when the source dir is a volume root. Single selection: `<basename>.zip`. Matches the orthodox two-pane
+   convention (Total Commander defaults the archive name to the parent folder).
+5. **Native menu label: match Copy/Move.** Copy is the Rust literal `"Copy..."` (native labels don't run through the
+   i18n catalog), so Compress uses `"Compress..."` and M6 skips the menu label. If that observation turns out wrong in
+   M5, wire whatever mechanism Copy actually uses.
 
 ## Definition of done
 
 Compress works from menu, palette, ⌥F5, and MCP; opens the Transfer dialog as a third mode with a suggested editable
-`.zip` name; packs the cursor item or selection into a new local zip at the other pane's path; cancel leaves no torn
-file; remote destination refuses with a typed error. Backend seed + compress-start are red→green tested; the command
-refusal is tested; a focused E2E covers the happy path + cancel-safety. All new strings translated across 11 locales and
+`.zip` name; packs the cursor item or selection into a new zip at the other pane's path (local, and remote via M8); cancel
+leaves no torn file. Backend seed + compress-start are red→green tested; the remote-dest path is integration-tested; a focused E2E covers the happy path + cancel-safety. All new strings translated across 11 locales and
 passing the i18n lane. TransferDialog net-shrinks (no allowlist bump). Colocated `CLAUDE.md`/`DETAILS.md` current and
 single-sourced. Full `pnpm check` green (bar the sanctioned `quick-xml` red). Self-reviewed solid AND elegant.
