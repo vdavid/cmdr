@@ -101,6 +101,22 @@ pub(super) fn target_pane_state<R: Runtime>(
     Ok((pane, state))
 }
 
+/// Flush the frontend's pending pane-state push for `pane` before a handler reads
+/// `PaneStateStore`, so name/selection/cursor resolution sees the LIVE listing.
+///
+/// `move_cursor` and `select` get this freshness as a side effect (their actions
+/// call `syncStateToMcpNow` before replying); a handler that only READS state to
+/// resolve targets (`tag`) has no such action, so a bare `nav` leaves the store a
+/// debounced-sync behind and a same-named file from the pane's previous directory
+/// could resolve as the target. This round-trip closes that window without moving
+/// the cursor or changing the selection. The FE `mcp-sync-state` listener replies
+/// once the push lands.
+pub(super) async fn flush_pane_state<R: Runtime>(app: &AppHandle<R>, pane: &str) -> Result<(), ToolError> {
+    mcp_round_trip(app, "mcp-sync-state", json!({ "pane": pane }), "ok".to_string())
+        .await
+        .map(|_| ())
+}
+
 /// Resolve the absolute paths a pane tool should act on: explicit `names` win,
 /// else the current selection, else the item under the cursor.
 ///

@@ -403,6 +403,30 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     })()
   })
 
+  await listenTauri('mcp-sync-state', (event) => {
+    // Off-bus round-trip: flush the pane's state to the backend so a name-resolving
+    // tool (`tag`) resolves against the live listing. No cursor/selection change —
+    // it only pushes what the FE already holds.
+    const raw = asRecord(event.payload)
+    const pane = parsePane(raw.pane)
+    const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    if (requestId === undefined) return
+    void (async () => {
+      const { emit } = await import('@tauri-apps/api/event')
+      if (!pane) {
+        await emit('mcp-response', { requestId, ok: false, error: 'Invalid sync-state payload' })
+        return
+      }
+      try {
+        await getExplorer()?.syncPaneStateToMcp(pane)
+        await emit('mcp-response', { requestId, ok: true })
+      } catch (e) {
+        const error = e instanceof Error ? e.message : String(e)
+        await emit('mcp-response', { requestId, ok: false, error })
+      }
+    })()
+  })
+
   await listenTauri('mcp-scroll-to', (event) => {
     const raw = asRecord(event.payload)
     const pane = parsePane(raw.pane)

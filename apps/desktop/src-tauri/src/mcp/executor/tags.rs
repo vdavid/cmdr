@@ -52,7 +52,13 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
             .collect::<Vec<_>>()
     });
 
-    let (pane, state) = super::target_pane_state(app, params)?;
+    // Resolution reads PaneStateStore, so flush the FE's pending push first (the
+    // `move_cursor` / `select` freshness, without moving the cursor): otherwise a
+    // tag right after a bare `nav` could resolve a same-named file from the pane's
+    // previous directory.
+    let (pane, _stale) = super::target_pane_state(app, params)?;
+    super::flush_pane_state(app, &pane).await?;
+    let (_pane, state) = super::target_pane_state(app, params)?;
     let paths = super::resolve_pane_target_paths(&state, names.as_deref())?;
 
     let updates = apply_tag_action(action, &paths, &colors)?;

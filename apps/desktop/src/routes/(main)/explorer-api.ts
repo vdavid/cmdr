@@ -101,6 +101,13 @@ export interface ExplorerAPI {
    */
   handleMcpSelectNames: (pane: 'left' | 'right', names: string[], mode: McpSelectMode) => Promise<void>
   /**
+   * Flush a pane's state to the backend `PaneStateStore` without moving the
+   * cursor or changing the selection (the freshness `handleMcpSelect` /
+   * `moveCursor` push as a side effect). Name-resolving MCP tools (`tag`) call
+   * this so a bare `nav` doesn't leave them resolving against stale state.
+   */
+  syncPaneStateToMcp: (pane: 'left' | 'right') => Promise<void>
+  /**
    * Per-pane tab action from the MCP `tab` tool. Targets a SPECIFIC pane (and
    * optionally a specific tab), unlike the focused-pane `newTab`/`cycleTab`/etc.
    */

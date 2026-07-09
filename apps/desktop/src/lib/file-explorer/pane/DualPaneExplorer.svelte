@@ -1167,6 +1167,14 @@
         await paneCommands.handleMcpSelectNames(pane, names, mode)
     }
 
+    // Flush the pane's state to the backend without moving the cursor or changing
+    // the selection — the freshness `handleMcpSelect` / `moveCursor` get as a side
+    // effect, exposed on its own so name-resolving tools (`tag`) can resolve
+    // against the live listing right after a bare `nav`.
+    export async function syncPaneStateToMcp(pane: 'left' | 'right'): Promise<void> {
+        await getPaneRef(pane)?.syncStateToMcpNow()
+    }
+
     // --- Tab bar handler functions (logic in tab-operations.ts) ---
 
     function handleTabClose(pane: 'left' | 'right', tabId: TabId) {

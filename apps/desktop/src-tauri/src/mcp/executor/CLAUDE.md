@@ -28,7 +28,10 @@ ack signal before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
   `resource_round_trip`. Per-tool timeouts in DETAILS.md.
 - **`move_cursor` and `select` flush the MCP state push (`syncStateToMcpNow`) before replying.** Without the flush, the
   new cursor/selection lives only in FE state until the debounced sync, so a follow-up `copy`/`move`/`delete` reads
-  stale state and `check_operation_has_target` wrongly rejects with "Nothing to copy". Don't drop the flush.
+  stale state and `check_operation_has_target` wrongly rejects with "Nothing to copy". Don't drop the flush. A tool that
+  only READS `PaneStateStore` to resolve targets (no cursor/selection action of its own, e.g. `tag`) gets the same
+  freshness by calling `flush_pane_state(app, pane)` first (the `mcp-sync-state` round-trip) — else a bare `nav` leaves
+  it resolving against the pane's previous directory.
 - **Read filesystem path params through `user_path_param` / `expand_user_path` (in `mod.rs`), never raw
   `params.get(...)`.** Agents routinely send `~/Downloads`; the FE and existence checks need absolute paths, and a
   literal `~` either fails validation or silently never matches and burns the full timeout. Validate existence via
