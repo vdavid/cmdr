@@ -146,6 +146,7 @@ export type MessageKey =
   | 'commands.favoritesAdd.label'
   | 'commands.feedbackSend.description'
   | 'commands.feedbackSend.label'
+  | 'commands.fileCompress.label'
   | 'commands.fileContextMenu.description'
   | 'commands.fileContextMenu.label'
   | 'commands.fileCopy.label'

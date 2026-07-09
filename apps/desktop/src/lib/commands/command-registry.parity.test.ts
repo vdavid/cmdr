@@ -94,6 +94,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'file.edit': 'Edit in default editor',
   'file.copy': 'Copy',
   'file.move': 'Move',
+  'file.compress': 'Compress',
   'edit.copy': 'Copy to clipboard',
   'edit.cut': 'Cut to clipboard',
   'edit.paste': 'Paste',

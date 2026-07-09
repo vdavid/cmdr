@@ -76,6 +76,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'file.edit',
   'file.copy',
   'file.move',
+  'file.compress',
   'edit.copy',
   'edit.cut',
   'edit.paste',

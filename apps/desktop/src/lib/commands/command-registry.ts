@@ -626,6 +626,13 @@ const commandSources: CommandSource[] = [
     showInPalette: true,
     shortcuts: ['F6'],
   },
+  {
+    id: 'file.compress',
+    nameKey: 'commands.fileCompress.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌥F5'],
+  },
 
   // ============================================================================
   // File list - Edit commands (clipboard operations)

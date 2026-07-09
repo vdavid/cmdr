@@ -107,6 +107,7 @@ export interface ExplorerAPI {
   startRename: () => void
   openCopyDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
   openMoveDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
+  openCompressDialog: (autoConfirm?: boolean, onConflict?: string) => Promise<void>
   copyToClipboard: () => Promise<void>
   cutToClipboard: () => Promise<void>
   pasteFromClipboard: (forceMove: boolean) => Promise<void>

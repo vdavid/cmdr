@@ -104,6 +104,7 @@ export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
     'toggleTagOnFocusedSelection',
     'openCopyDialog',
     'openMoveDialog',
+    'openCompressDialog',
     'openNewFolderDialog',
     'openNewFileDialog',
     'openDeleteDialog',

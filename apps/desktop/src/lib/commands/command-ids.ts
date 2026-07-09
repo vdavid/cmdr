@@ -139,6 +139,7 @@ export const COMMAND_IDS = [
   'file.edit',
   'file.copy',
   'file.move',
+  'file.compress',
 
   // Edit commands (clipboard)
   'edit.copy',

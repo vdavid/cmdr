@@ -503,6 +503,12 @@
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 
+  "commands.fileCompress.label": "Compress",
+  "@commands.fileCompress.label": {
+    "description": "Command name for the ⌥F5 compress operation that packs the cursor item or selection into a new zip archive in the other pane. Appears in the command palette. A terse control label.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+
   "commands.editCopy.label": "Copy to clipboard",
   "@commands.editCopy.label": {
     "description": "Command name that copies the selected files to the system clipboard (for pasting). Appears in the command palette. Distinct from the F5 \"Copy\" operation.",
