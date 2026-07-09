@@ -2,6 +2,8 @@
 //!
 //! Thin wrappers around `indexing` module functions, exposed to the frontend via Tauri commands.
 
+use std::sync::OnceLock;
+
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
@@ -271,4 +273,37 @@ pub async fn rescan_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
     }
     // Not active: enabling is what triggers the (first) scan.
     enable_drive_index(app, volume_id).await
+}
+
+// ── App handle for handle-free callers (the MCP `indexing` tool) ─────
+//
+// `enable`/`rescan` need a concrete `AppHandle` (they spawn the indexer and emit
+// events), but the MCP tool executor is generic over `Runtime` and can't supply
+// one. So we stash the concrete handle at startup and expose handle-free
+// wrappers, mirroring the `upgrade_to_smb_volume_inner` / `space_poller`
+// pattern. `disable`/`forget` need no handle and are called directly.
+
+static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
+
+/// Cache the concrete `AppHandle` for handle-free callers. Called once from
+/// `setup()`.
+pub fn set_app_handle(app: AppHandle) {
+    let _ = APP_HANDLE.set(app);
+}
+
+fn app_handle() -> Result<AppHandle, String> {
+    APP_HANDLE
+        .get()
+        .cloned()
+        .ok_or_else(|| "Indexing app handle isn't ready yet".to_string())
+}
+
+/// Handle-free `enable_drive_index` for the MCP `indexing` tool.
+pub async fn enable_drive_index_via_handle(volume_id: String) -> Result<EnableIndexingOutcome, String> {
+    enable_drive_index(app_handle()?, volume_id).await
+}
+
+/// Handle-free `rescan_drive_index` for the MCP `indexing` tool.
+pub async fn rescan_drive_index_via_handle(volume_id: String) -> Result<EnableIndexingOutcome, String> {
+    rescan_drive_index(app_handle()?, volume_id).await
 }

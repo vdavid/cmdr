@@ -16,7 +16,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use tauri::{Emitter, Listener, Manager, Runtime, WebviewWindow};
 
-use indexing::build_indexing_status_text;
 use logs::{parse_log_options, read_log_tail};
 
 use super::dialog_state::SoftDialogTracker;
@@ -68,7 +67,11 @@ pub fn get_all_resources() -> Vec<Resource> {
         Resource {
             uri: "cmdr://indexing".to_string(),
             name: "Indexing status".to_string(),
-            description: "Current drive indexing phase, timeline history, and database stats".to_string(),
+            description: "Per-volume drive indexing status: one block per known volume with freshness \
+                          (fresh/scanning/stale/off), current phase, scan progress, last scan, and DB \
+                          stats. Add `?volume=<id>` for a single volume's deep debug view (phase \
+                          timeline, trigger history, watcher stats)."
+                .to_string(),
             mime_type: "text/plain".to_string(),
         },
         Resource {
@@ -441,7 +444,15 @@ pub async fn read_resource<R: Runtime>(app: &tauri::AppHandle<R>, uri: &str) -> 
             (yaml, "text/yaml")
         }
         "cmdr://indexing" => {
-            let text = build_indexing_status_text();
+            let q = parse_query(query);
+            let now = indexing::now_unix_seconds();
+            let text = match q.get("volume") {
+                Some(vid) => match indexing::snapshot_volume_indexing(vid) {
+                    Some(snap) => indexing::build_volume_debug_text(&snap, now),
+                    None => format!("No index found for volume '{vid}'."),
+                },
+                None => indexing::build_indexing_text(&indexing::snapshot_indexing(), now),
+            };
             (text, "text/plain")
         }
         "cmdr://settings" => {

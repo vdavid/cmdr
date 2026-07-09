@@ -41,7 +41,7 @@ section below.
 
 ### Tools (`tool_registry.rs`)
 
-All 32 tools are authored once in the `mcp_tools!` table in `tool_registry.rs` — name, description, JSON schema,
+All 34 tools are authored once in the `mcp_tools!` table in `tool_registry.rs` — name, description, JSON schema,
 `TokenGate`, and handler per entry. That one table generates `get_all_tools()` (tools/list), `execute_tool()`
 (dispatch), and `tool_gate()` (auth), so the facets can't drift and adding a tool is a single entry. `tools.rs` is a
 thin shim: the `Tool` struct plus a re-export of `get_all_tools`. Read the entries for the exact schemas (don't
@@ -50,7 +50,7 @@ transcribe them here); the sections below summarize behavior. Wire output is byt
 
 **Param naming is camelCase** (`tabId`, `timeoutSeconds`, `sizeMin`, `autoConfirm`). Tool names stay snake_case. Don't add snake_case params; agents pattern-match across tools and every inconsistency is a guessed-wrong call.
 
-32 semantic tools grouped by category:
+34 semantic tools grouped by category:
 - Navigation (6): `select_volume` (also accepts MTP volume names), `nav_to_path` (accepts absolute, `~`-relative, and virtual `mtp://` / `smb://` paths; virtual paths skip the local existence check, local paths get a timed one — see `executor/mod.rs::validate_path_exists`), `nav_to_parent`, `nav_back`, `nav_forward`, `scroll_to`
 - Cursor/Selection (3): `move_cursor` (honest errors: a missing filename or out-of-range index is a round-trip failure, never a false OK), `open_under_cursor`, `select` (index ranges, `all`, `count: 0` to clear, or `names: [...]`; every mode is a round-trip that replies after the new selection landed in `PaneStateStore`, and the names mode errors listing any names not in the listing. Focuses the target pane — both the backend store AND the FE focused pane, so a follow-up focused-pane operation (copy/delete) acts on the pane you just selected in)
 - File operations (6): `copy`, `move`, `delete`, `mkdir`, `mkfile`, `refresh` (a round-trip that forces a backend re-read of the focused pane's listing — local volumes re-read from disk; watcher-backed MTP/SMB listings short-circuit). `copy`/`move`/`delete` fast-fail with the real cause when there's nothing to act on (no selection and the cursor is on `..`, or the pane shows no files) instead of a misleading ack timeout. `copy`/`move` accept optional `autoConfirm` (bool) and `onConflict` (`skip_all`|`overwrite_all`|`rename_all`). `onConflict` governs clashing **files only** — folders always merge (a source folder landing on a same-named dest folder merges into it; the policy then applies to the files inside). `delete` accepts optional `autoConfirm`. When `autoConfirm` is true, the dialog opens and immediately confirms.
@@ -60,8 +60,15 @@ transcribe them here); the sections below summarize behavior. Wire output is byt
 - App (3): `switch_pane`, `swap_panes`, `quit`
 - Search (2): `search` (structured file search across the drive index, optional `scope` for path/exclude filtering), `ai_search` (natural language search using configured LLM, optional `scope` merged with AI-inferred scope)
 - Settings (1): `set_setting` (change a setting value via round-trip to frontend)
+- Indexing (1): `indexing` (`action` = `enable` | `disable` | `rescan` | `forget`, `volumeId`; gate `Always`). A thin
+  adapter over `commands::indexing` (`enable_drive_index` / `disable_drive_index` / `rescan_drive_index` /
+  `forget_drive_index`) — no FE dispatch, no invented ack (the `connect_to_server` precedent). `enable`/`rescan` map the
+  typed `EnableIndexingOutcome` to honest text and carry the ordering contract (below); `disable`/`forget` map
+  `Result<(), String>` directly. Because the generic executor can't supply the concrete `AppHandle` that
+  `enable`/`rescan` need, they route through handle-free `*_via_handle` wrappers backed by a startup-cached handle
+  (`set_app_handle` in `setup()`). Status is NOT an action — it lives in `cmdr://indexing`.
 - Network (3): `connect_to_server` (add a manual SMB server by address, checks TCP reachability), `remove_manual_server` (remove a manually-added server by host ID), `upgrade_smb_to_direct` (upgrade an OS-mounted SMB volume to a direct smb2 session for faster I/O; thin wrapper over the existing manual "Connect directly" Tauri command — tries Keychain creds, returns a typed result mirroring `UpgradeResult`)
-- Async (1): `await` (poll PaneStateStore until a condition is met: `has_item`, `not_has_item`, `item_count_gte`, `item_count_lte`, `path`, or `path_contains` — the absence conditions are for "wait until the delete finished" flows. `~` expands in path-condition values. Supports `afterGeneration` to avoid matching stale state, `timeoutSeconds` up to 60)
+- Async (1): `await` (poll until a condition is met. Pane conditions (`pane` required): `has_item`, `not_has_item`, `item_count_gte`, `item_count_lte`, `path`, or `path_contains` — the absence conditions are for "wait until the delete finished" flows; `~` expands in path-condition values; `afterGeneration` avoids matching stale state. Volume condition (`volumeId` + `value`, no pane): `index_status` waits until a volume's indexing freshness equals `fresh` / `scanning` / `stale`, reading the single freshness store each tick (never re-deriving — the transition table lives in `indexing/freshness.rs`). Deliberately two fields, NOT a packed `<volumeId>:<status>` string: MTP volume ids embed colons. `timeoutSeconds` up to 60.)
 - Downloads (1): `go_to_latest_download` (no args; navigates the focused pane to `~/Downloads` and selects the most recently observed eligible file. Errors when no eligible file exists or FDA is missing. Reuses the same backend code path as the `⌘J` shortcut and the `go_to_latest_download` Tauri command, then drives `mcp-nav-to-path` + `mcp-move-cursor` round-trips for the navigation + cursor placement)
 
 ### Resources (`resources/`)
@@ -71,7 +78,7 @@ Directory module split by resource. `resources/mod.rs` is the shared spine: the 
 - `cmdr://state`: Complete app state in YAML (both panes, volumes, dialogs, active `listings` cache, `recentErrors`). Includes MTP volumes with `name` and `id`, and per-pane `volumeId`. SMB volumes appear as structured entries with `name`, `id`, and `smbConnectionState` (`direct` | `os_mount` | `disconnected`) so agents can route the `upgrade_smb_to_direct` tool at the right volumes; non-SMB volumes stay as bare `- {name}` lines. The `listings` section reflects every entry in `LISTING_CACHE` (id, volumeId, path, entry count, ageMs); `recentErrors` is the last 20 directory-listing failures with `atUnixMs`, `listingId`, `volumeId`, `path`, `message` (see `listing_errors.rs` and the freshness contract below); the `path` and `message` fields are run through `crate::redact::redact_line` before serialization, since failed-listing errors can carry SMB URIs / home paths the user never saw rendered. Supports `?include=panes,volumes,dialogs,listings,recentErrors` projection (defaults to all) and `?compact=true` (drops the `files:` list inside each pane while keeping every summary field). Example: `cmdr://state?include=listings,recentErrors` is the minimal payload for "did the last listing succeed?".
 - `cmdr://dialogs/available`: Static metadata about available dialogs
 - `transfers:` (inside `cmdr://state`, also `?include=transfers`): in-flight copy/move/delete/trash operations with phase, bytes/files progress, current file (redacted), whole-run average speed, and ETA. Sourced from the write-operations status cache (`resources/transfers.rs`); entries vanish on completion. Without it a running 10 GB copy is invisible to agents.
-- `cmdr://indexing`: Drive indexing status in plain text (current phase, timeline history, DB stats). Calls `indexing::get_debug_status()` and formats as human-readable text.
+- `cmdr://indexing`: Per-volume drive indexing status in plain text (`resources/indexing.rs`). Default: one summary block per known (registered) volume — freshness (`fresh`/`scanning`/`stale`/`off`), current phase, live scan progress (counts + percent + ETA while scanning), a step checklist while scanning, DB entry/dir counts + file size, and the last completed scan. `?volume=<id>` adds a deep debug view for one volume (watcher / live-event stats, DB internals, and the phase timeline with triggers); an unknown id returns an honest "no index found". The builders (`build_indexing_text` / `build_volume_debug_text`) are pure over an injected `VolumeIndexingSnapshot` (the `transfers.rs` snapshot-then-format precedent, `now_unix_s` injected), so formatting is unit-tested without a live index; `snapshot_indexing` / `snapshot_volume_indexing` do the reads via `get_volume_index_status` + `get_debug_status` (freshness is never re-derived). Volumes come from `all_registered_volume_ids` (root first, then sorted).
 - `cmdr://settings`: All settings with current values, defaults, types, and constraints. Fetched via round-trip to the frontend (`mcp-get-all-settings` event).
 - `cmdr://logs`: Tail of the live `cmdr.log` file. Query: `?since=<iso>&filter=<substring>&limit=<n>`. `limit` defaults to 100, capped at 1000; `filter` is a case-sensitive substring match (no regex dep); `since` drops lines whose ISO-8601 timestamp prefix is ≤ the given value (lines without a timestamp prefix, like a Rust panic, are kept). Reads the last ~5 MB of the file from the end so a 50 MB rotated log doesn't blow up MCP memory. Returns oldest-first. **Each returned line is run through `crate::redact::redact_line`** (in the pure, unit-tested `select_log_lines` helper) so the resource honors the same PII-redaction contract as the crash + error reporters — a loopback caller without filesystem read can't lift home paths, SMB URIs, emails, or device names out of the log. The `filter` substring matches against the RAW (pre-redaction) line, since redaction runs last.
 
@@ -126,6 +133,19 @@ Directory module split by test category:
 
 **Why not a per-tool client-facing timeout knob.** The timeout is a backend-side latency budget, not a client concern. MCP clients shouldn't have to tune it per call — they expect tools to either succeed or report a clear failure.
 
+### The `indexing` ordering contract (race-free `await index_status`)
+
+**Decision.** `indexing` `enable` / `rescan` don't return until the volume's freshness has LEFT its pre-scan state, so a
+follow-up `await index_status <volume> fresh` can't instantly match the pre-rescan Fresh state. The handler captures the
+freshness before the backend call, then polls until it differs (bounded 5 s, timeout-tolerant); a pre-state that's
+already `scanning` needs no wait.
+
+**Why it's not a spurious ack.** `force_scan` (the active-index rescan path) fires `ScanStarted` → `Scanning`
+synchronously before returning, so the first poll already differs and the handler returns immediately. Only the
+enable-first-scan path (a not-yet-active volume, especially async SMB via `start_indexing_for_smb`) can lag the flip,
+and that's exactly where the wait earns its keep. This replaces a generation counter for the new `await` condition (the
+tool contract sequences it instead), which is cheaper and honest.
+
 ### Why the TS parse layer stays separate from the registry
 
 The `mcp_tools!` registry single-sources the three **Rust** consumers (list, dispatch, auth gate). The frontend's
@@ -167,8 +187,9 @@ Binding to `0.0.0.0` would expose the server to the network, so we bind `127.0.0
 The bearer token is required for **only the calls that bypass the user's in-app confirmation dialog**:
 
 - `delete` / `move` / `copy` with `autoConfirm: true`,
-- the `dialog` tool with `action: "confirm"` (programmatically confirming an open dialog), and
-- `set_setting` (config mutation applies with no user confirmation, so the whole tool is gated — otherwise an unauthenticated local process could flip `updates.errorReports`, `network.*`, `developer.mcp*`, etc.).
+- the `dialog` tool with `action: "confirm"` (programmatically confirming an open dialog),
+- `set_setting` (config mutation applies with no user confirmation, so the whole tool is gated — otherwise an unauthenticated local process could flip `updates.errorReports`, `network.*`, `developer.mcp*`, etc.), and
+- `indexing` (all four actions mutate per-drive config or throw away / start heavy background work with no confirmation dialog — the `set_setting` rationale applied per drive).
 
 **Everything else needs no token**: resource reads (`cmdr://state`, `cmdr://logs`, etc.), navigation, search, and the destructive ops that still pop the confirmation dialog (`autoConfirm` absent/false).
 

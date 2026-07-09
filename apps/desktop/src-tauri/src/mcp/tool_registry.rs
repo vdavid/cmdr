@@ -23,7 +23,7 @@
 use serde_json::{Value, json};
 
 use super::executor::{ToolError, ToolResult};
-use super::executor::{app, async_tools, dialogs, downloads, file_ops, nav, search, view};
+use super::executor::{app, async_tools, dialogs, downloads, file_ops, indexing, nav, search, view};
 use super::tools::Tool;
 
 /// How a tool relates to the bearer-token gate. Pure, non-generic, and unit-testable — it
@@ -672,6 +672,30 @@ mcp_tools! {
         run: app_params async_tools::execute_set_setting
     },
 
+    // ── Indexing ────────────────────────────────────────────────────────────
+    "indexing" => {
+        desc: "Control one volume's drive indexing. Actions: enable (on, starts first scan), \
+               disable (off, keeps DB), rescan (fresh full scan), forget (delete DB). enable/rescan \
+               return once scanning starts; poll await index_status fresh for done. See cmdr://indexing.",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": ["enable", "disable", "rescan", "forget"],
+                    "description": "enable | disable | rescan | forget"
+                },
+                "volumeId": {
+                    "type": "string",
+                    "description": "Volume ID to control (for example 'root', 'smb-…', 'mtp-…:1'). See cmdr://state volumes."
+                }
+            },
+            "required": ["action", "volumeId"]
+        }),
+        gate: TokenGate::Always,
+        run: params_only indexing::execute_indexing
+    },
+
     // ── Network ─────────────────────────────────────────────────────────────
     "connect_to_server" => {
         desc: "Add a manual SMB server by address. Checks TCP reachability then adds to the host list.",
@@ -723,23 +747,27 @@ mcp_tools! {
 
     // ── Async ───────────────────────────────────────────────────────────────
     "await" => {
-        desc: "Wait until a condition is met on a pane. Use after fire-and-forget actions or to wait for async events like network discovery.",
+        desc: "Wait until a condition is met. Use after fire-and-forget actions or to wait for async events like network discovery or an indexing rescan. Pane conditions watch a pane; index_status watches a volume's indexing freshness.",
         schema: json!({
             "type": "object",
             "properties": {
                 "pane": {
                     "type": "string",
                     "enum": ["left", "right"],
-                    "description": "Which pane to watch"
+                    "description": "Which pane to watch. Required for the pane conditions; ignored for index_status."
                 },
                 "condition": {
                     "type": "string",
-                    "enum": ["has_item", "not_has_item", "item_count_gte", "item_count_lte", "path", "path_contains"],
-                    "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value)"
+                    "enum": ["has_item", "not_has_item", "item_count_gte", "item_count_lte", "path", "path_contains", "index_status"],
+                    "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value), index_status (volumeId's indexing freshness equals value: fresh / scanning / stale)"
+                },
+                "volumeId": {
+                    "type": "string",
+                    "description": "For index_status: the volume whose indexing freshness to watch (for example 'root', 'smb-…', 'mtp-…:1')."
                 },
                 "value": {
                     "type": "string",
-                    "description": "Value for the condition (item name, count, path, or substring)"
+                    "description": "Value for the condition (item name, count, path, substring, or for index_status a status: fresh / scanning / stale)"
                 },
                 "timeoutSeconds": {
                     "type": "integer",
@@ -747,10 +775,10 @@ mcp_tools! {
                 },
                 "afterGeneration": {
                     "type": "integer",
-                    "description": "Only consider state updates after this generation number. Prevents matching stale state from before an action. Get the current generation from cmdr://state or a previous await result."
+                    "description": "Only consider state updates after this generation number. Prevents matching stale state from before an action. Get the current generation from cmdr://state or a previous await result. Pane conditions only."
                 }
             },
-            "required": ["pane", "condition", "value"]
+            "required": ["condition", "value"]
         }),
         gate: TokenGate::Open,
         run: app_params async_tools::execute_await
@@ -806,6 +834,7 @@ mod tests {
         "search",
         "ai_search",
         "set_setting",
+        "indexing",
         "connect_to_server",
         "remove_manual_server",
         "upgrade_smb_to_direct",
@@ -816,8 +845,8 @@ mod tests {
     #[test]
     fn test_all_tools_count() {
         // 6 nav + 2 cursor + 1 selection + 7 file_op + 3 view + 1 tab + 2 dialog + 3 app + 2
-        // search + 1 settings + 3 network + 1 await + 1 downloads = 33
-        assert_eq!(get_all_tools().len(), 33);
+        // search + 1 settings + 1 indexing + 3 network + 1 await + 1 downloads = 34
+        assert_eq!(get_all_tools().len(), 34);
     }
 
     #[test]
@@ -825,7 +854,7 @@ mod tests {
         use std::collections::BTreeSet;
         let actual: BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();
         let expected: BTreeSet<String> = EXPECTED_TOOL_NAMES.iter().map(|s| (*s).to_owned()).collect();
-        assert_eq!(actual, expected, "tool name set drifted from the expected 33");
+        assert_eq!(actual, expected, "tool name set drifted from the expected 34");
     }
 
     #[test]
@@ -1023,6 +1052,49 @@ mod tests {
     }
 
     #[test]
+    fn test_indexing_tool_schema() {
+        let tools = get_all_tools();
+        let schema = &tool(&tools, "indexing").input_schema;
+        let props = schema.get("properties").unwrap();
+
+        assert!(props.get("action").is_some());
+        assert!(props.get("volumeId").is_some());
+
+        let action_enum = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();
+        for action in ["enable", "disable", "rescan", "forget"] {
+            assert!(action_enum.contains(&json!(action)), "missing action '{action}'");
+        }
+
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert_eq!(required.len(), 2);
+        assert!(required.contains(&json!("action")));
+        assert!(required.contains(&json!("volumeId")));
+
+        // Silent per-drive config mutation with no confirmation dialog → gated.
+        assert_eq!(tool_gate("indexing"), Some(TokenGate::Always));
+    }
+
+    #[test]
+    fn test_await_has_index_status_condition() {
+        let tools = get_all_tools();
+        let schema = &tool(&tools, "await").input_schema;
+        let props = schema.get("properties").unwrap();
+        assert!(
+            props.get("volumeId").is_some(),
+            "await should carry volumeId for index_status"
+        );
+
+        let cond_enum = props.get("condition").unwrap().get("enum").unwrap().as_array().unwrap();
+        assert!(cond_enum.contains(&json!("index_status")));
+
+        // pane is no longer required (index_status is volume-scoped, not pane-scoped).
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert!(required.contains(&json!("condition")));
+        assert!(required.contains(&json!("value")));
+        assert!(!required.contains(&json!("pane")));
+    }
+
+    #[test]
     fn test_downloads_tool_present() {
         let tools = get_all_tools();
         assert_eq!(tool(&tools, "go_to_latest_download").name, "go_to_latest_download");
@@ -1099,6 +1171,7 @@ mod tests {
             ("search", TokenGate::Open),
             ("ai_search", TokenGate::Open),
             ("set_setting", TokenGate::Always),
+            ("indexing", TokenGate::Always),
             ("connect_to_server", TokenGate::Open),
             ("remove_manual_server", TokenGate::Open),
             ("upgrade_smb_to_direct", TokenGate::Open),

@@ -655,6 +655,33 @@
       "name": "set_setting"
     },
     {
+      "description": "Control one volume's drive indexing. Actions: enable (on, starts first scan), disable (off, keeps DB), rescan (fresh full scan), forget (delete DB). enable/rescan return once scanning starts; poll await index_status fresh for done. See cmdr://indexing.",
+      "inputSchema": {
+        "properties": {
+          "action": {
+            "description": "enable | disable | rescan | forget",
+            "enum": [
+              "enable",
+              "disable",
+              "rescan",
+              "forget"
+            ],
+            "type": "string"
+          },
+          "volumeId": {
+            "description": "Volume ID to control (for example 'root', 'smb-…', 'mtp-…:1'). See cmdr://state volumes.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "volumeId"
+        ],
+        "type": "object"
+      },
+      "name": "indexing"
+    },
+    {
       "description": "Add a manual SMB server by address. Checks TCP reachability then adds to the host list.",
       "inputSchema": {
         "properties": {
@@ -703,27 +730,28 @@
       "name": "upgrade_smb_to_direct"
     },
     {
-      "description": "Wait until a condition is met on a pane. Use after fire-and-forget actions or to wait for async events like network discovery.",
+      "description": "Wait until a condition is met. Use after fire-and-forget actions or to wait for async events like network discovery or an indexing rescan. Pane conditions watch a pane; index_status watches a volume's indexing freshness.",
       "inputSchema": {
         "properties": {
           "afterGeneration": {
-            "description": "Only consider state updates after this generation number. Prevents matching stale state from before an action. Get the current generation from cmdr://state or a previous await result.",
+            "description": "Only consider state updates after this generation number. Prevents matching stale state from before an action. Get the current generation from cmdr://state or a previous await result. Pane conditions only.",
             "type": "integer"
           },
           "condition": {
-            "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value)",
+            "description": "Condition to wait for: has_item / not_has_item (file list contains / no longer contains item named value — use not_has_item after a delete), item_count_gte / item_count_lte (file list has >= / <= value items), path (pane path equals value), path_contains (pane path contains value), index_status (volumeId's indexing freshness equals value: fresh / scanning / stale)",
             "enum": [
               "has_item",
               "not_has_item",
               "item_count_gte",
               "item_count_lte",
               "path",
-              "path_contains"
+              "path_contains",
+              "index_status"
             ],
             "type": "string"
           },
           "pane": {
-            "description": "Which pane to watch",
+            "description": "Which pane to watch. Required for the pane conditions; ignored for index_status.",
             "enum": [
               "left",
               "right"
@@ -735,12 +763,15 @@
             "type": "integer"
           },
           "value": {
-            "description": "Value for the condition (item name, count, path, or substring)",
+            "description": "Value for the condition (item name, count, path, substring, or for index_status a status: fresh / scanning / stale)",
+            "type": "string"
+          },
+          "volumeId": {
+            "description": "For index_status: the volume whose indexing freshness to watch (for example 'root', 'smb-…', 'mtp-…:1').",
             "type": "string"
           }
         },
         "required": [
-          "pane",
           "condition",
           "value"
         ],

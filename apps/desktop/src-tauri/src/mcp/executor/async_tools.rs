@@ -4,28 +4,37 @@ use serde_json::{Value, json};
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::{PaneStateStore, ToolError, ToolResult, mcp_round_trip};
+use crate::indexing::freshness::Freshness;
+use crate::mcp::resources::indexing::freshness_token;
 
 // ── Await tool ────────────────────────────────────────────────────────
 
-/// Execute the `await` tool: poll PaneStateStore until a condition is met.
+/// Execute the `await` tool: poll until a condition is met. Pane conditions
+/// watch `PaneStateStore`; `index_status` watches a volume's indexing freshness.
 pub async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
-    let pane = params
-        .get("pane")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter"))?;
     let condition = params
         .get("condition")
         .and_then(|v| v.as_str())
         .ok_or_else(|| ToolError::invalid_params("Missing 'condition' parameter"))?;
-    let value = params
-        .get("value")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| ToolError::invalid_params("Missing 'value' parameter"))?;
     let timeout_s = params
         .get("timeoutSeconds")
         .and_then(|v| v.as_u64())
         .unwrap_or(15)
         .min(60);
+
+    // The volume-scoped condition takes no pane; branch before pane parsing.
+    if condition == "index_status" {
+        return await_index_status(params, timeout_s).await;
+    }
+
+    let pane = params
+        .get("pane")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'pane' parameter (required for this condition)"))?;
+    let value = params
+        .get("value")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'value' parameter"))?;
     let after_generation = params.get("afterGeneration").and_then(|v| v.as_u64());
 
     if !["left", "right"].contains(&pane) {
@@ -132,6 +141,61 @@ pub async fn execute_await<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
             )));
         }
 
+        tokio::time::sleep(poll_interval).await;
+    }
+}
+
+/// Whether a volume's current freshness satisfies an `index_status` await
+/// target. Reuses the resource's `freshness_token` so the resource text and the
+/// await condition agree by construction; never re-derives freshness (the one
+/// transition table lives in `indexing/freshness.rs`).
+fn index_status_matches(freshness: Option<Freshness>, target: &str) -> bool {
+    freshness_token(freshness) == target
+}
+
+/// Pull `volumeId` + status `value` for an `index_status` await, verbatim.
+/// Volume ids are used AS-IS — MTP ids embed colons (`mtp-{device}:{storage}`,
+/// and the device id may itself hold `:`), so they must never be split.
+fn index_status_params(params: &Value) -> Result<(String, String), ToolError> {
+    let volume_id = params
+        .get("volumeId")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("index_status requires a 'volumeId' parameter"))?;
+    let value = params
+        .get("value")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'value' parameter"))?;
+    if !matches!(value, "fresh" | "scanning" | "stale") {
+        return Err(ToolError::invalid_params(
+            "index_status value must be 'fresh', 'scanning', or 'stale'",
+        ));
+    }
+    Ok((volume_id.to_string(), value.to_string()))
+}
+
+/// Poll a volume's indexing freshness until it reaches the target status. Reads
+/// the single freshness store (`get_volume_index_status`) each tick — the same
+/// store the FE badge reads.
+async fn await_index_status(params: &Value, timeout_s: u64) -> ToolResult {
+    let (volume_id, target) = index_status_params(params)?;
+
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(timeout_s);
+    let poll_interval = std::time::Duration::from_millis(250);
+
+    loop {
+        let freshness = crate::indexing::get_volume_index_status(&volume_id).freshness;
+        if index_status_matches(freshness, &target) {
+            return Ok(json!(format!(
+                "OK: Condition met — volume '{volume_id}' index_status is {}",
+                freshness_token(freshness)
+            )));
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(ToolError::internal(format!(
+                "Timed out after {timeout_s}s waiting for volume '{volume_id}' index_status = '{target}' (currently {})",
+                freshness_token(freshness)
+            )));
+        }
         tokio::time::sleep(poll_interval).await;
     }
 }
@@ -250,4 +314,45 @@ pub async fn execute_set_setting<R: Runtime>(app: &AppHandle<R>, params: &Value)
         format!("OK: Set '{id}' to {value}"),
     )
     .await
+}
+
+#[cfg(test)]
+mod index_status_tests {
+    use super::*;
+
+    #[test]
+    fn matches_each_freshness_token() {
+        assert!(index_status_matches(Some(Freshness::Fresh), "fresh"));
+        assert!(index_status_matches(Some(Freshness::Scanning), "scanning"));
+        assert!(index_status_matches(Some(Freshness::Stale), "stale"));
+        // Cross-pairs don't match.
+        assert!(!index_status_matches(Some(Freshness::Fresh), "scanning"));
+        assert!(!index_status_matches(Some(Freshness::Stale), "fresh"));
+        // A never-indexed volume (None) never matches a live-status target.
+        assert!(!index_status_matches(None, "fresh"));
+        assert!(!index_status_matches(None, "stale"));
+    }
+
+    #[test]
+    fn preserves_mtp_volume_id_with_colons_verbatim() {
+        // The whole point of the two-field form: an MTP volume id whose device id
+        // holds colons must round-trip untouched (no `<volumeId>:<status>` packing
+        // to naively split).
+        let params = json!({ "volumeId": "mtp-AA:BB:CC:65537", "value": "fresh" });
+        let (volume_id, status) = index_status_params(&params).expect("valid params");
+        assert_eq!(volume_id, "mtp-AA:BB:CC:65537");
+        assert_eq!(status, "fresh");
+    }
+
+    #[test]
+    fn rejects_unknown_status_value() {
+        let params = json!({ "volumeId": "root", "value": "bogus" });
+        assert!(index_status_params(&params).is_err());
+    }
+
+    #[test]
+    fn requires_volume_id() {
+        let params = json!({ "value": "fresh" });
+        assert!(index_status_params(&params).is_err());
+    }
 }

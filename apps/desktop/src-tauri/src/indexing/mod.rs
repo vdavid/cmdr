@@ -75,7 +75,7 @@ pub use queries::{
     get_volume_index_status_for_path,
 };
 pub(crate) use state::ROOT_VOLUME_ID;
-pub(crate) use state::{IndexVolumeKind, ready_volumes_with_kind, volume_kind};
+pub(crate) use state::{IndexVolumeKind, all_registered_volume_ids, ready_volumes_with_kind, volume_kind};
 pub use state::{
     clear_index, force_scan, init, is_active, should_auto_start, should_auto_start_indexing, start_indexing,
     stop_indexing, stop_scan, trigger_verification,

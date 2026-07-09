@@ -463,6 +463,11 @@ pub fn run() {
             // Initialize the volume manager with the root volume
             file_system::init_volume_manager();
 
+            // Stash the AppHandle so the MCP `indexing` tool can drive
+            // enable/rescan (which need a concrete handle) from its generic
+            // executor. Disable/forget need no handle.
+            commands::indexing::set_app_handle(app.handle().clone());
+
             // Stash the AppHandle so SmbVolume can emit `smb-connection-changed`
             // events when sessions die or come back. The frontend reconnect
             // manager listens for these to drive its per-volume backoff cycle.

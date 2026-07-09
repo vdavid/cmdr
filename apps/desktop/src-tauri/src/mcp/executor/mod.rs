@@ -12,6 +12,7 @@ pub(crate) mod async_tools;
 pub(crate) mod dialogs;
 pub(crate) mod downloads;
 pub(crate) mod file_ops;
+pub(crate) mod indexing;
 pub(crate) mod nav;
 pub(crate) mod search;
 pub(crate) mod view;

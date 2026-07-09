@@ -10,18 +10,19 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
 - `server.rs`: HTTP server, bind/lifecycle, request dispatch (`process_request`), and response formatting only.
 - `auth.rs`: token lifecycle and per-request validation (`tool_call_requires_token`, `validate_token`,
   `validate_origin`, header/protocol checks). One-directional: `server` uses `auth`, never the reverse.
-- `tool_registry.rs`: single source for all 32 tools — one `mcp_tools!` table generates the list, dispatch, and auth
+- `tool_registry.rs`: single source for all 34 tools — one `mcp_tools!` table generates the list, dispatch, and auth
   gate (`tool_gate`/`TokenGate`). `tools.rs` is a shim (`Tool` struct + re-export). Handlers + ack contract in
   `executor/` (see [`executor/CLAUDE.md`](executor/CLAUDE.md)).
-- `resources/`: read-only YAML/text resources (`cmdr://state`, `logs`, `indexing`, `settings`). State stores:
-  `PaneStateStore`, `SoftDialogTracker` (`dialog_state.rs`), `listing_errors`. Config: `config.rs`, `port_file.rs`.
+- `resources/`: read-only YAML/text resources (`cmdr://state`, `logs`, `indexing` (per-volume), `settings`). State
+  stores: `PaneStateStore`, `SoftDialogTracker` (`dialog_state.rs`), `listing_errors`. Config: `config.rs`,
+  `port_file.rs`.
 
 ## Must-knows
 
 - **Auth gates ONLY the calls that bypass the user's confirmation dialog, and the gate is a `TokenGate` on each tool's
   `tool_registry.rs` entry, not a hand-list.** Gated: `delete`/`move`/`copy` with `autoConfirm: true`, `dialog` with
-  `action: "confirm"`, and `set_setting` (all of it). Everything else (reads, nav, search, dialog-prompting destructive
-  ops) needs no token. A new destructive tool MUST declare its gate — a structural test fails if an `autoConfirm` tool
+  `action: "confirm"`, `set_setting`, and `indexing` (per-drive config mutation). Everything else (reads, nav, search,
+  dialog-prompting destructive ops) needs no token. A new destructive tool MUST declare its gate — a structural test fails if an `autoConfirm` tool
   is left `Open`. Don't widen the gate to reads/nav or narrow it past the auto-confirm bypass (threat model, and why
   `validate_origin` is no barrier: DETAILS.md § Authentication).
 - **Token rejection is an in-band JSON-RPC error at HTTP 200, NOT 401** (401 makes clients launch an OAuth discovery

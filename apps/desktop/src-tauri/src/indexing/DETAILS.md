@@ -267,6 +267,8 @@ Enable (`mtp_index::start_indexing_for_mtp`) needs only the device connected (th
 
 `VolumeIndexStatus { volume_id, enabled, freshness, scan_completed_at, scan_duration_ms }` is the shape the per-drive badge consumes for EVERY drive (local included). `enabled: false` + `freshness: None` is gray; a registered volume always carries a freshness (blue `scanning` / green `fresh` / yellow `stale`). Freshness comes from the registry; the scan facts (`scan_completed_at`, `scan_duration_ms` — Unix seconds and wall-clock ms of the last completed scan, for the "Last indexed: … took N min" tooltip/footer) from the persisted `meta` surfaced by `get_status`. Two IPC keys: `get_volume_index_status(path)` resolves the volume from a listing path (the always-visible active-drive badge), and `get_volume_index_status_by_id(volume_id)` is keyed by volume id (the per-drive dropdown rows, since the FE identifies drives by `volume.id`). Both return the same shape.
 
+The MCP server also consumes these read APIs: `cmdr://indexing` and the `await index_status` condition read `get_volume_index_status` + `get_debug_status` (never re-deriving freshness), and the `indexing` MCP tool wraps `commands::indexing`'s enable/disable/rescan/forget (see `mcp/DETAILS.md`).
+
 ### Drive-indexing freshness settings (FE-owned)
 
 The three freshness-UX toggles gate FRONTEND behavior, so they live in the FE settings registry (which owns the registry entries + UI) and persist via `tauri-plugin-store`. The backend `settings::loader::Settings` parses two of them for completeness / crash-report correlation only (mirroring `network.firstTriggerDone`), and consumes none of them — the badge always reflects the live freshness regardless:
