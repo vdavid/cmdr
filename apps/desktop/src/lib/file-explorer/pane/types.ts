@@ -11,6 +11,13 @@ export interface StartRenameOptions {
    */
   suppressExtensionWarning?: boolean
   /**
+   * Seeds the editor with this value instead of the entry's current name. The
+   * MCP `rename` tool passes the proposed `newName` so the user reviews it before
+   * pressing Enter (the human-review affordance). Omitted for user-initiated
+   * renames (F2), which seed the current name.
+   */
+  initialName?: string
+  /**
    * The exact name the rename MUST activate on. For an auto-started rename
    * (paste-clipboard-as-file), the optimistic cursor move can resolve before the
    * FE row array applies the new file's synthetic diff, so the entry under the

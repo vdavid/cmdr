@@ -350,13 +350,19 @@ mcp_tools! {
         run: app_params file_ops::execute_compress
     },
     "delete" => {
-        desc: "Delete selected files (opens confirmation dialog)",
+        desc: "Delete selected files (opens confirmation dialog). mode presets trash vs permanent; \
+               omit it to use the pane's default (trash where supported).",
         schema: json!({
             "type": "object",
             "properties": {
                 "autoConfirm": {
                     "type": "boolean",
                     "description": "When true, dialog opens and immediately confirms without waiting for user interaction. Returns once the operation starts."
+                },
+                "mode": {
+                    "type": "string",
+                    "enum": ["trash", "delete"],
+                    "description": "trash = move to Trash; delete = permanent. Omit for the pane's default (a volume without a trash forces permanent)."
                 }
             },
             "required": []
@@ -364,17 +370,75 @@ mcp_tools! {
         gate: TokenGate::IfAutoConfirm,
         run: app_params file_ops::execute_delete
     },
+    "rename" => {
+        desc: "Rename an item (the named item, else the cursor item) in a pane. Without autoConfirm, \
+               opens the inline rename editor prefilled with newName for the user to confirm. With \
+               autoConfirm, renames directly (errors if the name already exists).",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "pane": {
+                    "type": "string",
+                    "enum": ["left", "right"],
+                    "description": "Which pane to rename in. Defaults to the focused pane."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Current filename to rename. Defaults to the cursor item. Errors if it isn't in the listing."
+                },
+                "newName": {
+                    "type": "string",
+                    "description": "The proposed new name (a name, not a path)."
+                },
+                "autoConfirm": {
+                    "type": "boolean",
+                    "description": "When true, renames directly without the review editor. Returns once the rename lands."
+                }
+            },
+            "required": ["newName"]
+        }),
+        gate: TokenGate::IfAutoConfirm,
+        run: app_params file_ops::execute_rename
+    },
     "mkdir" => {
-        desc: "Create folder in focused pane (triggers naming dialog)",
-        schema: no_params_schema(),
-        gate: TokenGate::Open,
-        run: app_only file_ops::execute_mkdir
+        desc: "Create a folder in the focused pane. No name opens the naming dialog; a name opens \
+               it prefilled; name + autoConfirm creates directly (errors on a name conflict).",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Folder name. Omit to open the dialog with the default prefill."
+                },
+                "autoConfirm": {
+                    "type": "boolean",
+                    "description": "With a name, create directly without the dialog. Returns once created."
+                }
+            },
+            "required": []
+        }),
+        gate: TokenGate::IfAutoConfirm,
+        run: app_params file_ops::execute_mkdir
     },
     "mkfile" => {
-        desc: "Create file in focused pane (triggers naming dialog)",
-        schema: no_params_schema(),
-        gate: TokenGate::Open,
-        run: app_only file_ops::execute_mkfile
+        desc: "Create an empty file in the focused pane. No name opens the naming dialog; a name \
+               opens it prefilled; name + autoConfirm creates directly (errors on a name conflict).",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "File name. Omit to open the dialog with the default prefill."
+                },
+                "autoConfirm": {
+                    "type": "boolean",
+                    "description": "With a name, create directly without the dialog. Returns once created."
+                }
+            },
+            "required": []
+        }),
+        gate: TokenGate::IfAutoConfirm,
+        run: app_params file_ops::execute_mkfile
     },
     "refresh" => {
         desc: "Refresh focused pane",
@@ -954,6 +1018,7 @@ mod tests {
         "move",
         "compress",
         "delete",
+        "rename",
         "mkdir",
         "mkfile",
         "refresh",
@@ -983,10 +1048,10 @@ mod tests {
 
     #[test]
     fn test_all_tools_count() {
-        // 6 nav + 2 cursor + 1 selection + 7 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app
+        // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app
         // + 2 search + 1 settings + 1 indexing + 1 queue + 1 favorites + 3 network + 1 eject + 1
-        // await + 1 downloads = 38
-        assert_eq!(get_all_tools().len(), 38);
+        // await + 1 downloads = 39
+        assert_eq!(get_all_tools().len(), 39);
     }
 
     #[test]
@@ -1308,6 +1373,23 @@ mod tests {
     }
 
     #[test]
+    fn test_rename_tool_schema_and_gate() {
+        let tools = get_all_tools();
+        let schema = &tool(&tools, "rename").input_schema;
+        let props = schema.get("properties").unwrap();
+        for key in ["pane", "name", "newName", "autoConfirm"] {
+            assert!(props.get(key).is_some(), "rename schema missing '{key}'");
+        }
+        let required = schema.get("required").unwrap().as_array().unwrap();
+        assert_eq!(required.len(), 1);
+        assert!(required.contains(&json!("newName")));
+
+        // autoConfirm bypasses the review editor → gated (also pinned structurally
+        // by `test_autoconfirm_tools_are_gated`).
+        assert_eq!(tool_gate("rename"), Some(TokenGate::IfAutoConfirm));
+    }
+
+    #[test]
     fn test_tag_tool_schema_and_gate() {
         let tools = get_all_tools();
         let schema = &tool(&tools, "tag").input_schema;
@@ -1416,8 +1498,9 @@ mod tests {
             ("move", TokenGate::IfAutoConfirm),
             ("compress", TokenGate::IfAutoConfirm),
             ("delete", TokenGate::IfAutoConfirm),
-            ("mkdir", TokenGate::Open),
-            ("mkfile", TokenGate::Open),
+            ("rename", TokenGate::IfAutoConfirm),
+            ("mkdir", TokenGate::IfAutoConfirm),
+            ("mkfile", TokenGate::IfAutoConfirm),
             ("refresh", TokenGate::Open),
             ("toggle_hidden", TokenGate::Open),
             ("set_view_mode", TokenGate::Open),

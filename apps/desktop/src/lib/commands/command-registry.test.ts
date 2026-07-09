@@ -239,9 +239,9 @@ describe('CommandId is a closed union (compile-time)', () => {
 
   it('arg-less ids resolve to an empty dispatch tuple', () => {
     // An arg-less command's dispatch-args tuple is `[]`.
-    const noArgs: CommandDispatchArgs<'file.rename'> = []
+    const noArgs: CommandDispatchArgs<'file.view'> = []
     // The arg map entry for an arg-less command is the `NoCommandArgs` marker.
-    const argValue: CommandArgs['file.rename'] = undefined
+    const argValue: CommandArgs['file.view'] = undefined
 
     expect(noArgs).toEqual([])
     expect(argValue).toBeUndefined()

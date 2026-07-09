@@ -141,6 +141,7 @@ const fileCompressCommand: CommandId = 'file.compress'
 const fileNewFolderCommand: CommandId = 'file.newFolder'
 const fileNewFileCommand: CommandId = 'file.newFile'
 const fileDeleteCommand: CommandId = 'file.delete'
+const fileRenameCommand: CommandId = 'file.rename'
 const dialogConfirmCommand: CommandId = 'dialog.confirm'
 const navBackCommand: CommandId = 'nav.back'
 const navForwardCommand: CommandId = 'nav.forward'
@@ -435,19 +436,59 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     void dispatch(fileCompressCommand, { autoConfirm, mcpRequestId })
   })
 
-  await listenTauri('mcp-mkdir', () => {
-    void dispatch(fileNewFolderCommand)
+  await listenTauri('mcp-rename', (event) => {
+    // Round-trip: the non-autoConfirm `rename` tool starts the inline editor
+    // prefilled with `newName` for the user to review. The Rust side resolves the
+    // target and sends its current `name` (so we move the cursor there — a no-op
+    // when it's already the cursor item, but it focuses the pane and pins
+    // activation via `expectedName`) plus the proposed `newName`.
+    const raw = asRecord(event.payload)
+    const pane = parsePane(raw.pane)
+    const name = typeof raw.name === 'string' ? raw.name : undefined
+    const newName = typeof raw.newName === 'string' ? raw.newName : undefined
+    const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+    if (requestId === undefined) return
+    void (async () => {
+      const { emit } = await import('@tauri-apps/api/event')
+      if (!pane || name === undefined || newName === undefined) {
+        await emit('mcp-response', { requestId, ok: false, error: 'Invalid rename payload' })
+        return
+      }
+      try {
+        // Move the cursor to the target row first (focuses the pane, settles the
+        // load), then start the editor pinned to that row and prefilled.
+        await dispatch(cursorMoveToCommand, { pane, to: name })
+        await dispatch(fileRenameCommand, { initialName: newName, expectedName: name })
+        await emit('mcp-response', { requestId, ok: true })
+      } catch (e) {
+        const error = e instanceof Error ? e.message : String(e)
+        await emit('mcp-response', { requestId, ok: false, error })
+      }
+    })()
   })
 
-  await listenTauri('mcp-mkfile', () => {
-    void dispatch(fileNewFileCommand)
+  await listenTauri('mcp-mkdir', (event) => {
+    // Only the dialog path reaches the FE (autoConfirm creates directly in Rust);
+    // `name` prefills the naming dialog.
+    const raw = asRecord(event.payload)
+    const name = typeof raw.name === 'string' ? raw.name : undefined
+    void dispatch(fileNewFolderCommand, { name })
+  })
+
+  await listenTauri('mcp-mkfile', (event) => {
+    const raw = asRecord(event.payload)
+    const name = typeof raw.name === 'string' ? raw.name : undefined
+    void dispatch(fileNewFileCommand, { name })
   })
 
   await listenTauri('mcp-delete', (event) => {
     const raw = asRecord(event.payload)
     const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
+    // `permanent` rides the event only when the tool's `mode` was given; otherwise
+    // the FE applies its per-volume default (trash where supported).
+    const permanent = typeof raw.permanent === 'boolean' ? raw.permanent : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileDeleteCommand, { autoConfirm, mcpRequestId })
+    void dispatch(fileDeleteCommand, { autoConfirm, permanent, mcpRequestId })
   })
 
   await listenTauri('mcp-confirm-dialog', (event) => {

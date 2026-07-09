@@ -79,7 +79,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   }
 
   /** Activates the inline rename editor on `entry` (the real activation body). */
-  function activateRename(entry: FileEntry): void {
+  function activateRename(entry: FileEntry, initialName?: string): void {
     const target = {
       path: entry.path,
       originalName: entry.name,
@@ -88,6 +88,21 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     }
 
     rename.activate(target)
+    // Seed a proposed name (MCP `rename`) instead of the current one, and validate
+    // it so a bad proposal shows the red border immediately (siblings load async;
+    // they re-validate on the first keystroke). The editor still selects the
+    // name-minus-extension on mount, so the user can accept it with one keypress.
+    if (initialName !== undefined) {
+      rename.setCurrentName(initialName)
+      const result = validateFilename(
+        initialName,
+        entry.name,
+        deps.getCurrentPath(),
+        renameSiblingNames,
+        effectiveExtensionPolicy(),
+      )
+      rename.setValidation(result)
+    }
     renameSiblingNames = []
 
     void loadSiblingNames(entry.name).then((names) => {
@@ -213,6 +228,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       // Scoped to this rename session; reset when it ends (finalize/cancel).
       suppressExtensionWarningOnce = options?.suppressExtensionWarning ?? false
       const expectedName = options?.expectedName
+      const initialName = options?.initialName
 
       // Activate ONLY on the intended entry. The permission check (skipped for MTP
       // and archive-inner paths) and sibling-name load live in `activateRename`.
@@ -223,7 +239,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         const entry = deps.getEntryUnderCursor()
         if (!entry || entry.name === '..') return false
         if (expectedName !== undefined && entry.name !== expectedName) return false
-        activateRename(entry)
+        activateRename(entry, initialName)
         return true
       }
 

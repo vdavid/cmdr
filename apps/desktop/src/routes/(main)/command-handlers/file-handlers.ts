@@ -53,8 +53,12 @@ export const fileHandlers = {
     void explorerRef?.openViewerForCursor()
   },
 
-  'file.rename': ({ explorerRef }) => {
-    explorerRef?.startRename()
+  'file.rename': ({ explorerRef, dispatchArgs }) => {
+    // Arg-less from F2 / the palette (seed the current name); the MCP `rename`
+    // tool passes `{ initialName, expectedName }` to seed a proposed name and pin
+    // activation to the target row.
+    const renameArgs = dispatchArgs as CommandArgs['file.rename'] | undefined
+    explorerRef?.startRename(renameArgs)
   },
 
   'file.edit': (hctx) => withEntryUnderCursor(hctx, (entry) => openInEditor(entry.path)),
@@ -82,17 +86,23 @@ export const fileHandlers = {
     )
   },
 
-  'file.newFolder': ({ explorerRef }) => {
-    void explorerRef?.openNewFolderDialog()
+  'file.newFolder': ({ explorerRef, dispatchArgs }) => {
+    // Arg-less from F7 / the palette; the MCP `mkdir` tool may pass `{ name }` to
+    // prefill the dialog. (autoConfirm creates directly in Rust, never reaching here.)
+    const args = dispatchArgs as CommandArgs['file.newFolder'] | undefined
+    void explorerRef?.openNewFolderDialog(args?.name)
   },
 
-  'file.newFile': ({ explorerRef }) => {
-    void explorerRef?.openNewFileDialog()
+  'file.newFile': ({ explorerRef, dispatchArgs }) => {
+    const args = dispatchArgs as CommandArgs['file.newFile'] | undefined
+    void explorerRef?.openNewFileDialog(args?.name)
   },
 
   'file.delete': ({ explorerRef, dispatchArgs }) => {
+    // The MCP `delete` tool may pass `permanent` (from its `mode`); F8 omits it
+    // (trash-default). The dialog still clamps to permanent on no-trash volumes.
     const deleteArgs = dispatchArgs as CommandArgs['file.delete'] | undefined
-    void explorerRef?.openDeleteDialog(false, deleteArgs?.autoConfirm, deleteArgs?.mcpRequestId)
+    void explorerRef?.openDeleteDialog(deleteArgs?.permanent ?? false, deleteArgs?.autoConfirm, deleteArgs?.mcpRequestId)
   },
 
   'file.deletePermanently': ({ explorerRef }) => {

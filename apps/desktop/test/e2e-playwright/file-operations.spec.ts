@@ -15,6 +15,7 @@ import fs from 'fs'
 import path from 'path'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
+import { ensureMcpClient, mcpCall, mcpNavToPath } from '../e2e-shared/mcp-client.js'
 import {
   dismissOverlay,
   dispatchMenuCommand,
@@ -208,6 +209,95 @@ test.describe('Rename round-trip', () => {
     // Verify on disk
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'renamed-file.txt'))).toBe(true)
     expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(false)
+  })
+})
+
+test.describe('MCP rename', () => {
+  test('non-autoConfirm opens the inline editor prefilled with newName, then Enter commits', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+
+    // The tool round-trip resolves only AFTER the FE started the editor, so the
+    // input is guaranteed present when the call returns — no arbitrary sleep.
+    const result = await mcpCall('rename', { pane: 'left', name: 'file-a.txt', newName: 'renamed-by-mcp.txt' })
+    expect(result).toContain('OK')
+
+    // Honest observation point: the editor is open, prefilled with the proposal.
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<boolean>(`document.querySelector('.rename-input')?.value === 'renamed-by-mcp.txt'`),
+        { timeout: 3000 },
+      )
+      .toBeTruthy()
+
+    // The user reviews and accepts with Enter — the prefilled value commits.
+    await tauriPage.press('.rename-input', 'Enter')
+    await expect.poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: 5000 }).toBeTruthy()
+
+    await expect
+      .poll(async () => fileExistsInFocusedPane(tauriPage, 'renamed-by-mcp.txt'), { timeout: 5000 })
+      .toBeTruthy()
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'renamed-by-mcp.txt'))).toBe(true)
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(false)
+  })
+
+  test('autoConfirm renames directly, no editor', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+
+    const result = await mcpCall('rename', {
+      pane: 'left',
+      name: 'file-b.txt',
+      newName: 'auto-renamed.txt',
+      autoConfirm: true,
+    })
+    expect(result).toContain('OK')
+
+    // No editor should open on the autoConfirm path.
+    expect(await tauriPage.isVisible('.rename-input')).toBe(false)
+
+    await expect
+      .poll(async () => fileExistsInFocusedPane(tauriPage, 'auto-renamed.txt'), { timeout: 5000 })
+      .toBeTruthy()
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'auto-renamed.txt'))).toBe(true)
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-b.txt'))).toBe(false)
+  })
+})
+
+test.describe('MCP delete mode', () => {
+  test('mode: delete presets the confirmation dialog to permanent', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+
+    await mcpCall('select', { pane: 'left', names: ['file-a.txt'] })
+    // Non-autoConfirm: the dialog opens with its toggle preset to `mode`. The
+    // call acks once the dialog mounts, so no arbitrary sleep is needed.
+    const result = await mcpCall('delete', { mode: 'delete' })
+    expect(result).toContain('OK')
+
+    await tauriPage.waitForSelector('[data-dialog-id="delete-confirmation"]', 5000)
+    // Permanent mode → alertdialog role (cross-platform: holds whether or not the
+    // volume supports trash). Trash mode would be role="dialog".
+    await expect
+      .poll(
+        async () =>
+          tauriPage.evaluate<string | null>(
+            `document.querySelector('[data-dialog-id="delete-confirmation"]')?.getAttribute('role')`,
+          ),
+        { timeout: 3000 },
+      )
+      .toBe('alertdialog')
+
+    // Dismiss without deleting (leaves file-a.txt in place).
+    await dismissOverlay(tauriPage)
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'file-a.txt'))).toBe(true)
   })
 })
 

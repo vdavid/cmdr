@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy, untrack } from 'svelte'
     import FilePane from './FilePane.svelte'
-    import type { FilePaneAPI } from './types'
+    import type { FilePaneAPI, StartRenameOptions } from './types'
     import PaneResizer from './PaneResizer.svelte'
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
@@ -719,8 +719,8 @@
     }
 
     /** Activates inline rename on the focused pane's cursor item. */
-    export function startRename() {
-        fileOps.startRename()
+    export function startRename(options?: StartRenameOptions) {
+        fileOps.startRename(options)
     }
 
     /** Cancels any active inline rename on either pane. */
@@ -733,14 +733,14 @@
         return fileOps.isRenaming()
     }
 
-    /** Opens the new folder dialog. Pre-fills with the entry name under cursor. */
-    export async function openNewFolderDialog() {
-        await fileOps.openNewFolderDialog()
+    /** Opens the new folder dialog, prefilled with `name` or the cursor entry. */
+    export async function openNewFolderDialog(name?: string) {
+        await fileOps.openNewFolderDialog(name)
     }
 
-    /** Opens the new file dialog. Pre-fills with the filename under cursor. */
-    export async function openNewFileDialog() {
-        await fileOps.openNewFileDialog()
+    /** Opens the new file dialog, prefilled with `name` or the cursor entry. */
+    export async function openNewFileDialog(name?: string) {
+        await fileOps.openNewFileDialog(name)
     }
 
     /** Closes any confirmation dialog (new folder, new file, or transfer) if open (for MCP). */

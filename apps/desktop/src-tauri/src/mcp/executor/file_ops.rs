@@ -224,9 +224,17 @@ pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) ->
 
 /// Execute delete command.
 ///
+/// The optional `mode` (`trash` | `delete`) presets the trash/permanent choice.
+/// Omitted, the FE applies its per-volume default (trash where supported, forced
+/// permanent on volumes without a trash and inside archives). `permanent` only
+/// rides the event when `mode` is given, so the FE default stays the single
+/// source of the volume clamp (`no-string-matching`: a typed bool crosses IPC).
+///
 /// Ack contract:
-/// - `autoConfirm: true` → pane generation must advance.
-/// - `autoConfirm: false` → `delete-confirmation` soft dialog must appear.
+/// - `autoConfirm: true` → round-trip returning the spawned `operationId`; the FE
+///   routes to `trash_files` vs `delete_files` by the effective permanent flag.
+/// - `autoConfirm: false` → `delete-confirmation` soft dialog appears, its toggle
+///   preset to `mode`.
 ///
 /// `check_operation_has_target` fast-fails the cases the FE would silently drop.
 pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
@@ -235,13 +243,21 @@ pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
     // (`tool_call_requires_token` in `mcp/server.rs`) is what protects this now — it flags
     // destructive auto-confirm (and the `dialog` confirm action), not the whole server.
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
+    let permanent = delete_permanent_from_mode(params)?;
 
     if auto_confirm {
-        let operation_id =
-            mcp_await_operation_start(app, "mcp-delete", json!({"autoConfirm": true}), OPERATION_START_TIMEOUT).await?;
+        let mut payload = json!({"autoConfirm": true});
+        if let Some(p) = permanent {
+            payload["permanent"] = json!(p);
+        }
+        let operation_id = mcp_await_operation_start(app, "mcp-delete", payload, OPERATION_START_TIMEOUT).await?;
         Ok(operation_started_ok("Delete", operation_id))
     } else {
-        app.emit("mcp-delete", json!({"autoConfirm": false}))?;
+        let mut payload = json!({"autoConfirm": false});
+        if let Some(p) = permanent {
+            payload["permanent"] = json!(p);
+        }
+        app.emit("mcp-delete", payload)?;
         wait_for_ack(
             app,
             AckSignal::SoftDialogAppeared("delete-confirmation"),
@@ -252,33 +268,186 @@ pub async fn execute_delete<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
     }
 }
 
-/// Execute mkdir command. Ack: `mkdir-confirmation` soft dialog appears.
-///
-/// Note: We cannot validate whether the current directory is writable because
-/// the current directory path is managed by the frontend. The validation happens
-/// when the actual mkdir operation is attempted, which will return an appropriate
-/// error if the directory is not writable.
-pub async fn execute_mkdir<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    app.emit("mcp-mkdir", ())?;
-    wait_for_ack(
-        app,
-        AckSignal::SoftDialogAppeared("mkdir-confirmation"),
-        DEFAULT_ACK_TIMEOUT,
-    )
-    .await?;
-    Ok(json!("OK: Create folder dialog opened."))
+/// Map the `delete` tool's `mode` param to the FE's `permanent` flag: `trash` →
+/// keep (false), `delete` → permanent (true), absent → `None` (FE volume default).
+fn delete_permanent_from_mode(params: &Value) -> Result<Option<bool>, ToolError> {
+    match params.get("mode").and_then(|v| v.as_str()) {
+        None => Ok(None),
+        Some("trash") => Ok(Some(false)),
+        Some("delete") => Ok(Some(true)),
+        Some(other) => Err(ToolError::invalid_params(format!(
+            "mode must be 'trash' or 'delete' (got '{other}')"
+        ))),
+    }
 }
 
-/// Execute mkfile command. Ack: `new-file-confirmation` soft dialog appears.
-pub async fn execute_mkfile<R: Runtime>(app: &AppHandle<R>) -> ToolResult {
-    app.emit("mcp-mkfile", ())?;
-    wait_for_ack(
-        app,
-        AckSignal::SoftDialogAppeared("new-file-confirmation"),
-        DEFAULT_ACK_TIMEOUT,
-    )
-    .await?;
-    Ok(json!("OK: Create file dialog opened."))
+/// Execute rename command.
+///
+/// - `autoConfirm: false` → a round-trip: the FE moves the cursor to the target
+///   row and starts the inline rename editor prefilled with `newName` for the
+///   user to review (the human-review affordance). Acks once the editor is up.
+/// - `autoConfirm: true` (token-gated) → calls the `rename_file` backend directly
+///   with `force: false`; the managed op notifies the listing cache, so the pane
+///   refreshes on success. Honest errors: name not in the listing, or the target
+///   already exists.
+///
+/// The target is the named item (`name`), else the item under the cursor.
+pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    let new_name = params
+        .get("newName")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| ToolError::invalid_params("Missing 'newName' parameter"))?
+        .to_string();
+    if new_name.trim().is_empty() {
+        return Err(ToolError::invalid_params("'newName' must not be empty"));
+    }
+    if new_name.contains('/') {
+        return Err(ToolError::invalid_params(
+            "'newName' is a name, not a path — it must not contain '/'",
+        ));
+    }
+
+    let (pane, state) = super::target_pane_state(app, params)?;
+    let name_param = params.get("name").and_then(|v| v.as_str());
+    let (current_name, from_path) = resolve_rename_target(&state, name_param)?;
+
+    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
+
+    if auto_confirm {
+        // Same-name rename is a no-op the FE would silently drop; reject fast.
+        if current_name == new_name {
+            return Err(ToolError::invalid_params(format!(
+                "'{new_name}' is already the item's name"
+            )));
+        }
+        let parent = std::path::Path::new(&from_path)
+            .parent()
+            .ok_or_else(|| ToolError::internal(format!("Couldn't derive the parent of {from_path}")))?;
+        let to_path = parent.join(&new_name).to_string_lossy().into_owned();
+        let volume_id = state.volume_id.clone();
+        crate::commands::rename::rename_file(from_path, to_path, false, volume_id)
+            .await
+            .map_err(|e| ToolError::internal(e.message))?;
+        Ok(json!(format!("OK: Renamed to {new_name}.")))
+    } else {
+        mcp_round_trip(
+            app,
+            "mcp-rename",
+            json!({"pane": pane, "name": current_name, "newName": new_name}),
+            format!("OK: Rename editor opened on {current_name}, prefilled with {new_name}. Waiting for the user to confirm."),
+        )
+        .await
+    }
+}
+
+/// Resolve the single rename target to its `(current_name, path)`: the named item
+/// (`name`), else the item under the cursor. Off the last-synced pane state, so a
+/// name not in the listing, or a cursor outside the loaded window / on `..`, is an
+/// honest error.
+fn resolve_rename_target(
+    state: &crate::mcp::pane_state::PaneState,
+    name: Option<&str>,
+) -> Result<(String, String), ToolError> {
+    if let Some(name) = name {
+        let entry = state
+            .files
+            .iter()
+            .find(|f| f.name == name)
+            .ok_or_else(|| ToolError::invalid_params(format!("'{name}' isn't in the listing")))?;
+        return Ok((entry.name.clone(), entry.path.clone()));
+    }
+    let entry = state
+        .cursor_index
+        .checked_sub(state.loaded_start)
+        .and_then(|i| state.files.get(i))
+        .ok_or_else(|| ToolError::invalid_params("the cursor isn't on a listed item; pass 'name'"))?;
+    if entry.name == ".." {
+        return Err(ToolError::invalid_params(
+            "the cursor is on the parent entry (..); pass 'name'",
+        ));
+    }
+    Ok((entry.name.clone(), entry.path.clone()))
+}
+
+/// Execute mkdir command.
+///
+/// - No `name` → opens the naming dialog (unchanged).
+/// - `name` only → opens the dialog prefilled with the name.
+/// - `name` + `autoConfirm` → creates the folder directly on the focused pane
+///   (`create_directory`), erroring honestly on a name conflict.
+///
+/// Ack for the dialog paths: `mkdir-confirmation` soft dialog appears.
+pub async fn execute_mkdir<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    execute_create(app, params, "mcp-mkdir", "mkdir-confirmation", CreateKind::Directory).await
+}
+
+/// Execute mkfile command. Same `name` / `autoConfirm` shape as [`execute_mkdir`];
+/// ack for the dialog paths: `new-file-confirmation` soft dialog appears.
+pub async fn execute_mkfile<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    execute_create(app, params, "mcp-mkfile", "new-file-confirmation", CreateKind::File).await
+}
+
+#[derive(Clone, Copy)]
+enum CreateKind {
+    Directory,
+    File,
+}
+
+/// Shared body for `mkdir` / `mkfile`. The direct-create path calls the typed
+/// `create_directory` / `create_file` backend on the focused pane; the dialog
+/// path emits the create event (prefilled when `name` is given) and waits for the
+/// naming dialog to mount.
+async fn execute_create<R: Runtime>(
+    app: &AppHandle<R>,
+    params: &Value,
+    event: &str,
+    ack_dialog: &'static str,
+    kind: CreateKind,
+) -> ToolResult {
+    let name = params.get("name").and_then(|v| v.as_str()).map(str::to_string);
+    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
+
+    if auto_confirm {
+        let name = name.ok_or_else(|| ToolError::invalid_params("autoConfirm requires a 'name'"))?;
+        if name.trim().is_empty() {
+            return Err(ToolError::invalid_params("'name' must not be empty"));
+        }
+        if name.contains('/') {
+            return Err(ToolError::invalid_params(
+                "'name' is a name, not a path — it must not contain '/'",
+            ));
+        }
+        // Create on the FOCUSED pane (mkdir/mkfile have no pane param).
+        let (_pane, state) = super::target_pane_state(app, params)?;
+        if state.path.is_empty() {
+            return Err(ToolError::internal("The focused pane has no synced path yet"));
+        }
+        let volume_id = state.volume_id.clone();
+        let parent = state.path.clone();
+        let created = match kind {
+            CreateKind::Directory => crate::commands::file_system::create_directory(volume_id, parent, name.clone()).await,
+            CreateKind::File => crate::commands::file_system::create_file(volume_id, parent, name.clone()).await,
+        };
+        created.map_err(|e| ToolError::internal(e.message))?;
+        let noun = match kind {
+            CreateKind::Directory => "folder",
+            CreateKind::File => "file",
+        };
+        return Ok(json!(format!("OK: Created {noun} {name}.")));
+    }
+
+    // Dialog path: prefill the name when given, else open with the FE's default.
+    let payload = match name {
+        Some(name) => json!({ "name": name }),
+        None => json!({}),
+    };
+    app.emit(event, payload)?;
+    wait_for_ack(app, AckSignal::SoftDialogAppeared(ack_dialog), DEFAULT_ACK_TIMEOUT).await?;
+    let what = match kind {
+        CreateKind::Directory => "Create folder",
+        CreateKind::File => "Create file",
+    };
+    Ok(json!(format!("OK: {what} dialog opened.")))
 }
 
 /// Execute refresh command.
@@ -398,4 +567,20 @@ pub async fn execute_select_command<R: Runtime>(app: &AppHandle<R>, params: &Val
         format!("OK: Selection updated in {pane} pane"),
     )
     .await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn delete_mode_maps_to_permanent_flag() {
+        // Omitted → None (the FE applies its per-volume default).
+        assert_eq!(delete_permanent_from_mode(&json!({})).unwrap(), None);
+        // trash → keep (false); delete → permanent (true).
+        assert_eq!(delete_permanent_from_mode(&json!({"mode": "trash"})).unwrap(), Some(false));
+        assert_eq!(delete_permanent_from_mode(&json!({"mode": "delete"})).unwrap(), Some(true));
+        // An unknown mode is an honest error, not a silent default.
+        assert!(delete_permanent_from_mode(&json!({"mode": "bin"})).is_err());
+    }
 }

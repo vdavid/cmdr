@@ -8,6 +8,7 @@ import type { McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/comman
 import type { QuickLookKeyEventPayload } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import type { FileEntry, FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
 import type { NavigateIntent, NavigateResult } from '$lib/file-explorer/pane/navigate'
+import type { StartRenameOptions } from '$lib/file-explorer/pane/types'
 
 /**
  * Closed action set for `handleSelectionAction` (the selection sub-dispatcher).
@@ -104,15 +105,15 @@ export interface ExplorerAPI {
    * optionally a specific tab), unlike the focused-pane `newTab`/`cycleTab`/etc.
    */
   handleMcpTabAction: (pane: 'left' | 'right', action: McpTabAction, tabId?: string, pinned?: boolean) => void
-  startRename: () => void
+  startRename: (options?: StartRenameOptions) => void
   openCopyDialog: (autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) => Promise<void>
   openMoveDialog: (autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) => Promise<void>
   openCompressDialog: (autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) => Promise<void>
   copyToClipboard: () => Promise<void>
   cutToClipboard: () => Promise<void>
   pasteFromClipboard: (forceMove: boolean) => Promise<void>
-  openNewFolderDialog: () => Promise<void>
-  openNewFileDialog: () => Promise<void>
+  openNewFolderDialog: (name?: string) => Promise<void>
+  openNewFileDialog: (name?: string) => Promise<void>
   openDeleteDialog: (permanent: boolean, autoConfirm?: boolean, mcpRequestId?: string) => Promise<void>
   closeConfirmationDialog: () => void
   confirmDialog: (dialogType: ConfirmDialogType, onConflict?: string) => void

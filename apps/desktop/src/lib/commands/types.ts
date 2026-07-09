@@ -84,7 +84,10 @@ export interface CommandArgsOptionalOverrides {
   'file.copy': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string }
   'file.move': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string }
   'file.compress': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string }
-  'file.delete': { autoConfirm?: boolean; mcpRequestId?: string }
+  'file.delete': { autoConfirm?: boolean; permanent?: boolean; mcpRequestId?: string }
+  'file.rename': { initialName?: string; expectedName?: string }
+  'file.newFolder': { name?: string; autoConfirm?: boolean; mcpRequestId?: string }
+  'file.newFile': { name?: string; autoConfirm?: boolean; mcpRequestId?: string }
 }
 
 /**

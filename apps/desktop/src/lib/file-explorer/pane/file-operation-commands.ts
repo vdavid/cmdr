@@ -19,7 +19,7 @@ import {
 import { capabilitiesFor, capabilitiesForPane, pathInsideArchive } from './volume-capabilities'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import type { MessageKey } from '$lib/intl/keys.gen'
-import type { FilePaneAPI } from './types'
+import type { FilePaneAPI, StartRenameOptions } from './types'
 import type { TransferOperationType } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
 import type { PaneAccess } from './pane-access'
@@ -83,7 +83,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   /** Activates inline rename on the focused pane's cursor item. */
-  function startRename() {
+  function startRename(options?: StartRenameOptions) {
     const refusal = readOnlyRefusal('rename')
     if (refusal) {
       dialogs.showAlert(refusal.title, refusal.message)
@@ -91,7 +91,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     }
 
     const paneRef = access.getPaneRef(access.getFocusedPane())
-    paneRef?.startRename()
+    paneRef?.startRename(options)
   }
 
   /** Cancels any active inline rename on either pane. */
@@ -108,8 +108,11 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     })
   }
 
-  /** Opens the new folder dialog. Pre-fills with the entry name under cursor. */
-  async function openNewFolderDialog() {
+  /**
+   * Opens the new folder dialog. Pre-fills with the entry name under the cursor,
+   * or with `nameOverride` (the MCP `mkdir` tool's `name`) when given.
+   */
+  async function openNewFolderDialog(nameOverride?: string) {
     const paneRef = access.getPaneRef(access.getFocusedPane())
     const path = access.getPanePath(access.getFocusedPane())
     const volumeIdForPane = access.getPaneVolumeId(access.getFocusedPane())
@@ -129,7 +132,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       return
     }
 
-    const initialName = await getInitialFolderName(paneRef, paneListingId, access.getShowHiddenFiles(), getFileAt)
+    const initialName =
+      nameOverride ?? (await getInitialFolderName(paneRef, paneListingId, access.getShowHiddenFiles(), getFileAt))
 
     dialogs.showNewFolder({
       currentPath: path,
@@ -140,8 +144,11 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     })
   }
 
-  /** Opens the new file dialog. Pre-fills with the filename under cursor. */
-  async function openNewFileDialog() {
+  /**
+   * Opens the new file dialog. Pre-fills with the filename under the cursor, or
+   * with `nameOverride` (the MCP `mkfile` tool's `name`) when given.
+   */
+  async function openNewFileDialog(nameOverride?: string) {
     const paneRef = access.getPaneRef(access.getFocusedPane())
     const path = access.getPanePath(access.getFocusedPane())
     const volumeIdForPane = access.getPaneVolumeId(access.getFocusedPane())
@@ -158,7 +165,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       return
     }
 
-    const initialName = await getInitialFileName(paneRef, paneListingId, access.getShowHiddenFiles(), getFileAt)
+    const initialName =
+      nameOverride ?? (await getInitialFileName(paneRef, paneListingId, access.getShowHiddenFiles(), getFileAt))
 
     dialogs.showNewFile({
       currentPath: path,

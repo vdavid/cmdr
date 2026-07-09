@@ -85,12 +85,12 @@ fn test_total_tool_count() {
     // The registry is the single source, so this count is a cheap guard over a by-construction
     // property, not a hand-synced number: adding an `mcp_tools!` entry bumps the list, dispatch,
     // and gate together. It just flags an unintended add/remove.
-    // 6 nav + 2 cursor + 1 select + 7 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app + 2
+    // 6 nav + 2 cursor + 1 select + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app + 2
     // search + 1 settings + 1 indexing + 1 queue + 1 favorites + 3 network + 1 eject + 1 await + 1
-    // downloads = 38
+    // downloads = 39
     assert_eq!(
         tools.len(),
-        38,
+        39,
         "Expected 35 tools, got {}. Did you add/remove tools?",
         tools.len()
     );
