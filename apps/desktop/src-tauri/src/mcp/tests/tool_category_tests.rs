@@ -56,8 +56,8 @@ fn test_view_tools_exist() {
 fn test_file_op_tools_exist() {
     let tools = get_all_tools();
 
-    // File operation tools: copy, delete, mkdir, refresh
-    let expected = ["copy", "delete", "mkdir", "refresh"];
+    // File operation tools: copy, compress, delete, mkdir, refresh
+    let expected = ["copy", "compress", "delete", "mkdir", "refresh"];
     for name in expected {
         assert!(tools.iter().any(|t| t.name == name), "Missing file op tool: {}", name);
     }

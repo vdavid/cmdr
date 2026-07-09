@@ -156,6 +156,62 @@ pub async fn execute_move<R: Runtime>(app: &AppHandle<R>, params: &Value) -> Too
     }
 }
 
+/// Execute compress command.
+///
+/// Opens the SAME transfer dialog as copy/move (in compress mode), packing the
+/// cursor item or selection into a new zip at the other pane's path.
+///
+/// Ack contract:
+/// - `autoConfirm: false` → the `transfer-confirmation` soft dialog must appear.
+/// - `autoConfirm: true` → EITHER the pane generation advances (the compress
+///   started) OR the `transfer-confirmation` dialog appears. The dialog branch is
+///   load-bearing: when the target archive already exists, compress mode
+///   deliberately aborts the auto-dispatch and keeps the dialog open rather than
+///   silently overwriting (never advancing the generation). Waiting on
+///   `GenerationAdvanced` alone would hang until timeout in exactly that case.
+pub async fn execute_compress<R: Runtime>(app: &AppHandle<R>, params: &Value) -> ToolResult {
+    check_operation_has_target(app, "compress")?;
+    // `autoConfirm: true` skips the user's confirmation dialog; the POST-handler token
+    // gate (`tool_call_requires_token` in `mcp/server.rs`) protects this case.
+    let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
+    let on_conflict = params.get("onConflict").and_then(|v| v.as_str()).unwrap_or("skip_all");
+
+    if auto_confirm && !["skip_all", "overwrite_all", "rename_all"].contains(&on_conflict) {
+        return Err(ToolError::invalid_params(
+            "onConflict must be 'skip_all', 'overwrite_all', or 'rename_all'",
+        ));
+    }
+
+    let pre_gen = snapshot_generation(app);
+    app.emit(
+        "mcp-compress",
+        json!({"autoConfirm": auto_confirm, "onConflict": on_conflict}),
+    )?;
+
+    if auto_confirm {
+        wait_for_ack(
+            app,
+            AckSignal::GenerationAdvancedOrSoftDialog {
+                from: pre_gen,
+                dialog: "transfer-confirmation",
+            },
+            DEFAULT_ACK_TIMEOUT,
+        )
+        .await?;
+        Ok(json!(
+            "OK: Compress started with auto-confirm (or the confirmation dialog opened because the target archive already exists)."
+        ))
+    } else {
+        wait_for_ack(
+            app,
+            AckSignal::SoftDialogAppeared("transfer-confirmation"),
+            DEFAULT_ACK_TIMEOUT,
+        )
+        .await?;
+        Ok(json!("OK: Compress dialog opened. Waiting for user confirmation."))
+    }
+}
+
 /// Execute delete command.
 ///
 /// Ack contract:

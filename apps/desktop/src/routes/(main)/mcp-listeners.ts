@@ -137,6 +137,7 @@ const viewSetModeCommand: CommandId = 'view.setMode'
 const paneRefreshCommand: CommandId = 'pane.refresh'
 const fileCopyCommand: CommandId = 'file.copy'
 const fileMoveCommand: CommandId = 'file.move'
+const fileCompressCommand: CommandId = 'file.compress'
 const fileNewFolderCommand: CommandId = 'file.newFolder'
 const fileNewFileCommand: CommandId = 'file.newFile'
 const fileDeleteCommand: CommandId = 'file.delete'
@@ -419,6 +420,13 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
     const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
     void dispatch(fileMoveCommand, { autoConfirm, onConflict })
+  })
+
+  await listenTauri('mcp-compress', (event) => {
+    const raw = asRecord(event.payload)
+    const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
+    const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
+    void dispatch(fileCompressCommand, { autoConfirm, onConflict })
   })
 
   await listenTauri('mcp-mkdir', () => {

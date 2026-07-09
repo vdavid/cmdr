@@ -323,6 +323,26 @@ mcp_tools! {
         gate: TokenGate::IfAutoConfirm,
         run: app_params file_ops::execute_move
     },
+    "compress" => {
+        desc: "Compress selected files into a new zip in the other pane (opens confirmation dialog)",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "autoConfirm": {
+                    "type": "boolean",
+                    "description": "When true, the dialog opens and immediately confirms without waiting for user interaction, returning once the compress starts. Exception: if the target archive already exists, the dialog stays open for the user to confirm the overwrite rather than replacing it silently."
+                },
+                "onConflict": {
+                    "type": "string",
+                    "enum": ["skip_all", "overwrite_all", "rename_all"],
+                    "description": "Carried for shape-uniformity with copy/move. Compress creates ONE new archive, so there are no inner-file conflicts to resolve; an existing target archive is surfaced by the dialog's overwrite affordance instead. Default: skip_all"
+                }
+            },
+            "required": []
+        }),
+        gate: TokenGate::IfAutoConfirm,
+        run: app_params file_ops::execute_compress
+    },
     "delete" => {
         desc: "Delete selected files (opens confirmation dialog)",
         schema: json!({
@@ -774,6 +794,7 @@ mod tests {
         "select",
         "copy",
         "move",
+        "compress",
         "delete",
         "mkdir",
         "mkfile",
@@ -799,9 +820,9 @@ mod tests {
 
     #[test]
     fn test_all_tools_count() {
-        // 6 nav + 2 cursor + 1 selection + 6 file_op + 3 view + 1 tab + 2 dialog + 3 app + 2
-        // search + 1 settings + 3 network + 1 await + 1 downloads = 32
-        assert_eq!(get_all_tools().len(), 32);
+        // 6 nav + 2 cursor + 1 selection + 7 file_op + 3 view + 1 tab + 2 dialog + 3 app + 2
+        // search + 1 settings + 3 network + 1 await + 1 downloads = 33
+        assert_eq!(get_all_tools().len(), 33);
     }
 
     #[test]
@@ -809,7 +830,7 @@ mod tests {
         use std::collections::BTreeSet;
         let actual: BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();
         let expected: BTreeSet<String> = EXPECTED_TOOL_NAMES.iter().map(|s| (*s).to_owned()).collect();
-        assert_eq!(actual, expected, "tool name set drifted from the expected 32");
+        assert_eq!(actual, expected, "tool name set drifted from the expected 33");
     }
 
     #[test]
@@ -1018,6 +1039,7 @@ mod tests {
     fn test_tool_gate_per_name() {
         assert_eq!(tool_gate("copy"), Some(TokenGate::IfAutoConfirm));
         assert_eq!(tool_gate("move"), Some(TokenGate::IfAutoConfirm));
+        assert_eq!(tool_gate("compress"), Some(TokenGate::IfAutoConfirm));
         assert_eq!(tool_gate("delete"), Some(TokenGate::IfAutoConfirm));
         assert_eq!(tool_gate("set_setting"), Some(TokenGate::Always));
         assert_eq!(tool_gate("dialog"), Some(TokenGate::IfConfirmAction));
@@ -1065,6 +1087,7 @@ mod tests {
             ("select", TokenGate::Open),
             ("copy", TokenGate::IfAutoConfirm),
             ("move", TokenGate::IfAutoConfirm),
+            ("compress", TokenGate::IfAutoConfirm),
             ("delete", TokenGate::IfAutoConfirm),
             ("mkdir", TokenGate::Open),
             ("mkfile", TokenGate::Open),

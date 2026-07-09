@@ -108,6 +108,7 @@ pub const EDIT_ID: &str = "edit";
 pub const FILE_VIEW_ID: &str = "file_view";
 pub const FILE_COPY_ID: &str = "file_copy";
 pub const FILE_MOVE_ID: &str = "file_move";
+pub const FILE_COMPRESS_ID: &str = "file_compress";
 pub const FILE_NEW_FOLDER_ID: &str = "file_new_folder";
 pub const FILE_DELETE_ID: &str = "file_delete";
 pub const FILE_DELETE_PERMANENTLY_ID: &str = "file_delete_permanently";
@@ -357,6 +358,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         FILE_VIEW_ID => Some(("file.view", CommandScope::FileScoped)),
         FILE_COPY_ID => Some(("file.copy", CommandScope::FileScoped)),
         FILE_MOVE_ID => Some(("file.move", CommandScope::FileScoped)),
+        FILE_COMPRESS_ID => Some(("file.compress", CommandScope::FileScoped)),
         FILE_NEW_FOLDER_ID => Some(("file.newFolder", CommandScope::FileScoped)),
         FILE_DELETE_ID => Some(("file.delete", CommandScope::FileScoped)),
         FILE_DELETE_PERMANENTLY_ID => Some(("file.deletePermanently", CommandScope::FileScoped)),
@@ -440,6 +442,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "file.view" => Some(FILE_VIEW_ID),
         "file.copy" => Some(FILE_COPY_ID),
         "file.move" => Some(FILE_MOVE_ID),
+        "file.compress" => Some(FILE_COMPRESS_ID),
         "file.newFolder" => Some(FILE_NEW_FOLDER_ID),
         "file.delete" => Some(FILE_DELETE_ID),
         "file.deletePermanently" => Some(FILE_DELETE_PERMANENTLY_ID),
@@ -674,6 +677,10 @@ mod tests {
             Some(("file.copy", CommandScope::FileScoped))
         );
         assert_eq!(
+            menu_id_to_command(FILE_COMPRESS_ID),
+            Some(("file.compress", CommandScope::FileScoped))
+        );
+        assert_eq!(
             menu_id_to_command(GO_BACK_ID),
             Some(("nav.back", CommandScope::FileScoped))
         );
@@ -766,6 +773,7 @@ mod tests {
             "file.view",
             "file.copy",
             "file.move",
+            "file.compress",
             "file.newFolder",
             "file.delete",
             "file.deletePermanently",

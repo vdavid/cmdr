@@ -12,7 +12,7 @@ use super::menu_items::{
 use super::{
     ABOUT_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID,
     COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID,
-    EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COPY_ID, FILE_DELETE_ID,
+    EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
     FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID,
     GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID,
     HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, PIN_TAB_MENU_ID, PREV_TAB_ID,
@@ -44,6 +44,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     let edit_item = MenuItem::with_id(app, EDIT_ID, "Edit in &editor", true, None::<&str>)?;
     let file_copy_item = MenuItem::with_id(app, FILE_COPY_ID, "&Copy...", true, None::<&str>)?;
     let file_move_item = MenuItem::with_id(app, FILE_MOVE_ID, "&Move...", true, None::<&str>)?;
+    let file_compress_item = MenuItem::with_id(app, FILE_COMPRESS_ID, "Comp&ress...", true, None::<&str>)?;
     let file_new_folder_item = MenuItem::with_id(app, FILE_NEW_FOLDER_ID, "&New folder", true, None::<&str>)?;
     let file_delete_item = MenuItem::with_id(app, FILE_DELETE_ID, "&Delete", true, None::<&str>)?;
     let file_delete_permanently_item = MenuItem::with_id(
@@ -75,6 +76,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
             &PredefinedMenuItem::separator(app)?,
             &file_copy_item,
             &file_move_item,
+            &file_compress_item,
             &file_new_folder_item,
             &file_delete_item,
             &file_delete_permanently_item,
@@ -371,19 +373,20 @@ pub(crate) fn build_menu_linux<R: Runtime>(
     register_item(&mut items, EDIT_ID, &edit_item, &file_menu, 2);
     register_item(&mut items, FILE_COPY_ID, &file_copy_item, &file_menu, 4);
     register_item(&mut items, FILE_MOVE_ID, &file_move_item, &file_menu, 5);
-    register_item(&mut items, FILE_NEW_FOLDER_ID, &file_new_folder_item, &file_menu, 6);
-    register_item(&mut items, FILE_DELETE_ID, &file_delete_item, &file_menu, 7);
+    register_item(&mut items, FILE_COMPRESS_ID, &file_compress_item, &file_menu, 6);
+    register_item(&mut items, FILE_NEW_FOLDER_ID, &file_new_folder_item, &file_menu, 7);
+    register_item(&mut items, FILE_DELETE_ID, &file_delete_item, &file_menu, 8);
     register_item(
         &mut items,
         FILE_DELETE_PERMANENTLY_ID,
         &file_delete_permanently_item,
         &file_menu,
-        8,
+        9,
     );
-    register_item(&mut items, RENAME_ID, &rename_item, &file_menu, 10);
-    register_item(&mut items, SHOW_IN_FINDER_ID, &show_in_fm_item, &file_menu, 12);
-    register_item(&mut items, GET_INFO_ID, &get_info_item, &file_menu, 13);
-    register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 14);
+    register_item(&mut items, RENAME_ID, &rename_item, &file_menu, 11);
+    register_item(&mut items, SHOW_IN_FINDER_ID, &show_in_fm_item, &file_menu, 13);
+    register_item(&mut items, GET_INFO_ID, &get_info_item, &file_menu, 14);
+    register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 15);
 
     // Edit menu positions: cut(0), copy(1), paste(2), move_here(3), sep(4),
     // copy_path(5), copy_filename(6), sep(7), search_files(8), sep(9), settings(10),
