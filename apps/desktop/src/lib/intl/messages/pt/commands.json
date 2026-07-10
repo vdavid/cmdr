@@ -83,6 +83,14 @@
   "@commands.helpWhatsNew.description": {
     "sourceHash": "f8ad411"
   },
+  "commands.logOperationLog.label": "Registro de operações",
+  "@commands.logOperationLog.label": {
+    "sourceHash": "2c97965"
+  },
+  "commands.logOperationLog.description": "Veja o histórico das suas operações de arquivo e reverta-as",
+  "@commands.logOperationLog.description": {
+    "sourceHash": "ea2d082"
+  },
   "commands.feedbackSend.label": "Enviar comentário",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

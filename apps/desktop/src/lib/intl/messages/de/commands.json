@@ -83,6 +83,14 @@
   "@commands.helpWhatsNew.description": {
     "sourceHash": "f8ad411"
   },
+  "commands.logOperationLog.label": "Vorgangsprotokoll",
+  "@commands.logOperationLog.label": {
+    "sourceHash": "2c97965"
+  },
+  "commands.logOperationLog.description": "Sieh dir den Verlauf deiner Dateivorgänge an und mach sie rückgängig",
+  "@commands.logOperationLog.description": {
+    "sourceHash": "ea2d082"
+  },
   "commands.feedbackSend.label": "Feedback senden",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

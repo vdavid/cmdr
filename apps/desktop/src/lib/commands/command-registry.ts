@@ -190,6 +190,19 @@ const commandSources: CommandSource[] = [
     shortcuts: [],
     descriptionKey: 'commands.feedbackSend.description',
   },
+  {
+    // Default ⌘⌥L. The plan's first pick ⌥⌘O is already bound to `file.showInFinder`,
+    // so L (for "log") is the mnemonic. Modifier order is Command-then-Option (⌘⌥),
+    // matching what `formatKeyCombo` emits, so the JS keydown dispatch fires it on
+    // macOS in addition to the native menu accelerator (⌥⌘-order defaults are
+    // native-menu-only). See `shortcut-dispatch.ts`.
+    id: 'log.operationLog',
+    nameKey: 'commands.logOperationLog.label',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: ['⌘⌥L'],
+    descriptionKey: 'commands.logOperationLog.description',
+  },
 
   // ============================================================================
   // Main window - Search

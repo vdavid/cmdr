@@ -572,3 +572,32 @@ Settled while translating the Compress feature:
 - smaller (slider high end, level 9) → `更小` · pairs with `更快`; marks the smaller output file (TC `zh` high end
   "最大压缩") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.
+
+### Operation log catalog (`operationLog.*` + `commands.logOperationLog.*`, 2026-07-09)
+
+macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses settled queue-status and transfer-verb terms so the log reads
+as one feature with the transfer queue.
+
+- **operation log (the dialog / command name)** · `操作日志` · `操作` (operation, Microsoft TBX / search-pass result
+  column) + `日志` (log, settings-pass `logging` → 日志). Standard, natural compound. · `high`
+- **operation history** · `操作历史记录` · `历史记录` = history; loadError renders `无法加载你的操作历史记录。请稍后重试。`
+  (no bare 失败/错误 per style.md; `请稍后重试` = try again in a moment, reusing settled `重试`) · `high`
+- **lifecycle status words (match the transfer queue `queue.row.status` exactly)** · Queued `等待中` / Running `进行中` /
+  Done `已完成` / Didn''t finish `无法完成` / Canceled `已取消` · reused verbatim from `queue.json` so the two surfaces
+  agree; `无法完成` carries the style-guide "avoid failed" rule (same as the queue) · `high`
+- **roll back (reverse an operation)** · `回滚` · reused from the file-ops pass (`rollback` → `回滚`, Microsoft TBX). Arms:
+  Can''t roll back `无法回滚` / Can roll back `可回滚` / Rolling back `正在回滚` (locale-wide `正在…` in-progress) / Rolled
+  back `已回滚` / Partly rolled back `已部分回滚` (`已…` perfective + `部分` = partly) · `high`
+- **per-item outcome** · Done `已完成` / Skipped `已跳过` (settled `跳过` + `已` perfective) / Didn''t finish `无法完成`
+  / Rolled back `已回滚` · reuses status + rollback terms · `high`
+- **summary lines (perfective `已[动词] {countText} 个项目`)** · `已拷贝`/`已移动`/`已删除`/`已重命名`/`已创建`/`已压缩` +
+  measure-word `个项目`/`个文件`/`个文件夹`; trash → `已将 {countText} 个项目移到废纸篓` (settled `移到废纸篓`); archive
+  edit/extract → `已编辑压缩文件` / `已解压压缩文件` (settled `压缩文件` + `编辑`/`解压`). `已` matches sibling result
+  toasts (`已拷贝`, `已压缩`). Chinese collapses each ICU plural to a single `other` branch holding `{countText}`. · `high`
+- **"and N more items" (moreItems)** · `另有 {countText} 个项目` · reused verbatim from the FAT32-pass `另有 {countText}
+  个文件` pattern (`另有` = in addition there are), items → 项目 · `high`
+- **initiator / provenance labels** · You `你` (informal register, style.md) / AI client `AI 客户端` (keep AI verbatim +
+  `客户端` = client) / Agent `代理` (settled agent → 代理) · `high`
+- **"Load 50 more" (loadMore button)** · `再加载 50 条` · `再加载` = load more; `条` measure word for log records ·
+  `high`
+- No `sameAsSourceJustification` needed: every value differs from English (`AI 客户端` keeps only the brand token).

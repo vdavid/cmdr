@@ -1,0 +1,160 @@
+{
+  "operationLog.dialog.title": "Operation log",
+  "@operationLog.dialog.title": {
+    "description": "Title of the Operation log dialog, which lists recent file operations (copy, move, delete, rename). Sentence case."
+  },
+  "operationLog.dialog.loading": "Loading…",
+  "@operationLog.dialog.loading": {
+    "description": "Shown while the Operation log dialog loads the list of operations, or while one operation's items load."
+  },
+  "operationLog.dialog.loadError": "Couldn’t load your operation history. Try again in a moment.",
+  "@operationLog.dialog.loadError": {
+    "description": "Shown in the Operation log dialog when the history couldn't be read. Friendly and actionable; avoids the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "operationLog.dialog.empty": "No operations yet. Copy, move, rename, or delete something and it’ll show up here.",
+  "@operationLog.dialog.empty": {
+    "description": "Empty state in the Operation log dialog when nothing has been logged yet. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "operationLog.dialog.itemsError": "Couldn’t load these items.",
+  "@operationLog.dialog.itemsError": {
+    "description": "Shown when the per-item detail of one expanded operation couldn't be read. Avoids the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "operationLog.dialog.noItems": "This operation has no recorded items.",
+  "@operationLog.dialog.noItems": {
+    "description": "Shown when an expanded operation has no per-item rows recorded."
+  },
+  "operationLog.dialog.moreItems": "{count, plural, one {and {countText} more item} other {and {countText} more items}}",
+  "@operationLog.dialog.moreItems": {
+    "description": "Shown below an expanded operation's item list when more items exist than are displayed. count is the number of extra items; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder.",
+    "placeholders": { "count": {}, "countText": {} }
+  },
+  "operationLog.dialog.loadMore": "Load 50 more",
+  "@operationLog.dialog.loadMore": {
+    "description": "Button that loads the next 50 operations into the Operation log dialog."
+  },
+  "operationLog.dialog.close": "Close",
+  "@operationLog.dialog.close": {
+    "description": "Button that closes the Operation log dialog."
+  },
+
+  "operationLog.summary.copy": "{count, plural, one {Copied {countText} item} other {Copied {countText} items}}",
+  "@operationLog.summary.copy": {
+    "description": "One-line summary of a copy operation. count is the number of items copied; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
+    "placeholders": { "count": {}, "countText": {} }
+  },
+  "operationLog.summary.move": "{count, plural, one {Moved {countText} item} other {Moved {countText} items}}",
+  "@operationLog.summary.move": {
+    "description": "One-line summary of a move operation. count is the number of items moved; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
+    "placeholders": { "count": {}, "countText": {} }
+  },
+  "operationLog.summary.delete": "{count, plural, one {Deleted {countText} item} other {Deleted {countText} items}}",
+  "@operationLog.summary.delete": {
+    "description": "One-line summary of a permanent-delete operation. count is the number of items deleted; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
+    "placeholders": { "count": {}, "countText": {} }
+  },
+  "operationLog.summary.trash": "{count, plural, one {Moved {countText} item to the trash} other {Moved {countText} items to the trash}}",
+  "@operationLog.summary.trash": {
+    "description": "One-line summary of a trash operation (moving items to the system trash/recycle bin). count is the number of items; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
+    "placeholders": { "count": {}, "countText": {} }
+  },
+  "operationLog.summary.rename": "{count, plural, one {Renamed {countText} item} other {Renamed {countText} items}}",
+  "@operationLog.summary.rename": {
+    "description": "One-line summary of a rename operation (one item, or a batch rename of many). count is the number of items renamed; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
+    "placeholders": { "count": {}, "countText": {} }
+  },
+  "operationLog.summary.createFolder": "{count, plural, one {Created {countText} folder} other {Created {countText} folders}}",
+  "@operationLog.summary.createFolder": {
+    "description": "One-line summary of a create-folder operation. count is the number of folders created; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
+    "placeholders": { "count": {}, "countText": {} }
+  },
+  "operationLog.summary.createFile": "{count, plural, one {Created {countText} file} other {Created {countText} files}}",
+  "@operationLog.summary.createFile": {
+    "description": "One-line summary of a create-file operation. count is the number of files created; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
+    "placeholders": { "count": {}, "countText": {} }
+  },
+  "operationLog.summary.compress": "{count, plural, one {Compressed {countText} item} other {Compressed {countText} items}}",
+  "@operationLog.summary.compress": {
+    "description": "One-line summary of a compress operation (creating an archive). count is the number of items compressed; countText is that number formatted with the locale's thousands separator. Keep the {countText} placeholder in every plural branch.",
+    "placeholders": { "count": {}, "countText": {} }
+  },
+  "operationLog.summary.archiveEdit": "Edited an archive",
+  "@operationLog.summary.archiveEdit": {
+    "description": "One-line summary of editing the contents of an existing archive (adding to or changing files inside a zip)."
+  },
+  "operationLog.summary.archiveExtract": "Extracted an archive",
+  "@operationLog.summary.archiveExtract": {
+    "description": "One-line summary of extracting an archive's contents."
+  },
+
+  "operationLog.initiator.user": "You",
+  "@operationLog.initiator.user": {
+    "description": "Shown on an operation the user started themselves (as opposed to an AI client). Provenance label."
+  },
+  "operationLog.initiator.aiClient": "AI client",
+  "@operationLog.initiator.aiClient": {
+    "description": "Shown on an operation an external AI client started over Cmdr's automation interface. Provenance label."
+  },
+  "operationLog.initiator.agent": "Agent",
+  "@operationLog.initiator.agent": {
+    "description": "Shown on an operation Cmdr's own AI agent started. Provenance label."
+  },
+
+  "operationLog.status.queued": "Queued",
+  "@operationLog.status.queued": {
+    "description": "Lifecycle status of an operation that is waiting to run."
+  },
+  "operationLog.status.running": "Running",
+  "@operationLog.status.running": {
+    "description": "Lifecycle status of an operation that is currently running."
+  },
+  "operationLog.status.done": "Done",
+  "@operationLog.status.done": {
+    "description": "Lifecycle status of an operation that finished successfully."
+  },
+  "operationLog.status.failed": "Didn’t finish",
+  "@operationLog.status.failed": {
+    "description": "Lifecycle status of an operation that stopped before completing. Avoids the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "operationLog.status.canceled": "Canceled",
+  "@operationLog.status.canceled": {
+    "description": "Lifecycle status of an operation the user canceled."
+  },
+
+  "operationLog.rollback.notRollbackable": "Can’t roll back",
+  "@operationLog.rollback.notRollbackable": {
+    "description": "Rollback status: this operation can't be reversed (for example a permanent delete). The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "operationLog.rollback.rollbackable": "Can roll back",
+  "@operationLog.rollback.rollbackable": {
+    "description": "Rollback status: this operation can be reversed."
+  },
+  "operationLog.rollback.rollingBack": "Rolling back",
+  "@operationLog.rollback.rollingBack": {
+    "description": "Rollback status: a reversal of this operation is currently in progress."
+  },
+  "operationLog.rollback.rolledBack": "Rolled back",
+  "@operationLog.rollback.rolledBack": {
+    "description": "Rollback status: this operation has been fully reversed."
+  },
+  "operationLog.rollback.partiallyRolledBack": "Partly rolled back",
+  "@operationLog.rollback.partiallyRolledBack": {
+    "description": "Rollback status: some but not all of this operation was reversed."
+  },
+
+  "operationLog.outcome.done": "Done",
+  "@operationLog.outcome.done": {
+    "description": "Per-item outcome shown in an expanded operation: the item was handled successfully."
+  },
+  "operationLog.outcome.skipped": "Skipped",
+  "@operationLog.outcome.skipped": {
+    "description": "Per-item outcome shown in an expanded operation: the item was skipped."
+  },
+  "operationLog.outcome.failed": "Didn’t finish",
+  "@operationLog.outcome.failed": {
+    "description": "Per-item outcome shown in an expanded operation: the item didn't complete. Avoids the words error and failed. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "operationLog.outcome.rolledBack": "Rolled back",
+  "@operationLog.outcome.rolledBack": {
+    "description": "Per-item outcome shown in an expanded operation: the item was reversed by a rollback."
+  }
+}

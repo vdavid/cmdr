@@ -26,6 +26,7 @@ export const SOFT_DIALOG_REGISTRY = [
   { id: 'error-report', description: 'Preview-and-send dialog for user-initiated error reports' },
   { id: 'feedback', description: 'Open-beta "Send feedback" dialog' },
   { id: 'whats-new', description: 'Post-update changelog summary popup' },
+  { id: 'operation-log', description: 'Alpha history of file operations, with expandable per-operation items' },
   { id: 'delete-confirmation', description: 'Opened by the delete tool, not directly' },
   { id: 'delete-ai-model', description: 'Confirmation before deleting the local AI model' },
   { id: 'search', description: 'Whole-drive file search' },

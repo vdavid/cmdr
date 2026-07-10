@@ -1,0 +1,146 @@
+{
+  "operationLog.dialog.title": "Registro de operaciones",
+  "@operationLog.dialog.title": {
+    "sourceHash": "2c97965"
+  },
+  "operationLog.dialog.loading": "Cargando…",
+  "@operationLog.dialog.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "operationLog.dialog.loadError": "No se pudo cargar tu historial de operaciones. Inténtalo de nuevo en un momento.",
+  "@operationLog.dialog.loadError": {
+    "sourceHash": "cf26c51"
+  },
+  "operationLog.dialog.empty": "Aún no hay operaciones. Copia, mueve, renombra o elimina algo y aparecerá aquí.",
+  "@operationLog.dialog.empty": {
+    "sourceHash": "2dea414"
+  },
+  "operationLog.dialog.itemsError": "No se pudieron cargar estos elementos.",
+  "@operationLog.dialog.itemsError": {
+    "sourceHash": "596819e"
+  },
+  "operationLog.dialog.noItems": "Esta operación no tiene elementos registrados.",
+  "@operationLog.dialog.noItems": {
+    "sourceHash": "c7d7bfb"
+  },
+  "operationLog.dialog.moreItems": "{count, plural, one {y {countText} elemento más} many {y {countText} elementos más} other {y {countText} elementos más}}",
+  "@operationLog.dialog.moreItems": {
+    "sourceHash": "c39507d"
+  },
+  "operationLog.dialog.loadMore": "Cargar 50 más",
+  "@operationLog.dialog.loadMore": {
+    "sourceHash": "baef697"
+  },
+  "operationLog.dialog.close": "Cerrar",
+  "@operationLog.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "operationLog.summary.copy": "{count, plural, one {Se copió {countText} elemento} many {Se copiaron {countText} elementos} other {Se copiaron {countText} elementos}}",
+  "@operationLog.summary.copy": {
+    "sourceHash": "c296979"
+  },
+  "operationLog.summary.move": "{count, plural, one {Se movió {countText} elemento} many {Se movieron {countText} elementos} other {Se movieron {countText} elementos}}",
+  "@operationLog.summary.move": {
+    "sourceHash": "a6a88d9"
+  },
+  "operationLog.summary.delete": "{count, plural, one {Se eliminó {countText} elemento} many {Se eliminaron {countText} elementos} other {Se eliminaron {countText} elementos}}",
+  "@operationLog.summary.delete": {
+    "sourceHash": "97ec6b7"
+  },
+  "operationLog.summary.trash": "{count, plural, one {Se movió {countText} elemento a la papelera} many {Se movieron {countText} elementos a la papelera} other {Se movieron {countText} elementos a la papelera}}",
+  "@operationLog.summary.trash": {
+    "sourceHash": "34b4457"
+  },
+  "operationLog.summary.rename": "{count, plural, one {Se renombró {countText} elemento} many {Se renombraron {countText} elementos} other {Se renombraron {countText} elementos}}",
+  "@operationLog.summary.rename": {
+    "sourceHash": "73f6409"
+  },
+  "operationLog.summary.createFolder": "{count, plural, one {Se creó {countText} carpeta} many {Se crearon {countText} carpetas} other {Se crearon {countText} carpetas}}",
+  "@operationLog.summary.createFolder": {
+    "sourceHash": "275bbc1"
+  },
+  "operationLog.summary.createFile": "{count, plural, one {Se creó {countText} archivo} many {Se crearon {countText} archivos} other {Se crearon {countText} archivos}}",
+  "@operationLog.summary.createFile": {
+    "sourceHash": "ad16d52"
+  },
+  "operationLog.summary.compress": "{count, plural, one {Se comprimió {countText} elemento} many {Se comprimieron {countText} elementos} other {Se comprimieron {countText} elementos}}",
+  "@operationLog.summary.compress": {
+    "sourceHash": "24d78df"
+  },
+  "operationLog.summary.archiveEdit": "Se editó un archivo comprimido",
+  "@operationLog.summary.archiveEdit": {
+    "sourceHash": "a1bbfcb"
+  },
+  "operationLog.summary.archiveExtract": "Se extrajo un archivo comprimido",
+  "@operationLog.summary.archiveExtract": {
+    "sourceHash": "ab99337"
+  },
+  "operationLog.initiator.user": "Tú",
+  "@operationLog.initiator.user": {
+    "sourceHash": "08b0419"
+  },
+  "operationLog.initiator.aiClient": "Cliente de IA",
+  "@operationLog.initiator.aiClient": {
+    "sourceHash": "caf5878"
+  },
+  "operationLog.initiator.agent": "Agente",
+  "@operationLog.initiator.agent": {
+    "sourceHash": "11b39c9"
+  },
+  "operationLog.status.queued": "Esperando",
+  "@operationLog.status.queued": {
+    "sourceHash": "661ff40"
+  },
+  "operationLog.status.running": "En ejecución",
+  "@operationLog.status.running": {
+    "sourceHash": "f4ccae2"
+  },
+  "operationLog.status.done": "Hecho",
+  "@operationLog.status.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.status.failed": "No se completó",
+  "@operationLog.status.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.status.canceled": "Cancelado",
+  "@operationLog.status.canceled": {
+    "sourceHash": "13ca2ee"
+  },
+  "operationLog.rollback.notRollbackable": "No se puede revertir",
+  "@operationLog.rollback.notRollbackable": {
+    "sourceHash": "c6f78ba"
+  },
+  "operationLog.rollback.rollbackable": "Se puede revertir",
+  "@operationLog.rollback.rollbackable": {
+    "sourceHash": "6e87942"
+  },
+  "operationLog.rollback.rollingBack": "Revirtiendo",
+  "@operationLog.rollback.rollingBack": {
+    "sourceHash": "8b9e964"
+  },
+  "operationLog.rollback.rolledBack": "Revertido",
+  "@operationLog.rollback.rolledBack": {
+    "sourceHash": "7159223"
+  },
+  "operationLog.rollback.partiallyRolledBack": "Revertido en parte",
+  "@operationLog.rollback.partiallyRolledBack": {
+    "sourceHash": "ea54c83"
+  },
+  "operationLog.outcome.done": "Hecho",
+  "@operationLog.outcome.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.outcome.skipped": "Omitido",
+  "@operationLog.outcome.skipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.outcome.failed": "No se completó",
+  "@operationLog.outcome.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.outcome.rolledBack": "Revertido",
+  "@operationLog.outcome.rolledBack": {
+    "sourceHash": "7159223"
+  }
+}

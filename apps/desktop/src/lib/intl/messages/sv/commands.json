@@ -83,6 +83,14 @@
   "@commands.helpWhatsNew.description": {
     "sourceHash": "f8ad411"
   },
+  "commands.logOperationLog.label": "Åtgärdslogg",
+  "@commands.logOperationLog.label": {
+    "sourceHash": "2c97965"
+  },
+  "commands.logOperationLog.description": "Se en historik över dina filåtgärder och återställ dem",
+  "@commands.logOperationLog.description": {
+    "sourceHash": "ea2d082"
+  },
   "commands.feedbackSend.label": "Skicka återkoppling",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

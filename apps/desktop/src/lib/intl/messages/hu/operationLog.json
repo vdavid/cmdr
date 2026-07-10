@@ -1,0 +1,146 @@
+{
+  "operationLog.dialog.title": "Műveletnapló",
+  "@operationLog.dialog.title": {
+    "sourceHash": "2c97965"
+  },
+  "operationLog.dialog.loading": "Betöltés…",
+  "@operationLog.dialog.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "operationLog.dialog.loadError": "Nem sikerült betölteni az előzményeidet. Próbáld újra egy pillanat múlva.",
+  "@operationLog.dialog.loadError": {
+    "sourceHash": "cf26c51"
+  },
+  "operationLog.dialog.empty": "Még nincs egyetlen művelet sem. Másolj, helyezz át, nevezz át vagy törölj valamit, és megjelenik itt.",
+  "@operationLog.dialog.empty": {
+    "sourceHash": "2dea414"
+  },
+  "operationLog.dialog.itemsError": "Nem sikerült betölteni ezeket az elemeket.",
+  "@operationLog.dialog.itemsError": {
+    "sourceHash": "596819e"
+  },
+  "operationLog.dialog.noItems": "Ehhez a művelethez nincsenek rögzített elemek.",
+  "@operationLog.dialog.noItems": {
+    "sourceHash": "c7d7bfb"
+  },
+  "operationLog.dialog.moreItems": "{count, plural, one {és {countText} további elem} other {és {countText} további elem}}",
+  "@operationLog.dialog.moreItems": {
+    "sourceHash": "c39507d"
+  },
+  "operationLog.dialog.loadMore": "További 50 betöltése",
+  "@operationLog.dialog.loadMore": {
+    "sourceHash": "baef697"
+  },
+  "operationLog.dialog.close": "Bezárás",
+  "@operationLog.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "operationLog.summary.copy": "{count, plural, one {{countText} elem másolása} other {{countText} elem másolása}}",
+  "@operationLog.summary.copy": {
+    "sourceHash": "c296979"
+  },
+  "operationLog.summary.move": "{count, plural, one {{countText} elem áthelyezése} other {{countText} elem áthelyezése}}",
+  "@operationLog.summary.move": {
+    "sourceHash": "a6a88d9"
+  },
+  "operationLog.summary.delete": "{count, plural, one {{countText} elem törlése} other {{countText} elem törlése}}",
+  "@operationLog.summary.delete": {
+    "sourceHash": "97ec6b7"
+  },
+  "operationLog.summary.trash": "{count, plural, one {{countText} elem áthelyezése a Kukába} other {{countText} elem áthelyezése a Kukába}}",
+  "@operationLog.summary.trash": {
+    "sourceHash": "34b4457"
+  },
+  "operationLog.summary.rename": "{count, plural, one {{countText} elem átnevezése} other {{countText} elem átnevezése}}",
+  "@operationLog.summary.rename": {
+    "sourceHash": "73f6409"
+  },
+  "operationLog.summary.createFolder": "{count, plural, one {{countText} mappa létrehozása} other {{countText} mappa létrehozása}}",
+  "@operationLog.summary.createFolder": {
+    "sourceHash": "275bbc1"
+  },
+  "operationLog.summary.createFile": "{count, plural, one {{countText} fájl létrehozása} other {{countText} fájl létrehozása}}",
+  "@operationLog.summary.createFile": {
+    "sourceHash": "ad16d52"
+  },
+  "operationLog.summary.compress": "{count, plural, one {{countText} elem tömörítése} other {{countText} elem tömörítése}}",
+  "@operationLog.summary.compress": {
+    "sourceHash": "24d78df"
+  },
+  "operationLog.summary.archiveEdit": "Archívum szerkesztése",
+  "@operationLog.summary.archiveEdit": {
+    "sourceHash": "a1bbfcb"
+  },
+  "operationLog.summary.archiveExtract": "Archívum kicsomagolása",
+  "@operationLog.summary.archiveExtract": {
+    "sourceHash": "ab99337"
+  },
+  "operationLog.initiator.user": "Te",
+  "@operationLog.initiator.user": {
+    "sourceHash": "08b0419"
+  },
+  "operationLog.initiator.aiClient": "AI-kliens",
+  "@operationLog.initiator.aiClient": {
+    "sourceHash": "caf5878"
+  },
+  "operationLog.initiator.agent": "Ágens",
+  "@operationLog.initiator.agent": {
+    "sourceHash": "11b39c9"
+  },
+  "operationLog.status.queued": "Várakozik",
+  "@operationLog.status.queued": {
+    "sourceHash": "661ff40"
+  },
+  "operationLog.status.running": "Fut",
+  "@operationLog.status.running": {
+    "sourceHash": "f4ccae2"
+  },
+  "operationLog.status.done": "Kész",
+  "@operationLog.status.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.status.failed": "Nem fejeződött be",
+  "@operationLog.status.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.status.canceled": "Megszakítva",
+  "@operationLog.status.canceled": {
+    "sourceHash": "13ca2ee"
+  },
+  "operationLog.rollback.notRollbackable": "Nem görgethető vissza",
+  "@operationLog.rollback.notRollbackable": {
+    "sourceHash": "c6f78ba"
+  },
+  "operationLog.rollback.rollbackable": "Visszagörgethető",
+  "@operationLog.rollback.rollbackable": {
+    "sourceHash": "6e87942"
+  },
+  "operationLog.rollback.rollingBack": "Visszagörgetés folyamatban",
+  "@operationLog.rollback.rollingBack": {
+    "sourceHash": "8b9e964"
+  },
+  "operationLog.rollback.rolledBack": "Visszagörgetve",
+  "@operationLog.rollback.rolledBack": {
+    "sourceHash": "7159223"
+  },
+  "operationLog.rollback.partiallyRolledBack": "Részben visszagörgetve",
+  "@operationLog.rollback.partiallyRolledBack": {
+    "sourceHash": "ea54c83"
+  },
+  "operationLog.outcome.done": "Kész",
+  "@operationLog.outcome.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.outcome.skipped": "Kihagyva",
+  "@operationLog.outcome.skipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.outcome.failed": "Nem fejeződött be",
+  "@operationLog.outcome.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.outcome.rolledBack": "Visszagörgetve",
+  "@operationLog.outcome.rolledBack": {
+    "sourceHash": "7159223"
+  }
+}

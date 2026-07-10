@@ -243,6 +243,8 @@ export const menuCommands = [
   'cmdr.openOnboarding',
   // Help (registered in MenuState.items so a future custom binding syncs its accelerator)
   'help.whatsNew',
+  // View > Operation log (default ⌥⌘L; registered so a custom binding syncs its accelerator)
+  'log.operationLog',
   // Edit menu (custom MenuItems; the focus-routed dispatch exception in
   // handle_menu_event doesn't change that their accelerators sync generically)
   'edit.cut',

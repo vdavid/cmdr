@@ -42,6 +42,7 @@ var messageKeyKnownAreas = map[string]bool{
 	"ui":             true,
 	"updates":        true,
 	"whatsNew":       true,
+	"operationLog":   true,
 	"commandPalette": true,
 	"shortcuts":      true,
 	"crashReporter":  true,

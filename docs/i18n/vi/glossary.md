@@ -587,3 +587,35 @@ Settled while translating the Compress feature:
 - smaller (slider high end, level 9) → `Nhỏ hơn` · pairs with `Nhanh hơn`; marks the smaller output file (TC `vi` high
   end "nén tối đa") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.
+
+Settled while translating the Operation log feature (alpha `operationLog.json` + `commands.logOperationLog.*`,
+2026-07-09). Reuses prior terms (sao chép/di chuyển/xóa/đổi tên/nén, thùng rác, tệp/thư mục, thử lại → `thử lại`, close
+→ `đóng`, không thể, agent → `tác nhân`, archive → `tệp nén`, extract → `giải nén`, edit archive → `chỉnh sửa`). New/
+confirmed terms below:
+
+- **operation (a file operation, as a logged event): `thao tác`** · macOS Finder (`thao tác di chuyển ^0 mục`,
+  `thao tác chưa hoàn tất`, `Thao tác lưu tệp`), matching the catalog''s `Thao tác tệp` (file operations) and the `Thao
+  tác:` action-field label. `high`.
+- **operation log (dialog title + command label): `Nhật ký thao tác`** · `nhật ký` (log, settled glossary term) + `thao
+  tác` (operation, macOS). `high`. Used for `operationLog.dialog.title` and `commands.logOperationLog.label`.
+- **history (operation history): `lịch sử`** · macOS (`NSToolbarHistoryTemplate` → "lịch sử", "lịch sử phiên bản" =
+  version history), MS ("Nhật ký Lịch sử"). "your operation history" → `lịch sử thao tác của bạn`. `high`.
+- **roll back / rollback (reverse a completed operation): `hoàn tác`** · macOS AppKit Undo → "Hoàn tác"; catalog already
+  renders the file-ops Rollback button as `Hoàn tác`. Catalog-consistent, so the whole rollback state set uses it:
+  "Can''t roll back" → `Không thể hoàn tác`, "Can roll back" → `Có thể hoàn tác`, "Rolling back" → `Đang hoàn tác`,
+  "Rolled back" → `Đã hoàn tác`, "Partly rolled back" → `Đã hoàn tác một phần`. "roll them back" (command description) →
+  `hoàn tác chúng` (`chúng` = them, inanimate; pile attests `tạo nó`). `high` (catalog-consistent).
+- **client (AI client, an external app over the automation interface): `máy khách`** · MS/standard client-server term
+  (counterpart to `máy chủ` = server). "AI client" → `Máy khách AI` (AI kept verbatim). `high`.
+- **item (generic logged item, vs file/folder): `mục`** · macOS Finder ("các mục", "^0 mục"). English keeps item generic
+  (distinct from file → `tệp`, folder → `thư mục`); the summary lines use `mục`. `high`.
+
+Operation-log status/outcome set, aligned to `queue.json` for catalog consistency (queue lifecycle already ships these):
+Queued → `Đang chờ`; Running → `Đang chạy`; Done → `Xong`; Canceled → `Đã hủy`; "Didn''t finish" (gentle failed, avoids
+"lỗi"/"thất bại") → `Chưa hoàn tất được` (macOS also attests `thao tác chưa hoàn tất`). Per-item outcomes: Skipped →
+`Đã bỏ qua` (past aspect, matches the other completed-aspect outcomes); Done → `Xong`; "Didn''t finish" →
+`Chưa hoàn tất được`; "Rolled back" → `Đã hoàn tác`. Initiator provenance: You → `Bạn`; AI client → `Máy khách AI`;
+Agent → `Tác nhân`. Summary verbs reuse the transfer past-tense forms (`Đã sao chép`/`Đã di chuyển`/`Đã xóa`/
+`Đã chuyển … vào thùng rác`/`Đã đổi tên`/`Đã tạo`/`Đã nén`). Plurals collapse to a single `other` branch (vi has one
+CLDR category), keeping the `{count}`/`{countText}` placeholders. "and N more items" → `và thêm {countText} mục nữa`.
+No `sameAsSourceJustification` needed: all values differ from English.

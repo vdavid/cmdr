@@ -1,0 +1,147 @@
+{
+  "operationLog.dialog.title": "Vorgangsprotokoll",
+  "@operationLog.dialog.title": {
+    "sourceHash": "2c97965"
+  },
+  "operationLog.dialog.loading": "Wird geladen …",
+  "@operationLog.dialog.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "operationLog.dialog.loadError": "Dein Verlauf ließ sich nicht laden. Versuch es gleich noch einmal.",
+  "@operationLog.dialog.loadError": {
+    "sourceHash": "cf26c51"
+  },
+  "operationLog.dialog.empty": "Noch keine Vorgänge. Kopiere, bewege, lösche oder benenne etwas um, dann erscheint es hier.",
+  "@operationLog.dialog.empty": {
+    "sourceHash": "2dea414"
+  },
+  "operationLog.dialog.itemsError": "Diese Objekte ließen sich nicht laden.",
+  "@operationLog.dialog.itemsError": {
+    "sourceHash": "596819e"
+  },
+  "operationLog.dialog.noItems": "Für diesen Vorgang wurden keine Objekte erfasst.",
+  "@operationLog.dialog.noItems": {
+    "sourceHash": "c7d7bfb"
+  },
+  "operationLog.dialog.moreItems": "und {countText} {count, plural, one {weiteres Objekt} other {weitere Objekte}}",
+  "@operationLog.dialog.moreItems": {
+    "sourceHash": "c39507d"
+  },
+  "operationLog.dialog.loadMore": "50 weitere laden",
+  "@operationLog.dialog.loadMore": {
+    "sourceHash": "baef697"
+  },
+  "operationLog.dialog.close": "Schließen",
+  "@operationLog.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "operationLog.summary.copy": "{count, plural, one {{countText} Objekt kopiert} other {{countText} Objekte kopiert}}",
+  "@operationLog.summary.copy": {
+    "sourceHash": "c296979"
+  },
+  "operationLog.summary.move": "{count, plural, one {{countText} Objekt bewegt} other {{countText} Objekte bewegt}}",
+  "@operationLog.summary.move": {
+    "sourceHash": "a6a88d9"
+  },
+  "operationLog.summary.delete": "{count, plural, one {{countText} Objekt gelöscht} other {{countText} Objekte gelöscht}}",
+  "@operationLog.summary.delete": {
+    "sourceHash": "97ec6b7"
+  },
+  "operationLog.summary.trash": "{count, plural, one {{countText} Objekt in den Papierkorb bewegt} other {{countText} Objekte in den Papierkorb bewegt}}",
+  "@operationLog.summary.trash": {
+    "sourceHash": "34b4457"
+  },
+  "operationLog.summary.rename": "{count, plural, one {{countText} Objekt umbenannt} other {{countText} Objekte umbenannt}}",
+  "@operationLog.summary.rename": {
+    "sourceHash": "73f6409"
+  },
+  "operationLog.summary.createFolder": "{count, plural, one {{countText} Ordner erstellt} other {{countText} Ordner erstellt}}",
+  "@operationLog.summary.createFolder": {
+    "sourceHash": "275bbc1"
+  },
+  "operationLog.summary.createFile": "{count, plural, one {{countText} Datei erstellt} other {{countText} Dateien erstellt}}",
+  "@operationLog.summary.createFile": {
+    "sourceHash": "ad16d52"
+  },
+  "operationLog.summary.compress": "{count, plural, one {{countText} Objekt komprimiert} other {{countText} Objekte komprimiert}}",
+  "@operationLog.summary.compress": {
+    "sourceHash": "24d78df"
+  },
+  "operationLog.summary.archiveEdit": "Archiv bearbeitet",
+  "@operationLog.summary.archiveEdit": {
+    "sourceHash": "a1bbfcb"
+  },
+  "operationLog.summary.archiveExtract": "Archiv entpackt",
+  "@operationLog.summary.archiveExtract": {
+    "sourceHash": "ab99337"
+  },
+  "operationLog.initiator.user": "Du",
+  "@operationLog.initiator.user": {
+    "sourceHash": "08b0419"
+  },
+  "operationLog.initiator.aiClient": "KI-Client",
+  "@operationLog.initiator.aiClient": {
+    "sourceHash": "caf5878"
+  },
+  "operationLog.initiator.agent": "Agent",
+  "@operationLog.initiator.agent": {
+    "sourceHash": "11b39c9",
+    "sameAsSourceJustification": "\"Agent\" is a genuine German word (der Agent), the standard term for a software agent, kept identical in macOS/Microsoft German. No German alternative reads more naturally."
+  },
+  "operationLog.status.queued": "Wartet",
+  "@operationLog.status.queued": {
+    "sourceHash": "661ff40"
+  },
+  "operationLog.status.running": "Läuft",
+  "@operationLog.status.running": {
+    "sourceHash": "f4ccae2"
+  },
+  "operationLog.status.done": "Fertig",
+  "@operationLog.status.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.status.failed": "Nicht abgeschlossen",
+  "@operationLog.status.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.status.canceled": "Abgebrochen",
+  "@operationLog.status.canceled": {
+    "sourceHash": "13ca2ee"
+  },
+  "operationLog.rollback.notRollbackable": "Kein Rollback möglich",
+  "@operationLog.rollback.notRollbackable": {
+    "sourceHash": "c6f78ba"
+  },
+  "operationLog.rollback.rollbackable": "Rollback möglich",
+  "@operationLog.rollback.rollbackable": {
+    "sourceHash": "6e87942"
+  },
+  "operationLog.rollback.rollingBack": "Rollback läuft",
+  "@operationLog.rollback.rollingBack": {
+    "sourceHash": "8b9e964"
+  },
+  "operationLog.rollback.rolledBack": "Rollback abgeschlossen",
+  "@operationLog.rollback.rolledBack": {
+    "sourceHash": "7159223"
+  },
+  "operationLog.rollback.partiallyRolledBack": "Teilweiser Rollback",
+  "@operationLog.rollback.partiallyRolledBack": {
+    "sourceHash": "ea54c83"
+  },
+  "operationLog.outcome.done": "Fertig",
+  "@operationLog.outcome.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.outcome.skipped": "Übersprungen",
+  "@operationLog.outcome.skipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.outcome.failed": "Nicht abgeschlossen",
+  "@operationLog.outcome.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.outcome.rolledBack": "Rollback abgeschlossen",
+  "@operationLog.outcome.rolledBack": {
+    "sourceHash": "7159223"
+  }
+}

@@ -29,6 +29,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'help.sendErrorReport',
   'help.whatsNew',
   'feedback.send',
+  'log.operationLog',
   'search.open',
   'nav.goToPath',
   'favorites.add',
@@ -317,5 +318,24 @@ describe('fixedKey flag', () => {
         expect(cmd.fixedKey).toBe(true)
       }
     }
+  })
+})
+
+describe('operation-log shortcut binding', () => {
+  // M7: the alpha "Operation log" command opens the dialog from the View menu and
+  // via a configurable default shortcut. The plan's first pick (⌥⌘O) is taken by
+  // `file.showInFinder`, so the default is ⌘⌥L. Guard against a silent double-bind.
+  it('binds log.operationLog to exactly ⌘⌥L', () => {
+    const cmd = commands.find((c) => c.id === 'log.operationLog')
+    expect(cmd, 'log.operationLog must be registered').toBeDefined()
+    expect(cmd?.shortcuts).toEqual(['⌘⌥L'])
+  })
+
+  it('does not double-bind ⌘⌥L (its default) or ⌥⌘O (Show in Finder, the plan pick it avoided)', () => {
+    const claimants = (shortcut: string): CommandId[] =>
+      commands.filter((c) => c.shortcuts.includes(shortcut)).map((c) => c.id)
+
+    expect(claimants('⌘⌥L')).toEqual(['log.operationLog'])
+    expect(claimants('⌥⌘O')).toEqual(['file.showInFinder'])
   })
 })

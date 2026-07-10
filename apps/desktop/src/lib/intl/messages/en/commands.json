@@ -113,6 +113,16 @@
     "description": "Longer help text for the \"What's new\" command, shown as a secondary line in the command palette. \"Cmdr\" is the brand name, do not translate it."
   },
 
+  "commands.logOperationLog.label": "Operation log",
+  "@commands.logOperationLog.label": {
+    "description": "Command name that opens the Operation log dialog, a history of file operations. Appears in the command palette and the View menu.",
+    "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.logOperationLog.description": "See a history of your file operations, and roll them back",
+  "@commands.logOperationLog.description": {
+    "description": "Longer help text for the \"Operation log\" command, shown as a secondary line in the command palette."
+  },
+
   "commands.feedbackSend.label": "Send feedback",
   "@commands.feedbackSend.label": {
     "description": "Command name that opens a form to send feedback to the app's maker. Appears in the command palette and the Help menu.",

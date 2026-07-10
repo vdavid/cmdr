@@ -327,3 +327,26 @@ Settled while translating the Compress feature:
 - smaller (slider high end, level 9) → `Menor` · pairs with `Mais rápido`; marks the smaller output file · high.
   `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.
+
+### Operation-log terms (Operation log dialog, `operationLog.*` + `commands.logOperationLog.*`, 2026-07-09)
+
+- operation log → `Registro de operações` · "log" → **registro** across the pt catalog (changelog → "registro de
+  alterações", `errorReporter.*` "arquivos de registro"); "operation" → operação · high. Used for
+  `operationLog.dialog.title` and `commands.logOperationLog.label`.
+- roll back / rollback (undo a logged operation) → `Reverter` (verb) / `Revertida` (operation, fem participle) /
+  `Revertido` (per-item outcome, masc participle) / `Revertendo` (in progress) · glossary "Rollback (transfer) →
+  Reverter", extended to the past participle agreeing with its subject (operação fem vs item masc) · high. "Can(’t) roll
+  back" → "Pode / Não pode ser revertida" (the operation is the subject); "Partly rolled back" → "Parcialmente
+  revertida"; `commands.logOperationLog.description` "roll them back" → "reverta-as".
+- operation-summary verbs (past-tense log lines) → `Copiou` / `Moveu` / `Apagou` / `Renomeou` / `Criou` / `Comprimiu` /
+  `Editou` / `Extraiu` · 3rd-person preterite (implied subject supplied by the initiator chip Você/Cliente de IA/Agente,
+  all taking the same 3rd-person form) · high. delete = **Apagou** (matching the glossary `Apagar` delete term, not
+  "Excluir"); trash arm keeps "para o Lixo"; folder/file/archive nouns per glossary (pasta / arquivo / arquivo
+  compactado). `operationLog.summary.*`.
+- initiator provenance chips → `Você` (You) / `Cliente de IA` (AI client) / `Agente` (Agent) · pt-BR user address (você)
+  + AI → **IA** (`ai.json` throughout) · high. `operationLog.initiator.*`.
+- lifecycle status → `Aguardando` (queued) / `Em andamento` (running) / `Concluído` (done) / `Não foi possível concluir`
+  (didn’t finish) / `Cancelado` (canceled) · matched exactly to `queue.row.status` (queued/running/done/cancelled/failed
+  arms) for cross-file consistency; "didn’t finish" avoids the banned bare "Falhou" · confirmed. `operationLog.status.*`.
+- per-item outcome → `Concluído` (done) / `Ignorado` (skipped, glossary Skip → Ignorar) / `Não foi possível concluir`
+  (didn’t finish) / `Revertido` (rolled back) · high. `operationLog.outcome.*`.

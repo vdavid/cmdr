@@ -83,6 +83,14 @@
   "@commands.helpWhatsNew.description": {
     "sourceHash": "f8ad411"
   },
+  "commands.logOperationLog.label": "Historique des opérations",
+  "@commands.logOperationLog.label": {
+    "sourceHash": "2c97965"
+  },
+  "commands.logOperationLog.description": "Consultez l''historique de vos opérations sur les fichiers et restaurez l''état précédent",
+  "@commands.logOperationLog.description": {
+    "sourceHash": "ea2d082"
+  },
   "commands.feedbackSend.label": "Envoyer un retour",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

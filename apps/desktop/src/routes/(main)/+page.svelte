@@ -15,6 +15,8 @@
     import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
     import WhatsNewDialog from '$lib/whats-new/WhatsNewDialog.svelte'
     import { whatsNewState, runWhatsNewStartupTrigger } from '$lib/whats-new/whats-new-trigger.svelte'
+    import OperationLogDialog from '$lib/operation-log/OperationLogDialog.svelte'
+    import { operationLogState } from '$lib/operation-log/operation-log-trigger.svelte'
     import { goToPath } from '$lib/go-to-path/go-to-path'
     import { getFocusedPanePath, getFocusedPaneSearchableFolder } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
@@ -182,6 +184,7 @@
             showExpiredModal ||
             showCommercialReminder ||
             whatsNewState.open ||
+            operationLogState.open ||
             isExplorerOverlayOpen()
         )
     }
@@ -812,6 +815,10 @@
 
         {#if whatsNewState.open}
             <WhatsNewDialog />
+        {/if}
+
+        {#if operationLogState.open}
+            <OperationLogDialog />
         {/if}
 
         {#if showOnboarding}

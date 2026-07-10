@@ -14,6 +14,7 @@ import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
 import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
 import { openFeedbackDialog } from '$lib/feedback/feedback-flow.svelte'
 import { openWhatsNew } from '$lib/whats-new/whats-new-trigger.svelte'
+import { openOperationLog } from '$lib/operation-log/operation-log-trigger.svelte'
 import { runMenuTriggeredCheck } from '$lib/updates/updater.svelte'
 import type { CommandHandlerRecord } from './types'
 
@@ -62,6 +63,10 @@ export const appDialogHandlers = {
 
   'help.whatsNew': () => {
     void openWhatsNew()
+  },
+
+  'log.operationLog': () => {
+    void openOperationLog()
   },
 
   'app.checkForUpdates': () => {

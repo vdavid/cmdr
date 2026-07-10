@@ -1,0 +1,147 @@
+{
+  "operationLog.dialog.title": "Bewerkingenlogboek",
+  "@operationLog.dialog.title": {
+    "sourceHash": "2c97965"
+  },
+  "operationLog.dialog.loading": "Laden…",
+  "@operationLog.dialog.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "operationLog.dialog.loadError": "Kon je bewerkingsgeschiedenis niet laden. Probeer het zo meteen opnieuw.",
+  "@operationLog.dialog.loadError": {
+    "sourceHash": "cf26c51"
+  },
+  "operationLog.dialog.empty": "Nog geen bewerkingen. Kopieer, verplaats, verwijder of wijzig de naam van iets, en het verschijnt hier.",
+  "@operationLog.dialog.empty": {
+    "sourceHash": "2dea414"
+  },
+  "operationLog.dialog.itemsError": "Kon deze onderdelen niet laden.",
+  "@operationLog.dialog.itemsError": {
+    "sourceHash": "596819e"
+  },
+  "operationLog.dialog.noItems": "Deze bewerking heeft geen vastgelegde onderdelen.",
+  "@operationLog.dialog.noItems": {
+    "sourceHash": "c7d7bfb"
+  },
+  "operationLog.dialog.moreItems": "{count, plural, one {en nog {countText} onderdeel} other {en nog {countText} onderdelen}}",
+  "@operationLog.dialog.moreItems": {
+    "sourceHash": "c39507d"
+  },
+  "operationLog.dialog.loadMore": "Laad nog 50",
+  "@operationLog.dialog.loadMore": {
+    "sourceHash": "baef697"
+  },
+  "operationLog.dialog.close": "Sluit",
+  "@operationLog.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "operationLog.summary.copy": "{count, plural, one {{countText} onderdeel gekopieerd} other {{countText} onderdelen gekopieerd}}",
+  "@operationLog.summary.copy": {
+    "sourceHash": "c296979"
+  },
+  "operationLog.summary.move": "{count, plural, one {{countText} onderdeel verplaatst} other {{countText} onderdelen verplaatst}}",
+  "@operationLog.summary.move": {
+    "sourceHash": "a6a88d9"
+  },
+  "operationLog.summary.delete": "{count, plural, one {{countText} onderdeel verwijderd} other {{countText} onderdelen verwijderd}}",
+  "@operationLog.summary.delete": {
+    "sourceHash": "97ec6b7"
+  },
+  "operationLog.summary.trash": "{count, plural, one {{countText} onderdeel naar de prullenmand verplaatst} other {{countText} onderdelen naar de prullenmand verplaatst}}",
+  "@operationLog.summary.trash": {
+    "sourceHash": "34b4457"
+  },
+  "operationLog.summary.rename": "{count, plural, one {Naam van {countText} onderdeel gewijzigd} other {Namen van {countText} onderdelen gewijzigd}}",
+  "@operationLog.summary.rename": {
+    "sourceHash": "73f6409"
+  },
+  "operationLog.summary.createFolder": "{count, plural, one {{countText} map aangemaakt} other {{countText} mappen aangemaakt}}",
+  "@operationLog.summary.createFolder": {
+    "sourceHash": "275bbc1"
+  },
+  "operationLog.summary.createFile": "{count, plural, one {{countText} bestand aangemaakt} other {{countText} bestanden aangemaakt}}",
+  "@operationLog.summary.createFile": {
+    "sourceHash": "ad16d52"
+  },
+  "operationLog.summary.compress": "{count, plural, one {{countText} onderdeel gecomprimeerd} other {{countText} onderdelen gecomprimeerd}}",
+  "@operationLog.summary.compress": {
+    "sourceHash": "24d78df"
+  },
+  "operationLog.summary.archiveEdit": "Een archief bewerkt",
+  "@operationLog.summary.archiveEdit": {
+    "sourceHash": "a1bbfcb"
+  },
+  "operationLog.summary.archiveExtract": "Een archief uitgepakt",
+  "@operationLog.summary.archiveExtract": {
+    "sourceHash": "ab99337"
+  },
+  "operationLog.initiator.user": "Jij",
+  "@operationLog.initiator.user": {
+    "sourceHash": "08b0419"
+  },
+  "operationLog.initiator.aiClient": "AI-client",
+  "@operationLog.initiator.aiClient": {
+    "sourceHash": "caf5878"
+  },
+  "operationLog.initiator.agent": "Agent",
+  "@operationLog.initiator.agent": {
+    "sourceHash": "11b39c9",
+    "sameAsSourceJustification": "'Agent' is a genuine Dutch word (MS NL terminology: agent -> agent), kept for the AI-agent provenance label."
+  },
+  "operationLog.status.queued": "Wachten",
+  "@operationLog.status.queued": {
+    "sourceHash": "661ff40"
+  },
+  "operationLog.status.running": "Bezig",
+  "@operationLog.status.running": {
+    "sourceHash": "f4ccae2"
+  },
+  "operationLog.status.done": "Gereed",
+  "@operationLog.status.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.status.failed": "Niet voltooid",
+  "@operationLog.status.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.status.canceled": "Geannuleerd",
+  "@operationLog.status.canceled": {
+    "sourceHash": "13ca2ee"
+  },
+  "operationLog.rollback.notRollbackable": "Niet terug te draaien",
+  "@operationLog.rollback.notRollbackable": {
+    "sourceHash": "c6f78ba"
+  },
+  "operationLog.rollback.rollbackable": "Terug te draaien",
+  "@operationLog.rollback.rollbackable": {
+    "sourceHash": "6e87942"
+  },
+  "operationLog.rollback.rollingBack": "Bezig met terugdraaien",
+  "@operationLog.rollback.rollingBack": {
+    "sourceHash": "8b9e964"
+  },
+  "operationLog.rollback.rolledBack": "Teruggedraaid",
+  "@operationLog.rollback.rolledBack": {
+    "sourceHash": "7159223"
+  },
+  "operationLog.rollback.partiallyRolledBack": "Gedeeltelijk teruggedraaid",
+  "@operationLog.rollback.partiallyRolledBack": {
+    "sourceHash": "ea54c83"
+  },
+  "operationLog.outcome.done": "Gereed",
+  "@operationLog.outcome.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.outcome.skipped": "Overgeslagen",
+  "@operationLog.outcome.skipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.outcome.failed": "Niet voltooid",
+  "@operationLog.outcome.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.outcome.rolledBack": "Teruggedraaid",
+  "@operationLog.outcome.rolledBack": {
+    "sourceHash": "7159223"
+  }
+}

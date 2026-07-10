@@ -83,6 +83,14 @@
   "@commands.helpWhatsNew.description": {
     "sourceHash": "f8ad411"
   },
+  "commands.logOperationLog.label": "Műveletnapló",
+  "@commands.logOperationLog.label": {
+    "sourceHash": "2c97965"
+  },
+  "commands.logOperationLog.description": "Megmutatja a fájlműveleteid előzményeit, és visszagörgeti őket",
+  "@commands.logOperationLog.description": {
+    "sourceHash": "ea2d082"
+  },
   "commands.feedbackSend.label": "Visszajelzés küldése",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

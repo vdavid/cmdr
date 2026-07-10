@@ -239,6 +239,9 @@ pub const QUEUE_SHOW_ID: &str = "queue_show";
 /// Menu item ID for "What's new" (opens the changelog popup, under the Help menu).
 pub const HELP_WHATS_NEW_ID: &str = "help_whats_new";
 
+/// Menu item ID for "Operation log" (opens the alpha operation-log dialog, under the View menu).
+pub const OPERATION_LOG_ID: &str = "operation_log";
+
 /// Menu item ID for "Check for updates…" (under the Cmdr / Help menu).
 pub const CHECK_FOR_UPDATES_ID: &str = "check_for_updates";
 
@@ -317,6 +320,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         HELP_SHORTCUTS_ID => Some(("help.openShortcuts", CommandScope::App)),
         QUEUE_SHOW_ID => Some(("queue.show", CommandScope::App)),
         HELP_WHATS_NEW_ID => Some(("help.whatsNew", CommandScope::App)),
+        OPERATION_LOG_ID => Some(("log.operationLog", CommandScope::App)),
         HELP_SEND_ERROR_REPORT_ID => Some(("help.sendErrorReport", CommandScope::App)),
         HELP_SEND_FEEDBACK_ID => Some(("feedback.send", CommandScope::App)),
         CHECK_FOR_UPDATES_ID => Some(("app.checkForUpdates", CommandScope::App)),
@@ -418,6 +422,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "help.openShortcuts" => Some(HELP_SHORTCUTS_ID),
         "queue.show" => Some(QUEUE_SHOW_ID),
         "help.whatsNew" => Some(HELP_WHATS_NEW_ID),
+        "log.operationLog" => Some(OPERATION_LOG_ID),
         "help.sendErrorReport" => Some(HELP_SEND_ERROR_REPORT_ID),
         "feedback.send" => Some(HELP_SEND_FEEDBACK_ID),
         "app.checkForUpdates" => Some(CHECK_FOR_UPDATES_ID),
@@ -789,6 +794,7 @@ mod tests {
             "help.openShortcuts",
             "queue.show",
             "help.whatsNew",
+            "log.operationLog",
             "help.sendErrorReport",
             "feedback.send",
             "app.checkForUpdates",

@@ -84,6 +84,14 @@
   "@commands.helpWhatsNew.description": {
     "sourceHash": "f8ad411"
   },
+  "commands.logOperationLog.label": "Bewerkingenlogboek",
+  "@commands.logOperationLog.label": {
+    "sourceHash": "2c97965"
+  },
+  "commands.logOperationLog.description": "Bekijk een geschiedenis van je bestandsbewerkingen en draai ze terug",
+  "@commands.logOperationLog.description": {
+    "sourceHash": "ea2d082"
+  },
   "commands.feedbackSend.label": "Verstuur feedback",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

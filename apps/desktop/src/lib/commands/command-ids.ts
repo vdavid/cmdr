@@ -46,6 +46,9 @@ export const COMMAND_IDS = [
   'feedback.send',
   'queue.show',
 
+  // Operation log (alpha)
+  'log.operationLog',
+
   // Search
   'search.open',
 

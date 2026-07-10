@@ -527,3 +527,37 @@ Settled while translating the Compress feature:
 - smaller (slider high end, level 9) → `Mindre` · pairs with `Snabbare`; marks the smaller output file (TC `sv` high end
   "Maximal komprimering") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.
+
+From the Operation-log pass (2026-07-09; `operationLog.json` + the two `commands.logOperationLog.*` keys). The alpha
+dialog listing recent file operations (copy/move/delete/rename/…) with per-op rollback. Reuses the transfer verbs
+(`Kopierade`/`Flyttade`/`Raderade`/`Komprimerade`/`Bytte namn på`), the queue-status words, and the rollback family; new
+ones:
+
+- **operation log (the feature/dialog): `Åtgärdslogg`** · reuses the ALREADY-SHIPPED `settings.section.operationLog` =
+  "Åtgärdslogg" in `sv/settings.json` (åtgärd = action/operation per the `Åtgärd:` field-label entry + MS/macOS; logg =
+  log). Applied to `operationLog.dialog.title` and `commands.logOperationLog.label` so the command, the settings section,
+  and the dialog title all read the same word. `high`.
+- **operation (a logged file operation): `åtgärd`** (definite `åtgärden`, plural `åtgärder`) · matches
+  `settings.operationLog.*` ("loggade åtgärder", "gå igenom din historik") and the `åtgärden {verb}` framing. `high`.
+- **history (operation history): `historik`; "operation history" → `åtgärdshistorik`** · `settings.operationLog` uses
+  "historik"/"Behåll historik i"; compounded åtgärd+historik for `loadError`. `high`.
+- **roll back / rollback (reverse a logged operation): reuse `återställ`/`återställa`/`återställer`/`återställd`** · the
+  settled rollback family (glossary rollback entry + `fileOperations.transferProgress` "Återställer"/"Återställ"). Status
+  chips: notRollbackable → "Går inte att återställa", rollbackable → "Går att återställa", rollingBack → "Återställer",
+  rolledBack → "Återställd", partiallyRolledBack → "Delvis återställd". Command description "roll them back" → "återställ
+  dem". `high`. NOTE: `settings.operationLog.intro` (already shipped) phrases the same concept as "ångra åtgärder"; the
+  dialog uses the `återställ` family for consistency with the transfer-rollback surface — flagged for David if he wants
+  the intro aligned.
+- **status chips (reuse queue.row.status): queued → `Väntar`, running → `Pågår`, done → `Klar`, canceled → `Avbruten`,
+  "Didn''t finish" → `Gick inte att slutföra`** · matched exactly to `queue.json` `queue.row.status`. `high`.
+- **initiator/provenance labels: You → `Du`, AI client → `AI-klient`, Agent → `Agent`** · `du` address (style.md); MS
+  "klient" hyphenated `AI-klient`; "agent" is the same word in Swedish (`agenten` across `queryUi`/`onboarding`), so
+  `Agent` carries a `sameAsSourceJustification`. `high`.
+- **per-item outcome "Skipped": `Överhoppad`** · adjectival participle of `hoppa över` (the settled skip verb), matching
+  the participle style of the sibling outcomes (`Klar`, `Återställd`). `tentative` (participle form not directly
+  attested; the verb `hoppa över` / "hoppade över" is — review whether `Överhoppad` or `Hoppade över` reads better as a
+  one-word chip).
+- **load / load more: `Läs in` / `Läs in 50 till`** · `läsa in` (glossary loading/reload); "50 till" = 50 more. `high`.
+- **more items (ICU plural tail): `och ytterligare {countText} objekt`** (both branches; `objekt` neuter invariant) ·
+  reuses `fileOperations.errorDialog.tooLargeAndMore` "och ytterligare {countText}" pattern. `high`.
+- **recorded items: `registrerade objekt`** · `registrera`/`registrerad` (glossary register entry) + `objekt`. `high`.

@@ -1,0 +1,146 @@
+{
+  "operationLog.dialog.title": "Registro de operações",
+  "@operationLog.dialog.title": {
+    "sourceHash": "2c97965"
+  },
+  "operationLog.dialog.loading": "Carregando…",
+  "@operationLog.dialog.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "operationLog.dialog.loadError": "Não foi possível carregar seu histórico de operações. Tente novamente em instantes.",
+  "@operationLog.dialog.loadError": {
+    "sourceHash": "cf26c51"
+  },
+  "operationLog.dialog.empty": "Nenhuma operação ainda. Copie, mova, renomeie ou apague algo e aparecerá aqui.",
+  "@operationLog.dialog.empty": {
+    "sourceHash": "2dea414"
+  },
+  "operationLog.dialog.itemsError": "Não foi possível carregar estes itens.",
+  "@operationLog.dialog.itemsError": {
+    "sourceHash": "596819e"
+  },
+  "operationLog.dialog.noItems": "Esta operação não tem itens registrados.",
+  "@operationLog.dialog.noItems": {
+    "sourceHash": "c7d7bfb"
+  },
+  "operationLog.dialog.moreItems": "{count, plural, one {e mais {countText} item} many {e mais {countText} itens} other {e mais {countText} itens}}",
+  "@operationLog.dialog.moreItems": {
+    "sourceHash": "c39507d"
+  },
+  "operationLog.dialog.loadMore": "Carregar mais 50",
+  "@operationLog.dialog.loadMore": {
+    "sourceHash": "baef697"
+  },
+  "operationLog.dialog.close": "Fechar",
+  "@operationLog.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "operationLog.summary.copy": "{count, plural, one {Copiou {countText} item} many {Copiou {countText} itens} other {Copiou {countText} itens}}",
+  "@operationLog.summary.copy": {
+    "sourceHash": "c296979"
+  },
+  "operationLog.summary.move": "{count, plural, one {Moveu {countText} item} many {Moveu {countText} itens} other {Moveu {countText} itens}}",
+  "@operationLog.summary.move": {
+    "sourceHash": "a6a88d9"
+  },
+  "operationLog.summary.delete": "{count, plural, one {Apagou {countText} item} many {Apagou {countText} itens} other {Apagou {countText} itens}}",
+  "@operationLog.summary.delete": {
+    "sourceHash": "97ec6b7"
+  },
+  "operationLog.summary.trash": "{count, plural, one {Moveu {countText} item para o Lixo} many {Moveu {countText} itens para o Lixo} other {Moveu {countText} itens para o Lixo}}",
+  "@operationLog.summary.trash": {
+    "sourceHash": "34b4457"
+  },
+  "operationLog.summary.rename": "{count, plural, one {Renomeou {countText} item} many {Renomeou {countText} itens} other {Renomeou {countText} itens}}",
+  "@operationLog.summary.rename": {
+    "sourceHash": "73f6409"
+  },
+  "operationLog.summary.createFolder": "{count, plural, one {Criou {countText} pasta} many {Criou {countText} pastas} other {Criou {countText} pastas}}",
+  "@operationLog.summary.createFolder": {
+    "sourceHash": "275bbc1"
+  },
+  "operationLog.summary.createFile": "{count, plural, one {Criou {countText} arquivo} many {Criou {countText} arquivos} other {Criou {countText} arquivos}}",
+  "@operationLog.summary.createFile": {
+    "sourceHash": "ad16d52"
+  },
+  "operationLog.summary.compress": "{count, plural, one {Comprimiu {countText} item} many {Comprimiu {countText} itens} other {Comprimiu {countText} itens}}",
+  "@operationLog.summary.compress": {
+    "sourceHash": "24d78df"
+  },
+  "operationLog.summary.archiveEdit": "Editou um arquivo compactado",
+  "@operationLog.summary.archiveEdit": {
+    "sourceHash": "a1bbfcb"
+  },
+  "operationLog.summary.archiveExtract": "Extraiu um arquivo compactado",
+  "@operationLog.summary.archiveExtract": {
+    "sourceHash": "ab99337"
+  },
+  "operationLog.initiator.user": "Você",
+  "@operationLog.initiator.user": {
+    "sourceHash": "08b0419"
+  },
+  "operationLog.initiator.aiClient": "Cliente de IA",
+  "@operationLog.initiator.aiClient": {
+    "sourceHash": "caf5878"
+  },
+  "operationLog.initiator.agent": "Agente",
+  "@operationLog.initiator.agent": {
+    "sourceHash": "11b39c9"
+  },
+  "operationLog.status.queued": "Aguardando",
+  "@operationLog.status.queued": {
+    "sourceHash": "661ff40"
+  },
+  "operationLog.status.running": "Em andamento",
+  "@operationLog.status.running": {
+    "sourceHash": "f4ccae2"
+  },
+  "operationLog.status.done": "Concluído",
+  "@operationLog.status.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.status.failed": "Não foi possível concluir",
+  "@operationLog.status.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.status.canceled": "Cancelado",
+  "@operationLog.status.canceled": {
+    "sourceHash": "13ca2ee"
+  },
+  "operationLog.rollback.notRollbackable": "Não pode ser revertida",
+  "@operationLog.rollback.notRollbackable": {
+    "sourceHash": "c6f78ba"
+  },
+  "operationLog.rollback.rollbackable": "Pode ser revertida",
+  "@operationLog.rollback.rollbackable": {
+    "sourceHash": "6e87942"
+  },
+  "operationLog.rollback.rollingBack": "Revertendo",
+  "@operationLog.rollback.rollingBack": {
+    "sourceHash": "8b9e964"
+  },
+  "operationLog.rollback.rolledBack": "Revertida",
+  "@operationLog.rollback.rolledBack": {
+    "sourceHash": "7159223"
+  },
+  "operationLog.rollback.partiallyRolledBack": "Parcialmente revertida",
+  "@operationLog.rollback.partiallyRolledBack": {
+    "sourceHash": "ea54c83"
+  },
+  "operationLog.outcome.done": "Concluído",
+  "@operationLog.outcome.done": {
+    "sourceHash": "11a6767"
+  },
+  "operationLog.outcome.skipped": "Ignorado",
+  "@operationLog.outcome.skipped": {
+    "sourceHash": "12698ce"
+  },
+  "operationLog.outcome.failed": "Não foi possível concluir",
+  "@operationLog.outcome.failed": {
+    "sourceHash": "59ea57b"
+  },
+  "operationLog.outcome.rolledBack": "Revertido",
+  "@operationLog.outcome.rolledBack": {
+    "sourceHash": "7159223"
+  }
+}

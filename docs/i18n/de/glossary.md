@@ -442,3 +442,48 @@ Settled while translating the Compress feature:
 - smaller (slider high end, level 9) → `Kleiner` · comparative of `klein`, pairs with `Schneller`; marks the smaller
   output file (TC `de` high end "maximale Komprimierung") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.
+
+## Operation log (2026-07-10)
+
+Terms settled while translating the Operation log dialog (`operationLog.*`; the retention settings under
+`settings.operationLog.*` had already fixed the core feature vocabulary in M6, and macOS Finder confirms `Vorgang`).
+
+- operation → `Vorgang` (plural `Vorgänge`) · macOS Finder ("Der Vorgang kann nicht abgeschlossen werden.",
+  "Kopiervorgang"/"Löschvorgang") + the settled Cmdr `de` catalog (`errors.listing.*` use `Vorgang` throughout,
+  `settings.operationLog.maxSize.description` "die ältesten Vorgänge") · high. NOT the loanword "Operation": Cmdr reserves
+  "Operation(en)" for the concurrent low-level SMB sense (`settings.network.smbConcurrency`) and the Settings SECTION
+  name "Dateioperationen"; the individual logged op is a `Vorgang`.
+- operation log → `Vorgangsprotokoll` · already settled in M6 (`settings.section.operationLog` → "Vorgangsprotokoll",
+  log → Protokoll) · high. The dialog title (`operationLog.dialog.title`) and the command label
+  (`commands.logOperationLog.label`) MUST match this Settings-section name.
+- history (of operations) → `Verlauf` · `settings.operationLog.intro` "damit du deinen Verlauf ansehen … kannst",
+  `maxAge.label` "Verlauf aufbewahren für"; macOS uses "Verlauf" for history · high. Used in the load-error string.
+- file operations (the user's ops collectively) → `Dateivorgänge` · `settings.operationLog.intro` "Cmdr protokolliert
+  deine Dateivorgänge" · high. Used in the command description.
+- roll back / undo (verb, user-facing prose) → `rückgängig machen` · `settings.operationLog.intro` "Aktionen rückgängig
+  machen"; macOS "widerrufen"/"rückgängig" · high. Used for the friendly command description ("… und mach sie
+  rückgängig"). Distinct from the technical status noun below.
+- rollback (technical status chips) → `Rollback` (noun, kept) · glossary rollback→Rollback + MS terminology · high.
+  Chip renderings: `Rollback möglich` / `Kein Rollback möglich` (calm "X nicht möglich" pattern, avoids "kann nicht") /
+  `Rollback läuft` (glossary's illustrative "Rollback läuft …" ellipsis dropped here to match the sibling no-ellipsis
+  status chips `Läuft`/`Wartet`) / `Rollback abgeschlossen` (complete→abgeschlossen, the "Löschen abgeschlossen"
+  pattern; reused for both `rollback.rolledBack` and `outcome.rolledBack`) / `Teilweiser Rollback` (partly→teilweise).
+  The short technical noun keeps the chips inside their width; the verb "rückgängig machen" stays for running prose.
+- lifecycle status chips → reused verbatim from `queue.row.status` (`queue.json`): queued → `Wartet`, running →
+  `Läuft`, done → `Fertig`, "Didn''t finish" (failed) → `Nicht abgeschlossen` (avoids "Fehler"/"fehlgeschlagen" per the
+  voice rule, matching the en source's deliberate "Didn''t finish"), canceled → `Abgebrochen` · high.
+- per-item outcome chips → done → `Fertig`, skipped → `Übersprungen` (glossary skip→überspringen), "Didn''t finish"
+  (failed) → `Nicht abgeschlossen`, rolled back → `Rollback abgeschlossen` · high.
+- summary lines (past-participle-final, item → `Objekt`/`Objekte`) → "{countText} Objekt(e) kopiert/bewegt/gelöscht/
+  umbenannt/komprimiert", trash → "… in den Papierkorb bewegt" (verbatim `transfer.trash` frame), createFolder →
+  "{countText} Ordner erstellt" (Ordner invariant in plural), createFile → "… Datei/Dateien erstellt", "Edited an
+  archive" → `Archiv bearbeitet`, "Extracted an archive" → `Archiv entpackt` (extract→entpacken) · high. Mirrors the
+  settled `transfer.*` participle pattern ("{phrase} kopiert", "… komprimiert").
+- initiator / provenance labels → "You" → `Du` (standalone label, sentence-initial cap; du-address settled), "AI
+  client" → `KI-Client` (AI→KI settled; client kept, MS "Client") · high · tentative on the loanword `KI-Client`.
+  "Agent" (Cmdr''s own AI agent) → `Agent` (kept; the standard DE loanword for a software/AI agent, matching the en
+  source''s bare "Agent") · tentative — flag for David, "Agent" standalone is slightly ambiguous.
+- more-items line → "und {countText} {count, plural, one {weiteres Objekt} other {weitere Objekte}}" · item→Objekt
+  (neuter, so "weiteres"/"weitere" declines inside each branch, unlike the invariant feminine "weitere Datei(en)"
+  glossary entry) · high.
+- No `sameAsSourceJustification` needed: every value differs from English.

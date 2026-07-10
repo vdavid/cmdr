@@ -5,8 +5,10 @@ future undo. **The app's first durable DB** (`operation-log.db` in the app data 
 on-disk store here is a disposable cache. Full design + rationale: [DETAILS.md](DETAILS.md). Plan:
 [`docs/specs/operation-log-plan.md`](../../../../../docs/specs/operation-log-plan.md).
 
-**Shipped: durable store (M1), capture (M2), rollback engine (M3), read/search API + retention (M4), MCP tools (M5, in
-`mcp/executor/operation_log.rs`).** The UI (M6/M7) builds on the read side.
+**Shipped end to end (M1–M7): durable store (M1), capture (M2), rollback engine (M3), read/search API + retention (M4),
+MCP tools (M5, in `mcp/executor/operation_log.rs`), retention settings + Debug panel (M6), and the alpha "Operation log"
+dialog (M7).** The UI is frontend-only over the M4 read API: Debug panel in `routes/debug/DebugOperationLogPanel.svelte`,
+alpha dialog in `src/lib/operation-log/` (see [DETAILS.md](DETAILS.md) § Alpha UI).
 
 ## Module map
 

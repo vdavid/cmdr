@@ -306,6 +306,9 @@ export type { SendFeedbackResult } from './feedback'
 export { getWhatsNew, whatsNewDevOverride } from './whats-new'
 export type { WhatsNewRelease, WhatsNewSection } from './whats-new'
 
+export { getRecentOperationLogEntries, getOperationLogDetail } from './operation-log'
+export type { OperationRow, OperationItemView, OperationLogDetail } from './operation-log'
+
 // Crash reporter
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'
 export type { CrashReport } from './crash-reporter'

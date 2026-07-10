@@ -26,6 +26,12 @@
       "note": "Browse, edit, extract zip, tar, and 7z archives like folders."
     },
     {
+      "id": "operation-log",
+      "name": "Operation log",
+      "status": "alpha",
+      "note": "A durable history of every copy, move, delete, and rename, with rollback. The dialog that shows it is still bare-bones."
+    },
+    {
       "id": "network-drives",
       "name": "Network drives (SMB)",
       "status": "beta",
