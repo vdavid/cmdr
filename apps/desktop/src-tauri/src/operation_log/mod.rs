@@ -12,6 +12,7 @@
 //! discipline. Design rationale, the migration-ladder template, and the capture/
 //! rollback contracts: `CLAUDE.md` + `DETAILS.md`.
 
+pub mod capture;
 pub mod store;
 pub mod types;
 pub mod writer;
