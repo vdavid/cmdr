@@ -30,11 +30,11 @@ use super::conflicts::{ConflictMode, conditional_overwrites, find_unique_inner, 
 use super::engine::{MutatorHooks, PlanError, delete_move_sources, run_managed_edit, to_write_error};
 use super::routing::{ensure_zip_writable, normalize_inner_path, read_only_error};
 use crate::file_system::get_volume_manager;
-use crate::operation_log::types::{ArchiveSubkind, ExecutionStatus};
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::{self, AddEntry, AddSource, Changeset, MutationError};
 use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
 use crate::file_system::volume::{LaneKey, LocalPosixVolume, Volume, VolumeError};
+use crate::operation_log::types::{ArchiveSubkind, ExecutionStatus};
 
 /// Routes a copy/move INTO a zip (a source dropped onto an archive destination)
 /// to the managed edit driver as a SINGLE `{ add + mkdir }` changeset — the whole
@@ -92,7 +92,10 @@ pub(crate) async fn route_archive_copy_into(
 /// Like [`route_archive_copy_into`] but with an explicit [`ArchiveProvenance`], so
 /// the compress driver can supply `subkind = compress` + the net-new flag the
 /// journal can't derive (Finding 3).
-#[allow(clippy::too_many_arguments, reason = "same seam as route_archive_copy_into plus provenance")]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "same seam as route_archive_copy_into plus provenance"
+)]
 pub(crate) async fn route_archive_copy_into_with_provenance(
     events: Arc<dyn OperationEventSink>,
     source_volume: Arc<dyn Volume>,

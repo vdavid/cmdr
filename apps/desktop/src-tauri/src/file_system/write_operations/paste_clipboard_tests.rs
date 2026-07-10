@@ -85,7 +85,9 @@ async fn paste_journals_a_create_file_operation() {
     ensure_root_volume();
     let jdir = TempDir::new().unwrap();
     let jdb = operation_log_db_path(jdir.path());
-    set_journal(Arc::new(WriterJournal::new(OperationLogWriter::spawn(&jdb).expect("spawn writer"))));
+    set_journal(Arc::new(WriterJournal::new(
+        OperationLogWriter::spawn(&jdb).expect("spawn writer"),
+    )));
 
     let tmp = TempDir::new().unwrap();
     let file = write_text(tmp.path(), "journaled paste").await.expect("Some file");

@@ -193,7 +193,14 @@ pub(super) fn persist_and_note(
     for leaf in &buffered.leaves {
         let source = abs_source.join(&leaf.rel);
         let dest = top_level_dest.map(|d| d.join(&leaf.rel));
-        super::journal::record_local_search_leaf(op_id, leaf.entry_type, &source, dest.as_deref(), leaf.size, leaf.mtime);
+        super::journal::record_local_search_leaf(
+            op_id,
+            leaf.entry_type,
+            &source,
+            dest.as_deref(),
+            leaf.size,
+            leaf.mtime,
+        );
     }
     if buffered.coverage != SearchCoverage::Full {
         crate::operation_log::journal_note_coverage(op_id, buffered.coverage, buffered.reason);

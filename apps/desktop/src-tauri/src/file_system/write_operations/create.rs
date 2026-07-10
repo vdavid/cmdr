@@ -222,7 +222,11 @@ async fn route_archive_create(
 ///
 /// `pub(super)` so the sibling paste-clipboard writer routes through the same
 /// managed `CreateFile` instant op (and journals for free).
-pub(super) fn instant_descriptor(op_type: WriteOperationType, volume_id: Option<&str>, name: &str) -> OperationDescriptor {
+pub(super) fn instant_descriptor(
+    op_type: WriteOperationType,
+    volume_id: Option<&str>,
+    name: &str,
+) -> OperationDescriptor {
     let volume_ids = match volume_id {
         None | Some("root") => vec![],
         Some(id) => vec![id.to_string()],

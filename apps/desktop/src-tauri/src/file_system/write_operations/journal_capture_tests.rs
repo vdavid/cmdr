@@ -275,7 +275,10 @@ fn trashed_dir_records_search_leaves_and_stays_full() {
     assert_eq!(units.len(), 1, "one top-level trash unit, got {items:?}");
     assert_eq!(units[0].source_name, "photos");
     assert_eq!(leaves.len(), 2, "two search leaves from the index, got {items:?}");
-    assert!(leaves.iter().any(|i| i.source_name == "b.jpg"), "leaf search finds b.jpg");
+    assert!(
+        leaves.iter().any(|i| i.source_name == "b.jpg"),
+        "leaf search finds b.jpg"
+    );
 }
 
 /// A trash op whose one top-level item FAILS records no `search_only` rows for
@@ -298,8 +301,16 @@ fn failed_trash_item_records_no_search_leaves_but_a_sibling_keeps_its_own() {
     let conn = open_read_connection(&jdb).expect("read conn");
     let items = read_operation_items(&conn, "op-trash-partial", 1000).expect("items");
     // The succeeded item: its top-level row + its one search leaf.
-    assert!(items.iter().any(|i| i.source_name == "good" && i.row_role == RowRole::RollbackUnit));
-    assert!(items.iter().any(|i| i.source_name == "keep.jpg" && i.row_role == RowRole::SearchOnly));
+    assert!(
+        items
+            .iter()
+            .any(|i| i.source_name == "good" && i.row_role == RowRole::RollbackUnit)
+    );
+    assert!(
+        items
+            .iter()
+            .any(|i| i.source_name == "keep.jpg" && i.row_role == RowRole::SearchOnly)
+    );
     // The failed item contributed NOTHING (no top-level row, no leaves).
     assert!(
         !items.iter().any(|i| i.source_name == "gone"),
@@ -327,7 +338,8 @@ fn time_delete(op_id: &str, paths: &[std::path::PathBuf]) -> Duration {
     journal::open_local_op(op_id, OpKind::Delete, Initiator::User, 0);
     let events = CollectorEventSink::new();
     let t = std::time::Instant::now();
-    delete_files_with_progress_inner(&events, op_id, &state(), paths, &WriteOperationConfig::default()).expect("delete");
+    delete_files_with_progress_inner(&events, op_id, &state(), paths, &WriteOperationConfig::default())
+        .expect("delete");
     let elapsed = t.elapsed();
     journal::finalize_op(op_id, OpKind::Delete, ExecutionStatus::Done);
     elapsed
@@ -574,8 +586,15 @@ fn same_fs_move_dir_records_search_leaves() {
     let op_id = "op-move-leaves";
     journal::open_local_op(op_id, OpKind::Move, Initiator::User, 0);
     let events = CollectorEventSink::new();
-    move_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &WriteOperationConfig::default())
-        .expect("move");
+    move_files_with_progress_inner(
+        &events,
+        op_id,
+        &state(),
+        std::slice::from_ref(&src),
+        &dst,
+        &WriteOperationConfig::default(),
+    )
+    .expect("move");
     journal::finalize_op(op_id, OpKind::Move, ExecutionStatus::Done);
     super::journal_search::test_hook::clear();
     clear_journal();
