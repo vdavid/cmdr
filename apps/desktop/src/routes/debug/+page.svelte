@@ -11,6 +11,7 @@
     import DebugDriveIndexPanel from './DebugDriveIndexPanel.svelte'
     import DebugErrorPreviewPanel from './DebugErrorPreviewPanel.svelte'
     import DebugHistoryPanel from './DebugHistoryPanel.svelte'
+    import DebugOperationLogPanel from './DebugOperationLogPanel.svelte'
     import DebugSmbDiagnosticsPanel from './DebugSmbDiagnosticsPanel.svelte'
     import DebugToastPanel from './DebugToastPanel.svelte'
     import ComponentsCatalog from '../dev/components/+page.svelte'
@@ -22,6 +23,7 @@
         | 'drive-index'
         | 'smb-diagnostics'
         | 'toast-notifications'
+        | 'operation-log'
         | 'navigation-history'
         | 'closed-tabs'
         | 'error-preview'
@@ -66,6 +68,7 @@
         { id: 'drive-index', label: 'Drive index' },
         { id: 'smb-diagnostics', label: 'SMB diagnostics' },
         { id: 'toast-notifications', label: 'Toast notifications' },
+        { id: 'operation-log', label: 'Operation log' },
         { id: 'navigation-history', label: 'Navigation history' },
         { id: 'closed-tabs', label: 'Closed tabs' },
         { id: 'error-preview', label: 'Error pane preview' },
@@ -242,6 +245,8 @@
                 <DebugSmbDiagnosticsPanel />
             {:else if selected === 'toast-notifications'}
                 <DebugToastPanel />
+            {:else if selected === 'operation-log'}
+                <DebugOperationLogPanel />
             {:else if selected === 'navigation-history'}
                 <DebugHistoryPanel />
             {:else if selected === 'closed-tabs'}

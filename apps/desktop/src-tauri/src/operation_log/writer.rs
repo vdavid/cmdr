@@ -107,6 +107,11 @@ pub struct FinalizeOperation {
     pub search_coverage: SearchCoverage,
     pub search_coverage_reason: Option<SearchCoverageReason>,
     pub ended_at: i64,
+    /// The planned total, refined at finalize from what the op actually scanned
+    /// (M6 rider). `None` keeps the value stored at `open` — the finalize paths
+    /// that can't observe a real total (instant creates, archive edits, or a
+    /// direct-call test with no status cache) leave it untouched.
+    pub item_count: Option<u64>,
     pub items_done: u64,
     pub bytes_total: u64,
     /// An optional dev-only summary for the Debug panel / dump bin. NEVER shown
@@ -443,9 +448,12 @@ fn apply_finalize(conn: &Connection, f: &FinalizeOperation) -> Result<FinalizeOu
             search_coverage = ?6,
             search_coverage_reason = ?7,
             ended_at = ?8,
-            items_done = ?9,
-            bytes_total = ?10,
-            dev_summary = ?11
+            -- COALESCE keeps the open-time item_count when finalize supplies NULL
+            -- (instant/archive/no-status paths), else refines it to the scanned total.
+            item_count = COALESCE(?9, item_count),
+            items_done = ?10,
+            bytes_total = ?11,
+            dev_summary = ?12
          WHERE op_id = ?1",
         rusqlite::params![
             f.op_id,
@@ -456,6 +464,7 @@ fn apply_finalize(conn: &Connection, f: &FinalizeOperation) -> Result<FinalizeOu
             f.search_coverage.as_token(),
             f.search_coverage_reason.map(|r| r.as_token()),
             f.ended_at,
+            f.item_count.map(|c| c as i64),
             f.items_done as i64,
             f.bytes_total as i64,
             f.dev_summary,

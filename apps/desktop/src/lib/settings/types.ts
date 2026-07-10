@@ -315,6 +315,13 @@ export interface SettingsValues {
   'behavior.fileSystemWatching.lowDiskSpaceNotifications': LowDiskSpaceNotificationsMode
   'behavior.fileSystemWatching.lowDiskSpaceThresholdPercent': number
 
+  // Operation log (retention). Read by the Rust retention loop each tick
+  // (`settings::load_operation_log_retention_limits`), so a change takes effect on
+  // the next prune with no restart. Age is a duration in ms (`0` = the "Forever"
+  // sentinel ⇒ never prune by age); size is a byte budget (default 3 GB).
+  'operationLog.maxAge': number
+  'operationLog.maxSize': number
+
   // Viewer
   'viewer.wordWrap': boolean
   'fileViewer.suppressBinaryWarning': boolean

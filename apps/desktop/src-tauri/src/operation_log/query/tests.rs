@@ -68,6 +68,7 @@ fn journal_op(
             search_coverage: coverage,
             search_coverage_reason: coverage_reason,
             ended_at,
+            item_count: None,
             items_done: count,
             bytes_total: 0,
             dev_summary: None,

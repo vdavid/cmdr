@@ -523,6 +523,7 @@ fn finalize_inverse(
         search_coverage: SearchCoverage::Full,
         search_coverage_reason: None,
         ended_at: super::now_secs(),
+        item_count: None,
         items_done: reversed,
         bytes_total: 0,
         dev_summary: None,

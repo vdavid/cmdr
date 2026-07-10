@@ -34,6 +34,7 @@ const SECTION_TITLE_KEY: Partial<Record<string, MessageKey>> = {
   'MTP (Android/Kindle/cameras)': 'settings.section.mtp',
   Git: 'settings.section.git',
   Viewer: 'settings.section.viewer',
+  'Operation log': 'settings.section.operationLog',
   Developer: 'settings.section.developer',
   'MCP server': 'settings.section.mcpServer',
   Logging: 'settings.section.logging',

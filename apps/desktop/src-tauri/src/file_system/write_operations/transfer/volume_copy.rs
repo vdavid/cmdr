@@ -271,7 +271,7 @@ pub async fn copy_between_volumes(
                 initiator,
                 &journal_source_volume_id,
                 Some(&journal_dest_volume_id),
-                0,
+                source_paths.len() as u64,
             );
 
             let result: Result<(), WriteFailure> = copy_volumes_with_progress(

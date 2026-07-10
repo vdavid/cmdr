@@ -1168,6 +1168,76 @@
   "@settings.section.viewer": {
     "sourceHash": "678bfa6"
   },
+  "settings.section.operationLog": "Műveletnapló",
+  "@settings.section.operationLog": {
+    "sourceHash": "2c97965"
+  },
+  "settings.operationLog.intro": "A Cmdr naplózza a fájlműveleteidet, így átnézheted az előzményeidet, és visszavonhatod a műveleteket. Add meg, meddig őrizze meg a naplót, és mennyi lemezterületet használhat.",
+  "@settings.operationLog.intro": {
+    "sourceHash": "0c62f4f"
+  },
+  "settings.operationLog.maxAge.label": "Előzmények megőrzése ennyi ideig",
+  "@settings.operationLog.maxAge.label": {
+    "sourceHash": "ca05015"
+  },
+  "settings.operationLog.maxAge.description": "Meddig őrzi meg a Cmdr a naplózott műveleteket, mielőtt automatikusan eltávolítja a legrégebbieket.",
+  "@settings.operationLog.maxAge.description": {
+    "sourceHash": "7d35887"
+  },
+  "settings.operationLog.maxAge.opt.forever": "Örökké",
+  "@settings.operationLog.maxAge.opt.forever": {
+    "sourceHash": "55f980c"
+  },
+  "settings.operationLog.maxAge.opt.days30": "30 nap",
+  "@settings.operationLog.maxAge.opt.days30": {
+    "sourceHash": "ffd7280"
+  },
+  "settings.operationLog.maxAge.opt.days90": "90 nap",
+  "@settings.operationLog.maxAge.opt.days90": {
+    "sourceHash": "38825b0"
+  },
+  "settings.operationLog.maxAge.opt.year1": "1 év",
+  "@settings.operationLog.maxAge.opt.year1": {
+    "sourceHash": "91647ba"
+  },
+  "settings.operationLog.maxSize.label": "Maximális méret",
+  "@settings.operationLog.maxSize.label": {
+    "sourceHash": "5a9f1ff"
+  },
+  "settings.operationLog.maxSize.description": "A legtöbb lemezterület, amelyet a műveletnapló használhat. Ha megtelik, a Cmdr először a legrégebbi műveleteket távolítja el.",
+  "@settings.operationLog.maxSize.description": {
+    "sourceHash": "ad5152a"
+  },
+  "settings.operationLog.maxSize.opt.mb100": "100 MB",
+  "@settings.operationLog.maxSize.opt.mb100": {
+    "sourceHash": "991d5de",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
+  },
+  "settings.operationLog.maxSize.opt.mb250": "250 MB",
+  "@settings.operationLog.maxSize.opt.mb250": {
+    "sourceHash": "028b133",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
+  },
+  "settings.operationLog.maxSize.opt.gb1": "1 GB",
+  "@settings.operationLog.maxSize.opt.gb1": {
+    "sourceHash": "6c31b63",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
+  },
+  "settings.operationLog.maxSize.opt.gb2": "2 GB",
+  "@settings.operationLog.maxSize.opt.gb2": {
+    "sourceHash": "b2dd624",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
+  },
+  "settings.operationLog.maxSize.opt.gb3": "3 GB",
+  "@settings.operationLog.maxSize.opt.gb3": {
+    "sourceHash": "485f66b",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
+  },
+  "settings.operationLog.maxSize.opt.gb5": "5 GB",
+  "@settings.operationLog.maxSize.opt.gb5": {
+    "sourceHash": "43644bc",
+    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
+  },
   "settings.section.developer": "Fejlesztői",
   "@settings.section.developer": {
     "sourceHash": "3fb7b39"

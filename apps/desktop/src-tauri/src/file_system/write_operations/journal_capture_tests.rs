@@ -10,9 +10,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::journal;
-use super::state::WriteOperationState;
+use super::state::{WriteOperationState, get_operation_status, register_operation_status, unregister_operation_status};
 use super::transfer::move_op::move_files_with_progress_inner;
-use super::types::{CollectorEventSink, WriteOperationConfig};
+use super::types::{CollectorEventSink, WriteOperationConfig, WriteOperationType};
 use super::{copy_files_with_progress_inner, delete_files_with_progress_inner};
 
 use crate::operation_log::capture::WriterJournal;
@@ -49,7 +49,7 @@ fn grouped_copy_journals_leaf_files_and_created_dir_rows() {
     std::fs::create_dir_all(&dst).expect("mk dst");
 
     let op_id = "op-copy-smoke";
-    journal::open_local_op(op_id, OpKind::Copy, Initiator::User, 0);
+    journal::open_local_op(op_id, OpKind::Copy, Initiator::User, 0, Some("root"));
     let events = CollectorEventSink::new();
     let cfg = WriteOperationConfig::default();
     copy_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &cfg).expect("copy");
@@ -82,6 +82,68 @@ fn grouped_copy_journals_leaf_files_and_created_dir_rows() {
     );
 }
 
+/// M6 rider: the op HEADER carries the real planned count, the completed count,
+/// and the destination volume — not the zeros an earlier local-FS open left. The
+/// count is refined at finalize from the status cache the queue UI drives, so it
+/// reflects what the op actually scanned (not the provisional top-level count the
+/// open used). The alpha dialog reads `item_count` to render "Copy N items", so a
+/// zero here would show "Copy 0 items".
+#[test]
+fn local_copy_header_carries_planned_count_items_done_and_dest_volume() {
+    let (_jdir, jdb) = install_journal();
+    let work = tempfile::tempdir().expect("work");
+    // One top-level source directory holding three files, so the scanned leaf
+    // total (3) differs from the provisional top-level count (1) the open uses —
+    // proving finalize refined the header from the status cache.
+    let src = work.path().join("src");
+    std::fs::create_dir_all(&src).expect("mk src");
+    for name in ["a.txt", "b.txt", "c.txt"] {
+        std::fs::write(src.join(name), b"data").expect("write");
+    }
+    let dst = work.path().join("dst");
+    std::fs::create_dir_all(&dst).expect("mk dst");
+
+    let op_id = "op-copy-header";
+    // The status cache must exist for the copy's progress updates to land and for
+    // finalize to read the terminal totals (the real pipeline registers this; the
+    // direct-call tests above don't, so their headers stay at the open value).
+    register_operation_status(op_id, WriteOperationType::Copy, vec![]);
+    // Open with the provisional top-level count (1 source dir), dest on "root".
+    journal::open_local_op(op_id, OpKind::Copy, Initiator::User, 1, Some("root"));
+    let events = CollectorEventSink::new();
+    let cfg = WriteOperationConfig::default();
+    copy_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &cfg).expect("copy");
+    let status = get_operation_status(op_id).expect("status present after copy");
+    journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
+    unregister_operation_status(op_id);
+    clear_journal();
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let row = read_operation(&conn, op_id).expect("read op").expect("op row");
+    assert_eq!(
+        row.item_count, status.files_total as u64,
+        "finalize refines item_count to the scanned total, not the provisional open count"
+    );
+    assert!(
+        row.item_count >= 3,
+        "the 3 copied files should be reflected, got {}",
+        row.item_count
+    );
+    assert_ne!(
+        row.item_count, 1,
+        "the provisional open count (1) must be overwritten by the scanned total"
+    );
+    assert_eq!(
+        row.items_done, status.files_done as u64,
+        "items_done reflects the completed files"
+    );
+    assert_eq!(
+        row.dest_volume_id.as_deref(),
+        Some("root"),
+        "a local copy's destination is the local FS volume"
+    );
+}
+
 #[test]
 fn overwriting_copy_finalizes_not_rollbackable() {
     let (_jdir, jdb) = install_journal();
@@ -95,7 +157,7 @@ fn overwriting_copy_finalizes_not_rollbackable() {
     std::fs::write(dst.join("src").join("a.txt"), b"old").expect("old");
 
     let op_id = "op-copy-overwrite";
-    journal::open_local_op(op_id, OpKind::Copy, Initiator::User, 0);
+    journal::open_local_op(op_id, OpKind::Copy, Initiator::User, 0, Some("root"));
     let events = CollectorEventSink::new();
     let cfg = WriteOperationConfig {
         conflict_resolution: super::ConflictResolution::Overwrite,
@@ -126,7 +188,7 @@ fn same_fs_move_journals_the_top_level_item_as_rollback_unit() {
     std::fs::create_dir_all(&dst).expect("mk dst");
 
     let op_id = "op-move-smoke";
-    journal::open_local_op(op_id, OpKind::Move, Initiator::User, 0);
+    journal::open_local_op(op_id, OpKind::Move, Initiator::User, 0, Some("root"));
     let events = CollectorEventSink::new();
     let cfg = WriteOperationConfig::default();
     move_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &cfg).expect("move");
@@ -161,7 +223,7 @@ fn initiator_threads_from_the_op_into_the_journal_row() {
         std::fs::create_dir_all(&dst).expect("mk dst");
 
         let op_id = "op-initiator";
-        journal::open_local_op(op_id, OpKind::Copy, initiator, 0);
+        journal::open_local_op(op_id, OpKind::Copy, initiator, 0, Some("root"));
         let events = CollectorEventSink::new();
         copy_files_with_progress_inner(&events, op_id, &state(), &[src], &dst, &WriteOperationConfig::default())
             .expect("copy");
@@ -185,7 +247,7 @@ fn delete_journals_search_leaves_and_stays_not_rollbackable() {
     std::fs::write(&b, b"cat").expect("b");
 
     let op_id = "op-delete-smoke";
-    journal::open_local_op(op_id, OpKind::Delete, Initiator::User, 0);
+    journal::open_local_op(op_id, OpKind::Delete, Initiator::User, 0, None);
     let events = CollectorEventSink::new();
     let cfg = WriteOperationConfig::default();
     delete_files_with_progress_inner(&events, op_id, &state(), &[a.clone(), b.clone()], &cfg).expect("delete");
@@ -237,7 +299,7 @@ fn install_canned_leaves(coverage: SearchCoverage, reason: Option<SearchCoverage
 #[cfg(target_os = "macos")]
 fn trash(op_id: &str, sources: &[std::path::PathBuf]) {
     use super::delete::trash::trash_files_with_progress;
-    journal::open_local_op(op_id, OpKind::Trash, Initiator::User, 0);
+    journal::open_local_op(op_id, OpKind::Trash, Initiator::User, 0, None);
     let events = CollectorEventSink::new();
     let st = state();
     // A missing source in the batch is a per-item failure, not a whole-op failure.
@@ -335,7 +397,7 @@ fn make_files(n: usize) -> (tempfile::TempDir, Vec<std::path::PathBuf>) {
 
 /// Time a delete of `paths` with the op id already opened/finalized around it.
 fn time_delete(op_id: &str, paths: &[std::path::PathBuf]) -> Duration {
-    journal::open_local_op(op_id, OpKind::Delete, Initiator::User, 0);
+    journal::open_local_op(op_id, OpKind::Delete, Initiator::User, 0, None);
     let events = CollectorEventSink::new();
     let t = std::time::Instant::now();
     delete_files_with_progress_inner(&events, op_id, &state(), paths, &WriteOperationConfig::default())
@@ -548,7 +610,7 @@ fn bench_same_fs_move_latency_delta() {
         let t = std::time::Instant::now();
         for (i, s) in srcs.iter().enumerate() {
             let id = format!("on-{i}");
-            journal::open_local_op(&id, OpKind::Move, Initiator::User, 0);
+            journal::open_local_op(&id, OpKind::Move, Initiator::User, 0, Some("root"));
             move_files_with_progress_inner(
                 &events,
                 &id,
@@ -586,7 +648,7 @@ fn same_fs_move_dir_records_search_leaves() {
 
     install_canned_leaves(SearchCoverage::Full, None, &["p.jpg"]);
     let op_id = "op-move-leaves";
-    journal::open_local_op(op_id, OpKind::Move, Initiator::User, 0);
+    journal::open_local_op(op_id, OpKind::Move, Initiator::User, 0, Some("root"));
     let events = CollectorEventSink::new();
     move_files_with_progress_inner(
         &events,

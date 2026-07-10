@@ -200,7 +200,7 @@ pub async fn move_between_volumes(
                 initiator,
                 &journal_source_volume_id,
                 Some(&journal_dest_volume_id),
-                0,
+                source_paths.len() as u64,
             );
 
             let result: Result<(), WriteFailure> = move_volumes_with_progress(
@@ -779,7 +779,7 @@ async fn move_within_same_volume(
                 initiator,
                 &journal_volume_id,
                 Some(&journal_volume_id),
-                0,
+                source_paths.len() as u64,
             );
 
             let result: Result<(), WriteOperationError> = move_within_same_volume_with_progress(

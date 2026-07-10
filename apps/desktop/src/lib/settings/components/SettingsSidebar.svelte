@@ -36,6 +36,7 @@
         'AI',
         'File systems',
         'Viewer',
+        'Operation log',
         'Keyboard shortcuts',
         'Developer',
         'Updates & privacy',

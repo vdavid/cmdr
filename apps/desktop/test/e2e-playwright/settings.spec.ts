@@ -66,6 +66,7 @@ test.describe('Settings page', () => {
       'MTP (Android/Kindle/cameras)',
       'Git',
       'Viewer',
+      'Operation log',
       'Keyboard shortcuts',
       'Developer',
       'MCP server',

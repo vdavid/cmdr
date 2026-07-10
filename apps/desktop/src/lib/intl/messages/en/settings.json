@@ -1470,6 +1470,70 @@
     "description": "Top-level Settings section title: Viewer (the built-in file viewer). Sidebar and page heading.",
     "screenshot": "settings-appearance.png"
   },
+  "settings.section.operationLog": "Operation log",
+  "@settings.section.operationLog": {
+    "description": "Title for the Operation log settings section, a durable log of file operations with history and undo. Sentence case."
+  },
+  "settings.operationLog.intro": "Cmdr logs your file operations so you can review your history and undo actions. Choose how long to keep the log and how much disk space it can use.",
+  "@settings.operationLog.intro": {
+    "description": "Intro paragraph at the top of the Operation log settings section. Explains what the log is; the two settings below control retention. \"Cmdr\" is the product name; do not translate it."
+  },
+  "settings.operationLog.maxAge.label": "Keep history for",
+  "@settings.operationLog.maxAge.label": {
+    "description": "Label for the picker that sets how long operation-log history is kept, in Settings > Operation log."
+  },
+  "settings.operationLog.maxAge.description": "How long Cmdr keeps logged operations before automatically removing the oldest ones.",
+  "@settings.operationLog.maxAge.description": {
+    "description": "Help text under the retention-age picker (settings.operationLog.maxAge.label)."
+  },
+  "settings.operationLog.maxAge.opt.forever": "Forever",
+  "@settings.operationLog.maxAge.opt.forever": {
+    "description": "Age-limit option: never remove entries by age (only the size limit applies)."
+  },
+  "settings.operationLog.maxAge.opt.days30": "30 days",
+  "@settings.operationLog.maxAge.opt.days30": {
+    "description": "Retention-age option: 30 days. The numeral is literal."
+  },
+  "settings.operationLog.maxAge.opt.days90": "90 days",
+  "@settings.operationLog.maxAge.opt.days90": {
+    "description": "Retention-age option: 90 days. The numeral is literal."
+  },
+  "settings.operationLog.maxAge.opt.year1": "1 year",
+  "@settings.operationLog.maxAge.opt.year1": {
+    "description": "Retention-age option: 1 year. The numeral is literal."
+  },
+  "settings.operationLog.maxSize.label": "Maximum size",
+  "@settings.operationLog.maxSize.label": {
+    "description": "Label for the picker that sets the operation log's maximum size on disk, in Settings > Operation log."
+  },
+  "settings.operationLog.maxSize.description": "The most disk space the operation log can use. When it fills up, Cmdr removes the oldest operations first.",
+  "@settings.operationLog.maxSize.description": {
+    "description": "Help text under the size-limit picker (settings.operationLog.maxSize.label)."
+  },
+  "settings.operationLog.maxSize.opt.mb100": "100 MB",
+  "@settings.operationLog.maxSize.opt.mb100": {
+    "description": "Size-limit option: 100 MB. The numeral and unit (MB) are literal."
+  },
+  "settings.operationLog.maxSize.opt.mb250": "250 MB",
+  "@settings.operationLog.maxSize.opt.mb250": {
+    "description": "Size-limit option: 250 MB. The numeral and unit (MB) are literal."
+  },
+  "settings.operationLog.maxSize.opt.gb1": "1 GB",
+  "@settings.operationLog.maxSize.opt.gb1": {
+    "description": "Size-limit option: 1 GB. The numeral and unit (GB) are literal."
+  },
+  "settings.operationLog.maxSize.opt.gb2": "2 GB",
+  "@settings.operationLog.maxSize.opt.gb2": {
+    "description": "Size-limit option: 2 GB. The numeral and unit (GB) are literal."
+  },
+  "settings.operationLog.maxSize.opt.gb3": "3 GB",
+  "@settings.operationLog.maxSize.opt.gb3": {
+    "description": "Size-limit option: 3 GB. The numeral and unit (GB) are literal."
+  },
+  "settings.operationLog.maxSize.opt.gb5": "5 GB",
+  "@settings.operationLog.maxSize.opt.gb5": {
+    "description": "Size-limit option: 5 GB. The numeral and unit (GB) are literal."
+  },
   "settings.section.developer": "Developer",
   "@settings.section.developer": {
     "description": "Top-level Settings section title: Developer. Sidebar and page heading.",

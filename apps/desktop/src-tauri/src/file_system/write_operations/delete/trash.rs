@@ -110,7 +110,9 @@ pub fn trash_single_journaled(
     };
 
     let op_id = uuid::Uuid::new_v4().to_string();
-    super::super::journal::open_local_op(&op_id, OpKind::Trash, initiator, 1);
+    // A single trash has no destination volume (the in-trash location rides on the
+    // item row, not the header); one top-level item.
+    super::super::journal::open_local_op(&op_id, OpKind::Trash, initiator, 1, None);
 
     match move_to_trash_sync(source) {
         Ok(in_trash) => {

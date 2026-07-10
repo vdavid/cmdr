@@ -487,6 +487,35 @@ mod tests {
     }
 
     #[test]
+    fn operation_log_retention_matches_frontend_registry_values() {
+        // Round-trip guard: the exact values the settings registry
+        // (`settings-registry.ts`) persists must produce the intended limits, so a
+        // drift on either side (a changed preset ms/byte constant, or a renamed
+        // key) fails here rather than silently mis-pruning. The `operationLog.maxAge`
+        // "Forever" default (0) and the 3 GB `operationLog.maxSize` default are the
+        // registry `default` values; the 30-day age preset and 1 GB size preset are
+        // registry option values.
+        let defaults =
+            parse_operation_log_retention_limits(r#"{ "operationLog.maxAge": 0, "operationLog.maxSize": 3221225472 }"#);
+        assert_eq!(
+            defaults.max_age_secs, None,
+            "the age default (0) is the Forever sentinel"
+        );
+        assert_eq!(
+            defaults.max_size_bytes,
+            Some(DEFAULT_OPERATION_LOG_MAX_SIZE_BYTES),
+            "the 3 GB size default must equal the backend's byte constant"
+        );
+        assert_eq!(DEFAULT_OPERATION_LOG_MAX_SIZE_BYTES, 3_221_225_472);
+
+        let presets = parse_operation_log_retention_limits(
+            r#"{ "operationLog.maxAge": 2592000000, "operationLog.maxSize": 1073741824 }"#,
+        );
+        assert_eq!(presets.max_age_secs, Some(2_592_000), "30 days in ms ⇒ seconds");
+        assert_eq!(presets.max_size_bytes, Some(1_073_741_824), "1 GB preset in bytes");
+    }
+
+    #[test]
     fn operation_log_retention_zero_sentinels_mean_unlimited() {
         // Age 0 = the "Forever" sentinel; size 0 = unlimited.
         let json = r#"{ "operationLog.maxAge": 0, "operationLog.maxSize": 0 }"#;

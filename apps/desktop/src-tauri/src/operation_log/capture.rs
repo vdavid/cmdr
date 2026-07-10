@@ -84,6 +84,10 @@ pub struct FinalizeInputs {
     /// prior archive)? Ignored for other kinds.
     pub net_new: bool,
     pub ended_at: i64,
+    /// The scanned planned total, refining the provisional count stored at `open`
+    /// (M6 rider). `None` leaves the open-time value in place — the caller can't
+    /// observe a real total.
+    pub item_count: Option<u64>,
     pub items_done: u64,
     pub bytes_total: u64,
     pub dev_summary: Option<String>,
@@ -363,6 +367,7 @@ impl OperationJournal for WriterJournal {
             search_coverage: accum.coverage,
             search_coverage_reason: accum.coverage_reason,
             ended_at: inputs.ended_at,
+            item_count: inputs.item_count,
             items_done: inputs.items_done,
             bytes_total: inputs.bytes_total,
             dev_summary: inputs.dev_summary,

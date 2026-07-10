@@ -206,6 +206,10 @@ async fn start_write_operation<F>(
     volume_ids: Vec<String>,
     lanes: Vec<LaneKey>,
     summary: OperationSummaryText,
+    // The provisional planned total (the top-level source count) journaled at
+    // `open`; finalize refines it to the scanned total. Never 0 for a real op, so
+    // the alpha dialog never renders "Copy 0 items" (M6 rider).
+    item_count: u64,
     handler: F,
 ) -> Result<WriteOperationStartResult, WriteOperationError>
 where
@@ -248,9 +252,16 @@ where
 
             // Open the journal row when the op actually starts (not at
             // registration), so a queued op that's canceled before admission
-            // never journals.
+            // never journals. A local copy/move lands its destination on the
+            // local FS ("root"); a delete/trash has no destination volume.
             let op_kind = journal::op_kind_of(operation_type);
-            journal::open_local_op(&op_id, op_kind, initiator, 0);
+            let dest_volume_id = match operation_type {
+                WriteOperationType::Copy | WriteOperationType::Move => {
+                    Some(crate::file_system::volume::DEFAULT_VOLUME_ID)
+                }
+                _ => None,
+            };
+            journal::open_local_op(&op_id, op_kind, initiator, item_count, dest_volume_id);
 
             let op_id_for_blocking = op_id.clone();
             let events_for_handler = Arc::clone(&events);
@@ -379,6 +390,7 @@ pub async fn copy_files_start(
         volume_ids,
         lanes,
         summary,
+        sources.len() as u64,
         move |events, op_id, state| {
             validate_sources(&sources)?;
             // Guard against copying a folder into itself BEFORE creating anything:
@@ -426,6 +438,7 @@ pub async fn move_files_start(
         volume_ids,
         lanes,
         summary,
+        sources.len() as u64,
         move |events, op_id, state| {
             validate_sources(&sources)?;
             // Guard against moving a folder into itself BEFORE creating anything:
@@ -531,7 +544,14 @@ pub async fn delete_files_start(
                 // Journal the volume delete under its REAL volume id (not the
                 // hardcoded `"root"` the local helpers bake in). The per-leaf rows
                 // are recorded inside `delete_volume_files_with_progress_inner`.
-                journal::open_volume_op(&op_id, OpKind::Delete, initiator, &volume_id_str, None, 0);
+                journal::open_volume_op(
+                    &op_id,
+                    OpKind::Delete,
+                    initiator,
+                    &volume_id_str,
+                    None,
+                    sources.len() as u64,
+                );
 
                 let execution_status = match crate::file_system::get_volume_manager().get(&volume_id_str) {
                     None => {
@@ -592,6 +612,7 @@ pub async fn delete_files_start(
             vec![],
             vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],
             summary,
+            sources.len() as u64,
             move |events, op_id, state| {
                 validate_sources(&sources)?;
                 delete_files_with_progress_inner(&*events, &op_id, &state, &sources, &config)
@@ -625,6 +646,7 @@ pub async fn trash_files_start(
         vec![],
         vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],
         summary,
+        sources.len() as u64,
         move |events, op_id, state| {
             validate_sources(&sources)?;
             trash_files_with_progress(&*events, &op_id, &state, &sources, item_sizes.as_deref())

@@ -137,6 +137,13 @@ cache that the same record points already write, and the `manager()` operation-m
 - **Lifecycle.** `journal_open` is called when the op actually STARTS (inside the manager's deferred), not at
   registration, so a queued op that's canceled before admission never journals and leaks no accumulator. `journal_finalize`
   removes the per-op accumulator.
+- **Header aggregates (`item_count` / `items_done` / `bytes_total`).** `open` writes a provisional `item_count` (the
+  top-level source count, known before the scan) plus the destination volume; `finalize_op` then refines the three
+  aggregates from the live `OperationStatus` cache (the same one the queue UI drives — `header_totals_from_status`), so
+  a finished op carries the scanned leaf total and completed count, not zeros. When no status row exists (an instant
+  create, an archive edit, or a direct-call test), `item_count` stays at the open value and `items_done`/`bytes_total`
+  stay 0. These fields are informational (the alpha dialog renders "Copy N items" from `item_count`), NOT the rollback
+  yardstick — completeness still compares ISSUED vs written per `row_role` (above).
 
 ### The two decisions the capture layer owns (the writer doesn't)
 
@@ -383,9 +390,12 @@ handlers (`mcp/executor/operation_log.rs`) do the same off the MCP task.
 ## Retention (D9) — prune by age + size, GC dirs, reclaim
 
 Retention runs the writer's `Prune` on startup and on a periodic timer (`retention.rs`, every 6 h), with the age/size
-limits read fresh from settings each tick (`load_operation_log_retention_limits`) so an M6 change takes effect on the
-next tick. Defaults hold before M6's UI lands: **age = forever, size = 3 GB** (D10). The settings contract M6 must honor:
-`operationLog.maxAge` (duration ms; `0` = forever) and `operationLog.maxSize` (bytes; absent ⇒ 3 GB; `0` = unlimited).
+limits read fresh from settings each tick (`load_operation_log_retention_limits`) so a settings change takes effect on
+the next tick with no restart or applier case. Defaults: **age = forever, size = 3 GB** (D10). The settings contract:
+`operationLog.maxAge` (duration ms; `0` = forever; absent ⇒ forever) and `operationLog.maxSize` (bytes; absent ⇒ 3 GB;
+`0` = unlimited). The user-facing controls are the "Operation log" settings section (`OperationLogSection.svelte` + the
+`operationLog.*` entries in `settings-registry.ts`), which persist exactly these keys — see
+[`adding-a-new-setting.md`](../../../../../docs/guides/adding-a-new-setting.md) for the registry pattern.
 
 A prune (`handle_prune`) is: **age prune** (delete whole finished ops older than the cutoff) → **size prune** (delete the
 oldest whole ops until the DB fits the budget) → **dir GC** → **reclaim**.

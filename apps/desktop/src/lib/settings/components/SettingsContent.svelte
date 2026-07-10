@@ -12,6 +12,7 @@
     import MtpSection from '$lib/settings/sections/MtpSection.svelte'
     import GitSection from '$lib/settings/sections/GitSection.svelte'
     import ViewerSection from '$lib/settings/sections/ViewerSection.svelte'
+    import OperationLogSection from '$lib/settings/sections/OperationLogSection.svelte'
     import KeyboardShortcutsSection from '$lib/settings/sections/KeyboardShortcutsSection.svelte'
     import McpServerSection from '$lib/settings/sections/McpServerSection.svelte'
     import LoggingSection from '$lib/settings/sections/LoggingSection.svelte'
@@ -149,6 +150,13 @@
         {#if shouldShowTopLevel(['Viewer'])}
             <section data-section-id="viewer">
                 <ViewerSection {searchQuery} />
+            </section>
+        {/if}
+
+        <!-- Operation log (top-level, no subsections) -->
+        {#if shouldShowTopLevel(['Operation log'])}
+            <section data-section-id="operation-log">
+                <OperationLogSection {searchQuery} />
             </section>
         {/if}
 

@@ -219,6 +219,7 @@ fn done_inputs(kind: OpKind) -> FinalizeInputs {
         archive_subkind: None,
         net_new: false,
         ended_at: 2,
+        item_count: None,
         items_done: 0,
         bytes_total: 0,
         dev_summary: None,

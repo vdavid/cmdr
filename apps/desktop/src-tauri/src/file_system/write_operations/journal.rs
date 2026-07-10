@@ -84,14 +84,24 @@ fn local_split(path: &Path) -> (String, String) {
 }
 
 /// Open a local-FS managed op in the journal (header only; the schema opens it
-/// `not_rollbackable` until finalize computes eligibility).
-pub(super) fn open_local_op(op_id: &str, kind: OpKind, initiator: Initiator, item_count: u64) {
+/// `not_rollbackable` until finalize computes eligibility). `item_count` is the
+/// provisional planned total (the top-level source count, known before the scan);
+/// `finalize_op` refines it to the scanned total. `dest_volume_id` is `Some("root")`
+/// for a local copy/move (the destination is on the local FS) and `None` for a
+/// delete/trash (no destination volume).
+pub(super) fn open_local_op(
+    op_id: &str,
+    kind: OpKind,
+    initiator: Initiator,
+    item_count: u64,
+    dest_volume_id: Option<&str>,
+) {
     journal_open(OpenOperation {
         op_id: op_id.to_string(),
         kind,
         initiator,
         source_volume_id: Some(DEFAULT_VOLUME_ID.to_string()),
-        dest_volume_id: None,
+        dest_volume_id: dest_volume_id.map(str::to_string),
         item_count,
         started_at: now_secs(),
         rolls_back_op_id: None,
@@ -370,9 +380,28 @@ pub(super) fn journal_instant_create(
     }
 }
 
+/// The op's terminal header aggregates — planned total, completed items, and
+/// total bytes — read from the live status cache the queue UI drives. Returned as
+/// `(item_count, items_done, bytes_total)`; `item_count` is `None` when no real
+/// scanned total is available (an instant op, or a direct-call test that never
+/// registered a status row), so finalize keeps the provisional open-time value.
+fn header_totals_from_status(op_id: &str) -> (Option<u64>, u64, u64) {
+    match super::state::get_operation_status(op_id) {
+        Some(status) if status.files_total > 0 => (
+            Some(status.files_total as u64),
+            status.files_done as u64,
+            status.bytes_total,
+        ),
+        _ => (None, 0, 0),
+    }
+}
+
 /// Finalize a local-FS op with a non-archive terminal state. Archive ops
 /// (compress) finalize through [`finalize_archive_op`] with the driver's subkind.
+/// The header aggregates are refined from the status cache (M6 rider) so the alpha
+/// dialog renders a real "Copy N items" instead of zero.
 pub(super) fn finalize_op(op_id: &str, kind: OpKind, execution_status: ExecutionStatus) {
+    let (item_count, items_done, bytes_total) = header_totals_from_status(op_id);
     journal_finalize(
         op_id,
         FinalizeInputs {
@@ -381,8 +410,9 @@ pub(super) fn finalize_op(op_id: &str, kind: OpKind, execution_status: Execution
             archive_subkind: None,
             net_new: false,
             ended_at: now_secs(),
-            items_done: 0,
-            bytes_total: 0,
+            item_count,
+            items_done,
+            bytes_total,
             dev_summary: None,
         },
     );
@@ -404,6 +434,8 @@ pub(super) fn finalize_archive_op(
             archive_subkind: Some(subkind),
             net_new,
             ended_at: now_secs(),
+            // A compress produces one archive; keep the open-time item_count.
+            item_count: None,
             items_done: 0,
             bytes_total: 0,
             dev_summary: None,
