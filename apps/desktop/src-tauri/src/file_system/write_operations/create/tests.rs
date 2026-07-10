@@ -68,6 +68,46 @@ fn instant_descriptor_marks_only_nonroot_volumes_busy() {
 // ============================================================================
 
 #[tokio::test]
+async fn create_directory_managed_journals_a_create_folder_op() {
+    use crate::operation_log::capture::WriterJournal;
+    use crate::operation_log::store::{
+        open_read_connection, operation_log_db_path, read_operation, read_operation_items,
+    };
+    use crate::operation_log::types::{EntryType, OpKind, RollbackState};
+    use crate::operation_log::writer::OperationLogWriter;
+
+    ensure_root_volume();
+    let jdir = tempfile::tempdir().expect("jdir");
+    let jdb = operation_log_db_path(jdir.path());
+    crate::operation_log::set_journal(Arc::new(WriterJournal::new(
+        OperationLogWriter::spawn(&jdb).expect("writer"),
+    )));
+
+    let tmp = create_test_dir("managed_journal");
+    let parent = tmp.to_string_lossy().to_string();
+    let created = create_directory_managed(None, parent, "made-folder".to_string())
+        .await
+        .expect("mkdir");
+    crate::operation_log::clear_journal();
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    // Exactly one CreateFolder op, rollbackable (net-new), with one Dir item row.
+    let ops = crate::operation_log::store::recent_operations(&conn, 10).expect("ops");
+    let op = ops
+        .iter()
+        .find(|o| o.kind == OpKind::CreateFolder)
+        .expect("a create_folder op");
+    assert_eq!(op.rollback_state, RollbackState::Rollbackable);
+    let items = read_operation_items(&conn, &op.op_id, 10).expect("items");
+    assert_eq!(items.len(), 1, "expected one created-dir row, got {items:?}");
+    assert_eq!(items[0].entry_type, EntryType::Dir);
+    assert_eq!(items[0].source_name, "made-folder");
+    let _ = read_operation(&conn, &op.op_id);
+    assert!(created.ends_with("made-folder"));
+    cleanup_test_dir(&tmp);
+}
+
+#[tokio::test]
 async fn create_directory_success() {
     ensure_root_volume();
     let tmp = create_test_dir("create_success");

@@ -79,8 +79,24 @@ pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volu
 
     let is_root = volume_id == "root";
     let descriptor = rename_descriptor(&from, &to, &volume_id);
+    // Journal local (root) renames only (volume run_instant capture is M2f). Snapshot
+    // the source (kind + mtime) BEFORE the closure moves `from`/`to` and the rename
+    // fires.
+    let op_id = descriptor.operation_id.clone();
+    let journal_snapshot = if is_root {
+        let meta = std::fs::symlink_metadata(&from).ok();
+        super::journal::open_local_op(
+            &op_id,
+            crate::operation_log::types::OpKind::Rename,
+            crate::operation_log::types::Initiator::User,
+            1,
+        );
+        Some((from.clone(), to.clone(), meta))
+    } else {
+        None
+    };
 
-    manager::manager()
+    let result = manager::manager()
         .run_instant(descriptor, async move {
             // Register both halves of the rename with the downloads watcher's
             // ignore set BEFORE the syscall (no-ops outside ~/Downloads).
@@ -115,7 +131,36 @@ pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volu
                 Ok(())
             }
         })
-        .await
+        .await;
+
+    // Journal the local rename as a single-item op: source → dest, one row (the
+    // whole subtree moves by one rename). Rollbackable iff unchanged (rechecked
+    // at rollback time, M3).
+    if let Some((from_path, to_path, meta)) = journal_snapshot {
+        use crate::operation_log::types::{EntryType, ExecutionStatus, ItemOutcome, OpKind};
+        match &result {
+            Ok(()) => {
+                let entry_type = if meta.as_ref().map(|m| m.is_dir()).unwrap_or(false) {
+                    EntryType::Dir
+                } else {
+                    EntryType::File
+                };
+                super::journal::record_local_leaf(
+                    &op_id,
+                    entry_type,
+                    &from_path,
+                    Some(&to_path),
+                    meta.as_ref().map(|m| m.len() as i64),
+                    meta.as_ref().and_then(super::journal::mtime_secs),
+                    false,
+                    ItemOutcome::Done,
+                );
+                super::journal::finalize_op(&op_id, OpKind::Rename, ExecutionStatus::Done);
+            }
+            Err(_) => super::journal::finalize_op(&op_id, OpKind::Rename, ExecutionStatus::Failed),
+        }
+    }
+    result
 }
 
 /// Routes an in-archive rename to the managed archive-edit driver. Both `from`

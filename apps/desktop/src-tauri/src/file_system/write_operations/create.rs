@@ -70,11 +70,31 @@ pub(crate) async fn create_directory_managed(
     }
 
     let volume_id_for_diff = volume_id.clone();
+    // Journal local (root) creates only; volume (MTP/SMB) run_instant capture is M2f.
+    let is_local = volume_id.as_deref().unwrap_or("root") == "root";
     let descriptor = instant_descriptor(WriteOperationType::CreateFolder, volume_id.as_deref(), &name);
+    let op_id = descriptor.operation_id.clone();
+    if is_local {
+        super::journal::open_local_op(
+            &op_id,
+            crate::operation_log::types::OpKind::CreateFolder,
+            crate::operation_log::types::Initiator::User,
+            1,
+        );
+    }
 
-    let (new_path, expanded_path) = manager::manager()
+    let result = manager::manager()
         .run_instant(descriptor, create_directory_core(volume_id, &parent_path, &name))
-        .await?;
+        .await;
+    if is_local {
+        super::journal::journal_instant_create(
+            &op_id,
+            crate::operation_log::types::OpKind::CreateFolder,
+            crate::operation_log::types::EntryType::Dir,
+            result.as_ref().ok().map(|(new_path, _)| new_path.as_path()),
+        );
+    }
+    let (new_path, expanded_path) = result?;
 
     // Synthetic diff only works for volumes backed by the local filesystem.
     // Protocol-only volumes (MTP) handle UI updates through their own event systems.
@@ -99,11 +119,30 @@ pub(crate) async fn create_file_managed(
     }
 
     let volume_id_for_diff = volume_id.clone();
+    let is_local = volume_id.as_deref().unwrap_or("root") == "root";
     let descriptor = instant_descriptor(WriteOperationType::CreateFile, volume_id.as_deref(), &name);
+    let op_id = descriptor.operation_id.clone();
+    if is_local {
+        super::journal::open_local_op(
+            &op_id,
+            crate::operation_log::types::OpKind::CreateFile,
+            crate::operation_log::types::Initiator::User,
+            1,
+        );
+    }
 
-    let (new_path, expanded_path) = manager::manager()
+    let result = manager::manager()
         .run_instant(descriptor, create_file_core(volume_id, &parent_path, &name))
-        .await?;
+        .await;
+    if is_local {
+        super::journal::journal_instant_create(
+            &op_id,
+            crate::operation_log::types::OpKind::CreateFile,
+            crate::operation_log::types::EntryType::File,
+            result.as_ref().ok().map(|(new_path, _)| new_path.as_path()),
+        );
+    }
+    let (new_path, expanded_path) = result?;
 
     if should_emit_synthetic_diff(volume_id_for_diff.as_deref()) {
         emit_synthetic_entry_diff(volume_id_for_diff.as_deref(), &new_path, &PathBuf::from(&expanded_path));

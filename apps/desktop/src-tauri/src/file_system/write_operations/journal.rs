@@ -202,6 +202,29 @@ pub(super) fn record_created_dirs(op_id: &str, dirs: &[std::path::PathBuf]) {
     }
 }
 
+/// Journal the terminal state of a `run_instant` create (mkdir / mkfile). On
+/// success the created path is a net-new item (source == dest, so the M3 rollback
+/// removes it if still empty/unchanged); on failure the op finalizes `failed`
+/// with no item. `open_local_op` must have been called with the same `op_id`.
+pub(super) fn journal_instant_create(op_id: &str, kind: OpKind, entry_type: EntryType, created: Option<&Path>) {
+    match created {
+        Some(path) => {
+            record_local_leaf(
+                op_id,
+                entry_type,
+                path,
+                Some(path),
+                None,
+                None,
+                false,
+                ItemOutcome::Done,
+            );
+            finalize_op(op_id, kind, ExecutionStatus::Done);
+        }
+        None => finalize_op(op_id, kind, ExecutionStatus::Failed),
+    }
+}
+
 /// Finalize a local-FS op with a non-archive terminal state. Archive ops
 /// (compress) finalize through [`finalize_archive_op`] with the driver's subkind.
 pub(super) fn finalize_op(op_id: &str, kind: OpKind, execution_status: ExecutionStatus) {
