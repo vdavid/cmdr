@@ -82,6 +82,66 @@ pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
     ))
 }
 
+/// Trash ONE item and journal it as a one-item trash operation — the single-trash
+/// path (`commands/rename.rs::move_to_trash`), which bypasses the batch trash and
+/// its manager op. Mirrors the batch path's capture: enumerate the subtree's
+/// `search_only` leaves from the drive index BEFORE the OS move (the reconciler
+/// prunes on the FSEvent), record the top-level `rollback_unit` row with the
+/// in-trash dest (M2d), persist the leaves only on success, and finalize. Returns
+/// the in-trash location like [`move_to_trash_sync`]. Runs on a `spawn_blocking`
+/// thread (sync index reads + journal sends are fine there).
+pub fn trash_single_journaled(
+    source: &Path,
+    initiator: crate::operation_log::types::Initiator,
+) -> Result<Option<PathBuf>, String> {
+    use crate::operation_log::types::{EntryType, ExecutionStatus, ItemOutcome, OpKind};
+
+    let source_meta = fs::symlink_metadata(source).map_err(|_| format!("'{}' doesn't exist", source.display()))?;
+
+    // Enumerate BEFORE the move (buffered, persisted only on success).
+    let buffered = if source_meta.is_dir() {
+        Some(super::super::journal_search::enumerate_subtree_for_search(
+            "root",
+            source,
+            super::super::journal_search::SEARCH_LEAF_CAP,
+        ))
+    } else {
+        None
+    };
+
+    let op_id = uuid::Uuid::new_v4().to_string();
+    super::super::journal::open_local_op(&op_id, OpKind::Trash, initiator, 1);
+
+    match move_to_trash_sync(source) {
+        Ok(in_trash) => {
+            let entry_type = if source_meta.is_dir() {
+                EntryType::Dir
+            } else {
+                EntryType::File
+            };
+            super::super::journal::record_local_leaf(
+                &op_id,
+                entry_type,
+                source,
+                in_trash.as_deref(),
+                Some(source_meta.len() as i64),
+                super::super::journal::mtime_secs(&source_meta),
+                false,
+                ItemOutcome::Done,
+            );
+            if let Some(buffered) = &buffered {
+                super::super::journal_search::persist_and_note(&op_id, source, in_trash.as_deref(), buffered);
+            }
+            super::super::journal::finalize_op(&op_id, OpKind::Trash, ExecutionStatus::Done);
+            Ok(in_trash)
+        }
+        Err(e) => {
+            super::super::journal::finalize_op(&op_id, OpKind::Trash, ExecutionStatus::Failed);
+            Err(e)
+        }
+    }
+}
+
 // ============================================================================
 // Batch trash with progress
 // ============================================================================

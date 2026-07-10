@@ -70,6 +70,42 @@ async fn png_payload_writes_pasted_png_verbatim() {
     );
 }
 
+/// Routing paste through the managed `CreateFile` op means it journals for free
+/// (David-approved M2f): a paste records exactly one `CreateFile` operation,
+/// `done` and `rollbackable` (a net-new file).
+#[tokio::test]
+async fn paste_journals_a_create_file_operation() {
+    use crate::operation_log::capture::WriterJournal;
+    use crate::operation_log::store::{open_read_connection, operation_log_db_path, recent_operations};
+    use crate::operation_log::types::{ExecutionStatus, OpKind, RollbackState};
+    use crate::operation_log::writer::OperationLogWriter;
+    use crate::operation_log::{clear_journal, set_journal};
+    use std::sync::Arc;
+
+    ensure_root_volume();
+    let jdir = TempDir::new().unwrap();
+    let jdb = operation_log_db_path(jdir.path());
+    set_journal(Arc::new(WriterJournal::new(OperationLogWriter::spawn(&jdb).expect("spawn writer"))));
+
+    let tmp = TempDir::new().unwrap();
+    let file = write_text(tmp.path(), "journaled paste").await.expect("Some file");
+    assert_eq!(file.name, "pasted.txt");
+    clear_journal();
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let ops = recent_operations(&conn, 10).expect("recent ops");
+    let create = ops
+        .iter()
+        .find(|o| o.kind == OpKind::CreateFile)
+        .expect("paste records a CreateFile op");
+    assert_eq!(create.execution_status, ExecutionStatus::Done);
+    assert_eq!(
+        create.rollback_state,
+        RollbackState::Rollbackable,
+        "a net-new pasted file is rollbackable"
+    );
+}
+
 #[tokio::test]
 async fn jpeg_payload_writes_pasted_jpg_verbatim_no_recompression() {
     ensure_root_volume();

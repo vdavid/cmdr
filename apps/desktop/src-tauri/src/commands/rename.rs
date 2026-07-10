@@ -10,7 +10,7 @@ use tokio::time::Duration;
 
 use super::file_system::expand_tilde;
 use super::util::IpcError;
-use crate::file_system::write_operations::trash::move_to_trash_sync;
+use crate::file_system::write_operations::trash::trash_single_journaled;
 use crate::file_system::write_operations::{
     RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
 };
@@ -30,16 +30,19 @@ pub async fn move_to_trash(path: String) -> Result<(), IpcError> {
     // outside ~/Downloads.
     crate::downloads::note_pending_write_for_cmdr(&path_buf);
 
+    // Journal as a one-item trash op (captures the in-trash location + the
+    // subtree's search leaves), mirroring the batch trash path. Initiator
+    // threading through this command lands with the provenance-completion pass.
     tokio::time::timeout(
         Duration::from_secs(15),
-        tokio::task::spawn_blocking(move || move_to_trash_sync(&path_buf)),
+        tokio::task::spawn_blocking(move || {
+            trash_single_journaled(&path_buf, crate::operation_log::types::Initiator::User)
+        }),
     )
     .await
     .map_err(|_| IpcError::timeout())?
     .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
     .map_err(IpcError::from_err)
-    // The in-trash location is captured by `move_to_trash_sync`; this single-trash
-    // command journals it as a one-item trash op in M2f.
     .map(|_in_trash| ())
 }
 
