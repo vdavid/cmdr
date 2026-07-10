@@ -1,8 +1,7 @@
 # Operation-log capture benchmarks (M2)
 
 Numbers behind the capture-layer performance decisions: the `search_only` leaf-enumeration cap, and the claim that
-journaling never measurably slows an operation (requirement 8). Linked from
-`src-tauri/src/operation_log/DETAILS.md`.
+journaling never measurably slows an operation (requirement 8). Linked from `src-tauri/src/operation_log/DETAILS.md`.
 
 Evidence anchor: measured on an Apple Silicon dev machine (macOS 15), release-adjacent `cargo nextest` test profile
 (unoptimized + debuginfo — so absolute numbers are conservative vs a release build), 2026-07-10, branch
@@ -16,8 +15,8 @@ The always-on 3-arm perf test (`capture_stays_off_the_hot_path_under_writer_load
 
 ## 1. Leaf-enumeration latency vs subtree size — and why the cap is 50,000
 
-A trash / same-FS move enumerates the subtree's leaves from the drive index SYNCHRONOUSLY before the OS mutation
-(the reconciler prunes the subtree on the FSEvent, so it must run first). So its cost is paid before a sub-second rename.
+A trash / same-FS move enumerates the subtree's leaves from the drive index SYNCHRONOUSLY before the OS mutation (the
+reconciler prunes the subtree on the FSEvent, so it must run first). So its cost is paid before a sub-second rename.
 
 Uncapped read of the whole subtree (flat folder, N direct children):
 
@@ -34,22 +33,21 @@ Capped at 50,000 (`SEARCH_LEAF_CAP`), reading at most `cap + 1` rows via `list_c
 - N = 10,000: ~11.5 ms (Full — under cap)
 - N = 100,000: ~58.6 ms (TopLevelOnly `capped` — cap hit, read bounded at ~50k rows)
 
-The ~59 ms at N = 100k is the CEILING for every larger subtree (1M included), because the `LIMIT cap + 1` bounds the
-row read by construction — that's the whole point of the limited reader.
+The ~59 ms at N = 100k is the CEILING for every larger subtree (1M included), because the `LIMIT cap + 1` bounds the row
+read by construction — that's the whole point of the limited reader.
 
 **Cap decision: keep 50,000.** ~59 ms worst-case synchronous cost, and it runs on the op's `spawn_blocking` thread (NOT
-the main thread / not the UI), before a background trash/move. The vast majority of trashed/moved folders hold far
-fewer than 50k descendants and pay the true (smaller) cost. Trashing a 50k+ folder is rare, and 59 ms of background work
-there is acceptable. The cap only ever bounds SEARCH completeness (an over-cap op is `top_level_only` + `capped`, still
-fully rollbackable) — never correctness — so it stays cheap to retune if real usage shows otherwise (David's framing:
+the main thread / not the UI), before a background trash/move. The vast majority of trashed/moved folders hold far fewer
+than 50k descendants and pay the true (smaller) cost. Trashing a 50k+ folder is rare, and 59 ms of background work there
+is acceptable. The cap only ever bounds SEARCH completeness (an over-cap op is `top_level_only` + `capped`, still fully
+rollbackable) — never correctness — so it stays cheap to retune if real usage shows otherwise (David's framing:
 benchmark from day one, cheap to change).
 
 ## 2. Background persist throughput
 
-Draining a burst of `search_only` leaf rows through the single writer thread (batched at 512/transaction, interning dirs
-+ folding names, then a `flush_blocking` barrier for the true drain time):
-
-- 50,000 rows in ~1.28 s ≈ **~39,000 rows/s**.
+Draining a burst of `search_only` leaf rows through the single writer thread (batched at 512 per transaction, interning
+dirs and folding names, then a `flush_blocking` barrier for the true drain time): 50,000 rows in ~1.28 s, or about
+**39,000 rows/s**.
 
 This is the writer's steady drain rate. It comfortably outpaces the rate any real op produces items (each item costs the
 op far more in file I/O — copying bytes, trashing, renaming — than a batched row insert costs the writer), which is why

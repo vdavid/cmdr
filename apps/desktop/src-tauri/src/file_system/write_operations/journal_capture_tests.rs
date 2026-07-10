@@ -485,6 +485,7 @@ fn bench_persist_throughput() {
     writer.flush_blocking().expect("flush");
     let elapsed = t.elapsed();
     println!(
+        // allowed-pluralize-noun: benchmark output, N is a fixed 50_000 (never 1)
         "persist {N} leaves in {elapsed:?} ({:.0} rows/s)",
         N as f64 / elapsed.as_secs_f64()
     );

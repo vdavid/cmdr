@@ -157,9 +157,9 @@ Names are indicative; the implementing agent owns the final DDL.
   view, not a separate table; `user_action_log` (below) is separate because its writer is the user, not the agent. **No
   term collision with the operation log** ([`docs/specs/operation-log-plan.md`](../operation-log-plan.md), Naming): that
   journal is the **"operation log"** (its rows are operations), this `agent_log` is the agent's **decision** log, and
-  **"action"** stays reserved for the `user_action_log` navigation/intent stream. Their future *merged UI surface* may be
-  labelled **"Activity"** then (a UI-copy call, not an entity/table name) — so a future planner reads the three surfaces
-  correctly and doesn't re-collide the terms.
+  **"action"** stays reserved for the `user_action_log` navigation/intent stream. Their future _merged UI surface_ may
+  be labelled **"Activity"** then (a UI-copy call, not an entity/table name) — so a future planner reads the three
+  surfaces correctly and doesn't re-collide the terms.
 - `conversations` + `messages`: chat threads. A notification the user replies to becomes a thread carrying the
   originating wake's context.
 - `agent_inbox`: pending event bundles (persisted so a crash loses nothing): `bundle_id`, `volume_id`, `rel_path`,
@@ -401,13 +401,13 @@ and whether it reports a per-op result the `proposal_ops` table can consume. Des
 `OperationManager`'s API, and file any batch-semantics gaps as small extensions to it.
 
 Because applied proposals execute through the managed pipeline, **the operation log journals every applied proposal
-batch for free** (the operation log hooks that pipeline — [`docs/specs/operation-log-plan.md`](../operation-log-plan.md),
-D33 reconciliation). A *rejected* proposal never becomes an operation, so it never appears in that journal — the
-`proposals` / `proposal_ops` tables above hold the "agent-suggested / accepted / rejected" pre-operation states and
-reference `operations.op_id` for the ops that were accepted and executed. When the agent lands, its applied ops are
-tagged `initiator = agent` in the journal (the operation log reserves that value now; v1 ships `user` + `ai_client`
-only). So the journal is the execution record; the proposal tables are the decision record — don't smear proposal states
-into the operations journal.
+batch for free** (the operation log hooks that pipeline —
+[`docs/specs/operation-log-plan.md`](../operation-log-plan.md), D33 reconciliation). A _rejected_ proposal never becomes
+an operation, so it never appears in that journal — the `proposals` / `proposal_ops` tables above hold the
+"agent-suggested / accepted / rejected" pre-operation states and reference `operations.op_id` for the ops that were
+accepted and executed. When the agent lands, its applied ops are tagged `initiator = agent` in the journal (the
+operation log reserves that value now; v1 ships `user` + `ai_client` only). So the journal is the execution record; the
+proposal tables are the decision record — don't smear proposal states into the operations journal.
 
 Dropped from the earlier sketch, deliberately: a `priority` column (YAGNI) and any logic on model "authoritativeness"
 (`created_by_model` is kept as provenance only).
