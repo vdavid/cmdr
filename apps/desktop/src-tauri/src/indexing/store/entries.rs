@@ -35,6 +35,37 @@ impl IndexStore {
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
+    /// List up to `limit` children of a directory. The operation log's search-leaf
+    /// enumeration (`journal_search`) walks a subtree BEFORE a trash / same-FS move
+    /// with a bounded budget, so it reads at most `cap + 1` rows total regardless of
+    /// how huge the folder is — a 1M-child folder must not pay a 1M-row read before
+    /// a sub-second rename. Row order is unspecified (the caller only counts +
+    /// buckets); `limit` is applied as a SQL `LIMIT`.
+    pub fn list_children_on_limited(
+        parent_id: i64,
+        conn: &Connection,
+        limit: i64,
+    ) -> Result<Vec<EntryRow>, IndexStoreError> {
+        let mut stmt = conn.prepare_cached(
+            "SELECT id, parent_id, name, is_directory, is_symlink, logical_size, physical_size, modified_at, inode
+             FROM entries WHERE parent_id = ?1 LIMIT ?2",
+        )?;
+        let rows = stmt.query_map(params![parent_id, limit], |row| {
+            Ok(EntryRow {
+                id: row.get(0)?,
+                parent_id: row.get(1)?,
+                name: row.get(2)?,
+                is_directory: row.get::<_, i32>(3)? != 0,
+                is_symlink: row.get::<_, i32>(4)? != 0,
+                logical_size: row.get(5)?,
+                physical_size: row.get(6)?,
+                modified_at: row.get(7)?,
+                inode: row.get(8)?,
+            })
+        })?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
     /// Read every entry in the index in one query.
     ///
     /// Lets a full-index consumer (the importance recompute) pull the whole tree

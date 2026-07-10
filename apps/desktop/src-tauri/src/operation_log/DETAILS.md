@@ -165,19 +165,55 @@ Each point is where the op already stats the item, so journaling is near-zero ma
   order of tens-to-~150 MB — leaf search is the requirement, and retention, D9/D10, manages the cost, NOT a row cap).
   Delete is never rollbackable, so these rows exist purely for "when did I delete `dog.jpg`".
 - **same-FS move + trash** — the **top-level** `rollback_unit` row (one rename-back / one restore reverses the whole
-  subtree) at `transfer/move_op.rs` / `delete/trash.rs`. The subtree's `search_only` leaves come from the drive index
-  (M2e), NOT a filesystem walk.
+  subtree) at `transfer/move_op.rs` / `delete/trash.rs`. Trash also captures the OS `resultingItemURL` (the in-trash
+  location) as the row's dest, so the M3 restore knows where to move it back from. The subtree's `search_only` leaves
+  come from the **drive index**, not a filesystem walk — see § Search-leaf enumeration.
 - **cross-FS move** — per-leaf via `copy_single_item` (it stages a copy), same as copy; the op's `kind` is `move`.
+- **compress** (`archive_edit`) — spawns directly (not through `start_write_operation`), so `copy_into.rs`'s deferred
+  carries its OWN open/finalize bracket. The compress driver supplies the `archive_edit` subkind + a net-new flag
+  (probed before the seed overwrites the target) via `ArchiveProvenance` — the journal can't derive them, both compress
+  and zip-inner edit cross IPC as `ArchiveEdit` (Finding 3). A net-new compress records the created archive as its single
+  `rollback_unit` item (with a size/mtime snapshot for the M3 drift recheck) and finalizes `rollbackable`; an overwrite
+  of a prior archive is `not_rollbackable`; a plain into-archive edit journals its header only (not rollbackable in v1).
+
+### Search-leaf enumeration (`file_system/write_operations/journal_search.rs`)
+
+For same-FS move + trash, the subtree's descendant leaves are read from the DRIVE INDEX (zero extra filesystem I/O) and
+recorded as `search_only` rows so "when did I trash `dog.jpg`" hits inside a trashed folder. Two hard ordering rules:
+
+- **Enumerate BEFORE the OS mutation**, buffered in memory: the index reconciler prunes the subtree the instant it sees
+  the trash/rename FSEvent, so a later read would find the rows gone and wrongly stamp `full`.
+- **Persist only AFTER the top-level item succeeds**: both loops process per item with partial failure, so a failed item
+  must record no leaves (search has no per-item outcome filter — leaves for a never-trashed subtree would return a trash
+  that never happened).
+
+`search_coverage = full` is gated on the subtree being PRESENT + CURRENT (`min_subtree_epoch > 0` AND `== current_epoch`,
+read via the sanctioned `ReadPool` — never a raw rusqlite dep on the index DB) AND the volume index `Live` (active +
+`Fresh`); otherwise it downgrades to `top_level_only` with a typed reason (`index_absent | index_stale | volume_not_live
+| capped`). The leaf read is bounded by `SEARCH_LEAF_CAP` (50,000) via `IndexStore::list_children_on_limited`'s `LIMIT
+cap + 1`, so a 1M-child folder pays a bounded (~59 ms) synchronous read before the sub-second rename, not a 1M-row one;
+over the cap ⇒ top-level row only + `capped` (rollback unaffected — the top-level row is the undo unit regardless).
+Numbers + the cap-tuning rationale: [`docs/notes/operation-log-capture-bench.md`](../../../../../docs/notes/operation-log-capture-bench.md).
 
 ### The bypass boundary
 
 - **`run_instant` ops (rename / mkdir / mkfile)** don't flow through the sink; capture hooks the managed functions
-  directly (M2d) as single-item ops.
-- **`paste_clipboard`** (paste-as-file) bypasses the managed pipeline today; the plan routes it through the managed
-  create path so it journals for free (M2f).
-- **The single `move_to_trash_sync` in `rename.rs`** journals as a one-item trash op (M2f).
+  directly as single-item ops.
+- **`paste_clipboard`** (paste-as-file) now runs INSIDE `manager::run_instant` with a `CreateFile` descriptor, so it
+  journals a one-item `CreateFile` op for free (the write loop is unchanged, just bracketed by the managed op).
+- **The single `move_to_trash_sync` in `rename.rs`** goes through `trash::trash_single_journaled`, journaling a one-item
+  trash op that mirrors the batch path (in-trash dest + drive-index search leaves).
+- **Volume (SMB / MTP) copy/move/delete + volume `run_instant`** do NOT journal yet — they spawn through their own
+  `volume_copy.rs` / `volume_move.rs` deferreds, outside the local record points. Journaling them (a volume-aware
+  `open`/`record` that carries the real volume id, not the hardcoded `"root"`) is the remaining M2 capture item.
 - **Native drag-out** is explicitly OUT of scope — the destination is another app, outside Cmdr; there's nothing to roll
   back to.
+
+### Initiator through the volume commands (provenance gap)
+
+Local write-start commands thread `initiator` (M2c). The VOLUME commands (`copy_between_volumes`, `move_between_volumes`,
+`compress_files`) and the two `run_instant` commands (`create`, `rename`) do NOT yet — they default to `user`. Full
+threading (an optional param + bindings regen + the `mcp-listeners.ts` `ai_client` tag) is the remaining provenance item.
 
 ### Row-volume tradeoff
 

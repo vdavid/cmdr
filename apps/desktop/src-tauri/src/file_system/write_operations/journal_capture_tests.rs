@@ -307,6 +307,255 @@ fn failed_trash_item_records_no_search_leaves_but_a_sibling_keeps_its_own() {
     );
 }
 
+// ── M2g: performance — capture stays off the operation's hot path ────────────
+
+/// Create `n` tiny files in a fresh tempdir; return the dir (keep alive) + paths.
+fn make_files(n: usize) -> (tempfile::TempDir, Vec<std::path::PathBuf>) {
+    let dir = tempfile::tempdir().expect("dir");
+    let paths: Vec<_> = (0..n)
+        .map(|i| {
+            let p = dir.path().join(format!("f{i}.bin"));
+            std::fs::write(&p, b"x").expect("write");
+            p
+        })
+        .collect();
+    (dir, paths)
+}
+
+/// Time a delete of `paths` with the op id already opened/finalized around it.
+fn time_delete(op_id: &str, paths: &[std::path::PathBuf]) -> Duration {
+    journal::open_local_op(op_id, OpKind::Delete, Initiator::User, 0);
+    let events = CollectorEventSink::new();
+    let t = std::time::Instant::now();
+    delete_files_with_progress_inner(&events, op_id, &state(), paths, &WriteOperationConfig::default()).expect("delete");
+    let elapsed = t.elapsed();
+    journal::finalize_op(op_id, OpKind::Delete, ExecutionStatus::Done);
+    elapsed
+}
+
+/// Requirement 8 (logging never measurably slows an op) under three writer loads:
+/// (a) no journal, (b) a keeping-up journal, (c) a journal whose writer thread is
+/// concurrently hammered with retention prunes + `incremental_vacuum` — the arm a
+/// naive test would miss. All three must finish the op within a generous budget:
+/// capture rides a bounded channel that BLOCKS only if the writer falls behind, and
+/// the vacuum runs in bounded slices between batches, so even the loaded writer
+/// can't stall the op. A capture that went synchronous on the op thread would blow
+/// the budget in (b)/(c).
+#[test]
+fn capture_stays_off_the_hot_path_under_writer_load() {
+    const N: usize = 1_500;
+
+    // Arm (a): no journal — the baseline op cost (pure file I/O).
+    let (_da, pa) = make_files(N);
+    let events = CollectorEventSink::new();
+    let t = std::time::Instant::now();
+    delete_files_with_progress_inner(&events, "perf-a", &state(), &pa, &WriteOperationConfig::default())
+        .expect("delete a");
+    let base = t.elapsed();
+
+    // Arm (b): a keeping-up journal.
+    let (_jb, jdb) = install_journal();
+    let (_db, pb) = make_files(N);
+    let kept_up = time_delete("perf-b", &pb);
+    {
+        let conn = open_read_connection(&jdb).expect("read");
+        let items = read_operation_items(&conn, "perf-b", 100_000).expect("items");
+        assert_eq!(items.len(), N, "every deleted leaf journaled under normal load");
+    }
+    clear_journal();
+
+    // Arm (c): a journal whose writer is under concurrent prune + vacuum load.
+    let cdir = tempfile::tempdir().expect("cdir");
+    let cdb = operation_log_db_path(cdir.path());
+    let writer = OperationLogWriter::spawn(&cdb).expect("spawn writer");
+    // Seed churn so the freelist has pages for `incremental_vacuum` to reclaim.
+    for i in 0..40 {
+        let id = format!("seed-{i}");
+        writer
+            .open_operation(crate::operation_log::writer::OpenOperation {
+                op_id: id.clone(),
+                kind: OpKind::Delete,
+                initiator: Initiator::User,
+                source_volume_id: Some("root".into()),
+                dest_volume_id: None,
+                item_count: 0,
+                started_at: 1,
+                rolls_back_op_id: None,
+                execution_status: ExecutionStatus::Running,
+            })
+            .expect("seed open");
+    }
+    writer.flush_blocking().expect("flush seed");
+    set_journal(Arc::new(WriterJournal::new(writer.clone())));
+
+    let stop = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let pruner = {
+        let writer = writer.clone();
+        let stop = Arc::clone(&stop);
+        std::thread::spawn(move || {
+            while !stop.load(std::sync::atomic::Ordering::Relaxed) {
+                let _ = writer.prune(crate::operation_log::writer::PruneRequest {
+                    max_age_secs: Some(0),
+                    now_secs: 10,
+                    vacuum: true,
+                });
+            }
+        })
+    };
+
+    let (_dc, pc) = make_files(N);
+    let stalled = time_delete("perf-c", &pc);
+    stop.store(true, std::sync::atomic::Ordering::Relaxed);
+    pruner.join().expect("join pruner");
+    clear_journal();
+
+    // Generous budget: journaling must not MULTIPLY op time. A synchronous capture
+    // would make (b)/(c) an order of magnitude over the baseline; a bounded-channel
+    // capture stays within a small multiple plus fixed slack (loose enough for CI
+    // noise, tight enough to catch a hot-path regression).
+    let budget = base * 6 + Duration::from_secs(3);
+    assert!(
+        kept_up < budget,
+        "journaling put capture on the hot path: base={base:?} kept_up={kept_up:?} budget={budget:?}"
+    );
+    assert!(
+        stalled < budget,
+        "a loaded writer stalled the op: base={base:?} stalled={stalled:?} budget={budget:?}"
+    );
+}
+
+/// BENCHMARK (ignored): background persist throughput — how fast the writer drains
+/// a burst of `search_only` leaf rows. Feeds `docs/notes/operation-log-capture-bench.md`.
+#[test]
+#[ignore = "benchmark; run explicitly to collect numbers"]
+#[allow(clippy::print_stdout, reason = "a benchmark prints its measurements")]
+fn bench_persist_throughput() {
+    use crate::operation_log::writer::JournalItem;
+    const N: usize = 50_000;
+    let dir = tempfile::tempdir().expect("dir");
+    let db = operation_log_db_path(dir.path());
+    let writer = OperationLogWriter::spawn(&db).expect("spawn");
+    writer
+        .open_operation(crate::operation_log::writer::OpenOperation {
+            op_id: "bench".into(),
+            kind: OpKind::Delete,
+            initiator: Initiator::User,
+            source_volume_id: Some("root".into()),
+            dest_volume_id: None,
+            item_count: 0,
+            started_at: 1,
+            rolls_back_op_id: None,
+            execution_status: ExecutionStatus::Running,
+        })
+        .expect("open");
+    let items: Vec<_> = (0..N)
+        .map(|i| JournalItem {
+            seq: i as i64,
+            entry_type: EntryType::File,
+            row_role: RowRole::SearchOnly,
+            source_volume_id: "root".into(),
+            source_dir: "/x".into(),
+            source_name: format!("f{i}.jpg"),
+            dest_volume_id: None,
+            dest_dir: None,
+            dest_name: None,
+            size: Some(10),
+            mtime: Some(1),
+            outcome: crate::operation_log::types::ItemOutcome::Done,
+            overwrote: false,
+        })
+        .collect();
+    let t = std::time::Instant::now();
+    // Batch as the capture layer does, then flush (barrier) for the true drain time.
+    for chunk in items.chunks(512) {
+        writer.record_items("bench", chunk.to_vec()).expect("record");
+    }
+    writer.flush_blocking().expect("flush");
+    let elapsed = t.elapsed();
+    println!(
+        "persist {N} leaves in {elapsed:?} ({:.0} rows/s)",
+        N as f64 / elapsed.as_secs_f64()
+    );
+}
+
+/// BENCHMARK (ignored): the op-latency delta of a same-FS move with journaling ON
+/// vs OFF (target ~zero — a move records ONE top-level row + a bounded enumerate).
+#[test]
+#[ignore = "benchmark; run explicitly to collect numbers"]
+#[allow(clippy::print_stdout, reason = "a benchmark prints its measurements")]
+fn bench_same_fs_move_latency_delta() {
+    const K: usize = 200;
+
+    // OFF: no journal — the baseline rename cost.
+    let off = {
+        let work = tempfile::tempdir().expect("work");
+        let dst = work.path().join("dst");
+        std::fs::create_dir_all(&dst).expect("dst");
+        let srcs: Vec<_> = (0..K)
+            .map(|i| {
+                let d = work.path().join(format!("d{i}"));
+                std::fs::create_dir_all(&d).expect("mk");
+                std::fs::write(d.join("f.bin"), b"x").expect("w");
+                d
+            })
+            .collect();
+        let events = CollectorEventSink::new();
+        let t = std::time::Instant::now();
+        for (i, s) in srcs.iter().enumerate() {
+            move_files_with_progress_inner(
+                &events,
+                &format!("off-{i}"),
+                &state(),
+                std::slice::from_ref(s),
+                &dst,
+                &WriteOperationConfig::default(),
+            )
+            .expect("move");
+        }
+        t.elapsed()
+    };
+
+    // ON: journal installed (no drive index registered, so each move records one
+    // top-level row + a fast VolumeNotLive enumerate).
+    let (_j, _jdb) = install_journal();
+    let on = {
+        let work = tempfile::tempdir().expect("work");
+        let dst = work.path().join("dst");
+        std::fs::create_dir_all(&dst).expect("dst");
+        let srcs: Vec<_> = (0..K)
+            .map(|i| {
+                let d = work.path().join(format!("d{i}"));
+                std::fs::create_dir_all(&d).expect("mk");
+                std::fs::write(d.join("f.bin"), b"x").expect("w");
+                d
+            })
+            .collect();
+        let events = CollectorEventSink::new();
+        let t = std::time::Instant::now();
+        for (i, s) in srcs.iter().enumerate() {
+            let id = format!("on-{i}");
+            journal::open_local_op(&id, OpKind::Move, Initiator::User, 0);
+            move_files_with_progress_inner(
+                &events,
+                &id,
+                &state(),
+                std::slice::from_ref(s),
+                &dst,
+                &WriteOperationConfig::default(),
+            )
+            .expect("move");
+            journal::finalize_op(&id, OpKind::Move, ExecutionStatus::Done);
+        }
+        t.elapsed()
+    };
+    clear_journal();
+    println!(
+        "same-FS move x{K}: off={off:?} ({:?}/op) on={on:?} ({:?}/op)",
+        off / K as u32,
+        on / K as u32
+    );
+}
+
 /// A same-FS move of a folder records the top-level `rollback_unit` row AND the
 /// subtree's `search_only` leaves from the index, rebased onto the moved-to path.
 #[cfg(target_os = "macos")]

@@ -136,20 +136,28 @@ fn enumerate_from_id(conn: &Connection, root_id: i64, cap: usize) -> BufferedLea
         return BufferedLeaves::downgraded(SearchCoverageReason::IndexStale);
     }
 
-    // Walk descendants depth-first, capping at `cap`. Over the cap ⇒ `capped`
-    // (top-level only); a read error mid-walk ⇒ `index_stale` (never claim full
-    // over a partial read).
+    // Walk descendants depth-first, reading at most `cap + 1` rows TOTAL: each dir
+    // is read with a `LIMIT` sized to the remaining budget + 1, so a 1M-child folder
+    // pays a bounded read before the sub-second mutation (never the whole subtree).
+    // Over the cap ⇒ `capped` (top-level only); a read error mid-walk ⇒ `index_stale`
+    // (never claim full over a partial read).
     let mut leaves = Vec::new();
     let mut stack = vec![(root_id, PathBuf::new())];
     while let Some((dir_id, rel)) = stack.pop() {
-        let children = match IndexStore::list_children_on(dir_id, conn) {
+        let remaining = cap - leaves.len();
+        // Clamp to the i64 LIMIT range: an uncapped `cap` (usize::MAX) would
+        // overflow the cast, so cap the read at i64::MAX (effectively unbounded).
+        let limit = (remaining.min(i64::MAX as usize) as i64).saturating_add(1);
+        let children = match IndexStore::list_children_on_limited(dir_id, conn, limit) {
             Ok(c) => c,
             Err(_) => return BufferedLeaves::downgraded(SearchCoverageReason::IndexStale),
         };
+        // More children than the remaining budget ⇒ over cap. (`remaining + 1`
+        // rows came back, so the subtree exceeds `cap`.)
+        if children.len() > remaining {
+            return BufferedLeaves::downgraded(SearchCoverageReason::Capped);
+        }
         for child in children {
-            if leaves.len() >= cap {
-                return BufferedLeaves::downgraded(SearchCoverageReason::Capped);
-            }
             let child_rel = rel.join(&child.name);
             let entry_type = if child.is_directory {
                 EntryType::Dir
@@ -326,5 +334,80 @@ mod tests {
         let buffered = enumerate_from_id(&conn, photos_id, 4);
         assert_eq!(buffered.coverage, SearchCoverage::Full);
         assert_eq!(buffered.leaves.len(), 4);
+    }
+
+    /// Build an index whose `photos` subtree holds `leaf_count` flat leaves in ONE
+    /// transaction (fast enough for the 1M bench), current epoch stamped.
+    fn index_with_n_leaves(leaf_count: usize) -> (tempfile::TempDir, Connection, i64) {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let db = dir.path().join("index.sqlite");
+        let _store = IndexStore::open(&db).expect("open index");
+        let mut wconn = IndexStore::open_write_connection(&db).expect("write conn");
+        let photos_id = IndexStore::insert_entry_v2(&wconn, ROOT_ID, "photos", true, false, None, None, None, None)
+            .expect("insert photos");
+        {
+            let tx = wconn.transaction().expect("tx");
+            for i in 0..leaf_count {
+                IndexStore::insert_entry_v2(
+                    &tx,
+                    photos_id,
+                    &format!("f{i}.jpg"),
+                    false,
+                    false,
+                    Some(10),
+                    Some(10),
+                    Some(1_700_000_000),
+                    None,
+                )
+                .expect("insert leaf");
+            }
+            tx.commit().expect("commit");
+        }
+        let current = IndexStore::seed_current_epoch(&wconn).expect("seed");
+        IndexStore::upsert_dir_stats_by_id(
+            &wconn,
+            &[crate::indexing::store::DirStatsById {
+                entry_id: photos_id,
+                recursive_logical_size: 0,
+                recursive_physical_size: 0,
+                recursive_file_count: leaf_count as u64,
+                recursive_dir_count: 0,
+                recursive_has_symlinks: false,
+                min_subtree_epoch: current,
+            }],
+        )
+        .expect("stats");
+        let rconn = IndexStore::open_read_connection(&db).expect("read conn");
+        (dir, rconn, photos_id)
+    }
+
+    /// BENCHMARK (ignored — run with `--run-ignored` to collect numbers): the
+    /// synchronous enumeration latency vs subtree size (1k / 10k / 100k / 1M).
+    /// The cap read is `LIMIT cap + 1`, so the synchronous cost the mutation waits
+    /// on is bounded regardless of the true subtree size. Results feed the cap
+    /// tuning in `docs/notes/operation-log-capture-bench.md`.
+    #[test]
+    #[ignore = "benchmark; run explicitly to collect numbers"]
+    #[allow(clippy::print_stdout, reason = "a benchmark prints its measurements")]
+    fn bench_enumeration_latency_by_subtree_size() {
+        // Sizes kept ≤ 100k so one run fits the harness slow-timeout; the uncapped
+        // curve is linear (~1.2 µs/leaf) so 1M extrapolates to ~1.2 s — exactly the
+        // disproportionate pre-mutation cost the cap prevents. Capped(50k) reads at
+        // most cap+1 rows (the `LIMIT` bound), so it plateaus once n > cap and is the
+        // ceiling for ALL larger subtrees, 1M included.
+        for &n in &[1_000usize, 10_000, 100_000] {
+            let (_dir, conn, root) = index_with_n_leaves(n);
+            let t0 = std::time::Instant::now();
+            let full = enumerate_from_id(&conn, root, usize::MAX);
+            let uncapped = t0.elapsed();
+            assert_eq!(full.leaves.len(), n);
+            let t1 = std::time::Instant::now();
+            let capped = enumerate_from_id(&conn, root, SEARCH_LEAF_CAP);
+            let capped_t = t1.elapsed();
+            println!(
+                "enumerate n={n:>7}: uncapped={uncapped:?} capped(50k)={capped_t:?} (capped coverage={:?})",
+                capped.coverage
+            );
+        }
     }
 }
