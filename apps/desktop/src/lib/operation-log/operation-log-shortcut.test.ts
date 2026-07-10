@@ -11,24 +11,22 @@
  */
 
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
+import { getEffectiveShortcuts } from '$lib/shortcuts/shortcuts-store'
+import { formatKeyCombo } from '$lib/shortcuts/key-capture'
+import { initShortcutDispatch, lookupCommand, destroyShortcutDispatch } from '$lib/shortcuts/shortcut-dispatch'
 
+// These modules read the platform (`isMacOS()`, userAgent-based) only at call time, never
+// at module load, so a static import is safe: the mock below is active before any of them run.
 const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
 beforeAll(() => {
-  // Force the macOS branch of isMacOS() (userAgent-based) for both the shortcut-map
-  // build (toPlatformShortcut) and formatKeyCombo, so they agree the way they do on
-  // a real Mac.
+  // Force the macOS branch of isMacOS() for both the shortcut-map build (toPlatformShortcut)
+  // and formatKeyCombo, so they agree the way they do on a real Mac.
   navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
 })
 afterAll(() => navigatorSpy.mockReset())
 
 describe('log.operationLog default shortcut (⌘⌥L)', () => {
-  it('a real Option+Command+L keydown resolves to log.operationLog', async () => {
-    const { getEffectiveShortcuts } = await import('$lib/shortcuts/shortcuts-store')
-    const { formatKeyCombo } = await import('$lib/shortcuts/key-capture')
-    const { initShortcutDispatch, lookupCommand, destroyShortcutDispatch } = await import(
-      '$lib/shortcuts/shortcut-dispatch'
-    )
-
+  it('a real Option+Command+L keydown resolves to log.operationLog', () => {
     // The registry default, converted to the active platform (macOS: unchanged).
     expect(getEffectiveShortcuts('log.operationLog')).toEqual(['⌘⌥L'])
 
