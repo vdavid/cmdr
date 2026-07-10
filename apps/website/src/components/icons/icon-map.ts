@@ -19,6 +19,7 @@ import FileArchive from '~icons/lucide/file-archive'
 import FileText from '~icons/lucide/file-text'
 import Folder from '~icons/lucide/folder'
 import GitBranch from '~icons/lucide/git-branch'
+import History from '~icons/lucide/history'
 import Keyboard from '~icons/lucide/keyboard'
 import ListChecks from '~icons/lucide/list-checks'
 import MessageCircleQuestionMark from '~icons/lucide/message-circle-question-mark'
@@ -49,6 +50,7 @@ export const ICONS = {
   'file-text': FileText,
   folder: Folder,
   'git-branch': GitBranch,
+  history: History,
   keyboard: Keyboard,
   'list-checks': ListChecks,
   'message-circle-question-mark': MessageCircleQuestionMark,
