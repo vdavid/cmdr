@@ -21,6 +21,14 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
 - **Add history only on "Open in pane"**: David's explicit call. The 1000-entry budget stays signal-rich when it tracks
   results worth acting on, not every keystroke-debounced filename search. The gate is a frontend convention, not
   Rust-enforced.
+- **Scope include-paths are canonicalized before the DB walk** (`resolve_include_paths` → `canonicalize_scope_path`):
+  the scanner walks the real filesystem, so the index stores canonical paths (`/private/tmp/…`), while panes and agents
+  report the symlinked form (`scope:/tmp/…`). Without resolving symlinks first, `store::resolve_path`'s literal
+  component walk finds nothing → silent empty results. Canonicalization happens ONCE per include path (a handful),
+  outside the hot per-entry scan, on a detached thread under a 2 s deadline (`realpath` blocks on a dead mount, and
+  `resolve_include_paths` is sync — the sync analog of `blocking_with_timeout`); a non-existent / timed-out path keeps
+  its literal so an offline-index scope still gets a best-effort match. Applies to `search`, `ai_search`, and the FE
+  search dialog — all route through the one `resolve_include_paths`.
 - **`_schemaVersion` mismatch quarantines instead of migrating in place**: there's only schema v1, so a migrator would
   be speculative. When v2 lands, replace the quarantine branch with a `match` on the version calling a
   `migrate_v1_to_v2` helper.

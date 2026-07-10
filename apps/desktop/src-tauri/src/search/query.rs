@@ -258,6 +258,32 @@ pub(crate) fn split_scope_segments(input: &str) -> Vec<String> {
 
 // ── Include path resolution ──────────────────────────────────────────
 
+/// Canonicalize a scope include path (resolve symlinks) so it matches the index's
+/// stored REAL paths, without wedging on a hung mount.
+///
+/// The scanner walks the real filesystem, so the index stores canonical paths (on
+/// macOS `/tmp` is a symlink, recorded as `/private/tmp`), while panes and agents
+/// report the symlinked form (`scope:/tmp/x`). A literal prefix match then resolves
+/// nothing → silent empty results. We canonicalize each include path ONCE here (a
+/// handful of paths, off the hot per-entry scan loop) before the DB walk.
+///
+/// `fs::canonicalize` issues `realpath`, which blocks indefinitely on a dead network
+/// mount, so it runs on a detached worker thread under a 2 s deadline (the sync
+/// analog of `blocking_with_timeout`; `resolve_include_paths` is sync). On timeout,
+/// an error, or a non-existent path we keep the literal — today's best-effort
+/// behavior, so an offline/unmounted-index scope still gets its literal match.
+fn canonicalize_scope_path(path: &str) -> String {
+    let owned = path.to_string();
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(std::fs::canonicalize(&owned));
+    });
+    match rx.recv_timeout(std::time::Duration::from_secs(2)) {
+        Ok(Ok(canonical)) => canonical.to_string_lossy().into_owned(),
+        _ => path.to_string(),
+    }
+}
+
 /// Resolve `include_paths` to entry IDs via SQLite and set `include_path_ids`
 /// on the query. Call this before `search()` when the query has `include_paths`.
 pub(crate) fn resolve_include_paths(query: &mut SearchQuery, pool: &ReadPool) {
@@ -265,6 +291,9 @@ pub(crate) fn resolve_include_paths(query: &mut SearchQuery, pool: &ReadPool) {
         Some(p) if !p.is_empty() => p.clone(),
         _ => return,
     };
+    // Canonicalize each include path ONCE (resolve symlinks like /tmp → /private/tmp)
+    // so the prefix walk matches the index's stored real paths. Off the hot scan loop.
+    let paths: Vec<String> = paths.iter().map(|p| canonicalize_scope_path(p)).collect();
     let ids = pool
         .with_conn(|conn| {
             let mut resolved = Vec::with_capacity(paths.len());
@@ -628,6 +657,40 @@ mod tests {
     fn summarize_empty_name_pattern() {
         let q = make_query(Some(""), PatternType::Glob, None, None, None, None, None);
         assert_eq!(summarize_query(&q), "(all entries)");
+    }
+
+    // ── canonicalize_scope_path ─────────────────────────────────────
+
+    #[cfg(unix)]
+    #[test]
+    fn canonicalize_scope_path_resolves_symlinks() {
+        use std::os::unix::fs::symlink;
+
+        // A real dir with a child, plus a symlink pointing at the real dir — the
+        // /tmp → /private/tmp shape the index stores canonically but scopes report
+        // symlinked.
+        let base = std::env::temp_dir().join(format!("cmdr-scope-canon-{}", std::process::id()));
+        let real = base.join("real");
+        std::fs::create_dir_all(real.join("child")).expect("create real dir");
+        let link = base.join("link");
+        let _ = std::fs::remove_file(&link);
+        symlink(&real, &link).expect("create symlink");
+
+        // A path THROUGH the symlink canonicalizes to the real path (both fully
+        // symlink-resolved), so a scope typed against the symlink now matches the
+        // index's stored real path.
+        let through_link = link.join("child").to_string_lossy().into_owned();
+        let want = std::fs::canonicalize(real.join("child"))
+            .expect("canonicalize real")
+            .to_string_lossy()
+            .into_owned();
+        assert_eq!(canonicalize_scope_path(&through_link), want);
+
+        // A non-existent path keeps the literal (best-effort: the offline-index case).
+        let missing = link.join("nope").to_string_lossy().into_owned();
+        assert_eq!(canonicalize_scope_path(&missing), missing);
+
+        std::fs::remove_dir_all(&base).ok();
     }
 
     // ── parse_scope ─────────────────────────────────────────────────
