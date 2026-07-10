@@ -187,6 +187,15 @@ fn move_with_rename(
             })?;
             let dest_path = destination.join(file_name);
 
+            // Snapshot the source (kind + mtime) BEFORE the rename for the
+            // journal's top-level `rollback_unit` row; `item_overwrote` records
+            // whether we replaced an existing dest (⇒ not rollbackable, D3).
+            let source_meta = fs::symlink_metadata(source).ok();
+            let source_is_dir = source_meta.as_ref().map(|m| m.is_dir()).unwrap_or(false);
+            let source_mtime = source_meta.as_ref().and_then(super::super::journal::mtime_secs);
+            let source_size = source_meta.as_ref().map(|m| m.len() as i64);
+            let mut item_overwrote = false;
+
             // When both source and dest are directories, merge recursively
             // instead of replacing (which would destroy dest-only files).
             if source.is_dir() && dest_path.exists() && dest_path.is_dir() {
@@ -223,6 +232,9 @@ fn move_with_rename(
                         // is also suppressed. No-ops outside ~/Downloads.
                         crate::downloads::note_pending_write_for_cmdr(source);
                         crate::downloads::note_pending_write_for_cmdr(&resolved.path);
+                        // Landing on the original dest name replaced a pre-existing
+                        // file; a rename-aside (different name) did not.
+                        item_overwrote = resolved.path == dest_path;
                         move_resolved_into_place(source, &dest_path, &resolved, &mut move_tx)?;
                     }
                     None => {
@@ -236,8 +248,28 @@ fn move_with_rename(
                 crate::downloads::note_pending_write_for_cmdr(source);
                 crate::downloads::note_pending_write_for_cmdr(&dest_path);
                 fs::rename(source, &dest_path).with_path(source)?;
-                move_tx.record(source.clone(), dest_path);
+                move_tx.record(source.clone(), dest_path.clone());
             }
+
+            // Journal the top-level moved item as the rollback unit: one
+            // rename-back reverses the whole subtree (D-granularity). The
+            // subtree's `search_only` leaves are enumerated from the drive index
+            // (M2e).
+            let entry_type = if source_is_dir {
+                crate::operation_log::types::EntryType::Dir
+            } else {
+                crate::operation_log::types::EntryType::File
+            };
+            super::super::journal::record_local_leaf(
+                operation_id,
+                entry_type,
+                source,
+                Some(&dest_path),
+                source_size,
+                source_mtime,
+                item_overwrote,
+                crate::operation_log::types::ItemOutcome::Done,
+            );
 
             files_done += 1;
 

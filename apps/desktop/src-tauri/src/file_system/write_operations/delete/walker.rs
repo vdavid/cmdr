@@ -154,6 +154,20 @@ pub(in crate::file_system::write_operations) fn delete_files_with_progress_inner
         crate::downloads::note_pending_write_for_cmdr(&file_info.path);
         fs::remove_file(&file_info.path).with_path(&file_info.path)?;
 
+        // Journal the deleted leaf so "when did I delete dog.jpg" is searchable.
+        // Delete is never rollbackable (the op finalizes `permanent_delete`), so
+        // these rows exist purely for search — one per leaf, deliberately (D4).
+        super::super::journal::record_local_leaf(
+            operation_id,
+            crate::operation_log::types::EntryType::File,
+            &file_info.path,
+            None,
+            Some(progress_bytes as i64),
+            None,
+            false,
+            crate::operation_log::types::ItemOutcome::Done,
+        );
+
         files_done += 1;
         bytes_done += progress_bytes;
 

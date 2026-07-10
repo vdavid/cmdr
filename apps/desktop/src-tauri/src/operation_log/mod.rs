@@ -17,7 +17,78 @@ pub mod store;
 pub mod types;
 pub mod writer;
 
+use std::sync::{Arc, RwLock};
+
 use tauri::{AppHandle, Manager};
+
+use crate::ignore_poison::RwLockIgnorePoison;
+use capture::{FinalizeInputs, OperationJournal, WriterJournal};
+use types::{SearchCoverage, SearchCoverageReason};
+use writer::{FinalizeOutcome, JournalItem, OpenOperation};
+
+/// The process-global journal handle. The write pipeline reaches it BY `op_id`
+/// through the free functions below, mirroring the existing per-op-keyed
+/// `update_operation_status(op_id, …)` status cache written at the very same
+/// record points and the `manager()` operation-manager singleton — rather than
+/// threading an `OperationObservers` context through the whole transfer/delete
+/// signature chain. This is a recorded deviation from D4's threaded-observers
+/// mechanism (its hard constraint — never extend `OperationEventSink` — is kept),
+/// chosen for consistency with those two established patterns and to keep the
+/// safety-critical pipeline signatures untouched. See `capture.rs` +
+/// `DETAILS.md` § Capture. `None` until `start` (or a test) installs one, so a
+/// build whose journal DB failed to open simply doesn't journal.
+static JOURNAL: RwLock<Option<Arc<dyn OperationJournal>>> = RwLock::new(None);
+
+/// Install the process-global journal. Called once at [`start`]; tests install
+/// their own (a `CapturingJournal` or a temp-DB `WriterJournal`).
+pub(crate) fn set_journal(journal: Arc<dyn OperationJournal>) {
+    *JOURNAL.write_ignore_poison() = Some(journal);
+}
+
+/// Clear the global journal (test teardown; nextest isolates per process, so this
+/// is belt-and-suspenders).
+#[cfg(test)]
+pub(crate) fn clear_journal() {
+    *JOURNAL.write_ignore_poison() = None;
+}
+
+fn current_journal() -> Option<Arc<dyn OperationJournal>> {
+    JOURNAL.read_ignore_poison().clone()
+}
+
+/// Open an operation row. No-op when no journal is installed.
+pub fn journal_open(open: OpenOperation) {
+    if let Some(j) = current_journal() {
+        j.open(open);
+    }
+}
+
+/// Record item rows for an open operation (buffered + batched by the journal).
+/// No-op when no journal is installed.
+pub fn journal_record_items(op_id: &str, items: Vec<JournalItem>) {
+    if let Some(j) = current_journal() {
+        j.record_items(op_id, items);
+    }
+}
+
+/// Downgrade an op's search coverage (worst-wins). No-op when no journal.
+pub fn journal_note_coverage(op_id: &str, coverage: SearchCoverage, reason: Option<SearchCoverageReason>) {
+    if let Some(j) = current_journal() {
+        j.note_search_coverage(op_id, coverage, reason);
+    }
+}
+
+/// Finalize an operation, returning the durable per-`row_role` counts (mostly for
+/// tests). No-op — returning zero counts — when no journal is installed.
+pub fn journal_finalize(op_id: &str, inputs: FinalizeInputs) -> FinalizeOutcome {
+    match current_journal() {
+        Some(j) => j.finalize(op_id, inputs),
+        None => FinalizeOutcome {
+            rollback_unit_rows: 0,
+            search_only_rows: 0,
+        },
+    }
+}
 
 /// Open `operation-log.db` and spawn its single writer thread, placing the
 /// [`OperationLogWriter`](writer::OperationLogWriter) handle in managed state so
@@ -43,6 +114,9 @@ pub fn start(app: &AppHandle) {
     }
     match writer::OperationLogWriter::spawn(&db_path) {
         Ok(writer) => {
+            // The global journal holds a clone (the capture record points reach it
+            // by op_id); managed state keeps the writer for retention + shutdown.
+            set_journal(Arc::new(WriterJournal::new(writer.clone())));
             app.manage(writer);
             log::debug!(target: "operation_log", "operation log ready at {}", db_path.display());
         }

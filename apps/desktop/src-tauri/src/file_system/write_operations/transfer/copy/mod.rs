@@ -484,6 +484,10 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 &transaction.created_files,
                 &already_synced,
             );
+            // Journal the directories this copy created as `dir` rows, after the
+            // leaf files (which recorded themselves as they landed), so a `seq
+            // DESC` rollback removes files before their dirs (D2, Finding 2).
+            crate::file_system::write_operations::journal::record_created_dirs(operation_id, &transaction.created_dirs);
             transaction.commit();
 
             log::info!(

@@ -304,8 +304,10 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
 
     // Validate the source still exists (and isn't a vanished symlink target).
     // Byte accounting uses `write_weight` (the scan-time size), not a fresh
-    // stat, so we only need the existence check here.
-    let _ = fs::symlink_metadata(source).with_path(source)?;
+    // stat, so we only need the existence check here — but the metadata's mtime
+    // is the free snapshot the journal records (no extra syscall).
+    let source_meta = fs::symlink_metadata(source).with_path(source)?;
+    let source_mtime = crate::file_system::write_operations::journal::mtime_secs(&source_meta);
 
     let file_name = source.file_name().unwrap_or_default();
 
@@ -373,6 +375,16 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
             create_symlink(&actual_dest)?;
         }
 
+        crate::file_system::write_operations::journal::record_local_leaf(
+            operation_id,
+            crate::operation_log::types::EntryType::File,
+            source,
+            Some(&actual_dest),
+            Some(write_weight as i64),
+            source_mtime,
+            needs_safe_overwrite,
+            crate::operation_log::types::ItemOutcome::Done,
+        );
         transaction.record_file(actual_dest);
         record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
     } else {
@@ -500,6 +512,16 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
         // We use `write_weight` rather than the strategy's returned byte count
         // so the per-file milestone matches the scan's `total_bytes` exactly
         // even when a clonefile reports 0 copied bytes.
+        crate::file_system::write_operations::journal::record_local_leaf(
+            operation_id,
+            crate::operation_log::types::EntryType::File,
+            source,
+            Some(&actual_dest),
+            Some(write_weight as i64),
+            source_mtime,
+            needs_safe_overwrite,
+            crate::operation_log::types::ItemOutcome::Done,
+        );
         transaction.record_file(actual_dest.clone());
         record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
     }

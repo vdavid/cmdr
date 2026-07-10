@@ -34,11 +34,14 @@ use super::types::{
 use super::writer::{FinalizeOperation, FinalizeOutcome, JournalItem, OpenOperation, OperationLogWriter};
 
 /// The per-item observer that journals a managed operation. Sibling to
-/// `OperationEventSink` (UI events); the two are bundled into
-/// `OperationObservers` and threaded down the same pipeline seam (D4). A test
-/// installs a [`CapturingJournal`] with no sink; production wires a
-/// [`WriterJournal`]; a build where the journal DB failed to open wires a
-/// [`NoopJournal`], so the op runs without a journal rather than refusing.
+/// `OperationEventSink` (UI events). The write pipeline reaches the installed
+/// journal by `op_id` through the free functions in [`super`] (`journal_open` /
+/// `journal_record_items` / `journal_finalize`), mirroring the op-keyed
+/// `update_operation_status` status cache written at the same record points — a
+/// recorded deviation from D4's threaded `OperationObservers` (whose hard
+/// constraint, never extending `OperationEventSink`, is kept). Production installs
+/// a [`WriterJournal`]; a test installs a [`CapturingJournal`]; when no journal is
+/// installed (the DB failed to open), the free functions no-op.
 ///
 /// The journal NEVER fails the operation: every method swallows its own errors
 /// (logged), because the file operation's data safety outranks the journal's
@@ -191,15 +194,27 @@ pub fn apply_completeness(
 
 // ── Per-op accumulator ───────────────────────────────────────────────────────
 
+/// Flush the per-op record buffer to the writer once it reaches this many rows,
+/// so a huge op coalesces its inserts into batched transactions (D4) instead of
+/// one writer message per leaf. The remainder flushes at finalize.
+const RECORD_BATCH: usize = 512;
+
 /// The per-op state the journal accumulates between `open` and `finalize`: the
-/// issued counts (D4 yardstick), whether any item overwrote (D3), and the worst
-/// search-coverage the driver noted (D-granularity).
+/// issued counts (D4 yardstick), whether any item overwrote (D3), the worst
+/// search-coverage the driver noted (D-granularity), and a small buffer that
+/// batches item rows before they cross to the writer thread.
 #[derive(Debug)]
 struct OpAccum {
     issued: IssuedCounts,
     any_overwrote: bool,
     coverage: SearchCoverage,
     coverage_reason: Option<SearchCoverageReason>,
+    buffer: Vec<JournalItem>,
+    /// Monotonic per-op sequence, assigned in recording order so callers never
+    /// track it. Files recorded during the op precede dirs recorded from the
+    /// transaction at the end, so the dir rows land AFTER their contents (D2,
+    /// Finding 2) and a `seq DESC` rollback removes files before their dirs.
+    next_seq: i64,
 }
 
 impl Default for OpAccum {
@@ -209,6 +224,8 @@ impl Default for OpAccum {
             any_overwrote: false,
             coverage: SearchCoverage::Full,
             coverage_reason: None,
+            buffer: Vec::new(),
+            next_seq: 0,
         }
     }
 }
@@ -262,12 +279,16 @@ impl OperationJournal for WriterJournal {
             return;
         }
         // Accumulate the issued counts + overwrote signal for the finalize
-        // decisions, and decide which items to forward (the test drop-seam aside).
-        let mut forward: Vec<JournalItem> = Vec::with_capacity(items.len());
-        {
+        // decisions, buffer the rows, and drain a full batch out under the lock
+        // (a batched writer message instead of one per leaf — D4).
+        let batch = {
             let mut ops = self.ops.lock_ignore_poison();
             let accum = ops.entry(op_id.to_string()).or_default();
-            for item in items {
+            for mut item in items {
+                // Assign the op-monotonic seq here so record points never track
+                // it; recording order IS the seq order.
+                item.seq = accum.next_seq;
+                accum.next_seq += 1;
                 accum.issued.add(item.row_role, 1);
                 accum.any_overwrote |= item.overwrote;
                 #[cfg(test)]
@@ -276,14 +297,22 @@ impl OperationJournal for WriterJournal {
                         .drop_next_rollback_row
                         .swap(false, std::sync::atomic::Ordering::SeqCst)
                 {
-                    // Counted as issued above, but not forwarded: a simulated drop.
+                    // Counted as issued above, but not buffered: a simulated drop.
                     continue;
                 }
-                forward.push(item);
+                accum.buffer.push(item);
             }
-        }
-        if !forward.is_empty()
-            && let Err(e) = self.writer.record_items(op_id, forward)
+            if accum.buffer.len() >= RECORD_BATCH {
+                Some(std::mem::take(&mut accum.buffer))
+            } else {
+                None
+            }
+        };
+        // Forward OUTSIDE the ops lock: `record_items` can block briefly under
+        // writer backpressure, and holding the per-op map lock across that would
+        // serialize unrelated ops.
+        if let Some(batch) = batch
+            && let Err(e) = self.writer.record_items(op_id, batch)
         {
             log::warn!(target: "operation_log", "journal record_items failed: {e}");
         }
@@ -305,6 +334,14 @@ impl OperationJournal for WriterJournal {
 
     fn finalize(&self, op_id: &str, inputs: FinalizeInputs) -> FinalizeOutcome {
         let accum = self.ops.lock_ignore_poison().remove(op_id).unwrap_or_default();
+
+        // Flush the buffered tail BEFORE finalize so the writer commits every
+        // record before it counts rows (messages are processed in FIFO order).
+        if !accum.buffer.is_empty()
+            && let Err(e) = self.writer.record_items(op_id, accum.buffer)
+        {
+            log::warn!(target: "operation_log", "journal finalize flush failed: {e}");
+        }
 
         let (state, reason) =
             compute_eligibility(inputs.kind, accum.any_overwrote, inputs.archive_subkind, inputs.net_new);
@@ -357,25 +394,6 @@ impl OperationJournal for WriterJournal {
             }
         }
         outcome
-    }
-}
-
-// ── Disabled journal: the DB failed to open ──────────────────────────────────
-
-/// A no-op journal used when `operation-log.db` couldn't be opened. Every method
-/// does nothing, so the write pipeline runs unchanged and un-journaled (the app
-/// runs without the journal rather than refusing to start).
-pub struct NoopJournal;
-
-impl OperationJournal for NoopJournal {
-    fn open(&self, _open: OpenOperation) {}
-    fn record_items(&self, _op_id: &str, _items: Vec<JournalItem>) {}
-    fn note_search_coverage(&self, _op_id: &str, _coverage: SearchCoverage, _reason: Option<SearchCoverageReason>) {}
-    fn finalize(&self, _op_id: &str, _inputs: FinalizeInputs) -> FinalizeOutcome {
-        FinalizeOutcome {
-            rollback_unit_rows: 0,
-            search_only_rows: 0,
-        }
     }
 }
 

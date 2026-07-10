@@ -28,6 +28,7 @@ mod durability;
 mod error_classification;
 mod eta;
 mod event_sinks;
+mod journal;
 mod manager;
 mod operation_intent;
 mod overwrite;
@@ -60,6 +61,7 @@ use std::time::Duration;
 use uuid::Uuid;
 
 use crate::file_system::volume::LaneKey;
+use crate::operation_log::types::Initiator;
 use delete::{delete_files_with_progress_inner, delete_volume_files_with_progress_inner};
 use manager::OperationDescriptor;
 #[cfg(not(test))]
@@ -233,10 +235,29 @@ where
             // can't dispatch a new op against a still-tearing-down volume.
             let _settled_guard = WriteSettledGuard::new(Arc::clone(&events), op_id.clone(), operation_type, None);
 
+            // Open the journal row when the op actually starts (not at
+            // registration), so a queued op that's canceled before admission
+            // never journals. The initiator is threaded in M2c; `User` for now.
+            let op_kind = journal::op_kind_of(operation_type);
+            journal::open_local_op(&op_id, op_kind, Initiator::User, 0);
+
             let op_id_for_blocking = op_id.clone();
             let events_for_handler = Arc::clone(&events);
             let result =
                 tokio::task::spawn_blocking(move || handler(events_for_handler, op_id_for_blocking, state)).await;
+
+            // Journal the terminal state BEFORE cache cleanup (finalize computes
+            // eligibility + the completeness downgrade from what actually
+            // happened). A failed/canceled op stays rollbackable for the items it
+            // reached (D4).
+            let execution_status = match &result {
+                Ok(Ok(())) => crate::operation_log::types::ExecutionStatus::Done,
+                Ok(Err(e)) if matches!(e, WriteOperationError::Cancelled { .. }) => {
+                    crate::operation_log::types::ExecutionStatus::Canceled
+                }
+                _ => crate::operation_log::types::ExecutionStatus::Failed,
+            };
+            journal::finalize_op(&op_id, op_kind, execution_status);
 
             match result {
                 Ok(Ok(())) => {} // Handler already emitted write-complete or write-cancelled
@@ -587,6 +608,8 @@ pub async fn trash_files_start(
 mod scan_preview_listing_progress_tests;
 #[cfg(test)]
 mod scan_preview_oracle_tests;
+#[cfg(test)]
+mod journal_capture_tests;
 #[cfg(test)]
 mod settle_event_tests;
 #[cfg(test)]

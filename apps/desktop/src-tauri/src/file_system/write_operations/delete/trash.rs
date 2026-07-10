@@ -120,14 +120,19 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
             });
         }
 
-        // Check existence using symlink_metadata (handles dangling symlinks)
-        if fs::symlink_metadata(source).is_err() {
-            errors.push(TrashItemError {
-                path: source.clone(),
-                message: format!("'{}' no longer exists", source.display()),
-            });
-            continue;
-        }
+        // Check existence using symlink_metadata (handles dangling symlinks).
+        // Keep the metadata: it's the free snapshot (kind + mtime) the journal
+        // records for the top-level item, stat'd BEFORE the OS moves it to trash.
+        let source_meta = match fs::symlink_metadata(source) {
+            Ok(m) => m,
+            Err(_) => {
+                errors.push(TrashItemError {
+                    path: source.clone(),
+                    message: format!("'{}' no longer exists", source.display()),
+                });
+                continue;
+            }
+        };
 
         // Defensive: register with the downloads watcher's ignore set so a
         // future "deleted from Downloads" event source wouldn't surprise us.
@@ -138,11 +143,30 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
         match move_to_trash_sync(source) {
             Ok(()) => {
                 items_done += 1;
-                if let Some(sizes) = item_sizes
-                    && let Some(&size) = sizes.get(i)
-                {
+                let item_size = item_sizes.and_then(|s| s.get(i).copied());
+                if let Some(size) = item_size {
                     bytes_done += size;
                 }
+
+                // Journal the trashed top-level item as the rollback unit (one
+                // rename-back restores the whole subtree). The subtree's
+                // `search_only` leaves are enumerated from the drive index (M2e);
+                // the in-trash restore location is captured in M2d.
+                let entry_type = if source_meta.is_dir() {
+                    crate::operation_log::types::EntryType::Dir
+                } else {
+                    crate::operation_log::types::EntryType::File
+                };
+                super::super::journal::record_local_leaf(
+                    operation_id,
+                    entry_type,
+                    source,
+                    None,
+                    item_size.map(|s| s as i64).or_else(|| Some(source_meta.len() as i64)),
+                    super::super::journal::mtime_secs(&source_meta),
+                    false,
+                    crate::operation_log::types::ItemOutcome::Done,
+                );
 
                 events.emit_source_item_done(WriteSourceItemDoneEvent {
                     operation_id: operation_id.to_string(),
