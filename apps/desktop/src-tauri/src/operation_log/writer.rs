@@ -147,6 +147,17 @@ enum WriteMessage {
         finalize: Box<FinalizeOperation>,
         reply: mpsc::Sender<FinalizeOutcome>,
     },
+    SetRollbackState {
+        op_id: String,
+        state: RollbackState,
+        reason: Option<NotRollbackableReason>,
+        reply: mpsc::Sender<()>,
+    },
+    SetItemOutcomes {
+        op_id: String,
+        updates: Vec<(i64, ItemOutcome)>,
+        reply: mpsc::Sender<()>,
+    },
     Prune(PruneRequest),
     Flush(mpsc::Sender<()>),
     Shutdown,
@@ -213,6 +224,44 @@ impl OperationLogWriter {
         rx.recv().map_err(writer_gone)
     }
 
+    /// Transition an operation's `rollback_state` (+ nullable reason). Blocks for
+    /// the reply, so it doubles as a barrier: on return the change is durable. The
+    /// rollback engine (M3) uses it to set `rolling_back` (as late as possible, at
+    /// a successful spawn), to reset on a synchronous spawn failure, and to resolve
+    /// the original op when the inverse finalizes.
+    pub fn set_rollback_state(
+        &self,
+        op_id: &str,
+        state: RollbackState,
+        reason: Option<NotRollbackableReason>,
+    ) -> Result<(), OperationLogStoreError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::SetRollbackState {
+            op_id: op_id.to_string(),
+            state,
+            reason,
+            reply: tx,
+        })?;
+        rx.recv().map_err(writer_gone)
+    }
+
+    /// Set the per-item `outcome` for the given `(seq, outcome)` pairs of an op.
+    /// The rollback engine marks an original op's reversed items `rolled_back` and
+    /// its skipped items `skipped`. Blocks for the reply (a barrier).
+    pub fn set_item_outcomes(
+        &self,
+        op_id: &str,
+        updates: Vec<(i64, ItemOutcome)>,
+    ) -> Result<(), OperationLogStoreError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::SetItemOutcomes {
+            op_id: op_id.to_string(),
+            updates,
+            reply: tx,
+        })?;
+        rx.recv().map_err(writer_gone)
+    }
+
     /// Enqueue a retention prune (+ optional bounded vacuum). Fire-and-forget.
     pub fn prune(&self, request: PruneRequest) -> Result<(), OperationLogStoreError> {
         self.send(WriteMessage::Prune(request))
@@ -266,6 +315,23 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
                     }
                 });
                 let _ = reply.send(outcome);
+            }
+            WriteMessage::SetRollbackState {
+                op_id,
+                state,
+                reason,
+                reply,
+            } => {
+                if let Err(e) = apply_set_rollback_state(&conn, &op_id, state, reason) {
+                    log::warn!(target: "operation_log", "set_rollback_state({op_id}) failed: {e}");
+                }
+                let _ = reply.send(());
+            }
+            WriteMessage::SetItemOutcomes { op_id, updates, reply } => {
+                if let Err(e) = apply_set_item_outcomes(&mut conn, &op_id, &updates) {
+                    log::warn!(target: "operation_log", "set_item_outcomes({op_id}) failed: {e}");
+                }
+                let _ = reply.send(());
             }
             WriteMessage::Prune(request) => {
                 if let Err(e) = handle_prune(&mut conn, &request) {
@@ -405,6 +471,39 @@ fn count_rows_by_role(conn: &Connection, op_id: &str) -> Result<FinalizeOutcome,
         rollback_unit_rows: count_for(RowRole::RollbackUnit)?,
         search_only_rows: count_for(RowRole::SearchOnly)?,
     })
+}
+
+/// Transition an op's `rollback_state` + nullable reason (M3). A no-op if the
+/// op_id is unknown (the row count is 0, not an error).
+fn apply_set_rollback_state(
+    conn: &Connection,
+    op_id: &str,
+    state: RollbackState,
+    reason: Option<NotRollbackableReason>,
+) -> Result<(), OperationLogStoreError> {
+    conn.execute(
+        "UPDATE operations SET rollback_state = ?2, not_rollbackable_reason = ?3 WHERE op_id = ?1",
+        rusqlite::params![op_id, state.as_token(), reason.map(|r| r.as_token())],
+    )?;
+    Ok(())
+}
+
+/// Set per-item `outcome`s by `(op_id, seq)` in one transaction (M3). A seq with
+/// no matching row updates nothing (not an error).
+fn apply_set_item_outcomes(
+    conn: &mut Connection,
+    op_id: &str,
+    updates: &[(i64, ItemOutcome)],
+) -> Result<(), OperationLogStoreError> {
+    let tx = conn.unchecked_transaction()?;
+    {
+        let mut stmt = tx.prepare_cached("UPDATE operation_items SET outcome = ?3 WHERE op_id = ?1 AND seq = ?2")?;
+        for (seq, outcome) in updates {
+            stmt.execute(rusqlite::params![op_id, seq, outcome.as_token()])?;
+        }
+    }
+    tx.commit()?;
+    Ok(())
 }
 
 // ── Retention (mechanism; M4 wires enforcement) ──────────────────────────────

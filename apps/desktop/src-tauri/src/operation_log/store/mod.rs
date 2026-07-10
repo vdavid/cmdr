@@ -407,5 +407,133 @@ pub fn read_operation_items(
     Ok(out)
 }
 
+// ── Rollback reads (M3) ──────────────────────────────────────────────────────
+
+/// One `rollback_unit` row with its interned dir prefixes resolved to full paths
+/// and real volume ids — everything the rollback engine (M3) needs to reverse the
+/// item without a second query per row. `source` is the item's original location;
+/// `dest` (present for copy/move/trash/rename) is where the item ended up (the
+/// thing a restore-move brings back, or a remove-inverse deletes).
+#[derive(Debug, Clone, PartialEq)]
+pub struct RollbackUnit {
+    pub seq: i64,
+    pub entry_type: EntryType,
+    pub source_volume_id: String,
+    pub source_path: PathBuf,
+    pub dest_volume_id: Option<String>,
+    pub dest_path: Option<PathBuf>,
+    pub size: Option<i64>,
+    pub mtime: Option<i64>,
+    pub overwrote: bool,
+    pub outcome: ItemOutcome,
+}
+
+/// Resolve an interned `dir_id` to `(volume_id, full path)`. The path is
+/// [`reconstruct_dir_path`]; the volume id is read from the dir row itself (every
+/// dir in a chain shares the volume, so the leaf's row is enough).
+fn resolve_dir(conn: &Connection, dir_id: i64) -> Result<(String, String), OperationLogStoreError> {
+    let volume_id: String = conn
+        .prepare_cached("SELECT volume_id FROM dirs WHERE dir_id = ?1")?
+        .query_row(rusqlite::params![dir_id], |row| row.get(0))?;
+    let path = reconstruct_dir_path(conn, dir_id)?;
+    Ok((volume_id, path))
+}
+
+/// Join a resolved dir path with a leaf name into a full path. The root renders as
+/// `/`, so `join_leaf("/", "a")` is `/a` and `join_leaf("/a/b", "c")` is `/a/b/c`.
+fn join_leaf(dir_path: &str, name: &str) -> PathBuf {
+    PathBuf::from(dir_path).join(name)
+}
+
+fn map_rollback_unit(conn: &Connection, item: &OperationItemRow) -> Result<RollbackUnit, OperationLogStoreError> {
+    let (source_volume_id, source_dir) = resolve_dir(conn, item.source_dir_id)?;
+    let source_path = join_leaf(&source_dir, &item.source_name);
+    let (dest_volume_id, dest_path) = match (item.dest_dir_id, &item.dest_name) {
+        (Some(dir_id), Some(name)) => {
+            let (vol, dir) = resolve_dir(conn, dir_id)?;
+            (Some(vol), Some(join_leaf(&dir, name)))
+        }
+        _ => (None, None),
+    };
+    Ok(RollbackUnit {
+        seq: item.seq,
+        entry_type: item.entry_type,
+        source_volume_id,
+        source_path,
+        dest_volume_id,
+        dest_path,
+        size: item.size,
+        mtime: item.mtime,
+        overwrote: item.overwrote,
+        outcome: item.outcome,
+    })
+}
+
+/// A page of `rollback_unit` rows for an op, newest-`seq`-first (reverse order, so
+/// a rollback undoes in inverse order and removes created files before the
+/// `entry_type = dir` rows that held them). Streaming: pass `i64::MAX` for the
+/// first page, then the smallest `seq` of the returned page (exclusive) as
+/// `before_seq` for the next — so the engine never materializes a 1M-row op (D7).
+/// `search_only` rows are excluded (they're for search, never reversal).
+pub fn read_rollback_units_page(
+    conn: &Connection,
+    op_id: &str,
+    before_seq: i64,
+    limit: u32,
+) -> Result<Vec<RollbackUnit>, OperationLogStoreError> {
+    let sql = format!(
+        "SELECT {ITEM_COLUMNS} FROM operation_items \
+         WHERE op_id = ?1 AND row_role = ?2 AND seq < ?3 \
+         ORDER BY seq DESC LIMIT ?4"
+    );
+    let mut stmt = conn.prepare_cached(&sql)?;
+    let mut rows = stmt.query(rusqlite::params![
+        op_id,
+        RowRole::RollbackUnit.as_token(),
+        before_seq,
+        limit
+    ])?;
+    let mut items = Vec::new();
+    while let Some(row) = rows.next()? {
+        items.push(map_item_row(row)?);
+    }
+    // Resolve dirs after draining the query so the prepared-statement borrow is
+    // released (the cache reuses one connection).
+    items.iter().map(|item| map_rollback_unit(conn, item)).collect()
+}
+
+/// Every operation currently in `rolling_back` — the startup-reconcile input (M3,
+/// Finding 7): each resolves deterministically from its (unfinalized) inverse op's
+/// recorded outcomes, or straight back to `rollbackable` when no inverse row exists.
+pub fn ops_in_rolling_back(conn: &Connection) -> Result<Vec<OperationRow>, OperationLogStoreError> {
+    let sql = format!("SELECT {OPERATION_COLUMNS} FROM operations WHERE rollback_state = ?1");
+    let mut stmt = conn.prepare_cached(&sql)?;
+    let mut rows = stmt.query(rusqlite::params![RollbackState::RollingBack.as_token()])?;
+    let mut out = Vec::new();
+    while let Some(row) = rows.next()? {
+        out.push(map_operation_row(row)?);
+    }
+    Ok(out)
+}
+
+/// The most recent inverse operation reversing `original_op_id` (its
+/// `rolls_back_op_id`), or `None` if none was ever opened. Used by startup
+/// reconcile to resolve a crashed `rolling_back` op from the inverse's outcomes.
+pub fn read_inverse_op(
+    conn: &Connection,
+    original_op_id: &str,
+) -> Result<Option<OperationRow>, OperationLogStoreError> {
+    let sql = format!(
+        "SELECT {OPERATION_COLUMNS} FROM operations \
+         WHERE rolls_back_op_id = ?1 ORDER BY started_at DESC, op_id DESC LIMIT 1"
+    );
+    let mut stmt = conn.prepare_cached(&sql)?;
+    let mut rows = stmt.query(rusqlite::params![original_op_id])?;
+    match rows.next()? {
+        Some(row) => Ok(Some(map_operation_row(row)?)),
+        None => Ok(None),
+    }
+}
+
 #[cfg(test)]
 mod tests;

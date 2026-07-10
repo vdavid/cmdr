@@ -13,11 +13,13 @@
 //! rollback contracts: `CLAUDE.md` + `DETAILS.md`.
 
 pub mod capture;
+pub mod rollback;
 pub mod store;
 pub mod types;
 pub mod writer;
 
 use std::sync::{Arc, RwLock};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use tauri::{AppHandle, Manager};
 
@@ -54,6 +56,16 @@ pub(crate) fn clear_journal() {
 
 fn current_journal() -> Option<Arc<dyn OperationJournal>> {
     JOURNAL.read_ignore_poison().clone()
+}
+
+/// Seconds since the Unix epoch — the journal's opaque clock (the store owns no
+/// clock, so callers supply the time). Shared by the write pipeline's capture glue
+/// and the rollback engine.
+pub(crate) fn now_secs() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
 }
 
 /// Open an operation row. No-op when no journal is installed.
@@ -114,6 +126,11 @@ pub fn start(app: &AppHandle) {
     }
     match writer::OperationLogWriter::spawn(&db_path) {
         Ok(writer) => {
+            // Resolve any operation a crash left mid-rollback (Finding 7): from its
+            // unfinalized inverse op's recorded outcomes, or straight back to
+            // rollbackable when no inverse ever opened. Runs before anything can
+            // journal, so a re-issued rollback resumes cleanly.
+            rollback::reconcile_rolling_back_on_open(&writer);
             // The global journal holds a clone (the capture record points reach it
             // by op_id); managed state keeps the writer for retention + shutdown.
             set_journal(Arc::new(WriterJournal::new(writer.clone())));

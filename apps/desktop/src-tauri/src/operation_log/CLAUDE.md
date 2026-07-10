@@ -5,18 +5,19 @@ and a future undo. **The app's first durable DB** (`operation-log.db` in the app
 other on-disk store here is a disposable cache. Full design + rationale: [DETAILS.md](DETAILS.md). Plan:
 [`docs/specs/operation-log-plan.md`](../../../../../docs/specs/operation-log-plan.md).
 
-**Scope shipped (M1): the durable store only** — schema, the forward-migration ladder, the single writer thread, dir
-interning, case folding, and the `operation-log-dump` dev bin. Nothing journals through it yet; capture (M2), rollback
-(M3), search/retention enforcement (M4), MCP (M5), and the UI (M6/M7) build on this.
+**Shipped: the durable store (M1), capture at the chokepoint (M2), and the rollback engine (M3).** Search/retention
+enforcement (M4), MCP (M5), and the UI (M6/M7) build on this.
 
 ## Module map
 
 - `store/` — `operation-log.db`: connection factory (`connection.rs`), the migration ladder (`migrations.rs`), schema,
   `intern_dir`, `fold_name`, and read functions. `OperationLogStore` owns the schema lifecycle.
-- `writer.rs` — the ONE writer thread: `open_operation` / `record_items` / `finalize_operation` / `prune`, batched
-  inserts, retention mechanism.
-- `types.rs` — the typed vocabulary (`OpKind`, `Initiator`, `RollbackState`, `RowRole`, …) and their stable DB tokens.
-- `mod.rs::start` — opens the DB and puts the `OperationLogWriter` in managed state at app setup.
+- `writer.rs` — the ONE writer thread: `open_operation` / `record_items` / `finalize_operation` / `set_rollback_state`
+  / `set_item_outcomes` / `prune`, batched inserts, retention mechanism.
+- `rollback.rs` — the M3 engine (inverse-per-item + recheck, the `rolling_back` state machine, startup reconcile);
+  managed-op spawn glue is `write_operations/rollback.rs::dispatch_rollback`. `capture.rs` (M2) feeds the writer.
+- `types.rs` — the typed vocabulary (`OpKind`, `RollbackState`, …) and their stable DB tokens.
+- `mod.rs::start` — opens the DB, runs the rollback reconcile, and manages the `OperationLogWriter` at app setup.
 
 ## Must-knows
 
@@ -44,6 +45,11 @@ interning, case folding, and the `operation-log-dump` dev bin. Nothing journals 
   `set_journal`; the write pipeline calls the `journal_open` / `journal_record_items` / `journal_note_coverage` /
   `journal_finalize` free functions by `op_id`, mirroring `update_operation_status`. Full rationale + per-kind record
   points: [DETAILS.md](DETAILS.md) § Capture.
+- **Rollback FAILS SAFE** (`rollback.rs`, data-safety-critical): recheck each item against its snapshot AND its restore
+  target; drift / unverifiable (absent MTP-SMB mtime) / occupied target ⇒ SKIP (→ `partially_rolled_back`), never
+  operate; a restore-move never overwrites (pinned `Skip`, bar a case-only self-collision). `rolling_back` is the
+  double-rollback + retention-race guard (set at spawn, reset on sync spawn failure, reconciled on crash). Full contract:
+  [DETAILS.md](DETAILS.md) § Rollback.
 - **Interned dirs never grow unbounded**: retention GCs dirs down to the referenced-plus-ancestors closure (a referenced
   dir's whole parent chain survives). Prune whole operations only; null dangling `rolls_back_op_id`; skip `rolling_back`
   ops. Vacuum runs in bounded slices between batches so it never starves capture.

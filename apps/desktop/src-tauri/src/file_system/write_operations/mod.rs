@@ -36,6 +36,7 @@ mod overwrite;
 #[cfg(target_os = "macos")]
 mod paste_clipboard;
 mod rename;
+mod rollback;
 mod scan;
 mod scan_cache;
 mod scan_preview;
@@ -99,6 +100,11 @@ pub use manager::{
     LifecycleStatus, OperationSnapshot, OperationSummaryText, OperationsChanged, cancel_operation, cancel_operations,
     init_operation_event_emitter, list_operations, pause_all, pause_operation, resume_all, resume_operation,
 };
+// Managed dispatch of an operation-log rollback: the backend entry point the FE /
+// MCP command calls (M5 wires the tauri command + MCP tool). Spawns the inverse as
+// a managed op and returns after dispatch (poll `rollback_state` for the result).
+#[allow(unused_imports, reason = "backend entry point consumed by the M5 rollback command")]
+pub use rollback::dispatch_rollback;
 // Managed instant mutations (rename / mkdir / mkfile) + rename validation. The
 // thin IPC commands (`commands/rename.rs`, `commands/file_system/write_ops.rs`)
 // call these; `RenameValidityResult` rides into `bindings.ts` via the

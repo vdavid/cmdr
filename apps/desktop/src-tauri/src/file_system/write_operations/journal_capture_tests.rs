@@ -650,9 +650,8 @@ use crate::file_system::volume::{InMemoryVolume, Volume};
 /// this is exactly the set the op journaled under).
 fn dir_volume_ids(conn: &rusqlite::Connection) -> Vec<String> {
     let mut stmt = conn.prepare("SELECT DISTINCT volume_id FROM dirs").expect("prepare");
-    
-    stmt
-        .query_map([], |r| r.get::<_, String>(0))
+
+    stmt.query_map([], |r| r.get::<_, String>(0))
         .expect("query")
         .collect::<Result<Vec<_>, _>>()
         .expect("collect")

@@ -256,6 +256,101 @@ Per-leaf delete/copy rows are the search requirement, so there is **no row cap**
 `search_only` leaf enumeration for trash/same-FS-move (M2e, a per-op tunable). Retention (D9/D10) reclaims the space, not
 a row cap.
 
+## Rollback (M3) — reversing an operation as recheck-then-act inverses
+
+`rollback.rs` is the data-safety-critical engine that undoes a journaled operation. It never runs a bespoke reversal:
+each item's inverse is applied through the `Volume` trait (so local and remote reverse uniformly), and the whole inverse
+is itself a journaled operation linked back via `rolls_back_op_id`. The write-pipeline glue that spawns it as a
+cancelable managed op is `file_system/write_operations/rollback.rs::dispatch_rollback`.
+
+### The two data-safety guards (D7)
+
+Every item passes two independent guards before anything is touched; failing either SKIPS the item (never operates on
+it), feeding a `partially_rolled_back` result:
+
+1. **Snapshot recheck** (`verify_snapshot`). The item must still match the size/mtime the journal recorded. Every
+   recorded field must have a present, equal live value; a recorded field whose live counterpart is absent (an MTP/SMB
+   mtime the backend can't prove) is **Unverifiable** — a skip, not a guess. Nothing recorded ⇒ Unverifiable too. A
+   recorded field that differs ⇒ **Drift** — skip. This is why a copy leaf that recorded only `size` (volume transfers
+   carry no per-leaf mtime) still verifies on size, while an item whose only field (mtime) is absent live is skipped.
+   Directories aren't cheaply verifiable, so a dir's recheck is existence-only.
+2. **Pinned non-destructive restore.** A restore-move (move/trash/rename undo) NEVER overwrites: if the restore target
+   is occupied by a DIFFERENT entry it skips (`RestoreTargetOccupied`). The one exception is a **case-only
+   self-collision** (`is_self_collision`): restoring `dog.JPG` → `dog.jpg` on a case-insensitive volume sees the target
+   "exist" because it IS the same entry — same inode (`LocalPosixVolume`) or, without inodes (MTP), the same
+   case-folded path **within one volume** (the `same_volume` gate is load-bearing — a cross-volume restore to the same
+   relative path is a genuinely different file and must never be treated as self).
+
+### Per-kind inverse table
+
+The op kind + item entry-type map to one of three inverse actions (`inverse_action`):
+
+- **copy** → file: `RemoveFileIfUnchanged` (delete the copied dest if it still matches the snapshot); dir: the created
+  dir is `RemoveDirIfEmpty`. A copy of a whole tree removes its copied files, then its created dirs.
+- **create_file / compress** (`archive_edit`) → `RemoveFileIfUnchanged` (delete the created file / net-new archive only
+  if unchanged — a later zip-edit drifts the archive, so it's left untouched, Finding 5).
+- **create_folder** → `RemoveDirIfEmpty` (remove only if still empty — a file added since ⇒ keep, partial).
+- **move / trash / rename** → `RestoreMove` (move the item back FROM where it landed, `dest`, TO its original,
+  `source`). Trash's `dest` is the recorded in-trash location; a same-volume undo is a `rename`, a cross-volume one
+  streams the bytes back then deletes the source side.
+- **delete** → refused op-level (a permanent delete can't be restored).
+
+The inverse op's own eligibility is computed like any op: a delete-the-copies undo is `not_rollbackable`, a move/rename
+undo is `rollbackable` again (redo falls out — D-undo).
+
+### Streaming + ordering
+
+Reversal streams the original op's `rollback_unit` rows via `store::read_rollback_units_page` (a `seq DESC` paged
+cursor, `before_seq` = the smallest seq of the prior page), so a 1M-item op never materializes its list.
+`search_only` leaves are excluded (they're for search, never reversal). Removal happens in two phases matching
+`CopyTransaction::rollback`: all **files** first (streamed), then the buffered **created-dir** rows deepest-path-first —
+a dir removes only once its contents are gone, and pure `seq DESC` would hit a deep dir before the files it holds. Dirs
+are a small fraction of an op (interning shares them), so buffering just the dir rows stays bounded.
+
+### The `rolling_back` state machine + startup reconcile (Finding 7 + 3)
+
+`rollback_operation` (the entry) reads the op, gates it (`check_rollbackable`: `UnknownOperation` / `AlreadyRollingBack`
+/ `NotRollbackable(reason)` / `VolumeUnavailable{volume_id}` — the cross-volume gate is computed from live mount state,
+never stored), then sets `rolling_back` **as late as possible** (right before the spawn) and hands the plan to the
+injected `spawn`. The double-rollback guard is automatic: a second request reads `rolling_back` and refuses. On a
+**synchronous spawn failure** (a volume dropped between the gate and the spawn, so the inverse never starts) it resets
+`rolling_back → rollbackable` in the same call before returning the typed error, so a retry isn't wedged.
+
+`execute_rollback` resolves the original op at the end: `RolledBack` (nothing skipped), `PartiallyRolledBack` (any skip,
+even if nothing could be reversed — those skips won't clear on retry), or back to `Rollbackable` **only** when a run was
+CANCELED with nothing reversed (a clean retry). It marks the original's items `rolled_back`/`skipped` and journals the
+inverse op's own item rows (reversed ⇒ `done`, skipped ⇒ `skipped`), which drive the reconcile.
+
+**Startup reconcile** (`reconcile_rolling_back_on_open`, called at `start` beside the migration-ladder open path)
+resolves any op a crash left `rolling_back`: from its unfinalized inverse op's recorded outcomes (any `done` item ⇒
+`partially_rolled_back`, else `rollbackable`), or — when **no inverse op row exists** (crashed after setting
+`rolling_back` but before the spawn) — straight back to `rollbackable`. Either way a re-issued rollback resumes
+idempotently: every per-item inverse is a recheck-then-act, and an already-reversed item reads as `AlreadyGone` (counted
+as a no-op success).
+
+### The retention race it closes (Finding 6)
+
+The paged cursor spans successive short-lived read connections, not one WAL snapshot, so a concurrent `Prune` could
+delete rows between pages and silently under-restore. The fix is NOT a long read transaction (it would block WAL
+checkpointing for the whole file-I/O duration) — it's the `rolling_back` state: retention skips any op in `rolling_back`
+(and its `rolls_back_op_id` target), so a live rollback's streamed source rows can't vanish mid-stream (see `writer.rs`
+`handle_prune`).
+
+### Known snapshot-completeness limit
+
+Volume (SMB/MTP) transfers record `size`/`mtime` only for TOP-LEVEL files, not for the inner leaves of a copied/moved
+directory (the M2 capture path doesn't cheaply have them). So a rollback of a cross-volume directory copy/move verifies
+and reverses the top-level items but SKIPS inner leaves as `UnverifiablePrecondition` — a safe partial, never a wrong
+delete. Local-FS copy/move record per-leaf mtime, so their directory rollbacks are complete. Closing this needs M2 to
+capture inner-leaf snapshots for volume transfers.
+
+### Future: Cmd+Z (D-undo, designed-for, not built)
+
+A later Cmd+Z is `SELECT op_id FROM operations WHERE initiator='user' AND rollback_state='rollbackable' ORDER BY
+ended_at DESC LIMIT 1` then `dispatch_rollback`. The two-axis status + `rolls_back_op_id` linkage make it a query, not a
+new engine; because a rollback is itself a journaled user op, "undo the undo" (redo) falls out too. Don't build it;
+don't preclude it.
+
 ## Retention (mechanism here; enforcement in M4)
 
 The `Prune` message is the mechanism; M4 wires the periodic timer, the settings-driven age/size limits, and the
