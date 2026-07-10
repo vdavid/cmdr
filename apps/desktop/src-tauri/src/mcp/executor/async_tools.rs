@@ -188,6 +188,21 @@ fn index_status_params(params: &Value) -> Result<(String, String), ToolError> {
 async fn await_index_status(params: &Value, timeout_s: u64) -> ToolResult {
     let (volume_id, target) = index_status_params(params)?;
 
+    // Fast-fail an unknown / never-registered volume id rather than polling the full
+    // timeout only to keep reporting 'off': a volume with no registered index can never
+    // reach fresh / scanning / stale. Mirrors `operation_complete`'s unknown-id honesty.
+    // After `indexing enable`, the volume IS registered (the enable tool's ordering
+    // contract returns only once freshness has left its pre-scan state), so a
+    // legitimate enable → await chain still passes this gate.
+    if !crate::indexing::all_registered_volume_ids()
+        .iter()
+        .any(|id| id == &volume_id)
+    {
+        return Err(ToolError::invalid_params(format!(
+            "Unknown volume '{volume_id}': no index is registered for it, so index_status can't reach '{target}'. Enable indexing first (indexing enable), or see cmdr://state volumes for indexable ids."
+        )));
+    }
+
     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(timeout_s);
     let poll_interval = std::time::Duration::from_millis(250);
 

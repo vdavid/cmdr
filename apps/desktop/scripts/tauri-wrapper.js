@@ -156,6 +156,18 @@ try {
       env.CMDR_MCP_BRIDGE_PORT = String(await pickEphemeralPort())
     }
 
+    // Force the MCP server ON for dev/worktree launches unless explicitly overridden.
+    // The FE persists `developer.mcpEnabled: false` (the registry default) as an explicit
+    // value on first run; that persisted `false` then beats the debug-build-on default at
+    // every later launch, so MCP silently dies for the dev workflow. Exporting
+    // CMDR_MCP_ENABLED=1 (which `mcp/config.rs` reads ahead of the setting) keeps it on;
+    // set CMDR_MCP_ENABLED=0 to still exercise the off path. The deeper fix — not
+    // persisting registry defaults as explicit choices — is a known settings-store
+    // follow-up (see `src-tauri/src/settings/DETAILS.md`).
+    if (isDev && env.CMDR_MCP_ENABLED === undefined) {
+      env.CMDR_MCP_ENABLED = '1'
+    }
+
     // P4: reserve an ephemeral port for the Vite dev server (dev only). Threaded through
     // both `CMDR_VITE_PORT` (read by `vite.config.js`) AND the generated config's
     // `build.devUrl` (read by Tauri to point the webview). Both routes must see the same

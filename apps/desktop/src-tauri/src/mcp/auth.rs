@@ -152,9 +152,12 @@ pub(super) fn validate_token(headers: &HeaderMap) -> Result<(), ()> {
     Ok(())
 }
 
-/// Build the response returned when a token-gated call (destructive auto-confirm or a
-/// programmatic `dialog` confirm) arrives without a valid bearer token. The message tells
-/// the caller exactly where to get the token — both the `CMDR_MCP_TOKEN` env var and the
+/// Build the response returned when a token-gated call arrives without a valid bearer
+/// token — any tool that applies without the user's in-app confirmation (auto-confirmed
+/// `delete`/`move`/`copy`, `dialog` confirm, `set_setting`, `indexing`, `tag`, `favorites`,
+/// rollback cancel). The message names the tool (from the request — safe for the no-oracle
+/// property) and tells the caller exactly where to get the token — both the `CMDR_MCP_TOKEN`
+/// env var and the
 /// resolved `<data_dir>/mcp.token` path. That's safe: the secret is the file's 0o600
 /// contents (and the env value), not the path, which is already discoverable. We never
 /// echo the token itself. One uniform message for missing-vs-wrong token (no oracle).
@@ -173,13 +176,29 @@ pub(super) fn validate_token(headers: &HeaderMap) -> Result<(), ()> {
 ///    protocol desync. `-32602` at HTTP 200 is the same per-call error shape the executor's
 ///    `ToolError` uses, which clients handle cleanly. Our bearer gate is not OAuth and the
 ///    request envelope is valid, so it must look like an ordinary tool error.
-pub(super) fn auto_confirm_token_required_response<R: Runtime>(app: &AppHandle<R>, id: Option<Value>) -> Response {
+pub(super) fn auto_confirm_token_required_response<R: Runtime>(
+    app: &AppHandle<R>,
+    id: Option<Value>,
+    tool_name: Option<&str>,
+) -> Response {
     let token_path = match crate::config::resolved_app_data_dir(app) {
         Ok(dir) => dir.join(TOKEN_FILE_NAME).display().to_string(),
         Err(_) => "<data_dir>/mcp.token".to_string(),
     };
+    // One honest reason that fits every gated tool — auto-confirmed delete/move/copy,
+    // `dialog confirm`, `set_setting`, `indexing`, `tag`, `favorites`, and rollback
+    // cancel: each applies WITHOUT the in-app confirmation the user would otherwise
+    // see. Naming the tool is safe for the no-oracle property (the tool comes from the
+    // request, identical for a missing vs a wrong token); the message never echoes the
+    // token, and the path is already discoverable — the secret is the file's 0o600
+    // contents (and the env value).
+    let subject = match tool_name {
+        Some(name) => format!("'{name}'"),
+        None => "This tool".to_string(),
+    };
     let message = format!(
-        "This tool auto-confirms a destructive file operation, which requires the Cmdr MCP auth token. Send it as an `Authorization: Bearer <token>` header. Get the token from the `CMDR_MCP_TOKEN` environment variable of the running Cmdr, or read `{token_path}` (owner-only). Reads, navigation, search, and destructive ops that prompt you in the app all work without it."
+        // allowed-pluralize-noun: "applies" is a verb here (the tool applies a change), not a plural noun after a count
+        "{subject} applies without the usual in-app confirmation, which requires the Cmdr MCP auth token. Send it as an `Authorization: Bearer <token>` header. Get the token from the `CMDR_MCP_TOKEN` environment variable of the running Cmdr, or read `{token_path}` (owner-only). Reads, navigation, search, and actions that prompt you in the app all work without it."
     );
     let error_response = McpResponse::error(id, INVALID_PARAMS, message);
     (StatusCode::OK, Json(error_response)).into_response()

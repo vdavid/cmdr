@@ -64,6 +64,15 @@ async fn execute_tag_macos<R: Runtime>(app: &AppHandle<R>, params: &Value) -> To
     let updates = apply_tag_action(action, &paths, &colors)?;
     refresh_listing_tags(&state, updates);
 
+    // Flush the pane's MCP state so the `[tags:…]` marker shows in cmdr://state
+    // promptly instead of ~2 s later (the debounced sync). `refresh_listing_tags`
+    // patched the backend `LISTING_CACHE` synchronously, and the FE's
+    // `syncPaneStateToMcp` re-reads that cache via `getFileAt` — so the forced push
+    // carries the new tags without racing the 50 ms-coalesced `directory-diff`.
+    // Best-effort: the tags already landed on disk and in the cache, so a flush
+    // timeout just delays the marker to the next push rather than failing the tool.
+    let _ = super::flush_pane_state(app, &pane).await;
+
     Ok(json!(format!(
         "OK: {} tags on {} in the {pane} pane.",
         action_verb(action),

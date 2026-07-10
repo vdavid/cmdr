@@ -582,7 +582,12 @@ async fn handle_mcp_post<R: Runtime>(
     // (destructive auto-confirm + programmatic dialog confirm). Reads, nav, search, and
     // destructive ops that still prompt the user all pass without a token.
     if tool_call_requires_token(&request.method, &request.params) && validate_token(&headers).is_err() {
-        return auto_confirm_token_required_response(&state.app, request.id.clone());
+        // Name the gated tool in the rejection (the `name` field of the tools/call
+        // params) so the message describes the ACTUAL tool, not a hardcoded
+        // "destructive file operation" that's wrong for set_setting / indexing / tag /
+        // favorites. Same value for a missing vs a wrong token, so no oracle.
+        let tool_name = request.params.get("name").and_then(|v| v.as_str());
+        return auto_confirm_token_required_response(&state.app, request.id.clone(), tool_name);
     }
 
     // 2. Validate Accept header (recommended but we're lenient)

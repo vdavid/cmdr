@@ -62,7 +62,10 @@ fn base_snapshot(volume_id: &str, kind: &'static str) -> VolumeIndexingSnapshot 
 
 #[test]
 fn test_empty_state() {
-    assert_eq!(build_indexing_text(&[], 1_000), "No volumes are being indexed.");
+    let text = build_indexing_text(&[], 1_000);
+    // Explains this resource is registered-indexes-only and points at cmdr://state.
+    assert!(text.contains("No volumes have a registered index"), "got: {text}");
+    assert!(text.contains("cmdr://state"), "got: {text}");
 }
 
 #[test]
@@ -73,7 +76,10 @@ fn test_default_view_fresh_volume() {
     smb.scan_duration_ms = Some(252_000);
 
     let text = build_indexing_text(std::slice::from_ref(&smb), 1_000_000);
-    assert!(text.starts_with("Indexing status for 1 volume:"), "got: {text}");
+    assert!(
+        text.starts_with("Indexing status for 1 registered index ("),
+        "got: {text}"
+    );
     assert!(text.contains("smb-nas (smb):"), "got: {text}");
     assert!(text.contains("status: fresh"), "got: {text}");
     assert!(text.contains("phase: Live"), "got: {text}");
@@ -150,7 +156,10 @@ fn test_multi_volume_ordering_and_count() {
     let root = base_snapshot("root", "local");
     let smb = base_snapshot("smb-nas", "smb");
     let text = build_indexing_text(&[root, smb], 1_000_000);
-    assert!(text.starts_with("Indexing status for 2 volumes:"), "got: {text}");
+    assert!(
+        text.starts_with("Indexing status for 2 registered indexes ("),
+        "got: {text}"
+    );
     let root_pos = text.find("root (local):").expect("root block");
     let smb_pos = text.find("smb-nas (smb):").expect("smb block");
     assert!(root_pos < smb_pos, "root should render before smb: {text}");

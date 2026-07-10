@@ -259,14 +259,17 @@ fn push_volume_summary(lines: &mut Vec<String>, snap: &VolumeIndexingSnapshot, n
 /// wall clock.
 pub(crate) fn build_indexing_text(snapshots: &[VolumeIndexingSnapshot], now_unix_s: u64) -> String {
     if snapshots.is_empty() {
-        return "No volumes are being indexed.".to_string();
+        return "No volumes have a registered index yet. This resource lists only volumes with indexing enabled; \
+                cmdr://state shows every mounted volume with its per-volume indexStatus."
+            .to_string();
     }
 
     let mut lines = Vec::new();
     lines.push(format!(
-        "Indexing status for {} volume{}:",
+        "Indexing status for {} registered index{} (volumes with indexing enabled). For every mounted volume's \
+         indexStatus at a glance, see cmdr://state volumes:",
         snapshots.len(),
-        if snapshots.len() == 1 { "" } else { "s" }
+        if snapshots.len() == 1 { "" } else { "es" }
     ));
     for snap in snapshots {
         lines.push(String::new());

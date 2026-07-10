@@ -408,8 +408,20 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
             tr
         }
         Err(e) => {
-            log::warn!("MCP ai_search: LLM call failed for query={natural_query:?}: {e}");
-            return Err(ToolError::internal(format!("AI translation failed: {e}")));
+            log::warn!(
+                "MCP ai_search: translate returned {:?} for query={natural_query:?}: {e}",
+                e.kind
+            );
+            // Branch on the TYPED kind (no string-matching): the not-set-up cases get a
+            // clear, actionable message instead of the error-copy-rule-banned "failed".
+            use crate::ai::translate_error::AiTranslateErrorKind as K;
+            return match e.kind {
+                K::Off | K::NotConfigured => Err(ToolError::invalid_params(
+                    "AI isn't set up yet. Configure an AI provider in Settings > AI, then run ai_search again."
+                        .to_string(),
+                )),
+                _ => Err(ToolError::internal(format!("AI search couldn't run: {}", e.message))),
+            };
         }
     };
 

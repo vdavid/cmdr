@@ -245,7 +245,7 @@ It then sends `Authorization: Bearer <token>` on the gated calls. `scripts/mcp-c
 
 The rejection is returned as an **in-band JSON-RPC error at HTTP 200, not a 401**. The MCP Streamable-HTTP spec reserves HTTP 401 for an OAuth challenge, so a 401 makes clients (Claude Code, etc.) launch an OAuth discovery flow and surface a confusing "Invalid OAuth error response" instead of our message. A 200 + JSON-RPC `error` is the canonical application-error shape and renders client-side as `MCP error <code>: <message>` (the same path `nav_to_path`'s "path does not exist" takes). Our bearer gate isn't OAuth, so it must not look like one.
 
-The message tells the caller exactly where the token lives (the `CMDR_MCP_TOKEN` env var and the resolved `<data_dir>/mcp.token` path). That's safe: the secret is the file's 0o600 contents and the env value, not the path, which is already discoverable. The message never echoes the token, and it's one uniform message for missing-vs-wrong token (no oracle).
+The message names the gated tool (from the request's `name` field) and its honest reason — it applies without the usual in-app confirmation — rather than a hardcoded "destructive file operation" that's wrong for `set_setting` / `indexing` / `tag` / `favorites`. It tells the caller exactly where the token lives (the `CMDR_MCP_TOKEN` env var and the resolved `<data_dir>/mcp.token` path). That's safe: the secret is the file's 0o600 contents and the env value, not the path, which is already discoverable. The message never echoes the token, and it's identical for a missing vs a wrong token (no oracle) — the tool name comes from the request, so it doesn't leak whether a token was presented.
 
 ### `CMDR_MCP_TOKEN` override
 

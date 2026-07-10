@@ -16,6 +16,15 @@ stay testable. For `pnpm dev`, the wrapper resolves an instance ID (from `--work
   `CMDR_DATA_DIR` + `CMDR_SECRET_STORE=file` for non-prod. Production leaves `CMDR_INSTANCE_ID` unset and runs
   byte-identical to before instance isolation existed.
 
+### Dev forces the MCP server on (`CMDR_MCP_ENABLED=1`)
+
+For `pnpm dev` launches the wrapper exports `CMDR_MCP_ENABLED=1` unless the env var is already set. Without it, MCP is
+silently dead across dev sessions: the FE persists `developer.mcpEnabled: false` (the registry default) as an explicit
+saved value on first run, and that saved `false` then beats the debug-build-on default (`cfg!(debug_assertions)` in
+`mcp/config.rs`) at every later launch. `mcp/config.rs::from_settings_and_env` reads `CMDR_MCP_ENABLED` ahead of the
+setting, so the export wins; `CMDR_MCP_ENABLED=0` still exercises the off path. The deeper fix — not persisting registry
+defaults as explicit choices — is a known settings-store follow-up (see `src-tauri/src/settings/DETAILS.md`).
+
 ## Key decisions
 
 - **Pure helpers in `instance-id.js`, side effects in `tauri-wrapper.js`.** The sanitizer, identifier composer,
