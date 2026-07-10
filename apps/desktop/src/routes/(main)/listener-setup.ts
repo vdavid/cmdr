@@ -37,6 +37,7 @@ import { openSettingsWindow } from '$lib/settings/settings-window'
 import { saveSettings } from '$lib/settings-store'
 import { seedSettingForE2E } from '$lib/settings'
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
+import { closeDialogById } from '$lib/ui/dialog-close-registry'
 import { getAppMode } from '$lib/app-mode'
 import type { ExplorerAPI } from './explorer-api'
 import type { FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
@@ -292,6 +293,21 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
       void openSettingsWindow(section ? [section] : undefined)
     }),
   )
+
+  // Generic soft-dialog close (MCP `dialog` tool, `action: close` for any registered
+  // soft dialog beyond the special-cased about / confirmations). Routes the id to the
+  // dialog's own close via the close registry (populated by ModalDialog / QueryDialog).
+  // Fire-and-forget: the backend acks on `SoftDialogDisappeared(id)` (or times out
+  // honestly if nothing closed), so no reply is needed here.
+  await listenTauri('mcp-close-dialog', (event) => {
+    const raw = event.payload
+    const id =
+      raw && typeof raw === 'object' && typeof (raw as { id?: unknown }).id === 'string'
+        ? (raw as { id: string }).id
+        : undefined
+    if (id === undefined) return
+    closeDialogById(id)
+  })
 
   // About dialog
   await pushTauri(unlistenFns, () =>

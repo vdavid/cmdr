@@ -206,15 +206,14 @@ fn test_dialog_tool_schema() {
     assert!(action_enum.contains(&json!("close")));
     assert!(action_enum.contains(&json!("confirm")));
 
-    let type_enum = props.get("type").unwrap().get("enum").unwrap().as_array().unwrap();
-    assert!(type_enum.contains(&json!("settings")));
-    assert!(type_enum.contains(&json!("file-viewer")));
-    assert!(type_enum.contains(&json!("about")));
-    assert!(type_enum.contains(&json!("transfer-confirmation")));
-    assert!(type_enum.contains(&json!("copy-confirmation")));
-    assert!(type_enum.contains(&json!("mkdir-confirmation")));
-    assert!(type_enum.contains(&json!("new-file-confirmation")));
-    assert!(type_enum.contains(&json!("delete-confirmation")));
+    // `type` is a free string (NOT an enum): `close` accepts any dialog id registered
+    // by the frontend and listed in cmdr://dialogs/available, validated at runtime, not
+    // a fixed schema enum. Open/focus/confirm still validate their subset in the handler.
+    let type_prop = props.get("type").unwrap();
+    assert_eq!(type_prop.get("type").unwrap(), &json!("string"));
+    assert!(type_prop.get("enum").is_none());
+    let type_desc = type_prop.get("description").unwrap().as_str().unwrap();
+    assert!(type_desc.contains("cmdr://dialogs/available"));
 
     let required = schema.get("required").unwrap().as_array().unwrap();
     assert_eq!(required.len(), 2);

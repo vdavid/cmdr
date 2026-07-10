@@ -1,4 +1,32 @@
-use crate::mcp::resources::get_all_resources;
+use crate::mcp::dialog_state::KnownDialog;
+use crate::mcp::resources::{format_available_dialogs_yaml, get_all_resources};
+
+#[test]
+fn dialogs_available_carries_registered_descriptions() {
+    // Every FE-registered soft dialog renders its `dialog-registry.ts` description in
+    // cmdr://dialogs/available; a dialog without one renders just its type line. This
+    // pins the description round-trip the dogfooding flagged as inconsistent.
+    let known = vec![
+        KnownDialog {
+            id: "whats-new".to_string(),
+            description: Some("Post-update changelog summary popup".to_string()),
+        },
+        KnownDialog {
+            id: "about".to_string(),
+            description: None,
+        },
+    ];
+    let yaml = format_available_dialogs_yaml(&known);
+
+    // Window-based types are always present.
+    assert!(yaml.contains("- type: settings"));
+    assert!(yaml.contains("- type: file-viewer"));
+    // A described soft dialog carries its description line.
+    assert!(yaml.contains("- type: whats-new\n  description: Post-update changelog summary popup\n"));
+    // A description-less one renders the type line with no description.
+    assert!(yaml.contains("- type: about\n"));
+    assert!(!yaml.contains("- type: about\n  description:"));
+}
 
 #[test]
 fn test_resource_count() {

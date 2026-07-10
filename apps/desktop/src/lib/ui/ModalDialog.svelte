@@ -4,6 +4,7 @@
     import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
     import { trapFocus } from './focus-trap'
     import type { SoftDialogId } from './dialog-registry'
+    import { registerDialogClose, unregisterDialogClose } from './dialog-close-registry'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -109,6 +110,11 @@
         previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
         if (dialogId) {
             void notifyDialogOpened(dialogId)
+            // Register the close primitive so the MCP `dialog` tool's generic close can
+            // dismiss this dialog by id. Only when `onclose` exists — a dialog with no
+            // dismiss affordance stays non-closable (an honest tool failure over a
+            // silent no-op).
+            if (onclose) registerDialogClose(dialogId, onclose)
         }
         await tick()
         overlayElement?.focus()
@@ -117,6 +123,7 @@
     onDestroy(() => {
         if (dialogId) {
             void notifyDialogClosed(dialogId)
+            if (onclose) unregisterDialogClose(dialogId, onclose)
         }
         // Restore focus to whatever had it before the dialog opened. The connected-check
         // skips elements that were unmounted while the dialog was up (e.g., a rename input).

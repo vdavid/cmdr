@@ -582,7 +582,7 @@ mcp_tools! {
 
     // ── Dialogs ─────────────────────────────────────────────────────────────
     "dialog" => {
-        desc: "Open, focus, close, or confirm a dialog (settings, file-viewer, about, or a confirmation dialog). action=confirm accepts an open confirmation on the user's behalf (token-gated). See cmdr://state (open) and cmdr://dialogs/available (types).",
+        desc: "Open, focus, close, or confirm a dialog. Open/focus: settings, file-viewer, about, onboarding. Close: any id from cmdr://dialogs/available. confirm (token-gated) accepts an open confirmation. cmdr://state lists what's open.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -593,8 +593,7 @@ mcp_tools! {
                 },
                 "type": {
                     "type": "string",
-                    "enum": ["settings", "file-viewer", "about", "transfer-confirmation", "copy-confirmation", "mkdir-confirmation", "new-file-confirmation", "delete-confirmation"],
-                    "description": "Dialog type. 'transfer-confirmation' covers both copy and move dialogs (preferred over 'copy-confirmation')."
+                    "description": "Dialog type. Openable/focusable: settings, file-viewer, about, onboarding. Closable: any dialog id from cmdr://dialogs/available (also settings, file-viewer). Confirmable: transfer-confirmation (covers copy and move; 'copy-confirmation' is an alias) and delete-confirmation."
                 },
                 "section": {
                     "type": "string",

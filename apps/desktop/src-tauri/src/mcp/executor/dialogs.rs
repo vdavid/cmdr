@@ -11,6 +11,11 @@
 //!   overlay, not a separate window).
 //! - `close <confirmation>` → soft dialog is no longer in `SoftDialogTracker`. Cancel doesn't
 //!   reliably bump pane generation, so we wait for the tracker entry to vanish.
+//! - `close <any other registered soft dialog>` → the generic path: validate the id against the
+//!   FE-registered known dialogs, emit one `mcp-close-dialog { id }`, and wait for the tracker to
+//!   lose the id. The main window routes the id to the dialog's own close via the close registry
+//!   (`ModalDialog` / `QueryDialog`). An unregistered id is an honest `invalid_params`, and an
+//!   already-closed dialog acks immediately (the tracker doesn't hold it).
 //! - `focus settings|file-viewer|about` → window is present (no-op fast path; if the window isn't
 //!   there, the wait_for_ack times out, which is the correct contract for focusing a non-existent
 //!   dialog).
@@ -258,7 +263,12 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
             // hold the id and `SoftDialogDisappeared` returns immediately, so close is
             // a fast no-op in that case, no timeout.
             CloseAbout.emit_to(app, "main")?;
-            wait_for_ack(app, AckSignal::SoftDialogDisappeared("about"), DEFAULT_ACK_TIMEOUT).await?;
+            wait_for_ack(
+                app,
+                AckSignal::SoftDialogDisappeared("about".to_string()),
+                DEFAULT_ACK_TIMEOUT,
+            )
+            .await?;
             Ok(json!("OK: Closed about dialog"))
         }
         "transfer-confirmation" | "mkdir-confirmation" | "new-file-confirmation" | "delete-confirmation" => {
@@ -269,14 +279,43 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
             // (that's what we used to wait for, and it broke on every cancel).
             wait_for_ack(
                 app,
-                AckSignal::SoftDialogDisappeared(soft_dialog_id(dialog_type)),
+                AckSignal::SoftDialogDisappeared(soft_dialog_id(dialog_type).to_string()),
                 DEFAULT_ACK_TIMEOUT,
             )
             .await?;
             Ok(json!("OK: Cancelled confirmation dialog"))
         }
-        _ => Err(ToolError::invalid_params(format!("Invalid dialog type: {dialog_type}"))),
+        // Generic close for any OTHER registered soft dialog (whats-new, go-to-path,
+        // search, feedback, drive-index-stale, …). Validate the id against the FE-
+        // registered known dialogs, then emit the one generic `mcp-close-dialog` event;
+        // the main window's router calls the dialog's own close via the close registry.
+        // Ack on the tracker losing the id — a dialog that isn't open makes
+        // `SoftDialogDisappeared` return immediately (a fast no-op OK), so closing an
+        // already-closed dialog succeeds instead of timing out.
+        other => execute_generic_dialog_close(app, other).await,
     }
+}
+
+/// Close a registered soft dialog by id via the generic `mcp-close-dialog` path.
+/// Rejects an id the frontend never registered (an honest "unknown dialog" instead of
+/// a silent 1500 ms ack timeout), pointing the caller at the discovery resource.
+async fn execute_generic_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str) -> ToolResult {
+    let is_known = app
+        .try_state::<crate::mcp::dialog_state::SoftDialogTracker>()
+        .is_some_and(|tracker| is_registered_soft_dialog(&tracker.get_known_dialogs(), dialog_type));
+    if !is_known {
+        return Err(ToolError::invalid_params(format!(
+            "Unknown dialog type '{dialog_type}'. Closable dialogs are listed in cmdr://dialogs/available."
+        )));
+    }
+    app.emit("mcp-close-dialog", json!({ "id": dialog_type }))?;
+    wait_for_ack(
+        app,
+        AckSignal::SoftDialogDisappeared(dialog_type.to_string()),
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await?;
+    Ok(json!(format!("OK: Closed {dialog_type} dialog")))
 }
 
 /// Execute dialog confirm action.
@@ -384,5 +423,39 @@ fn soft_dialog_id(dialog_type: &str) -> &'static str {
         "mkdir-confirmation" => "mkdir-confirmation",
         "new-file-confirmation" => "new-file-confirmation",
         _ => "",
+    }
+}
+
+/// Whether `dialog_type` is a soft dialog the frontend registered (and so closable via
+/// the generic `close` path). Pure over the known list — the FE registers every
+/// `SOFT_DIALOG_REGISTRY` id at startup, so an id not in it is one the generic close
+/// can't drive (an honest "unknown dialog" error over a silent ack timeout).
+fn is_registered_soft_dialog(known: &[crate::mcp::dialog_state::KnownDialog], dialog_type: &str) -> bool {
+    known.iter().any(|d| d.id == dialog_type)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::mcp::dialog_state::KnownDialog;
+
+    fn known(ids: &[&str]) -> Vec<KnownDialog> {
+        ids.iter()
+            .map(|id| KnownDialog {
+                id: (*id).to_string(),
+                description: None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn is_registered_soft_dialog_matches_only_known_ids() {
+        let dialogs = known(&["whats-new", "search", "delete-confirmation"]);
+        assert!(is_registered_soft_dialog(&dialogs, "whats-new"));
+        assert!(is_registered_soft_dialog(&dialogs, "search"));
+        // An id the FE never registered can't be closed generically.
+        assert!(!is_registered_soft_dialog(&dialogs, "not-a-dialog"));
+        // Empty registry (e.g. FE hasn't registered yet) rejects everything.
+        assert!(!is_registered_soft_dialog(&[], "whats-new"));
     }
 }

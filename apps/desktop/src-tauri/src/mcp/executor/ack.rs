@@ -95,7 +95,9 @@ pub enum AckSignal {
     /// the FE's `ModalDialog` runs `notifyDialogClosed` on destroy, so the
     /// tracker reflects the close even when the surrounding pane state didn't
     /// change (e.g. cancelling a confirmation dialog doesn't bump generation).
-    SoftDialogDisappeared(&'static str),
+    /// Owned `String` (not `&'static str` like the other pattern variants) because
+    /// the generic soft-dialog close targets a runtime-chosen dialog id.
+    SoftDialogDisappeared(String),
     /// A Tauri webview window whose label equals (or starts with, for viewers)
     /// the given pattern appeared.
     WindowAppeared(&'static str),
@@ -267,7 +269,7 @@ mod tests {
                 .describe()
                 .contains("delete-confirmation")
         );
-        let closed = AckSignal::SoftDialogDisappeared("mkdir-confirmation").describe();
+        let closed = AckSignal::SoftDialogDisappeared("mkdir-confirmation".to_string()).describe();
         assert!(closed.contains("mkdir-confirmation"));
         assert!(closed.contains("closed"));
         assert!(AckSignal::WindowAppeared("settings").describe().contains("settings"));
@@ -286,7 +288,7 @@ mod tests {
         assert!(!signal_uses_windows(&AckSignal::GenerationAdvanced { from: 0 }));
         assert!(signal_uses_windows(&AckSignal::WindowAppeared("settings")));
         assert!(signal_uses_windows(&AckSignal::SoftDialogDisappeared(
-            "mkdir-confirmation"
+            "mkdir-confirmation".to_string()
         )));
         assert!(signal_uses_windows(&AckSignal::WindowCountBelow {
             prefix: "viewer",

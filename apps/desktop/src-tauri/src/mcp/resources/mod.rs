@@ -405,6 +405,18 @@ fn extract_viewer_path<R: Runtime>(window: &WebviewWindow<R>) -> Option<String> 
 /// Combines window-based types (hardcoded, stable) with soft dialog types
 /// registered by the frontend at startup.
 fn build_available_dialogs_yaml<R: Runtime>(app: &tauri::AppHandle<R>) -> String {
+    let known = app
+        .try_state::<SoftDialogTracker>()
+        .map(|tracker| tracker.get_known_dialogs())
+        .unwrap_or_default();
+    format_available_dialogs_yaml(&known)
+}
+
+/// Pure YAML builder for `cmdr://dialogs/available`: the two hardcoded window-based
+/// types followed by every FE-registered soft dialog, each carrying its
+/// `dialog-registry.ts` description when present. Split out so the description
+/// round-trip is unit-testable without a live tracker.
+pub(crate) fn format_available_dialogs_yaml(known: &[super::dialog_state::KnownDialog]) -> String {
     let mut yaml = String::new();
 
     // Window-based dialog types (managed on the Rust side)
@@ -414,12 +426,10 @@ fn build_available_dialogs_yaml<R: Runtime>(app: &tauri::AppHandle<R>) -> String
     );
 
     // Soft dialog types (registered by the frontend)
-    if let Some(tracker) = app.try_state::<SoftDialogTracker>() {
-        for dialog in tracker.get_known_dialogs() {
-            yaml.push_str(&format!("- type: {}\n", dialog.id));
-            if let Some(ref desc) = dialog.description {
-                yaml.push_str(&format!("  description: {}\n", desc));
-            }
+    for dialog in known {
+        yaml.push_str(&format!("- type: {}\n", dialog.id));
+        if let Some(ref desc) = dialog.description {
+            yaml.push_str(&format!("  description: {desc}\n"));
         }
     }
 

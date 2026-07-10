@@ -152,6 +152,24 @@ test.describe('MCP agent tools', () => {
     expect(fs.existsSync(path.join(fixtureRoot, 'left', dirName))).toBe(false)
   })
 
+  test('open_search_dialog then generic dialog close dismisses it', async ({ tauriPage }) => {
+    // The generic soft-dialog close: `open_search_dialog` mounts the search dialog
+    // (acks on SoftDialogAppeared 'search'), and `dialog close type:search` routes
+    // through the generic path (validate id → mcp-close-dialog → the FE close registry
+    // → the dialog's own close → SoftDialogDisappeared 'search'). Before the fix, only
+    // a hardcoded subset of dialogs was closable and 'search' timed out.
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+
+    const openResult = await mcpCall('open_search_dialog', { autoRun: false })
+    expect(openResult).toContain('OK')
+    await expect.poll(async () => tauriPage.isVisible('.search-overlay'), { timeout: 5000 }).toBeTruthy()
+
+    const closeResult = await mcpCall('dialog', { action: 'close', type: 'search' })
+    expect(closeResult).toContain('OK')
+    await expect.poll(async () => !(await tauriPage.isVisible('.search-overlay')), { timeout: 5000 }).toBeTruthy()
+  })
+
   test('refresh forces a backend re-read; transfers section exists', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)

@@ -120,6 +120,17 @@ To add a new dialog:
 1. Add an entry to `SOFT_DIALOG_REGISTRY` in `dialog-registry.ts`.
 2. Pass the new id as `dialogId` to `ModalDialog`. MCP tracking is then automatic.
 
+### Generic close (`dialog-close-registry.ts`)
+
+The MCP `dialog` tool's generic `close` action closes any registered soft dialog by id. `dialog-close-registry.ts` holds
+a `Map<SoftDialogId, () => void>` that `ModalDialog` (when it has an `onclose`) and `QueryDialog` (search / go-to-path —
+not a `ModalDialog`, so it registers itself) populate on mount and clear on destroy. The backend emits
+`mcp-close-dialog { id }`; the main-window router (`listener-setup.ts`) calls `closeDialogById(id)`, which runs the
+dialog's own close, unmounting it (→ `notifyDialogClosed` → the backend `SoftDialogTracker` → the tool's
+`SoftDialogDisappeared` ack). A dialog rendered without an `onclose` isn't in the map, so `closeDialogById` returns
+`false` and the tool reports an honest failure rather than silently closing nothing. `unregisterDialogClose` only clears
+an entry that's still its own registration, so a rapid remount can't have the outgoing instance evict the incoming one.
+
 ## Tooltip (`../tooltip/tooltip.ts`)
 
 Global tooltip system via Svelte action. Apple-style frosted glass appearance, 400ms show delay, auto-flips above/below
