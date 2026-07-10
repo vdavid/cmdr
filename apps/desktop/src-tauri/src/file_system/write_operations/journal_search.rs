@@ -225,10 +225,12 @@ pub(super) mod test_hook {
 
     /// Install a hook mapping a subtree-root path to a canned enumeration result
     /// (`None` ⇒ fall through to the real index path for that call).
+    #[allow(dead_code, reason = "used only by the macOS-gated trash/move wiring tests")]
     pub(crate) fn install(hook: impl FnMut(&Path) -> Option<BufferedLeaves> + 'static) {
         HOOK.with(|h| *h.borrow_mut() = Some(Box::new(hook)));
     }
 
+    #[allow(dead_code, reason = "used only by the macOS-gated trash/move wiring tests")]
     pub(crate) fn clear() {
         HOOK.with(|h| *h.borrow_mut() = None);
     }
