@@ -20,11 +20,23 @@ use super::super::types::{
 
 /// Synchronous trash implementation using macOS NSFileManager.trashItem.
 ///
+/// Returns the item's **in-trash location** (`Some` on macOS, where the OS
+/// reports it): the journal records it as the trash row's dest so a later restore
+/// knows where the OS put the item (the M3 trash rollback depends on it). `None`
+/// means "trashed, but no restore location recorded" (Linux, or the rare case the
+/// OS omitted the URL).
+///
 /// Uses `symlink_metadata()` for existence checks so dangling symlinks
 /// are handled correctly (the link itself exists even if its target doesn't).
+///
+/// The macOS in-trash URL comes from `trashItemAtURL:resultingItemURL:error:`,
+/// which populates the out-param with the final URL inside the user's Trash
+/// (verified on macOS 15, live trash of a temp file returns a `~/.Trash/…` path,
+/// 2026-07-10). NSFileManager may de-duplicate the name (`file 2.txt`) if the
+/// Trash already holds one, so the returned location is the authoritative one.
 #[cfg(target_os = "macos")]
-pub fn move_to_trash_sync(path: &Path) -> Result<(), String> {
-    use objc2::rc::autoreleasepool;
+pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
+    use objc2::rc::{Retained, autoreleasepool};
     use objc2_foundation::{NSFileManager, NSString, NSURL};
 
     if fs::symlink_metadata(path).is_err() {
@@ -39,26 +51,31 @@ pub fn move_to_trash_sync(path: &Path) -> Result<(), String> {
         let url = NSURL::fileURLWithPath(&ns_path);
         let file_manager = NSFileManager::defaultManager();
 
-        // trashItemAtURL:resultingItemURL:error: moves the item to Trash.
-        // We pass None for resultingItemURL since we don't need the trash location.
+        // Capture resultingItemURL (the final location inside Trash) so the
+        // journal can record where to restore from (M3 trash rollback).
+        let mut resulting: Option<Retained<NSURL>> = None;
         file_manager
-            .trashItemAtURL_resultingItemURL_error(&url, None)
+            .trashItemAtURL_resultingItemURL_error(&url, Some(&mut resulting))
             .map_err(|e| format!("Failed to move to trash: {}", e))?;
-        Ok(())
+        let in_trash = resulting.and_then(|u| u.path()).map(|p| PathBuf::from(p.to_string()));
+        Ok(in_trash)
     })
 }
 
 #[cfg(target_os = "linux")]
-pub fn move_to_trash_sync(path: &Path) -> Result<(), String> {
+pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
     if fs::symlink_metadata(path).is_err() {
         return Err(format!("'{}' doesn't exist", path.display()));
     }
 
-    trash::delete(path).map_err(|e| format!("Failed to move to trash: {}", e))
+    trash::delete(path).map_err(|e| format!("Failed to move to trash: {}", e))?;
+    // The `trash` crate doesn't surface the in-trash location, so no restore
+    // location is recorded (trash rollback is then unavailable on Linux, M3).
+    Ok(None)
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-pub fn move_to_trash_sync(path: &Path) -> Result<(), String> {
+pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
     Err(format!(
         "Moving to trash is not supported on this platform for '{}'",
         path.display()
@@ -141,7 +158,7 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
 
         // Attempt to trash the item
         match move_to_trash_sync(source) {
-            Ok(()) => {
+            Ok(in_trash) => {
                 items_done += 1;
                 let item_size = item_sizes.and_then(|s| s.get(i).copied());
                 if let Some(size) = item_size {
@@ -149,9 +166,10 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
                 }
 
                 // Journal the trashed top-level item as the rollback unit (one
-                // rename-back restores the whole subtree). The subtree's
-                // `search_only` leaves are enumerated from the drive index (M2e);
-                // the in-trash restore location is captured in M2d.
+                // restore-from-trash reverses the whole subtree). The in-trash
+                // location (`resultingItemURL`) is the row's dest so M3 restore
+                // knows where to move it back FROM. The subtree's `search_only`
+                // leaves are enumerated from the drive index (M2e).
                 let entry_type = if source_meta.is_dir() {
                     crate::operation_log::types::EntryType::Dir
                 } else {
@@ -161,7 +179,7 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
                     operation_id,
                     entry_type,
                     source,
-                    None,
+                    in_trash.as_deref(),
                     item_size.map(|s| s as i64).or(Some(source_meta.len() as i64)),
                     super::super::journal::mtime_secs(&source_meta),
                     false,
@@ -308,6 +326,17 @@ mod tests {
         let result = move_to_trash_sync(&file);
         assert!(result.is_ok());
         assert!(fs::symlink_metadata(&file).is_err());
+
+        // The in-trash location (resultingItemURL) is captured and points into
+        // the user's Trash — the M3 restore depends on this dest.
+        let in_trash = result.unwrap().expect("macOS reports an in-trash location");
+        assert!(
+            in_trash.components().any(|c| c.as_os_str() == ".Trash"),
+            "expected a ~/.Trash path, got {}",
+            in_trash.display()
+        );
+        assert!(fs::symlink_metadata(&in_trash).is_ok(), "the item exists in Trash");
+        let _ = fs::remove_file(&in_trash);
         cleanup_test_dir(&tmp);
     }
 

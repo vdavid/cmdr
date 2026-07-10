@@ -86,6 +86,7 @@ async fn compress_start_packs_local_files_into_a_new_zip() {
         ConflictResolution::Overwrite,
         0,
         None,
+        crate::operation_log::types::Initiator::User,
     )
     .await
     .expect("start compress");
@@ -101,6 +102,84 @@ async fn compress_start_packs_local_files_into_a_new_zip() {
 
     let complete = events.complete.lock_ignore_poison();
     assert!(complete[0].files_skipped == 0, "a clean compress skips nothing");
+}
+
+/// The compress driver supplies the `archive_edit` subkind + net-new flag the
+/// journal can't derive from `WriteOperationType` (both compress and zip-inner
+/// edit cross IPC as `ArchiveEdit`, Finding 3). A net-new compress finalizes with
+/// `subkind = compress`, records the created archive as its single `rollback_unit`
+/// item, and computes `rollbackable` eligibility — proving the subkind came from
+/// the driver, not the op type.
+#[tokio::test]
+async fn compress_journals_subkind_and_net_new_from_the_driver() {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    use crate::operation_log::capture::WriterJournal;
+    use crate::operation_log::store::{open_read_connection, operation_log_db_path, read_operation, read_operation_items};
+    use crate::operation_log::types::{ArchiveSubkind, ExecutionStatus, Initiator, OpKind, RollbackState, RowRole};
+    use crate::operation_log::writer::OperationLogWriter;
+    use crate::operation_log::{clear_journal, set_journal};
+
+    let jdir = tempfile::tempdir().expect("jdir");
+    let jdb = operation_log_db_path(jdir.path());
+    set_journal(Arc::new(WriterJournal::new(OperationLogWriter::spawn(&jdb).expect("spawn writer"))));
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(&src_root).expect("mkdir src");
+    std::fs::write(src_root.join("one.txt"), b"first").expect("w1");
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+
+    let dest = tmp.path().join("bundle.zip");
+    assert!(!dest.exists(), "the target must be net-new");
+
+    let events = Arc::new(CollectorEventSink::new());
+    let start = compress_start(
+        Arc::clone(&events) as Arc<dyn OperationEventSink>,
+        source_volume,
+        vec![PathBuf::from("one.txt")],
+        dest.clone(),
+        unique_lane_id(),
+        ConflictResolution::Overwrite,
+        0,
+        None,
+        Initiator::User,
+    )
+    .await
+    .expect("start compress");
+
+    // Poll the journal itself (not just the complete event, which fires before
+    // finalize) until the op is durably finalized.
+    let op_id = start.operation_id.clone();
+    let jdb_poll = jdb.clone();
+    assert!(
+        wait_until(|| {
+            open_read_connection(&jdb_poll)
+                .ok()
+                .and_then(|c| read_operation(&c, &op_id).ok().flatten())
+                .is_some_and(|r| r.execution_status == ExecutionStatus::Done)
+        })
+        .await,
+        "the compress op should finalize in the journal"
+    );
+    clear_journal();
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let row = read_operation(&conn, &start.operation_id).expect("read").expect("row");
+    assert_eq!(row.kind, OpKind::ArchiveEdit);
+    assert_eq!(
+        row.archive_subkind,
+        Some(ArchiveSubkind::Compress),
+        "the subkind is the driver's, not derived from WriteOperationType"
+    );
+    assert_eq!(
+        row.rollback_state,
+        RollbackState::Rollbackable,
+        "a net-new compress is rollbackable (delete the created archive)"
+    );
+    let items = read_operation_items(&conn, &start.operation_id, 100).expect("items");
+    assert_eq!(items.len(), 1, "the created archive is the single rollback_unit, got {items:?}");
+    assert_eq!(items[0].row_role, RowRole::RollbackUnit);
+    assert_eq!(items[0].source_name, "bundle.zip");
 }
 
 /// Compressing a whole folder packs its subtree under the folder name — the common
@@ -127,6 +206,7 @@ async fn compress_start_packs_a_directory_subtree() {
         ConflictResolution::Overwrite,
         0,
         None,
+        crate::operation_log::types::Initiator::User,
     )
     .await
     .expect("start compress");
@@ -184,6 +264,7 @@ async fn compress_payload_at(dir: &Path, tag: &str, level: Option<i64>, payload:
         ConflictResolution::Overwrite,
         0,
         level,
+        crate::operation_log::types::Initiator::User,
     )
     .await
     .expect("start compress");

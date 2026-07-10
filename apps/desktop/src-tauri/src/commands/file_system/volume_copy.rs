@@ -13,6 +13,7 @@ use tokio::time::Duration;
 
 use crate::commands::util::IpcError;
 use crate::file_system::volume::backends::archive;
+use crate::operation_log::types::Initiator;
 
 /// Expands a leading `~` in the destination path when the destination is a local
 /// volume. The transfer dialog accepts the home shortcut (`~`, `~/…`) in its
@@ -251,6 +252,9 @@ pub async fn compress_files(
         config.conflict_resolution,
         config.progress_interval_ms,
         config.compression_level,
+        // Initiator threading through the volume commands lands with the
+        // provenance-completion pass; defaults to `user` here.
+        Initiator::User,
     )
     .await
 }

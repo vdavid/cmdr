@@ -25,7 +25,7 @@ use super::super::archive_remote_edit::{self, RemoteEditError};
 use super::super::scratch_dir::ScratchDir;
 use super::super::state::WriteOperationState;
 use super::super::types::{ConflictResolution, WriteOperationError, WriteOperationStartResult};
-use super::route_archive_copy_into;
+use super::copy_into::route_archive_copy_into_with_provenance;
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::Volume;
 
@@ -168,22 +168,35 @@ pub(crate) async fn compress_start(
     conflict: ConflictResolution,
     progress_interval_ms: u64,
     compression_level: Option<i64>,
+    initiator: crate::operation_log::types::Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Seed a valid empty zip at the target so the copy-into has a real archive to
     // open. The seed must be visible to `route_archive_copy_into`'s parent-aware
     // path: a LOCAL parent edits the file in place, so a local-FS seed works; a
     // REMOTE parent PULLS the target before editing (`pull_apply_upload_swap`), so
     // its seed must be a real file ON the remote, written THROUGH the parent volume.
-    match get_volume_manager().get(&parent_volume_id) {
+    //
+    // Probe whether the target already existed BEFORE seeding (the seed always
+    // creates/overwrites it): a net-new archive is rollbackable (delete it), an
+    // overwrite of a prior archive is not (the prior bytes aren't retained). This
+    // `net_new` flag is the driver-supplied fact the journal can't derive (Finding
+    // 3), passed into finalize via [`ArchiveProvenance`].
+    let net_new = match get_volume_manager().get(&parent_volume_id) {
         Some(parent) if !parent.supports_local_fs_access() => {
+            let existed = parent.exists(&dest_zip_full_path).await;
             seed_empty_zip_remote(parent.as_ref(), &dest_zip_full_path).await?;
+            !existed
         }
         // Local parent, or an unregistered id (`route_archive_copy_into` falls back
         // to a local in-place edit for it) — seed the local filesystem.
-        _ => seed_empty_zip(&dest_zip_full_path)?,
-    }
+        _ => {
+            let existed = std::fs::symlink_metadata(&dest_zip_full_path).is_ok();
+            seed_empty_zip(&dest_zip_full_path)?;
+            !existed
+        }
+    };
 
-    route_archive_copy_into(
+    route_archive_copy_into_with_provenance(
         events,
         source_volume,
         source_paths,
@@ -193,6 +206,7 @@ pub(crate) async fn compress_start(
         progress_interval_ms,
         false,
         compression_level,
+        super::super::journal::ArchiveProvenance::compress(net_new, initiator),
     )
     .await
 }

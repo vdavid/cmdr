@@ -245,7 +245,6 @@ pub(super) fn finalize_op(op_id: &str, kind: OpKind, execution_status: Execution
 
 /// Finalize an `archive_edit` op, carrying the driver-supplied subkind + net-new
 /// flag into eligibility (Finding 3).
-#[allow(dead_code, reason = "wired by the M2d compress capture in this milestone")]
 pub(super) fn finalize_archive_op(
     op_id: &str,
     subkind: ArchiveSubkind,
@@ -264,5 +263,92 @@ pub(super) fn finalize_archive_op(
             bytes_total: 0,
             dev_summary: None,
         },
+    );
+}
+
+/// The journaling facts an archive-edit driver supplies that the generic pipeline
+/// can't derive: the `archive_edit` subkind (compress vs zip-inner edit — both
+/// cross IPC as `ArchiveEdit`, Finding 3), whether the archive was net-new (for
+/// compress rollback eligibility), and the provenance. Threaded from the command
+/// down into the archive-copy-into deferred, where open + finalize bracket the op.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct ArchiveProvenance {
+    pub subkind: ArchiveSubkind,
+    /// Compress only: did the archive not exist before (vs overwriting a prior
+    /// archive)? Ignored for `Edit`/`Extract`.
+    pub net_new: bool,
+    pub initiator: Initiator,
+}
+
+impl ArchiveProvenance {
+    /// A plain copy/move INTO an existing archive: a zip-inner edit, not
+    /// rollbackable in v1 (`ZipEditUnsupported`).
+    pub(crate) fn edit(initiator: Initiator) -> Self {
+        Self {
+            subkind: ArchiveSubkind::Edit,
+            net_new: false,
+            initiator,
+        }
+    }
+
+    /// A compress: create a NEW archive and pack the sources in. Rollbackable iff
+    /// `net_new` (and, at rollback time, unchanged — M3, Finding 5).
+    pub(crate) fn compress(net_new: bool, initiator: Initiator) -> Self {
+        Self {
+            subkind: ArchiveSubkind::Compress,
+            net_new,
+            initiator,
+        }
+    }
+}
+
+/// Open an archive-edit managed op in the journal. Unlike [`open_local_op`] this
+/// records the parent (archive) volume, which may be remote (SMB / MTP). The
+/// op opens `not_rollbackable` until [`finalize_archive_op`] computes eligibility
+/// from the subkind + net-new flag.
+pub(super) fn open_archive_op(op_id: &str, initiator: Initiator, parent_volume_id: &str) {
+    journal_open(OpenOperation {
+        op_id: op_id.to_string(),
+        kind: OpKind::ArchiveEdit,
+        initiator,
+        source_volume_id: Some(parent_volume_id.to_string()),
+        dest_volume_id: Some(parent_volume_id.to_string()),
+        item_count: 0,
+        started_at: now_secs(),
+        rolls_back_op_id: None,
+        execution_status: ExecutionStatus::Running,
+    });
+}
+
+/// Record the archive a compress created as the single `rollback_unit` item: the
+/// compress rollback (M3) deletes THIS archive if it's still net-new and unchanged
+/// (the `size`/`mtime` snapshot is the drift check, Finding 5). The archive lives
+/// on `parent_volume_id` (may be remote); `overwrote` is `!net_new`.
+pub(super) fn record_compress_archive(
+    op_id: &str,
+    parent_volume_id: &str,
+    archive: &Path,
+    size: Option<i64>,
+    mtime: Option<i64>,
+    net_new: bool,
+) {
+    let (dir, name) = local_split(archive);
+    journal_record_items(
+        op_id,
+        vec![JournalItem {
+            seq: 0,
+            entry_type: EntryType::File,
+            row_role: RowRole::RollbackUnit,
+            source_volume_id: parent_volume_id.to_string(),
+            source_dir: dir.clone(),
+            source_name: name.clone(),
+            dest_volume_id: Some(parent_volume_id.to_string()),
+            dest_dir: Some(dir),
+            dest_name: Some(name),
+            size,
+            mtime,
+            outcome: ItemOutcome::Done,
+            overwrote: !net_new,
+        }],
     );
 }

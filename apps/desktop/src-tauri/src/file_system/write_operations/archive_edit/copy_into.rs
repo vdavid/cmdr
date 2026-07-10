@@ -30,6 +30,7 @@ use super::conflicts::{ConflictMode, conditional_overwrites, find_unique_inner, 
 use super::engine::{MutatorHooks, PlanError, delete_move_sources, run_managed_edit, to_write_error};
 use super::routing::{ensure_zip_writable, normalize_inner_path, read_only_error};
 use crate::file_system::get_volume_manager;
+use crate::operation_log::types::{ArchiveSubkind, ExecutionStatus};
 use crate::file_system::volume::backends::archive;
 use crate::file_system::volume::backends::archive::mutator::{self, AddEntry, AddSource, Changeset, MutationError};
 use crate::file_system::volume::backends::archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
@@ -70,6 +71,40 @@ pub(crate) async fn route_archive_copy_into(
     is_move: bool,
     compression_level: Option<i64>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
+    // A copy/move INTO an existing archive is a zip-inner edit — journaled but not
+    // rollbackable in v1. Compress overrides this via
+    // [`route_archive_copy_into_with_provenance`].
+    route_archive_copy_into_with_provenance(
+        events,
+        source_volume,
+        source_paths,
+        dest_full_path,
+        parent_volume_id,
+        conflict,
+        progress_interval_ms,
+        is_move,
+        compression_level,
+        super::super::journal::ArchiveProvenance::edit(crate::operation_log::types::Initiator::User),
+    )
+    .await
+}
+
+/// Like [`route_archive_copy_into`] but with an explicit [`ArchiveProvenance`], so
+/// the compress driver can supply `subkind = compress` + the net-new flag the
+/// journal can't derive (Finding 3).
+#[allow(clippy::too_many_arguments, reason = "same seam as route_archive_copy_into plus provenance")]
+pub(crate) async fn route_archive_copy_into_with_provenance(
+    events: Arc<dyn OperationEventSink>,
+    source_volume: Arc<dyn Volume>,
+    source_paths: Vec<PathBuf>,
+    dest_full_path: PathBuf,
+    parent_volume_id: String,
+    conflict: ConflictResolution,
+    progress_interval_ms: u64,
+    is_move: bool,
+    compression_level: Option<i64>,
+    prov: super::super::journal::ArchiveProvenance,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
     // A LOCAL source volume's root — `Some` skips the pull (the changeset walks
     // real paths); `None` (a remote source) triggers the in-op pull-to-scratch.
     let src_local_root = source_volume.local_path();
@@ -104,6 +139,7 @@ pub(crate) async fn route_archive_copy_into(
         is_move,
         progress_interval_ms,
         compression_level,
+        prov,
     )
     .await
 }
@@ -499,6 +535,7 @@ async fn archive_copy_into_start(
     is_move: bool,
     progress_interval_ms: u64,
     compression_level: Option<i64>,
+    prov: super::super::journal::ArchiveProvenance,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let operation_id = Uuid::new_v4().to_string();
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)));
@@ -540,6 +577,11 @@ async fn archive_copy_into_start(
                 WriteOperationType::ArchiveEdit,
                 settle_volume,
             );
+
+            // Open the journal row when the op actually starts. Archive edits
+            // spawn directly (not through `start_write_operation`), so this is
+            // their own open/finalize bracket, mirroring the generic one.
+            super::super::journal::open_archive_op(&op_id, prov.initiator, &parent_volume_id);
 
             let hooks = Arc::new(MutatorHooks::new(
                 Arc::clone(&state),
@@ -603,6 +645,13 @@ async fn archive_copy_into_start(
             .await;
 
             let final_progress = hooks.latest_progress();
+            // Capture the terminal status before the consuming `match outcome`
+            // below (which moves the error out of `outcome`).
+            let execution_status = match &outcome {
+                Ok(_) => ExecutionStatus::Done,
+                Err(PlanError::Cancelled) => ExecutionStatus::Canceled,
+                Err(PlanError::Op(_)) => ExecutionStatus::Failed,
+            };
             match outcome {
                 Ok(skipped_count) => {
                     events.emit_complete(WriteCompleteEvent {
@@ -629,6 +678,30 @@ async fn archive_copy_into_start(
                     ));
                 }
             }
+
+            // Finalize the journal row. Compress records the created archive as
+            // its single `rollback_unit` item (the M3 rollback deletes it if still
+            // net-new and unchanged), then finalizes with the driver's subkind +
+            // net-new flag so eligibility is computed from what the driver knows
+            // (Finding 3). A plain into-archive edit records no item — it's not
+            // rollbackable in v1 — just the header's terminal state.
+            if prov.subkind == ArchiveSubkind::Compress && execution_status == ExecutionStatus::Done {
+                // Snapshot the finished archive (size + mtime) for the M3 drift
+                // recheck; best-effort and local-only (a remote archive snapshots
+                // as `None`, so its rollback rechecks existence only).
+                let (size, mtime) = std::fs::symlink_metadata(&archive_path)
+                    .map(|m| (Some(m.len() as i64), super::super::journal::mtime_secs(&m)))
+                    .unwrap_or((None, None));
+                super::super::journal::record_compress_archive(
+                    &op_id,
+                    &parent_volume_id,
+                    &archive_path,
+                    size,
+                    mtime,
+                    prov.net_new,
+                );
+            }
+            super::super::journal::finalize_archive_op(&op_id, prov.subkind, prov.net_new, execution_status);
 
             task_guard.disarm();
             manager::manager().on_settled(&op_id);

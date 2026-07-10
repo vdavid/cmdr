@@ -444,6 +444,7 @@ async fn smb_integration_compress_local_files_onto_the_share() {
         ConflictResolution::Overwrite,
         100,
         None,
+        crate::operation_log::types::Initiator::User,
     )
     .await
     .expect("start SMB compress");

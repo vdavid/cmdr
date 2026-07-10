@@ -38,6 +38,9 @@ pub async fn move_to_trash(path: String) -> Result<(), IpcError> {
     .map_err(|_| IpcError::timeout())?
     .map_err(|e| IpcError::from_err(format!("Task failed: {}", e)))?
     .map_err(IpcError::from_err)
+    // The in-trash location is captured by `move_to_trash_sync`; this single-trash
+    // command journals it as a one-item trash op in M2f.
+    .map(|_in_trash| ())
 }
 
 /// Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not
