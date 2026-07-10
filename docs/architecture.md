@@ -143,6 +143,12 @@ All under `apps/desktop/src-tauri/src/`.
   neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
   (queryable even for an unmounted volume). See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/importance/CLAUDE.md)
   and [`docs/specs/importance-subsystem-plan.md`](specs/importance-subsystem-plan.md)
+- `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
+  (`operation-log.db`), the foundation for rollback, indexed name search, and a future undo. Single writer thread, a
+  forward-migration ladder (not delete-and-recreate) and retention discipline, interned dir prefixes + per-item rows,
+  app-side case folding with no collation (stays `sqlite3`-inspectable). See its
+  [`CLAUDE.md`](../apps/desktop/src-tauri/src/operation_log/CLAUDE.md) and
+  [`docs/specs/operation-log-plan.md`](specs/operation-log-plan.md)
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher

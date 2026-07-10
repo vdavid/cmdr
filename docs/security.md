@@ -94,3 +94,20 @@ The folder-importance subsystem records a lightweight navigation-visit signal to
   every volume, always local to the user's disk.
 - **Fire-and-forget and failure-silent.** The `record_visit` command never blocks or breaks navigation, and a visit that
   can't be written is silently dropped. Recording a visit is best-effort, never load-bearing.
+
+## Operation log
+
+The operation log (`operation_log/`) journals every file mutation to a durable `operation-log.db` in the app data dir,
+so the user can search their history and roll operations back. It is itself sensitive — effectively a map of the user's
+file activity (what was copied, moved, trashed, renamed, and where). Privacy posture:
+
+- **Local-only, never transmitted.** The journal lives on the user's disk and is never sent anywhere — not to the
+  maintainer, not to PostHog analytics, not in crash or error reports. It's not telemetry. It IS backed up by Time
+  Machine like any Application Support file (deliberately — restoring it restores undo-ability); retention (default 3
+  GB) bounds that, and a future "exclude from backups" toggle is the identified escape hatch.
+- **File-activity metadata, not contents.** Rows hold operation kind, initiator, timestamps, per-item paths/names,
+  sizes, mtimes, and outcomes — never file contents.
+- **The journal never compromises the operation.** Capture rides a bounded channel that blocks briefly under
+  backpressure (lossless) and drops a single row on a DB error rather than failing the file op; the finalize-time
+  completeness check then degrades that op to "can't undo" or "search marked partial" rather than silently
+  under-reversing or claiming false coverage.

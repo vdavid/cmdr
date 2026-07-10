@@ -1,0 +1,45 @@
+# Operation log subsystem
+
+The durable, cross-volume journal of every file mutation: the foundation for rollback, indexed name search, retention,
+and a future undo. **The app's first durable DB** (`operation-log.db` in the app data dir, Time Machine-backed) — every
+other on-disk store here is a disposable cache. Full design + rationale: [DETAILS.md](DETAILS.md). Plan:
+[`docs/specs/operation-log-plan.md`](../../../../../docs/specs/operation-log-plan.md).
+
+**Scope shipped (M1): the durable store only** — schema, the forward-migration ladder, the single writer thread, dir
+interning, case folding, and the `operation-log-dump` dev bin. Nothing journals through it yet; capture (M2), rollback
+(M3), search/retention enforcement (M4), MCP (M5), and the UI (M6/M7) build on this.
+
+## Module map
+
+- `store/` — `operation-log.db`: connection factory (`connection.rs`), the migration ladder (`migrations.rs`), schema,
+  `intern_dir`, `fold_name`, and read functions. `OperationLogStore` owns the schema lifecycle.
+- `writer.rs` — the ONE writer thread: `open_operation` / `record_items` / `finalize_operation` / `prune`, batched
+  inserts, retention mechanism.
+- `types.rs` — the typed vocabulary (`OpKind`, `Initiator`, `RollbackState`, `RowRole`, …) and their stable DB tokens.
+- `mod.rs::start` — opens the DB and puts the `OperationLogWriter` in managed state at app setup.
+
+## Must-knows
+
+- **This DB is DURABLE and MIGRATES; it never delete-and-recreates on a version bump.** The migration ladder
+  (`store/migrations.rs`) is the first in the codebase and the template future durable DBs follow: append a `Migration`
+  with the next version; NEVER edit or renumber a shipped step (users' DBs already ran it). A downgrade is refused, never
+  wiped. Delete-and-recreate is reserved for a genuinely unparseable file (typed sqlite error code, not a string match).
+- **NO `platform_case` collation** (unlike the index/importance stores) — deliberate (D2): the store precomputes a
+  `name_folded` column via `fold_name` (Unicode-lowercase + NFC) and queries plain b-tree equality, so the file stays
+  openable in any `sqlite3` browser. Don't add a collation to "match" the other stores.
+- **One writer thread, one cross-volume DB, NO per-volume registry** (divergence from importance, D1). One
+  `OperationLogWriter` in managed state. All writes cross the bounded channel: `record_items` BLOCKS under backpressure
+  (lossless), never drops on fullness; a DB *error* on one row logs and drops THAT row without failing the op. That's
+  why `finalize_operation` returns per-`row_role` durable counts — the M2 completeness check compares them to items
+  issued and degrades a `rollback_unit` gap to `not_rollbackable`, a `search_only` gap to `top_level_only` (never a
+  silent under-reverse or false coverage claim).
+- **Classification is typed end to end, never a string/substring branch** (`no-string-matching`): every `kind`,
+  `initiator`, status, `row_role`, `outcome`, etc. is a `types.rs` enum with a stable token; the token↔enum mapping lives
+  ONLY there. Renaming a token is a schema change (needs a migration); renaming a variant is free.
+- **The writer stores terminal state; it does NOT compute eligibility.** Rollback eligibility (D3) and the net-new/
+  subkind reasoning are the M2 capture layer's job, upstream of the writer — keep business logic out of `writer.rs`.
+- **Interned dirs never grow unbounded**: retention GCs dirs down to the referenced-plus-ancestors closure (a referenced
+  dir's whole parent chain survives). Prune whole operations only; null dangling `rolls_back_op_id`; skip `rolling_back`
+  ops. Vacuum runs in bounded slices between batches so it never starves capture.
+
+Depth (D1/D2 rationale, the ladder template, schema, retention, the dev bin): [DETAILS.md](DETAILS.md).

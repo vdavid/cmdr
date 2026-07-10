@@ -126,6 +126,7 @@ mod native_drag;
 mod net;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod network;
+pub mod operation_log;
 #[cfg(target_os = "macos")]
 mod permissions;
 #[cfg(target_os = "linux")]
@@ -840,6 +841,11 @@ pub fn run() {
                 Ok(data_dir) => search::start_importance_weight_subscriber(data_dir),
                 Err(e) => log::warn!("search importance weights not wired: {e}"),
             }
+
+            // Open the durable operation log and spawn its writer thread. Nothing
+            // journals through it yet (M1 is the foundation); capture (M2) hooks
+            // the write pipeline into the managed writer this places in state.
+            operation_log::start(app.handle());
 
             Ok(())
         })
