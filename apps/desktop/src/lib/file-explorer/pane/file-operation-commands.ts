@@ -48,8 +48,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    */
   function readOnlyRefusal(
     action: 'rename' | 'mkdir' | 'mkfile' | 'delete',
+    pane: 'left' | 'right' = access.getFocusedPane(),
   ): { title: string; message: string } | null {
-    const pane = access.getFocusedPane()
     const volId = access.getPaneVolumeId(pane)
 
     const volumeInfo = getDestinationVolumeInfo(volId, access.getVolumes())
@@ -110,17 +110,19 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
 
   /**
    * Opens the new folder dialog. Pre-fills with the entry name under the cursor,
-   * or with `nameOverride` (the MCP `mkdir` tool's `name`) when given.
+   * or with `nameOverride` (the MCP `mkdir` tool's `name`) when given. `pane`
+   * defaults to the focused pane; the MCP `mkdir` tool passes it explicitly so
+   * the dialog targets the right pane regardless of focus timing.
    */
-  async function openNewFolderDialog(nameOverride?: string) {
-    const paneRef = access.getPaneRef(access.getFocusedPane())
-    const path = access.getPanePath(access.getFocusedPane())
-    const volumeIdForPane = access.getPaneVolumeId(access.getFocusedPane())
+  async function openNewFolderDialog(nameOverride?: string, pane: 'left' | 'right' = access.getFocusedPane()) {
+    const paneRef = access.getPaneRef(pane)
+    const path = access.getPanePath(pane)
+    const volumeIdForPane = access.getPaneVolumeId(pane)
 
     // Read-only destinations (a write-protected volume, or inside an archive) can't
     // accept new folders. Surface that as an alert up front rather than letting the
     // user type a name and then hit a backend rejection. Mirrors `startRename`.
-    const refusal = readOnlyRefusal('mkdir')
+    const refusal = readOnlyRefusal('mkdir', pane)
     if (refusal) {
       dialogs.showAlert(refusal.title, refusal.message)
       return
@@ -146,14 +148,15 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
 
   /**
    * Opens the new file dialog. Pre-fills with the filename under the cursor, or
-   * with `nameOverride` (the MCP `mkfile` tool's `name`) when given.
+   * with `nameOverride` (the MCP `mkfile` tool's `name`) when given. `pane`
+   * defaults to the focused pane; the MCP `mkfile` tool passes it explicitly.
    */
-  async function openNewFileDialog(nameOverride?: string) {
-    const paneRef = access.getPaneRef(access.getFocusedPane())
-    const path = access.getPanePath(access.getFocusedPane())
-    const volumeIdForPane = access.getPaneVolumeId(access.getFocusedPane())
+  async function openNewFileDialog(nameOverride?: string, pane: 'left' | 'right' = access.getFocusedPane()) {
+    const paneRef = access.getPaneRef(pane)
+    const path = access.getPanePath(pane)
+    const volumeIdForPane = access.getPaneVolumeId(pane)
 
-    const refusal = readOnlyRefusal('mkfile')
+    const refusal = readOnlyRefusal('mkfile', pane)
     if (refusal) {
       dialogs.showAlert(refusal.title, refusal.message)
       return
@@ -178,25 +181,27 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
   }
 
   /**
-   * Creates a folder directly on the focused pane (the MCP `mkdir` autoConfirm
+   * Creates a folder directly on the target pane (the MCP `mkdir` autoConfirm
    * path), using the pane's LIVE path + volumeId so it can't land in a stale
-   * directory. Throws the read-only refusal or the backend conflict error, which
-   * the mcp-mkdir listener relays as the tool's failure.
+   * directory. `pane` defaults to the focused pane; the tool passes it explicitly
+   * so a `nav_to_path` right before the create can't land in the wrong pane on a
+   * focus-timing race. Throws the read-only refusal or the backend conflict error,
+   * which the mcp-mkdir listener relays as the tool's failure.
    */
-  async function createFolderDirect(name: string): Promise<void> {
-    const refusal = readOnlyRefusal('mkdir')
+  async function createFolderDirect(name: string, pane: 'left' | 'right' = access.getFocusedPane()): Promise<void> {
+    const refusal = readOnlyRefusal('mkdir', pane)
     if (refusal) throw new Error(refusal.message)
-    const path = access.getPanePath(access.getFocusedPane())
-    const volumeId = access.getPaneVolumeId(access.getFocusedPane())
+    const path = access.getPanePath(pane)
+    const volumeId = access.getPaneVolumeId(pane)
     await createDirectory(path, name, volumeId)
   }
 
-  /** Creates an empty file directly on the focused pane (MCP `mkfile` autoConfirm). */
-  async function createFileDirect(name: string): Promise<void> {
-    const refusal = readOnlyRefusal('mkfile')
+  /** Creates an empty file directly on the target pane (MCP `mkfile` autoConfirm). */
+  async function createFileDirect(name: string, pane: 'left' | 'right' = access.getFocusedPane()): Promise<void> {
+    const refusal = readOnlyRefusal('mkfile', pane)
     if (refusal) throw new Error(refusal.message)
-    const path = access.getPanePath(access.getFocusedPane())
-    const volumeId = access.getPaneVolumeId(access.getFocusedPane())
+    const path = access.getPanePath(pane)
+    const volumeId = access.getPaneVolumeId(pane)
     await createFile(path, name, volumeId)
   }
 

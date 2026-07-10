@@ -249,10 +249,13 @@ describe('mcp-nav-to-path listener', () => {
     resolveLocationMock.mockReset()
   })
 
+  const setFocusedPaneMock = vi.fn()
+
   async function setupWithExplorer(navigate: () => NavigateResult): Promise<Map<string, TauriEventHandler>> {
+    setFocusedPaneMock.mockClear()
     const handlers = new Map<string, TauriEventHandler>()
     await setupMcpListeners({
-      getExplorer: () => ({ navigate }) as unknown as ExplorerAPI,
+      getExplorer: () => ({ navigate, setFocusedPane: setFocusedPaneMock }) as unknown as ExplorerAPI,
       dispatch: vi.fn(),
       listenTauri: (event, handler) => {
         handlers.set(event, handler)
@@ -263,7 +266,7 @@ describe('mcp-nav-to-path listener', () => {
     return handlers
   }
 
-  it('resolves the path, navigates with the resolved location, and replies ok', async () => {
+  it('resolves the path, navigates with the resolved location, focuses the pane, and replies ok', async () => {
     resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'root', path: '/Library' } })
     const navigate = vi.fn((): NavigateResult => ({ status: 'started', settled: Promise.resolve() }))
     const handlers = await setupWithExplorer(navigate)
@@ -277,7 +280,25 @@ describe('mcp-nav-to-path listener', () => {
       to: { goTo: { volumeId: 'root', path: '/Library' } },
       source: 'mcp',
     })
+    // Focus follows the navigated pane so FE focus matches the backend store.
+    expect(setFocusedPaneMock).toHaveBeenCalledWith('left')
     expect(emit).toHaveBeenCalledWith('mcp-response', { requestId: 'req-1', ok: true })
+  })
+
+  it('does NOT shift focus when the navigate is refused', async () => {
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'network', path: 'smb://h/s' } })
+    const navigate = vi.fn(
+      (): NavigateResult => ({
+        status: 'refused',
+        reason: { kind: 'on-network-volume', message: 'nope' },
+      }),
+    )
+    const handlers = await setupWithExplorer(navigate)
+
+    getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'right', path: 'smb://h/s', requestId: 'req-r' } })
+    await flushAsyncWork()
+
+    expect(setFocusedPaneMock).not.toHaveBeenCalled()
   })
 
   it('replies ok:false WITHOUT navigating when the path cannot be resolved', async () => {

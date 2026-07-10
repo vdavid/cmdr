@@ -88,14 +88,15 @@ export const fileHandlers = {
 
   'file.newFolder': ({ explorerRef, dispatchArgs }) => {
     // Arg-less from F7 / the palette; the MCP `mkdir` tool may pass `{ name }` to
-    // prefill the dialog. (autoConfirm creates directly in Rust, never reaching here.)
+    // prefill the dialog and `{ pane }` to target a specific pane. (autoConfirm
+    // creates directly in Rust, never reaching here.)
     const args = dispatchArgs as CommandArgs['file.newFolder'] | undefined
-    void explorerRef?.openNewFolderDialog(args?.name)
+    void explorerRef?.openNewFolderDialog(args?.name, args?.pane)
   },
 
   'file.newFile': ({ explorerRef, dispatchArgs }) => {
     const args = dispatchArgs as CommandArgs['file.newFile'] | undefined
-    void explorerRef?.openNewFileDialog(args?.name)
+    void explorerRef?.openNewFileDialog(args?.name, args?.pane)
   },
 
   'file.delete': ({ explorerRef, dispatchArgs }) => {

@@ -97,6 +97,61 @@ test.describe('MCP agent tools', () => {
     await expect(mcpCall('copy', { autoConfirm: true })).rejects.toThrow('Nothing to copy')
   })
 
+  test('nav_to_path shifts focus so a follow-up create lands in the navigated pane', async ({ tauriPage }) => {
+    // The focus-divergence regression: `select right` focuses the right pane in
+    // the backend store; a same-volume `nav_to_path left` must shift FE focus to
+    // the left pane too, so a `mkdir` with no explicit pane (which targets the
+    // focused pane) creates in LEFT, not the previously-focused RIGHT. Before the
+    // fix, FE focus stayed on right while `cmdr://state` reported left, and the
+    // folder landed in the wrong pane.
+    test.setTimeout(30_000)
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    // Two panes on DISTINCT dirs so the create is attributable: left starts at the
+    // fixture root, right sits in the populated sub-dir (so the select can target a
+    // real file there and focus the right pane).
+    await mcpNavToPath('left', fixtureRoot)
+    await mcpNavToPath('right', path.join(fixtureRoot, 'left', 'sub-dir'))
+
+    // Focus the RIGHT pane via select, then navigate the LEFT pane (a same-volume,
+    // in-place nav — the exact arm that used to skip the focus shift).
+    await mcpCall('select', { pane: 'right', names: ['nested-file.txt'] })
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+
+    // No explicit pane → the focused pane, which must now be LEFT.
+    const dirName = `mcp-focus-${String(Date.now())}`
+    const mkdirResult = await mcpCall('mkdir', { name: dirName, autoConfirm: true })
+    expect(mkdirResult).toContain('OK')
+
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', dirName))).toBe(true)
+    // Before the focus fix, focus stayed on the right pane (sub-dir) and the folder
+    // landed there instead.
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', 'sub-dir', dirName))).toBe(false)
+  })
+
+  test('mkdir with an explicit pane targets that pane regardless of focus', async ({ tauriPage }) => {
+    // The pane param is the belt-and-suspenders guard: even with focus on LEFT,
+    // `mkdir pane:right` creates in RIGHT, so creation never depends on focus timing.
+    test.setTimeout(30_000)
+    await ensureAppReady(tauriPage)
+    await ensureMcpClient(tauriPage)
+    const fixtureRoot = getFixtureRoot()
+
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+    await mcpNavToPath('right', path.join(fixtureRoot, 'right'))
+    // Focus LEFT explicitly.
+    await mcpNavToPath('left', path.join(fixtureRoot, 'left'))
+
+    const dirName = `mcp-pane-${String(Date.now())}`
+    const mkdirResult = await mcpCall('mkdir', { name: dirName, autoConfirm: true, pane: 'right' })
+    expect(mkdirResult).toContain('OK')
+
+    expect(fs.existsSync(path.join(fixtureRoot, 'right', dirName))).toBe(true)
+    expect(fs.existsSync(path.join(fixtureRoot, 'left', dirName))).toBe(false)
+  })
+
   test('refresh forces a backend re-read; transfers section exists', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)

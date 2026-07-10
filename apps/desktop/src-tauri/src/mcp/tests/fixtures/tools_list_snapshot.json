@@ -302,7 +302,7 @@
       "name": "rename"
     },
     {
-      "description": "Create a folder in the focused pane (nav_to_path does NOT change focus; use select/switch_pane first). No name opens the naming dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on a name conflict).",
+      "description": "Create a folder in the focused pane, or pass pane to target the other. No name opens the naming dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on a name conflict).",
       "inputSchema": {
         "properties": {
           "autoConfirm": {
@@ -312,6 +312,14 @@
           "name": {
             "description": "Folder name. Omit to open the dialog with the default prefill.",
             "type": "string"
+          },
+          "pane": {
+            "description": "Target pane. Defaults to the focused pane.",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "type": "string"
           }
         },
         "required": [],
@@ -320,7 +328,7 @@
       "name": "mkdir"
     },
     {
-      "description": "Create an empty file in the focused pane (nav_to_path does NOT change focus; use select/switch_pane first). No name opens the naming dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on a name conflict).",
+      "description": "Create an empty file in the focused pane, or pass pane to target the other. No name opens the naming dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on a name conflict).",
       "inputSchema": {
         "properties": {
           "autoConfirm": {
@@ -329,6 +337,14 @@
           },
           "name": {
             "description": "File name. Omit to open the dialog with the default prefill.",
+            "type": "string"
+          },
+          "pane": {
+            "description": "Target pane. Defaults to the focused pane.",
+            "enum": [
+              "left",
+              "right"
+            ],
             "type": "string"
           }
         },

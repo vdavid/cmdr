@@ -400,9 +400,9 @@ mcp_tools! {
         run: app_params file_ops::execute_rename
     },
     "mkdir" => {
-        desc: "Create a folder in the focused pane (nav_to_path does NOT change focus; use select/switch_pane \
-               first). No name opens the naming dialog (user confirms, not MCP); a name prefills it; name + \
-               autoConfirm creates directly (errors on a name conflict).",
+        desc: "Create a folder in the focused pane, or pass pane to target the other. No name opens the naming \
+               dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on \
+               a name conflict).",
         schema: json!({
             "type": "object",
             "properties": {
@@ -413,6 +413,11 @@ mcp_tools! {
                 "autoConfirm": {
                     "type": "boolean",
                     "description": "With a name, create directly without the dialog. Returns once created."
+                },
+                "pane": {
+                    "type": "string",
+                    "enum": ["left", "right"],
+                    "description": "Target pane. Defaults to the focused pane."
                 }
             },
             "required": []
@@ -421,9 +426,9 @@ mcp_tools! {
         run: app_params file_ops::execute_mkdir
     },
     "mkfile" => {
-        desc: "Create an empty file in the focused pane (nav_to_path does NOT change focus; use select/switch_pane \
-               first). No name opens the naming dialog (user confirms, not MCP); a name prefills it; name + \
-               autoConfirm creates directly (errors on a name conflict).",
+        desc: "Create an empty file in the focused pane, or pass pane to target the other. No name opens the naming \
+               dialog (user confirms, not MCP); a name prefills it; name + autoConfirm creates directly (errors on \
+               a name conflict).",
         schema: json!({
             "type": "object",
             "properties": {
@@ -434,6 +439,11 @@ mcp_tools! {
                 "autoConfirm": {
                     "type": "boolean",
                     "description": "With a name, create directly without the dialog. Returns once created."
+                },
+                "pane": {
+                    "type": "string",
+                    "enum": ["left", "right"],
+                    "description": "Target pane. Defaults to the focused pane."
                 }
             },
             "required": []

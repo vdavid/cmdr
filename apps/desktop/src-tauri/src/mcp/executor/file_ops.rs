@@ -416,11 +416,16 @@ enum CreateKind {
 /// Shared body for `mkdir` / `mkfile`.
 ///
 /// The direct-create path (`autoConfirm`) is a round-trip: the FE creates using
-/// its LIVE focused-pane path + volumeId (never a backend `PaneStateStore` read,
+/// the target pane's LIVE path + volumeId (never a backend `PaneStateStore` read,
 /// which lags a nav by the debounced sync — reading it could create in the pane's
 /// previous directory), then replies OK or an honest conflict error. The dialog
 /// path emits the create event (prefilled when `name` is given) and waits for the
 /// naming dialog to mount.
+///
+/// The optional `pane` param picks the target pane; absent, the FE uses its
+/// focused pane. Carrying it explicitly means creation never depends on FE focus
+/// timing (a `nav_to_path` immediately before a create can't land in the wrong
+/// pane if focus hasn't settled yet).
 async fn execute_create<R: Runtime>(
     app: &AppHandle<R>,
     params: &Value,
@@ -430,6 +435,7 @@ async fn execute_create<R: Runtime>(
 ) -> ToolResult {
     let name = params.get("name").and_then(|v| v.as_str()).map(str::to_string);
     let auto_confirm = params.get("autoConfirm").and_then(|v| v.as_bool()).unwrap_or(false);
+    let pane = super::optional_pane_param(params)?;
 
     if auto_confirm {
         let name = name.ok_or_else(|| ToolError::invalid_params("autoConfirm requires a 'name'"))?;
@@ -445,20 +451,21 @@ async fn execute_create<R: Runtime>(
             CreateKind::Directory => "folder",
             CreateKind::File => "file",
         };
-        return mcp_round_trip(
-            app,
-            event,
-            json!({ "name": name, "autoConfirm": true }),
-            format!("OK: Created {noun} {name}."),
-        )
-        .await;
+        let mut payload = json!({ "name": name, "autoConfirm": true });
+        if let Some(pane) = pane {
+            payload["pane"] = json!(pane);
+        }
+        return mcp_round_trip(app, event, payload, format!("OK: Created {noun} {name}.")).await;
     }
 
     // Dialog path: prefill the name when given, else open with the FE's default.
-    let payload = match name {
+    let mut payload = match name {
         Some(name) => json!({ "name": name }),
         None => json!({}),
     };
+    if let Some(pane) = pane {
+        payload["pane"] = json!(pane);
+    }
     app.emit(event, payload)?;
     wait_for_ack(app, AckSignal::SoftDialogAppeared(ack_dialog), DEFAULT_ACK_TIMEOUT).await?;
     let what = match kind {

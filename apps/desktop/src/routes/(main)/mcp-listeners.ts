@@ -265,6 +265,9 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
         await emit('mcp-response', { requestId, ok: false, error: 'Invalid select payload' })
         return
       }
+      // Match the backend store, which `select` focuses optimistically, so a
+      // follow-up focused-pane op (copy/move) acts on the pane just selected in.
+      getExplorer()?.setFocusedPane(pane)
       try {
         await dispatch(selectionMcpSelectCommand, { pane, start, count, mode })
         await emit('mcp-response', { requestId, ok: true })
@@ -291,6 +294,9 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
         await emit('mcp-response', { requestId, ok: false, error: 'Invalid select-names payload' })
         return
       }
+      // Match the backend store, which `select` focuses optimistically, so a
+      // follow-up focused-pane op (copy/move) acts on the pane just selected in.
+      getExplorer()?.setFocusedPane(pane)
       try {
         await dispatch(selectionMcpSelectByNamesCommand, { pane, names, mode })
         await emit('mcp-response', { requestId, ok: true })
@@ -343,6 +349,14 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
         await reply({ ok: false, error: result.reason.message })
         return
       }
+      // Shift FE focus to the navigated pane so it matches the backend store (which
+      // `nav_to_path` sets optimistically) and the documented "focus follows the
+      // navigated pane" contract. `navigate()`'s in-place arm (a same-volume path
+      // change) deliberately keeps focus put for keyboard nav, so without this an
+      // MCP nav to the non-focused pane leaves FE focus on the other pane while
+      // `cmdr://state` reports the navigated one — a follow-up focused-pane op
+      // (mkdir/copy/move) would then hit the WRONG pane.
+      explorerRef.setFocusedPane(pane)
       // Started: wait for the navigation to settle (the listing completes).
       try {
         await result.settled
@@ -432,6 +446,9 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const pane = parsePane(raw.pane)
     const index = typeof raw.index === 'number' ? raw.index : undefined
     if (!pane || index === undefined) return
+    // Match the backend store, which `scroll_to` focuses optimistically (focus
+    // follows the scrolled pane, like the other pane-targeting nav tools).
+    getExplorer()?.setFocusedPane(pane)
     void dispatch(cursorScrollToCommand, { pane, index })
   })
 
@@ -524,26 +541,28 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
 
   await listenTauri('mcp-mkdir', (event) => {
     // `name` prefills the naming dialog; with `autoConfirm` it's a round-trip that
-    // creates directly on the pane's LIVE path (so it can't land in a stale dir)
-    // and replies OK or the backend conflict error.
+    // creates directly on the target pane's LIVE path (so it can't land in a stale
+    // dir) and replies OK or the backend conflict error. `pane` defaults to focused.
     const raw = asRecord(event.payload)
     const name = typeof raw.name === 'string' ? raw.name : undefined
+    const pane = parsePane(raw.pane)
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (raw.autoConfirm === true) {
-      void createDirectlyThenReply(() => getExplorer()?.createFolderDirect(name ?? ''), name, requestId)
+      void createDirectlyThenReply(() => getExplorer()?.createFolderDirect(name ?? '', pane), name, requestId)
     } else {
-      void dispatch(fileNewFolderCommand, { name })
+      void dispatch(fileNewFolderCommand, { name, pane })
     }
   })
 
   await listenTauri('mcp-mkfile', (event) => {
     const raw = asRecord(event.payload)
     const name = typeof raw.name === 'string' ? raw.name : undefined
+    const pane = parsePane(raw.pane)
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (raw.autoConfirm === true) {
-      void createDirectlyThenReply(() => getExplorer()?.createFileDirect(name ?? ''), name, requestId)
+      void createDirectlyThenReply(() => getExplorer()?.createFileDirect(name ?? '', pane), name, requestId)
     } else {
-      void dispatch(fileNewFileCommand, { name })
+      void dispatch(fileNewFileCommand, { name, pane })
     }
   })
 

@@ -136,6 +136,18 @@ fn test_empty_operation_error_cursor_outside_loaded_window() {
 }
 
 #[test]
+fn test_optional_pane_param() {
+    // Absent → None (the FE defaults to its focused pane).
+    assert_eq!(optional_pane_param(&json!({})).unwrap(), None);
+    // Valid values pass through.
+    assert_eq!(optional_pane_param(&json!({"pane": "left"})).unwrap(), Some("left"));
+    assert_eq!(optional_pane_param(&json!({"pane": "right"})).unwrap(), Some("right"));
+    // An unknown value is an honest error, not a silent default.
+    let err = optional_pane_param(&json!({"pane": "middle"})).unwrap_err();
+    assert_eq!(err.code, INVALID_PARAMS);
+}
+
+#[test]
 fn test_is_virtual_path() {
     // Scheme-prefixed virtual paths skip the local existence check
     assert!(is_virtual_path("mtp://device-1/DCIM"));

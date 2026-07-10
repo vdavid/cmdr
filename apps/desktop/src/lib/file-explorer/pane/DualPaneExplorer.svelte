@@ -733,24 +733,24 @@
         return fileOps.isRenaming()
     }
 
-    /** Opens the new folder dialog, prefilled with `name` or the cursor entry. */
-    export async function openNewFolderDialog(name?: string) {
-        await fileOps.openNewFolderDialog(name)
+    /** Opens the new folder dialog, prefilled with `name` or the cursor entry. `pane` defaults to focused. */
+    export async function openNewFolderDialog(name?: string, pane?: 'left' | 'right') {
+        await fileOps.openNewFolderDialog(name, pane)
     }
 
-    /** Opens the new file dialog, prefilled with `name` or the cursor entry. */
-    export async function openNewFileDialog(name?: string) {
-        await fileOps.openNewFileDialog(name)
+    /** Opens the new file dialog, prefilled with `name` or the cursor entry. `pane` defaults to focused. */
+    export async function openNewFileDialog(name?: string, pane?: 'left' | 'right') {
+        await fileOps.openNewFileDialog(name, pane)
     }
 
-    /** Creates a folder directly on the focused pane's live path (MCP autoConfirm). */
-    export async function createFolderDirect(name: string) {
-        await fileOps.createFolderDirect(name)
+    /** Creates a folder directly on the target pane's live path (MCP autoConfirm). `pane` defaults to focused. */
+    export async function createFolderDirect(name: string, pane?: 'left' | 'right') {
+        await fileOps.createFolderDirect(name, pane)
     }
 
-    /** Creates an empty file directly on the focused pane's live path (MCP autoConfirm). */
-    export async function createFileDirect(name: string) {
-        await fileOps.createFileDirect(name)
+    /** Creates an empty file directly on the target pane's live path (MCP autoConfirm). `pane` defaults to focused. */
+    export async function createFileDirect(name: string, pane?: 'left' | 'right') {
+        await fileOps.createFileDirect(name, pane)
     }
 
     /** Closes any confirmation dialog (new folder, new file, or transfer) if open (for MCP). */

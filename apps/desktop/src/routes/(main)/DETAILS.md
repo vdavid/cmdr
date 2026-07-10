@@ -93,6 +93,17 @@ path; its `fromMenu` flag picks `setViewModeFromMenu` (skip `pushViewMenuState`)
   so the tool reports the real failure instead of a false-positive OK. HMR can land these with no explorer; they reply
   `ok: false` rather than crashing.
 
+### Focus follows the navigated pane
+
+The nav-family handlers that take a `pane` (`mcp-nav-to-path`, `mcp-scroll-to`, `mcp-select`, `mcp-select-names`) call
+`explorerRef.setFocusedPane(pane)` so FE focus matches the backend `PaneStateStore`, whose focused pane the Rust
+`nav_to_path` / `scroll_to` / `select` handlers set optimistically. Without it, FE focus and the backend store diverge
+(`navigate()`'s in-place same-volume arm deliberately keeps focus put for keyboard nav), so `cmdr://state` reports one
+pane focused while a follow-up focused-pane op (`mkdir` / `copy` / `move`) acts on the other — the wrong-pane
+data-safety bug. `mcp-move-cursor` and `mcp-volume-select` don't need the explicit call: `moveCursor` focuses internally
+and the volume-switch arm shifts focus itself. Don't remove these `setFocusedPane` calls. (`mkdir` / `mkfile`
+additionally carry an optional `pane` so a create never races FE focus timing.)
+
 A `mcp-key` GoBack/GoForward routes through the bus (`nav.back`/`nav.forward`), whose handlers call
 `explorerRef.navigate({ pane, to: { history: 'back' | 'forward' }, source: 'user' })`, same shape as `nav.parent`
 (`to: { history: 'parent' }`). Every other key stays a `sendKeyToFocusedPane` passthrough (invariant P2).

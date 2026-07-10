@@ -101,6 +101,21 @@ pub(super) fn target_pane_state<R: Runtime>(
     Ok((pane, state))
 }
 
+/// Validate an optional `pane` param (`left` / `right`), returning `None` when
+/// absent. Unlike [`target_pane_state`], this reads no store snapshot: it's for
+/// tools whose FE side resolves the pane's LIVE path itself (mkdir/mkfile
+/// direct-create), so the backend only validates and forwards the choice, and
+/// the FE defaults to its focused pane when `None`.
+pub(super) fn optional_pane_param(params: &Value) -> Result<Option<&str>, ToolError> {
+    match params.get("pane").and_then(|v| v.as_str()) {
+        None => Ok(None),
+        Some(pane @ ("left" | "right")) => Ok(Some(pane)),
+        Some(other) => Err(ToolError::invalid_params(format!(
+            "pane must be 'left' or 'right' (got '{other}')"
+        ))),
+    }
+}
+
 /// Flush the frontend's pending pane-state push for `pane` before a handler reads
 /// `PaneStateStore`, so name/selection/cursor resolution sees the LIVE listing.
 ///

@@ -390,11 +390,16 @@ test.describe('Archive browsing', () => {
     await ensureMcpClient(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
-    // Right pane inside the zip (the copy destination); left focused on a real file.
+    // Right pane inside the zip (the copy destination).
     await navigatePaneTo(tauriPage, 'right', `${fixtureRoot}/left/sample.zip`)
     await expect
       .poll(async () => (await mcpReadResource('cmdr://state?compact=true')).includes('sample.zip'), { timeout: 5000 })
       .toBeTruthy()
+
+    // Navigating the right pane focuses it (focus follows the navigated pane), so
+    // re-focus the left source pane before the F5 copy reads from it.
+    await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
+    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${fixtureRoot}/left`)
 
     const found = await moveCursorToFile(tauriPage, 'file-a.txt')
     expect(found).toBe(true)
@@ -434,7 +439,11 @@ test.describe('Archive browsing', () => {
       .poll(async () => (await mcpReadResource('cmdr://state?compact=true')).includes('sample.zip'), { timeout: 5000 })
       .toBeTruthy()
 
-    // Left pane stays at `left/` (from the describe beforeEach); cursor the big file.
+    // Navigating the right pane focuses it (focus follows the navigated pane), so
+    // re-focus the left source pane (still at `left/` from the beforeEach) before
+    // cursoring the big file for the F5 copy.
+    await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
+    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${fixtureRoot}/left`)
     await expect.poll(async () => fileExistsInFocusedPane(tauriPage, bigName), { timeout: 5000 }).toBeTruthy()
     const found = await moveCursorToFile(tauriPage, bigName)
     expect(found).toBe(true)
@@ -507,6 +516,11 @@ test.describe('Archive browsing', () => {
     await expect
       .poll(async () => (await mcpReadResource('cmdr://state?compact=true')).includes('sample.zip'), { timeout: 5000 })
       .toBeTruthy()
+
+    // Navigating the right pane focuses it (focus follows the navigated pane), so
+    // re-focus the left source pane before cursoring the clashing file.
+    await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
+    await expect.poll(async () => getFocusedPaneActiveTabPath(), { timeout: 5000 }).toBe(`${fixtureRoot}/left`)
 
     const found = await moveCursorToFile(tauriPage, 'inner.txt')
     expect(found).toBe(true)
