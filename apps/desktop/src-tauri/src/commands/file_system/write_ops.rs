@@ -96,11 +96,12 @@ pub async fn create_directory(
     volume_id: Option<String>,
     parent_path: String,
     name: String,
+    initiator: Option<Initiator>,
 ) -> Result<String, IpcError> {
     let expanded_parent = expand_parent(volume_id.as_deref(), &parent_path);
     tokio::time::timeout(
         Duration::from_secs(5),
-        ops_create_directory_managed(volume_id, expanded_parent, name),
+        ops_create_directory_managed(volume_id, expanded_parent, name, initiator.unwrap_or(Initiator::User)),
     )
     .await
     .map_err(|_| IpcError::timeout())?
@@ -111,11 +112,16 @@ pub async fn create_directory(
 /// [`create_directory`].
 #[tauri::command]
 #[specta::specta]
-pub async fn create_file(volume_id: Option<String>, parent_path: String, name: String) -> Result<String, IpcError> {
+pub async fn create_file(
+    volume_id: Option<String>,
+    parent_path: String,
+    name: String,
+    initiator: Option<Initiator>,
+) -> Result<String, IpcError> {
     let expanded_parent = expand_parent(volume_id.as_deref(), &parent_path);
     tokio::time::timeout(
         Duration::from_secs(5),
-        ops_create_file_managed(volume_id, expanded_parent, name),
+        ops_create_file_managed(volume_id, expanded_parent, name, initiator.unwrap_or(Initiator::User)),
     )
     .await
     .map_err(|_| IpcError::timeout())?

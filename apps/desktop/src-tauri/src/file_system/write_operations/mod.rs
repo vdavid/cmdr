@@ -62,7 +62,7 @@ use std::time::Duration;
 use uuid::Uuid;
 
 use crate::file_system::volume::LaneKey;
-use crate::operation_log::types::Initiator;
+use crate::operation_log::types::{Initiator, OpKind};
 use delete::{delete_files_with_progress_inner, delete_volume_files_with_progress_inner};
 use manager::OperationDescriptor;
 #[cfg(not(test))]
@@ -139,6 +139,9 @@ pub(crate) use validation::{
 // concurrent-copy cross-contamination test in
 // `file_system::volume::smb`) that drive `copy_volumes_with_progress`
 // directly against a real SMB backend instead of the full Tauri path.
+#[cfg(test)]
+#[allow(unused_imports, reason = "Used by the volume-journal capture tests")]
+pub(crate) use transfer::volume_move::move_volumes_with_progress;
 #[cfg(test)]
 #[allow(unused_imports, reason = "Used by SMB integration tests in file_system::volume::smb")]
 pub(crate) use transfer::volume_move::move_within_same_volume_with_progress;
@@ -519,7 +522,12 @@ pub async fn delete_files_start(
                     Some(volume_id_str.clone()),
                 );
 
-                match crate::file_system::get_volume_manager().get(&volume_id_str) {
+                // Journal the volume delete under its REAL volume id (not the
+                // hardcoded `"root"` the local helpers bake in). The per-leaf rows
+                // are recorded inside `delete_volume_files_with_progress_inner`.
+                journal::open_volume_op(&op_id, OpKind::Delete, initiator, &volume_id_str, None, 0);
+
+                let execution_status = match crate::file_system::get_volume_manager().get(&volume_id_str) {
                     None => {
                         events.emit_error(WriteErrorEvent::new(
                             op_id.clone(),
@@ -529,6 +537,7 @@ pub async fn delete_files_start(
                                 message: format!("Volume '{}' not found", volume_id_str),
                             },
                         ));
+                        crate::operation_log::types::ExecutionStatus::Failed
                     }
                     Some(volume) => {
                         let result = delete_volume_files_with_progress_inner(
@@ -542,14 +551,18 @@ pub async fn delete_files_start(
                         )
                         .await;
                         match result {
-                            Ok(()) => {}
-                            Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {}
+                            Ok(()) => crate::operation_log::types::ExecutionStatus::Done,
+                            Err(ref e) if matches!(e, WriteOperationError::Cancelled { .. }) => {
+                                crate::operation_log::types::ExecutionStatus::Canceled
+                            }
                             Err(e) => {
                                 events.emit_error(WriteErrorEvent::new(op_id.clone(), WriteOperationType::Delete, e));
+                                crate::operation_log::types::ExecutionStatus::Failed
                             }
                         }
                     }
-                }
+                };
+                journal::finalize_op(&op_id, OpKind::Delete, execution_status);
 
                 task_guard.disarm();
                 manager::manager().on_settled(&op_id);

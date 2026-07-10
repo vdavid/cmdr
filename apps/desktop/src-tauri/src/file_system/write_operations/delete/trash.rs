@@ -130,7 +130,14 @@ pub fn trash_single_journaled(
                 ItemOutcome::Done,
             );
             if let Some(buffered) = &buffered {
-                super::super::journal_search::persist_and_note(&op_id, source, in_trash.as_deref(), buffered);
+                super::super::journal_search::persist_and_note(
+                    &op_id,
+                    crate::file_system::volume::DEFAULT_VOLUME_ID,
+                    source,
+                    crate::file_system::volume::DEFAULT_VOLUME_ID,
+                    in_trash.as_deref(),
+                    buffered,
+                );
             }
             super::super::journal::finalize_op(&op_id, OpKind::Trash, ExecutionStatus::Done);
             Ok(in_trash)
@@ -267,7 +274,14 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
                 // is rebased onto the in-trash location; coverage downgrades are
                 // noted worst-wins.
                 if let Some(buffered) = &buffered_leaves {
-                    super::super::journal_search::persist_and_note(operation_id, source, in_trash.as_deref(), buffered);
+                    super::super::journal_search::persist_and_note(
+                        operation_id,
+                        crate::file_system::volume::DEFAULT_VOLUME_ID,
+                        source,
+                        crate::file_system::volume::DEFAULT_VOLUME_ID,
+                        in_trash.as_deref(),
+                        buffered,
+                    );
                 }
 
                 events.emit_source_item_done(WriteSourceItemDoneEvent {

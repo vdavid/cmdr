@@ -48,8 +48,9 @@ cross-cutting machinery both subdirs share.
   delete). Don't "fix" copy to the dedup'd number — it under-reserves disk space.
 - **All write ops emit via `OperationEventSink`, not `tauri::AppHandle`** — built only at the IPC edge, injected in.
 - **Every managed mutation journals to the operation log** (`journal.rs`, by `op_id`); a new op kind / record point needs
-  an `open_local_op`/`record_local_leaf`/`finalize_op` bracket or it won't appear in history. Volume (SMB/MTP) paths
-  don't journal yet. DETAILS § Capture.
+  an open/record/finalize bracket or it won't appear in history. Local ops use the `_local_` helpers (they bake in
+  `"root"`); VOLUME (SMB/MTP) ops use the `open_volume_op` / `record_volume_*` siblings with the REAL volume id — a volume
+  op journaling under `"root"` corrupts history silently. DETAILS § Capture.
 - **The busy-volumes set disables Eject mid-op** (source AND dest IDs); the `eject_volume` server-side guard is the real
   safety net.
 - **Volume-aware ops must not emit `write-error` on `Cancelled`** — the inner handler already emitted `write-cancelled`.

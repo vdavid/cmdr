@@ -1,4 +1,4 @@
-import { getFileAt, getListingStats, getPathsAtIndices } from '$lib/tauri-commands'
+import { getFileAt, getListingStats, getPathsAtIndices, type Initiator } from '$lib/tauri-commands'
 import { toBackendIndices, toBackendCursorIndex } from '$lib/file-operations/transfer/transfer-dialog-utils'
 import type { SortColumn, SortOrder, TransferOperationType, VolumeInfo } from '../types'
 import type { FilePaneAPI } from './types'
@@ -33,6 +33,9 @@ export interface TransferDialogPropsData {
   /** MCP round-trip id, present only for an auto-confirmed MCP op. Threaded to the
    *  progress state, which replies `mcp-response` with the spawned operationId. */
   mcpRequestId?: string
+  /** Who triggered this operation (`aiClient` for MCP-originated writes). Carried
+   *  into the progress dialog's write config so the backend records provenance. */
+  initiator?: Initiator
 }
 
 export async function getSelectedFilePaths(

@@ -60,7 +60,14 @@ async fn rename_managed_local_success() {
     let old = tmp.join("old.txt");
     let new = tmp.join("new.txt");
     fs::write(&old, "content").unwrap();
-    let result = rename_managed(old.clone(), new.clone(), false, "root".to_string()).await;
+    let result = rename_managed(
+        old.clone(),
+        new.clone(),
+        false,
+        "root".to_string(),
+        crate::operation_log::types::Initiator::User,
+    )
+    .await;
     assert!(result.is_ok());
     assert!(!old.exists());
     assert_eq!(fs::read_to_string(&new).unwrap(), "content");
@@ -75,7 +82,14 @@ async fn rename_managed_renames_a_zip_file_itself() {
     let old = tmp.join("bundle.zip");
     let new = tmp.join("renamed.zip");
     fs::write(&old, b"PK\x03\x04rest").unwrap();
-    let result = rename_managed(old.clone(), new.clone(), false, "root".to_string()).await;
+    let result = rename_managed(
+        old.clone(),
+        new.clone(),
+        false,
+        "root".to_string(),
+        crate::operation_log::types::Initiator::User,
+    )
+    .await;
     assert!(result.is_ok(), "renaming the .zip file itself must succeed: {result:?}");
     assert!(!old.exists());
     assert!(new.exists());
@@ -89,7 +103,14 @@ async fn rename_managed_local_conflict_without_force_is_transparent() {
     let new = tmp.join("new.txt");
     fs::write(&old, "old").unwrap();
     fs::write(&new, "new").unwrap();
-    let result = rename_managed(old.clone(), new.clone(), false, "root".to_string()).await;
+    let result = rename_managed(
+        old.clone(),
+        new.clone(),
+        false,
+        "root".to_string(),
+        crate::operation_log::types::Initiator::User,
+    )
+    .await;
     assert!(result.is_err());
     // allowed-error-string-match: the module returns a String; message is the signal
     assert!(result.unwrap_err().contains("already exists"));
@@ -104,7 +125,14 @@ async fn rename_managed_local_force_overwrites() {
     let new = tmp.join("new.txt");
     fs::write(&old, "new content").unwrap();
     fs::write(&new, "old content").unwrap();
-    let result = rename_managed(old.clone(), new.clone(), true, "root".to_string()).await;
+    let result = rename_managed(
+        old.clone(),
+        new.clone(),
+        true,
+        "root".to_string(),
+        crate::operation_log::types::Initiator::User,
+    )
+    .await;
     assert!(result.is_ok());
     assert!(!old.exists());
     assert_eq!(fs::read_to_string(&new).unwrap(), "new content");
@@ -187,8 +215,16 @@ async fn rename_managed_marks_nonroot_volume_busy_during_op() {
     get_volume_manager().register(&volume_id, volume);
 
     let vid = volume_id.clone();
-    let handle =
-        tokio::spawn(async move { rename_managed(PathBuf::from("/old"), PathBuf::from("/new"), false, vid).await });
+    let handle = tokio::spawn(async move {
+        rename_managed(
+            PathBuf::from("/old"),
+            PathBuf::from("/new"),
+            false,
+            vid,
+            crate::operation_log::types::Initiator::User,
+        )
+        .await
+    });
 
     // Wait until the volume's rename is parked mid-flight.
     started.notified().await;
@@ -227,9 +263,15 @@ async fn rename_managed_routes_an_in_archive_rename_to_the_edit_driver() {
     // rather than the old flat "isn't available yet" refusal or an instant rename.
     let from = zip.join("old.txt");
     let to = zip.join("new.txt");
-    let err = rename_managed(from, to, false, "root".to_string())
-        .await
-        .expect_err("routing needs an app handle the unit test doesn't wire");
+    let err = rename_managed(
+        from,
+        to,
+        false,
+        "root".to_string(),
+        crate::operation_log::types::Initiator::User,
+    )
+    .await
+    .expect_err("routing needs an app handle the unit test doesn't wire");
     // allowed-error-string-match: the fn returns a String; the "archive" wording is
     // how we tell the routing fork fired from a natural rename failure.
     assert!(
@@ -240,9 +282,15 @@ async fn rename_managed_routes_an_in_archive_rename_to_the_edit_driver() {
     // A cross-boundary rename (OUT of the archive) is refused as a move, a
     // deterministic routing decision that needs no app handle.
     let outside = tmp.join("out.txt");
-    let cross = rename_managed(zip.join("old.txt"), outside, false, "root".to_string())
-        .await
-        .expect_err("a cross-boundary rename is refused");
+    let cross = rename_managed(
+        zip.join("old.txt"),
+        outside,
+        false,
+        "root".to_string(),
+        crate::operation_log::types::Initiator::User,
+    )
+    .await
+    .expect_err("a cross-boundary rename is refused");
     assert!(
         cross.to_lowercase().contains("move"),
         "a cross-boundary rename should suggest a move instead, got: {cross}"

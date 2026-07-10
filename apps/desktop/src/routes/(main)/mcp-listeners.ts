@@ -32,6 +32,7 @@ import type {
   SortColumn,
 } from '$lib/commands'
 import { applySearchPrefill, type SearchPrefill, type SearchMode } from '$lib/search/search-state.svelte'
+import type { Initiator } from '$lib/tauri-commands'
 import { resolveLocation } from '$lib/file-explorer/navigation/resolve-location'
 import { tString } from '$lib/intl/messages.svelte'
 import type { ExplorerAPI } from './explorer-api'
@@ -179,6 +180,11 @@ async function createDirectlyThenReply(
     await emit('mcp-response', { requestId, ok: false, error })
   }
 }
+
+// Every write an MCP tool triggers is tagged with this provenance so the
+// backend's operation log records `initiator = ai_client` (not `user`). It rides
+// the same bus args as `autoConfirm`/`onConflict` down to the write-start command.
+const aiClientInitiator: Initiator = 'aiClient'
 
 /** Register all MCP event listeners. Call from onMount after listenTauri is ready. */
 export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> {
@@ -488,7 +494,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     // Auto-confirm carries a round-trip id: the FE replies `mcp-response` with the
     // spawned operationId once the op starts (see transfer-progress-state).
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileCopyCommand, { autoConfirm, onConflict, mcpRequestId })
+    void dispatch(fileCopyCommand, { autoConfirm, onConflict, mcpRequestId, initiator: aiClientInitiator })
   })
 
   await listenTauri('mcp-move', (event) => {
@@ -496,7 +502,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const autoConfirm = typeof raw.autoConfirm === 'boolean' ? raw.autoConfirm : undefined
     const onConflict = typeof raw.onConflict === 'string' ? raw.onConflict : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileMoveCommand, { autoConfirm, onConflict, mcpRequestId })
+    void dispatch(fileMoveCommand, { autoConfirm, onConflict, mcpRequestId, initiator: aiClientInitiator })
   })
 
   await listenTauri('mcp-compress', (event) => {
@@ -505,7 +511,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     // No onConflict, unlike copy/move: compress has no inner-file conflicts, and an
     // existing target archive is the dialog's overwrite affordance, not a policy.
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileCompressCommand, { autoConfirm, mcpRequestId })
+    void dispatch(fileCompressCommand, { autoConfirm, mcpRequestId, initiator: aiClientInitiator })
   })
 
   await listenTauri('mcp-rename', (event) => {
@@ -548,9 +554,13 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const pane = parsePane(raw.pane)
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (raw.autoConfirm === true) {
-      void createDirectlyThenReply(() => getExplorer()?.createFolderDirect(name ?? '', pane), name, requestId)
+      void createDirectlyThenReply(
+        () => getExplorer()?.createFolderDirect(name ?? '', pane, aiClientInitiator),
+        name,
+        requestId,
+      )
     } else {
-      void dispatch(fileNewFolderCommand, { name, pane })
+      void dispatch(fileNewFolderCommand, { name, pane, initiator: aiClientInitiator })
     }
   })
 
@@ -560,9 +570,13 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const pane = parsePane(raw.pane)
     const requestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
     if (raw.autoConfirm === true) {
-      void createDirectlyThenReply(() => getExplorer()?.createFileDirect(name ?? '', pane), name, requestId)
+      void createDirectlyThenReply(
+        () => getExplorer()?.createFileDirect(name ?? '', pane, aiClientInitiator),
+        name,
+        requestId,
+      )
     } else {
-      void dispatch(fileNewFileCommand, { name, pane })
+      void dispatch(fileNewFileCommand, { name, pane, initiator: aiClientInitiator })
     }
   })
 
@@ -573,7 +587,7 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     // the FE applies its per-volume default (trash where supported).
     const permanent = typeof raw.permanent === 'boolean' ? raw.permanent : undefined
     const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
-    void dispatch(fileDeleteCommand, { autoConfirm, permanent, mcpRequestId })
+    void dispatch(fileDeleteCommand, { autoConfirm, permanent, mcpRequestId, initiator: aiClientInitiator })
   })
 
   await listenTauri('mcp-confirm-dialog', (event) => {

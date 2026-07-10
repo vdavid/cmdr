@@ -58,6 +58,7 @@ import {
   onOperationsChanged,
   listOperations,
   DEFAULT_VOLUME_ID,
+  type Initiator,
   type WriteProgressEvent,
   type WriteCompleteEvent,
   type WriteErrorEvent,
@@ -108,6 +109,9 @@ export interface TransferProgressStateConfig {
   itemSizes?: number[]
   /** Whether the scan preview is still running (this dialog subscribes to scan events). */
   scanInProgress: boolean
+  /** Who triggered this operation. `undefined`/`user` for direct UI actions;
+   *  `aiClient` when an MCP tool initiated it (drives the operation-log provenance). */
+  initiator?: Initiator
   onComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
   onCancelled: (filesProcessed: number) => void
   onError: (error: WriteOperationError) => void
@@ -603,13 +607,19 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
     const compressionLevel = getSetting('behavior.archiveCompressionLevel')
 
     if (config.operationType === 'trash') {
-      return trashFiles(config.sourcePaths, config.itemSizes, { progressIntervalMs, previewId: config.previewId })
+      return trashFiles(
+        config.sourcePaths,
+        config.itemSizes,
+        { progressIntervalMs, previewId: config.previewId },
+        config.initiator,
+      )
     }
     if (config.operationType === 'delete') {
       return deleteFiles(
         config.sourcePaths,
         { progressIntervalMs, sortColumn: config.sortColumn, sortOrder: config.sortOrder, previewId: config.previewId },
         config.sourceVolumeId,
+        config.initiator,
       )
     }
     if (config.operationType === 'move') {
@@ -628,18 +638,24 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
             preKnownConflicts: config.preKnownConflicts ?? [],
             compressionLevel,
           },
+          config.initiator,
         )
       }
       // Local-to-local move
-      return moveFiles(config.sourcePaths, config.destinationPath ?? '', {
-        conflictResolution: config.conflictResolution,
-        progressIntervalMs,
-        maxConflictsToShow,
-        sortColumn: config.sortColumn,
-        sortOrder: config.sortOrder,
-        previewId: config.previewId,
-        preKnownConflicts: config.preKnownConflicts ?? [],
-      })
+      return moveFiles(
+        config.sourcePaths,
+        config.destinationPath ?? '',
+        {
+          conflictResolution: config.conflictResolution,
+          progressIntervalMs,
+          maxConflictsToShow,
+          sortColumn: config.sortColumn,
+          sortOrder: config.sortOrder,
+          previewId: config.previewId,
+          preKnownConflicts: config.preKnownConflicts ?? [],
+        },
+        config.initiator,
+      )
     }
     if (config.operationType === 'compress') {
       return dispatchCompress(progressIntervalMs, maxConflictsToShow, compressionLevel)
@@ -666,6 +682,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
         preKnownConflicts: config.preKnownConflicts ?? [],
         compressionLevel,
       },
+      config.initiator,
     )
   }
 
@@ -693,6 +710,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
         previewId: config.previewId,
         compressionLevel,
       },
+      config.initiator,
     )
   }
 

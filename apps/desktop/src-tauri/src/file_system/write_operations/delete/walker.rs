@@ -875,6 +875,22 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
             Err(e) => return Err(map_volume_error(&entry.path.display().to_string(), e)),
         }
 
+        // Journal the deleted leaf under the REAL volume id so "when did I delete
+        // dog.jpg" is searchable for SMB / MTP too. Delete is never rollbackable
+        // (the op finalizes `permanent_delete`), so these rows exist purely for
+        // search — one per leaf, deliberately (D4).
+        super::super::journal::record_volume_leaf(
+            operation_id,
+            crate::operation_log::types::EntryType::File,
+            volume_id,
+            &entry.path,
+            None,
+            Some(entry.progress_bytes as i64),
+            None,
+            false,
+            crate::operation_log::types::ItemOutcome::Done,
+        );
+
         files_done += 1;
         // `progress_bytes` (not `size`) so the numerator stays in lockstep
         // with the dedup'd `total_bytes` denominator. See

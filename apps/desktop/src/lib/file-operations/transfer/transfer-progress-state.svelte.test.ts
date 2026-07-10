@@ -302,6 +302,7 @@ describe('createTransferProgressState: compression-level threading', () => {
       'root',
       '/dst',
       expect.objectContaining({ compressionLevel: 6 }),
+      undefined,
     )
   })
 
@@ -313,6 +314,7 @@ describe('createTransferProgressState: compression-level threading', () => {
       'root',
       '/dst',
       expect.objectContaining({ compressionLevel: 6 }),
+      undefined,
     )
   })
 
@@ -324,6 +326,7 @@ describe('createTransferProgressState: compression-level threading', () => {
       'root',
       '/dst',
       expect.objectContaining({ compressionLevel: 6 }),
+      undefined,
     )
   })
 })

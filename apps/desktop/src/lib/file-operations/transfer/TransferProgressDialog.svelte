@@ -4,6 +4,7 @@
         formatDuration,
         formatFilesPerSecond,
         DEFAULT_VOLUME_ID,
+        type Initiator,
     } from '$lib/tauri-commands'
     import type {
         TransferOperationType,
@@ -59,6 +60,8 @@
         itemSizes?: number[]
         /** Whether the scan preview is still running (this dialog should subscribe to scan events) */
         scanInProgress?: boolean
+        /** Who triggered this operation (`aiClient` for MCP-originated writes). */
+        initiator?: Initiator
         onComplete: (filesProcessed: number, filesSkipped: number, bytesProcessed: number) => void
         onCancelled: (filesProcessed: number) => void
         onError: (error: WriteOperationError) => void
@@ -87,6 +90,7 @@
         preKnownConflicts,
         itemSizes,
         scanInProgress = false,
+        initiator,
         onComplete,
         onCancelled,
         onError,
@@ -162,6 +166,7 @@
         preKnownConflicts,
         itemSizes,
         scanInProgress,
+        initiator,
         onComplete,
         onCancelled,
         onError,

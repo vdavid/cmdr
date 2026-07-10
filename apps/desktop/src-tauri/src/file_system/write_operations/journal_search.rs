@@ -182,22 +182,27 @@ fn enumerate_from_id(conn: &Connection, root_id: i64, cap: usize) -> BufferedLea
 /// item's mutation succeeded) and note any coverage downgrade on the op. Each leaf
 /// is rebased onto the source root (`abs_source`) and, when known, the dest root
 /// (`top_level_dest` — the in-trash location, or the moved-to path); a `None` dest
-/// records the leaf source-only (still searchable). A `Full` verdict notes nothing
-/// (the op opens `Full`); a downgrade notes worst-wins.
+/// records the leaf source-only (still searchable). `source_volume_id` /
+/// `dest_volume_id` carry the real volume ids so a volume move's leaves journal
+/// under that volume, not `"root"` (the local callers pass `"root"`). A `Full`
+/// verdict notes nothing (the op opens `Full`); a downgrade notes worst-wins.
 pub(super) fn persist_and_note(
     op_id: &str,
+    source_volume_id: &str,
     abs_source: &Path,
+    dest_volume_id: &str,
     top_level_dest: Option<&Path>,
     buffered: &BufferedLeaves,
 ) {
     for leaf in &buffered.leaves {
         let source = abs_source.join(&leaf.rel);
         let dest = top_level_dest.map(|d| d.join(&leaf.rel));
-        super::journal::record_local_search_leaf(
+        super::journal::record_search_leaf(
             op_id,
             leaf.entry_type,
+            source_volume_id,
             &source,
-            dest.as_deref(),
+            dest.as_ref().map(|d| (dest_volume_id, d.as_path())),
             leaf.size,
             leaf.mtime,
         );

@@ -4,6 +4,7 @@ import { type UnlistenFn } from '@tauri-apps/api/event'
 import {
   commands,
   events,
+  type Initiator,
   type MtpDeviceConnected,
   type MtpDeviceDisconnected,
   type MtpExclusiveAccessError,
@@ -498,8 +499,16 @@ export async function copyBetweenVolumes(
   destVolumeId: string,
   destPath: string,
   config?: VolumeCopyConfig,
+  initiator?: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.copyBetweenVolumes(sourceVolumeId, sourcePaths, destVolumeId, destPath, config ?? null)
+  const res = await commands.copyBetweenVolumes(
+    sourceVolumeId,
+    sourcePaths,
+    destVolumeId,
+    destPath,
+    config ?? null,
+    initiator ?? null,
+  )
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -517,8 +526,16 @@ export async function moveBetweenVolumes(
   destVolumeId: string,
   destPath: string,
   config?: VolumeCopyConfig,
+  initiator?: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.moveBetweenVolumes(sourceVolumeId, sourcePaths, destVolumeId, destPath, config ?? null)
+  const res = await commands.moveBetweenVolumes(
+    sourceVolumeId,
+    sourcePaths,
+    destVolumeId,
+    destPath,
+    config ?? null,
+    initiator ?? null,
+  )
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -542,8 +559,16 @@ export async function compressFiles(
   destVolumeId: string,
   destZipPath: string,
   config?: VolumeCopyConfig,
+  initiator?: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.compressFiles(sourceVolumeId, sourcePaths, destVolumeId, destZipPath, config ?? null)
+  const res = await commands.compressFiles(
+    sourceVolumeId,
+    sourcePaths,
+    destVolumeId,
+    destZipPath,
+    config ?? null,
+    initiator ?? null,
+  )
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

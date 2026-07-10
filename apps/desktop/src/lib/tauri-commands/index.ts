@@ -281,6 +281,7 @@ export type {
   WriteSourceItemDoneEvent,
   ConflictInfo,
   DryRunResult,
+  Initiator,
   OperationStatus,
   OperationSummary,
   ScanProgressEvent,

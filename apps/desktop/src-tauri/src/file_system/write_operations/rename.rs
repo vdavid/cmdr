@@ -65,7 +65,13 @@ pub(crate) struct ConflictFileInfo {
 ///
 /// `from`/`to` are already tilde-expanded (root) or volume-relative (non-root)
 /// by the command layer. `volume_id` is `"root"` for the local filesystem.
-pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volume_id: String) -> Result<(), String> {
+pub(crate) async fn rename_managed(
+    from: PathBuf,
+    to: PathBuf,
+    force: bool,
+    volume_id: String,
+    initiator: crate::operation_log::types::Initiator,
+) -> Result<(), String> {
     // Renaming a path INSIDE an archive is a zip mutation: route it to the
     // managed archive-edit driver. The `.zip` file itself is a regular file —
     // renaming it must work like any other file — so only a genuinely-inner path
@@ -79,22 +85,38 @@ pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volu
 
     let is_root = volume_id == "root";
     let descriptor = rename_descriptor(&from, &to, &volume_id);
-    // Journal local (root) renames only (volume run_instant capture is M2f). Snapshot
-    // the source (kind + mtime) BEFORE the closure moves `from`/`to` and the rename
-    // fires.
+    // Journal the rename as a single-item op under the REAL volume id. Snapshot the
+    // source kind BEFORE the closure moves `from`/`to` and the rename fires: local
+    // reads size + mtime for free from `symlink_metadata`; a volume probes only the
+    // kind (dir vs file) for the row's `entry_type` — one metadata call for a
+    // single-item op, since size/mtime aren't cheaply available on MTP (recorded
+    // `None`, acceptable for a record).
     let op_id = descriptor.operation_id.clone();
-    let journal_snapshot = if is_root {
-        let meta = std::fs::symlink_metadata(&from).ok();
-        super::journal::open_local_op(
-            &op_id,
-            crate::operation_log::types::OpKind::Rename,
-            crate::operation_log::types::Initiator::User,
-            1,
-        );
-        Some((from.clone(), to.clone(), meta))
+    // Cloned so the record after the op (which moves `volume_id` into the closure)
+    // still has the id.
+    let journal_volume_id = volume_id.clone();
+    let local_meta = if is_root {
+        std::fs::symlink_metadata(&from).ok()
     } else {
         None
     };
+    let volume_is_dir = if is_root {
+        false
+    } else {
+        match manager.get(&volume_id) {
+            Some(v) => v.is_directory(&from).await.unwrap_or(false),
+            None => false,
+        }
+    };
+    super::journal::open_volume_op(
+        &op_id,
+        crate::operation_log::types::OpKind::Rename,
+        initiator,
+        &journal_volume_id,
+        None,
+        1,
+    );
+    let journal_snapshot = Some((from.clone(), to.clone(), local_meta, volume_is_dir));
 
     let result = manager::manager()
         .run_instant(descriptor, async move {
@@ -133,23 +155,21 @@ pub(crate) async fn rename_managed(from: PathBuf, to: PathBuf, force: bool, volu
         })
         .await;
 
-    // Journal the local rename as a single-item op: source → dest, one row (the
-    // whole subtree moves by one rename). Rollbackable iff unchanged (rechecked
-    // at rollback time, M3).
-    if let Some((from_path, to_path, meta)) = journal_snapshot {
+    // Journal the rename as a single-item op: source → dest, one row (the whole
+    // subtree moves by one rename). Rollbackable iff unchanged (rechecked at
+    // rollback time, M3).
+    if let Some((from_path, to_path, meta, volume_is_dir)) = journal_snapshot {
         use crate::operation_log::types::{EntryType, ExecutionStatus, ItemOutcome, OpKind};
         match &result {
             Ok(()) => {
-                let entry_type = if meta.as_ref().map(|m| m.is_dir()).unwrap_or(false) {
-                    EntryType::Dir
-                } else {
-                    EntryType::File
-                };
-                super::journal::record_local_leaf(
+                let is_dir = meta.as_ref().map(|m| m.is_dir()).unwrap_or(volume_is_dir);
+                let entry_type = if is_dir { EntryType::Dir } else { EntryType::File };
+                super::journal::record_volume_leaf(
                     &op_id,
                     entry_type,
+                    &journal_volume_id,
                     &from_path,
-                    Some(&to_path),
+                    Some((&journal_volume_id, &to_path)),
                     meta.as_ref().map(|m| m.len() as i64),
                     meta.as_ref().and_then(super::journal::mtime_secs),
                     false,

@@ -85,9 +85,14 @@ async fn create_directory_managed_journals_a_create_folder_op() {
 
     let tmp = create_test_dir("managed_journal");
     let parent = tmp.to_string_lossy().to_string();
-    let created = create_directory_managed(None, parent, "made-folder".to_string())
-        .await
-        .expect("mkdir");
+    let created = create_directory_managed(
+        None,
+        parent,
+        "made-folder".to_string(),
+        crate::operation_log::types::Initiator::User,
+    )
+    .await
+    .expect("mkdir");
     crate::operation_log::clear_journal();
 
     let conn = open_read_connection(&jdb).expect("read conn");
@@ -269,7 +274,13 @@ async fn create_directory_managed_creates_folder_and_cleans_up_record() {
     ensure_root_volume();
     let tmp = create_test_dir("create_managed_ok");
     let parent = tmp.to_string_lossy().to_string();
-    let result = create_directory_managed(None, parent, "made".to_string()).await;
+    let result = create_directory_managed(
+        None,
+        parent,
+        "made".to_string(),
+        crate::operation_log::types::Initiator::User,
+    )
+    .await;
     assert!(result.is_ok(), "managed create returns the new path");
     let path = result.unwrap();
     assert!(path.ends_with("made"));

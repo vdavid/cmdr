@@ -338,9 +338,15 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
             .ok_or_else(|| ToolError::internal(format!("Couldn't derive the parent of {from_path}")))?;
         let to_path = parent.join(&new_name).to_string_lossy().into_owned();
         let volume_id = state.volume_id.clone();
-        crate::commands::rename::rename_file(from_path, to_path, false, volume_id)
-            .await
-            .map_err(|e| ToolError::internal(e.message))?;
+        crate::commands::rename::rename_file(
+            from_path,
+            to_path,
+            false,
+            volume_id,
+            Some(crate::operation_log::types::Initiator::AiClient),
+        )
+        .await
+        .map_err(|e| ToolError::internal(e.message))?;
         Ok(json!(format!("OK: Renamed to {new_name}.")))
     } else {
         // Resolution lives in the FE (it holds the live listing): the mcp-rename

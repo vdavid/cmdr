@@ -9,6 +9,7 @@ import type { QuickLookKeyEventPayload } from '$lib/file-explorer/quick-look/qui
 import type { FileEntry, FriendlyError, TransferOperationType } from '$lib/file-explorer/types'
 import type { NavigateIntent, NavigateResult } from '$lib/file-explorer/pane/navigate'
 import type { StartRenameOptions } from '$lib/file-explorer/pane/types'
+import type { Initiator } from '$lib/tauri-commands'
 
 /**
  * Closed action set for `handleSelectionAction` (the selection sub-dispatcher).
@@ -113,17 +114,37 @@ export interface ExplorerAPI {
    */
   handleMcpTabAction: (pane: 'left' | 'right', action: McpTabAction, tabId?: string, pinned?: boolean) => void
   startRename: (options?: StartRenameOptions) => void
-  openCopyDialog: (autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) => Promise<void>
-  openMoveDialog: (autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) => Promise<void>
-  openCompressDialog: (autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) => Promise<void>
+  openCopyDialog: (
+    autoConfirm?: boolean,
+    onConflict?: string,
+    mcpRequestId?: string,
+    initiator?: Initiator,
+  ) => Promise<void>
+  openMoveDialog: (
+    autoConfirm?: boolean,
+    onConflict?: string,
+    mcpRequestId?: string,
+    initiator?: Initiator,
+  ) => Promise<void>
+  openCompressDialog: (
+    autoConfirm?: boolean,
+    onConflict?: string,
+    mcpRequestId?: string,
+    initiator?: Initiator,
+  ) => Promise<void>
   copyToClipboard: () => Promise<void>
   cutToClipboard: () => Promise<void>
   pasteFromClipboard: (forceMove: boolean) => Promise<void>
-  openNewFolderDialog: (name?: string, pane?: 'left' | 'right') => Promise<void>
-  openNewFileDialog: (name?: string, pane?: 'left' | 'right') => Promise<void>
-  createFolderDirect: (name: string, pane?: 'left' | 'right') => Promise<void>
-  createFileDirect: (name: string, pane?: 'left' | 'right') => Promise<void>
-  openDeleteDialog: (permanent: boolean, autoConfirm?: boolean, mcpRequestId?: string) => Promise<void>
+  openNewFolderDialog: (name?: string, pane?: 'left' | 'right', initiator?: Initiator) => Promise<void>
+  openNewFileDialog: (name?: string, pane?: 'left' | 'right', initiator?: Initiator) => Promise<void>
+  createFolderDirect: (name: string, pane?: 'left' | 'right', initiator?: Initiator) => Promise<void>
+  createFileDirect: (name: string, pane?: 'left' | 'right', initiator?: Initiator) => Promise<void>
+  openDeleteDialog: (
+    permanent: boolean,
+    autoConfirm?: boolean,
+    mcpRequestId?: string,
+    initiator?: Initiator,
+  ) => Promise<void>
   closeConfirmationDialog: () => void
   confirmDialog: (dialogType: ConfirmDialogType, onConflict?: string) => void
   isConfirmationDialogOpen: () => boolean

@@ -15,6 +15,7 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 use super::super::conflict::ApplyToAll;
+use super::super::journal;
 use super::super::manager;
 use super::super::state::WriteOperationState;
 use super::super::types::{
@@ -32,6 +33,7 @@ use super::volume_rename_merge::{RenameMergeCtx, rename_merge_directory};
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
+use crate::operation_log::types::OpKind;
 
 /// Resolve `path` against `volume.local_path()` and register it with the
 /// downloads watcher's ignore set. Skips silently when `volume` isn't
@@ -84,10 +86,20 @@ pub async fn move_between_volumes(
     dest_volume: Arc<dyn Volume>,
     dest_path: PathBuf,
     config: VolumeCopyConfig,
+    initiator: crate::operation_log::types::Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Same volume: use native rename/move (instant for MTP)
     if Arc::ptr_eq(&source_volume, &dest_volume) {
-        return move_within_same_volume(events, source_volume_id, source_volume, source_paths, dest_path, config).await;
+        return move_within_same_volume(
+            events,
+            source_volume_id,
+            source_volume,
+            source_paths,
+            dest_path,
+            config,
+            initiator,
+        )
+        .await;
     }
 
     // Both local: delegate to the battle-tested move implementation
@@ -121,7 +133,7 @@ pub async fn move_between_volumes(
             write_config,
             vec![source_volume_id, dest_volume_id],
             Some(lanes),
-            crate::operation_log::types::Initiator::User,
+            initiator,
         )
         .await;
     }
@@ -136,9 +148,15 @@ pub async fn move_between_volumes(
 
     let operation_id = Uuid::new_v4().to_string();
 
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(
-        config.progress_interval_ms,
-    )));
+    // The per-leaf record points inside `move_volumes_with_progress` journal under
+    // these REAL volume ids (carried on the op state so the test call sites stay
+    // unchanged); the deferred's open/finalize bracket uses them directly.
+    let state = Arc::new(
+        WriteOperationState::new(Duration::from_millis(config.progress_interval_ms))
+            .with_journal_volumes(source_volume_id.clone(), dest_volume_id.clone()),
+    );
+    let journal_source_volume_id = source_volume_id.clone();
+    let journal_dest_volume_id = dest_volume_id.clone();
 
     // Occupies both volumes' lanes (source AND destination). Both volume IDs go
     // in `volume_ids` for the eject guard.
@@ -174,6 +192,17 @@ pub async fn move_between_volumes(
                 Some(source_volume_name),
             );
 
+            // Journal the cross-volume move under the REAL volume ids (per-leaf
+            // rows land inside `move_volumes_with_progress`; this brackets the op).
+            journal::open_volume_op(
+                &op_id,
+                OpKind::Move,
+                initiator,
+                &journal_source_volume_id,
+                Some(&journal_dest_volume_id),
+                0,
+            );
+
             let result: Result<(), WriteFailure> = move_volumes_with_progress(
                 Arc::clone(&events),
                 &op_id,
@@ -185,6 +214,12 @@ pub async fn move_between_volumes(
                 &config,
             )
             .await;
+
+            journal::finalize_op(
+                &op_id,
+                OpKind::Move,
+                journal::execution_status_from_error(result.as_ref().err().map(|f| &f.error)),
+            );
 
             match result {
                 Ok(()) => {}
@@ -224,7 +259,7 @@ pub async fn move_between_volumes(
     clippy::too_many_arguments,
     reason = "Volume move requires passing multiple context parameters"
 )]
-pub(super) async fn move_volumes_with_progress(
+pub(crate) async fn move_volumes_with_progress(
     events: Arc<dyn OperationEventSink>,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -267,6 +302,11 @@ pub(super) async fn move_volumes_with_progress(
     let total_bytes = preflight.total_bytes;
     let known_directory_paths = preflight.known_directory_paths();
     let source_hints: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(preflight.source_hints);
+
+    // The operation-log journal target (real source + dest volume ids), set by the
+    // `move_between_volumes` deferred. `None` in tests / the both-local shortcut,
+    // where the per-leaf record point below no-ops.
+    let journal_volumes = state.journal_volumes.clone();
 
     // Bulk-skip is **file-only** (a top-level directory matching a pre-known
     // conflict means only SOME of its children collide — dropping the whole
@@ -428,6 +468,7 @@ pub(super) async fn move_volumes_with_progress(
             let merge_apply_to_all = Arc::clone(&apply_to_all_cell);
             let last_progress_time: Arc<std::sync::Mutex<Instant>> = Arc::new(std::sync::Mutex::new(Instant::now()));
             let leaf_files_done = Arc::clone(&leaf_files_done);
+            let journal_volumes = journal_volumes.clone();
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let source_volume = Arc::clone(&source_volume);
                 let dest_volume = Arc::clone(&dest_volume);
@@ -439,6 +480,7 @@ pub(super) async fn move_volumes_with_progress(
                 let merge_apply_to_all = Arc::clone(&merge_apply_to_all);
                 let last_progress_time = Arc::clone(&last_progress_time);
                 let leaf_files_done = Arc::clone(&leaf_files_done);
+                let journal_volumes = journal_volumes.clone();
                 let source_path = ctx.source_path.to_path_buf();
                 let dest_item_path = ctx
                     .dest_path
@@ -484,9 +526,10 @@ pub(super) async fn move_volumes_with_progress(
                         let leaf_progress = Arc::clone(&leaf_progress);
                         move |leaf_bytes: u64| leaf_progress.on_leaf_complete(leaf_bytes)
                     };
-                    // Cross-volume move's copy phase doesn't use the granular
-                    // rollback ledger (move rollback reverses renames / cleans
-                    // staging separately), so a throwaway ledger is fine here.
+                    // The copy phase's per-file ledger. Cross-volume move's own
+                    // rollback reverses renames / cleans staging separately, but
+                    // the operation-log capture harvests it below for the per-leaf
+                    // journal rows.
                     let created = super::volume_strategy::CreatedPaths::default();
                     // Merge context: when a source folder lands on a same-named
                     // dest folder, deep file clashes inside honor the file policy
@@ -526,6 +569,18 @@ pub(super) async fn move_volumes_with_progress(
                             );
                             return Err(map_volume_error(&source_path.display().to_string(), e));
                         }
+                    };
+                    // Overwrote iff the top-level file→file safe-replace fires below
+                    // OR a deep-merge child replaced a dest file. Captured before
+                    // `replace_after_write` is consumed; feeds move eligibility.
+                    let source_overwrote = replace_after_write.is_some() || created.any_overwrote();
+                    // Where a FILE source actually lands: `orig` after a safe-replace
+                    // (the temp `dest_item_path` gets renamed onto it below), else
+                    // `dest_item_path`. A DIR source's dest root is `dest_item_path`.
+                    let landed_dest = if source_is_dir {
+                        dest_item_path.clone()
+                    } else {
+                        replace_after_write.clone().unwrap_or_else(|| dest_item_path.clone())
                     };
 
                     // Safe-replace finalize (file→file Overwrite): the temp on
@@ -567,6 +622,31 @@ pub(super) async fn move_volumes_with_progress(
                             e
                         );
                         return Err(map_volume_error(&source_path.display().to_string(), e));
+                    }
+
+                    // Journal the moved leaves under the REAL volume ids: a file
+                    // source → one leaf (source on the source volume, dest on the
+                    // dest volume); a dir source → one leaf per copied file (source
+                    // rebased from the dest tail) plus the created dest dirs after
+                    // them. Per-source here (not post-loop) because the throwaway
+                    // ledger is drained per iteration; the created dirs land right
+                    // after this source's files, so their `seq` still follows the
+                    // contents within the subtree.
+                    if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
+                        let files = std::mem::take(&mut *created.files.lock_ignore_poison());
+                        let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
+                        journal::record_volume_transfer_source(
+                            &operation_id,
+                            src_vol,
+                            &source_path,
+                            dst_vol,
+                            &landed_dest,
+                            source_is_dir,
+                            &files,
+                            (!source_is_dir).then_some(bytes as i64),
+                            source_overwrote,
+                        );
+                        journal::record_created_dirs_on(&operation_id, dst_vol, &dirs);
                     }
 
                     // Per-file milestone emit (bumped `files_done = N`,
@@ -638,6 +718,7 @@ async fn move_within_same_volume(
     source_paths: Vec<PathBuf>,
     dest_path: PathBuf,
     config: VolumeCopyConfig,
+    initiator: crate::operation_log::types::Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let operation_id = Uuid::new_v4().to_string();
 
@@ -651,7 +732,13 @@ async fn move_within_same_volume(
 
     let progress_interval_ms = config.progress_interval_ms;
 
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(progress_interval_ms)));
+    // A same-volume move journals under the one volume id as both source and dest;
+    // the per-item record point in `_with_progress` reads it off the state.
+    let state = Arc::new(
+        WriteOperationState::new(Duration::from_millis(progress_interval_ms))
+            .with_journal_volumes(volume_id.clone(), volume_id.clone()),
+    );
+    let journal_volume_id = volume_id.clone();
 
     // Same-volume move: a single lane (the volume's own).
     let lane = volume.lane_key();
@@ -684,6 +771,17 @@ async fn move_within_same_volume(
                 Some(volume_name),
             );
 
+            // Journal the same-volume move under the REAL volume id. The top-level
+            // rename rows + search leaves land inside `_with_progress`.
+            journal::open_volume_op(
+                &op_id,
+                OpKind::Move,
+                initiator,
+                &journal_volume_id,
+                Some(&journal_volume_id),
+                0,
+            );
+
             let result: Result<(), WriteOperationError> = move_within_same_volume_with_progress(
                 Arc::clone(&events),
                 &op_id,
@@ -694,6 +792,12 @@ async fn move_within_same_volume(
                 &config,
             )
             .await;
+
+            journal::finalize_op(
+                &op_id,
+                OpKind::Move,
+                journal::execution_status_from_error(result.as_ref().err()),
+            );
 
             match result {
                 Ok(()) => {}
@@ -717,6 +821,45 @@ async fn move_within_same_volume(
         operation_id,
         operation_type: WriteOperationType::Move,
     })
+}
+
+/// Journal one moved top-level item of a same-volume move: the `rollback_unit`
+/// row (one rename-back reverses the whole subtree) plus the buffered `search_only`
+/// leaves. `overwrote` is the OR of the top-level file→file overwrite (recorded in
+/// `overwritten_sources` by the resolver) and any deep-merge overwrite (via
+/// `merge_overwrote`) — either makes the move `not_rollbackable`. No-ops without a
+/// journal target.
+#[allow(clippy::too_many_arguments, reason = "the fields of one journaled moved item")]
+fn journal_same_volume_moved_item(
+    op_id: &str,
+    journal_volumes: Option<&(String, String)>,
+    overwritten_sources: &std::sync::Mutex<std::collections::HashSet<PathBuf>>,
+    merge_overwrote: &std::sync::atomic::AtomicBool,
+    entry_type: crate::operation_log::types::EntryType,
+    source: &Path,
+    dest: &Path,
+    size: Option<i64>,
+    buffered: Option<&super::super::journal_search::BufferedLeaves>,
+) {
+    let Some((src_vol, dst_vol)) = journal_volumes else {
+        return;
+    };
+    let overwrote = merge_overwrote.load(std::sync::atomic::Ordering::Relaxed)
+        || overwritten_sources.lock_ignore_poison().contains(source);
+    journal::record_volume_leaf(
+        op_id,
+        entry_type,
+        src_vol,
+        source,
+        Some((dst_vol, dest)),
+        size,
+        None,
+        overwrote,
+        crate::operation_log::types::ItemOutcome::Done,
+    );
+    if let Some(buf) = buffered {
+        super::super::journal_search::persist_and_note(op_id, src_vol, source, dst_vol, Some(dest), buf);
+    }
 }
 
 /// Internal same-volume rename body. Takes a sink for event emission so unit
@@ -786,6 +929,15 @@ pub(crate) async fn move_within_same_volume_with_progress(
     let known_directory_paths = top_level.known_directory_paths();
     let source_hints: Arc<HashMap<PathBuf, SourceHint>> = Arc::new(top_level.source_hints);
 
+    // Operation-log journaling for the same-volume move: the one volume id (as both
+    // source and dest) plus the set of top-level sources whose conflict resolution
+    // overwrote an existing dest file. The resolver runs BEFORE the transfer closure
+    // (in a separate driver callback), so the overwrite verdict crosses to the
+    // record point through this shared set. `None` journal target ⇒ no journaling.
+    let journal_volumes = state.journal_volumes.clone();
+    let overwritten_sources: Arc<std::sync::Mutex<std::collections::HashSet<PathBuf>>> =
+        Arc::new(std::sync::Mutex::new(std::collections::HashSet::new()));
+
     // Bulk-skip is file-only. Top-level directory matches are excluded so
     // their non-conflicting children still move.
     let pre_skip_paths = build_pre_skip_set(
@@ -845,6 +997,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
             let source_hints = Arc::clone(&source_hints);
             let config = config_owned.clone();
             let operation_id = operation_id_owned.clone();
+            let overwritten_sources = Arc::clone(&overwritten_sources);
             move |input: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
                 let volume = Arc::clone(&volume);
                 let state = Arc::clone(&state);
@@ -852,6 +1005,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
                 let apply_to_all = Arc::clone(&apply_to_all);
                 let source_hints = Arc::clone(&source_hints);
                 let config = config.clone();
+                let overwritten_sources = Arc::clone(&overwritten_sources);
                 let operation_id = operation_id.clone();
                 let source_path_owned = input.source_path.to_path_buf();
                 let initial_dest_owned = input.initial_dest_path.to_path_buf();
@@ -909,6 +1063,12 @@ pub(crate) async fn move_within_same_volume_with_progress(
                             // the resolved path as-is.
                             match rc.replace_after_write {
                                 Some(orig) => {
+                                    // A file→file overwrite: record it so the journal
+                                    // finalizes this move `not_rollbackable` (the
+                                    // replaced original is gone).
+                                    overwritten_sources
+                                        .lock_ignore_poison()
+                                        .insert(source_path_owned.clone());
                                     match volume.delete(&orig).await {
                                         Ok(()) => {}
                                         Err(VolumeError::NotFound(_)) => {}
@@ -937,6 +1097,8 @@ pub(crate) async fn move_within_same_volume_with_progress(
             let apply_to_all = Arc::clone(&apply_to_all_cell);
             let config_for_merge = config_owned.clone();
             let operation_id = operation_id_owned.clone();
+            let journal_volumes = journal_volumes.clone();
+            let overwritten_sources = Arc::clone(&overwritten_sources);
             move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                 let volume = Arc::clone(&volume);
                 let source_hints = Arc::clone(&source_hints);
@@ -945,6 +1107,8 @@ pub(crate) async fn move_within_same_volume_with_progress(
                 let apply_to_all = Arc::clone(&apply_to_all);
                 let config_for_merge = config_for_merge.clone();
                 let operation_id = operation_id.clone();
+                let journal_volumes = journal_volumes.clone();
+                let overwritten_sources = Arc::clone(&overwritten_sources);
                 let source_path = ctx.source_path.to_path_buf();
                 let dest_item_path = ctx
                     .dest_path
@@ -961,6 +1125,31 @@ pub(crate) async fn move_within_same_volume_with_progress(
                         None => volume.is_directory(&source_path).await.unwrap_or(false),
                     };
 
+                    // Operation-log: a same-volume move is a same-FS-style move, so
+                    // the top-level item is the `rollback_unit` row and the subtree's
+                    // descendants are `search_only` leaves. Enumerate them from the
+                    // drive index BEFORE the rename (the reconciler prunes the moved
+                    // subtree on its FSEvent); persist only after the item succeeds.
+                    // A volume with no index downgrades to `index_absent`. `None`
+                    // journal target (tests) skips all of this.
+                    let entry_type = if source_is_dir {
+                        crate::operation_log::types::EntryType::Dir
+                    } else {
+                        crate::operation_log::types::EntryType::File
+                    };
+                    let row_size = hint.and_then(|h| (!h.is_directory).then_some(h.size as i64));
+                    let buffered_leaves = journal_volumes.as_ref().filter(|_| source_is_dir).map(|(src_vol, _)| {
+                        super::super::journal_search::enumerate_subtree_for_search(
+                            src_vol,
+                            &source_path,
+                            super::super::journal_search::SEARCH_LEAF_CAP,
+                        )
+                    });
+                    // Deep-merge overwrites cross to this record point through the
+                    // merge ctx's flag; a top-level file→file overwrite through the
+                    // resolver's `overwritten_sources` set.
+                    let merge_overwrote = std::sync::atomic::AtomicBool::new(false);
+
                     // Dir-vs-dir collision: the resolver short-circuited to a
                     // merge (no prompt for the folder), handing back the existing
                     // dest dir as the target. A flat `rename` would fail
@@ -975,6 +1164,7 @@ pub(crate) async fn move_within_same_volume_with_progress(
                             config: &config_for_merge,
                             state: &state,
                             apply_to_all: &apply_to_all,
+                            overwrote: &merge_overwrote,
                         };
                         // Register both halves of every deep child rename with
                         // the downloads watcher's ignore set. No-ops on
@@ -984,6 +1174,17 @@ pub(crate) async fn move_within_same_volume_with_progress(
                             note_pending_for_local_volume(&volume, to);
                         };
                         rename_merge_directory(&merge_ctx, &source_path, &dest_item_path, &note).await?;
+                        journal_same_volume_moved_item(
+                            &operation_id,
+                            journal_volumes.as_ref(),
+                            &overwritten_sources,
+                            &merge_overwrote,
+                            entry_type,
+                            &source_path,
+                            &dest_item_path,
+                            row_size,
+                            buffered_leaves.as_ref(),
+                        );
                         // A rename moves no bytes: the item counts 1 (driver's
                         // milestone), the byte axis stays at 0.
                         return Ok(TransferOutcome::Transferred { bytes: 0 });
@@ -1000,6 +1201,18 @@ pub(crate) async fn move_within_same_volume_with_progress(
                         .rename(&source_path, &dest_item_path, false)
                         .await
                         .map_err(|e| map_volume_error(&source_path.display().to_string(), e))?;
+
+                    journal_same_volume_moved_item(
+                        &operation_id,
+                        journal_volumes.as_ref(),
+                        &overwritten_sources,
+                        &merge_overwrote,
+                        entry_type,
+                        &source_path,
+                        &dest_item_path,
+                        row_size,
+                        buffered_leaves.as_ref(),
+                    );
 
                     // Per-file milestone emit (bumped `files_done`) lives in the
                     // driver's `Transferred` arm. A rename moves no bytes, so the

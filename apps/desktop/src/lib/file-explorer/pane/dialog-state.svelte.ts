@@ -1,4 +1,4 @@
-import { formatBytes, refreshListing } from '$lib/tauri-commands'
+import { formatBytes, refreshListing, type Initiator } from '$lib/tauri-commands'
 import { onDirectoryDiff, findFileIndex } from '$lib/tauri-commands'
 import { setArchivePassword, clearArchivePassword } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
@@ -48,6 +48,8 @@ export interface TransferProgressPropsData {
   /** MCP round-trip id, present only for an auto-confirmed MCP op. Forwarded to
    *  the progress state so it replies `mcp-response` with the spawned operationId. */
   mcpRequestId?: string
+  /** Who triggered this operation (`aiClient` for MCP-originated writes). */
+  initiator?: Initiator
 }
 
 export interface NewFolderDialogPropsData {
@@ -56,6 +58,8 @@ export interface NewFolderDialogPropsData {
   showHiddenFiles: boolean
   initialName: string
   volumeId: string
+  /** Who triggered this create (`aiClient` for the MCP `mkdir` tool). */
+  initiator?: Initiator
 }
 
 export interface NewFileDialogPropsData {
@@ -64,6 +68,8 @@ export interface NewFileDialogPropsData {
   showHiddenFiles: boolean
   initialName: string
   volumeId: string
+  /** Who triggered this create (`aiClient` for the MCP `mkfile` tool). */
+  initiator?: Initiator
 }
 
 export interface AlertDialogPropsData {
@@ -118,6 +124,8 @@ export interface DeleteDialogPropsData {
   /** MCP round-trip id, present only for an auto-confirmed MCP delete/trash.
    *  Forwarded to the progress state so it replies with the spawned operationId. */
   mcpRequestId?: string
+  /** Who triggered this delete (`aiClient` for the MCP `delete` tool). */
+  initiator?: Initiator
 }
 
 export interface DialogStateDeps {
@@ -381,6 +389,7 @@ export function createDialogState(deps: DialogStateDeps) {
         fileCount: transferDialogProps.fileCount,
         folderCount: transferDialogProps.folderCount,
         mcpRequestId: transferDialogProps.mcpRequestId,
+        initiator: transferDialogProps.initiator,
       }
       snapshotSourcePaneSelection()
 
@@ -421,6 +430,7 @@ export function createDialogState(deps: DialogStateDeps) {
         sourceVolumeId: deleteDialogProps.sourceVolumeId,
         itemSizes,
         mcpRequestId: deleteDialogProps.mcpRequestId,
+        initiator: deleteDialogProps.initiator,
       }
       snapshotSourcePaneSelection()
 

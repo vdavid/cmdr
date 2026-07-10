@@ -237,6 +237,83 @@ describe('mcp-refresh listener (round-trip)', () => {
   })
 })
 
+// === MCP-originated write provenance ===
+// Every write an MCP tool triggers must carry `initiator: 'aiClient'` through the
+// bus so the backend's operation log records the AI as the initiator, not the
+// user. These pin the tag on each of the six write dispatches (copy, move,
+// compress, mkdir, mkfile, delete) alongside the existing autoConfirm/onConflict
+// pass-through.
+
+describe('MCP write dispatches tag initiator: aiClient', () => {
+  it('mcp-copy forwards initiator alongside autoConfirm/onConflict', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-copy')({ payload: { autoConfirm: true, onConflict: 'overwrite_all' } })
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.copy', {
+      autoConfirm: true,
+      onConflict: 'overwrite_all',
+      initiator: 'aiClient',
+    })
+  })
+
+  it('mcp-move forwards initiator alongside autoConfirm/onConflict', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-move')({ payload: { autoConfirm: false, onConflict: 'skip_all' } })
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.move', {
+      autoConfirm: false,
+      onConflict: 'skip_all',
+      initiator: 'aiClient',
+    })
+  })
+
+  it('mcp-compress forwards initiator (no onConflict for compress)', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-compress')({ payload: { autoConfirm: true } })
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.compress', {
+      autoConfirm: true,
+      initiator: 'aiClient',
+    })
+  })
+
+  it('mcp-mkdir dispatches with initiator even though it carries no other args', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-mkdir')({ payload: {} })
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.newFolder', { initiator: 'aiClient' })
+  })
+
+  it('mcp-mkfile dispatches with initiator even though it carries no other args', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-mkfile')({ payload: {} })
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.newFile', { initiator: 'aiClient' })
+  })
+
+  it('mcp-delete forwards initiator alongside autoConfirm', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-delete')({ payload: { autoConfirm: true } })
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('file.delete', {
+      autoConfirm: true,
+      initiator: 'aiClient',
+    })
+  })
+})
+
 // === mcp-nav-to-path round-trip ===
 // `nav_to_path` resolves the bare path to a `Location` at the edge first (the
 // agent path can live on any volume), then routes a `{ location }` navigation.

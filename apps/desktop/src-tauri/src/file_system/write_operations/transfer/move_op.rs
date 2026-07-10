@@ -288,7 +288,14 @@ fn move_with_rename(
             // Persist the buffered `search_only` leaves now that the move
             // succeeded; their dest is rebased onto the moved-to path.
             if let Some(buffered) = &buffered_leaves {
-                super::super::journal_search::persist_and_note(operation_id, source, Some(&dest_path), buffered);
+                super::super::journal_search::persist_and_note(
+                    operation_id,
+                    crate::file_system::volume::DEFAULT_VOLUME_ID,
+                    source,
+                    crate::file_system::volume::DEFAULT_VOLUME_ID,
+                    Some(&dest_path),
+                    buffered,
+                );
             }
 
             files_done += 1;

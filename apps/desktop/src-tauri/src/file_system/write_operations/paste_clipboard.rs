@@ -49,15 +49,12 @@ pub(crate) async fn write_payload_to_dir(
     // Route through the managed `CreateFile` instant op (David-approved M2f): the
     // write is a real mutation, so it registers a brief `Running` record, marks
     // the volume busy, and — via the journal bracket — records a one-item
-    // `CreateFile` operation exactly like mkfile, without a bespoke recorder. Local
-    // (`root`) writes journal; volume (MTP/SMB) run_instant capture is a separate
-    // M2f item.
-    let is_local = volume_id_str == "root";
+    // `CreateFile` operation exactly like mkfile, without a bespoke recorder. It
+    // journals under the REAL volume id (`"root"` for the local drive), so a paste
+    // onto SMB / MTP is captured too. Paste is always user-initiated (no MCP path).
     let descriptor = super::create::instant_descriptor(WriteOperationType::CreateFile, volume_id.as_deref(), "pasted");
     let op_id = descriptor.operation_id.clone();
-    if is_local {
-        super::journal::open_local_op(&op_id, OpKind::CreateFile, Initiator::User, 1);
-    }
+    super::journal::open_volume_op(&op_id, OpKind::CreateFile, Initiator::User, &volume_id_str, None, 1);
 
     // Atomic O_EXCL create+write, retrying the shared `pasted (N).<ext>` names on
     // the typed AlreadyExists (no pre-scan TOCTOU; works on any writable volume).
@@ -87,14 +84,13 @@ pub(crate) async fn write_payload_to_dir(
     };
     let result = manager::manager().run_instant(descriptor, write).await;
 
-    if is_local {
-        super::journal::journal_instant_create(
-            &op_id,
-            OpKind::CreateFile,
-            EntryType::File,
-            result.as_ref().ok().map(|(path, _)| path.as_path()),
-        );
-    }
+    super::journal::journal_instant_create(
+        &op_id,
+        OpKind::CreateFile,
+        EntryType::File,
+        &volume_id_str,
+        result.as_ref().ok().map(|(path, _)| path.as_path()),
+    );
     let (new_path, final_name) = result?;
 
     // Synthetic listing diff so the new file appears and the FE cursor-lands

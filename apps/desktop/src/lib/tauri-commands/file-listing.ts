@@ -1,7 +1,7 @@
 // On-demand virtual scrolling API (listing-based), sync status, font metrics
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { commands, events } from '$lib/ipc/bindings'
+import { commands, events, type Initiator } from '$lib/ipc/bindings'
 import type {
   FileEntry,
   ListingStats,
@@ -392,8 +392,13 @@ export async function statPathsKinds(paths: string[]): Promise<(boolean | null)[
  * @param volumeId - Optional volume ID. Defaults to "root" for local filesystem.
  * @returns The full path of the created directory.
  */
-export async function createDirectory(parentPath: string, name: string, volumeId?: string): Promise<string> {
-  const res = await commands.createDirectory(volumeId ?? null, parentPath, name)
+export async function createDirectory(
+  parentPath: string,
+  name: string,
+  volumeId?: string,
+  initiator?: Initiator,
+): Promise<string> {
+  const res = await commands.createDirectory(volumeId ?? null, parentPath, name, initiator ?? null)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -405,8 +410,13 @@ export async function createDirectory(parentPath: string, name: string, volumeId
  * @param volumeId - Optional volume ID. Defaults to "root" for local filesystem.
  * @returns The full path of the created file.
  */
-export async function createFile(parentPath: string, name: string, volumeId?: string): Promise<string> {
-  const res = await commands.createFile(volumeId ?? null, parentPath, name)
+export async function createFile(
+  parentPath: string,
+  name: string,
+  volumeId?: string,
+  initiator?: Initiator,
+): Promise<string> {
+  const res = await commands.createFile(volumeId ?? null, parentPath, name, initiator ?? null)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

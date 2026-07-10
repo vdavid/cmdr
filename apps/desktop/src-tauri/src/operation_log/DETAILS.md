@@ -203,17 +203,52 @@ Numbers + the cap-tuning rationale: [`docs/notes/operation-log-capture-bench.md`
   journals a one-item `CreateFile` op for free (the write loop is unchanged, just bracketed by the managed op).
 - **The single `move_to_trash_sync` in `rename.rs`** goes through `trash::trash_single_journaled`, journaling a one-item
   trash op that mirrors the batch path (in-trash dest + drive-index search leaves).
-- **Volume (SMB / MTP) copy/move/delete + volume `run_instant`** do NOT journal yet — they spawn through their own
-  `volume_copy.rs` / `volume_move.rs` deferreds, outside the local record points. Journaling them (a volume-aware
-  `open`/`record` that carries the real volume id, not the hardcoded `"root"`) is the remaining M2 capture item.
+- **Volume (SMB / MTP) copy/move/delete + volume `run_instant`** journal through the same seam, but under the REAL
+  volume id (not `"root"`). They spawn through their own `volume_copy.rs` / `volume_move.rs` / delete-walker deferreds,
+  so each deferred brackets the op with `journal::open_volume_op` / `finalize_op` and the per-item record points call the
+  `record_volume_*` siblings of the local helpers. The record points inside the shared `copy_volumes_with_progress` /
+  `move_volumes_with_progress` bodies read the `(source_volume_id, dest_volume_id)` off `WriteOperationState::journal_volumes`
+  (the deferred sets it) rather than taking new params — those bodies have ~80 test call sites, and this mirrors how
+  `op_id` already reaches them. `run_instant` (create/rename) unifies local + volume via `open_volume_op` with the id
+  (`"root"` for local), so there's no local/volume branch. See § Volume capture below.
 - **Native drag-out** is explicitly OUT of scope — the destination is another app, outside Cmdr; there's nothing to roll
   back to.
+- **Archive move-OUT** (`route_archive_move_out`, a compound extract-then-archive-rewrite) does NOT open an
+  operation-log op; its extract phase runs `copy_volumes_with_progress` with no journal target set, so it doesn't journal.
+  A copy/move INTO an archive DOES journal (via the compress/edit `ArchiveProvenance` path), but the plain
+  into-archive-edit convenience wrapper (`route_archive_copy_into`) defaults its `initiator` to `user` — an
+  MCP-initiated into-archive edit records `user`, a minor provenance gap on a rare, already-`not_rollbackable` path.
 
-### Initiator through the volume commands (provenance gap)
+### Volume capture — carrying the real volume id + honest overwrite
 
-Local write-start commands thread `initiator` (M2c). The VOLUME commands (`copy_between_volumes`, `move_between_volumes`,
-`compress_files`) and the two `run_instant` commands (`create`, `rename`) do NOT yet — they default to `user`. Full
-threading (an optional param + bindings regen + the `mcp-listeners.ts` `ai_client` tag) is the remaining provenance item.
+Two things the volume paths need that the local paths don't:
+
+- **The real volume id, threaded via op state.** `journal.rs` gained `open_volume_op` + `record_volume_leaf` /
+  `record_volume_transfer_source` / `record_created_dirs_on` / `record_search_leaf` — the volume-aware siblings of the
+  `_local_` helpers, taking explicit source/dest volume ids. The deferreds call `open`/`finalize` directly (they have the
+  ids); the per-leaf points inside the shared `*_with_progress` bodies read `WriteOperationState::journal_volumes`
+  (`Some((src, dst))`, set by the deferred; `None` in tests / the both-local shortcut ⇒ no journaling). Honesty invariant,
+  TDD-guarded: a volume op's rows carry the real id, never `"root"` (a wrong id silently corrupts history —
+  `volume_copy_journals_under_the_real_volume_ids_not_root`, `cross_volume_move_journals_per_leaf_move_rows`).
+- **Overwrite detection for eligibility.** A copy/move that overwrote isn't rollbackable (deleting the copies can't
+  restore the overwritten original), so the volume paths surface "did anything overwrite": the top-level file→file
+  safe-replace is known at the call site; deep-merge child overwrites are counted in `CreatedPaths::overwrote_files`
+  (copy/cross-volume-move) or a `RenameMergeCtx::overwrote` flag (same-volume move), and the same-volume resolver records
+  a top-level file overwrite in a shared `overwritten_sources` set (it runs in a separate driver callback from the record
+  point). The recorded row's `overwrote` bit is the OR of these; `compute_eligibility` reads it op-wide. Per-inner-file
+  granularity isn't tracked (op-wide eligibility is all that's consumed).
+
+Granularity mirrors local (D-granularity): cross-volume copy + cross-volume move + volume delete are per-leaf; a
+same-volume move is a same-FS-style move (top-level `rollback_unit` row + drive-index `search_only` leaves, which
+downgrade to `index_absent` on a volume with no index — verified by the gate in `enumerate_subtree_for_search`).
+
+### Provenance — initiator threads through every write-start command
+
+Every write-start command now carries an optional `initiator` (default `user`): the local commands (M2c) plus the volume
+commands (`copy_between_volumes`, `move_between_volumes`, `compress_files`) and the `run_instant` commands (`create`,
+`rename`). The FE `mcp-listeners.ts` tags MCP-originated write dispatches `ai_client` (threaded through the typed command
+bus alongside `autoConfirm`/`onConflict`, mirroring navigation's `source: 'mcp'`). The one gap: an into-archive-edit via
+a volume command defaults to `user` (see the bypass boundary above).
 
 ### Row-volume tradeoff
 

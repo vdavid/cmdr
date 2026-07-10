@@ -19,7 +19,7 @@ use crate::operation_log::types::{ArchiveSubkind, EntryType, ExecutionStatus, In
 use crate::operation_log::writer::{JournalItem, OpenOperation};
 use crate::operation_log::{journal_finalize, journal_open, journal_record_items};
 
-use super::types::WriteOperationType;
+use super::types::{WriteOperationError, WriteOperationType};
 
 /// Map the pipeline's op type to the journal taxonomy (1:1). The `archive_edit`
 /// subkind + net-new flag are supplied separately by the compress/zip driver
@@ -34,6 +34,19 @@ pub(super) fn op_kind_of(t: WriteOperationType) -> OpKind {
         WriteOperationType::CreateFolder => OpKind::CreateFolder,
         WriteOperationType::CreateFile => OpKind::CreateFile,
         WriteOperationType::ArchiveEdit => OpKind::ArchiveEdit,
+    }
+}
+
+/// Map a write op's terminal `Result` error into the journal's `ExecutionStatus`:
+/// `None` (success) ⇒ `Done`, a `Cancelled` error ⇒ `Canceled`, anything else ⇒
+/// `Failed`. A failed / canceled op still finalizes and stays rollbackable for
+/// what it reached (D4). The caller passes `result.as_ref().err()` (or, for a
+/// `WriteFailure`, `.map(|f| &f.error)`).
+pub(super) fn execution_status_from_error(err: Option<&WriteOperationError>) -> ExecutionStatus {
+    match err {
+        None => ExecutionStatus::Done,
+        Some(WriteOperationError::Cancelled { .. }) => ExecutionStatus::Canceled,
+        Some(_) => ExecutionStatus::Failed,
     }
 }
 
@@ -86,6 +99,30 @@ pub(super) fn open_local_op(op_id: &str, kind: OpKind, initiator: Initiator, ite
     });
 }
 
+/// Open a volume (SMB / MTP / local) managed op in the journal, carrying the REAL
+/// source and dest volume ids — the volume-aware sibling of [`open_local_op`],
+/// which bakes in `"root"`. A same-volume move passes the one id as both.
+pub(super) fn open_volume_op(
+    op_id: &str,
+    kind: OpKind,
+    initiator: Initiator,
+    source_volume_id: &str,
+    dest_volume_id: Option<&str>,
+    item_count: u64,
+) {
+    journal_open(OpenOperation {
+        op_id: op_id.to_string(),
+        kind,
+        initiator,
+        source_volume_id: Some(source_volume_id.to_string()),
+        dest_volume_id: dest_volume_id.map(str::to_string),
+        item_count,
+        started_at: now_secs(),
+        rolls_back_op_id: None,
+        execution_status: ExecutionStatus::Running,
+    });
+}
+
 /// Record one local `rollback_unit` row: a copied / cross-FS-moved file (with a
 /// dest), a deleted file (no dest), or a trashed / renamed / same-FS-moved
 /// top-level item. `seq` is assigned by the journal in recording order.
@@ -100,10 +137,44 @@ pub(super) fn record_local_leaf(
     overwrote: bool,
     outcome: ItemOutcome,
 ) {
-    record_local_row(
+    record_row(
         op_id,
         entry_type,
         RowRole::RollbackUnit,
+        DEFAULT_VOLUME_ID,
+        source,
+        dest.map(|d| (DEFAULT_VOLUME_ID, d)),
+        size,
+        mtime,
+        overwrote,
+        outcome,
+    );
+}
+
+/// Record one `rollback_unit` row on a real (SMB / MTP / local) volume: the
+/// volume-aware sibling of [`record_local_leaf`]. `source` lives on
+/// `source_volume_id`; `dest` bundles the destination volume id + path (they may
+/// differ from the source on a cross-volume copy / move). The local helpers bake
+/// in `"root"`; the volume paths must pass the REAL ids so a volume op's rows
+/// never journal under `"root"` (the honesty invariant — a wrong volume id would
+/// corrupt history silently).
+#[allow(clippy::too_many_arguments, reason = "the natural fields of a journal row")]
+pub(super) fn record_volume_leaf(
+    op_id: &str,
+    entry_type: EntryType,
+    source_volume_id: &str,
+    source: &Path,
+    dest: Option<(&str, &Path)>,
+    size: Option<i64>,
+    mtime: Option<i64>,
+    overwrote: bool,
+    outcome: ItemOutcome,
+) {
+    record_row(
+        op_id,
+        entry_type,
+        RowRole::RollbackUnit,
+        source_volume_id,
         source,
         dest,
         size,
@@ -113,21 +184,79 @@ pub(super) fn record_local_leaf(
     );
 }
 
-/// Record one local `search_only` row (a leaf beneath a trashed / same-FS-moved
+/// Record the per-file `rollback_unit` rows a volume copy / cross-volume move
+/// landed for ONE top-level source. A FILE source records one leaf (`created_files`
+/// empty, `dest_root` = the landed dest path, `file_size` known). A DIRECTORY
+/// source records one leaf per `created_files` entry (a dest path under
+/// `dest_root`), its source rebased onto `source_root` from the tail under
+/// `dest_root`; per-inner-file size isn't cheaply available here, so it records
+/// `None`. `overwrote` applies to the whole source's leaves — op-wide rollback
+/// eligibility is the OR of these, so marking a source that overwrote anything is
+/// honest (deleting the copies can't restore an overwritten original). The created
+/// directories are journaled separately, after all files, via
+/// [`record_created_dirs_on`].
+#[allow(clippy::too_many_arguments, reason = "the natural fields of a volume transfer")]
+pub(super) fn record_volume_transfer_source(
+    op_id: &str,
+    source_volume_id: &str,
+    source_root: &Path,
+    dest_volume_id: &str,
+    dest_root: &Path,
+    source_is_dir: bool,
+    created_files: &[std::path::PathBuf],
+    file_size: Option<i64>,
+    overwrote: bool,
+) {
+    if source_is_dir {
+        for dest_leaf in created_files {
+            let rel = dest_leaf.strip_prefix(dest_root).unwrap_or(dest_leaf);
+            let source_leaf = source_root.join(rel);
+            record_volume_leaf(
+                op_id,
+                EntryType::File,
+                source_volume_id,
+                &source_leaf,
+                Some((dest_volume_id, dest_leaf)),
+                None,
+                None,
+                overwrote,
+                ItemOutcome::Done,
+            );
+        }
+    } else {
+        record_volume_leaf(
+            op_id,
+            EntryType::File,
+            source_volume_id,
+            source_root,
+            Some((dest_volume_id, dest_root)),
+            file_size,
+            None,
+            overwrote,
+            ItemOutcome::Done,
+        );
+    }
+}
+
+/// Record one `search_only` row (a leaf beneath a trashed / same-FS-moved
 /// top-level unit — searchable but never a reversal unit, D-granularity).
+/// Volume-aware: `source_volume_id` and the optional `dest` volume carry the real
+/// ids (the local callers pass `"root"`).
 #[allow(clippy::too_many_arguments, reason = "the natural fields of a journal row")]
-pub(super) fn record_local_search_leaf(
+pub(super) fn record_search_leaf(
     op_id: &str,
     entry_type: EntryType,
+    source_volume_id: &str,
     source: &Path,
-    dest: Option<&Path>,
+    dest: Option<(&str, &Path)>,
     size: Option<i64>,
     mtime: Option<i64>,
 ) {
-    record_local_row(
+    record_row(
         op_id,
         entry_type,
         RowRole::SearchOnly,
+        source_volume_id,
         source,
         dest,
         size,
@@ -137,25 +266,29 @@ pub(super) fn record_local_search_leaf(
     );
 }
 
+/// The shared record core: split the source (and optional dest) into interned dir
+/// prefix + leaf name, carry the explicit volume ids, and hand one [`JournalItem`]
+/// to the writer. `seq` is assigned by the journal in recording order.
 #[allow(clippy::too_many_arguments, reason = "the natural fields of a journal row")]
-fn record_local_row(
+fn record_row(
     op_id: &str,
     entry_type: EntryType,
     row_role: RowRole,
+    source_volume_id: &str,
     source: &Path,
-    dest: Option<&Path>,
+    dest: Option<(&str, &Path)>,
     size: Option<i64>,
     mtime: Option<i64>,
     overwrote: bool,
     outcome: ItemOutcome,
 ) {
     let (source_dir, source_name) = local_split(source);
-    let (dest_dir, dest_name) = match dest {
-        Some(d) => {
+    let (dest_volume_id, dest_dir, dest_name) = match dest {
+        Some((vol, d)) => {
             let (dd, dn) = local_split(d);
-            (Some(dd), Some(dn))
+            (Some(vol.to_string()), Some(dd), Some(dn))
         }
-        None => (None, None),
+        None => (None, None, None),
     };
     journal_record_items(
         op_id,
@@ -163,10 +296,10 @@ fn record_local_row(
             seq: 0,
             entry_type,
             row_role,
-            source_volume_id: DEFAULT_VOLUME_ID.to_string(),
+            source_volume_id: source_volume_id.to_string(),
             source_dir,
             source_name,
-            dest_volume_id: dest.map(|_| DEFAULT_VOLUME_ID.to_string()),
+            dest_volume_id,
             dest_dir,
             dest_name,
             size,
@@ -183,13 +316,21 @@ fn record_local_row(
 /// created path is both source and dest (a copy's rollback removes the dest dir
 /// when empty; search matches its name).
 pub(super) fn record_created_dirs(op_id: &str, dirs: &[std::path::PathBuf]) {
+    record_created_dirs_on(op_id, DEFAULT_VOLUME_ID, dirs);
+}
+
+/// The volume-aware sibling of [`record_created_dirs`]: the created dirs live on
+/// the destination volume `dest_volume_id` (may be SMB / MTP). Both the source
+/// and dest of each row are the created path on that volume.
+pub(super) fn record_created_dirs_on(op_id: &str, dest_volume_id: &str, dirs: &[std::path::PathBuf]) {
     for dir in dirs {
-        record_local_row(
+        record_row(
             op_id,
             EntryType::Dir,
             RowRole::RollbackUnit,
+            dest_volume_id,
             dir,
-            Some(dir),
+            Some((dest_volume_id, dir)),
             None,
             None,
             false,
@@ -198,18 +339,26 @@ pub(super) fn record_created_dirs(op_id: &str, dirs: &[std::path::PathBuf]) {
     }
 }
 
-/// Journal the terminal state of a `run_instant` create (mkdir / mkfile). On
-/// success the created path is a net-new item (source == dest, so the M3 rollback
-/// removes it if still empty/unchanged); on failure the op finalizes `failed`
-/// with no item. `open_local_op` must have been called with the same `op_id`.
-pub(super) fn journal_instant_create(op_id: &str, kind: OpKind, entry_type: EntryType, created: Option<&Path>) {
+/// Journal the terminal state of a `run_instant` create (mkdir / mkfile) on
+/// volume `volume_id` (`"root"` for the local drive). On success the created path
+/// is a net-new item (source == dest, so the M3 rollback removes it if still
+/// empty/unchanged); on failure the op finalizes `failed` with no item. The
+/// matching open call must have used the same `op_id`.
+pub(super) fn journal_instant_create(
+    op_id: &str,
+    kind: OpKind,
+    entry_type: EntryType,
+    volume_id: &str,
+    created: Option<&Path>,
+) {
     match created {
         Some(path) => {
-            record_local_leaf(
+            record_volume_leaf(
                 op_id,
                 entry_type,
+                volume_id,
                 path,
-                Some(path),
+                Some((volume_id, path)),
                 None,
                 None,
                 false,

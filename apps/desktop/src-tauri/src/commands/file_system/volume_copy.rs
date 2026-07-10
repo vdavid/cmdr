@@ -67,6 +67,7 @@ pub async fn copy_between_volumes(
     dest_volume_id: String,
     dest_path: String,
     config: Option<VolumeCopyConfig>,
+    initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
 
@@ -115,6 +116,7 @@ pub async fn copy_between_volumes(
         dest_volume,
         dest_path,
         config,
+        initiator.unwrap_or(Initiator::User),
     )
     .await
 }
@@ -131,6 +133,7 @@ pub async fn move_between_volumes(
     dest_volume_id: String,
     dest_path: String,
     config: Option<VolumeCopyConfig>,
+    initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
 
@@ -198,6 +201,7 @@ pub async fn move_between_volumes(
         dest_volume,
         dest_path,
         config,
+        initiator.unwrap_or(Initiator::User),
     )
     .await
 }
@@ -216,6 +220,7 @@ pub async fn compress_files(
     dest_volume_id: String,
     dest_zip_path: String,
     config: Option<VolumeCopyConfig>,
+    initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
 
@@ -252,9 +257,7 @@ pub async fn compress_files(
         config.conflict_resolution,
         config.progress_interval_ms,
         config.compression_level,
-        // Initiator threading through the volume commands lands with the
-        // provenance-completion pass; defaults to `user` here.
-        Initiator::User,
+        initiator.unwrap_or(Initiator::User),
     )
     .await
 }

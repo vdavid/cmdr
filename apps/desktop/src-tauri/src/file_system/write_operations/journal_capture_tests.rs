@@ -634,3 +634,246 @@ fn over_cap_trash_is_top_level_only_capped_but_still_rollbackable() {
     assert_eq!(items.len(), 1, "top-level row only, no search leaves, got {items:?}");
     assert_eq!(items[0].row_role, RowRole::RollbackUnit);
 }
+
+// ── Volume (SMB / MTP) capture: the honesty-critical volume-id plumbing ──────
+//
+// These drive the REAL volume copy/move/delete bodies with in-memory volumes and
+// a temp-DB journal, then read the rows back. The load-bearing assertion is that a
+// volume op's rows carry the REAL volume id, never the local `"root"` the local
+// helpers bake in — a wrong volume id would corrupt history silently.
+
+use super::types::VolumeCopyConfig;
+use super::{copy_volumes_with_progress, move_volumes_with_progress};
+use crate::file_system::volume::{InMemoryVolume, Volume};
+
+/// Every distinct `volume_id` interned in the `dirs` table (fresh DB per test, so
+/// this is exactly the set the op journaled under).
+fn dir_volume_ids(conn: &rusqlite::Connection) -> Vec<String> {
+    let mut stmt = conn.prepare("SELECT DISTINCT volume_id FROM dirs").expect("prepare");
+    
+    stmt
+        .query_map([], |r| r.get::<_, String>(0))
+        .expect("query")
+        .collect::<Result<Vec<_>, _>>()
+        .expect("collect")
+}
+
+fn in_memory(name: &str) -> Arc<InMemoryVolume> {
+    Arc::new(InMemoryVolume::new(name).with_space_info(1_000_000, 900_000))
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn volume_copy_journals_under_the_real_volume_ids_not_root() {
+    let (_jdir, jdb) = install_journal();
+    let source = in_memory("Src");
+    source
+        .create_file(std::path::Path::new("/a.txt"), b"aaa")
+        .await
+        .expect("a");
+    source
+        .create_file(std::path::Path::new("/b.txt"), b"bbbb")
+        .await
+        .expect("b");
+    let dest = in_memory("Dst");
+
+    let op_id = "op-vol-copy";
+    let state = Arc::new(
+        WriteOperationState::new(Duration::from_millis(0)).with_journal_volumes("smb-src".into(), "smb-dst".into()),
+    );
+    journal::open_volume_op(op_id, OpKind::Copy, Initiator::AiClient, "smb-src", Some("smb-dst"), 0);
+    copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        op_id,
+        &state,
+        source as Arc<dyn Volume>,
+        &[std::path::PathBuf::from("/a.txt"), std::path::PathBuf::from("/b.txt")],
+        dest as Arc<dyn Volume>,
+        std::path::Path::new("/"),
+        &VolumeCopyConfig::default(),
+    )
+    .await
+    .expect("volume copy");
+    journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
+    clear_journal();
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let row = read_operation(&conn, op_id).expect("read").expect("op row");
+    // The operation header carries the REAL volume ids + the AI-client provenance.
+    assert_eq!(row.source_volume_id.as_deref(), Some("smb-src"));
+    assert_eq!(row.dest_volume_id.as_deref(), Some("smb-dst"));
+    assert_eq!(row.initiator, Initiator::AiClient);
+    assert_eq!(row.kind, OpKind::Copy);
+    // No overwrite ⇒ rollbackable.
+    assert_eq!(row.rollback_state, RollbackState::Rollbackable);
+
+    let items = read_operation_items(&conn, op_id, 1000).expect("items");
+    assert_eq!(items.len(), 2, "two leaf rows, got {items:?}");
+    assert!(items.iter().all(|i| i.row_role == RowRole::RollbackUnit));
+
+    // The honesty invariant: every interned dir is on a REAL volume, never "root".
+    let vols = dir_volume_ids(&conn);
+    assert!(
+        vols.iter().all(|v| v == "smb-src" || v == "smb-dst"),
+        "volume copy dirs must carry the real volume ids, got {vols:?}"
+    );
+    assert!(
+        !vols.iter().any(|v| v == "root"),
+        "a volume op must never journal under root"
+    );
+    assert!(vols.iter().any(|v| v == "smb-src") && vols.iter().any(|v| v == "smb-dst"));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn overwriting_volume_copy_finalizes_not_rollbackable() {
+    let (_jdir, jdb) = install_journal();
+    let source = in_memory("Src");
+    source
+        .create_file(std::path::Path::new("/dup.txt"), b"new")
+        .await
+        .expect("src dup");
+    let dest = in_memory("Dst");
+    // Pre-existing dest file with the same name ⇒ the copy overwrites it.
+    dest.create_file(std::path::Path::new("/dup.txt"), b"old")
+        .await
+        .expect("dst dup");
+
+    let op_id = "op-vol-copy-ow";
+    let cfg = VolumeCopyConfig {
+        conflict_resolution: super::types::ConflictResolution::Overwrite,
+        ..Default::default()
+    };
+    let state = Arc::new(
+        WriteOperationState::new(Duration::from_millis(0)).with_journal_volumes("smb-src".into(), "smb-dst".into()),
+    );
+    journal::open_volume_op(op_id, OpKind::Copy, Initiator::User, "smb-src", Some("smb-dst"), 0);
+    copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        op_id,
+        &state,
+        source as Arc<dyn Volume>,
+        &[std::path::PathBuf::from("/dup.txt")],
+        dest as Arc<dyn Volume>,
+        std::path::Path::new("/"),
+        &cfg,
+    )
+    .await
+    .expect("volume copy");
+    journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
+    clear_journal();
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let row = read_operation(&conn, op_id).expect("read").expect("op row");
+    // Overwriting an existing dest ⇒ not rollbackable (the original is gone).
+    assert_eq!(row.rollback_state, RollbackState::NotRollbackable);
+    let items = read_operation_items(&conn, op_id, 1000).expect("items");
+    assert!(
+        items.iter().any(|i| i.overwrote),
+        "the overwriting leaf must be flagged, got {items:?}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_journals_per_leaf_move_rows() {
+    let (_jdir, jdb) = install_journal();
+    let source = in_memory("Src");
+    source
+        .create_file(std::path::Path::new("/one.txt"), b"1")
+        .await
+        .expect("one");
+    source
+        .create_file(std::path::Path::new("/two.txt"), b"22")
+        .await
+        .expect("two");
+    let dest = in_memory("Dst");
+
+    let op_id = "op-vol-move";
+    let state = Arc::new(
+        WriteOperationState::new(Duration::from_millis(0)).with_journal_volumes("smb-src".into(), "smb-dst".into()),
+    );
+    journal::open_volume_op(op_id, OpKind::Move, Initiator::User, "smb-src", Some("smb-dst"), 0);
+    move_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        op_id,
+        &state,
+        source as Arc<dyn Volume>,
+        &[
+            std::path::PathBuf::from("/one.txt"),
+            std::path::PathBuf::from("/two.txt"),
+        ],
+        dest as Arc<dyn Volume>,
+        std::path::Path::new("/"),
+        &VolumeCopyConfig::default(),
+    )
+    .await
+    .expect("volume move");
+    journal::finalize_op(op_id, OpKind::Move, ExecutionStatus::Done);
+    clear_journal();
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let row = read_operation(&conn, op_id).expect("read").expect("op row");
+    assert_eq!(row.kind, OpKind::Move);
+    // A cross-volume move is per-leaf (D-granularity): no overwrite ⇒ rollbackable.
+    assert_eq!(row.rollback_state, RollbackState::Rollbackable);
+
+    // Per-leaf rows: one `rollback_unit` per moved FILE, source on the source
+    // volume, dest on the dest volume.
+    let items = read_operation_items(&conn, op_id, 1000).expect("items");
+    let files: Vec<_> = items.iter().filter(|i| i.entry_type == EntryType::File).collect();
+    assert_eq!(files.len(), 2, "one leaf row per moved file, got {items:?}");
+    assert!(files.iter().all(|i| i.row_role == RowRole::RollbackUnit));
+    let vols = dir_volume_ids(&conn);
+    assert!(
+        !vols.iter().any(|v| v == "root"),
+        "a cross-volume move must never journal under root"
+    );
+    assert!(vols.iter().any(|v| v == "smb-src") && vols.iter().any(|v| v == "smb-dst"));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn volume_delete_journals_per_leaf_under_the_real_volume_id() {
+    let (_jdir, jdb) = install_journal();
+    let volume = in_memory("Src");
+    volume
+        .create_file(std::path::Path::new("/gone1.txt"), b"x")
+        .await
+        .expect("g1");
+    volume
+        .create_file(std::path::Path::new("/gone2.txt"), b"yy")
+        .await
+        .expect("g2");
+
+    let op_id = "op-vol-delete";
+    let state = state();
+    journal::open_volume_op(op_id, OpKind::Delete, Initiator::User, "smb-src", None, 0);
+    super::delete_volume_files_with_progress_inner(
+        volume as Arc<dyn Volume>,
+        "smb-src",
+        &CollectorEventSink::new(),
+        op_id,
+        &state,
+        &[
+            std::path::PathBuf::from("/gone1.txt"),
+            std::path::PathBuf::from("/gone2.txt"),
+        ],
+        &WriteOperationConfig::default(),
+    )
+    .await
+    .expect("volume delete");
+    journal::finalize_op(op_id, OpKind::Delete, ExecutionStatus::Done);
+    clear_journal();
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let row = read_operation(&conn, op_id).expect("read").expect("op row");
+    assert_eq!(row.kind, OpKind::Delete);
+    // Delete is never rollbackable.
+    assert_eq!(row.rollback_state, RollbackState::NotRollbackable);
+    let items = read_operation_items(&conn, op_id, 1000).expect("items");
+    let files: Vec<_> = items.iter().filter(|i| i.entry_type == EntryType::File).collect();
+    assert_eq!(files.len(), 2, "one leaf row per deleted file, got {items:?}");
+    let vols = dir_volume_ids(&conn);
+    assert_eq!(
+        vols,
+        vec!["smb-src".to_string()],
+        "the delete must journal under the real volume id"
+    );
+}

@@ -66,6 +66,12 @@ pub(super) struct RenameMergeCtx<'a> {
     /// Op-wide apply-to-all latch, shared between the top-level dispatch and
     /// every deep merge level so a "…all" choice applies everywhere.
     pub apply_to_all: &'a Mutex<ApplyToAll>,
+    /// Set `true` when a deep child REPLACED an existing dest entry (a file→file
+    /// overwrite, or a dir subtree over a dest file). The operation-log capture
+    /// reads it so a same-volume move whose merge overwrote anything finalizes
+    /// `not_rollbackable` (moving the subtree back can't restore the overwritten
+    /// entry). Shared across recursion levels (the same `ctx` threads through).
+    pub overwrote: &'a std::sync::atomic::AtomicBool,
 }
 
 /// The decision recorded for a child whose name hit the dest map, so a
@@ -328,6 +334,8 @@ async fn apply_child_decision(
             return Box::pin(rename_merge_directory(ctx, child_source, &write_path, note_both_halves)).await;
         }
         if ctx.volume.exists(&write_path).await {
+            // Replacing a dest FILE with this dir subtree destroys it: an overwrite.
+            ctx.overwrote.store(true, std::sync::atomic::Ordering::Relaxed);
             match ctx.volume.delete(&write_path).await {
                 Ok(()) | Err(VolumeError::NotFound(_)) => {}
                 Err(e) => return Err(map_rename_error(&write_path, e)),
@@ -351,7 +359,12 @@ async fn apply_child_decision(
         // an explicit delete-then-rename is the only shape correct across all
         // backends — the same legacy delete-first shape the top-level
         // same-volume overwrite uses.
-        Some(orig) => orig,
+        Some(orig) => {
+            // A file→file safe-replace: the existing dest is deleted below. Mark
+            // the op as having overwritten (not rollbackable).
+            ctx.overwrote.store(true, std::sync::atomic::Ordering::Relaxed);
+            orig
+        }
         // Rename / fresh: `write_path` is the resolved (unique) name. On a
         // local-FS dest the resolver RESERVED it with an O_CREAT|O_EXCL
         // placeholder (the TOCTOU guard the streaming writer would truncate),

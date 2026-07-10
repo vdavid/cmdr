@@ -71,9 +71,10 @@ pub(crate) async fn route_archive_copy_into(
     is_move: bool,
     compression_level: Option<i64>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
-    // A copy/move INTO an existing archive is a zip-inner edit — journaled but not
-    // rollbackable in v1. Compress overrides this via
-    // [`route_archive_copy_into_with_provenance`].
+    // A copy/move INTO an existing archive is a user-initiated zip-inner edit —
+    // journaled but not rollbackable in v1. An MCP-initiated into-archive edit
+    // supplies its own provenance via [`route_archive_copy_into_with_provenance`]
+    // (as compress does); this convenience wrapper defaults to `user`.
     route_archive_copy_into_with_provenance(
         events,
         source_volume,

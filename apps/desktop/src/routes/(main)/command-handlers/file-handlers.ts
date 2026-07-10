@@ -65,16 +65,26 @@ export const fileHandlers = {
 
   'file.copy': ({ explorerRef, dispatchArgs }) => {
     // Arg-less from the F-bar / palette / keyboard (open the dialog with no
-    // preset); the MCP `copy` tool may pass `{ autoConfirm, onConflict }` to
-    // pre-answer the conflict policy. `dispatchArgs` is `undefined` in the
-    // arg-less case, so the openers default both.
+    // preset); the MCP `copy` tool may pass `{ autoConfirm, onConflict, initiator }`
+    // to pre-answer the conflict policy and tag provenance. `dispatchArgs` is
+    // `undefined` in the arg-less case, so the openers default them all.
     const copyArgs = dispatchArgs as CommandArgs['file.copy'] | undefined
-    void explorerRef?.openCopyDialog(copyArgs?.autoConfirm, copyArgs?.onConflict, copyArgs?.mcpRequestId)
+    void explorerRef?.openCopyDialog(
+      copyArgs?.autoConfirm,
+      copyArgs?.onConflict,
+      copyArgs?.mcpRequestId,
+      copyArgs?.initiator,
+    )
   },
 
   'file.move': ({ explorerRef, dispatchArgs }) => {
     const moveArgs = dispatchArgs as CommandArgs['file.move'] | undefined
-    void explorerRef?.openMoveDialog(moveArgs?.autoConfirm, moveArgs?.onConflict, moveArgs?.mcpRequestId)
+    void explorerRef?.openMoveDialog(
+      moveArgs?.autoConfirm,
+      moveArgs?.onConflict,
+      moveArgs?.mcpRequestId,
+      moveArgs?.initiator,
+    )
   },
 
   'file.compress': ({ explorerRef, dispatchArgs }) => {
@@ -83,20 +93,21 @@ export const fileHandlers = {
       compressArgs?.autoConfirm,
       compressArgs?.onConflict,
       compressArgs?.mcpRequestId,
+      compressArgs?.initiator,
     )
   },
 
   'file.newFolder': ({ explorerRef, dispatchArgs }) => {
     // Arg-less from F7 / the palette; the MCP `mkdir` tool may pass `{ name }` to
-    // prefill the dialog and `{ pane }` to target a specific pane. (autoConfirm
-    // creates directly in Rust, never reaching here.)
+    // prefill the dialog and `{ pane }` to target a specific pane, plus `{ initiator }`
+    // to tag provenance. (autoConfirm creates directly in Rust, never reaching here.)
     const args = dispatchArgs as CommandArgs['file.newFolder'] | undefined
-    void explorerRef?.openNewFolderDialog(args?.name, args?.pane)
+    void explorerRef?.openNewFolderDialog(args?.name, args?.pane, args?.initiator)
   },
 
   'file.newFile': ({ explorerRef, dispatchArgs }) => {
     const args = dispatchArgs as CommandArgs['file.newFile'] | undefined
-    void explorerRef?.openNewFileDialog(args?.name, args?.pane)
+    void explorerRef?.openNewFileDialog(args?.name, args?.pane, args?.initiator)
   },
 
   'file.delete': ({ explorerRef, dispatchArgs }) => {
@@ -107,6 +118,7 @@ export const fileHandlers = {
       deleteArgs?.permanent ?? false,
       deleteArgs?.autoConfirm,
       deleteArgs?.mcpRequestId,
+      deleteArgs?.initiator,
     )
   },
 

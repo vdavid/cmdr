@@ -81,6 +81,16 @@ pub struct WriteOperationState {
     /// manager record's `LifecycleStatus` mirrors the paused bit for the UI.
     /// See [`PauseGate`].
     pub pause_gate: PauseGate,
+    /// The operation-log journal target for a VOLUME (SMB / MTP) transfer: the
+    /// `(source_volume_id, dest_volume_id)` the per-leaf record points journal
+    /// under (a same-volume move passes the one id as both). Set by the volume
+    /// copy/move deferreds via [`with_journal_volumes`](Self::with_journal_volumes);
+    /// `None` for local-FS ops (which journal via the `"root"` helpers) and in
+    /// tests that don't exercise journaling, so those record points no-op. Carried
+    /// here — the op's shared context — because the `*_with_progress` bodies that
+    /// own the per-leaf record points don't take the volume ids as params (they're
+    /// called from ~80 test sites), mirroring how `op_id` reaches them.
+    pub journal_volumes: Option<(String, String)>,
 }
 
 impl WriteOperationState {
@@ -96,7 +106,16 @@ impl WriteOperationState {
             estimator: std::sync::Mutex::new(EtaEstimator::new()),
             backend_cancel: Arc::new(AtomicBool::new(false)),
             pause_gate: PauseGate::new(),
+            journal_volumes: None,
         }
+    }
+
+    /// Set the volume-transfer journal target (see [`journal_volumes`](Self::journal_volumes)).
+    /// Chained before wrapping the state in an `Arc`, so the per-leaf record points
+    /// in the volume copy/move bodies journal under the REAL volume ids.
+    pub fn with_journal_volumes(mut self, source_volume_id: String, dest_volume_id: String) -> Self {
+        self.journal_volumes = Some((source_volume_id, dest_volume_id));
+        self
     }
 
     /// Populate `bytes_per_second`, `files_per_second`, and `eta_seconds` on a

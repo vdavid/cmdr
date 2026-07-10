@@ -69,6 +69,7 @@
     import { initialize as initMtpStore } from '$lib/mtp'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import type { TransferOperationType } from '../types'
+    import type { Initiator } from '$lib/tauri-commands'
     import { createDialogState } from './dialog-state.svelte'
     import { explorerState } from './explorer-state.svelte'
     import type { PaneAccess } from './pane-access'
@@ -734,23 +735,23 @@
     }
 
     /** Opens the new folder dialog, prefilled with `name` or the cursor entry. `pane` defaults to focused. */
-    export async function openNewFolderDialog(name?: string, pane?: 'left' | 'right') {
-        await fileOps.openNewFolderDialog(name, pane)
+    export async function openNewFolderDialog(name?: string, pane?: 'left' | 'right', initiator?: Initiator) {
+        await fileOps.openNewFolderDialog(name, pane, initiator)
     }
 
     /** Opens the new file dialog, prefilled with `name` or the cursor entry. `pane` defaults to focused. */
-    export async function openNewFileDialog(name?: string, pane?: 'left' | 'right') {
-        await fileOps.openNewFileDialog(name, pane)
+    export async function openNewFileDialog(name?: string, pane?: 'left' | 'right', initiator?: Initiator) {
+        await fileOps.openNewFileDialog(name, pane, initiator)
     }
 
     /** Creates a folder directly on the target pane's live path (MCP autoConfirm). `pane` defaults to focused. */
-    export async function createFolderDirect(name: string, pane?: 'left' | 'right') {
-        await fileOps.createFolderDirect(name, pane)
+    export async function createFolderDirect(name: string, pane?: 'left' | 'right', initiator?: Initiator) {
+        await fileOps.createFolderDirect(name, pane, initiator)
     }
 
     /** Creates an empty file directly on the target pane's live path (MCP autoConfirm). `pane` defaults to focused. */
-    export async function createFileDirect(name: string, pane?: 'left' | 'right') {
-        await fileOps.createFileDirect(name, pane)
+    export async function createFileDirect(name: string, pane?: 'left' | 'right', initiator?: Initiator) {
+        await fileOps.createFileDirect(name, pane, initiator)
     }
 
     /** Closes any confirmation dialog (new folder, new file, or transfer) if open (for MCP). */
@@ -785,23 +786,40 @@
         operationType: TransferOperationType,
         autoConfirm?: boolean,
         onConflict?: string,
+        mcpRequestId?: string,
+        initiator?: Initiator,
     ) {
-        await fileOps.openTransferDialog(operationType, autoConfirm, onConflict)
+        await fileOps.openTransferDialog(operationType, autoConfirm, onConflict, mcpRequestId, initiator)
     }
 
     /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
-    export async function openCopyDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
-        await fileOps.openCopyDialog(autoConfirm, onConflict, mcpRequestId)
+    export async function openCopyDialog(
+        autoConfirm?: boolean,
+        onConflict?: string,
+        mcpRequestId?: string,
+        initiator?: Initiator,
+    ) {
+        await fileOps.openCopyDialog(autoConfirm, onConflict, mcpRequestId, initiator)
     }
 
     /** Opens the move dialog (convenience wrapper for MCP/key binding). */
-    export async function openMoveDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
-        await fileOps.openMoveDialog(autoConfirm, onConflict, mcpRequestId)
+    export async function openMoveDialog(
+        autoConfirm?: boolean,
+        onConflict?: string,
+        mcpRequestId?: string,
+        initiator?: Initiator,
+    ) {
+        await fileOps.openMoveDialog(autoConfirm, onConflict, mcpRequestId, initiator)
     }
 
     /** Opens the compress dialog (convenience wrapper for the ⌥F5 command/MCP). */
-    export async function openCompressDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
-        await fileOps.openCompressDialog(autoConfirm, onConflict, mcpRequestId)
+    export async function openCompressDialog(
+        autoConfirm?: boolean,
+        onConflict?: string,
+        mcpRequestId?: string,
+        initiator?: Initiator,
+    ) {
+        await fileOps.openCompressDialog(autoConfirm, onConflict, mcpRequestId, initiator)
     }
 
     /** Copies selected files (or cursor file) to the system clipboard. */
@@ -820,8 +838,13 @@
     }
 
     /** Opens the delete confirmation dialog for the current selection or cursor item. */
-    export async function openDeleteDialog(permanent: boolean, autoConfirm?: boolean, mcpRequestId?: string) {
-        await fileOps.openDeleteDialog(permanent, autoConfirm, mcpRequestId)
+    export async function openDeleteDialog(
+        permanent: boolean,
+        autoConfirm?: boolean,
+        mcpRequestId?: string,
+        initiator?: Initiator,
+    ) {
+        await fileOps.openDeleteDialog(permanent, autoConfirm, mcpRequestId, initiator)
     }
 
     // Focus the container after initialization so keyboard events work

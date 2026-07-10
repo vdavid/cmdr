@@ -1,6 +1,14 @@
 <script lang="ts">
     import { onDestroy, onMount, tick } from 'svelte'
-    import { createFile, findFileIndex, getFileAt, isIpcError, onDirectoryDiff, type UnlistenFn } from '$lib/tauri-commands'
+    import {
+        createFile,
+        findFileIndex,
+        getFileAt,
+        isIpcError,
+        onDirectoryDiff,
+        type Initiator,
+        type UnlistenFn,
+    } from '$lib/tauri-commands'
     import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -18,11 +26,14 @@
         initialName: string
         /** Volume ID for the filesystem (like "root" for local, "mtp-336592896:65537" for MTP) */
         volumeId: string
+        /** Who triggered this create (`aiClient` for the MCP `mkfile` tool). */
+        initiator?: Initiator
         onCreated: (fileName: string) => void
         onCancel: () => void
     }
 
-    const { currentPath, listingId, showHiddenFiles, initialName, volumeId, onCreated, onCancel }: Props = $props()
+    const { currentPath, listingId, showHiddenFiles, initialName, volumeId, initiator, onCreated, onCancel }: Props =
+        $props()
 
     let fileName = $state(initialName)
     let errorMessage = $state('')
@@ -118,7 +129,7 @@
         const trimmed = fileName.trim()
         if (!trimmed || errorMessage) return
         try {
-            await createFile(currentPath, trimmed, volumeId)
+            await createFile(currentPath, trimmed, volumeId, initiator)
             onCreated(trimmed)
         } catch (e) {
             errorMessage = isIpcError(e) ? e.message : String(e)

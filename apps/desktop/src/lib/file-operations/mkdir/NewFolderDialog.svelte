@@ -10,6 +10,7 @@
         refreshListing,
         streamFolderSuggestions,
         type FolderSuggestionsStream,
+        type Initiator,
         type UnlistenFn,
     } from '$lib/tauri-commands'
     import { validateDisallowedChars, validateNameLength, validatePathLength } from '$lib/utils/filename-validation'
@@ -29,11 +30,14 @@
         initialName: string
         /** Volume ID for the filesystem (like "root" for local, "mtp-336592896:65537" for MTP) */
         volumeId?: string
+        /** Who triggered this create (`aiClient` for the MCP `mkdir` tool). */
+        initiator?: Initiator
         onCreated: (folderName: string) => void
         onCancel: () => void
     }
 
-    const { currentPath, listingId, showHiddenFiles, initialName, volumeId, onCreated, onCancel }: Props = $props()
+    const { currentPath, listingId, showHiddenFiles, initialName, volumeId, initiator, onCreated, onCancel }: Props =
+        $props()
 
     let folderName = $state(initialName)
     let errorMessage = $state('')
@@ -185,7 +189,7 @@
         const trimmed = folderName.trim()
         if (!trimmed || errorMessage || timeoutError) return
         try {
-            await createDirectory(currentPath, trimmed, volumeId)
+            await createDirectory(currentPath, trimmed, volumeId, initiator)
             onCreated(trimmed)
         } catch (e) {
             if (isIpcError(e) && e.timedOut) {

@@ -1,4 +1,11 @@
-import { DEFAULT_VOLUME_ID, createDirectory, createFile, getFileAt, getFilesAtIndices } from '$lib/tauri-commands'
+import {
+  DEFAULT_VOLUME_ID,
+  createDirectory,
+  createFile,
+  getFileAt,
+  getFilesAtIndices,
+  type Initiator,
+} from '$lib/tauri-commands'
 import { pluralize } from '$lib/utils/pluralize'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
@@ -112,9 +119,14 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * Opens the new folder dialog. Pre-fills with the entry name under the cursor,
    * or with `nameOverride` (the MCP `mkdir` tool's `name`) when given. `pane`
    * defaults to the focused pane; the MCP `mkdir` tool passes it explicitly so
-   * the dialog targets the right pane regardless of focus timing.
+   * the dialog targets the right pane regardless of focus timing. `initiator`
+   * carries provenance (`aiClient` for MCP-originated writes).
    */
-  async function openNewFolderDialog(nameOverride?: string, pane: 'left' | 'right' = access.getFocusedPane()) {
+  async function openNewFolderDialog(
+    nameOverride?: string,
+    pane: 'left' | 'right' = access.getFocusedPane(),
+    initiator?: Initiator,
+  ) {
     const paneRef = access.getPaneRef(pane)
     const path = access.getPanePath(pane)
     const volumeIdForPane = access.getPaneVolumeId(pane)
@@ -143,6 +155,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       showHiddenFiles: access.getShowHiddenFiles(),
       initialName,
       volumeId: volumeIdForPane,
+      initiator,
     })
   }
 
@@ -150,8 +163,13 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * Opens the new file dialog. Pre-fills with the filename under the cursor, or
    * with `nameOverride` (the MCP `mkfile` tool's `name`) when given. `pane`
    * defaults to the focused pane; the MCP `mkfile` tool passes it explicitly.
+   * `initiator` carries provenance (`aiClient` for MCP-originated writes).
    */
-  async function openNewFileDialog(nameOverride?: string, pane: 'left' | 'right' = access.getFocusedPane()) {
+  async function openNewFileDialog(
+    nameOverride?: string,
+    pane: 'left' | 'right' = access.getFocusedPane(),
+    initiator?: Initiator,
+  ) {
     const paneRef = access.getPaneRef(pane)
     const path = access.getPanePath(pane)
     const volumeIdForPane = access.getPaneVolumeId(pane)
@@ -177,6 +195,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       showHiddenFiles: access.getShowHiddenFiles(),
       initialName,
       volumeId: volumeIdForPane,
+      initiator,
     })
   }
 
@@ -188,21 +207,29 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * focus-timing race. Throws the read-only refusal or the backend conflict error,
    * which the mcp-mkdir listener relays as the tool's failure.
    */
-  async function createFolderDirect(name: string, pane: 'left' | 'right' = access.getFocusedPane()): Promise<void> {
+  async function createFolderDirect(
+    name: string,
+    pane: 'left' | 'right' = access.getFocusedPane(),
+    initiator?: Initiator,
+  ): Promise<void> {
     const refusal = readOnlyRefusal('mkdir', pane)
     if (refusal) throw new Error(refusal.message)
     const path = access.getPanePath(pane)
     const volumeId = access.getPaneVolumeId(pane)
-    await createDirectory(path, name, volumeId)
+    await createDirectory(path, name, volumeId, initiator)
   }
 
   /** Creates an empty file directly on the target pane (MCP `mkfile` autoConfirm). */
-  async function createFileDirect(name: string, pane: 'left' | 'right' = access.getFocusedPane()): Promise<void> {
+  async function createFileDirect(
+    name: string,
+    pane: 'left' | 'right' = access.getFocusedPane(),
+    initiator?: Initiator,
+  ): Promise<void> {
     const refusal = readOnlyRefusal('mkfile', pane)
     if (refusal) throw new Error(refusal.message)
     const path = access.getPanePath(pane)
     const volumeId = access.getPaneVolumeId(pane)
-    await createFile(path, name, volumeId)
+    await createFile(path, name, volumeId, initiator)
   }
 
   /** Closes any confirmation dialog (new folder, new file, or transfer) if open (for MCP). */
@@ -316,6 +343,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     autoConfirm?: boolean,
     onConflict?: string,
     mcpRequestId?: string,
+    initiator?: Initiator,
   ) {
     // Snapshot source pane: no backend listing exists, so the listing-id-driven
     // builders don't apply — build from the snapshot's selected (or cursor)
@@ -331,6 +359,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
           snapshotProps.autoConfirmOnConflict = onConflict
           snapshotProps.mcpRequestId = mcpRequestId
         }
+        snapshotProps.initiator = initiator
         dialogs.showTransfer(snapshotProps)
       }
       return
@@ -363,6 +392,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
         props.autoConfirmOnConflict = onConflict
         props.mcpRequestId = mcpRequestId
       }
+      props.initiator = initiator
       dialogs.showTransfer(props)
     }
   }
@@ -373,6 +403,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     autoConfirm?: boolean,
     onConflict?: string,
     mcpRequestId?: string,
+    initiator?: Initiator,
   ) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const destPane = access.otherPane(access.getFocusedPane())
@@ -400,22 +431,38 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       autoConfirm,
       onConflict,
       mcpRequestId,
+      initiator,
     )
   }
 
   /** Opens the copy dialog (convenience wrapper for MCP/key binding). */
-  async function openCopyDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
-    await openTransferDialog('copy', autoConfirm, onConflict, mcpRequestId)
+  async function openCopyDialog(
+    autoConfirm?: boolean,
+    onConflict?: string,
+    mcpRequestId?: string,
+    initiator?: Initiator,
+  ) {
+    await openTransferDialog('copy', autoConfirm, onConflict, mcpRequestId, initiator)
   }
 
   /** Opens the move dialog (convenience wrapper for MCP/key binding). */
-  async function openMoveDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
-    await openTransferDialog('move', autoConfirm, onConflict, mcpRequestId)
+  async function openMoveDialog(
+    autoConfirm?: boolean,
+    onConflict?: string,
+    mcpRequestId?: string,
+    initiator?: Initiator,
+  ) {
+    await openTransferDialog('move', autoConfirm, onConflict, mcpRequestId, initiator)
   }
 
   /** Opens the compress dialog (convenience wrapper for the ⌥F5 command/MCP). */
-  async function openCompressDialog(autoConfirm?: boolean, onConflict?: string, mcpRequestId?: string) {
-    await openTransferDialog('compress', autoConfirm, onConflict, mcpRequestId)
+  async function openCompressDialog(
+    autoConfirm?: boolean,
+    onConflict?: string,
+    mcpRequestId?: string,
+    initiator?: Initiator,
+  ) {
+    await openTransferDialog('compress', autoConfirm, onConflict, mcpRequestId, initiator)
   }
 
   /**
@@ -431,7 +478,12 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
    * search ever indexes external read-only volumes we'd need to look that
    * up per entry).
    */
-  function openDeleteFromSearchResults(permanent: boolean, autoConfirm?: boolean, mcpRequestId?: string) {
+  function openDeleteFromSearchResults(
+    permanent: boolean,
+    autoConfirm?: boolean,
+    mcpRequestId?: string,
+    initiator?: Initiator,
+  ) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const currentPath = sourcePaneRef?.getCurrentPath() ?? ''
     const SEARCH_RESULTS_PREFIX = 'search-results://'
@@ -487,12 +539,18 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       sourceVolumeId: DEFAULT_VOLUME_ID,
       autoConfirm,
       mcpRequestId,
+      initiator,
     })
   }
 
   /** Opens the delete confirmation dialog for the current selection or cursor item. */
   // eslint-disable-next-line complexity -- Guard chain: each early-return is an independent precondition; splitting wouldn't add clarity.
-  async function openDeleteDialog(permanent: boolean, autoConfirm?: boolean, mcpRequestId?: string) {
+  async function openDeleteDialog(
+    permanent: boolean,
+    autoConfirm?: boolean,
+    mcpRequestId?: string,
+    initiator?: Initiator,
+  ) {
     const sourcePaneRef = access.getPaneRef(access.getFocusedPane())
     const focusedVolId = access.getPaneVolumeId(access.getFocusedPane())
 
@@ -505,7 +563,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // not a `volumeId === 'search-results'` string compare (A6); search-results
     // is the only source-capable `!hasBackendListing` kind to reach here.
     if (!capabilitiesFor(focusedVolId).hasBackendListing) {
-      openDeleteFromSearchResults(permanent, autoConfirm, mcpRequestId)
+      openDeleteFromSearchResults(permanent, autoConfirm, mcpRequestId, initiator)
       return
     }
 
@@ -612,6 +670,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
       sourceVolumeId: sourceVolId,
       autoConfirm,
       mcpRequestId,
+      initiator,
     })
   }
 

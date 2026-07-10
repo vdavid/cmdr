@@ -333,14 +333,22 @@ export const commands = {
    *  create op (`write_operations::create`): expand tilde (root only), wrap in the
    *  5 s write timeout, map to `IpcError`.
    */
-  createDirectory: (volumeId: string | null, parentPath: string, name: string) =>
-    typedError<string, IpcError>(__TAURI_INVOKE('create_directory', { volumeId, parentPath, name })),
+  createDirectory: (
+    volumeId: string | null,
+    parentPath: string,
+    name: string,
+    initiator: 'user' | 'aiClient' | 'agent' | null,
+  ) => typedError<string, IpcError>(__TAURI_INVOKE('create_directory', { volumeId, parentPath, name, initiator })),
   /**
    *  Creates an empty file and returns its new path. Same shape as
    *  [`create_directory`].
    */
-  createFile: (volumeId: string | null, parentPath: string, name: string) =>
-    typedError<string, IpcError>(__TAURI_INVOKE('create_file', { volumeId, parentPath, name })),
+  createFile: (
+    volumeId: string | null,
+    parentPath: string,
+    name: string,
+    initiator: 'user' | 'aiClient' | 'agent' | null,
+  ) => typedError<string, IpcError>(__TAURI_INVOKE('create_file', { volumeId, parentPath, name, initiator })),
   /**
    *  Stores `password` for the archive at `archive_path` on `parent_volume_id`,
    *  overwriting any previous one (so a fresh attempt replaces a rejected password).
@@ -631,9 +639,17 @@ export const commands = {
        */
       compressionLevel?: number | null
     } | null,
+    initiator: 'user' | 'aiClient' | 'agent' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
-      __TAURI_INVOKE('copy_between_volumes', { sourceVolumeId, sourcePaths, destVolumeId, destPath, config }),
+      __TAURI_INVOKE('copy_between_volumes', {
+        sourceVolumeId,
+        sourcePaths,
+        destVolumeId,
+        destPath,
+        config,
+        initiator,
+      }),
     ),
   /**
    *  Unified move across volume types. Same events as `copy_between_volumes`.
@@ -673,9 +689,17 @@ export const commands = {
        */
       compressionLevel?: number | null
     } | null,
+    initiator: 'user' | 'aiClient' | 'agent' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
-      __TAURI_INVOKE('move_between_volumes', { sourceVolumeId, sourcePaths, destVolumeId, destPath, config }),
+      __TAURI_INVOKE('move_between_volumes', {
+        sourceVolumeId,
+        sourcePaths,
+        destVolumeId,
+        destPath,
+        config,
+        initiator,
+      }),
     ),
   /**
    *  Compresses `source_paths` into a NEW zip at `dest_zip_path` on `dest_volume_id`.
@@ -717,9 +741,10 @@ export const commands = {
        */
       compressionLevel?: number | null
     } | null,
+    initiator: 'user' | 'aiClient' | 'agent' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
-      __TAURI_INVOKE('compress_files', { sourceVolumeId, sourcePaths, destVolumeId, destZipPath, config }),
+      __TAURI_INVOKE('compress_files', { sourceVolumeId, sourcePaths, destVolumeId, destZipPath, config, initiator }),
     ),
   // Pre-flight scan: total count/bytes, available space, conflicts. Doesn't copy anything.
   scanVolumeForCopy: (
@@ -857,8 +882,13 @@ export const commands = {
    *  The mutation runs as a managed instant op (busy-marks the volume, appears
    *  briefly in the queue), still inline and result-returning.
    */
-  renameFile: (from: string, to: string, force: boolean, volumeId: string | null) =>
-    typedError<null, IpcError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId })),
+  renameFile: (
+    from: string,
+    to: string,
+    force: boolean,
+    volumeId: string | null,
+    initiator: 'user' | 'aiClient' | 'agent' | null,
+  ) => typedError<null, IpcError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
   // Moves a file or directory to the macOS Trash via NSFileManager.
   moveToTrash: (path: string) => typedError<null, IpcError>(__TAURI_INVOKE('move_to_trash', { path })),
   // Returns the current restricted-paths snapshot (sorted, absolute paths).

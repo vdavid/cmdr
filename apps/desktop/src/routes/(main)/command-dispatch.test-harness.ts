@@ -435,52 +435,67 @@ export const DELEGATE_ROWS: DelegateRow[] = [
   {
     id: 'file.copy',
     expect: (e) => {
-      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined)
+      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined, undefined)
     },
   },
   {
     id: 'file.copy',
-    args: { autoConfirm: true, onConflict: 'overwrite_all' },
+    args: { autoConfirm: true, onConflict: 'overwrite_all', initiator: 'aiClient' },
     expect: (e) => {
-      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(true, 'overwrite_all', undefined)
+      // The MCP `initiator` rides the same handler path as autoConfirm/onConflict.
+      expect(e.openCopyDialog).toHaveBeenCalledExactlyOnceWith(true, 'overwrite_all', undefined, 'aiClient')
     },
   },
   {
     id: 'file.move',
     expect: (e) => {
-      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined)
+      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined, undefined)
     },
   },
   {
     id: 'file.move',
-    args: { autoConfirm: false, onConflict: 'skip_all' },
+    args: { autoConfirm: false, onConflict: 'skip_all', initiator: 'aiClient' },
     expect: (e) => {
-      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(false, 'skip_all', undefined)
+      expect(e.openMoveDialog).toHaveBeenCalledExactlyOnceWith(false, 'skip_all', undefined, 'aiClient')
     },
   },
   {
     id: 'file.newFolder',
     expect: (e) => {
-      expect(e.openNewFolderDialog).toHaveBeenCalledOnce()
+      expect(e.openNewFolderDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined)
+    },
+  },
+  {
+    id: 'file.newFolder',
+    args: { initiator: 'aiClient' },
+    expect: (e) => {
+      expect(e.openNewFolderDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, 'aiClient')
     },
   },
   {
     id: 'file.newFile',
     expect: (e) => {
-      expect(e.openNewFileDialog).toHaveBeenCalledOnce()
+      expect(e.openNewFileDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, undefined)
+    },
+  },
+  {
+    id: 'file.newFile',
+    args: { initiator: 'aiClient' },
+    expect: (e) => {
+      expect(e.openNewFileDialog).toHaveBeenCalledExactlyOnceWith(undefined, undefined, 'aiClient')
     },
   },
   {
     id: 'file.delete',
     expect: (e) => {
-      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(false, undefined, undefined)
+      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(false, undefined, undefined, undefined)
     },
   },
   {
     id: 'file.delete',
-    args: { autoConfirm: true },
+    args: { autoConfirm: true, initiator: 'aiClient' },
     expect: (e) => {
-      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(false, true, undefined)
+      expect(e.openDeleteDialog).toHaveBeenCalledExactlyOnceWith(false, true, undefined, 'aiClient')
     },
   },
   {

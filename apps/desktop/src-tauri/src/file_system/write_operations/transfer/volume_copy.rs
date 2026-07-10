@@ -28,6 +28,7 @@ use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
 
 use super::super::conflict::ApplyToAll;
+use super::super::journal;
 use super::super::manager;
 use super::super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
 use super::super::types::{
@@ -44,6 +45,7 @@ use super::volume_preflight::{SourceHint, scan_volume_sources};
 use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{SourceItemInfo, Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
+use crate::operation_log::types::OpKind;
 
 /// Per-call future shape for the driver's `dest_meta_fetcher` closure.
 type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
@@ -70,6 +72,10 @@ struct CopyTaskSuccess {
     recorded_path: PathBuf,
     source_is_dir: bool,
     bytes: u64,
+    /// Whether this source replaced any existing dest file (a top-level file→file
+    /// safe-replace, or a deep-merge child overwrite). Feeds the operation-log
+    /// eligibility: a copy that overwrote isn't rollbackable (the original is gone).
+    overwrote: bool,
     created_files: Vec<PathBuf>,
     created_dirs: Vec<PathBuf>,
     /// The top-level source this task copied, and how many children a deep
@@ -145,6 +151,7 @@ pub async fn copy_between_volumes(
     dest_volume: Arc<dyn Volume>,
     dest_path: PathBuf,
     config: VolumeCopyConfig,
+    initiator: crate::operation_log::types::Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     // Validate that volumes support the required operations
     if !source_volume.supports_export() {
@@ -193,9 +200,7 @@ pub async fn copy_between_volumes(
             write_config,
             vec![source_volume_id, dest_volume_id],
             Some(lanes),
-            // Both-local copies delegate here from the user's copy action; MCP
-            // provenance rides the plain `copy_files` command, not this path.
-            crate::operation_log::types::Initiator::User,
+            initiator,
         )
         .await;
     }
@@ -210,9 +215,15 @@ pub async fn copy_between_volumes(
         dest_path.display()
     );
 
-    let state = Arc::new(WriteOperationState::new(Duration::from_millis(
-        config.progress_interval_ms,
-    )));
+    // The per-leaf record points inside `copy_volumes_with_progress` journal under
+    // these REAL volume ids (carried on the op state so the ~80 test call sites
+    // stay unchanged); the open/finalize bracket below uses them directly.
+    let state = Arc::new(
+        WriteOperationState::new(Duration::from_millis(config.progress_interval_ms))
+            .with_journal_volumes(source_volume_id.clone(), dest_volume_id.clone()),
+    );
+    let journal_source_volume_id = source_volume_id.clone();
+    let journal_dest_volume_id = dest_volume_id.clone();
 
     // The op occupies both volumes' lanes (source AND destination); the manager
     // serializes it against anything else touching either lane. Both volume IDs
@@ -251,6 +262,18 @@ pub async fn copy_between_volumes(
                 Some(source_volume_name),
             );
 
+            // Journal the cross-volume copy under the REAL volume ids (the local
+            // helpers bake in `"root"`). Per-leaf rows land inside
+            // `copy_volumes_with_progress`; this brackets the op.
+            journal::open_volume_op(
+                &op_id,
+                OpKind::Copy,
+                initiator,
+                &journal_source_volume_id,
+                Some(&journal_dest_volume_id),
+                0,
+            );
+
             let result: Result<(), WriteFailure> = copy_volumes_with_progress(
                 Arc::clone(&events),
                 &op_id,
@@ -262,6 +285,12 @@ pub async fn copy_between_volumes(
                 &config,
             )
             .await;
+
+            journal::finalize_op(
+                &op_id,
+                OpKind::Copy,
+                journal::execution_status_from_error(result.as_ref().err().map(|f| &f.error)),
+            );
 
             match result {
                 Ok(()) => {
@@ -498,6 +527,12 @@ pub(crate) async fn copy_volumes_with_progress(
         operation_id,
         source_paths.len()
     );
+
+    // The operation-log journal target (real source + dest volume ids), set by the
+    // `copy_between_volumes` deferred. `None` for the both-local shortcut (journals
+    // via `copy_files_start`) and in tests that don't install a journal — the
+    // per-leaf record points below then no-op.
+    let journal_volumes = state.journal_volumes.clone();
 
     // Phase 0: Reject copying a directory into its own descendant on the SAME
     // volume. `copy_directory_streaming` re-lists each subdirectory live, so a
@@ -987,6 +1022,11 @@ pub(crate) async fn copy_volumes_with_progress(
                     // the archive).
                     let task_skipped_count = created.skipped_file_count();
                     let task_skipped_bytes = created.skipped_byte_count();
+                    // Overwrote iff a top-level file→file safe-replace fires below,
+                    // OR a deep-merge child replaced an existing dest file. Computed
+                    // before `replace_after_write_owned` is consumed. Feeds the
+                    // operation-log eligibility (a copy that overwrote can't roll back).
+                    let task_overwrote = replace_after_write_owned.is_some() || created.any_overwrote();
                     match result {
                         Ok(bytes) => {
                             // If the volume didn't call the progress callback,
@@ -1029,6 +1069,7 @@ pub(crate) async fn copy_volumes_with_progress(
                                     recorded_path: orig,
                                     source_is_dir: false,
                                     bytes,
+                                    overwrote: task_overwrote,
                                     created_files,
                                     created_dirs,
                                     source_path: source_owned,
@@ -1041,6 +1082,7 @@ pub(crate) async fn copy_volumes_with_progress(
                                 recorded_path: dest_owned,
                                 source_is_dir: source_is_dir_hint,
                                 bytes,
+                                overwrote: task_overwrote,
                                 created_files,
                                 created_dirs,
                                 source_path: source_owned,
@@ -1076,7 +1118,8 @@ pub(crate) async fn copy_volumes_with_progress(
                     partial_path,
                     recorded_path,
                     source_is_dir,
-                    bytes: _bytes,
+                    bytes,
+                    overwrote,
                     created_files,
                     created_dirs: task_created_dirs,
                     source_path: done_source,
@@ -1099,6 +1142,26 @@ pub(crate) async fn copy_volumes_with_progress(
                     }
                     drop(partials);
                     let file_name_done = recorded_path.file_name().map(|n| n.to_string_lossy().to_string());
+                    // Journal the per-leaf `rollback_unit` rows under the REAL
+                    // volume ids (a file source → one leaf at `recorded_path`; a dir
+                    // source → one leaf per `created_files` entry, source rebased
+                    // from `done_source`). Created dirs journal post-loop (after all
+                    // files, so their `seq` follows the contents). No-ops for the
+                    // both-local shortcut (that path journals via `copy_files_start`)
+                    // and in tests that don't set a journal target.
+                    if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
+                        journal::record_volume_transfer_source(
+                            operation_id,
+                            src_vol,
+                            &done_source,
+                            dst_vol,
+                            &recorded_path,
+                            source_is_dir,
+                            &created_files,
+                            (!source_is_dir).then_some(bytes as i64),
+                            overwrote,
+                        );
+                    }
                     // For a DIRECTORY source, record the individual files and the
                     // newly-created subdirs the op wrote — never the directory
                     // root — so rollback can't recursively delete a merged
@@ -1378,6 +1441,7 @@ pub(crate) async fn copy_volumes_with_progress(
                 let leaf_files_done = Arc::clone(&leaf_files_done);
                 let deep_skipped_files = Arc::clone(&deep_skipped_files);
                 let deep_skipped_bytes = Arc::clone(&deep_skipped_bytes);
+                let journal_volumes = journal_volumes.clone();
                 move |ctx: TransferContext<'_>| -> TransferFut<'_> {
                     let source_volume = Arc::clone(&source_volume);
                     let dest_volume = Arc::clone(&dest_volume);
@@ -1393,6 +1457,7 @@ pub(crate) async fn copy_volumes_with_progress(
                     let leaf_files_done = Arc::clone(&leaf_files_done);
                     let deep_skipped_files = Arc::clone(&deep_skipped_files);
                     let deep_skipped_bytes = Arc::clone(&deep_skipped_bytes);
+                    let journal_volumes = journal_volumes.clone();
                     let source_path = ctx.source_path.to_path_buf();
                     let dest_item_path = ctx
                         .dest_path
@@ -1488,6 +1553,10 @@ pub(crate) async fn copy_volumes_with_progress(
                                 // of the new data — it must survive on disk as a
                                 // recoverable `.cmdr-tmp-*` artifact.
                                 *last_dest_cell.lock_ignore_poison() = None;
+                                // Overwrote iff a top-level file→file safe-replace
+                                // fires, OR a deep-merge child replaced a dest file.
+                                // Captured before `replace_after_write` is consumed.
+                                let source_overwrote = replace_after_write.is_some() || created.any_overwrote();
                                 let landed_path = match replace_after_write {
                                     Some(orig) => {
                                         if let Err(e) = super::volume_conflict::finalize_safe_replace(
@@ -1513,9 +1582,38 @@ pub(crate) async fn copy_volumes_with_progress(
                                 if source_is_dir_hint {
                                     let files = std::mem::take(&mut *created.files.lock_ignore_poison());
                                     let dirs = std::mem::take(&mut *created.dirs.lock_ignore_poison());
+                                    // Journal the per-leaf rows under the REAL volume
+                                    // ids (dir source: rebased from `landed_path`, the
+                                    // dest dir root). Created dirs journal post-loop.
+                                    if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
+                                        journal::record_volume_transfer_source(
+                                            &operation_id,
+                                            src_vol,
+                                            &source_path,
+                                            dst_vol,
+                                            &landed_path,
+                                            true,
+                                            &files,
+                                            None,
+                                            source_overwrote,
+                                        );
+                                    }
                                     copied_paths.lock_ignore_poison().extend(files);
                                     created_dirs.lock_ignore_poison().extend(dirs);
                                 } else {
+                                    if let Some((src_vol, dst_vol)) = journal_volumes.as_ref() {
+                                        journal::record_volume_transfer_source(
+                                            &operation_id,
+                                            src_vol,
+                                            &source_path,
+                                            dst_vol,
+                                            &landed_path,
+                                            false,
+                                            &[],
+                                            Some(bytes_copied as i64),
+                                            source_overwrote,
+                                        );
+                                    }
                                     copied_paths.lock_ignore_poison().push(landed_path);
                                 }
                                 // Fold this source's deep-merge skips into the op-wide
@@ -1643,6 +1741,14 @@ pub(crate) async fn copy_volumes_with_progress(
             bytes_done,
             format_skipped_suffix(files_skipped, bytes_skipped),
         );
+
+        // Journal the directories the copy created as `dir` rows on the dest
+        // volume, AFTER all the file leaves (so their `seq` follows the contents
+        // and the M3 rollback removes files before their dirs). Mirrors the local
+        // copy's post-success `record_created_dirs`.
+        if let Some((_, dst_vol)) = journal_volumes.as_ref() {
+            journal::record_created_dirs_on(operation_id, dst_vol, &created_dirs);
+        }
 
         events.emit_complete(WriteCompleteEvent {
             operation_id: operation_id.to_string(),

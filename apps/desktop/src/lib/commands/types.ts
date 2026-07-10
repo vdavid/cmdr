@@ -5,6 +5,7 @@
 import type { ViewMode } from '$lib/app-status-store'
 import type { BadgeStatus } from '$lib/feature-status'
 import type { MessageKey } from '$lib/intl/keys.gen'
+import type { Initiator } from '$lib/tauri-commands'
 import type { CommandId } from './command-ids'
 
 export type { CommandId } from './command-ids'
@@ -81,13 +82,13 @@ export interface CommandArgsOverrides {
  * resolves these to a `[args?]` tuple so both call shapes type-check.
  */
 export interface CommandArgsOptionalOverrides {
-  'file.copy': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string }
-  'file.move': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string }
-  'file.compress': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string }
-  'file.delete': { autoConfirm?: boolean; permanent?: boolean; mcpRequestId?: string }
+  'file.copy': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string; initiator?: Initiator }
+  'file.move': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string; initiator?: Initiator }
+  'file.compress': { autoConfirm?: boolean; onConflict?: string; mcpRequestId?: string; initiator?: Initiator }
+  'file.delete': { autoConfirm?: boolean; permanent?: boolean; mcpRequestId?: string; initiator?: Initiator }
   'file.rename': { initialName?: string; expectedName?: string }
-  'file.newFolder': { name?: string; pane?: 'left' | 'right' }
-  'file.newFile': { name?: string; pane?: 'left' | 'right' }
+  'file.newFolder': { name?: string; pane?: 'left' | 'right'; initiator?: Initiator }
+  'file.newFile': { name?: string; pane?: 'left' | 'right'; initiator?: Initiator }
 }
 
 /**

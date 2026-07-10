@@ -132,6 +132,11 @@ pub(super) struct CreatedPaths {
     // archive (see `skipped_file_count`).
     pub skipped_files: std::sync::atomic::AtomicUsize,
     pub skipped_bytes: std::sync::atomic::AtomicU64,
+    // Deep-merge children that REPLACED an existing dest file. The operation-log
+    // capture reads this per source (`overwrote_count`) so a copy / move whose
+    // subtree overwrote anything finalizes `not_rollbackable` — deleting the
+    // copies can't bring the overwritten originals back.
+    pub overwrote_files: std::sync::atomic::AtomicUsize,
 }
 
 impl CreatedPaths {
@@ -148,6 +153,18 @@ impl CreatedPaths {
         use std::sync::atomic::Ordering;
         self.skipped_files.fetch_add(1, Ordering::Relaxed);
         self.skipped_bytes.fetch_add(size, Ordering::Relaxed);
+    }
+
+    /// Tally one child a deep merge overwrote (replaced an existing dest file).
+    fn record_overwrite(&self) {
+        self.overwrote_files.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Whether this copy overwrote any existing dest file in its subtree — the
+    /// operation-log capture uses it (with the top-level file→file overwrite) to
+    /// mark the op `not_rollbackable`.
+    pub(super) fn any_overwrote(&self) -> bool {
+        self.overwrote_files.load(std::sync::atomic::Ordering::Relaxed) > 0
     }
 
     /// How many children this copy skipped (deep merge Skips). `0` means the
@@ -619,6 +636,10 @@ pub(super) async fn copy_directory_streaming(
         let recorded = match replace_after_write {
             Some(orig) => {
                 super::volume_conflict::finalize_safe_replace(dest_volume, &write_dest, &orig).await?;
+                // A deep-merge child that replaced an existing dest file: record
+                // the overwrite so the operation-log eligibility is honest (a copy
+                // / move that overwrote isn't rollbackable — the original is gone).
+                created.record_overwrite();
                 orig
             }
             None => write_dest,

@@ -137,6 +137,7 @@
         itemSizes={transferProgressProps.itemSizes}
         scanInProgress={transferProgressProps.scanInProgress}
         mcpRequestId={transferProgressProps.mcpRequestId}
+        initiator={transferProgressProps.initiator}
         onComplete={onTransferComplete}
         onCancelled={onTransferCancelled}
         onError={onTransferError}
@@ -171,6 +172,7 @@
         showHiddenFiles={newFolderDialogProps.showHiddenFiles}
         initialName={newFolderDialogProps.initialName}
         volumeId={newFolderDialogProps.volumeId}
+        initiator={newFolderDialogProps.initiator}
         onCreated={onNewFolderCreated}
         onCancel={onNewFolderCancel}
     />
@@ -183,6 +185,7 @@
         showHiddenFiles={newFileDialogProps.showHiddenFiles}
         initialName={newFileDialogProps.initialName}
         volumeId={newFileDialogProps.volumeId}
+        initiator={newFileDialogProps.initiator}
         onCreated={onNewFileCreated}
         onCancel={onNewFileCancel}
     />

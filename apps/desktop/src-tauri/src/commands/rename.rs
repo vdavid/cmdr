@@ -96,7 +96,13 @@ pub async fn check_rename_validity(
 /// briefly in the queue), still inline and result-returning.
 #[tauri::command]
 #[specta::specta]
-pub async fn rename_file(from: String, to: String, force: bool, volume_id: Option<String>) -> Result<(), IpcError> {
+pub async fn rename_file(
+    from: String,
+    to: String,
+    force: bool,
+    volume_id: Option<String>,
+    initiator: Option<crate::operation_log::types::Initiator>,
+) -> Result<(), IpcError> {
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
     let (from_path, to_path) = if volume_id_str != "root" {
@@ -108,7 +114,13 @@ pub async fn rename_file(from: String, to: String, force: bool, volume_id: Optio
 
     tokio::time::timeout(
         Duration::from_secs(5),
-        rename_managed(from_path, to_path, force, volume_id_str),
+        rename_managed(
+            from_path,
+            to_path,
+            force,
+            volume_id_str,
+            initiator.unwrap_or(crate::operation_log::types::Initiator::User),
+        ),
     )
     .await
     .map_err(|_| IpcError::timeout())?
@@ -260,6 +272,7 @@ mod tests {
             new.to_string_lossy().to_string(),
             false,
             None,
+            None,
         )
         .await;
         assert!(result.is_ok());
@@ -281,6 +294,7 @@ mod tests {
             old.to_string_lossy().to_string(),
             new.to_string_lossy().to_string(),
             false,
+            None,
             None,
         )
         .await;
@@ -305,6 +319,7 @@ mod tests {
             old.to_string_lossy().to_string(),
             new.to_string_lossy().to_string(),
             true,
+            None,
             None,
         )
         .await;
