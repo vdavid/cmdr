@@ -353,6 +353,10 @@ and reverses the top-level items but SKIPS inner leaves as `UnverifiablePrecondi
 delete. Local-FS copy/move record per-leaf mtime, so their directory rollbacks are complete. Closing this needs the capture layer to
 capture inner-leaf snapshots for volume transfers.
 
+The case-only rename self-collision logic is unit-tested through the pure `is_self_collision` helper (inode plus
+path-fold cases) but NOT exercised end-to-end on a real case-insensitive filesystem — the `InMemoryVolume` fixtures are
+case-sensitive. A macOS-gated tempdir integration test on the real FS is the named follow-up.
+
 ### Future: Cmd+Z (D-undo, designed-for, not built)
 
 A later Cmd+Z is `SELECT op_id FROM operations WHERE initiator='user' AND rollback_state='rollbackable' ORDER BY
