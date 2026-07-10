@@ -193,6 +193,9 @@ pub async fn copy_between_volumes(
             write_config,
             vec![source_volume_id, dest_volume_id],
             Some(lanes),
+            // Both-local copies delegate here from the user's copy action; MCP
+            // provenance rides the plain `copy_files` command, not this path.
+            crate::operation_log::types::Initiator::User,
         )
         .await;
     }

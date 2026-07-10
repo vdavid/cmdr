@@ -150,6 +150,34 @@ fn same_fs_move_journals_the_top_level_item_as_rollback_unit() {
 }
 
 #[test]
+fn initiator_threads_from_the_op_into_the_journal_row() {
+    // An AI-client-initiated copy records `ai_client`; the default path records
+    // `user`. Provenance (D5) crosses as a typed enum, not a string.
+    for initiator in [Initiator::User, Initiator::AiClient] {
+        let (jdir, jdb) = install_journal();
+        let work = tempfile::tempdir().expect("work");
+        let src = work.path().join("src");
+        std::fs::create_dir_all(&src).expect("mk src");
+        std::fs::write(src.join("a.txt"), b"a").expect("a");
+        let dst = work.path().join("dst");
+        std::fs::create_dir_all(&dst).expect("mk dst");
+
+        let op_id = "op-initiator";
+        journal::open_local_op(op_id, OpKind::Copy, initiator, 0);
+        let events = CollectorEventSink::new();
+        copy_files_with_progress_inner(&events, op_id, &state(), &[src], &dst, &WriteOperationConfig::default())
+            .expect("copy");
+        journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
+        clear_journal();
+
+        let conn = open_read_connection(&jdb).expect("read conn");
+        let row = read_operation(&conn, op_id).expect("read").expect("row");
+        assert_eq!(row.initiator, initiator);
+        drop(jdir);
+    }
+}
+
+#[test]
 fn delete_journals_search_leaves_and_stays_not_rollbackable() {
     let (_jdir, jdb) = install_journal();
     let work = tempfile::tempdir().expect("work");

@@ -27,7 +27,12 @@ macro_rules! token_enum {
         $vis:vis enum $name:ident { $( $(#[$vmeta:meta])* $variant:ident => $token:literal ),+ $(,)? }
     ) => {
         $(#[$meta])*
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, specta::Type)]
+        // The serde/specta wire form (camelCase, for IPC + `bindings.ts`) is
+        // SEPARATE from the DB `as_token` (stable snake_case). Callers cross IPC
+        // as this typed enum, never a string (`no-string-matching`); the store
+        // reads/writes via the tokens below.
+        #[serde(rename_all = "camelCase")]
         $vis enum $name { $( $(#[$vmeta])* $variant ),+ }
 
         impl $name {

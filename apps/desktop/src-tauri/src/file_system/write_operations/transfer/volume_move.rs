@@ -121,6 +121,7 @@ pub async fn move_between_volumes(
             write_config,
             vec![source_volume_id, dest_volume_id],
             Some(lanes),
+            crate::operation_log::types::Initiator::User,
         )
         .await;
     }

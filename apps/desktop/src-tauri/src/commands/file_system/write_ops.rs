@@ -22,6 +22,7 @@ use std::sync::Arc;
 use tokio::time::Duration;
 
 use crate::commands::util::IpcError;
+use crate::operation_log::types::Initiator;
 use crate::file_system::Volume;
 use crate::file_system::volume::backends::archive;
 
@@ -143,6 +144,7 @@ pub async fn copy_files(
     sources: Vec<String>,
     destination: String,
     config: Option<WriteOperationConfig>,
+    initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
     let destination = PathBuf::from(expand_tilde(&destination));
@@ -156,7 +158,7 @@ pub async fn copy_files(
     // `copy_between_volumes`; this plain command is the same-`root` local path,
     // so no ejectable volume is involved (empty busy set).
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    ops_copy_files_start(events, sources, destination, config, vec![], None).await
+    ops_copy_files_start(events, sources, destination, config, vec![], None, initiator.unwrap_or(Initiator::User)).await
 }
 
 /// Uses rename() for same-filesystem (instant), copy+delete for cross-filesystem.
@@ -168,6 +170,7 @@ pub async fn move_files(
     sources: Vec<String>,
     destination: String,
     config: Option<WriteOperationConfig>,
+    initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
     let destination = PathBuf::from(expand_tilde(&destination));
@@ -180,7 +183,7 @@ pub async fn move_files(
     // Same-`root` local move (the FE uses `move_between_volumes` whenever the
     // source and destination volumes differ), so no ejectable volume here.
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    ops_move_files_start(events, sources, destination, config, vec![], None).await
+    ops_move_files_start(events, sources, destination, config, vec![], None, initiator.unwrap_or(Initiator::User)).await
 }
 
 /// Recursively deletes files and directories. Same events as `copy_files`.
@@ -192,6 +195,7 @@ pub async fn delete_files(
     sources: Vec<String>,
     volume_id: Option<String>,
     config: Option<WriteOperationConfig>,
+    initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let is_local = volume_id.as_deref().unwrap_or("root") == "root";
     let sources: Vec<PathBuf> = if is_local {
@@ -205,7 +209,7 @@ pub async fn delete_files(
     // driver inside `delete_files_start` (a `{ delete }` changeset), so no
     // rejection here. The `.zip` file itself deletes on the normal path.
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    ops_delete_files_start(events, sources, config, volume_id).await
+    ops_delete_files_start(events, sources, config, volume_id, initiator.unwrap_or(Initiator::User)).await
 }
 
 /// Moves files to macOS Trash. Same events as `copy_files` but with `operationType: trash`.
@@ -216,6 +220,7 @@ pub async fn trash_files(
     sources: Vec<String>,
     item_sizes: Option<Vec<u64>>,
     config: Option<WriteOperationConfig>,
+    initiator: Option<Initiator>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let sources: Vec<PathBuf> = sources.iter().map(|s| PathBuf::from(expand_tilde(s))).collect();
     let config = config.unwrap_or_default();
@@ -224,7 +229,7 @@ pub async fn trash_files(
     reject_if_archive_inner(sources.iter())?;
 
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    ops_trash_files_start(events, sources, item_sizes, config).await
+    ops_trash_files_start(events, sources, item_sizes, config, initiator.unwrap_or(Initiator::User)).await
 }
 
 #[tauri::command]

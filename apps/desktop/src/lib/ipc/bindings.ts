@@ -388,9 +388,10 @@ export const commands = {
        */
       preKnownConflicts?: string[]
     } | null,
+    initiator: 'user' | 'aiClient' | 'agent' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
-      __TAURI_INVOKE('copy_files', { sources, destination, config }),
+      __TAURI_INVOKE('copy_files', { sources, destination, config, initiator }),
     ),
   /**
    *  Uses rename() for same-filesystem (instant), copy+delete for cross-filesystem.
@@ -420,9 +421,10 @@ export const commands = {
        */
       preKnownConflicts?: string[]
     } | null,
+    initiator: 'user' | 'aiClient' | 'agent' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
-      __TAURI_INVOKE('move_files', { sources, destination, config }),
+      __TAURI_INVOKE('move_files', { sources, destination, config, initiator }),
     ),
   /**
    *  Recursively deletes files and directories. Same events as `copy_files`.
@@ -452,9 +454,10 @@ export const commands = {
        */
       preKnownConflicts?: string[]
     } | null,
+    initiator: 'user' | 'aiClient' | 'agent' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
-      __TAURI_INVOKE('delete_files', { sources, volumeId, config }),
+      __TAURI_INVOKE('delete_files', { sources, volumeId, config, initiator }),
     ),
   // Moves files to macOS Trash. Same events as `copy_files` but with `operationType: trash`.
   trashFiles: (
@@ -481,9 +484,10 @@ export const commands = {
        */
       preKnownConflicts?: string[]
     } | null,
+    initiator: 'user' | 'aiClient' | 'agent' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
-      __TAURI_INVOKE('trash_files', { sources, itemSizes, config }),
+      __TAURI_INVOKE('trash_files', { sources, itemSizes, config, initiator }),
     ),
   cancelWriteOperation: (operationId: string, rollback: boolean) =>
     __TAURI_INVOKE<void>('cancel_write_operation', { operationId, rollback }),
@@ -4074,6 +4078,12 @@ export type IndexStatusResponse = {
    */
   volumeUsedBytes: number | null
 }
+
+/**
+ *  Who initiated the operation (provenance, D5). `Agent` is reserved for the
+ *  future in-app agent; v1 records only `User` and `AiClient`.
+ */
+export type Initiator = 'user' | 'aiClient' | 'agent'
 
 /**
  *  Structured IPC error with a timeout flag.

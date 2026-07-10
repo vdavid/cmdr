@@ -191,6 +191,7 @@ pub(crate) use archive_remote_edit::{RemoteEditError, pull_apply_upload_swap};
 async fn start_write_operation<F>(
     events: Arc<dyn OperationEventSink>,
     operation_type: WriteOperationType,
+    initiator: Initiator,
     progress_interval_ms: u64,
     volume_ids: Vec<String>,
     lanes: Vec<LaneKey>,
@@ -237,9 +238,9 @@ where
 
             // Open the journal row when the op actually starts (not at
             // registration), so a queued op that's canceled before admission
-            // never journals. The initiator is threaded in M2c; `User` for now.
+            // never journals.
             let op_kind = journal::op_kind_of(operation_type);
-            journal::open_local_op(&op_id, op_kind, Initiator::User, 0);
+            journal::open_local_op(&op_id, op_kind, initiator, 0);
 
             let op_id_for_blocking = op_id.clone();
             let events_for_handler = Arc::clone(&events);
@@ -349,6 +350,7 @@ pub async fn copy_files_start(
     config: WriteOperationConfig,
     volume_ids: Vec<String>,
     lanes: Option<Vec<LaneKey>>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!(
         "copy_files_start: sources={:?}, destination={:?}, dry_run={}",
@@ -362,6 +364,7 @@ pub async fn copy_files_start(
     start_write_operation(
         events,
         WriteOperationType::Copy,
+        initiator,
         config.progress_interval_ms,
         volume_ids,
         lanes,
@@ -394,6 +397,7 @@ pub async fn move_files_start(
     config: WriteOperationConfig,
     volume_ids: Vec<String>,
     lanes: Option<Vec<LaneKey>>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!(
         "move_files_start: sources={:?}, destination={:?}, dry_run={}",
@@ -407,6 +411,7 @@ pub async fn move_files_start(
     start_write_operation(
         events,
         WriteOperationType::Move,
+        initiator,
         config.progress_interval_ms,
         volume_ids,
         lanes,
@@ -438,6 +443,7 @@ pub async fn delete_files_start(
     sources: Vec<PathBuf>,
     config: WriteOperationConfig,
     volume_id: Option<String>,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
@@ -561,6 +567,7 @@ pub async fn delete_files_start(
         start_write_operation(
             events,
             WriteOperationType::Delete,
+            initiator,
             config.progress_interval_ms,
             vec![],
             vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],
@@ -584,6 +591,7 @@ pub async fn trash_files_start(
     sources: Vec<PathBuf>,
     item_sizes: Option<Vec<u64>>,
     config: WriteOperationConfig,
+    initiator: Initiator,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     log::info!("trash_files_start: sources={:?}", sources);
 
@@ -592,6 +600,7 @@ pub async fn trash_files_start(
     start_write_operation(
         events,
         WriteOperationType::Trash,
+        initiator,
         config.progress_interval_ms,
         vec![],
         vec![LaneKey::new(crate::file_system::volume::DEFAULT_VOLUME_ID)],

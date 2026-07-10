@@ -19,6 +19,7 @@ import type {
   CompressedSizeEstimate,
   ConflictInfo,
   DryRunResult,
+  Initiator,
   OperationStatus,
   OperationSummary,
   ScanPreviewCancelledEvent,
@@ -137,8 +138,9 @@ export async function copyFiles(
   sources: string[],
   destination: string,
   config?: WriteOperationConfig,
+  initiator?: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.copyFiles(sources, destination, config ?? null)
+  const res = await commands.copyFiles(sources, destination, config ?? null, initiator ?? null)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -148,8 +150,9 @@ export async function moveFiles(
   sources: string[],
   destination: string,
   config?: WriteOperationConfig,
+  initiator?: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.moveFiles(sources, destination, config ?? null)
+  const res = await commands.moveFiles(sources, destination, config ?? null, initiator ?? null)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -159,8 +162,9 @@ export async function deleteFiles(
   sources: string[],
   config?: WriteOperationConfig,
   volumeId?: string,
+  initiator?: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.deleteFiles(sources, volumeId ?? null, config ?? null)
+  const res = await commands.deleteFiles(sources, volumeId ?? null, config ?? null, initiator ?? null)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
@@ -170,8 +174,9 @@ export async function trashFiles(
   sources: string[],
   itemSizes?: number[],
   config?: WriteOperationConfig,
+  initiator?: Initiator,
 ): Promise<WriteOperationStartResult> {
-  const res = await commands.trashFiles(sources, itemSizes ?? null, config ?? null)
+  const res = await commands.trashFiles(sources, itemSizes ?? null, config ?? null, initiator ?? null)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }
