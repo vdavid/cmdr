@@ -33,6 +33,7 @@ import {
   dismissOverlay,
   getOpenedPaths,
   clearOpenedPaths,
+  pollUntil,
   TRANSFER_DIALOG,
   MKDIR_DIALOG,
 } from './helpers.js'
@@ -84,11 +85,46 @@ async function clearAllToasts(tauriPage: PageLike): Promise<void> {
     .toBeTruthy()
 }
 
-/** Moves the cursor to `name` in the focused pane and presses Enter to open it. */
+/**
+ * Moves the cursor to `name` in the focused pane and presses Enter to open it.
+ *
+ * The Enter is effect-probed and retried (bounded): the suite's `beforeEach`
+ * wipes and recreates `left/` on disk, and the file-watcher's remove/create
+ * diffs can drain AFTER `moveCursorToFile` confirmed the cursor — briefly
+ * emptying/replacing the listing (the same window `moveCursorToFile`'s own
+ * doc describes). An Enter landing in that window is a silent no-op: no path
+ * change, no overlay, no error — the long-standing "Enter on an archive did
+ * nothing" flake. Each retry re-confirms the cursor is on the target before
+ * pressing again, so this never masks a genuinely broken Enter: with the bug
+ * present the probe exhausts its retries and fails loudly.
+ */
 async function enterEntry(tauriPage: PageLike, name: string): Promise<void> {
-  const found = await moveCursorToFile(tauriPage, name)
-  expect(found, `entry "${name}" should be in the focused pane`).toBe(true)
-  await tauriPage.keyboard.press('Enter')
+  const startPath = await getFocusedPaneActiveTabPath()
+  const startOpened = (await getOpenedPaths(tauriPage)).length
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const found = await moveCursorToFile(tauriPage, name)
+    expect(found, `entry "${name}" should be in the focused pane`).toBe(true)
+    await tauriPage.keyboard.press('Enter')
+    // Probe for ANY effect of the keystroke: an in-place navigation (path
+    // change), an opened overlay/menu/dialog, or an external open recorded by
+    // the mock (`getOpenedPaths` — the docx default-Open case). No effect
+    // within the window ⇒ the keystroke hit the mid-refresh empty listing;
+    // re-verify the cursor and press again.
+    const hadEffect = await pollUntil(
+      tauriPage,
+      async () => {
+        const path = await getFocusedPaneActiveTabPath()
+        if (path !== startPath) return true
+        if ((await getOpenedPaths(tauriPage)).length > startOpened) return true
+        return tauriPage.evaluate<boolean>(`(function() {
+              return !!document.querySelector('.menu-content, .modal-overlay, [role="dialog"], [role="alertdialog"]');
+          })()`)
+      },
+      700,
+    )
+    if (hadEffect) return
+  }
+  throw new Error(`enterEntry: Enter on "${name}" produced no effect after 3 attempts (path stayed ${startPath})`)
 }
 
 /** Navigate a pane to a path via the same `mcp-nav-to-path` event the MCP server uses. */
