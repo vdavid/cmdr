@@ -13,6 +13,8 @@
 //! rollback contracts: `CLAUDE.md` + `DETAILS.md`.
 
 pub mod capture;
+pub mod query;
+pub mod retention;
 pub mod rollback;
 pub mod store;
 pub mod types;
@@ -134,6 +136,10 @@ pub fn start(app: &AppHandle) {
             // The global journal holds a clone (the capture record points reach it
             // by op_id); managed state keeps the writer for retention + shutdown.
             set_journal(Arc::new(WriterJournal::new(writer.clone())));
+            // Enforce retention: prune on startup + a periodic timer, with the
+            // settings-driven age/size limits (M4). Runs before the app is under
+            // load; the size loop is a no-op while the DB is under budget.
+            retention::spawn(app, writer.clone());
             app.manage(writer);
             log::debug!(target: "operation_log", "operation log ready at {}", db_path.display());
         }

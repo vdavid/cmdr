@@ -375,6 +375,76 @@ pub fn early_load_global_go_to_latest_shortcut() -> Option<(bool, String)> {
     Some((enabled, binding))
 }
 
+/// The operation log's default size budget: 3 GB (D10). Applied when
+/// `operationLog.maxSize` isn't persisted.
+pub const DEFAULT_OPERATION_LOG_MAX_SIZE_BYTES: u64 = 3 * 1024 * 1024 * 1024;
+
+/// The operation log's retention limits, read fresh from `settings.json` each call
+/// so an M6 settings change takes effect on the next retention tick. Defaults
+/// (D10): age = forever (`None`), size = 3 GB.
+#[derive(Debug, Clone, Copy)]
+pub struct OperationLogRetentionLimits {
+    /// Prune ops older than this many seconds. `None` = keep forever (the default,
+    /// and the "Forever" sentinel the age setting stores as `0`).
+    pub max_age_secs: Option<u64>,
+    /// Prune oldest ops until the DB fits this many bytes. `None` only if the user
+    /// picks an explicit `0` (unlimited); absent ⇒ the 3 GB default.
+    pub max_size_bytes: Option<u64>,
+}
+
+impl Default for OperationLogRetentionLimits {
+    fn default() -> Self {
+        Self {
+            max_age_secs: None,
+            max_size_bytes: Some(DEFAULT_OPERATION_LOG_MAX_SIZE_BYTES),
+        }
+    }
+}
+
+/// Reads the operation-log retention limits from `settings.json`.
+///
+/// Contract with M6 (which wires the settings UI): the age limit persists under
+/// `operationLog.maxAge` as a duration in **milliseconds** (`0` = the "Forever"
+/// sentinel ⇒ no age prune), and the size limit under `operationLog.maxSize` as a
+/// byte count (absent ⇒ 3 GB default; `0` ⇒ unlimited). M4 reads these so
+/// retention works before the UI lands; M6 must persist these exact keys.
+pub fn load_operation_log_retention_limits<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+) -> OperationLogRetentionLimits {
+    let Ok(data_dir) = crate::config::resolved_app_data_dir(app) else {
+        return OperationLogRetentionLimits::default();
+    };
+    let settings_path = data_dir.join("settings.json");
+    let Ok(contents) = fs::read_to_string(&settings_path) else {
+        return OperationLogRetentionLimits::default();
+    };
+    parse_operation_log_retention_limits(&contents)
+}
+
+/// Pure parse step for [`load_operation_log_retention_limits`], split out for unit
+/// tests.
+fn parse_operation_log_retention_limits(contents: &str) -> OperationLogRetentionLimits {
+    let Ok(json) = serde_json::from_str::<serde_json::Value>(contents) else {
+        return OperationLogRetentionLimits::default();
+    };
+    // Age: milliseconds; 0 (the "Forever" sentinel) or absent ⇒ no age prune.
+    let max_age_secs = json
+        .get("operationLog.maxAge")
+        .and_then(|v| v.as_u64())
+        .filter(|ms| *ms > 0)
+        .map(|ms| ms / 1000);
+    // Size: bytes; absent ⇒ 3 GB default; 0 ⇒ unlimited (no size prune).
+    let max_size_bytes = match json.get("operationLog.maxSize").and_then(|v| v.as_u64()) {
+        None => Some(DEFAULT_OPERATION_LOG_MAX_SIZE_BYTES),
+        Some(0) => None,
+        Some(bytes) => Some(bytes),
+    };
+    OperationLogRetentionLimits {
+        max_age_secs,
+        max_size_bytes,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -393,6 +463,36 @@ mod tests {
         assert_eq!(parsed.file_viewer_suppress_binary_warning, Some(true));
         assert_eq!(parsed.appearance_text_size, Some(125.0));
         assert_eq!(parsed.appearance_app_color.as_deref(), Some("blue"));
+    }
+
+    #[test]
+    fn operation_log_retention_defaults_forever_and_3gb() {
+        // Absent keys ⇒ forever age, 3 GB size.
+        let limits = parse_operation_log_retention_limits("{}");
+        assert_eq!(limits.max_age_secs, None);
+        assert_eq!(limits.max_size_bytes, Some(DEFAULT_OPERATION_LOG_MAX_SIZE_BYTES));
+        // Bad JSON ⇒ same defaults.
+        let bad = parse_operation_log_retention_limits("not json");
+        assert_eq!(bad.max_age_secs, None);
+        assert_eq!(bad.max_size_bytes, Some(DEFAULT_OPERATION_LOG_MAX_SIZE_BYTES));
+    }
+
+    #[test]
+    fn operation_log_retention_reads_persisted_values() {
+        // Age in ms → seconds; size in bytes verbatim.
+        let json = r#"{ "operationLog.maxAge": 90000, "operationLog.maxSize": 104857600 }"#;
+        let limits = parse_operation_log_retention_limits(json);
+        assert_eq!(limits.max_age_secs, Some(90), "90000 ms ⇒ 90 s");
+        assert_eq!(limits.max_size_bytes, Some(104_857_600));
+    }
+
+    #[test]
+    fn operation_log_retention_zero_sentinels_mean_unlimited() {
+        // Age 0 = the "Forever" sentinel; size 0 = unlimited.
+        let json = r#"{ "operationLog.maxAge": 0, "operationLog.maxSize": 0 }"#;
+        let limits = parse_operation_log_retention_limits(json);
+        assert_eq!(limits.max_age_secs, None);
+        assert_eq!(limits.max_size_bytes, None);
     }
 
     #[test]

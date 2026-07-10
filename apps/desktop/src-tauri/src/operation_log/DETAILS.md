@@ -2,14 +2,15 @@
 
 Depth for the operation-log subsystem. Must-knows and the module map: [CLAUDE.md](CLAUDE.md). The full design, every
 decision (D1–D10), and the milestone breakdown: [`docs/specs/operation-log-plan.md`](../../../../../docs/specs/operation-log-plan.md)
-— this doc captures what M1 shipped and the durable rationale a future agent needs on hand; the plan holds the rest.
+— this doc captures what shipped (M1–M4) and the durable rationale a future agent needs on hand; the plan holds the rest.
 
 ## What this is
 
 A durable, cross-volume journal of every file mutation Cmdr performs: one `operations` row per user-level batch (1:1
 with the pipeline's `operation_id`), many `operation_items` rows beneath it. It answers "what did I do to my files, and
-can I undo it?" — provenance, rollback, indexed name search, and retention. M1 is the store foundation; capture and
-rollback build on it.
+can I undo it?" — provenance, rollback, indexed name search, and retention. Shipped: the durable store (M1), capture at
+the chokepoint (M2), the rollback engine (M3), and the read/search API + retention enforcement (M4). MCP tools (M5) and
+the UI (M6/M7) build on the read side.
 
 ## Why a separate durable DB (D1)
 
@@ -351,21 +352,63 @@ ended_at DESC LIMIT 1` then `dispatch_rollback`. The two-axis status + `rolls_ba
 new engine; because a rollback is itself a journaled user op, "undo the undo" (redo) falls out too. Don't build it;
 don't preclude it.
 
-## Retention (mechanism here; enforcement in M4)
+## Query API + search (M4)
 
-The `Prune` message is the mechanism; M4 wires the periodic timer, the settings-driven age/size limits, and the
-size-budget loop. What M1 lands: prune **whole operations** older than an age cutoff (never orphan an item from a kept
-op), null any now-dangling `rolls_back_op_id`, **skip ops in `rolling_back`** (and their target) so a live rollback's
-streamed source rows can't vanish mid-stream, then **GC interned dirs** and run a **bounded** `incremental_vacuum` slice.
+`query.rs` is the read side: short-lived read-only connections, index-served name search, and paged reads for the Debug
+panel (M6) / alpha dialog (M7) / MCP tools (M5). The IPC surface is two thin pass-throughs
+(`commands/operation_log.rs`): `get_recent_operation_log_entries(limit, offset)` and
+`get_operation_log_detail(operation_id, item_limit, item_offset)` — business logic (filtering, paging, dir-path
+resolution) lives in `query.rs`, the commands only open a connection off the IPC thread and forward.
 
-- **Dir GC — the referenced-plus-ancestors closure.** Interning keeps a dir row forever, so pruning operations alone
-  leaves a monotonically-growing `dirs` floor. GC iterates leaf-up: delete dirs referenced by no item AND no child dir,
-  repeat until stable. This deletes exactly the complement of the referenced-dirs-plus-their-ancestors closure — a
-  referenced dir's whole parent chain survives (path reconstruction walks it to the root).
-- **Bounded vacuum.** Mirrors `indexing/writer/maintenance.rs`: a tiered `pick_vacuum_cap(freelist)` (skip below a floor,
-  a steady cap for a modest freelist, ramp for a real backlog) so a big prune drains in bounded slices between insert
-  batches and never stops the world — the one thing that could stall the lossless-with-backpressure writer. Importance
-  sets `auto_vacuum = INCREMENTAL` but never calls `incremental_vacuum`; this DB must, or it grows unboundedly.
+- **Name search is an indexed folded-name lookup, not FTS (D8).** The product headline — "when did I delete `dog.jpg`?"
+  — is exact/prefix name equality, so `search_operations` joins `operation_items` to `operations` and matches the
+  indexed `source_name_folded` column. The benchmark query
+  (`source_name_folded = ? AND kind IN (delete, trash) ORDER BY ended_at DESC`) is served by
+  `operation_items_source_name` + the `operations` PK, never a full table scan — pinned by an `EXPLAIN QUERY PLAN` test
+  (`query::tests::delete_dog_jpg_is_index_served`). FTS5 stays a clean later add if substring/fuzzy is ever wanted.
+- **Search spans every `row_role`, deliberately.** A trashed folder records the top-level `rollback_unit` plus its
+  subtree's `search_only` leaves (D-granularity), so "when did I trash `dog.jpg`" hits even when `dog.jpg` sat inside a
+  trashed folder — the asymmetry a uniform-granularity design would leave as a silent miss. The one uncovered case (a
+  subtree that couldn't be enumerated) is flagged `search_coverage = top_level_only`, a queryable known gap
+  (`coverage_is_complete`), not a false negative.
+- **Names repeat, so they're NOT interned.** Item names duplicate massively across a 1M-file op; a b-tree index handles
+  duplicate keys fine, and (unlike dirs) names must stay directly queryable. Prefix match is a folded-range scan on the
+  same index (`>= prefix AND < prefix⁺`), never `LIKE` (which wouldn't use the index).
+- **Item views resolve interned dirs to full paths.** `OperationRow` is the summary wire type (no `dir_id`s); item rows
+  carry interned prefixes, so `get_operation` returns `OperationItemView`s with `source_path`/`dest_path` reconstructed —
+  the frontend never sees a `dir_id`.
+
+## Retention (D9) — prune by age + size, GC dirs, reclaim
+
+Retention runs the writer's `Prune` on startup and on a periodic timer (`retention.rs`, every 6 h), with the age/size
+limits read fresh from settings each tick (`load_operation_log_retention_limits`) so an M6 change takes effect on the
+next tick. Defaults hold before M6's UI lands: **age = forever, size = 3 GB** (D10). The settings contract M6 must honor:
+`operationLog.maxAge` (duration ms; `0` = forever) and `operationLog.maxSize` (bytes; absent ⇒ 3 GB; `0` = unlimited).
+
+A prune (`handle_prune`) is: **age prune** (delete whole finished ops older than the cutoff) → **size prune** (delete the
+oldest whole ops until the DB fits the budget) → **dir GC** → **reclaim**.
+
+- **Prune whole operations only.** Never orphan an item from a kept op; never leave a dangling `rolls_back_op_id` (null a
+  surviving op's link to a pruned op BEFORE the delete, or the self-FK rejects it). A rolled-back pair prunes together
+  (`rollback_pair_component` pulls in the seed's inverse/original), and any protected partner is excluded with its link
+  nulled.
+- **Never prune an in-flight rollback's rows.** `protected_ops_fragment` excludes any op in `rolling_back` (the original,
+  which a live rollback streams across successive read connections) and its `rolls_back_op_id` target; the unfinished
+  inverse is separately excluded by the `ended_at IS NOT NULL` gate. This closes the Finding 6/7 race without a long read
+  transaction.
+- **Size budget is measured as live bytes.** `live_size_bytes = (page_count - freelist) * page_size` — the size the file
+  would have after a full vacuum — so the delete loop makes progress before pages are physically reclaimed (each delete
+  grows the freelist). It stops when under budget or nothing prunable remains (everything left protected).
+- **Dir GC — the referenced-plus-ancestors closure.** Interning keeps a dir row forever, so pruning ops alone leaves a
+  monotonically-growing `dirs` floor. GC iterates leaf-up: delete dirs referenced by no item AND no child dir, repeat
+  until stable — exactly the complement of the referenced-dirs-plus-their-ancestors closure, so a referenced dir's whole
+  parent chain survives (path reconstruction walks it to the root).
+- **Reclaim.** An age-only prune runs one **bounded** `incremental_vacuum` slice (tiered `pick_vacuum_cap`, mirroring
+  `indexing/writer/maintenance.rs`) and lets the periodic timer drain the rest over ticks, never stalling the
+  lossless-with-backpressure writer. A **size** prune must actually shrink the file to honor the budget, so it drains the
+  ENTIRE freelist (`reclaim_fully`, ignoring the cap floor) then `wal_checkpoint(TRUNCATE)` so the truncation reaches the
+  physical file (in WAL mode `incremental_vacuum`'s page-count drop otherwise lands only in the WAL). Importance sets
+  `auto_vacuum = INCREMENTAL` but never calls `incremental_vacuum`; this DB must, or it grows unboundedly.
 
 ## The dev bin
 

@@ -113,8 +113,13 @@ fn is_unparseable(err: &OperationLogStoreError) -> bool {
     )
 }
 
-/// A read of one `operations` row, tokens decoded to typed enums.
-#[derive(Debug, Clone, PartialEq)]
+/// A read of one `operations` row, tokens decoded to typed enums. Doubles as the
+/// IPC/MCP summary wire type (the query API returns it directly): it carries no
+/// interned `dir_id`s, only volume ids and typed fields the frontend can render,
+/// so it's safe to serialize. Item rows are NOT (their dir prefixes are ids); the
+/// query layer resolves those to paths in a separate view type.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct OperationRow {
     pub op_id: String,
     pub kind: OpKind,
@@ -315,11 +320,11 @@ fn decode_opt<T>(
     }
 }
 
-const OPERATION_COLUMNS: &str = "op_id, kind, archive_subkind, initiator, execution_status, rollback_state, \
+pub(super) const OPERATION_COLUMNS: &str = "op_id, kind, archive_subkind, initiator, execution_status, rollback_state, \
      not_rollbackable_reason, rolls_back_op_id, source_volume_id, dest_volume_id, started_at, ended_at, \
      item_count, items_done, bytes_total, search_coverage, search_coverage_reason, dev_summary";
 
-fn map_operation_row(row: &rusqlite::Row<'_>) -> Result<OperationRow, OperationLogStoreError> {
+pub(super) fn map_operation_row(row: &rusqlite::Row<'_>) -> Result<OperationRow, OperationLogStoreError> {
     Ok(OperationRow {
         op_id: row.get(0)?,
         kind: decode(row.get(1)?, OpKind::from_token, "kind")?,
@@ -370,10 +375,10 @@ pub fn recent_operations(conn: &Connection, limit: u32) -> Result<Vec<OperationR
     Ok(out)
 }
 
-const ITEM_COLUMNS: &str = "item_id, op_id, seq, entry_type, row_role, source_dir_id, source_name, dest_dir_id, \
+pub(super) const ITEM_COLUMNS: &str = "item_id, op_id, seq, entry_type, row_role, source_dir_id, source_name, dest_dir_id, \
      dest_name, size, mtime, outcome, overwrote";
 
-fn map_item_row(row: &rusqlite::Row<'_>) -> Result<OperationItemRow, OperationLogStoreError> {
+pub(super) fn map_item_row(row: &rusqlite::Row<'_>) -> Result<OperationItemRow, OperationLogStoreError> {
     Ok(OperationItemRow {
         item_id: row.get(0)?,
         op_id: row.get(1)?,
@@ -431,7 +436,7 @@ pub struct RollbackUnit {
 /// Resolve an interned `dir_id` to `(volume_id, full path)`. The path is
 /// [`reconstruct_dir_path`]; the volume id is read from the dir row itself (every
 /// dir in a chain shares the volume, so the leaf's row is enough).
-fn resolve_dir(conn: &Connection, dir_id: i64) -> Result<(String, String), OperationLogStoreError> {
+pub(super) fn resolve_dir(conn: &Connection, dir_id: i64) -> Result<(String, String), OperationLogStoreError> {
     let volume_id: String = conn
         .prepare_cached("SELECT volume_id FROM dirs WHERE dir_id = ?1")?
         .query_row(rusqlite::params![dir_id], |row| row.get(0))?;
@@ -441,7 +446,7 @@ fn resolve_dir(conn: &Connection, dir_id: i64) -> Result<(String, String), Opera
 
 /// Join a resolved dir path with a leaf name into a full path. The root renders as
 /// `/`, so `join_leaf("/", "a")` is `/a` and `join_leaf("/a/b", "c")` is `/a/b/c`.
-fn join_leaf(dir_path: &str, name: &str) -> PathBuf {
+pub(super) fn join_leaf(dir_path: &str, name: &str) -> PathBuf {
     PathBuf::from(dir_path).join(name)
 }
 

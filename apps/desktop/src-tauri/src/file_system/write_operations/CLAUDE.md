@@ -17,17 +17,17 @@ cross-cutting machinery both subdirs share.
 ## Must-knows
 
 - **A zip edit (`ArchiveEdit`) is a managed op, NOT instant.** Editing a `.zip` (mutations inside, or copy/move INTO
-  one) routes to the `archive_edit/` driver, running `ArchiveMutator` (temp+rename, O(archive) rewrite) via
-  `spawn_managed` on the PARENT drive's lane. **Move OUT converges per-source.** **Compress** = seed a valid empty zip
-  then copy-into (load-bearing: `ZipArchive::new` rejects a 0-byte target). DETAILS § "Archive edits".
+  one) routes to the `archive_edit/` driver, running `ArchiveMutator` (temp+rename) via `spawn_managed` on the PARENT
+  drive's lane. **Compress** = seed a valid empty zip then copy-into (load-bearing: `ZipArchive::new` rejects a 0-byte
+  target). DETAILS § "Archive edits".
 - **Every archive apply site runs through `run_managed_edit`, never a bare `spawn_blocking(mutator::apply)`.** It
   dispatches on `parent.supports_local_fs_access()`: a LOCAL parent edits in place; a REMOTE parent (SMB / MTP) pulls the
   `.zip`, edits a local copy, and swaps — original untouched until the swap. Don't reintroduce an in-place remote edit.
   DETAILS § "Remote edit".
 - **Copy/move/delete/trash spawn through `manager::spawn_managed`; rename/mkdir/mkfile run through
   `manager::run_instant`.** A spawned op reserves a slot in each lane it touches (source AND dest), else Queued; the next
-  admits on the explicit `on_settled`, NEVER in `Drop`. Instant ops reserve NO lane and never queue — a metadata syscall
-  must not wait behind a transfer. DETAILS § "Operation manager".
+  admits on the explicit `on_settled`, NEVER in `Drop`. Instant ops reserve NO lane and never queue. DETAILS §
+  "Operation manager".
 - **All blocking work runs in `spawn_blocking`** (including validation). `*_files_start` returns an `operationId`
   immediately (dialog opens, offers cancel).
 - **`OperationIntent` is a single `AtomicU8`** (`Running → RollingBack/Stopped`, `Stopped` terminal); never
@@ -35,8 +35,7 @@ cross-cutting machinery both subdirs share.
   reverse. **Pause is a separate `PauseGate`**, orthogonal to intent; cancel wins (`wake()`s a parked op).
 - **Stop-mode conflict resolution must store the oneshot sender BEFORE emitting `write-conflict`** — emit-first hangs the
   recv. **The conflict-dispatch mutex serializes concurrent/nested merges**; NEVER hold it across the file write.
-- **`write-settled` fires exactly once per op, AFTER the terminal event** (a `WriteSettledGuard` Drop, panic-safe). The
-  FE gates the "Cancelling…" dialog close on this.
+- **`write-settled` fires exactly once per op, AFTER the terminal event** (a `WriteSettledGuard` Drop, panic-safe).
 - **Every write-op driver MUST register its destination with the downloads watcher's ignore set BEFORE the syscall**
   (`crate::downloads::note_pending_write_for_cmdr`; renames register BOTH halves). Scoping lives inside the helper — no
   call-site guards.
@@ -48,9 +47,9 @@ cross-cutting machinery both subdirs share.
   delete). Don't "fix" copy to the dedup'd number — it under-reserves disk space.
 - **All write ops emit via `OperationEventSink`, not `tauri::AppHandle`** — built only at the IPC edge, injected in.
 - **Every managed mutation journals to the operation log** (`journal.rs`, by `op_id`); a new op kind / record point needs
-  an open/record/finalize bracket or it won't appear in history. Local ops use the `_local_` helpers (they bake in
-  `"root"`); VOLUME (SMB/MTP) ops use the `open_volume_op` / `record_volume_*` siblings with the REAL volume id — a volume
-  op journaling under `"root"` corrupts history silently. DETAILS § Capture.
+  an open/record/finalize bracket or it won't appear in history. Local ops use the `_local_` helpers (baking in
+  `"root"`); VOLUME (SMB/MTP) ops use `open_volume_op` / `record_volume_*` with the REAL volume id — journaling a volume
+  op under `"root"` silently corrupts history. DETAILS § Capture.
 - **The busy-volumes set disables Eject mid-op** (source AND dest IDs); the `eject_volume` server-side guard is the real
   safety net.
 - **Volume-aware ops must not emit `write-error` on `Cancelled`** — the inner handler already emitted `write-cancelled`.

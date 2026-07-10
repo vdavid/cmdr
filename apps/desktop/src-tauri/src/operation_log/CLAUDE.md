@@ -1,57 +1,54 @@
 # Operation log subsystem
 
-The durable, cross-volume journal of every file mutation: the foundation for rollback, indexed name search, retention,
-and a future undo. **The app's first durable DB** (`operation-log.db` in the app data dir, Time Machine-backed) — every
-other on-disk store here is a disposable cache. Full design + rationale: [DETAILS.md](DETAILS.md). Plan:
+The durable, cross-volume journal of every file mutation: the base for rollback, indexed name search, retention, and a
+future undo. **The app's first durable DB** (`operation-log.db` in the app data dir, Time Machine-backed) — every other
+on-disk store here is a disposable cache. Full design + rationale: [DETAILS.md](DETAILS.md). Plan:
 [`docs/specs/operation-log-plan.md`](../../../../../docs/specs/operation-log-plan.md).
 
-**Shipped: the durable store (M1), capture at the chokepoint (M2), and the rollback engine (M3).** Search/retention
-enforcement (M4), MCP (M5), and the UI (M6/M7) build on this.
+**Shipped: durable store (M1), capture (M2), rollback engine (M3), read/search API + retention (M4).** MCP (M5) and the
+UI (M6/M7) build on the read side.
 
 ## Module map
 
-- `store/` — `operation-log.db`: connection factory (`connection.rs`), the migration ladder (`migrations.rs`), schema,
-  `intern_dir`, `fold_name`, and read functions. `OperationLogStore` owns the schema lifecycle.
-- `writer.rs` — the ONE writer thread: `open_operation` / `record_items` / `finalize_operation` / `set_rollback_state`
-  / `set_item_outcomes` / `prune`, batched inserts, retention mechanism.
-- `rollback.rs` — the M3 engine (inverse-per-item + recheck, the `rolling_back` state machine, startup reconcile);
-  managed-op spawn glue is `write_operations/rollback.rs::dispatch_rollback`. `capture.rs` (M2) feeds the writer.
-- `types.rs` — the typed vocabulary (`OpKind`, `RollbackState`, …) and their stable DB tokens.
-- `mod.rs::start` — opens the DB, runs the rollback reconcile, and manages the `OperationLogWriter` at app setup.
+- `store/` — the DB: connection factory, migration ladder (`migrations.rs`), schema, `intern_dir`, `fold_name`, and
+  low-level reads. `OperationLogStore` owns the schema lifecycle.
+- `writer.rs` — the ONE writer thread: `open_operation` / `record_items` / `finalize_operation` / `set_rollback_state` /
+  `set_item_outcomes` / `prune`; batched inserts; the retention mechanism (age + size prune, dir GC, vacuum).
+- `query.rs` — the read side (index-served name search, paged `recent_operations` / `get_operation`); `retention.rs`
+  runs `prune` on a startup + periodic timer; IPC in `commands/operation_log.rs`.
+- `rollback.rs` — the M3 engine (inverse-per-item + recheck, `rolling_back` state machine, startup reconcile); spawn glue
+  in `write_operations/rollback.rs`. `capture.rs` (M2) feeds the writer. `types.rs` — the typed tokens.
+- `mod.rs::start` — opens the DB, reconciles rollback, spawns retention, manages the writer.
 
 ## Must-knows
 
-- **This DB is DURABLE and MIGRATES; it never delete-and-recreates on a version bump.** The migration ladder
-  (`store/migrations.rs`) is the first in the codebase and the template future durable DBs follow: append a `Migration`
-  with the next version; NEVER edit or renumber a shipped step (users' DBs already ran it). A downgrade is refused, never
-  wiped. Delete-and-recreate is reserved for a genuinely unparseable file (typed sqlite error code, not a string match).
-- **NO `platform_case` collation** (unlike the index/importance stores) — deliberate (D2): the store precomputes a
-  `name_folded` column via `fold_name` (Unicode-lowercase + NFC) and queries plain b-tree equality, so the file stays
-  openable in any `sqlite3` browser. Don't add a collation to "match" the other stores.
-- **One writer thread, one cross-volume DB, NO per-volume registry** (divergence from importance, D1). One
-  `OperationLogWriter` in managed state. All writes cross the bounded channel: `record_items` BLOCKS under backpressure
-  (lossless), never drops on fullness; a DB *error* on one row logs and drops THAT row without failing the op. That's
-  why `finalize_operation` returns per-`row_role` durable counts — the M2 completeness check compares them to items
-  issued and degrades a `rollback_unit` gap to `not_rollbackable`, a `search_only` gap to `top_level_only` (never a
-  silent under-reverse or false coverage claim).
-- **Classification is typed end to end, never a string/substring branch** (`no-string-matching`): every `kind`,
-  `initiator`, status, `row_role`, `outcome`, etc. is a `types.rs` enum with a stable token; the token↔enum mapping lives
-  ONLY there. Renaming a token is a schema change (needs a migration); renaming a variant is free.
-- **The writer stores terminal state; it does NOT compute eligibility.** Rollback eligibility (D3) and the net-new/
-  subkind reasoning are the M2 capture layer's job (`capture.rs` — `compute_eligibility` + `apply_completeness`),
-  upstream of the writer — keep business logic out of `writer.rs`.
-- **Capture is a process-global journal reached by `op_id`, NOT threaded through the pipeline** (a recorded deviation
-  from D4's `OperationObservers`; D4's hard rule — never extend `OperationEventSink` — still holds). Install via
-  `set_journal`; the write pipeline calls the `journal_open` / `journal_record_items` / `journal_note_coverage` /
-  `journal_finalize` free functions by `op_id`, mirroring `update_operation_status`. Full rationale + per-kind record
-  points: [DETAILS.md](DETAILS.md) § Capture.
-- **Rollback FAILS SAFE** (`rollback.rs`, data-safety-critical): recheck each item against its snapshot AND its restore
-  target; drift / unverifiable (absent MTP-SMB mtime) / occupied target ⇒ SKIP (→ `partially_rolled_back`), never
-  operate; a restore-move never overwrites (pinned `Skip`, bar a case-only self-collision). `rolling_back` is the
-  double-rollback + retention-race guard (set at spawn, reset on sync spawn failure, reconciled on crash). Full contract:
-  [DETAILS.md](DETAILS.md) § Rollback.
-- **Interned dirs never grow unbounded**: retention GCs dirs down to the referenced-plus-ancestors closure (a referenced
-  dir's whole parent chain survives). Prune whole operations only; null dangling `rolls_back_op_id`; skip `rolling_back`
-  ops. Vacuum runs in bounded slices between batches so it never starves capture.
+- **DURABLE and MIGRATES; never delete-and-recreates on a version bump.** The ladder (`store/migrations.rs`) is the first
+  here and the template future durable DBs follow: append a `Migration`; NEVER edit or renumber a shipped step. A
+  downgrade is refused, never wiped; delete-and-recreate is only for a genuinely unparseable file (typed sqlite code, not
+  a string).
+- **NO `platform_case` collation** (D2): the store precomputes a `name_folded` column (Unicode-lowercase + NFC) and
+  queries plain b-tree equality, keeping the file openable in any `sqlite3` browser. Don't add a collation to match the
+  other stores.
+- **One writer thread, one cross-volume DB, NO per-volume registry** (D1). `record_items` BLOCKS under backpressure
+  (lossless), never drops on fullness; a DB *error* on one row logs and drops THAT row without failing the op. So
+  `finalize_operation` returns per-`row_role` durable counts, and the M2 completeness check degrades a `rollback_unit`
+  gap to `not_rollbackable` and a `search_only` gap to `top_level_only` — never a silent under-reverse or false coverage
+  claim.
+- **Classification is typed end to end** (`no-string-matching`): every `kind`, `initiator`, status, `row_role`,
+  `outcome` is a `types.rs` enum with a stable token; the mapping lives ONLY there. Renaming a token is a schema change;
+  renaming a variant is free.
+- **The writer stores terminal state; it does NOT compute eligibility.** Rollback eligibility (D3) + net-new/subkind
+  reasoning are the M2 capture layer's job (`capture.rs`) — keep business logic out of `writer.rs`.
+- **Capture is a process-global journal reached by `op_id`, NOT threaded through the pipeline** (recorded deviation from
+  D4; its hard rule — never extend `OperationEventSink` — still holds). Install via `set_journal`; the pipeline calls the
+  `journal_*` free functions by `op_id`. Rationale + record points: [DETAILS.md](DETAILS.md) § Capture.
+- **Rollback FAILS SAFE** (data-safety-critical): recheck each item against its snapshot AND its restore target; drift /
+  unverifiable / occupied target ⇒ SKIP (→ `partially_rolled_back`), never operate; a restore-move never overwrites
+  (pinned `Skip`, bar a case-only self-collision). `rolling_back` is the double-rollback + retention-race guard. Full
+  contract: [DETAILS.md](DETAILS.md) § Rollback.
+- **Search spans every `row_role`; retention prunes whole ops only.** Name search matches the indexed
+  `source_name_folded` across `rollback_unit` AND `search_only` rows (a leaf hits inside a trashed folder); a
+  `top_level_only` op is a queryable known gap, not a false miss. Retention prunes whole ops by age + size, GCs dirs to
+  the referenced-plus-ancestors closure, and NEVER prunes an op in `rolling_back` or its target.
 
-Depth (D1/D2 rationale, the ladder template, schema, retention, the dev bin): [DETAILS.md](DETAILS.md).
+Depth (ladder template, schema, query/search, retention, rollback, dev bin): [DETAILS.md](DETAILS.md).

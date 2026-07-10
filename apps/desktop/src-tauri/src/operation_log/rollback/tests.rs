@@ -1135,6 +1135,7 @@ async fn retention_cannot_prune_a_rollbacks_source_mid_stream() {
     rig.writer
         .prune(PruneRequest {
             max_age_secs: Some(0),
+            max_size_bytes: None,
             now_secs: 1_000_000,
             vacuum: true,
         })

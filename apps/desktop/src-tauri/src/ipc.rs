@@ -624,6 +624,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::favorites::reorder_favorites,
         crate::commands::whats_new::get_whats_new,
         crate::commands::whats_new::whats_new_dev_override,
+        crate::commands::operation_log::get_recent_operation_log_entries,
+        crate::commands::operation_log::get_operation_log_detail,
         crate::commands::selection::translate_selection_query,
         crate::commands::selection::get_recent_selections,
         crate::commands::selection::add_recent_selection,

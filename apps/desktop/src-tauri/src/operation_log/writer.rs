@@ -15,9 +15,11 @@
 //! slows an op" requirement: a batched row insert is far cheaper than the
 //! per-item file I/O the op already does, so the writer outpaces every real op
 //! and the channel effectively never fills; the block is a theoretical backstop.
-//! The one thing that could stall the writer — a long retention vacuum on the
-//! same thread — is avoided by running `incremental_vacuum` in bounded slices
-//! ([`handle_prune`]), never one stop-the-world pass.
+//! The one thing that could stall the writer is a long retention vacuum on the
+//! same thread. An age-only prune reclaims one bounded `incremental_vacuum` slice
+//! and lets the periodic timer drain the rest over ticks; only a size-budget prune
+//! reclaims fully (it must, to honor the budget), and that runs off the hot path
+//! on the retention timer, not during a capture burst ([`handle_prune`]).
 //!
 //! A DB *error* on a single item row (not fullness) logs a warning and drops
 //! THAT row — the operation never fails for a journal problem. That's exactly
@@ -32,7 +34,7 @@ use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OptionalExtension};
 
 use super::store::{OperationLogStoreError, fold_name, intern_dir, open_write_connection};
 use super::types::{
@@ -121,19 +123,23 @@ pub struct FinalizeOutcome {
     pub search_only_rows: u64,
 }
 
-/// A retention request. The MECHANISM lands here (M1); M4 wires the periodic
-/// enforcement and the size-budget policy. `max_age_secs` prunes whole
-/// operations whose `ended_at` is older than `now_secs - max_age_secs`.
+/// A retention request (D9). Prunes whole operations by age and/or a size budget,
+/// GCs the interned dirs the pruned ops orphaned, then reclaims freed pages.
 #[derive(Debug, Clone)]
 pub struct PruneRequest {
     /// Prune operations that ended more than this many seconds before
-    /// `now_secs`. `None` ⇒ no age prune (M4 adds the size-budget prune).
+    /// `now_secs`. `None` ⇒ no age prune.
     pub max_age_secs: Option<u64>,
+    /// A disk budget in bytes. When the DB's live size exceeds it, prune the
+    /// oldest whole operations until it fits, then reclaim so the file actually
+    /// shrinks. `None` ⇒ no size prune.
+    pub max_size_bytes: Option<u64>,
     /// The current time (seconds), supplied by the caller (no clock in the
     /// store — keeps pruning testable).
     pub now_secs: u64,
-    /// Run a bounded `incremental_vacuum` slice after pruning to return freed
-    /// pages to the OS.
+    /// Run a bounded `incremental_vacuum` slice after an age-only prune to return
+    /// freed pages to the OS. A size prune always reclaims fully (it must, to honor
+    /// the budget), regardless of this flag.
     pub vacuum: bool,
 }
 
@@ -526,54 +532,199 @@ fn pick_vacuum_cap(freelist: i64) -> Option<i64> {
     }
 }
 
-/// Prune whole operations by age, GC orphaned interned dirs, then run a bounded
-/// vacuum slice. Whole-operation pruning keeps rollback pairs consistent: a
-/// pruned op's dangling `rolls_back_op_id` links (in surviving ops) are nulled,
-/// never left dangling. Ops currently `rolling_back` are skipped so a live
-/// rollback's streamed source rows can't vanish mid-stream (Finding 6/7).
+/// Prune whole operations by age and/or a size budget, GC orphaned interned dirs,
+/// then reclaim freed pages. Whole-operation pruning keeps rollback pairs
+/// consistent: a pruned op's dangling `rolls_back_op_id` links (in surviving ops)
+/// are nulled, never left dangling. Ops a live rollback touches are never pruned
+/// (see [`prunable_ops_fragment`]) so its streamed source rows can't vanish
+/// mid-stream (Finding 6/7).
 fn handle_prune(conn: &mut Connection, request: &PruneRequest) -> Result<(), OperationLogStoreError> {
     if let Some(max_age) = request.max_age_secs {
         let cutoff = request.now_secs.saturating_sub(max_age) as i64;
-        let rolling_back = RollbackState::RollingBack.as_token();
-        // The set of ops this pass prunes: finished, older than the cutoff, and
-        // NOT reversing or being reversed (a live rollback streams its source
-        // op's rows across successive reads, so pruning them mid-stream would
-        // under-restore — Finding 6/7). Ops the pruned set is reversing are also
-        // held: skipping the `rolling_back` state covers the in-flight window.
-        const PRUNE_PREDICATE: &str = "ended_at IS NOT NULL AND ended_at < ?1 AND rollback_state <> ?2";
+        prune_by_age(conn, cutoff)?;
+    }
 
+    if let Some(budget) = request.max_size_bytes {
+        prune_by_size(conn, budget)?;
+    }
+
+    // GC the dirs the pruned ops orphaned, once, covering both passes.
+    {
         let tx = conn.unchecked_transaction()?;
-        // Null any SURVIVING op's rollback link that points at an op about to be
-        // pruned, BEFORE the delete — otherwise the self-FK
-        // (`rolls_back_op_id REFERENCES operations`) would reject deleting a
-        // referenced op. A rolled-back pair whose both halves fall in the prune
-        // set deletes together; a split pair leaves the survivor with a nulled
-        // link, never a dangling one.
-        tx.execute(
-            &format!(
-                "UPDATE operations SET rolls_back_op_id = NULL
-                 WHERE rolls_back_op_id IN (SELECT op_id FROM operations WHERE {PRUNE_PREDICATE})"
-            ),
-            rusqlite::params![cutoff, rolling_back],
-        )?;
-        tx.execute(
-            &format!(
-                "DELETE FROM operation_items WHERE op_id IN (SELECT op_id FROM operations WHERE {PRUNE_PREDICATE})"
-            ),
-            rusqlite::params![cutoff, rolling_back],
-        )?;
-        tx.execute(
-            &format!("DELETE FROM operations WHERE {PRUNE_PREDICATE}"),
-            rusqlite::params![cutoff, rolling_back],
-        )?;
         gc_orphan_dirs(&tx)?;
         tx.commit()?;
     }
 
-    if request.vacuum {
+    // A size prune must actually return the freed pages to the OS to honor the
+    // budget, so it drains the freelist fully and truncates. An age-only prune
+    // just does one bounded slice (the periodic timer drains the rest over ticks),
+    // keeping the writer responsive to capture.
+    if request.max_size_bytes.is_some() {
+        reclaim_fully(conn);
+    } else if request.vacuum {
         run_bounded_vacuum(conn);
     }
     Ok(())
+}
+
+/// The SQL predicate for an op that IS safe to prune — i.e. NOT protected by an
+/// in-flight rollback. It excludes any op in `rolling_back` (the original, whose
+/// rows a live rollback streams across successive read connections) and the
+/// `rolls_back_op_id` target of one. Interpolates the stable `rolling_back` token
+/// (a compile-time constant, no injection surface); the unfinished inverse op is
+/// separately protected by the `ended_at IS NOT NULL` gate every prune applies.
+fn prunable_ops_fragment() -> String {
+    let rolling_back = RollbackState::RollingBack.as_token();
+    format!(
+        "rollback_state <> '{rolling_back}' \
+         AND op_id NOT IN (SELECT rolls_back_op_id FROM operations \
+                           WHERE rollback_state = '{rolling_back}' AND rolls_back_op_id IS NOT NULL)"
+    )
+}
+
+/// Prune every finished, unprotected op older than `cutoff` in one transaction.
+fn prune_by_age(conn: &mut Connection, cutoff: i64) -> Result<(), OperationLogStoreError> {
+    let prunable = prunable_ops_fragment();
+    let predicate = format!("ended_at IS NOT NULL AND ended_at < {cutoff} AND {prunable}");
+    let selector = format!("SELECT op_id FROM operations WHERE {predicate}");
+
+    let tx = conn.unchecked_transaction()?;
+    // Null any SURVIVING op's rollback link that points at an op about to be
+    // pruned, BEFORE the delete — otherwise the self-FK
+    // (`rolls_back_op_id REFERENCES operations`) rejects deleting a referenced op.
+    // A rolled-back pair whose both halves fall in the prune set deletes together;
+    // a split pair leaves the survivor with a nulled link, never a dangling one.
+    tx.execute(
+        &format!("UPDATE operations SET rolls_back_op_id = NULL WHERE rolls_back_op_id IN ({selector})"),
+        [],
+    )?;
+    tx.execute(&format!("DELETE FROM operation_items WHERE op_id IN ({selector})"), [])?;
+    tx.execute(&format!("DELETE FROM operations WHERE {predicate}"), [])?;
+    tx.commit()?;
+    Ok(())
+}
+
+/// Prune the oldest whole operations until the DB's live size is within `budget`.
+/// Live size is `(page_count - freelist) * page_size` — the size the file would
+/// have after a full vacuum — so the loop makes progress even before pages are
+/// reclaimed (each delete grows the freelist, shrinking live size). Stops when
+/// under budget or nothing prunable remains (e.g. everything left is protected by
+/// an in-flight rollback).
+fn prune_by_size(conn: &mut Connection, budget: u64) -> Result<(), OperationLogStoreError> {
+    let prunable = prunable_ops_fragment();
+    let oldest_sql = format!(
+        "SELECT op_id FROM operations WHERE ended_at IS NOT NULL AND {prunable} \
+         ORDER BY ended_at ASC, started_at ASC, op_id ASC LIMIT 1"
+    );
+    loop {
+        if live_size_bytes(conn)? <= budget {
+            return Ok(());
+        }
+        let seed: Option<String> = conn
+            .prepare_cached(&oldest_sql)?
+            .query_row([], |row| row.get(0))
+            .optional()?;
+        let Some(seed) = seed else {
+            // Nothing left we're allowed to prune; the vacuum still reclaims what
+            // the age/earlier passes freed.
+            return Ok(());
+        };
+        let set = rollback_pair_component(conn, &seed)?;
+        let tx = conn.unchecked_transaction()?;
+        delete_op_set(&tx, &set)?;
+        tx.commit()?;
+    }
+}
+
+/// The op plus its rollback pair partners (the op it rolls back, and any op that
+/// rolls it back), so a rolled-back pair prunes together. Protected partners are
+/// excluded from the delete set — [`delete_op_set`] nulls the dangling link to
+/// them instead. `seed` itself is never protected (the caller selects only
+/// unprotected ops).
+fn rollback_pair_component(conn: &Connection, seed: &str) -> Result<Vec<String>, OperationLogStoreError> {
+    let prunable = prunable_ops_fragment();
+    let mut set = vec![seed.to_string()];
+    let mut add = |op_id: Option<String>| {
+        if let Some(id) = op_id
+            && !set.contains(&id)
+        {
+            set.push(id);
+        }
+    };
+    // The op this one rolls back (if any), unless it's protected.
+    let target: Option<String> = conn
+        .prepare_cached(&format!(
+            "SELECT rolls_back_op_id FROM operations \
+             WHERE op_id = ?1 AND rolls_back_op_id IS NOT NULL \
+             AND rolls_back_op_id IN (SELECT op_id FROM operations WHERE {prunable})"
+        ))?
+        .query_row(rusqlite::params![seed], |row| row.get(0))
+        .optional()?;
+    add(target);
+    // Ops that roll this one back, unless protected.
+    let mut stmt = conn.prepare_cached(&format!(
+        "SELECT op_id FROM operations WHERE rolls_back_op_id = ?1 AND {prunable}"
+    ))?;
+    let inverses = stmt.query_map(rusqlite::params![seed], |row| row.get::<_, String>(0))?;
+    for inv in inverses {
+        add(Some(inv?));
+    }
+    Ok(set)
+}
+
+/// Delete a set of whole operations (their items too), nulling any surviving op's
+/// `rolls_back_op_id` that points into the set first (the self-FK would otherwise
+/// reject the delete).
+fn delete_op_set(conn: &Connection, op_ids: &[String]) -> Result<(), OperationLogStoreError> {
+    if op_ids.is_empty() {
+        return Ok(());
+    }
+    let placeholders = std::iter::repeat_n("?", op_ids.len()).collect::<Vec<_>>().join(", ");
+    let params: Vec<&dyn rusqlite::ToSql> = op_ids.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+    conn.execute(
+        &format!(
+            "UPDATE operations SET rolls_back_op_id = NULL \
+             WHERE rolls_back_op_id IN ({placeholders}) AND op_id NOT IN ({placeholders})"
+        ),
+        [params.as_slice(), params.as_slice()].concat().as_slice(),
+    )?;
+    conn.execute(
+        &format!("DELETE FROM operation_items WHERE op_id IN ({placeholders})"),
+        params.as_slice(),
+    )?;
+    conn.execute(
+        &format!("DELETE FROM operations WHERE op_id IN ({placeholders})"),
+        params.as_slice(),
+    )?;
+    Ok(())
+}
+
+/// The DB's live size in bytes: `(page_count - freelist) * page_size` — what the
+/// file would occupy after a full vacuum. Used as the size-budget yardstick so
+/// pruning makes progress before pages are physically reclaimed.
+fn live_size_bytes(conn: &Connection) -> Result<u64, OperationLogStoreError> {
+    let page_count: i64 = conn.pragma_query_value(None, "page_count", |row| row.get(0))?;
+    let freelist: i64 = conn.pragma_query_value(None, "freelist_count", |row| row.get(0))?;
+    let page_size: i64 = conn.pragma_query_value(None, "page_size", |row| row.get(0))?;
+    Ok(((page_count - freelist).max(0) as u64) * page_size as u64)
+}
+
+/// Fully reclaim freed pages to the OS after a size prune: drain the ENTIRE
+/// freelist, then TRUNCATE the WAL so the truncation reaches the physical file.
+/// Unlike [`run_bounded_vacuum`] this ignores the `pick_vacuum_cap` floor — a size
+/// budget can only be honored once the pages actually leave the file, however
+/// small the freelist. Retention runs off the hot path, so a full drain here is
+/// the point, not a stall to avoid.
+fn reclaim_fully(conn: &Connection) {
+    // No cap: reclaim every free page in one pass.
+    if let Err(e) = conn.execute_batch("PRAGMA incremental_vacuum;") {
+        log::warn!(target: "operation_log", "incremental_vacuum failed: {e}");
+    }
+    // TRUNCATE so the vacuum's page-count reduction reaches the on-disk file (in
+    // WAL mode it otherwise lands only in the WAL until the next checkpoint).
+    if let Err(e) = conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(())) {
+        log::warn!(target: "operation_log", "wal_checkpoint(TRUNCATE) failed: {e}");
+    }
 }
 
 /// GC interned dirs no longer live: iterate leaf-up, deleting dirs referenced by

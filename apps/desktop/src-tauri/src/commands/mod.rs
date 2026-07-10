@@ -26,6 +26,7 @@ pub mod menu;
 pub mod mtp;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod network;
+pub mod operation_log;
 pub mod quick_look;
 pub mod rename;
 pub mod restricted_paths;

@@ -1901,6 +1901,29 @@ export const commands = {
    */
   whatsNewDevOverride: () => __TAURI_INVOKE<string | null>('whats_new_dev_override'),
   /**
+   *  The recent-operations feed (newest first), paged — the alpha UI's "last 50 +
+   *  load 50 more" and the Debug panel's list.
+   */
+  getRecentOperationLogEntries: (limit: number, offset: number) =>
+    typedError<OperationRow[], string>(__TAURI_INVOKE('get_recent_operation_log_entries', { limit, offset })),
+  /**
+   *  One operation's header plus a page of its items (dir prefixes resolved to full
+   *  paths). `None` when the operation is absent.
+   */
+  getOperationLogDetail: (operationId: string, itemLimit: number, itemOffset: number) =>
+    typedError<
+      {
+        operation: OperationRow
+        items: OperationItemView[]
+        /**
+         *  The op's total item count (all `row_role`s), so a paged UI knows whether
+         *  more items exist beyond the returned slice.
+         */
+        totalItems: number
+      } | null,
+      string
+    >(__TAURI_INVOKE('get_operation_log_detail', { operationId, itemLimit, itemOffset })),
+  /**
    *  Translates a natural-language selection request into a glob/regex plus optional
    *  size and date filters.
    *
@@ -3000,6 +3023,13 @@ export type AppStatus =
   // Expired commercial license - reverted to personal.
   | { type: 'expired'; organizationName: string | null; expiredAt: string; showModal: boolean }
 
+/**
+ *  The `archive_edit` subkind, supplied by the capturing driver (compress vs
+ *  zip-inner edit), NOT derivable from `WriteOperationType` — both cross IPC
+ *  as `ArchiveEdit` (D2, Finding 3). Stored only when `kind = ArchiveEdit`.
+ */
+export type ArchiveSubkind = 'compress' | 'edit' | 'extract'
+
 // Authentication mode detected for a host.
 export type AuthMode =
   | 'guest_allowed'
@@ -3504,6 +3534,13 @@ export type EntryStatusCode =
   | 'conflicted'
 
 /**
+ *  Whether an item row is a file or a directory. Directories the op created
+ *  are first-class rows so a `seq DESC` rollback removes files before the
+ *  dirs that held them (D2, Finding 2).
+ */
+export type EntryType = 'file' | 'dir'
+
+/**
  *  Typed action the frontend should offer alongside the error message.
  *
  *  Only set when a specific, platform-resolvable action is known. Defaults to `None`
@@ -3541,6 +3578,12 @@ export type ErrorReportAutoSent = {
 export type ExecuteCommand = {
   commandId: string
 }
+
+/**
+ *  The operation's lifecycle axis, mirrored from the manager's
+ *  `LifecycleStatus` (D3). Independent of [`RollbackState`].
+ */
+export type ExecutionStatus = 'queued' | 'running' | 'done' | 'failed' | 'canceled'
 
 /**
  *  User-selectable text encoding for the file viewer.
@@ -4124,6 +4167,12 @@ export type IpcError = {
   message: string
   timedOut: boolean
 }
+
+/**
+ *  The per-item outcome. A canceled/failed op keeps `Done` rows for what it
+ *  reached — exactly what a rollback needs (D4).
+ */
+export type ItemOutcome = 'done' | 'skipped' | 'failed' | 'rolledBack'
 
 // Error types for Keychain operations.
 export type KeychainError =
@@ -4905,6 +4954,35 @@ export type NetworkHostLost = {
 export type NetworkHostResolved = NetworkHost
 
 /**
+ *  Why an operation is not rollbackable, set alongside
+ *  `RollbackState::NotRollbackable` (D3). A nullable column: `None` when the
+ *  op is rollbackable. Cross-volume disconnection is NOT here — that's
+ *  computed at rollback time from mount state, never stored.
+ */
+export type NotRollbackableReason =
+  // A copy/move overwrote existing files; the originals are gone.
+  | 'overwrote'
+  // A permanent delete can't be restored.
+  | 'permanentDelete'
+  // A compress overwrote a prior archive; the prior bytes aren't retained.
+  | 'archiveOverwrite'
+  // Zip-inner editing rollback isn't supported yet (v1).
+  | 'zipEditUnsupported'
+  /**
+   *  A `rollback_unit` row was dropped/errored, so the journal is an
+   *  incomplete record of what to reverse (D4 completeness).
+   */
+  | 'journalIncomplete'
+
+/**
+ *  The operation taxonomy, mirroring `WriteOperationType`. Archive variants
+ *  (compress vs zip-edit vs future extract) share `ArchiveEdit` and are
+ *  distinguished by [`ArchiveSubkind`], so a new archive flavor is an
+ *  additive subkind, not a new `kind` (D2 extensibility).
+ */
+export type OpKind = 'copy' | 'move' | 'delete' | 'trash' | 'rename' | 'createFolder' | 'createFile' | 'archiveEdit'
+
+/**
  *  `open-file-viewer`: open a viewer window. `path` present → open that file;
  *  absent → open the file under the cursor (MCP `dialog open file-viewer`).
  */
@@ -4918,6 +4996,66 @@ export type OpenFileViewer = {
  */
 export type OpenSettings = {
   section: string
+}
+
+/**
+ *  An operation's header plus a page of its items, with dir prefixes resolved to
+ *  full paths. Returned by [`get_operation`].
+ */
+export type OperationDetail = {
+  operation: OperationRow
+  items: OperationItemView[]
+  /**
+   *  The op's total item count (all `row_role`s), so a paged UI knows whether
+   *  more items exist beyond the returned slice.
+   */
+  totalItems: number
+}
+
+/**
+ *  One item row with its interned dir prefixes resolved to full paths and real
+ *  volume ids — the frontend/MCP view (never an interned `dir_id`).
+ */
+export type OperationItemView = {
+  seq: number
+  entryType: EntryType
+  rowRole: RowRole
+  sourceVolumeId: string
+  sourcePath: string
+  destVolumeId: string | null
+  destPath: string | null
+  size: number | null
+  mtime: number | null
+  outcome: ItemOutcome
+  overwrote: boolean
+}
+
+/**
+ *  A read of one `operations` row, tokens decoded to typed enums. Doubles as the
+ *  IPC/MCP summary wire type (the query API returns it directly): it carries no
+ *  interned `dir_id`s, only volume ids and typed fields the frontend can render,
+ *  so it's safe to serialize. Item rows are NOT (their dir prefixes are ids); the
+ *  query layer resolves those to paths in a separate view type.
+ */
+export type OperationRow = {
+  opId: string
+  kind: OpKind
+  archiveSubkind: ArchiveSubkind | null
+  initiator: Initiator
+  executionStatus: ExecutionStatus
+  rollbackState: RollbackState
+  notRollbackableReason: NotRollbackableReason | null
+  rollsBackOpId: string | null
+  sourceVolumeId: string | null
+  destVolumeId: string | null
+  startedAt: number
+  endedAt: number | null
+  itemCount: number
+  itemsDone: number
+  bytesTotal: number
+  searchCoverage: SearchCoverage
+  searchCoverageReason: SearchCoverageReason | null
+  devSummary: string | null
 }
 
 /**
@@ -5365,6 +5503,20 @@ export type RestrictedWindowSettings = {
 }
 
 /**
+ *  Whether and how the operation can be / has been reversed (D3). Independent
+ *  of [`ExecutionStatus`]. `RollingBack` is the transient in-flight guard
+ *  (M3); a fresh op sits at `NotRollbackable` until finalize proves otherwise.
+ */
+export type RollbackState = 'notRollbackable' | 'rollbackable' | 'rollingBack' | 'rolledBack' | 'partiallyRolledBack'
+
+/**
+ *  An item row's role (D-granularity). `RollbackUnit` rows are the reversal
+ *  units and are also searchable; `SearchOnly` rows exist purely so leaf
+ *  search hits inside a top-level move/trash unit, and are never reversed.
+ */
+export type RowRole = 'rollbackUnit' | 'searchOnly'
+
+/**
  *  A conflict detected during pre-copy scanning: a source item that already exists at the
  *  destination.
  */
@@ -5493,6 +5645,30 @@ export type ScanProgressEvent = {
   // For activity indication.
   currentPath: string | null
 }
+
+/**
+ *  Whether the journal holds every leaf of the operation (search honesty,
+ *  D-granularity). `Full` requires the drive index to have been present AND
+ *  current for the whole subtree.
+ */
+export type SearchCoverage = 'full' | 'topLevelOnly'
+
+/**
+ *  Why coverage is only `TopLevelOnly`, set when `search_coverage =
+ *  top_level_only` (D2). Kept distinct so the future agent can tell a
+ *  too-big-to-index subtree from a stale index.
+ */
+export type SearchCoverageReason =
+  // The subtree exceeded the per-op `search_only` leaf cap.
+  | 'capped'
+  // No drive index covered the subtree.
+  | 'indexAbsent'
+  // The index covered the subtree but wasn't current.
+  | 'indexStale'
+  // The volume's index phase wasn't `Live`.
+  | 'volumeNotLive'
+  // A `search_only` leaf row was dropped/errored (D4 completeness).
+  | 'searchRowIncomplete'
 
 /**
  *  Emitted once the in-memory search index finishes loading, so the dialog can

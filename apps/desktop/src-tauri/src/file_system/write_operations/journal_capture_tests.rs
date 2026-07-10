@@ -408,6 +408,7 @@ fn capture_stays_off_the_hot_path_under_writer_load() {
             while !stop.load(std::sync::atomic::Ordering::Relaxed) {
                 let _ = writer.prune(crate::operation_log::writer::PruneRequest {
                     max_age_secs: Some(0),
+                    max_size_bytes: None,
                     now_secs: 10,
                     vacuum: true,
                 });

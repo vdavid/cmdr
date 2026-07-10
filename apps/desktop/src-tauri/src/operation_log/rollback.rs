@@ -55,7 +55,12 @@ const ROLLBACK_PAGE: u32 = 512;
 /// Why a rollback request is refused at the operation level (before any item
 /// runs). Typed across IPC/MCP — never a message string (`no-string-matching`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "kind", content = "detail")]
+#[serde(
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase",
+    tag = "kind",
+    content = "detail"
+)]
 pub enum RollbackRefusal {
     /// No operation with this id in the journal.
     UnknownOperation,
