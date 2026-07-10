@@ -324,16 +324,24 @@ function mintToken(deps: NavigateDeps, pane: 'left' | 'right'): number {
 }
 
 /**
- * Whether a volume switch shifts the focused pane (L1). A direct user/MCP/history
+ * Whether a volume switch shifts the focused pane (L1). A direct user/history
  * navigation makes the navigated pane the focused one; `'mirror'` (copy-path
  * between panes — restoreFocus semantics) and `'correction'` (a background
  * refinement) keep focus put. The edge-flow recoveries (`'cancel'` walk-up /
  * network-restore, `'fallback'` MTP-fatal / retry / open-home / unmount) also keep
  * the focused pane put — they re-anchor DOM focus on the container instead, via
  * the handler's own `focusContainer()` where today's code does.
+ *
+ * `'mcp'` deliberately does NOT shift here: the MCP nav listener
+ * (`mcp-listeners.ts`) calls `setFocusedPane(pane)` synchronously when the nav is
+ * accepted, so focus is settled before the tool's `mcp-response` resolves. This
+ * commit-time shift fires at async listing-complete, which for an MCP nav means a
+ * SECOND, late-landing shift that races whatever the agent (or an E2E helper)
+ * does next — an immediately-following keystroke landed mid-shift and vanished.
+ * One source, one shift, deterministic timing.
  */
 function shiftsFocus(source: NavigateSource): boolean {
-  return source === 'user' || source === 'mcp' || source === 'history'
+  return source === 'user' || source === 'history'
 }
 
 /**

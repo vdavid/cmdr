@@ -223,16 +223,15 @@ export async function ensureAppReady(
   //    PtpcameradDialog, ExpirationModal, ...) calls `overlayElement?.focus()`
   //    on mount, stealing DOM focus from `.dual-pane-explorer`. The explorer's
   //    `onfocusin` guard can't reclaim it from an out-of-tree overlay.
-  // 2. The two `mcp-nav-to-path` events above navigate BOTH panes, and a direct
-  //    `source: 'mcp'` navigation SHIFTS the focused pane to whichever pane it
-  //    navigated (`navigate.ts` L1, `shiftFocus`). We navigate left then RIGHT,
-  //    and each pane's focus-shift fires on its async listing-complete, so the
-  //    right pane's shift can land AFTER our `entry.click()` above — leaving the
-  //    RIGHT (empty) pane focused. A prior test that ended on the right pane
-  //    (e.g. Copy's `Tab`) makes this the default, not the exception. macOS
-  //    timing usually lets the click win; Linux Xvfb + WebKitGTK consistently
-  //    lets the late right-pane shift win, which silently pointed every
-  //    cursor-driven op at the wrong pane.
+  // 2. The two `mcp-nav-to-path` events above navigate BOTH panes, and the MCP
+  //    nav listener shifts focus to whichever pane it navigated — synchronously
+  //    when the nav is accepted (`mcp-listeners.ts` `setFocusedPane`; the
+  //    commit-time `shiftFocus` in `navigate.ts` deliberately excludes `'mcp'`
+  //    so there's no second, late-landing shift at listing-complete). The two
+  //    listener-time shifts still run async relative to our fire-and-forget
+  //    emits above, so the right-pane shift can land AFTER our `entry.click()`
+  //    — leaving the RIGHT (empty) pane focused. A prior test that ended on the
+  //    right pane (e.g. Copy's `Tab`) makes this the default, not the exception.
   //
   // On every iteration we dismiss any new modal overlay (Escape), re-request
   // left-pane focus by clicking the left `.file-pane` (its `onclick` →

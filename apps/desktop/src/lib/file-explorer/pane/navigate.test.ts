@@ -267,6 +267,15 @@ describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
     expect(h.setFocusedPane).not.toHaveBeenCalled()
   })
 
+  it("does NOT shift focus at commit for an 'mcp' source (the listener shifts synchronously instead)", () => {
+    // The MCP nav listener calls setFocusedPane when the nav is ACCEPTED, so a
+    // commit-time shift here would be a second, late-landing shift racing the
+    // agent's next action. Pre-fix this fired and intermittently ate the very
+    // next keystroke (the E2E enterEntry flake).
+    navigate({ pane: 'right', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'mcp' }, h.deps)
+    expect(h.setFocusedPane).not.toHaveBeenCalled()
+  })
+
   it('uses the volume mount path for the background correction lookup', () => {
     navigate({ pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user' }, h.deps)
     expect(h.determineNavigationPath).toHaveBeenCalledWith('ext', '/Volumes/Ext', '/Volumes/Ext', expect.anything())
