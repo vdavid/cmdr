@@ -22,9 +22,9 @@ use std::sync::Arc;
 use tokio::time::Duration;
 
 use crate::commands::util::IpcError;
-use crate::operation_log::types::Initiator;
 use crate::file_system::Volume;
 use crate::file_system::volume::backends::archive;
+use crate::operation_log::types::Initiator;
 
 use super::expand_tilde;
 
@@ -158,7 +158,16 @@ pub async fn copy_files(
     // `copy_between_volumes`; this plain command is the same-`root` local path,
     // so no ejectable volume is involved (empty busy set).
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    ops_copy_files_start(events, sources, destination, config, vec![], None, initiator.unwrap_or(Initiator::User)).await
+    ops_copy_files_start(
+        events,
+        sources,
+        destination,
+        config,
+        vec![],
+        None,
+        initiator.unwrap_or(Initiator::User),
+    )
+    .await
 }
 
 /// Uses rename() for same-filesystem (instant), copy+delete for cross-filesystem.
@@ -183,7 +192,16 @@ pub async fn move_files(
     // Same-`root` local move (the FE uses `move_between_volumes` whenever the
     // source and destination volumes differ), so no ejectable volume here.
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    ops_move_files_start(events, sources, destination, config, vec![], None, initiator.unwrap_or(Initiator::User)).await
+    ops_move_files_start(
+        events,
+        sources,
+        destination,
+        config,
+        vec![],
+        None,
+        initiator.unwrap_or(Initiator::User),
+    )
+    .await
 }
 
 /// Recursively deletes files and directories. Same events as `copy_files`.
@@ -229,7 +247,14 @@ pub async fn trash_files(
     reject_if_archive_inner(sources.iter())?;
 
     let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    ops_trash_files_start(events, sources, item_sizes, config, initiator.unwrap_or(Initiator::User)).await
+    ops_trash_files_start(
+        events,
+        sources,
+        item_sizes,
+        config,
+        initiator.unwrap_or(Initiator::User),
+    )
+    .await
 }
 
 #[tauri::command]

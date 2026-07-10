@@ -162,7 +162,7 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
                     entry_type,
                     source,
                     None,
-                    item_size.map(|s| s as i64).or_else(|| Some(source_meta.len() as i64)),
+                    item_size.map(|s| s as i64).or(Some(source_meta.len() as i64)),
                     super::super::journal::mtime_secs(&source_meta),
                     false,
                     crate::operation_log::types::ItemOutcome::Done,

@@ -382,11 +382,15 @@ fn prune_nulls_a_survivors_rollback_link_to_a_pruned_op() {
         dev_summary: None,
     };
     writer.open_operation(open("original", 1_000, None)).expect("open orig");
-    writer.finalize_operation(finalize("original", 1_000)).expect("finalize orig");
+    writer
+        .finalize_operation(finalize("original", 1_000))
+        .expect("finalize orig");
     writer
         .open_operation(open("inverse", 9_000, Some("original".to_string())))
         .expect("open inverse");
-    writer.finalize_operation(finalize("inverse", 9_000)).expect("finalize inverse");
+    writer
+        .finalize_operation(finalize("inverse", 9_000))
+        .expect("finalize inverse");
     writer.flush_blocking().expect("flush");
 
     writer
@@ -398,8 +402,13 @@ fn prune_nulls_a_survivors_rollback_link_to_a_pruned_op() {
         .expect("prune");
     writer.flush_blocking().expect("flush");
 
-    assert!(read_operation(store.conn(), "original").expect("read").is_none(), "old original pruned");
-    let inverse = read_operation(store.conn(), "inverse").expect("read").expect("inverse kept");
+    assert!(
+        read_operation(store.conn(), "original").expect("read").is_none(),
+        "old original pruned"
+    );
+    let inverse = read_operation(store.conn(), "inverse")
+        .expect("read")
+        .expect("inverse kept");
     assert_eq!(
         inverse.rolls_back_op_id, None,
         "the survivor's link to the pruned op is nulled, not left dangling (no FK violation)"

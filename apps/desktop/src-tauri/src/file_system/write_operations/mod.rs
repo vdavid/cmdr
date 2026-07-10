@@ -253,7 +253,7 @@ where
             // reached (D4).
             let execution_status = match &result {
                 Ok(Ok(())) => crate::operation_log::types::ExecutionStatus::Done,
-                Ok(Err(e)) if matches!(e, WriteOperationError::Cancelled { .. }) => {
+                Ok(Err(WriteOperationError::Cancelled { .. })) => {
                     crate::operation_log::types::ExecutionStatus::Canceled
                 }
                 _ => crate::operation_log::types::ExecutionStatus::Failed,
@@ -614,11 +614,11 @@ pub async fn trash_files_start(
 }
 
 #[cfg(test)]
+mod journal_capture_tests;
+#[cfg(test)]
 mod scan_preview_listing_progress_tests;
 #[cfg(test)]
 mod scan_preview_oracle_tests;
-#[cfg(test)]
-mod journal_capture_tests;
 #[cfg(test)]
 mod settle_event_tests;
 #[cfg(test)]

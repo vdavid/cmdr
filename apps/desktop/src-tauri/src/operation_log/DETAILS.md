@@ -111,6 +111,80 @@ counts), `Prune` (retention), `Flush` (barrier), `Shutdown`.
   reading of the plan: storing the terminal state the caller computed keeps the writer single-responsibility and avoids a
   dead net-new field it would ignore.)
 
+## Capture (M2) — journaling every mutation at the chokepoint
+
+`capture.rs` is the journal half of the pipeline observer seam (D4); the write pipeline's glue lives in
+`file_system/write_operations/journal.rs`. Together they make every managed mutation journal itself with per-item rows,
+two-axis status, and computed rollback eligibility — without measurably slowing the op.
+
+### The seam: a global journal reached by `op_id` (recorded deviation from D4)
+
+**D4's plan bundles the journal WITH the sink into an `OperationObservers` context threaded down the pipeline. This
+implementation does NOT do that.** Instead the journal is a **process-global singleton** (`operation_log::JOURNAL`,
+installed at `start`) reached BY `op_id` through free functions — `journal_open`, `journal_record_items`,
+`journal_note_coverage`, `journal_finalize` — exactly mirroring the op-keyed `update_operation_status(op_id, …)` status
+cache that the same record points already write, and the `manager()` operation-manager singleton.
+
+- **Why the deviation.** Threading an observers context replaces `Arc<dyn OperationEventSink>` through the entire
+  transfer/delete signature chain (`copy_single_item`, the transfer driver, the volume paths, …) — a large, high-risk
+  refactor of the app's most data-safety-critical code. The op-id-keyed global is (a) how `update_operation_status`
+  already works at the identical call sites, (b) how `manager()` already works, and (c) zero-churn to those signatures.
+  D4's HARD constraint — never extend `OperationEventSink` — is kept; only its suggested *mechanism* changed.
+- **Testability holds.** `set_journal` / `clear_journal` install a `CapturingJournal` or a temp-DB `WriterJournal` per
+  test; nextest isolates each test in its own process, so the global is hermetic.
+- **Lifecycle.** `journal_open` is called when the op actually STARTS (inside the manager's deferred), not at
+  registration, so a queued op that's canceled before admission never journals and leaks no accumulator. `journal_finalize`
+  removes the per-op accumulator.
+
+### The two decisions the capture layer owns (the writer doesn't)
+
+- **Eligibility (D3), `compute_eligibility`** — pure, tested in isolation: copy/move rollbackable iff nothing overwrote;
+  delete never (`permanent_delete`); trash/rename/create-folder/create-file open rollbackable (rechecked at rollback
+  time, M3); compress rollbackable iff net-new (`archive_overwrite` otherwise); zip-inner edit not yet
+  (`zip_edit_unsupported`). `execution_status` is deliberately NOT an input — a failed/canceled op stays rollbackable for
+  what it reached (D4).
+- **Completeness (D4), `apply_completeness`** — the per-`row_role` issued-vs-written check. The `WriterJournal`
+  accumulates the count of `record_item` calls it ISSUED per role; `finalize` compares them to the writer's durable
+  counts and, on a shortfall, downgrades: a missing `rollback_unit` row ⇒ `not_rollbackable(journal_incomplete)` (a
+  lossy journal must never claim rollbackability); a missing `search_only` row ⇒ `search_coverage = top_level_only`
+  (`search_row_incomplete`). Compared against ISSUED, never the planned `item_count` (Finding 1). The correcting
+  re-finalize fires only on a real drop, so it's rare.
+
+The `WriterJournal` also **batches** rows (a per-op buffer flushed at `RECORD_BATCH` or finalize, so a huge op coalesces
+into batched writer transactions) and **auto-assigns `seq`** in recording order, so record points never track it.
+
+### Per-kind record points and granularity (D-granularity)
+
+Each point is where the op already stats the item, so journaling is near-zero marginal cost (no new syscalls):
+
+- **copy** — per-leaf `rollback_unit` rows at `transfer/copy/single_item.rs` (right where each file commits to the
+  `CopyTransaction`, carrying the free source `mtime` + the overwrite flag), plus the **created-directory rows** from
+  `CopyTransaction::created_dirs` at the success commit in `copy/mod.rs`. Files record during the op, dirs after, so dir
+  `seq` > their contents' `seq` (Finding 2); the M3 rollback removes files before dirs.
+- **delete** — per-leaf at `delete/walker.rs`, one row per file, deliberately (a 1M-file delete journals ~1M rows on the
+  order of tens-to-~150 MB — leaf search is the requirement, and retention, D9/D10, manages the cost, NOT a row cap).
+  Delete is never rollbackable, so these rows exist purely for "when did I delete `dog.jpg`".
+- **same-FS move + trash** — the **top-level** `rollback_unit` row (one rename-back / one restore reverses the whole
+  subtree) at `transfer/move_op.rs` / `delete/trash.rs`. The subtree's `search_only` leaves come from the drive index
+  (M2e), NOT a filesystem walk.
+- **cross-FS move** — per-leaf via `copy_single_item` (it stages a copy), same as copy; the op's `kind` is `move`.
+
+### The bypass boundary
+
+- **`run_instant` ops (rename / mkdir / mkfile)** don't flow through the sink; capture hooks the managed functions
+  directly (M2d) as single-item ops.
+- **`paste_clipboard`** (paste-as-file) bypasses the managed pipeline today; the plan routes it through the managed
+  create path so it journals for free (M2f).
+- **The single `move_to_trash_sync` in `rename.rs`** journals as a one-item trash op (M2f).
+- **Native drag-out** is explicitly OUT of scope — the destination is another app, outside Cmdr; there's nothing to roll
+  back to.
+
+### Row-volume tradeoff
+
+Per-leaf delete/copy rows are the search requirement, so there is **no row cap** on them; the only cap is the
+`search_only` leaf enumeration for trash/same-FS-move (M2e, a per-op tunable). Retention (D9/D10) reclaims the space, not
+a row cap.
+
 ## Retention (mechanism here; enforcement in M4)
 
 The `Prune` message is the mechanism; M4 wires the periodic timer, the settings-driven age/size limits, and the

@@ -132,7 +132,10 @@ pub fn compute_eligibility(
             }
         }
         // A permanent delete can't be restored.
-        OpKind::Delete => (RollbackState::NotRollbackable, Some(NotRollbackableReason::PermanentDelete)),
+        OpKind::Delete => (
+            RollbackState::NotRollbackable,
+            Some(NotRollbackableReason::PermanentDelete),
+        ),
         // Restore-from-trash / rename-back / remove-if-net-new: the precondition
         // is rechecked at rollback time (M3), so these open rollbackable.
         OpKind::Trash | OpKind::Rename | OpKind::CreateFolder | OpKind::CreateFile => {
@@ -178,7 +181,12 @@ pub fn apply_completeness(
     coverage_reason: Option<SearchCoverageReason>,
     issued: IssuedCounts,
     written: FinalizeOutcome,
-) -> (RollbackState, Option<NotRollbackableReason>, SearchCoverage, Option<SearchCoverageReason>) {
+) -> (
+    RollbackState,
+    Option<NotRollbackableReason>,
+    SearchCoverage,
+    Option<SearchCoverageReason>,
+) {
     let (mut rb, mut rr) = (state, reason);
     if written.rollback_unit_rows < issued.rollback_unit {
         rb = RollbackState::NotRollbackable;

@@ -51,6 +51,9 @@ cross-cutting machinery both subdirs share.
 - **Every scan reports two byte totals**: `total_bytes` (write footprint, copy/move) and `dedup_bytes` (`du`-equivalent,
   delete). Don't "fix" copy to the dedup'd number — it under-reserves disk space.
 - **All write ops emit via `OperationEventSink`, not `tauri::AppHandle`** — built only at the IPC edge, injected in.
+- **Every managed mutation journals to the operation log** via `journal.rs` (`operation_log::journal_*`, by `op_id`); a
+  new op kind or record point needs a `record_local_leaf` + `open_local_op`/`finalize_op` bracket, else it won't appear
+  in history/rollback.
 - **The busy-volumes set disables Eject mid-op** (source AND dest IDs); the `eject_volume` server-side guard is the real
   safety net, the picker disable is UX.
 - **Volume-aware ops must not emit `write-error` on `Cancelled`** — the inner handler already emitted `write-cancelled`,

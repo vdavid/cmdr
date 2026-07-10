@@ -458,7 +458,9 @@ fn handle_prune(conn: &mut Connection, request: &PruneRequest) -> Result<(), Ope
             rusqlite::params![cutoff, rolling_back],
         )?;
         tx.execute(
-            &format!("DELETE FROM operation_items WHERE op_id IN (SELECT op_id FROM operations WHERE {PRUNE_PREDICATE})"),
+            &format!(
+                "DELETE FROM operation_items WHERE op_id IN (SELECT op_id FROM operations WHERE {PRUNE_PREDICATE})"
+            ),
             rusqlite::params![cutoff, rolling_back],
         )?;
         tx.execute(

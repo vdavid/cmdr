@@ -37,7 +37,13 @@ interning, case folding, and the `operation-log-dump` dev bin. Nothing journals 
   `initiator`, status, `row_role`, `outcome`, etc. is a `types.rs` enum with a stable token; the token↔enum mapping lives
   ONLY there. Renaming a token is a schema change (needs a migration); renaming a variant is free.
 - **The writer stores terminal state; it does NOT compute eligibility.** Rollback eligibility (D3) and the net-new/
-  subkind reasoning are the M2 capture layer's job, upstream of the writer — keep business logic out of `writer.rs`.
+  subkind reasoning are the M2 capture layer's job (`capture.rs` — `compute_eligibility` + `apply_completeness`),
+  upstream of the writer — keep business logic out of `writer.rs`.
+- **Capture is a process-global journal reached by `op_id`, NOT threaded through the pipeline** (a recorded deviation
+  from D4's `OperationObservers`; D4's hard rule — never extend `OperationEventSink` — still holds). Install via
+  `set_journal`; the write pipeline calls the `journal_open` / `journal_record_items` / `journal_note_coverage` /
+  `journal_finalize` free functions by `op_id`, mirroring `update_operation_status`. Full rationale + per-kind record
+  points: [DETAILS.md](DETAILS.md) § Capture.
 - **Interned dirs never grow unbounded**: retention GCs dirs down to the referenced-plus-ancestors closure (a referenced
   dir's whole parent chain survives). Prune whole operations only; null dangling `rolls_back_op_id`; skip `rolling_back`
   ops. Vacuum runs in bounded slices between batches so it never starves capture.

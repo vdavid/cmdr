@@ -14,8 +14,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::file_system::volume::DEFAULT_VOLUME_ID;
 use crate::operation_log::capture::FinalizeInputs;
-use crate::operation_log::types::{ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind};
 use crate::operation_log::types::RowRole;
+use crate::operation_log::types::{ArchiveSubkind, EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind};
 use crate::operation_log::writer::{JournalItem, OpenOperation};
 use crate::operation_log::{journal_finalize, journal_open, journal_record_items};
 
@@ -100,13 +100,26 @@ pub(super) fn record_local_leaf(
     overwrote: bool,
     outcome: ItemOutcome,
 ) {
-    record_local_row(op_id, entry_type, RowRole::RollbackUnit, source, dest, size, mtime, overwrote, outcome);
+    record_local_row(
+        op_id,
+        entry_type,
+        RowRole::RollbackUnit,
+        source,
+        dest,
+        size,
+        mtime,
+        overwrote,
+        outcome,
+    );
 }
 
 /// Record one local `search_only` row (a leaf beneath a trashed / same-FS-moved
 /// top-level unit — searchable but never a reversal unit, D-granularity).
 #[allow(clippy::too_many_arguments, reason = "the natural fields of a journal row")]
-#[allow(dead_code, reason = "wired by the M2e drive-index search enumeration in this milestone")]
+#[allow(
+    dead_code,
+    reason = "wired by the M2e drive-index search enumeration in this milestone"
+)]
 pub(super) fn record_local_search_leaf(
     op_id: &str,
     entry_type: EntryType,

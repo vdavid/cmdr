@@ -11,14 +11,12 @@ use std::time::Duration;
 
 use super::journal;
 use super::state::WriteOperationState;
-use super::types::{CollectorEventSink, WriteOperationConfig};
 use super::transfer::move_op::move_files_with_progress_inner;
+use super::types::{CollectorEventSink, WriteOperationConfig};
 use super::{copy_files_with_progress_inner, delete_files_with_progress_inner};
 
 use crate::operation_log::capture::WriterJournal;
-use crate::operation_log::store::{
-    open_read_connection, operation_log_db_path, read_operation, read_operation_items,
-};
+use crate::operation_log::store::{open_read_connection, operation_log_db_path, read_operation, read_operation_items};
 use crate::operation_log::types::{EntryType, ExecutionStatus, Initiator, OpKind, RollbackState, RowRole};
 use crate::operation_log::writer::OperationLogWriter;
 use crate::operation_log::{clear_journal, set_journal};
@@ -54,7 +52,7 @@ fn grouped_copy_journals_leaf_files_and_created_dir_rows() {
     journal::open_local_op(op_id, OpKind::Copy, Initiator::User, 0);
     let events = CollectorEventSink::new();
     let cfg = WriteOperationConfig::default();
-    copy_files_with_progress_inner(&events, op_id, &state(), &[src.clone()], &dst, &cfg).expect("copy");
+    copy_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &cfg).expect("copy");
     journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
     clear_journal();
 
@@ -103,7 +101,7 @@ fn overwriting_copy_finalizes_not_rollbackable() {
         conflict_resolution: super::ConflictResolution::Overwrite,
         ..Default::default()
     };
-    copy_files_with_progress_inner(&events, op_id, &state(), &[src.clone()], &dst, &cfg).expect("copy");
+    copy_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &cfg).expect("copy");
     journal::finalize_op(op_id, OpKind::Copy, ExecutionStatus::Done);
     clear_journal();
 
@@ -131,7 +129,7 @@ fn same_fs_move_journals_the_top_level_item_as_rollback_unit() {
     journal::open_local_op(op_id, OpKind::Move, Initiator::User, 0);
     let events = CollectorEventSink::new();
     let cfg = WriteOperationConfig::default();
-    move_files_with_progress_inner(&events, op_id, &state(), &[src.clone()], &dst, &cfg).expect("move");
+    move_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &cfg).expect("move");
     journal::finalize_op(op_id, OpKind::Move, ExecutionStatus::Done);
     clear_journal();
 

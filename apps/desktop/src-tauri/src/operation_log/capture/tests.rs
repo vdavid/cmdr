@@ -363,7 +363,11 @@ fn writer_journal_note_coverage_downgrade_reaches_finalize() {
             ..leaf(0, "huge", false)
         }],
     );
-    journal.note_search_coverage("op-capped", SearchCoverage::TopLevelOnly, Some(SearchCoverageReason::Capped));
+    journal.note_search_coverage(
+        "op-capped",
+        SearchCoverage::TopLevelOnly,
+        Some(SearchCoverageReason::Capped),
+    );
     journal.finalize("op-capped", done_inputs(OpKind::Trash));
     writer.flush_blocking().expect("flush");
 

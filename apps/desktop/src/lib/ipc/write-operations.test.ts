@@ -42,13 +42,13 @@ describe('commands.copyFiles', () => {
       maxConflictsToShow: 50,
     }
 
-    const result = await commands.copyFiles(sources, destination, config)
+    const result = await commands.copyFiles(sources, destination, config, null)
 
     expect(result).toEqual({ status: 'ok', data: happyResult })
     expect(ipc.calls).toHaveLength(1)
     expect(ipc.calls[0]).toEqual({
       command: 'copy_files',
-      payload: { sources, destination, config },
+      payload: { sources, destination, config, initiator: null },
     })
   })
 
@@ -56,12 +56,13 @@ describe('commands.copyFiles', () => {
     const ipc = installIpcMock()
     ipc.mock('copy_files', () => ({ ...happyResult, operationType: 'copy' as const }))
 
-    await commands.copyFiles(['/a'], '/b', null)
+    await commands.copyFiles(['/a'], '/b', null, null)
 
     expect(ipc.lastCall('copy_files')?.payload).toEqual({
       sources: ['/a'],
       destination: '/b',
       config: null,
+      initiator: null,
     })
   })
 
@@ -71,7 +72,7 @@ describe('commands.copyFiles', () => {
       throw { type: 'source_not_found', path: '/a/missing.txt' }
     })
 
-    const result = await commands.copyFiles(['/a/missing.txt'], '/b', null)
+    const result = await commands.copyFiles(['/a/missing.txt'], '/b', null, null)
 
     expect(result.status).toBe('error')
     if (result.status === 'error') {
@@ -85,12 +86,13 @@ describe('commands.moveFiles', () => {
     const ipc = installIpcMock()
     ipc.mock('move_files', () => ({ operationId: 'op-2', operationType: 'move' as const }))
 
-    await commands.moveFiles(['/a/x'], '/b', null)
+    await commands.moveFiles(['/a/x'], '/b', null, null)
 
     expect(ipc.lastCall('move_files')?.payload).toEqual({
       sources: ['/a/x'],
       destination: '/b',
       config: null,
+      initiator: null,
     })
   })
 })
@@ -101,7 +103,7 @@ describe('commands.deleteFiles', () => {
     ipc.mock('delete_files', () => ({ operationId: 'op-3', operationType: 'delete' as const }))
 
     const volumeId = 'smb://server/share'
-    await commands.deleteFiles(['/x', '/y'], volumeId, { dryRun: true })
+    await commands.deleteFiles(['/x', '/y'], volumeId, { dryRun: true }, null)
 
     // Note the camelCase `volumeId` payload key. Tauri-Specta sends in camelCase and the
     // Rust side deserializes via the standard serde camelCase rename on the IPC layer.
@@ -109,6 +111,7 @@ describe('commands.deleteFiles', () => {
       sources: ['/x', '/y'],
       volumeId,
       config: { dryRun: true },
+      initiator: null,
     })
   })
 
@@ -116,12 +119,13 @@ describe('commands.deleteFiles', () => {
     const ipc = installIpcMock()
     ipc.mock('delete_files', () => ({ operationId: 'op-4', operationType: 'delete' as const }))
 
-    await commands.deleteFiles(['/x'], null, null)
+    await commands.deleteFiles(['/x'], null, null, null)
 
     expect(ipc.lastCall('delete_files')?.payload).toEqual({
       sources: ['/x'],
       volumeId: null,
       config: null,
+      initiator: null,
     })
   })
 })
@@ -131,12 +135,13 @@ describe('commands.trashFiles', () => {
     const ipc = installIpcMock()
     ipc.mock('trash_files', () => ({ operationId: 'op-5', operationType: 'trash' as const }))
 
-    await commands.trashFiles(['/x', '/y'], [123, 456], null)
+    await commands.trashFiles(['/x', '/y'], [123, 456], null, null)
 
     expect(ipc.lastCall('trash_files')?.payload).toEqual({
       sources: ['/x', '/y'],
       itemSizes: [123, 456],
       config: null,
+      initiator: null,
     })
   })
 
@@ -144,7 +149,7 @@ describe('commands.trashFiles', () => {
     const ipc = installIpcMock()
     ipc.mock('trash_files', () => ({ operationId: 'op-6', operationType: 'trash' as const }))
 
-    await commands.trashFiles(['/x'], null, null)
+    await commands.trashFiles(['/x'], null, null, null)
 
     const payload = ipc.lastCall('trash_files')?.payload as Record<string, unknown> | undefined
     expect(payload?.itemSizes).toBeNull()
