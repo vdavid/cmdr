@@ -10,7 +10,9 @@
 //! macOS-only: Finder tags don't exist elsewhere, so off macOS it returns a clean
 //! not-supported error.
 
-use serde_json::{Value, json};
+use serde_json::Value;
+#[cfg(target_os = "macos")]
+use serde_json::json;
 use tauri::{AppHandle, Runtime};
 
 use super::{ToolError, ToolResult};

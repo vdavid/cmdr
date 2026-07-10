@@ -35,10 +35,10 @@
     const { estimate, isScanning, sourceIsLocal }: Props = $props()
 
     const LEVEL_ID = 'behavior.archiveCompressionLevel'
-    let level = $state(getSetting(LEVEL_ID) as number)
+    let level = $state(getSetting(LEVEL_ID))
     onMount(() =>
         onSpecificSettingChange(LEVEL_ID, (_id, newValue) => {
-            level = newValue as number
+            level = newValue
         }),
     )
 

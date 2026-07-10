@@ -126,6 +126,9 @@ pub(super) fn optional_pane_param(params: &Value) -> Result<Option<&str>, ToolEr
 /// could resolve as the target. This round-trip closes that window without moving
 /// the cursor or changing the selection. The FE `mcp-sync-state` listener replies
 /// once the push lands.
+// The only current caller (`tag`) is macOS-gated, so off macOS this is dead code
+// under `#![deny(unused)]`; the helper itself is platform-neutral.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub(super) async fn flush_pane_state<R: Runtime>(app: &AppHandle<R>, pane: &str) -> Result<(), ToolError> {
     mcp_round_trip(app, "mcp-sync-state", json!({ "pane": pane }), "ok".to_string())
         .await
@@ -138,6 +141,9 @@ pub(super) async fn flush_pane_state<R: Runtime>(app: &AppHandle<R>, pane: &str)
 /// Paths come from the last-synced pane state, so the loaded window is the
 /// authority: a `name` not in the listing, or a selection/cursor outside the
 /// loaded window, is an honest error rather than a silent miss.
+// The only current caller (`tag`) is macOS-gated, so off macOS this is dead code
+// under `#![deny(unused)]`; the helper itself is platform-neutral.
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub(super) fn resolve_pane_target_paths(state: &PaneState, names: Option<&[String]>) -> Result<Vec<String>, ToolError> {
     if let Some(names) = names {
         if names.is_empty() {
