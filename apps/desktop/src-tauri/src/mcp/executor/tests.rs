@@ -51,11 +51,7 @@ fn test_expand_user_path_leaves_non_tilde_paths_untouched() {
     assert_eq!(expand_user_path("~root/x"), "~root/x");
 }
 
-fn pane_state_with(
-    files: Vec<(&str, bool)>,
-    cursor_index: usize,
-    selected: Vec<usize>,
-) -> PaneState {
+fn pane_state_with(files: Vec<(&str, bool)>, cursor_index: usize, selected: Vec<usize>) -> PaneState {
     PaneState {
         path: "/test".to_string(),
         files: files
