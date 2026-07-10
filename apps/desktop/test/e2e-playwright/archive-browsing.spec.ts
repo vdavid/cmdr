@@ -124,7 +124,9 @@ async function enterEntry(tauriPage: PageLike, name: string): Promise<void> {
     )
     if (hadEffect) return
   }
-  throw new Error(`enterEntry: Enter on "${name}" produced no effect after 3 attempts (path stayed ${startPath})`)
+  throw new Error(
+    `enterEntry: Enter on "${name}" produced no effect after 3 attempts (path stayed ${startPath ?? '<unknown>'})`,
+  )
 }
 
 /** Navigate a pane to a path via the same `mcp-nav-to-path` event the MCP server uses. */
