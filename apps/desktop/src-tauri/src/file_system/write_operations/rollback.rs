@@ -8,26 +8,19 @@
 //! transfer — and bridges the manager's `OperationIntent` cancellation into the
 //! engine's cancel predicate.
 //!
-//! [`dispatch_rollback`] is the backend entry point the FE/MCP command calls (M5
-//! wires the tauri command + MCP tool). It returns after DISPATCH, not after the
-//! reversal finishes: the inverse is an async managed op, so the caller polls the
-//! original op's `rollback_state` until it leaves `rolling_back` to observe the
-//! terminal result (the "dispatch then poll" contract).
-
-// The whole module is the landed backend entry point; its sole consumer (the
-// tauri command + MCP `operations_rollback` tool) arrives in M5, so nothing calls
-// it yet. Allow dead code until then rather than leave a warning.
-#![allow(
-    dead_code,
-    reason = "backend rollback entry point; consumed by the M5 command + MCP tool"
-)]
+//! [`dispatch_rollback`] is the backend entry point a rollback caller invokes.
+//! The MCP `operations_rollback` tool (M5) is the first consumer; a FE-facing
+//! tauri command lands with the alpha UI (M7). It returns after DISPATCH, not
+//! after the reversal finishes: the inverse is an async managed op, so the caller
+//! polls the original op's `rollback_state` until it leaves `rolling_back` to
+//! observe the terminal result (the "dispatch then poll" contract).
 
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, Runtime};
 
 use crate::file_system::get_volume_manager;
 use crate::file_system::volume::DEFAULT_VOLUME_ID;
@@ -60,8 +53,8 @@ fn write_op_type(kind: OpKind) -> WriteOperationType {
 /// result). A refusal (unknown / already rolling back / not rollbackable / a
 /// volume disconnected) surfaces typed; the entry resets `rolling_back` on a
 /// synchronous spawn failure so a retry isn't wedged.
-pub fn dispatch_rollback(
-    app: &AppHandle,
+pub fn dispatch_rollback<R: Runtime>(
+    app: &AppHandle<R>,
     op_id: &str,
     initiator: Initiator,
 ) -> Result<RollbackDispatch, RollbackRefusal> {

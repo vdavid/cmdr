@@ -5,8 +5,8 @@ future undo. **The app's first durable DB** (`operation-log.db` in the app data 
 on-disk store here is a disposable cache. Full design + rationale: [DETAILS.md](DETAILS.md). Plan:
 [`docs/specs/operation-log-plan.md`](../../../../../docs/specs/operation-log-plan.md).
 
-**Shipped: durable store (M1), capture (M2), rollback engine (M3), read/search API + retention (M4).** MCP (M5) and the
-UI (M6/M7) build on the read side.
+**Shipped: durable store (M1), capture (M2), rollback engine (M3), read/search API + retention (M4), MCP tools (M5, in
+`mcp/executor/operation_log.rs`).** The UI (M6/M7) builds on the read side.
 
 ## Module map
 

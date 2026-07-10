@@ -9,8 +9,9 @@ decision (D1–D10), and the milestone breakdown: [`docs/specs/operation-log-pla
 A durable, cross-volume journal of every file mutation Cmdr performs: one `operations` row per user-level batch (1:1
 with the pipeline's `operation_id`), many `operation_items` rows beneath it. It answers "what did I do to my files, and
 can I undo it?" — provenance, rollback, indexed name search, and retention. Shipped: the durable store (M1), capture at
-the chokepoint (M2), the rollback engine (M3), and the read/search API + retention enforcement (M4). MCP tools (M5) and
-the UI (M6/M7) build on the read side.
+the chokepoint (M2), the rollback engine (M3), the read/search API + retention enforcement (M4), and the MCP tools (M5,
+`operations_list` / `operations_get` / `operations_rollback` — see `mcp/DETAILS.md`). The UI (M6/M7) builds on the read
+side.
 
 ## Why a separate durable DB (D1)
 
@@ -355,10 +356,11 @@ don't preclude it.
 ## Query API + search (M4)
 
 `query.rs` is the read side: short-lived read-only connections, index-served name search, and paged reads for the Debug
-panel (M6) / alpha dialog (M7) / MCP tools (M5). The IPC surface is two thin pass-throughs
-(`commands/operation_log.rs`): `get_recent_operation_log_entries(limit, offset)` and
-`get_operation_log_detail(operation_id, item_limit, item_offset)` — business logic (filtering, paging, dir-path
-resolution) lives in `query.rs`, the commands only open a connection off the IPC thread and forward.
+panel (M6) / alpha dialog (M7) / MCP tools (M5). Two kinds of caller open their own short-lived read connection and
+forward to `query.rs` (business logic — filtering, paging, dir-path resolution — lives there, never in the callers): the
+FE IPC surface is two thin pass-throughs (`commands/operation_log.rs`): `get_recent_operation_log_entries(limit, offset)`
+and `get_operation_log_detail(operation_id, item_limit, item_offset)`; the MCP `operations_list` / `operations_get`
+handlers (`mcp/executor/operation_log.rs`) do the same off the MCP task.
 
 - **Name search is an indexed folded-name lookup, not FTS (D8).** The product headline — "when did I delete `dog.jpg`?"
   — is exact/prefix name equality, so `search_operations` joins `operation_items` to `operations` and matches the

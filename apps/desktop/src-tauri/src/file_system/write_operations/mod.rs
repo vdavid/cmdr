@@ -36,7 +36,7 @@ mod overwrite;
 #[cfg(target_os = "macos")]
 mod paste_clipboard;
 mod rename;
-mod rollback;
+pub(crate) mod rollback;
 mod scan;
 mod scan_cache;
 mod scan_preview;

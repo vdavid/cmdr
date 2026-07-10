@@ -766,4 +766,6 @@ fn run_bounded_vacuum(conn: &Connection) {
 }
 
 #[cfg(test)]
+mod retention_tests;
+#[cfg(test)]
 mod tests;

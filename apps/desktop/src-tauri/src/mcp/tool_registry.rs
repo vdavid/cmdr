@@ -24,7 +24,8 @@ use serde_json::{Value, json};
 
 use super::executor::{ToolError, ToolResult};
 use super::executor::{
-    app, async_tools, dialogs, downloads, eject, favorites, file_ops, indexing, nav, queue, search, tags, view,
+    app, async_tools, dialogs, downloads, eject, favorites, file_ops, indexing, nav, operation_log, queue, search,
+    tags, view,
 };
 use super::tools::Tool;
 
@@ -999,5 +1000,105 @@ mcp_tools! {
         schema: no_params_schema(),
         gate: TokenGate::Open,
         run: app_only downloads::execute_go_to_latest_download
+    },
+
+    // ── Operation log ─────────────────────────────────────────────────────────
+    "operations_list" => {
+        desc: "List operations from the durable operation log (file mutations: copy, move, delete, trash, rename, create, compress), newest first. Filter by time range, item name, kind, initiator, and status; paged.",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "since": {
+                    "type": "integer",
+                    "description": "Inclusive lower bound on the operation's start time (Unix milliseconds)"
+                },
+                "until": {
+                    "type": "integer",
+                    "description": "Inclusive upper bound on the operation's start time (Unix milliseconds)"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Match operations that touched an item with this name (folded: case- and Unicode-normalized). Exact or prefix match on the item's source name (see nameMatch), NOT a substring search."
+                },
+                "nameMatch": {
+                    "type": "string",
+                    "enum": ["exact", "prefix"],
+                    "description": "How 'name' matches: exact folded-name equality, or folded-name prefix. Default: prefix."
+                },
+                "kind": {
+                    "type": "string",
+                    "enum": ["copy", "move", "delete", "trash", "rename", "createFolder", "createFile", "archiveEdit"],
+                    "description": "Filter by operation kind"
+                },
+                "initiator": {
+                    "type": "string",
+                    "enum": ["user", "aiClient", "agent"],
+                    "description": "Filter by who initiated the operation"
+                },
+                "executionStatus": {
+                    "type": "string",
+                    "enum": ["queued", "running", "done", "failed", "canceled"],
+                    "description": "Filter by lifecycle status"
+                },
+                "rollbackState": {
+                    "type": "string",
+                    "enum": ["notRollbackable", "rollbackable", "rollingBack", "rolledBack", "partiallyRolledBack"],
+                    "description": "Filter by rollback state"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max operations to return. Default 50, max 1000."
+                },
+                "offset": {
+                    "type": "integer",
+                    "description": "Number of operations to skip, for paging"
+                }
+            },
+            "required": []
+        }),
+        gate: TokenGate::Open,
+        run: app_params operation_log::execute_operations_list
+    },
+    "operations_get" => {
+        desc: "Get one operation's header plus a page of its item rows (full source/dest paths, per-item outcome). Use after operations_list; poll this to watch a rollback settle (rollbackState leaves 'rollingBack').",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "operationId": {
+                    "type": "string",
+                    "description": "The operation's id, from operations_list"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max item rows to return. Default 200, max 1000."
+                },
+                "offset": {
+                    "type": "integer",
+                    "description": "Number of item rows to skip, for paging"
+                }
+            },
+            "required": ["operationId"]
+        }),
+        gate: TokenGate::Open,
+        run: app_params operation_log::execute_operations_get
+    },
+    "operations_rollback" => {
+        desc: "Reverse a logged operation (delete the copies, move back, restore from trash). Rechecks each item and never overwrites; a drifted or occupied item is skipped. Returns after dispatch: poll operations_get until rollbackState leaves 'rollingBack'.",
+        schema: json!({
+            "type": "object",
+            "properties": {
+                "operationId": {
+                    "type": "string",
+                    "description": "The operation to reverse, from operations_list"
+                },
+                "autoConfirm": {
+                    "type": "boolean",
+                    "description": "Must be true to roll back: a rollback writes to disk, so (like copy/move/delete) it requires the bearer token. Returns once the reversal is dispatched; poll operations_get until rollbackState leaves 'rollingBack'."
+                }
+            },
+            "required": ["operationId"]
+        }),
+        gate: TokenGate::IfAutoConfirm,
+        run: app_params operation_log::execute_operations_rollback
     },
 }

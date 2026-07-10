@@ -16,6 +16,10 @@ Depth for the MCP tool-execution layer. `CLAUDE.md` holds the must-knows.
   `spawn_blocking`.
 - **`downloads.rs`**: `go_to_latest_download` (resolves via `downloads::commands::go_to_latest_download`, then
   `mcp-nav-to-path` + `mcp-move-cursor`).
+- **`operation_log.rs`**: `operations_list`, `operations_get` (short-lived read-only connection over the M4 query API,
+  the `commands/operation_log.rs` pattern), `operations_rollback` (dispatches the M3 engine via
+  `write_operations::rollback::dispatch_rollback`; returns after dispatch — see `mcp/DETAILS.md` § dispatch-then-poll).
+  The pure filter/param parsers and the typed-refusal shape are unit-tested in `operation_log/tests.rs`.
 - **`tests.rs`**: unit tests for the dispatcher and shared helpers; per-category tests live alongside their handlers.
 
 ## Ack contract

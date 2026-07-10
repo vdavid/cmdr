@@ -999,6 +999,133 @@
         "type": "object"
       },
       "name": "go_to_latest_download"
+    },
+    {
+      "description": "List operations from the durable operation log (file mutations: copy, move, delete, trash, rename, create, compress), newest first. Filter by time range, item name, kind, initiator, and status; paged.",
+      "inputSchema": {
+        "properties": {
+          "executionStatus": {
+            "description": "Filter by lifecycle status",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed",
+              "canceled"
+            ],
+            "type": "string"
+          },
+          "initiator": {
+            "description": "Filter by who initiated the operation",
+            "enum": [
+              "user",
+              "aiClient",
+              "agent"
+            ],
+            "type": "string"
+          },
+          "kind": {
+            "description": "Filter by operation kind",
+            "enum": [
+              "copy",
+              "move",
+              "delete",
+              "trash",
+              "rename",
+              "createFolder",
+              "createFile",
+              "archiveEdit"
+            ],
+            "type": "string"
+          },
+          "limit": {
+            "description": "Max operations to return. Default 50, max 1000.",
+            "type": "integer"
+          },
+          "name": {
+            "description": "Match operations that touched an item with this name (folded: case- and Unicode-normalized). Exact or prefix match on the item's source name (see nameMatch), NOT a substring search.",
+            "type": "string"
+          },
+          "nameMatch": {
+            "description": "How 'name' matches: exact folded-name equality, or folded-name prefix. Default: prefix.",
+            "enum": [
+              "exact",
+              "prefix"
+            ],
+            "type": "string"
+          },
+          "offset": {
+            "description": "Number of operations to skip, for paging",
+            "type": "integer"
+          },
+          "rollbackState": {
+            "description": "Filter by rollback state",
+            "enum": [
+              "notRollbackable",
+              "rollbackable",
+              "rollingBack",
+              "rolledBack",
+              "partiallyRolledBack"
+            ],
+            "type": "string"
+          },
+          "since": {
+            "description": "Inclusive lower bound on the operation's start time (Unix milliseconds)",
+            "type": "integer"
+          },
+          "until": {
+            "description": "Inclusive upper bound on the operation's start time (Unix milliseconds)",
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "operations_list"
+    },
+    {
+      "description": "Get one operation's header plus a page of its item rows (full source/dest paths, per-item outcome). Use after operations_list; poll this to watch a rollback settle (rollbackState leaves 'rollingBack').",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "Max item rows to return. Default 200, max 1000.",
+            "type": "integer"
+          },
+          "offset": {
+            "description": "Number of item rows to skip, for paging",
+            "type": "integer"
+          },
+          "operationId": {
+            "description": "The operation's id, from operations_list",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operationId"
+        ],
+        "type": "object"
+      },
+      "name": "operations_get"
+    },
+    {
+      "description": "Reverse a logged operation (delete the copies, move back, restore from trash). Rechecks each item and never overwrites; a drifted or occupied item is skipped. Returns after dispatch: poll operations_get until rollbackState leaves 'rollingBack'.",
+      "inputSchema": {
+        "properties": {
+          "autoConfirm": {
+            "description": "Must be true to roll back: a rollback writes to disk, so (like copy/move/delete) it requires the bearer token. Returns once the reversal is dispatched; poll operations_get until rollbackState leaves 'rollingBack'.",
+            "type": "boolean"
+          },
+          "operationId": {
+            "description": "The operation to reverse, from operations_list",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operationId"
+        ],
+        "type": "object"
+      },
+      "name": "operations_rollback"
     }
   ]
 }

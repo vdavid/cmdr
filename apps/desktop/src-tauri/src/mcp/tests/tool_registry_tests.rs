@@ -57,14 +57,17 @@ const EXPECTED_TOOL_NAMES: &[&str] = &[
     "eject",
     "await",
     "go_to_latest_download",
+    "operations_list",
+    "operations_get",
+    "operations_rollback",
 ];
 
 #[test]
 fn test_all_tools_count() {
     // 6 nav + 2 cursor + 1 selection + 8 file_op + 1 tag + 3 view + 1 tab + 2 dialog + 3 app
     // + 2 search + 1 settings + 1 indexing + 1 queue + 1 favorites + 3 network + 1 eject + 1
-    // await + 1 downloads = 39
-    assert_eq!(get_all_tools().len(), 39);
+    // await + 1 downloads + 3 operation_log = 42
+    assert_eq!(get_all_tools().len(), 42);
 }
 
 #[test]
@@ -322,6 +325,57 @@ fn test_downloads_tool_present() {
     assert_eq!(tool(&tools, "go_to_latest_download").name, "go_to_latest_download");
 }
 
+#[test]
+fn test_operations_list_schema() {
+    let tools = get_all_tools();
+    let schema = &tool(&tools, "operations_list").input_schema;
+    let props = schema.get("properties").unwrap();
+
+    for key in [
+        "since",
+        "until",
+        "name",
+        "nameMatch",
+        "kind",
+        "initiator",
+        "executionStatus",
+        "rollbackState",
+        "limit",
+        "offset",
+    ] {
+        assert!(props.get(key).is_some(), "operations_list schema missing '{key}'");
+    }
+
+    // The enum values are the camelCase serde tokens the results also serialize,
+    // so an agent round-trips a value it read back verbatim.
+    let kind_enum = props.get("kind").unwrap().get("enum").unwrap().as_array().unwrap();
+    assert!(kind_enum.contains(&json!("createFolder")));
+    assert!(kind_enum.contains(&json!("archiveEdit")));
+    let initiator_enum = props.get("initiator").unwrap().get("enum").unwrap().as_array().unwrap();
+    assert!(initiator_enum.contains(&json!("aiClient")));
+
+    assert!(schema.get("required").unwrap().as_array().unwrap().is_empty());
+}
+
+#[test]
+fn test_operations_rollback_schema_and_gate() {
+    let tools = get_all_tools();
+    let schema = &tool(&tools, "operations_rollback").input_schema;
+    let props = schema.get("properties").unwrap();
+    assert!(props.get("operationId").is_some());
+    // The autoConfirm property is what ties the tool to the IfAutoConfirm gate
+    // (the anti-footgun `test_autoconfirm_tools_are_gated` backstop).
+    assert!(props.get("autoConfirm").is_some());
+
+    let required = schema.get("required").unwrap().as_array().unwrap();
+    assert_eq!(required.len(), 1);
+    assert!(required.contains(&json!("operationId")));
+
+    assert_eq!(tool_gate("operations_rollback"), Some(TokenGate::IfAutoConfirm));
+    assert_eq!(tool_gate("operations_list"), Some(TokenGate::Open));
+    assert_eq!(tool_gate("operations_get"), Some(TokenGate::Open));
+}
+
 // ── Token gate (auth classification) ──────────────────────────────────────
 
 #[test]
@@ -533,6 +587,9 @@ fn test_gate_table_is_complete_and_correct() {
         ("upgrade_smb_to_direct", TokenGate::Open),
         ("await", TokenGate::Open),
         ("go_to_latest_download", TokenGate::Open),
+        ("operations_list", TokenGate::Open),
+        ("operations_get", TokenGate::Open),
+        ("operations_rollback", TokenGate::IfAutoConfirm),
     ]
     .into_iter()
     .collect();

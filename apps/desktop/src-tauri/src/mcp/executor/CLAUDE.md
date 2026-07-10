@@ -10,7 +10,7 @@ ack signal before returning `OK`. Up: [`../CLAUDE.md`](../CLAUDE.md).
   `user_path_param` / `expand_user_path` (tilde expansion). (Dispatch is generated in the registry, not here.)
 - **`ack.rs`**: the ack contract (`AckSignal` variants, `snapshot_generation`, `wait_for_ack`, default budgets).
 - Category handlers: `app.rs`, `view.rs`, `nav.rs`, `file_ops.rs`, `dialogs.rs`, `async_tools.rs`, `search.rs`,
-  `downloads.rs`. (Per-file tool lists in DETAILS.md.)
+  `downloads.rs`, `operation_log.rs` (the `operations_*` journal tools). (Per-file tool lists in DETAILS.md.)
 
 ## Must-knows
 
