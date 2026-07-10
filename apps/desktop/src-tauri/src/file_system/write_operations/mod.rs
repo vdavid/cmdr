@@ -29,6 +29,7 @@ mod error_classification;
 mod eta;
 mod event_sinks;
 mod journal;
+mod journal_search;
 mod manager;
 mod operation_intent;
 mod overwrite;

@@ -116,10 +116,6 @@ pub(super) fn record_local_leaf(
 /// Record one local `search_only` row (a leaf beneath a trashed / same-FS-moved
 /// top-level unit — searchable but never a reversal unit, D-granularity).
 #[allow(clippy::too_many_arguments, reason = "the natural fields of a journal row")]
-#[allow(
-    dead_code,
-    reason = "wired by the M2e drive-index search enumeration in this milestone"
-)]
 pub(super) fn record_local_search_leaf(
     op_id: &str,
     entry_type: EntryType,

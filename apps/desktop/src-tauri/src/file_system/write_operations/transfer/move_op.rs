@@ -196,6 +196,20 @@ fn move_with_rename(
             let source_size = source_meta.as_ref().map(|m| m.len() as i64);
             let mut item_overwrote = false;
 
+            // Enumerate the subtree's `search_only` leaves from the drive index
+            // BEFORE the rename — the reconciler prunes the moved subtree on its
+            // FSEvent, so a later read would miss them (M2e). Persisted only after
+            // this item's move succeeds (below the top-level row).
+            let buffered_leaves = if source_is_dir {
+                Some(super::super::journal_search::enumerate_subtree_for_search(
+                    "root",
+                    source,
+                    super::super::journal_search::SEARCH_LEAF_CAP,
+                ))
+            } else {
+                None
+            };
+
             // When both source and dest are directories, merge recursively
             // instead of replacing (which would destroy dest-only files).
             if source.is_dir() && dest_path.exists() && dest_path.is_dir() {
@@ -270,6 +284,12 @@ fn move_with_rename(
                 item_overwrote,
                 crate::operation_log::types::ItemOutcome::Done,
             );
+
+            // Persist the buffered `search_only` leaves now that the move
+            // succeeded; their dest is rebased onto the moved-to path.
+            if let Some(buffered) = &buffered_leaves {
+                super::super::journal_search::persist_and_note(operation_id, source, Some(&dest_path), buffered);
+            }
 
             files_done += 1;
 

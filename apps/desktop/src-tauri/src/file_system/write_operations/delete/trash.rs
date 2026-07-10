@@ -156,6 +156,21 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
         // No-ops outside ~/Downloads.
         crate::downloads::note_pending_write_for_cmdr(source);
 
+        // Enumerate the subtree's `search_only` leaves from the drive index BEFORE
+        // the OS move — the index reconciler prunes the subtree the instant it sees
+        // the trash FSEvent, so a later read would miss them (M2e). Only a directory
+        // has descendants; a file is fully covered by its top-level row. Buffered
+        // now, persisted only after this item succeeds (below).
+        let buffered_leaves = if source_meta.is_dir() {
+            Some(super::super::journal_search::enumerate_subtree_for_search(
+                "root",
+                source,
+                super::super::journal_search::SEARCH_LEAF_CAP,
+            ))
+        } else {
+            None
+        };
+
         // Attempt to trash the item
         match move_to_trash_sync(source) {
             Ok(in_trash) => {
@@ -185,6 +200,15 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
                     false,
                     crate::operation_log::types::ItemOutcome::Done,
                 );
+
+                // Persist the buffered `search_only` leaves NOW that this item
+                // succeeded (never before — a failed item must record no leaves,
+                // else search would return a trash that never happened). Their dest
+                // is rebased onto the in-trash location; coverage downgrades are
+                // noted worst-wins.
+                if let Some(buffered) = &buffered_leaves {
+                    super::super::journal_search::persist_and_note(operation_id, source, in_trash.as_deref(), buffered);
+                }
 
                 events.emit_source_item_done(WriteSourceItemDoneEvent {
                     operation_id: operation_id.to_string(),

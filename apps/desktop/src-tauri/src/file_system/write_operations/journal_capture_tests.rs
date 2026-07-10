@@ -201,3 +201,167 @@ fn delete_journals_search_leaves_and_stays_not_rollbackable() {
     assert_eq!(items.len(), 2, "expected 2 deleted-leaf rows, got {items:?}");
     assert!(items.iter().any(|i| i.source_name == "dog.jpg"));
 }
+
+// ── M2e: `search_only` leaf enumeration for trash ────────────────────────────
+//
+// These drive the real trash pipeline with a CANNED enumeration (the test hook),
+// so the wiring — enumerate-before, persist-after-success, coverage notes — is
+// exercised without standing up a live drive index + registry. The enumeration
+// CORE honesty (stale / over-cap / full from a real index) is unit-tested in
+// `journal_search::tests`.
+
+#[cfg(target_os = "macos")]
+use crate::operation_log::types::{SearchCoverage, SearchCoverageReason};
+
+/// A canned drive-index enumeration for the trashed subtree.
+#[cfg(target_os = "macos")]
+fn install_canned_leaves(coverage: SearchCoverage, reason: Option<SearchCoverageReason>, names: &[&str]) {
+    let leaves: Vec<_> = names
+        .iter()
+        .map(|n| super::journal_search::Leaf {
+            rel: std::path::PathBuf::from(n),
+            entry_type: EntryType::File,
+            size: Some(1),
+            mtime: None,
+        })
+        .collect();
+    super::journal_search::test_hook::install(move |_path| {
+        Some(super::journal_search::BufferedLeaves {
+            coverage,
+            reason,
+            leaves: leaves.clone(),
+        })
+    });
+}
+
+#[cfg(target_os = "macos")]
+fn trash(op_id: &str, sources: &[std::path::PathBuf]) {
+    use super::delete::trash::trash_files_with_progress;
+    journal::open_local_op(op_id, OpKind::Trash, Initiator::User, 0);
+    let events = CollectorEventSink::new();
+    let st = state();
+    // A missing source in the batch is a per-item failure, not a whole-op failure.
+    let _ = trash_files_with_progress(&events, op_id, &st, sources, None);
+    journal::finalize_op(op_id, OpKind::Trash, ExecutionStatus::Done);
+    super::journal_search::test_hook::clear();
+    clear_journal();
+}
+
+/// A trashed folder records the top-level `rollback_unit` row AND the subtree's
+/// `search_only` leaves enumerated from the drive index — so "when did I trash
+/// `b.jpg`" hits even though `b.jpg` sat inside a trashed folder.
+#[cfg(target_os = "macos")]
+#[test]
+fn trashed_dir_records_search_leaves_and_stays_full() {
+    let (_jdir, jdb) = install_journal();
+    let work = tempfile::tempdir().expect("work");
+    let dir = work.path().join("photos");
+    std::fs::create_dir_all(dir.join("sub")).expect("mk");
+    std::fs::write(dir.join("a.jpg"), b"a").expect("a");
+    std::fs::write(dir.join("sub").join("b.jpg"), b"b").expect("b");
+
+    install_canned_leaves(SearchCoverage::Full, None, &["a.jpg", "sub/b.jpg"]);
+    trash("op-trash-leaves", std::slice::from_ref(&dir));
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let row = read_operation(&conn, "op-trash-leaves").expect("read").expect("row");
+    assert_eq!(row.kind, OpKind::Trash);
+    assert_eq!(row.rollback_state, RollbackState::Rollbackable);
+    assert_eq!(row.search_coverage, SearchCoverage::Full);
+
+    let items = read_operation_items(&conn, "op-trash-leaves", 1000).expect("items");
+    let units: Vec<_> = items.iter().filter(|i| i.row_role == RowRole::RollbackUnit).collect();
+    let leaves: Vec<_> = items.iter().filter(|i| i.row_role == RowRole::SearchOnly).collect();
+    assert_eq!(units.len(), 1, "one top-level trash unit, got {items:?}");
+    assert_eq!(units[0].source_name, "photos");
+    assert_eq!(leaves.len(), 2, "two search leaves from the index, got {items:?}");
+    assert!(leaves.iter().any(|i| i.source_name == "b.jpg"), "leaf search finds b.jpg");
+}
+
+/// A trash op whose one top-level item FAILS records no `search_only` rows for
+/// that item's subtree, while a sibling that succeeded keeps its leaves — so
+/// search can't return a trash that never happened (persist-after-success).
+#[cfg(target_os = "macos")]
+#[test]
+fn failed_trash_item_records_no_search_leaves_but_a_sibling_keeps_its_own() {
+    let (_jdir, jdb) = install_journal();
+    let work = tempfile::tempdir().expect("work");
+    let good = work.path().join("good");
+    std::fs::create_dir_all(&good).expect("mk good");
+    std::fs::write(good.join("keep.jpg"), b"k").expect("k");
+    // A missing source: fails at the existence check before it's ever trashed.
+    let missing = work.path().join("gone");
+
+    install_canned_leaves(SearchCoverage::Full, None, &["keep.jpg"]);
+    trash("op-trash-partial", &[good.clone(), missing.clone()]);
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let items = read_operation_items(&conn, "op-trash-partial", 1000).expect("items");
+    // The succeeded item: its top-level row + its one search leaf.
+    assert!(items.iter().any(|i| i.source_name == "good" && i.row_role == RowRole::RollbackUnit));
+    assert!(items.iter().any(|i| i.source_name == "keep.jpg" && i.row_role == RowRole::SearchOnly));
+    // The failed item contributed NOTHING (no top-level row, no leaves).
+    assert!(
+        !items.iter().any(|i| i.source_name == "gone"),
+        "a failed item records nothing, got {items:?}"
+    );
+}
+
+/// A same-FS move of a folder records the top-level `rollback_unit` row AND the
+/// subtree's `search_only` leaves from the index, rebased onto the moved-to path.
+#[cfg(target_os = "macos")]
+#[test]
+fn same_fs_move_dir_records_search_leaves() {
+    use super::transfer::move_op::move_files_with_progress_inner;
+    let (_jdir, jdb) = install_journal();
+    let work = tempfile::tempdir().expect("work");
+    let src = work.path().join("photos");
+    std::fs::create_dir_all(&src).expect("mk src");
+    std::fs::write(src.join("p.jpg"), b"pic").expect("p");
+    let dst = work.path().join("dest");
+    std::fs::create_dir_all(&dst).expect("mk dst");
+
+    install_canned_leaves(SearchCoverage::Full, None, &["p.jpg"]);
+    let op_id = "op-move-leaves";
+    journal::open_local_op(op_id, OpKind::Move, Initiator::User, 0);
+    let events = CollectorEventSink::new();
+    move_files_with_progress_inner(&events, op_id, &state(), std::slice::from_ref(&src), &dst, &WriteOperationConfig::default())
+        .expect("move");
+    journal::finalize_op(op_id, OpKind::Move, ExecutionStatus::Done);
+    super::journal_search::test_hook::clear();
+    clear_journal();
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let items = read_operation_items(&conn, op_id, 1000).expect("items");
+    let units: Vec<_> = items.iter().filter(|i| i.row_role == RowRole::RollbackUnit).collect();
+    let leaves: Vec<_> = items.iter().filter(|i| i.row_role == RowRole::SearchOnly).collect();
+    assert_eq!(units.len(), 1, "one top-level move unit, got {items:?}");
+    assert_eq!(leaves.len(), 1, "one search leaf, got {items:?}");
+    assert_eq!(leaves[0].source_name, "p.jpg");
+}
+
+/// An over-cap subtree records the top-level `rollback_unit` row only, downgrades
+/// coverage to `top_level_only` with the `capped` reason (distinct from stale /
+/// absent), and STILL rolls back fully (the cap never touches the undo unit).
+#[cfg(target_os = "macos")]
+#[test]
+fn over_cap_trash_is_top_level_only_capped_but_still_rollbackable() {
+    let (_jdir, jdb) = install_journal();
+    let work = tempfile::tempdir().expect("work");
+    let dir = work.path().join("huge");
+    std::fs::create_dir_all(&dir).expect("mk");
+    std::fs::write(dir.join("x.bin"), b"x").expect("x");
+
+    install_canned_leaves(SearchCoverage::TopLevelOnly, Some(SearchCoverageReason::Capped), &[]);
+    trash("op-trash-capped", std::slice::from_ref(&dir));
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let row = read_operation(&conn, "op-trash-capped").expect("read").expect("row");
+    assert_eq!(row.search_coverage, SearchCoverage::TopLevelOnly);
+    assert_eq!(row.search_coverage_reason, Some(SearchCoverageReason::Capped));
+    // The cap only bounds search — the top-level unit is still the undo unit.
+    assert_eq!(row.rollback_state, RollbackState::Rollbackable);
+    let items = read_operation_items(&conn, "op-trash-capped", 1000).expect("items");
+    assert_eq!(items.len(), 1, "top-level row only, no search leaves, got {items:?}");
+    assert_eq!(items[0].row_role, RowRole::RollbackUnit);
+}
