@@ -1,10 +1,10 @@
-//! Rollback engine tests (M3): the hard data-safety invariants, TDD'd.
+//! Rollback engine tests: the hard data-safety invariants, TDD'd.
 //!
 //! The pure decision helpers (`verify_snapshot`, `is_self_collision`,
 //! `inverse_action`, …) are unit-tested in isolation. The per-kind reversal is
 //! tested end-to-end against `InMemoryVolume`s: seed the journal with the rows an
 //! operation would have recorded (with realistic size/mtime snapshots — the
-//! capture layer's correctness is M2's concern; here the engine is under test) and
+//! capture layer's correctness is the capture layer's concern; here the engine is under test) and
 //! the post-op filesystem state, run `execute_rollback`, and assert the invariant
 //! **apply-then-rollback == original state**, plus the specific data-loss traps
 //! D7 surfaced.
@@ -731,7 +731,7 @@ async fn cancel_stops_and_keeps_what_was_reversed() {
 
 #[tokio::test]
 async fn a_canceled_original_op_rolls_back_exactly_its_completed_items() {
-    // A copy canceled mid-way journals only the files it actually completed (M2),
+    // A copy canceled mid-way journals only the files it actually completed (capture),
     // so rolling it back reverses exactly those — a canceled `execution_status`
     // never blocks rollback (D4). Here only one of the two intended files landed.
     let rig = Rig::new();

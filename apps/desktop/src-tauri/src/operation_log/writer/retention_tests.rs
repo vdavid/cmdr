@@ -1,7 +1,7 @@
 //! Retention tests: age + size pruning of whole operations, the interned-dir GC,
 //! the rolled-back-pair and rolling-back invariants, and the tiered vacuum policy.
 //! Split out of `writer/tests.rs` (which keeps the open/record/finalize round-trip
-//! and the M3 rollback reads) to keep each test file under the length budget.
+//! and the rollback reads) to keep each test file under the length budget.
 
 use super::tests::fresh;
 use super::*;
@@ -65,7 +65,7 @@ fn journal_bulk_op(writer: &OperationLogWriter, op_index: i64, item_count: i64) 
 
 /// Retention prunes whole operations older than the age cutoff, GCs the interned
 /// dirs that only the pruned op referenced, and keeps a recent op (and its dirs)
-/// intact. The mechanism M4 will wire to a periodic timer + size budget.
+/// intact. The mechanism retention wires to a periodic timer + size budget.
 #[test]
 fn prune_removes_old_operation_and_gcs_its_dirs() {
     let (store, writer, _dir) = fresh();
@@ -177,8 +177,8 @@ fn prune_removes_old_operation_and_gcs_its_dirs() {
 
 /// Pruning an op that a SURVIVING op references via `rolls_back_op_id` nulls the
 /// survivor's link instead of tripping the self-FK on delete. Guards the
-/// ordering: null-before-delete. (M4 expands retention tests; this one defends
-/// the FK trap the M3 rollback linkage will exercise.)
+/// ordering: null-before-delete. (Retention expands these tests; this one defends
+/// the FK trap the rollback linkage will exercise.)
 #[test]
 fn prune_nulls_a_survivors_rollback_link_to_a_pruned_op() {
     let (store, writer, _dir) = fresh();

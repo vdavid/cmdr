@@ -23,11 +23,11 @@
 //!
 //! A DB *error* on a single item row (not fullness) logs a warning and drops
 //! THAT row — the operation never fails for a journal problem. That's exactly
-//! why finalize returns per-`row_role` durable-row counts: the M2 capture layer
+//! why finalize returns per-`row_role` durable-row counts: the capture layer
 //! compares them against the items it issued and, on a shortfall, downgrades a
 //! `rollback_unit` gap to `not_rollbackable(journal_incomplete)` or a
 //! `search_only` gap to `search_coverage = top_level_only` (D4). This writer
-//! provides the counts; it does not itself compute eligibility (that's M2/M3).
+//! provides the counts; it does not itself compute eligibility (that's the capture layer and rollback engine).
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
@@ -90,7 +90,7 @@ pub struct JournalItem {
     pub overwrote: bool,
 }
 
-/// The terminal update at finalize. The capture layer (M2) computes the
+/// The terminal update at finalize. The capture layer computes the
 /// eligibility (`rollback_state` + reason) and coverage from what actually
 /// happened — the archive subkind and net-new flag feed THAT computation
 /// upstream; this writer stores the already-typed result and reports the durable
@@ -108,7 +108,7 @@ pub struct FinalizeOperation {
     pub search_coverage_reason: Option<SearchCoverageReason>,
     pub ended_at: i64,
     /// The planned total, refined at finalize from what the op actually scanned
-    /// (M6 rider). `None` keeps the value stored at `open` — the finalize paths
+    /// (the header-aggregate rider). `None` keeps the value stored at `open` — the finalize paths
     /// that can't observe a real total (instant creates, archive edits, or a
     /// direct-call test with no status cache) leave it untouched.
     pub item_count: Option<u64>,
@@ -120,7 +120,7 @@ pub struct FinalizeOperation {
     pub dev_summary: Option<String>,
 }
 
-/// Durable row counts per `row_role`, returned by finalize — the input to the M2
+/// Durable row counts per `row_role`, returned by finalize — the input to the capture
 /// completeness check (D4).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FinalizeOutcome {
@@ -224,7 +224,7 @@ impl OperationLogWriter {
     }
 
     /// Finalize an operation: write its terminal state and return the durable
-    /// per-`row_role` row counts (the M2 completeness input). Blocks for the
+    /// per-`row_role` row counts (the capture completeness input). Blocks for the
     /// reply, so it also acts as a barrier for this op's prior records.
     pub fn finalize_operation(&self, finalize: FinalizeOperation) -> Result<FinalizeOutcome, OperationLogStoreError> {
         let (tx, rx) = mpsc::channel();
@@ -237,7 +237,7 @@ impl OperationLogWriter {
 
     /// Transition an operation's `rollback_state` (+ nullable reason). Blocks for
     /// the reply, so it doubles as a barrier: on return the change is durable. The
-    /// rollback engine (M3) uses it to set `rolling_back` (as late as possible, at
+    /// rollback engine uses it to set `rolling_back` (as late as possible, at
     /// a successful spawn), to reset on a synchronous spawn failure, and to resolve
     /// the original op when the inverse finalizes.
     pub fn set_rollback_state(
@@ -488,7 +488,7 @@ fn count_rows_by_role(conn: &Connection, op_id: &str) -> Result<FinalizeOutcome,
     })
 }
 
-/// Transition an op's `rollback_state` + nullable reason (M3). A no-op if the
+/// Transition an op's `rollback_state` + nullable reason (rollback). A no-op if the
 /// op_id is unknown (the row count is 0, not an error).
 fn apply_set_rollback_state(
     conn: &Connection,
@@ -503,7 +503,7 @@ fn apply_set_rollback_state(
     Ok(())
 }
 
-/// Set per-item `outcome`s by `(op_id, seq)` in one transaction (M3). A seq with
+/// Set per-item `outcome`s by `(op_id, seq)` in one transaction (rollback). A seq with
 /// no matching row updates nothing (not an error).
 fn apply_set_item_outcomes(
     conn: &mut Connection,
@@ -521,7 +521,7 @@ fn apply_set_item_outcomes(
     Ok(())
 }
 
-// ── Retention (mechanism; M4 wires enforcement) ──────────────────────────────
+// ── Retention (mechanism; retention wires enforcement) ──────────────────────────────
 
 /// Tiered `incremental_vacuum` caps, mirroring `indexing/writer/maintenance.rs`:
 /// skip the lock below `MIN`, hold a steady cap for a modest freelist, ramp to

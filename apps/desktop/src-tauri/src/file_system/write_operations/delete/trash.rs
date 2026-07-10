@@ -22,7 +22,7 @@ use super::super::types::{
 ///
 /// Returns the item's **in-trash location** (`Some` on macOS, where the OS
 /// reports it): the journal records it as the trash row's dest so a later restore
-/// knows where the OS put the item (the M3 trash rollback depends on it). `None`
+/// knows where the OS put the item (the trash rollback depends on it). `None`
 /// means "trashed, but no restore location recorded" (Linux, or the rare case the
 /// OS omitted the URL).
 ///
@@ -52,7 +52,7 @@ pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
         let file_manager = NSFileManager::defaultManager();
 
         // Capture resultingItemURL (the final location inside Trash) so the
-        // journal can record where to restore from (M3 trash rollback).
+        // journal can record where to restore from (the trash rollback).
         let mut resulting: Option<Retained<NSURL>> = None;
         file_manager
             .trashItemAtURL_resultingItemURL_error(&url, Some(&mut resulting))
@@ -70,7 +70,7 @@ pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
 
     trash::delete(path).map_err(|e| format!("Failed to move to trash: {}", e))?;
     // The `trash` crate doesn't surface the in-trash location, so no restore
-    // location is recorded (trash rollback is then unavailable on Linux, M3).
+    // location is recorded (trash rollback is then unavailable on Linux).
     Ok(None)
 }
 
@@ -87,7 +87,7 @@ pub fn move_to_trash_sync(path: &Path) -> Result<Option<PathBuf>, String> {
 /// its manager op. Mirrors the batch path's capture: enumerate the subtree's
 /// `search_only` leaves from the drive index BEFORE the OS move (the reconciler
 /// prunes on the FSEvent), record the top-level `rollback_unit` row with the
-/// in-trash dest (M2d), persist the leaves only on success, and finalize. Returns
+/// in-trash dest, persist the leaves only on success, and finalize. Returns
 /// the in-trash location like [`move_to_trash_sync`]. Runs on a `spawn_blocking`
 /// thread (sync index reads + journal sends are fine there).
 pub fn trash_single_journaled(
@@ -227,7 +227,7 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
 
         // Enumerate the subtree's `search_only` leaves from the drive index BEFORE
         // the OS move — the index reconciler prunes the subtree the instant it sees
-        // the trash FSEvent, so a later read would miss them (M2e). Only a directory
+        // the trash FSEvent, so a later read would miss them (search-leaf enumeration). Only a directory
         // has descendants; a file is fully covered by its top-level row. Buffered
         // now, persisted only after this item succeeds (below).
         let buffered_leaves = if source_meta.is_dir() {
@@ -251,9 +251,9 @@ pub(in crate::file_system::write_operations) fn trash_files_with_progress(
 
                 // Journal the trashed top-level item as the rollback unit (one
                 // restore-from-trash reverses the whole subtree). The in-trash
-                // location (`resultingItemURL`) is the row's dest so M3 restore
+                // location (`resultingItemURL`) is the row's dest so the rollback restore
                 // knows where to move it back FROM. The subtree's `search_only`
-                // leaves are enumerated from the drive index (M2e).
+                // leaves are enumerated from the drive index (search-leaf enumeration).
                 let entry_type = if source_meta.is_dir() {
                     crate::operation_log::types::EntryType::Dir
                 } else {
@@ -428,7 +428,7 @@ mod tests {
         assert!(fs::symlink_metadata(&file).is_err());
 
         // The in-trash location (resultingItemURL) is captured and points into
-        // the user's Trash — the M3 restore depends on this dest.
+        // the user's Trash — the rollback restore depends on this dest.
         let in_trash = result.unwrap().expect("macOS reports an in-trash location");
         assert!(
             in_trash.components().any(|c| c.as_os_str() == ".Trash"),

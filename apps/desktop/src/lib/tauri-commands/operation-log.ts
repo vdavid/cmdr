@@ -1,6 +1,6 @@
 // Operation-log read side: the recent-operations feed and one operation's detail.
 // Thin wrappers over the typed `commands.*` bindings, unwrapping `Result<T, string>`.
-// The dialog (M7) and any future surface consume these; the Debug panel reads the
+// The alpha dialog and any future surface consume these; the Debug panel reads the
 // same backend commands directly (dev-only, bindings-import-exempt).
 
 import { commands, type OperationRow, type OperationItemView } from '$lib/ipc/bindings'

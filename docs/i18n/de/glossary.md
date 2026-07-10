@@ -446,14 +446,14 @@ Settled while translating the Compress feature:
 ## Operation log (2026-07-10)
 
 Terms settled while translating the Operation log dialog (`operationLog.*`; the retention settings under
-`settings.operationLog.*` had already fixed the core feature vocabulary in M6, and macOS Finder confirms `Vorgang`).
+`settings.operationLog.*` had already fixed the core feature vocabulary with the retention settings, and macOS Finder confirms `Vorgang`).
 
 - operation → `Vorgang` (plural `Vorgänge`) · macOS Finder ("Der Vorgang kann nicht abgeschlossen werden.",
   "Kopiervorgang"/"Löschvorgang") + the settled Cmdr `de` catalog (`errors.listing.*` use `Vorgang` throughout,
   `settings.operationLog.maxSize.description` "die ältesten Vorgänge") · high. NOT the loanword "Operation": Cmdr reserves
   "Operation(en)" for the concurrent low-level SMB sense (`settings.network.smbConcurrency`) and the Settings SECTION
   name "Dateioperationen"; the individual logged op is a `Vorgang`.
-- operation log → `Vorgangsprotokoll` · already settled in M6 (`settings.section.operationLog` → "Vorgangsprotokoll",
+- operation log → `Vorgangsprotokoll` · already settled with the retention settings (`settings.section.operationLog` → "Vorgangsprotokoll",
   log → Protokoll) · high. The dialog title (`operationLog.dialog.title`) and the command label
   (`commands.logOperationLog.label`) MUST match this Settings-section name.
 - history (of operations) → `Verlauf` · `settings.operationLog.intro` "damit du deinen Verlauf ansehen … kannst",

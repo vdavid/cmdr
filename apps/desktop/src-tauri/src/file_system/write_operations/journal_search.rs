@@ -1,4 +1,4 @@
-//! `search_only` leaf enumeration for the operation log (M2e).
+//! `search_only` leaf enumeration for the operation log.
 //!
 //! A same-FS move or a trash reverses a whole subtree with ONE rename-back /
 //! restore, so the pipeline records ONE top-level `rollback_unit` row (see

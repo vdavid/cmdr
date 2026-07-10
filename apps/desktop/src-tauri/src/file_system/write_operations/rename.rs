@@ -157,7 +157,7 @@ pub(crate) async fn rename_managed(
 
     // Journal the rename as a single-item op: source → dest, one row (the whole
     // subtree moves by one rename). Rollbackable iff unchanged (rechecked at
-    // rollback time, M3).
+    // rollback time).
     if let Some((from_path, to_path, meta, volume_is_dir)) = journal_snapshot {
         use crate::operation_log::types::{EntryType, ExecutionStatus, ItemOutcome, OpKind};
         match &result {

@@ -843,7 +843,7 @@ pub fn run() {
             }
 
             // Open the durable operation log and spawn its writer thread. Nothing
-            // journals through it yet (M1 is the foundation); capture (M2) hooks
+            // journals through it yet (the durable store is the foundation); capture hooks
             // the write pipeline into the managed writer this places in state.
             operation_log::start(app.handle());
 

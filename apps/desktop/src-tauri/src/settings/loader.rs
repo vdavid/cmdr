@@ -380,7 +380,7 @@ pub fn early_load_global_go_to_latest_shortcut() -> Option<(bool, String)> {
 pub const DEFAULT_OPERATION_LOG_MAX_SIZE_BYTES: u64 = 3 * 1024 * 1024 * 1024;
 
 /// The operation log's retention limits, read fresh from `settings.json` each call
-/// so an M6 settings change takes effect on the next retention tick. Defaults
+/// so a retention settings change takes effect on the next retention tick. Defaults
 /// (D10): age = forever (`None`), size = 3 GB.
 #[derive(Debug, Clone, Copy)]
 pub struct OperationLogRetentionLimits {
@@ -403,11 +403,11 @@ impl Default for OperationLogRetentionLimits {
 
 /// Reads the operation-log retention limits from `settings.json`.
 ///
-/// Contract with M6 (which wires the settings UI): the age limit persists under
+/// Contract with the retention settings UI: the age limit persists under
 /// `operationLog.maxAge` as a duration in **milliseconds** (`0` = the "Forever"
 /// sentinel ⇒ no age prune), and the size limit under `operationLog.maxSize` as a
-/// byte count (absent ⇒ 3 GB default; `0` ⇒ unlimited). M4 reads these so
-/// retention works before the UI lands; M6 must persist these exact keys.
+/// byte count (absent ⇒ 3 GB default; `0` ⇒ unlimited). Retention reads these so
+/// it works before the UI lands; the settings UI must persist these exact keys.
 pub fn load_operation_log_retention_limits<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
 ) -> OperationLogRetentionLimits {

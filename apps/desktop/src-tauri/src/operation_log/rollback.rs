@@ -1,4 +1,4 @@
-//! The rollback engine (M3): reverse a journaled operation as a set of inverse
+//! The rollback engine: reverse a journaled operation as a set of inverse
 //! per-item actions, each rechecked against its recorded snapshot before it
 //! touches anything.
 //!
@@ -119,7 +119,7 @@ enum ItemResult {
 /// What a rollback DISPATCH returns to the FE/MCP: the inverse op's id. The
 /// reversal itself is an async managed op, so the caller polls the ORIGINAL op's
 /// `rollback_state` until it leaves `rolling_back` to observe the terminal result
-/// (the M5 "dispatch then poll" contract).
+/// (the MCP tools' "dispatch then poll" contract).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RollbackDispatch {
@@ -288,7 +288,7 @@ fn resolve_final_state(reversed: u64, skipped: u64, canceled: bool) -> RollbackS
     }
 }
 
-// ── The op-level gate (used by the M3c entry point + tested here) ─────────────
+// ── The op-level gate (used by the managed rollback entry point + tested here) ─────────────
 
 /// Check whether `op` may be rolled back right now: its stored `rollback_state`
 /// and (for a connected-volume requirement) whether every volume it touches is
@@ -333,7 +333,7 @@ pub fn check_rollbackable(vm: &VolumeManager, op: &OperationRow) -> Result<(), R
 /// `cancel` is polled between items (a rollback is cancelable like any op): a
 /// canceled run keeps what it reversed and records the rest as untouched.
 ///
-/// This is the awaitable core the managed entry point (M3c) spawns; it takes only
+/// This is the awaitable core the managed rollback entry point spawns; it takes only
 /// the `VolumeManager` and the `writer` (which yields the read connection via its
 /// db path), so it's driven directly in tests without a live manager/runtime.
 pub async fn execute_rollback(

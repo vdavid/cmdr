@@ -1744,7 +1744,7 @@ pub(crate) async fn copy_volumes_with_progress(
 
         // Journal the directories the copy created as `dir` rows on the dest
         // volume, AFTER all the file leaves (so their `seq` follows the contents
-        // and the M3 rollback removes files before their dirs). Mirrors the local
+        // and the rollback removes files before their dirs). Mirrors the local
         // copy's post-success `record_created_dirs`.
         if let Some((_, dst_vol)) = journal_volumes.as_ref() {
             journal::record_created_dirs_on(operation_id, dst_vol, &created_dirs);

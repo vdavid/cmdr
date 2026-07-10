@@ -1,4 +1,4 @@
-//! The read side of the operation log (M4): filtered/paged search, a paged
+//! The read side of the operation log (the query API): filtered/paged search, a paged
 //! operation detail, and the recent-operations feed. Every function takes a
 //! short-lived read-only [`Connection`](rusqlite::Connection) (the writer thread
 //! owns the single write connection; reads never contend under WAL).

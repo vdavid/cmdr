@@ -85,7 +85,7 @@ pub struct FinalizeInputs {
     pub net_new: bool,
     pub ended_at: i64,
     /// The scanned planned total, refining the provisional count stored at `open`
-    /// (M6 rider). `None` leaves the open-time value in place — the caller can't
+    /// (the header-aggregate rider). `None` leaves the open-time value in place — the caller can't
     /// observe a real total.
     pub item_count: Option<u64>,
     pub items_done: u64,
@@ -141,14 +141,14 @@ pub fn compute_eligibility(
             Some(NotRollbackableReason::PermanentDelete),
         ),
         // Restore-from-trash / rename-back / remove-if-net-new: the precondition
-        // is rechecked at rollback time (M3), so these open rollbackable.
+        // is rechecked at rollback time, so these open rollbackable.
         OpKind::Trash | OpKind::Rename | OpKind::CreateFolder | OpKind::CreateFile => {
             (RollbackState::Rollbackable, None)
         }
         OpKind::ArchiveEdit => match archive_subkind {
             // Compress: deleting the archive is safe only if it was net-new (an
             // overwrite discarded the prior bytes). The rollback rechecks the
-            // archive is unchanged before deleting (M3, Finding 5).
+            // archive is unchanged before deleting (the rollback engine, Finding 5).
             Some(ArchiveSubkind::Compress) => {
                 if net_new {
                     (RollbackState::Rollbackable, None)

@@ -71,7 +71,7 @@ async fn png_payload_writes_pasted_png_verbatim() {
 }
 
 /// Routing paste through the managed `CreateFile` op means it journals for free
-/// (David-approved M2f): a paste records exactly one `CreateFile` operation,
+/// (David-approved bypass routing): a paste records exactly one `CreateFile` operation,
 /// `done` and `rollbackable` (a net-new file).
 #[tokio::test]
 async fn paste_journals_a_create_file_operation() {

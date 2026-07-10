@@ -5505,7 +5505,7 @@ export type RestrictedWindowSettings = {
 /**
  *  Whether and how the operation can be / has been reversed (D3). Independent
  *  of [`ExecutionStatus`]. `RollingBack` is the transient in-flight guard
- *  (M3); a fresh op sits at `NotRollbackable` until finalize proves otherwise.
+ *  (rollback); a fresh op sits at `NotRollbackable` until finalize proves otherwise.
  */
 export type RollbackState = 'notRollbackable' | 'rollbackable' | 'rollingBack' | 'rolledBack' | 'partiallyRolledBack'
 

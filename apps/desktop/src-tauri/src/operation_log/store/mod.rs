@@ -294,7 +294,7 @@ pub fn reconstruct_dir_path(conn: &Connection, dir_id: i64) -> Result<String, Op
     Ok(format!("/{}", names.join("/")))
 }
 
-// ── Reads (used by the dump bin; the M4 query API adds paged/filtered reads) ──
+// ── Reads (used by the dump bin; the query API adds paged/filtered reads) ──
 
 /// Decode a stored token to a typed enum, or a [`OperationLogStoreError::Decode`].
 fn decode<T>(
@@ -412,10 +412,10 @@ pub fn read_operation_items(
     Ok(out)
 }
 
-// ── Rollback reads (M3) ──────────────────────────────────────────────────────
+// ── Rollback reads ──────────────────────────────────────────────────────
 
 /// One `rollback_unit` row with its interned dir prefixes resolved to full paths
-/// and real volume ids — everything the rollback engine (M3) needs to reverse the
+/// and real volume ids — everything the rollback engine needs to reverse the
 /// item without a second query per row. `source` is the item's original location;
 /// `dest` (present for copy/move/trash/rename) is where the item ended up (the
 /// thing a restore-move brings back, or a remove-inverse deletes).
@@ -507,7 +507,7 @@ pub fn read_rollback_units_page(
     items.iter().map(|item| map_rollback_unit(conn, item)).collect()
 }
 
-/// Every operation currently in `rolling_back` — the startup-reconcile input (M3,
+/// Every operation currently in `rolling_back` — the startup-reconcile input (rollback,
 /// Finding 7): each resolves deterministically from its (unfinalized) inverse op's
 /// recorded outcomes, or straight back to `rollbackable` when no inverse row exists.
 pub fn ops_in_rolling_back(conn: &Connection) -> Result<Vec<OperationRow>, OperationLogStoreError> {

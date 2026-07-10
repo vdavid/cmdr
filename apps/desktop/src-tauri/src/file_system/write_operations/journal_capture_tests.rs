@@ -1,4 +1,4 @@
-//! Integration tests for capture at the chokepoint (M2): drive a real local-FS
+//! Integration tests for capture at the chokepoint (the capture layer): drive a real local-FS
 //! op through the pipeline with a temp-DB journal installed globally, then read
 //! back the journaled operation + item rows.
 //!
@@ -82,7 +82,7 @@ fn grouped_copy_journals_leaf_files_and_created_dir_rows() {
     );
 }
 
-/// M6 rider: the op HEADER carries the real planned count, the completed count,
+/// Header-aggregate rider: the op HEADER carries the real planned count, the completed count,
 /// and the destination volume — not the zeros an earlier local-FS open left. The
 /// count is refined at finalize from the status cache the queue UI drives, so it
 /// reflects what the op actually scanned (not the provisional top-level count the
@@ -202,7 +202,7 @@ fn same_fs_move_journals_the_top_level_item_as_rollback_unit() {
     let items = read_operation_items(&conn, op_id, 1000).expect("items");
     // A same-FS move records ONE top-level rollback_unit row (the whole `photos`
     // subtree moved by one rename); its `search_only` leaves come from the drive
-    // index (M2e), not enumerated here.
+    // index (search-leaf enumeration), not enumerated here.
     assert_eq!(items.len(), 1, "expected 1 top-level row, got {items:?}");
     assert_eq!(items[0].entry_type, EntryType::Dir);
     assert_eq!(items[0].row_role, RowRole::RollbackUnit);
@@ -264,7 +264,7 @@ fn delete_journals_search_leaves_and_stays_not_rollbackable() {
     assert!(items.iter().any(|i| i.source_name == "dog.jpg"));
 }
 
-// ── M2e: `search_only` leaf enumeration for trash ────────────────────────────
+// ── Search-leaf enumeration for trash ────────────────────────────
 //
 // These drive the real trash pipeline with a CANNED enumeration (the test hook),
 // so the wiring — enumerate-before, persist-after-success, coverage notes — is
@@ -380,7 +380,7 @@ fn failed_trash_item_records_no_search_leaves_but_a_sibling_keeps_its_own() {
     );
 }
 
-// ── M2g: performance — capture stays off the operation's hot path ────────────
+// ── Performance — capture stays off the operation's hot path ────────────
 
 /// Create `n` tiny files in a fresh tempdir; return the dir (keep alive) + paths.
 fn make_files(n: usize) -> (tempfile::TempDir, Vec<std::path::PathBuf>) {

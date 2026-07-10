@@ -1,4 +1,4 @@
-//! Managed dispatch of an operation-log rollback (M3).
+//! Managed dispatch of an operation-log rollback.
 //!
 //! The rollback ENGINE (what an inverse does, and the data-safety rechecks) lives
 //! in [`crate::operation_log::rollback`]; this thin glue is the only piece that
@@ -9,8 +9,8 @@
 //! engine's cancel predicate.
 //!
 //! [`dispatch_rollback`] is the backend entry point a rollback caller invokes.
-//! The MCP `operations_rollback` tool (M5) is the first consumer; a FE-facing
-//! tauri command lands with the alpha UI (M7). It returns after DISPATCH, not
+//! The MCP `operations_rollback` tool is the first consumer; a FE-facing
+//! tauri command lands with the alpha UI. It returns after DISPATCH, not
 //! after the reversal finishes: the inverse is an async managed op, so the caller
 //! polls the original op's `rollback_state` until it leaves `rolling_back` to
 //! observe the terminal result (the "dispatch then poll" contract).
@@ -58,7 +58,7 @@ pub fn dispatch_rollback<R: Runtime>(
     op_id: &str,
     initiator: Initiator,
 ) -> Result<RollbackDispatch, RollbackRefusal> {
-    // The writer lives in managed state (M1). Its absence means the journal never
+    // The writer lives in managed state (the durable store). Its absence means the journal never
     // opened, so there's nothing to roll back.
     let writer = app
         .try_state::<OperationLogWriter>()

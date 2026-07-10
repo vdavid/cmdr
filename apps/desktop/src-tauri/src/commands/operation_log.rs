@@ -1,9 +1,9 @@
-//! IPC commands for the operation log's read side (M4).
+//! IPC commands for the operation log's read side (the query API).
 //!
 //! Thin pass-throughs over [`crate::operation_log::query`]: the business logic
 //! (filtering, paging, dir-path resolution) lives in the query module; these
 //! commands only open a short-lived read-only connection off the IPC thread and
-//! forward the call. The Debug panel (M6) and alpha dialog (M7) consume them.
+//! forward the call. The Debug panel and alpha dialog consume them.
 
 use tauri::AppHandle;
 

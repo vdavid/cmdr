@@ -322,7 +322,7 @@ describe('fixedKey flag', () => {
 })
 
 describe('operation-log shortcut binding', () => {
-  // M7: the alpha "Operation log" command opens the dialog from the View menu and
+  // The alpha "Operation log" command opens the dialog from the View menu and
   // via a configurable default shortcut. The plan's first pick (⌥⌘O) is taken by
   // `file.showInFinder`, so the default is ⌘⌥L. Guard against a silent double-bind.
   it('binds log.operationLog to exactly ⌘⌥L', () => {

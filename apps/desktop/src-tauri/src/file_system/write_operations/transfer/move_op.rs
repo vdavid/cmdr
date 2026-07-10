@@ -198,7 +198,7 @@ fn move_with_rename(
 
             // Enumerate the subtree's `search_only` leaves from the drive index
             // BEFORE the rename — the reconciler prunes the moved subtree on its
-            // FSEvent, so a later read would miss them (M2e). Persisted only after
+            // FSEvent, so a later read would miss them (search-leaf enumeration). Persisted only after
             // this item's move succeeds (below the top-level row).
             let buffered_leaves = if source_is_dir {
                 Some(super::super::journal_search::enumerate_subtree_for_search(
@@ -268,7 +268,7 @@ fn move_with_rename(
             // Journal the top-level moved item as the rollback unit: one
             // rename-back reverses the whole subtree (D-granularity). The
             // subtree's `search_only` leaves are enumerated from the drive index
-            // (M2e).
+            // (search-leaf enumeration).
             let entry_type = if source_is_dir {
                 crate::operation_log::types::EntryType::Dir
             } else {

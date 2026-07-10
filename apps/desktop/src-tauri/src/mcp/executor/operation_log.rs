@@ -1,10 +1,10 @@
-//! Operation-log tool handlers (M5): read the durable journal and dispatch a
+//! Operation-log tool handlers (the MCP tools): read the durable journal and dispatch a
 //! rollback, so an agent can test the whole feature end to end without the FE.
 //!
 //! `operations_list` / `operations_get` are pure reads over a short-lived
 //! read-only connection (the same pattern as `commands/operation_log.rs`: the
 //! writer thread owns the one write connection, reads never contend under WAL).
-//! `operations_rollback` dispatches the M3 rollback engine and returns after
+//! `operations_rollback` dispatches the rollback engine and returns after
 //! DISPATCH, not completion — the reversal is an async managed op, so the caller
 //! polls `operations_get` until the operation's `rollbackState` leaves
 //! `rollingBack` (the "dispatch then poll" contract, `mcp/DETAILS.md`).
@@ -70,12 +70,12 @@ pub async fn execute_operations_get<R: Runtime>(app: &AppHandle<R>, params: &Val
     }
 }
 
-/// Reverse a logged operation through the M3 rollback engine.
+/// Reverse a logged operation through the rollback engine.
 ///
 /// Requires `autoConfirm: true`, which the `IfAutoConfirm` gate ties to the bearer
 /// token — the same threat model as copy/move/delete: a rollback writes to the
 /// filesystem, so it must never run unconfirmed. Without a confirmation dialog
-/// (an M7 surface), the only safe path over MCP is the token-gated bypass, so a
+/// (an alpha-UI surface), the only safe path over MCP is the token-gated bypass, so a
 /// call missing `autoConfirm` is refused rather than acting unconfirmed.
 ///
 /// Returns after DISPATCH: the inverse operation spawns as an async managed op, so

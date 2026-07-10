@@ -1075,7 +1075,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   // with no restart and no `settings-applier` case. Modeled on
   // `network.shareCacheDuration` (preset select + custom). Age is a duration in
   // ms where `0` is the "Forever" sentinel (never prune by age); size is a byte
-  // budget. Keys and units are the M4 contract — see `operation_log/DETAILS.md`.
+  // budget. Keys and units are the retention contract — see `operation_log/DETAILS.md`.
   // ========================================================================
   {
     id: 'operationLog.maxAge',
@@ -1106,7 +1106,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     descriptionKey: 'settings.operationLog.maxSize.description',
     keywords: ['operation', 'log', 'history', 'retention', 'size', 'disk', 'space', 'limit', 'megabytes', 'gigabytes'],
     type: 'number',
-    default: 3221225472, // 3 GB (binary), the M4 default budget
+    default: 3221225472, // 3 GB (binary), the default retention budget
     component: 'select',
     constraints: {
       options: [

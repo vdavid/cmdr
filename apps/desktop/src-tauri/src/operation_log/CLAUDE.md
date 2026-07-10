@@ -5,9 +5,9 @@ future undo. **The app's first durable DB** (`operation-log.db` in the app data 
 on-disk store here is a disposable cache. Full design + rationale: [DETAILS.md](DETAILS.md). Plan:
 [`docs/specs/operation-log-plan.md`](../../../../../docs/specs/operation-log-plan.md).
 
-**Shipped end to end (M1–M7): durable store (M1), capture (M2), rollback engine (M3), read/search API + retention (M4),
-MCP tools (M5, in `mcp/executor/operation_log.rs`), retention settings + Debug panel (M6), and the alpha "Operation log"
-dialog (M7).** The UI is frontend-only over the M4 read API: Debug panel in `routes/debug/DebugOperationLogPanel.svelte`,
+**Shipped end to end: the durable store, capture, the rollback engine, the read/search API and retention, the MCP tools
+(in `mcp/executor/operation_log.rs`), the retention settings and Debug panel, and the alpha "Operation log"
+dialog.** The UI is frontend-only over the read API: Debug panel in `routes/debug/DebugOperationLogPanel.svelte`,
 alpha dialog in `src/lib/operation-log/` (see [DETAILS.md](DETAILS.md) § Alpha UI).
 
 ## Module map
@@ -18,8 +18,8 @@ alpha dialog in `src/lib/operation-log/` (see [DETAILS.md](DETAILS.md) § Alpha 
   `set_item_outcomes` / `prune`; batched inserts; the retention mechanism (age + size prune, dir GC, vacuum).
 - `query.rs` — the read side (index-served name search, paged `recent_operations` / `get_operation`); `retention.rs`
   runs `prune` on a startup + periodic timer; IPC in `commands/operation_log.rs`.
-- `rollback.rs` — the M3 engine (inverse-per-item + recheck, `rolling_back` state machine, startup reconcile); spawn glue
-  in `write_operations/rollback.rs`. `capture.rs` (M2) feeds the writer. `types.rs` — the typed tokens.
+- `rollback.rs` — the rollback engine (inverse-per-item + recheck, `rolling_back` state machine, startup reconcile); spawn glue
+  in `write_operations/rollback.rs`. `capture.rs` (the capture layer) feeds the writer. `types.rs` — the typed tokens.
 - `mod.rs::start` — opens the DB, reconciles rollback, spawns retention, manages the writer.
 
 ## Must-knows
@@ -33,14 +33,14 @@ alpha dialog in `src/lib/operation-log/` (see [DETAILS.md](DETAILS.md) § Alpha 
   other stores.
 - **One writer thread, one cross-volume DB, NO per-volume registry** (D1). `record_items` BLOCKS under backpressure
   (lossless), never drops on fullness; a DB *error* on one row logs and drops THAT row without failing the op. So
-  `finalize_operation` returns per-`row_role` durable counts, and the M2 completeness check degrades a `rollback_unit`
+  `finalize_operation` returns per-`row_role` durable counts, and the capture completeness check degrades a `rollback_unit`
   gap to `not_rollbackable` and a `search_only` gap to `top_level_only` — never a silent under-reverse or false coverage
   claim.
 - **Classification is typed end to end** (`no-string-matching`): every `kind`, `initiator`, status, `row_role`,
   `outcome` is a `types.rs` enum with a stable token; the mapping lives ONLY there. Renaming a token is a schema change;
   renaming a variant is free.
 - **The writer stores terminal state; it does NOT compute eligibility.** Rollback eligibility (D3) + net-new/subkind
-  reasoning are the M2 capture layer's job (`capture.rs`) — keep business logic out of `writer.rs`.
+  reasoning are the capture layer's job (`capture.rs`) — keep business logic out of `writer.rs`.
 - **Capture is a process-global journal reached by `op_id`, NOT threaded through the pipeline** (recorded deviation from
   D4; its hard rule — never extend `OperationEventSink` — still holds). Install via `set_journal`; the pipeline calls the
   `journal_*` free functions by `op_id`. Rationale + record points: [DETAILS.md](DETAILS.md) § Capture.

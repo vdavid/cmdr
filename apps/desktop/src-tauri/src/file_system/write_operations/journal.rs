@@ -322,7 +322,7 @@ fn record_row(
 
 /// Record the directories a copy created as first-class `dir` rows (D2, Finding
 /// 2). Called after the leaf files are recorded, so the dir rows land AFTER their
-/// contents in `seq`; the M3 rollback removes files before their dirs. The
+/// contents in `seq`; the rollback removes files before their dirs. The
 /// created path is both source and dest (a copy's rollback removes the dest dir
 /// when empty; search matches its name).
 pub(super) fn record_created_dirs(op_id: &str, dirs: &[std::path::PathBuf]) {
@@ -351,7 +351,7 @@ pub(super) fn record_created_dirs_on(op_id: &str, dest_volume_id: &str, dirs: &[
 
 /// Journal the terminal state of a `run_instant` create (mkdir / mkfile) on
 /// volume `volume_id` (`"root"` for the local drive). On success the created path
-/// is a net-new item (source == dest, so the M3 rollback removes it if still
+/// is a net-new item (source == dest, so the rollback removes it if still
 /// empty/unchanged); on failure the op finalizes `failed` with no item. The
 /// matching open call must have used the same `op_id`.
 pub(super) fn journal_instant_create(
@@ -398,7 +398,7 @@ fn header_totals_from_status(op_id: &str) -> (Option<u64>, u64, u64) {
 
 /// Finalize a local-FS op with a non-archive terminal state. Archive ops
 /// (compress) finalize through [`finalize_archive_op`] with the driver's subkind.
-/// The header aggregates are refined from the status cache (M6 rider) so the alpha
+/// The header aggregates are refined from the status cache (the header-aggregate rider) so the alpha
 /// dialog renders a real "Copy N items" instead of zero.
 pub(super) fn finalize_op(op_id: &str, kind: OpKind, execution_status: ExecutionStatus) {
     let (item_count, items_done, bytes_total) = header_totals_from_status(op_id);
@@ -469,7 +469,7 @@ impl ArchiveProvenance {
     }
 
     /// A compress: create a NEW archive and pack the sources in. Rollbackable iff
-    /// `net_new` (and, at rollback time, unchanged — M3, Finding 5).
+    /// `net_new` (and, at rollback time, unchanged — the rollback engine, Finding 5).
     pub(crate) fn compress(net_new: bool, initiator: Initiator) -> Self {
         Self {
             subkind: ArchiveSubkind::Compress,
@@ -498,7 +498,7 @@ pub(super) fn open_archive_op(op_id: &str, initiator: Initiator, parent_volume_i
 }
 
 /// Record the archive a compress created as the single `rollback_unit` item: the
-/// compress rollback (M3) deletes THIS archive if it's still net-new and unchanged
+/// compress rollback deletes THIS archive if it's still net-new and unchanged
 /// (the `size`/`mtime` snapshot is the drift check, Finding 5). The archive lives
 /// on `parent_volume_id` (may be remote); `overwrote` is `!net_new`.
 pub(super) fn record_compress_archive(

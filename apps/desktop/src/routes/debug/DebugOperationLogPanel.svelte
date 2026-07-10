@@ -3,9 +3,9 @@
     import { commands, type OperationRow } from '$lib/ipc/bindings'
     import { formatInteger } from '$lib/intl/number-format'
 
-    // Dev-only inspector for the operation log's read side (M6, requirement 6a).
+    // Dev-only inspector for the operation log's read side (the Debug panel, requirement 6a).
     // Reads through the same typed `get_recent_operation_log_entries` IPC the alpha
-    // dialog (M7) uses. Plain English on purpose: the Debug window is never shipped
+    // dialog uses. Plain English on purpose: the Debug window is never shipped
     // to users, so it skips the i18n catalog (same as every other Debug*Panel).
 
     const PAGE = 50

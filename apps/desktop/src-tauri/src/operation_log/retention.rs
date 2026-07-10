@@ -1,12 +1,12 @@
-//! Retention enforcement (M4): run the writer's `Prune` on startup and on a
+//! Retention enforcement: run the writer's `Prune` on startup and on a
 //! periodic timer, driven by the age/size limits from settings (D9/D10).
 //!
 //! The prune MECHANISM (whole-op pruning, dir GC, size-budget loop, vacuum) lives
 //! in [`writer`](super::writer); this module owns the POLICY: when to prune and
 //! with which limits. Limits are read fresh each tick
-//! ([`crate::settings::load_operation_log_retention_limits`]), so an M6 settings
-//! change takes effect on the next tick without a restart. Defaults hold before
-//! M6 lands the UI: age = forever, size = 3 GB.
+//! ([`crate::settings::load_operation_log_retention_limits`]), so a retention
+//! settings change takes effect on the next tick without a restart. Defaults hold
+//! before the retention settings UI lands: age = forever, size = 3 GB.
 
 use std::time::Duration;
 

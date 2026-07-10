@@ -1,5 +1,5 @@
 /**
- * E2E for the alpha "Operation log" dialog (M7): it opens BOTH from the View menu
+ * E2E for the alpha "Operation log" dialog: it opens BOTH from the View menu
  * item and from the ⌘⌥L keyboard shortcut, and renders with the ALPHA badge.
  *
  * The menu path uses `dispatchMenuCommand` (menu click → on_menu_event →

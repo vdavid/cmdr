@@ -101,9 +101,9 @@ pub use manager::{
     init_operation_event_emitter, list_operations, pause_all, pause_operation, resume_all, resume_operation,
 };
 // Managed dispatch of an operation-log rollback: the backend entry point the FE /
-// MCP command calls (M5 wires the tauri command + MCP tool). Spawns the inverse as
+// MCP command calls (the MCP tools wire the tauri command + MCP tool). Spawns the inverse as
 // a managed op and returns after dispatch (poll `rollback_state` for the result).
-#[allow(unused_imports, reason = "backend entry point consumed by the M5 rollback command")]
+#[allow(unused_imports, reason = "backend entry point consumed by the MCP rollback command")]
 pub use rollback::dispatch_rollback;
 // Managed instant mutations (rename / mkdir / mkfile) + rename validation. The
 // thin IPC commands (`commands/rename.rs`, `commands/file_system/write_ops.rs`)
@@ -208,7 +208,7 @@ async fn start_write_operation<F>(
     summary: OperationSummaryText,
     // The provisional planned total (the top-level source count) journaled at
     // `open`; finalize refines it to the scanned total. Never 0 for a real op, so
-    // the alpha dialog never renders "Copy 0 items" (M6 rider).
+    // the alpha dialog never renders "Copy 0 items" (the header-aggregate rider).
     item_count: u64,
     handler: F,
 ) -> Result<WriteOperationStartResult, WriteOperationError>

@@ -2,16 +2,16 @@
 
 Depth for the operation-log subsystem. Must-knows and the module map: [CLAUDE.md](CLAUDE.md). The full design, every
 decision (D1–D10), and the milestone breakdown: [`docs/specs/operation-log-plan.md`](../../../../../docs/specs/operation-log-plan.md)
-— this doc captures what shipped (M1–M4) and the durable rationale a future agent needs on hand; the plan holds the rest.
+— this doc captures what shipped and the durable rationale a future agent needs on hand; the plan holds the rest.
 
 ## What this is
 
 A durable, cross-volume journal of every file mutation Cmdr performs: one `operations` row per user-level batch (1:1
 with the pipeline's `operation_id`), many `operation_items` rows beneath it. It answers "what did I do to my files, and
-can I undo it?" — provenance, rollback, indexed name search, and retention. Shipped: the durable store (M1), capture at
-the chokepoint (M2), the rollback engine (M3), the read/search API + retention enforcement (M4), and the MCP tools (M5,
-`operations_list` / `operations_get` / `operations_rollback` — see `mcp/DETAILS.md`). The UI (M6/M7) builds on the read
-side.
+can I undo it?" — provenance, rollback, indexed name search, and retention. Shipped: the durable store, capture at
+the chokepoint, the rollback engine, the read/search API + retention enforcement, and the MCP tools
+(`operations_list` / `operations_get` / `operations_rollback` — see `mcp/DETAILS.md`). The UI (the Debug panel and the
+alpha dialog) builds on the read side.
 
 ## Why a separate durable DB (D1)
 
@@ -101,19 +101,19 @@ counts), `Prune` (retention), `Flush` (barrier), `Shutdown`.
   than the per-item file I/O the op already does, so the writer outpaces every real op and the block is a theoretical
   backstop. A DB *error* on one row (not fullness) logs and drops THAT row — the op never fails for a journal problem.
 - **Completeness accounting is the writer's contribution, not its judgment.** `finalize_operation` returns
-  `FinalizeOutcome { rollback_unit_rows, search_only_rows }` — the durably-written counts per role. The **M2 capture
+  `FinalizeOutcome { rollback_unit_rows, search_only_rows }` — the durably-written counts per role. The **capture
   layer** compares them against the `record_item` calls it actually *issued* (items reached — NOT the planned
   `item_count`, which a canceled op never reaches) and, on a shortfall, degrades: a missing `rollback_unit` row ⇒
   `not_rollbackable(journal_incomplete)`; a missing `search_only` row ⇒ `search_coverage = top_level_only`
   (`search_row_incomplete`). The writer supplies the numbers; it does not itself compute eligibility.
 - **Eligibility lives upstream.** The net-new flag and `archive_edit` subkind the capturing driver knows (Finding 3) feed
-  the M2 layer's eligibility computation, which passes the already-typed `rollback_state` + reason + subkind into
+  the capture layer's eligibility computation, which passes the already-typed `rollback_state` + reason + subkind into
   `FinalizeOperation`. `writer.rs` stores what it's given — keeping data-safety-critical business logic in the TDD'd
   capture/rollback layers, not the writer. (This is a deliberate divergence from a "finalize computes eligibility"
   reading of the plan: storing the terminal state the caller computed keeps the writer single-responsibility and avoids a
   dead net-new field it would ignore.)
 
-## Capture (M2) — journaling every mutation at the chokepoint
+## Capture — journaling every mutation at the chokepoint
 
 `capture.rs` is the journal half of the pipeline observer seam (D4); the write pipeline's glue lives in
 `file_system/write_operations/journal.rs`. Together they make every managed mutation journal itself with per-item rows,
@@ -149,7 +149,7 @@ cache that the same record points already write, and the `manager()` operation-m
 
 - **Eligibility (D3), `compute_eligibility`** — pure, tested in isolation: copy/move rollbackable iff nothing overwrote;
   delete never (`permanent_delete`); trash/rename/create-folder/create-file open rollbackable (rechecked at rollback
-  time, M3); compress rollbackable iff net-new (`archive_overwrite` otherwise); zip-inner edit not yet
+  time, in the rollback engine); compress rollbackable iff net-new (`archive_overwrite` otherwise); zip-inner edit not yet
   (`zip_edit_unsupported`). `execution_status` is deliberately NOT an input — a failed/canceled op stays rollbackable for
   what it reached (D4).
 - **Completeness (D4), `apply_completeness`** — the per-`row_role` issued-vs-written check. The `WriterJournal`
@@ -169,20 +169,20 @@ Each point is where the op already stats the item, so journaling is near-zero ma
 - **copy** — per-leaf `rollback_unit` rows at `transfer/copy/single_item.rs` (right where each file commits to the
   `CopyTransaction`, carrying the free source `mtime` + the overwrite flag), plus the **created-directory rows** from
   `CopyTransaction::created_dirs` at the success commit in `copy/mod.rs`. Files record during the op, dirs after, so dir
-  `seq` > their contents' `seq` (Finding 2); the M3 rollback removes files before dirs.
+  `seq` > their contents' `seq` (Finding 2); the rollback engine removes files before dirs.
 - **delete** — per-leaf at `delete/walker.rs`, one row per file, deliberately (a 1M-file delete journals ~1M rows on the
   order of tens-to-~150 MB — leaf search is the requirement, and retention, D9/D10, manages the cost, NOT a row cap).
   Delete is never rollbackable, so these rows exist purely for "when did I delete `dog.jpg`".
 - **same-FS move + trash** — the **top-level** `rollback_unit` row (one rename-back / one restore reverses the whole
   subtree) at `transfer/move_op.rs` / `delete/trash.rs`. Trash also captures the OS `resultingItemURL` (the in-trash
-  location) as the row's dest, so the M3 restore knows where to move it back from. The subtree's `search_only` leaves
+  location) as the row's dest, so the rollback restore knows where to move it back from. The subtree's `search_only` leaves
   come from the **drive index**, not a filesystem walk — see § Search-leaf enumeration.
 - **cross-FS move** — per-leaf via `copy_single_item` (it stages a copy), same as copy; the op's `kind` is `move`.
 - **compress** (`archive_edit`) — spawns directly (not through `start_write_operation`), so `copy_into.rs`'s deferred
   carries its OWN open/finalize bracket. The compress driver supplies the `archive_edit` subkind + a net-new flag
   (probed before the seed overwrites the target) via `ArchiveProvenance` — the journal can't derive them, both compress
   and zip-inner edit cross IPC as `ArchiveEdit` (Finding 3). A net-new compress records the created archive as its single
-  `rollback_unit` item (with a size/mtime snapshot for the M3 drift recheck) and finalizes `rollbackable`; an overwrite
+  `rollback_unit` item (with a size/mtime snapshot for the rollback drift recheck) and finalizes `rollbackable`; an overwrite
   of a prior archive is `not_rollbackable`; a plain into-archive edit journals its header only (not rollbackable in v1).
 
 ### Search-leaf enumeration (`file_system/write_operations/journal_search.rs`)
@@ -253,7 +253,7 @@ downgrade to `index_absent` on a volume with no index — verified by the gate i
 
 ### Provenance — initiator threads through every write-start command
 
-Every write-start command now carries an optional `initiator` (default `user`): the local commands (M2c) plus the volume
+Every write-start command now carries an optional `initiator` (default `user`): the local commands (provenance threading) plus the volume
 commands (`copy_between_volumes`, `move_between_volumes`, `compress_files`) and the `run_instant` commands (`create`,
 `rename`). The FE `mcp-listeners.ts` tags MCP-originated write dispatches `ai_client` (threaded through the typed command
 bus alongside `autoConfirm`/`onConflict`, mirroring navigation's `source: 'mcp'`). The one gap: an into-archive-edit via
@@ -262,10 +262,10 @@ a volume command defaults to `user` (see the bypass boundary above).
 ### Row-volume tradeoff
 
 Per-leaf delete/copy rows are the search requirement, so there is **no row cap** on them; the only cap is the
-`search_only` leaf enumeration for trash/same-FS-move (M2e, a per-op tunable). Retention (D9/D10) reclaims the space, not
+`search_only` leaf enumeration for trash/same-FS-move (search-leaf enumeration, a per-op tunable). Retention (D9/D10) reclaims the space, not
 a row cap.
 
-## Rollback (M3) — reversing an operation as recheck-then-act inverses
+## Rollback — reversing an operation as recheck-then-act inverses
 
 `rollback.rs` is the data-safety-critical engine that undoes a journaled operation. It never runs a bespoke reversal:
 each item's inverse is applied through the `Volume` trait (so local and remote reverse uniformly), and the whole inverse
@@ -348,9 +348,9 @@ checkpointing for the whole file-I/O duration) — it's the `rolling_back` state
 ### Known snapshot-completeness limit
 
 Volume (SMB/MTP) transfers record `size`/`mtime` only for TOP-LEVEL files, not for the inner leaves of a copied/moved
-directory (the M2 capture path doesn't cheaply have them). So a rollback of a cross-volume directory copy/move verifies
+directory (the capture path doesn't cheaply have them). So a rollback of a cross-volume directory copy/move verifies
 and reverses the top-level items but SKIPS inner leaves as `UnverifiablePrecondition` — a safe partial, never a wrong
-delete. Local-FS copy/move record per-leaf mtime, so their directory rollbacks are complete. Closing this needs M2 to
+delete. Local-FS copy/move record per-leaf mtime, so their directory rollbacks are complete. Closing this needs the capture layer to
 capture inner-leaf snapshots for volume transfers.
 
 ### Future: Cmd+Z (D-undo, designed-for, not built)
@@ -360,10 +360,10 @@ ended_at DESC LIMIT 1` then `dispatch_rollback`. The two-axis status + `rolls_ba
 new engine; because a rollback is itself a journaled user op, "undo the undo" (redo) falls out too. Don't build it;
 don't preclude it.
 
-## Query API + search (M4)
+## Query API + search
 
 `query.rs` is the read side: short-lived read-only connections, index-served name search, and paged reads for the Debug
-panel (M6) / alpha dialog (M7) / MCP tools (M5). Two kinds of caller open their own short-lived read connection and
+panel / alpha dialog / MCP tools. Two kinds of caller open their own short-lived read connection and
 forward to `query.rs` (business logic — filtering, paging, dir-path resolution — lives there, never in the callers): the
 FE IPC surface is two thin pass-throughs (`commands/operation_log.rs`): `get_recent_operation_log_entries(limit, offset)`
 and `get_operation_log_detail(operation_id, item_limit, item_offset)`; the MCP `operations_list` / `operations_get`
@@ -387,12 +387,12 @@ handlers (`mcp/executor/operation_log.rs`) do the same off the MCP task.
   carry interned prefixes, so `get_operation` returns `OperationItemView`s with `source_path`/`dest_path` reconstructed —
   the frontend never sees a `dir_id`.
 
-## Alpha UI (M7) — the "Operation log" dialog
+## Alpha UI — the "Operation log" dialog
 
 The thin alpha surface (requirement 6b): a menu- and shortcut-triggered soft dialog listing recent operations, newest
 first, each expandable to its per-item rows. **Debugging/demo quality by design** (it may become a sidebar later), so it
 is deliberately un-gold-plated — but i18n, style-guide copy, and a11y basics are not optional. It lives entirely in the
-frontend (`apps/desktop/src/lib/operation-log/`) over the existing M4 read API; no new backend command.
+frontend (`apps/desktop/src/lib/operation-log/`) over the existing read API; no new backend command.
 
 - **Modeled on the What's-new dialog** (the menu-triggered, list-rendering, App-scoped soft-dialog template):
   - `operation-log-trigger.svelte.ts` — the reactive `$state({ open, entries, loading, loadError, hasMore, loadingMore })`

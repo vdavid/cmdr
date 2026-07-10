@@ -46,7 +46,7 @@ pub(crate) async fn write_payload_to_dir(
         .get(&volume_id_str)
         .ok_or_else(|| format!("Volume not found: {volume_id_str}"))?;
 
-    // Route through the managed `CreateFile` instant op (David-approved M2f): the
+    // Route through the managed `CreateFile` instant op (David-approved bypass routing): the
     // write is a real mutation, so it registers a brief `Running` record, marks
     // the volume busy, and — via the journal bracket — records a one-item
     // `CreateFile` operation exactly like mkfile, without a bespoke recorder. It

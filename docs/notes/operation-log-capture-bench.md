@@ -1,4 +1,4 @@
-# Operation-log capture benchmarks (M2)
+# Operation-log capture benchmarks
 
 Numbers behind the capture-layer performance decisions: the `search_only` leaf-enumeration cap, and the claim that
 journaling never measurably slows an operation (requirement 8). Linked from `src-tauri/src/operation_log/DETAILS.md`.

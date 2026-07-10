@@ -1,5 +1,5 @@
 //! Writer tests: the full open→record→finalize→read round-trip, per-`row_role`
-//! finalize counts, and the M3 rollback reads + state-mutation messages. The
+//! finalize counts, and the rollback reads + state-mutation messages. The
 //! retention prune + dir GC + vacuum tests live in the sibling
 //! [`retention_tests`](super::retention_tests) module (split out to keep each test
 //! file under the length budget); they share [`fresh`] from here.
@@ -39,7 +39,7 @@ fn file_item(seq: i64, src_dir: &str, name: &str, dst_dir: &str) -> JournalItem 
     }
 }
 
-/// The headline M1 round-trip: open a grouped copy, record files + a created
+/// The headline durable-store round-trip: open a grouped copy, record files + a created
 /// dir, finalize, and read the whole thing back — one operation row plus its
 /// items in `seq` order, dir prefixes interned and reconstructable, leaf names
 /// folded. Everything else in the subsystem builds on this working.
@@ -167,7 +167,7 @@ fn open_record_finalize_round_trips_one_operation() {
 
 /// Finalize returns counts split by `row_role`: a trash-shaped op with a
 /// top-level rollback unit plus search-only leaves reports both populations
-/// separately (the D4 completeness input the M2 layer splits its checks on).
+/// separately (the D4 completeness input the capture layer splits its checks on).
 #[test]
 fn finalize_counts_split_by_row_role() {
     let (_store, writer, _dir) = fresh();
@@ -245,7 +245,7 @@ fn finalize_counts_split_by_row_role() {
     writer.shutdown();
 }
 
-// ── M3: rollback reads + state-mutation messages ─────────────────────────────
+// ── Rollback reads + state-mutation messages ─────────────────────────────
 
 /// `read_rollback_units_page` streams `rollback_unit` rows newest-`seq`-first,
 /// resolves interned dirs to full paths + real volume ids, EXCLUDES `search_only`
@@ -317,7 +317,7 @@ fn rollback_units_page_streams_reverse_and_excludes_search_leaves() {
 
 /// `set_rollback_state` transitions the two-axis rollback state (+ reason) and
 /// acts as a barrier; `set_item_outcomes` flips per-item outcomes by `(op_id, seq)`.
-/// These back the M3 engine's rolling_back transitions and the "mark reversed items
+/// These back the rollback engine's rolling_back transitions and the "mark reversed items
 /// rolled_back" step.
 #[test]
 fn set_rollback_state_and_item_outcomes_persist() {

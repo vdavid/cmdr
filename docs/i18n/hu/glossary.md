@@ -613,7 +613,7 @@ Settled while translating the Operation log feature (`operationLog.json` + `comm
 - roll back / rolling back / rolled back / rollback (the operation-log reversal action + statuses) → `visszagörgetés`
   (verb `visszagörget`) · RECONCILED to the shipped `fileOperations.transferProgress.*` rollback strings
   (`titleRollingBack` = "Visszagörgetés…", `conflictRollback` = "Visszagörgetés", `rollbackUnavailableTooltip`,
-  `smbNativeNote`), which render the SAME rollback engine (M3) that this dialog surfaces · high (up from the earlier
+  `smbNativeNote`), which render the SAME rollback engine that this dialog surfaces · high (up from the earlier
   `tentative`/FLAGGED transfer-cleanup entry). Same English word ("roll back") + same engine → same term, so the dialog
   must not fork it. NOT `visszavon`: the shipped `settings.operationLog.intro` uses `visszavonhatod` because its EN
   source says "undo actions" (a different English word in prose), not the status-term "roll back"; and NOT MS's

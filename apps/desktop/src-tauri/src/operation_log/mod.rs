@@ -1,9 +1,9 @@
 //! The operation log: a durable, cross-volume journal of every file mutation,
 //! the foundation for search, rollback, and a future undo.
 //!
-//! This module is the DURABLE STORE (M1): the schema, the forward-migration
-//! ladder, the single writer thread, and dir interning. Capture (M2), rollback
-//! (M3), search/retention (M4), MCP tools (M5), and the UI (M6/M7) build on it.
+//! This module is the DURABLE STORE: the schema, the forward-migration
+//! ladder, the single writer thread, and dir interning. The capture layer, the
+//! rollback engine, search/retention, the MCP tools, and the UI build on it.
 //!
 //! Unlike every other on-disk store in the app (the drive index and
 //! `importance.db` are disposable per-volume caches that delete-and-recreate on
@@ -106,7 +106,7 @@ pub fn journal_finalize(op_id: &str, inputs: FinalizeInputs) -> FinalizeOutcome 
 
 /// Open `operation-log.db` and spawn its single writer thread, placing the
 /// [`OperationLogWriter`](writer::OperationLogWriter) handle in managed state so
-/// the capture layer (M2) can journal through it. A single cross-volume writer,
+/// the capture layer can journal through it. A single cross-volume writer,
 /// no per-volume registry (D1). Failure is non-fatal: the app runs without the
 /// journal rather than refusing to start.
 pub fn start(app: &AppHandle) {
@@ -137,7 +137,7 @@ pub fn start(app: &AppHandle) {
             // by op_id); managed state keeps the writer for retention + shutdown.
             set_journal(Arc::new(WriterJournal::new(writer.clone())));
             // Enforce retention: prune on startup + a periodic timer, with the
-            // settings-driven age/size limits (M4). Runs before the app is under
+            // settings-driven age/size limits. Runs before the app is under
             // load; the size loop is a no-op while the DB is under budget.
             retention::spawn(app, writer.clone());
             app.manage(writer);
