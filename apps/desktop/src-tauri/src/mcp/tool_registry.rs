@@ -1004,7 +1004,7 @@ mcp_tools! {
 
     // ── Operation log ─────────────────────────────────────────────────────────
     "operations_list" => {
-        desc: "List operations from the durable operation log (file mutations: copy, move, delete, trash, rename, create, compress), newest first. Filter by time range, item name, kind, initiator, and status; paged.",
+        desc: "List past operations from the durable operation log (copy, move, delete, trash, rename, create, compress), newest first. Filter by time, item name, kind, initiator, status; paged. In-flight ops live in cmdr://state operations + the queue tool.",
         schema: json!({
             "type": "object",
             "properties": {
@@ -1066,7 +1066,7 @@ mcp_tools! {
             "properties": {
                 "operationId": {
                     "type": "string",
-                    "description": "The operation's id, from operations_list"
+                    "description": "The operation's id. The same id everywhere: from operations_list, a copy/move/delete response, cmdr://state operations, or the queue tool."
                 },
                 "limit": {
                     "type": "integer",
@@ -1089,7 +1089,7 @@ mcp_tools! {
             "properties": {
                 "operationId": {
                     "type": "string",
-                    "description": "The operation to reverse, from operations_list"
+                    "description": "The operation to reverse. Same id as operations_list, a copy/move/delete response, or cmdr://state operations."
                 },
                 "autoConfirm": {
                     "type": "boolean",

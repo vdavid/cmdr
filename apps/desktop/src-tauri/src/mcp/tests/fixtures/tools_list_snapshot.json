@@ -1001,7 +1001,7 @@
       "name": "go_to_latest_download"
     },
     {
-      "description": "List operations from the durable operation log (file mutations: copy, move, delete, trash, rename, create, compress), newest first. Filter by time range, item name, kind, initiator, and status; paged.",
+      "description": "List past operations from the durable operation log (copy, move, delete, trash, rename, create, compress), newest first. Filter by time, item name, kind, initiator, status; paged. In-flight ops live in cmdr://state operations + the queue tool.",
       "inputSchema": {
         "properties": {
           "executionStatus": {
@@ -1096,7 +1096,7 @@
             "type": "integer"
           },
           "operationId": {
-            "description": "The operation's id, from operations_list",
+            "description": "The operation's id. The same id everywhere: from operations_list, a copy/move/delete response, cmdr://state operations, or the queue tool.",
             "type": "string"
           }
         },
@@ -1116,7 +1116,7 @@
             "type": "boolean"
           },
           "operationId": {
-            "description": "The operation to reverse, from operations_list",
+            "description": "The operation to reverse. Same id as operations_list, a copy/move/delete response, or cmdr://state operations.",
             "type": "string"
           }
         },

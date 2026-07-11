@@ -21,7 +21,7 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
 ## Must-knows
 
 - **Auth gates ONLY the calls that bypass the user's confirmation dialog, and the gate is a `TokenGate` on each tool's
-  `tool_registry.rs` entry, not a hand-list.** Gated: `delete`/`move`/`copy` with `autoConfirm: true`, `dialog` with
+  `tool_registry.rs` entry, not a hand-list.** Gated: `delete`/`move`/`copy`/`operations_rollback` with `autoConfirm: true`, `dialog` with
   `action: "confirm"`, `set_setting`, `indexing` (per-drive config mutation), and `queue` with `rollback: true` (the
   `IfRollback` gate — a rollback cancel actively DELETES already-copied files; plain pause/resume/cancel stay `Open`).
   Everything else (reads, nav, search, dialog-prompting destructive ops) needs no token. A new destructive tool MUST

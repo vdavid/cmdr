@@ -303,7 +303,7 @@ async fn await_operation_complete(params: &Value, timeout_s: u64) -> ToolResult 
             }
             CompleteResolution::Unknown => {
                 return Err(ToolError::invalid_params(format!(
-                    "Unknown operationId '{operation_id}': it isn't a currently running operation and hasn't recently settled. See cmdr://state operations."
+                    "Unknown operationId '{operation_id}': it isn't a currently running operation and hasn't recently settled. See cmdr://state operations for live ops, or operations_list for completed history."
                 )));
             }
             CompleteResolution::StillRunning => {
