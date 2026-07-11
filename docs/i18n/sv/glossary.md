@@ -535,19 +535,19 @@ ones:
 
 - **operation log (the feature/dialog): `Åtgärdslogg`** · reuses the ALREADY-SHIPPED `settings.section.operationLog` =
   "Åtgärdslogg" in `sv/settings.json` (åtgärd = action/operation per the `Åtgärd:` field-label entry + MS/macOS; logg =
-  log). Applied to `operationLog.dialog.title` and `commands.logOperationLog.label` so the command, the settings section,
-  and the dialog title all read the same word. `high`.
+  log). Applied to `operationLog.dialog.title` and `commands.logOperationLog.label` so the command, the settings
+  section, and the dialog title all read the same word. `high`.
 - **operation (a logged file operation): `åtgärd`** (definite `åtgärden`, plural `åtgärder`) · matches
   `settings.operationLog.*` ("loggade åtgärder", "gå igenom din historik") and the `åtgärden {verb}` framing. `high`.
 - **history (operation history): `historik`; "operation history" → `åtgärdshistorik`** · `settings.operationLog` uses
   "historik"/"Behåll historik i"; compounded åtgärd+historik for `loadError`. `high`.
 - **roll back / rollback (reverse a logged operation): reuse `återställ`/`återställa`/`återställer`/`återställd`** · the
-  settled rollback family (glossary rollback entry + `fileOperations.transferProgress` "Återställer"/"Återställ"). Status
-  chips: notRollbackable → "Går inte att återställa", rollbackable → "Går att återställa", rollingBack → "Återställer",
-  rolledBack → "Återställd", partiallyRolledBack → "Delvis återställd". Command description "roll them back" → "återställ
-  dem". `high`. NOTE: `settings.operationLog.intro` (already shipped) phrases the same concept as "ångra åtgärder"; the
-  dialog uses the `återställ` family for consistency with the transfer-rollback surface — flagged for David if he wants
-  the intro aligned.
+  settled rollback family (glossary rollback entry + `fileOperations.transferProgress` "Återställer"/"Återställ").
+  Status chips: notRollbackable → "Går inte att återställa", rollbackable → "Går att återställa", rollingBack →
+  "Återställer", rolledBack → "Återställd", partiallyRolledBack → "Delvis återställd". Command description "roll them
+  back" → "återställ dem". `high`. NOTE: `settings.operationLog.intro` (already shipped) phrases the same concept as
+  "ångra åtgärder"; the dialog uses the `återställ` family for consistency with the transfer-rollback surface — flagged
+  for David if he wants the intro aligned.
 - **status chips (reuse queue.row.status): queued → `Väntar`, running → `Pågår`, done → `Klar`, canceled → `Avbruten`,
   "Didn''t finish" → `Gick inte att slutföra`** · matched exactly to `queue.json` `queue.row.status`. `high`.
 - **initiator/provenance labels: You → `Du`, AI client → `AI-klient`, Agent → `Agent`** · `du` address (style.md); MS

@@ -618,27 +618,28 @@ Settled while translating the Operation log feature (`operationLog.json` + `comm
   must not fork it. NOT `visszavon`: the shipped `settings.operationLog.intro` uses `visszavonhatod` because its EN
   source says "undo actions" (a different English word in prose), not the status-term "roll back"; and NOT MS's
   `visszaállítás` (Tier-2 "roll back = to reverse changes"), which is overloaded with reset/revert/restore. Status forms
-  derive cleanly: "Can roll back" = `Visszagörgethető` (potential adjective), "Can''t roll back" = `Nem görgethető
-  vissza` (negation detaches the coverb), "Rolling back" = `Visszagörgetés folyamatban` (state descriptor; the shipped
-  `Visszagörgetés…` is the live dialog-title variant), "Rolled back" = `Visszagörgetve` (adverbial `-ve` participle,
-  matching the `Kész`/`Megszakítva`/`Kihagyva` state style), "Partly rolled back" = `Részben visszagörgetve`.
-- Lifecycle statuses reuse settled terms verbatim: queued = `Várakozik`, running = `Fut` (both from
-  `queue.row.status`), done = `Kész`, canceled = `Megszakítva` (extends `cancel (running op) → megszakítás`). "Didn''t
-  finish" (the softened EN for status/outcome `failed`) → `Nem fejeződött be` (neutral intransitive "didn''t finish",
-  no bare "hiba"/"sikertelen"; distinct from `queue.row.status` failed = `Nem sikerült befejezni`, which translated the
-  harsher EN "Failed"). Per-item outcomes: skipped = `Kihagyva` (settled), rolledBack = `Visszagörgetve`.
+  derive cleanly: "Can roll back" = `Visszagörgethető` (potential adjective), "Can''t roll back" =
+  `Nem görgethető vissza` (negation detaches the coverb), "Rolling back" = `Visszagörgetés folyamatban` (state
+  descriptor; the shipped `Visszagörgetés…` is the live dialog-title variant), "Rolled back" = `Visszagörgetve`
+  (adverbial `-ve` participle, matching the `Kész`/`Megszakítva`/`Kihagyva` state style), "Partly rolled back" =
+  `Részben visszagörgetve`.
+- Lifecycle statuses reuse settled terms verbatim: queued = `Várakozik`, running = `Fut` (both from `queue.row.status`),
+  done = `Kész`, canceled = `Megszakítva` (extends `cancel (running op) → megszakítás`). "Didn''t finish" (the softened
+  EN for status/outcome `failed`) → `Nem fejeződött be` (neutral intransitive "didn''t finish", no bare
+  "hiba"/"sikertelen"; distinct from `queue.row.status` failed = `Nem sikerült befejezni`, which translated the harsher
+  EN "Failed"). Per-item outcomes: skipped = `Kihagyva` (settled), rolledBack = `Visszagörgetve`.
 - operation summaries (`summary.*`) use the verbal-noun naming style (possessive `-ása/-ése`), matching the
   `queue.row.label` arms and macOS Finder "Elemek tömörítése": "Copied N items" = `{countText} elem másolása`, move =
   `… áthelyezése`, delete = `… törlése`, trash = `… áthelyezése a Kukába` (settled), rename = `… átnevezése`,
-  createFolder = `{countText} mappa létrehozása`, createFile = `{countText} fájl létrehozása`, compress = `… tömörítése`.
-  Counted noun stays SINGULAR in both plural branches (`elem`/`mappa`/`fájl`); `{countText}` kept in every branch.
-  archiveEdit "Edited an archive" = `Archívum szerkesztése` (matches `queue.row.label` archive_edit verbatim),
-  archiveExtract "Extracted an archive" = `Archívum kicsomagolása` (`extract → kicsomagol`, settled). "and N more items"
-  = `és {countText} további elem` (macOS Finder `és ^0 további elem` pattern, singular noun).
-- AI client (external AI app over Cmdr''s automation interface, provenance label) → `AI-kliens` · MS terminology
-  (client = "an entity, such as a device or program, that connects to another entity over a network" = `kliens`) · high.
-  Provenance siblings: "You" = `Te` (informal `te` register), "Agent" (Cmdr''s own AI) = `Ágens` (settled `agent →
-  ágens`).
+  createFolder = `{countText} mappa létrehozása`, createFile = `{countText} fájl létrehozása`, compress =
+  `… tömörítése`. Counted noun stays SINGULAR in both plural branches (`elem`/`mappa`/`fájl`); `{countText}` kept in
+  every branch. archiveEdit "Edited an archive" = `Archívum szerkesztése` (matches `queue.row.label` archive_edit
+  verbatim), archiveExtract "Extracted an archive" = `Archívum kicsomagolása` (`extract → kicsomagol`, settled). "and N
+  more items" = `és {countText} további elem` (macOS Finder `és ^0 további elem` pattern, singular noun).
+- AI client (external AI app over Cmdr''s automation interface, provenance label) → `AI-kliens` · MS terminology (client
+  = "an entity, such as a device or program, that connects to another entity over a network" = `kliens`) · high.
+  Provenance siblings: "You" = `Te` (informal `te` register), "Agent" (Cmdr''s own AI) = `Ágens` (settled
+  `agent → ágens`).
 - items = `elem` (settled), "history" = `előzmények` (matches `settings.operationLog` `Előzmények megőrzése` +
   `átnézheted az előzményeidet`); "Couldn''t load…" body uses the settled `nem sikerült` calm-voice rule.
 - No `sameAsSourceJustification` needed: all values differ from English (`AI-kliens`/`Te`/`Ágens` all translate).

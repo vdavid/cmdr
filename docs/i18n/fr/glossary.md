@@ -631,46 +631,46 @@ Settled while translating the Compress feature:
 Settled while translating the Operation log feature (alpha history-of-operations dialog + its command). ICU values, so
 apostrophes are doubled in the catalog:
 
-- operation log → `Historique des opérations` · macOS "historique" (`NSToolbarHistoryTemplate`/`NSTouchBarHistoryTemplate`
-  → "historique", "historique des versions"), Double Commander ("Historique des commandes", "Historique des dossiers") ·
-  high — the feature IS a history view and its English `@key` descriptions call it "operation history" throughout, so
-  the user-facing "historique" (Apple's word for history views) fits better than the technical "journal" (reserved for
-  `journalisation`/`fichier journal`, the log-file sense). Used verbatim for `operationLog.dialog.title` AND
-  `commands.logOperationLog.label` (same sourceHash 2c97965).
-- operation (a logged file operation) → `opération` (feminine) · reuses the settled `File operations → Opérations sur les
-  fichiers` section name · high.
-- roll back / rollback (reverse a COMPLETED operation, operation-log sense) → `restaurer` (verb) / `restauration` (noun /
-  status family) · reuses the `restauration` noun the `fileOperations` rollback pass already settled · high. **DIVERGENCE
-  from the live-transfer catalog, deliberate:** the transfer surface renders the rolling-back action as `annulation`
-  (`fileOperations.transferProgress.titleRollingBack` = "Annulation en cours..."), but the operation log must keep
-  `Canceled` and `Rolled back` as DISTINCT status pills. Anchoring rollback to the `restaur-` family reserves
+- operation log → `Historique des opérations` · macOS "historique"
+  (`NSToolbarHistoryTemplate`/`NSTouchBarHistoryTemplate` → "historique", "historique des versions"), Double Commander
+  ("Historique des commandes", "Historique des dossiers") · high — the feature IS a history view and its English `@key`
+  descriptions call it "operation history" throughout, so the user-facing "historique" (Apple's word for history views)
+  fits better than the technical "journal" (reserved for `journalisation`/`fichier journal`, the log-file sense). Used
+  verbatim for `operationLog.dialog.title` AND `commands.logOperationLog.label` (same sourceHash 2c97965).
+- operation (a logged file operation) → `opération` (feminine) · reuses the settled
+  `File operations → Opérations sur les fichiers` section name · high.
+- roll back / rollback (reverse a COMPLETED operation, operation-log sense) → `restaurer` (verb) / `restauration` (noun
+  / status family) · reuses the `restauration` noun the `fileOperations` rollback pass already settled · high.
+  **DIVERGENCE from the live-transfer catalog, deliberate:** the transfer surface renders the rolling-back action as
+  `annulation` (`fileOperations.transferProgress.titleRollingBack` = "Annulation en cours..."), but the operation log
+  must keep `Canceled` and `Rolled back` as DISTINCT status pills. Anchoring rollback to the `restaur-` family reserves
   `annuler`/`Annulé` exclusively for `Canceled`, preserving the you-canceled-before-it-ran vs you-reversed-it-after
   semantic split. The five rollback pills read as one concept:
   - Can roll back → `Restauration possible`; Can''t roll back → `Restauration impossible` (macOS calm "… impossible"
     pattern)
   - Rolling back → `Restauration en cours`
-  - Rolled back → `Restauré` (masc., agrees with implied `élément` for the per-item outcome, kept masc. for the operation
-    status pill to match the sibling masculine pills)
+  - Rolled back → `Restauré` (masc., agrees with implied `élément` for the per-item outcome, kept masc. for the
+    operation status pill to match the sibling masculine pills)
   - Partly rolled back → `Partiellement restauré`
   - `commands.logOperationLog.description` "…and roll them back" → "…et restaurez l''état précédent" (stays in the
     `restaur-` family; "them" rendered as "l''état précédent" = restore the prior state, which is what rollback does).
-- Status pills matched to the existing `queue.row.status` renderings (brief-mandated consistency): Queued → `En attente`,
-  Running → `En cours`, Done → `Terminé`, Canceled → `Annulé` · high. `Didn''t finish` (status + item outcome,
-  non-alarmist wording for a stopped op) → `Non terminé`, NOT "Échec" (brief-mandated; avoids "erreur"/"échec" per the
-  style guide).
+- Status pills matched to the existing `queue.row.status` renderings (brief-mandated consistency): Queued →
+  `En attente`, Running → `En cours`, Done → `Terminé`, Canceled → `Annulé` · high. `Didn''t finish` (status + item
+  outcome, non-alarmist wording for a stopped op) → `Non terminé`, NOT "Échec" (brief-mandated; avoids "erreur"/"échec"
+  per the style guide).
 - Per-item outcomes: Done → `Terminé`; Skipped → `Ignoré` (settled `skip → ignorer`); Didn''t finish → `Non terminé`;
   Rolled back → `Restauré` · high. `status.done`/`outcome.done` (same sourceHash) and `status.failed`/`outcome.failed`
   and `status.rolledBack`/`outcome.rolledBack` render identically, as their shared hashes require.
 - summary lines (one-line op summaries) → count-led past participle agreeing masc. with `élément`/`fichier`/`dossier`:
-  Copied → "{countText} élément(s) copié(s)", Moved → "…déplacé(s)", Deleted → "…supprimé(s)", Moved to trash → "…placé(s)
-  dans la corbeille" (settled `move to trash → placer dans la corbeille`), Renamed → "…renommé(s)", Compressed →
-  "…compressé(s)", Created N folders/files → "{countText} dossier(s)/fichier(s) créé(s)" · high — mirrors
-  `transfer.fileOnly.allDone`''s participle-agreement discipline; FR CLDR `one`/`many`/`other` with `{countText}` in every
-  branch (`many` identical to `other`).
+  Copied → "{countText} élément(s) copié(s)", Moved → "…déplacé(s)", Deleted → "…supprimé(s)", Moved to trash →
+  "…placé(s) dans la corbeille" (settled `move to trash → placer dans la corbeille`), Renamed → "…renommé(s)",
+  Compressed → "…compressé(s)", Created N folders/files → "{countText} dossier(s)/fichier(s) créé(s)" · high — mirrors
+  `transfer.fileOnly.allDone`''s participle-agreement discipline; FR CLDR `one`/`many`/`other` with `{countText}` in
+  every branch (`many` identical to `other`).
 - Edited an archive → `Archive modifiée`; Extracted an archive → `Archive extraite` · past participle agreeing with the
   feminine `archive` (settled glossary term); `extract → extraire`, `edit archive → modification` · high.
 - provenance labels: You (op you started) → `Vous` (macOS uses "Vous"); AI client → `Client IA` (`AI → IA`); Agent →
   `Agent` (identical, genuine FR word, carries `sameAsSourceJustification`) · high.
-- "and {countText} more item(s)" (overflow line) → "et {countText} élément(s) de plus" · reuses the macOS "et ^0 de plus"
-  overflow pattern settled in the `filesystem-size-guard` pass · high.
+- "and {countText} more item(s)" (overflow line) → "et {countText} élément(s) de plus" · reuses the macOS "et ^0 de
+  plus" overflow pattern settled in the `filesystem-size-guard` pass · high.
 - No other `sameAsSourceJustification` needed: every value except `Agent` differs from English.

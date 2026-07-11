@@ -546,12 +546,32 @@ Settled while translating the Compress feature:
 
 ### Settled during the Operation log pass (`operationLog.json` + `commands.logOperationLog.*`; alpha dialog listing recent file operations with rollback; macOS + Double/Total Commander + MS terminology, 2026-07-10)
 
-- **operation log (dialog title / command label) → Registro de operaciones** · "log" → "registro" (MS "Event log" → "registro de eventos"; matches the settled Logging Settings section → Registro and changelog → registro de cambios). "operation" → "operación". Used for `operationLog.dialog.title` and `commands.logOperationLog.label` (shared sourceHash `2c97965`) · high
-- **history (the record shown) → historial** · macOS ("NSToolbarHistoryTemplate" → "historial", "version history" → "historial de versiones"). Used in the command description "Consulta el historial de tus operaciones de archivos…" and the load-error string · high
-- **roll back / rollback → revertir (verb) / reversión (noun)** · REAFFIRMS the settled fileOperations glossary entry; the catalog already uses "Revertir" (`transferProgress.conflictRollback`) and "La reversión" (`rollbackUnavailableTooltip`). So: "Can roll back" → "Se puede revertir", "Can''t roll back" → "No se puede revertir", "Rolling back" → "Revirtiendo" (gerund), "Rolled back" → "Revertido", "Partly rolled back" → "Revertido en parte". Command "roll them back" → imperative "reviértelas" · high (consistency-settled)
-- **item (in this dialog) → elemento** · matches the sibling `fileOperations.json` "elementos" (not macOS "ítems"), per the archive-pass note; used across the summary plurals and the item-list strings · high
-- **operation-summary lines (past-tense impersonal) → "Se {verb-preterite} {countText} elemento(s)"** · mirrors the settled transfer-toast pattern ("Se movió"/"Se movieron", "Se copió"/"Se comprimió"). copy→Se copió/copiaron, move→Se movió/movieron, delete→Se eliminó/eliminaron, rename→Se renombró/renombraron, createFolder→Se creó/crearon carpeta(s), createFile→Se creó/crearon archivo(s), compress→Se comprimió/comprimieron, trash→Se movió/movieron … a la papelera. archiveEdit "Edited an archive" → "Se editó un archivo comprimido"; archiveExtract → "Se extrajo un archivo comprimido" (archive→archivo comprimido, extract→extraer, glossary) · high
-- **lifecycle status badges → match `queue.row.status`** · queued→Esperando, running→En ejecución, done→Hecho, canceled→Cancelado (queue uses `cancelled {Cancelado}`) · high
-- **"Didn''t finish" (failed status/outcome, no-bare-"failed" voice) → No se completó** · literal neutral rendering of "Didn''t finish"; calm, avoids "Falló". Close cousin of the queue''s "No se pudo completar" but shorter and matches the source''s "didn''t" framing. Used for both `status.failed` and `outcome.failed` (shared sourceHash `59ea57b`) · high
-- **initiator provenance labels → Tú / Cliente de IA / Agente** · "You"→"Tú" (direct-address, no gendered noun); "AI client"→"Cliente de IA" (AI→IA, glossary); "Agent"→"Agente" · high
+- **operation log (dialog title / command label) → Registro de operaciones** · "log" → "registro" (MS "Event log" →
+  "registro de eventos"; matches the settled Logging Settings section → Registro and changelog → registro de cambios).
+  "operation" → "operación". Used for `operationLog.dialog.title` and `commands.logOperationLog.label` (shared
+  sourceHash `2c97965`) · high
+- **history (the record shown) → historial** · macOS ("NSToolbarHistoryTemplate" → "historial", "version history" →
+  "historial de versiones"). Used in the command description "Consulta el historial de tus operaciones de archivos…" and
+  the load-error string · high
+- **roll back / rollback → revertir (verb) / reversión (noun)** · REAFFIRMS the settled fileOperations glossary entry;
+  the catalog already uses "Revertir" (`transferProgress.conflictRollback`) and "La reversión"
+  (`rollbackUnavailableTooltip`). So: "Can roll back" → "Se puede revertir", "Can''t roll back" → "No se puede
+  revertir", "Rolling back" → "Revirtiendo" (gerund), "Rolled back" → "Revertido", "Partly rolled back" → "Revertido en
+  parte". Command "roll them back" → imperative "reviértelas" · high (consistency-settled)
+- **item (in this dialog) → elemento** · matches the sibling `fileOperations.json` "elementos" (not macOS "ítems"), per
+  the archive-pass note; used across the summary plurals and the item-list strings · high
+- **operation-summary lines (past-tense impersonal) → "Se {verb-preterite} {countText} elemento(s)"** · mirrors the
+  settled transfer-toast pattern ("Se movió"/"Se movieron", "Se copió"/"Se comprimió"). copy→Se copió/copiaron, move→Se
+  movió/movieron, delete→Se eliminó/eliminaron, rename→Se renombró/renombraron, createFolder→Se creó/crearon carpeta(s),
+  createFile→Se creó/crearon archivo(s), compress→Se comprimió/comprimieron, trash→Se movió/movieron … a la papelera.
+  archiveEdit "Edited an archive" → "Se editó un archivo comprimido"; archiveExtract → "Se extrajo un archivo
+  comprimido" (archive→archivo comprimido, extract→extraer, glossary) · high
+- **lifecycle status badges → match `queue.row.status`** · queued→Esperando, running→En ejecución, done→Hecho,
+  canceled→Cancelado (queue uses `cancelled {Cancelado}`) · high
+- **"Didn''t finish" (failed status/outcome, no-bare-"failed" voice) → No se completó** · literal neutral rendering of
+  "Didn''t finish"; calm, avoids "Falló". Close cousin of the queue''s "No se pudo completar" but shorter and matches
+  the source''s "didn''t" framing. Used for both `status.failed` and `outcome.failed` (shared sourceHash `59ea57b`) ·
+  high
+- **initiator provenance labels → Tú / Cliente de IA / Agente** · "You"→"Tú" (direct-address, no gendered noun); "AI
+  client"→"Cliente de IA" (AI→IA, glossary); "Agent"→"Agente" · high
 - No `sameAsSourceJustification` needed: every value differs from English.

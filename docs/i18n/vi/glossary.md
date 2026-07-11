@@ -594,10 +594,10 @@ Settled while translating the Operation log feature (alpha `operationLog.json` +
 confirmed terms below:
 
 - **operation (a file operation, as a logged event): `thao tác`** · macOS Finder (`thao tác di chuyển ^0 mục`,
-  `thao tác chưa hoàn tất`, `Thao tác lưu tệp`), matching the catalog''s `Thao tác tệp` (file operations) and the `Thao
-  tác:` action-field label. `high`.
-- **operation log (dialog title + command label): `Nhật ký thao tác`** · `nhật ký` (log, settled glossary term) + `thao
-  tác` (operation, macOS). `high`. Used for `operationLog.dialog.title` and `commands.logOperationLog.label`.
+  `thao tác chưa hoàn tất`, `Thao tác lưu tệp`), matching the catalog''s `Thao tác tệp` (file operations) and the
+  `Thao tác:` action-field label. `high`.
+- **operation log (dialog title + command label): `Nhật ký thao tác`** · `nhật ký` (log, settled glossary term) +
+  `thao tác` (operation, macOS). `high`. Used for `operationLog.dialog.title` and `commands.logOperationLog.label`.
 - **history (operation history): `lịch sử`** · macOS (`NSToolbarHistoryTemplate` → "lịch sử", "lịch sử phiên bản" =
   version history), MS ("Nhật ký Lịch sử"). "your operation history" → `lịch sử thao tác của bạn`. `high`.
 - **roll back / rollback (reverse a completed operation): `hoàn tác`** · macOS AppKit Undo → "Hoàn tác"; catalog already
@@ -617,5 +617,5 @@ Queued → `Đang chờ`; Running → `Đang chạy`; Done → `Xong`; Canceled 
 `Chưa hoàn tất được`; "Rolled back" → `Đã hoàn tác`. Initiator provenance: You → `Bạn`; AI client → `Máy khách AI`;
 Agent → `Tác nhân`. Summary verbs reuse the transfer past-tense forms (`Đã sao chép`/`Đã di chuyển`/`Đã xóa`/
 `Đã chuyển … vào thùng rác`/`Đã đổi tên`/`Đã tạo`/`Đã nén`). Plurals collapse to a single `other` branch (vi has one
-CLDR category), keeping the `{count}`/`{countText}` placeholders. "and N more items" → `và thêm {countText} mục nữa`.
-No `sameAsSourceJustification` needed: all values differ from English.
+CLDR category), keeping the `{count}`/`{countText}` placeholders. "and N more items" → `và thêm {countText} mục nữa`. No
+`sameAsSourceJustification` needed: all values differ from English.

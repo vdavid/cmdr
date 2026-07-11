@@ -677,29 +677,29 @@ Settled while translating the Compress feature:
   "maximale compressie") · high. `.smaller`.
 - No `sameAsSourceJustification` needed: all values differ from English.
 
-From the Operation-log pass (`operationLog.json` + `commands.logOperationLog.*`; mined `_ignored/i18n/nl/`,
-2026-07-10):
+From the Operation-log pass (`operationLog.json` + `commands.logOperationLog.*`; mined `_ignored/i18n/nl/`, 2026-07-10):
 
-- operation log (feature name, dialog title + command label) → `Bewerkingenlogboek` · compound of "bewerkingen"
-  (macOS operation→bewerking, glossary "File operations"→"Bestandsbewerkingen") + "logboek" (MS "log"→"logboek";
-  glossary Logging→Logboek). Concatenated per the compound rule, with -en- linking like "bestandenlijst" · high
-- operation history (in prose, `dialog.loadError` + command description) → `bewerkingsgeschiedenis` /
-  `geschiedenis` · macOS "history"→"geschiedenis" ("version history"→"versiegeschiedenis", NSToolbarHistoryTemplate
-  →"geschiedenis"); the compound "bewerkingsgeschiedenis" uses -s- linking like macOS "versiegeschiedenis" · high
+- operation log (feature name, dialog title + command label) → `Bewerkingenlogboek` · compound of "bewerkingen" (macOS
+  operation→bewerking, glossary "File operations"→"Bestandsbewerkingen") + "logboek" (MS "log"→"logboek"; glossary
+  Logging→Logboek). Concatenated per the compound rule, with -en- linking like "bestandenlijst" · high
+- operation history (in prose, `dialog.loadError` + command description) → `bewerkingsgeschiedenis` / `geschiedenis` ·
+  macOS "history"→"geschiedenis" ("version history"→"versiegeschiedenis", NSToolbarHistoryTemplate →"geschiedenis"); the
+  compound "bewerkingsgeschiedenis" uses -s- linking like macOS "versiegeschiedenis" · high
 - roll back (verb) → `terugdraaien`; "roll them back"→"draai ze terug" (imperative "draai ... terug") · reuses the
   settled fileOperations rollback term ("Bezig met terugdraaien...", "conflictRollback"→"Terugdraaien") · high
 - rolled back (past participle, status + per-item outcome) → `Teruggedraaid`; "partly rolled back"→"Gedeeltelijk
   teruggedraaid"; "rolling back"→"Bezig met terugdraaien" (matches fileOperations `titleRollingBack`) · high
 - can (not) roll back (rollback-capability status badges) → `Terug te draaien` / `Niet terug te draaien` · the Dutch
   "te + infinitief" -able construction reads as a clean adjectival status pair · high
-- rename summary ("Renamed N items") → `Naam van {countText} onderdeel gewijzigd` / `Namen van {countText}
-  onderdelen gewijzigd` · honors the strongly-settled rename→"naam wijzigen" (NOT hernoemen; macOS Finder "De naam
-  van het onderdeel ... gewijzigd"); reordered in `dialog.empty` so "wijzig de naam van iets" keeps its object · high
+- rename summary ("Renamed N items") → `Naam van {countText} onderdeel gewijzigd` /
+  `Namen van {countText} onderdelen gewijzigd` · honors the strongly-settled rename→"naam wijzigen" (NOT hernoemen;
+  macOS Finder "De naam van het onderdeel ... gewijzigd"); reordered in `dialog.empty` so "wijzig de naam van iets"
+  keeps its object · high
 - lifecycle status words (operation log) reuse queue.row.status: Queued→`Wachten`, Running→`Bezig`, Done→`Gereed`,
   "Didn''t finish"→`Niet voltooid`, Canceled→`Geannuleerd`; per-item Skipped→`Overgeslagen` (glossary) · high
 - initiator labels: You→`Jij` (contrastive standalone), AI client→`AI-client` (MS client→client, hyphenated after the
   acronym), Agent→`Agent` (kept, `sameAsSourceJustification`) · high
 - recorded (items) → `vastgelegd` · natural NL for logged/recorded ("geen vastgelegde onderdelen") · tentative
-- "and N more items" (trailing list line) → `en nog {countText} onderdeel(en)` · matches the FAT32 pass
-  "en nog {countText} bestand(en)" pattern ("nog" carries the more/additional sense) · high
+- "and N more items" (trailing list line) → `en nog {countText} onderdeel(en)` · matches the FAT32 pass "en nog
+  {countText} bestand(en)" pattern ("nog" carries the more/additional sense) · high
 - No `sameAsSourceJustification` needed except `initiator.agent` ("Agent").

@@ -344,9 +344,10 @@ Settled while translating the Compress feature:
   "Excluir"); trash arm keeps "para o Lixo"; folder/file/archive nouns per glossary (pasta / arquivo / arquivo
   compactado). `operationLog.summary.*`.
 - initiator provenance chips → `Você` (You) / `Cliente de IA` (AI client) / `Agente` (Agent) · pt-BR user address (você)
-  + AI → **IA** (`ai.json` throughout) · high. `operationLog.initiator.*`.
+  - AI → **IA** (`ai.json` throughout) · high. `operationLog.initiator.*`.
 - lifecycle status → `Aguardando` (queued) / `Em andamento` (running) / `Concluído` (done) / `Não foi possível concluir`
   (didn’t finish) / `Cancelado` (canceled) · matched exactly to `queue.row.status` (queued/running/done/cancelled/failed
-  arms) for cross-file consistency; "didn’t finish" avoids the banned bare "Falhou" · confirmed. `operationLog.status.*`.
+  arms) for cross-file consistency; "didn’t finish" avoids the banned bare "Falhou" · confirmed.
+  `operationLog.status.*`.
 - per-item outcome → `Concluído` (done) / `Ignorado` (skipped, glossary Skip → Ignorar) / `Não foi possível concluir`
   (didn’t finish) / `Revertido` (rolled back) · high. `operationLog.outcome.*`.
