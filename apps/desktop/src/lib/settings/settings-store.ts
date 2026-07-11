@@ -30,6 +30,11 @@ const SETTING_CHANGED_EVENT = 'settings:changed'
 interface SettingChangedPayload {
   id: string
   value: unknown
+  // Whether the change is an explicit set (true) or a reset back to the registry
+  // default (false). Lets a receiving window keep its sparse explicit-set ledger
+  // in sync, so its own later save neither drops a key another window just set
+  // nor re-persists a key another window just reset.
+  explicit: boolean
 }
 
 // ============================================================================
@@ -42,9 +47,19 @@ let storeInstance: Store | null = null
 let saveTimeout: ReturnType<typeof setTimeout> | null = null
 const SAVE_DEBOUNCE_MS = 500
 
-// In-memory cache of settings for synchronous access
-// Using Record to allow any setting ID assignment
-const settingsCache: Record<string, unknown> = {}
+// In-memory cache of settings for synchronous access. A `Map` (not a plain
+// object) so unsetting a key on reset is a `.delete(id)` call, not the
+// `delete obj[computed]` form the lint bans (`no-dynamic-delete`).
+const settingsCache = new Map<string, unknown>()
+
+// Ids an actor explicitly set: the Settings UI, the MCP `set_setting` tool, a
+// migration, or a key found already persisted at load. This is the sparse-
+// persistence ledger — `saveToStore` writes exactly these keys and nothing else.
+// "Explicit" is a STRUCTURAL fact about which mutator ran, never a value
+// comparison against the default: a deliberate choice that equals the default
+// still belongs here, so it survives a future change to that default.
+const explicitlySet = new Set<SettingId>()
+
 let initialized = false
 let crossWindowUnlisten: UnlistenFn | null = null
 
@@ -76,14 +91,13 @@ async function getStore(): Promise<Store> {
       log.warn('Could not resolve isolated settings path, using default: {error}', { error: String(e) })
     })
     log.debug('Creating new store instance for {storeName}', { storeName: storePath })
-    // Build defaults from registry
-    const defaults: Record<string, unknown> = {}
-    for (const def of settingsRegistry) {
-      defaults[def.id] = def.default
-    }
-    // allowed-pluralize-noun: settingsRegistry is a fixed const with many entries.
-    log.debug('Loading store with {count} default settings', { count: Object.keys(defaults).length })
-    storeInstance = await load(storePath, { defaults, autoSave: false })
+    // Load WITHOUT seeding registry defaults. The store file must hold only the
+    // keys an actor explicitly set, so no save can ever flush a registry default
+    // into `settings.json` as if it were a user choice (the bug that pinned
+    // `developer.mcpEnabled: false` and silently killed the dev MCP server).
+    // Defaults resolve at read time via `getDefaultValue`, and a changed default
+    // in a future release then reaches every user who never set that key.
+    storeInstance = await load(storePath, { defaults: {}, autoSave: false })
     log.debug('Store instance created successfully')
   }
   return storeInstance
@@ -173,10 +187,15 @@ export async function initializeSettings(options?: { restrictedWindow?: boolean 
       if (stored !== null && stored !== undefined) {
         try {
           validateSettingValue(def.id, stored)
-          settingsCache[def.id] = stored
+          settingsCache.set(def.id, stored)
+          // Present on disk = an actor set it (we can't tell past-explicit from a
+          // pre-fix leak, and dropping a deliberate choice is worse than keeping a
+          // stale one — so every present, valid key is treated as explicit).
+          explicitlySet.add(def.id)
           loadedCount++
         } catch {
-          // Invalid stored value, will use default
+          // Invalid stored value: drop it. Reads resolve to the default, and the
+          // next save prunes it since it never enters the explicit-set ledger.
           log.warn('Invalid stored value for {id}, using default', { id: def.id })
           defaultCount++
         }
@@ -227,7 +246,7 @@ async function initializeSettingsRestricted(): Promise<void> {
       if (value == null) continue // not persisted: registry default applies
       try {
         validateSettingValue(id, value)
-        settingsCache[id] = value
+        settingsCache.set(id, value)
       } catch {
         log.warn('Invalid snapshot value for {id}, using default', { id })
       }
@@ -281,11 +300,21 @@ async function setupCrossWindowListener(): Promise<void> {
   log.debug('Setting up cross-window settings listener')
 
   crossWindowUnlisten = await listen<SettingChangedPayload>(SETTING_CHANGED_EVENT, (event) => {
-    const { id, value } = event.payload
+    const { id, value, explicit } = event.payload
     log.debug('Received cross-window setting change: {id}', { id })
 
-    // Update our cache without re-emitting (to avoid loops)
-    settingsCache[id] = value
+    // Update our cache and mirror the sparse ledger without re-emitting (to avoid
+    // loops). `explicit === false` means another window reset the key: forget the
+    // value so this window also resolves to the registry default, and drop it from
+    // the ledger so our own next save doesn't re-persist it. Any other shape (an
+    // explicit set, or a legacy payload without the flag) marks it explicit.
+    if (!explicit) {
+      settingsCache.delete(id)
+      explicitlySet.delete(id as SettingId)
+    } else {
+      settingsCache.set(id, value)
+      explicitlySet.add(id as SettingId)
+    }
 
     // Notify local listeners
     notifyListeners(id as SettingId, value as SettingsValues[SettingId])
@@ -298,6 +327,8 @@ async function setupCrossWindowListener(): Promise<void> {
  * Migrate settings from older schema versions.
  */
 async function migrateSettings(store: Store, fromVersion: number): Promise<void> {
+  let changed = false
+
   if (fromVersion < 1) {
     // No-op placeholder for the original schema.
   }
@@ -308,11 +339,21 @@ async function migrateSettings(store: Store, fromVersion: number): Promise<void>
     const dateColors = await store.get<string>('appearance.dateColors')
     if (dateColors === 'off') {
       await store.set('appearance.dateColors', 'none')
+      changed = true
     }
   }
 
-  await store.set('_schemaVersion', SCHEMA_VERSION)
-  await store.save()
+  // Persist the version stamp only when this launch has something to write: a
+  // value the migration changed, or an already-populated file. A brand-new
+  // install with no file writes nothing — the sparse invariant that
+  // `settings.json` doesn't exist until an actor sets something. Consequence:
+  // on a fresh install the migration re-runs each launch until the first real
+  // save stamps `_schemaVersion`, so every migration step MUST be idempotent.
+  const fileHasKeys = (await store.keys()).length > 0
+  if (changed || fileHasKeys) {
+    await store.set('_schemaVersion', SCHEMA_VERSION)
+    await store.save()
+  }
 }
 
 // ============================================================================
@@ -328,11 +369,14 @@ const warnedUninitializedReads = new Set<string>()
  */
 export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
   if (!initialized) {
-    // Reading before initializeSettings() completes silently returns the REGISTRY DEFAULT,
-    // which can push a wrong value to the backend as if the user chose it (this is how a
-    // pre-init read of `ai.provider` could quietly configure AI as "off"). Warn — once per id —
-    // so an accidental pre-init read surfaces in the logs instead of masquerading as a real
-    // value. We warn rather than throw: a stray early read must not crash the UI.
+    // Reading before initializeSettings() completes returns the REGISTRY DEFAULT.
+    // Under sparse persistence a read never writes anything (only an explicit
+    // setSetting/reset touches the file), so a stray pre-init read can no longer
+    // leak a default into `settings.json`. It can still feed a wrong value to a
+    // backend hot-apply push, though (this is how a pre-init read of `ai.provider`
+    // could quietly configure AI as "off"). Warn — once per id — so an accidental
+    // pre-init read surfaces in the logs instead of masquerading as a real value.
+    // We warn rather than throw: a stray early read must not crash the UI.
     if (!warnedUninitializedReads.has(id)) {
       warnedUninitializedReads.add(id)
       log.warn('getSetting({id}) called before settings were initialized; returning the registry default', { id })
@@ -340,7 +384,7 @@ export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
     return getDefaultValue(id)
   }
 
-  const cached = settingsCache[id]
+  const cached = settingsCache.get(id)
   if (cached !== undefined) {
     return cached as SettingsValues[K]
   }
@@ -375,13 +419,16 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
   validateSettingValue(id, value)
 
   // Idempotency: skip the cascade when nothing actually changed.
-  if (settingsCache[id] === value) {
+  if (settingsCache.get(id) === value) {
     log.debug('setSetting({id}): unchanged, skipping notify+save+emit', { id })
     return
   }
 
-  // Update cache immediately for synchronous access
-  settingsCache[id] = value
+  // Update cache immediately for synchronous access, and record the explicit
+  // choice so the sparse save persists exactly this key (structural, not a
+  // value compare — persists even when `value` equals the registry default).
+  settingsCache.set(id, value)
+  explicitlySet.add(id)
 
   if (restrictedWindowMode) {
     // No store in this window: persistence goes through the typed backend
@@ -408,8 +455,9 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
   // Notify local listeners
   notifyListeners(id, value)
 
-  // Emit cross-window event so other windows get the update
-  void emit(SETTING_CHANGED_EVENT, { id, value } satisfies SettingChangedPayload)
+  // Emit cross-window event so other windows get the update (and mirror the
+  // explicit choice into their ledger).
+  void emit(SETTING_CHANGED_EVENT, { id, value, explicit: true } satisfies SettingChangedPayload)
   log.debug('Emitted cross-window setting change event for {id}', { id })
 }
 
@@ -427,7 +475,8 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
  */
 export function persistSettingFromRestrictedWindow<K extends SettingId>(id: K, value: SettingsValues[K]): void {
   validateSettingValue(id, value)
-  settingsCache[id] = value
+  settingsCache.set(id, value)
+  explicitlySet.add(id)
   scheduleSave()
 }
 
@@ -443,16 +492,42 @@ export function persistSettingFromRestrictedWindow<K extends SettingId>(id: K, v
  */
 export function seedSettingForE2E<K extends SettingId>(id: K, value: SettingsValues[K]): void {
   validateSettingValue(id, value)
-  settingsCache[id] = value
+  settingsCache.set(id, value)
+  explicitlySet.add(id)
   scheduleSave()
 }
 
 /**
- * Reset a setting to its default value.
+ * Reset a setting to its default value by UNSETTING it: the key is dropped from
+ * the ledger and pruned from `settings.json` on the next save, so the value
+ * resolves to the registry default (and tracks a future change to that default).
+ *
+ * Deliberately NOT `setSetting(id, default)` — writing the default back would
+ * re-persist it as an explicit choice, which is exactly what sparse persistence
+ * avoids. Notifies listeners and emits with the default value (so hot-apply and
+ * other windows revert), tagged `explicit: false` so receivers unset it too.
  */
 export function resetSetting(id: SettingId): void {
+  const wasExplicit = explicitlySet.delete(id)
+  const hadCachedValue = settingsCache.has(id)
+  if (!wasExplicit && !hadCachedValue) {
+    // Already at the registry default; nothing to unset, nothing to broadcast.
+    return
+  }
+
+  settingsCache.delete(id)
   const defaultValue = getDefaultValue(id)
-  setSetting(id, defaultValue)
+
+  if (restrictedWindowMode) {
+    // The viewer has no reset affordance; keep the unset session-only rather than
+    // forwarding (the persist command only carries a value, not a delete).
+    log.debug('Restricted window: reset of {id} is session-only (not forwarded)', { id })
+  } else {
+    scheduleSave()
+  }
+
+  notifyListeners(id, defaultValue)
+  void emit(SETTING_CHANGED_EVENT, { id, value: defaultValue, explicit: false } satisfies SettingChangedPayload)
 }
 
 /**
@@ -485,21 +560,23 @@ async function saveToStore(): Promise<void> {
 
   try {
     const store = await getStore()
+    const existingKeys = new Set(await store.keys())
 
-    // Only save non-default values to keep the file small
+    // Sparse write: persist exactly the explicitly-set keys (structural — driven
+    // by which mutator ran, NEVER a value compare against the default), and drop
+    // any registry key that's persisted but no longer explicit (e.g. after a
+    // reset) so it resolves back to the registry default. Non-registry/orphan
+    // keys are left untouched; a dedicated migration (`deleteRawStoreKeys`) owns
+    // those, and a not-yet-run raw-key migration must still be able to read them.
     let savedCount = 0
     let removedCount = 0
 
     for (const def of settingsRegistry) {
       const id = def.id
-      const value = settingsCache[id]
-      const defaultValue = def.default
-
-      if (value !== undefined && value !== defaultValue) {
-        await store.set(id, value)
+      if (explicitlySet.has(id)) {
+        await store.set(id, settingsCache.get(id))
         savedCount++
-      } else {
-        // Remove from store if it's the default
+      } else if (existingKeys.has(id)) {
         await store.delete(id)
         removedCount++
       }
@@ -507,7 +584,7 @@ async function saveToStore(): Promise<void> {
 
     await store.set('_schemaVersion', SCHEMA_VERSION)
     await store.save()
-    log.info('Settings saved: {saved} non-default values, {removed} reset to default', {
+    log.info('Settings saved: {saved} explicit values, {removed} reset to default', {
       saved: savedCount,
       removed: removedCount,
     })

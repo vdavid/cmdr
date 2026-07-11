@@ -26,7 +26,7 @@ describe('setSetting idempotency', () => {
     expect(listener).toHaveBeenCalledTimes(1)
     expect(listener).toHaveBeenCalledWith('appearance.uiDensity', 'spacious')
     expect(settingsChangedEmits()).toHaveLength(1)
-    expect(settingsChangedEmits()[0]?.[1]).toEqual({ id: 'appearance.uiDensity', value: 'spacious' })
+    expect(settingsChangedEmits()[0]?.[1]).toEqual({ id: 'appearance.uiDensity', value: 'spacious', explicit: true })
 
     unsub()
   })
