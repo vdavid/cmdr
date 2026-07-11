@@ -150,14 +150,14 @@ Names are indicative; the implementing agent owns the final DDL.
 - `proposal_ops` (op level): `op_id` PK, `batch_id` FK, `op` (move | rename | trash | mkdir; extract later),
   `source_volume_id`, `source_rel_path`, `dest_volume_id`, `dest_rel_path`, `status` (per-op, enabling partial apply),
   `snapshot_inode`, `snapshot_size`, `snapshot_mtime` (drift detection), `executed_at`, `result`.
-- `agent_log`: `ts`, `source` (detector | wake | planner | chat | summarizer), `kind` (proposal | notify | memory_write
+- `agent_log`: `ts`, `source` (detector | wake | planner | chat | summarizer), `kind` (proposal | notify | memory*write
   | file_read | observation | error), `target`, `rationale`, `model`, `tokens_in`, `tokens_out`, `latency_ms`. This
   feeds the activity UI and is also context input (recent rejections, §9.2). Terminology mapping, since the spec uses
   several names: the user-facing **"activity log"** IS this table; the **"read log"** is its `kind = file_read` filtered
   view, not a separate table; `user_action_log` (below) is separate because its writer is the user, not the agent. **No
   term collision with the operation log** ([`docs/specs/operation-log-plan.md`](../operation-log-plan.md), Naming): that
   journal is the **"operation log"** (its rows are operations), this `agent_log` is the agent's **decision** log, and
-  **"action"** stays reserved for the `user_action_log` navigation/intent stream. Their future _merged UI surface_ may
+  **"action"** stays reserved for the `user_action_log` navigation/intent stream. Their future \_merged UI surface* may
   be labelled **"Activity"** then (a UI-copy call, not an entity/table name) — so a future planner reads the three
   surfaces correctly and doesn't re-collide the terms.
 - `conversations` + `messages`: chat threads. A notification the user replies to becomes a thread carrying the
@@ -412,6 +412,24 @@ proposal tables are the decision record — don't smear proposal states into the
 Dropped from the earlier sketch, deliberately: a `priority` column (YAGNI) and any logic on model "authoritativeness"
 (`created_by_model` is kept as provenance only).
 
+### 8.5 Autonomy: auto-apply as a user-granted proposal policy (decided)
+
+Some users will want "my agent can do stuff without me confirming each time." That grant is a **policy on the proposal
+pipeline's apply step, never raw tool exposure** (§11.1): an auto-apply-enabled agent still emits frozen proposal
+batches, and the system applies them — keeping drift detection, per-op statuses, trash-default, batch caps, the activity
+log, and (via the operation log) rollback, exactly as if the user had clicked apply. Turning the dial up loses the
+review click, not the audit trail or the safety machinery.
+
+- The grant is a Settings toggle (default OFF; see §16), living next to the proactivity dial. v1 can ship it coarse (off
+  / auto-apply); scoping it (per-folder, per-op-kind, batch-size ceiling) is a later refinement with the same shape.
+- **Agents can't self-enable it.** The setting joins a small `protectedSettings` set in the settings registry that the
+  MCP `set_setting` tool refuses regardless of bearer token, and the in-process agent has no `set_setting` at all (§11.1
+  consumer view). Changing it is a Settings-UI-only act — the same class of consent as granting Full Disk Access.
+- Rejected alternative: a CLI flag. Nobody launches a GUI file manager from a terminal in normal use, and a flag is
+  invisible to the person reviewing what the app is allowed to do; Settings is where consent lives and stays auditable.
+- Auto-applied batches still notify (a "the agent moved 12 files — review / undo" toast riding the notification
+  etiquette of §9.5), and rejections/undo feed back as implicit signals like any other rejection.
+
 ## 9. The agent runtime
 
 Rust, in-process, under `src-tauri/src/agent/` (inbox/coalescer, interest, summaries, proposals, memory, tools, llm
@@ -574,8 +592,20 @@ gating, and dispatch can't drift, and the gate is a per-entry `TokenGate` rather
 surface remains useful for UI-driving use cases (testing, automation), but it is the secondary surface: the agent-first
 registry (knowledge, proposals, memory, notify) is the main interface, consumed in-process by the agent and exposed over
 MCP to AI clients. The agent-first registry should **extend this consolidated registry rather than stand up a parallel
-one**, keeping one authored source for every AI-callable tool. Fine-grained per-consumer capability gating stays
-available where it genuinely matters, with parity as the default posture.
+one**, keeping one authored source for every AI-callable tool.
+
+**Consumer gating is structural, not policy (decided).** D26 ("proposals are the only write path, safety by
+construction") must survive the registry reuse: the consolidated registry now carries direct write tools for AI clients
+(auto-confirm file ops, `tag`, `favorites`, `indexing`, `set_setting`, rollback-cancel), and an in-process agent that
+merely "holds the bearer token but chooses not to use it" would reduce D26 to policy. So the registry grows a consumer
+dimension: each authored entry declares its exposure (for example `consumers: [ai_client]` vs `[ai_client, agent]`), and
+each adapter — the MCP HTTP server, the in-process agent runtime — is constructed with a consumer identity and can only
+list and dispatch its own view. The agent's write path is then physically absent from its dispatch table; proposals are
+its only write verb because nothing else exists in its registry view. Enforce it the same way the `TokenGate` is
+enforced: a structural set-equality test asserting every tool with a non-`Open` gate is absent from the `agent` view, so
+a new destructive tool can't ship agent-visible by accident. This lands inside the registry-refactor milestone (there's
+no consumer to gate until the adapters exist). The §8.5 autonomy setting does NOT loosen this view — it acts on the
+proposal pipeline's apply step, never on tool exposure.
 
 One open check on that reuse, and the answer is determinable from the code: the consolidated registry core is currently
 **MCP- and Tauri-shaped, not transport-agnostic**. `get_all_tools()` emits a `tools/list` payload with raw JSON
@@ -661,7 +691,12 @@ bug).
 
 Provider/model for the two slots (bulk, interactive); budget caps (the background-refresh budget defaults to ~$10/month,
 adjustable); proactivity dial; excluded paths; content-access policy; user-action-log toggle and retention; per-volume
-opt-ins (index, summaries); the spend display.
+opt-ins (index, summaries); the spend display; the auto-apply grant (§8.5).
+
+Protected settings (decided): the auto-apply grant is settable ONLY through the Settings UI. It sits in a small
+`protectedSettings` set in the settings registry that the MCP `set_setting` tool refuses regardless of bearer token (the
+in-process agent has no `set_setting` at all, §11.1). The mechanism is generic — any future consent-class setting
+(content-access policy is a candidate) can join the set.
 
 Ownership line (decided): the settings store carries user preferences only. Agent operational state (throttle and snooze
 state, walk bookkeeping, and similar) lives in `main.db`, written by the backend, never in the settings store.
@@ -853,6 +888,14 @@ of sections above; treat them as inputs to the next planning round.
   is fine, dropped is not; the cap protects attention, which is only spent on screen.
 - **D58**: Every agent tunable is exposed in Settings from v1. Rationale: Better too many dials than hidden behavior;
   pruning to Advanced (or dropping) comes later.
+- **D59**: Per-consumer registry gating is structural: entries declare consumer exposure; the agent adapter's view
+  contains no write-gated tools, pinned by a set-equality test. Rationale: D26 must be by-construction across the
+  registry reuse; "holds the token but doesn't use it" is policy, not construction.
+- **D60**: User-granted autonomy is an auto-apply policy on the proposal pipeline (Settings toggle, default off), never
+  raw tool exposure; the toggle is a protected setting changeable only in the Settings UI (refused by `set_setting` even
+  with the token; the agent has no `set_setting`). A CLI flag was rejected. Rationale: keep one write path with its full
+  audit/safety machinery while dropping only the review click; self-enabling autonomy must be impossible; consent lives
+  where the user can see it, not in an invocation flag.
 
 ## 20. How to use this spec (starting sequence)
 
