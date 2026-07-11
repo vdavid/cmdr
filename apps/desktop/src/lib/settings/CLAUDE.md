@@ -36,6 +36,10 @@ Registry-based user settings for Cmdr: defined once in `settings-registry.ts`, a
   through `persist_restricted_window_setting`. **Failures degrade to registry defaults with `log.warn`, never
   `log.error`** (error-level auto-reports an error on every viewer open). Extend the allowlist struct/enum; never grant
   the viewer store permissions.
+- **Persistence is sparse: `settings.json` holds ONLY keys an actor explicitly set.** "Explicit" is structural (which
+  mutator ran, tracked in `explicitlySet`), NEVER `value !== default`. Don't seed defaults into the store or gate saves
+  on a value compare; either re-opens the leak that pinned `developer.mcpEnabled`. `resetSetting` unsets (deletes the
+  key). [DETAILS.md](DETAILS.md) § Sparse persistence.
 - **Increment `SCHEMA_VERSION` and add a `migrateSettings()` case** when changing the settings format, or old files may
   crash on load. Adding a new key is additive (no bump).
 - **Card visibility is section-owned**, NEVER re-derived from the registry `card` field (reintroduces the empty-card

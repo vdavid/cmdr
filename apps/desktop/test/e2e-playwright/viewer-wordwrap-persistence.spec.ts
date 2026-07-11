@@ -45,7 +45,9 @@ const settingsFilePath = (() => {
 })()
 
 /** Reads `viewer.wordWrap` from the instance's settings.json. `undefined` when
- *  the file or key is absent (the store deletes keys equal to the default). */
+ *  the file or key is absent (never set, or cleared by `clearWordWrapSetting`);
+ *  a boolean once an actor sets it — sparse persistence keeps an explicit choice
+ *  even when it equals the registry default. */
 function wordWrapOnDisk(): boolean | undefined {
   try {
     const parsed: unknown = JSON.parse(fs.readFileSync(settingsFilePath, 'utf-8'))
@@ -142,9 +144,9 @@ test.describe('Viewer word-wrap persistence', () => {
     if (!label2) throw new Error('Scoped viewer page has no targetWindow label')
     expect(await wrapBadgeVisible(viewer2)).toBe(true)
 
-    // Toggle back off and wait for the key to drop from disk (false is the
-    // default, so the store removes it). This is the cleanup: the shared
-    // settings file ends in its pre-test state.
+    // Toggle back off. Sparse persistence keeps the explicit choice, so `false`
+    // is written to disk (not deleted) — the assertion is just "no longer on".
+    // The `afterEach` `clearWordWrapSetting()` restores the pre-test baseline.
     await pressWrapToggle(viewer2)
     await expect.poll(() => wrapBadgeVisible(viewer2), { timeout: 3000 }).toBe(false)
     await expect.poll(() => wordWrapOnDisk(), { timeout: 5000 }).not.toBe(true)

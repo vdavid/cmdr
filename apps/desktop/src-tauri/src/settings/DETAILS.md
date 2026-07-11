@@ -9,12 +9,12 @@ differs from the field name.
 
 - `show_hidden_files: bool` (default true).
 - `full_disk_access_choice`: consulted at launch by the indexer FDA gate.
-- `developer_mcp_enabled: Option<bool>`. **Known follow-up (settings-store footgun):** the FE persists this as an
-  explicit `false` (the registry default) on first run, so the saved value then overrides the debug-build-on default
-  (`cfg!(debug_assertions)` in `mcp/config.rs`) at every later launch — MCP silently dead in dev. The dev workaround is
-  the wrapper's `CMDR_MCP_ENABLED=1` export (`scripts/DETAILS.md`); the real fix is to stop persisting registry defaults
-  as explicit choices in the FE settings store (don't write a key the user never changed). Not done here — flagged so it
-  doesn't get lost.
+- `developer_mcp_enabled: Option<bool>`. Absent (the common case) → `None` → `mcp/config.rs` uses its
+  env → setting → debug-build-on fallback. The FE settings store persists sparsely now (only keys an actor explicitly
+  set), so it no longer writes the registry-default `false` here as if it were a user choice. A pre-fix data dir may
+  still carry a leaked explicit `false` (we don't rewrite existing files); the dev wrapper's `CMDR_MCP_ENABLED=1` export
+  (`scripts/DETAILS.md`) neutralizes that for the dev workflow. See the FE `lib/settings/DETAILS.md` § "Sparse
+  persistence".
 - `developer_mcp_port: Option<u16>`.
 - `indexing_enabled: Option<bool>`.
 - `crash_reports_enabled: Option<bool>` (from `updates.crashReports`).

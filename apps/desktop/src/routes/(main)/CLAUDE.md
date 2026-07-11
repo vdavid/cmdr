@@ -50,8 +50,8 @@ explorer via a typed API. Up: [`../../../CLAUDE.md`](../../../CLAUDE.md), siblin
 
 - **Don't remove the `{#if settingsReady}` wrapper** in `+layout.svelte`, and don't move setting-reading work ahead of
   the flag. The subtree mounts only after `initReactiveSettings()` + `initSettingsApplier()` resolve; a pre-init
-  `getSetting()` returns registry defaults that can get pushed to the backend as real choices. See `settings-store.ts` §
-  `getSetting`.
+  `getSetting()` returns registry defaults that can get hot-applied to the backend as if chosen. See `settings-store.ts`
+  § `getSetting`.
 - **Native-menu accelerators fire before the webview keydown**, so these can't rely on the keydown bail and carry
   load-bearing constraints (mechanism in DETAILS.md § Native-menu and input-focus interactions):
   - **⌘A** routes to `active.select()` for a focused `<input>` / `<textarea>` before delegating to the explorer.

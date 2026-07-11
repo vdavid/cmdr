@@ -157,13 +157,13 @@ try {
     }
 
     // Force the MCP server ON for dev/worktree launches unless explicitly overridden.
-    // The FE persists `developer.mcpEnabled: false` (the registry default) as an explicit
-    // value on first run; that persisted `false` then beats the debug-build-on default at
-    // every later launch, so MCP silently dies for the dev workflow. Exporting
-    // CMDR_MCP_ENABLED=1 (which `mcp/config.rs` reads ahead of the setting) keeps it on;
-    // set CMDR_MCP_ENABLED=0 to still exercise the off path. The deeper fix — not
-    // persisting registry defaults as explicit choices — is a known settings-store
-    // follow-up (see `src-tauri/src/settings/DETAILS.md`).
+    // The settings store now persists sparsely (only keys an actor set), so new dev
+    // data dirs no longer leak `developer.mcpEnabled: false` — but a pre-fix data dir
+    // may still carry that leaked `false`, which beats the debug-build-on default in
+    // `mcp/config.rs` and silently kills MCP for the dev workflow. Exporting
+    // CMDR_MCP_ENABLED=1 (which `mcp/config.rs` reads ahead of the setting) keeps it on
+    // regardless; set CMDR_MCP_ENABLED=0 to still exercise the off path. See the sparse-
+    // persistence note in `src-tauri/src/settings/DETAILS.md`.
     if (isDev && env.CMDR_MCP_ENABLED === undefined) {
       env.CMDR_MCP_ENABLED = '1'
     }

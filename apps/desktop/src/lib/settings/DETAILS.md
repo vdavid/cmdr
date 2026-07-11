@@ -71,7 +71,45 @@ config UIs), `KeyboardShortcutsSection` (command names from the command registry
 - Uses `tauri-plugin-store` for persistence to `~/Library/Application Support/com.veszelovszki.cmdr/settings.json`
 - Debounced saves: 500ms after last change, atomic write (temp file + rename)
 - In-memory cache for synchronous reads via `getSetting()`
-- Cross-window sync: emits `settings:changed` events when values change
+- Cross-window sync: emits `settings:changed` events when values change (payload carries an `explicit` flag; see §
+  Sparse persistence)
+- **Sparse: `settings.json` holds only keys an actor explicitly set** — see § Sparse persistence below.
+
+### Sparse persistence (only explicit choices are written)
+
+**Decision / why.** `settings.json` holds ONLY the keys an actor explicitly set (the Settings UI, MCP `set_setting`, a
+migration, or a key already present at load). Every other setting resolves to its registry default at read time. This
+kills a footgun where the store persisted registry defaults as if they were user choices: the store used to `load()`
+with the full registry-default map, and `migrateSettings()`'s save flushed that map to disk on first launch, so e.g.
+`developer.mcpEnabled: false` got pinned as an explicit value that then overrode the debug-build-on default in
+`mcp/config.rs` (MCP silently dead in dev). Sparse persistence also means a changed registry default in a future release
+reaches every user who never touched that setting.
+
+Mechanics (`settings-store.ts`):
+
+- **"Explicit" is structural, never a value compare.** An `explicitlySet` ledger (`Set<SettingId>`) records which ids a
+  mutator touched: `setSetting`, `resetSetting` (removes), `seedSettingForE2E`, `persistSettingFromRestrictedWindow`,
+  and every valid key found on disk at load. A deliberate choice that equals the default is still explicit, so it
+  persists and survives a future default flip. **Guardrail: never gate persistence on `value !== default`** — that drops
+  default-equal choices and re-opens the leak.
+- **`getStore()` does not seed registry defaults into the plugin store**, so no save can flush a default into the file.
+- **`saveToStore()` writes exactly the explicit keys** and prunes any registry key that's persisted but no longer
+  explicit (e.g. after a reset). Non-registry/orphan keys are left alone (a `deleteRawStoreKeys` migration owns those,
+  and a not-yet-run raw-key migration must still be able to read them).
+- **`resetSetting()` UNSETS** (drops from the ledger, prunes on save); it does not write the default back.
+- **`migrateSettings()` saves only when it changed a value or the file is already populated**, so a brand-new install
+  writes nothing until an actor sets something. Consequence: migrations re-run each launch until the first real save
+  stamps `_schemaVersion`, so **every migration step must be idempotent**.
+- **Cross-window `settings:changed` carries `explicit`**: a receiving window mirrors the ledger (adds on a set, removes
+  on a reset) so its own later save neither drops a key another window just set nor re-persists one another window just
+  reset.
+- **Backend readers tolerate absent keys** (`src-tauri/src/settings/loader.rs`: missing file → `Settings::default()`,
+  every field `Option<_>` with an `unwrap_or` fallback; `mcp/config.rs` has env → setting → build-default), so absence
+  means "use my fallback", never an error.
+- **Existing installs are accepted as-is.** A pre-fix `settings.json` full of leaked defaults keeps every present key
+  (present = explicit); we can't tell a past-explicit choice from a past leak, and dropping a deliberate choice is worse
+  than keeping a stale one. The dev-side leaked `developer.mcpEnabled: false` stays neutralized by the wrapper's
+  `CMDR_MCP_ENABLED=1` export.
 - **Store path goes through `resolveStorePath(storeName)`** (`store-path.ts`). `tauri-plugin-store` resolves a bare name
   against Tauri's identifier-driven `app_data_dir()`, which ignores `CMDR_DATA_DIR`. In isolated instances (dev,
   per-worktree dev, E2E) that would read the real production store file; the helper asks the backend
