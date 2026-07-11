@@ -21,8 +21,8 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
   (`section[0] === 'Advanced'` + a `cardKey`), never both. (The canonical/mirror pattern for two FEATURE pages is
   unrelated; `sections/DETAILS.md`.)
 - **Every setting MUST apply immediately without restart.** A backend-affecting one needs a Tauri command, a
-  `$lib/tauri-commands/settings.ts` wrapper, AND an `onSettingChange` case in `settings-applier.ts`. Restart-required
-  is a bug, even for "structural" changes (reconnect, rebind).
+  `$lib/tauri-commands/settings.ts` wrapper, AND an `onSettingChange` case in `settings-applier.ts`. Restart-required is
+  a bug, even for "structural" changes (reconnect, rebind).
 - **Every `tauri-plugin-store` reader goes through `resolveStorePath(storeName)`** (`store-path.ts`): the plugin
   resolves bare names against `app_data_dir()`, which ignores `CMDR_DATA_DIR`, so isolated instances (dev, worktree,
   E2E) would read the real production store. Applies to `settings.json`, `shortcuts.json`, `app-status.json`.
@@ -42,9 +42,8 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
   bug); `cardKey` is search metadata only. [DETAILS.md](DETAILS.md) § Card groups.
 - **Reactive settings live in `reactive-settings.svelte.ts`** (`$state()` needs the `.svelte.ts` extension).
 - **Date/locale formatting has one source of truth**: `formatDateForDisplay()` (pure) → `formattedDate()` (reactive) →
-  `<DateLabel>` (render); coloring only in `age-tier-utils.ts`. The `'system'` date mode and file-size
-  decimals/grouping read `$lib/intl`'s `getLocale()`; don't hardcode a locale or add a fresh formatter. DETAILS § Date
-  display.
+  `<DateLabel>` (render); coloring only in `age-tier-utils.ts`. The `'system'` date mode and file-size decimals/grouping
+  read `$lib/intl`'s `getLocale()`; don't hardcode a locale or add a fresh formatter. DETAILS § Date display.
 - **AI hot-apply** routes `ai.provider` / `ai.cloudProvider` / `ai.cloudProviderConfigs` through `settings-applier.ts`
   to `ai-config.ts::pushConfigToBackend()`, which re-reads every setting fresh — never pass cached values (sections and
   the wizard just call `setSetting(...)`).

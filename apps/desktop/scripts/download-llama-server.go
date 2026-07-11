@@ -65,17 +65,22 @@ func main() {
 		return
 	}
 
-	// Check if already extracted for this version
-	if isCurrentVersion(MarkerFile, Version) {
+	// Check if already extracted for this version. A DestDir that is itself a
+	// symlink is the retired share-by-symlink worktree scheme: its marker
+	// resolves THROUGH the link into the main clone, so it "matches" — but the
+	// link dangles inside the Linux-E2E Docker bind-mount (the container can't
+	// see the host's main clone), breaking the in-container build. Fall through
+	// so the clone path below replaces it with a self-contained copy.
+	if isCurrentVersion(MarkerFile, Version) && !isSymlink(DestDir) {
 		fmt.Printf("llama-server %s already prepared, skipping\n", Version)
 		return
 	}
 
-	// In a linked worktree, try to symlink from the main clone's populated
-	// resources/ai/ instead of downloading 30 MB. Falls through to the download
-	// path if we're in the main clone or the main clone has a stale/missing
-	// version.
-	if tryLinkFromMainClone() {
+	// In a linked worktree, clone the main clone's populated resources/ai/
+	// (APFS clonefile: instant, no extra space) instead of downloading 30 MB.
+	// Falls through to the download path if we're in the main clone or the main
+	// clone has a stale/missing version.
+	if tryCloneFromMainClone() {
 		return
 	}
 
@@ -291,14 +296,22 @@ func codesign(path, identity string) error {
 	return nil
 }
 
-// tryLinkFromMainClone symlinks DestDir to the main clone's resources/ai/ when:
+// tryCloneFromMainClone copies the main clone's populated resources/ai/ into
+// DestDir when:
 //   - we're inside a linked git worktree (not the main clone itself), and
 //   - the main clone already has the target version extracted.
+//
+// The copy uses APFS clonefile (`cp -c`): instant and space-free on the same
+// volume, with a plain copy fallback elsewhere. A copy (not a symlink) keeps
+// the worktree self-contained — the Linux-E2E Docker container bind-mounts only
+// the worktree, so a symlink into the main clone dangles there and breaks the
+// in-container tauri build. The dir's INTERNAL relative dylib symlinks survive
+// (`cp -R` copies links as links) and resolve fine inside the mount.
 //
 // Returns true on success. Returns false (without erroring) if we're outside a
 // git repo, in the main clone, or the main clone's version doesn't match. The
 // caller then falls back to downloading.
-func tryLinkFromMainClone() bool {
+func tryCloneFromMainClone() bool {
 	currentRoot, err := gitRevParse("--show-toplevel")
 	if err != nil {
 		return false
@@ -323,8 +336,8 @@ func tryLinkFromMainClone() bool {
 	}
 
 	// Replace any existing DestDir (empty dir from a prior trap, stale files,
-	// or an old symlink). os.RemoveAll on a symlink removes the link only, not
-	// the target: safe for the main clone.
+	// or a symlink from the retired share-by-symlink scheme). os.RemoveAll on a
+	// symlink removes the link only, not the target: safe for the main clone.
 	if err := os.RemoveAll(DestDir); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Warning: could not clear %s: %v\n", DestDir, err)
 		return false
@@ -333,12 +346,25 @@ func tryLinkFromMainClone() bool {
 		_, _ = fmt.Fprintf(os.Stderr, "Warning: could not create parent dir: %v\n", err)
 		return false
 	}
-	if err := os.Symlink(srcDir, DestDir); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Warning: could not symlink to main clone: %v\n", err)
+	// -c requests clonefile and fails cleanly when unsupported (for example a
+	// worktree on a different volume), so retry as a plain copy.
+	if err := exec.Command("cp", "-c", "-R", srcDir, DestDir).Run(); err != nil {
+		if err := exec.Command("cp", "-R", srcDir, DestDir).Run(); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Warning: could not copy from main clone: %v\n", err)
+			return false
+		}
+	}
+	fmt.Printf("Cloned %s from %s (version %s, APFS clonefile)\n", DestDir, srcDir, Version)
+	return true
+}
+
+// isSymlink reports whether path itself is a symlink (without following it).
+func isSymlink(path string) bool {
+	info, err := os.Lstat(path)
+	if err != nil || info == nil {
 		return false
 	}
-	fmt.Printf("Linked %s -> %s (version %s, shared with main clone)\n", DestDir, srcDir, Version)
-	return true
+	return info.Mode()&os.ModeSymlink != 0
 }
 
 func gitRevParse(arg string) (string, error) {
@@ -363,12 +389,12 @@ func createPlaceholder(path string) error {
 		return nil
 	}
 
-	// Worktree-in-Docker case: on the macOS host, `tryLinkFromMainClone` set
-	// up `resources/ai` as a symlink into the main clone's populated dir.
-	// Inside Docker that symlink target is a host path the container can't
-	// see, so the symlink is dangling and the MkdirAll below fails with
-	// "file exists". Detect and clean up before proceeding so the
-	// placeholder write can land in a real directory.
+	// Legacy worktree-in-Docker heal: the retired share-by-symlink scheme left
+	// `resources/ai` as a symlink into the main clone's populated dir. Inside
+	// Docker that target is a host path the container can't see, so the
+	// symlink dangles and the MkdirAll below fails with "file exists". Detect
+	// and clean up so the placeholder write lands in a real directory. (New
+	// worktrees get a self-contained clonefile copy and never hit this.)
 	dir := filepath.Dir(path)
 	if info, lerr := os.Lstat(dir); lerr == nil && info.Mode()&os.ModeSymlink != 0 {
 		if _, serr := os.Stat(dir); serr != nil {

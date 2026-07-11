@@ -129,8 +129,9 @@ worktree under `.claude/worktrees/<slug>`:
   `cp -c .codegraph/codegraph.db` and `cp .codegraph/config.json` into it, then `(cd <worktree> && codegraph sync)`.
   Without its own populated `.codegraph`, the worktree session deadlocks against the main repo's DB.
 - llama-server binaries (gitignored, `src-tauri/resources/ai/`): nothing to do. `src-tauri/build.rs` runs
-  `scripts/download-llama-server.go` on demand, which symlinks from the main clone when `.version` matches, else
-  downloads. So raw `cargo check` works in a fresh worktree.
+  `scripts/download-llama-server.go` on demand, which clones from the main clone when `.version` matches (APFS clonefile
+  — a self-contained copy, so the worktree also works bind-mounted into the Linux-E2E Docker container), else downloads.
+  So raw `cargo check` works in a fresh worktree.
 
 When FF-ing `main`, delete the worktree + branch AND remove the orphaned dev data dir
 (`~/Library/Application Support/com.veszelovszki.cmdr-dev-<slug>`, often ~1 GB once its drive index builds): nothing

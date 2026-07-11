@@ -34,11 +34,12 @@ Wrapper architecture, decisions, and the full instance-isolation reference: [DET
   space; `/tmp` self-prunes. Wrapper exit cleanup (`process.on('exit'/'SIGINT'/'SIGTERM')`) is best-effort and doesn't
   run on `SIGKILL`/OOM/terminal-close, so the `$TMPDIR` location is the load-bearing fallback. Don't move it into the
   repo.
-- **`download-llama-server.go` symlinks from the main clone in linked worktrees when `.version` matches** (else
-  downloads). In CI release builds (`APPLE_SIGNING_IDENTITY` set) it codesigns each extracted binary; when
-  `LLAMA_SIGN_KEYCHAIN` is set it passes `codesign --keychain` explicitly (release.yml puts that keychain in the search
-  list because the runner's launchd session can't use the login keychain's key and `--keychain` alone doesn't work
-  outside the search list).
+- **`download-llama-server.go` clones from the main clone in linked worktrees when `.version` matches** (APFS clonefile
+  via `cp -c`, plain-copy fallback; else downloads). A copy, never a symlink into the main clone: the Linux-E2E Docker
+  container bind-mounts only the worktree, so such a symlink dangles there and breaks the in-container build. In CI
+  release builds (`APPLE_SIGNING_IDENTITY` set) it codesigns each extracted binary; when `LLAMA_SIGN_KEYCHAIN` is set it
+  passes `codesign --keychain` explicitly (release.yml puts that keychain in the search list because the runner's
+  launchd session can't use the login keychain's key and `--keychain` alone doesn't work outside the search list).
 - **`--worktree` slug isn't validated against the actual worktree directory name.** The wrapper just sanitizes whatever
   slug you pass, so you can pin isolation from a non-worktree shell.
 - **`instance-id.js` is stdlib-only** (`node:net`/`fs`/`os`/`path`/`child_process`, no npm deps) and is imported by both
