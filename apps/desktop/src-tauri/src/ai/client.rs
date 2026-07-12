@@ -68,6 +68,44 @@ impl AiBackend {
             model: remote_model_iden(&model),
         }
     }
+
+    /// Resolves the provider adapter for this backend's configured model, without a
+    /// network call. The agent LLM (`crate::agent::llm`) uses it to pick a
+    /// per-provider reasoning posture before building request options.
+    pub(crate) async fn resolve_adapter(&self) -> Result<AdapterKind, AiError> {
+        let target = self
+            .client
+            .resolve_service_target(&self.model)
+            .await
+            .map_err(map_genai_error)?;
+        Ok(target.model.adapter_kind)
+    }
+
+    /// Runs a full tool-capable streaming chat request and returns the raw `genai`
+    /// stream, so the caller maps the events into its own delta type. Applies the
+    /// same per-model option fixups as [`chat_completion_stream`] (reasoning-class
+    /// models get `temperature`/`top_p` stripped).
+    ///
+    /// The prompt-only helpers above can't express a multipart tool loop (tool
+    /// calls, tool responses, reasoning parts), so the agent's `AgentLlm` genai impl
+    /// builds the `ChatRequest` itself and drives it through here — reusing this
+    /// backend's adapter routing and endpoint resolution rather than duplicating them.
+    pub(crate) async fn exec_chat_stream_request(
+        &self,
+        request: ChatRequest,
+        options: &ChatOptions,
+    ) -> Result<genai::chat::ChatStreamResponse, AiError> {
+        let target = self
+            .client
+            .resolve_service_target(&self.model)
+            .await
+            .map_err(map_genai_error)?;
+        let effective_options = adjust_for_model(options, &target);
+        self.client
+            .exec_chat_stream(&self.model, request, Some(&effective_options))
+            .await
+            .map_err(map_genai_error)
+    }
 }
 
 /// Maps a BYOK model name to the `genai` model identifier whose namespace picks the right adapter.
@@ -357,8 +395,10 @@ fn ai_error_for_status(status: u16, detail: String) -> AiError {
 }
 
 /// Maps `genai`'s rich error tree to our flat [`AiError`]. Pattern-matches on the
-/// known transport variants instead of grepping the `Display` output.
-fn map_genai_error(e: genai::Error) -> AiError {
+/// known transport variants instead of grepping the `Display` output. Shared with
+/// the agent LLM (`crate::agent::llm`), which maps `AiError` on to its own typed
+/// error, so the status-based classification lives in one place.
+pub(crate) fn map_genai_error(e: genai::Error) -> AiError {
     use genai::Error as G;
     use genai::webc::Error as W;
 

@@ -83,6 +83,7 @@ mod logging;
 mod accent_color;
 #[cfg(target_os = "linux")]
 mod accent_color_linux;
+mod agent;
 mod ai;
 mod analytics;
 pub mod benchmark;

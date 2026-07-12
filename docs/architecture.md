@@ -151,6 +151,11 @@ All under `apps/desktop/src-tauri/src/`.
   app-side case folding with no collation (stays `sqlite3`-inspectable). See its
   [`CLAUDE.md`](../apps/desktop/src-tauri/src/operation_log/CLAUDE.md) and
   [`docs/specs/operation-log-plan.md`](specs/operation-log-plan.md)
+- `agent/`: The in-app AI agent, whose first user-facing slice is "Ask Cmdr" (a read-only chat rail). Builds out over
+  milestones (`docs/specs/ask-cmdr-plan.md`); M1 lands `agent/llm/` — the provider-agnostic `AgentLlm` seam over the
+  shipped `genai` client, its deterministic fake, and the typed message-part model that keeps opaque provider reasoning
+  state lossless. See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/agent/CLAUDE.md) and
+  [`docs/specs/ask-cmdr-spec.md`](specs/ask-cmdr-spec.md)
 - `downloads/`: `notify`-based `~/Downloads` watcher, FDA-gated, browser-rename-aware filter, Cmdr-own-write ignore set
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher
