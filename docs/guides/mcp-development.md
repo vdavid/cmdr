@@ -17,7 +17,10 @@ mcp/
 ├── server.rs         # HTTP server (axum), bind/rebind lifecycle, request dispatch
 ├── auth.rs           # Bearer-token lifecycle + per-request validation (reads the gate)
 ├── protocol.rs       # JSON-RPC message handling
-├── tool_registry.rs  # THE single source: one authored table → tools/list, dispatch, and auth gate
+├── tool_registry/    # THE single source: one authored table → per-consumer lists, dispatch, auth gate
+│   ├── mod.rs        #   the `mcp_tools!` macro, the table, the `Consumer`/`Access` dimensions, accessors
+│   ├── gate.rs       #   `TokenGate` (the bearer-token dimension)
+│   └── schemas/      #   per-tool `fn <tool>_schema()` blocks, grouped by category
 ├── tools.rs          # Thin shim: the `Tool` struct + re-export of `get_all_tools`
 ├── executor/         # Tool handlers, grouped by category (app.rs, nav.rs, file_ops.rs, …)
 ├── resources/        # Read-only resources (cmdr://state, logs, indexing, settings)
@@ -25,12 +28,20 @@ mcp/
 └── tests/            # Test suite, split by category
 ```
 
-Every tool is authored **exactly once** in the `mcp_tools!` table in `tool_registry.rs`. That one table generates all
-three consumers, so they can't drift:
+Every tool is authored **exactly once** in the `mcp_tools!` table in `tool_registry/mod.rs`. That one table generates
+every view, so they can't drift:
 
-- `get_all_tools()` — the `tools/list` payload.
-- `execute_tool()` — the `tools/call` dispatch (generic over `Runtime`).
+- `get_all_tools()` — the ai_client `tools/list` payload (entries whose `consumers` include `AiClient`).
+- `agent_tool_view()` — the in-process agent's tool set (entries whose `consumers` include `Agent`); empty until the
+  agent effort's M4 authors read-only agent tools.
+- `execute_tool()` — the `tools/call` dispatch (generic over `Runtime`), gated to the caller's consumer view: a name
+  outside that view is refused before dispatch.
 - `tool_gate()` + `TokenGate` — the bearer-token classification `auth.rs` reads.
+- `tool_consumers()` / `tool_access()` — the `consumers` (exposure) and `access` (read/write) dimensions.
+
+Two AI consumers share this one registry (agent-spec D49: extend it, don't fork a parallel agent table). See
+`src/mcp/DETAILS.md` § Consumer and access views for the model and why `access` is a stronger read-only guarantee than
+the `TokenGate`.
 
 ### Data flow
 
@@ -38,7 +49,7 @@ three consumers, so they can't drift:
 2. **Parsing** → `protocol.rs` parses and validates it.
 3. **Auth** → for `tools/call`, `auth::tool_call_requires_token` looks up the tool's `TokenGate` and requires the bearer
    token only for calls that bypass the user's confirmation dialog.
-4. **Routing** → `tools/call` dispatches through the generated `execute_tool()` in `tool_registry.rs`.
+4. **Routing** → `tools/call` dispatches through the generated `execute_tool()` in `tool_registry/mod.rs`.
 5. **Execution** → the handler in the matching `executor/` category file emits a Tauri event (or queries state) and
    waits for the frontend ack before returning `OK`.
 6. **Frontend** → `mcp-listeners.ts` validate-parses the event payload and dispatches on the typed command bus, then
@@ -70,27 +81,49 @@ pub async fn execute_my_action<R: Runtime>(app: &AppHandle<R>, params: &Value) -
 Follow the executor must-knows: read path params through `user_path_param`, choose the right ack (`wait_for_ack` vs
 `mcp_round_trip`), and never return `OK` without waiting for the ack.
 
-### Step 2: add ONE entry to the `mcp_tools!` table in `tool_registry.rs`
+### Step 2: add the schema to `schemas/` and ONE entry to the `mcp_tools!` table in `tool_registry/mod.rs`
+
+Add a `fn <tool>_schema() -> Value` to the matching `schemas/<category>.rs` (a no-parameter tool reuses
+`schemas::no_params_schema()`):
 
 ```rust
-"my_action" => {
-    desc: "Do the thing to a target",
-    schema: json!({
+// in tool_registry/schemas/view.rs
+pub fn my_action_schema() -> Value {
+    json!({
         "type": "object",
         "properties": {
             "target": { "type": "string", "description": "What to act on" }
         },
         "required": ["target"]
-    }),
+    })
+}
+```
+
+Then the table entry:
+
+```rust
+"my_action" => {
+    desc: "Do the thing to a target",
+    schema: schemas::my_action_schema(),
     gate: TokenGate::Open,
+    consumers: &[Consumer::AiClient],
+    access: Access::Write,
     run: app_params view::execute_my_action
 },
 ```
 
-Each entry bundles every facet: name, description, JSON schema, the bearer-token `gate`, and the handler (as a shape tag
-plus a path). You can't add an entry without all five, and you can't add a handler the dispatch doesn't know about, so
-schema/dispatch/auth can't fall out of sync.
+Each entry bundles every facet: name, description, JSON schema, the bearer-token `gate`, the `consumers` exposure, the
+`access` class, and the handler (as a shape tag plus a path). You can't add an entry without all of them, and you can't
+add a handler the dispatch doesn't know about, so schema/dispatch/auth/exposure can't fall out of sync.
 
+- **`consumers`** is the exposure set (`&[Consumer::AiClient]`, `&[Consumer::Agent]`, or both). A tool driving the UI is
+  `[AiClient]`; a read-only tool for the in-process agent is `[Agent]` (or shared as `[AiClient, Agent]` when a read
+  surface fits both). The agent's view is dispatched only by the agent runtime; the HTTP server dispatches only the
+  ai_client view.
+- **`access`** is `Read` or `Write`. `Write` covers any mutation of the filesystem OR app state (nav, cursor, selection,
+  tabs, dialogs, settings, connect/eject, file ops); when in doubt, `Write`. The agent view must be **read-only by
+  construction** — a structural test fails if any `[Agent]` tool is `Write` — so a tool shared into the agent view must
+  be a genuine read surface tagged `Read`.
 - **`gate`** classifies the tool for the bearer token: `Open` (no token — reads, nav, search, and destructive ops that
   still prompt the user), `Always` (always gated — config mutation with no confirmation, like `set_setting`),
   `IfAutoConfirm` (gated when `arguments.autoConfirm == true`, like `copy`/`move`/`delete`), `IfConfirmAction` (gated
@@ -101,7 +134,7 @@ schema/dispatch/auth can't fall out of sync.
   `app_params` (`handler(app, params).await`, most tools), `app_only` (`handler(app).await`, no params), `params_only`
   (`handler(params).await`, no `app` — `search`, `ai_search`), `sync_app` / `sync_app_params` (sync handlers, no
   `.await`), and `nav` / `nav_params` (the nav family, which routes several tools through one handler by passing the
-  tool name). See the macro doc comment in `tool_registry.rs` for the full list.
+  tool name). See the macro doc comment in `tool_registry/mod.rs` for the full list.
 - **Schema keys** serialize alphabetically (serde_json `Map` is a `BTreeMap`), so authored key order doesn't affect the
   wire bytes. A tools/list snapshot test (`tests/tool_snapshot_tests.rs`) pins the exact output; run it after any schema
   edit and update the fixture when the change is intentional.
@@ -215,7 +248,7 @@ cd apps/desktop/src-tauri && cargo check
 ### Tests failing
 
 ```bash
-cargo test mcp::tool_registry::tests::test_my_action_schema -- --nocapture
+cargo test mcp::tests::tool_registry_tests::test_my_action_schema -- --nocapture
 ```
 
 ### Events not reaching the frontend

@@ -39,14 +39,50 @@ section below.
 - Routes to `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/read`
 - Session management (though most clients don't use sessions)
 
-### Tools (`tool_registry.rs`)
+### Tools (`tool_registry/`)
 
-All 42 tools are authored once in the `mcp_tools!` table in `tool_registry.rs` — name, description, JSON schema,
-`TokenGate`, and handler per entry. That one table generates `get_all_tools()` (tools/list), `execute_tool()`
-(dispatch), and `tool_gate()` (auth), so the facets can't drift and adding a tool is a single entry. `tools.rs` is a
-thin shim: the `Tool` struct plus a re-export of `get_all_tools`. Read the entries for the exact schemas (don't
-transcribe them here); the sections below summarize behavior. Wire output is byte-identical and pinned by
-`tests/tool_snapshot_tests.rs`.
+Every AI-callable tool is authored once in the `mcp_tools!` table in `tool_registry/mod.rs` — name, description, JSON
+schema, `TokenGate`, `consumers`, `access`, and handler per entry. That one table generates `get_all_tools()`
+(the ai_client `tools/list`), `agent_tool_view()` (the in-process agent's set), `execute_tool()` (consumer-gated
+dispatch), `tool_gate()` (auth), and `tool_consumers()` / `tool_access()`, so the facets can't drift and adding a tool
+is a single entry. `tools.rs` is a thin shim: the `Tool` struct plus a re-export of `get_all_tools`. Read the entries
+for the exact schemas (don't transcribe them here); the sections below summarize behavior. Wire output is byte-identical
+and pinned by `tests/tool_snapshot_tests.rs`.
+
+**Directory split (`tool_registry/`).** The table's `json!` schema blocks dominate the line count and serialize
+identically wherever they live, so they're hoisted into `schemas/*.rs` (one `fn <tool>_schema() -> Value` per tool,
+grouped by category) and the entries call them (`schema: schemas::copy_schema()`). `gate.rs` holds `TokenGate`;
+`mod.rs` holds the macro, the `Consumer` / `Access` dimensions, the authored table, and the generated accessors. The
+split changed no wire bytes — the snapshot passes unmodified.
+
+### Consumer and access views
+
+One authored registry serves two consumers (agent-spec D49: **extend the consolidated registry, don't fork a parallel
+agent-only table**). Two per-entry dimensions express the split:
+
+- **`consumers`** (`&[Consumer]`, `AiClient` / `Agent`): the exposure axis. `get_all_tools()` returns entries whose
+  `consumers` include `AiClient` (the MCP wire); `agent_tool_view()` returns those including `Agent` (the in-process
+  agent runtime, M4+). The macro emits a `Tool` per entry *conditionally*, so an agent-only entry never reaches the MCP
+  wire and vice versa. Every current entry is `[AiClient]`; the agent view is empty until M4 authors read-only tools.
+- **`access`** (`Read` / `Write`): whether the tool reads or mutates. `Write` covers any mutation of the filesystem OR
+  app state — nav, cursor, selection, tabs, dialogs, settings, connect/eject, file ops, rollback-cancel; when in doubt,
+  `Write`. Only genuine read surfaces (`search`, `ai_search`, `await`, `operations_list`, `operations_get`) are `Read`.
+
+**Consumer-gated dispatch.** `execute_tool` takes a `Consumer` and refuses a name outside that consumer's view before
+dispatch (via `tool_available_to`, a typed `Consumer`-set check — not a string). So the HTTP server (constructed as
+`Consumer::AiClient`) can't dispatch an agent-only name, and the agent runtime can't dispatch an ai_client-only one.
+"Callable but not listed" is exactly the drift the structural tests forbid: the dispatch view each consumer reaches
+equals its list view (`test_dispatch_view_equals_list_view_per_consumer`).
+
+**Why `access` strengthens the gate-based D59 test.** D59's original phrasing pins the agent view with "every
+non-`Open`-gated tool is absent from the agent view." That is necessary but **not sufficient**, because `TokenGate::Open`
+is not "read-only": its remit includes destructive ops that still prompt the user, and the file-mutating ops
+(`copy` / `move` / `delete`) carry `IfAutoConfirm` — effectively open when `autoConfirm` is absent. A gate-based filter
+would therefore admit a destructive tool into a read-only agent's view. The explicit `access` dimension is the correct
+guarantee: the agent view must equal exactly its authored `[agent]` entries **and** every one must be `Access::Read`.
+The two structural tests (`test_agent_tool_view_is_exactly_expected_set` + `test_agent_tool_view_is_all_read`) pin both
+halves; they pass vacuously while the agent view is empty and go red→green as M4 populates it. This is the
+read-only-by-construction line the plan calls the effort's most safety-critical invariant.
 
 **Param naming is camelCase** (`tabId`, `timeoutSeconds`, `sizeMin`, `autoConfirm`). Tool names stay snake_case. Don't add snake_case params; agents pattern-match across tools and every inconsistency is a guessed-wrong call.
 
@@ -103,7 +139,7 @@ Directory module split by resource. `resources/mod.rs` is the shared spine: the 
 ### Executor (`executor/`)
 
 The tool handlers and the ack contract live in `executor/`. Dispatch itself (`execute_tool`) is generated by the
-`mcp_tools!` table in `tool_registry.rs`, which calls these handlers by path; that's why the category submodules are
+`mcp_tools!` table in `tool_registry/mod.rs`, which calls these handlers by path; that's why the category submodules are
 `pub(crate)` (a sibling module reaching their `pub` handler fns). The category split (`app.rs`, `view.rs`, `nav.rs`,
 `file_ops.rs`, `dialogs.rs`, `async_tools.rs`, `search.rs`, `downloads.rs`), the `AckSignal` variants and budgets, and
 the `mcp_round_trip` pattern for tools that need an explicit FE response are all documented in
@@ -130,7 +166,7 @@ Frontend syncs state to these stores via Tauri commands (`update_left_pane_state
 
 Directory module split by test category:
 - `protocol_tests.rs`: tool name validation, schema checks, tool count
-- `tool_registry_tests.rs`: the `mcp_tools!` table's schema-shape and token-gate tests (moved out of `tool_registry.rs` so the authored table stays lean)
+- `tool_registry_tests.rs`: the `mcp_tools!` table's schema-shape, token-gate, and consumer/access tests (kept out of `tool_registry/mod.rs` so the authored table stays lean)
 - `resource_tests.rs`: resource URI validation, count, mime types (the public `get_all_resources` surface)
 - `resource_state_tests.rs`: `cmdr://state` builder — URI/query parsing, pane/tab/file formatting
 - `resource_log_tests.rs`: `cmdr://logs` builder — option parsing, line selection, `since` filter, the PII-redaction contract
@@ -233,7 +269,7 @@ The bearer token is required for **only the calls that bypass the user's in-app 
 
 **Everything else needs no token**: resource reads (`cmdr://state`, `cmdr://logs`, etc.), navigation, search, and the destructive ops that still pop the confirmation dialog (`autoConfirm` absent/false).
 
-The classification is **sourced from the tool registry, not a separate string list** — this is the by-construction win. Each tool declares a `TokenGate` (`Open` / `Always` / `IfAutoConfirm` / `IfConfirmAction` / `IfRollback`) on its `mcp_tools!` entry in `tool_registry.rs`. `auth::tool_call_requires_token(method, params)` (a pure, unit-tested predicate) returns true iff `method == "tools/call"` and `tool_gate(name)` reports a gate whose `requires_token(arguments)` is true. Because the gate is a required field on every entry, a new destructive tool can't ship with the gate forgotten — and two structural tests (`test_autoconfirm_tools_are_gated`, `test_rollback_tools_are_gated`) fail if a tool exposing `autoConfirm` / `rollback` is left `Open`, while a full-table set-equality test forces a conscious gate for any newly-added tool. `TokenGate::IfConfirmAction` / `IfRollback` read the tool's own typed `action` / `rollback` field, not a message substring, so they're not a `no-string-matching` violation.
+The classification is **sourced from the tool registry, not a separate string list** — this is the by-construction win. Each tool declares a `TokenGate` (`Open` / `Always` / `IfAutoConfirm` / `IfConfirmAction` / `IfRollback`) on its `mcp_tools!` entry in `tool_registry/mod.rs`. `auth::tool_call_requires_token(method, params)` (a pure, unit-tested predicate) returns true iff `method == "tools/call"` and `tool_gate(name)` reports a gate whose `requires_token(arguments)` is true. Because the gate is a required field on every entry, a new destructive tool can't ship with the gate forgotten — and two structural tests (`test_autoconfirm_tools_are_gated`, `test_rollback_tools_are_gated`) fail if a tool exposing `autoConfirm` / `rollback` is left `Open`, while a full-table set-equality test forces a conscious gate for any newly-added tool. `TokenGate::IfConfirmAction` / `IfRollback` read the tool's own typed `action` / `rollback` field, not a message substring, so they're not a `no-string-matching` violation.
 
 The POST handler runs `if tool_call_requires_token(..) && validate_token(..).is_err() { reject }`. `GET /mcp` (SSE) carries no tool call, so it's never gated. `GET /mcp/health` stays open for liveness probes.
 

@@ -1,13 +1,15 @@
 //! Schema-shape and token-gate tests for the `mcp_tools!` registry table.
 //!
-//! These live beside the table rather than inline in `tool_registry.rs`, so that
+//! These live beside the table rather than inline in `tool_registry/mod.rs`, so that
 //! authored source stays a lean, single-purpose declaration (the `file-length`
 //! scanner flags it otherwise). They drive only the public registry surface
 //! (`get_all_tools` / `tool_gate` / `TokenGate`), so no `super` access is needed.
 
 use serde_json::json;
 
-use crate::mcp::tool_registry::{TokenGate, get_all_tools, tool_gate};
+use crate::mcp::tool_registry::{
+    Access, Consumer, TokenGate, agent_tool_view, get_all_tools, tool_access, tool_available_to, tool_gate,
+};
 use crate::mcp::tools::Tool;
 
 fn tool<'a>(tools: &'a [Tool], name: &str) -> &'a Tool {
@@ -626,4 +628,87 @@ fn test_requires_token_arg_logic() {
     // Always / Open
     assert!(TokenGate::Always.requires_token(None));
     assert!(!TokenGate::Open.requires_token(Some(&json!({"autoConfirm": true}))));
+}
+
+// ── Consumer + access dimensions (the read-only-by-construction gate) ──────
+//
+// One authored registry, two consumer views (agent-spec D49/D59). `consumers` is the exposure
+// axis; `access` is a stronger read-only guarantee than `TokenGate::Open` can give (Open covers
+// destructive-but-prompting ops). These tests pin the agent view to exactly its authored
+// `[agent]` entries AND require every one to be `Access::Read`. Both pass vacuously at M3 (the
+// agent view is empty) and go red→green as M4 authors the agent tool entries.
+
+/// The exact set of tool names in the agent's read-only view. EMPTY at M3 — M4 populates it.
+/// Pins the set so a stray agent-visible tool (or a dropped one) is a hard failure, mirroring
+/// `EXPECTED_TOOL_NAMES` for the ai_client view.
+const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[];
+
+/// Set-equality: the agent view equals exactly its authored `consumers:[agent]` entries. This is
+/// D59's mechanism — a new destructive tool can't ship agent-visible by accident, because adding
+/// it to the view without adding it here fails.
+#[test]
+fn test_agent_tool_view_is_exactly_expected_set() {
+    use std::collections::BTreeSet;
+    let actual: BTreeSet<String> = agent_tool_view().into_iter().map(|t| t.name).collect();
+    let expected: BTreeSet<String> = EXPECTED_AGENT_TOOL_NAMES.iter().map(|s| (*s).to_owned()).collect();
+    assert_eq!(actual, expected, "agent tool view drifted from the expected set");
+}
+
+/// Read-only by construction: every tool in the agent's view is `Access::Read`. This is the
+/// guarantee `TokenGate::Open` cannot give — `Open` covers destructive ops that still prompt the
+/// user (`copy`/`move`/`delete` with `autoConfirm` absent carry `IfAutoConfirm`), so a gate-based
+/// filter would let a `Write` tool into a read-only view. The red→green anchor for M4.
+#[test]
+fn test_agent_tool_view_is_all_read() {
+    for tool in agent_tool_view() {
+        assert_eq!(
+            tool_access(&tool.name),
+            Some(Access::Read),
+            "agent-visible tool '{}' is not Access::Read — the agent view must be read-only by construction",
+            tool.name
+        );
+    }
+}
+
+/// Consumer-identity dispatch: the dispatch view each consumer can reach through `execute_tool`
+/// equals exactly its list view — no transport dispatches a name outside its consumer view
+/// ("callable but not listed" is the drift D59 exists to prevent). At M3 this proves every
+/// ai_client tool is refused to the agent runtime (the agent view is empty); it stays green and
+/// gains force as M4 shares entries into both views.
+#[test]
+fn test_dispatch_view_equals_list_view_per_consumer() {
+    use std::collections::BTreeSet;
+    let ai_names: BTreeSet<String> = get_all_tools().into_iter().map(|t| t.name).collect();
+    let agent_names: BTreeSet<String> = agent_tool_view().into_iter().map(|t| t.name).collect();
+
+    for name in ai_names.iter().chain(agent_names.iter()) {
+        assert_eq!(
+            tool_available_to(name, Consumer::AiClient),
+            ai_names.contains(name),
+            "ai_client dispatchability of '{name}' disagrees with the ai_client list view"
+        );
+        assert_eq!(
+            tool_available_to(name, Consumer::Agent),
+            agent_names.contains(name),
+            "agent dispatchability of '{name}' disagrees with the agent list view"
+        );
+    }
+
+    // An unknown name is refused by both transports (typed refusal, not a string branch).
+    assert!(!tool_available_to("bogus", Consumer::AiClient));
+    assert!(!tool_available_to("bogus", Consumer::Agent));
+}
+
+/// Every ai_client tool declares an access class, and the current registry is entirely ai_client.
+/// A future entry shared into `[ai_client, agent]` still needs a correct `access` (the all-Read
+/// test above enforces `Read` for its agent side).
+#[test]
+fn test_every_tool_has_an_access_class() {
+    for tool in get_all_tools() {
+        assert!(
+            tool_access(&tool.name).is_some(),
+            "tool '{}' has no access class",
+            tool.name
+        );
+    }
 }

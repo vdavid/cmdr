@@ -33,7 +33,7 @@ use super::config::McpConfig;
 use super::port_file::{remove_port_file, write_port_file, write_secret_file};
 use super::protocol::{INVALID_PARAMS, INVALID_REQUEST, METHOD_NOT_FOUND, McpRequest, McpResponse, ServerCapabilities};
 use super::resources::{get_all_resources, read_resource};
-use super::tool_registry::execute_tool;
+use super::tool_registry::{Consumer, execute_tool};
 use super::tools::get_all_tools;
 
 /// File name written under `<data_dir>` so external readers (CLI, E2E fixtures, agent
@@ -772,7 +772,9 @@ async fn process_request<R: Runtime>(
             }
 
             log::debug!("MCP: executing tool {name}");
-            let result = execute_tool(&state.app, name, &arguments).await;
+            // The HTTP transport is the ai_client consumer: it dispatches only the ai_client
+            // view (an agent-only name is refused before dispatch). See `tool_registry`.
+            let result = execute_tool(&state.app, Consumer::AiClient, name, &arguments).await;
 
             match result {
                 Ok(ref value) => {

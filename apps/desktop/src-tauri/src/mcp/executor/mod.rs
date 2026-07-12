@@ -5,7 +5,7 @@
 
 mod ack;
 // The category handler modules are `pub(crate)` (not private to `executor`) so the generated
-// dispatch in the sibling `mcp/tool_registry.rs` can name their `pub` handler fns; a sibling
+// dispatch in the sibling `mcp/tool_registry/mod.rs` can name their `pub` handler fns; a sibling
 // can't otherwise reach `executor`'s descendants (E0603). `ack` stays private (executor-internal).
 pub(crate) mod app;
 pub(crate) mod async_tools;
