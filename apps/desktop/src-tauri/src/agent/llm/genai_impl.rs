@@ -393,7 +393,7 @@ mod tests {
             role: AgentRole::Assistant,
             parts: vec![AgentPart::ToolCall(AgentToolCall {
                 call_id: "call-1".into(),
-                tool: ToolId::Placeholder,
+                tool: ToolId::AppState,
                 arguments: json!({ "path": "/Users/x" }),
                 reasoning: Some(ReasoningState {
                     provider: ProviderTag::Gemini,
@@ -540,7 +540,7 @@ mod tests {
     #[test]
     fn declared_tools_are_never_strict() {
         let decl = ToolDeclaration {
-            name: ToolId::Placeholder,
+            name: ToolId::AppState,
             description: "look".into(),
             schema: json!({ "type": "object" }),
         };

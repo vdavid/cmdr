@@ -27,8 +27,9 @@ For adding or changing tools, see `docs/guides/mcp-development.md`.
   to reads/nav or narrow it past the auto-confirm bypass. Full model: DETAILS.md § Authentication.
 - **One registry, two consumer views (agent-spec D49/D59).** Each entry declares `consumers` (`ai_client`/`agent`) +
   `access` (`Read`/`Write`); each transport dispatches only its own view. The agent view is **read-only by
-  construction** — its `[agent]` entries, all `access: Read`, pinned by structural tests (empty until M4). `access` is
-  stronger than `TokenGate::Open`, so tag any mutating/nav/cursor tool `Write`. DETAILS.md § Consumer and access views.
+  construction** — `[agent]` entries, all `access: Read`, pinned structurally. `access` is stronger than
+  `TokenGate::Open`, so tag any mutating tool `Write`. Agent handlers live under
+  [`agent/tools`](../agent/tools/CLAUDE.md). DETAILS.md § Consumer and access views.
 - **Token rejection is an in-band JSON-RPC error at HTTP 200, NOT 401** (401 makes clients launch an OAuth discovery
   flow; the Streamable-HTTP spec reserves it for that). Keep it 200 + JSON-RPC `error`. The gate fails closed (no token
   → reject). One uniform message for missing-vs-wrong token (no oracle); never echo the token.

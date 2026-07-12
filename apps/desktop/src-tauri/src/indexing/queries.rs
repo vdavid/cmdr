@@ -284,6 +284,36 @@ fn dir_stats_from(path: String, s: &store::DirStatsById, current_epoch: u64, pen
     }
 }
 
+/// List the immediate children of a directory from a volume's index (names,
+/// folder/file, per-child size + mtime), resolving the owning volume from the
+/// path. `Ok(None)` means the volume has no live index (no read pool) or the path
+/// isn't in the index (unresolved) — the caller surfaces a typed "no index" /
+/// "not found" rather than a misleading empty listing. Reads the index only; it
+/// never touches the disk (so it's safe on a dead mount). Mirrors
+/// [`get_dir_stats`]'s pool/resolve wiring.
+pub fn list_dir_children(path: &str) -> Result<Option<Vec<store::EntryRow>>, String> {
+    let volume_id = volume_id_for_local_path(path);
+    let pool = match get_read_pool_for(&volume_id) {
+        Some(p) => p,
+        None => return Ok(None),
+    };
+    let normalized = firmlinks::normalize_path(path);
+    let index_path = match index_read_path(&volume_id, &normalized) {
+        Some(p) => p,
+        None => return Ok(None),
+    };
+    pool.with_conn(|conn| {
+        let entry_id =
+            match store::resolve_path(conn, &index_path).map_err(|e| format!("Couldn't resolve path: {e}"))? {
+                Some(id) => id,
+                None => return Ok(None),
+            };
+        let children =
+            IndexStore::list_children_on(entry_id, conn).map_err(|e| format!("Couldn't list children: {e}"))?;
+        Ok(Some(children))
+    })?
+}
+
 /// Batch lookup of dir_stats, resolving the owning volume from the paths. The
 /// IPC `get_dir_stats_batch` sends one directory's children, which all live on
 /// one volume; resolving from the first path is sufficient. Every

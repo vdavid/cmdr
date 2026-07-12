@@ -34,7 +34,7 @@ pub(crate) enum VolumeKind {
 }
 
 impl VolumeKind {
-    fn token(self) -> &'static str {
+    pub(crate) fn token(self) -> &'static str {
         match self {
             VolumeKind::Local => "local",
             VolumeKind::Smb => "smb",

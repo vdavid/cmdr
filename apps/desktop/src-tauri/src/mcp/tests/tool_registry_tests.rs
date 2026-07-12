@@ -638,10 +638,20 @@ fn test_requires_token_arg_logic() {
 // `[agent]` entries AND require every one to be `Access::Read`. Both pass vacuously at M3 (the
 // agent view is empty) and go red→green as M4 authors the agent tool entries.
 
-/// The exact set of tool names in the agent's read-only view. EMPTY at M3 — M4 populates it.
-/// Pins the set so a stray agent-visible tool (or a dropped one) is a hard failure, mirroring
-/// `EXPECTED_TOOL_NAMES` for the ai_client view.
-const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[];
+/// The exact set of tool names in the agent's read-only view. Pins the set so a stray
+/// agent-visible tool (or a dropped one) is a hard failure, mirroring `EXPECTED_TOOL_NAMES`
+/// for the ai_client view. `operations_list` / `operations_get` are shared with the
+/// ai_client view (`consumers: [AiClient, Agent]`); the rest are agent-only read entries.
+const EXPECTED_AGENT_TOOL_NAMES: &[&str] = &[
+    "app_state",
+    "list_dir",
+    "largest_dirs",
+    "important_folders",
+    "folder_importance",
+    "list_volumes",
+    "operations_list",
+    "operations_get",
+];
 
 /// Set-equality: the agent view equals exactly its authored `consumers:[agent]` entries. This is
 /// D59's mechanism — a new destructive tool can't ship agent-visible by accident, because adding

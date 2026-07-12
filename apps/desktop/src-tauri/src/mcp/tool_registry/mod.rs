@@ -57,9 +57,8 @@ use super::tools::Tool;
 pub enum Consumer {
     /// External MCP clients over the HTTP transport (dev tooling, Claude Code, E2E).
     AiClient,
-    /// The in-process Ask Cmdr agent runtime. Not yet constructed in non-test code: the agent
-    /// runtime that dispatches this view arrives in M4/M5; the M3 structural tests exercise it now.
-    #[allow(dead_code, reason = "the agent runtime that constructs this variant lands in M4/M5")]
+    /// The in-process Ask Cmdr agent runtime, which dispatches the read-only agent view via
+    /// [`execute_tool`] with this identity (`crate::agent::tools`).
     Agent,
 }
 
@@ -68,12 +67,9 @@ pub enum Consumer {
 /// when in doubt a tool is `Write`. The agent view must contain zero `Write` tools — this is the
 /// read-only-by-construction guarantee [`TokenGate`] alone can't give (see the module docs).
 ///
-/// `Write` is never read outside the structural tests yet; the agent runtime that acts on the
-/// read/write split arrives in M4/M5. It's registry metadata, not a field on the emitted `Tool`.
-#[allow(
-    dead_code,
-    reason = "the agent runtime that acts on the read/write split lands in M4/M5"
-)]
+/// The agent dispatch (`crate::agent::tools`) reads [`tool_access`] as a runtime backstop:
+/// it refuses to execute any tool not classified `Read`, so read-only holds even against a
+/// mis-tagged entry. It's registry metadata, not a field on the emitted `Tool`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Access {
     Read,
@@ -130,11 +126,9 @@ macro_rules! mcp_tools {
             tools
         }
 
-        /// The in-process agent's tool set: every `[agent]` tool in table order. EMPTY at M3 (M4
-        /// authors the read-only agent tools); the structural set-equality + all-`Read` tests pass
-        /// vacuously until then, and go red→green as M4 populates the entries. Dispatched by the
-        /// agent runtime in M4/M5 — only the structural tests read it today.
-        #[allow(dead_code, reason = "dispatched by the agent runtime in M4/M5; tests read it now")]
+        /// The in-process agent's tool set: every `[agent]` tool in table order. The agent
+        /// runtime (`crate::agent::tools`) turns these into `ToolDeclaration`s and dispatches
+        /// them; the structural set-equality + all-`Read` tests pin the set.
         pub fn agent_tool_view() -> Vec<Tool> {
             let mut tools = Vec::new();
             $(
@@ -163,8 +157,7 @@ macro_rules! mcp_tools {
         }
 
         /// The access class for a tool, or `None` for an unknown name. Read by the structural
-        /// tests now and the agent runtime in M4/M5.
-        #[allow(dead_code, reason = "read by the agent runtime in M4/M5; tests read it now")]
+        /// tests and by the agent dispatch's runtime read-only backstop (`crate::agent::tools`).
         pub fn tool_access(name: &str) -> Option<Access> {
             match name {
                 $( $name => Some($access), )*
@@ -574,7 +567,8 @@ mcp_tools! {
         desc: "List past operations from the durable operation log (copy, move, delete, trash, rename, create, compress), newest first. Filter by time, item name, kind, initiator, status; paged. In-flight ops live in cmdr://state operations + the queue tool.",
         schema: schemas::operations_list_schema(),
         gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
+        // Shared read: the agent runtime uses the same core (the schemas fit unchanged).
+        consumers: &[Consumer::AiClient, Consumer::Agent],
         access: Access::Read,
         run: app_params operation_log::execute_operations_list
     },
@@ -582,7 +576,8 @@ mcp_tools! {
         desc: "Get one operation's header plus a page of its item rows (full source/dest paths, per-item outcome). Use after operations_list; poll this to watch a rollback settle (rollbackState leaves 'rollingBack').",
         schema: schemas::operations_get_schema(),
         gate: TokenGate::Open,
-        consumers: &[Consumer::AiClient],
+        // Shared read: the agent runtime uses the same core (the schemas fit unchanged).
+        consumers: &[Consumer::AiClient, Consumer::Agent],
         access: Access::Read,
         run: app_params operation_log::execute_operations_get
     },
@@ -593,5 +588,60 @@ mcp_tools! {
         consumers: &[Consumer::AiClient],
         access: Access::Write,
         run: app_params operation_log::execute_operations_rollback
+    },
+
+    // ── Agent read-only tools ─────────────────────────────────────────────────
+    // The Ask Cmdr agent's own read-only surface (agent-spec D49: one authored registry, two
+    // consumer views). `consumers: [Agent]`, `access: Read` — filtered out of `get_all_tools()`,
+    // so the ai-client wire snapshot is unchanged. Handlers, schemas, and typed result shapes are
+    // colocated in `crate::agent::tools::read` (feature-organized). `gate: Open` is inert here (the
+    // agent never crosses the MCP auth boundary); it's the honest classification for a read.
+    "app_state" => {
+        desc: "Snapshot the live app state: both panes (current folder, cursor item, selection, view mode, sort) and the mounted volumes with their index freshness and connectivity. Use this to ground an answer in what the user is looking at right now.",
+        schema: crate::agent::tools::read::state::app_state_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::read::state::execute_app_state
+    },
+    "list_dir" => {
+        desc: "List a directory's immediate children (names, folder/file, size, modified) plus its recursive size totals, from the drive index. Reports index freshness honestly (fresh / scanning / stale) and returns a typed 'no index' when the volume isn't indexed, never a wrong zero. Reads the index only — it never touches the disk.",
+        schema: crate::agent::tools::read::listing::list_dir_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::read::listing::execute_list_dir
+    },
+    "largest_dirs" => {
+        desc: "Find the largest subdirectories directly under a path, by recursive size (largest first). Batches directory-size lookups over the index and sorts them. Reports freshness and whether each size is an exact total or a lower bound.",
+        schema: crate::agent::tools::read::listing::largest_dirs_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::read::listing::execute_largest_dirs
+    },
+    "important_folders" => {
+        desc: "List the most important folders across scored volumes (top-N, or those at or above a score threshold), highest first. Importance is Cmdr's own offline signal, so it answers even for an unmounted-but-scored drive. Each row carries its volume and score.",
+        schema: crate::agent::tools::read::importance::important_folders_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::read::importance::execute_important_folders
+    },
+    "folder_importance" => {
+        desc: "Explain one folder's importance: scored (with its 0-1 score, the signal breakdown, and whether the score is stale relative to the latest scan), floored to zero by design (with the reason), or unscored. Offline-capable.",
+        schema: crate::agent::tools::read::importance::folder_importance_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::read::importance::execute_folder_importance
+    },
+    "list_volumes" => {
+        desc: "List every volume Cmdr can see (local disks, SMB shares, MTP devices, and the Network root) with each one's kind, index freshness (fresh / scanning / stale / off), and — for SMB — its connection state (direct / os_mount / disconnected).",
+        schema: crate::agent::tools::read::volumes::list_volumes_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::Agent],
+        access: Access::Read,
+        run: app_params crate::agent::tools::read::volumes::execute_list_volumes
     },
 }

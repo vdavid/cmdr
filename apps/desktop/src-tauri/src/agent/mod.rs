@@ -14,15 +14,21 @@
 //! See `CLAUDE.md` for must-knows and `DETAILS.md` for the map.
 
 // The agent seam is built ahead of its consumers: M1 lands the `AgentLlm` trait,
-// its impls, and the typed part model, but the runtime that drives them and the
-// IPC that reaches them arrive in M5/M6. Until a non-test consumer wires the
-// subsystem in, its items are legitimately unreferenced from a release build, so
-// allow dead_code here (a justified exception to `#![deny(unused)]`). Remove this
-// once M5 wires `AgentLlm` into the chat runtime.
-#![allow(dead_code, reason = "M1 seam + M2 store; consumers (runtime, IPC) arrive in M5/M6")]
+// M2 the store, M4 the read-only toolset + its dispatch gate, but the chat runtime
+// that drives them and the IPC that reaches them arrive in M5/M6. The M4 tool
+// HANDLERS are already live (the `mcp_tools!` macro references them), but the
+// dispatch entry point, the declaration builder, and the refusal gate have no
+// non-test caller until M5. Until then those items are legitimately unreferenced
+// from a release build, so allow dead_code here (a justified exception to
+// `#![deny(unused)]`). Remove this once M5 wires the runtime in.
+#![allow(
+    dead_code,
+    reason = "M1 seam + M2 store + M4 tool dispatch; the runtime arrives in M5/M6"
+)]
 
 pub mod llm;
 pub mod store;
+pub mod tools;
 pub mod types;
 
 use std::path::{Path, PathBuf};

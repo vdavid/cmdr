@@ -24,7 +24,15 @@ pub use auth::current_mcp_token;
 pub use config::McpConfig;
 pub use dialog_state::SoftDialogTracker;
 pub use pane_state::PaneStateStore;
+
+// The agent runtime (`crate::agent`) is the registry's second consumer (agent-spec D49):
+// it dispatches the read-only `Consumer::Agent` view in-process. These are the exact
+// surface it needs — the dispatch entry, the agent view, the consumer/access tokens, and
+// the tool result types its handlers return. Deliberately narrow so the agent can't reach
+// the ai-client dispatch or the auth gate.
+pub(crate) use executor::{ToolError, ToolResult};
 pub use server::{
     McpServerOutcome, get_mcp_actual_port, is_mcp_running, rebind_interactive, start_mcp_server_background,
     stop_mcp_server, stop_mcp_server_and_wait,
 };
+pub(crate) use tool_registry::{Access, Consumer, agent_tool_view, execute_tool, tool_access};

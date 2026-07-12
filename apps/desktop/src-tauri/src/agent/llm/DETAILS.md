@@ -85,8 +85,10 @@ Provider transport errors are classified by HTTP status once, upstream, in `crat
 (the genai `fn_name`, the DB token, and the IPC string are one identical value). `from_wire_name` is total: an unknown
 name resolves to `Unrecognized` rather than failing, so the raw name stays representable for the transparent UI and the
 typed "tool not available" result. The read-only guarantee is that `Unrecognized` (and any future write tool) is never
-in `agent_tool_view()`, so dispatch refuses it — a typed view-membership check, not a string match. M4 replaces the M1
-`Placeholder` variant with the real read-only families and pins `from_wire_name` to the registry view.
+in `agent_tool_view()`, so dispatch refuses it — a typed view-membership check, not a string match. The known variants
+are the read-only families (`AppState`, `ListDir`, `LargestDirs`, `ImportantFolders`, `FolderImportance`, `ListVolumes`,
+`OperationsList`, `OperationsGet`), pinned 1:1 to `agent_tool_view()` by a structural test in `agent/tools`;
+`ToolId::KNOWN` excludes `Unrecognized` by design.
 
 ## Tests
 

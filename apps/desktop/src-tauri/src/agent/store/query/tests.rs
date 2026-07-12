@@ -113,7 +113,7 @@ fn content_blocks_round_trip_the_opaque_reasoning_blob_through_the_db() {
     let id = create_conversation(&conn, "T", 1, None).expect("create");
     let parts = vec![AgentPart::ToolCall(AgentToolCall {
         call_id: "call-1".into(),
-        tool: ToolId::Placeholder,
+        tool: ToolId::AppState,
         arguments: serde_json::json!({ "path": "/Users/x" }),
         reasoning: Some(ReasoningState {
             provider: ProviderTag::Gemini,

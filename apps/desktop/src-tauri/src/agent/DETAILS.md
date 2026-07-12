@@ -25,9 +25,10 @@ build order:
 - `store/` (M2, present): the `main.db` durable store — a forward-migration ladder (mirroring `operation_log/store/`),
   FTS5 over message text, and a per-day cost meter. `agent::start(app)` (open the DB, register the `AgentDb` handle)
   lands here, modeled on `operation_log::start`. Depth: [`store/DETAILS.md`](store/DETAILS.md).
-- `tools/` (M4): the in-process read-only toolset — the agent's view of the consolidated tool registry (agent-spec D49,
-  extend-don't-fork) plus the concrete tool handlers that call the shipped cores (drive index, importance, operation
-  log, volumes, app state).
+- `tools/` (M4, present): the in-process read-only toolset — the five read families authored as `consumers: [Agent]`
+  entries in the consolidated registry (agent-spec D49, extend-don't-fork), their handlers/result shapes that reuse the
+  shipped cores (drive index, importance, operation log, volumes, app state), and the gated dispatch that refuses any
+  non-view name before `execute_tool`. Depth: [`tools/DETAILS.md`](tools/DETAILS.md).
 - `chat/` (M5): the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors) and the
   pure, TDD-heavy context-assembly core (stable prefix, elide-only compaction, the fresh context envelope on the latest
   user turn only).

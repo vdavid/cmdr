@@ -163,7 +163,7 @@ mod tests {
     #[tokio::test]
     async fn sequences_turns_and_records_every_call() {
         let fake = FakeAgentLlm::script(vec![
-            ScriptedTurn::CallTools(vec![(ToolId::Placeholder, json!({ "path": "/" }))]),
+            ScriptedTurn::CallTools(vec![(ToolId::AppState, json!({ "path": "/" }))]),
             ScriptedTurn::Say(vec!["Hello ".into(), "world".into()]),
         ]);
         let cancel = CancellationToken::new();

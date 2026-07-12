@@ -62,8 +62,13 @@ agent-only table**). Two per-entry dimensions express the split:
 
 - **`consumers`** (`&[Consumer]`, `AiClient` / `Agent`): the exposure axis. `get_all_tools()` returns entries whose
   `consumers` include `AiClient` (the MCP wire); `agent_tool_view()` returns those including `Agent` (the in-process
-  agent runtime, M4+). The macro emits a `Tool` per entry *conditionally*, so an agent-only entry never reaches the MCP
-  wire and vice versa. Every current entry is `[AiClient]`; the agent view is empty until M4 authors read-only tools.
+  agent runtime). The macro emits a `Tool` per entry *conditionally*, so an agent-only entry never reaches the MCP wire
+  and vice versa. The agent view is the six read families authored under `crate::agent::tools::read` (`app_state`,
+  `list_dir`, `largest_dirs`, `important_folders`, `folder_importance`, `list_volumes`) plus `operations_list` /
+  `operations_get`, shared into `[AiClient, Agent]` because their read schemas fit unchanged. Adding those didn't touch
+  the ai-client wire snapshot (agent-only entries are filtered out of `get_all_tools()`; a shared entry stays byte-
+  identical there). Agent handlers/schemas live under [`agent/tools`](../agent/tools/CLAUDE.md), named by path from
+  the entry.
 - **`access`** (`Read` / `Write`): whether the tool reads or mutates. `Write` covers any mutation of the filesystem OR
   app state — nav, cursor, selection, tabs, dialogs, settings, connect/eject, file ops, rollback-cancel; when in doubt,
   `Write`. Only genuine read surfaces (`search`, `ai_search`, `await`, `operations_list`, `operations_get`) are `Read`.
@@ -81,8 +86,9 @@ is not "read-only": its remit includes destructive ops that still prompt the use
 would therefore admit a destructive tool into a read-only agent's view. The explicit `access` dimension is the correct
 guarantee: the agent view must equal exactly its authored `[agent]` entries **and** every one must be `Access::Read`.
 The two structural tests (`test_agent_tool_view_is_exactly_expected_set` + `test_agent_tool_view_is_all_read`) pin both
-halves; they pass vacuously while the agent view is empty and go red→green as M4 populates it. This is the
-read-only-by-construction line the plan calls the effort's most safety-critical invariant.
+halves against `EXPECTED_AGENT_TOOL_NAMES`. This is the read-only-by-construction line the plan calls the effort's most
+safety-critical invariant; the runtime side (`agent::tools::view`) adds a matching `tool_access == Read` check before
+dispatch so a mis-tagged entry is refused at runtime too.
 
 **Param naming is camelCase** (`tabId`, `timeoutSeconds`, `sizeMin`, `autoConfirm`). Tool names stay snake_case. Don't add snake_case params; agents pattern-match across tools and every inconsistency is a guessed-wrong call.
 
