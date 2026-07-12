@@ -6,10 +6,10 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
-- [ ] 2026-07-12 [ask-cmdr-spec.md](ask-cmdr-spec.md) - "Ask Cmdr" chat slice of the agent: read-only LLM chat over
-      the drive index + importance + operation log via the in-process tool registry, `AgentLlm` trait over `genai`
-      (gated on the agent-spec §18.1 capability spike), `main.db` conversations/messages/FTS, right-sidebar rail UI
-      with sessions and search. Spec ready; plan pending (`/plan` next).
+- [ ] 2026-07-12 [ask-cmdr-spec.md](ask-cmdr-spec.md) - "Ask Cmdr" chat slice of the agent: read-only LLM chat over the
+      drive index + importance + operation log via the in-process tool registry, `AgentLlm` trait over `genai` (gated on
+      the agent-spec §18.1 capability spike), `main.db` conversations/messages/FTS, right-sidebar rail UI with sessions
+      and search. Spec ready; plan pending (`/plan` next).
 - [ ] 2026-07-09 [compress-level-plan.md](compress-level-plan.md) - Extend the shipped Compress feature: a
       compression-level slider (deflate 1-9, default 6) in both the Compress dialog and Settings › Behavior › Archives,
       one FE-owned setting threaded through `route_archive_copy_into` → the mutator's `FileOptions` (governs
