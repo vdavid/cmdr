@@ -3,11 +3,11 @@
 Status: plan ready, execution pending. 2026-07-12. Owner: David.
 
 Contract: [`ask-cmdr-spec.md`](ask-cmdr-spec.md) (behavior + settled decisions) and its parent
-[`later/agent-spec.md`](later/agent-spec.md) (principles, decision log D1–D60). The genai capability spike (spec §3
-step 0, milestone M0) is complete: [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md). This plan owns construction:
-module layout, DDL, the `AgentLlm` trait shape, the IPC surface, milestones, and the resolutions to spec §7. It does
-not reopen the spec's decisions. Single-source rule: where the spec owns a behavior, this plan points at it rather than
-restating it.
+[`later/agent-spec.md`](later/agent-spec.md) (principles, decision log D1–D60). The genai capability spike (spec §3 step
+0, milestone M0) is complete: [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md). This plan owns construction: module
+layout, DDL, the `AgentLlm` trait shape, the IPC surface, milestones, and the resolutions to spec §7. It does not reopen
+the spec's decisions. Single-source rule: where the spec owns a behavior, this plan points at it rather than restating
+it.
 
 ## 1. Intent
 
@@ -55,19 +55,19 @@ Full report: [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md). Load-bearing 
   **OpenAI Responses** adapter never re-serializes reasoning items (`store=false` is the right privacy posture). So a
   reasoning-on multi-step loop breaks on Anthropic and degrades/400s on OpenAI-Responses.
 - Consequences baked into this plan: (a) `AgentLlm` carries messages as **typed parts** — text, tool-call with attached
-  opaque provider state, reasoning blob — never flattened content+reasoning strings (M1). (b) v1 ships with
-  reasoning **off/minimal on the Anthropic and OpenAI-Responses paths**, with graceful degradation and honest UI (M1,
-  M8). (c) A scoped local `[patch.crates.io]` genai patch (or upstream PR) for Anthropic thinking capture+replay is a
-  named follow-up, needed before Tier-1-certifying Anthropic with thinking on, since newer Claude models default
-  thinking on (§13 follow-ups). (d) Five provider-side live checks are pending API keys — the pre-ship certification
-  step in M8 (§11 open-question 7).
+  opaque provider state, reasoning blob — never flattened content+reasoning strings (M1). (b) v1 ships with reasoning
+  **off/minimal on the Anthropic and OpenAI-Responses paths**, with graceful degradation and honest UI (M1, M8). (c) A
+  scoped local `[patch.crates.io]` genai patch (or upstream PR) for Anthropic thinking capture+replay is a named
+  follow-up, needed before Tier-1-certifying Anthropic with thinking on, since newer Claude models default thinking on
+  (§13 follow-ups). (d) Five provider-side live checks are pending API keys — the pre-ship certification step in M8 (§11
+  open-question 7).
 
 ## 4. Module layout
 
 ### Backend — `apps/desktop/src-tauri/src/agent/`
 
-New subsystem, named after the UI surface where it makes sense (`name-internals-after-the-UI`). The persistent entity
-is "the agent" (agent-spec D44); the user-facing slice is "Ask Cmdr".
+New subsystem, named after the UI surface where it makes sense (`name-internals-after-the-UI`). The persistent entity is
+"the agent" (agent-spec D44); the user-facing slice is "Ask Cmdr".
 
 - `agent/mod.rs` — subsystem entry: `start(app)` (open `main.db`, register runtime state), re-exports. Modeled on
   `operation_log::start`.
@@ -75,11 +75,11 @@ is "the agent" (agent-spec D44); the user-facing slice is "Ask Cmdr".
   the typed message-part model (M1). `agent/llm/genai_impl.rs`, `agent/llm/fake.rs`, `agent/llm/types.rs`,
   `agent/llm/error.rs`.
 - `agent/store/` — the `main.db` durable store: migration ladder, `token_enum!` types, connection/pragmas, conversation
-  + message + FTS + cost-meter queries (M2). Mirrors `operation_log/store/` structure:
-  `store/mod.rs`, `store/migrations.rs`, `store/connection.rs`, `store/query.rs`, `agent/types.rs`.
+  - message + FTS + cost-meter queries (M2). Mirrors `operation_log/store/` structure: `store/mod.rs`,
+    `store/migrations.rs`, `store/connection.rs`, `store/query.rs`, `agent/types.rs`.
 - `agent/tools/` — the in-process read-only toolset: the agent's registry view + the concrete tool implementations that
-  call the underlying cores (M4). `tools/mod.rs`, `tools/view.rs` (the gated dispatch view), `tools/read/*.rs` (one
-  file per tool family: state, listing, importance, operations, volumes).
+  call the underlying cores (M4). `tools/mod.rs`, `tools/view.rs` (the gated dispatch view), `tools/read/*.rs` (one file
+  per tool family: state, listing, importance, operations, volumes).
 - `agent/chat/` — the chat runtime + the pure context-assembly core (M5). `chat/runtime.rs` (single-flight, budgets,
   cancellation, typed errors), `chat/context.rs` (pure: prefix, elision, envelope, budget — the TDD core),
   `chat/system_prompt.rs`.
@@ -111,8 +111,8 @@ Named after the surface. Modeled on `src/lib/operation-log/` (the sessions UI te
 
 ## 5. `main.db` v1 DDL
 
-Discipline copied from `operation_log/store/`: a `meta` anchor table outside the ladder, a forward-only migration
-ladder (one transaction per step, refuse downgrade, delete-and-recreate only on the typed `NotADatabase`/`DatabaseCorrupt`
+Discipline copied from `operation_log/store/`: a `meta` anchor table outside the ladder, a forward-only migration ladder
+(one transaction per step, refuse downgrade, delete-and-recreate only on the typed `NotADatabase`/`DatabaseCorrupt`
 error code), WAL + incremental auto_vacuum pragmas, snake_case DB tokens via `token_enum!`, precomputed values in Rust
 (no custom collation, `sqlite3`-inspectable). File lives at `resolved_app_data_dir(app).join("main.db")` — peer to
 `operation-log.db` (agent-spec D1/D3).
@@ -192,13 +192,13 @@ CREATE TABLE cost_meter (
 -- thread; the per-day cross-thread rollup is computed at query time (SUM ... GROUP BY day) in ask_cmdr_cost_summary.
 ```
 
-No auto-retention in v1 (transcripts are small; spec §3). The retention *scaffold* (`operation_log/retention.rs` +
+No auto-retention in v1 (transcripts are small; spec §3). The retention _scaffold_ (`operation_log/retention.rs` +
 `PruneRequest`) is the template when real sizes exist — a follow-up, not built now.
 
 ## 6. The `AgentLlm` trait sketch
 
-Rust signatures (the implementer refines). The non-negotiable shape from the spike: an assistant turn is an ordered
-list of **typed parts**, and opaque reasoning state is **provider-tagged and rides on the part that owns it**, never
+Rust signatures (the implementer refines). The non-negotiable shape from the spike: an assistant turn is an ordered list
+of **typed parts**, and opaque reasoning state is **provider-tagged and rides on the part that owns it**, never
 flattened to `content: String + reasoning: String` (that lossy shape is exactly what breaks on step 3 — spike Gaps A/B).
 The frontend never receives the reasoning blob.
 
@@ -264,9 +264,9 @@ pub trait AgentLlm: Send + Sync {
 
 The genai-backed impl (`agent/llm/genai_impl.rs`) resolves the interactive model slot (M8) into an
 `crate::ai::AiBackend` and maps `AgentPart` ⇄ genai `ContentPart` (`ToolCall`, `ToolResponse`, `ThoughtSignature`,
-`ReasoningContent`, `ToolCall.thought_signatures`), reusing `map_genai_error` for the typed error surface (429→RateLimited,
-401/403→AuthFailed — status-based, satisfies `no-string-matching`). Reasoning stays off/minimal for Anthropic and
-OpenAI-Responses in v1 (spike verdict).
+`ReasoningContent`, `ToolCall.thought_signatures`), reusing `map_genai_error` for the typed error surface
+(429→RateLimited, 401/403→AuthFailed — status-based, satisfies `no-string-matching`). Reasoning stays off/minimal for
+Anthropic and OpenAI-Responses in v1 (spike verdict).
 
 **The read-only enforcement gate is the `ToolId` parse step.** A provider returns each tool call's name as a raw string
 (genai `ToolCall.fn_name`). The runtime parses that string into an agent `ToolId` **before dispatch**, and a name that
@@ -320,8 +320,8 @@ Streaming events (`AskCmdrStreamEvent`, typed enum; the frontend gets display pa
 - `Done { stop: AgentStopReason, usage: AgentUsage }`
 - `Failed { kind: AgentErrorKind }` — typed; rendered honestly, never with "error"/"failed" words
 
-Wire types: `ConversationRow`, `ConversationDetail` (header + a page of `MessageView`), `MessageView`
-(display-only blocks: text, tool-call summary, tool-result stub — **no** provider blob), `ConversationSearchHit`,
+Wire types: `ConversationRow`, `ConversationDetail` (header + a page of `MessageView`), `MessageView` (display-only
+blocks: text, tool-call summary, tool-result stub — **no** provider blob), `ConversationSearchHit`,
 `AttachmentRef { path, kind }`, `CostSummary`. All `#[serde(rename_all = "camelCase")]` + `specta::Type`; DB tokens
 snake_case via `token_enum!`.
 
@@ -338,8 +338,8 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
 
 ### M1 — `AgentLlm` trait + deterministic fake
 
-- **Scope**: the typed message-part model (§6), the trait, the genai-backed impl over `crate::ai::AiBackend`, the
-  fake, the typed error surface. Reasoning off/minimal on Anthropic + OpenAI-Responses paths.
+- **Scope**: the typed message-part model (§6), the trait, the genai-backed impl over `crate::ai::AiBackend`, the fake,
+  the typed error surface. Reasoning off/minimal on Anthropic + OpenAI-Responses paths.
 - **Intention**: lock the seam that the entire runtime and UI test against, with the opaque-provider-state shape the
   spike proved is mandatory. Getting the part model right here is what keeps multi-step loops from silently degrading
   later; everything downstream depends on this contract, so it is worth over-investing in.
@@ -348,14 +348,14 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
   sequencing and `calls_seen` recording.
 - **Test-after**: one gated live smoke per Tier-1 cloud provider (skipped without keys, never in CI's critical path);
   the local-slot smoke against llama-server.
-- **Docs**: `agent/llm/CLAUDE.md` + `DETAILS.md` (the part-model invariant, the reasoning-off-in-v1 decision, the
-  genai gaps A/B pointer).
+- **Docs**: `agent/llm/CLAUDE.md` + `DETAILS.md` (the part-model invariant, the reasoning-off-in-v1 decision, the genai
+  gaps A/B pointer).
 - **Checks**: `pnpm check rust clippy --fast` while iterating; `pnpm check rust` at milestone end.
 
 ### M2 — `main.db` durable store
 
-- **Scope**: the migration ladder + `token_enum!` types + connection/pragmas (mirroring `operation_log/store/`), the
-  v1 DDL (§5), the FTS5 feature enablement + triggers, the conversation/message/cost-meter query layer, `agent::start`
+- **Scope**: the migration ladder + `token_enum!` types + connection/pragmas (mirroring `operation_log/store/`), the v1
+  DDL (§5), the FTS5 feature enablement + triggers, the conversation/message/cost-meter query layer, `agent::start`
   wiring at app setup, and a pure **FTS5 query-sanitizer** function (used by M7's cross-thread search). Raw user input
   fed straight into `... MATCH ?` throws an fts5 syntax error on ordinary filename fragments (`report(v2)`, `foo:bar`, a
   bareword `AND`/`OR`/`NOT`, an unbalanced `"`) — parameter binding does not help, and there's no in-tree pattern to
@@ -366,9 +366,9 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
   on a string.
 - **TDD-first**: migration ladder bootstrap (fresh DB → v1) + downgrade-refusal + corrupt-recreate (reuse the op-log
   test shape); `token_enum!` round-trip + uniqueness; FTS5 insert/update/delete trigger sync (a message edit re-indexes;
-  a delete de-indexes); a search query returns the right rows and ranks recent-first; **the FTS5 query-sanitizer**
-  (real red→green: empty query, punctuation like `report(v2)`, an embedded quote, a bareword `AND`/`OR`/`NOT`, and a
-  prefix match all produce a valid non-throwing query with the expected hits).
+  a delete de-indexes); a search query returns the right rows and ranks recent-first; **the FTS5 query-sanitizer** (real
+  red→green: empty query, punctuation like `report(v2)`, an embedded quote, a bareword `AND`/`OR`/`NOT`, and a prefix
+  match all produce a valid non-throwing query with the expected hits).
 - **TDD-first (cost meter)**: an upsert against an existing `(day, conversation_id, provider, model)` row
   **accumulates** (`ON CONFLICT DO UPDATE prompt_tokens = prompt_tokens + excluded.prompt_tokens`, etc.) rather than
   inserting a duplicate — the guard against the NULL-in-PK regression; and the per-day cross-thread rollup
@@ -380,28 +380,28 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
 
 ### M3 — Registry: consumer + access dimensions, file split
 
-- **Scope**: honor agent-spec D49 ("extend the consolidated registry, don't fork") and D59 (structural consumer
-  gating) by growing the one authored `mcp_tools!` registry, not by standing up a parallel agent-only dispatch table.
-  Three things in one refactor (they share `tool_registry.rs`):
+- **Scope**: honor agent-spec D49 ("extend the consolidated registry, don't fork") and D59 (structural consumer gating)
+  by growing the one authored `mcp_tools!` registry, not by standing up a parallel agent-only dispatch table. Three
+  things in one refactor (they share `tool_registry.rs`):
   1. Grow each authored entry with a **`consumers`** dimension (`[ai_client]`, `[agent]`, or both) — D59's actual
      mechanism — and the **`access: Read | Write`** dimension. Generate `tool_consumers(name)`, `tool_access(name)`, and
      an `agent_tool_view()` (the set of entries whose `consumers` includes `agent`) next to `tool_gate`. Existing
      entries stay `consumers: [ai_client]` unless deliberately shared. **Mechanism (load-bearing):** the macro currently
-     emits a `Tool` for every entry unconditionally, so agent-only entries do NOT auto-drop from the wire — `get_all_tools()`
-     must be reworked to APPLY a consumer filter, returning only entries whose `consumers` includes `ai_client`. Under
-     that filter `get_all_tools()` IS the ai_client view, and it stays byte-identical for the entries it already
-     contained (the new `consumers`/`access` dimensions are registry metadata, not fields on the emitted `Tool` struct),
-     so `tool_snapshot_tests.rs` plus `EXPECTED_TOOL_NAMES` / count / gate-table tests stay green **unmodified** — but
-     only because the M4 agent-only entries are filtered out of this view. Symmetrically, **`execute_tool` gains a
-     consumer identity and dispatches only its own view**: an agent-only tool name arriving over MCP is refused, and an
-     `ai_client`-only name arriving through the agent runtime is refused. "Callable but not listed" is exactly the drift
-     D59 exists to prevent, so no transport dispatches a name outside its consumer view.
+     emits a `Tool` for every entry unconditionally, so agent-only entries do NOT auto-drop from the wire —
+     `get_all_tools()` must be reworked to APPLY a consumer filter, returning only entries whose `consumers` includes
+     `ai_client`. Under that filter `get_all_tools()` IS the ai_client view, and it stays byte-identical for the entries
+     it already contained (the new `consumers`/`access` dimensions are registry metadata, not fields on the emitted
+     `Tool` struct), so `tool_snapshot_tests.rs` plus `EXPECTED_TOOL_NAMES` / count / gate-table tests stay green
+     **unmodified** — but only because the M4 agent-only entries are filtered out of this view. Symmetrically,
+     **`execute_tool` gains a consumer identity and dispatches only its own view**: an agent-only tool name arriving
+     over MCP is refused, and an `ai_client`-only name arriving through the agent runtime is refused. "Callable but not
+     listed" is exactly the drift D59 exists to prevent, so no transport dispatches a name outside its consumer view.
   2. **Split** `tool_registry.rs` (currently 1104 lines, at allowlist parity — adding two fields per entry plus the M4
-     agent entries would push it well over) into a directory module: `tool_registry/mod.rs` (macro + table +
-     accessors), `tool_registry/gate.rs` (`TokenGate`), `tool_registry/schemas/*.rs` (the per-category `json!` schema
-     blocks hoisted into `fn <tool>_schema() -> Value`, which dominate the line count and serialize identically). This
-     resolves the standing length warn by trimming, not by touching the allowlist (run `pnpm check file-length` and
-     commit the shrink-wrap).
+     agent entries would push it well over) into a directory module: `tool_registry/mod.rs` (macro + table + accessors),
+     `tool_registry/gate.rs` (`TokenGate`), `tool_registry/schemas/*.rs` (the per-category `json!` schema blocks hoisted
+     into `fn <tool>_schema() -> Value`, which dominate the line count and serialize identically). This resolves the
+     standing length warn by trimming, not by touching the allowlist (run `pnpm check file-length` and commit the
+     shrink-wrap).
 - **Intention**: give the agent a **read-only-by-construction** dispatch view (the agent runtime in M5 dispatches ONLY
   through `agent_tool_view()`) and a structural test that keeps it that way. This strengthens D59: D59's stated test is
   "every non-`Open`-gated tool is absent from the agent view", which is necessary but **not sufficient here**, because
@@ -417,8 +417,8 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
 - **Test-after**: the existing `EXPECTED_TOOL_NAMES` / gate-table / wire-snapshot tests still pass (update consciously
   only for the new accessors; if you deliberately share an entry into `[ai_client, agent]`, update the structural tests
   in the same conscious step — never loosen them).
-- **Docs**: update `mcp/CLAUDE.md` + `DETAILS.md` (the consumer + access dimensions, the "extend don't fork" record,
-  the two-view model, why access strengthens the gate-based D59 test, the split map).
+- **Docs**: update `mcp/CLAUDE.md` + `DETAILS.md` (the consumer + access dimensions, the "extend don't fork" record, the
+  two-view model, why access strengthens the gate-based D59 test, the split map).
 - **Checks**: `pnpm check rust file-length`; confirm the ai_client wire snapshot is byte-identical.
 
 ### M4 — Agent read-only tool entries + in-process handlers
@@ -432,11 +432,12 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
   tasks, not literal drop-ins**):
   - app-state snapshot — reuse `mcp::resources` state building (`build_state_yaml` is private + takes `AppHandle<R>`
     plus opts; either call it through a small in-`mcp` shim or read `PaneStateStore` + `snapshot_volumes` directly).
-  - directory listing + stats — `indexing::queries::get_dir_stats*` + `EntryRow::list_children_on(parent_id: i64, conn:
-    &Connection)` (a method on `EntryRow` in `indexing/store/entries.rs`, taking a resolved `parent_id` + a read
-    connection, NOT a path-based `IndexStore` call). So the listing tool first resolves the path to a `parent_id`
-    (`indexing::store::resolve_path`) and opens a read connection; budget that wiring.
-    **The top-N-by-size tool batches `get_dir_stats` over candidate dirs and sorts itself; no index query does this.**
+  - directory listing + stats — `indexing::queries::get_dir_stats*` +
+    `EntryRow::list_children_on(parent_id: i64, conn: &Connection)` (a method on `EntryRow` in
+    `indexing/store/entries.rs`, taking a resolved `parent_id` + a read connection, NOT a path-based `IndexStore` call).
+    So the listing tool first resolves the path to a `parent_id` (`indexing::store::resolve_path`) and opens a read
+    connection; budget that wiring. **The top-N-by-size tool batches `get_dir_stats` over candidate dirs and sorts
+    itself; no index query does this.**
   - importance — `ImportanceIndex::{top_n, lookup, top_above_threshold, explain(path, now_secs: u64)}` (already
     `&Path`-based, offline). `explain` needs a `now_secs` clock arg (recency contributions are computed relative to
     now); pass the same wall-clock unix-secs source the envelope timestamp uses, so a tool call and its explanation
@@ -445,8 +446,8 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
     `&Connection` (open one via `operation_log::store::open_read_connection(&db_path)`); consider sharing the existing
     `operations_list`/`operations_get` entries as `consumers:[ai_client, agent]` since their cores fit unchanged —
     recommended, with the structural test updated consciously in M3.
-  - volume list — `mcp::resources::volumes::{snapshot_volumes (async, `pub(crate)` → needs a visibility bump),
-    build_volumes_yaml(&[VolumeSummary])}`.
+  - volume list —
+    `mcp::resources::volumes::{snapshot_volumes (async, `pub(crate)` → needs a visibility bump), build_volumes_yaml(&[VolumeSummary])}`.
   - Every tool voices coverage honestly in its typed result: index `Freshness` (`fresh`/`scanning`/`stale`,
     `is_authoritative()`), `DirStats.recursive_size_complete/_stale/_pending`, importance `as_of_generation` vs
     `recompute_generation`, unmounted/unindexed volumes.
@@ -461,8 +462,8 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
     tool call naming a write or non-view tool — a hallucinated `"delete"`, `"copy"`, or an unknown name — the agent
     dispatch **refuses it** (the incoming name fails to parse into a valid agent `ToolId`, yielding a typed "tool not
     available" tool-result) and **never reaches `execute_tool`** (which dispatches every table name by string match, so
-    the parse step, not `execute_tool`, is the gate). Red step: point the fake at `"delete"` and assert dispatch
-    refuses without touching `execute_tool`.
+    the parse step, not `execute_tool`, is the gate). Red step: point the fake at `"delete"` and assert dispatch refuses
+    without touching `execute_tool`.
   - **`ToolId` ↔ `agent_tool_view()` 1:1 structural test**: the typed `ToolId` enum and the registry's agent-consumer
     view are authored in two places with nothing tying them; a test asserts the `ToolId` variants map exactly onto the
     `agent_tool_view()` entry names (no orphan variant, no unmapped view entry). Joins the M3/M4 structural suite.
@@ -493,8 +494,8 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
   - (a) assistant text streamed before a non-`End` termination (provider drop, app crash, cancel) is **discarded** from
     the DB — no partial assistant row is persisted — and the UI shows a typed, honest notice ("the reply didn't finish —
     try again?", never "error"/"failed").
-  - (b) a user message whose **first** `respond` call never reached `End` is a **valid, resumable** state — nothing about
-    the failed attempt is recorded, so re-sending assembles byte-identically the same prompt.
+  - (b) a user message whose **first** `respond` call never reached `End` is a **valid, resumable** state — nothing
+    about the failed attempt is recorded, so re-sending assembles byte-identically the same prompt.
   - (c) **interrupted multi-turn loop**: when a crash lands mid-loop after one or more turns completed (e.g.
     `user → assistant(tool_call) → tool(result) → [crash streaming turn 2]`), the completed turns and their tool results
     **stay persisted** (each was written on its own `End`). "Try again" issues a **fresh** `respond` assembled from the
@@ -524,26 +525,26 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
 - **Scope**: the right rail (`AskCmdrRail.svelte`) hosted in `+page.svelte` beside `DualPaneExplorer`; streaming render
   with a stop button; collapsible tool-call lines; markdown-lite via `snarkdown` **with mandatory entity-escaping of
   untrusted model/user text** (the `errors/markdown-escape.ts` pattern) before `{@html}`; screen-reader support for the
-  live stream — streamed assistant text renders into a polite `aria-live` region and tool-call status uses
-  `aria-busy` / `role=status` (reuse the existing pattern from `Spinner.svelte`, `ToastContainer.svelte`,
-  `QueryResults.svelte`); the focus model (the rail as
-  a third focus region — add a parallel region flag rather than widening the binary `'left'|'right'` union in
-  `explorer-state.svelte.ts`; toggle focuses the composer, Esc returns focus to the active pane; pane min-widths hold;
-  layout persists via `app-status-store.ts`); the full four-places menu wiring for the toggle (command registry +
-  command id, Rust `command_map.rs` + `macos.rs`/`linux.rs` View submenu, `shortcuts-store.ts` `menuCommands`,
-  `showInPalette`); ALPHA badge via `feature-status.json` (`id: "ask-cmdr"`) + `getBadgeStatus` + `StatusBadge.svelte`;
-  the thread-length soft-cap nudge ("this chat is getting long — start a fresh one?", honest UI copy, no hard cut) shown
-  when a thread crosses `THREAD_SOFT_CAP_MESSAGES` (§10), with a one-click new-chat action.
+  live stream — streamed assistant text renders into a polite `aria-live` region and tool-call status uses `aria-busy` /
+  `role=status` (reuse the existing pattern from `Spinner.svelte`, `ToastContainer.svelte`, `QueryResults.svelte`); the
+  focus model (the rail as a third focus region — add a parallel region flag rather than widening the binary
+  `'left'|'right'` union in `explorer-state.svelte.ts`; toggle focuses the composer, Esc returns focus to the active
+  pane; pane min-widths hold; layout persists via `app-status-store.ts`); the full four-places menu wiring for the
+  toggle (command registry + command id, Rust `command_map.rs` + `macos.rs`/`linux.rs` View submenu,
+  `shortcuts-store.ts` `menuCommands`, `showInPalette`); ALPHA badge via `feature-status.json` (`id: "ask-cmdr"`) +
+  `getBadgeStatus` + `StatusBadge.svelte`; the thread-length soft-cap nudge ("this chat is getting long — start a fresh
+  one?", honest UI copy, no hard cut) shown when a thread crosses `THREAD_SOFT_CAP_MESSAGES` (§10), with a one-click
+  new-chat action.
 - **Intention**: the killer context is what the user is looking at, so the chat lives in the main window next to the
   panes. The focus model must be deliberate — the rail is the future convergence surface for notifications and proposal
   reviews, so entering/leaving must feel intentional now.
 - **TDD-first**: none pure here; behavior is UI.
-- **Test-after** (Vitest + Playwright): the registered toggle resolves for JS dispatch — `getEffectiveShortcuts`
-  returns `['⌘⌥A']` (command-first), the guard against re-introducing the Apple-display-order string that only fires in
-  the native menu; rail toggles via shortcut and via View menu; send-and-render streams against the fake backend; the
-  stop button cancels; tool-call lines expand/collapse; focus enters the composer on open and returns to the pane on
-  Esc; layout width persists; markdown escaping neutralizes an injection-shaped model string; the soft-cap nudge appears
-  once a thread crosses `THREAD_SOFT_CAP_MESSAGES` and its new-chat action opens a fresh thread.
+- **Test-after** (Vitest + Playwright): the registered toggle resolves for JS dispatch — `getEffectiveShortcuts` returns
+  `['⌘⌥A']` (command-first), the guard against re-introducing the Apple-display-order string that only fires in the
+  native menu; rail toggles via shortcut and via View menu; send-and-render streams against the fake backend; the stop
+  button cancels; tool-call lines expand/collapse; focus enters the composer on open and returns to the pane on Esc;
+  layout width persists; markdown escaping neutralizes an injection-shaped model string; the soft-cap nudge appears once
+  a thread crosses `THREAD_SOFT_CAP_MESSAGES` and its new-chat action opens a fresh thread.
 - **Docs**: `src/lib/ask-cmdr/CLAUDE.md` + `DETAILS.md`.
 - **Checks**: `pnpm check svelte desktop`; `pnpm check --include-slow` for the E2E specs.
 
@@ -580,6 +581,54 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
 - **Docs**: `AskCmdrSection` settings doc; update `feature-status.json`; note the website privacy touchpoint.
 - **Checks**: `pnpm check` (full) then `pnpm check --include-slow`; `pnpm check intl`.
 
+### M9 — LLM call logging (the observability gateway)
+
+- **Requirement (David, verbatim intent)**: "what is it exactly that we sent to this LLM? Was it set up for success?
+  And what did it respond?" A structural, no-call-can-bypass-it log of every LLM request and response to local disk.
+- **Choke point**: all LLM traffic flows through `AiBackend` (`ai/client.rs`) — the agent (via M1's `AgentLlm` genai
+  impl) AND the existing one-shot features (folder suggestions, translate, NL search). The logger taps at the
+  `AiBackend`/genai boundary so interception is structural: both the M5 runtime's calls and the legacy prompt-helpers
+  get logged through one seam, and no code path can skip it.
+- **Capture fidelity — verbatim wire body is available and cheap (researched).** genai `=0.6.0-beta.19` exposes
+  `AdapterDispatcher::to_web_request_data(target, service_type, chat_req, options_set) -> WebRequestData { url, headers,
+  payload: Value }` as a **public** function, and `payload` is the **exact per-adapter wire JSON** genai sends — it is
+  the very function `exec_chat` / `exec_chat_stream` call internally (`client_impl.rs`), so reproducing it for logging
+  yields the byte-identical body (post-transform: strict-schema injection, thinking config, tool-call formatting) with
+  **no network call and no proxy**. So v1 logs the verbatim wire `payload`, and records `fidelity: "wire"` in metadata.
+  (The documented fallback — serialize the genai `ChatRequest` to JSON — stays noted for any future adapter where
+  `to_web_request_data` can't be reached, marked `fidelity: "request_struct"`; it still carries the full assembled
+  prompt: system, tools, history, envelope.) **Redact the auth header**: `WebRequestData.headers` carries the user's
+  API key — strip/redact it before writing; the `payload` body itself contains no secret. Responses: log the full raw
+  response body (genai's non-stream path parses `WebResponse { status, body: Value }`); for streams, log the assembled
+  final response plus, optionally, the raw delta log.
+- **File layout** (David's design): `{app data dir}/llm-logs/{session-or-thread-id}/{NNN}_{request|response}_{slug}.json`
+  — `NNN` a three-digit zero-padded per-session counter; `slug` is **deterministic** (job type + a few sanitized words
+  of the latest user message), never LLM-generated. JSON files (chat APIs are JSON), with metadata embedded: ISO
+  timestamp, provider, model, adapter kind, token counts (when the provider returns usage), latency, stop reason, and
+  the `fidelity` marker. Borrow OpenTelemetry GenAI semantic-convention field names where they fit (`gen_ai.request.model`-style)
+  so external tooling can consume the files later, but **add no OTel dependency**.
+- **Setting**: `logLlmCalls` in Settings › Advanced; **default ON in dev builds, OFF in prod/release**; runtime-toggleable
+  without restart (re-read the setting per call, like the AI config's read-fresh pattern). **Failure-isolated**: a
+  logging error (disk full, permission) never breaks or delays the LLM call — log-and-continue, the call result is
+  unaffected.
+- **Privacy**: logs contain everything the provider saw (names, paths, envelope) — **local only, never transmitted**,
+  in the app data dir. One line in the consent/settings docs points at the folder.
+- **Intention**: answer David's three questions for both the agent and the legacy AI features, and give the M8 live
+  certification runs their natural debugging companion (dev-default-ON).
+- **TDD-first** (real red→green, the pure parts): path/slug/counter generation (deterministic slug from job type +
+  message; the counter increments and zero-pads; the session dir is derived correctly); metadata assembly; a
+  redaction-free round-trip of a captured payload (write→read yields the same JSON), plus the **auth-header redaction**
+  (the written request file carries no API key).
+- **Test-after** (integration, against the fake LLM): one fake turn produces exactly one request + one response file
+  with correct sequence numbers; the setting OFF produces zero files; a deliberately failing logger (unwritable dir)
+  does not fail or delay the call.
+- **Docs**: a new `agent/llm/DETAILS.md` section (or the logger's own colocated doc) on the wire-capture approach,
+  fidelity markers, the file layout, and the failure-isolation contract; the settings/consent privacy line.
+- **Checks**: `pnpm check rust`; `pnpm check svelte desktop` for the setting UI; `pnpm check --include-slow` before the
+  wrap.
+- **Placement**: after M8, independent of David's product calls. Because the setting is dev-default-ON, M8 execution may
+  pull M9 earlier to instrument the live certification runs — an allowed resequencing, record the rationale if done.
+
 ## 9. Context envelope field set (resolves spec §7 Q4)
 
 A single tagged block opening the latest user turn only (never the prefix, so prompt caching survives). Fields, in
@@ -591,8 +640,8 @@ order, all from verified sources:
 
 - Local weekday + ISO date + time (so the model can reason about "this morning"; every historical message also carries
   its own timestamp).
-- Focused pane path — `PaneStateStore::get_focused_pane` returns the pane **side** (a bare `String`, `"left"`/`"right"`),
-  not a path; resolve that side's path from the state snapshot (the pane's current directory).
+- Focused pane path — `PaneStateStore::get_focused_pane` returns the pane **side** (a bare `String`,
+  `"left"`/`"right"`), not a path; resolve that side's path from the state snapshot (the pane's current directory).
 - Cursor item name, or `—` if none.
 - Selection count.
 - Mounted volumes, each with an index-freshness token (`freshness_token`: fresh/scanning/stale/off) and, for SMB
@@ -620,21 +669,23 @@ Initial values; tune with use (comment each as such at the definition site).
 **Q1 — everything the spike answers.** Done (M0, §3). The reasoning-round-trip split (Gemini works; Anthropic +
 OpenAI-Responses broken) drives the reasoning-off-in-v1 posture and the genai-patch follow-up.
 
-**Q2 — which MCP executor cores are consumable in-process as-is vs. need hoisting.** Verified answer: **all five v1
-read surfaces are callable in-process** given the app's `AppHandle`; none needs hoisting out of a transport, but several
-need small visibility bumps or shims (so M4 budgets them as wiring, not literal drop-ins). The research clarified two
+**Q2 — which MCP executor cores are consumable in-process as-is vs. need hoisting.** Verified answer: **all five v1 read
+surfaces are callable in-process** given the app's `AppHandle`; none needs hoisting out of a transport, but several need
+small visibility bumps or shims (so M4 budgets them as wiring, not literal drop-ins). The research clarified two
 "transports" often conflated: (a) the MCP/HTTP/JSON-RPC wire — the registry core is already fully decoupled from it
 (`execute_tool` needs only an `AppHandle<R>` + JSON, no server/auth); (b) the Tauri **frontend round-trip**
-(`executor::mcp_round_trip`, emit/listen on `mcp-response`) — this welds the *mutating/action* tools to the frontend,
+(`executor::mcp_round_trip`, emit/listen on `mcp-response`) — this welds the _mutating/action_ tools to the frontend,
 but **none of the read surfaces touch it** (they read Rust-side stores and SQLite directly). The cores and their exact
 call shapes (corrected against the tree):
+
 - `operation_log::query::{search_operations, get_operation}` take a **`&Connection`** (not a `&Path`); open one via
   `operation_log::store::open_read_connection(&db_path)`.
 - `ImportanceIndex` is `&Path`-based already (offline-capable). Note `explain(path, now_secs: u64)` takes a wall-clock
   arg (recency is relative to now); the other query methods (`top_n`, `lookup`, `top_above_threshold`) don't.
-- drive index: `indexing::queries::get_dir_stats*` (globals) + `EntryRow::list_children_on(parent_id: i64, conn:
-  &Connection)` (a method on `EntryRow` in `indexing/store/entries.rs`, not a path-based `IndexStore` call), so listing
-  wires up path→`parent_id` resolution (`indexing::store::resolve_path`) + a read connection first.
+- drive index: `indexing::queries::get_dir_stats*` (globals) +
+  `EntryRow::list_children_on(parent_id: i64, conn: &Connection)` (a method on `EntryRow` in
+  `indexing/store/entries.rs`, not a path-based `IndexStore` call), so listing wires up path→`parent_id` resolution
+  (`indexing::store::resolve_path`) + a read connection first.
 - `mcp::resources::volumes::snapshot_volumes()` is **`async` + `pub(crate)`** (needs a visibility bump);
   `build_volumes_yaml(&[VolumeSummary])` **takes an arg**.
 - `mcp::resources::build_state_yaml` is **private** and takes **`AppHandle<R>` + opts** — reach it via a small in-`mcp`
@@ -663,9 +714,9 @@ text, never through `{@html}`; any styling routes through the same markdown-esca
 
 **Q6 — sidebar min-width at small window sizes.** Rail default width 340px, min 280px, max 520px; each pane keeps its
 existing min-width. Persist rail width + open flag in `app-status-store.ts` (same pattern as `leftPaneWidthPercent`).
-When the window is too narrow to hold both panes at min-width plus the rail (below ~900px effective), the rail **overlays
-the right pane as a floating panel** rather than compressing panes below their minimum — the panes never break their
-min-width contract (spec UI requirement). All widths are tunable constants.
+When the window is too narrow to hold both panes at min-width plus the rail (below ~900px effective), the rail
+**overlays the right pane as a floating panel** rather than compressing panes below their minimum — the panes never
+break their min-width contract (spec UI requirement). All widths are tunable constants.
 
 **Q7 — which Tier-1 models to certify at ship time.** Anthropic, OpenAI, Gemini, local (agent-spec D40). Do **not** pin
 model ids from training data — re-verify current ids from each provider's models endpoint at implementation time (M8).
@@ -677,6 +728,7 @@ Anthropic certification** until the genai Anthropic thinking capture+replay patc
 single most important thing to state plainly to a user picking an Anthropic model in v1.
 
 The pending live checks (from the spike §5, run with real keys in M8) are the certification gate:
+
 1. **Anthropic, thinking OFF + a ≥3-step tool loop — confirm it COMPLETES.** This is the check that actually certifies
    the v1 Anthropic posture (the spike harness has it staged: `./target/debug/spike sequential <model>` without
    `REASON=1`); nothing in the original list proved the happy path works, only that thinking-ON breaks.
@@ -689,8 +741,8 @@ The pending live checks (from the spike §5, run with real keys in M8) are the c
 
 ## 12. Product calls for David
 
-The plan proceeds on these recommendations, but David confirms them **before the i18n pass (M8)** and before building
-UI copy on top of them.
+The plan proceeds on these recommendations, but David confirms them **before the i18n pass (M8)** and before building UI
+copy on top of them.
 
 **1. Feature name — recommend "Ask Cmdr".** Menu item, rail title, `feature-status` id `ask-cmdr`. It's a
 product-identity call (spec §4); the internal subsystem is `agent/` regardless (agent-spec D44).
@@ -701,7 +753,7 @@ registry): the combo Cmd+Option+A is **free** — no Cmdr binding uses it, and t
 `⌘⌥A` (command before option), NOT `⌥⌘A`. `formatKeyCombo` emits Command-then-Option, and
 `operation-log-shortcut.test.ts` is the regression guard proving Apple-display-order strings (`⌥⌘…`) resolve as
 native-menu-only and **never fire via JS dispatch** — which is exactly why the operation log registered `⌘⌥L`, not
-`⌥⌘L`. macOS still *renders* the combo as ⌥⌘A in menus (Apple's display order); the registered string is `⌘⌥A`. Existing
+`⌥⌘L`. macOS still _renders_ the combo as ⌥⌘A in menus (Apple's display order); the registered string is `⌘⌥A`. Existing
 ⌥⌘-family combos in use: ⌥⌘H (hide-others, macOS-native), `⌘⌥L` (operation log), the paste-special and show-in-Finder
 ops (so **don't** reuse show-in-Finder's combo). No known macOS system-global reservation on Cmd+Option+A (unlike ⌘⇧A =
 Finder Applications). Worth one manual runtime check on the target OS. If it ever collides, `⌘⌥K`/`⌘⌥J`/`⌘⌥I` are also
@@ -727,11 +779,11 @@ friendly, sentence case, no "just/simple", never "error"/"failed", and the spec 
 > Your chats stay on your Mac, in a local database you can open and read. You pick the provider and model, and you can
 > see what each conversation costs.
 >
-> [Turn on Ask Cmdr]  [Not now]
+> [Turn on Ask Cmdr] [Not now]
 
-**4. Sidebar side — recommend right.** The rail is the future convergence surface for notifications and proposal
-reviews (spec §3); right keeps it out of the left-to-right reading path into the panes. This is a recommendation, not a
-decree (spec §8).
+**4. Sidebar side — recommend right.** The rail is the future convergence surface for notifications and proposal reviews
+(spec §3); right keeps it out of the left-to-right reading path into the panes. This is a recommendation, not a decree
+(spec §8).
 
 ## 13. Execution gotchas + follow-ups
 
@@ -740,9 +792,9 @@ decree (spec §8).
 - The on-open formatter hook reflows `docs/specs/*.md`; the final diff must contain only `ask-cmdr-plan.md` and
   `index.md`. Revert any other churn (`git checkout -- <file>`); never commit it. ~12 docs are oxfmt-unclean and reflow
   on every check run — keep them out of commits.
-- Use `pnpm check`, never bare cargo (the COW worktree `target/` false-greens; `touch` a source before verifying
-  compile freshness). `--fast` iterating, full per milestone, `--include-slow` before the wrap. Never truncate checker
-  output; never bump `file-length`/`claude-md-length` allowlists — surface warns to David.
+- Use `pnpm check`, never bare cargo (the COW worktree `target/` false-greens; `touch` a source before verifying compile
+  freshness). `--fast` iterating, full per milestone, `--include-slow` before the wrap. Never truncate checker output;
+  never bump `file-length`/`claude-md-length` allowlists — surface warns to David.
 - New IPC/DB enums: camelCase over the wire, snake_case tokens in DB, one owning `types.rs` via `token_enum!`.
 - The structural MCP registry tests (`EXPECTED_TOOL_NAMES`, counts, gate table, wire-bytes snapshot) fail on any
   registry change by design — update consciously, never loosen. The new `access`-dimension set-equality test joins them.
@@ -751,8 +803,8 @@ decree (spec §8).
   (`operation-log-shortcut.test.ts` guards this; it's why the op log is `⌘⌥L`). macOS still renders it ⌥⌘A in menus.
 - A new IPC command must be registered in **both** `ipc.rs` and `ipc_collectors.rs` (the tauri-specta collector that
   regenerates `bindings.ts`), then get a `tauri-commands/` wrapper (never a raw bindings import).
-- The reasoning provider-state blob is a **backend-only** DB column; it must never cross to the frontend
-  (`MessageView` carries display parts only). This is both a privacy and a typing boundary.
+- The reasoning provider-state blob is a **backend-only** DB column; it must never cross to the frontend (`MessageView`
+  carries display parts only). This is both a privacy and a typing boundary.
 - Folder and file names entering the context envelope and tool results are a **prompt-injection vector** (a crafted
   filename can carry instructions). Accepted as a bounded risk in v1 because the agent is read-only by construction with
   no content-read and no fetch channel — the blast radius is misleading text in the reply only, not action or
@@ -760,36 +812,38 @@ decree (spec §8).
 - `~/.cmdr/CMDR.md` is read-only in v1 (rules/memory machinery stays with the full agent); it goes in the stable prefix
   if present.
 - Run the app via `pnpm dev --worktree ask-cmdr`; an FF-merge leaves the worktree dev data dir behind to delete by hand.
-- Local `main` moves mid-effort; rebase before FF-merge, compile-gate each replayed commit, expect union conflicts
-  where a feature threads a parameter through a shared seam.
+- Local `main` moves mid-effort; rebase before FF-merge, compile-gate each replayed commit, expect union conflicts where
+  a feature threads a parameter through a shared seam.
 
 ### Follow-ups ledger
 
-- **genai Anthropic thinking capture+replay** — a scoped local `[patch.crates.io]` patch (or upstream PR to issue
-  #213): capture `{thinking, signature}` into a `ContentPart` and re-serialize a `thinking` block before `tool_use` on
-  the assistant turn. Needed **before Tier-1-certifying Anthropic with thinking on** (newer Claude models default
-  thinking on, so "just disable it" won't hold long-term). ~0.5–1 day; track upstream #213.
+- **genai Anthropic thinking capture+replay** — a scoped local `[patch.crates.io]` patch (or upstream PR to issue #213):
+  capture `{thinking, signature}` into a `ContentPart` and re-serialize a `thinking` block before `tool_use` on the
+  assistant turn. Needed **before Tier-1-certifying Anthropic with thinking on** (newer Claude models default thinking
+  on, so "just disable it" won't hold long-term). ~0.5–1 day; track upstream #213.
 - **genai OpenAI-Responses reasoning round-trip** — parse `type:"reasoning"` items (incl. `encrypted_content`) and emit
   them back into `input` on replay with `include:["reasoning.encrypted_content"]`, `store=false`. Alternative pragmatic
   v1 stance: route OpenAI reasoning models via chat-completions and accept reasoning loss. Decide at certification.
 - **Five live provider certification checks** — run with real keys in M8 (§11 Q7), re-verifying model ids at that time.
+  M9's LLM call logging (dev-default-ON) is the natural companion for these runs — the on-disk request/response files
+  make "what did we send, what came back" directly inspectable, so M8 may pull M9 forward to instrument them.
 - **FTS5-as-net-new** — M2 adds the `fts5` rusqlite feature + trigger sync; there's no in-tree trigger pattern to copy,
   so review the trigger sync carefully.
 - **Auto-retention** — deferred (transcripts small); the `operation_log/retention.rs` + `PruneRequest` scaffold is the
   template when real sizes exist.
-- **Bulk model slot, summarize-on-overflow compaction, local slot beyond drop-in, content reading, external MCP
-  servers, memory writes** — all explicitly deferred by spec §3; design the tool layer so external mounts could slot in
-  later behind per-server consent and the same access gating, but build none of it now.
+- **Bulk model slot, summarize-on-overflow compaction, local slot beyond drop-in, content reading, external MCP servers,
+  memory writes** — all explicitly deferred by spec §3; design the tool layer so external mounts could slot in later
+  behind per-server consent and the same access gating, but build none of it now.
 
 ## 14. Top risks for the reviewer to attack
 
-1. **The read-only structural guarantee (approach settled; execution is the risk).** The lead chose Option A: extend
-   the one authored registry with `consumers` + `access` dimensions (D49/D59), agent tools as `consumers:[agent]`
-   entries, agent runtime dispatching only through `agent_tool_view()`, pinned by the set-equality + all-`Read` tests
-   (M3/M4). The residual risks are execution details: (a) getting the wire-snapshot invariant right when agent-only
-   entries are added and when the `operations_list`/`operations_get` pair is shared into `[ai_client, agent]`; (b) the
-   `access` classification of the app-state snapshot path if it's reached through an `mcp` shim rather than an authored
-   entry — the shim must stay read-only. M3/M4 is where a mistake would silently weaken the guarantee.
+1. **The read-only structural guarantee (approach settled; execution is the risk).** The lead chose Option A: extend the
+   one authored registry with `consumers` + `access` dimensions (D49/D59), agent tools as `consumers:[agent]` entries,
+   agent runtime dispatching only through `agent_tool_view()`, pinned by the set-equality + all-`Read` tests (M3/M4).
+   The residual risks are execution details: (a) getting the wire-snapshot invariant right when agent-only entries are
+   added and when the `operations_list`/`operations_get` pair is shared into `[ai_client, agent]`; (b) the `access`
+   classification of the app-state snapshot path if it's reached through an `mcp` shim rather than an authored entry —
+   the shim must stay read-only. M3/M4 is where a mistake would silently weaken the guarantee.
 2. **FTS5 trigger sync correctness.** It's net-new (no in-tree pattern), and external-content FTS5 tables are easy to
    desync (a missed `'delete'` on update leaves orphan index rows). The M2 TDD list covers insert/update/delete, but
    this is the DB area most likely to hide a subtle bug.
