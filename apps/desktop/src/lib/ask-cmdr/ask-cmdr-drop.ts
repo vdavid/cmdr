@@ -10,8 +10,11 @@
  * only LOCAL (`'root'`) self-drags are supported; a Finder drop uses the payload paths
  * (genuine local absolute paths). Kinds are resolved backend-side from known pane state.
  *
- * The Tauri APIs are loaded lazily and every failure is swallowed, so mounting the
- * composer outside a Tauri webview (unit tests, SSR) is a no-op.
+ * The subscription glue (dynamic Tauri import + `onDragDropEvent`) is deliberately thin;
+ * the hit-test, event dispatch, and path resolution are pure/injectable functions so the
+ * meaningful branches are unit-testable without a webview. Loading the Tauri API is lazy
+ * and every failure is swallowed, so mounting the composer outside a Tauri webview (unit
+ * tests, SSR) is a no-op.
  */
 
 import { getIsDraggingFromSelf, getSelfDragIdentity } from '$lib/file-explorer/drag/drag-drop'
@@ -21,37 +24,62 @@ import { resolveAskCmdrAttachments, type AttachmentRef } from '$lib/tauri-comman
 /** The local volume id; a pane on it round-trips genuine absolute paths. */
 const LOCAL_VOLUME_ID = 'root'
 
+/** A native drag-drop event payload, mirroring the Tauri webview shape (only the fields
+ * this module reads). */
+export type DragDropPayload =
+  | { type: 'enter'; paths: string[]; position: { x: number; y: number } }
+  | { type: 'over'; position: { x: number; y: number } }
+  | { type: 'drop'; paths: string[]; position: { x: number; y: number } }
+  | { type: 'leave' }
+
+/** The composer-side hooks a drag-drop event drives. */
+export interface DropHandlers {
+  /** The composer's current bounding rect, or `null` when unmounted. */
+  getRect: () => DOMRect | null
+  /** Toggle the drop overlay as a drag moves over / off the composer. */
+  onDragActive: (active: boolean) => void
+  /** Receive the resolved refs on a drop inside the composer. */
+  onAttachments: (refs: AttachmentRef[]) => void
+}
+
+/** Is `position` (after the DevTools-docking correction) inside `rect`? `null` rect (the
+ * composer is unmounted) is never a hit. Pure. */
+export function isWithinRect(position: { x: number; y: number }, rect: DOMRect | null): boolean {
+  if (!rect) return false
+  const p = toViewportPosition(position)
+  return p.x >= rect.left && p.x <= rect.right && p.y >= rect.top && p.y <= rect.bottom
+}
+
+/** Dispatch one native drag-drop event against the composer: enter/over toggle the
+ * overlay by rect hit-test, leave clears it, and a drop inside resolves its paths into
+ * attachment refs. The choke point the subscription forwards every event to. */
+export async function handleDragDropEvent(payload: DragDropPayload, handlers: DropHandlers): Promise<void> {
+  if (payload.type === 'enter' || payload.type === 'over') {
+    handlers.onDragActive(isWithinRect(payload.position, handlers.getRect()))
+  } else if (payload.type === 'leave') {
+    handlers.onDragActive(false)
+  } else {
+    // 'drop'.
+    handlers.onDragActive(false)
+    if (!isWithinRect(payload.position, handlers.getRect())) return
+    handlers.onAttachments(await resolveDroppedPaths(payload.paths))
+  }
+}
+
 /**
- * Subscribe the composer to native drag-drop. `getRect` returns the composer's current
- * bounding rect (or `null` when unmounted); `onDragActive` toggles the drop overlay;
- * `onAttachments` receives the resolved refs on a drop inside the composer. Returns an
- * unlisten function (a no-op when Tauri isn't available).
+ * Subscribe the composer to native drag-drop. Returns an unlisten function (a no-op when
+ * Tauri isn't available). The callback just forwards to [`handleDragDropEvent`].
  */
 export async function installComposerDrop(
   getRect: () => DOMRect | null,
   onDragActive: (active: boolean) => void,
   onAttachments: (refs: AttachmentRef[]) => void,
 ): Promise<() => void> {
+  const handlers: DropHandlers = { getRect, onDragActive, onAttachments }
   try {
     const { getCurrentWebview } = await import('@tauri-apps/api/webview')
-    const within = (position: { x: number; y: number }): boolean => {
-      const rect = getRect()
-      if (!rect) return false
-      const p = toViewportPosition(position)
-      return p.x >= rect.left && p.x <= rect.right && p.y >= rect.top && p.y <= rect.bottom
-    }
     return await getCurrentWebview().onDragDropEvent((event) => {
-      const payload = event.payload
-      if (payload.type === 'enter' || payload.type === 'over') {
-        onDragActive(within(payload.position))
-      } else if (payload.type === 'leave') {
-        onDragActive(false)
-      } else {
-        // The only remaining variant is 'drop'.
-        onDragActive(false)
-        if (!within(payload.position)) return
-        void resolveDroppedPaths(payload.paths).then(onAttachments)
-      }
+      void handleDragDropEvent(event.payload as DragDropPayload, handlers)
     })
   } catch {
     return () => {}
