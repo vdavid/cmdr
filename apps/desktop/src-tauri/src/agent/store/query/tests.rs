@@ -263,6 +263,20 @@ fn search_returns_each_matching_thread_once() {
     );
 }
 
+#[test]
+fn search_hit_carries_a_snippet_of_the_match() {
+    let conn = migrated_conn();
+    let id = create_conversation(&conn, "T", 1, None).expect("create");
+    append_user_text(&conn, id, "the quarterly budget spreadsheet lives here", 10);
+    let hits = search_conversations(&conn, "budget", 50, 0).expect("search");
+    assert_eq!(hits.len(), 1);
+    assert!(
+        hits[0].snippet.contains("budget"),
+        "the hit's snippet shows the matched term: {:?}",
+        hits[0].snippet
+    );
+}
+
 // ── The FTS5 sanitizer ─────────────────────────────────────────────────────────
 
 #[test]

@@ -11,12 +11,15 @@ import {
   commands,
   type ConversationRow,
   type ConversationDetailView,
+  type ConversationSearchHit,
   type MessageView,
   type MessageBlock,
+  type AttachmentRef,
+  type AttachmentKindView,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { ConversationRow, ConversationDetailView, MessageView, MessageBlock }
+export type { ConversationRow, ConversationDetailView, ConversationSearchHit, MessageView, MessageBlock, AttachmentRef, AttachmentKindView }
 
 /** Why an assistant turn ended, on the wire (mirrors Rust `StopReasonView`). */
 export type StopReason = 'completed' | 'toolCall' | 'maxTokens' | 'contentFilter' | 'stopSequence' | 'other'
@@ -65,12 +68,13 @@ export type AskCmdrStreamEvent =
 export function sendAskCmdrMessage(
   conversationId: number | null,
   text: string,
+  attachments: AttachmentRef[],
   onEvent: (event: AskCmdrStreamEvent) => void,
 ): Promise<number> {
   const channel = new Channel<AskCmdrStreamEvent>()
   channel.onmessage = onEvent
   // eslint-disable-next-line cmdr/no-raw-tauri-invoke -- streaming Channel<T> not specta-friendly yet; tracked for follow-up
-  return invoke<number>('ask_cmdr_send_message', { conversationId, text, onEvent: channel }).then(
+  return invoke<number>('ask_cmdr_send_message', { conversationId, text, attachments, onEvent: channel }).then(
     (id) => id,
     () => conversationId ?? 0, // contracted Ok(i64); webview teardown can reject — fall back to the known id
   )
@@ -101,4 +105,40 @@ export async function listAskCmdrConversations(
   const res = await commands.askCmdrListConversations(limit, offset, includeArchived)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
+}
+
+/** Conversations whose messages match `query` (newest-match first, paged), each with a
+ * plain-text snippet. Empty for a blank/punctuation-only query. */
+export async function searchAskCmdrConversations(
+  query: string,
+  limit: number,
+  offset: number,
+): Promise<ConversationSearchHit[]> {
+  const res = await commands.askCmdrSearchConversations(query, limit, offset)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** Rename a conversation. */
+export async function renameAskCmdrConversation(id: number, title: string): Promise<void> {
+  const res = await commands.askCmdrRenameConversation(id, title)
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/** Archive or unarchive a conversation (no delete in v1 — the flag filters the list). */
+export async function archiveAskCmdrConversation(id: number, archived: boolean): Promise<void> {
+  const res = await commands.askCmdrArchiveConversation(id, archived)
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/** Attachment refs for the focused pane's current selection (or its cursor item when
+ * nothing is selected) — the "ask about selection" affordance. Path + kind only. */
+export async function askCmdrSelectionAttachments(): Promise<AttachmentRef[]> {
+  return commands.askCmdrSelectionAttachments()
+}
+
+/** Resolve dragged LOCAL paths into typed attachment refs (kind from known pane state).
+ * Only for local-volume drags; virtual-volume paths mis-resolve and aren't supported. */
+export async function resolveAskCmdrAttachments(paths: string[]): Promise<AttachmentRef[]> {
+  return commands.askCmdrResolveAttachments(paths)
 }

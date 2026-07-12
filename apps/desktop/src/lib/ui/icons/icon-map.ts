@@ -1,4 +1,6 @@
 import type { Component } from 'svelte'
+import IconArchive from '~icons/lucide/archive'
+import IconArchiveRestore from '~icons/lucide/archive-restore'
 import IconArrowLeft from '~icons/lucide/arrow-left'
 import IconCheck from '~icons/lucide/check'
 import IconChevronDown from '~icons/lucide/chevron-down'
@@ -30,9 +32,11 @@ import IconKey from '~icons/lucide/key'
 import IconLink from '~icons/lucide/link'
 import IconList from '~icons/lucide/list'
 import IconLock from '~icons/lucide/lock'
+import IconMessagesSquare from '~icons/lucide/messages-square'
 import IconMonitor from '~icons/lucide/monitor'
 import IconMoon from '~icons/lucide/moon'
 import IconMoreHorizontal from '~icons/lucide/more-horizontal'
+import IconPaperclip from '~icons/lucide/paperclip'
 import IconPause from '~icons/lucide/pause'
 import IconPencil from '~icons/lucide/pencil'
 import IconPlay from '~icons/lucide/play'
@@ -62,6 +66,8 @@ import EjectIcon from './EjectIcon.svelte'
  * `docs/guides/icons.md`).
  */
 export const ICON_COMPONENTS = {
+  archive: IconArchive,
+  'archive-restore': IconArchiveRestore,
   'arrow-left': IconArrowLeft,
   check: IconCheck,
   'chevron-down': IconChevronDown,
@@ -94,9 +100,11 @@ export const ICON_COMPONENTS = {
   link: IconLink,
   list: IconList,
   lock: IconLock,
+  'messages-square': IconMessagesSquare,
   monitor: IconMonitor,
   moon: IconMoon,
   'more-horizontal': IconMoreHorizontal,
+  paperclip: IconPaperclip,
   pause: IconPause,
   pencil: IconPencil,
   play: IconPlay,

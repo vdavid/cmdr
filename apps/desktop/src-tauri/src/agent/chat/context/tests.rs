@@ -88,6 +88,7 @@ fn envelope_at(at: i64) -> ContextEnvelope {
                 connectivity: Some(EnvelopeConnectivity::Direct),
             },
         ],
+        attachments: vec![],
     }
 }
 
@@ -179,6 +180,7 @@ fn envelope_uses_em_dashes_and_none_when_fields_are_absent() {
         cursor_item: None,
         selection_count: 0,
         volumes: vec![],
+        attachments: vec![],
     };
     let rendered = render_envelope(&env, offset());
     assert!(rendered.contains("focused: —"), "absent focus renders an em dash");
@@ -337,4 +339,85 @@ fn assembly_elides_down_to_the_token_budget() {
         panic!("expected a tool-result part");
     };
     assert!(result.elided, "the oversized result was elided to fit the budget");
+}
+
+// ── Attachments in the envelope (path + kind only; the privacy line) ────────────
+
+fn envelope_with_attachments(attachments: Vec<EnvelopeAttachment>) -> ContextEnvelope {
+    ContextEnvelope {
+        captured_at: 1_780_000_000,
+        focused_pane_path: Some("~/Documents".to_string()),
+        cursor_item: None,
+        selection_count: 0,
+        volumes: vec![],
+        attachments,
+    }
+}
+
+#[test]
+fn envelope_renders_attachment_paths_and_kinds() {
+    let env = envelope_with_attachments(vec![
+        EnvelopeAttachment {
+            path: "/Users/d/photos".to_string(),
+            kind: AttachmentKind::Folder,
+        },
+        EnvelopeAttachment {
+            path: "/Users/d/taxes.pdf".to_string(),
+            kind: AttachmentKind::File,
+        },
+    ]);
+    let rendered = render_envelope(&env, offset());
+    assert!(
+        rendered.contains("attached: /Users/d/photos (folder), /Users/d/taxes.pdf (file)"),
+        "attachments render as path + kind: {rendered}"
+    );
+}
+
+#[test]
+fn envelope_omits_the_attached_segment_when_empty() {
+    let rendered = render_envelope(&envelope_with_attachments(vec![]), offset());
+    assert!(
+        !rendered.contains("attached:"),
+        "no attachments ⇒ no segment: {rendered}"
+    );
+}
+
+#[test]
+fn attachments_ride_only_the_latest_user_turn_and_carry_nothing_but_path_and_kind() {
+    // Two user turns; only the latest gets the envelope (with its attachments). The turn
+    // text is unchanged and NOTHING beyond path + kind reaches the prompt (no size, no
+    // contents) — the read-only privacy line asserted at the assembly boundary.
+    let transcript = vec![
+        user("first question", 100),
+        assistant_text("an answer", 110),
+        user("what's in this folder?", 200),
+    ];
+    let env = envelope_with_attachments(vec![EnvelopeAttachment {
+        path: "/Users/d/secret".to_string(),
+        kind: AttachmentKind::Folder,
+    }]);
+    let assembled = assemble_prompt(&prefix(None, &[]), &transcript, &env, offset());
+
+    // The earlier user turn carries only its timestamp marker, no attachment.
+    let AgentPart::Text(first) = &assembled.messages[0].parts[0] else {
+        panic!("expected the first user turn's text");
+    };
+    assert!(!first.contains("attached:"), "the older turn has no envelope: {first}");
+
+    // The latest user turn opens with the envelope, naming the attachment path + kind.
+    let AgentPart::Text(latest) = &assembled.messages[2].parts[0] else {
+        panic!("expected the latest user turn's envelope text");
+    };
+    assert!(
+        latest.contains("attached: /Users/d/secret (folder)"),
+        "envelope names it: {latest}"
+    );
+    // The original question survives as its own part, unchanged.
+    assert!(
+        assembled.messages[2]
+            .parts
+            .iter()
+            .any(|p| matches!(p, AgentPart::Text(t) if t == "what's in this folder?")),
+        "the user's text is untouched"
+    );
 }

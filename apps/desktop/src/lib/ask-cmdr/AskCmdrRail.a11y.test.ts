@@ -14,13 +14,21 @@ import type { RailMessage } from './ask-cmdr-trigger.svelte'
 
 // `vi.hoisted` so the shared mutable state exists before the hoisted `vi.mock` factory runs.
 const { triggerState, flags } = vi.hoisted(() => ({
-  triggerState: { streaming: false, width: 340, conversationId: null as number | null, messages: [] as RailMessage[] },
+  triggerState: {
+    streaming: false,
+    width: 340,
+    conversationId: null as number | null,
+    messages: [] as RailMessage[],
+    attachments: [] as unknown[],
+  },
   flags: { overSoftCap: false },
 }))
 
 vi.mock('./ask-cmdr-trigger.svelte', () => ({
   askCmdrState: triggerState,
   isOverSoftCap: () => flags.overSoftCap,
+  hasOlderMessages: () => false,
+  loadOlderMessages: vi.fn(),
   closeRail: vi.fn(),
   newChat: vi.fn(),
   setRailWidth: vi.fn(),
@@ -28,6 +36,12 @@ vi.mock('./ask-cmdr-trigger.svelte', () => ({
   stopStreaming: vi.fn(),
   markRailFocused: vi.fn(),
   returnFocusToPane: vi.fn(),
+  addAttachments: vi.fn(),
+  removeAttachment: vi.fn(),
+}))
+vi.mock('./ask-cmdr-sessions.svelte', () => ({
+  sessionsState: { open: false },
+  openSessions: vi.fn(),
 }))
 
 import AskCmdrRail from './AskCmdrRail.svelte'
@@ -54,7 +68,7 @@ describe('AskCmdrRail a11y', () => {
 
   it('a populated thread has no a11y violations', async () => {
     triggerState.messages = [
-      { kind: 'user', id: 1, text: 'What is my biggest folder?' },
+      { kind: 'user', id: 1, text: 'What is my biggest folder?', attachments: [] },
       {
         kind: 'assistant',
         id: 2,
@@ -70,7 +84,7 @@ describe('AskCmdrRail a11y', () => {
   })
 
   it('the over-soft-cap nudge has no a11y violations', async () => {
-    triggerState.messages = [{ kind: 'user', id: 1, text: 'hi' }]
+    triggerState.messages = [{ kind: 'user', id: 1, text: 'hi', attachments: [] }]
     flags.overSoftCap = true
     const target = mountRail()
     await tick()

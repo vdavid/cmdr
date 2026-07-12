@@ -7,14 +7,17 @@ E2E path, layout, decisions): [DETAILS.md](DETAILS.md).
 
 ## Module map
 
-- `ask-cmdr-trigger.svelte.ts`: the `$state` store + all mutators — open/close/focus, the active thread, and the live
-  streaming model (`RailMessage[]`). The one place state changes.
-- `AskCmdrRail.svelte`: the panel (header + ALPHA badge, thread, soft-cap nudge, composer, resize handle). Hosted by
-  `routes/(main)/+page.svelte` beside `DualPaneExplorer`.
-- `AskCmdrMessage.svelte` / `AskCmdrToolLine.svelte` / `AskCmdrComposer.svelte`: one thread item, one collapsible tool
-  line, the input.
+- `ask-cmdr-trigger.svelte.ts`: the core `$state` store + mutators — open/close/focus, the active thread, the live
+  streaming model (`RailMessage[]`), message paging, and staged attachments. The one place core state changes.
+- `ask-cmdr-sessions.svelte.ts`: a SEPARATE state slice for the sessions panel — thread list + paging, cross-thread
+  search, rename/archive, switch-thread. Calls the trigger's `switchToThread`/`newChat`; the trigger never imports it
+  back (no cycle).
+- `AskCmdrRail.svelte`: the panel (header + ALPHA badge, thread, load-earlier, soft-cap nudge, composer, resize handle),
+  hosting `AskCmdrSessions.svelte` as an overlay. Hosted by `routes/(main)/+page.svelte` beside `DualPaneExplorer`.
+- `AskCmdrMessage.svelte` / `AskCmdrToolLine.svelte` / `AskCmdrComposer.svelte` / `AskCmdrAttachmentChip.svelte`: one
+  thread item, one collapsible tool line, the input (with attach button + drop target), one attachment chip.
 - `ask-cmdr-markdown.ts`: the XSS boundary (escape + snarkdown). `ask-cmdr-labels.ts`: typed enum → localized string
-  maps.
+  maps. `ask-cmdr-drop.ts`: the native-webview drop target. `ask-cmdr-attachments.ts`: pure chip helpers.
 
 ## Must-knows
 
@@ -37,5 +40,9 @@ E2E path, layout, decisions): [DETAILS.md](DETAILS.md).
   `askCmdr.toggle` handler; Rust `command_map.rs` + the `macos.rs`/`linux.rs` View submenus; `shortcuts-store.ts`
   `menuCommands`. Default `⌘⌥A`, registered Command-then-Option (⌥⌘-order strings are native-menu-only). Pinned by
   `ask-cmdr-shortcut.test.ts`.
+- **Attachments cross into the envelope as path + kind ONLY — never contents** (the read-only privacy line). Drag from a
+  pane is a NATIVE webview drag (`onDragDropEvent`), not HTML5 — a DOM `ondrop` never fires; the composer hit-tests its
+  rect and trusts the self-drag identity for local drags only. Message paging is tail-first with load-older prepend;
+  don't reintroduce a single big page. Details in [DETAILS.md](DETAILS.md) § M7.
 
 Depth: [DETAILS.md](DETAILS.md).

@@ -6,6 +6,8 @@
 
     /** Where each glyph shows up in the app. Derived by grepping `name="<icon>"` call sites. */
     const USAGE: Record<IconName, string> = {
+        archive: 'Archive action on an Ask Cmdr chat row in the sessions panel, and the archived-view toggle.',
+        'archive-restore': 'Unarchive action on an archived Ask Cmdr chat row in the sessions panel.',
         'arrow-left': 'Back button in the onboarding wizard.',
         check: 'Selected-state check in onboarding cloud-provider rows, the settings checkbox, the select and combobox dropdowns, the breadcrumb volume menu, and the transfer scan-complete marker.',
         'chevron-down': 'Closed-state indicator on the combobox trigger, and the expand toggle in the download toast.',
@@ -40,9 +42,11 @@
         link: 'Symlink badge overlaid on a file or folder icon when the entry is a symlink.',
         list: 'Queue button on the transfer progress dialog (send the transfer to the background, managed in the queue window).',
         lock: 'Pinned-tab marker in the tab bar, the read-only-volume indicator in the breadcrumb, and the SMB login-form lock.',
+        'messages-square': 'Opens the Ask Cmdr sessions panel (past chats) from the rail header.',
         monitor: 'System theme-mode toggle option, and the host marker in the network browser.',
         moon: 'Dark theme-mode toggle option.',
         'more-horizontal': 'Row actions menu trigger in the search and selection results.',
+        paperclip: 'The "ask about selection" attach button in the Ask Cmdr composer, and its drag-to-attach drop hint.',
         pause: 'Pause control on a transfer queue row and the progress dialog (pauses that transfer in place).',
         pencil: 'Type marker for a rename operation row in the transfer queue window.',
         play: 'Resume control on a paused transfer queue row and the progress dialog (resumes the transfer).',

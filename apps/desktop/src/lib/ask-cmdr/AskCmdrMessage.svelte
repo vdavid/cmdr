@@ -13,6 +13,7 @@
     import { errorMessage } from './ask-cmdr-labels'
     import { renderAssistantMarkdown } from './ask-cmdr-markdown'
     import AskCmdrToolLine from './AskCmdrToolLine.svelte'
+    import AskCmdrAttachmentChip from './AskCmdrAttachmentChip.svelte'
     import type { RailMessage } from './ask-cmdr-trigger.svelte'
 
     interface Props {
@@ -23,7 +24,16 @@
 
 {#if message.kind === 'user'}
     <div class="msg user">
-        <div class="bubble">{message.text}</div>
+        <div class="user-stack">
+            <div class="bubble">{message.text}</div>
+            {#if message.attachments.length > 0}
+                <div class="user-attachments">
+                    {#each message.attachments as attachment (attachment.path)}
+                        <AskCmdrAttachmentChip {attachment} />
+                    {/each}
+                </div>
+            {/if}
+        </div>
     </div>
 {:else if message.kind === 'assistant'}
     <div class="msg">
@@ -67,8 +77,23 @@
         justify-content: flex-end;
     }
 
-    .user .bubble {
+    .user-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--spacing-xxs);
         max-width: 85%;
+    }
+
+    .user-attachments {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: var(--spacing-xxs);
+    }
+
+    .user .bubble {
+        max-width: 100%;
         padding: var(--spacing-xs) var(--spacing-sm);
         background: var(--color-accent-subtle);
         color: var(--color-text-primary);

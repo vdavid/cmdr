@@ -47,6 +47,7 @@ fn envelope() -> ContextEnvelope {
         cursor_item: Some("taxes/".to_string()),
         selection_count: 1,
         volumes: vec![],
+        attachments: vec![],
     }
 }
 
@@ -667,5 +668,73 @@ async fn a_pre_stream_provider_error_persists_nothing_and_is_typed() {
         drain(&mut rx)
             .iter()
             .any(|e| matches!(e, AgentChatEvent::Failed { .. }))
+    );
+}
+
+// ── Attachments reach the LLM in the envelope (and nothing more) ────────────────
+
+#[tokio::test]
+async fn attachments_reach_the_llm_in_the_envelope_and_nothing_more() {
+    use crate::agent::chat::context::{AttachmentKind, EnvelopeAttachment};
+
+    let conn = migrated_conn();
+    let id = conversation(&conn);
+    let llm = ProgrammableLlm::new(vec![Program::Answer {
+        chunks: vec!["ok".to_string()],
+        usage: AgentUsage::default(),
+    }]);
+    let (tx, _rx) = unbounded_channel();
+
+    let env = ContextEnvelope {
+        captured_at: 1_780_000_000,
+        focused_pane_path: Some("~/Documents".to_string()),
+        cursor_item: None,
+        selection_count: 0,
+        volumes: vec![],
+        attachments: vec![EnvelopeAttachment {
+            path: "/Users/d/report.pdf".to_string(),
+            kind: AttachmentKind::File,
+        }],
+    };
+    let params = TurnParams {
+        conversation_id: id,
+        user_text: Some("summarize this"),
+        cmdr_md: None,
+        envelope: &env,
+        offset: offset(),
+        now_secs: 1_780_000_000,
+        provider: ProviderTag::Local,
+        model: "fake-model".to_string(),
+    };
+
+    let result = run_turn(&llm, &OkDispatcher, &conn, &[], &params, &tx, &CancellationToken::new()).await;
+    assert!(matches!(result, TurnResult::Answered { .. }));
+
+    // The prompt the LLM actually saw carries the attachment on the user turn.
+    let seen = llm.calls_seen();
+    let messages = &seen[0];
+    let user_turn = messages
+        .iter()
+        .rev()
+        .find(|m| m.role == AgentRole::User)
+        .expect("a user turn");
+    let opening = leading_text(user_turn);
+    assert!(
+        opening.contains("attached: /Users/d/report.pdf (file)"),
+        "the envelope names the attachment path + kind: {opening}"
+    );
+    // Path + kind and NOTHING else — no size, no bytes, no file contents field.
+    let joined: String = messages
+        .iter()
+        .flat_map(|m| m.parts.iter())
+        .filter_map(|p| match p {
+            AgentPart::Text(t) => Some(t.as_str()),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(
+        !joined.to_lowercase().contains("content"),
+        "no file contents reach the prompt: {joined}"
     );
 }

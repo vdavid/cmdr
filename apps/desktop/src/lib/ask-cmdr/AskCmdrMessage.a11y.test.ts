@@ -21,7 +21,21 @@ function mountMessage(message: RailMessage): HTMLElement {
 
 describe('AskCmdrMessage a11y', () => {
   it('a user bubble has no a11y violations', async () => {
-    const target = mountMessage({ kind: 'user', id: 1, text: 'What is my biggest folder?' })
+    const target = mountMessage({ kind: 'user', id: 1, text: 'What is my biggest folder?', attachments: [] })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('a user bubble with attachment chips has no a11y violations', async () => {
+    const target = mountMessage({
+      kind: 'user',
+      id: 1,
+      text: "What's in here?",
+      attachments: [
+        { path: '/Users/me/photos', kind: 'folder' },
+        { path: '/Users/me/taxes.pdf', kind: 'file' },
+      ],
+    })
     await tick()
     await expectNoA11yViolations(target)
   })

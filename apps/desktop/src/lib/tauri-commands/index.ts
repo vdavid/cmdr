@@ -310,7 +310,17 @@ export { getRecentOperationLogEntries, getOperationLogDetail } from './operation
 export type { OperationRow, OperationItemView, OperationLogDetail } from './operation-log'
 
 // Ask Cmdr chat rail
-export { sendAskCmdrMessage, cancelAskCmdr, getAskCmdrConversation, listAskCmdrConversations } from './ask-cmdr'
+export {
+  sendAskCmdrMessage,
+  cancelAskCmdr,
+  getAskCmdrConversation,
+  listAskCmdrConversations,
+  searchAskCmdrConversations,
+  renameAskCmdrConversation,
+  archiveAskCmdrConversation,
+  askCmdrSelectionAttachments,
+  resolveAskCmdrAttachments,
+} from './ask-cmdr'
 export type {
   AskCmdrStreamEvent,
   AskCmdrErrorKind,
@@ -318,8 +328,11 @@ export type {
   StopReason,
   ConversationRow,
   ConversationDetailView,
+  ConversationSearchHit,
   MessageView,
   MessageBlock,
+  AttachmentRef,
+  AttachmentKindView,
 } from './ask-cmdr'
 
 // Crash reporter

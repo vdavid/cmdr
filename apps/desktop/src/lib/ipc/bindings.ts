@@ -1947,6 +1947,39 @@ export const commands = {
       __TAURI_INVOKE('ask_cmdr_list_conversations', { limit, offset, includeArchived }),
     ),
   /**
+   *  Conversations whose messages match `query` (FTS5, sanitized), newest-match first,
+   *  paged. Each hit carries a plain-text snippet around the match. Empty when the store
+   *  never opened or the query has no searchable term.
+   */
+  askCmdrSearchConversations: (query: string, limit: number, offset: number) =>
+    typedError<ConversationSearchHit[], string>(
+      __TAURI_INVOKE('ask_cmdr_search_conversations', { query, limit, offset }),
+    ),
+  // Rename a conversation. A no-op when the store never opened.
+  askCmdrRenameConversation: (id: number, title: string) =>
+    typedError<null, string>(__TAURI_INVOKE('ask_cmdr_rename_conversation', { id, title })),
+  /**
+   *  Archive or unarchive a conversation (no delete in v1 — the flag filters the list). A
+   *  no-op when the store never opened.
+   */
+  askCmdrArchiveConversation: (id: number, archived: boolean) =>
+    typedError<null, string>(__TAURI_INVOKE('ask_cmdr_archive_conversation', { id, archived })),
+  /**
+   *  "Ask about selection": attachment refs for the focused pane's current selection, or
+   *  its cursor item when nothing is selected. Reads [`PaneStateStore`] — the same live
+   *  source the envelope uses — so kinds come from known pane state, with no filesystem
+   *  stat. Empty when no pane state is registered.
+   */
+  askCmdrSelectionAttachments: () => __TAURI_INVOKE<AttachmentRef[]>('ask_cmdr_selection_attachments'),
+  /**
+   *  Resolve dragged local paths into typed attachment refs. Kinds come from the known
+   *  pane files (left + right) — no filesystem stat — defaulting to `File` for an unknown
+   *  path. The frontend only calls this for LOCAL drags; virtual-volume drag paths
+   *  mis-resolve after the pasteboard round-trip and are not supported in v1.
+   */
+  askCmdrResolveAttachments: (paths: string[]) =>
+    __TAURI_INVOKE<AttachmentRef[]>('ask_cmdr_resolve_attachments', { paths }),
+  /**
    *  Translates a natural-language selection request into a glob/regex plus optional
    *  size and date filters.
    *
@@ -3053,6 +3086,20 @@ export type AppStatus =
  */
 export type ArchiveSubkind = 'compress' | 'edit' | 'extract'
 
+// Whether an attachment references a file or a folder, on the wire.
+export type AttachmentKindView = 'file' | 'folder'
+
+/**
+ *  A file/folder the user attached by reference for a turn (dragged onto the composer,
+ *  or "ask about selection"). Structurally path + kind only — the read-only privacy
+ *  line means no tool ever reads its contents. Both directions: an input to
+ *  [`ask_cmdr_send_message`], and the output of the two attachment-resolving commands.
+ */
+export type AttachmentRef = {
+  path: string
+  kind: AttachmentKindView
+}
+
 // Authentication mode detected for a host.
 export type AuthMode =
   | 'guest_allowed'
@@ -3281,6 +3328,22 @@ export type ConversationRow = {
   archived: boolean
   // `None` = user-started (the v1 case). A non-null token is a programmatic origin.
   origin: ConversationOrigin | null
+}
+
+/**
+ *  A conversation whose messages matched a cross-thread search, newest-activity first.
+ *  Wire type (the search results list, M7): the `snippet` is a plain-text excerpt from
+ *  the newest matching message, rendered ESCAPED on the frontend (never `{@html}`).
+ */
+export type ConversationSearchHit = {
+  conversationId: number
+  title: string
+  updatedAt: number
+  /**
+   *  An FTS5 excerpt around the match, or the message start if the term is early.
+   *  Plain text with `…` ellipses; no markup (rendered as escaped text).
+   */
+  snippet: string
 }
 
 // The crash report written to disk (JSON).

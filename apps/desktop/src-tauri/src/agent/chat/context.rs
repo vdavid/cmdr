@@ -109,6 +109,33 @@ pub struct EnvelopeVolume {
     pub connectivity: Option<EnvelopeConnectivity>,
 }
 
+/// Whether an attached reference points at a file or a folder. The only "metadata"
+/// an attachment carries into the envelope beyond its path — never file contents
+/// (the read-only privacy line, spec §2.1).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AttachmentKind {
+    File,
+    Folder,
+}
+
+impl AttachmentKind {
+    fn token(self) -> &'static str {
+        match self {
+            AttachmentKind::File => "file",
+            AttachmentKind::Folder => "folder",
+        }
+    }
+}
+
+/// One file or folder the user referenced (dragged onto the composer, or "ask about
+/// selection") for this turn. A pure reference — path plus kind — resolved into the
+/// envelope, structurally never the file's contents.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EnvelopeAttachment {
+    pub path: String,
+    pub kind: AttachmentKind,
+}
+
 /// The live app-state snapshot the runtime captures ONCE at message-send and holds
 /// constant across the whole turn (snapshot-at-send). Rendered as the tagged block
 /// that opens the latest user turn.
@@ -122,6 +149,10 @@ pub struct ContextEnvelope {
     pub cursor_item: Option<String>,
     pub selection_count: u32,
     pub volumes: Vec<EnvelopeVolume>,
+    /// Files/folders the user attached by reference for this turn (drag-onto-composer
+    /// or "ask about selection"). Empty in the common case; rendered as a trailing
+    /// `attached: …` segment. Paths + kinds only, never contents.
+    pub attachments: Vec<EnvelopeAttachment>,
 }
 
 // ── Prefix + assembled output ─────────────────────────────────────────────────
@@ -204,8 +235,19 @@ pub fn render_envelope(envelope: &ContextEnvelope, offset: FixedOffset) -> Strin
             .collect::<Vec<_>>()
             .join(", ")
     };
+    let attachments = if envelope.attachments.is_empty() {
+        String::new()
+    } else {
+        let refs = envelope
+            .attachments
+            .iter()
+            .map(|a| format!("{} ({})", a.path, a.kind.token()))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!(" · attached: {refs}")
+    };
     format!(
-        "[{timestamp} · focused: {focused} · cursor: {cursor} · {} selected · volumes: {volumes}]",
+        "[{timestamp} · focused: {focused} · cursor: {cursor} · {} selected · volumes: {volumes}{attachments}]",
         envelope.selection_count
     )
 }

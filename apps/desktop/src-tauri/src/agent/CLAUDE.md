@@ -24,11 +24,15 @@ surface, so later proactive slices (proposals, notifications) grow here too. Ful
 - **Read-only by construction.** The chat agent has NO write tool and no content-read tool — only names, paths, and
   metadata ever reach the provider (spec §2.1). This is a structural privacy line, not a runtime check; don't add a tool
   that breaks it without revisiting the whole consent + gating story.
-- **The runtime drives the seams, and M6 wired the IPC.** M5's `chat::runtime` consumes the M1 seam, the M2 store
-  queries, and the M4 tool dispatch, and `agent::start` registers `ChatRuntime` in state. M6's
+- **The runtime drives the seams, and the IPC is wired.** M5's `chat::runtime` consumes the M1 seam, the M2 store
+  queries, and the M4 tool dispatch, and `agent::start` registers `ChatRuntime` in state.
   [`commands/agent.rs`](../commands/agent.rs) is the thin frontend surface: `ask_cmdr_send_message` (streaming over a
-  Tauri `Channel`, driven on a worker thread because `run_turn` holds a non-`Send` connection across awaits),
-  `ask_cmdr_cancel`, `ask_cmdr_get_conversation`, `ask_cmdr_list_conversations`. The interactive LLM is resolved from the
-  existing `ai/` config as an interim (M8 adds the dedicated slot). Frontend: [`src/lib/ask-cmdr/`](../../../src/lib/ask-cmdr/CLAUDE.md).
+  Tauri `Channel`, driven on a worker thread because `run_turn` holds a non-`Send` connection across awaits; takes
+  `attachments: Vec<AttachmentRef>` folded into the envelope as path + kind only), `ask_cmdr_cancel`,
+  `ask_cmdr_get_conversation`, `ask_cmdr_list_conversations`, plus M7's `ask_cmdr_search_conversations` (FTS hits with a
+  snippet), `ask_cmdr_rename_conversation`, `ask_cmdr_archive_conversation`, and the attachment resolvers
+  `ask_cmdr_selection_attachments` / `ask_cmdr_resolve_attachments` (kinds from `PaneStateStore`, no filesystem stat).
+  Register a new command in BOTH `ipc.rs` and `ipc_collectors.rs`. The interactive LLM is resolved from the existing
+  `ai/` config as an interim (M8 adds the dedicated slot). Frontend: [`src/lib/ask-cmdr/`](../../../src/lib/ask-cmdr/CLAUDE.md).
 
 Depth (milestone layout, the read-only rationale, how the slice relates to the full agent): [DETAILS.md](DETAILS.md).

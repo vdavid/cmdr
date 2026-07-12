@@ -8,14 +8,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AskCmdrStreamEvent } from '$lib/tauri-commands'
 
-const sendMock = vi.fn<(c: number | null, t: string, o: (e: AskCmdrStreamEvent) => void) => Promise<number>>()
+const sendMock =
+  vi.fn<
+    (c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>
+  >()
 const cancelMock = vi.fn<(id: number) => Promise<void>>()
 const listMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
 const getMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
 const saveMock = vi.fn()
 
 vi.mock('$lib/tauri-commands', () => ({
-  sendAskCmdrMessage: (c: number | null, t: string, o: (e: AskCmdrStreamEvent) => void) => sendMock(c, t, o),
+  sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) =>
+    sendMock(c, t, a, o),
   cancelAskCmdr: (id: number) => cancelMock(id),
   listAskCmdrConversations: (...a: unknown[]) => listMock(...a),
   getAskCmdrConversation: (...a: unknown[]) => getMock(...a),
@@ -33,17 +37,23 @@ vi.mock('$lib/file-explorer/pane/explorer-state.svelte', () => ({
 }))
 
 import {
+  addAttachments,
   askCmdrState,
+  hasOlderMessages,
   hydrateRail,
   isOverSoftCap,
+  loadOlderMessages,
+  MESSAGE_PAGE,
   newChat,
   openRail,
   pathFromArguments,
   RAIL_MAX_WIDTH,
   RAIL_MIN_WIDTH,
+  removeAttachment,
   sendMessage,
   setRailWidth,
   stopStreaming,
+  switchToThread,
   THREAD_SOFT_CAP_MESSAGES,
   type RailMessage,
 } from './ask-cmdr-trigger.svelte'
@@ -64,7 +74,7 @@ beforeEach(() => {
   listMock.mockReset()
   getMock.mockReset()
   listMock.mockResolvedValue([])
-  sendMock.mockImplementation((c, _t, o) => {
+  sendMock.mockImplementation((c, _t, _a, o) => {
     lastOnEvent = o
     return Promise.resolve(c ?? 1)
   })
@@ -87,9 +97,9 @@ function assistantAt(index: number): Extract<RailMessage, { kind: 'assistant' }>
 describe('sendMessage + streaming', () => {
   it('appends a user message and streams the answer into an assistant bubble', () => {
     sendMessage('hello')
-    expect(askCmdrState.messages[0]).toEqual({ kind: 'user', id: null, text: 'hello' })
+    expect(askCmdrState.messages[0]).toEqual({ kind: 'user', id: null, text: 'hello', attachments: [] })
     expect(askCmdrState.streaming).toBe(true)
-    expect(sendMock).toHaveBeenCalledWith(null, 'hello', expect.any(Function))
+    expect(sendMock).toHaveBeenCalledWith(null, 'hello', [], expect.any(Function))
 
     fire({ type: 'started', conversationId: 7 })
     fire({ type: 'assistantStarted' })
@@ -195,7 +205,7 @@ describe('openRail bootstrap + newChat + hydrate', () => {
 
   it('newChat clears the active thread', () => {
     askCmdrState.conversationId = 5
-    askCmdrState.messages.push({ kind: 'user', id: null, text: 'x' })
+    askCmdrState.messages.push({ kind: 'user', id: null, text: 'x', attachments: [] })
     newChat()
     expect(askCmdrState.conversationId).toBeNull()
     expect(askCmdrState.messages).toHaveLength(0)
@@ -223,7 +233,7 @@ describe('setRailWidth', () => {
 describe('isOverSoftCap', () => {
   it('trips only once the thread crosses the soft cap', () => {
     for (let i = 0; i <= THREAD_SOFT_CAP_MESSAGES; i++) {
-      askCmdrState.messages.push({ kind: 'user', id: null, text: `m${String(i)}` })
+      askCmdrState.messages.push({ kind: 'user', id: null, text: `m${String(i)}`, attachments: [] })
     }
     expect(askCmdrState.messages.length).toBe(THREAD_SOFT_CAP_MESSAGES + 1)
     expect(isOverSoftCap()).toBe(true)
@@ -235,5 +245,105 @@ describe('pathFromArguments', () => {
     expect(pathFromArguments('{"path":"/Users/x/Documents"}')).toBe('/Users/x/Documents')
     expect(pathFromArguments('{"limit":10}')).toBeNull()
     expect(pathFromArguments('not json')).toBeNull()
+  })
+})
+
+/** A minimal user-role MessageView for paging fixtures. */
+function userMessage(id: number, seq: number) {
+  return {
+    id,
+    seq,
+    role: 'user' as const,
+    blocks: [{ type: 'text' as const, text: `m${String(seq)}` }],
+    promptTokens: null,
+    completionTokens: null,
+    createdAt: 0,
+  }
+}
+
+/** A detail page covering seqs [offset, offset+limit) out of `total`. */
+function detailPage(total: number, limit: number, offset: number) {
+  const upper = Math.min(offset + limit, total)
+  const messages = []
+  for (let seq = offset; seq < upper; seq++) messages.push(userMessage(seq + 1, seq))
+  return { conversation: conversationRow(9), totalMessages: total, messages }
+}
+
+describe('message paging (tail-first, load older)', () => {
+  it('loads the most recent page for a long thread and offers older', async () => {
+    const total = MESSAGE_PAGE + 20
+    getMock.mockImplementation((...args: unknown[]) => {
+      const [, limit, offset] = args as [number, number, number]
+      return Promise.resolve(detailPage(total, limit, offset))
+    })
+    await switchToThread(9)
+    // A long thread refetches its tail: the last page, not the oldest.
+    expect(getMock).toHaveBeenLastCalledWith(9, MESSAGE_PAGE, total - MESSAGE_PAGE)
+    expect(askCmdrState.messages).toHaveLength(MESSAGE_PAGE)
+    expect(askCmdrState.historyCount).toBe(MESSAGE_PAGE)
+    expect(hasOlderMessages()).toBe(true)
+    // The newest message shown is the last one (seq total-1).
+    const last = askCmdrState.messages.at(-1)
+    expect(last?.kind === 'user' && last.text).toBe(`m${String(total - 1)}`)
+  })
+
+  it('load-older prepends the previous page with a non-overlapping offset', async () => {
+    const total = MESSAGE_PAGE + 20
+    getMock.mockImplementation((...args: unknown[]) => {
+      const [, limit, offset] = args as [number, number, number]
+      return Promise.resolve(detailPage(total, limit, offset))
+    })
+    await switchToThread(9)
+    await loadOlderMessages()
+    // The older page starts at 0 and fills the gap up to the tail (20 messages).
+    expect(getMock).toHaveBeenLastCalledWith(9, 20, 0)
+    expect(askCmdrState.messages).toHaveLength(total)
+    expect(askCmdrState.historyCount).toBe(total)
+    expect(hasOlderMessages()).toBe(false)
+    // Ordering holds: oldest at the top, newest at the bottom, no gaps or repeats.
+    const seqs = askCmdrState.messages.map((m) => (m.kind === 'user' ? m.text : ''))
+    expect(seqs).toEqual(Array.from({ length: total }, (_, i) => `m${String(i)}`))
+  })
+
+  it('a short thread loads in one page with nothing older', async () => {
+    getMock.mockImplementation((...args: unknown[]) => {
+      const [, limit, offset] = args as [number, number, number]
+      return Promise.resolve(detailPage(3, limit, offset))
+    })
+    await switchToThread(9)
+    expect(askCmdrState.messages).toHaveLength(3)
+    expect(hasOlderMessages()).toBe(false)
+  })
+})
+
+describe('attachments', () => {
+  it('adds and de-duplicates by path, and removes by path', () => {
+    addAttachments([
+      { path: '/a', kind: 'file' },
+      { path: '/b', kind: 'folder' },
+    ])
+    addAttachments([{ path: '/a', kind: 'file' }]) // duplicate ignored
+    expect(askCmdrState.attachments.map((a) => a.path)).toEqual(['/a', '/b'])
+    removeAttachment('/a')
+    expect(askCmdrState.attachments.map((a) => a.path)).toEqual(['/b'])
+  })
+
+  it('send passes staged attachments, echoes them on the user bubble, then clears them', () => {
+    addAttachments([{ path: '/a', kind: 'file' }])
+    sendMessage('about this')
+    expect(sendMock).toHaveBeenCalledWith(null, 'about this', [{ path: '/a', kind: 'file' }], expect.any(Function))
+    const first = askCmdrState.messages[0]
+    expect(first.kind === 'user' && first.attachments).toEqual([{ path: '/a', kind: 'file' }])
+    // Staged attachments are cleared after the send.
+    expect(askCmdrState.attachments).toEqual([])
+  })
+})
+
+describe('switchToThread', () => {
+  it('loads the chosen thread into the rail', async () => {
+    getMock.mockResolvedValue(detailPage(2, MESSAGE_PAGE, 0))
+    await switchToThread(9)
+    expect(askCmdrState.conversationId).toBe(9)
+    expect(askCmdrState.messages).toHaveLength(2)
   })
 })

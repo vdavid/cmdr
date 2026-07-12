@@ -11,13 +11,15 @@ import { mount, tick } from 'svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 // `vi.hoisted` so the shared mutable state exists before the hoisted `vi.mock` factory runs.
-const { triggerState } = vi.hoisted(() => ({ triggerState: { streaming: false } }))
+const { triggerState } = vi.hoisted(() => ({ triggerState: { streaming: false, attachments: [] as unknown[] } }))
 vi.mock('./ask-cmdr-trigger.svelte', () => ({
   askCmdrState: triggerState,
   sendMessage: vi.fn(),
   stopStreaming: vi.fn(),
   markRailFocused: vi.fn(),
   returnFocusToPane: vi.fn(),
+  addAttachments: vi.fn(),
+  removeAttachment: vi.fn(),
 }))
 
 import AskCmdrComposer from './AskCmdrComposer.svelte'

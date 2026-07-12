@@ -8,12 +8,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 
 const { state, spies } = vi.hoisted(() => ({
-  state: { streaming: false },
+  state: { streaming: false, attachments: [] as unknown[] },
   spies: {
     sendMessage: vi.fn(),
     stopStreaming: vi.fn(),
     markRailFocused: vi.fn(),
     returnFocusToPane: vi.fn(),
+    addAttachments: vi.fn(),
+    removeAttachment: vi.fn(),
   },
 }))
 
@@ -23,6 +25,8 @@ vi.mock('./ask-cmdr-trigger.svelte', () => ({
   stopStreaming: spies.stopStreaming,
   markRailFocused: spies.markRailFocused,
   returnFocusToPane: spies.returnFocusToPane,
+  addAttachments: spies.addAttachments,
+  removeAttachment: spies.removeAttachment,
 }))
 
 import AskCmdrComposer from './AskCmdrComposer.svelte'

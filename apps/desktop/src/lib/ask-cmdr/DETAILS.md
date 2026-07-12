@@ -40,8 +40,52 @@ backend AND finalizes the current bubble itself (a late `textDelta` that races i
 more text to a non-streaming bubble).
 
 History loads through `getAskCmdrConversation` on rail open (bootstrapping the most recent thread) and folds `tool`-role
-result rows into their assistant tool line by `callId`, so the thread shows one line per call. Real paging is M7; v1
-loads up to `HISTORY_LOAD_LIMIT` (threads are small — no retention, soft cap ~40).
+result rows into their assistant tool line by `callId`, so the thread shows one line per call.
+
+## Sessions, search, message paging (M7)
+
+- **Sessions panel** (`AskCmdrSessions.svelte`, opened from the rail header's "Chats" button) overlays the rail body
+  (`position: absolute; inset: 0`) with a search box, an active/archived filter, and the thread list. Its state lives in
+  a separate slice, `ask-cmdr-sessions.svelte.ts` (`sessionsState`), which calls the trigger's `switchToThread` /
+  `newChat`; the trigger never imports it back (no cycle). Selecting a thread switches the rail and closes the panel.
+- **List paging mirrors the operation-log dialog**: the offset is `conversations.length` (one source of truth), so an
+  append can't overlap or desync; a full page (`SESSIONS_PAGE`) means "load more" is offered. Rename edits the row's
+  title in place. The archived filter has two states: active-only (default) and "show archived", which shows ALL threads
+  with archived ones badged (the backend `include_archived=true` returns everything, so the reverse label is "Hide
+  archived", not "Show active"). `setArchived` drops a row only when archiving in the active-only view; in the all view a
+  flip just updates the badge in place.
+- **Search** is debounced (`SEARCH_DEBOUNCE_MS`) and guarded by a monotonic `searchSeq` so a slow earlier response can't
+  overwrite a newer one. A non-empty query replaces the list with FTS hits (`searchAskCmdrConversations`); clearing it
+  restores the list. Each hit's `snippet` is backend FTS text rendered as plain `{text}` (never `{@html}`).
+- **Message paging is tail-first** (a chat shows newest at the bottom). `loadConversation` probes page 0 to learn
+  `totalMessages`, then refetches the newest page when the thread exceeds `MESSAGE_PAGE`; `historyCount` tracks how many
+  rows are loaded from the tail. "Load earlier" (`loadOlderMessages`) prepends the previous page, its offset derived from
+  `messageTotal - historyCount` so pages tile without overlap and live-streamed rows (newer than the load-time total)
+  are never disturbed. The rail preserves the scroll position across a prepend (capture `scrollHeight` before, restore
+  after) and its auto-scroll-to-bottom only fires when the user was already near the bottom (`wasNearBottom`, tracked on
+  scroll), so streaming follows but loading older doesn't jump. Page-boundary caveat: `buildRailMessages` folds each
+  loaded page independently, so a tool result split across a page seam may render unfolded — negligible in practice
+  (threads sit under the ~40 soft cap, well below a 50-message page, so paging rarely fires at all).
+
+## Attachments by reference (M7)
+
+- The composer stages `AttachmentRef { path, kind }` chips (`askCmdrState.attachments`), sent with the next message and
+  cleared after. They ride into the context envelope as `attached: <path> (<kind>)` on the latest user turn — **path +
+  kind only, structurally never contents** (the read-only privacy line). History user rows carry no chips (the refs were
+  envelope text, not stored blocks).
+- **"Ask about selection"** (the paperclip button) calls `ask_cmdr_selection_attachments`, which reads the focused pane
+  from `PaneStateStore` (the same source the envelope uses) and returns its selection (or cursor item) as typed refs —
+  no filesystem stat.
+- **Drag-onto-composer is a NATIVE webview drag, not HTML5** (`ask-cmdr-drop.ts`): a Cmdr pane drag is delivered through
+  `getCurrentWebview().onDragDropEvent`, so a DOM `ondrop` would never fire. The composer subscribes to that event and
+  hit-tests its own rect (via `toViewportPosition`, mirroring the pane drag-drop controller). For an in-app drag the
+  trustworthy source is the recorded self-drag identity (`getSelfDragIdentity`), not the pasteboard-round-tripped payload
+  paths; only LOCAL (`'root'`) self-drags are supported (virtual-volume paths mis-resolve). A Finder drop uses the
+  payload paths (genuine local absolute). Kinds are resolved backend-side (`ask_cmdr_resolve_attachments`) from known
+  pane state, defaulting to file. The Tauri APIs load lazily and swallow failures, so the composer still mounts outside a
+  Tauri webview (unit tests).
+- Chips render the escaped basename (`attachmentBasename`) as plain `{text}` — filesystem names are attacker-controllable
+  on a network share, so never `{@html}` (see the shared XSS-boundary rule).
 
 ## Layout, persistence, focus
 
@@ -61,13 +105,17 @@ The app has no real AI provider under E2E, so `commands/agent.rs::resolve_agent_
 `FakeAgentLlm` when `CMDR_E2E_ASK_CMDR_FAKE=1` (set for the whole E2E run by the `desktop-svelte-e2e-playwright` check).
 It streams a fixed "Hi! I'm the test assistant." so `ask-cmdr.spec.ts` can assert send-and-render deterministically,
 zero network. The scripted turn is Say-only (no tools), so no tool dispatch runs. `ask-cmdr-trigger.test.ts` covers the
-full event model (tool lines, stop, soft cap) with mocked events.
+full event model (tool lines, stop, soft cap, message paging, attachments) with mocked events;
+`ask-cmdr-sessions.test.ts` covers list paging/search/rename/archive. The E2E spec also drives the sessions path
+end-to-end (create two threads, search finds the right one via real FTS over the persisted messages, switch works) — it
+seeds a per-run nonce into the message text so search never matches a thread left by an earlier run.
 
 ## i18n
 
-Copy lives in `intl/messages/en/askCmdr.json` (`askCmdr.*`) + the command label in `commands.json`
-(`commands.askCmdrToggle.*`), each with an `@key` translator description. English-only in M6; the other nine locales are
-M8 (so `desktop-i18n-coverage` reports the gap until then). Tool + error labels are literal-keyed records in
+Copy lives in `intl/messages/en/askCmdr.json` (`askCmdr.*`, including the M7 `askCmdr.sessions.*`,
+`askCmdr.composer.attach`/`dropHint`, `askCmdr.attachment.*`, and `askCmdr.loadEarlier` keys) + the command label in
+`commands.json` (`commands.askCmdrToggle.*`), each with an `@key` translator description. English-only; the other nine
+locales are M8 (so `desktop-i18n-coverage` reports the gap until then). Tool + error labels are literal-keyed records in
 `ask-cmdr-labels.ts` (a computed prefix would trip the unused-key check).
 
 ## Decisions

@@ -12,22 +12,51 @@
     import { tString } from '$lib/intl/messages.svelte'
     import AskCmdrComposer from './AskCmdrComposer.svelte'
     import AskCmdrMessage from './AskCmdrMessage.svelte'
-    import { askCmdrState, closeRail, isOverSoftCap, newChat, setRailWidth } from './ask-cmdr-trigger.svelte'
+    import AskCmdrSessions from './AskCmdrSessions.svelte'
+    import {
+        askCmdrState,
+        closeRail,
+        hasOlderMessages,
+        isOverSoftCap,
+        loadOlderMessages,
+        newChat,
+        setRailWidth,
+    } from './ask-cmdr-trigger.svelte'
+    import { openSessions, sessionsState } from './ask-cmdr-sessions.svelte'
 
     const badgeStatus = getBadgeStatus('ask-cmdr')
 
     let listElement = $state<HTMLDivElement | null>(null)
+    // Whether the user was near the bottom before the last content change. Streaming
+    // appends scroll to follow; a "load earlier" prepend (user scrolled up) does not.
+    let wasNearBottom = true
 
-    // Keep the newest message in view as the thread grows or text streams in.
+    function onListScroll(): void {
+        const el = listElement
+        if (el) wasNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    }
+
+    // Keep the newest message in view as the thread grows or text streams in, but only
+    // when the user is already at the bottom.
     const lastText = $derived(askCmdrState.messages.at(-1))
     $effect(() => {
         // Track the message count and the live tail so streaming deltas also scroll.
         void askCmdrState.messages.length
         void (lastText && lastText.kind === 'assistant' ? lastText.text : '')
+        if (!wasNearBottom) return
         void tick().then(() => {
             if (listElement) listElement.scrollTop = listElement.scrollHeight
         })
     })
+
+    // Prepend older history, holding the user's scroll position steady across the growth.
+    async function onLoadEarlier(): Promise<void> {
+        const el = listElement
+        const before = el ? el.scrollHeight : 0
+        await loadOlderMessages()
+        await tick()
+        if (el) el.scrollTop += el.scrollHeight - before
+    }
 
     // Left-edge resize: dragging left widens (the rail hugs the right edge).
     let dragStartX = 0
@@ -66,6 +95,9 @@
             <StatusBadge status={badgeStatus} />
         {/if}
         <span class="header-actions">
+            <button type="button" class="icon-button" onclick={openSessions} aria-label={tString('askCmdr.threads.open')} title={tString('askCmdr.threads.open')}>
+                <Icon name="messages-square" size={16} aria-hidden="true" />
+            </button>
             <button type="button" class="icon-button" onclick={newChat} aria-label={tString('askCmdr.newChat')}>
                 <Icon name="file-plus" size={16} aria-hidden="true" />
             </button>
@@ -75,7 +107,12 @@
         </span>
     </header>
 
-    <div class="rail-body" bind:this={listElement}>
+    <div class="rail-body" bind:this={listElement} onscroll={onListScroll}>
+        {#if hasOlderMessages()}
+            <button type="button" class="load-earlier" disabled={askCmdrState.loadingOlder} onclick={() => void onLoadEarlier()}>
+                {tString('askCmdr.loadEarlier')}
+            </button>
+        {/if}
         {#if askCmdrState.messages.length === 0}
             <div class="empty">
                 <span class="empty-glyph"><Icon name="sparkles" size={28} aria-hidden="true" /></span>
@@ -98,6 +135,10 @@
     </div>
 
     <AskCmdrComposer />
+
+    {#if sessionsState.open}
+        <AskCmdrSessions />
+    {/if}
 </aside>
 
 <style>
@@ -169,6 +210,23 @@
         min-height: 0;
         overflow-y: auto;
         padding: var(--spacing-md);
+    }
+
+    .load-earlier {
+        display: block;
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+        padding: var(--spacing-xs);
+        font: inherit;
+        font-size: var(--font-size-sm);
+        color: var(--color-accent-text);
+        background: none;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+    }
+
+    .load-earlier:disabled {
+        opacity: 0.5;
     }
 
     .empty {

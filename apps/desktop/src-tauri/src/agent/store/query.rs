@@ -8,11 +8,11 @@
 //!
 //! ## Wire vs. backend types
 //!
-//! [`ConversationRow`], [`CostSummary`], and [`CostDay`] are wire types (camelCase +
-//! `specta::Type`) the IPC layer (M6/M7) returns directly. [`StoredMessage`] is
-//! deliberately NOT a wire type: it carries the fully parsed [`AgentPart`]s, including the
-//! opaque provider reasoning blob, which must never cross to the frontend. M6 builds a
-//! display-only `MessageView` from it.
+//! [`ConversationRow`], [`ConversationSearchHit`], [`CostSummary`], and [`CostDay`] are
+//! wire types (camelCase + `specta::Type`) the IPC layer (M6/M7) returns directly.
+//! [`StoredMessage`] is deliberately NOT a wire type: it carries the fully parsed
+//! [`AgentPart`]s, including the opaque provider reasoning blob, which must never cross to
+//! the frontend. M6 builds a display-only `MessageView` from it.
 //!
 //! ## FTS5 search is sanitized, never raw
 //!
@@ -64,11 +64,17 @@ pub struct ConversationDetail {
 }
 
 /// A conversation whose messages matched a cross-thread search, newest-activity first.
-#[derive(Debug, Clone, PartialEq)]
+/// Wire type (the search results list, M7): the `snippet` is a plain-text excerpt from
+/// the newest matching message, rendered ESCAPED on the frontend (never `{@html}`).
+#[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct ConversationSearchHit {
     pub conversation_id: i64,
     pub title: String,
     pub updated_at: i64,
+    /// An FTS5 excerpt around the match, or the message start if the term is early.
+    /// Plain text with `…` ellipses; no markup (rendered as escaped text).
+    pub snippet: String,
 }
 
 /// One metering event to fold into the cost meter (per completed `respond` call).
@@ -352,13 +358,29 @@ pub fn search_conversations(
     let Some(match_query) = sanitize_fts_query(query) else {
         return Ok(Vec::new());
     };
+    // Per conversation: the max matching message id (the newest matching message,
+    // ids being insert-monotonic) drives a deterministic snippet, and MAX(created_at)
+    // orders threads by most recent match. The `hit` subquery yields a snippet for
+    // every matching rowid; joining it on that max id picks one excerpt per thread.
+    // `snippet(messages_fts, 0, '', '', '…', 10)`: column 0 (`text_for_search`), no
+    // highlight markers (the frontend escapes + styles), `…` ellipsis, ~10 tokens.
     let mut stmt = conn.prepare_cached(
-        "SELECT c.id, c.title, c.updated_at
+        "SELECT c.id, c.title, c.updated_at, hit.snippet
          FROM conversations c
-         JOIN messages m ON m.conversation_id = c.id
-         WHERE m.id IN (SELECT rowid FROM messages_fts WHERE messages_fts MATCH ?1)
-         GROUP BY c.id
-         ORDER BY MAX(m.created_at) DESC, c.id DESC
+         JOIN (
+             SELECT m.conversation_id AS cid,
+                    MAX(m.created_at)  AS latest,
+                    MAX(m.id)          AS max_id
+             FROM messages m
+             WHERE m.id IN (SELECT rowid FROM messages_fts WHERE messages_fts MATCH ?1)
+             GROUP BY m.conversation_id
+         ) grouped ON grouped.cid = c.id
+         JOIN (
+             SELECT messages_fts.rowid AS rid,
+                    snippet(messages_fts, 0, '', '', '…', 10) AS snippet
+             FROM messages_fts WHERE messages_fts MATCH ?1
+         ) hit ON hit.rid = grouped.max_id
+         ORDER BY grouped.latest DESC, c.id DESC
          LIMIT ?2 OFFSET ?3",
     )?;
     let mut rows = stmt.query(rusqlite::params![match_query, limit, offset])?;
@@ -368,6 +390,7 @@ pub fn search_conversations(
             conversation_id: row.get(0)?,
             title: row.get(1)?,
             updated_at: row.get(2)?,
+            snippet: row.get(3)?,
         });
     }
     Ok(out)

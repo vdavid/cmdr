@@ -22,6 +22,7 @@ import {
   sendAskCmdrMessage,
   type AskCmdrErrorKind,
   type AskCmdrStreamEvent,
+  type AttachmentRef,
   type ConversationDetailView,
   type MessageView,
 } from '$lib/tauri-commands'
@@ -32,8 +33,10 @@ const log = getAppLogger('askCmdr')
  * `THREAD_SOFT_CAP_MESSAGES`; no hard cut). */
 export const THREAD_SOFT_CAP_MESSAGES = 40
 
-/** How many messages to load when opening a thread (v1 threads are small; M7 adds paging). */
-const HISTORY_LOAD_LIMIT = 500
+/** How many messages a thread page holds. Threads are small (soft cap ~40), so the first
+ * page is usually the whole thread; paging is the insurance for a long one. Loading is
+ * tail-first (newest page), with "load earlier" prepending older pages. */
+export const MESSAGE_PAGE = 50
 
 /** One tool call the assistant made, as the collapsible "looked at X" line shows it. */
 export interface RailToolCall {
@@ -46,9 +49,11 @@ export interface RailToolCall {
   path: string | null
 }
 
-/** One rendered item in the thread. */
+/** One rendered item in the thread. `attachments` on a user turn are the chips shown
+ * under the sent message; history rows carry none (the refs rode into the envelope, not
+ * stored blocks). */
 export type RailMessage =
-  | { kind: 'user'; id: number | null; text: string }
+  | { kind: 'user'; id: number | null; text: string; attachments: AttachmentRef[] }
   | { kind: 'assistant'; id: number | null; text: string; tools: RailToolCall[]; thinking: boolean; streaming: boolean }
   | { kind: 'error'; errorKind: AskCmdrErrorKind }
 
@@ -61,6 +66,14 @@ interface AskCmdrState {
   messages: RailMessage[]
   streaming: boolean
   loadingHistory: boolean
+  /** Total messages the active thread had at load, so paging knows when older exist. */
+  messageTotal: number
+  /** History rows loaded so far, from the newest end. `< messageTotal` ⇒ older remain. */
+  historyCount: number
+  /** True while a "load earlier" page is in flight. */
+  loadingOlder: boolean
+  /** Files/folders staged in the composer for the next send (path + kind only). */
+  attachments: AttachmentRef[]
 }
 
 export const RAIL_MIN_WIDTH = 280
@@ -74,11 +87,20 @@ export const askCmdrState = $state<AskCmdrState>({
   messages: [],
   streaming: false,
   loadingHistory: false,
+  messageTotal: 0,
+  historyCount: 0,
+  loadingOlder: false,
+  attachments: [],
 })
 
 /** True once the thread grows past the soft cap (drives the "start a fresh one?" nudge). */
 export function isOverSoftCap(): boolean {
   return askCmdrState.messages.length > THREAD_SOFT_CAP_MESSAGES
+}
+
+/** True when older history pages exist beyond what's loaded (drives "load earlier"). */
+export function hasOlderMessages(): boolean {
+  return askCmdrState.historyCount < askCmdrState.messageTotal
 }
 
 // ── Open / close / focus ───────────────────────────────────────────────────────
@@ -144,6 +166,16 @@ export function newChat(): void {
   if (askCmdrState.streaming) stopStreaming()
   askCmdrState.conversationId = null
   askCmdrState.messages = []
+  askCmdrState.messageTotal = 0
+  askCmdrState.historyCount = 0
+  askCmdrState.attachments = []
+}
+
+/** Switch the rail to an existing thread and load its most recent page. */
+export async function switchToThread(id: number): Promise<void> {
+  if (askCmdrState.streaming) stopStreaming()
+  askCmdrState.attachments = []
+  await loadConversation(id)
 }
 
 async function bootstrapActiveThread(): Promise<void> {
@@ -161,11 +193,47 @@ async function bootstrapActiveThread(): Promise<void> {
   }
 }
 
+/** Load a thread's most recent page into the rail (tail-first). One probe fetch learns
+ * the total; a thread longer than a page then refetches its newest page. */
 async function loadConversation(id: number): Promise<void> {
-  const detail = await getAskCmdrConversation(id, HISTORY_LOAD_LIMIT, 0)
-  if (!detail) return
-  askCmdrState.conversationId = id
-  askCmdrState.messages = buildRailMessages(detail)
+  askCmdrState.loadingHistory = true
+  try {
+    const probe = await getAskCmdrConversation(id, MESSAGE_PAGE, 0)
+    if (!probe) return
+    let detail = probe
+    if (probe.totalMessages > MESSAGE_PAGE) {
+      const tailOffset = probe.totalMessages - MESSAGE_PAGE
+      detail = (await getAskCmdrConversation(id, MESSAGE_PAGE, tailOffset)) ?? probe
+    }
+    askCmdrState.conversationId = id
+    askCmdrState.messageTotal = detail.totalMessages
+    askCmdrState.historyCount = detail.messages.length
+    askCmdrState.messages = buildRailMessages(detail)
+  } finally {
+    askCmdrState.loadingHistory = false
+  }
+}
+
+/** Prepend the page of history immediately older than what's shown. Offset is derived
+ * from `historyCount` against the load-time total, so pages tile with no overlap and
+ * live-streamed messages (newer than the total) are never disturbed. */
+export async function loadOlderMessages(): Promise<void> {
+  const id = askCmdrState.conversationId
+  if (id === null || askCmdrState.loadingOlder || !hasOlderMessages()) return
+  askCmdrState.loadingOlder = true
+  try {
+    const remaining = askCmdrState.messageTotal - askCmdrState.historyCount
+    const limit = Math.min(MESSAGE_PAGE, remaining)
+    const offset = remaining - limit
+    const detail = await getAskCmdrConversation(id, limit, offset)
+    if (!detail) return
+    askCmdrState.messages = [...buildRailMessages(detail), ...askCmdrState.messages]
+    askCmdrState.historyCount += detail.messages.length
+  } catch (e) {
+    log.warn('loading earlier messages failed: {error}', { error: String(e) })
+  } finally {
+    askCmdrState.loadingOlder = false
+  }
 }
 
 /** Fold a loaded conversation's messages into rail items: tool results are attached to the
@@ -181,7 +249,7 @@ function buildRailMessages(detail: ConversationDetailView): RailMessage[] {
   const out: RailMessage[] = []
   for (const message of detail.messages) {
     if (message.role === 'user') {
-      out.push({ kind: 'user', id: message.id, text: joinText(message) })
+      out.push({ kind: 'user', id: message.id, text: joinText(message), attachments: [] })
     } else if (message.role === 'assistant') {
       out.push({
         kind: 'assistant',
@@ -237,9 +305,11 @@ export function pathFromArguments(argumentsJson: string): string | null {
 export function sendMessage(text: string): void {
   const trimmed = text.trim()
   if (!trimmed || askCmdrState.streaming) return
-  askCmdrState.messages.push({ kind: 'user', id: null, text: trimmed })
+  const attachments = askCmdrState.attachments
+  askCmdrState.messages.push({ kind: 'user', id: null, text: trimmed, attachments })
   askCmdrState.streaming = true
-  void sendAskCmdrMessage(askCmdrState.conversationId, trimmed, handleStreamEvent).then(
+  askCmdrState.attachments = []
+  void sendAskCmdrMessage(askCmdrState.conversationId, trimmed, attachments, handleStreamEvent).then(
     (id) => {
       askCmdrState.conversationId = id
     },
@@ -247,6 +317,23 @@ export function sendMessage(text: string): void {
       log.warn('sending a message failed: {error}', { error: String(e) })
     },
   )
+}
+
+// ── Attachments (staged in the composer for the next send) ─────────────────────
+
+/** Stage attachment refs in the composer, de-duplicated by path (counts stay tiny, so a
+ * linear check beats a reactive Set). */
+export function addAttachments(refs: AttachmentRef[]): void {
+  for (const ref of refs) {
+    if (!askCmdrState.attachments.some((a) => a.path === ref.path)) {
+      askCmdrState.attachments.push(ref)
+    }
+  }
+}
+
+/** Remove one staged attachment by path. */
+export function removeAttachment(path: string): void {
+  askCmdrState.attachments = askCmdrState.attachments.filter((a) => a.path !== path)
 }
 
 /** Stop the in-flight turn. The runtime sends no terminal event on cancel, so finalize the

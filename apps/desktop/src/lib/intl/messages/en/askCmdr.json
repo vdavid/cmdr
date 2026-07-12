@@ -154,5 +154,89 @@
   "askCmdr.error.provider": "Something went wrong on the provider’s side. Try again?",
   "@askCmdr.error.provider": {
     "description": "Shown for any other provider-side problem. Friendly; avoids the words error and failed. The apostrophe is U+2019."
+  },
+  "askCmdr.loadEarlier": "Load earlier messages",
+  "@askCmdr.loadEarlier": {
+    "description": "Button at the top of a long Ask Cmdr chat that loads the previous page of older messages. Sentence case."
+  },
+  "askCmdr.threads.open": "Chats",
+  "@askCmdr.threads.open": {
+    "description": "Accessible label and tooltip for the rail header button that opens the list of past Ask Cmdr chats. Sentence case."
+  },
+  "askCmdr.sessions.title": "Chats",
+  "@askCmdr.sessions.title": {
+    "description": "Heading of the Ask Cmdr panel listing the user's past chats. Sentence case."
+  },
+  "askCmdr.sessions.back": "Back to chat",
+  "@askCmdr.sessions.back": {
+    "description": "Accessible label for the button that closes the chats list and returns to the active conversation. Sentence case."
+  },
+  "askCmdr.sessions.searchPlaceholder": "Search your chats…",
+  "@askCmdr.sessions.searchPlaceholder": {
+    "description": "Placeholder in the box that searches across all past Ask Cmdr chats. Ends with an ellipsis character (…)."
+  },
+  "askCmdr.sessions.searchLabel": "Search chats",
+  "@askCmdr.sessions.searchLabel": {
+    "description": "Accessible label for the Ask Cmdr chats search input. Sentence case."
+  },
+  "askCmdr.sessions.empty": "No chats yet",
+  "@askCmdr.sessions.empty": {
+    "description": "Shown in the chats list when the user has no saved Ask Cmdr conversations. Sentence case."
+  },
+  "askCmdr.sessions.emptyArchived": "No archived chats",
+  "@askCmdr.sessions.emptyArchived": {
+    "description": "Shown in the chats list, in archived view, when nothing is archived. Sentence case."
+  },
+  "askCmdr.sessions.noResults": "No chats match your search",
+  "@askCmdr.sessions.noResults": {
+    "description": "Shown when a search across past Ask Cmdr chats finds nothing. Sentence case."
+  },
+  "askCmdr.sessions.showArchived": "Show archived",
+  "@askCmdr.sessions.showArchived": {
+    "description": "Toggle that switches the chats list to show archived conversations. Sentence case."
+  },
+  "askCmdr.sessions.hideArchived": "Hide archived",
+  "@askCmdr.sessions.hideArchived": {
+    "description": "Toggle that switches the chats list back to active-only, hiding archived conversations. Sentence case."
+  },
+  "askCmdr.sessions.loadMore": "Load more",
+  "@askCmdr.sessions.loadMore": {
+    "description": "Button that loads the next page of older chats in the list. Sentence case."
+  },
+  "askCmdr.sessions.searching": "Searching…",
+  "@askCmdr.sessions.searching": {
+    "description": "Shown while a search across past chats is running. Ends with an ellipsis character (…)."
+  },
+  "askCmdr.sessions.rename": "Rename",
+  "@askCmdr.sessions.rename": {
+    "description": "Accessible label for the button that renames a chat in the list. Sentence case."
+  },
+  "askCmdr.sessions.renameLabel": "Chat title",
+  "@askCmdr.sessions.renameLabel": {
+    "description": "Accessible label for the inline text box that edits a chat's title. Sentence case."
+  },
+  "askCmdr.sessions.archive": "Archive",
+  "@askCmdr.sessions.archive": {
+    "description": "Accessible label for the button that archives a chat (hides it from the active list, no delete). Sentence case."
+  },
+  "askCmdr.sessions.unarchive": "Unarchive",
+  "@askCmdr.sessions.unarchive": {
+    "description": "Accessible label for the button that restores an archived chat to the active list. Sentence case."
+  },
+  "askCmdr.sessions.archivedBadge": "Archived",
+  "@askCmdr.sessions.archivedBadge": {
+    "description": "Small badge marking an archived chat in the list. Sentence case."
+  },
+  "askCmdr.composer.attach": "Ask about selection",
+  "@askCmdr.composer.attach": {
+    "description": "Button in the composer that attaches the file or folder selected in the active pane, so the user can ask about it. Sentence case."
+  },
+  "askCmdr.composer.dropHint": "Drop to attach",
+  "@askCmdr.composer.dropHint": {
+    "description": "Overlay shown on the composer while a file or folder is dragged over it, inviting a drop. Sentence case."
+  },
+  "askCmdr.attachment.remove": "Remove attachment",
+  "@askCmdr.attachment.remove": {
+    "description": "Accessible label for the small button that removes a staged file or folder attachment from the composer. Sentence case."
   }
 }

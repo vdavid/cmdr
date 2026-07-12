@@ -35,7 +35,7 @@ use std::path::Path;
 use std::sync::{LazyLock, Mutex};
 
 use chrono::{FixedOffset, Local};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::ipc::Channel;
 use tauri::{AppHandle, Manager};
@@ -43,12 +43,14 @@ use tokio::sync::mpsc::unbounded_channel;
 use tokio_util::sync::CancellationToken;
 
 use crate::agent::AgentDb;
-use crate::agent::chat::context::{ContextEnvelope, EnvelopeConnectivity, EnvelopeFreshness, EnvelopeVolume};
+use crate::agent::chat::context::{
+    AttachmentKind, ContextEnvelope, EnvelopeAttachment, EnvelopeConnectivity, EnvelopeFreshness, EnvelopeVolume,
+};
 use crate::agent::chat::runtime::{AgentChatEvent, AgentErrorKind, ChatRuntime};
 use crate::agent::llm::AgentLlm;
 use crate::agent::llm::genai_impl::GenaiAgentLlm;
 use crate::agent::llm::types::{AgentPart, AgentRole, AgentStopReason, AgentUsage, ProviderTag};
-use crate::agent::store::{self, ConversationRow, StoredMessage};
+use crate::agent::store::{self, ConversationRow, ConversationSearchHit, StoredMessage};
 use crate::ignore_poison::IgnorePoison;
 use crate::mcp::PaneStateStore;
 use crate::mcp::resources::volumes::{VolumeSummary, snapshot_volumes};
@@ -262,6 +264,39 @@ pub struct ConversationDetailView {
     pub total_messages: u32,
 }
 
+// ── Attachments (by reference; path + kind, never contents) ─────────────────────
+
+/// Whether an attachment references a file or a folder, on the wire.
+#[derive(Clone, Copy, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum AttachmentKindView {
+    File,
+    Folder,
+}
+
+/// A file/folder the user attached by reference for a turn (dragged onto the composer,
+/// or "ask about selection"). Structurally path + kind only — the read-only privacy
+/// line means no tool ever reads its contents. Both directions: an input to
+/// [`ask_cmdr_send_message`], and the output of the two attachment-resolving commands.
+#[derive(Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentRef {
+    pub path: String,
+    pub kind: AttachmentKindView,
+}
+
+impl AttachmentRef {
+    fn to_envelope(&self) -> EnvelopeAttachment {
+        EnvelopeAttachment {
+            path: self.path.clone(),
+            kind: match self.kind {
+                AttachmentKindView::File => AttachmentKind::File,
+                AttachmentKindView::Folder => AttachmentKind::Folder,
+            },
+        }
+    }
+}
+
 /// True when a persisted tool result is a real answer rather than a refusal or a handler
 /// problem. Reads OUR OWN typed result keys (`available` / `problem`), never external
 /// wording — matching the runtime's `dispatch_ok`.
@@ -376,8 +411,9 @@ fn provider_and_model() -> (ProviderTag, String) {
 }
 
 /// Capture the context envelope from live app state (snapshot-at-send). Focused pane path
-/// resolves from the focused SIDE's directory; volumes come from `snapshot_volumes`.
-async fn capture_envelope<R: tauri::Runtime>(app: &AppHandle<R>) -> ContextEnvelope {
+/// resolves from the focused SIDE's directory; volumes come from `snapshot_volumes`;
+/// `attachments` are the references the user attached for this turn (path + kind only).
+async fn capture_envelope<R: tauri::Runtime>(app: &AppHandle<R>, attachments: &[AttachmentRef]) -> ContextEnvelope {
     let (focused_pane_path, cursor_item, selection_count) = match app.try_state::<PaneStateStore>() {
         Some(store) => {
             let side = store.get_focused_pane();
@@ -399,6 +435,7 @@ async fn capture_envelope<R: tauri::Runtime>(app: &AppHandle<R>) -> ContextEnvel
         cursor_item,
         selection_count,
         volumes,
+        attachments: attachments.iter().map(AttachmentRef::to_envelope).collect(),
     }
 }
 
@@ -455,6 +492,7 @@ pub async fn ask_cmdr_send_message(
     app: AppHandle,
     conversation_id: Option<i64>,
     text: String,
+    attachments: Vec<AttachmentRef>,
     on_event: Channel<AskCmdrStreamEvent>,
 ) -> Result<i64, String> {
     // Resolve the LLM before touching the DB: if AI is off/unconfigured, say so and add
@@ -512,6 +550,7 @@ pub async fn ask_cmdr_send_message(
             model,
             conversation_id,
             text,
+            attachments,
             on_event,
             cancel,
         ));
@@ -534,6 +573,7 @@ async fn drive_turn(
     model: String,
     conversation_id: i64,
     text: String,
+    attachments: Vec<AttachmentRef>,
     on_event: Channel<AskCmdrStreamEvent>,
     cancel: CancellationToken,
 ) {
@@ -546,7 +586,7 @@ async fn drive_turn(
     }
     let _guard = CancelGuard(conversation_id);
 
-    let envelope = capture_envelope(&app).await;
+    let envelope = capture_envelope(&app, &attachments).await;
     let offset = local_offset();
 
     let Some(runtime) = app.try_state::<ChatRuntime>() else {
@@ -645,6 +685,128 @@ pub async fn ask_cmdr_list_conversations(
         store::list_conversations(conn, limit, offset, include_archived)
     })
     .await
+}
+
+/// Conversations whose messages match `query` (FTS5, sanitized), newest-match first,
+/// paged. Each hit carries a plain-text snippet around the match. Empty when the store
+/// never opened or the query has no searchable term.
+#[tauri::command]
+#[specta::specta]
+pub async fn ask_cmdr_search_conversations(
+    app: AppHandle,
+    query: String,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<ConversationSearchHit>, String> {
+    with_read_connection(app, Vec::new(), move |conn| {
+        store::search_conversations(conn, &query, limit, offset)
+    })
+    .await
+}
+
+/// Rename a conversation. A no-op when the store never opened.
+#[tauri::command]
+#[specta::specta]
+pub async fn ask_cmdr_rename_conversation(app: AppHandle, id: i64, title: String) -> Result<(), String> {
+    with_write_connection(app, move |conn| store::rename_conversation(conn, id, &title)).await
+}
+
+/// Archive or unarchive a conversation (no delete in v1 — the flag filters the list). A
+/// no-op when the store never opened.
+#[tauri::command]
+#[specta::specta]
+pub async fn ask_cmdr_archive_conversation(app: AppHandle, id: i64, archived: bool) -> Result<(), String> {
+    with_write_connection(app, move |conn| store::archive_conversation(conn, id, archived)).await
+}
+
+/// "Ask about selection": attachment refs for the focused pane's current selection, or
+/// its cursor item when nothing is selected. Reads [`PaneStateStore`] — the same live
+/// source the envelope uses — so kinds come from known pane state, with no filesystem
+/// stat. Empty when no pane state is registered.
+#[tauri::command]
+#[specta::specta]
+pub fn ask_cmdr_selection_attachments(app: AppHandle) -> Vec<AttachmentRef> {
+    let Some(store) = app.try_state::<PaneStateStore>() else {
+        return Vec::new();
+    };
+    let pane = if store.get_focused_pane() == "right" {
+        store.get_right()
+    } else {
+        store.get_left()
+    };
+    let indices = if pane.selected_indices.is_empty() {
+        vec![pane.cursor_index]
+    } else {
+        pane.selected_indices.clone()
+    };
+    indices
+        .into_iter()
+        .filter_map(|i| pane.files.get(i))
+        .filter(|entry| !entry.path.is_empty())
+        .map(pane_entry_to_attachment)
+        .collect()
+}
+
+/// Resolve dragged local paths into typed attachment refs. Kinds come from the known
+/// pane files (left + right) — no filesystem stat — defaulting to `File` for an unknown
+/// path. The frontend only calls this for LOCAL drags; virtual-volume drag paths
+/// mis-resolve after the pasteboard round-trip and are not supported in v1.
+#[tauri::command]
+#[specta::specta]
+pub fn ask_cmdr_resolve_attachments(app: AppHandle, paths: Vec<String>) -> Vec<AttachmentRef> {
+    let mut is_dir_by_path: HashMap<String, bool> = HashMap::new();
+    if let Some(store) = app.try_state::<PaneStateStore>() {
+        for pane in [store.get_left(), store.get_right()] {
+            for entry in pane.files {
+                is_dir_by_path.insert(entry.path, entry.is_directory);
+            }
+        }
+    }
+    paths
+        .into_iter()
+        .filter(|path| !path.is_empty())
+        .map(|path| {
+            let is_dir = is_dir_by_path.get(&path).copied().unwrap_or(false);
+            AttachmentRef {
+                kind: if is_dir {
+                    AttachmentKindView::Folder
+                } else {
+                    AttachmentKindView::File
+                },
+                path,
+            }
+        })
+        .collect()
+}
+
+/// Map a known pane file entry to an attachment ref (kind straight from `is_directory`).
+fn pane_entry_to_attachment(entry: &crate::mcp::pane_state::PaneFileEntry) -> AttachmentRef {
+    AttachmentRef {
+        path: entry.path.clone(),
+        kind: if entry.is_directory {
+            AttachmentKindView::Folder
+        } else {
+            AttachmentKindView::File
+        },
+    }
+}
+
+/// Open a short-lived WRITE connection to `main.db` off the IPC thread and run `write`
+/// (opening a write connection runs the idempotent migration ladder). A missing store
+/// (agent start failed) is a silent no-op — there are no conversations to mutate.
+async fn with_write_connection<F>(app: AppHandle, write: F) -> Result<(), String>
+where
+    F: FnOnce(&rusqlite::Connection) -> Result<(), store::AgentStoreError> + Send + 'static,
+{
+    let Some(db_path) = app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf()) else {
+        return Ok(());
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        let conn = store::open_write_connection(&db_path).map_err(|e| e.to_string())?;
+        write(&conn).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Open a short-lived read connection to `main.db` off the IPC thread and run `read`. A
