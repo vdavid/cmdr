@@ -10,8 +10,8 @@ import type { AskCmdrStreamEvent } from '$lib/tauri-commands'
 
 const sendMock = vi.fn<(c: number | null, t: string, o: (e: AskCmdrStreamEvent) => void) => Promise<number>>()
 const cancelMock = vi.fn<(id: number) => Promise<void>>()
-const listMock = vi.fn()
-const getMock = vi.fn()
+const listMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
+const getMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
 const saveMock = vi.fn()
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -20,7 +20,11 @@ vi.mock('$lib/tauri-commands', () => ({
   listAskCmdrConversations: (...a: unknown[]) => listMock(...a),
   getAskCmdrConversation: (...a: unknown[]) => getMock(...a),
 }))
-vi.mock('$lib/app-status-store', () => ({ saveAppStatus: (s: unknown) => saveMock(s) }))
+vi.mock('$lib/app-status-store', () => ({
+  saveAppStatus: (s: unknown) => {
+    saveMock(s)
+  },
+}))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), debug: vi.fn(), error: vi.fn() }),
 }))
@@ -30,10 +34,13 @@ vi.mock('$lib/file-explorer/pane/explorer-state.svelte', () => ({
 
 import {
   askCmdrState,
+  hydrateRail,
   isOverSoftCap,
   newChat,
+  openRail,
   pathFromArguments,
   RAIL_MAX_WIDTH,
+  RAIL_MIN_WIDTH,
   sendMessage,
   setRailWidth,
   stopStreaming,
@@ -44,10 +51,19 @@ import {
 /** Capture the onEvent callback the last send handed us, to drive the stream by hand. */
 let lastOnEvent: ((e: AskCmdrStreamEvent) => void) | null = null
 
+/** Feed one stream event through the captured callback (fails loudly if no send is live). */
+function fire(event: AskCmdrStreamEvent): void {
+  if (!lastOnEvent) throw new Error('no active send to fire an event into')
+  lastOnEvent(event)
+}
+
 beforeEach(() => {
   sendMock.mockReset()
   cancelMock.mockReset()
   saveMock.mockReset()
+  listMock.mockReset()
+  getMock.mockReset()
+  listMock.mockResolvedValue([])
   sendMock.mockImplementation((c, _t, o) => {
     lastOnEvent = o
     return Promise.resolve(c ?? 1)
@@ -55,7 +71,12 @@ beforeEach(() => {
   newChat()
   askCmdrState.messages = []
   askCmdrState.conversationId = null
+  askCmdrState.open = false
 })
+
+function conversationRow(id: number) {
+  return { id, title: 't', createdAt: 0, updatedAt: 0, archived: false, origin: null }
+}
 
 function assistantAt(index: number): Extract<RailMessage, { kind: 'assistant' }> {
   const message = askCmdrState.messages[index]
@@ -70,14 +91,14 @@ describe('sendMessage + streaming', () => {
     expect(askCmdrState.streaming).toBe(true)
     expect(sendMock).toHaveBeenCalledWith(null, 'hello', expect.any(Function))
 
-    lastOnEvent!({ type: 'started', conversationId: 7 })
-    lastOnEvent!({ type: 'assistantStarted' })
-    lastOnEvent!({ type: 'textDelta', text: 'Hi ' })
-    lastOnEvent!({ type: 'textDelta', text: 'there' })
+    fire({ type: 'started', conversationId: 7 })
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'textDelta', text: 'Hi ' })
+    fire({ type: 'textDelta', text: 'there' })
     expect(assistantAt(1).text).toBe('Hi there')
     expect(assistantAt(1).streaming).toBe(true)
 
-    lastOnEvent!({
+    fire({
       type: 'done',
       messageId: 42,
       seq: 2,
@@ -92,17 +113,17 @@ describe('sendMessage + streaming', () => {
 
   it('renders tool call lines and their finished status', () => {
     sendMessage('what am I looking at?')
-    lastOnEvent!({ type: 'assistantStarted' })
-    lastOnEvent!({ type: 'toolCallStarted', callId: 'c1', tool: 'app_state' })
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'toolCallStarted', callId: 'c1', tool: 'app_state' })
     expect(assistantAt(1).tools[0]).toMatchObject({ callId: 'c1', tool: 'app_state', running: true })
-    lastOnEvent!({ type: 'toolCallFinished', callId: 'c1', ok: true })
+    fire({ type: 'toolCallFinished', callId: 'c1', ok: true })
     expect(assistantAt(1).tools[0]).toMatchObject({ running: false, ok: true })
   })
 
   it('a typed failure ends streaming and shows an honest notice', () => {
     sendMessage('hi')
-    lastOnEvent!({ type: 'assistantStarted' })
-    lastOnEvent!({ type: 'failed', kind: 'rateLimited' })
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'failed', kind: 'rateLimited' })
     expect(askCmdrState.streaming).toBe(false)
     // The empty assistant bubble is dropped; an error item takes its place.
     const last = askCmdrState.messages.at(-1)
@@ -119,9 +140,9 @@ describe('sendMessage + streaming', () => {
 describe('stopStreaming', () => {
   it('cancels the active turn and finalizes locally (no terminal event arrives)', () => {
     sendMessage('long one')
-    lastOnEvent!({ type: 'started', conversationId: 3 })
-    lastOnEvent!({ type: 'assistantStarted' })
-    lastOnEvent!({ type: 'textDelta', text: 'partial' })
+    fire({ type: 'started', conversationId: 3 })
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'textDelta', text: 'partial' })
     stopStreaming()
     expect(cancelMock).toHaveBeenCalledWith(3)
     expect(askCmdrState.streaming).toBe(false)
@@ -130,20 +151,79 @@ describe('stopStreaming', () => {
   })
 })
 
+describe('openRail bootstrap + newChat + hydrate', () => {
+  it('opens, bootstraps the most recent thread, and folds tool results into their lines', async () => {
+    listMock.mockResolvedValue([conversationRow(9)])
+    getMock.mockResolvedValue({
+      conversation: conversationRow(9),
+      totalMessages: 3,
+      messages: [
+        { id: 1, seq: 0, role: 'user', blocks: [{ type: 'text', text: 'hi' }], promptTokens: null, completionTokens: null, createdAt: 0 },
+        {
+          id: 2,
+          seq: 1,
+          role: 'assistant',
+          blocks: [
+            { type: 'text', text: 'hello' },
+            { type: 'toolCall', callId: 'c1', tool: 'list_dir', arguments: '{"path":"/x"}' },
+          ],
+          promptTokens: null,
+          completionTokens: null,
+          createdAt: 0,
+        },
+        { id: 3, seq: 2, role: 'tool', blocks: [{ type: 'toolResult', callId: 'c1', ok: true, elided: false }], promptTokens: null, completionTokens: null, createdAt: 0 },
+      ],
+    })
+    await openRail()
+    expect(askCmdrState.open).toBe(true)
+    expect(askCmdrState.conversationId).toBe(9)
+    expect(saveMock).toHaveBeenCalledWith({ askCmdrRailOpen: true })
+    // The user + assistant items; the tool-result row folds into the assistant's tool line.
+    expect(askCmdrState.messages).toHaveLength(2)
+    const assistant = assistantAt(1)
+    expect(assistant.text).toBe('hello')
+    expect(assistant.tools[0]).toMatchObject({ callId: 'c1', tool: 'list_dir', ok: true, path: '/x' })
+  })
+
+  it('opens cleanly when there is no prior thread', async () => {
+    listMock.mockResolvedValue([])
+    await openRail()
+    expect(askCmdrState.open).toBe(true)
+    expect(askCmdrState.conversationId).toBeNull()
+    expect(askCmdrState.messages).toHaveLength(0)
+  })
+
+  it('newChat clears the active thread', () => {
+    askCmdrState.conversationId = 5
+    askCmdrState.messages.push({ kind: 'user', id: null, text: 'x' })
+    newChat()
+    expect(askCmdrState.conversationId).toBeNull()
+    expect(askCmdrState.messages).toHaveLength(0)
+  })
+
+  it('hydrateRail applies a persisted width and opens when the flag is set', () => {
+    hydrateRail(true, 420)
+    expect(askCmdrState.width).toBe(420)
+    expect(askCmdrState.open).toBe(true)
+  })
+})
+
 describe('setRailWidth', () => {
-  it('persists the width and clamps to the max', () => {
+  it('persists the width and clamps to the bounds', () => {
     setRailWidth(400)
     expect(askCmdrState.width).toBe(400)
     expect(saveMock).toHaveBeenCalledWith({ askCmdrRailWidth: 400 })
     setRailWidth(99999)
     expect(askCmdrState.width).toBe(RAIL_MAX_WIDTH)
+    setRailWidth(10)
+    expect(askCmdrState.width).toBe(RAIL_MIN_WIDTH)
   })
 })
 
 describe('isOverSoftCap', () => {
   it('trips only once the thread crosses the soft cap', () => {
     for (let i = 0; i <= THREAD_SOFT_CAP_MESSAGES; i++) {
-      askCmdrState.messages.push({ kind: 'user', id: null, text: `m${i}` })
+      askCmdrState.messages.push({ kind: 'user', id: null, text: `m${String(i)}` })
     }
     expect(askCmdrState.messages.length).toBe(THREAD_SOFT_CAP_MESSAGES + 1)
     expect(isOverSoftCap()).toBe(true)

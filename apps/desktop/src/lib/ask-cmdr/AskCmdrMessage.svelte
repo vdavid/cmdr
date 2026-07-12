@@ -50,7 +50,7 @@
             </div>
         {/if}
     </div>
-{:else}
+{:else if message.kind === 'error'}
     <div class="msg error" role="status">
         <Icon name="triangle-alert" size={14} aria-hidden="true" />
         <span>{errorMessage(message.errorKind)}</span>

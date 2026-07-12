@@ -150,7 +150,7 @@ async function bootstrapActiveThread(): Promise<void> {
   askCmdrState.loadingHistory = true
   try {
     const recent = await listAskCmdrConversations(1, 0, false)
-    const latest = recent[0]
+    const latest = recent.at(0)
     if (latest) {
       await loadConversation(latest.id)
     }
@@ -243,7 +243,7 @@ export function sendMessage(text: string): void {
     (id) => {
       askCmdrState.conversationId = id
     },
-    (e) => {
+    (e: unknown) => {
       log.warn('sending a message failed: {error}', { error: String(e) })
     },
   )

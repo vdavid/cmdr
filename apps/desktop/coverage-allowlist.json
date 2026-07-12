@@ -241,6 +241,9 @@
     "tauri-commands/app-state.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
+    "tauri-commands/ask-cmdr.ts": {
+      "reason": "Streaming Channel<T> + raw-invoke IPC wrapper (sendAskCmdrMessage) plus thin commands.* pass-throughs; exercised via ask-cmdr-trigger.svelte.ts (which mocks the wrapper layer) and the ask-cmdr E2E spec"
+    },
     "tauri-commands/clipboard-files.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
