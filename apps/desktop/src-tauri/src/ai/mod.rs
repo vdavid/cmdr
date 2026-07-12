@@ -34,6 +34,7 @@ pub mod connection_check;
 mod download;
 pub mod extract;
 pub mod install;
+pub mod llm_log;
 pub mod manager;
 mod process;
 pub mod server;

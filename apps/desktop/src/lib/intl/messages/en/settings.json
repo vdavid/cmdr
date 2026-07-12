@@ -1254,6 +1254,15 @@
     "screenshot": "settings-advanced.png"
   },
 
+  "settings.advanced.logLlmCalls.label": "Log AI model calls",
+  "@settings.advanced.logLlmCalls.label": {
+    "description": "Advanced-section label for the toggle that writes every AI model request and response to a local folder for debugging. \"AI model\" refers to the LLM (large language model) the user's AI features talk to."
+  },
+  "settings.advanced.logLlmCalls.description": "Save every AI request and response to a local folder (llm-logs) for debugging. These files stay on your Mac and include the file names and paths Cmdr sends to your provider.",
+  "@settings.advanced.logLlmCalls.description": {
+    "description": "Help text for the log-AI-model-calls toggle (advanced). \"llm-logs\" is a literal folder name, keep it exactly. \"Cmdr\" is the app name, keep it. \"provider\" = the AI provider the user chose (OpenAI, Anthropic, etc.). The point is that logging is local-only and never transmitted."
+  },
+
   "settings.advanced.serviceResolveTimeout.label": "Service resolve timeout",
   "@settings.advanced.serviceResolveTimeout.label": {
     "description": "Advanced-section label for the Bonjour service-resolve timeout control. \"resolve\" = looking up a discovered network service's address.",

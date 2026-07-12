@@ -12,13 +12,18 @@
 //!   chat-completions so `genai` doesn't mis-route it to Ollama.
 
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use futures_util::stream::{BoxStream, StreamExt};
 use genai::adapter::AdapterKind;
-use genai::chat::{ChatMessage, ChatOptions, ChatRequest, ChatStreamEvent, ReasoningEffort};
+use genai::chat::{
+    ChatMessage, ChatOptions, ChatRequest, ChatRole, ChatStreamEvent, ReasoningEffort, StopReason, StreamEnd,
+};
 use genai::resolver::{AuthData, Endpoint, ServiceTargetResolver};
 use genai::{Client, ModelIden, ServiceTarget};
+use serde_json::{Value, json};
+
+use super::llm_log::{self, CallLog, Fidelity, LlmLogContext, RequestInfo, ResponseInfo};
 
 /// A configured AI backend ready to receive [`chat_completion`] calls.
 ///
@@ -28,6 +33,12 @@ use genai::{Client, ModelIden, ServiceTarget};
 pub struct AiBackend {
     client: Client,
     model: String,
+    /// The logging context for this backend's calls, or `None` to skip logging (the default;
+    /// unit-test backends and any path that hasn't opted in). Set by the caller via
+    /// [`AiBackend::with_log_context`] once it knows which feature (and session) the call
+    /// serves. The actual write is still gated on the `logLlmCalls` setting inside
+    /// [`crate::ai::llm_log`], so a context alone never forces a write.
+    log_ctx: Option<LlmLogContext>,
 }
 
 impl AiBackend {
@@ -45,6 +56,7 @@ impl AiBackend {
         Self {
             client,
             model: String::from("openai::local-model"),
+            log_ctx: None,
         }
     }
 
@@ -66,7 +78,17 @@ impl AiBackend {
         Self {
             client,
             model: remote_model_iden(&model),
+            log_ctx: None,
         }
+    }
+
+    /// Attaches a logging context so this backend's requests and responses are recorded to
+    /// disk (subject to the `logLlmCalls` setting). Callers set it once they know which
+    /// feature and session the call serves — the agent per conversation, the one-shot helpers
+    /// per job. Without it, this backend logs nothing.
+    pub fn with_log_context(mut self, ctx: LlmLogContext) -> Self {
+        self.log_ctx = Some(ctx);
+        self
     }
 
     /// Resolves the provider adapter for this backend's configured model, without a
@@ -94,19 +116,160 @@ impl AiBackend {
         &self,
         request: ChatRequest,
         options: &ChatOptions,
-    ) -> Result<genai::chat::ChatStreamResponse, AiError> {
+    ) -> Result<BoxStream<'static, genai::Result<ChatStreamEvent>>, AiError> {
         let target = self
             .client
             .resolve_service_target(&self.model)
             .await
             .map_err(map_genai_error)?;
         let effective_options = adjust_for_model(options, &target);
-        self.client
+        // Log the assembled request (system + tools + history + envelope) before dispatch,
+        // then tap the returned stream to log the assembled response on `End`.
+        let logged = self.begin_request_log(&target, &request, Fidelity::RequestStruct);
+        let res = self
+            .client
             .exec_chat_stream(&self.model, request, Some(&effective_options))
             .await
-            .map_err(map_genai_error)
+            .map_err(map_genai_error)?;
+        Ok(wrap_stream_with_response_log(res.stream, logged))
+    }
+
+    /// Serializes and records an outgoing request when this backend has a logging context and
+    /// the `logLlmCalls` setting is on. Returns a handle + start time for the matching response
+    /// log, or `None` when nothing should be logged. Never fails the call.
+    fn begin_request_log(
+        &self,
+        target: &ServiceTarget,
+        request: &ChatRequest,
+        fidelity: Fidelity,
+    ) -> Option<(CallLog, Instant)> {
+        let ctx = self.log_ctx.as_ref()?;
+        let info = RequestInfo {
+            provider: provider_label(target.model.adapter_kind),
+            model: target.model.model_name.to_string(),
+            adapter_kind: format!("{:?}", target.model.adapter_kind),
+            fidelity,
+            user_message: latest_user_message(request).unwrap_or_default(),
+        };
+        let body = serde_json::to_value(request).unwrap_or(Value::Null);
+        let handle = llm_log::log_request(ctx, info, body)?;
+        Some((handle, Instant::now()))
     }
 }
+
+// region: --- LLM call logging helpers
+
+/// Wraps a genai chat stream so the assembled response (streamed text, or the captured
+/// content when the caller set capture options, plus stop reason and usage) is logged on
+/// `End`. When `logged` is `None` (logging off or no context), the stream is returned
+/// untouched with zero overhead. A stream dropped before `End` (cancellation) writes no
+/// response file, which honestly reflects that nothing came back.
+fn wrap_stream_with_response_log(
+    stream: genai::chat::ChatStream,
+    logged: Option<(CallLog, Instant)>,
+) -> BoxStream<'static, genai::Result<ChatStreamEvent>> {
+    let Some((handle, started)) = logged else {
+        return stream.boxed();
+    };
+    let mut handle = Some(handle);
+    let mut accumulated = String::new();
+    stream
+        .inspect(move |item| {
+            if let Ok(event) = item {
+                match event {
+                    ChatStreamEvent::Chunk(chunk) => accumulated.push_str(&chunk.content),
+                    ChatStreamEvent::End(end) => {
+                        if let Some(handle) = handle.take() {
+                            handle.log_response(
+                                response_info_from_end(end, started),
+                                response_body_from_end(end, &accumulated),
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        })
+        .boxed()
+}
+
+/// The assistant's assembled reply for the response body: the captured content when present
+/// (the agent sets capture options, so this holds text + tool calls), else the text we
+/// accumulated from the chunk stream (the legacy streaming helper sets no capture options).
+fn response_body_from_end(end: &StreamEnd, accumulated: &str) -> Value {
+    let content = end
+        .captured_content
+        .as_ref()
+        .and_then(|content| serde_json::to_value(content).ok())
+        .unwrap_or_else(|| json!({ "text": accumulated }));
+    json!({ "content": content, "response_id": end.captured_response_id })
+}
+
+fn response_info_from_end(end: &StreamEnd, started: Instant) -> ResponseInfo {
+    ResponseInfo {
+        prompt_tokens: end.captured_usage.as_ref().and_then(|u| u.prompt_tokens).map(clamp_u32),
+        completion_tokens: end
+            .captured_usage
+            .as_ref()
+            .and_then(|u| u.completion_tokens)
+            .map(clamp_u32),
+        stop_reason: end.captured_stop_reason.as_ref().map(stop_reason_label),
+        latency_ms: started.elapsed().as_millis() as u64,
+        fidelity: Fidelity::Assembled,
+    }
+}
+
+fn response_info_from_chat_response(res: &genai::chat::ChatResponse, started: Instant) -> ResponseInfo {
+    ResponseInfo {
+        prompt_tokens: res.usage.prompt_tokens.map(clamp_u32),
+        completion_tokens: res.usage.completion_tokens.map(clamp_u32),
+        stop_reason: res.stop_reason.as_ref().map(stop_reason_label),
+        latency_ms: started.elapsed().as_millis() as u64,
+        fidelity: Fidelity::Parsed,
+    }
+}
+
+/// The latest user turn's text, for the log slug. Reads our own assembled request, so this is
+/// not error/state classification (no `no-string-matching` concern).
+fn latest_user_message(request: &ChatRequest) -> Option<String> {
+    request
+        .messages
+        .iter()
+        .rev()
+        .find(|message| matches!(message.role, ChatRole::User))
+        .and_then(|message| message.content.joined_texts())
+}
+
+/// A stable provider label for the `gen_ai.system` metadata field.
+fn provider_label(adapter: AdapterKind) -> String {
+    match adapter {
+        AdapterKind::Anthropic => "anthropic".to_string(),
+        AdapterKind::Gemini => "gemini".to_string(),
+        AdapterKind::OpenAIResp => "openai_responses".to_string(),
+        AdapterKind::OpenAI => "openai".to_string(),
+        other => format!("{other:?}").to_lowercase(),
+    }
+}
+
+/// A stable, lowercase stop-reason label for metadata (a descriptive log field, not control
+/// flow — the runtime classifies stop reasons on typed variants, not this string).
+fn stop_reason_label(reason: &StopReason) -> String {
+    match reason {
+        StopReason::Completed(_) => "completed",
+        StopReason::MaxTokens(_) => "max_tokens",
+        StopReason::ToolCall(_) => "tool_call",
+        StopReason::ContentFilter(_) => "content_filter",
+        StopReason::StopSequence(_) => "stop_sequence",
+        StopReason::Other(_) => "other",
+    }
+    .to_string()
+}
+
+fn clamp_u32(count: i32) -> u32 {
+    count.max(0) as u32
+}
+
+// endregion: --- LLM call logging helpers
 
 /// Maps a BYOK model name to the `genai` model identifier whose namespace picks the right adapter.
 ///
@@ -196,11 +359,19 @@ pub async fn chat_completion(
         &*target.model.model_name
     );
 
+    let logged = backend.begin_request_log(&target, &req, Fidelity::RequestStruct);
     let res = backend
         .client
         .exec_chat(&backend.model, req, Some(&effective_options))
         .await
         .map_err(map_genai_error)?;
+
+    if let Some((handle, started)) = logged {
+        handle.log_response(
+            response_info_from_chat_response(&res, started),
+            serde_json::to_value(&res).unwrap_or(Value::Null),
+        );
+    }
 
     let text = res
         .first_text()
@@ -300,15 +471,17 @@ pub async fn chat_completion_stream(
         &*target.model.model_name
     );
 
+    let logged = backend.begin_request_log(&target, &req, Fidelity::RequestStruct);
     let res = backend
         .client
         .exec_chat_stream(&backend.model, req, Some(&effective_options))
         .await
         .map_err(map_genai_error)?;
 
-    // Map ChatStreamEvent → Option<String>: keep only visible content; drop reasoning,
+    // Tap the response side (logs the assembled reply on `End`), then map
+    // ChatStreamEvent → Option<String>: keep only visible content; drop reasoning,
     // thought-signature, tool-call chunks; pass through errors mapped to AiError.
-    let stream = res.stream.filter_map(|item| async move {
+    let stream = wrap_stream_with_response_log(res.stream, logged).filter_map(|item| async move {
         match item {
             Ok(ChatStreamEvent::Chunk(chunk)) => Some(Ok(chunk.content)),
             Ok(ChatStreamEvent::Start | ChatStreamEvent::End(_)) => None,

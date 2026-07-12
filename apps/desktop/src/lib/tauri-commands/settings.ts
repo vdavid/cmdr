@@ -111,6 +111,16 @@ export async function setSmbConcurrency(value: number): Promise<void> {
 }
 
 /**
+ * Turns LLM call logging on or off. When on, every AI request and response is written to
+ * `{app data dir}/llm-logs/` for debugging (local only, never transmitted). Pushed live from
+ * the settings UI whenever `advanced.logLlmCalls` changes; runtime-toggleable, no restart.
+ * @param enabled - True to log LLM calls
+ */
+export async function setLogLlmCalls(enabled: boolean): Promise<void> {
+  await commands.setLogLlmCalls(enabled)
+}
+
+/**
  * Updates the in-RAM log-storage cap and eagerly prunes excess archived log files.
  *
  * `tauri-plugin-log` has no runtime reconfigure API, so the rotation strategy the plugin

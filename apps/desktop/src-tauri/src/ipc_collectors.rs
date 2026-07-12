@@ -191,6 +191,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::settings::set_direct_smb_connection,
         crate::commands::settings::set_filter_safe_save_artifacts_cmd,
         crate::commands::settings::set_smb_concurrency_cmd,
+        crate::commands::settings::set_log_llm_calls,
         crate::commands::settings::set_max_log_storage_mb,
         crate::commands::settings::set_error_reports_enabled,
         crate::commands::settings::get_restricted_window_settings,

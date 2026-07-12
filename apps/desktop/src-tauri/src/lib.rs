@@ -839,7 +839,13 @@ pub fn run() {
             // ranking to match-quality + recency — today's behavior. See
             // `search/DETAILS.md` § importance ranking.
             match config::resolved_app_data_dir(app.handle()) {
-                Ok(data_dir) => search::start_importance_weight_subscriber(data_dir),
+                Ok(data_dir) => {
+                    // Point the LLM call logger at `{data dir}/llm-logs/` so the tap in
+                    // `ai::client` can write there. Enablement is separate (the `logLlmCalls`
+                    // setting, dev-default-on); this only records where.
+                    ai::llm_log::init(&data_dir);
+                    search::start_importance_weight_subscriber(data_dir);
+                }
                 Err(e) => log::warn!("search importance weights not wired: {e}"),
             }
 

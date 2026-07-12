@@ -48,9 +48,12 @@ use crate::agent::chat::context::{
 };
 use crate::agent::chat::runtime::{AgentChatEvent, AgentErrorKind, ChatRuntime};
 use crate::agent::llm::AgentLlm;
+use crate::agent::llm::fake::FakeAgentLlm;
 use crate::agent::llm::genai_impl::GenaiAgentLlm;
 use crate::agent::llm::types::{AgentPart, AgentRole, AgentStopReason, AgentUsage, ProviderTag};
 use crate::agent::store::{self, ConversationRow, ConversationSearchHit, StoredMessage};
+use crate::ai::client::AiBackend;
+use crate::ai::llm_log::LlmLogContext;
 use crate::ignore_poison::IgnorePoison;
 use crate::mcp::PaneStateStore;
 use crate::mcp::resources::volumes::{VolumeSummary, snapshot_volumes};
@@ -354,21 +357,49 @@ fn unregister_cancel(conversation_id: i64) {
 
 // ── Interim LLM + envelope + clock helpers ─────────────────────────────────────
 
+/// A resolved-but-not-yet-built agent LLM. Resolution happens up front (to fail fast before
+/// creating a thread), but the concrete `AgentLlm` is built only once the conversation id is
+/// known, so the real backend can carry an [`LlmLogContext`] keyed on that conversation.
+enum ResolvedAgentLlm {
+    /// The real genai-backed LLM over the resolved `ai/` backend.
+    Genai(AiBackend),
+    /// The deterministic E2E fake (zero network; never logs — the tap is at the genai seam).
+    Fake(FakeAgentLlm),
+}
+
+impl ResolvedAgentLlm {
+    /// Builds the boxed `AgentLlm`, attaching a per-conversation logging context to the real
+    /// backend so its requests/responses land under `llm-logs/thread-{id}/` (subject to the
+    /// `logLlmCalls` setting). The fake bypasses the genai seam, so it logs nothing.
+    fn into_llm(self, conversation_id: i64) -> Box<dyn AgentLlm> {
+        match self {
+            ResolvedAgentLlm::Genai(backend) => Box::new(GenaiAgentLlm::new(
+                backend.with_log_context(LlmLogContext::agent_chat(conversation_id)),
+            )),
+            ResolvedAgentLlm::Fake(fake) => Box::new(fake),
+        }
+    }
+}
+
 /// Resolve the interactive LLM from the existing `ai/` config (M8 replaces this with the
-/// dedicated interactive slot). Returns the backend plus the provider/model labels the
-/// cost meter records, or a typed error kind when AI is off/unconfigured.
-fn resolve_agent_llm() -> Result<(Box<dyn AgentLlm>, ProviderTag, String), AgentErrorKind> {
+/// dedicated interactive slot). Returns the resolved backend plus the provider/model labels
+/// the cost meter records, or a typed error kind when AI is off/unconfigured.
+fn resolve_agent_llm() -> Result<(ResolvedAgentLlm, ProviderTag, String), AgentErrorKind> {
     // E2E harness path: drive a deterministic scripted assistant with zero network, so the
     // rail's send-and-render can be tested without a provider. Guarded by an explicit env
     // flag so it never activates in a normal run.
     if std::env::var("CMDR_E2E_ASK_CMDR_FAKE").is_ok() {
-        return Ok((Box::new(scripted_fake_llm()), ProviderTag::Local, "fake".to_string()));
+        return Ok((
+            ResolvedAgentLlm::Fake(scripted_fake_llm()),
+            ProviderTag::Local,
+            "fake".to_string(),
+        ));
     }
     use crate::ai::manager::BackendResolution;
     match crate::ai::manager::resolve_backend() {
         BackendResolution::Ready(backend) => {
             let (provider, model) = provider_and_model();
-            Ok((Box::new(GenaiAgentLlm::new(backend)), provider, model))
+            Ok((ResolvedAgentLlm::Genai(backend), provider, model))
         }
         // "AI off", a blank cloud key, or a stopped local server all read the same to the
         // rail: nothing is configured to talk to. M8's settings surface disambiguates.
@@ -380,8 +411,8 @@ fn resolve_agent_llm() -> Result<(Box<dyn AgentLlm>, ProviderTag, String), Agent
 
 /// The scripted turn the E2E fake streams: a short multi-chunk reply, so the test sees
 /// streamed text land and a `Done`. Kept trivially deterministic.
-fn scripted_fake_llm() -> crate::agent::llm::fake::FakeAgentLlm {
-    use crate::agent::llm::fake::{FakeAgentLlm, ScriptedTurn};
+fn scripted_fake_llm() -> FakeAgentLlm {
+    use crate::agent::llm::fake::ScriptedTurn;
     FakeAgentLlm::script(vec![ScriptedTurn::Say(vec![
         "Hi! ".to_string(),
         "I'm the ".to_string(),
@@ -497,7 +528,7 @@ pub async fn ask_cmdr_send_message(
 ) -> Result<i64, String> {
     // Resolve the LLM before touching the DB: if AI is off/unconfigured, say so and add
     // no thread.
-    let (llm, provider, model) = match resolve_agent_llm() {
+    let (llm_kind, provider, model) = match resolve_agent_llm() {
         Ok(resolved) => resolved,
         Err(kind) => {
             let _ = on_event.send(AskCmdrStreamEvent::Failed { kind: kind.into() });
@@ -527,6 +558,10 @@ pub async fn ask_cmdr_send_message(
         },
     };
     let _ = on_event.send(AskCmdrStreamEvent::Started { conversation_id });
+
+    // Now that the conversation id is known, build the LLM so the real backend logs under
+    // this thread's `llm-logs/thread-{id}/` directory.
+    let llm = llm_kind.into_llm(conversation_id);
 
     // Register the cancel token before spawning so a stop that arrives immediately hits it.
     let cancel = register_cancel(conversation_id);

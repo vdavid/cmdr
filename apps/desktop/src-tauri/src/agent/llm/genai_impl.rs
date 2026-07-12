@@ -76,10 +76,10 @@ impl AgentLlm for GenaiAgentLlm {
 
             // Cancellation: end the stream when the token fires, which drops the
             // underlying reqwest body (billing stops) — the same model `crate::ai`
-            // relies on.
+            // relies on. `response` is the raw genai event stream (already tapped for
+            // logging inside `AiBackend`).
             let cancel_signal = cancel.clone();
             let stream = response
-                .stream
                 .take_until(async move { cancel_signal.cancelled().await })
                 .filter_map(move |item| async move { map_stream_event(item, provider) })
                 .boxed();

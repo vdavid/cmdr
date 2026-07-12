@@ -132,6 +132,15 @@ pub fn set_smb_concurrency_cmd(value: u16) {
     set_smb_concurrency(value as usize);
 }
 
+/// Turn LLM call logging on or off. When on, every AI model request and response is written
+/// to `{app data dir}/llm-logs/` for debugging (local only, never transmitted). Pushed live
+/// from the frontend whenever `advanced.logLlmCalls` changes; runtime-toggleable, no restart.
+#[tauri::command]
+#[specta::specta]
+pub fn set_log_llm_calls(enabled: bool) {
+    crate::ai::llm_log::set_enabled(enabled);
+}
+
 /// Updates the in-RAM log-storage cap and runs an eager prune so the user sees excess files
 /// disappear immediately when they lower the cap.
 ///

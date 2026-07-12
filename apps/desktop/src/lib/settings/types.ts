@@ -347,6 +347,7 @@ export interface SettingsValues {
   'advanced.mountTimeout': number
   'advanced.updateCheckInterval': number
   'advanced.filterSafeSaveArtifacts': boolean
+  'advanced.logLlmCalls': boolean
   'advanced.diskSpaceChangeThreshold': number
   'advanced.maxLogStorageMb': number
   'fileExplorer.tabs.closedTabHistorySize': number

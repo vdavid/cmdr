@@ -20,6 +20,7 @@ use serde_json::json;
 use tokio::net::TcpListener;
 
 use super::client::{AiBackend, AiError, chat_completion_stream};
+use super::llm_log::{self, LlmLogContext};
 
 const SYSTEM: &str = "system";
 const USER: &str = "hi";
@@ -169,6 +170,89 @@ async fn cancel_via_drop_closes_connection() {
     // We don't have a programmatic way to assert the server saw the disconnect without
     // adding more wiring; the assertion here is "we got back to the test thread cleanly,
     // which only happens if drop didn't deadlock or panic."
+}
+
+#[tokio::test]
+async fn logging_tap_writes_the_assembled_request_and_response_end_to_end() {
+    // End-to-end proof that the tap in `AiBackend` is on the real genai dispatch path (not
+    // bypassable): a streamed call with a logging context + the setting on writes one request
+    // file carrying the assembled prompt and one response file carrying the streamed reply,
+    // and no API key reaches disk. `nextest` runs each test in its own process, so the
+    // `LOG_DIR`/`ENABLED` globals are isolated to this test.
+    let dir = tempfile::tempdir().expect("tempdir");
+    llm_log::init(dir.path());
+    llm_log::set_enabled(true);
+
+    let base_url = spawn_server(vec![
+        Frame::Delta(String::from("hello ")),
+        Frame::Delta(String::from("world!")),
+        Frame::Done,
+    ])
+    .await;
+
+    let backend = AiBackend::remote(String::from("test-key-SECRET"), base_url, String::from("gpt-4o-mini"))
+        .with_log_context(LlmLogContext::folder_suggestions());
+
+    let mut stream = chat_completion_stream(&backend, SYSTEM, USER, &opts())
+        .await
+        .expect("stream open");
+    let mut collected = Vec::new();
+    while let Some(item) = stream.next().await {
+        collected.push(item.expect("chunk ok"));
+    }
+    assert_eq!(collected, vec!["hello ", "world!"]);
+
+    // The response file lands on a detached writer thread; poll briefly.
+    let session_dir = dir.path().join("llm-logs").join("folder-suggestions");
+    let files = wait_for_two_files(&session_dir);
+    assert_eq!(
+        files.len(),
+        2,
+        "expected one request + one response file, saw {files:?}"
+    );
+    assert!(files[0].starts_with("001_request_folder-suggestions"));
+    assert!(files[1].starts_with("002_response_folder-suggestions"));
+
+    // The request body is the assembled prompt. The legacy helper assembles the system prompt
+    // and the user turn as two messages (the agent path instead uses the top-level `system`
+    // field). Either way the full prompt is present, and no key material is.
+    let req_text = std::fs::read_to_string(session_dir.join(&files[0])).expect("read request");
+    let req: serde_json::Value = serde_json::from_str(&req_text).expect("request json");
+    assert_eq!(req["metadata"]["cmdr.fidelity"], json!("request_struct"));
+    let messages = req["body"]["messages"].as_array().expect("messages array");
+    assert_eq!(messages.len(), 2, "system + user turns assembled: {req_text}");
+    assert!(
+        req_text.contains(USER),
+        "request body must carry the user message: {req_text}"
+    );
+    assert!(
+        !req_text.contains("test-key-SECRET"),
+        "no API key may reach disk: {req_text}"
+    );
+
+    // The response body carries the assembled streamed reply.
+    let res_text = std::fs::read_to_string(session_dir.join(&files[1])).expect("read response");
+    let res: serde_json::Value = serde_json::from_str(&res_text).expect("response json");
+    assert_eq!(res["metadata"]["cmdr.direction"], json!("response"));
+    assert_eq!(res["body"]["content"]["text"], json!("hello world!"));
+}
+
+/// Waits (bounded) for the session dir to hold two files, returning their sorted names.
+fn wait_for_two_files(session_dir: &std::path::Path) -> Vec<String> {
+    let deadline = std::time::Instant::now() + Duration::from_secs(3);
+    loop {
+        let mut names: Vec<String> = std::fs::read_dir(session_dir)
+            .map(|rd| rd.flatten().filter_map(|e| e.file_name().into_string().ok()).collect())
+            .unwrap_or_default();
+        if names.len() >= 2 {
+            names.sort();
+            return names;
+        }
+        if std::time::Instant::now() >= deadline {
+            panic!("timed out waiting for two log files in {session_dir:?}; saw {names:?}");
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
 }
 
 #[tokio::test]

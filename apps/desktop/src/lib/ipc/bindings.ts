@@ -1533,6 +1533,12 @@ export const commands = {
    */
   setSmbConcurrencyCmd: (value: number) => __TAURI_INVOKE<void>('set_smb_concurrency_cmd', { value }),
   /**
+   *  Turn LLM call logging on or off. When on, every AI model request and response is written
+   *  to `{app data dir}/llm-logs/` for debugging (local only, never transmitted). Pushed live
+   *  from the frontend whenever `advanced.logLlmCalls` changes; runtime-toggleable, no restart.
+   */
+  setLogLlmCalls: (enabled: boolean) => __TAURI_INVOKE<void>('set_log_llm_calls', { enabled }),
+  /**
    *  Updates the in-RAM log-storage cap and runs an eager prune so the user sees excess files
    *  disappear immediately when they lower the cap.
    *

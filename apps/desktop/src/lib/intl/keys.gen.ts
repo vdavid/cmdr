@@ -1822,6 +1822,8 @@ export type MessageKey =
   | 'settings.advanced.fileWatcherDebounce.label'
   | 'settings.advanced.filterSafeSaveArtifacts.description'
   | 'settings.advanced.filterSafeSaveArtifacts.label'
+  | 'settings.advanced.logLlmCalls.description'
+  | 'settings.advanced.logLlmCalls.label'
   | 'settings.advanced.maxLogStorageMb.description'
   | 'settings.advanced.maxLogStorageMb.label'
   | 'settings.advanced.mountTimeout.description'

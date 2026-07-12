@@ -10,6 +10,7 @@ use genai::chat::ChatOptions;
 use serde::Serialize;
 use tauri::ipc::Channel;
 
+use crate::ai::llm_log::LlmLogContext;
 use crate::file_system::get_file_at;
 
 /// Maximum number of file names to include in the prompt context.
@@ -136,6 +137,7 @@ async fn get_suggestions_from_backend(
         .with_max_tokens(150)
         .with_top_p(0.95);
 
+    let backend = backend.with_log_context(LlmLogContext::folder_suggestions());
     match super::client::chat_completion(&backend, SUGGESTION_SYSTEM_PROMPT, &prompt, &options).await {
         Ok(response) => {
             log::trace!("AI suggestions: raw response:\n{response}");
@@ -297,6 +299,7 @@ pub async fn stream_folder_suggestions(
         .with_max_tokens(150)
         .with_top_p(0.95);
 
+    let backend = backend.with_log_context(LlmLogContext::folder_suggestions());
     let mut stream =
         match super::client::chat_completion_stream(&backend, SUGGESTION_SYSTEM_PROMPT, &prompt, &options).await {
             Ok(s) => s,

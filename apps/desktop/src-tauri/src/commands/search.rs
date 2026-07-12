@@ -327,7 +327,8 @@ pub async fn translate_search_query(
     natural_query: String,
     current_type: Option<bool>,
 ) -> Result<TranslateResult, AiTranslateError> {
-    let backend = crate::ai::manager::resolve_translate_backend(false)?;
+    let backend = crate::ai::manager::resolve_translate_backend(false)?
+        .with_log_context(crate::ai::llm_log::LlmLogContext::translate_search());
     let system_prompt = ai::build_classification_prompt(current_type);
 
     log::debug!(

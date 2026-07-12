@@ -1263,6 +1263,22 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     component: 'switch',
   },
 
+  {
+    id: 'advanced.logLlmCalls',
+    section: ['Advanced'],
+    cardKey: 'settings.advanced.card.loggingAndDiagnostics',
+    labelKey: 'settings.advanced.logLlmCalls.label',
+    descriptionKey: 'settings.advanced.logLlmCalls.description',
+    keywords: ['llm', 'ai', 'log', 'debug', 'request', 'response', 'prompt', 'ask cmdr'],
+    type: 'boolean',
+    // Dev-on, prod-off: `import.meta.env.DEV` inlines to a build-time boolean, so a
+    // developer's runs are inspectable out of the box while shipped builds stay off until
+    // opt-in. The Rust default (`AtomicBool::new(cfg!(debug_assertions))`) matches, so the
+    // two agree with or without the frontend push.
+    default: import.meta.env.DEV,
+    component: 'switch',
+  },
+
   // ========================================================================
   // Advanced (auto-generated UI).
   //
