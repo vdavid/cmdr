@@ -83,7 +83,7 @@ mod logging;
 mod accent_color;
 #[cfg(target_os = "linux")]
 mod accent_color_linux;
-mod agent;
+pub mod agent;
 mod ai;
 mod analytics;
 pub mod benchmark;
@@ -847,6 +847,12 @@ pub fn run() {
             // journals through it yet (the durable store is the foundation); capture hooks
             // the write pipeline into the managed writer this places in state.
             operation_log::start(app.handle());
+
+            // Open the agent's durable store (`main.db`, peer to `operation-log.db`) and
+            // register its handle. Nothing reads or writes it yet — the chat runtime (M5)
+            // and IPC (M6) are the consumers; opening here proves the migration ladder
+            // runs at startup and keeps the DB current.
+            agent::start(app.handle());
 
             Ok(())
         })

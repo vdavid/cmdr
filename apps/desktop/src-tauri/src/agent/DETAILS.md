@@ -22,9 +22,9 @@ build order:
 - `llm/` (M1, present): the `AgentLlm` trait, its genai-backed impl over `crate::ai::AiBackend`, the deterministic fake,
   and the typed message-part model. This is the seam the whole runtime and UI test against. Depth:
   [`llm/DETAILS.md`](llm/DETAILS.md).
-- `store/` (M2): the `main.db` durable store — a forward-migration ladder (mirroring `operation_log/store/`), FTS5 over
-  message text, and a per-day cost meter. `agent::start(app)` (open the DB, register runtime state) lands here, modeled
-  on `operation_log::start`.
+- `store/` (M2, present): the `main.db` durable store — a forward-migration ladder (mirroring `operation_log/store/`),
+  FTS5 over message text, and a per-day cost meter. `agent::start(app)` (open the DB, register the `AgentDb` handle)
+  lands here, modeled on `operation_log::start`. Depth: [`store/DETAILS.md`](store/DETAILS.md).
 - `tools/` (M4): the in-process read-only toolset — the agent's view of the consolidated tool registry (agent-spec D49,
   extend-don't-fork) plus the concrete tool handlers that call the shipped cores (drive index, importance, operation
   log, volumes, app state).

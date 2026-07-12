@@ -28,22 +28,89 @@ pub enum AgentRole {
     Tool,
 }
 
+impl AgentRole {
+    /// The stable DB token for the `messages.role` column (M2). Snake_case, the
+    /// one place the enum ↔ storage mapping lives; renaming a token is a schema
+    /// change, renaming a variant is free (`no-string-matching`).
+    pub fn as_token(self) -> &'static str {
+        match self {
+            AgentRole::System => "system",
+            AgentRole::User => "user",
+            AgentRole::Assistant => "assistant",
+            AgentRole::Tool => "tool",
+        }
+    }
+
+    /// Parse a stored token back to the variant, or `None` if unknown (a row
+    /// written by a newer schema, or corruption — the reader surfaces a typed
+    /// store error rather than guessing).
+    pub fn from_token(token: &str) -> Option<Self> {
+        match token {
+            "system" => Some(AgentRole::System),
+            "user" => Some(AgentRole::User),
+            "assistant" => Some(AgentRole::Assistant),
+            "tool" => Some(AgentRole::Tool),
+            _ => None,
+        }
+    }
+}
+
 /// Which provider a reasoning blob came from. The tag is descriptive: it records
 /// where the opaque `blob` originated so a replay re-attaches it in the shape that
 /// provider expects. Distinguishes the two OpenAI surfaces because their reasoning
 /// round-trip differs (chat-completions is stateless; Responses carries encrypted
 /// items — spike Gap B).
 ///
-/// Serialized snake_case (the DB token style; the blob is persisted in
-/// `content_blocks`). M2 extends this for the `cost_meter` provider column.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+/// Two-way split, like the operation log's `token_enum!` types: the serde/specta
+/// wire form is camelCase (for IPC + `bindings.ts` — the `cost_meter` provider on
+/// the wire, M8's per-thread breakdown), while [`as_token`](Self::as_token) is the
+/// stable snake_case DB token (the `cost_meter.provider` column, M2). The reasoning
+/// `blob` in `content_blocks` persists this via serde and round-trips it untouched;
+/// its exact string form is backend-only.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub enum ProviderTag {
     Anthropic,
     OpenAi,
     OpenAiResponses,
     Gemini,
     Local,
+}
+
+impl ProviderTag {
+    /// Every variant, for exhaustive tests (token uniqueness, round-trip).
+    pub const ALL: [ProviderTag; 5] = [
+        ProviderTag::Anthropic,
+        ProviderTag::OpenAi,
+        ProviderTag::OpenAiResponses,
+        ProviderTag::Gemini,
+        ProviderTag::Local,
+    ];
+
+    /// The stable snake_case DB token for the `cost_meter.provider` column. The one
+    /// place enum ↔ storage mapping lives; separate from the camelCase serde wire
+    /// form so neither can drift the other (`no-string-matching`).
+    pub fn as_token(self) -> &'static str {
+        match self {
+            ProviderTag::Anthropic => "anthropic",
+            ProviderTag::OpenAi => "openai",
+            ProviderTag::OpenAiResponses => "openai_responses",
+            ProviderTag::Gemini => "gemini",
+            ProviderTag::Local => "local",
+        }
+    }
+
+    /// Parse a stored token back to the variant, or `None` if unknown.
+    pub fn from_token(token: &str) -> Option<Self> {
+        match token {
+            "anthropic" => Some(ProviderTag::Anthropic),
+            "openai" => Some(ProviderTag::OpenAi),
+            "openai_responses" => Some(ProviderTag::OpenAiResponses),
+            "gemini" => Some(ProviderTag::Gemini),
+            "local" => Some(ProviderTag::Local),
+            _ => None,
+        }
+    }
 }
 
 /// Opaque, provider-tagged reasoning state. The `blob` shape is owned solely by
