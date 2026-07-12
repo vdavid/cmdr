@@ -9,11 +9,12 @@
 //! cancel between sources stops further transfers.
 
 use super::*;
-use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume};
+use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, VolumeError};
 use crate::file_system::write_operations::state::ConflictResolutionResponse;
+use crate::file_system::write_operations::transfer::volume_move_same::move_within_same_volume_with_progress;
 use crate::file_system::write_operations::types::{
-    CollectorEventSink, ConflictResolution, WriteCancelledEvent, WriteConflictEvent, WriteProgressEvent,
-    WriteSourceItemDoneEvent,
+    CollectorEventSink, ConflictResolution, WriteCancelledEvent, WriteConflictEvent, WriteErrorEvent,
+    WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use std::sync::atomic::{AtomicU8, Ordering};
 

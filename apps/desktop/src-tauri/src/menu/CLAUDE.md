@@ -1,12 +1,13 @@
 # Menu system
 
-Native menu bar for macOS and Linux. Builds platform-specific menus from scratch, handles menu events, syncs accelerator
-labels with user-customized shortcuts, and enables/disables items by window focus context.
+Native menu bar for macOS and Linux. Builds platform menus from scratch, handles events, syncs accelerator labels to
+user shortcuts, and enables/disables items by focus context.
 
 ## Module map
 
-- `mod.rs`: shared types, all menu item ID constants, the ID mapping functions (`menu_id_to_command`,
-  `command_id_to_menu_id`).
+- `mod.rs`: shared types, enums, event structs, and menu state.
+- `command_map.rs`: the menu item ID constants and the `menu_id_to_command` / `command_id_to_menu_id` mapping
+  functions (re-exported via `mod.rs`).
 - `menu_items.rs` / `menu_structure.rs`: small-piece builders and hierarchical assembly (`build_menu` dispatcher,
   context menus, viewer menu).
 - `menu_handlers.rs`: event handling + live-update helpers. `macos.rs` / `linux.rs`: platform menu bars. `open_with.rs`
@@ -52,6 +53,5 @@ labels with user-customized shortcuts, and enables/disables items by window focu
   (full-color non-template images via `IconMenuItem`).
 - **⌘G / ⌘J double-dispatch on macOS**: the combo fires both the native menu and the JS keydown. Safe here without
   suppression (⌘G dialog-open is idempotency-guarded, ⌘J re-reveal is idempotent). Expect two log lines per ⌘J press.
-- **`menu_id_to_command` and `command_id_to_menu_id` are exhaustive match statements kept in sync manually.**
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

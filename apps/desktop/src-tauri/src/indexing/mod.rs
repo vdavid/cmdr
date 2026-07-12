@@ -23,6 +23,7 @@ mod partial_agg;
 mod progress_reporter;
 mod queries;
 mod routing;
+mod scan_completion;
 mod state;
 pub mod store;
 pub mod writer;

@@ -241,7 +241,15 @@ impl ImportanceScheduler {
 }
 
 #[cfg(test)]
-mod tests;
+mod coalescing_tests;
+#[cfg(test)]
+mod incremental_tests;
+#[cfg(test)]
+mod multi_volume_tests;
+#[cfg(test)]
+mod recompute_tests;
+#[cfg(test)]
+mod test_support;
 
 impl ImportanceScheduler {
     /// Construct a scheduler with the default weights and the app's data dir.

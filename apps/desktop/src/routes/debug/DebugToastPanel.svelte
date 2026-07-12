@@ -127,3 +127,32 @@
         </div>
     </div>
 </section>
+
+<style>
+    .toast-debug-panel {
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .toast-debug-row {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .toast-debug-label {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        min-width: 110px;
+    }
+
+    .toast-debug-count {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        font-family: var(--font-mono);
+    }
+</style>

@@ -10,9 +10,11 @@ window focus context.
 ## File layout
 
 - `mod.rs`: shared types (`MenuState`, `MenuItems`, `MenuItemEntry`, `MenuContext`,
-  `NetworkHostMenuContext`, `CommandScope`, `ViewMode`), constants (all menu item IDs), the
-  ID mapping functions (`menu_id_to_command`, `command_id_to_menu_id`), and re-exports of the
-  public API exposed by the submodules below.
+  `NetworkHostMenuContext`, `CommandScope`, `ViewMode`), re-exports of the public API exposed by the
+  submodules below, plus a glob re-export of `command_map` so the menu IDs and mapping functions
+  stay reachable at `crate::menu::…`.
+- `command_map.rs`: the menu item ID constants (all `*_ID`) and the ID mapping functions
+  (`menu_id_to_command`, `command_id_to_menu_id`).
 - `menu_items.rs`: small-piece builders and platform-aware helpers: `build_sort_submenu`,
   `build_zoom_submenu`, `register_item`, `truncate_for_menu_label`, the `copy_path_accelerator` /
   `show_in_file_manager_*` / `full_view_label` / `brief_view_label` platform helpers, and the

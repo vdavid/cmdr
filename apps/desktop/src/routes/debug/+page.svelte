@@ -377,10 +377,10 @@
         min-width: 0;
     }
 
-    /* ── Shared section styles (used by every Debug*Panel.svelte) ────────
-       Kept here so each panel can stay focused on its own content; lifting
-       these out of the previous monolithic +page.svelte preserves the
-       visual look the panels were built against. */
+    /* ── Shared styles used by more than one Debug*Panel.svelte child ────
+       These stay here (as :global) because several panels — or the parent
+       layout — rely on them. Panel-exclusive rules live in each panel's own
+       scoped \3c style>; only genuinely shared selectors remain global here. */
 
     :global(.debug-section) {
         margin-bottom: var(--spacing-2xl);
@@ -423,124 +423,9 @@
         accent-color: var(--color-accent);
     }
 
-    /* ── Drive-index panel (DebugDriveIndexPanel.svelte) ─────────────── */
-
-    :global(.index-panel) {
-        background: var(--color-bg-secondary);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-md);
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    :global(.index-status-row) {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        flex-wrap: wrap;
-    }
-
-    :global(.status-badge) {
-        display: inline-flex;
-        align-items: center;
-        padding: 2px var(--spacing-sm);
-        border-radius: var(--radius-sm);
-        font-size: var(--font-size-xs);
-        font-weight: 600;
-        color: var(--color-text-primary);
-    }
-
-    /* DebugDriveIndexPanel.svelte: status-badge variants applied via `phaseStyle`
-       which returns 'active' | 'ready' | 'neutral', plus a literal 'ready' /
-       'neutral' on the watcher badge. */
-    :global(.status-badge.active) {
-        background: var(--color-accent);
-        color: var(--color-accent-fg);
-    }
-
-    :global(.status-badge.ready) {
-        background: var(--color-accent-subtle);
-        color: var(--color-text-primary);
-    }
-
-    :global(.status-badge.neutral) {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-tertiary);
-    }
-
-    :global(.phase-duration) {
-        margin-left: var(--spacing-xs);
-        color: var(--color-text-tertiary);
-        font-variant-numeric: tabular-nums;
-    }
-
-    :global(.phase-live-stat) {
-        color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
-    }
-
-    :global(.phase-timeline) {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        background: var(--color-bg-tertiary);
-        border-radius: var(--radius-sm);
-        padding: var(--spacing-sm);
-        max-height: 240px;
-        overflow-y: auto;
-    }
-
-    :global(.phase-timeline-row) {
-        display: grid;
-        grid-template-columns: 90px 110px 80px 1fr;
-        gap: var(--spacing-sm);
-        padding: 2px 0;
-        align-items: baseline;
-    }
-
-    :global(.phase-timeline-row.phase-current) {
-        font-weight: 600;
-        color: var(--color-text-primary);
-    }
-
-    :global(.phase-time) {
-        color: var(--color-text-tertiary);
-    }
-
-    :global(.phase-name) {
-        color: var(--color-text-secondary);
-    }
-
-    :global(.phase-dur) {
-        color: var(--color-text-secondary);
-        text-align: right;
-    }
-
-    :global(.phase-stats) {
-        color: var(--color-text-tertiary);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    :global(.phase-now-marker) {
-        color: var(--color-accent);
-    }
-
-    :global(.no-history) {
-        margin: 0;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        font-style: italic;
-    }
-
-    :global(.index-actions) {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-    }
-
+    /* Small action button + inline status message shared across panels:
+       `.index-button` by drive-index, operation-log, toast, error-preview, and
+       SMB diagnostics; `.index-message` by drive-index and operation-log. */
     :global(.index-button) {
         padding: 4px var(--spacing-md);
         font-size: var(--font-size-sm);
@@ -560,45 +445,45 @@
         color: var(--color-text-tertiary);
     }
 
-    :global(.index-sub-header) {
+    /* Empty-state line shared by the drive-index, navigation-history, and
+       operation-log panels. */
+    :global(.no-history) {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        font-style: italic;
+    }
+
+    /* Status pill. Only the drive-index panel renders it today, but it's kept
+       central per the shared-classes convention. Variants come from `phaseStyle`
+       ('active' | 'ready' | 'neutral'), plus a literal 'ready' / 'neutral' on
+       the watcher badge. */
+    :global(.status-badge) {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px var(--spacing-sm);
+        border-radius: var(--radius-sm);
         font-size: var(--font-size-xs);
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--color-text-tertiary);
-        margin-top: 4px;
-    }
-
-    :global(.index-meta) {
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-        font-size: var(--font-size-sm);
-    }
-
-    :global(.index-meta-row) {
-        display: flex;
-        gap: var(--spacing-sm);
-    }
-
-    :global(.index-meta-label) {
-        color: var(--color-text-tertiary);
-        min-width: 120px;
-    }
-
-    :global(.index-meta-value) {
         color: var(--color-text-primary);
-        font-family: var(--font-mono);
     }
 
-    :global(.db-breakdown) {
+    :global(.status-badge.active) {
+        background: var(--color-accent);
+        color: var(--color-accent-fg);
+    }
+
+    :global(.status-badge.ready) {
+        background: var(--color-accent-subtle);
+        color: var(--color-text-primary);
+    }
+
+    :global(.status-badge.neutral) {
+        background: var(--color-bg-tertiary);
         color: var(--color-text-tertiary);
-        font-size: var(--font-size-xs);
-        margin-left: 4px;
     }
 
-    /* ── Info icon (used by drive-index + SMB diagnostics) ──────────── */
-
+    /* Info icon, shared by the drive-index and SMB diagnostics panels. */
     :global(.info-icon) {
         display: inline-flex;
         align-items: center;
@@ -620,200 +505,5 @@
     :global(.info-icon:hover) {
         background: var(--color-bg-primary);
         color: var(--color-text-secondary);
-    }
-
-    /* ── History + closed-tabs panels ────────────────────────────────── */
-
-    :global(.history-panes),
-    :global(.closed-tabs-panes) {
-        display: flex;
-        gap: var(--spacing-md);
-    }
-
-    :global(.history-pane),
-    :global(.closed-tabs-pane) {
-        flex: 1;
-        background: var(--color-bg-secondary);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-sm);
-        min-width: 0;
-    }
-
-    :global(.history-pane.focused),
-    :global(.closed-tabs-pane.focused) {
-        outline: 2px solid var(--color-accent);
-    }
-
-    :global(.history-pane h3),
-    :global(.closed-tabs-pane h3) {
-        margin: 0 0 var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        font-weight: 600;
-        color: var(--color-text-secondary);
-        text-transform: uppercase;
-    }
-
-    :global(.history-list),
-    :global(.closed-tabs-list) {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        font-size: var(--font-size-sm);
-        font-family: var(--font-mono);
-    }
-
-    :global(.history-list li),
-    :global(.closed-tabs-list li) {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        padding: 3px 4px;
-        border-radius: var(--radius-sm);
-        color: var(--color-text-secondary);
-        min-width: 0;
-    }
-
-    :global(.history-list li.current),
-    :global(.closed-tabs-list li.top) {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-        font-weight: 600;
-    }
-
-    :global(.history-list li.future) {
-        opacity: 0.5;
-    }
-
-    :global(.history-index) {
-        flex-shrink: 0;
-        width: 12px;
-        text-align: center;
-    }
-
-    :global(.history-path),
-    :global(.closed-tab-path) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* DebugClosedTabsPanel: row marker prefix (↑ for the top entry, · otherwise)
-       and the empty-state message. */
-    :global(.closed-tab-marker) {
-        flex-shrink: 0;
-        width: 12px;
-        text-align: center;
-        color: var(--color-text-tertiary);
-    }
-
-    :global(.no-closed-tabs) {
-        margin: 0;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        font-style: italic;
-    }
-
-    /* ── Toast debug panel ───────────────────────────────────────────── */
-
-    :global(.toast-debug-panel) {
-        background: var(--color-bg-secondary);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-md);
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-sm);
-    }
-
-    :global(.toast-debug-row) {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-    }
-
-    :global(.toast-debug-label) {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-tertiary);
-        min-width: 110px;
-    }
-
-    :global(.toast-debug-count) {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        font-family: var(--font-mono);
-    }
-
-    /* ── Error preview panel ─────────────────────────────────────────── */
-
-    :global(.error-preview-panel) {
-        background: var(--color-bg-secondary);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-md);
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    :global(.error-preview-actions) {
-        display: flex;
-        gap: var(--spacing-sm);
-        margin-bottom: 4px;
-    }
-
-    :global(.error-group-header) {
-        font-size: var(--font-size-xs);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--color-text-tertiary);
-        margin-top: var(--spacing-sm);
-    }
-
-    :global(.error-group-header:first-of-type) {
-        margin-top: 0;
-    }
-
-    :global(.error-row) {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 2px 0;
-        font-size: var(--font-size-xs);
-    }
-
-    :global(.error-label) {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-family: var(--font-mono);
-        color: var(--color-text-primary);
-    }
-
-    :global(.error-title) {
-        color: var(--color-text-tertiary);
-        margin-left: 4px;
-        font-family: var(--font-system), sans-serif;
-    }
-
-    :global(.error-trigger-btn) {
-        flex-shrink: 0;
-        width: 24px;
-        height: 22px;
-        padding: 0;
-        font-size: var(--font-size-xs);
-        font-weight: 600;
-        font-family: var(--font-system), sans-serif;
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    :global(.error-trigger-btn:hover) {
-        background: var(--color-bg-primary);
     }
 </style>

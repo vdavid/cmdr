@@ -46,5 +46,9 @@ mod in_memory_test;
 mod local_posix_test;
 // `mtp_test` is gated on the same platforms as the `mtp` module it tests (the
 // other two backends are cross-platform, so their test mods aren't gated).
+// `mtp_archive_test` also needs the `virtual-mtp` feature (every test in it runs
+// against a virtual MTP device), so it carries that gate on top.
+#[cfg(all(test, any(target_os = "macos", target_os = "linux"), feature = "virtual-mtp"))]
+mod mtp_archive_test;
 #[cfg(all(test, any(target_os = "macos", target_os = "linux")))]
 mod mtp_test;

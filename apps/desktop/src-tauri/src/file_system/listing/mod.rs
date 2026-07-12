@@ -40,6 +40,10 @@ pub(crate) use operations::{get_listing_entries, update_listing_entries};
 #[cfg(test)]
 mod brief_columns_test;
 #[cfg(test)]
+mod caching_oracle_test;
+#[cfg(test)]
+mod caching_reaper_test;
+#[cfg(test)]
 mod caching_test;
 #[cfg(test)]
 mod diff_emitter_test;

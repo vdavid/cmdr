@@ -2305,6 +2305,9 @@ impl SmbConnectionParams {
 // `smb.rs` is a file module (not a `mod.rs` directory), the sibling paths are
 // spelled explicitly with `#[path]`.
 #[cfg(test)]
+#[path = "smb_archive_integration_test.rs"]
+mod smb_archive_integration_test;
+#[cfg(test)]
 #[path = "smb_integration_test.rs"]
 mod smb_integration_test;
 #[cfg(test)]

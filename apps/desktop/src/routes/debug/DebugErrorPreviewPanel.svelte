@@ -288,9 +288,84 @@
 </section>
 
 <style>
+    /* stylelint-disable declaration-property-value-disallowed-list -- Dev utility window */
+
     /* Sizing box for the per-row provider picker; `ui/Select` owns the trigger chrome. */
     .error-provider-select {
         display: inline-flex;
         width: 150px;
+    }
+
+    .error-preview-panel {
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .error-preview-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+        margin-bottom: 4px;
+    }
+
+    .error-group-header {
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--color-text-tertiary);
+        margin-top: var(--spacing-sm);
+    }
+
+    .error-group-header:first-of-type {
+        margin-top: 0;
+    }
+
+    .error-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 0;
+        font-size: var(--font-size-xs);
+    }
+
+    .error-label {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--font-mono);
+        color: var(--color-text-primary);
+    }
+
+    .error-title {
+        color: var(--color-text-tertiary);
+        margin-left: 4px;
+        font-family: var(--font-system), sans-serif;
+    }
+
+    .error-trigger-btn {
+        flex-shrink: 0;
+        width: 24px;
+        height: 22px;
+        padding: 0;
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        font-family: var(--font-system), sans-serif;
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .error-trigger-btn:hover {
+        background: var(--color-bg-primary);
     }
 </style>

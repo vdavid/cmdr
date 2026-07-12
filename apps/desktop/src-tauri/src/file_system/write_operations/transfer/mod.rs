@@ -19,13 +19,16 @@ pub(super) mod linux_copy;
 pub(crate) mod macos_copy;
 pub(super) mod move_op;
 pub(super) mod transfer_driver;
+pub(super) mod volume_cleanup;
 pub(super) mod volume_conflict;
 pub(super) mod volume_copy;
 pub(super) mod volume_move;
+pub(super) mod volume_move_same;
 pub(super) mod volume_preflight;
 pub(super) mod volume_rename_merge;
 pub(super) mod volume_sequential_extract;
 pub(super) mod volume_strategy;
+pub(super) mod volume_transfer_error;
 
 // Re-export for the nested integration tests below (and to mirror the
 // pre-split `write_operations::CopyTransaction` test path).

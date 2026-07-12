@@ -51,7 +51,7 @@ Centralized command registry and fuzzy search engine for the command palette.
   effects and pollute the rollback log. See `handleTextRegionShortcut` in `command-dispatch.ts`.
 - **Adding a command with a menu item touches four places**, and missing any one fails silently (shortcut works but menu
   doesn't, or vice versa): (1) `command-registry.ts`, (2) the handler in `routes/(main)/command-handlers/`, (3)
-  `src-tauri/src/menu/mod.rs` id mappings (`menu_id_to_command` + `command_id_to_menu_id`) plus the matching
+  `src-tauri/src/menu/command_map.rs` id mappings (`menu_id_to_command` + `command_id_to_menu_id`) plus the matching
   `Menu/SubmenuItem::with_id` registration in the right platform builder (`macos.rs` / `linux.rs`), (4) the
   `menuCommands` array in `shortcuts-store.ts`.
 

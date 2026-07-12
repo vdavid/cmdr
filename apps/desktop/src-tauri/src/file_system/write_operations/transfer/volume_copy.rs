@@ -33,8 +33,8 @@ use super::super::manager;
 use super::super::state::{OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status};
 use super::super::types::{
     OperationEventSink, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent,
-    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
-    WriteOperationType, WriteProgressEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
+    WriteProgressEvent,
 };
 use super::transfer_driver::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, PostLoopIntent, SerialLeafProgress, TransferContext,
@@ -46,6 +46,17 @@ use super::volume_strategy::copy_single_path;
 use crate::file_system::volume::{SourceItemInfo, Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
+
+// The transfer-error plumbing (`WriteFailure`, `map_volume_error`,
+// `write_error_event_from`) lives in `volume_transfer_error`, and the volume
+// cleanup/rollback helpers in `volume_cleanup`. Re-exported at their original
+// `volume_copy::` paths so the sibling modules that still import them from here
+// (`volume_preflight`, `volume_rename_merge`, `volume_conflict`) keep resolving.
+pub(in crate::file_system::write_operations) use super::volume_cleanup::delete_volume_path_recursive;
+use super::volume_cleanup::volume_rollback_with_progress;
+pub(crate) use super::volume_transfer_error::WriteFailure;
+pub(in crate::file_system::write_operations) use super::volume_transfer_error::map_volume_error;
+use super::volume_transfer_error::write_error_event_from;
 
 /// Per-call future shape for the driver's `dest_meta_fetcher` closure.
 type FetchFut<'a> = Pin<Box<dyn Future<Output = Option<u64>> + Send + 'a>>;
@@ -1858,315 +1869,6 @@ pub(crate) async fn copy_volumes_with_progress(
     }))
 }
 
-// ============================================================================
-// Volume rollback helpers
-// ============================================================================
-
-/// Rolls back copied files on a volume with progress events, matching the local copy's
-/// `rollback_with_progress` pattern. Deletes paths in reverse order so that files inside
-/// directories are removed before the directories themselves.
-///
-/// `copied_paths` are the individual destination FILES the operation wrote (never a merged
-/// directory root). After deleting them, `created_dirs` — the directories this operation
-/// NEWLY created — are removed deepest-first with a non-recursive, empty-only delete. A
-/// directory that still holds a pre-existing sibling (a dest-only file the user already had,
-/// or a kept-partial under cancel) is left in place, so rollback never destroys data this
-/// operation didn't write.
-///
-/// Returns `true` if rollback completed fully, `false` if the user cancelled it.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "Needs the full progress state at cancellation time to emit reverse progress"
-)]
-async fn volume_rollback_with_progress(
-    volume: &Arc<dyn Volume>,
-    copied_paths: &[PathBuf],
-    created_dirs: &[PathBuf],
-    events: &dyn OperationEventSink,
-    operation_id: &str,
-    state: &Arc<WriteOperationState>,
-    files_at_cancel: usize,
-    bytes_at_cancel: u64,
-    files_total: usize,
-    bytes_total: u64,
-) -> bool {
-    let paths_to_delete = copied_paths.len();
-    let mut paths_deleted = 0usize;
-    let mut last_progress_time = Instant::now();
-
-    // Emit initial rollback phase event
-    state.emit_progress_via_sink(
-        events,
-        WriteProgressEvent::new(
-            operation_id.to_string(),
-            WriteOperationType::Copy,
-            WriteOperationPhase::RollingBack,
-            None,
-            files_at_cancel,
-            files_total,
-            bytes_at_cancel,
-            bytes_total,
-        ),
-    );
-    update_operation_status(
-        operation_id,
-        WriteOperationPhase::RollingBack,
-        None,
-        files_at_cancel,
-        files_total,
-        bytes_at_cancel,
-        bytes_total,
-    );
-
-    // Delete in reverse order (newest first)
-    for path in copied_paths.iter().rev() {
-        // Check if user cancelled the rollback (RollingBack → Stopped)
-        if load_intent(&state.intent) == OperationIntent::Stopped {
-            log::info!(
-                "volume_rollback_with_progress: rollback cancelled at {}/{} paths, keeping remaining",
-                paths_deleted,
-                paths_to_delete,
-            );
-            return false;
-        }
-
-        // Each copied path may be a file or a directory tree, so delete recursively
-        if let Err(e) = delete_volume_path_recursive(volume, path).await {
-            log::warn!(
-                "volume_rollback_with_progress: failed to delete {}: {:?}",
-                path.display(),
-                e
-            );
-        }
-        paths_deleted += 1;
-
-        // Throttled progress events with decreasing values
-        if last_progress_time.elapsed() >= state.progress_interval {
-            let remaining_files = files_at_cancel.saturating_sub(paths_deleted);
-            let remaining_bytes = if paths_to_delete > 0 {
-                bytes_at_cancel - (bytes_at_cancel as f64 * paths_deleted as f64 / paths_to_delete as f64) as u64
-            } else {
-                0
-            };
-
-            let current_file_name = path
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_default();
-            state.emit_progress_via_sink(
-                events,
-                WriteProgressEvent::new(
-                    operation_id.to_string(),
-                    WriteOperationType::Copy,
-                    WriteOperationPhase::RollingBack,
-                    Some(current_file_name.clone()),
-                    remaining_files,
-                    files_total,
-                    remaining_bytes,
-                    bytes_total,
-                ),
-            );
-            update_operation_status(
-                operation_id,
-                WriteOperationPhase::RollingBack,
-                Some(current_file_name),
-                remaining_files,
-                files_total,
-                remaining_bytes,
-                bytes_total,
-            );
-            last_progress_time = Instant::now();
-        }
-    }
-
-    // Prune the directories this operation newly created, deepest-first, with a
-    // non-recursive empty-only delete. `created_dirs` is in creation order
-    // (shallowest first), so iterating in reverse hits leaves before their
-    // parents. A directory that still holds a pre-existing sibling (a dest-only
-    // file the user already had) won't be empty, so its `delete` fails with
-    // NotFound/IoError on real backends and we leave it standing — exactly the
-    // protection that keeps rollback from destroying untouched user data. We
-    // deliberately do NOT use `delete_volume_path_recursive` here: that would
-    // recurse into and delete those pre-existing siblings.
-    for dir in created_dirs.iter().rev() {
-        if load_intent(&state.intent) == OperationIntent::Stopped {
-            return false;
-        }
-        if let Err(e) = volume.delete(dir).await {
-            log::debug!(
-                "volume_rollback_with_progress: not removing created dir {} (likely non-empty, kept): {:?}",
-                dir.display(),
-                e
-            );
-        }
-    }
-
-    true
-}
-
-/// Recursively deletes a file or directory on a volume.
-///
-/// For files: calls `volume.delete()` directly.
-/// For directories: lists contents, deletes children (files first, then subdirs),
-/// then deletes the directory itself. Best-effort: logs errors but continues.
-pub(in crate::file_system::write_operations) async fn delete_volume_path_recursive(
-    volume: &Arc<dyn Volume>,
-    path: &Path,
-) -> Result<(), VolumeError> {
-    let is_dir = match volume.is_directory(path).await {
-        Ok(true) => true,
-        Ok(false) => false,
-        Err(_) => {
-            // Path may not exist (already deleted or never fully created). Nothing to do.
-            return Ok(());
-        }
-    };
-
-    if !is_dir {
-        return volume.delete(path).await;
-    }
-
-    // List directory contents and delete children first
-    let children = volume.list_directory(path, None).await?;
-
-    // Delete files first, then recurse into subdirectories
-    for child in &children {
-        let child_path = PathBuf::from(&child.path);
-        if child.is_directory {
-            if let Err(e) = Box::pin(delete_volume_path_recursive(volume, &child_path)).await {
-                log::warn!(
-                    "delete_volume_path_recursive: failed to delete subdirectory {}: {:?}",
-                    child_path.display(),
-                    e
-                );
-            }
-        } else if let Err(e) = volume.delete(&child_path).await {
-            log::warn!(
-                "delete_volume_path_recursive: failed to delete file {}: {:?}",
-                child_path.display(),
-                e
-            );
-        }
-    }
-
-    // Delete the now-empty directory
-    volume.delete(path).await
-}
-
-/// A write-operation failure carrying the typed `WriteOperationError` the FE renders
-/// from. The two volume-aware constructors map an originating `VolumeError + path`
-/// into the typed error; `synthetic` wraps an already-typed error (cancellation,
-/// validation, synthetic IoError).
-#[derive(Debug, Clone)]
-pub(crate) struct WriteFailure {
-    pub error: WriteOperationError,
-}
-
-impl WriteFailure {
-    /// Construct a `WriteFailure` from an originating `VolumeError + path`, mapping it
-    /// to a `WriteOperationError`. One spot to map, replacing per-call-site boilerplate.
-    pub(super) fn from_volume(path: &Path, e: VolumeError) -> Self {
-        let error = map_volume_error(&path.display().to_string(), e);
-        Self { error }
-    }
-
-    /// Construct a `WriteFailure` from a synthetic `WriteOperationError` (no volume
-    /// context). Used for cancellation, validation errors, etc.
-    pub(super) fn synthetic(error: WriteOperationError) -> Self {
-        Self { error }
-    }
-}
-
-/// Convenience: take a captured `(VolumeError, PathBuf)` and build the `WriteFailure`
-/// from it. Used inside loops where we cloned the path for logging.
-impl From<(VolumeError, PathBuf)> for WriteFailure {
-    fn from(ctx: (VolumeError, PathBuf)) -> Self {
-        let (volume_error, path) = ctx;
-        let error = map_volume_error(&path.display().to_string(), volume_error);
-        Self { error }
-    }
-}
-
-/// Builds a `WriteErrorEvent` from a `WriteFailure`. The FE renders all copy and
-/// classification from the typed `error`. Shared by `volume_move` and `volume_copy`.
-pub(super) fn write_error_event_from(
-    operation_id: String,
-    operation_type: WriteOperationType,
-    failure: WriteFailure,
-) -> WriteErrorEvent {
-    WriteErrorEvent::new(operation_id, operation_type, failure.error)
-}
-
-/// Maps VolumeError to WriteOperationError, attaching path context where the original error lacks
-/// one.
-pub(in crate::file_system::write_operations) fn map_volume_error(
-    context_path: &str,
-    e: VolumeError,
-) -> WriteOperationError {
-    match e {
-        VolumeError::NotFound(path) => WriteOperationError::SourceNotFound { path },
-        VolumeError::PermissionDenied(msg) => WriteOperationError::PermissionDenied {
-            path: context_path.to_string(),
-            message: msg,
-        },
-        VolumeError::AlreadyExists(path) => WriteOperationError::DestinationExists { path },
-        VolumeError::NotSupported => WriteOperationError::IoError {
-            path: context_path.to_string(),
-            message: "Operation not supported by this volume type".to_string(),
-        },
-        VolumeError::DeviceDisconnected(_) => WriteOperationError::DeviceDisconnected {
-            path: context_path.to_string(),
-        },
-        VolumeError::ReadOnly(_) => WriteOperationError::ReadOnlyDevice {
-            path: context_path.to_string(),
-            device_name: None,
-        },
-        VolumeError::StorageFull { .. } => WriteOperationError::InsufficientSpace {
-            required: 0,
-            available: 0,
-            volume_name: None,
-        },
-        VolumeError::ConnectionTimeout(_) => WriteOperationError::ConnectionInterrupted {
-            path: context_path.to_string(),
-        },
-        VolumeError::Cancelled(_) => WriteOperationError::Cancelled {
-            message: "Operation cancelled by user".to_string(),
-        },
-        VolumeError::IoError { message, .. } => WriteOperationError::IoError {
-            path: context_path.to_string(),
-            message,
-        },
-        // Extracting from a password-protected archive: a typed signal the FE
-        // prompts on (then retries via `set_archive_password`), never a generic
-        // read error.
-        VolumeError::NeedsPassword { wrong_attempt } => WriteOperationError::ArchiveNeedsPassword {
-            path: context_path.to_string(),
-            wrong_attempt,
-        },
-        VolumeError::FriendlyGit(git_err) => WriteOperationError::IoError {
-            path: context_path.to_string(),
-            message: git_err.to_string(),
-        },
-        VolumeError::IsADirectory(path) => WriteOperationError::IoError {
-            path,
-            message: "Is a directory".to_string(),
-        },
-        VolumeError::DeletePending(_) => WriteOperationError::DeletePending {
-            path: context_path.to_string(),
-        },
-        // Surfaced only when the transfer engine's one-shot retry on a stale
-        // destination handle ALSO failed. The fault is the destination folder
-        // (its handle couldn't be re-resolved), never the source, so attach the
-        // dest folder path and a destination-write classification — never
-        // `SourceNotFound`, which would point the user at an intact source file.
-        VolumeError::StaleDestinationHandle(dest_folder) => WriteOperationError::WriteError {
-            path: dest_folder,
-            message: "The destination folder couldn't be found on the device. Open the folder again and retry."
-                .to_string(),
-        },
-    }
-}
-
 // The `volume_copy_tests.rs` suite was split for size. The crash-safety and
 // rollback suites live in their own files; both share `make_state` /
 // `make_volumes` from `tests` (`super::tests`). The bench suite is a single
@@ -2175,8 +1877,14 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
 #[path = "volume_copy_bench.rs"]
 mod bench;
 #[cfg(test)]
+#[path = "volume_copy_concurrent_tests.rs"]
+mod concurrent_tests;
+#[cfg(test)]
 #[path = "volume_copy_crashsafe_tests.rs"]
 mod crashsafe_tests;
+#[cfg(test)]
+#[path = "volume_copy_extract_out_tests.rs"]
+mod extract_out_tests;
 #[cfg(test)]
 #[path = "volume_merge_tests.rs"]
 mod merge_tests;

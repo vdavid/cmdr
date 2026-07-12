@@ -101,3 +101,72 @@
         </div>
     </div>
 </section>
+
+<style>
+    /* stylelint-disable declaration-property-value-disallowed-list -- Dev utility window */
+
+    .history-panes {
+        display: flex;
+        gap: var(--spacing-md);
+    }
+
+    .history-pane {
+        flex: 1;
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-sm);
+        min-width: 0;
+    }
+
+    .history-pane.focused {
+        outline: 2px solid var(--color-accent);
+    }
+
+    .history-pane h3 {
+        margin: 0 0 var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+    }
+
+    .history-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font-size: var(--font-size-sm);
+        font-family: var(--font-mono);
+    }
+
+    .history-list li {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: 3px 4px;
+        border-radius: var(--radius-sm);
+        color: var(--color-text-secondary);
+        min-width: 0;
+    }
+
+    .history-list li.current {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+        font-weight: 600;
+    }
+
+    .history-list li.future {
+        opacity: 0.5;
+    }
+
+    .history-index {
+        flex-shrink: 0;
+        width: 12px;
+        text-align: center;
+    }
+
+    .history-path {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>

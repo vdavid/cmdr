@@ -487,3 +487,125 @@
         {/if}
     </div>
 </section>
+
+<style>
+    /* stylelint-disable declaration-property-value-disallowed-list -- Dev utility window */
+
+    .index-panel {
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .index-status-row {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        flex-wrap: wrap;
+    }
+
+    .phase-duration {
+        margin-left: var(--spacing-xs);
+        color: var(--color-text-tertiary);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .phase-live-stat {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+    }
+
+    .phase-timeline {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        background: var(--color-bg-tertiary);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-sm);
+        max-height: 240px;
+        overflow-y: auto;
+    }
+
+    .phase-timeline-row {
+        display: grid;
+        grid-template-columns: 90px 110px 80px 1fr;
+        gap: var(--spacing-sm);
+        padding: 2px 0;
+        align-items: baseline;
+    }
+
+    .phase-timeline-row.phase-current {
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .phase-time {
+        color: var(--color-text-tertiary);
+    }
+
+    .phase-name {
+        color: var(--color-text-secondary);
+    }
+
+    .phase-dur {
+        color: var(--color-text-secondary);
+        text-align: right;
+    }
+
+    .phase-stats {
+        color: var(--color-text-tertiary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .phase-now-marker {
+        color: var(--color-accent);
+    }
+
+    .index-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .index-sub-header {
+        font-size: var(--font-size-xs);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--color-text-tertiary);
+        margin-top: 4px;
+    }
+
+    .index-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-size: var(--font-size-sm);
+    }
+
+    .index-meta-row {
+        display: flex;
+        gap: var(--spacing-sm);
+    }
+
+    .index-meta-label {
+        color: var(--color-text-tertiary);
+        min-width: 120px;
+    }
+
+    .index-meta-value {
+        color: var(--color-text-primary);
+        font-family: var(--font-mono);
+    }
+
+    .db-breakdown {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+        margin-left: 4px;
+    }
+</style>

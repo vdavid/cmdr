@@ -94,3 +94,77 @@
         </div>
     </div>
 </section>
+
+<style>
+    /* stylelint-disable declaration-property-value-disallowed-list -- Dev utility window */
+
+    .closed-tabs-panes {
+        display: flex;
+        gap: var(--spacing-md);
+    }
+
+    .closed-tabs-pane {
+        flex: 1;
+        background: var(--color-bg-secondary);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-sm);
+        min-width: 0;
+    }
+
+    .closed-tabs-pane.focused {
+        outline: 2px solid var(--color-accent);
+    }
+
+    .closed-tabs-pane h3 {
+        margin: 0 0 var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+    }
+
+    .closed-tabs-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font-size: var(--font-size-sm);
+        font-family: var(--font-mono);
+    }
+
+    .closed-tabs-list li {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        padding: 3px 4px;
+        border-radius: var(--radius-sm);
+        color: var(--color-text-secondary);
+        min-width: 0;
+    }
+
+    .closed-tabs-list li.top {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+        font-weight: 600;
+    }
+
+    .closed-tab-path {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Row marker prefix (↑ for the top entry, · otherwise). */
+    .closed-tab-marker {
+        flex-shrink: 0;
+        width: 12px;
+        text-align: center;
+        color: var(--color-text-tertiary);
+    }
+
+    .no-closed-tabs {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-tertiary);
+        font-style: italic;
+    }
+</style>
