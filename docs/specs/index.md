@@ -6,10 +6,20 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-12 [ask-cmdr-plan.md](ask-cmdr-plan.md) - Implementation plan for the "Ask Cmdr" chat slice: 8 milestones
+      (`AgentLlm` trait + fake → `main.db` store → registry read/write gating + split → in-process tool layer → runtime
+      + context assembly → rail UI + streaming → sessions/search/attachments → consent/settings/i18n/E2E), the `main.db`
+      DDL (conversations/messages/FTS5/cost_meter, FTS5 net-new), the `AgentLlm` typed-part trait sketch, the IPC
+      surface, and resolutions to every spec §7 open question. Plan ready; execution pending (`/execute` next).
 - [ ] 2026-07-12 [ask-cmdr-spec.md](ask-cmdr-spec.md) - "Ask Cmdr" chat slice of the agent: read-only LLM chat over the
       drive index + importance + operation log via the in-process tool registry, `AgentLlm` trait over `genai` (gated on
       the agent-spec §18.1 capability spike), `main.db` conversations/messages/FTS, right-sidebar rail UI with sessions
-      and search. Spec ready; plan pending (`/plan` next).
+      and search. Spec ready; see the plan above.
+- [ ] 2026-07-12 [ask-cmdr-genai-spike.md](ask-cmdr-genai-spike.md) - The completed genai capability spike (spec §3 step
+      0 / agent-spec §18.1): verdict that `genai =0.6.0-beta.19` drives multi-step tool loops, streaming-with-tools, and
+      stop-reason/usage normalization on all adapters, but reasoning-state round-trip is broken on the Anthropic and
+      OpenAI-Responses adapters (upstream #213) and correct on Gemini. Shapes the `AgentLlm` typed-part design and the
+      reasoning-off-in-v1 posture. Referenced by the plan.
 - [ ] 2026-07-09 [compress-level-plan.md](compress-level-plan.md) - Extend the shipped Compress feature: a
       compression-level slider (deflate 1-9, default 6) in both the Compress dialog and Settings › Behavior › Archives,
       one FE-owned setting threaded through `route_archive_copy_into` → the mutator's `FileOptions` (governs
