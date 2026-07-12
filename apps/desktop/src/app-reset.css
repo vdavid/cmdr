@@ -1,0 +1,168 @@
+/* =============================================================================
+   Reset from https://github.com/filipelinhares/ress/blob/master/dist/ress.min.css with some stripping
+   ============================================================================= */
+
+@layer ress-reset {
+  html {
+    -webkit-text-size-adjust: 100%;
+    box-sizing: border-box;
+    tab-size: 4;
+    word-break: normal;
+  }
+
+  *,
+  :after,
+  :before {
+    background-repeat: no-repeat;
+    box-sizing: inherit;
+  }
+
+  :after,
+  :before {
+    text-decoration: inherit;
+    vertical-align: inherit;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+  }
+
+  hr {
+    color: inherit;
+    height: 0;
+    overflow: visible;
+  }
+
+  details,
+  main {
+    display: block;
+  }
+
+  summary {
+    display: list-item;
+  }
+
+  abbr[title] {
+    border-bottom: none;
+    text-decoration: underline dotted;
+  }
+
+  a {
+    background-color: transparent;
+    cursor: default;
+  }
+
+  a:active,
+  a:hover {
+    outline-width: 0;
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    /* stylelint-disable-next-line declaration-property-value-disallowed-list -- CSS reset */
+    font-family: monospace, monospace;
+  }
+
+  pre {
+    /* stylelint-disable-next-line declaration-property-value-disallowed-list -- CSS reset */
+    font-size: 1em;
+  }
+
+  b,
+  strong {
+    font-weight: bolder;
+  }
+
+  sub,
+  sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+
+  sub {
+    bottom: -0.25em;
+  }
+
+  sup {
+    top: -0.5em;
+  }
+
+  table {
+    border-color: inherit;
+    text-indent: 0;
+  }
+
+  iframe {
+    border-style: none;
+  }
+
+  input {
+    border-radius: 0;
+  }
+
+  textarea {
+    overflow: auto;
+    resize: vertical;
+  }
+
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  optgroup {
+    font-weight: 700;
+  }
+
+  button {
+    overflow: visible;
+  }
+
+  button,
+  select {
+    text-transform: none;
+  }
+
+  [role='button'],
+  [type='button'],
+  [type='reset'],
+  [type='submit'],
+  button {
+    cursor: default;
+  }
+
+  [type='reset'],
+  [type='submit'],
+  button,
+  html [type='button'] {
+    appearance: button;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    background-color: transparent;
+    border-style: none;
+  }
+
+  a:focus,
+  button:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline-width: 0;
+  }
+
+  progress {
+    vertical-align: baseline;
+  }
+}

@@ -106,10 +106,22 @@ func stripCssComments(cssContent string) string {
 	return commentRegex.ReplaceAllString(cssContent, "")
 }
 
+// cssImportRegex matches an `@import` at-rule up to its terminating `;`, in any
+// of its forms (`@import './x.css';`, `@import url("x.css");`).
+var cssImportRegex = regexp.MustCompile(`@import[^;]*;`)
+
+// stripCssImports removes `@import` at-rules from CSS content. Their filename
+// arguments (like `'./app-palette.css'`) end in `.css`, which the class-def
+// regex would otherwise misread as a `.css` class selector.
+func stripCssImports(cssContent string) string {
+	return cssImportRegex.ReplaceAllString(cssContent, "")
+}
+
 // findClassDefinitions extracts CSS class definitions from CSS content.
 func findClassDefinitions(cssContent string) []string {
-	// Strip comments first to avoid false positives from URLs and file paths
-	cleanContent := stripCssComments(cssContent)
+	// Strip comments and @import at-rules first to avoid false positives from
+	// URLs and file paths (a `.css` / `.svelte` extension looks like a class).
+	cleanContent := stripCssImports(stripCssComments(cssContent))
 
 	var classes []string
 	for _, match := range cssClassDefRegex.FindAllStringSubmatch(cleanContent, -1) {
