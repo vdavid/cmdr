@@ -29,9 +29,9 @@ build order:
   entries in the consolidated registry (agent-spec D49, extend-don't-fork), their handlers/result shapes that reuse the
   shipped cores (drive index, importance, operation log, volumes, app state), and the gated dispatch that refuses any
   non-view name before `execute_tool`. Depth: [`tools/DETAILS.md`](tools/DETAILS.md).
-- `chat/` (M5): the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors) and the
-  pure, TDD-heavy context-assembly core (stable prefix, elide-only compaction, the fresh context envelope on the latest
-  user turn only).
+- `chat/` (M5, present): the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors,
+  crash-safe persistence, the `AgentChatEvent` seam) and the pure, TDD-heavy context-assembly core (stable prefix,
+  elide-only compaction, the fresh context envelope on the latest user turn only). Depth: [`chat/DETAILS.md`](chat/DETAILS.md).
 
 ## Read-only by construction
 
@@ -44,6 +44,7 @@ it). Revisit the whole consent + gating story before adding the first write or c
 
 ## Staged construction
 
-M1's seam is built before its consumers (the runtime, M5; the IPC, M6). Until a non-test path wires the subsystem in,
-its items are unreferenced from a release build, so `agent/mod.rs` carries a justified `#![allow(dead_code, reason=…)]`.
-Remove it when M5 lands — leaving it would mask genuinely dead code in later milestones.
+The subsystem was built seam-first: M1 the `AgentLlm` trait, M2 the store, M4 the read-only toolset. Each landed ahead
+of a caller, so `agent/mod.rs` carried a temporary `#![allow(dead_code)]`. M5's `chat::runtime` now consumes all three
+(and `agent::start` registers `ChatRuntime` in state), so the allow is gone. The remaining unwired step is the IPC
+surface (M6) that lets the frontend reach `ChatRuntime`.

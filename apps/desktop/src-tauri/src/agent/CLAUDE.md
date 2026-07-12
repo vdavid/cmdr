@@ -16,17 +16,17 @@ surface, so later proactive slices (proposals, notifications) grow here too. Ful
 - `tools/` (M4, here now): the in-process read-only toolset — the five read families as `consumers: [Agent]` registry
   entries, their handlers/result shapes, and the gated dispatch (the read-only choke point). See
   [`tools/CLAUDE.md`](tools/CLAUDE.md).
-- `chat/` (M5): the chat runtime + context assembly. Not built yet.
+- `chat/` (M5, here now): the chat runtime (`run_turn` + `ChatRuntime`, single-flight, budgets, cancellation, crash-safe
+  persistence, the `AgentChatEvent` seam) and the pure context-assembly core. See [`chat/CLAUDE.md`](chat/CLAUDE.md).
 
 ## Must-knows
 
 - **Read-only by construction.** The chat agent has NO write tool and no content-read tool — only names, paths, and
   metadata ever reach the provider (spec §2.1). This is a structural privacy line, not a runtime check; don't add a tool
   that breaks it without revisiting the whole consent + gating story.
-- **Staged ahead of consumers.** The M1 seam, most of the M2 store query layer, and the M4 tool dispatch (`dispatch` /
-  `refuse_unavailable` / `agent_tool_declarations`) have no non-test caller yet (the runtime is M5, IPC is M6), so
-  `mod.rs` carries a justified `#![allow(dead_code)]`. `agent::start` is wired at app setup and the store DB opens at
-  launch, and the M4 tool HANDLERS are already live (the `mcp_tools!` macro references them), but the runtime that drives
-  them waits for M5. Remove the allow when M5 wires the runtime — don't let it outlive its reason.
+- **The runtime drives the seams; IPC is still pending.** M5's `chat::runtime` now consumes the M1 seam, the M2 store
+  queries, and the M4 tool dispatch, and `agent::start` registers `ChatRuntime` in state — so the module-level
+  `#![allow(dead_code)]` is gone. The IPC commands that reach the runtime from the frontend are M6; `ChatRuntime` is
+  reachable public API in the meantime.
 
 Depth (milestone layout, the read-only rationale, how the slice relates to the full agent): [DETAILS.md](DETAILS.md).

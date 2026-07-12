@@ -13,19 +13,7 @@
 //!
 //! See `CLAUDE.md` for must-knows and `DETAILS.md` for the map.
 
-// The agent seam is built ahead of its consumers: M1 lands the `AgentLlm` trait,
-// M2 the store, M4 the read-only toolset + its dispatch gate, but the chat runtime
-// that drives them and the IPC that reaches them arrive in M5/M6. The M4 tool
-// HANDLERS are already live (the `mcp_tools!` macro references them), but the
-// dispatch entry point, the declaration builder, and the refusal gate have no
-// non-test caller until M5. Until then those items are legitimately unreferenced
-// from a release build, so allow dead_code here (a justified exception to
-// `#![deny(unused)]`). Remove this once M5 wires the runtime in.
-#![allow(
-    dead_code,
-    reason = "M1 seam + M2 store + M4 tool dispatch; the runtime arrives in M5/M6"
-)]
-
+pub mod chat;
 pub mod llm;
 pub mod store;
 pub mod tools;
@@ -85,6 +73,9 @@ pub fn start(app: &AppHandle) {
             app.manage(AgentDb {
                 db_path: db_path.clone(),
             });
+            // Register the chat runtime against the same DB so M6's IPC command is a
+            // thin pass-through (`app.state::<chat::runtime::ChatRuntime>()`).
+            chat::runtime::register(app, db_path.clone());
             log::debug!(target: "agent::store", "main.db ready at {}", db_path.display());
         }
         Err(e) => log::warn!(target: "agent::store", "main.db not opened: {e}"),
