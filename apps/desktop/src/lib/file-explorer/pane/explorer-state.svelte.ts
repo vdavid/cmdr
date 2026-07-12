@@ -86,6 +86,16 @@ export interface ExplorerState {
   getTabMgr: (pane: 'left' | 'right') => TabManager
   /** Swaps the tab-manager holder for `pane` (e.g. when loading persisted tabs). */
   setTabMgr: (pane: 'left' | 'right', mgr: TabManager) => void
+
+  /**
+   * Whether the Ask Cmdr rail owns focus. A PARALLEL third focus region, deliberately
+   * NOT folded into the binary `focusedPane` union: exactly one PANE is always focused,
+   * and this flag says whether input is actually routed to the rail's composer instead.
+   * Reactive.
+   */
+  getRailFocused: () => boolean
+  /** Sets the rail-focused flag. The single writer of `railFocused`. */
+  setRailFocused: (value: boolean) => void
 }
 
 /**
@@ -98,6 +108,7 @@ export function createExplorerState(): ExplorerState {
   let leftPaneWidthPercent = $state(DEFAULT_PANE_WIDTH_PERCENT)
   let leftTabMgr = $state<TabManager>(createDefaultTabMgr())
   let rightTabMgr = $state<TabManager>(createDefaultTabMgr())
+  let railFocused = $state(false)
 
   return {
     getFocusedPane: () => focusedPane,
@@ -126,6 +137,11 @@ export function createExplorerState(): ExplorerState {
         rightTabMgr = mgr
       }
     },
+
+    getRailFocused: () => railFocused,
+    setRailFocused: (value) => {
+      railFocused = value
+    },
   }
 }
 
@@ -145,4 +161,5 @@ export function _resetForTesting(): void {
   explorerState.setLeftPaneWidthPercent(DEFAULT_PANE_WIDTH_PERCENT)
   explorerState.setTabMgr('left', createDefaultTabMgr())
   explorerState.setTabMgr('right', createDefaultTabMgr())
+  explorerState.setRailFocused(false)
 }

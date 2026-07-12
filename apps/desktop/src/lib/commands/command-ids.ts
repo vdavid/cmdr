@@ -49,6 +49,9 @@ export const COMMAND_IDS = [
   // Operation log (alpha)
   'log.operationLog',
 
+  // Ask Cmdr chat rail (alpha)
+  'askCmdr.toggle',
+
   // Search
   'search.open',
 

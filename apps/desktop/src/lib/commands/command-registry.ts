@@ -203,6 +203,18 @@ const commandSources: CommandSource[] = [
     shortcuts: ['⌘⌥L'],
     descriptionKey: 'commands.logOperationLog.description',
   },
+  {
+    // Default ⌘⌥A ("A for Ask"). Command-then-Option order (⌘⌥), matching what
+    // `formatKeyCombo` emits, so the JS keydown dispatch fires it on macOS too
+    // (⌥⌘-order defaults are native-menu-only). macOS still renders it ⌥⌘A in the menu.
+    id: 'askCmdr.toggle',
+    nameKey: 'commands.askCmdrToggle.label',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: ['⌘⌥A'],
+    descriptionKey: 'commands.askCmdrToggle.description',
+    status: getBadgeStatus('ask-cmdr'),
+  },
 
   // ============================================================================
   // Main window - Search

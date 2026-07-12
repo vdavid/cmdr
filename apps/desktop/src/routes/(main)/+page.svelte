@@ -17,6 +17,8 @@
     import { whatsNewState, runWhatsNewStartupTrigger } from '$lib/whats-new/whats-new-trigger.svelte'
     import OperationLogDialog from '$lib/operation-log/OperationLogDialog.svelte'
     import { operationLogState } from '$lib/operation-log/operation-log-trigger.svelte'
+    import AskCmdrRail from '$lib/ask-cmdr/AskCmdrRail.svelte'
+    import { askCmdrState } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
     import { goToPath } from '$lib/go-to-path/go-to-path'
     import { getFocusedPanePath, getFocusedPaneSearchableFolder } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
@@ -826,7 +828,12 @@
         {/if}
 
         {#if showApp}
-            <DualPaneExplorer bind:this={explorerRef} onCommand={handleCommandExecute} />
+            <div class="explorer-rail-row">
+                <DualPaneExplorer bind:this={explorerRef} onCommand={handleCommandExecute} />
+                {#if askCmdrState.open}
+                    <AskCmdrRail />
+                {/if}
+            </div>
             <IndexingStatusIndicator />
             <StaleDriveDialog />
         {/if}
@@ -896,5 +903,21 @@
         flex-direction: column;
         overflow: hidden;
         min-height: 0;
+    }
+
+    /* Panes + the Ask Cmdr rail sit in a row; the panes take the remainder, the rail its
+       fixed width. Below ~900px the rail overlays the right pane (see AskCmdrRail). */
+    .explorer-rail-row {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        min-width: 0;
+        position: relative;
+    }
+
+    .explorer-rail-row > :global(.dual-pane-explorer) {
+        flex: 1;
+        width: auto;
+        min-width: 0;
     }
 </style>

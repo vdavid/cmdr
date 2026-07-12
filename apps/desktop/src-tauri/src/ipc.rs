@@ -626,6 +626,12 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::commands::whats_new::whats_new_dev_override,
         crate::commands::operation_log::get_recent_operation_log_entries,
         crate::commands::operation_log::get_operation_log_detail,
+        // ask_cmdr_send_message: streaming via tauri Channel<T>; not specta-friendly, so
+        // it rides raw invoke on the frontend and is absent from ipc_collectors.
+        crate::commands::agent::ask_cmdr_send_message,
+        crate::commands::agent::ask_cmdr_cancel,
+        crate::commands::agent::ask_cmdr_get_conversation,
+        crate::commands::agent::ask_cmdr_list_conversations,
         crate::commands::selection::translate_selection_query,
         crate::commands::selection::get_recent_selections,
         crate::commands::selection::add_recent_selection,

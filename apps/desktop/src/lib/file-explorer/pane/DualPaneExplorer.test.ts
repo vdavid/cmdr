@@ -199,6 +199,8 @@ describe('Sorting integration', () => {
       leftViewMode: 'brief',
       rightViewMode: 'brief',
       leftPaneWidthPercent: 50,
+      askCmdrRailOpen: false,
+      askCmdrRailWidth: 340,
     })
 
     const target = document.createElement('div')

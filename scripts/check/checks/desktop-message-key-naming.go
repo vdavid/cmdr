@@ -43,6 +43,7 @@ var messageKeyKnownAreas = map[string]bool{
 	"updates":        true,
 	"whatsNew":       true,
 	"operationLog":   true,
+	"askCmdr":        true,
 	"commandPalette": true,
 	"shortcuts":      true,
 	"crashReporter":  true,

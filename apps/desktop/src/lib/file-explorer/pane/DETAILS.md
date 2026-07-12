@@ -307,6 +307,8 @@ The **writers** (A2 — exactly one mutator per field, all inside the store modu
 - **`leftPaneWidthPercent`**: `setLeftPaneWidthPercent`
 - **`leftTabMgr`**: `setTabMgr('left', …)`
 - **`rightTabMgr`**: `setTabMgr('right', …)`
+- **`railFocused`**: `setRailFocused` (the Ask Cmdr rail's parallel focus flag — a third focus region alongside the
+  `'left'|'right'` `focusedPane`, deliberately not folded into that union)
 
 **Enforced by lint (`cmdr/no-explorer-state-writes`).** Assigning to any property of the store object outside
 `explorer-state.svelte.ts` is a lint error (`explorerState.x = …`, compound assignment, `++`, and monkey-patching a

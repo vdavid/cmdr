@@ -127,6 +127,8 @@ vi.mock('$lib/downloads/go-to-latest', () => ({
 
 // The whole `$lib/tauri-commands` barrel the arms call.
 vi.mock('$lib/tauri-commands', () => ({
+  // Pulled in transitively via the Ask Cmdr toggle handler → explorer-state module init.
+  DEFAULT_VOLUME_ID: 'root',
   openExternalUrl: (...a: unknown[]) => m.openExternalUrl(...a),
   showInFinder: (...a: unknown[]) => m.showInFinder(...a),
   copyToClipboard: (...a: unknown[]) => m.copyToClipboard(...a),

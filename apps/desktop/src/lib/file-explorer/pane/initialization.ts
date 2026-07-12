@@ -1,4 +1,5 @@
 import { loadAppStatus, loadPaneTabs } from '$lib/app-status-store'
+import { hydrateRail } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { loadSettings } from '$lib/settings-store'
 import { pathExists, getDefaultVolumeId, resolvePathVolume, getE2eStartPath } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
@@ -33,6 +34,9 @@ export async function loadPersistedState(): Promise<InitializedState> {
     loadAppStatus(pathExists),
     loadSettings(),
   ])
+
+  // Restore the Ask Cmdr rail's persisted open/width (reopening loads its active thread).
+  hydrateRail(status.askCmdrRailOpen, status.askCmdrRailWidth)
 
   // E2E test override: use CMDR_E2E_START_PATH subdirectories when set
   const e2eStartPath = await getE2eStartPath()

@@ -1,5 +1,6 @@
 //! Tauri commands module.
 
+pub mod agent;
 pub mod analytics;
 pub mod beta_signup;
 pub mod child_window_state;

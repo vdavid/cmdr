@@ -625,8 +625,10 @@ pub fn register<R: Runtime>(app: &AppHandle<R>, db_path: PathBuf) {
 }
 
 /// A thread title from the first line of the user's message, trimmed to a sane length.
-/// A user-facing default; renaming stays the user's call (M7).
-fn derive_title(text: &str) -> String {
+/// A user-facing default; renaming stays the user's call (M7). `pub(crate)` so M6's
+/// IPC command, which pre-creates the conversation to learn its id up front (for the
+/// cancel registry and the `Started` event), derives the same title the runtime would.
+pub(crate) fn derive_title(text: &str) -> String {
     const MAX: usize = 60;
     let first_line = text.lines().find(|l| !l.trim().is_empty()).unwrap_or("").trim();
     if first_line.is_empty() {

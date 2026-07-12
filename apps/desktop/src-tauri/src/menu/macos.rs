@@ -13,16 +13,17 @@ use super::menu_items::{
     show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 use super::{
-    ABOUT_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID,
-    COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID, EDIT_PASTE_ID,
-    EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
-    FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID,
-    GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID,
-    HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID,
-    OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID,
-    SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID,
-    SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID, SWITCH_PANE_ID,
-    VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, ViewMode,
+    ABOUT_ID, ASK_CMDR_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID,
+    COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID,
+    EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
+    FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID,
+    GO_BACK_ID, GO_FORWARD_ID, GO_LATEST_DOWNLOAD_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_SEND_ERROR_REPORT_ID,
+    HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, MenuItems, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID,
+    OPEN_ONBOARDING_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID,
+    REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID, SELECT_FILES_ID, SETTINGS_ID, SHOW_HIDDEN_FILES_ID,
+    SHOW_IN_FINDER_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SWAP_PANES_ID,
+    SWITCH_PANE_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
+    ViewMode,
 };
 
 pub(crate) fn build_menu_macos<R: Runtime>(
@@ -272,6 +273,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // Default ⌘⌥L (Cmd+Opt+L). ⌥⌘O — the plan's first choice — is taken by "Show in Finder".
     // The accelerator syncs from the `log.operationLog` registry shortcut; this is the initial label.
     let operation_log_item = MenuItem::with_id(app, OPERATION_LOG_ID, "Operation log", true, Some("Cmd+Alt+L"))?;
+    // Default ⌘⌥A (rendered ⌥⌘A by macOS). The accelerator syncs from the `askCmdr.toggle`
+    // registry shortcut; this is the initial label.
+    let ask_cmdr_item = MenuItem::with_id(app, ASK_CMDR_ID, "Ask Cmdr", true, Some("Cmd+Alt+A"))?;
 
     let view_submenu = Submenu::with_items(
         app,
@@ -290,6 +294,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &PredefinedMenuItem::separator(app)?,
             &command_palette_item,
             &operation_log_item,
+            &ask_cmdr_item,
         ],
     )?;
     menu.append(&view_submenu)?;
@@ -447,11 +452,12 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 4);
 
     // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), zoom(5), sep(6),
-    // switch(7), swap(8), sep(9), command(10), operation_log(11)
+    // switch(7), swap(8), sep(9), command(10), operation_log(11), ask_cmdr(12)
     register_item(&mut items, SWITCH_PANE_ID, &switch_pane_item, &view_submenu, 7);
     register_item(&mut items, SWAP_PANES_ID, &swap_panes_item, &view_submenu, 8);
     register_item(&mut items, COMMAND_PALETTE_ID, &command_palette_item, &view_submenu, 10);
     register_item(&mut items, OPERATION_LOG_ID, &operation_log_item, &view_submenu, 11);
+    register_item(&mut items, ASK_CMDR_ID, &ask_cmdr_item, &view_submenu, 12);
 
     // Sort by submenu positions: name(0), extension(1), modified(2), size(3), created(4),
     // sep(5), ascending(6), descending(7). Only the four shortcut-bound columns are

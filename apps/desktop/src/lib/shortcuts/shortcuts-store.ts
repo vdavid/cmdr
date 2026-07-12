@@ -245,6 +245,8 @@ export const menuCommands = [
   'help.whatsNew',
   // View > Operation log (default ⌥⌘L; registered so a custom binding syncs its accelerator)
   'log.operationLog',
+  // View > Ask Cmdr (default ⌥⌘A; registered so a custom binding syncs its accelerator)
+  'askCmdr.toggle',
   // Edit menu (custom MenuItems; the focus-routed dispatch exception in
   // handle_menu_event doesn't change that their accelerators sync generically)
   'edit.cut',

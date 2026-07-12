@@ -1,0 +1,158 @@
+{
+  "askCmdr.title": "Ask Cmdr",
+  "@askCmdr.title": {
+    "description": "Title of the Ask Cmdr chat rail, where the user chats with an AI about their files. This is the product name; keep it as-is."
+  },
+  "askCmdr.close": "Close Ask Cmdr",
+  "@askCmdr.close": {
+    "description": "Accessible label for the button that closes the Ask Cmdr chat rail. Sentence case."
+  },
+  "askCmdr.newChat": "New chat",
+  "@askCmdr.newChat": {
+    "description": "Label for the button that starts a fresh Ask Cmdr conversation. Sentence case."
+  },
+  "askCmdr.empty.title": "Ask about your files",
+  "@askCmdr.empty.title": {
+    "description": "Heading of the Ask Cmdr rail's empty state, shown before the first message. Sentence case."
+  },
+  "askCmdr.empty.hint": "Cmdr can look at what you’re browsing, your drives, and your file history to answer. It only reads names, paths, and sizes, never file contents.",
+  "@askCmdr.empty.hint": {
+    "description": "Explanatory text in the Ask Cmdr rail's empty state, describing what the assistant can see. The apostrophe is a curly typographic apostrophe (U+2019)."
+  },
+  "askCmdr.composer.placeholder": "Ask about your files…",
+  "@askCmdr.composer.placeholder": {
+    "description": "Placeholder text in the Ask Cmdr message input box. Ends with an ellipsis character (…)."
+  },
+  "askCmdr.composer.send": "Send message",
+  "@askCmdr.composer.send": {
+    "description": "Accessible label for the button that sends the typed Ask Cmdr message. Sentence case."
+  },
+  "askCmdr.composer.stop": "Stop",
+  "@askCmdr.composer.stop": {
+    "description": "Label for the button that stops the assistant while it is answering. Sentence case."
+  },
+  "askCmdr.thinking": "Thinking…",
+  "@askCmdr.thinking": {
+    "description": "Shown while the assistant is reasoning before it starts replying. Ends with an ellipsis character (…)."
+  },
+  "askCmdr.softCap.message": "This chat is getting long. A fresh one keeps replies fast and focused.",
+  "@askCmdr.softCap.message": {
+    "description": "A gentle nudge shown once an Ask Cmdr conversation grows past its soft length cap. Friendly, not a hard limit."
+  },
+  "askCmdr.softCap.action": "Start a fresh chat",
+  "@askCmdr.softCap.action": {
+    "description": "Button that starts a new Ask Cmdr conversation, shown alongside the getting-long nudge. Sentence case."
+  },
+  "askCmdr.tool.appState.doing": "Checking what you’re looking at",
+  "@askCmdr.tool.appState.doing": {
+    "description": "Present-tense status for the assistant reading the user's current view (open folders, cursor, selection). Shown while the tool runs. The apostrophe is U+2019."
+  },
+  "askCmdr.tool.appState.done": "Looked at what you’re looking at",
+  "@askCmdr.tool.appState.done": {
+    "description": "Past-tense label after the assistant read the user's current view. The apostrophe is U+2019."
+  },
+  "askCmdr.tool.listDir.doing": "Listing a folder",
+  "@askCmdr.tool.listDir.doing": {
+    "description": "Present-tense status for the assistant listing a folder's contents and size. Shown while the tool runs."
+  },
+  "askCmdr.tool.listDir.done": "Listed a folder",
+  "@askCmdr.tool.listDir.done": {
+    "description": "Past-tense label after the assistant listed a folder."
+  },
+  "askCmdr.tool.largestDirs.doing": "Finding the largest folders",
+  "@askCmdr.tool.largestDirs.doing": {
+    "description": "Present-tense status for the assistant finding the biggest subfolders by size."
+  },
+  "askCmdr.tool.largestDirs.done": "Found the largest folders",
+  "@askCmdr.tool.largestDirs.done": {
+    "description": "Past-tense label after the assistant found the biggest subfolders."
+  },
+  "askCmdr.tool.importantFolders.doing": "Finding your important folders",
+  "@askCmdr.tool.importantFolders.doing": {
+    "description": "Present-tense status for the assistant finding the user's most important folders."
+  },
+  "askCmdr.tool.importantFolders.done": "Found your important folders",
+  "@askCmdr.tool.importantFolders.done": {
+    "description": "Past-tense label after the assistant found the user's most important folders."
+  },
+  "askCmdr.tool.folderImportance.doing": "Checking a folder’s importance",
+  "@askCmdr.tool.folderImportance.doing": {
+    "description": "Present-tense status for the assistant scoring how important one folder is. The apostrophe is U+2019."
+  },
+  "askCmdr.tool.folderImportance.done": "Checked a folder’s importance",
+  "@askCmdr.tool.folderImportance.done": {
+    "description": "Past-tense label after the assistant scored a folder's importance. The apostrophe is U+2019."
+  },
+  "askCmdr.tool.listVolumes.doing": "Checking your drives",
+  "@askCmdr.tool.listVolumes.doing": {
+    "description": "Present-tense status for the assistant listing the user's drives and their index freshness."
+  },
+  "askCmdr.tool.listVolumes.done": "Checked your drives",
+  "@askCmdr.tool.listVolumes.done": {
+    "description": "Past-tense label after the assistant listed the user's drives."
+  },
+  "askCmdr.tool.operationsList.doing": "Searching your file history",
+  "@askCmdr.tool.operationsList.doing": {
+    "description": "Present-tense status for the assistant searching the operation log (past copies, moves, deletes, renames)."
+  },
+  "askCmdr.tool.operationsList.done": "Searched your file history",
+  "@askCmdr.tool.operationsList.done": {
+    "description": "Past-tense label after the assistant searched the operation log."
+  },
+  "askCmdr.tool.operationsGet.doing": "Looking up an operation",
+  "@askCmdr.tool.operationsGet.doing": {
+    "description": "Present-tense status for the assistant reading one logged file operation's detail."
+  },
+  "askCmdr.tool.operationsGet.done": "Looked up an operation",
+  "@askCmdr.tool.operationsGet.done": {
+    "description": "Past-tense label after the assistant read one file operation's detail."
+  },
+  "askCmdr.tool.unknown.doing": "Working",
+  "@askCmdr.tool.unknown.doing": {
+    "description": "Present-tense fallback status for a tool the rail doesn't have a specific label for."
+  },
+  "askCmdr.tool.unknown.done": "Used a tool",
+  "@askCmdr.tool.unknown.done": {
+    "description": "Past-tense fallback label for a tool the rail doesn't have a specific label for."
+  },
+  "askCmdr.tool.refused": "That request wasn’t available",
+  "@askCmdr.tool.refused": {
+    "description": "Shown on a tool line when the assistant asked for something Ask Cmdr can't do (it's read-only). The apostrophe is U+2019."
+  },
+  "askCmdr.error.noKey": "Add your API key in settings to start chatting.",
+  "@askCmdr.error.noKey": {
+    "description": "Shown when the chosen AI provider has no API key. Friendly and actionable; avoids the words error and failed."
+  },
+  "askCmdr.error.notConfigured": "Turn on an AI provider in settings to use Ask Cmdr.",
+  "@askCmdr.error.notConfigured": {
+    "description": "Shown when no AI provider is set up. Friendly and actionable; avoids the words error and failed."
+  },
+  "askCmdr.error.unavailable": "Couldn’t reach the AI provider. Check your connection and try again.",
+  "@askCmdr.error.unavailable": {
+    "description": "Shown when the AI provider is unreachable. Friendly and actionable; avoids the words error and failed. The apostrophe is U+2019."
+  },
+  "askCmdr.error.timeout": "That took too long. Try again?",
+  "@askCmdr.error.timeout": {
+    "description": "Shown when the AI request timed out. Friendly; avoids the words error and failed."
+  },
+  "askCmdr.error.authFailed": "The provider didn’t accept your API key. Check it in settings.",
+  "@askCmdr.error.authFailed": {
+    "description": "Shown when the provider rejected the API key. Friendly and actionable; avoids the words error and failed. The apostrophe is U+2019."
+  },
+  "askCmdr.error.rateLimited": "The provider is busy or you’re out of quota. Try again in a bit.",
+  "@askCmdr.error.rateLimited": {
+    "description": "Shown when the provider is rate-limiting or the account is out of quota. Friendly; avoids the words error and failed. The apostrophe is U+2019."
+  },
+  "askCmdr.error.budgetExhausted": "This one hit its limit before finishing. Try asking something more specific.",
+  "@askCmdr.error.budgetExhausted": {
+    "description": "Shown when a single answer used up its tool-step or time budget before finishing. Friendly and actionable; avoids the words error and failed."
+  },
+  "askCmdr.error.unfinishedReply": "The reply didn’t finish. Try again?",
+  "@askCmdr.error.unfinishedReply": {
+    "description": "Shown when the reply stream stopped before completing (a provider drop or a crash). Friendly; avoids the words error and failed. The apostrophe is U+2019."
+  },
+  "askCmdr.error.provider": "Something went wrong on the provider’s side. Try again?",
+  "@askCmdr.error.provider": {
+    "description": "Shown for any other provider-side problem. Friendly; avoids the words error and failed. The apostrophe is U+2019."
+  }
+}

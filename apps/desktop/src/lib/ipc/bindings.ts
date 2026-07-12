@@ -1924,6 +1924,29 @@ export const commands = {
       string
     >(__TAURI_INVOKE('get_operation_log_detail', { operationId, itemLimit, itemOffset })),
   /**
+   *  Stop the in-flight turn for a thread. Idempotent: an unknown id (already finished) is a
+   *  no-op. A clean stop at the next tool boundary or stream chunk, not a hard abort.
+   */
+  askCmdrCancel: (conversationId: number) => __TAURI_INVOKE<void>('ask_cmdr_cancel', { conversationId }),
+  /**
+   *  One conversation's header plus a page of its display messages (oldest first). `None`
+   *  when the thread is absent or the store never opened.
+   */
+  askCmdrGetConversation: (id: number, msgLimit: number, msgOffset: number) =>
+    typedError<
+      {
+        conversation: ConversationRow
+        messages: MessageView[]
+        totalMessages: number
+      } | null,
+      string
+    >(__TAURI_INVOKE('ask_cmdr_get_conversation', { id, msgLimit, msgOffset })),
+  // Conversations newest-activity first, paged. Empty when the store never opened.
+  askCmdrListConversations: (limit: number, offset: number, includeArchived: boolean) =>
+    typedError<ConversationRow[], string>(
+      __TAURI_INVOKE('ask_cmdr_list_conversations', { limit, offset, includeArchived }),
+    ),
+  /**
    *  Translates a natural-language selection request into a glob/regex plus optional
    *  size and date filters.
    *
@@ -3228,6 +3251,37 @@ export type ConnectionDiagnosticsDto = {
 
 // Connection mode used for the last successful connection.
 export type ConnectionMode = 'guest' | 'credentials'
+
+/**
+ *  A conversation header plus a page of its display messages, and the total count so a
+ *  paged UI knows whether more exist.
+ */
+export type ConversationDetailView = {
+  conversation: ConversationRow
+  messages: MessageView[]
+  totalMessages: number
+}
+
+/**
+ *  How a conversation was started, stored in the nullable `conversations.origin`
+ *  column. NULL means the user started it (the v1 case); a non-null token records a
+ *  programmatic origin. Kept as a column (not a migration) so a future
+ *  notification-spawned thread is an additive token, not a schema change (spec §3).
+ *  v1 never writes a non-null origin; `Notification` is the forward-compat surface
+ *  the column exists to hold.
+ */
+export type ConversationOrigin = 'notification'
+
+// A conversation header row. Wire type (the thread list, M7).
+export type ConversationRow = {
+  id: number
+  title: string
+  createdAt: number
+  updatedAt: number
+  archived: boolean
+  // `None` = user-started (the v1 case). A non-null token is a programmatic origin.
+  origin: ConversationOrigin | null
+}
 
 // The crash report written to disk (JSON).
 export type CrashReport = {
@@ -4634,6 +4688,40 @@ export type MediaDimensions = {
 export type MenuSort = {
   action: string
   value: string
+}
+
+/**
+ *  One display block of a message. A projection of the stored [`AgentPart`]s that DROPS
+ *  the reasoning part entirely (the opaque provider blob is backend-only and never
+ *  crosses IPC — the store's `content_blocks` invariant).
+ */
+export type MessageBlock =
+  // Assistant or user prose (rendered markdown-lite, entity-escaped first).
+  | { type: 'text'; text: string }
+  /**
+   *  A tool the model invoked. `arguments` is the raw JSON call arguments as a string
+   *  (the frontend `JSON.parse`s it to build a localized "looked at X" label); both
+   *  `tool` and any filesystem-derived args render as escaped plain text, never `{@html}`.
+   */
+  | { type: 'toolCall'; callId: string; tool: string; arguments: string }
+  /**
+   *  A tool result, reduced to its status (`ok`/`elided`) — the raw content stays
+   *  backend-only.
+   */
+  | { type: 'toolResult'; callId: string; ok: boolean; elided: boolean }
+
+// A message's role, on the wire.
+export type MessageRoleView = 'system' | 'user' | 'assistant' | 'tool'
+
+// A message as the rail displays it: id/seq/role, its display blocks, and token counts.
+export type MessageView = {
+  id: number
+  seq: number
+  role: MessageRoleView
+  blocks: MessageBlock[]
+  promptTokens: number | null
+  completionTokens: number | null
+  createdAt: number
 }
 
 export type MetricsSnapshotDto = {

@@ -42,6 +42,7 @@ import IconSearch from '~icons/lucide/search'
 import IconShieldCheck from '~icons/lucide/shield-check'
 import IconShieldOff from '~icons/lucide/shield-off'
 import IconSparkles from '~icons/lucide/sparkles'
+import IconSquare from '~icons/lucide/square'
 import IconSun from '~icons/lucide/sun'
 import IconTag from '~icons/lucide/tag'
 import IconTrash2 from '~icons/lucide/trash-2'
@@ -105,6 +106,7 @@ export const ICON_COMPONENTS = {
   'shield-check': IconShieldCheck,
   'shield-off': IconShieldOff,
   sparkles: IconSparkles,
+  square: IconSquare,
   sun: IconSun,
   tag: IconTag,
   'trash-2': IconTrash2,

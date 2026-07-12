@@ -32,6 +32,12 @@
       "note": "A durable history of every copy, move, delete, and rename, with rollback. The dialog that shows it is still bare-bones."
     },
     {
+      "id": "ask-cmdr",
+      "name": "Ask Cmdr",
+      "status": "alpha",
+      "note": "Chat with a bring-your-own-key AI about your files. It reads names, paths, sizes, and history to answer, never file contents. Early: the model picker and cost view are still coming."
+    },
+    {
       "id": "network-drives",
       "name": "Network drives (SMB)",
       "status": "beta",

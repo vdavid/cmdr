@@ -122,6 +122,14 @@
   "@commands.logOperationLog.description": {
     "description": "Longer help text for the \"Operation log\" command, shown as a secondary line in the command palette."
   },
+  "commands.askCmdrToggle.label": "Ask Cmdr",
+  "@commands.askCmdrToggle.label": {
+    "description": "Command name that opens or closes the Ask Cmdr chat rail, where the user chats with an AI about their files. Appears in the command palette and the View menu. \"Ask Cmdr\" is the product name; keep it as-is."
+  },
+  "commands.askCmdrToggle.description": "Chat with an AI about your files, drives, and history",
+  "@commands.askCmdrToggle.description": {
+    "description": "Longer help text for the \"Ask Cmdr\" command, shown as a secondary line in the command palette."
+  },
 
   "commands.feedbackSend.label": "Send feedback",
   "@commands.feedbackSend.label": {

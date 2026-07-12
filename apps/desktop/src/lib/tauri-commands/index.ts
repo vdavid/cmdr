@@ -309,6 +309,19 @@ export type { WhatsNewRelease, WhatsNewSection } from './whats-new'
 export { getRecentOperationLogEntries, getOperationLogDetail } from './operation-log'
 export type { OperationRow, OperationItemView, OperationLogDetail } from './operation-log'
 
+// Ask Cmdr chat rail
+export { sendAskCmdrMessage, cancelAskCmdr, getAskCmdrConversation, listAskCmdrConversations } from './ask-cmdr'
+export type {
+  AskCmdrStreamEvent,
+  AskCmdrErrorKind,
+  AskCmdrUsage,
+  StopReason,
+  ConversationRow,
+  ConversationDetailView,
+  MessageView,
+  MessageBlock,
+} from './ask-cmdr'
+
 // Crash reporter
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'
 export type { CrashReport } from './crash-reporter'

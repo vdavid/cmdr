@@ -301,6 +301,10 @@ func runShard(desktopDir string, s shardSpec) shardResult {
 	cmd.Dir = desktopDir
 	cmd.Env = append(os.Environ(),
 		"CMDR_E2E_START_PATH="+s.fixtureDir,
+		// Ask Cmdr has no real AI provider under E2E; this flag routes its send path
+		// through the deterministic scripted fake LLM (see commands/agent.rs), so
+		// ask-cmdr.spec.ts can assert streamed text. Safe: no other spec sends AI messages.
+		"CMDR_E2E_ASK_CMDR_FAKE=1",
 		// Specs that assert on persisted state (for example
 		// viewer-wordwrap-persistence.spec.ts) read the instance's
 		// settings.json directly, so the test process needs the same

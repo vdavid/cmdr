@@ -155,6 +155,8 @@ vi.mock('$lib/downloads/go-to-latest', () => ({
 
 // The whole `$lib/tauri-commands` barrel the arms call.
 vi.mock('$lib/tauri-commands', () => ({
+  // Pulled in transitively via the Ask Cmdr toggle handler → explorer-state module init.
+  DEFAULT_VOLUME_ID: 'root',
   openExternalUrl: (...a: unknown[]) => m.openExternalUrl(...a),
   showInFinder: (...a: unknown[]) => m.showInFinder(...a),
   copyToClipboard: (...a: unknown[]) => m.copyToClipboard(...a),
@@ -206,8 +208,8 @@ describe('characterization — id partition self-check', () => {
     for (const id of EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 
-  it('dispatchable set is exactly 104 ids', () => {
-    expect(DISPATCHABLE_IDS).toHaveLength(104)
+  it('dispatchable set is exactly 105 ids', () => {
+    expect(DISPATCHABLE_IDS).toHaveLength(105)
   })
 
   it('dispatchable ∪ exempt = COMMAND_IDS, disjoint', () => {

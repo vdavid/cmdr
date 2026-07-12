@@ -30,6 +30,8 @@ vi.mock('$lib/error-reporter/error-report-flow.svelte', () => ({ openErrorReport
 vi.mock('$lib/updates/updater.svelte', () => ({ runMenuTriggeredCheck: vi.fn() }))
 vi.mock('$lib/downloads/go-to-latest', () => ({ goToLatestDownload: vi.fn() }))
 vi.mock('$lib/tauri-commands', () => ({
+  // Pulled in transitively via the Ask Cmdr toggle handler → explorer-state module init.
+  DEFAULT_VOLUME_ID: 'root',
   openExternalUrl: vi.fn(),
   showInFinder: vi.fn(),
   copyToClipboard: vi.fn(),
