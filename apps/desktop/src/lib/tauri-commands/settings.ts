@@ -222,6 +222,16 @@ export async function setIndexingEnabled(enabled: boolean): Promise<void> {
 }
 
 /**
+ * Live-applies the master "Index image contents" toggle (`mediaIndex.enabled`) to the
+ * backend `media_index` enrichment scheduler. Enabling clears any prior memory-watchdog
+ * stop so enrichment resumes on the next scan completion; disabling makes the scheduler
+ * no-op. No restart needed.
+ */
+export async function setImageIndexEnabled(enabled: boolean): Promise<void> {
+  await commands.setImageIndexEnabled(enabled)
+}
+
+/**
  * Starts the drive indexer after the user makes their Full Disk Access decision.
  *
  * At launch, the backend skips auto-starting the indexer when the FDA choice is

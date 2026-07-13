@@ -91,6 +91,7 @@
     const enabledDef = getSettingDefinition('indexing.enabled') ?? { label: '', description: '' }
     const askForEachDriveDef = getSettingDefinition('indexing.askForEachDrive') ?? { label: '', description: '' }
     const staleNotifyDef = getSettingDefinition('indexing.staleNotify') ?? { label: '', description: '' }
+    const imageIndexDef = getSettingDefinition('mediaIndex.enabled') ?? { label: '', description: '' }
 
     // The "Re-enable notifications for all drives" button is disabled until the
     // user has silenced at least one drive's first-connect prompt. Tracked
@@ -345,6 +346,19 @@
                     <SettingSwitch id="indexing.staleNotify" />
                 </SettingRow>
             {/if}
+        </SectionCard>
+    {/if}
+
+    {#if shouldShow('mediaIndex.enabled')}
+        <SectionCard label={tString('settings.mediaIndex.card')}>
+            <SettingRow
+                id="mediaIndex.enabled"
+                label={imageIndexDef.label}
+                description={imageIndexDef.description}
+                {searchQuery}
+            >
+                <SettingSwitch id="mediaIndex.enabled" />
+            </SettingRow>
         </SectionCard>
     {/if}
 

@@ -523,6 +523,7 @@ export {
   setErrorReportsEnabled,
   setShowVirtualGitPortal,
   setIndexingEnabled,
+  setImageIndexEnabled,
   startIndexingAfterFdaDecision,
   getDirStatsBatch,
   getE2eStartPath,

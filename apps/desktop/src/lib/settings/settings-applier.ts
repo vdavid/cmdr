@@ -17,6 +17,7 @@ import {
   updateFileWatcherDebounce,
   updateServiceResolveTimeout,
   setIndexingEnabled,
+  setImageIndexEnabled,
   setMtpEnabled,
   setDiskSpaceThreshold,
   setDirectSmbConnection,
@@ -177,6 +178,7 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   'advanced.fileWatcherDebounce': (v) => void updateFileWatcherDebounce(v as number),
   'advanced.serviceResolveTimeout': (v) => void updateServiceResolveTimeout(v as number),
   'indexing.enabled': (v) => void setIndexingEnabled(v as boolean),
+  'mediaIndex.enabled': (v) => void setImageIndexEnabled(v as boolean),
   'fileOperations.mtpEnabled': (v) => void setMtpEnabled(v as boolean),
   'advanced.diskSpaceChangeThreshold': (v) => void setDiskSpaceThreshold(v as number),
   // Low-disk-space pair: either change re-pushes the full config. The helper

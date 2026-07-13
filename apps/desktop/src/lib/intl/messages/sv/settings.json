@@ -451,6 +451,18 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "559ec69"
   },
+  "settings.mediaIndex.card": "Bildsökning",
+  "@settings.mediaIndex.card": {
+    "sourceHash": "a4a68f1"
+  },
+  "settings.mediaIndex.enabled.label": "Indexera bildinnehåll",
+  "@settings.mediaIndex.enabled.label": {
+    "sourceHash": "a2e6604"
+  },
+  "settings.mediaIndex.enabled.description": "Läs texten i dina bilder så att du kan söka i den. Körs på din Mac och lämnar den aldrig. Täcker lokala enheter tills vidare.",
+  "@settings.mediaIndex.enabled.description": {
+    "sourceHash": "118fc8d"
+  },
   "settings.indexing.askForEachDrive.label": "Fråga för varje enhet",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

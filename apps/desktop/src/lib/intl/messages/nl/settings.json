@@ -454,6 +454,18 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "559ec69"
   },
+  "settings.mediaIndex.card": "Afbeeldingen doorzoeken",
+  "@settings.mediaIndex.card": {
+    "sourceHash": "a4a68f1"
+  },
+  "settings.mediaIndex.enabled.label": "Inhoud van afbeeldingen indexeren",
+  "@settings.mediaIndex.enabled.label": {
+    "sourceHash": "a2e6604"
+  },
+  "settings.mediaIndex.enabled.description": "Lees de tekst in je afbeeldingen zodat je erin kunt zoeken. Draait op je Mac en verlaat die nooit. Dekt voorlopig lokale schijven.",
+  "@settings.mediaIndex.enabled.description": {
+    "sourceHash": "118fc8d"
+  },
   "settings.indexing.askForEachDrive.label": "Per schijf vragen",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

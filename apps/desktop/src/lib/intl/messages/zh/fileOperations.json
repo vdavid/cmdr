@@ -231,12 +231,10 @@
   "@fileOperations.transferDialog.compressLevelCaption": {
     "sourceHash": "58924a1"
   },
-
   "fileOperations.transferDialog.estimatedSize": "预计大小",
   "@fileOperations.transferDialog.estimatedSize": {
     "sourceHash": "d5f39d7"
   },
-
   "fileOperations.transferDialog.estimatedSizeTooltip": "对打包后 zip 大小的粗略估算。实际大小可能不同。",
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"

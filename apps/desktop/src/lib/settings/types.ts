@@ -304,6 +304,14 @@ export interface SettingsValues {
   /** Internal (FE-owned): whether the one-time stale dialog (D2) has fired once. */
   'indexing.firstStaleDialogShown': boolean
 
+  // Image-ML index (media_index): make images searchable by the text inside them.
+  /**
+   * Master toggle for image-content indexing (OCR search, off by default). Live-applied
+   * to the backend `media_index` scheduler via `set_image_index_enabled`; the scheduler
+   * no-ops until it's on. Local drives only for now (SMB/MTP is a later milestone).
+   */
+  'mediaIndex.enabled': boolean
+
   // File system watching - downloads notifications + global go-to-latest shortcut.
   'behavior.fileSystemWatching.downloadsNotifications': DownloadsNotificationsMode
   /** Internal: remembers whether the user last collapsed the new-download toast, so a new toast opens the same way. */

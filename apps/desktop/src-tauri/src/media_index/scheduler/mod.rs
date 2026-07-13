@@ -103,6 +103,16 @@ impl PassCoordinator {
         }
     }
 
+    /// Whether a pass is currently running for `volume_id`. Drives the honest
+    /// "still indexing images…" coverage state the search UI shows (a snapshot, not
+    /// a subscription — M1's minimal per-volume enrichment signal).
+    pub(crate) fn is_running(&self, volume_id: &str) -> bool {
+        self.slots
+            .lock_ignore_poison()
+            .get(volume_id)
+            .is_some_and(|slot| slot.running)
+    }
+
     /// Finish the running pass for `volume_id`. Returns [`FinishOutcome::RunAgain`]
     /// (keeping the slot running) if a re-run was requested, else
     /// [`FinishOutcome::Done`].
@@ -146,6 +156,13 @@ impl MediaScheduler {
     /// The app data dir this scheduler resolves `media.db` paths under.
     pub fn data_dir(&self) -> &std::path::Path {
         &self.data_dir
+    }
+
+    /// Whether an enrichment pass is currently running for `volume_id`. The honest
+    /// signal behind the search UI's "still indexing images, results may be
+    /// incomplete" state; full counts + ETA are a later milestone.
+    pub fn is_enriching(&self, volume_id: &str) -> bool {
+        self.coordinator.is_running(volume_id)
     }
 
     /// Run one full enrichment pass for a volume synchronously (blocking).

@@ -1824,6 +1824,18 @@ export const commands = {
   mediaIndexSearchOcr: (volumeId: string, query: string, limit: number | null) =>
     typedError<OcrHit[], string>(__TAURI_INVOKE('media_index_search_ocr', { volumeId, query, limit })),
   /**
+   *  Report the honest per-volume enrichment state for `volume_id`: the master toggle,
+   *  whether a pass is running now, and how many images are already enriched. The search
+   *  UI reads this to voice its own coverage rather than showing a confident-looking
+   *  empty result that's really "not indexed yet".
+   *
+   *  The count read runs off the IPC thread (`spawn_blocking`); the running-pass flag is
+   *  a cheap in-memory snapshot off the scheduler's coalescing coordinator. A volume with
+   *  no `media.db` (never enriched / offline) reports `enriched_count: 0`, never an error.
+   */
+  mediaIndexVolumeState: (volumeId: string) =>
+    typedError<MediaIndexVolumeState, string>(__TAURI_INVOKE('media_index_volume_state', { volumeId })),
+  /**
    *  Called when the search dialog opens. Starts loading the index in the background.
    *  Returns immediately with `{ ready, entryCount }`.
    */
@@ -4852,6 +4864,33 @@ export type McpSettingsClose = null
 export type MediaDimensions = {
   width: number
   height: number
+}
+
+/**
+ *  The minimal, honest per-volume enrichment state the search UI reads to voice its
+ *  own coverage (plan M1 § Coverage honesty + per-volume state). Deliberately NOT a
+ *  progress percentage or ETA — those are a later milestone; this only lets the UI
+ *  tell apart "indexing is off", "still indexing", "indexed but empty result", and
+ *  "not indexed yet". Crosses the IPC boundary, so it derives `Serialize` +
+ *  `specta::Type` (camelCase).
+ */
+export type MediaIndexVolumeState = {
+  /**
+   *  Whether image indexing is enabled at all (the master toggle / gate). When
+   *  `false`, no volume is enriched and the UI hints the user to turn it on.
+   */
+  enabled: boolean
+  /**
+   *  Whether an enrichment pass is running for this volume right now. Drives the
+   *  "still indexing images, results may be incomplete" honesty line.
+   */
+  indexing: boolean
+  /**
+   *  How many images are already enriched (stored OCR rows) for this volume. `0`
+   *  with `indexing == false` and `enabled == true` reads as "not indexed yet",
+   *  distinct from a genuinely empty search result over a populated index.
+   */
+  enrichedCount: number
 }
 
 /**

@@ -451,6 +451,18 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "559ec69"
   },
+  "settings.mediaIndex.card": "Recherche d''images",
+  "@settings.mediaIndex.card": {
+    "sourceHash": "a4a68f1"
+  },
+  "settings.mediaIndex.enabled.label": "Indexer le contenu des images",
+  "@settings.mediaIndex.enabled.label": {
+    "sourceHash": "a2e6604"
+  },
+  "settings.mediaIndex.enabled.description": "Lit le texte à l''intérieur de vos images pour que vous puissiez le rechercher. Fonctionne sur votre Mac et ne le quitte jamais. Couvre les disques locaux pour l''instant.",
+  "@settings.mediaIndex.enabled.description": {
+    "sourceHash": "118fc8d"
+  },
   "settings.indexing.askForEachDrive.label": "Demander pour chaque disque",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

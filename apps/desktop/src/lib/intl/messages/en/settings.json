@@ -555,6 +555,18 @@
     "screenshot": "settings-behavior-file-system-watching.png"
   },
 
+  "settings.mediaIndex.card": "Image search",
+  "@settings.mediaIndex.card": {
+    "description": "Title of the settings card that groups image-content indexing (searching the text inside images). In Settings > Behavior > File system watching."
+  },
+  "settings.mediaIndex.enabled.label": "Index image contents",
+  "@settings.mediaIndex.enabled.label": {
+    "description": "Label for the toggle that turns on reading the text inside images (OCR) so you can search it. Off by default. In Settings > Behavior > File system watching."
+  },
+  "settings.mediaIndex.enabled.description": "Read the text inside your images so you can search it. Runs on your Mac and never leaves it. Covers local drives for now.",
+  "@settings.mediaIndex.enabled.description": {
+    "description": "Help text under the \"Index image contents\" toggle. Reassures the user this is on-device (nothing is uploaded) and scopes it to local drives (network drives come later). \"OCR\" is not used in the copy on purpose; keep it plain."
+  },
   "settings.indexing.askForEachDrive.label": "Ask for each drive",
   "@settings.indexing.askForEachDrive.label": {
     "description": "Label for the toggle that controls whether Cmdr asks, the first time you open a network share or USB device, if you''d like to index it. In Settings > Behavior > File system watching.",

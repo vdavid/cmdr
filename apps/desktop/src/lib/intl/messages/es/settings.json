@@ -452,6 +452,18 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "559ec69"
   },
+  "settings.mediaIndex.card": "Búsqueda de imágenes",
+  "@settings.mediaIndex.card": {
+    "sourceHash": "a4a68f1"
+  },
+  "settings.mediaIndex.enabled.label": "Indexar el contenido de las imágenes",
+  "@settings.mediaIndex.enabled.label": {
+    "sourceHash": "a2e6604"
+  },
+  "settings.mediaIndex.enabled.description": "Lee el texto dentro de tus imágenes para que puedas buscarlo. Se ejecuta en tu Mac y nunca sale de ahí. Por ahora cubre las unidades locales.",
+  "@settings.mediaIndex.enabled.description": {
+    "sourceHash": "118fc8d"
+  },
   "settings.indexing.askForEachDrive.label": "Preguntar por cada unidad",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

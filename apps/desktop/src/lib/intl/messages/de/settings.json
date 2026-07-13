@@ -451,6 +451,18 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "559ec69"
   },
+  "settings.mediaIndex.card": "Bildersuche",
+  "@settings.mediaIndex.card": {
+    "sourceHash": "a4a68f1"
+  },
+  "settings.mediaIndex.enabled.label": "Bildinhalte indizieren",
+  "@settings.mediaIndex.enabled.label": {
+    "sourceHash": "a2e6604"
+  },
+  "settings.mediaIndex.enabled.description": "Liest den Text in deinen Bildern, damit du danach suchen kannst. Läuft auf deinem Mac und verlässt ihn nie. Deckt vorerst lokale Laufwerke ab.",
+  "@settings.mediaIndex.enabled.description": {
+    "sourceHash": "118fc8d"
+  },
   "settings.indexing.askForEachDrive.label": "Für jedes Laufwerk fragen",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

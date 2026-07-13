@@ -449,6 +449,18 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "559ec69"
   },
+  "settings.mediaIndex.card": "Képkeresés",
+  "@settings.mediaIndex.card": {
+    "sourceHash": "a4a68f1"
+  },
+  "settings.mediaIndex.enabled.label": "Képek tartalmának indexelése",
+  "@settings.mediaIndex.enabled.label": {
+    "sourceHash": "a2e6604"
+  },
+  "settings.mediaIndex.enabled.description": "Beolvassa a képeidben lévő szöveget, hogy rá tudj keresni. A Macen fut, és soha nem hagyja el. Egyelőre a helyi meghajtókra terjed ki.",
+  "@settings.mediaIndex.enabled.description": {
+    "sourceHash": "118fc8d"
+  },
   "settings.indexing.askForEachDrive.label": "Kérdezzen meghajtónként",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

@@ -682,6 +682,20 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // Master toggle for image-content (OCR) indexing. Off by default; live-applied to
+    // the `media_index` backend scheduler via `set_image_index_enabled`. Its own card
+    // in FileSystemWatchingSection.svelte, titled by `cardKey`.
+    id: 'mediaIndex.enabled',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.mediaIndex.enabled.label',
+    descriptionKey: 'settings.mediaIndex.enabled.description',
+    cardKey: 'settings.mediaIndex.card',
+    keywords: ['image', 'photo', 'ocr', 'text', 'search', 'index', 'picture', 'screenshot', 'content'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
     id: 'behavior.fileSystemWatching.downloadsNotifications',
     section: ['Behavior', 'File system watching'],
     labelKey: 'settings.behavior.fileSystemWatching.downloadsNotifications.label',

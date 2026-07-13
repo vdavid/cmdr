@@ -452,6 +452,18 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "559ec69"
   },
+  "settings.mediaIndex.card": "Busca de imagens",
+  "@settings.mediaIndex.card": {
+    "sourceHash": "a4a68f1"
+  },
+  "settings.mediaIndex.enabled.label": "Indexar o conteúdo das imagens",
+  "@settings.mediaIndex.enabled.label": {
+    "sourceHash": "a2e6604"
+  },
+  "settings.mediaIndex.enabled.description": "Lê o texto dentro das suas imagens para você poder buscá-lo. Roda no seu Mac e nunca sai dele. Por enquanto cobre discos locais.",
+  "@settings.mediaIndex.enabled.description": {
+    "sourceHash": "118fc8d"
+  },
   "settings.indexing.askForEachDrive.label": "Perguntar para cada disco",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"
