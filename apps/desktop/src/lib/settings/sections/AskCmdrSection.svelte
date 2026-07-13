@@ -1,7 +1,7 @@
 <!--
   The Ask Cmdr settings section: the enable/consent toggle, the "what Ask Cmdr sends"
   disclosure (the same human-reviewed copy as the opt-in screen), the provider/model
-  (interactive slot), and the spend rollup (plan §M8). The enable state is consent, stored
+  (interactive slot), and the spend rollup. The enable state is consent, stored
   in `main.db` (not a preference), so it's driven by the consent commands, not the registry.
 -->
 <script lang="ts">

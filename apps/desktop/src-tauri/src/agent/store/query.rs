@@ -2,17 +2,17 @@
 //! cross-thread search (with its input sanitizer), and the cost meter.
 //!
 //! Functions take a [`Connection`](rusqlite::Connection); the caller owns its lifetime
-//! (the chat runtime, M5, holds a write connection; reads can use a short-lived read-only
+//! (the chat runtime holds a write connection; reads can use a short-lived read-only
 //! one). Writes that must stay consistent (a message insert bumps its conversation's
 //! `updated_at`, and the per-conversation `seq` is derived) run inside a transaction.
 //!
 //! ## Wire vs. backend types
 //!
 //! [`ConversationRow`], [`ConversationSearchHit`], [`CostSummary`], and [`CostDay`] are
-//! wire types (camelCase + `specta::Type`) the IPC layer (M6/M7) returns directly.
+//! wire types (camelCase + `specta::Type`) the IPC layer returns directly.
 //! [`StoredMessage`] is deliberately NOT a wire type: it carries the fully parsed
 //! [`AgentPart`]s, including the opaque provider reasoning blob, which must never cross to
-//! the frontend. M6 builds a display-only `MessageView` from it.
+//! the frontend. The IPC layer builds a display-only `MessageView` from it.
 //!
 //! ## FTS5 search is sanitized, never raw
 //!
@@ -27,7 +27,7 @@ use super::super::types::ConversationOrigin;
 use super::AgentStoreError;
 use crate::agent::llm::types::{AgentPart, AgentRole, ProviderTag};
 
-/// A conversation header row. Wire type (the thread list, M7).
+/// A conversation header row. Wire type (the thread list).
 #[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ConversationRow {
@@ -41,7 +41,7 @@ pub struct ConversationRow {
 }
 
 /// One stored message, fully decoded. Backend-only: `parts` carries the opaque provider
-/// reasoning blob, so this never crosses IPC (M6 derives a display `MessageView`).
+/// reasoning blob, so this never crosses IPC (the IPC layer derives a display `MessageView`).
 #[derive(Debug, Clone, PartialEq)]
 pub struct StoredMessage {
     pub id: i64,
@@ -64,7 +64,7 @@ pub struct ConversationDetail {
 }
 
 /// A conversation whose messages matched a cross-thread search, newest-activity first.
-/// Wire type (the search results list, M7): the `snippet` is a plain-text excerpt from
+/// Wire type (the search results list): the `snippet` is a plain-text excerpt from
 /// the newest matching message, rendered ESCAPED on the frontend (never `{@html}`).
 #[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -94,7 +94,7 @@ pub struct CostRecord {
 }
 
 /// One day's token + cost totals across every thread and model. Wire type (the settings
-/// spend display, M8).
+/// spend display).
 #[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct CostDay {
@@ -108,7 +108,7 @@ pub struct CostDay {
     pub fully_priced: bool,
 }
 
-/// The per-day cost rollup, newest day first. Wire type (M8).
+/// The per-day cost rollup, newest day first. Wire type (the settings spend list).
 #[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct CostSummary {
@@ -429,7 +429,7 @@ pub fn record_cost(conn: &Connection, record: &CostRecord) -> Result<(), AgentSt
 }
 
 /// One conversation's cumulative token + cost totals across every day and model it used.
-/// Wire type (the per-thread footer, M8).
+/// Wire type (the per-thread footer).
 #[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ConversationCost {
@@ -446,7 +446,7 @@ pub struct ConversationCost {
 }
 
 /// The cumulative token + cost total for one conversation (all days, all models). Zeroed
-/// when the thread has metered no turn yet. Drives the per-thread footer (M8).
+/// when the thread has metered no turn yet. Drives the per-thread footer.
 pub fn conversation_cost(conn: &Connection, conversation_id: i64) -> Result<ConversationCost, AgentStoreError> {
     let (prompt_tokens, completion_tokens, cost_micros, fully_priced) = conn.query_row(
         "SELECT COALESCE(SUM(prompt_tokens), 0),
@@ -521,7 +521,7 @@ const CONSENT_AT_KEY: &str = "ask_cmdr_consent_at";
 
 /// A recorded consent: which copy version the user accepted, and when. Stored in the
 /// durable `main.db` (agent state, not a preference — agent-spec D56), so it lives beside
-/// the chats it governs and is `sqlite3`-inspectable. Wire type (M8).
+/// the chats it governs and is `sqlite3`-inspectable. Wire type (the consent record).
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AskCmdrConsent {

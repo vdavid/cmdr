@@ -635,8 +635,8 @@ fn test_requires_token_arg_logic() {
 // One authored registry, two consumer views (agent-spec D49/D59). `consumers` is the exposure
 // axis; `access` is a stronger read-only guarantee than `TokenGate::Open` can give (Open covers
 // destructive-but-prompting ops). These tests pin the agent view to exactly its authored
-// `[agent]` entries AND require every one to be `Access::Read`. Both pass vacuously at M3 (the
-// agent view is empty) and go red→green as M4 authors the agent tool entries.
+// `[agent]` entries AND require every one to be `Access::Read`. With an empty agent view both hold
+// vacuously; once entries are authored they enforce the exposure and read-only axes.
 
 /// The exact set of tool names in the agent's read-only view. Pins the set so a stray
 /// agent-visible tool (or a dropped one) is a hard failure, mirroring `EXPECTED_TOOL_NAMES`
@@ -667,7 +667,7 @@ fn test_agent_tool_view_is_exactly_expected_set() {
 /// Read-only by construction: every tool in the agent's view is `Access::Read`. This is the
 /// guarantee `TokenGate::Open` cannot give — `Open` covers destructive ops that still prompt the
 /// user (`copy`/`move`/`delete` with `autoConfirm` absent carry `IfAutoConfirm`), so a gate-based
-/// filter would let a `Write` tool into a read-only view. The red→green anchor for M4.
+/// filter would let a `Write` tool into a read-only view. The regression anchor for the read-only agent view.
 #[test]
 fn test_agent_tool_view_is_all_read() {
     for tool in agent_tool_view() {
@@ -682,9 +682,9 @@ fn test_agent_tool_view_is_all_read() {
 
 /// Consumer-identity dispatch: the dispatch view each consumer can reach through `execute_tool`
 /// equals exactly its list view — no transport dispatches a name outside its consumer view
-/// ("callable but not listed" is the drift D59 exists to prevent). At M3 this proves every
-/// ai_client tool is refused to the agent runtime (the agent view is empty); it stays green and
-/// gains force as M4 shares entries into both views.
+/// ("callable but not listed" is the drift D59 exists to prevent). With an empty agent view this
+/// proves every ai_client tool is refused to the agent runtime; with entries shared into both
+/// views it enforces that no transport dispatches a name outside its consumer view.
 #[test]
 fn test_dispatch_view_equals_list_view_per_consumer() {
     use std::collections::BTreeSet;

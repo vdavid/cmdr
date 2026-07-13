@@ -2,8 +2,8 @@
 
 The frontend of Ask Cmdr, the read-only chat rail: a toggleable right-side panel where the user chats with a BYO-key LLM
 about their files. Backend seam + IPC: `src-tauri/src/agent/` and `commands/agent.rs`. Plan:
-[`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask-cmdr-plan.md) § M6. Depth (the streaming flow, the fake
-E2E path, layout, decisions): [DETAILS.md](DETAILS.md).
+[`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask-cmdr-plan.md). Depth (the streaming flow, the fake E2E
+path, layout, decisions): [DETAILS.md](DETAILS.md).
 
 ## Module map
 
@@ -48,6 +48,6 @@ E2E path, layout, decisions): [DETAILS.md](DETAILS.md).
 - **Attachments cross into the envelope as path + kind ONLY — never contents** (the read-only privacy line). Drag from a
   pane is a NATIVE webview drag (`onDragDropEvent`), not HTML5 — a DOM `ondrop` never fires; the composer hit-tests its
   rect and trusts the self-drag identity for local drags only. Message paging is tail-first with load-older prepend;
-  don't reintroduce a single big page. Details in [DETAILS.md](DETAILS.md) § M7.
+  don't reintroduce a single big page. Details in [DETAILS.md](DETAILS.md) § Sessions, search, message paging.
 
 Depth: [DETAILS.md](DETAILS.md).

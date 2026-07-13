@@ -3,13 +3,13 @@
 //!
 //! The subsystem is named after the persistent entity ("the agent"), not the
 //! surface, so later proactive slices (proposals, notifications) grow here too.
-//! It builds out over the milestones in `docs/specs/ask-cmdr-plan.md`:
+//! Its modules:
 //!
-//! - `llm` (M1): the `AgentLlm` seam — the provider-agnostic trait, its
+//! - `llm`: the `AgentLlm` seam — the provider-agnostic trait, its
 //!   genai-backed impl, the deterministic fake, and the typed message-part model.
-//! - `store` (M2): the `main.db` durable store; `start(app)` lands here.
-//! - `tools` (M4): the in-process read-only toolset (the agent's registry view).
-//! - `chat` (M5): the chat runtime and the pure context-assembly core.
+//! - `store`: the `main.db` durable store; `start(app)` lands here.
+//! - `tools`: the in-process read-only toolset (the agent's registry view).
+//! - `chat`: the chat runtime and the pure context-assembly core.
 //!
 //! See `CLAUDE.md` for must-knows and `DETAILS.md` for the map.
 
@@ -28,8 +28,8 @@ use tauri::{AppHandle, Manager};
 use rusqlite::Connection;
 
 /// The managed-state handle to `main.db`: the resolved DB path, plus connection factories
-/// the chat runtime (M5) opens read/write connections from. Registered by [`start`]. Held
-/// as a path (not a live `Connection`, which isn't `Sync`); M5 owns the write-connection
+/// the chat runtime opens read/write connections from. Registered by [`start`]. Held
+/// as a path (not a live `Connection`, which isn't `Sync`); the chat runtime owns the write-connection
 /// lifetime and single-writer discipline.
 pub struct AgentDb {
     db_path: PathBuf,
@@ -53,7 +53,7 @@ impl AgentDb {
 }
 
 /// Open `main.db` and register the [`AgentDb`] handle in managed state so the chat runtime
-/// (M5) can read and write. Modeled on `operation_log::start`: the store owns the schema
+/// can read and write. Modeled on `operation_log::start`: the store owns the schema
 /// lifecycle on open (migrate forward, recreate a genuinely unparseable file, or refuse a
 /// downgrade). Failure is non-fatal — the app runs without the agent store rather than
 /// refusing to start.
@@ -75,7 +75,7 @@ pub fn start(app: &AppHandle) {
             app.manage(AgentDb {
                 db_path: db_path.clone(),
             });
-            // Register the chat runtime against the same DB so M6's IPC command is a
+            // Register the chat runtime against the same DB so the IPC command is a
             // thin pass-through (`app.state::<chat::runtime::ChatRuntime>()`).
             chat::runtime::register(app, db_path.clone());
             log::debug!(target: "agent::store", "main.db ready at {}", db_path.display());

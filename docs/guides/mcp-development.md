@@ -32,8 +32,8 @@ Every tool is authored **exactly once** in the `mcp_tools!` table in `tool_regis
 every view, so they can't drift:
 
 - `get_all_tools()` — the ai_client `tools/list` payload (entries whose `consumers` include `AiClient`).
-- `agent_tool_view()` — the in-process agent's tool set (entries whose `consumers` include `Agent`); empty until the
-  agent effort's M4 authors read-only agent tools.
+- `agent_tool_view()` — the in-process agent's tool set (entries whose `consumers` include `Agent`): the read-only
+  families the chat agent dispatches.
 - `execute_tool()` — the `tools/call` dispatch (generic over `Runtime`), gated to the caller's consumer view: a name
   outside that view is refused before dispatch.
 - `tool_gate()` + `TokenGate` — the bearer-token classification `auth.rs` reads.

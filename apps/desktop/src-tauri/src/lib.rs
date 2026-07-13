@@ -855,9 +855,9 @@ pub fn run() {
             operation_log::start(app.handle());
 
             // Open the agent's durable store (`main.db`, peer to `operation-log.db`) and
-            // register its handle. Nothing reads or writes it yet — the chat runtime (M5)
-            // and IPC (M6) are the consumers; opening here proves the migration ladder
-            // runs at startup and keeps the DB current.
+            // register its handle. The chat runtime and the Ask Cmdr IPC commands are its
+            // consumers; opening here runs the migration ladder at startup and keeps the
+            // DB current.
             agent::start(app.handle());
 
             Ok(())

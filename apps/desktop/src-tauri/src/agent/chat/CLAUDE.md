@@ -45,7 +45,7 @@ cases, decision rationale): [DETAILS.md](DETAILS.md).
 - **Never block the main thread.** `run_turn` is async; the real `ToolDispatcher` routes
   through `agent::tools::view::dispatch` (the read-only choke point) and reads
   cache/SQLite only. `ChatRuntime::send_message` runs on the caller's tokio task.
-- **The event seam is `AgentChatEvent` over an `UnboundedSender`.** M6's Tauri command is a
+- **The event seam is `AgentChatEvent` over an `UnboundedSender`.** The `ask_cmdr_send_message` Tauri command is a
   thin adapter (forward each event onto a `Channel`, map to the wire enum). No reasoning
   blob or provider state ever rides an event. `AssistantStarted` carries no id by design
   (no row exists until `End`); the persisted id arrives on `Done`.

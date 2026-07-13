@@ -9,16 +9,16 @@
 //! the right structural position, so it cannot be concatenated into a text field.
 //! See `DETAILS.md` for the mapping table and the spike-gap rationale.
 //!
-//! These types carry `serde` for DB persistence (`main.db` `content_blocks`, M2)
+//! These types carry `serde` for DB persistence (`main.db` `content_blocks`)
 //! and are pure data — no dependency on `genai` or `crate::ai`. The genai
 //! coupling lives entirely in `genai_impl.rs`. The reasoning `blob` is a
 //! **backend-only** value: it is persisted and replayed, but never crosses to the
-//! frontend (the wire `MessageView` in M6 carries display parts only).
+//! frontend (the wire `MessageView` carries display parts only).
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-/// The role of a message in the conversation. DB token form is snake_case (M2's
-/// `messages.role` column); IPC uses the wire `MessageView` (M6), not this type.
+/// The role of a message in the conversation. DB token form is snake_case (the
+/// `messages.role` column); IPC uses the wire `MessageView`, not this type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AgentRole {
@@ -29,7 +29,7 @@ pub enum AgentRole {
 }
 
 impl AgentRole {
-    /// The stable DB token for the `messages.role` column (M2). Snake_case, the
+    /// The stable DB token for the `messages.role` column. Snake_case, the
     /// one place the enum ↔ storage mapping lives; renaming a token is a schema
     /// change, renaming a variant is free (`no-string-matching`).
     pub fn as_token(self) -> &'static str {
@@ -63,8 +63,8 @@ impl AgentRole {
 ///
 /// Two-way split, like the operation log's `token_enum!` types: the serde/specta
 /// wire form is camelCase (for IPC + `bindings.ts` — the `cost_meter` provider on
-/// the wire, M8's per-thread breakdown), while [`as_token`](Self::as_token) is the
-/// stable snake_case DB token (the `cost_meter.provider` column, M2). The reasoning
+/// the wire, the per-thread cost breakdown), while [`as_token`](Self::as_token) is the
+/// stable snake_case DB token (the `cost_meter.provider` column). The reasoning
 /// `blob` in `content_blocks` persists this via serde and round-trips it untouched;
 /// its exact string form is backend-only.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, specta::Type)]
@@ -252,7 +252,7 @@ pub struct AgentToolCall {
 }
 
 /// The result of executing a tool, fed back to the model. `elided` records that
-/// the runtime collapsed this result to a stub for the context budget (M5); the
+/// the runtime collapsed this result to a stub for the context budget; the
 /// content already reflects the elision when set.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AgentToolResult {

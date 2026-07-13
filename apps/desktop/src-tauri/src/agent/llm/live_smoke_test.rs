@@ -2,8 +2,8 @@
 //! provider plus the local slot. Each drives ONE real streaming `respond` call
 //! through the whole seam (build request → exec → map deltas → final message), so a
 //! regression in adapter routing, tool-call mapping, or stream handling fails here
-//! instead of silently in production. These are the M1 preview of M8's full
-//! certification pass (a ≥3-step loop, reasoning on/off per provider).
+//! instead of silently in production. These are a lightweight preview of the full
+//! provider-certification pass (a ≥3-step loop, reasoning on/off per provider).
 //!
 //! `#[ignore]`-gated on the matching env var, never in CI's critical path. Verify
 //! current model ids from each provider's models endpoint at run time — never from

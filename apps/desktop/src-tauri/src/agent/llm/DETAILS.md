@@ -7,7 +7,7 @@ Pull-tier docs for `agent/llm/`. Must-know invariants live in [CLAUDE.md](CLAUDE
 ## The seam
 
 `AgentLlm::respond(system, tools, messages, cancel)` makes ONE cold, self-contained streaming call. `messages` is the
-fully-assembled prompt — context assembly (prefix stability, elision, the envelope) is the runtime's job (M5), not the
+fully-assembled prompt — context assembly (prefix stability, elision, the envelope) is the runtime's job, not the
 LLM's. The call returns an `AgentDeltaStream` (`BoxStream<'static, Result<AgentDelta, AgentLlmError>>`); the terminal
 `AgentDelta::End` carries the fully-assembled final `AgentMessage`, including any opaque provider state, for persistence
 and replay.
@@ -16,13 +16,13 @@ The trait is written as a boxed-future return (`BoxFuture`) rather than `async f
 (`Box<dyn AgentLlm>`) without pulling in `async-trait`.
 
 Two implementations:
-- `GenaiAgentLlm` (`genai_impl.rs`) wraps a configured `crate::ai::AiBackend` (the interactive model slot; slot
-  resolution is M8). It reuses the backend's adapter routing (`remote_model_iden` — the load-bearing Ollama-fallback
+- `GenaiAgentLlm` (`genai_impl.rs`) wraps a configured `crate::ai::AiBackend` (the interactive model slot; the slot is
+  resolved in the command layer). It reuses the backend's adapter routing (`remote_model_iden` — the load-bearing Ollama-fallback
   fix) and its stream-cancel model, via two `pub(crate)` seam methods added to `AiBackend`: `resolve_adapter` and
   `exec_chat_stream_request` (the prompt-only helpers can't express a multipart tool loop).
 - `FakeAgentLlm` (`fake.rs`) is scripted with `ScriptedTurn`s (one consumed per `respond`) and records every `messages`
   slice via `calls_seen()`, so a test asserts the exact assembled prompts. `CallRawTool(name, args)` emits a raw tool
-  name to exercise M4's read-only parse gate.
+  name to exercise the read-only parse gate.
 
 ## `AgentPart` ⇄ genai `ContentPart` mapping
 
@@ -77,7 +77,7 @@ thinking on, so "just disable it" won't hold long-term.
 Provider transport errors are classified by HTTP status once, upstream, in `crate::ai` (`ai_error_for_status`:
 401/403 → auth, 429 → rate-limited). `genai_impl` maps that `AiError` to the seam's `AgentLlmError` variant-to-variant
 (`impl From<AiError>`), so there is no message-string matching anywhere (`no-string-matching`). `AgentLlmError::NoKey` /
-`NotConfigured` / `BudgetExhausted` are pre-flight/runtime states the runtime raises (M5), not transport errors.
+`NotConfigured` / `BudgetExhausted` are pre-flight/runtime states the runtime raises, not transport errors.
 
 ## `ToolId` and the read-only gate
 
@@ -100,5 +100,5 @@ are the read-only families (`AppState`, `ListDir`, `LargestDirs`, `ImportantFold
 - `fake.rs`: scripted-turn sequencing + `calls_seen` recording; `CallRawTool` yields an `Unrecognized` `ToolId`; a
   `Fail` turn returns its typed error.
 - `live_smoke_test.rs`: `#[ignore]`-gated, one real `respond` call per Tier-1 cloud provider + the local slot, run
-  manually with the matching env key (never in CI's critical path). The M1 preview of M8's full certification pass.
+  manually with the matching env key (never in CI's critical path). A lightweight preview of the full provider-certification pass.
   Verify current model ids from each provider's models endpoint at run time — never from training data.

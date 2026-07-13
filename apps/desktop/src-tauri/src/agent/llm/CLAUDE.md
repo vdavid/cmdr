@@ -26,7 +26,7 @@ decision rationale): [DETAILS.md](DETAILS.md).
   turn it on before the genai capture+replay patch lands.
 - **`ToolId::Unrecognized` is the read-only choke point, not an error.** A raw provider tool name resolves through
   `ToolId::from_wire_name`; an unknown name becomes `Unrecognized(raw)`, which is never in the agent's tool view, so
-  dispatch refuses it (M4). The gate is a typed variant/view check, never a string match on the name.
+  dispatch refuses it. The gate is a typed variant/view check, never a string match on the name.
 - **`ToolId` and errors classify by variant/HTTP status, never by message string** (`no-string-matching`). Provider
   errors are status-classified upstream in `crate::ai` and mapped variant-to-variant here.
 - **Tool declarations are never `strict: true`** (Gap D): OpenAI strict also demands all-required, which genai doesn't

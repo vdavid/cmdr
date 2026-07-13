@@ -34,7 +34,7 @@ use super::{AgentDeltaStream, AgentLlm};
 const LOG_TARGET: &str = "agent::llm";
 
 /// The genai-backed agent LLM. Wraps a configured [`AiBackend`] (the interactive
-/// model slot; slot resolution arrives in M8) and reuses its adapter routing and
+/// model slot; the slot is resolved in the command layer) and reuses its adapter routing and
 /// stream-cancel model.
 pub struct GenaiAgentLlm {
     backend: AiBackend,
@@ -315,7 +315,7 @@ impl From<AiError> for AgentLlmError {
 
 /// Maps the resolved adapter to a descriptive provider tag for reasoning state.
 /// The local llama-server forces the OpenAI chat-completions adapter, so it tags as
-/// `OpenAi` here; honest local labeling (free/on-device cost) is the slot's job (M8).
+/// `OpenAi` here; honest local labeling (free/on-device cost) is the slot's job.
 fn provider_tag_for(adapter: AdapterKind) -> ProviderTag {
     match adapter {
         AdapterKind::Anthropic => ProviderTag::Anthropic,

@@ -29,7 +29,7 @@ pub type AgentDeltaStream = BoxStream<'static, Result<AgentDelta, AgentLlmError>
 ///
 /// The one method makes a single cold call: `messages` is the fully-assembled
 /// prompt (stable prefix + elided history + the envelope on the latest user turn —
-/// context assembly is the runtime's job, M5). The returned stream yields
+/// context assembly is the runtime's job). The returned stream yields
 /// [`AgentDelta`]s and, on `End`, the fully-assembled final [`AgentMessage`]
 /// carrying any opaque provider state for persistence and replay.
 ///

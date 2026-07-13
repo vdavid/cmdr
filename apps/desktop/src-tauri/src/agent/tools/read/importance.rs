@@ -234,9 +234,9 @@ pub async fn execute_folder_importance<R: Runtime>(app: &AppHandle<R>, params: &
     serde_json::to_value(&result).map_err(|e| ToolError::internal(e.to_string()))
 }
 
-/// Wall-clock unix seconds for the `explain` recency terms. M5 threads the
-/// envelope's clock through the runtime so a tool call and its explanation agree
-/// on "now"; until then a tool call reads the current time directly.
+/// Wall-clock unix seconds for the `explain` recency terms. A tool call reads the
+/// current time directly; threading the envelope's clock through the runtime (so a
+/// tool call and its explanation agree on "now") is a refinement, not yet wired.
 fn now_secs() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

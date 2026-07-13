@@ -3353,7 +3353,7 @@ export type ConnectionMode = 'guest' | 'credentials'
 
 /**
  *  One conversation's cumulative token + cost totals across every day and model it used.
- *  Wire type (the per-thread footer, M8).
+ *  Wire type (the per-thread footer).
  */
 export type ConversationCost = {
   promptTokens: number
@@ -3392,7 +3392,7 @@ export type ConversationDetailView = {
  */
 export type ConversationOrigin = 'notification'
 
-// A conversation header row. Wire type (the thread list, M7).
+// A conversation header row. Wire type (the thread list).
 export type ConversationRow = {
   id: number
   title: string
@@ -3405,7 +3405,7 @@ export type ConversationRow = {
 
 /**
  *  A conversation whose messages matched a cross-thread search, newest-activity first.
- *  Wire type (the search results list, M7): the `snippet` is a plain-text excerpt from
+ *  Wire type (the search results list): the `snippet` is a plain-text excerpt from
  *  the newest matching message, rendered ESCAPED on the frontend (never `{@html}`).
  */
 export type ConversationSearchHit = {
@@ -3421,7 +3421,7 @@ export type ConversationSearchHit = {
 
 /**
  *  One day's token + cost totals across every thread and model. Wire type (the settings
- *  spend display, M8).
+ *  spend display).
  */
 export type CostDay = {
   day: string
@@ -3436,7 +3436,7 @@ export type CostDay = {
   fullyPriced: boolean
 }
 
-// The per-day cost rollup, newest day first. Wire type (M8).
+// The per-day cost rollup, newest day first. Wire type (the settings spend list).
 export type CostSummary = {
   days: CostDay[]
 }
@@ -5530,8 +5530,8 @@ export type Provider =
  *
  *  Two-way split, like the operation log's `token_enum!` types: the serde/specta
  *  wire form is camelCase (for IPC + `bindings.ts` — the `cost_meter` provider on
- *  the wire, M8's per-thread breakdown), while [`as_token`](Self::as_token) is the
- *  stable snake_case DB token (the `cost_meter.provider` column, M2). The reasoning
+ *  the wire, the per-thread cost breakdown), while [`as_token`](Self::as_token) is the
+ *  stable snake_case DB token (the `cost_meter.provider` column). The reasoning
  *  `blob` in `content_blocks` persists this via serde and round-trips it untouched;
  *  its exact string form is backend-only.
  */

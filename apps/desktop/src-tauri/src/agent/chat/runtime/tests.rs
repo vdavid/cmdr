@@ -629,7 +629,7 @@ async fn end_to_end_multi_tool_turn_dispatches_and_answers() {
 #[test]
 fn agent_llm_errors_map_to_typed_kinds() {
     // The seam carries TYPED error kinds, not strings. The user-facing copy (rendered
-    // without the words "error"/"failed") is the frontend's job (M6); here we pin the
+    // without the words "error"/"failed") is the frontend's job; here we pin the
     // total, variant-to-variant mapping.
     use AgentErrorKind as K;
     use AgentLlmError as E;

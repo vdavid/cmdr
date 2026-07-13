@@ -7,7 +7,7 @@
 //! - [`get_all_tools`] — the AI-client `tools/list` payload (entries whose `consumers` include
 //!   [`Consumer::AiClient`]; non-generic; server + tests read it).
 //! - [`agent_tool_view`] — the in-process agent's tool set (entries whose `consumers` include
-//!   [`Consumer::Agent`]). EMPTY until M4 authors read-only agent tools.
+//!   [`Consumer::Agent`]): the read-only families the chat agent dispatches.
 //! - [`execute_tool`] — the `tools/call` dispatch (generic over `Runtime`), gated to the caller's
 //!   consumer view: a name outside the caller's view is refused before dispatch.
 //! - [`tool_gate`] + [`TokenGate`] — the auth classification `auth.rs` reads.

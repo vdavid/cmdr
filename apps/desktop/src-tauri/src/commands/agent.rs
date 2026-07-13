@@ -1,5 +1,5 @@
-//! IPC commands for Ask Cmdr, the read-only chat rail (spec `docs/specs/ask-cmdr-spec.md`,
-//! plan § M6). Thin pass-throughs: the runtime, store, and context assembly all live in
+//! IPC commands for Ask Cmdr, the read-only chat rail (spec `docs/specs/ask-cmdr-spec.md`).
+//! Thin pass-throughs: the runtime, store, and context assembly all live in
 //! [`crate::agent`]; these commands only bridge the frontend to them.
 //!
 //! ## Streaming
@@ -15,12 +15,13 @@
 //! the wire enum. **No reasoning blob or provider state ever crosses** — the runtime events
 //! already exclude them, and [`MessageView`] carries display parts only.
 //!
-//! ## Interim LLM resolution
+//! ## LLM resolution
 //!
-//! The interactive model slot is M8. Until then this resolves the EXISTING `ai/` provider
-//! config (`ai.provider` + cloud model / local server) into a [`GenaiAgentLlm`] at send
-//! time, so the rail is drivable in dev against the local llama-server with zero new
-//! settings. A provider that is off or unconfigured yields a typed `NotConfigured` event.
+//! [`resolve_agent_llm`] resolves the Ask Cmdr interactive slot: a dedicated model choice
+//! (`askCmdr.interactiveModel`, read fresh) layered over the shared `ai/` provider config
+//! (provider on/off, keys, and base URLs stay single-sourced in `ai/`; only the model is
+//! slot-specific), producing a [`GenaiAgentLlm`] at send time. A provider that is off or
+//! unconfigured yields a typed `NotConfigured` event.
 //!
 //! ## Cancellation
 //!

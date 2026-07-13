@@ -8,8 +8,8 @@
  * events mutate the last assistant message in place (Svelte 5 deep-proxies the array and
  * its objects, so field mutation is reactive).
  *
- * **Cancel finalizes locally.** The runtime returns `Cancelled` with NO terminal event
- * (M5), so a stop won't be echoed back — `stopStreaming` finalizes the bubble itself.
+ * **Cancel finalizes locally.** The runtime returns `Cancelled` with NO terminal event,
+ * so a stop won't be echoed back — `stopStreaming` finalizes the bubble itself.
  */
 
 import { saveAppStatus } from '$lib/app-status-store'

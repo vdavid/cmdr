@@ -9,7 +9,7 @@
 //! - [`runtime`]: the chat runtime that drives one user message to an answer —
 //!   single-flight per thread, per-message budgets, cancellation, typed errors, and the
 //!   crash-safe persistence model. It emits typed progress events through a channel seam
-//!   the IPC layer (M6) subscribes to.
+//!   the IPC layer subscribes to.
 //!
 //! See `CLAUDE.md` for the must-knows (prefix stability, snapshot-at-send, the crash
 //! cases) and `DETAILS.md` for the anatomy-of-one-call reference and the constants

@@ -22,7 +22,7 @@ list): [DETAILS.md](DETAILS.md).
   say so in its typed result: index `Coverage` (`fresh`/`scanning`/`stale`/`off`, only `fresh` authoritative), `DirStats`
   size flags (`sizeIsLowerBound`/`sizeIsStale`/`sizeIsUpdating`), importance `stale` (asOf vs recompute generation). An
   unindexed volume returns a typed "no index", NEVER a wrong zero; an unmounted-but-scored volume still answers
-  importance (offline is a headline). The system prompt (M5) requires the model to relay these.
+  importance (offline is a headline). The system prompt requires the model to relay these.
 - **`Unrecognized` is out of the view AND out of dispatch.** A raw provider tool name resolves through
   `ToolId::from_wire_name`; any non-view name (a hallucinated `delete`/`copy`, a typo) becomes `ToolId::Unrecognized`,
   which `refuse_unavailable` turns into a typed "not available" result BEFORE `execute_tool` is reached. That parse step

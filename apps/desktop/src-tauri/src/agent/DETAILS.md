@@ -14,22 +14,21 @@ The persistent entity is "the agent" (agent-spec D44); "Ask Cmdr" is the user-fa
 Naming the subsystem after the entity means the later proactive surfaces (proposals, notifications) grow inside `agent/`
 rather than forcing a rename. `name-internals-after-the-UI` still applies to the surfaces (`ask-cmdr/` on the frontend).
 
-## Milestone layout
+## Module layout
 
-Construction plan: [`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask-cmdr-plan.md). The backend modules, in
-build order:
+Construction plan: [`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask-cmdr-plan.md). The backend modules:
 
-- `llm/` (M1, present): the `AgentLlm` trait, its genai-backed impl over `crate::ai::AiBackend`, the deterministic fake,
+- `llm/`: the `AgentLlm` trait, its genai-backed impl over `crate::ai::AiBackend`, the deterministic fake,
   and the typed message-part model. This is the seam the whole runtime and UI test against. Depth:
   [`llm/DETAILS.md`](llm/DETAILS.md).
-- `store/` (M2, present): the `main.db` durable store — a forward-migration ladder (mirroring `operation_log/store/`),
+- `store/`: the `main.db` durable store — a forward-migration ladder (mirroring `operation_log/store/`),
   FTS5 over message text, and a per-day cost meter. `agent::start(app)` (open the DB, register the `AgentDb` handle)
   lands here, modeled on `operation_log::start`. Depth: [`store/DETAILS.md`](store/DETAILS.md).
-- `tools/` (M4, present): the in-process read-only toolset — the five read families authored as `consumers: [Agent]`
+- `tools/`: the in-process read-only toolset — the five read families authored as `consumers: [Agent]`
   entries in the consolidated registry (agent-spec D49, extend-don't-fork), their handlers/result shapes that reuse the
   shipped cores (drive index, importance, operation log, volumes, app state), and the gated dispatch that refuses any
   non-view name before `execute_tool`. Depth: [`tools/DETAILS.md`](tools/DETAILS.md).
-- `chat/` (M5, present): the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors,
+- `chat/`: the chat runtime (single-flight per thread, per-message budgets, cancellation, typed errors,
   crash-safe persistence, the `AgentChatEvent` seam) and the pure, TDD-heavy context-assembly core (stable prefix,
   elide-only compaction, the fresh context envelope on the latest user turn only). Depth: [`chat/DETAILS.md`](chat/DETAILS.md).
 
@@ -37,14 +36,7 @@ build order:
 
 The v1 agent can only look and speak (spec §2.1): no write tool exists in its dispatch view, and there is no
 content-read tool, so only names, paths, and metadata ever reach the provider — never file contents. This is the
-privacy line and it is structural, not a runtime guard. The registry gains a `consumers` + `access` dimension in M3 so
+privacy line and it is structural, not a runtime guard. The registry carries a `consumers` + `access` dimension so
 the agent's view is pinned to exactly its `access: Read` entries; the runtime's `ToolId` parse step is the runtime choke
 point (an unrecognized name resolves to `ToolId::Unrecognized`, which is never in the agent view, so dispatch refuses
 it). Revisit the whole consent + gating story before adding the first write or content-read tool.
-
-## Staged construction
-
-The subsystem was built seam-first: M1 the `AgentLlm` trait, M2 the store, M4 the read-only toolset. Each landed ahead
-of a caller, so `agent/mod.rs` carried a temporary `#![allow(dead_code)]`. M5's `chat::runtime` now consumes all three
-(and `agent::start` registers `ChatRuntime` in state), so the allow is gone. The remaining unwired step is the IPC
-surface (M6) that lets the frontend reach `ChatRuntime`.

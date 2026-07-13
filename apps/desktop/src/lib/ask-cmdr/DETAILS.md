@@ -1,11 +1,11 @@
 # Ask Cmdr rail details
 
 Pull-tier docs for `lib/ask-cmdr/`. Must-knows live in [CLAUDE.md](CLAUDE.md). Plan:
-[`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask-cmdr-plan.md) § M6. Backend:
+[`docs/specs/ask-cmdr-plan.md`](../../../../../docs/specs/ask-cmdr-plan.md). Backend:
 [`src-tauri/src/agent/CLAUDE.md`](../../../src-tauri/src/agent/CLAUDE.md) and
 [`commands/agent.rs`](../../../src-tauri/src/commands/agent.rs).
 
-## The IPC surface (M6)
+## The IPC surface
 
 Wrappers in [`lib/tauri-commands/ask-cmdr.ts`](../tauri-commands/ask-cmdr.ts):
 
@@ -42,7 +42,7 @@ more text to a non-streaming bubble).
 History loads through `getAskCmdrConversation` on rail open (bootstrapping the most recent thread) and folds `tool`-role
 result rows into their assistant tool line by `callId`, so the thread shows one line per call.
 
-## Sessions, search, message paging (M7)
+## Sessions, search, message paging
 
 - **Sessions panel** (`AskCmdrSessions.svelte`, opened from the rail header's "Chats" button) overlays the rail body
   (`position: absolute; inset: 0`) with a search box, an active/archived filter, and the thread list. Its state lives in
@@ -67,7 +67,7 @@ result rows into their assistant tool line by `callId`, so the thread shows one 
   folds each loaded page independently, so a tool result split across a page seam may render unfolded — negligible in
   practice (threads sit under the ~40 soft cap, well below a 50-message page, so paging rarely fires at all).
 
-## Attachments by reference (M7)
+## Attachments by reference
 
 - The composer stages `AttachmentRef { path, kind }` chips (`askCmdrState.attachments`), sent with the next message and
   cleared after. They ride into the context envelope as `attached: <path> (<kind>)` on the latest user turn — **path +
@@ -110,7 +110,7 @@ full event model (tool lines, stop, soft cap, message paging, attachments) with 
 end-to-end (create two threads, search finds the right one via real FTS over the persisted messages, switch works) — it
 seeds a per-run nonce into the message text so search never matches a thread left by an earlier run.
 
-## Consent gate, cost, and settings (M8)
+## Consent gate, cost, and settings
 
 - **Consent** (`ask-cmdr-consent.svelte.ts` + `AskCmdrConsent.svelte`): the opt-in gate. `consentState.accepted` is
   `null` (loading) / `false` (show the gate) / `true` (show the chat). The backend records consent in `main.db` (version
@@ -130,13 +130,13 @@ seeds a per-run nonce into the message text so search never matches a thread lef
 
 ## i18n
 
-Copy lives in `intl/messages/en/askCmdr.json` (`askCmdr.*`, including the M7 `askCmdr.sessions.*`,
-`askCmdr.composer.attach`/`dropHint`, `askCmdr.attachment.*`, `askCmdr.loadEarlier`, and the M8 `askCmdr.consent.*` +
+Copy lives in `intl/messages/en/askCmdr.json` (`askCmdr.*`, including the `askCmdr.sessions.*`,
+`askCmdr.composer.attach`/`dropHint`, `askCmdr.attachment.*`, `askCmdr.loadEarlier`, and the `askCmdr.consent.*` +
 `askCmdr.cost.*` keys), the settings copy in `settings.json` (`settings.askCmdr.*`, `settings.section.askCmdr`), and the
 command label in `commands.json` (`commands.askCmdrToggle.*`), each with an `@key` translator description. Translated
-across all 10 locales in M8, so `desktop-i18n-coverage` is green. The name and the consent copy are the re-translation
-surface if David adjusts the product calls. Tool + error labels are literal-keyed records in `ask-cmdr-labels.ts` (a
-computed prefix would trip the unused-key check).
+across all 10 locales, so `desktop-i18n-coverage` is green. The name and the consent copy are the re-translation surface
+if David adjusts the product calls. Tool + error labels are literal-keyed records in `ask-cmdr-labels.ts` (a computed
+prefix would trip the unused-key check).
 
 ## Decisions
 

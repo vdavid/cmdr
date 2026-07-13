@@ -1,6 +1,6 @@
 # Agent tools — details
 
-The read-only toolset the Ask Cmdr chat agent dispatches in-process (M4). Must-knows: [CLAUDE.md](CLAUDE.md). Contract:
+The read-only toolset the Ask Cmdr chat agent dispatches in-process. Must-knows: [CLAUDE.md](CLAUDE.md). Contract:
 [`docs/specs/ask-cmdr-plan.md`](../../../../../../docs/specs/ask-cmdr-plan.md) § M4 and
 [`ask-cmdr-spec.md`](../../../../../../docs/specs/ask-cmdr-spec.md) §2.4.
 
@@ -51,7 +51,7 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
 `Freshness::is_authoritative` (never re-derives the tokens) and attaches a plain-language note when a read isn't
 authoritative or the path isn't indexed. `SizeStats::from_dir_stats` carries the exact-vs-lower-bound / stale / updating
 / has-symlinks flags verbatim from `DirStats`. Importance staleness is `asOfGeneration < recomputeGeneration`. These are
-the flags spec §2.4 makes load-bearing; M5's system prompt requires the model to voice them.
+the flags spec §2.4 makes load-bearing; the system prompt requires the model to voice them.
 
 ## The read-only dispatch gate
 
@@ -67,21 +67,19 @@ the flags spec §2.4 makes load-bearing; M5's system prompt requires the model t
 The negative test (`view.rs`) drives the fake `AgentLlm`'s `CallRawTool("delete", …)` and asserts the refusal end to
 end; it was proven red (gate disabled ⇒ "delete" not refused) before green.
 
-## Visibility bumps / shims this milestone made
+## Cross-module symbols the toolset reuses
 
-- `indexing::queries::list_dir_children` — NEW path-based helper (re-exported from `crate::indexing`); the child-listing
+- `indexing::queries::list_dir_children` — a path-based helper (re-exported from `crate::indexing`); the child-listing
   analog of `get_dir_stats`, wrapping the read-pool + `index_read_path` + `resolve_path` + `IndexStore::list_children_on`
-  wiring so the tool stays path-based (the plan's "budget that wiring", placed in `indexing`, its elegant home).
-- `mcp::resources::volumes::VolumeKind::token` — bumped `fn` → `pub(crate) fn` so the volume mapper reuses the one
-  kind→token mapping.
+  wiring so the tool stays path-based (it lives in `indexing`, its elegant home).
+- `mcp::resources::volumes::VolumeKind::token` — `pub(crate)` so the volume mapper reuses the one kind→token mapping.
 - `mcp` re-exports `Access`, `Consumer`, `agent_tool_view`, `execute_tool`, `tool_access`, `ToolError`, `ToolResult` as
-  `pub(crate)` for the agent runtime. `snapshot_volumes` and the `importance::snapshot_*` functions were already
-  `pub(crate)` (no bump needed, despite the plan's guess).
+  `pub(crate)` for the agent runtime. `snapshot_volumes` and the `importance::snapshot_*` functions are `pub(crate)` too.
 
-## Not covered here (deferred to M5's runtime harness)
+## Not covered here (the runtime harness)
 
 A full fake-driven dispatch of a REAL agent tool (success path through `execute_tool`) needs a Tauri app with managed
-state (`PaneStateStore`, the index registry, a data dir). That app harness is M5's runtime concern, so M4 covers the
-success path with per-tool pure-shaper tests (fixtures for the coverage flags) and the refusal path in full (no app
-needed). The dispatch entry point M5 calls is `agent::tools::view::dispatch`; the declaration API is
+state (`PaneStateStore`, the index registry, a data dir). That app harness is the chat runtime's concern, so this layer
+covers the success path with per-tool pure-shaper tests (fixtures for the coverage flags) and the refusal path in full
+(no app needed). The dispatch entry point the runtime calls is `agent::tools::view::dispatch`; the declaration API is
 `agent::tools::agent_tool_declarations`.

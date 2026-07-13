@@ -31,8 +31,8 @@ rationale, the FTS design, the search-JOIN gotcha, no-retention-in-v1): [DETAILS
   column inside the PK breaks `ON CONFLICT DO UPDATE` (every write inserts a duplicate instead of upserting). Keep it NOT
   NULL; the per-day cross-thread rollup is computed at query time (`SUM … GROUP BY day`).
 - **`content_blocks` is a backend-only column.** It carries the opaque provider reasoning blob, which must NEVER cross to
-  the frontend. `StoredMessage` is deliberately not a wire type; M6 derives a display `MessageView`.
-- **Consent lives in the `meta` table, not a settings preference (M8).** `get_consent`/`set_consent`/`clear_consent`
+  the frontend. `StoredMessage` is deliberately not a wire type; the IPC layer derives a display `MessageView`.
+- **Consent lives in the `meta` table, not a settings preference.** `get_consent`/`set_consent`/`clear_consent`
   read/write the `ask_cmdr_consent_version` + `ask_cmdr_consent_at` meta rows (agent state, `sqlite3`-inspectable). A
   partial/absent record reads as no consent, so the gate fails CLOSED. The copy version is owned by
   `commands/agent.rs::CONSENT_COPY_VERSION`, not here.

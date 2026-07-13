@@ -27,7 +27,7 @@ pub enum ScriptedTurn {
     /// Emit these tool calls (typed), then stop with `ToolCall` and await results.
     CallTools(Vec<(ToolId, serde_json::Value)>),
     /// Emit a tool call under an arbitrary raw name (e.g. `"delete"`), to exercise
-    /// the runtime's read-only parse gate (M4). The name resolves through
+    /// the runtime's read-only parse gate. The name resolves through
     /// [`ToolId::from_wire_name`], so an unknown name becomes [`ToolId::Unrecognized`].
     CallRawTool(String, serde_json::Value),
     /// Fail the call before streaming with this typed error (no key, provider down).
@@ -204,7 +204,7 @@ mod tests {
 
     #[tokio::test]
     async fn call_raw_tool_carries_unrecognized_tool_id() {
-        // The seam that M4's read-only negative test builds on: a raw name the agent
+        // The seam the read-only negative test builds on: a raw name the agent
         // doesn't know resolves to `Unrecognized`, which dispatch will refuse.
         let fake = FakeAgentLlm::script(vec![ScriptedTurn::CallRawTool("delete".into(), json!({}))]);
         let stream = fake

@@ -6,15 +6,15 @@
 //! typed error surface, and the crash-safe persistence model. The pure prompt building
 //! lives in [`context`]; this module is the I/O-and-time half.
 //!
-//! ## The event seam (what M6 subscribes to)
+//! ## The event seam (what the IPC layer subscribes to)
 //!
 //! Progress is emitted as typed [`AgentChatEvent`]s through a plain
-//! `UnboundedSender` ([`ChatEventSink`]). M6's Tauri command is a thin adapter: it makes
+//! `UnboundedSender` ([`ChatEventSink`]). The Tauri command is a thin adapter: it makes
 //! a channel, spawns a task forwarding each [`AgentChatEvent`] onto a
 //! `tauri::ipc::Channel` (mapping to the wire `AskCmdrStreamEvent`), and passes the
 //! sender here. Nothing in this module knows about Tauri IPC.
 //!
-//! ## Crash / mid-stream persistence (spec §2.3; plan §M5)
+//! ## Crash / mid-stream persistence (spec §2.3)
 //!
 //! Continuity is through DB state, so partial state must be unambiguous. A message's
 //! `content_blocks` are written only on that call's `End`:
@@ -57,7 +57,7 @@ const LOG_TARGET: &str = "agent::chat";
 
 // ── The event seam ────────────────────────────────────────────────────────────
 
-/// The sink the runtime emits progress through. A plain unbounded channel; M6 forwards
+/// The sink the runtime emits progress through. A plain unbounded channel; the IPC command forwards
 /// it to a Tauri `Channel`. Send failures (a closed receiver, e.g. the rail was closed)
 /// are ignored — the turn keeps running to persist its state.
 pub type ChatEventSink = UnboundedSender<AgentChatEvent>;
@@ -93,7 +93,7 @@ pub enum AgentChatEvent {
         usage: AgentUsage,
     },
     /// The turn ended without an answer, honestly and typed. Rendered by the frontend
-    /// without the words "error"/"failed" (M6 owns the copy).
+    /// without the words "error"/"failed" (the frontend owns the copy).
     Failed { kind: AgentErrorKind },
 }
 
@@ -225,7 +225,7 @@ pub struct TurnParams<'a> {
     /// Wall-clock secs stamped on rows written this turn; also the envelope's clock.
     pub now_secs: i64,
     /// The resolved interactive-slot provider + model, for cost metering. Real slot
-    /// resolution is M8; the runtime just records what it was told.
+    /// resolution happens in the command layer; the runtime just records what it was told.
     pub provider: ProviderTag,
     pub model: String,
 }
@@ -553,10 +553,10 @@ fn day_for(now_secs: i64, offset: FixedOffset) -> String {
     utc.with_timezone(&offset).format("%Y-%m-%d").to_string()
 }
 
-// ── The single-flight wrapper (M6's entry point) ──────────────────────────────
+// ── The single-flight wrapper (the send command's entry point) ────────────────
 
 /// The managed chat runtime: the `main.db` path plus the per-thread single-flight
-/// locks. Registered in state by `agent::start`; M6's `ask_cmdr_send_message` command
+/// locks. Registered in state by `agent::start`; the `ask_cmdr_send_message` command
 /// grabs it and calls [`ChatRuntime::send_message`].
 pub struct ChatRuntime {
     db_path: PathBuf,
@@ -573,12 +573,12 @@ impl ChatRuntime {
 
     /// Send one user message to a thread and drive it to an answer, single-flight per
     /// thread. `conversation_id` is `None` to lazily create a thread (its id is
-    /// returned). The provider/model name the resolved interactive slot (M8) for cost
+    /// returned). The provider/model name the resolved interactive slot for cost
     /// metering. Long work runs on the caller's tokio task; nothing here blocks the main
     /// thread.
     #[allow(
         clippy::too_many_arguments,
-        reason = "the send surface; M6's command is a thin pass-through"
+        reason = "the send surface; the IPC command is a thin pass-through"
     )]
     pub async fn send_message<R: Runtime>(
         &self,
@@ -622,13 +622,13 @@ impl ChatRuntime {
 }
 
 /// Register the [`ChatRuntime`] in managed state (called from `agent::start`, after the
-/// store handle is up). M6's IPC command reads it back with `app.state::<ChatRuntime>()`.
+/// store handle is up). The IPC command reads it back with `app.state::<ChatRuntime>()`.
 pub fn register<R: Runtime>(app: &AppHandle<R>, db_path: PathBuf) {
     app.manage(ChatRuntime::new(db_path));
 }
 
 /// A thread title from the first line of the user's message, trimmed to a sane length.
-/// A user-facing default; renaming stays the user's call (M7). `pub(crate)` so M6's
+/// A user-facing default; renaming stays the user's call. `pub(crate)` so the
 /// IPC command, which pre-creates the conversation to learn its id up front (for the
 /// cancel registry and the `Started` event), derives the same title the runtime would.
 pub(crate) fn derive_title(text: &str) -> String {

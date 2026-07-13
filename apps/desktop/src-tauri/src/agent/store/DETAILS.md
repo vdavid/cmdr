@@ -23,7 +23,7 @@ The exact schema is in `migrations.rs`. The non-obvious choices:
   insurance so a future notification-spawned thread (the full agent's proactive surfaces) is a column value, not a
   migration (spec §3). The typed `ConversationOrigin` (`agent/types.rs`) carries the one anticipated `Notification`
   token; v1 never writes a non-null origin.
-- **`messages.content_blocks` is typed JSON**, the serialized `Vec<AgentPart>` from the M1 seam. The opaque provider
+- **`messages.content_blocks` is typed JSON**, the serialized `Vec<AgentPart>` from the `AgentLlm` seam. The opaque provider
   reasoning blob rides inside it and is backend-only — it must never reach the frontend. `text_for_search` is the plain
   user+assistant prose extracted at insert (never tool blobs), the only thing the FTS index sees.
 - **`prompt_tokens` / `completion_tokens` are nullable** (assistant turns only).
@@ -68,5 +68,5 @@ is the template to follow — a follow-up, not built now.
 
 `agent::start(app)` (in `agent/mod.rs`, modeled on `operation_log::start`) opens the DB through `AgentStore::open` (which
 runs the schema lifecycle) and registers an `AgentDb` handle in managed state. `AgentDb` holds the DB path and hands out
-read/write connections; the chat runtime (M5) owns the write-connection lifetime and single-writer discipline (M2 does
-not add a writer thread).
+read/write connections; the chat runtime owns the write-connection lifetime and single-writer discipline (the store
+itself does not add a writer thread).

@@ -16,7 +16,7 @@
 //! History compaction is **elide-only** (spec §2, §5): assistant prose always survives
 //! verbatim; tool results from older turns collapse to a typed stub carrying an
 //! approximate token-size hint. Summarize-on-overflow is deferred; when even full
-//! elision can't fit the budget, the runtime shows the soft-cap nudge (M6).
+//! elision can't fit the budget, the runtime shows the soft-cap nudge.
 
 use chrono::{DateTime, FixedOffset, Utc};
 use serde_json::{Value, json};
@@ -46,7 +46,7 @@ pub const CONTEXT_TOKEN_BUDGET: usize = 8_000;
 pub const ELIDE_TOOL_RESULTS_AFTER_TURNS: usize = 3;
 
 /// Past this many messages a thread shows the honest "this chat is getting long -
-/// start a fresh one?" nudge (M6), no hard cut. Initial value; tune with use.
+/// start a fresh one?" nudge, no hard cut. Initial value; tune with use.
 pub const THREAD_SOFT_CAP_MESSAGES: usize = 40;
 
 /// Rough characters-per-token divisor for the size estimates that drive elision and
@@ -204,7 +204,7 @@ pub fn assemble_prompt(
     let tools = prefix.tools.to_vec();
 
     // Elide older tool results, tightening the threshold until the estimate fits the
-    // budget (assistant prose is never touched — that's the soft-cap's job, M6).
+    // budget (assistant prose is never touched — that's the soft-cap's job).
     let mut threshold = ELIDE_TOOL_RESULTS_AFTER_TURNS;
     let mut messages = build_messages(transcript, envelope, offset, threshold);
     while threshold > 0 && estimate_prompt_tokens(&system, &tools, &messages) > CONTEXT_TOKEN_BUDGET {

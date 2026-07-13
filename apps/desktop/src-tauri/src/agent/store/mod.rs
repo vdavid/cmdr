@@ -11,7 +11,7 @@
 //!
 //! [`AgentStore`] owns the schema lifecycle (migrate on open; delete-and-recreate only a
 //! genuinely unparseable file; refuse a downgrade). Reads and writes go through
-//! connections opened from the DB path (`connection`); the chat runtime (M5) owns the
+//! connections opened from the DB path (`connection`); the chat runtime owns the
 //! write-connection lifetime.
 
 mod connection;

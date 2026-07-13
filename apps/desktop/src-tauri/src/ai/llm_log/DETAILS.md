@@ -1,7 +1,7 @@
 # LLM call logging details
 
 Pull-tier docs for `ai/llm_log/`. Must-know invariants live in [CLAUDE.md](CLAUDE.md). This is the observability
-gateway from the Ask Cmdr plan's M9 ([`docs/specs/ask-cmdr-plan.md`](../../../../../../docs/specs/ask-cmdr-plan.md)
+gateway specified in the Ask Cmdr plan ([`docs/specs/ask-cmdr-plan.md`](../../../../../../docs/specs/ask-cmdr-plan.md)
 § M9).
 
 ## The seam: one tap, all traffic
@@ -21,7 +21,7 @@ extracted from the `ChatRequest` at log time.
 ### The fake logs nothing (decision)
 
 `FakeAgentLlm` bypasses genai entirely, so a fake-driven turn produces no log files. The plan left this to the
-implementer's call; keeping the tap strictly at the genai boundary keeps the M1 `AgentLlm` seam clean (no logging
+implementer's call; keeping the tap strictly at the genai boundary keeps the `AgentLlm` seam clean (no logging
 concern threaded through the trait) and is honest — dev debugging of real prompts uses a real provider, which logs. The
 E2E fake path (`CMDR_E2E_ASK_CMDR_FAKE`) is likewise silent.
 
@@ -100,11 +100,11 @@ The consent/settings copy points at this folder.
 - **Startup**: `lib.rs`'s setup calls `llm_log::init(&data_dir)` to record `{data dir}/llm-logs/`. Until then logging
   no-ops (no dir).
 
-## Notes for M8
+## Settings and certification notes
 
-- The settings row's i18n keys to translate: `settings.advanced.logLlmCalls.label` and `.description` (English-only
+- The settings row's i18n keys: `settings.advanced.logLlmCalls.label` and `.description` (English-only
   today, in `messages/en/settings.json`).
-- These log files are the debugging companion for M8's live provider-certification runs: with the setting on (dev
+- These log files are the debugging companion for the live provider-certification runs: with the setting on (dev
   default), each certification call's request and response are on disk, so "what did we send, what came back" is
   directly inspectable — useful for the reasoning-off Anthropic loop and the OpenAI-Responses/Gemini checks.
-- The privacy line here should be mirrored into the consent/settings human-facing copy M8 finalizes.
+- The privacy line here should stay mirrored in the consent/settings human-facing copy.
