@@ -463,6 +463,74 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.networkVolumes.label": "Bildindexering för nätverksenheter",
+  "@settings.mediaIndex.networkVolumes.label": {
+    "sourceHash": "9d12bf3"
+  },
+  "settings.mediaIndex.networkVolumes.description": "Internt: nätverksenheter (SMB) som användaren har valt in för bildindexering i bakgrunden.",
+  "@settings.mediaIndex.networkVolumes.description": {
+    "sourceHash": "8f3c883"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.label": "Enheter som alltid indexeras",
+  "@settings.mediaIndex.alwaysIndexVolumes.label": {
+    "sourceHash": "a975b70"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.description": "Internt: enheter som användaren har markerat för att alltid indexera bilderna på dem.",
+  "@settings.mediaIndex.alwaysIndexVolumes.description": {
+    "sourceHash": "b543f01"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.label": "Mappar som alltid indexeras",
+  "@settings.mediaIndex.alwaysIndexFolders.label": {
+    "sourceHash": "5b2f6b5"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.description": "Internt: mappar som användaren har markerat för att alltid indexera bilderna i dem.",
+  "@settings.mediaIndex.alwaysIndexFolders.description": {
+    "sourceHash": "7fbc7f3"
+  },
+  "settings.mediaIndex.networkVolumes.intro": "Nätverksenheter indexeras bara när du aktiverar dem här. Cmdr läser bilder över nätverket skonsamt: bara när du inte är upptagen, med begränsad hastighet, och pausar när enheten kopplas från.",
+  "@settings.mediaIndex.networkVolumes.intro": {
+    "sourceHash": "165a9eb"
+  },
+  "settings.mediaIndex.networkVolumes.none": "Anslut en nätverksenhet för att indexera bilderna på den.",
+  "@settings.mediaIndex.networkVolumes.none": {
+    "sourceHash": "badb753"
+  },
+  "settings.mediaIndex.networkVolumes.optInLabel": "Indexera bilder på {name}",
+  "@settings.mediaIndex.networkVolumes.optInLabel": {
+    "sourceHash": "0a536c8"
+  },
+  "settings.mediaIndex.networkVolumes.optInHelp": "Cmdr läser texten i de här bilderna så att du kan söka i den. Det körs på din Mac, och bilderna lämnar aldrig ditt nätverk.",
+  "@settings.mediaIndex.networkVolumes.optInHelp": {
+    "sourceHash": "a2da6d4"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysLabel": "Indexera alltid den här enheten",
+  "@settings.mediaIndex.networkVolumes.alwaysLabel": {
+    "sourceHash": "123af5e"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "Aktivera det här för ett bildarkiv som du sällan öppnar, så indexeras bilderna ändå.",
+  "@settings.mediaIndex.networkVolumes.alwaysHelp": {
+    "sourceHash": "47f4a66"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Indexera alltid bilder på {name}",
+  "@settings.mediaIndex.networkVolumes.alwaysAria": {
+    "sourceHash": "10ee003"
+  },
+  "settings.mediaIndex.networkVolumes.paused": "Pausad, återupptas när enheten återansluter",
+  "@settings.mediaIndex.networkVolumes.paused": {
+    "sourceHash": "4df8d65"
+  },
+  "settings.mediaIndex.networkVolumes.indexing": "Indexerar bilder nu",
+  "@settings.mediaIndex.networkVolumes.indexing": {
+    "sourceHash": "0d850c0"
+  },
+  "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} bild indexerad} other {{countText} bilder indexerade}}",
+  "@settings.mediaIndex.networkVolumes.indexed": {
+    "sourceHash": "3c6ee39"
+  },
+  "settings.mediaIndex.networkVolumes.notIndexedYet": "Inte indexerad än",
+  "@settings.mediaIndex.networkVolumes.notIndexedYet": {
+    "sourceHash": "808e81b"
+  },
   "settings.indexing.askForEachDrive.label": "Fråga för varje enhet",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

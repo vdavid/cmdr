@@ -164,15 +164,41 @@ real now; the on-demand-per-visit trigger itself is a later slice (a clear TODO 
 
 ### Backend commands + typed state for the M1.5b UI
 
-The UI slice (per-volume opt-in + "always index" toggles + i18n + E2E) is the next agent's. This backend provides:
+The backend provides three setters + the extended state:
 
 - `media_index_set_network_volume_enabled(volume_id, enabled)` — the per-volume SMB opt-in (live-applied; enabling kicks a
   pass).
 - `media_index_set_always_index_volume(volume_id, always)` / `media_index_set_always_index_folder(folder, always)` — the
-  overrides (live-applied).
+  overrides (live-applied; the folder setter does NOT kick a pass, next scan picks it up).
 - `media_index_volume_state` extended with `network_opt_in`, `always_indexed`, `paused` (the "paused, resumes on
-  reconnect" honesty). The FE persists the `mediaIndex.*` settings and calls the setters on change (the standard
-  live-apply pattern).
+  reconnect" honesty).
+
+**The FE surface (shipped, M1.5b).** The opt-in + volume override live in Settings > Behavior > File system watching >
+"Image search" card, below the master toggle, rendered by
+`src/lib/settings/sections/MediaIndexNetworkVolumes.svelte` (only when `mediaIndex.enabled` is on). It lists each mounted
+network (SMB) volume with an opt-in switch and, once opted in, an "always index this drive" switch plus a live status
+line (indexing / paused-because-disconnected / count) polled off `media_index_volume_state`. Persistence + live-apply are
+co-located in `src/lib/media-index/network-volume-prefs.ts`: each toggle writes the FE-owned array setting
+(`mediaIndex.networkVolumes` / `mediaIndex.alwaysIndexVolumes`, persisted as a REAL JSON array so the Rust loader's
+`Vec<String>` reads it — NOT the double-encoded JSON-string shape `indexing.silencedDrives` uses) AND calls the matching
+setter, rolling the persisted value back if the IPC call rejects. These three settings needed a new `'string-array'`
+`SettingType` (the store was scalar-only before). Cross-window edits re-seed the switches via
+`onSpecificSettingChange`; startup seeding is the Rust `load_settings` path, so no `settings-applier.ts` entry (the
+per-item setters don't fit its key→value passthrough table).
+
+Coverage-honesty for a network volume lives in `src/lib/search/ImageSearchResults.svelte`: it takes an optional
+`mountRoot` + `isNetwork` and reconstructs an openable OS path from each index-relative hit via the pure
+`src/lib/search/media-path.ts` (`resolveMediaHitPath`, mirroring the backend `os_join`), and voices the network states
+("turn on indexing for this drive" when not opted in, "disconnected, showing what's indexed" when paused). NOTE: the
+whole-drive Search dialog currently targets only `ROOT_VOLUME_ID` (a local-index surface), so those network states are
+reachable only once a caller points `ImageSearchResults` at a network volume — the component + path reconstruction are
+ready; wiring the dialog to search a chosen network volume is a separate search-feature change (deferred, see the M1.5b
+report).
+
+**Per-folder override — FE trigger deferred.** The `media_index_set_always_index_folder` command +
+`mediaIndex.alwaysIndexFolders` setting are ready, but no FE control sets them yet: the natural trigger is a folder
+right-click action, and the file context menu is a NATIVE (Rust) menu (`show_file_context_menu`), so adding the item +
+its menu-event handler is a small backend follow-up rather than an FE change.
 
 ## Schema (`store/`)
 

@@ -628,3 +628,40 @@ one-time consent screen, the per-chat cost footer, and the settings section + LL
   `askCmdr.consent.noContents` repeat "Cmdr" across sentences rather than introducing an ambiguous pronoun. Where the
   antecedent is unambiguous within the same sentence (`settings.askCmdr.intro`'s "Ask Cmdr är skrivskyddad: den
   läser…"), a pronoun is fine.
+
+## Network-drive image indexing pass (2026-07-13; `settings.mediaIndex.networkVolumes.*` + `settings.mediaIndex.alwaysIndex*` + `search.imageResults.networkOff`/`.paused`)
+
+Opting a network (SMB) drive into background image-content indexing so its photos become text-searchable, plus an
+always-index override for rarely-browsed archives and the honest status lines. Reuses `nätverk` (network), `enhet`
+(drive), `indexera`/`indexering` (index), `aktivera`/`stäng av` (enable), `ansluta` (connect), `koppla från`
+(disconnect), `pausa`/`pausad` (pause), `Inställningar`, `mapp`, and the shipped `settings.mediaIndex.enabled.*`
+phrasing ("Läs texten i dina bilder så att du kan söka i den", "Körs på din Mac"). New/settled terms:
+
+- **photo(s) (the user's photographs being indexed): `bild` / `bilder`** · Apple localizes the Photos app itself to
+  "Bilder" in Swedish (pile `sv/macOS`, 6 "Bilder" hits), so "photo" and "image" both render `bild(er)` in Cmdr's
+  Swedish. This also keeps the whole feature consistent with the already-shipped card "Bildsökning" and toggle "Indexera
+  bildinnehåll". Definite `bilden`/`bilderna`, common gender (en bild). `high`.
+- **network drive: `nätverksenhet`** (definite `nätverksenheten`, plural `nätverksenheter`) · compound `nätverk`
+  (glossary) + `enhet` (drive); standard Swedish IT compound, matches how the drive surfaces to the user. `high`.
+- **reconnect (a drive coming back): `återansluta`** (present `återansluter`) · macOS pile "återansluta" (14 hits);
+  åter- + `ansluta` (connect). "resumes when this drive reconnects" → "återupptas när enheten återansluter". `high`.
+- **resume (indexing after a pause): `återuppta`** (passive `återupptas` for "it resumes") · reuses the settled queue
+  `återuppta` (resume) entry. `high`.
+- **disconnected (drive state): `frånkopplad`** · macOS pile "frånkopplad" (6 hits), the state adjective paired with the
+  settled `koppla från` (disconnect) verb. "This drive is disconnected" → "Den här enheten är frånkopplad". `high`.
+- **gently (reads the network gently, resource-considerate): `skonsamt`** · standard Swedish for sparing/considerate use
+  ("skonsam mot"); no direct pile hit, chosen over `varsamt` for the resource-respect sense. `tentative` (convention;
+  low risk).
+- **photo archive (a rarely-browsed NAS collection, not a zip): `bildarkiv`** · `bild` + `arkiv` (the collection sense
+  of archive, distinct from the compressed-file `arkiv` — same word, disambiguated by context). "a photo archive you
+  rarely browse" → "ett bildarkiv som du sällan öppnar" (visiting a drive rendered `öppna`, warmer than `bläddra i`
+  here). `high`.
+- **opt in (turn a drive on for indexing): `välja in` / `aktivera`** · the internal description uses "har valt in för"
+  (opted into); the user-facing toggle reuses `aktivera` (enable). `high`.
+- **so far / yet (status tail): `hittills` / `än`** · "photos indexed so far" → "bilderna som indexerats hittills"; "Not
+  indexed yet" → "Inte indexerad än" (reuses the `finns inte än` precedent). `high`.
+- **indexed (ICU plural, `settings.mediaIndex.networkVolumes.indexed`): one → `{countText} bild indexerad`, other →
+  `{countText} bilder indexerade`** · common-gender agreement (en bild → `indexerad`), plural adjective `indexerade`.
+  Swedish CLDR one/other. `high`.
+
+No `sameAsSourceJustification` needed: all 19 values differ from English.

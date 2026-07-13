@@ -744,3 +744,31 @@ every apostrophe is doubled in the catalog:
 - `Ask Cmdr` (the product/brand name) is `sameAsSourceJustification`''d everywhere it appears alone (`askCmdr.title`,
   `settings.section.askCmdr`, `commands.askCmdrToggle.label`) per its own `@key` description ("keep it as-is"); every
   other value in this pass differs from English.
+
+Settled during the `media-ml-index` network-drive image-indexing pass (2026-07-13, opting an SMB drive into background
+photo-content indexing + its status lines; `settings.mediaIndex.networkVolumes.*`, the internal
+`settings.mediaIndex.{networkVolumes,alwaysIndexVolumes,alwaysIndexFolders}.{label,description}`,
+`search.imageResults.{networkOff,paused}`). ICU values, so apostrophes are doubled in the catalog:
+
+- network drive → `disque réseau` · settled `drive → disque` (macOS Finder, Tier 1) + `réseau` (macOS "Réseau",
+  pervasive). DELIBERATELY NOT Microsoft''s Windows term "lecteur réseau" (MS terminology FRA id 84433) — Cmdr is a macOS
+  app, so `disque` wins over the Windows `lecteur` per the style-guide term-choice rule 2 · high.
+- photo → `photo` (feminine: "une photo", "les photos") · macOS/pile ("photo"/"photos") · high — same word as EN but
+  genuinely FR and gendered, so agreeing participles are feminine: "photo indexée" / "photos indexées"
+  (`networkVolumes.indexed` FR CLDR `one`/`many`/`other`, `many` identical to `other`; feminine agreement in every
+  branch), "photos … indexées" (`search.imageResults.paused`).
+- reconnect → `se reconnecter` · macOS pile ("reconnecter"); pairs with the settled `disconnect → se déconnecter`.
+  "resumes when this drive reconnects" → "reprend quand ce disque se reconnecte" (settled `resume → reprendre`,
+  `paused → en pause`) · high.
+- gently (reads photos over the network gently) → `en douceur` · natural calm FR, no exact pile phrase · tentative.
+- at a limited speed → `à vitesse limitée` · descriptive FR, no pile hit · tentative.
+- always index this drive (the rarely-browsed-archive override) → `Toujours indexer ce disque` /
+  `Toujours indexer les photos sur {name}` (aria) · composed from settled `index → indexer` + the catalog''s
+  `Toujours` (crash-reporter "Always → Toujours"); the internal list labels are `Disques à toujours indexer` /
+  `Dossiers à toujours indexer` · high.
+- "get indexed anyway" (always-index help) → `soient indexées malgré tout` · settled `browse → parcourir` in the same
+  string ("que vous parcourez rarement"); "photo archive" → "archive de photos" (settled feminine `archive`) · high.
+- Internal (hidden dev-setting) label/description strings translated like the `settings.indexing.silencedDrives.*`
+  sibling: `Interne : …` lead, third-person `l''utilisateur` · high.
+- No `sameAsSourceJustification` needed: every value differs from English (each carries the FR ASCII-space-before-`:`,
+  a translated term, or French agreement).

@@ -539,3 +539,24 @@ labels, error copy, sessions, attachments, the consent screen, and the cost foot
   standard DE compounding rule for a multi-word loanword + native noun (parallel to `iPhone-App`) · high
 - "Same as Cmdr's AI" (empty-field placeholder) → `Wie die KI von Cmdr` · analytic genitive per the glossary's "don't
   decline Cmdr to Cmdrs" rule, not `Cmdrs KI` · high
+
+## Image-content indexing on network drives (2026-07-13)
+
+Terms settled while translating the network-drive image-indexing opt-in (`settings.mediaIndex.networkVolumes.*`, the
+`settings.mediaIndex.*Index*` internal lists, and `search.imageResults.networkOff`/`paused`).
+
+- photo → `Foto` (plural `Fotos`) · macOS AirDrop ("1 Foto empfangen", "^0 Fotos empfangen"), macOS Photos app ("In
+  „Fotos“ öffnen") · high. The EN source deliberately says "photos" (warmer) for the network-drive/NAS-archive strings
+  while the local card says "images"; keep the split in DE too — `photo → Foto`, `image → Bild` (the local card stays
+  `Bildinhalte`/`Bildersuche`). ❌ Don't collapse both to `Bild`
+- network drive → `Netzlaufwerk` · Microsoft terminology (network drive → Netzlaufwerk) · high. An SMB-mounted drive
+  Cmdr can index; distinct from the settled `network share → Netzwerkfreigabe` (the exported share itself)
+- image indexing → `Bildindizierung` · already shipped in the de catalog (`search.imageResults.off`), reused for the
+  card/settings label and the search hint · high
+- photo archive → `Fotoarchiv` · compound of `Foto` + `Archiv` (archive → Archiv, glossary) · high. The rarely-browsed
+  NAS photo store the "always index" switch targets
+- indexing paused (auto-pause when a network drive disconnects) → `Angehalten` (status) / `hält an` (prose, verb
+  `anhalten`) · macOS ("Kopieren von „^0“ wurde angehalten"), aligns with the settled transfer `pause → anhalten`
+  /`Angehalten` · high. resume → `fortsetzen` ("wird fortgesetzt"), reconnect → "wieder verbunden" (derived from the
+  settled connect/disconnect terms). ❌ Don't introduce the loanword "pausiert" — macOS uses `anhalten`/`angehalten`
+- No `sameAsSourceJustification` needed: every value differs from English.

@@ -691,3 +691,33 @@ Settings, Nâng cao = Advanced). New terms below, each mined from `_ignored/i18n
   particle) for consistency across the five error strings that use it.
 - **Consent-screen items ("Sentence case, no period" per the en `@key` notes) keep no trailing period** in Vietnamese,
   matching the English constraint.
+
+Added during the network-drive image-indexing pass (2026-07-13): the 19 `settings.mediaIndex.networkVolumes.*` /
+`.alwaysIndex*` keys + `search.imageResults.networkOff`/`.paused` (opting an SMB drive into background photo-content
+indexing so photos become searchable by the text inside them). Reuses prior terms (index/indexing → `chỉ mục`/
+`lập chỉ mục`, indexed → `đã lập chỉ mục`, drive/volume → `ổ đĩa`, network → `mạng`, folder → `thư mục`, image →
+`hình ảnh`, text → `văn bản`, search → `tìm kiếm`, pause/paused → `tạm dừng`/`Đã tạm dừng`, resume → `tiếp tục`,
+disconnect → `ngắt kết nối`, browse → `duyệt`, background → `ở chế độ nền`, Settings → `Cài đặt`, Mac → `Mac` verbatim,
+"in the background" → `ở chế độ nền` per `settings.indexing.enabled.description`, "Internal:" → `Nội bộ:`). New terms
+below:
+
+- **photo (vs image): `ảnh`** · macOS (`Chọn ảnh` = Choose Photo, `Cắt ảnh` = Crop photo; Apple's Photos app is `Ảnh`).
+  Deliberately distinct from the feature-level "image" → `hình ảnh` (`settings.mediaIndex.card` = `Tìm kiếm hình ảnh`,
+  `enabled.label` = `Lập chỉ mục nội dung hình ảnh`): the English copy itself splits "image" (feature/card) from
+  "photos" (the concrete per-drive strings), and `ảnh` is the natural concrete word. "photos indexed" →
+  `Đã lập chỉ mục … ảnh`; "photos on {name}" → `ảnh trên {name}`. `high`.
+- **network drive: `ổ đĩa mạng`** · `ổ đĩa` (drive) + `mạng` (network), both settled. `high`.
+- **reconnect: `kết nối lại`** · macOS (`Để kết nối lại, hãy bấm…`). "resumes when this drive reconnects" →
+  `sẽ tiếp tục khi ổ đĩa này kết nối lại`. `high`.
+- **photo archive (a rarely-browsed NAS of photos): `kho ảnh`** · `kho` (store/archive, the archival-storage sense, NOT
+  the browsable-zip `tệp nén`) + `ảnh`. Register matches "an archive you rarely browse". `tentative` (constructed
+  compound; no single pile source).
+- **gently (reads photos gently): `một cách nhẹ nhàng`** · adverbial rendering; no pile hit. `tentative`.
+- **at a limited speed: `ở tốc độ giới hạn`** · `tốc độ` (speed, macOS "Tốc độ ghi đĩa") + `giới hạn` (limit, settled).
+  `high`.
+- **so far (photos indexed so far): `cho đến nay`** · standard temporal phrasing. `high`.
+- **mark (a drive/folder, internal): `đánh dấu`** · `đánh dấu` (mark). Internal dev strings for the always-index lists.
+  `high`.
+- **The `indexed` ICU plural collapses to a single `other` branch** (vi has one CLDR category), keeping both `{count}`
+  (selector) and `{countText}` (preformatted display): `{count, plural, other {Đã lập chỉ mục {countText} ảnh}}`.
+- No `sameAsSourceJustification` needed: all 19 values differ from English.

@@ -463,6 +463,74 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.networkVolumes.label": "Bildindizierung für Netzlaufwerke",
+  "@settings.mediaIndex.networkVolumes.label": {
+    "sourceHash": "9d12bf3"
+  },
+  "settings.mediaIndex.networkVolumes.description": "Intern: Netzlaufwerke (SMB), für die im Hintergrund die Bildindizierung aktiviert wurde.",
+  "@settings.mediaIndex.networkVolumes.description": {
+    "sourceHash": "8f3c883"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.label": "Immer zu indizierende Laufwerke",
+  "@settings.mediaIndex.alwaysIndexVolumes.label": {
+    "sourceHash": "a975b70"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.description": "Intern: Laufwerke, deren Fotos immer indiziert werden sollen.",
+  "@settings.mediaIndex.alwaysIndexVolumes.description": {
+    "sourceHash": "b543f01"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.label": "Immer zu indizierende Ordner",
+  "@settings.mediaIndex.alwaysIndexFolders.label": {
+    "sourceHash": "5b2f6b5"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.description": "Intern: Ordner, deren Fotos immer indiziert werden sollen.",
+  "@settings.mediaIndex.alwaysIndexFolders.description": {
+    "sourceHash": "7fbc7f3"
+  },
+  "settings.mediaIndex.networkVolumes.intro": "Netzlaufwerke werden nur indiziert, wenn du sie hier aktivierst. Cmdr liest Fotos schonend über das Netzwerk: nur, während du nicht beschäftigt bist, mit begrenzter Geschwindigkeit, und die Indizierung hält an, wenn das Laufwerk getrennt wird.",
+  "@settings.mediaIndex.networkVolumes.intro": {
+    "sourceHash": "165a9eb"
+  },
+  "settings.mediaIndex.networkVolumes.none": "Verbinde ein Netzlaufwerk, um die Fotos darauf zu indizieren.",
+  "@settings.mediaIndex.networkVolumes.none": {
+    "sourceHash": "badb753"
+  },
+  "settings.mediaIndex.networkVolumes.optInLabel": "Fotos auf {name} indizieren",
+  "@settings.mediaIndex.networkVolumes.optInLabel": {
+    "sourceHash": "0a536c8"
+  },
+  "settings.mediaIndex.networkVolumes.optInHelp": "Cmdr liest den Text in diesen Fotos, damit du danach suchen kannst. Das läuft auf deinem Mac, und die Fotos verlassen dein Netzwerk nie.",
+  "@settings.mediaIndex.networkVolumes.optInHelp": {
+    "sourceHash": "a2da6d4"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysLabel": "Dieses Laufwerk immer indizieren",
+  "@settings.mediaIndex.networkVolumes.alwaysLabel": {
+    "sourceHash": "123af5e"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "Aktiviere das für ein Fotoarchiv, das du selten öffnest, damit seine Fotos trotzdem indiziert werden.",
+  "@settings.mediaIndex.networkVolumes.alwaysHelp": {
+    "sourceHash": "47f4a66"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Fotos auf {name} immer indizieren",
+  "@settings.mediaIndex.networkVolumes.alwaysAria": {
+    "sourceHash": "10ee003"
+  },
+  "settings.mediaIndex.networkVolumes.paused": "Angehalten, wird fortgesetzt, wenn das Laufwerk wieder verbunden ist",
+  "@settings.mediaIndex.networkVolumes.paused": {
+    "sourceHash": "4df8d65"
+  },
+  "settings.mediaIndex.networkVolumes.indexing": "Fotos werden gerade indiziert",
+  "@settings.mediaIndex.networkVolumes.indexing": {
+    "sourceHash": "0d850c0"
+  },
+  "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} Foto indiziert} other {{countText} Fotos indiziert}}",
+  "@settings.mediaIndex.networkVolumes.indexed": {
+    "sourceHash": "3c6ee39"
+  },
+  "settings.mediaIndex.networkVolumes.notIndexedYet": "Noch nicht indiziert",
+  "@settings.mediaIndex.networkVolumes.notIndexedYet": {
+    "sourceHash": "808e81b"
+  },
   "settings.indexing.askForEachDrive.label": "Für jedes Laufwerk fragen",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

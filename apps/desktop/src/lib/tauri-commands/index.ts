@@ -633,6 +633,8 @@ export {
   mediaIndexVolumeState,
   mediaIndexThumbnailToken,
   mediaIndexDropThumbnailTokens,
+  mediaIndexSetNetworkVolumeEnabled,
+  mediaIndexSetAlwaysIndexVolume,
 } from './media-index'
 export type { MediaIndexVolumeState, OcrHit } from './media-index'
 

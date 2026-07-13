@@ -761,3 +761,28 @@ REVIEW FLAGS (Ask Cmdr pass):
   better idiom turns up.
 - `askCmdr.composer.dropHint` "Drop to attach" → "Zet hier neer om bij te voegen": no pile source for a drag-and-drop
   invitation overlay; phrased from the settled `bijvoegen` verb. Subjective.
+
+From the network image-indexing pass (`settings.mediaIndex.networkVolumes.*` + `settings.mediaIndex.alwaysIndex*` + 2
+`search.imageResults.*`; mined `_ignored/i18n/nl/`, 2026-07-13):
+
+- network drive → `netwerkschijf` (plural `netwerkschijven`) · macOS Finder (`nl/macOS`: "Netwerkschijf koppelen…",
+  "Verbreek verbinding met netwerkschijf…") + glossary drive→`schijf`; Tier 1, preferred over Windows-flavoured
+  "netwerkstation" · high
+- photo → `foto` (plural `foto''s`, ICU-doubled apostrophe) · macOS ("Foto''s" app, "^0 foto''s ontvangen") · high.
+  Mirrors the EN source's deliberate register split: internal/technical labels keep `image`→`afbeelding` (matches the
+  already-translated `settings.mediaIndex.card` "Afbeeldingen doorzoeken" / `enabled.label` "Inhoud van afbeeldingen
+  indexeren"), while the warm user-facing network-drive rows say `foto''s` (the network case is a photo archive/NAS).
+- image (technical/label sense) → `afbeelding` (plural `afbeeldingen`) · macOS ("Afbeelding"/"Afbeeldingen") · high.
+  "Image indexing" (internal label + the search hint) → "afbeeldingen indexeren" / "het indexeren van afbeeldingen".
+- indexed → `geïndexeerd` (past participle) · glossary index→indexeren; "Not indexed yet"→"Nog niet geïndexeerd",
+  "N photos indexed"→"{countText} foto''s geïndexeerd" · high
+- reconnect (drive comes back) → `opnieuw verbinding maken` · macOS Finder ("opnieuw verbinding maken met '^0'");
+  "resumes when this drive reconnects"→"gaat verder zodra deze schijf opnieuw verbinding maakt" · high
+- disconnect / disconnected (drive drops off mid-pass) → `wordt losgekoppeld` / `is losgekoppeld` · reuses the
+  indexing-pass glossary disconnected→`losgekoppeld` (macOS koppel-family) · high
+- background indexing → `achtergrondindexering` · compound of "achtergrond" (glossary "op de achtergrond") +
+  "indexering" (index→indexeren) · tentative
+- photo archive → `fotoarchief` · compound of `foto` + glossary archive→`archief` · high
+- resume (auto, of a paused pass) → `gaat verder` · plainer than glossary button `Hervat` for a passive status line
+  ("gaat verder zodra …") · high
+- No `sameAsSourceJustification` needed: all 19 values differ from English.

@@ -461,6 +461,74 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.networkVolumes.label": "Hálózati meghajtók képindexelése",
+  "@settings.mediaIndex.networkVolumes.label": {
+    "sourceHash": "9d12bf3"
+  },
+  "settings.mediaIndex.networkVolumes.description": "Belső: hálózati (SMB) meghajtók, amelyeket a felhasználó bevont a háttérben futó képindexelésbe.",
+  "@settings.mediaIndex.networkVolumes.description": {
+    "sourceHash": "8f3c883"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.label": "Mindig indexelt meghajtók",
+  "@settings.mediaIndex.alwaysIndexVolumes.label": {
+    "sourceHash": "a975b70"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.description": "Belső: meghajtók, amelyeket a felhasználó megjelölt a fotóik folyamatos indexelésére.",
+  "@settings.mediaIndex.alwaysIndexVolumes.description": {
+    "sourceHash": "b543f01"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.label": "Mindig indexelt mappák",
+  "@settings.mediaIndex.alwaysIndexFolders.label": {
+    "sourceHash": "5b2f6b5"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.description": "Belső: mappák, amelyeket a felhasználó megjelölt a fotóik folyamatos indexelésére.",
+  "@settings.mediaIndex.alwaysIndexFolders.description": {
+    "sourceHash": "7fbc7f3"
+  },
+  "settings.mediaIndex.networkVolumes.intro": "A hálózati meghajtók csak akkor indexelődnek, ha itt bekapcsolod őket. A Cmdr kíméletesen olvassa a fotókat a hálózaton: csak amikor épp nem vagy elfoglalt, korlátozott sebességgel, és szünetel, ha megszakad a kapcsolat a meghajtóval.",
+  "@settings.mediaIndex.networkVolumes.intro": {
+    "sourceHash": "165a9eb"
+  },
+  "settings.mediaIndex.networkVolumes.none": "Csatlakoztass egy hálózati meghajtót, hogy indexelhesd a rajta lévő fotókat.",
+  "@settings.mediaIndex.networkVolumes.none": {
+    "sourceHash": "badb753"
+  },
+  "settings.mediaIndex.networkVolumes.optInLabel": "{name} fotóinak indexelése",
+  "@settings.mediaIndex.networkVolumes.optInLabel": {
+    "sourceHash": "0a536c8"
+  },
+  "settings.mediaIndex.networkVolumes.optInHelp": "A Cmdr beolvassa a fotókban lévő szöveget, hogy rá tudj keresni. A Macen fut, és a fotók soha nem hagyják el a hálózatodat.",
+  "@settings.mediaIndex.networkVolumes.optInHelp": {
+    "sourceHash": "a2da6d4"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysLabel": "Ez a meghajtó mindig legyen indexelve",
+  "@settings.mediaIndex.networkVolumes.alwaysLabel": {
+    "sourceHash": "123af5e"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "Kapcsold be egy ritkán böngészett fotóarchívumhoz, hogy a fotói így is indexelve legyenek.",
+  "@settings.mediaIndex.networkVolumes.alwaysHelp": {
+    "sourceHash": "47f4a66"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysAria": "{name} fotói mindig legyenek indexelve",
+  "@settings.mediaIndex.networkVolumes.alwaysAria": {
+    "sourceHash": "10ee003"
+  },
+  "settings.mediaIndex.networkVolumes.paused": "Szüneteltetve, folytatódik, amikor a meghajtó újra csatlakozik",
+  "@settings.mediaIndex.networkVolumes.paused": {
+    "sourceHash": "4df8d65"
+  },
+  "settings.mediaIndex.networkVolumes.indexing": "Fotók indexelése folyamatban",
+  "@settings.mediaIndex.networkVolumes.indexing": {
+    "sourceHash": "0d850c0"
+  },
+  "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} fotó indexelve} other {{countText} fotó indexelve}}",
+  "@settings.mediaIndex.networkVolumes.indexed": {
+    "sourceHash": "3c6ee39"
+  },
+  "settings.mediaIndex.networkVolumes.notIndexedYet": "Még nincs indexelve",
+  "@settings.mediaIndex.networkVolumes.notIndexedYet": {
+    "sourceHash": "808e81b"
+  },
   "settings.indexing.askForEachDrive.label": "Kérdezzen meghajtónként",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

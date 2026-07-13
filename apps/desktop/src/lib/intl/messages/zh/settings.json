@@ -461,6 +461,74 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.networkVolumes.label": "网络驱动器图像索引",
+  "@settings.mediaIndex.networkVolumes.label": {
+    "sourceHash": "9d12bf3"
+  },
+  "settings.mediaIndex.networkVolumes.description": "内部：用户已开启后台图像索引的网络（SMB）驱动器。",
+  "@settings.mediaIndex.networkVolumes.description": {
+    "sourceHash": "8f3c883"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.label": "始终索引的驱动器",
+  "@settings.mediaIndex.alwaysIndexVolumes.label": {
+    "sourceHash": "a975b70"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.description": "内部：用户标记为始终索引其照片的驱动器。",
+  "@settings.mediaIndex.alwaysIndexVolumes.description": {
+    "sourceHash": "b543f01"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.label": "始终索引的文件夹",
+  "@settings.mediaIndex.alwaysIndexFolders.label": {
+    "sourceHash": "5b2f6b5"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.description": "内部：用户标记为始终索引其照片的文件夹。",
+  "@settings.mediaIndex.alwaysIndexFolders.description": {
+    "sourceHash": "7fbc7f3"
+  },
+  "settings.mediaIndex.networkVolumes.intro": "只有在这里开启后，网络驱动器才会被索引。Cmdr 通过网络读取照片时很克制：只在你空闲时读取，速度有限，并会在驱动器断开连接时暂停。",
+  "@settings.mediaIndex.networkVolumes.intro": {
+    "sourceHash": "165a9eb"
+  },
+  "settings.mediaIndex.networkVolumes.none": "连接一个网络驱动器，即可为其中的照片建立索引。",
+  "@settings.mediaIndex.networkVolumes.none": {
+    "sourceHash": "badb753"
+  },
+  "settings.mediaIndex.networkVolumes.optInLabel": "为 {name} 上的照片建立索引",
+  "@settings.mediaIndex.networkVolumes.optInLabel": {
+    "sourceHash": "0a536c8"
+  },
+  "settings.mediaIndex.networkVolumes.optInHelp": "Cmdr 会读取这些照片中的文字，方便你搜索。整个过程都在你的 Mac 上运行，照片不会离开你的网络。",
+  "@settings.mediaIndex.networkVolumes.optInHelp": {
+    "sourceHash": "a2da6d4"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysLabel": "始终索引此驱动器",
+  "@settings.mediaIndex.networkVolumes.alwaysLabel": {
+    "sourceHash": "123af5e"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "如果某个照片归档你很少浏览，可以开启此项，让其中的照片也能被索引。",
+  "@settings.mediaIndex.networkVolumes.alwaysHelp": {
+    "sourceHash": "47f4a66"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysAria": "始终为 {name} 上的照片建立索引",
+  "@settings.mediaIndex.networkVolumes.alwaysAria": {
+    "sourceHash": "10ee003"
+  },
+  "settings.mediaIndex.networkVolumes.paused": "已暂停，将在此驱动器重新连接时继续",
+  "@settings.mediaIndex.networkVolumes.paused": {
+    "sourceHash": "4df8d65"
+  },
+  "settings.mediaIndex.networkVolumes.indexing": "正在为照片建立索引",
+  "@settings.mediaIndex.networkVolumes.indexing": {
+    "sourceHash": "0d850c0"
+  },
+  "settings.mediaIndex.networkVolumes.indexed": "{count, plural, other {已索引 {countText} 张照片}}",
+  "@settings.mediaIndex.networkVolumes.indexed": {
+    "sourceHash": "3c6ee39"
+  },
+  "settings.mediaIndex.networkVolumes.notIndexedYet": "尚未索引",
+  "@settings.mediaIndex.networkVolumes.notIndexedYet": {
+    "sourceHash": "808e81b"
+  },
   "settings.indexing.askForEachDrive.label": "为每个驱动器询问",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

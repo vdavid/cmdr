@@ -604,6 +604,21 @@ as one feature with the transfer queue.
   `high`
 - No `sameAsSourceJustification` needed: every value differs from English (`AI 客户端` keeps only the brand token).
 
+### Network-drive image indexing catalog (`settings.mediaIndex.networkVolumes.*`, `settings.mediaIndex.alwaysIndex*`, `search.imageResults.networkOff/paused`, 2026-07-13)
+
+macOS zh-CN Tier 1 (Finder/Photos), Microsoft zh-Hans TBX cross-check. Reuses settled `图像`/`网络驱动器`/`建立索引`/`断开连接`/`暂停`/`继续`/`文件夹` terms. Feature: opting a network (SMB) drive into background indexing of the text inside its photos.
+
+- **photo vs image — deliberate register split, mirroring the English source** · warm user-facing photo mentions → `照片` (macOS Photos app; measure word `张`, e.g. `张照片` in Finder); the feature name / internal label "image indexing" → `图像` (settled glossary, matching the existing card `settings.mediaIndex.card` = `图像搜索` and `enabled.description` = `读取图像中的文字`). The English copy makes the same split (warm "photos" in the opt-in rows, technical "image" in the card/label); Chinese follows it faithfully. So `图像索引` = the feature, `照片` = the actual pictures. · `high`
+- **network drive** · `网络驱动器` · reused from errors/settings glossary; confirmed in the Total Commander zh-CN pile (`网络驱动器`, `映射网络驱动器`, `断开网络驱动器连接`) · `confirmed`
+- **turn on / opt in (a per-drive switch)** · `开启` · standard modern toggle-on verb (macOS/Microsoft); "turn them on here" → `在这里开启`, "turn this on for…" → `可以开启此项` · `high`
+- **index (build an index for photos)** · `建立索引` (verb) / `索引` (noun) / `已索引` (perfective, "indexed") · reused from settings/indexing pass; "Indexing photos now" → `正在为照片建立索引` (locale-wide `正在…` in-progress); "{countText} photos indexed" → `已索引 {countText} 张照片` (Chinese collapses the ICU plural to a single `other` branch, measure word `张`); "Not indexed yet" → `尚未索引` · `high`
+- **always index (rarely-browsed archive override)** · `始终索引` · `始终` (always) + settled `建立索引`/`索引`; "Always index this drive" → `始终索引此驱动器`, "Always-index drives/folders" (internal labels) → `始终索引的驱动器`/`始终索引的文件夹` · `high`
+- **photo archive (rarely-browsed collection; NOT a zip)** · `照片归档` · `归档` = archive/file-away collection (distinct from the zip-browsing `压缩文件` sense settled in the archive-browsing pass — this is a rarely-opened photo store, not a compressed file); phrased `如果某个照片归档你很少浏览` to keep it natural · `high`
+- **pause / resume / reconnect (indexing lifecycle)** · `暂停` / `继续` / `重新连接` · settled `暂停`/`继续` from the transfer-queue pass; `断开连接` (disconnect, settled) + `重新连接` (reconnect, attested in the zh-CN pile); "Paused, resumes when this drive reconnects" → `已暂停，将在此驱动器重新连接时继续` · `high`
+- **gently (reads photos conservatively over the network)** · `很克制` · `克制` = restrained/measured, carrying the "only while you're not busy, limited speed, pauses on disconnect" intent from the @key description; chosen over a literal `温和地` (gentle) because the honesty is about restraint, not softness · `high`
+- **"Internal:" prefix on hidden dev strings** · `内部：` · reused verbatim from `settings.indexing.silencedDrives.description` (`内部：用户已静默索引提示的驱动器。`); full-width colon per style.md · `high`
+- No `sameAsSourceJustification` needed: every value differs from English (brand `Cmdr`, `Mac`, `SMB`, and `{name}`/`{countText}` placeholders are the only verbatim tokens).
+
 ### Ask Cmdr catalog (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `settings.section.askCmdr`, `commands.askCmdrToggle.*`, 2026-07-13)
 
 macOS zh-CN Tier 1 (no macOS coverage for this domain: Apple doesn't ship an AI-chat feature), Microsoft zh-Hans TBX

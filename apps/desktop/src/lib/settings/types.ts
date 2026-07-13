@@ -9,7 +9,7 @@ import type { IconName } from '$lib/ui/icons/icon-map'
 // Core Types
 // ============================================================================
 
-export type SettingType = 'boolean' | 'number' | 'string' | 'enum' | 'duration'
+export type SettingType = 'boolean' | 'number' | 'string' | 'enum' | 'duration' | 'string-array'
 
 export type DurationUnit = 'ms' | 's' | 'min' | 'h' | 'd'
 
@@ -311,6 +311,26 @@ export interface SettingsValues {
    * no-ops until it's on. Local drives only for now (SMB/MTP is a later milestone).
    */
   'mediaIndex.enabled': boolean
+  /**
+   * Internal (FE-owned): volume ids opted into background network (SMB) image enrichment
+   * (`media_index` M1.5). Off by default per volume: turning on the master toggle does NOT
+   * auto-enrich network drives. Persisted as a real JSON array so the Rust loader reads it
+   * as `Vec<String>`; seeded into `media_index::network::config` at startup and live-applied
+   * via `media_index_set_network_volume_enabled` on change.
+   */
+  'mediaIndex.networkVolumes': string[]
+  /**
+   * Internal (FE-owned): volume ids marked "always index" (enrich regardless of the
+   * importance threshold, so a rarely-browsed NAS archive's photos don't defer forever).
+   * Persisted as a real JSON array; live-applied via `media_index_set_always_index_volume`.
+   */
+  'mediaIndex.alwaysIndexVolumes': string[]
+  /**
+   * Internal (FE-owned): absolute OS-mount folder paths marked "always index"; every image
+   * at or under one enriches regardless of importance. Persisted as a real JSON array;
+   * live-applied via `media_index_set_always_index_folder`.
+   */
+  'mediaIndex.alwaysIndexFolders': string[]
 
   // File system watching - downloads notifications + global go-to-latest shortcut.
   'behavior.fileSystemWatching.downloadsNotifications': DownloadsNotificationsMode

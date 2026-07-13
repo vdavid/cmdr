@@ -54,3 +54,27 @@ export async function mediaIndexDropThumbnailTokens(tokens: string[]): Promise<v
   if (tokens.length === 0) return
   await commands.mediaIndexDropThumbnailTokens(tokens)
 }
+
+/**
+ * Opt a network (SMB) volume in or out of background image enrichment (plan M1.5). Off by
+ * default: turning on the master toggle does NOT auto-enrich network drives. Enabling kicks
+ * an immediate pass so the user sees progress without waiting for the next scan. The FE also
+ * persists `mediaIndex.networkVolumes`; both happen together in `network-volume-prefs.ts`.
+ */
+export async function mediaIndexSetNetworkVolumeEnabled(volumeId: string, enabled: boolean): Promise<void> {
+  await commands.mediaIndexSetNetworkVolumeEnabled(volumeId, enabled)
+}
+
+/**
+ * Set (or clear) a whole-volume "always index" override: enrich regardless of the importance
+ * threshold (a rarely-browsed NAS scores low, so without this its photos defer forever — plan
+ * Decision 6). Enabling kicks an immediate pass. The FE also persists
+ * `mediaIndex.alwaysIndexVolumes`.
+ */
+export async function mediaIndexSetAlwaysIndexVolume(volumeId: string, always: boolean): Promise<void> {
+  await commands.mediaIndexSetAlwaysIndexVolume(volumeId, always)
+}
+
+// A typed wrapper for the per-folder override (`media_index_set_always_index_folder`) is
+// deliberately omitted this slice: its trigger is a folder right-click action in the native
+// (Rust) file context menu, a small backend follow-up. The raw `commands.*` binding is ready.

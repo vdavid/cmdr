@@ -463,6 +463,74 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.networkVolumes.label": "Indexation des images des disques réseau",
+  "@settings.mediaIndex.networkVolumes.label": {
+    "sourceHash": "9d12bf3"
+  },
+  "settings.mediaIndex.networkVolumes.description": "Interne : disques réseau (SMB) pour lesquels l''utilisateur a activé l''indexation des images en arrière-plan.",
+  "@settings.mediaIndex.networkVolumes.description": {
+    "sourceHash": "8f3c883"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.label": "Disques à toujours indexer",
+  "@settings.mediaIndex.alwaysIndexVolumes.label": {
+    "sourceHash": "a975b70"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.description": "Interne : disques que l''utilisateur a marqués pour toujours indexer leurs photos.",
+  "@settings.mediaIndex.alwaysIndexVolumes.description": {
+    "sourceHash": "b543f01"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.label": "Dossiers à toujours indexer",
+  "@settings.mediaIndex.alwaysIndexFolders.label": {
+    "sourceHash": "5b2f6b5"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.description": "Interne : dossiers que l''utilisateur a marqués pour toujours indexer leurs photos.",
+  "@settings.mediaIndex.alwaysIndexFolders.description": {
+    "sourceHash": "7fbc7f3"
+  },
+  "settings.mediaIndex.networkVolumes.intro": "Les disques réseau ne sont indexés que lorsque vous les activez ici. Cmdr lit les photos sur le réseau en douceur : uniquement pendant vos moments d''inactivité, à vitesse limitée, et l''indexation se met en pause quand le disque se déconnecte.",
+  "@settings.mediaIndex.networkVolumes.intro": {
+    "sourceHash": "165a9eb"
+  },
+  "settings.mediaIndex.networkVolumes.none": "Connectez un disque réseau pour indexer les photos qu''il contient.",
+  "@settings.mediaIndex.networkVolumes.none": {
+    "sourceHash": "badb753"
+  },
+  "settings.mediaIndex.networkVolumes.optInLabel": "Indexer les photos sur {name}",
+  "@settings.mediaIndex.networkVolumes.optInLabel": {
+    "sourceHash": "0a536c8"
+  },
+  "settings.mediaIndex.networkVolumes.optInHelp": "Cmdr lit le texte à l''intérieur de ces photos pour que vous puissiez le rechercher. Cela fonctionne sur votre Mac, et les photos ne quittent jamais votre réseau.",
+  "@settings.mediaIndex.networkVolumes.optInHelp": {
+    "sourceHash": "a2da6d4"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysLabel": "Toujours indexer ce disque",
+  "@settings.mediaIndex.networkVolumes.alwaysLabel": {
+    "sourceHash": "123af5e"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "Activez cette option pour une archive de photos que vous parcourez rarement, afin que ses photos soient indexées malgré tout.",
+  "@settings.mediaIndex.networkVolumes.alwaysHelp": {
+    "sourceHash": "47f4a66"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Toujours indexer les photos sur {name}",
+  "@settings.mediaIndex.networkVolumes.alwaysAria": {
+    "sourceHash": "10ee003"
+  },
+  "settings.mediaIndex.networkVolumes.paused": "En pause, reprend quand ce disque se reconnecte",
+  "@settings.mediaIndex.networkVolumes.paused": {
+    "sourceHash": "4df8d65"
+  },
+  "settings.mediaIndex.networkVolumes.indexing": "Indexation des photos en cours",
+  "@settings.mediaIndex.networkVolumes.indexing": {
+    "sourceHash": "0d850c0"
+  },
+  "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} photo indexée} many {{countText} photos indexées} other {{countText} photos indexées}}",
+  "@settings.mediaIndex.networkVolumes.indexed": {
+    "sourceHash": "3c6ee39"
+  },
+  "settings.mediaIndex.networkVolumes.notIndexedYet": "Pas encore indexé",
+  "@settings.mediaIndex.networkVolumes.notIndexedYet": {
+    "sourceHash": "808e81b"
+  },
   "settings.indexing.askForEachDrive.label": "Demander pour chaque disque",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

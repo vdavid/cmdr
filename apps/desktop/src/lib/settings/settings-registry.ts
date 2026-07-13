@@ -696,6 +696,46 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    // Internal (FE-owned): JSON array of volume ids opted into background network (SMB)
+    // image enrichment (M1.5). Off by default per volume; the per-network-volume rows in
+    // FileSystemWatchingSection's "Image search" card toggle it, persisting here AND
+    // calling `media_index_set_network_volume_enabled`. Read by the Rust loader as an array.
+    id: 'mediaIndex.networkVolumes',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.mediaIndex.networkVolumes.label',
+    descriptionKey: 'settings.mediaIndex.networkVolumes.description',
+    keywords: [],
+    type: 'string-array',
+    default: [],
+    hidden: true,
+  },
+  {
+    // Internal (FE-owned): JSON array of volume ids marked "always index" (enrich
+    // regardless of importance). Toggled by the per-network-volume rows; persisted here
+    // AND pushed via `media_index_set_always_index_volume`.
+    id: 'mediaIndex.alwaysIndexVolumes',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.mediaIndex.alwaysIndexVolumes.label',
+    descriptionKey: 'settings.mediaIndex.alwaysIndexVolumes.description',
+    keywords: [],
+    type: 'string-array',
+    default: [],
+    hidden: true,
+  },
+  {
+    // Internal (FE-owned): JSON array of absolute OS-mount folder paths marked "always
+    // index". Set by the per-folder override; persisted here AND pushed via
+    // `media_index_set_always_index_folder`.
+    id: 'mediaIndex.alwaysIndexFolders',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.mediaIndex.alwaysIndexFolders.label',
+    descriptionKey: 'settings.mediaIndex.alwaysIndexFolders.description',
+    keywords: [],
+    type: 'string-array',
+    default: [],
+    hidden: true,
+  },
+  {
     id: 'behavior.fileSystemWatching.downloadsNotifications',
     section: ['Behavior', 'File system watching'],
     labelKey: 'settings.behavior.fileSystemWatching.downloadsNotifications.label',
@@ -1798,6 +1838,12 @@ export function validateSettingValue(id: string, value: unknown): void {
 
     case 'enum':
       validateEnumValue(id, value, def)
+      break
+
+    case 'string-array':
+      if (!Array.isArray(value) || !value.every((v): v is string => typeof v === 'string')) {
+        throw new SettingValidationError(id, `Expected an array of strings, got ${typeof value}`)
+      }
       break
   }
 }

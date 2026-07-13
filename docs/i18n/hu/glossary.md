@@ -762,3 +762,45 @@ Settled while translating the Ask Cmdr feature (`askCmdr.json` + the
   `settings.section.askCmdr`, `commands.askCmdrToggle.label`): kept per the en `@key` note that this is the product
   name. Everything else in this batch differs from English (all 96 keys across `askCmdr.json`, `settings.json`'s 17 Ask
   Cmdr/LLM-logging keys, and `commands.json`'s 2 keys translate; no other identical-to-English residuals).
+
+Settled while translating the network-drive image-indexing feature (`settings.mediaIndex.networkVolumes.*` +
+`alwaysIndex*` internals in `settings.json`, `search.imageResults.networkOff`/`.paused` in `search.json`, 2026-07-13):
+
+- **photo vs image — MIRROR the EN split: `fotó` (photo) / `kép` (image).** The EN copy deliberately alternates: the
+  settings CARD and global toggle say "image" (already shipped `settings.mediaIndex.card` = `Képkeresés`,
+  `enabled.label` = `Képek tartalmának indexelése`), while the per-network-drive user strings say "photos" (a NAS holds
+  photos). So user-facing per-drive strings and status lines use `fotó` (`fotók`, `fotói`, `fotóarchívum`), and the
+  feature/section-level and INTERNAL developer labels keep `kép`/`képindexelés` (image indexing). `fotó` is Tier-1
+  attested (macOS Photos app = `Fotók`); `kép` is settled (macOS AppKit "Image" = `Kép`). EN itself mixes the two even
+  within one sentence (`search.imageResults.networkOff` = "image indexing … its photos"), so mirroring is faithful, not
+  drift · high.
+- network drive → `hálózati meghajtó` · macOS (`Hálózati meghajtó`, Tier 1) + settled `drive → meghajtó` · high.
+- image indexing (the feature, internal labels) → `képindexelés` (transparent compound `kép`+`indexelés`, parallel to
+  `fájlindexelés`); "Network drive image indexing" = `Hálózati meghajtók képindexelése` · high.
+- "always index" (index a rarely-browsed drive regardless of browsing) → the impersonal subjunctive `mindig legyen
+  indexelve` for the switch label/aria (`alwaysLabel` = `Ez a meghajtó mindig legyen indexelve`, `alwaysAria` =
+  `{name} fotói mindig legyenek indexelve`), and `folyamatos indexelés` (continuous indexing) for the internal
+  developer descriptions. `mindig` + a bare verbal noun is ungrammatical, so `legyen`/`legyenek` (3rd-person subjunctive,
+  NOT `te` direct address, standard HU settings phrasing) carries "always/regardless" · tentative (no direct pile hit
+  for the "index regardless of browse frequency" sense; construction reuses settled `index → indexelés` +
+  `indexelve` state participle).
+- **`{name}` (uncontrolled drive name) placed as a bare NOMINATIVE POSSESSOR, never suffixed**: `optInLabel`
+  "Index photos on {name}" = `{name} fotóinak indexelése` ("{name}'s photos' indexing"), `alwaysAria` =
+  `{name} fotói mindig legyenek indexelve`. Hungarian allows a juxtaposed nominative possessor (`naspi fotói` =
+  "naspi's photos"), so the possessive suffix lands on `fotó`, not on the unknown `{name}` — dodges the vowel-harmony
+  trap (style.md § Notes) the same way the colon-slot trick does, but reads more naturally for a possessive relation ·
+  high.
+- disconnect / reconnect (a network drive) → disconnected STATE = `nincs csatlakoztatva` (is not connected;
+  `search.imageResults.paused`); the drive disconnecting (event, intro) = `megszakad a kapcsolat a meghajtóval` (the
+  connection to the drive breaks); reconnect = `újra csatlakozik` (`settings…paused`) · macOS (`újracsatlakoztat`
+  attested; `Kapcsolat bontása` = disconnect) · high. Chose the natural `nincs csatlakoztatva`/`megszakad a kapcsolat`
+  over a literal `leválasztva` because the drive drops on its own here (not a user-initiated eject/leválasztás).
+- pause status reuses settled `pause → Szüneteltetve`; resume reuses settled `resume → Folytatás` (verb `folytatódik`,
+  intransitive "it resumes"). "Indexing photos now" (live status) = `Fotók indexelése folyamatban` (matches the
+  `queue.row.status` live-status `folyamatban` style + shipped `search.imageResults.indexing` "…folyamatban van").
+  "Not indexed yet" = `Még nincs indexelve`; the `indexed` count ICU keeps the singular noun in both branches
+  (`{countText} fotó indexelve`, no-pluralize-after-number rule; `indexelve` = state participle) · high.
+- "gently" (reads photos over the network sparingly) → `kíméletesen` (resource-sparing sense, fits the respect-resources
+  tone) · descriptive · high. "at a limited speed" = `korlátozott sebességgel`, "only while you''re not busy" =
+  `csak amikor épp nem vagy elfoglalt` (informal `te`, conversational copy).
+- No `sameAsSourceJustification` needed: all 19 values differ from English.

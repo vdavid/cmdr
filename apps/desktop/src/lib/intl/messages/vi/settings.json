@@ -459,6 +459,74 @@
   "@settings.mediaIndex.enabled.description": {
     "sourceHash": "118fc8d"
   },
+  "settings.mediaIndex.networkVolumes.label": "Lập chỉ mục hình ảnh trên ổ đĩa mạng",
+  "@settings.mediaIndex.networkVolumes.label": {
+    "sourceHash": "9d12bf3"
+  },
+  "settings.mediaIndex.networkVolumes.description": "Nội bộ: các ổ đĩa mạng (SMB) mà người dùng đã chọn lập chỉ mục hình ảnh ở chế độ nền.",
+  "@settings.mediaIndex.networkVolumes.description": {
+    "sourceHash": "8f3c883"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.label": "Ổ đĩa luôn lập chỉ mục",
+  "@settings.mediaIndex.alwaysIndexVolumes.label": {
+    "sourceHash": "a975b70"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.description": "Nội bộ: các ổ đĩa người dùng đã đánh dấu để luôn lập chỉ mục ảnh.",
+  "@settings.mediaIndex.alwaysIndexVolumes.description": {
+    "sourceHash": "b543f01"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.label": "Thư mục luôn lập chỉ mục",
+  "@settings.mediaIndex.alwaysIndexFolders.label": {
+    "sourceHash": "5b2f6b5"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.description": "Nội bộ: các thư mục người dùng đã đánh dấu để luôn lập chỉ mục ảnh.",
+  "@settings.mediaIndex.alwaysIndexFolders.description": {
+    "sourceHash": "7fbc7f3"
+  },
+  "settings.mediaIndex.networkVolumes.intro": "Ổ đĩa mạng chỉ được lập chỉ mục khi bạn bật chúng ở đây. Cmdr đọc ảnh qua mạng một cách nhẹ nhàng: chỉ khi bạn không bận, ở tốc độ giới hạn, và tạm dừng khi ổ đĩa ngắt kết nối.",
+  "@settings.mediaIndex.networkVolumes.intro": {
+    "sourceHash": "165a9eb"
+  },
+  "settings.mediaIndex.networkVolumes.none": "Kết nối một ổ đĩa mạng để lập chỉ mục ảnh trên đó.",
+  "@settings.mediaIndex.networkVolumes.none": {
+    "sourceHash": "badb753"
+  },
+  "settings.mediaIndex.networkVolumes.optInLabel": "Lập chỉ mục ảnh trên {name}",
+  "@settings.mediaIndex.networkVolumes.optInLabel": {
+    "sourceHash": "0a536c8"
+  },
+  "settings.mediaIndex.networkVolumes.optInHelp": "Cmdr đọc văn bản bên trong những ảnh này để bạn có thể tìm kiếm nó. Việc này chạy trên máy Mac của bạn, và ảnh không bao giờ rời khỏi mạng của bạn.",
+  "@settings.mediaIndex.networkVolumes.optInHelp": {
+    "sourceHash": "a2da6d4"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysLabel": "Luôn lập chỉ mục ổ đĩa này",
+  "@settings.mediaIndex.networkVolumes.alwaysLabel": {
+    "sourceHash": "123af5e"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "Bật tùy chọn này cho một kho ảnh mà bạn hiếm khi duyệt, để ảnh của nó vẫn được lập chỉ mục.",
+  "@settings.mediaIndex.networkVolumes.alwaysHelp": {
+    "sourceHash": "47f4a66"
+  },
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Luôn lập chỉ mục ảnh trên {name}",
+  "@settings.mediaIndex.networkVolumes.alwaysAria": {
+    "sourceHash": "10ee003"
+  },
+  "settings.mediaIndex.networkVolumes.paused": "Đã tạm dừng, sẽ tiếp tục khi ổ đĩa này kết nối lại",
+  "@settings.mediaIndex.networkVolumes.paused": {
+    "sourceHash": "4df8d65"
+  },
+  "settings.mediaIndex.networkVolumes.indexing": "Đang lập chỉ mục ảnh",
+  "@settings.mediaIndex.networkVolumes.indexing": {
+    "sourceHash": "0d850c0"
+  },
+  "settings.mediaIndex.networkVolumes.indexed": "{count, plural, other {Đã lập chỉ mục {countText} ảnh}}",
+  "@settings.mediaIndex.networkVolumes.indexed": {
+    "sourceHash": "3c6ee39"
+  },
+  "settings.mediaIndex.networkVolumes.notIndexedYet": "Chưa lập chỉ mục",
+  "@settings.mediaIndex.networkVolumes.notIndexedYet": {
+    "sourceHash": "808e81b"
+  },
   "settings.indexing.askForEachDrive.label": "Hỏi cho từng ổ đĩa",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

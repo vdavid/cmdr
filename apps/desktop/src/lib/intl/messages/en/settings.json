@@ -567,6 +567,80 @@
   "@settings.mediaIndex.enabled.description": {
     "description": "Help text under the \"Index image contents\" toggle. Reassures the user this is on-device (nothing is uploaded) and scopes it to local drives (network drives come later). \"OCR\" is not used in the copy on purpose; keep it plain."
   },
+  "settings.mediaIndex.networkVolumes.label": "Network drive image indexing",
+  "@settings.mediaIndex.networkVolumes.label": {
+    "description": "Internal (hidden setting): label for the list of network drives opted into image indexing."
+  },
+  "settings.mediaIndex.networkVolumes.description": "Internal: network (SMB) drives the user opted into background image indexing.",
+  "@settings.mediaIndex.networkVolumes.description": {
+    "description": "Internal (hidden setting): help text for the network-drive opt-in list. Not shown as a normal settings row."
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.label": "Always-index drives",
+  "@settings.mediaIndex.alwaysIndexVolumes.label": {
+    "description": "Internal (hidden setting): label for the list of drives marked to index regardless of how often they''re browsed."
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.description": "Internal: drives the user marked to always index their photos.",
+  "@settings.mediaIndex.alwaysIndexVolumes.description": {
+    "description": "Internal (hidden setting): help text for the always-index drive list. Not shown as a normal settings row."
+  },
+  "settings.mediaIndex.alwaysIndexFolders.label": "Always-index folders",
+  "@settings.mediaIndex.alwaysIndexFolders.label": {
+    "description": "Internal (hidden setting): label for the list of folders marked to index regardless of how often they''re browsed."
+  },
+  "settings.mediaIndex.alwaysIndexFolders.description": "Internal: folders the user marked to always index their photos.",
+  "@settings.mediaIndex.alwaysIndexFolders.description": {
+    "description": "Internal (hidden setting): help text for the always-index folder list. Not shown as a normal settings row."
+  },
+  "settings.mediaIndex.networkVolumes.intro": "Network drives are indexed only when you turn them on here. Cmdr reads photos over the network gently: only while you''re not busy, at a limited speed, and it pauses when the drive disconnects.",
+  "@settings.mediaIndex.networkVolumes.intro": {
+    "description": "Intro paragraph above the per-network-drive opt-in list, inside the \"Image search\" card in Settings > Behavior > File system watching. Sets honest expectations about the conservative network reading."
+  },
+  "settings.mediaIndex.networkVolumes.none": "Connect a network drive to index the photos on it.",
+  "@settings.mediaIndex.networkVolumes.none": {
+    "description": "Shown in place of the drive list when no network (SMB) drives are currently connected."
+  },
+  "settings.mediaIndex.networkVolumes.optInLabel": "Index photos on {name}",
+  "@settings.mediaIndex.networkVolumes.optInLabel": {
+    "description": "Accessible label for the on/off switch that opts a network drive into background image indexing.",
+    "placeholders": { "name": { "content": "The network drive''s name, like \"naspi\"." } }
+  },
+  "settings.mediaIndex.networkVolumes.optInHelp": "Cmdr reads the text inside these photos so you can search it. It runs on your Mac, and the photos never leave your network.",
+  "@settings.mediaIndex.networkVolumes.optInHelp": {
+    "description": "Help text shown under a network drive once its indexing is turned on. Reassures the user the work is on-device and private."
+  },
+  "settings.mediaIndex.networkVolumes.alwaysLabel": "Always index this drive",
+  "@settings.mediaIndex.networkVolumes.alwaysLabel": {
+    "description": "Label for the switch that indexes a drive''s photos even if you rarely open it (the NAS-archive case)."
+  },
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "Turn this on for a photo archive you rarely browse, so its photos get indexed anyway.",
+  "@settings.mediaIndex.networkVolumes.alwaysHelp": {
+    "description": "Help text under the \"Always index this drive\" switch, explaining why the NAS-archive case needs it."
+  },
+  "settings.mediaIndex.networkVolumes.alwaysAria": "Always index photos on {name}",
+  "@settings.mediaIndex.networkVolumes.alwaysAria": {
+    "description": "Accessible label for the \"Always index this drive\" switch.",
+    "placeholders": { "name": { "content": "The network drive''s name, like \"naspi\"." } }
+  },
+  "settings.mediaIndex.networkVolumes.paused": "Paused, resumes when this drive reconnects",
+  "@settings.mediaIndex.networkVolumes.paused": {
+    "description": "Status line for a network drive whose indexing paused because the drive disconnected mid-pass. What''s already indexed stays searchable."
+  },
+  "settings.mediaIndex.networkVolumes.indexing": "Indexing photos now",
+  "@settings.mediaIndex.networkVolumes.indexing": {
+    "description": "Status line shown while a network drive''s photos are being indexed right now."
+  },
+  "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} photo indexed} other {{countText} photos indexed}}",
+  "@settings.mediaIndex.networkVolumes.indexed": {
+    "description": "Status line showing how many of a drive''s photos are already indexed and searchable.",
+    "placeholders": {
+      "count": { "content": "The number of indexed photos, used to choose singular or plural wording." },
+      "countText": { "content": "The same number, preformatted with thousands separators for display." }
+    }
+  },
+  "settings.mediaIndex.networkVolumes.notIndexedYet": "Not indexed yet",
+  "@settings.mediaIndex.networkVolumes.notIndexedYet": {
+    "description": "Status line for a drive that''s opted in but hasn''t indexed any photos yet (the pass hasn''t run or found images)."
+  },
   "settings.indexing.askForEachDrive.label": "Ask for each drive",
   "@settings.indexing.askForEachDrive.label": {
     "description": "Label for the toggle that controls whether Cmdr asks, the first time you open a network share or USB device, if you''d like to index it. In Settings > Behavior > File system watching.",

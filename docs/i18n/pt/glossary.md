@@ -403,3 +403,30 @@ Settled while translating the Compress feature:
   reused across all three English "Checking…"/"Checked…" pairs for cross-file consistency, per the tool-status
   doing/gerund + done/preterite pattern already established in `queue.row.label` and `operationLog.summary.*` · high.
   `askCmdr.tool.appState.*`, `askCmdr.tool.listVolumes.*`, `askCmdr.tool.folderImportance.*`.
+
+### Network image-indexing terms (opt a network drive into image-content indexing, `settings.mediaIndex.networkVolumes.*` + `search.imageResults.networkOff/paused`, 2026-07-13)
+
+- network drive · **disco de rede** · glossary drive/disk = **disco** (macOS Finder) + "de rede" modifier (the standard
+  pt-BR network qualifier: 137 "de rede" hits in the pile, incl. "discos de rede", "servidor de rede"; MS's "unidade de
+  rede" not used, since Cmdr follows macOS "disco") · high. Used across the `networkVolumes.*` list and the two
+  `search.imageResults` network strings.
+- photo (vs "image") · **foto** / plural **fotos** · macOS pile (Fotos/foto/fotos, 90+ hits) · confirmed. The English
+  deliberately says "photos" in the network strings (vs "images"/**imagens** in the on-toggle `enabled.*` row); pt keeps
+  the same split (fotos vs imagens). Participles agree with fem **foto**: "foto indexada" / "fotos indexadas".
+- background (image indexing runs in the background) · **em segundo plano** · glossary "background (running transfer)"
+  row, reused for the indexing-pass sense (20 pile hits) · confirmed. `networkVolumes.description`.
+- always index (mark a rarely-browsed drive/folder to index regardless) · "Always index this drive" → **Sempre indexar
+  este disco**; "Always-index drives/folders" (internal labels) → **Discos/Pastas para sempre indexar** · standard
+  pt-BR; **indexar** per the glossary Indexing row · high. `networkVolumes.alwaysLabel/alwaysAria`,
+  `alwaysIndexVolumes/Folders.label`.
+- photo archive (a rarely-browsed photo collection, NAS-archive case) · **acervo de fotos** · standard pt-BR for a
+  collection/library; chosen over "arquivo de fotos" to avoid the file/archive ("arquivo") ambiguity · high.
+  `networkVolumes.alwaysHelp`.
+- reconnect / disconnect (a network drive) · **reconectar** / **desconectar** · pile (reconectar 2 hits; glossary
+  Disconnect → Desconectar) · high. Status "Paused, resumes when this drive reconnects" → "Pausado, retoma quando este
+  disco se reconecta" (pause status **Pausado** + resume **retoma** per the glossary pause/resume rows).
+  `networkVolumes.paused`, `search.imageResults.paused`.
+- "while you''re not busy" (gentle-reading reassurance) · **quando o Mac está ocioso** · restructured to agree with the
+  object (o Mac), not the user, per the gender/inclusive-language rule (sidesteps the gendered "ocupado") · high.
+  `networkVolumes.intro`.
+- No `sameAsSourceJustification` needed: all 19 values differ from English.
