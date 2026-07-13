@@ -1,11 +1,12 @@
-//! Read-API + FTS tests: the FTS5 availability smoke, the query builder (an M1 TDD
+//! Read-API + FTS tests: the FTS5 availability smoke, the query builder (a TDD
 //! target), and an end-to-end search round-trip (incl. the offline-after-unmount
 //! posture).
 
 use super::*;
+use crate::media_index::backend::Tag;
 use crate::media_index::predicate::MediaKind;
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, media_db_path};
-use crate::media_index::writer::MediaWriter;
+use crate::media_index::writer::{MediaWriter, UpsertAnalysis};
 
 /// FTS5 availability smoke: a bundled SQLite build must be able to create an fts5
 /// virtual table. Decision 2's build-flag worry is closed (agent/store proves it),
@@ -75,9 +76,7 @@ fn search_finds_the_image_by_ocr_text_and_survives_unmount() {
                 state: EnrichmentState::Done,
                 engine_version: "e1".to_string(),
             },
-            Some(crate::media_index::writer::UpsertAnalysis::ocr_only(
-                "a sunset over the beach with palm trees",
-            )),
+            Some(UpsertAnalysis::ocr_only("a sunset over the beach with palm trees")),
         )
         .expect("upsert");
     writer.flush_blocking().expect("flush");
@@ -103,4 +102,55 @@ fn search_finds_the_image_by_ocr_text_and_survives_unmount() {
     writer.shutdown();
     let offline = MediaIndex::open(dir.path(), "root");
     assert_eq!(offline.search_ocr("palm", 10).expect("offline search").len(), 1);
+}
+
+// ── Tag search is case-insensitive ────────────────────────────────────────
+
+/// Store one image tagged `sky` (Vision's taxonomy labels are lowercase), then read
+/// it back. `images_with_tag` must fold the query so a capitalized `"Sky"` finds it,
+/// and the FTS-folded tag words must already tokenize case-insensitively.
+#[test]
+fn tag_search_is_case_insensitive() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = media_db_path(dir.path(), "root");
+    MediaStore::open(&db_path).expect("open store");
+    let writer = MediaWriter::spawn(&db_path).expect("writer");
+
+    writer
+        .upsert(
+            MediaStatusRow {
+                path: "/photos/clouds.jpg".to_string(),
+                mtime: Some(1),
+                size: Some(2),
+                media_kind: MediaKind::Image,
+                state: EnrichmentState::Done,
+                engine_version: "e1".to_string(),
+            },
+            Some(UpsertAnalysis {
+                tags: vec![Tag {
+                    label: "sky".to_string(),
+                    score: 0.9,
+                }],
+                ..Default::default()
+            }),
+        )
+        .expect("upsert");
+    writer.flush_blocking().expect("flush");
+
+    let index = MediaIndex::open(dir.path(), "root");
+
+    // Structured tag-score filter: a capitalized query must find the lowercase tag.
+    let hits = index.images_with_tag("Sky", 0.0).expect("tag search");
+    assert_eq!(hits.len(), 1, "capitalized 'Sky' must match stored 'sky'");
+    assert_eq!(hits[0].path, "/photos/clouds.jpg");
+    // The exact-case query still works.
+    assert_eq!(index.images_with_tag("sky", 0.0).expect("tag search").len(), 1);
+
+    // The FTS-folded tag words (source='tag' rows) already tokenize case-insensitively,
+    // so an uppercase keyword search finds the folded tag too.
+    assert_eq!(
+        index.search_ocr("SKY", 10).expect("ocr search").len(),
+        1,
+        "FTS tokenization folds case, so uppercase keyword finds the folded tag"
+    );
 }

@@ -6,7 +6,7 @@
 //! this. It owns a `platform_case`-registered read connection and reads the DB
 //! directly, so it answers OFFLINE from `media.db` after the volume unmounts.
 //!
-//! ## FTS query building (an M1 TDD target)
+//! ## FTS query building (a TDD target)
 //!
 //! Raw user input must NEVER be fed into `... MATCH ?` — ordinary filename/text
 //! fragments (`report(v2)`, `foo:bar`, a bareword `AND`/`OR`) throw an fts5 syntax
@@ -132,14 +132,17 @@ impl MediaIndex {
     }
 
     /// The images tagged `label` at or above `min_score`, each with the matching
-    /// tag's score, highest first — the tag-score filter (plan M2). Empty for a
+    /// tag's score, highest first — the tag-score filter. Empty for a
     /// missing/never-enriched DB.
     pub fn images_with_tag(&self, label: &str, min_score: f32) -> Result<Vec<TagHit>, MediaStoreError> {
         if !self.db_path.exists() {
             return Ok(Vec::new());
         }
+        // Vision's taxonomy labels are stored lowercase, so Unicode-lowercase the query
+        // here to make tag search case-insensitive (a `Sky` query finds the `sky` tag).
+        let folded = label.to_lowercase();
         let conn = open_read_connection(&self.db_path)?;
-        Ok(read_tag_matches(&conn, label, min_score)?
+        Ok(read_tag_matches(&conn, &folded, min_score)?
             .into_iter()
             .map(|(path, score)| TagHit { path, score })
             .collect())
