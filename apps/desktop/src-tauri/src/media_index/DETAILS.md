@@ -202,22 +202,33 @@ its menu-event handler is a small backend follow-up rather than an FE change.
 
 ## Schema (`store/`)
 
-`SCHEMA_VERSION` is a disposable-cache version: a mismatch delete-and-recreates `media-{volume_id}.db`. Three objects:
+`SCHEMA_VERSION` is a disposable-cache version: a mismatch delete-and-recreates `media-{volume_id}.db`. It's now `2`
+(M2 added the tag + embedding tables and the FTS `source` column). Objects:
 
 - `media_status` — `WITHOUT ROWID`, `path TEXT PRIMARY KEY COLLATE platform_case`; `mtime`, `size` (the `(path, mtime,
   size)` staleness key); `media_kind` + `state` (typed TEXT tokens, `sqlite3`-inspectable, parsed back to typed enums —
-  `no-string-matching`); `engine_version` (the OS/Vision engine stamp so an OS upgrade re-runs OCR even on an unchanged
-  file — data-COVERAGE, not data-safety, since OCR text is disposable).
-- `media_ocr` — a **standalone** FTS5 table (`path UNINDEXED, text`). Not external-content: `agent/store`'s
-  `messages_fts` points at an integer `messages.id`, but `media_status` is path-keyed and `WITHOUT ROWID`, so there's no
-  integer rowid to hang external content off. Standalone keeps enrichment and GC a simple `WHERE path = ?` delete with no
-  trigger machinery to desync. Created via `CREATE VIRTUAL TABLE … USING fts5`, which doubles as the FTS5 availability
-  guard (a `bundled` build without FTS5 fails there — Decision 2's build-flag worry is closed, `agent/store` proves it).
+  `no-string-matching`); `engine_version` (the combined **analyze provenance stamp** — § M2 — so an OS upgrade to the OCR
+  engine, tag taxonomy, or feature-print model re-runs analysis even on an unchanged file — data-COVERAGE, not
+  data-safety, since the derived data is disposable).
+- `media_ocr` — a **standalone** FTS5 table (`path UNINDEXED, source UNINDEXED, text`). Not external-content:
+  `agent/store`'s `messages_fts` points at an integer `messages.id`, but `media_status` is path-keyed and `WITHOUT
+  ROWID`, so there's no integer rowid to hang external content off. Standalone keeps enrichment and GC a simple `WHERE
+  path = ?` delete with no trigger machinery to desync. It holds up to two rows per path: the OCR text (`source='ocr'`)
+  and the space-joined tag labels (`source='tag'`), so a keyword search matches **tags alongside OCR** (M2). Created via
+  `CREATE VIRTUAL TABLE … USING fts5`, which doubles as the FTS5 availability guard (a `bundled` build without FTS5 fails
+  there — Decision 2's build-flag worry is closed, `agent/store` proves it).
+- `media_tags` — `(path COLLATE platform_case, label, score)` with an index on `path` and on `label`: the STRUCTURED
+  tags for tag-score filtering (`images_with_tag(label, min_score)`), distinct from the folded FTS keyword index above.
+- `media_embedding` — `WITHOUT ROWID`, `(path PRIMARY KEY COLLATE platform_case, dims, vector BLOB)`: the image
+  feature-print embedding as a little-endian `f32` BLOB (`encode_embedding`/`decode_embedding`; `dims` = element count).
+  The vector store's load source (§ M2).
 - `meta` — `schema_version` only.
 
-The `needs_enrichment` staleness predicate is `(path, mtime, size)` + engine: stale when there's no row, or when
-`(mtime, size)` changed, or when the engine stamp changed. State is deliberately excluded from the key so a failed file
-isn't re-hammered every completed scan; a real file change re-tries it.
+The `needs_enrichment` staleness predicate is `(path, mtime, size)` + the analyze stamp: stale when there's no row, or
+when `(mtime, size)` changed, or when the stamp changed. State is deliberately excluded from the key so a failed file
+isn't re-hammered every completed scan; a real file change re-tries it. A successful `upsert` writes `media_status` +
+the OCR/tag FTS rows + `media_tags` + `media_embedding` in ONE transaction (clearing each prior row first, so a
+re-enrichment leaves nothing stale); a failure clears them all and records only the `Failed` status.
 
 ## The image-qualification predicate (`predicate.rs`)
 
@@ -230,14 +241,17 @@ directory and runs `qualify_dir` per group.
 ## The `VisionBackend` seam (`backend/`)
 
 The inference boundary the scheduler, store, and GC sit behind, so all of that is testable with no GPU/ANE/FFI. The
-trait is `VisionBackend` (`engine_version` + `ocr`). Two impls:
+trait is `VisionBackend`: `ocr` (OCR only, for the focused OCR tests), `analyze` (the enrichment entry point — OCR +
+tags + feature print from ONE decode, M2), and the provenance stamps `engine_version` / `taxonomy_version` /
+`analysis_stamp` (§ M2). Two impls:
 
-- `fake::FakeVisionBackend` — deterministic, zero-FFI (scripted/derived OCR text). Every test injects it via
-  `MediaScheduler::new`; it's also the production fallback off-macOS.
-- `vision::VisionOcrBackend` (macOS only) — the real OCR. `scheduler::start` selects it on macOS.
+- `fake::FakeVisionBackend` — deterministic, zero-FFI (scripted/derived OCR text, tags, and a stem-derived unit
+  embedding). Every test injects it via `MediaScheduler::new`; it's also the production fallback off-macOS.
+- `vision::VisionOcrBackend` (macOS only) — the real OCR + classify + feature print. `scheduler::start` selects it on
+  macOS.
 
-Tags, image feature prints, CLIP embeddings, and faces become sibling methods on this trait as M2+ land, each returning
-its own typed result, each fakeable the same way.
+CLIP embeddings and faces become sibling methods on this trait as M3+ land, each returning its own typed result, each
+fakeable the same way.
 
 ### The real Vision OCR backend (`backend/vision.rs`, macOS)
 
@@ -267,10 +281,10 @@ framework call — never a blanket file allow (`clippy::undocumented_unsafe_bloc
 file returns `Decode`; a request failure returns `Ocr`. The pass logs it and marks the row `Failed`.
 
 **`engine_version`** is `vision-ocr;os={major}.{minor}.{patch};rev={N}`: the macOS version (`NSProcessInfo`) plus the
-current `VNRecognizeTextRequest` revision (read off a fresh instance). Both bump when the OS ships a new OCR engine, so a
-stored row's stamp mismatches and re-runs — data-COVERAGE, cheap and stable within an OS version.
+current `VNRecognizeTextRequest` revision (read off a fresh instance). The M2 `analyze` path additionally computes
+`taxonomy_version` (the `VNClassifyImageRequest` revision) and folds all three revisions into `analysis_stamp` (§ M2).
 
-The fixture for the macOS-gated real-OCR test lives at `backend/test-fixtures/ocr-sample.png` (a tiny PNG rendering
+The fixture for the macOS-gated real tests lives at `backend/test-fixtures/ocr-sample.png` (a tiny PNG rendering
 "CMDR OCR" / "hello 2026", generated once via CoreGraphics text drawing).
 
 ## The read API (`read/`)
@@ -348,11 +362,113 @@ watching (a dedicated "Image search" card, `FileSystemWatchingSection.svelte`), 
 default. It live-applies through `settings-applier.ts` → `setImageIndexEnabled` (no
 restart), the standard backend-affecting-setting pattern.
 
-## What M1 leaves out
+## M2 — Tags, image-similarity embeddings, vector search, importance-prioritization
 
-The search/query-ui frontend + thumbnail grid + coverage-honesty line; the settings toggle UI + the M1 E2E; SMB/MTP
-enrichment + the conservative byte-fetch policy (M1.5); tags, feature prints, CLIP, faces, the durable identity store,
-and the importance-threshold slider (M2+).
+M2 adds Vision tags + image feature-print embeddings, a brute-force vector store, real importance-prioritized
+scheduling, the settings-slider covered-count preview, the per-folder photo-search exclude, and an honest per-volume
+progress denominator. Still zero model download (Vision-only); local + opted-in SMB both get tags + embeddings.
+
+### `analyze`: one decode, three outputs (`backend/vision.rs`)
+
+The enrichment path calls `VisionBackend::analyze`, not `ocr`. The real backend decodes the thumbnail ONCE
+(`decode_thumbnail`, the shared M1 downscale) and performs THREE Vision requests on a single `VNImageRequestHandler`:
+`VNRecognizeTextRequest` (OCR), `VNClassifyImageRequest` (scene/object tags), and `VNGenerateImageFeaturePrintRequest`
+(the image↔image feature print). Reusing one decode + one handler is the Decision-5 "decode once" applied across all
+three — decoding the original three times would dominate cost.
+
+- **Tags** (`read_tags`): the top `MAX_TAGS` (12) classifications above `MIN_TAG_SCORE` (0.1), highest confidence first
+  (Vision returns them sorted, so the read breaks at the floor). The taxonomy is FIXED by the OS — **1,303 identifiers on
+  macOS 26.5.1** (verified 2026-07-13 via `VNClassifyImageRequest::supportedIdentifiersAndReturnError().len()`). A
+  taxonomy change on an OS upgrade re-tags via the provenance stamp below.
+- **Feature print** (`read_feature_print`): the first `VNFeaturePrintObservation`'s raw bytes decoded per `elementType`
+  (`Float` → `f32`, `Double` → `f64`→`f32`), length-checked against `elementCount` (a mismatch drops it rather than
+  storing garbage). Vision's feature print is image↔image only (no text encoder — that's M3's CLIP).
+- Every new `unsafe` block carries a per-site `// SAFETY:` (the request `new()`s, the observation accessors, the
+  `NSData` byte read is the safe `to_vec`), same discipline as the OCR path.
+
+### The analyze provenance stamp (plan Decision 4)
+
+`analysis_stamp` folds the OCR engine revision, the tag-taxonomy (classify) revision, and the feature-print revision
+into ONE stamp stored in the `media_status.engine_version` column and used by `needs_enrichment`. Because one decode
+produces all three outputs, re-running the whole analysis when ANY component changes costs nothing extra, so a single
+combined stamp is simpler than three per-output stamps and still satisfies "an OS taxonomy change re-tags" (the
+taxonomy-version component bumps → the row goes stale → analyze re-runs → tags refresh). The fake exposes
+`with_engine_version` / `with_taxonomy_version` to simulate either bump.
+
+### The vector store + resident cache (`vector/`, plan Decision 2)
+
+Brute-force cosine in Rust, NO `sqlite-vec` (a loadable extension our `rusqlite` isn't built for; a real build+signing
+project adopted only if a library outgrows brute force, behind this same `VectorStore` trait). `cosine` guards
+degenerate inputs (zero magnitude / length mismatch → `0.0`, never `NaN`). `BruteForceVectorStore::top_k` linearly
+ranks by cosine (source excluded, ties by path); `dedup_clusters` groups near-duplicates by single-linkage union-find
+over pairs at/above a cosine threshold (default 0.9), returning clusters of two or more.
+
+`vector::cache` keeps a load-once `BruteForceVectorStore` per volume (keyed by `media.db` path), mirroring `search/`'s
+warm `SEARCH_INDEX` arena, so a find-similar/dedup query doesn't reload the BLOBs each call (all query-time work runs OFF
+the IPC thread via `spawn_blocking`). Invalidated per COMPLETED enrichment pass (not per write — that would thrash-reload
+mid-pass; the plan accepts eventual consistency until a pass completes) and DROPPED wholesale by `clear_all` from the
+memory-watchdog stop hook, so the resident vectors are counted against the ONE shared resident-memory ceiling.
+
+### Importance-prioritized scheduling (the headline — plan Cross-cutting)
+
+The local `run_pass_blocking` and the network `should_enrich` now read `importance/`'s `ImportanceIndex`
+(`MediaScheduler::folder_scores` → `above_threshold(threshold)`), the SAME signal the M2 slider sets. The scheduler:
+
+- **orders** the walk by folder importance descending (`enrich::prioritized`), so high-importance folders enrich first;
+- **filters** via a `should_enrich(path)` closure: an EXCLUDED folder never enriches (hard privacy veto, checked first);
+  otherwise enrich when an "always index" override covers it OR its folder importance meets the threshold. A deferred
+  image stays in the GC `current` set, so a below-threshold folder's rows are never wiped — only vanished files are GC'd.
+- **`folder_scores` returns `Option`** — `None` when importance NEVER scored the volume (fresh, offline, importance
+  disabled; detected via `recompute_generation() == 0`). This `None` is load-bearing and differs by path: a LOCAL volume
+  falls back to "enrich everything" (cheap local reads; the next pass after importance scores applies the threshold), a
+  NETWORK volume falls back to "override only" (conservative — never drag a whole NAS off importance-absence). Floored
+  junk (`node_modules`, caches, hidden/system) has no importance row at all, so it's excluded at any threshold.
+
+Threshold lives in `gate` as an `f64`-bits atomic (`set_importance_threshold` / `importance_threshold`, clamped
+`0.0..=1.0`), seeded from `mediaIndex.importanceThreshold` and live-applied by `media_index_set_importance_threshold`.
+Default `0.0` (`DEFAULT_IMPORTANCE_THRESHOLD`): enrich every scored folder (non-regressive vs M1's "enrich all real
+folders"), the slider raises it to defer low-importance folders. Importance keys on the INDEX identity, so the network
+gate strips the mount root off the OS path before the lookup.
+
+### Covered-count preview + honest progress (`coverage.rs`, `commands.rs`)
+
+`media_index_covered_count(threshold, volume_ids)` powers the slider's live preview: across the ENABLED volumes
+(master on AND (local, or SMB opted-in); MTP never), how many folders score `≥ threshold` and how many images they hold
+— exactly `(importance ≥ threshold) AND opted-in`, never a non-opted-in SMB/MTP volume. The qualifying-image count per
+folder is an O(entries) index walk, so it's cached per volume (`coverage::get_or_build`, a `folder → count` map,
+invalidated on each pass) and the threshold is applied cheaply by intersecting with `above_threshold` — a debounced drag
+only re-runs the cheap importance read + `covered_for_volume` (pure, unit-tested). `pending` is `true` when any enabled
+requested volume isn't ready (still scanning / not yet scored), so the UI voices "naspi still scanning" rather than a
+confident wrong number. `media_index_volume_state` gained `qualifying_count: Option<u64>` (the honest denominator for
+"12,000 of 38,900 images", `None` when offline/scanning); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
+
+### Per-folder photo-search exclude (privacy complement)
+
+`network::config` gained `excluded_folders` (seeded from `mediaIndex.excludedFolders`, live-applied by
+`media_index_set_excluded_folder`): an image at or under an excluded folder never enriches, a HARD veto that beats any
+"always index" override — the privacy complement to the opt-in (protect a high-importance `~/Documents/IDs` the
+threshold alone can't). It stops FUTURE enrichment; existing rows for a now-excluded folder stay until the next GC/rescan
+(purging them on exclude is a possible follow-up).
+
+### M2 read API + commands
+
+`MediaIndex` gained `find_similar(source_path, k)` (source embedding → `top_k` over the resident cache, source
+excluded), `dedup_clusters(threshold)`, and `images_with_tag(label, min_score)` (structured tag-score filter). New async
+commands (all `spawn_blocking`, offline-capable, registered in BOTH `ipc.rs` + `ipc_collectors.rs`; regen bindings):
+`media_index_find_similar`, `media_index_dedup_clusters`, `media_index_search_tag`, `media_index_covered_count`,
+`media_index_set_importance_threshold`, `media_index_set_excluded_folder`. **Shapes for the M2 frontend agent:**
+`SimilarImage { path, score: f32 }`, `DedupCluster { paths: Vec<String> }`, `TagHit { path, score: f32 }`,
+`CoveredCount { folders: u64, images: u64, pending: bool }`, `Tag { label, score: f32 }`, and the extended
+`MediaIndexVolumeState { …, qualifying_count: Option<u64> }`. Live-apply for the threshold + exclude settings needs a
+`settings-applier.ts` entry (the one FE handoff the backend can't do).
+
+## What's left for later
+
+- **M2 frontend (next agent):** the importance-threshold slider + live covered-count preview, the find-similar UI, the
+  progress/ETA surface, the per-folder exclude UI, and tag-search surfacing. The backend commands + shapes above are
+  ready; live-apply of the threshold + exclude settings needs a `settings-applier.ts` entry.
+- **M3+:** CLIP text→image semantic search, the model-install path, faces (detect/embed/cluster/name), the durable
+  identity store, and LLM captions.
 
 ## Testing
 
@@ -366,3 +482,11 @@ off the committed fixture, and hostile inputs (non-image, empty, missing) each r
 panic. The async wire-up (`ready_volumes_with_kind` sweep → `wire_volume` → `run_pass_blocking`) is covered indirectly by
 the reactive pieces (bus-edge consumption + coalescer + the enrich core); a full end-to-end async test needs the
 process-global index registry and is deferred to the E2E slice.
+
+**M2 tests** (all real red→green on the pure/risky bits): cosine + `top_k` ranking + source exclusion + dedup grouping
+(`vector/tests.rs`, pure); tags/embedding round-trip + tag-score filtering + the embedding codec + the
+clear-on-re-enrichment invariant (`store/tests.rs`); `prioritized` ordering + the scheduler DEFERS a below-threshold
+folder + ENRICHES an overridden one, both keeping deferred rows for GC (`scheduler/enrich_tests.rs`); the covered-count
+arithmetic over a synthetic counts+scores map (`coverage.rs`); the fake backend's deterministic tags/feature-prints
+(`backend/fake.rs`). **macOS-gated real FFI** (`backend/vision/tests.rs`): `analyze` returns real OCR + well-formed tags
++ a stable-length feature print off the fixture, and a real feature print's self-cosine is ~1.0.

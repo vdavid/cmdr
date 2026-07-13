@@ -1,62 +1,62 @@
 # Media index subsystem
 
 Image-ML enrichment: makes a volume's images searchable by their content. A read-consumer of `indexing/`, sibling to
-`importance/` and `search/`. **OCR-text search only, off by default. Local volumes enrich by default; opt-in SMB volumes
-conservatively (M1.5); MTP never background-sweeps. Real macOS Vision OCR in production; a fake for tests.** Plan:
-[`docs/specs/media-ml-index-plan.md`](../../../../../docs/specs/media-ml-index-plan.md). Port rationale, the network-fetch
-decision, GC safety, FFI discipline, and schema: [DETAILS.md](DETAILS.md).
+`importance/` and `search/`. **Off by default. On-device OCR text + Vision tags + image-similarity embeddings (M2).
+Local volumes enrich by default; opt-in SMB volumes conservatively (M1.5); MTP never background-sweeps. Real macOS Vision;
+a fake for tests.** Plan: [`docs/specs/media-ml-index-plan.md`](../../../../../docs/specs/media-ml-index-plan.md).
+Port rationale, network-fetch, GC safety, FFI, schema, M2 depth: [DETAILS.md](DETAILS.md).
 
 ## Module map
 
-- `predicate.rs` — the PURE image-qualification predicate (`qualify_dir`): images vs non, Live Photos, `.aae` sidecars,
-  RAW+JPEG pairs. Sibling-aware, unit-tested.
-- `store/` — per-volume `media.db` (ported from `importance/store/`): `media_status` (path-keyed) + `media_ocr` (FTS5) +
-  `meta`, and the `needs_enrichment` staleness predicate.
-- `writer.rs` + `writer_registry.rs` — the ONE writer thread per volume and its lazy registry.
-- `backend/` — the `VisionBackend` seam, the deterministic `FakeVisionBackend`, and (macOS) `vision.rs`, the real
-  `objc2-vision` OCR backend (decode + recognize on a dedicated 8 MB-stack OS thread; see DETAILS).
-- `scheduler/` — the bus-driven, coalesced pass (`PassCoordinator` clone) + its registry-free walk+enrich+GC core
-  (`enrich.rs`); routes each volume by kind (local + opted-in SMB enrich; MTP never background-swept).
-- `network/` — SMB byte-fetch enrichment (M1.5): the OS-mount fetcher (`fetch.rs`), the conservative-fetch policy
-  (`policy.rs`: idle/bandwidth/override, pure), the settings-seeded opt-in/override/paused state (`config.rs`), the
-  disconnect-safe pass (`enrich.rs`). `foreground.rs` is the app-wide idle signal it gates on.
-- `read/` — the `MediaIndex` consumer read API (OCR search + `build_ocr_match_query`), the ONLY consumer entry point.
-- `commands.rs` — the thin IPC surface (OCR search, per-volume coverage signal, opt-in/override setters, `cmdr-media://`
-  thumbnail tokens); `gate.rs` — the master-toggle + emergency-stop atomics the scheduler gates on.
+- `predicate.rs` — PURE image-qualification (`qualify_dir`): images, Live Photos, `.aae` sidecars, RAW+JPEG.
+- `store/` — per-volume `media.db` (ported from `importance/store/`): `media_status` + `media_ocr` (FTS5: OCR + folded
+  tags) + `media_tags` + `media_embedding`; `needs_enrichment` + embedding codec.
+- `writer.rs` + `writer_registry.rs` — the ONE writer thread per volume, and its registry.
+- `backend/` — the `VisionBackend` seam (`ocr`, `analyze`, stamps), `FakeVisionBackend`, and (macOS) `vision/`, the real
+  backend (OCR + classify + feature print on one 8 MB-stack thread).
+- `scheduler/` — bus-driven coalesced pass + `enrich.rs` (walk + importance-order + enrich + GC).
+- `network/` — SMB byte-fetch (M1.5): `fetch.rs`, `policy.rs`, `config.rs` (opt-in/override/exclude/paused), `enrich.rs`;
+  `foreground.rs` = the idle signal.
+- `vector/` — brute-force `VectorStore` (cosine top-k, dedup) + the resident `cache`.
+- `coverage.rs` — the slider covered-count (cached counts + threshold math).
+- `read/` — `MediaIndex`, the ONLY consumer entry (OCR/tag search, find-similar, dedup).
+- `commands.rs` — the thin IPC surface; `gate.rs` — master-toggle, emergency-stop, threshold atomics.
 
 ## Must-knows
 
-- **This is a deliberate PORT of `importance/`** (store, writer registry, scheduler, coalescer, read API). Mirror its
-  patterns; don't re-derive. Read `importance/CLAUDE.md` before changing structure here.
-- **Path-keyed, disposable cache.** Rows key on the index path identity (no stable entry id); a schema bump or corruption
-  delete-and-recreates `media.db` (no migrations). Staleness is `(path, mtime, size)` PLUS the OS/Vision engine stamp
-  (`needs_enrichment`).
-- **NEVER persist the lifecycle-bus `generation`** (a transient wake counter, resets to 1 each launch); there is
-  deliberately NO per-row scan-generation column (plan Decision 3). The bus mechanism is single-sourced in
-  [`indexing/DETAILS.md`](../indexing/DETAILS.md) — link it, don't re-document.
-- **GC is deletion-driven AND edge-triggered — a data-safety line.** A pass GCs ONLY on a `Completed` bus edge (consumed
-  via `borrow_and_update`, NEVER a `borrow()` poll) or the Fresh sweep — post-writer-flush, so the tree is whole. Don't
-  switch to a poll, and don't GC on volume-absence (a mid-`Scanning` truncate or a disconnect must never sweep).
-- **Inference sits behind `VisionBackend`.** Production selects the real macOS `VisionOcrBackend` in `scheduler::start`;
-  every test injects `FakeVisionBackend` (zero FFI) via `MediaScheduler::new`, never `start` (off-macOS also falls back to
-  the fake). The real backend runs ALL Vision/ImageIO on ONE dedicated 8 MB-stack OS thread (never rayon/small stacks for
-  macOS frameworks — `src-tauri/CLAUDE.md`); a hostile image returns a typed `VisionError`, never a panic/hang. It decodes
-  from `ImageInput.bytes` when set (network pre-fetch), else reads `path` (local). FFI/threading depth: DETAILS.
-- **Off by default + shared memory ceiling.** The master toggle (`mediaIndex.enabled`) defaults off; the scheduler
-  no-ops until on. Cancellation hooks the EXISTING indexing memory watchdog (`indexing::register_subsystem_stop_hook`) —
-  do NOT stand up a second 16 GB ceiling over the same pool.
-- **A disconnect is NOT a bad file (a data-safety line).** A mid-pass SMB unmount PAUSES the pass (keeps completed rows,
-  no GC per above); it writes NO `Failed` for the in-flight image. `Failed` is reserved for a genuinely bad file (good
-  read, decode/OCR failure). The byte-fetch, idle/bandwidth policy, and override live in [DETAILS.md](DETAILS.md)
-  § "Network-volume enrichment (M1.5)".
-- **`search/` reaches `media.db` ONLY through `MediaIndex`** (plan Decision 8) — no raw `rusqlite` dep, or the
-  collation/one-writer invariants leak. `media_index` commands register in BOTH `ipc.rs` and `ipc_collectors.rs` (missing
-  from either breaks the typed bindings — regen with `pnpm bindings:regen`).
+- **A deliberate PORT of `importance/`** (store, writer registry, scheduler, coalescer, read API). Mirror its patterns;
+  read `importance/CLAUDE.md`.
+- **Path-keyed, disposable cache.** Rows key on the index path identity (no stable entry id); a schema bump/corruption
+  delete-and-recreates `media.db` (no migrations; `SCHEMA_VERSION` is `2`). Staleness is `(path, mtime, size)` PLUS the
+  analyze provenance stamp.
+- **`analyze` is the enrichment entry, not `ocr`** — OCR + tags + feature print from ONE decode (Decision 5). Its
+  `analysis_stamp` (OCR engine + tag taxonomy + feature-print revisions, in the `engine_version` column) drives
+  staleness, so an OS taxonomy change re-tags. Tag labels fold into `media_ocr` (a `source` column) for keyword search.
+- **NEVER persist the lifecycle-bus `generation`** (a transient wake counter, resets to 1 each launch); there is NO
+  per-row scan-generation column. Bus single-sourced in [`indexing/DETAILS.md`](../indexing/DETAILS.md).
+- **GC is deletion-driven AND edge-triggered — a data-safety line.** A pass GCs ONLY on a `Completed` bus edge (via
+  `borrow_and_update`, NEVER a `borrow()` poll) or the Fresh sweep — post-flush, tree whole. Don't GC on volume-absence
+  (a mid-`Scanning` truncate or a disconnect must never sweep). A deferred below-threshold image stays in the GC
+  `current` set, so only vanished files are GC'd.
+- **Importance-prioritized (the headline).** The scheduler orders + filters by `ImportanceIndex` at the slider threshold
+  (`gate::importance_threshold`). `folder_scores` is `None` when importance never scored the volume; the fallback DIFFERS:
+  LOCAL enriches all, NETWORK enriches override-only (never drag a whole NAS). An EXCLUDED folder is a hard veto (beats
+  override); floored junk has no importance row, so it's skipped at any threshold.
+- **Inference behind `VisionBackend`.** Production selects real Vision in `scheduler::start`; every test injects
+  `FakeVisionBackend` via `MediaScheduler::new`, never `start`. The real backend runs ALL Vision/ImageIO on ONE 8 MB-stack
+  thread (never rayon for macOS frameworks); a hostile image returns a typed `VisionError`, never a panic/hang.
+- **Off by default + ONE shared memory ceiling.** The master toggle (`mediaIndex.enabled`) defaults off; the scheduler
+  no-ops until on. Cancellation hooks the EXISTING indexing watchdog (`register_subsystem_stop_hook`), which also drops
+  the vector caches — do NOT add a second ceiling. Query-time work runs OFF the IPC thread; the vector cache is
+  load-once, invalidated per completed pass.
+- **A disconnect is NOT a bad file (data-safety).** A mid-pass SMB unmount PAUSES (keeps completed rows, no GC, no
+  `Failed` — that's reserved for a genuinely bad file: a good read but a decode/analysis failure).
+- **`search/` reaches `media.db` ONLY through `MediaIndex`** (Decision 8) — no raw `rusqlite` dep. Commands register in
+  BOTH `ipc.rs` and `ipc_collectors.rs` (regen with `pnpm bindings:regen`).
 
-## Not yet (later slices)
+## Not yet
 
-The M1.5b UI (per-volume SMB opt-in + volume "always index" toggle) ships in Settings > File system watching > Image
-search (see [DETAILS.md](DETAILS.md) § "The FE surface"). The Search dialog's image-OCR grid targets the focused pane's
-volume (see [`src/lib/search/CLAUDE.md`](../../../src/lib/search/CLAUDE.md)). Still open: the per-FOLDER override's FE
-trigger (a native menu item), full MTP on-demand wiring, the importance slider + progress/ETA (M2), and tags,
-embeddings, faces (M2+).
+M2 frontend (next agent): the importance slider + covered-count preview, find-similar UI, progress/ETA, exclude UI,
+tag-search surfacing — backend commands + shapes are ready ([DETAILS.md](DETAILS.md) § M2), and live-apply of the
+threshold + exclude settings needs a `settings-applier.ts` entry. Later: the per-FOLDER override FE trigger, MTP
+on-demand, and M3+ (CLIP, faces, durable identity store, captions).

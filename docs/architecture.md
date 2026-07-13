@@ -145,13 +145,16 @@ All under `apps/desktop/src-tauri/src/`.
   neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
   (queryable even for an unmounted volume). See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/importance/CLAUDE.md)
   and [`docs/specs/importance-subsystem-plan.md`](specs/importance-subsystem-plan.md)
-- `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content. A read-consumer of
-  `indexing/`, ported from `importance/`, with its own per-volume disposable `media.db` (path-keyed, FTS5 OCR text), a
-  scheduler that enriches on the lifecycle-bus scan-completion edge, inference behind a `VisionBackend` seam (M1 ships a
-  fake; real objc2-vision OCR lands next), deletion-driven GC gated on a completed scan, and the consumable `MediaIndex`
-  read API (offline after unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively (idle-gated,
-  bandwidth-bounded byte-fetch off the OS mount; disconnect pauses without losing coverage; MTP never
-  background-sweeps). OCR-only, off by default. See its
+- `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content (OCR text, Vision scene/
+  object tags, and image-similarity "find similar" via feature-print embeddings). A read-consumer of `indexing/`, ported
+  from `importance/`, with its own per-volume disposable `media.db` (path-keyed, FTS5 OCR + tags, structured tags, and a
+  brute-force cosine vector store over feature-print embeddings), a scheduler that enriches on the lifecycle-bus
+  scan-completion edge, importance-prioritized (high-importance folders first, below the settings slider threshold
+  deferred, with "always index" overrides + a per-folder privacy exclude), inference behind a `VisionBackend` seam (real
+  objc2-vision OCR + classify + feature print, a fake for tests), deletion-driven GC gated on a completed scan, and the
+  consumable `MediaIndex` read API (OCR/tag search + find-similar, offline after unmount). Enriches local volumes plus
+  opt-in network (SMB) volumes conservatively (idle-gated, bandwidth-bounded byte-fetch off the OS mount; disconnect
+  pauses without losing coverage; MTP never background-sweeps). Off by default. See its
   [`CLAUDE.md`](../apps/desktop/src-tauri/src/media_index/CLAUDE.md) and
   [`docs/specs/media-ml-index-plan.md`](specs/media-ml-index-plan.md)
 - `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
