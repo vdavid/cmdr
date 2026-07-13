@@ -973,6 +973,9 @@ pub(crate) fn stop_all_indexing() {
             log::warn!("stop_all_indexing: stop_indexing('{volume_id}') failed: {e}");
         }
     }
+    // Tell shared-resident-pool subsystems (media_index enrichment) to yield to the
+    // SAME 16 GB ceiling, rather than a second independent budget over one pool.
+    super::subsystem_stop::run_subsystem_stop_hooks();
 }
 
 /// The typed kind of a registered volume, or `None` if it has no index instance.

@@ -26,6 +26,7 @@ mod routing;
 mod scan_completion;
 mod state;
 pub mod store;
+pub mod subsystem_stop;
 pub mod writer;
 
 mod memory_watchdog;
@@ -83,6 +84,7 @@ pub use state::{
     clear_index, force_scan, init, is_active, should_auto_start, should_auto_start_indexing, start_indexing,
     stop_indexing, stop_scan, trigger_verification,
 };
+pub use subsystem_stop::register_subsystem_stop_hook;
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub use smb_index::SmbIndexGateReason;
