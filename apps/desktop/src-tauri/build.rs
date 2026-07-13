@@ -19,9 +19,18 @@ fn main() {
     // without the feature, so we can't put this in the static capabilities/).
     #[cfg(feature = "playwright-e2e")]
     {
-        let cap_path = std::path::Path::new("capabilities").join("playwright.json");
+        // Write via temp + rename (the house atomic-write pattern). Besides atomicity, this
+        // dodges a real failure: under OrbStack's file sharing, a host-side delete of this
+        // exact file (which every non-feature macOS build does, below) leaves Docker
+        // containers with a persistent ENOENT for the name — a direct O_CREAT open fails
+        // while rename() onto the name succeeds (verified in-container via strace,
+        // OrbStack on macOS 26, 2026-07-13). The Linux E2E build runs inside such a
+        // container, so a plain `fs::write` here breaks it whenever a macOS build ran last.
+        let cap_dir = std::path::Path::new("capabilities");
+        let cap_path = cap_dir.join("playwright.json");
+        let tmp_path = cap_dir.join(format!(".playwright.json.tmp-{}", std::process::id()));
         std::fs::write(
-            &cap_path,
+            &tmp_path,
             r#"{
     "$schema": "../gen/schemas/desktop-schema.json",
     "identifier": "playwright",
@@ -38,7 +47,8 @@ fn main() {
 }
 "#,
         )
-        .expect("Failed to write playwright capability file");
+        .expect("Failed to write playwright capability temp file");
+        std::fs::rename(&tmp_path, &cap_path).expect("Failed to move playwright capability file into place");
     }
 
     // Clean up the generated capability file when building without the feature,

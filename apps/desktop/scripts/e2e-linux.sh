@@ -564,6 +564,13 @@ else
             # diagnostic logging) gate on this. See docs/testing.md.
             export CMDR_E2E_MODE=1
 
+            # Drive Ask Cmdr through the deterministic scripted fake LLM so
+            # ask-cmdr.spec.ts can assert send-and-render with no provider. Must
+            # be exported on the APP process (launched below), which reads it in
+            # commands/agent.rs resolve_agent_llm. The macOS harness sets the
+            # same flag on its app launch; keep them in sync.
+            export CMDR_E2E_ASK_CMDR_FAKE=1
+
             # Isolated data dir, shared by the app (writes settings.json there
             # via the CMDR_DATA_DIR precedence) and the test runner (specs that
             # assert on persisted state, for example
