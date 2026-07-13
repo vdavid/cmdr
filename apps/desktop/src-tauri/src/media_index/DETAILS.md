@@ -189,10 +189,12 @@ per-item setters don't fit its key→value passthrough table).
 Coverage-honesty for a network volume lives in `src/lib/search/ImageSearchResults.svelte`: it takes an optional
 `mountRoot` + `isNetwork` and reconstructs an openable OS path from each index-relative hit via the pure
 `src/lib/search/media-path.ts` (`resolveMediaHitPath`, mirroring the backend `os_join`), and voices the network states
-("turn on indexing for this drive" when not opted in, "disconnected, showing what's indexed" when paused). NOTE: the
-whole-drive Search dialog currently targets only `ROOT_VOLUME_ID` (a local-index surface), so those network states are
-reachable only once a caller points `ImageSearchResults` at a network volume — the component + path reconstruction are
-ready; wiring the dialog to search a chosen network volume is a separate search-feature change (deferred).
+("turn on indexing for this drive" when not opted in, "disconnected, showing what's indexed" when paused). The Search
+dialog reaches these states by following the FOCUSED PANE's volume: `+page.svelte` passes
+`getFocusedPaneImageSearchVolume()` (the pure `resolveImageSearchVolume` over the volume store) as `imageSearchVolume`,
+so browsing a NAS pane searches that NAS's `media.db` and hits resolve under its mount root; a non-filesystem pane (a
+search-results snapshot) falls back to the local root. Filename search stays deliberately root-scoped (it reads the
+local whole-drive index) — only the image grid follows the pane.
 
 **Per-folder override — FE trigger deferred.** The `media_index_set_always_index_folder` command +
 `mediaIndex.alwaysIndexFolders` setting are ready, but no FE control sets them yet: the natural trigger is a folder
