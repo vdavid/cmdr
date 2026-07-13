@@ -131,3 +131,7 @@ Deferred future work. Unchecked by default; the folder name is the status.
       canonical home)
 - [ ] 2026-06-28 later/drive-index-overall-eta.md - Overall indexing ETA across remaining steps, with the backend
       per-phase calibration it needs to stay honest (the step checklist ships per-step ETA only)
+- [ ] 2026-07-14 [later/default-file-manager-spec.md](later/default-file-manager-spec.md) - Reveal-in-Cmdr
+      (`NSFileViewer` redirect) + `public.folder` default handler: two opt-in toggles (default OFF, onboarding step 4 +
+      Settings), `RunEvent::Opened` plumbing with cold-start buffering, sanctioned `NSWorkspace` registration, and a
+      spike checklist to run before building
