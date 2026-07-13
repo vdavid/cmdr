@@ -276,7 +276,8 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
 7. **Enrichment subscribes to the SHIPPED neutral lifecycle bus and does an initial registry sweep — copy the
    `importance/` scheduler.** `indexing/lifecycle_bus.rs` already exists and is exactly the surface this plan asked for
    (verified 2026-07-13); `media_index`'s scheduler subscribes to it the same way `importance/`'s scheduler does. Nothing
-   to add in `indexing/`; the plumbing below is a copy, not a build. The bus's design already resolves every
+   to add in `indexing/` FOR THE BUS; the bus plumbing below is a copy, not a build. (The memory-watchdog hook is
+   separate, real `indexing/` work — see Cross-cutting § Resources and M1.) The bus's design already resolves every
    adversarial point this decision once flagged:
    - **Per-volume `watch`, not `broadcast` — done.** `publish_scan_completed` (fired from `apply_freshness_event_on` on
      `FreshnessEvent::ScanCompleted`, the chokepoint BOTH local and network funnel through) uses `send_replace` on a
@@ -293,8 +294,11 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
    - **Late-registering volumes — RESOLVED (was an M1-deferred open question).** A share mounted mid-session reaches a
      subscriber through the registration `broadcast` bus (`publish_volume_registered` / `subscribe_registrations`,
      carrying the typed `IndexVolumeKind`). The `importance/` scheduler subscribes to registrations ONCE before its
-     sweep (closing the gap), then wires each late volume's subscriptions on arrival. `media_index` reuses this for its
-     SMB/MTP milestone — no new mechanism needed.
+     sweep (closing the gap), then wires each late volume's subscriptions on arrival. `media_index` reuses this
+     registration/scheduling wiring for its SMB/MTP milestone (M1.5) — no new *bus* mechanism needed. The **byte-fetch
+     policy is genuinely new work**, though: only the scheduling, registration, and bus wiring is a copy; the
+     conservative network-fetch path has no `importance/` sibling to reuse (importance never reads bytes off the wire —
+     Decision 6, M1.5).
    - **Coalescing per `volume_id` — pattern to copy.** `importance/`'s `PassCoordinator` guarantees ONE pass per volume;
      a request arriving mid-pass sets a single re-run flag rather than starting a second. `media_index` copies this so
      the sweep and a concurrent `ScanCompleted` collapse to one pass, then at most one re-run. Cover with a coalescing
@@ -410,6 +414,20 @@ SHIPPED sibling in `importance/` to COPY (verified 2026-07-13). So M1 splits cle
     scheduler/store/GC/search logic is testable without ANE (mirroring `importance/`'s fake seams).
   - **The `media.db` schema + the FTS5 OCR table**, `media_status` path-keyed staleness (`(path, mtime[, size])`), the
     **GC reconcile** (below), and the **search OCR query path** (below). SMB out of M1 — local only.
+  - **A minimal OS/Vision-engine-version stamp on OCR rows, from the start.** `media_status` (or `media_ocr`) rows carry
+    a lightweight OS/Vision-engine-version component so an OS upgrade that changes the Vision OCR engine re-runs OCR. The
+    `(path, mtime, size)` staleness key alone never re-runs on an engine change, so coverage would go silently stale
+    (the same text, decoded by a newer engine, would keep its old result forever). This is data-**coverage**, not
+    data-safety — OCR text is disposable — so OCR needs ONLY the OS/Vision-version component, NOT the full
+    `{model id, OS version, taxonomy}` provenance stamp that faces/tags carry (Decision 4). Adding the column in M1
+    avoids an awkward retrofit when the full provenance stamp first lands in M2 (tags) / M4a (faces); it unifies with how
+    tags re-enrich on a taxonomy bump (M2).
+  - **The memory-watchdog hook (real `indexing/` work).** Hook `media_index` cancellation into the existing indexing
+    memory watchdog's stop action (Cross-cutting § Resources), rather than standing up a second 16 GB ceiling over the
+    same resident pool. The watchdog is currently indexing-specific — `stop_all_indexing` "does not know about other
+    subsystems" (`indexing/CLAUDE.md`) — so this IS a modification to `indexing/`, distinct from the bus (which is pure
+    reuse; see Decision 7). M1 already decodes HEIC/RAW, whose RAM spikes are exactly what the ceiling defends, so wire it
+    here, in the first milestone that can spike.
 - **GC reconcile:** when a source file vanishes (index deletion), GC its media rows — but run the deletion sweep **only
   when triggered by a `Completed` signal off the bus (which fires post-flush), never mid-`Scanning`** (Decision 3), so
   the index-truncate window can't wipe rows for files that still exist. Design the reconcile against index deletions now,
@@ -439,8 +457,12 @@ SHIPPED sibling in `importance/` to COPY (verified 2026-07-13). So M1 splits cle
     reconcile is deletion-driven** (a _known_ entry deleted ⇒ rows gone) **and must NOT fire during an in-progress
     rescan** (transient truncate absence ⇒ rows kept; the sweep runs only when a `Completed` signal fires) — this is a
     data-safety test,
-    not a nicety; the **scheduler throttle/cancel decision**; and **FTS query building** — fail first for the right
-    reason, then implement (`tdd-red-green`).
+    not a nicety; **GC fires on a bus EDGE, never a poll** — assert the sweep consumes a `Completed` **transition**
+    (copy `importance/`'s `borrow_and_update` / `has_changed` edge-triggered consumption), never a `borrow()` of the
+    retained state, because the `watch` retains the last `Completed` across a new scan's truncate window, so a poll of
+    retained state could observe a stale `Completed` mid-truncate and sweep live rows (edge-triggered = safe; this test
+    makes the safety property explicit); the **scheduler throttle/cancel decision**; and **FTS query building** — fail
+    first for the right reason, then implement (`tdd-red-green`).
   - _After:_ scheduler integration test using the **fake `VisionBackend`** over a synthetic index (no FFI); a macOS-
     gated integration test running real Vision OCR on a committed fixture image (asserts known words). The bus mechanism
     itself (late-subscriber replay, generation, registration) is already tested in `indexing/lifecycle_bus.rs`; M1's own
@@ -451,6 +473,64 @@ SHIPPED sibling in `importance/` to COPY (verified 2026-07-13). So M1 splits cle
 - **Checks:** `pnpm check --fast` iterating; full `pnpm check` at end (clippy, rust tests, i18n-coverage,
   `claude-md-details-sibling`, `docs-reachable`, file-length). Smoke-test the scheduler on 1–2 images first
   (`test-infra-smoke-first`).
+
+### M1.5 — Network-volume enrichment (SMB opt-in), validated on the NAS
+
+Network enrichment is the **headline use case**, not an afterthought: the user's photo library lives on a NAS
+(`/Volumes/naspi`, over SMB), and "search my NAS photos" is the whole point. So it earns a scheduled milestone, right
+after the local pipeline proves out, rather than being deferred to "impl time." It **can't** be deferred, because the
+`importance/` reuse precedent that carries the rest of the plan does NOT cover the one part M1.5 needs. `importance/`
+carries a hard rule — "NEVER a filesystem syscall against an SMB/MTP mount — read only the local index DB"
+(`importance/CLAUDE.md`, verified 2026-07-13) — so importance never pulls a single byte over the wire. Media enrichment
+is the opposite: it MUST read image **bytes** off the SMB mount to decode and run Vision/CLIP. So the bus, registration,
+and scheduling wiring is a straight copy from `importance/` (Decision 7), but the **byte-fetch policy is genuinely new
+work with no sibling to copy** (Decision 6). This milestone is scoped to the **OCR pipeline only** — it inherits M1's
+Vision OCR and adds no new models, so it proves the transport without model-download risk piled on top.
+
+- **Per-volume SMB opt-in (off by default).** A per-volume opt-in in Settings, distinct from M1's master toggle: turning
+  on image indexing does NOT auto-enrich network volumes. Extends M1's master toggle + per-volume state. **Disabling a
+  network volume** follows M1's disable-data behavior (stop in-flight work via the cancel token, offer to delete that
+  volume's `media.db` rows; the durable identity store survives with a notice — Decision 6).
+- **The conservative-fetch policy with teeth** (defined in Decision 6 — scheduled and built here): idle-gated (enrich
+  only when the volume isn't serving foreground work), bandwidth-bounded, bounded concurrency, resumable, with
+  **on-demand-per-folder-visit** as a candidate strategy to weigh (so a rarely-browsed archive isn't dragged over the
+  wire wholesale). **Dependency to flag — "idle-gated" needs a foreground-activity/idle signal to gate on, and there is
+  NONE in `indexing/` today** (grep verified 2026-07-13 — the only `Idle` is `ActivityPhase::Idle`, an indexing
+  work-state, not a user-foreground signal). Treat the idle signal as **new work**, not reuse.
+- **The "always index this folder / this volume" override** (user-set) — M1.5 owns building it; Decision 6 and
+  Cross-cutting § Importance-prioritized enrichment give the why, but no milestone owned it before. Navigation-based
+  importance **starves** a NAS photo archive: a library the user rarely browses folder-by-folder scores LOW everywhere,
+  so importance-first ordering plus the M2 slider would defer the user's actual photos indefinitely — the opposite of
+  intent. The override forces enrichment regardless of importance. (Optionally weigh a **photo-density** importance-input
+  candidate — a folder that's mostly images is likely an archive regardless of visit count — but keep it a candidate,
+  not load-bearing, per the plan's "measure, don't hardcode" posture; don't ship importance-first without at least the
+  manual override.)
+- **Resumability across unmount** (Cross-cutting § Cancellation defines it — scheduled and tested here): a mid-pass
+  unmount is not a crash. Abandon the in-flight item cleanly, **KEEP every completed path-keyed row** (they're valid),
+  and mark the volume "paused, resumes when reconnected" — it resumes via the bus's registration path on remount.
+  **Never mark rows permanently failed on a disconnect** — a disconnect isn't a bad file.
+- **Offline search after unmount** (a property of Decision 8 — proven here on `/Volumes/naspi`): the `media_index` read
+  API answers from `media.db` with the NAS unplugged, so a user can search their NAS photos while disconnected. Prove it
+  with a test that unmounts and still returns results.
+- **GC vs unmount interaction:** a volume that is merely disconnected must **NOT** GC its rows. Only an index deletion on
+  a **completed** scan GCs rows (Decision 3); a disconnect is neither, so a paused volume's coverage survives intact
+  until it reconnects.
+- **MTP stays on-demand, never background.** Keep `importance/`'s precedent: `ScoringPolicy::for_kind` **excludes MTP**
+  from background scoring (verified 2026-07-13). MTP media enrichment is likewise **on-demand-per-visit, NOT a background
+  sweep** — a phone or camera on MTP is transient and slow, so enrich what the user opens, when they open it.
+- **Docs:** `media_index/DETAILS.md` — the network-fetch policy (idle/bandwidth/concurrency gating) and the
+  resumable-across-unmount behavior; per-volume opt-in strings in the i18n catalog with `@key` descriptions; a note in
+  `docs/architecture.md` that `media_index` enriches opt-in network volumes.
+- **Tests:**
+  - _TDD red→green (data-safety + risky):_ the **conservative-fetch decision** (the idle/bandwidth gate defers or
+    proceeds correctly, over a fake clock/bandwidth signal); the **resumable-across-unmount row preservation** (a
+    mid-pass unmount keeps completed rows, marks the volume paused, and never marks rows failed); the **GC must NOT fire
+    on a mere disconnect** (a disconnect is not a completed-scan deletion ⇒ rows kept) — this is a data-safety case, fail
+    first for the right reason.
+  - _After:_ a macOS-gated integration test against **`/Volumes/naspi`** plus the existing `test/smb-servers/` fixtures
+    — enrich over SMB, unmount, and assert offline search still answers from `media.db`.
+  - _E2E:_ the per-volume SMB opt-in persists.
+- **Checks:** full `pnpm check` + `--include-slow` before wrapping (the network + resumability paths).
 
 ### M2 — Tags + image-similarity (Vision-only, zero download)
 
@@ -674,8 +754,8 @@ looking, not a blocker for M1–M5; a short milestone or a future note.
   side finding, 2026-06-30.)
   - **Per-folder "don't index for photo search" exclusion** (user-set) is the privacy complement to the opt-in: the
     threshold slider can't protect a high-importance `~/Documents/IDs/` folder (the user uses it, so it scores HIGH and
-    would be indexed). Mirror `importance/`'s floor/denylist shape, but user-set. Small to build; lands near the slider
-    (M2) or in M1 settings.
+    would be indexed). Mirror `importance/`'s floor/denylist shape, but user-set. Small to build; lands next to the
+    slider in M2.
 - **i18n.** Every user-facing string via the catalog with a `@key` description (`cmdr/no-raw-user-facing-string`).
 - **Dependencies.** `objc2-vision`, `objc2-core-ml`, maybe a clustering crate / `ort` fallback / `sqlite-vec` binding:
   each needs `cargo deny check` + a verified ≥14-day-old version (`use-latest-dep-versions`, project `dependencies`
@@ -687,7 +767,9 @@ looking, not a blocker for M1–M5; a short milestone or a future note.
 
 - **M1 must land first** — media DB, path-keyed identity, lifecycle-bus subscription, backend trait, GC, the read-API
   boundary.
-- After M1: **M2 (Vision tags/feature-print)** and the **M5 Swift-bridge spike** are independent and can parallelize.
+- After M1: **M1.5 (network-volume enrichment)**, **M2 (Vision tags/feature-print)**, and the **M5 Swift-bridge spike**
+  are independent and can parallelize. M1.5 touches only the SMB opt-in, the fetch policy, and the network resumability
+  paths (no `media.db` schema conflict with M2), so it can land alongside M2.
 - **M3 (CLIP)** and **M4a (faces pipeline)** both depend on M2's vector store and the M3 model-install path (so M4a
   follows M3's install code even if the CLIP search work parallelizes); independent of each other in their `media.db`
   tables and UI surfaces (low conflict). **M4b follows M4a.** Prefer sequential unless we want speed; worktree per
@@ -705,8 +787,10 @@ looking, not a blocker for M1–M5; a short milestone or a future note.
   lean.
 - Enrichment is throttled, cancelable, crash-resumable, GC'd against deletions, under an explicit memory ceiling, and
   **importance-prioritized** (high-importance folders first, below-threshold junk deferred/skipped per the settings
-  slider, with an "always index this" override for rarely-browsed photo archives); SMB/MTP are conservative opt-ins, and
-  enrichment surfaces honest per-volume progress and coverage.
+  slider, with an "always index this" override for rarely-browsed photo archives). SMB is a conservative per-volume
+  opt-in with a genuine byte-fetch policy (idle-gated, bandwidth-bounded, resumable across unmount), validated on the NAS
+  (M1.5); MTP enrichment is on-demand-per-visit, never a background sweep. Enrichment surfaces honest per-volume progress
+  and coverage.
 - Full `pnpm check --include-slow` green; new subsystem has `CLAUDE.md`+`DETAILS.md`; architecture map updated and the
   `media_index` lifecycle-bus subscription linked to `indexing/DETAILS.md`; privacy posture in `docs/security.md`.
 
@@ -740,4 +824,8 @@ looking, not a blocker for M1–M5; a short milestone or a future note.
   handles watch-vs-broadcast (late-subscriber replay), the Fresh-at-launch registry sweep (`ready_volumes_with_kind`),
   and **late-registering volumes** (the registration `broadcast` bus, `subscribe_registrations`, carrying the typed
   kind). `media_index` copies `importance/`'s subscription, so none of these are open for it — SMB/MTP enrichment reuses
-  the same wiring `importance/` already ships for network volumes.
+  the same **scheduling, registration, and bus wiring** `importance/` already ships for network volumes. The one part
+  with NO sibling to copy is the **byte-fetch path**: `importance/` hard-rules out ever reading bytes off an SMB/MTP
+  mount (`importance/CLAUDE.md`: "NEVER a filesystem syscall against an SMB/MTP mount — read only the local index DB"),
+  whereas media enrichment MUST read image bytes to decode and run Vision/CLIP. That conservative-fetch policy is genuine
+  new work, scheduled in M1.5.
