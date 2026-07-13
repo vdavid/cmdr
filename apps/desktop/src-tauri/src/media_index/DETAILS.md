@@ -38,8 +38,10 @@ fine alongside `importance`'s scheduler. The bus mechanism (watch vs broadcast, 
 bus, why the sender outlives the registry) is documented once in [`indexing/DETAILS.md`](../indexing/DETAILS.md) — not
 re-documented here (single-source).
 
-M1 wires LOCAL volumes only. `wire_volume` skips SMB/MTP with a log; their byte-fetch enrichment is M1.5 (the one part
-with no `importance/` sibling to copy — `importance` never reads bytes off the wire).
+`wire_volume` routes by typed kind: LOCAL enriches by default (when the master toggle is on); an opted-in SMB volume
+runs the conservative network pass (§ "Network-volume enrichment (M1.5)"); MTP is NEVER background-swept. Both local and
+SMB subscribe to the SAME bus the same way; only which pass method runs differs. The opt-in is checked INSIDE the network
+pass, so flipping it on takes effect on the next scan completion (and the opt-in command kicks an immediate pass).
 
 ## The GC safety argument (data-safety)
 
@@ -60,6 +62,117 @@ walk. The safety comes entirely from **when** a pass (and thus its GC) runs, not
   mid-truncate.
 - A cancelled pass (memory watchdog) skips GC entirely, yielding fully; vanished rows are collected on the next completed
   scan.
+
+## Network-volume enrichment (M1.5)
+
+Making an opted-in NAS's images searchable by content is the headline use case (`/Volumes/naspi` over SMB). This is the
+ONE part of the plan with no `importance/` sibling to copy: `importance` follows a hard rule ("never a filesystem syscall
+against an SMB/MTP mount"), but media enrichment MUST read image bytes off the wire. Everything lives under `network/`;
+the scheduler routes SMB volumes to it (§ "The lifecycle bus"). Scoped to OCR (it inherits M1's Vision backend — no new
+models).
+
+### The byte-fetch decision (`network/fetch.rs`) — why the OS mount, not a direct smb2 client
+
+**Decision: read image bytes via the OS mount path (`/Volumes/<share>/…`) with plain `std::fs`, bounded by a timeout —
+the SAME transport the file viewer already uses for SMB image preview** (`file_viewer/media_protocol.rs` reads bytes with
+`std::fs::File::open` on the mount path + its own `spawn_blocking` + timeout). We do NOT stand up a parallel direct-`smb2`
+client (`Volume::open_read_stream`). Why:
+
+- The viewer's OS-mount read is the ONE existing byte-read path for images over SMB; reusing it keeps a single transport
+  and matches what the M1 local pass already does (`std::fs::read`).
+- The direct-`smb2` `open_read_stream` is the chunked large-transfer/copy path; an OCR fetch wants the whole (bounded)
+  compressed file, which a single `std::fs::read` gives simply.
+- The whole use case is an OS-mounted NAS. The mount root comes from `VolumeManager::get(volume_id).root()` — the same
+  source `indexing::routing::index_read_path` uses for its read-side mount strip.
+
+**Path mapping.** An SMB index's `ROOT_ID` is the mount root, so `walk_image_entries` reconstructs MOUNT-RELATIVE paths
+(`/DCIM/x.jpg`). `os_join(mount_root, rel)` prepends the mount root to reach the real file (`/Volumes/naspi/DCIM/x.jpg`);
+for the `root`/local volume the mount root is `/`, so the path passes through unchanged. The stored `media.db` row keeps
+the index-relative identity (matching the index + GC set); the M1.5b UI reconstructs the display/open path via the mount
+root.
+
+**Non-blocking discipline (the crux).** A network `std::fs::read` can block indefinitely on a hung mount. So `FsByteFetcher`
+runs the read on a throwaway thread and waits with `recv_timeout`; a timeout returns `FetchError::Disconnected` (pause),
+never a wedge. Critically, the fetch happens in the ENRICH layer, not on the serialized Vision OCR worker thread — the
+backend receives the already-fetched bytes via `ImageInput.bytes` (`Some` = network, `None` = local read-it-yourself), so a
+hung mount can never stall OCR of other (local) volumes. Failures classify by I/O error KIND (a typed errno, not a message
+match): `NotFound` ⇒ skip (a vanished source; GC collects it), else ⇒ `Disconnected` (pause). A `MAX_FETCH_BYTES` cap skips
+a pathological file rather than OOMing.
+
+### The conservative-fetch policy with teeth (`network/policy.rs`)
+
+Typed knobs (`ConservativeFetchPolicy`), each a real gate, not a comment:
+
+- **Idle-gated.** The pass proceeds only while the app has been idle for `idle_threshold` (default 5 s). The idle signal
+  is NEW work — there is no foreground/idle signal in `indexing/` (its only `Idle` is an indexing work-state). `foreground.rs`
+  is a single process-global "last foreground activity" timestamp; the hot foreground filesystem IPC (directory listing =
+  every navigation) calls `note_foreground_activity`, and the pure `is_idle(now, last, threshold)` is unit-tested over a
+  fake clock. A non-idle app pauses the pass (`PauseReason::NotIdle`) so a NAS is never dragged over the wire while the
+  user browses.
+- **Bandwidth-bounded.** After each image, `throttle_delay(bytes, max_bytes_per_sec)` sleeps so the sustained fetch rate
+  stays under the cap (default 8 MB/s). Pure and tested; it deliberately over-throttles slightly (ignores OCR time) — the
+  conservative direction.
+- **Bounded concurrency.** `max_concurrency` (default 1); the pass fetches serially today, so it's honestly 1, with the
+  field bounding any future parallel fetch.
+- **Resumable.** Each completed image persists immediately (path-keyed upsert), so an interrupted pass resumes from the
+  store on the next scan; unchanged images skip via `needs_enrichment`.
+
+### The "always index" override (`network/config.rs`) — why it's load-bearing
+
+Navigation-based importance scores a rarely-browsed NAS archive LOW everywhere, so importance-first ordering would defer
+the user's photos forever (plan Decision 6). The override forces enrichment regardless of importance. `should_enrich_image(covered_by_override, importance, threshold)` = `covered || importance ≥ threshold`. The importance
+slider is M2, so in M1.5 the production importance oracle yields `None` (defer) and **the override is the load-bearing
+input**: only override-covered volumes/folders enrich. The gate seam keeps the M2 importance path drop-in.
+
+**Storage: a settings-seeded global, not a fourth per-volume store.** The opt-in and overrides are user config (a handful
+of volumes/folders), not per-image data, so they ride the sparse settings store (`mediaIndex.networkVolumes`,
+`mediaIndex.alwaysIndexVolumes`, `mediaIndex.alwaysIndexFolders` — FE-owned) rather than a new SQLite DB with its own
+writer thread (the standing-cost note already flags per-volume thread growth). The scheduler runs off the IPC thread and
+consults `network::config` (a process-global `RwLock`) each pass, seeded from `load_settings` at startup and live-applied
+through the `media_index_set_*` commands. Folder overrides store absolute OS-mount paths; `path_is_within` is a
+trailing-slash-safe prefix so `/Photos2` isn't "within" `/Photos`.
+
+*Non-load-bearing candidate (NOT built):* a photo-density importance input (a folder that's mostly images is likely an
+archive regardless of visit count) could feed the M2 importance oracle. Deliberately deferred; the manual override is the
+M1.5 mechanism.
+
+### Resumability across unmount + the disconnect data-safety lines
+
+A mid-pass unmount is not a crash and not a bad file. On `FetchError::Disconnected` the pass returns
+`NetworkPassOutcome::Paused { reason: Disconnected }`: it flushes every completed row (they survive), writes NO `Failed`
+row for the in-flight image, and does NOT GC. The scheduler marks the volume paused (`network::config::mark_paused`),
+which the coverage signal surfaces; resume happens via the registration bus on remount (the next completed scan re-runs
+the pass, skipping already-Done rows). This is distinct from the M1 `Failed` state, which is reserved for a genuinely bad
+file (a GOOD read but a decode/OCR failure) — a transport fault must never masquerade as one.
+
+**GC vs a mere disconnect.** Only a pass that ran to COMPLETION reaches GC (the same completed-scan edge the local pass
+gates on). A paused/cancelled pass returns before GC, so a disconnect can NEVER wipe a volume's coverage — a paused
+volume's rows survive intact until reconnect. Pinned by `network::tests::gc_does_not_fire_on_a_disconnect` and
+`disconnect_mid_pass_keeps_completed_rows_and_writes_no_failure` (both verified red→green).
+
+### Offline search after unmount (Decision 8)
+
+`media.db` is keyed by `volume_id` (`media-{volume_id}.db`) and the `MediaIndex` read API opens it directly, so an SMB
+volume's photos stay searchable with the NAS unplugged. `network::tests::search_answers_offline_after_the_volume_unmounts`
+enriches over the fake fetcher, drops the writer (simulating unmount), and asserts the search still answers.
+
+### MTP stays on-demand, never background
+
+`wire_volume` skips MTP with a log: a phone/camera on MTP is transient and slow, so enrichment is on-demand-per-visit, not
+a background sweep (keeping `importance/`'s `ScoringPolicy::for_kind` MTP exclusion). The never-background-sweep gate is
+real now; the on-demand-per-visit trigger itself is a later slice (a clear TODO — nothing wires it yet).
+
+### Backend commands + typed state for the M1.5b UI
+
+The UI slice (per-volume opt-in + "always index" toggles + i18n + E2E) is the next agent's. This backend provides:
+
+- `media_index_set_network_volume_enabled(volume_id, enabled)` — the per-volume SMB opt-in (live-applied; enabling kicks a
+  pass).
+- `media_index_set_always_index_volume(volume_id, always)` / `media_index_set_always_index_folder(folder, always)` — the
+  overrides (live-applied).
+- `media_index_volume_state` extended with `network_opt_in`, `always_indexed`, `paused` (the "paused, resumes on
+  reconnect" honesty). The FE persists the `mediaIndex.*` settings and calls the setters on change (the standard
+  live-apply pattern).
 
 ## Schema (`store/`)
 

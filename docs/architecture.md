@@ -149,7 +149,9 @@ All under `apps/desktop/src-tauri/src/`.
   `indexing/`, ported from `importance/`, with its own per-volume disposable `media.db` (path-keyed, FTS5 OCR text), a
   scheduler that enriches on the lifecycle-bus scan-completion edge, inference behind a `VisionBackend` seam (M1 ships a
   fake; real objc2-vision OCR lands next), deletion-driven GC gated on a completed scan, and the consumable `MediaIndex`
-  read API (offline after unmount). M1 is OCR-only, local-only, off by default. See its
+  read API (offline after unmount). Enriches local volumes plus opt-in network (SMB) volumes conservatively (idle-gated,
+  bandwidth-bounded byte-fetch off the OS mount; disconnect pauses without losing coverage; MTP never
+  background-sweeps). OCR-only, off by default. See its
   [`CLAUDE.md`](../apps/desktop/src-tauri/src/media_index/CLAUDE.md) and
   [`docs/specs/media-ml-index-plan.md`](specs/media-ml-index-plan.md)
 - `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
