@@ -9,10 +9,10 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::indexing::store::{IndexStore, ROOT_ID};
-use crate::media_index::backend::{ImageInput, VisionBackend};
+use crate::media_index::backend::{Analysis, ImageInput, VisionBackend};
 use crate::media_index::predicate::{MediaKind, Qualification, qualify_dir};
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, needs_enrichment};
-use crate::media_index::writer::MediaWriter;
+use crate::media_index::writer::{MediaWriter, UpsertAnalysis};
 
 /// One qualifying image discovered while walking the index: its absolute path, the
 /// `(mtime, size)` staleness key, and the typed kind the predicate assigned.
@@ -129,11 +129,43 @@ pub(crate) fn gc_targets<'a>(stored: impl IntoIterator<Item = &'a String>, curre
     stored.into_iter().filter(|p| !current.contains(*p)).cloned().collect()
 }
 
+/// The parent directory of an absolute path (the folder importance keys on). `"/"`
+/// for a top-level file. A pure slice, no allocation.
+pub(crate) fn parent_dir(path: &str) -> &str {
+    match path.rfind('/') {
+        Some(0) | None => "/",
+        Some(i) => &path[..i],
+    }
+}
+
+/// Order the walked images so HIGH-importance folders enrich first (plan
+/// Cross-cutting § Importance-prioritized enrichment): sort by the folder's
+/// importance score descending, ties broken by path for determinism. A folder with
+/// no score (offline importance DB, floored/unscored, override-only) sorts as `0.0`,
+/// so it enriches after the scored folders but is NOT dropped — the `should_enrich`
+/// filter, not the ordering, decides what enriches. Returns a fresh ordered `Vec`.
+pub(crate) fn prioritized(images: &[ImageEntry], folder_score: &dyn Fn(&str) -> f64) -> Vec<ImageEntry> {
+    let mut ordered = images.to_vec();
+    ordered.sort_by(|a, b| {
+        let sa = folder_score(parent_dir(&a.path));
+        let sb = folder_score(parent_dir(&b.path));
+        sb.partial_cmp(&sa)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| a.path.cmp(&b.path))
+    });
+    ordered
+}
+
 /// Enrich the stale images and GC vanished rows through `writer`, over a set of
 /// already-loaded `statuses` (path → row). Returns what the pass did.
 ///
-/// - Enriches only images the staleness predicate marks stale
-///   ([`needs_enrichment`]).
+/// - `images` is the caller's priority-ordered list ([`prioritized`]); enrichment
+///   walks it in that order so high-importance folders land first.
+/// - `should_enrich(path)` is the importance/override/exclude filter: an image it
+///   rejects is DEFERRED (not enriched) but stays in the GC `current` set, so a
+///   below-threshold folder's existing rows aren't wiped — only genuinely vanished
+///   files are GC'd.
+/// - Enriches only images the staleness predicate marks stale ([`needs_enrichment`]).
 /// - Checks `cancel` BETWEEN images so an emergency stop (the memory watchdog)
 ///   yields promptly; a cancelled pass ALSO skips GC (yield fully) — the vanished
 ///   rows are collected on the next completed scan.
@@ -144,9 +176,10 @@ pub(crate) fn enrich_and_gc(
     statuses: &HashMap<String, MediaStatusRow>,
     backend: &dyn VisionBackend,
     writer: &MediaWriter,
+    should_enrich: &dyn Fn(&str) -> bool,
     cancel: &dyn Fn() -> bool,
 ) -> Result<PassSummary, String> {
-    let engine = backend.engine_version();
+    let stamp = backend.analysis_stamp();
     let current: HashSet<String> = images.iter().map(|i| i.path.clone()).collect();
 
     let mut enriched = 0;
@@ -156,7 +189,12 @@ pub(crate) fn enrich_and_gc(
             cancelled = true;
             break;
         }
-        if !needs_enrichment(statuses.get(&image.path), image.mtime, image.size, &engine) {
+        // Importance / override / exclude gate: a deferred image is skipped here but
+        // stays in `current`, so GC never wipes it.
+        if !should_enrich(&image.path) {
+            continue;
+        }
+        if !needs_enrichment(statuses.get(&image.path), image.mtime, image.size, &stamp) {
             continue;
         }
         let input = ImageInput {
@@ -165,17 +203,20 @@ pub(crate) fn enrich_and_gc(
             // Local volume: the backend reads the real on-disk path itself.
             bytes: None,
         };
-        match backend.ocr(&input) {
-            Ok(result) => {
+        match backend.analyze(&input) {
+            Ok(analysis) => {
                 writer
-                    .upsert(status_row(image, EnrichmentState::Done, &engine), Some(result.text))
+                    .upsert(
+                        status_row(image, EnrichmentState::Done, &stamp),
+                        Some(to_upsert_analysis(analysis)),
+                    )
                     .map_err(|e| e.to_string())?;
                 enriched += 1;
             }
             Err(e) => {
-                log::warn!(target: "media_index", "OCR failed for '{}': {e}", image.path);
+                log::warn!(target: "media_index", "analysis failed for '{}': {e}", image.path);
                 writer
-                    .upsert(status_row(image, EnrichmentState::Failed, &engine), None)
+                    .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
                     .map_err(|e| e.to_string())?;
             }
         }
@@ -197,15 +238,26 @@ pub(crate) fn enrich_and_gc(
     Ok(PassSummary { enriched, gc_count })
 }
 
-/// Build the `media_status` row for an image at a given state and engine stamp.
-pub(crate) fn status_row(image: &ImageEntry, state: EnrichmentState, engine: &str) -> MediaStatusRow {
+/// Build the `media_status` row for an image at a given state and analyze provenance
+/// stamp (stored in the `engine_version` column).
+pub(crate) fn status_row(image: &ImageEntry, state: EnrichmentState, stamp: &str) -> MediaStatusRow {
     MediaStatusRow {
         path: image.path.clone(),
         mtime: image.mtime,
         size: image.size,
         media_kind: image.kind,
         state,
-        engine_version: engine.to_string(),
+        engine_version: stamp.to_string(),
+    }
+}
+
+/// Convert a backend [`Analysis`] into the writer's persistence shape: the OCR text,
+/// tags, and embedding a successful `upsert` stores.
+pub(crate) fn to_upsert_analysis(analysis: Analysis) -> UpsertAnalysis {
+    UpsertAnalysis {
+        ocr_text: analysis.ocr.text,
+        tags: analysis.tags,
+        embedding: analysis.embedding,
     }
 }
 

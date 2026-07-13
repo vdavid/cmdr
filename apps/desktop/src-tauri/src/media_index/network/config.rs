@@ -30,6 +30,11 @@ pub struct NetworkEnrichConfig {
     /// Absolute folder paths (OS-mount form, e.g. `/Volumes/naspi/Photos`) marked
     /// "always index": every image at or under one enriches regardless of importance.
     pub always_index_folders: HashSet<String>,
+    /// Absolute folder paths the user EXCLUDED from photo-search indexing (the privacy
+    /// complement to the opt-in — a sensitive high-importance folder like
+    /// `~/Documents/IDs`). A hard veto: an image at or under an excluded folder never
+    /// enriches, even under an "always index" override. Plan M2 § Privacy.
+    pub excluded_folders: HashSet<String>,
 }
 
 impl NetworkEnrichConfig {
@@ -43,6 +48,12 @@ impl NetworkEnrichConfig {
     pub fn covers(&self, volume_id: &str, os_path: &str) -> bool {
         self.always_index_volumes.contains(volume_id)
             || self.always_index_folders.iter().any(|f| path_is_within(os_path, f))
+    }
+
+    /// Whether an image at OS path `os_path` is under a user-excluded folder — a hard
+    /// veto that beats any "always index" override (the privacy complement).
+    pub fn is_excluded(&self, os_path: &str) -> bool {
+        self.excluded_folders.iter().any(|f| path_is_within(os_path, f))
     }
 }
 
@@ -110,9 +121,26 @@ pub fn set_always_index_folder(folder: &str, always: bool) {
     }
 }
 
+/// Set or clear a folder photo-search EXCLUSION (live-applied). `folder` is an
+/// absolute path; every image at or under it is skipped (privacy veto).
+pub fn set_excluded_folder(folder: &str, excluded: bool) {
+    let mut cfg = CONFIG.write_ignore_poison();
+    if excluded {
+        cfg.excluded_folders.insert(folder.to_string());
+    } else {
+        cfg.excluded_folders.remove(folder);
+    }
+}
+
 /// Whether an image at OS path `os_path` on `volume_id` is override-covered.
 pub fn covers_override(volume_id: &str, os_path: &str) -> bool {
     CONFIG.read_ignore_poison().covers(volume_id, os_path)
+}
+
+/// Whether an image at OS path `os_path` is under a user-excluded folder (a hard
+/// privacy veto, beats any override).
+pub fn is_excluded(os_path: &str) -> bool {
+    CONFIG.read_ignore_poison().is_excluded(os_path)
 }
 
 /// Mark a volume paused (its enrichment stopped on a disconnect; resumes on reconnect).
@@ -150,6 +178,7 @@ mod tests {
             opted_in_volumes: HashSet::new(),
             always_index_volumes: ["smb-vol".to_string()].into_iter().collect(),
             always_index_folders: ["/Volumes/naspi/Photos".to_string()].into_iter().collect(),
+            excluded_folders: HashSet::new(),
         };
         // Whole-volume override.
         assert!(cfg.covers("smb-vol", "/anything/x.jpg"));

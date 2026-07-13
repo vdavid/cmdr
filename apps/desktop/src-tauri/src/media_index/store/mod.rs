@@ -26,9 +26,17 @@
 //! ## Tables
 //!
 //! - `media_status` — path identity + `(mtime, size)` staleness + a typed
-//!   enrichment state + a lightweight OS/Vision engine-version stamp.
-//! - `media_ocr` — a standalone FTS5 table over the recognized text, keyed by path
-//!   (see [`CREATE_TABLES`] for why standalone rather than external-content).
+//!   enrichment state + the combined analyze provenance stamp (`engine_version`
+//!   column: OCR engine + tag taxonomy + feature-print revision; see
+//!   [`VisionBackend::analysis_stamp`](super::backend::VisionBackend::analysis_stamp)).
+//! - `media_ocr` — a standalone FTS5 table over searchable image text, keyed by path
+//!   (see [`CREATE_TABLES`] for why standalone rather than external-content). Holds
+//!   BOTH the recognized OCR text AND the scene/object tag labels (one folded row
+//!   per source), so a keyword search matches tags alongside OCR (plan M2).
+//! - `media_tags` — the structured tags (`path, label, score`) for tag-score
+//!   filtering; the folded FTS rows above are its keyword-search index.
+//! - `media_embedding` — the image feature-print embedding (`path, dims, vector`
+//!   BLOB) for image↔image similarity + dedup (plan M2, Decision 2).
 //! - `meta` — `schema_version`.
 
 mod connection;
@@ -47,7 +55,7 @@ use super::predicate::MediaKind;
 /// Bump to invalidate on-disk `media.db` files. A mismatch deletes the file and
 /// recreates it fresh (disposable cache, no migrations). Start at 1; bump on any
 /// change to the tables below OR to what rows/text the store persists.
-const SCHEMA_VERSION: &str = "1";
+const SCHEMA_VERSION: &str = "2";
 
 /// The FTS5 `media_ocr` table is STANDALONE (its own copy of the text), not
 /// external-content. `agent/store`'s `messages_fts` is external-content because it
@@ -55,6 +63,11 @@ const SCHEMA_VERSION: &str = "1";
 /// `WITHOUT ROWID`, so there is no integer rowid to hang an external-content index
 /// off; a standalone table keyed by an UNINDEXED `path` column keeps enrichment and
 /// GC a simple `WHERE path = ?` delete, with no trigger machinery to desync.
+///
+/// `media_ocr` folds tags in by carrying a `source` (`'ocr'` / `'tag'`) column and up
+/// to two rows per path: the recognized OCR text, and the space-joined tag labels. A
+/// keyword search matches either, so tags are searchable alongside OCR (plan M2); the
+/// `WHERE path = ?` delete still clears every row for a path in one statement.
 const CREATE_TABLES_SQL: &str = "
     CREATE TABLE IF NOT EXISTS media_status (
         path            TEXT    PRIMARY KEY COLLATE platform_case,
@@ -67,9 +80,24 @@ const CREATE_TABLES_SQL: &str = "
 
     CREATE VIRTUAL TABLE IF NOT EXISTS media_ocr USING fts5(
         path UNINDEXED,
+        source UNINDEXED,
         text,
         tokenize = 'unicode61 remove_diacritics 2'
     );
+
+    CREATE TABLE IF NOT EXISTS media_tags (
+        path   TEXT NOT NULL COLLATE platform_case,
+        label  TEXT NOT NULL,
+        score  REAL NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_media_tags_path  ON media_tags(path);
+    CREATE INDEX IF NOT EXISTS idx_media_tags_label ON media_tags(label);
+
+    CREATE TABLE IF NOT EXISTS media_embedding (
+        path    TEXT PRIMARY KEY COLLATE platform_case,
+        dims    INTEGER NOT NULL,
+        vector  BLOB    NOT NULL
+    ) WITHOUT ROWID;
 
     CREATE TABLE IF NOT EXISTS meta (
         key   TEXT PRIMARY KEY,
@@ -111,7 +139,8 @@ impl EnrichmentState {
 }
 
 /// One `media_status` row: path identity, the `(mtime, size)` staleness key, the
-/// typed kind and state, and the OS/Vision engine-version stamp.
+/// typed kind and state, and the combined analyze provenance stamp (stored in the
+/// `engine_version` column: OCR engine + tag taxonomy + feature-print revision).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MediaStatusRow {
     pub path: String,
@@ -127,8 +156,10 @@ pub struct MediaStatusRow {
 ///
 /// This is the path-keyed staleness predicate (plan Decision 3, an M1 TDD target).
 /// Stale when there is no row, or when the `(mtime, size)` identity changed, or when
-/// the OS/Vision engine stamp changed (an OS upgrade re-runs OCR even on an
-/// unchanged file). The enrichment STATE is deliberately NOT part of the key: a
+/// the analyze provenance stamp changed (an OS upgrade to the OCR engine, tag
+/// taxonomy, or feature-print model re-runs analysis even on an unchanged file — one
+/// decode produces all three, so re-running all of it is free). The enrichment STATE
+/// is deliberately NOT part of the key: a
 /// stored row at the same identity+engine is covered whether it succeeded or failed,
 /// so a bad file isn't re-hammered every completed scan; a genuine change to the
 /// file (mtime/size) re-tries it.
@@ -316,6 +347,88 @@ fn row_to_status(row: &rusqlite::Row<'_>) -> rusqlite::Result<MediaStatusRow> {
         state: EnrichmentState::from_token(&row.get::<_, String>(4)?),
         engine_version: row.get(5)?,
     })
+}
+
+// ── Embedding codec (feature-print BLOBs) ──────────────────────────────────
+
+/// Serialize a feature-print embedding to a little-endian `f32` BLOB. The `dims`
+/// column stores the element count so a decode can validate the byte length.
+pub(crate) fn encode_embedding(vector: &[f32]) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(vector.len() * 4);
+    for f in vector {
+        bytes.extend_from_slice(&f.to_le_bytes());
+    }
+    bytes
+}
+
+/// Decode a little-endian `f32` BLOB back to a vector. Returns `None` when the byte
+/// length isn't a whole number of `f32`s (a corrupt row degrades to "no embedding"
+/// rather than failing the whole read — the cache just skips it).
+pub(crate) fn decode_embedding(bytes: &[u8]) -> Option<Vec<f32>> {
+    if !bytes.len().is_multiple_of(4) {
+        return None;
+    }
+    Some(
+        bytes
+            .chunks_exact(4)
+            .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+            .collect(),
+    )
+}
+
+/// One stored embedding: the image path and its feature-print vector. The vector
+/// store loads a `Vec` of these per volume into its resident cache.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct EmbeddingRow {
+    pub(crate) path: String,
+    pub(crate) vector: Vec<f32>,
+}
+
+/// Load every stored embedding for a volume (the resident vector cache's load-once
+/// source). A row whose BLOB can't be decoded is skipped, not fatal.
+pub(crate) fn read_all_embeddings(conn: &Connection) -> Result<Vec<EmbeddingRow>, MediaStoreError> {
+    let mut stmt = conn.prepare_cached("SELECT path, vector FROM media_embedding")?;
+    let rows = stmt.query_map([], |row| {
+        let path: String = row.get(0)?;
+        let blob: Vec<u8> = row.get(1)?;
+        Ok((path, blob))
+    })?;
+    let mut out = Vec::new();
+    for row in rows {
+        let (path, blob) = row?;
+        if let Some(vector) = decode_embedding(&blob) {
+            out.push(EmbeddingRow { path, vector });
+        }
+    }
+    Ok(out)
+}
+
+/// Read one image's stored embedding, or `None` if it has none (the source vector for
+/// a "find similar images" query).
+pub(crate) fn read_embedding_for(conn: &Connection, path: &str) -> Result<Option<Vec<f32>>, MediaStoreError> {
+    let mut stmt = conn.prepare_cached("SELECT vector FROM media_embedding WHERE path = ?1")?;
+    let mut rows = stmt.query_map(rusqlite::params![path], |row| row.get::<_, Vec<u8>>(0))?;
+    match rows.next() {
+        Some(Ok(blob)) => Ok(decode_embedding(&blob)),
+        Some(Err(e)) => Err(e.into()),
+        None => Ok(None),
+    }
+}
+
+/// The paths whose stored tags include `label` at or above `min_score`, each with the
+/// matching tag's score (the tag-score filter — plan M2). Ordered by score descending.
+pub(crate) fn read_tag_matches(
+    conn: &Connection,
+    label: &str,
+    min_score: f32,
+) -> Result<Vec<(String, f32)>, MediaStoreError> {
+    let mut stmt = conn.prepare_cached(
+        "SELECT path, score FROM media_tags WHERE label = ?1 AND score >= ?2 ORDER BY score DESC, path ASC",
+    )?;
+    let rows = stmt.query_map(rusqlite::params![label, min_score], |row| {
+        Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)? as f32))
+    })?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
 pub(super) const CREATE_TABLES: &str = CREATE_TABLES_SQL;

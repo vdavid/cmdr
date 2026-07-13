@@ -1881,6 +1881,47 @@ export const commands = {
   mediaIndexSetAlwaysIndexFolder: (folder: string, always: boolean) =>
     __TAURI_INVOKE<void>('media_index_set_always_index_folder', { folder, always }),
   /**
+   *  Set (or clear) a per-folder photo-search EXCLUSION: no image at or under `folder`
+   *  (an absolute path) is enriched (the privacy complement to the opt-in — plan M2 §
+   *  Privacy). A hard veto that beats any "always index" override. Live-applied; the
+   *  frontend persists `mediaIndex.excludedFolders` and calls this on change. Existing
+   *  rows for the folder stay until the next GC/rescan; the veto stops FUTURE enrichment.
+   */
+  mediaIndexSetExcludedFolder: (folder: string, excluded: boolean) =>
+    __TAURI_INVOKE<void>('media_index_set_excluded_folder', { folder, excluded }),
+  /**
+   *  Set the folder-importance threshold the scheduler enriches by — the M2 settings
+   *  slider's typed value (`0.0..=1.0`, clamped), never a string (`no-string-matching`).
+   *  Below-threshold folders are deferred; an override still forces enrichment. Live-
+   *  applied; the frontend persists `mediaIndex.importanceThreshold` and calls this.
+   */
+  mediaIndexSetImportanceThreshold: (threshold: number) =>
+    __TAURI_INVOKE<void>('media_index_set_importance_threshold', { threshold }),
+  mediaIndexCoveredCount: (threshold: number, volumeIds: string[]) =>
+    typedError<CoveredCount, string>(__TAURI_INVOKE('media_index_covered_count', { threshold, volumeIds })),
+  /**
+   *  Find the images most similar to the one at `source_path` on `volume_id` (by
+   *  feature-print cosine), highest first, excluding the source (plan M2 "find
+   *  similar"). Runs OFF the IPC thread; answers from `media.db` + the resident vector
+   *  cache even when the volume is offline.
+   */
+  mediaIndexFindSimilar: (volumeId: string, sourcePath: string, limit: number | null) =>
+    typedError<SimilarImage[], string>(__TAURI_INVOKE('media_index_find_similar', { volumeId, sourcePath, limit })),
+  /**
+   *  Group `volume_id`'s images into near-duplicate clusters (feature-print cosine at or
+   *  above `threshold`, default [`DEFAULT_DEDUP_THRESHOLD`]). Runs OFF the IPC thread
+   *  over the resident vector cache.
+   */
+  mediaIndexDedupClusters: (volumeId: string, threshold: number | null) =>
+    typedError<DedupCluster[], string>(__TAURI_INVOKE('media_index_dedup_clusters', { volumeId, threshold })),
+  /**
+   *  The images on `volume_id` tagged `label` at or above `min_score` (default `0.0` =
+   *  any confidence), highest first — the structured tag-score filter alongside the FTS
+   *  keyword search. Runs OFF the IPC thread; answers offline from `media.db`.
+   */
+  mediaIndexSearchTag: (volumeId: string, label: string, minScore: number | null) =>
+    typedError<TagHit[], string>(__TAURI_INVOKE('media_index_search_tag', { volumeId, label, minScore })),
+  /**
    *  Called when the search dialog opens. Starts loading the index in the background.
    *  Returns immediately with `{ ready, entryCount }`.
    */
@@ -3515,6 +3556,27 @@ export type CostSummary = {
   days: CostDay[]
 }
 
+/**
+ *  The live preview behind the M2 importance slider: across the ENABLED volumes in
+ *  `volume_ids`, how many folders score at or above `threshold` and how many images
+ *  they hold ((importance ≥ `threshold`) AND volume opted-in — never a non-opted-in
+ *  SMB/MTP volume). `pending` is `true` when any requested enabled volume isn't ready
+ *  (still scanning, or importance hasn't scored it), so the UI voices "naspi still
+ *  scanning" instead of a confident wrong number. Debounce-friendly: the per-folder
+ *  image counts are cached, so a drag only re-runs the cheap importance filter.
+ */
+export type CoveredCount = {
+  // Folders scoring at or above the threshold across the enabled volumes.
+  folders: number
+  // Qualifying images in those folders across the enabled volumes.
+  images: number
+  /**
+   *  Whether some enabled volume's count is unknown (scanning / not yet scored), so
+   *  the total is a lower bound the UI must caveat.
+   */
+  pending: boolean
+}
+
 // The crash report written to disk (JSON).
 export type CrashReport = {
   version: number
@@ -3576,6 +3638,15 @@ export type CreditInfoDto = {
   available: number
   in_flight: number
   next_message_id: number
+}
+
+/**
+ *  A near-duplicate cluster: the paths of images whose feature prints are within the
+ *  dedup cosine threshold of each other. Crosses the IPC boundary.
+ */
+export type DedupCluster = {
+  // The paths in this near-duplicate group (two or more).
+  paths: string[]
 }
 
 export type DfsCacheEntryDto = {
@@ -4936,6 +5007,14 @@ export type MediaIndexVolumeState = {
    *  distinct from a genuinely empty search result over a populated index.
    */
   enrichedCount: number
+  /**
+   *  How many images the drive index says QUALIFY for enrichment on this volume —
+   *  the honest denominator behind "12,000 of 38,900 images indexed" (plan M2 §
+   *  Honest progress). `None` when the volume's index isn't ready (offline / still
+   *  scanning), so the UI voices that rather than a fabricated total. ETA math lives
+   *  UI-side off `(enriched_count, qualifying_count)`.
+   */
+  qualifyingCount: number | null
   /**
    *  Whether this volume is opted into background network (SMB) enrichment. Only
    *  meaningful for network volumes; a local volume enriches by default when
@@ -6349,6 +6428,18 @@ export type SigningInfoDto = {
 }
 
 /**
+ *  One image-similarity hit: the matched image's path and its cosine similarity to
+ *  the query in `[-1.0, 1.0]` (`1.0` = identical direction). Crosses the IPC boundary
+ *  (find-similar is surfaced by a command), so it derives `Serialize` + `specta::Type`.
+ */
+export type SimilarImage = {
+  // The matched image's path.
+  path: string
+  // Cosine similarity to the query vector.
+  score: number
+}
+
+/**
  *  Typed `smb-connection-changed` Tauri event. The frontend reconnect manager
  *  listens for this and runs the per-volume backoff cycle. Defined here (in the
  *  always-compiled `network` module rather than the macOS/Linux-only SMB backend)
@@ -6564,6 +6655,18 @@ export type TabInfo = {
   path: string
   pinned: boolean
   active: boolean
+}
+
+/**
+ *  One tag-filter hit: an image path and the confidence of the matched tag. Crosses
+ *  the IPC boundary (tag search is surfaced by a command), so it derives `Serialize`
+ *  + `specta::Type`.
+ */
+export type TagHit = {
+  // The matched image's path.
+  path: string
+  // The matched tag's confidence in `[0.0, 1.0]`.
+  score: number
 }
 
 /**

@@ -37,6 +37,7 @@ function state(overrides: Partial<MediaIndexVolumeState> = {}): MediaIndexVolume
     enabled: true,
     indexing: false,
     enrichedCount: 5,
+    qualifyingCount: null,
     networkOptIn: false,
     alwaysIndexed: false,
     paused: false,

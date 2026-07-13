@@ -10,13 +10,14 @@
 //!
 //! Nothing above the seam knows which backend it holds.
 //!
-//! ## Room to grow
+//! ## What the seam computes
 //!
-//! M1 needs OCR only. Tags (`VNClassifyImageRequest`, M2), image feature prints
-//! (M2), CLIP embeddings (M3), and face detect/embed (M4) become sibling methods on
-//! this trait as those milestones land — each returning its own typed result, each
-//! fakeable the same way. Keeping [`ocr`](VisionBackend::ocr) the sole method now
-//! keeps the seam honest to what M1 actually exercises.
+//! [`analyze`](VisionBackend::analyze) is the enrichment entry point: it runs OCR,
+//! scene/object classification (tags), and an image feature-print embedding over ONE
+//! decode of the image (plan Decision 5 — decode once, reuse). OCR alone stays
+//! available via [`ocr`](VisionBackend::ocr) for the focused macOS OCR tests. CLIP
+//! embeddings (M3) and face detect/embed (M4) become sibling methods as those
+//! milestones land.
 
 pub mod fake;
 
@@ -60,6 +61,34 @@ pub struct OcrResult {
     pub text: String,
 }
 
+/// One scene/object tag Vision's `VNClassifyImageRequest` assigned to an image: a
+/// taxonomy label (`"beach"`, `"dog"`) and its confidence in `0.0..=1.0`. Crosses
+/// the IPC boundary (tag surfacing is a next-agent M2 UI), so it derives `Serialize`
+/// + `specta::Type`.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct Tag {
+    /// The taxonomy label (a Vision classification identifier).
+    pub label: String,
+    /// The classifier's confidence in `[0.0, 1.0]`.
+    pub score: f32,
+}
+
+/// The full enrichment analysis of ONE image, computed from a single decode (plan
+/// Decision 5). OCR text (possibly empty — an image with no text), the scene/object
+/// tags (possibly empty), and the image feature-print embedding (`None` if the
+/// feature-print request produced nothing).
+#[derive(Debug, Clone, PartialEq)]
+pub struct Analysis {
+    /// The recognized OCR text.
+    pub ocr: OcrResult,
+    /// The scene/object tags, already thresholded/capped by the backend.
+    pub tags: Vec<Tag>,
+    /// The image feature-print embedding (image↔image similarity), or `None` when
+    /// the feature-print request yielded no observation.
+    pub embedding: Option<Vec<f32>>,
+}
+
 /// A typed backend failure. Never string-matched for classification
 /// (`no-string-matching`): a caller branches on the variant, not the message.
 #[derive(Debug, Clone)]
@@ -84,15 +113,40 @@ impl std::error::Error for VisionError {}
 /// The inference boundary. `Send + Sync` so an `Arc<dyn VisionBackend>` can be held
 /// by the scheduler and used across its dedicated OS threads.
 pub trait VisionBackend: Send + Sync {
-    /// A stable stamp for the OS/Vision OCR engine this backend runs. The
-    /// scheduler persists it on each `media_status` row: when it changes (an OS
-    /// upgrade bumps the Vision OCR engine), stored OCR goes stale and re-runs even
-    /// though `(path, mtime, size)` is unchanged (data-COVERAGE, not data-safety —
-    /// OCR text is disposable). See [`crate::media_index`] DETAILS.
+    /// A stable stamp for the OS/Vision OCR engine this backend runs. A component of
+    /// [`analysis_stamp`](VisionBackend::analysis_stamp); also the shape the focused
+    /// OCR tests assert.
     fn engine_version(&self) -> String;
+
+    /// A stable stamp for the Vision scene/object TAG taxonomy (the classifier
+    /// revision). When macOS ships a new tag taxonomy this bumps, so stored tags go
+    /// stale and re-tag via [`analysis_stamp`](VisionBackend::analysis_stamp) — the
+    /// tag-taxonomy-version component of the provenance key (plan Decision 4).
+    fn taxonomy_version(&self) -> String;
+
+    /// The COMBINED provenance/staleness stamp the scheduler persists on each
+    /// `media_status` row (in the `engine_version` column): the OCR engine, the tag
+    /// taxonomy, and the feature-print revision folded together. When ANY component
+    /// changes (an OS upgrade bumps the OCR engine, the tag taxonomy, or the
+    /// feature-print model) a stored row goes stale and re-runs [`analyze`], even
+    /// though `(path, mtime, size)` is unchanged (data-COVERAGE; the derived data is
+    /// disposable). One decode produces all three outputs, so re-running the whole
+    /// analysis on any component change costs nothing extra. Default folds the two
+    /// stamps above; a backend with a distinct feature-print revision overrides it.
+    fn analysis_stamp(&self) -> String {
+        format!("{};tax={}", self.engine_version(), self.taxonomy_version())
+    }
 
     /// Run OCR over one image. The real backend decodes (from `input.bytes` when
     /// present, else by reading `input.path`) and runs `VNRecognizeTextRequest`; the
     /// fake returns scripted text keyed on `input.path`.
     fn ocr(&self, input: &ImageInput) -> Result<OcrResult, VisionError>;
+
+    /// Run the full enrichment analysis over one image from a SINGLE decode: OCR,
+    /// scene/object classification (tags), and the image feature-print embedding. The
+    /// real backend decodes once and runs all three Vision requests on the one
+    /// `CGImage`; the fake returns deterministic scripted results keyed on
+    /// `input.path`. A hostile/undecodable image fails closed to a typed
+    /// [`VisionError`], never a panic (as [`ocr`](VisionBackend::ocr) does).
+    fn analyze(&self, input: &ImageInput) -> Result<Analysis, VisionError>;
 }

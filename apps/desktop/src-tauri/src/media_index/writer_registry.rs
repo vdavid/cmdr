@@ -80,7 +80,7 @@ mod tests {
                 state: EnrichmentState::Done,
                 engine_version: "e1".to_string(),
             },
-            Some("hello".to_string()),
+            Some(crate::media_index::writer::UpsertAnalysis::ocr_only("hello")),
         )
         .expect("upsert");
         w2.flush_blocking().expect("flush through the shared writer");

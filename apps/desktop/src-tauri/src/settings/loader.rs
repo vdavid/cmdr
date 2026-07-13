@@ -121,6 +121,16 @@ pub struct Settings {
     /// opt-in.
     #[serde(alias = "mediaIndex.alwaysIndexFolders", default)]
     pub media_index_always_index_folders: Vec<String>,
+    /// The lowest folder-importance level (`0.0..=1.0`) to image-index — the M2
+    /// settings slider. Absent means the default (enrich every scored folder). Seeded
+    /// into `media_index::gate` at startup; live changes flow through
+    /// `set_media_index_importance_threshold`.
+    #[serde(alias = "mediaIndex.importanceThreshold", default)]
+    pub media_index_importance_threshold: Option<f64>,
+    /// Absolute folder paths the user EXCLUDED from photo-search indexing (the privacy
+    /// complement to the opt-in). Seeded + live-applied like the opt-in.
+    #[serde(alias = "mediaIndex.excludedFolders", default)]
+    pub media_index_excluded_folders: Vec<String>,
 }
 
 fn default_show_hidden() -> bool {
@@ -165,6 +175,8 @@ impl Default for Settings {
             media_index_network_volumes: Vec::new(),
             media_index_always_index_volumes: Vec::new(),
             media_index_always_index_folders: Vec::new(),
+            media_index_importance_threshold: None,
+            media_index_excluded_folders: Vec::new(),
         }
     }
 }
@@ -240,6 +252,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let media_index_network_volumes = parse_string_array(&json, "mediaIndex.networkVolumes");
     let media_index_always_index_volumes = parse_string_array(&json, "mediaIndex.alwaysIndexVolumes");
     let media_index_always_index_folders = parse_string_array(&json, "mediaIndex.alwaysIndexFolders");
+    let media_index_importance_threshold = json.get("mediaIndex.importanceThreshold").and_then(|v| v.as_f64());
+    let media_index_excluded_folders = parse_string_array(&json, "mediaIndex.excludedFolders");
 
     Ok(Settings {
         show_hidden_files,
@@ -269,6 +283,8 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         media_index_network_volumes,
         media_index_always_index_volumes,
         media_index_always_index_folders,
+        media_index_importance_threshold,
+        media_index_excluded_folders,
     })
 }
 

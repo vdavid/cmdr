@@ -4,14 +4,17 @@
 //! write connection per DB, and all writes cross a bounded channel. The handle is
 //! cloneable; every clone shares the one channel and one thread.
 //!
-//! ## Command surface (M1)
+//! ## Command surface
 //!
 //! - [`upsert`](MediaWriter::upsert): record one image's enrichment — upsert its
-//!   `media_status` row and replace its `media_ocr` text (or clear the text on a
-//!   failure) in ONE transaction.
-//! - [`gc_paths`](MediaWriter::gc_paths): delete the `media_status` + `media_ocr`
-//!   rows for a set of paths whose source files vanished (deletion-driven GC, run
-//!   ONLY on a completed-scan edge — see [`super::scheduler`]).
+//!   `media_status` row and replace its searchable text (OCR + folded tag labels in
+//!   `media_ocr`), its structured `media_tags`, and its `media_embedding` in ONE
+//!   transaction. On a failure the text/tags/embedding are cleared (only the status
+//!   row records the failure).
+//! - [`gc_paths`](MediaWriter::gc_paths): delete the `media_status` + `media_ocr` +
+//!   `media_tags` + `media_embedding` rows for a set of paths whose source files
+//!   vanished (deletion-driven GC, run ONLY on a completed-scan edge — see
+//!   [`super::scheduler`]).
 //! - [`purge_volume`](MediaWriter::purge_volume): drop all rows (the feature was
 //!   disabled and the user chose to delete `media.db`'s contents).
 
@@ -23,7 +26,8 @@ use std::thread;
 
 use rusqlite::Connection;
 
-use super::store::{MediaStatusRow, MediaStoreError, open_write_connection};
+use super::backend::Tag;
+use super::store::{MediaStatusRow, MediaStoreError, encode_embedding, open_write_connection};
 use crate::ignore_poison::IgnorePoison;
 
 /// Bounded channel capacity. Enrichment sends one `Upsert` per image; a modest
@@ -32,12 +36,13 @@ const CHANNEL_CAPACITY: usize = 1024;
 
 /// Messages to the writer thread.
 enum WriteMessage {
-    /// Upsert one image's status row and replace its OCR text. `ocr_text` is
-    /// `Some` on success (replaces the FTS rows for this path) and `None` on a
-    /// failure/skip (clears any prior FTS rows). One transaction.
+    /// Upsert one image's status row and replace its searchable text, tags, and
+    /// embedding. On success `analysis` is `Some` (replaces the FTS + tag + embedding
+    /// rows for this path); on a failure/skip it's `None` (clears any prior rows). One
+    /// transaction.
     Upsert {
         row: MediaStatusRow,
-        ocr_text: Option<String>,
+        analysis: Option<UpsertAnalysis>,
     },
     /// Delete the status + OCR rows for each path (deletion-driven GC). One
     /// transaction over the whole batch.
@@ -48,6 +53,32 @@ enum WriteMessage {
     Flush(mpsc::Sender<()>),
     /// Shut the writer thread down.
     Shutdown,
+}
+
+/// The enrichment outputs one successful `upsert` persists for an image: the
+/// searchable OCR text, the scene/object tags, and the feature-print embedding.
+/// Assembled by the enrich core from a backend [`Analysis`](super::backend::Analysis).
+#[derive(Debug, Clone, Default)]
+pub struct UpsertAnalysis {
+    /// The recognized OCR text (empty for an image with no text). Stored as the
+    /// `source = 'ocr'` FTS row when non-empty.
+    pub ocr_text: String,
+    /// The scene/object tags (label + score). Stored structurally in `media_tags`
+    /// and their labels folded into the FTS as the `source = 'tag'` row.
+    pub tags: Vec<Tag>,
+    /// The image feature-print embedding, or `None` if the backend produced none.
+    pub embedding: Option<Vec<f32>>,
+}
+
+impl UpsertAnalysis {
+    /// An analysis carrying only OCR text (no tags, no embedding) — the shape the
+    /// store/writer round-trip tests use to assert the OCR path in isolation.
+    pub fn ocr_only(text: impl Into<String>) -> Self {
+        Self {
+            ocr_text: text.into(),
+            ..Default::default()
+        }
+    }
 }
 
 /// A cloneable handle to a volume's media writer thread.
@@ -82,11 +113,11 @@ impl MediaWriter {
         &self.db_path
     }
 
-    /// Upsert one image's enrichment. On success pass `Some(text)`; on a failure
-    /// pass `None` (the status row records the failure; any prior OCR text is
-    /// cleared).
-    pub fn upsert(&self, row: MediaStatusRow, ocr_text: Option<String>) -> Result<(), MediaStoreError> {
-        self.send(WriteMessage::Upsert { row, ocr_text })
+    /// Upsert one image's enrichment. On success pass `Some(analysis)`; on a failure
+    /// pass `None` (the status row records the failure; any prior text/tags/embedding
+    /// are cleared).
+    pub fn upsert(&self, row: MediaStatusRow, analysis: Option<UpsertAnalysis>) -> Result<(), MediaStoreError> {
+        self.send(WriteMessage::Upsert { row, analysis })
     }
 
     /// GC the status + OCR rows for `paths` (their source files vanished). A no-op
@@ -134,8 +165,8 @@ impl MediaWriter {
 fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
     while let Ok(msg) = receiver.recv() {
         match msg {
-            WriteMessage::Upsert { row, ocr_text } => {
-                if let Err(e) = apply_upsert(&mut conn, &row, ocr_text.as_deref()) {
+            WriteMessage::Upsert { row, analysis } => {
+                if let Err(e) = apply_upsert(&mut conn, &row, analysis.as_ref()) {
                     log::warn!(target: "media_index", "upsert failed for '{}': {e}", row.path);
                 }
             }
@@ -157,10 +188,17 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
     }
 }
 
-/// Upsert one status row and replace its OCR text in one transaction. The OCR text
-/// is always cleared first (a re-enrichment must not leave stale FTS rows), then
-/// re-inserted only when `ocr_text` is `Some`.
-fn apply_upsert(conn: &mut Connection, row: &MediaStatusRow, ocr_text: Option<&str>) -> Result<(), MediaStoreError> {
+/// Upsert one status row and replace its searchable text, tags, and embedding in one
+/// transaction. The prior text/tags/embedding rows are always cleared first (a
+/// re-enrichment must not leave stale rows), then re-inserted only when `analysis` is
+/// `Some` (a success). The OCR FTS row is written only for non-empty text; the folded
+/// tag FTS row + structured `media_tags` only for non-empty tags; the embedding only
+/// when present.
+fn apply_upsert(
+    conn: &mut Connection,
+    row: &MediaStatusRow,
+    analysis: Option<&UpsertAnalysis>,
+) -> Result<(), MediaStoreError> {
     let tx = conn.transaction()?;
     {
         tx.execute(
@@ -177,35 +215,75 @@ fn apply_upsert(conn: &mut Connection, row: &MediaStatusRow, ocr_text: Option<&s
                 row.engine_version,
             ],
         )?;
+        // Clear every prior derived row for this path (one `WHERE path = ?` each).
         tx.execute("DELETE FROM media_ocr WHERE path = ?1", rusqlite::params![row.path])?;
-        if let Some(text) = ocr_text {
-            tx.execute(
-                "INSERT INTO media_ocr (path, text) VALUES (?1, ?2)",
-                rusqlite::params![row.path, text],
-            )?;
+        tx.execute("DELETE FROM media_tags WHERE path = ?1", rusqlite::params![row.path])?;
+        tx.execute(
+            "DELETE FROM media_embedding WHERE path = ?1",
+            rusqlite::params![row.path],
+        )?;
+
+        if let Some(analysis) = analysis {
+            if !analysis.ocr_text.is_empty() {
+                tx.execute(
+                    "INSERT INTO media_ocr (path, source, text) VALUES (?1, 'ocr', ?2)",
+                    rusqlite::params![row.path, analysis.ocr_text],
+                )?;
+            }
+            if !analysis.tags.is_empty() {
+                // Fold the tag labels into the FTS as one searchable row, and store
+                // the structured (label, score) rows for tag-score filtering.
+                let labels = analysis
+                    .tags
+                    .iter()
+                    .map(|t| t.label.as_str())
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                tx.execute(
+                    "INSERT INTO media_ocr (path, source, text) VALUES (?1, 'tag', ?2)",
+                    rusqlite::params![row.path, labels],
+                )?;
+                let mut ins_tag =
+                    tx.prepare_cached("INSERT INTO media_tags (path, label, score) VALUES (?1, ?2, ?3)")?;
+                for tag in &analysis.tags {
+                    ins_tag.execute(rusqlite::params![row.path, tag.label, tag.score as f64])?;
+                }
+            }
+            if let Some(vector) = &analysis.embedding {
+                tx.execute(
+                    "INSERT INTO media_embedding (path, dims, vector) VALUES (?1, ?2, ?3)",
+                    rusqlite::params![row.path, vector.len() as i64, encode_embedding(vector)],
+                )?;
+            }
         }
     }
     tx.commit()?;
     Ok(())
 }
 
-/// Delete the status + OCR rows for each path in one transaction.
+/// Delete the status + text + tag + embedding rows for each path in one transaction.
 fn apply_gc(conn: &mut Connection, paths: &[String]) -> Result<(), MediaStoreError> {
     let tx = conn.transaction()?;
     {
         let mut del_status = tx.prepare_cached("DELETE FROM media_status WHERE path = ?1")?;
         let mut del_ocr = tx.prepare_cached("DELETE FROM media_ocr WHERE path = ?1")?;
+        let mut del_tags = tx.prepare_cached("DELETE FROM media_tags WHERE path = ?1")?;
+        let mut del_emb = tx.prepare_cached("DELETE FROM media_embedding WHERE path = ?1")?;
         for path in paths {
             del_status.execute(rusqlite::params![path])?;
             del_ocr.execute(rusqlite::params![path])?;
+            del_tags.execute(rusqlite::params![path])?;
+            del_emb.execute(rusqlite::params![path])?;
         }
     }
     tx.commit()?;
     Ok(())
 }
 
-/// Drop every status and OCR row. Schema stays.
+/// Drop every derived row. Schema stays.
 fn apply_purge(conn: &Connection) -> Result<(), MediaStoreError> {
-    conn.execute_batch("DELETE FROM media_status; DELETE FROM media_ocr;")?;
+    conn.execute_batch(
+        "DELETE FROM media_status; DELETE FROM media_ocr; DELETE FROM media_tags; DELETE FROM media_embedding;",
+    )?;
     Ok(())
 }

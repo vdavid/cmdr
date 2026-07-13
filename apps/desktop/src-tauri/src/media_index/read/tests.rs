@@ -75,7 +75,9 @@ fn search_finds_the_image_by_ocr_text_and_survives_unmount() {
                 state: EnrichmentState::Done,
                 engine_version: "e1".to_string(),
             },
-            Some("a sunset over the beach with palm trees".to_string()),
+            Some(crate::media_index::writer::UpsertAnalysis::ocr_only(
+                "a sunset over the beach with palm trees",
+            )),
         )
         .expect("upsert");
     writer.flush_blocking().expect("flush");

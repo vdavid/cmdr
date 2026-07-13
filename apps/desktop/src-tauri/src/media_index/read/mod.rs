@@ -16,7 +16,8 @@
 
 use std::path::PathBuf;
 
-use super::store::{MediaStoreError, media_db_path, open_read_connection};
+use super::store::{MediaStoreError, media_db_path, open_read_connection, read_embedding_for, read_tag_matches};
+use super::vector::{DedupCluster, SimilarImage, VectorStore, cache};
 
 /// One OCR search hit: the matched image's path and a highlighted snippet of the
 /// matched text (the "why matched" reason the results grid shows). Crosses the IPC
@@ -62,23 +63,35 @@ impl MediaIndex {
             return Ok(Vec::new());
         }
         let conn = open_read_connection(&self.db_path)?;
-        // `snippet(media_ocr, 1, ...)`: column 1 is `text` (0 is the UNINDEXED
-        // `path`). `[`/`]` mark the matched terms; `…` is the ellipsis; 12 is the
-        // max snippet token count.
+        // `snippet(media_ocr, 2, ...)`: column 2 is `text` (0 is the UNINDEXED `path`,
+        // 1 the UNINDEXED `source`). `[`/`]` mark the matched terms; `…` is the
+        // ellipsis; 12 is the max snippet token count. A path can have two rows (OCR +
+        // folded tags); over-fetch then dedup by path in Rust, keeping the best-ranked.
         let mut stmt = conn.prepare(
-            "SELECT path, snippet(media_ocr, 1, '[', ']', '…', 12) AS snip
+            "SELECT path, snippet(media_ocr, 2, '[', ']', '…', 12) AS snip
              FROM media_ocr
              WHERE media_ocr MATCH ?1
              ORDER BY rank
              LIMIT ?2",
         )?;
-        let rows = stmt.query_map(rusqlite::params![match_query, limit as i64], |row| {
+        let rows = stmt.query_map(rusqlite::params![match_query, (limit * 2) as i64], |row| {
             Ok(OcrHit {
                 path: row.get(0)?,
                 snippet: row.get(1)?,
             })
         })?;
-        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+        let mut seen = std::collections::HashSet::new();
+        let mut hits = Vec::new();
+        for hit in rows {
+            let hit = hit?;
+            if seen.insert(hit.path.clone()) {
+                hits.push(hit);
+                if hits.len() >= limit {
+                    break;
+                }
+            }
+        }
+        Ok(hits)
     }
 
     /// The number of enriched images stored for this volume (a `COUNT(*)` over
@@ -92,6 +105,57 @@ impl MediaIndex {
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM media_status", [], |row| row.get(0))?;
         Ok(count as u64)
     }
+
+    /// The `k` images most similar to the one at `source_path` (by feature-print
+    /// cosine), highest first, excluding the source itself. Reads the source's stored
+    /// embedding, then brute-force ranks it against the volume's resident vector cache
+    /// (loaded once, kept warm — plan § Query-time vector residency). An empty result
+    /// when the source has no embedding, or the volume is un-enriched/offline.
+    pub fn find_similar(&self, source_path: &str, k: usize) -> Result<Vec<SimilarImage>, MediaStoreError> {
+        if !self.db_path.exists() {
+            return Ok(Vec::new());
+        }
+        let conn = open_read_connection(&self.db_path)?;
+        let Some(query) = read_embedding_for(&conn, source_path)? else {
+            return Ok(Vec::new());
+        };
+        drop(conn);
+        let store = cache::get_or_load(&self.db_path);
+        Ok(store.top_k(&query, k, Some(source_path)))
+    }
+
+    /// Group the volume's images into near-duplicate clusters (feature-print cosine at
+    /// or above `threshold`). Reads the resident vector cache; empty for an
+    /// un-enriched/offline volume.
+    pub fn dedup_clusters(&self, threshold: f32) -> Vec<DedupCluster> {
+        cache::get_or_load(&self.db_path).dedup_clusters(threshold)
+    }
+
+    /// The images tagged `label` at or above `min_score`, each with the matching
+    /// tag's score, highest first — the tag-score filter (plan M2). Empty for a
+    /// missing/never-enriched DB.
+    pub fn images_with_tag(&self, label: &str, min_score: f32) -> Result<Vec<TagHit>, MediaStoreError> {
+        if !self.db_path.exists() {
+            return Ok(Vec::new());
+        }
+        let conn = open_read_connection(&self.db_path)?;
+        Ok(read_tag_matches(&conn, label, min_score)?
+            .into_iter()
+            .map(|(path, score)| TagHit { path, score })
+            .collect())
+    }
+}
+
+/// One tag-filter hit: an image path and the confidence of the matched tag. Crosses
+/// the IPC boundary (tag search is surfaced by a command), so it derives `Serialize`
+/// + `specta::Type`.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct TagHit {
+    /// The matched image's path.
+    pub path: String,
+    /// The matched tag's confidence in `[0.0, 1.0]`.
+    pub score: f32,
 }
 
 /// Build an fts5 `MATCH` query from raw user input by quoting each whitespace-

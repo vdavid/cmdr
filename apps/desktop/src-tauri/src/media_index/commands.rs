@@ -14,10 +14,12 @@ use std::sync::Arc;
 
 use tauri::{AppHandle, Manager};
 
+use super::coverage;
 use super::gate;
 use super::network::config as network_config;
-use super::read::{MediaIndex, OcrHit};
+use super::read::{MediaIndex, OcrHit, TagHit};
 use super::scheduler::{self, MediaScheduler};
+use super::vector::{DedupCluster, SimilarImage};
 
 /// The default hit cap when the caller doesn't specify one, and the hard ceiling on
 /// any caller-supplied limit (a photo-search grid never needs more, and it bounds the
@@ -77,6 +79,12 @@ pub struct MediaIndexVolumeState {
     /// with `indexing == false` and `enabled == true` reads as "not indexed yet",
     /// distinct from a genuinely empty search result over a populated index.
     pub enriched_count: u64,
+    /// How many images the drive index says QUALIFY for enrichment on this volume —
+    /// the honest denominator behind "12,000 of 38,900 images indexed" (plan M2 §
+    /// Honest progress). `None` when the volume's index isn't ready (offline / still
+    /// scanning), so the UI voices that rather than a fabricated total. ETA math lives
+    /// UI-side off `(enriched_count, qualifying_count)`.
+    pub qualifying_count: Option<u64>,
     /// Whether this volume is opted into background network (SMB) enrichment. Only
     /// meaningful for network volumes; a local volume enriches by default when
     /// `enabled`, so the UI shows the opt-in toggle only for network volumes (M1.5b).
@@ -109,10 +117,14 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
 
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
     let vid = volume_id.clone();
-    let enriched_count = tauri::async_runtime::spawn_blocking(move || {
-        MediaIndex::open(&data_dir, &vid)
+    let (enriched_count, qualifying_count) = tauri::async_runtime::spawn_blocking(move || {
+        let enriched = MediaIndex::open(&data_dir, &vid)
             .enriched_count()
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+        // The honest denominator: how many images qualify per the drive index. `None`
+        // when the index isn't registered (offline / still scanning).
+        let qualifying = coverage::get_or_build(&vid).map(|c| c.total);
+        Ok::<_, String>((enriched, qualifying))
     })
     .await
     .map_err(|e| format!("media volume state task panicked: {e}"))??;
@@ -121,6 +133,7 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
         enabled,
         indexing,
         enriched_count,
+        qualifying_count,
         network_opt_in: network_config::is_opted_in(&volume_id),
         always_indexed: network_config::snapshot().always_index_volumes.contains(&volume_id),
         paused: network_config::is_paused(&volume_id),
@@ -168,6 +181,178 @@ pub fn media_index_set_always_index_volume(app: AppHandle, volume_id: String, al
 #[specta::specta]
 pub fn media_index_set_always_index_folder(folder: String, always: bool) {
     network_config::set_always_index_folder(&folder, always);
+}
+
+/// Set (or clear) a per-folder photo-search EXCLUSION: no image at or under `folder`
+/// (an absolute path) is enriched (the privacy complement to the opt-in — plan M2 §
+/// Privacy). A hard veto that beats any "always index" override. Live-applied; the
+/// frontend persists `mediaIndex.excludedFolders` and calls this on change. Existing
+/// rows for the folder stay until the next GC/rescan; the veto stops FUTURE enrichment.
+#[tauri::command]
+#[specta::specta]
+pub fn media_index_set_excluded_folder(folder: String, excluded: bool) {
+    network_config::set_excluded_folder(&folder, excluded);
+}
+
+/// Set the folder-importance threshold the scheduler enriches by — the M2 settings
+/// slider's typed value (`0.0..=1.0`, clamped), never a string (`no-string-matching`).
+/// Below-threshold folders are deferred; an override still forces enrichment. Live-
+/// applied; the frontend persists `mediaIndex.importanceThreshold` and calls this.
+#[tauri::command]
+#[specta::specta]
+pub fn media_index_set_importance_threshold(threshold: f64) {
+    gate::set_importance_threshold(threshold);
+}
+
+/// The live preview behind the M2 importance slider: across the ENABLED volumes in
+/// `volume_ids`, how many folders score at or above `threshold` and how many images
+/// they hold ((importance ≥ `threshold`) AND volume opted-in — never a non-opted-in
+/// SMB/MTP volume). `pending` is `true` when any requested enabled volume isn't ready
+/// (still scanning, or importance hasn't scored it), so the UI voices "naspi still
+/// scanning" instead of a confident wrong number. Debounce-friendly: the per-folder
+/// image counts are cached, so a drag only re-runs the cheap importance filter.
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct CoveredCount {
+    /// Folders scoring at or above the threshold across the enabled volumes.
+    pub folders: u64,
+    /// Qualifying images in those folders across the enabled volumes.
+    pub images: u64,
+    /// Whether some enabled volume's count is unknown (scanning / not yet scored), so
+    /// the total is a lower bound the UI must caveat.
+    pub pending: bool,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn media_index_covered_count(
+    app: AppHandle,
+    threshold: f64,
+    volume_ids: Vec<String>,
+) -> Result<CoveredCount, String> {
+    // Feature off ⇒ nothing is covered (the slider is disabled anyway).
+    if !gate::is_enabled() {
+        return Ok(CoveredCount {
+            folders: 0,
+            images: 0,
+            pending: false,
+        });
+    }
+    let data_dir = crate::config::resolved_app_data_dir(&app)?;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        use crate::indexing::IndexVolumeKind;
+        // Typed kind per ready volume (never an id-string branch); an unlisted volume
+        // is offline / not scanned.
+        let kinds: std::collections::HashMap<String, IndexVolumeKind> =
+            crate::indexing::ready_volumes_with_kind().into_iter().collect();
+
+        let mut folders = 0u64;
+        let mut images = 0u64;
+        let mut pending = false;
+
+        for vid in &volume_ids {
+            // Enabled = master on (checked above) AND the scheduler would enrich this
+            // volume: a local volume always, an SMB volume only when opted in, MTP
+            // never (it's on-demand, not previewed).
+            let enabled = match kinds.get(vid) {
+                Some(IndexVolumeKind::Local) => true,
+                Some(IndexVolumeKind::Smb) => network_config::is_opted_in(vid),
+                Some(IndexVolumeKind::Mtp) | None => false,
+            };
+            if !enabled {
+                // An offline / not-ready requested volume that the user expects to
+                // count is pending; a genuinely-disabled one just contributes nothing.
+                if !kinds.contains_key(vid) {
+                    pending = true;
+                }
+                continue;
+            }
+            let (Some(counts), Some(scores)) =
+                (coverage::get_or_build(vid), coverage::importance_scores(&data_dir, vid))
+            else {
+                // Index not ready or importance not scored yet ⇒ unknown for now.
+                pending = true;
+                continue;
+            };
+            let (f, i) = coverage::covered_for_volume(&counts, &scores, threshold);
+            folders += f;
+            images += i;
+        }
+
+        Ok(CoveredCount {
+            folders,
+            images,
+            pending,
+        })
+    })
+    .await
+    .map_err(|e| format!("covered-count task panicked: {e}"))?
+}
+
+/// Find the images most similar to the one at `source_path` on `volume_id` (by
+/// feature-print cosine), highest first, excluding the source (plan M2 "find
+/// similar"). Runs OFF the IPC thread; answers from `media.db` + the resident vector
+/// cache even when the volume is offline.
+#[tauri::command]
+#[specta::specta]
+pub async fn media_index_find_similar(
+    app: AppHandle,
+    volume_id: String,
+    source_path: String,
+    limit: Option<u32>,
+) -> Result<Vec<SimilarImage>, String> {
+    let data_dir = crate::config::resolved_app_data_dir(&app)?;
+    let k = resolve_limit(limit);
+    tauri::async_runtime::spawn_blocking(move || {
+        MediaIndex::open(&data_dir, &volume_id)
+            .find_similar(&source_path, k)
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("find-similar task panicked: {e}"))?
+}
+
+/// The default and hard-cap cosine thresholds for the near-duplicate grouping.
+const DEFAULT_DEDUP_THRESHOLD: f32 = 0.9;
+
+/// Group `volume_id`'s images into near-duplicate clusters (feature-print cosine at or
+/// above `threshold`, default [`DEFAULT_DEDUP_THRESHOLD`]). Runs OFF the IPC thread
+/// over the resident vector cache.
+#[tauri::command]
+#[specta::specta]
+pub async fn media_index_dedup_clusters(
+    app: AppHandle,
+    volume_id: String,
+    threshold: Option<f32>,
+) -> Result<Vec<DedupCluster>, String> {
+    let data_dir = crate::config::resolved_app_data_dir(&app)?;
+    let threshold = threshold.unwrap_or(DEFAULT_DEDUP_THRESHOLD).clamp(-1.0, 1.0);
+    tauri::async_runtime::spawn_blocking(move || Ok(MediaIndex::open(&data_dir, &volume_id).dedup_clusters(threshold)))
+        .await
+        .map_err(|e| format!("dedup task panicked: {e}"))?
+}
+
+/// The images on `volume_id` tagged `label` at or above `min_score` (default `0.0` =
+/// any confidence), highest first — the structured tag-score filter alongside the FTS
+/// keyword search. Runs OFF the IPC thread; answers offline from `media.db`.
+#[tauri::command]
+#[specta::specta]
+pub async fn media_index_search_tag(
+    app: AppHandle,
+    volume_id: String,
+    label: String,
+    min_score: Option<f32>,
+) -> Result<Vec<TagHit>, String> {
+    let data_dir = crate::config::resolved_app_data_dir(&app)?;
+    let min_score = min_score.unwrap_or(0.0);
+    tauri::async_runtime::spawn_blocking(move || {
+        MediaIndex::open(&data_dir, &volume_id)
+            .images_with_tag(&label, min_score)
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("tag-search task panicked: {e}"))?
 }
 
 /// Mint a `cmdr-media://` token so the search-results grid can render an image's

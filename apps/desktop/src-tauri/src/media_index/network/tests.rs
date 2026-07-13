@@ -245,7 +245,9 @@ fn gc_does_not_fire_on_a_disconnect() {
                 state: EnrichmentState::Done,
                 engine_version: "fake-vision-1".to_string(),
             },
-            Some("kept across disconnect".to_string()),
+            Some(crate::media_index::writer::UpsertAnalysis::ocr_only(
+                "kept across disconnect",
+            )),
         )
         .expect("seed");
     writer.flush_blocking().expect("flush");

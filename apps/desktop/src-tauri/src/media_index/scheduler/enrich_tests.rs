@@ -5,7 +5,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::enrich::{ImageEntry, enrich_and_gc, gc_targets, load_statuses, walk_image_entries};
+use super::enrich::{
+    ImageEntry, enrich_and_gc, gc_targets, load_statuses, parent_dir, prioritized, walk_image_entries,
+};
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::media_index::backend::fake::FakeVisionBackend;
 use crate::media_index::predicate::MediaKind;
@@ -117,7 +119,7 @@ fn enrich_over_fake_backend_populates_ocr_for_images_only() {
 
     let backend = FakeVisionBackend::new().with_text("/photos/beach.jpg", "a sunny beach with waves");
     let writer = media_writer(dir.path(), "root");
-    let summary = enrich_and_gc(&images, &HashMap::new(), &backend, &writer, &|| false).expect("pass");
+    let summary = enrich_and_gc(&images, &HashMap::new(), &backend, &writer, &|_| true, &|| false).expect("pass");
     assert_eq!(summary.enriched, 1);
 
     let index = MediaIndex::open(dir.path(), "root");
@@ -127,8 +129,84 @@ fn enrich_over_fake_backend_populates_ocr_for_images_only() {
     // A second pass over the loaded statuses re-enriches nothing (path-keyed
     // staleness: same mtime/size/engine ⇒ fresh).
     let statuses = load_statuses(dir.path(), "root");
-    let again = enrich_and_gc(&images, &statuses, &backend, &writer, &|| false).expect("second pass");
+    let again = enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|| false).expect("second pass");
     assert_eq!(again.enriched, 0, "unchanged images aren't re-enriched");
+    writer.shutdown();
+}
+
+// ── Importance-prioritized enrichment (M2) ──────────────────────────────────
+
+fn image(path: &str) -> ImageEntry {
+    ImageEntry {
+        path: path.to_string(),
+        mtime: Some(1),
+        size: Some(2),
+        kind: MediaKind::Image,
+    }
+}
+
+#[test]
+fn prioritized_orders_high_importance_folders_first() {
+    let images = [image("/low/a.jpg"), image("/high/b.jpg"), image("/mid/c.jpg")];
+    let score = |dir: &str| match dir {
+        "/high" => 0.9,
+        "/mid" => 0.5,
+        "/low" => 0.1,
+        _ => 0.0,
+    };
+    let ordered = prioritized(&images, &score);
+    let paths: Vec<&str> = ordered.iter().map(|i| i.path.as_str()).collect();
+    assert_eq!(paths, vec!["/high/b.jpg", "/mid/c.jpg", "/low/a.jpg"]);
+}
+
+#[test]
+fn enrich_defers_below_threshold_folder_but_keeps_it_for_gc() {
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "root");
+    let backend = FakeVisionBackend::new();
+
+    // Two folders: /keep qualifies (should_enrich true), /skip is below threshold
+    // (should_enrich false). Neither is stored yet, so /keep enriches, /skip defers.
+    let images = [image("/keep/a.jpg"), image("/skip/b.jpg")];
+    let should_enrich = |path: &str| parent_dir(path) == "/keep";
+    let summary = enrich_and_gc(&images, &HashMap::new(), &backend, &writer, &should_enrich, &|| false).expect("pass");
+    assert_eq!(summary.enriched, 1, "only the qualifying folder enriches");
+    assert_eq!(summary.gc_count, 0, "the deferred image is present, so it is NOT GC'd");
+
+    let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen");
+    assert!(
+        store.status_for("/keep/a.jpg").expect("read").is_some(),
+        "qualifying enriched"
+    );
+    assert!(
+        store.status_for("/skip/b.jpg").expect("read").is_none(),
+        "below-threshold deferred, not enriched"
+    );
+    writer.shutdown();
+}
+
+#[test]
+fn override_enriches_a_folder_the_threshold_would_defer() {
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "root");
+    let backend = FakeVisionBackend::new();
+
+    // The whole tree is below threshold, but /archive is override-covered ⇒ it
+    // enriches while the rest defers (the escape hatch for a rarely-browsed archive).
+    let images = [image("/archive/a.jpg"), image("/misc/b.jpg")];
+    let overridden = |path: &str| parent_dir(path) == "/archive";
+    let summary = enrich_and_gc(&images, &HashMap::new(), &backend, &writer, &overridden, &|| false).expect("pass");
+    assert_eq!(summary.enriched, 1);
+
+    let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen");
+    assert!(
+        store.status_for("/archive/a.jpg").expect("read").is_some(),
+        "override enriches"
+    );
+    assert!(
+        store.status_for("/misc/b.jpg").expect("read").is_none(),
+        "the rest defers"
+    );
     writer.shutdown();
 }
 
@@ -173,7 +251,7 @@ fn a_completed_pass_gcs_a_vanished_known_entry() {
                     state: EnrichmentState::Done,
                     engine_version: "fake-vision-1".to_string(),
                 },
-                Some("some text".to_string()),
+                Some(crate::media_index::writer::UpsertAnalysis::ocr_only("some text")),
             )
             .expect("seed");
     }
@@ -188,7 +266,7 @@ fn a_completed_pass_gcs_a_vanished_known_entry() {
     }];
     let statuses = load_statuses(dir.path(), "root");
     let backend = FakeVisionBackend::new();
-    let summary = enrich_and_gc(&images, &statuses, &backend, &writer, &|| false).expect("pass");
+    let summary = enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|| false).expect("pass");
     assert_eq!(summary.gc_count, 1);
 
     let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen");
@@ -237,7 +315,7 @@ fn a_cancelled_pass_enriches_nothing_and_skips_gc() {
                 state: EnrichmentState::Done,
                 engine_version: "fake-vision-1".to_string(),
             },
-            Some("keep me".to_string()),
+            Some(crate::media_index::writer::UpsertAnalysis::ocr_only("keep me")),
         )
         .expect("seed");
     writer.flush_blocking().expect("flush");
@@ -252,7 +330,7 @@ fn a_cancelled_pass_enriches_nothing_and_skips_gc() {
     let backend = FakeVisionBackend::new();
     // Cancel returns true immediately ⇒ no enrichment, and GC is skipped (yield
     // fully), so the pre-existing row survives even though it's absent from `images`.
-    let summary = enrich_and_gc(&images, &statuses, &backend, &writer, &|| true).expect("pass");
+    let summary = enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|| true).expect("pass");
     assert_eq!(summary.enriched, 0);
     assert_eq!(summary.gc_count, 0, "a cancelled pass skips GC");
 

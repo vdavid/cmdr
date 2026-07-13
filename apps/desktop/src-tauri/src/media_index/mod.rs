@@ -13,6 +13,7 @@
 
 pub mod backend;
 pub mod commands;
+pub mod coverage;
 pub mod foreground;
 pub mod gate;
 pub mod network;
@@ -20,6 +21,7 @@ pub mod predicate;
 pub mod read;
 pub mod scheduler;
 pub mod store;
+pub mod vector;
 pub mod writer;
 pub mod writer_registry;
 

@@ -20,7 +20,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use crate::media_index::backend::{ImageInput, VisionBackend};
-use crate::media_index::scheduler::enrich::{ImageEntry, PassSummary, gc_targets, status_row};
+use crate::media_index::scheduler::enrich::{ImageEntry, PassSummary, gc_targets, status_row, to_upsert_analysis};
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, needs_enrichment};
 use crate::media_index::writer::MediaWriter;
 
@@ -83,7 +83,7 @@ pub(crate) struct NetworkEnrichCtx<'a> {
 /// Run one conservative network enrichment pass. See the module docs for the
 /// data-safety contract.
 pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPassOutcome, String> {
-    let engine = ctx.backend.engine_version();
+    let stamp = ctx.backend.analysis_stamp();
     // The GC "current" set is the FULL walked identity set (not just freshly enriched),
     // so a present-but-deferred image is never GC'd.
     let current: HashSet<String> = ctx.images.iter().map(|i| i.path.clone()).collect();
@@ -104,8 +104,8 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
         if !(ctx.should_enrich)(&os_path) {
             continue;
         }
-        // Path-keyed staleness: unchanged images (same mtime/size/engine) are skipped.
-        if !needs_enrichment(ctx.statuses.get(&image.path), image.mtime, image.size, &engine) {
+        // Path-keyed staleness: unchanged images (same mtime/size/stamp) are skipped.
+        if !needs_enrichment(ctx.statuses.get(&image.path), image.mtime, image.size, &stamp) {
             continue;
         }
 
@@ -117,19 +117,22 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
                     kind: image.kind,
                     bytes: Some(bytes),
                 };
-                match ctx.backend.ocr(&input) {
-                    Ok(result) => {
+                match ctx.backend.analyze(&input) {
+                    Ok(analysis) => {
                         ctx.writer
-                            .upsert(status_row(image, EnrichmentState::Done, &engine), Some(result.text))
+                            .upsert(
+                                status_row(image, EnrichmentState::Done, &stamp),
+                                Some(to_upsert_analysis(analysis)),
+                            )
                             .map_err(|e| e.to_string())?;
                         summary.enriched += 1;
                     }
                     Err(e) => {
-                        // A GOOD read but a bad decode/OCR ⇒ a genuinely bad file ⇒
-                        // `Failed` (same as the local pass). NOT a disconnect.
-                        log::warn!(target: "media_index", "network OCR failed for '{}': {e}", image.path);
+                        // A GOOD read but a bad decode/analysis ⇒ a genuinely bad file
+                        // ⇒ `Failed` (same as the local pass). NOT a disconnect.
+                        log::warn!(target: "media_index", "network analysis failed for '{}': {e}", image.path);
                         ctx.writer
-                            .upsert(status_row(image, EnrichmentState::Failed, &engine), None)
+                            .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
                             .map_err(|e| e.to_string())?;
                     }
                 }

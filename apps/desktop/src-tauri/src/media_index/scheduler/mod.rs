@@ -195,10 +195,47 @@ impl MediaScheduler {
             .writers
             .writer_for(&self.data_dir, volume_id)
             .map_err(|e| e.to_string())?;
-        let summary = enrich_and_gc(&images, &statuses, self.backend.as_ref(), &writer, &|| {
-            gate::is_cancelled()
-        })?;
 
+        // Importance-prioritized enrichment (plan Cross-cutting): read the folder
+        // scores at the user's threshold, enrich the qualifying folders (high score
+        // first), and defer the rest. When importance hasn't scored this volume yet
+        // (`None`), a LOCAL volume falls back to enriching everything (the pre-slider
+        // behavior; local reads are cheap) — the next pass, after importance scores,
+        // applies the threshold. An "always index" override always enriches; a
+        // user-excluded folder never does (privacy veto).
+        let threshold = gate::importance_threshold();
+        let scores = self.folder_scores(volume_id, threshold);
+        let config = network::config::snapshot();
+        let should_enrich = |path: &str| -> bool {
+            if config.is_excluded(path) {
+                return false;
+            }
+            match &scores {
+                None => true,
+                Some(map) => config.covers(volume_id, path) || map.contains_key(enrich::parent_dir(path)),
+            }
+        };
+        let folder_score = |dir: &str| -> f64 { scores.as_ref().and_then(|m| m.get(dir)).copied().unwrap_or(0.0) };
+        let ordered = enrich::prioritized(&images, &folder_score);
+
+        let summary = enrich_and_gc(
+            &ordered,
+            &statuses,
+            self.backend.as_ref(),
+            &writer,
+            &should_enrich,
+            &gate::is_cancelled,
+        )?;
+
+        // The volume's embeddings changed; drop the resident cache so the next
+        // find-similar / dedup reloads (per-pass invalidation, not per-write — plan §
+        // Query-time vector residency).
+        if summary.enriched > 0 || summary.gc_count > 0 {
+            super::vector::cache::invalidate(&super::store::media_db_path(&self.data_dir, volume_id));
+        }
+        // The qualifying set may have shifted (a rescan added/removed files); refresh
+        // the covered-count cache so the slider preview stays honest.
+        super::coverage::invalidate(volume_id);
         log::info!(
             target: "media_index",
             "enrichment of '{volume_id}': {} of {} images enriched, {} rows GC'd",
@@ -207,6 +244,31 @@ impl MediaScheduler {
             summary.gc_count,
         );
         Ok(summary.enriched)
+    }
+
+    /// The folder importance scores for `volume_id` at `threshold`: `Some(map)` of
+    /// `folder → score` for every folder scoring at or above `threshold`, or `None`
+    /// when importance has NEVER scored this volume (fresh, offline, or importance
+    /// disabled). The `None` case is load-bearing: it tells the local pass to fall
+    /// back to "enrich all" and the network pass to fall back to "override only"
+    /// (plan Cross-cutting — the override stays load-bearing when importance is
+    /// unavailable). Reads through `ImportanceIndex` (the read API answers OFFLINE),
+    /// never a raw `rusqlite` dep.
+    pub(crate) fn folder_scores(&self, volume_id: &str, threshold: f64) -> Option<HashMap<String, f64>> {
+        use crate::importance::{ImportanceIndex, SignalSet};
+        let index = ImportanceIndex::open(&self.data_dir, volume_id, SignalSet::all());
+        // A generation of 0 means never-scored (missing DB / offline volume); treat
+        // as "importance unavailable", not "everything scores 0".
+        if index.recompute_generation().unwrap_or(0) == 0 {
+            return None;
+        }
+        match index.above_threshold(threshold) {
+            Ok(weights) => Some(weights.into_iter().map(|w| (w.path, w.score.value())).collect()),
+            Err(e) => {
+                log::warn!(target: "media_index", "importance read failed for '{volume_id}': {e}");
+                None
+            }
+        }
     }
 
     /// Run one CONSERVATIVE network enrichment pass for an opted-in SMB volume
@@ -254,10 +316,26 @@ impl MediaScheduler {
         let fetcher = FsByteFetcher;
         let idle_threshold = policy.idle_threshold;
         let is_idle = move || super::foreground::global().idle_for(idle_threshold);
-        // Production override/importance gate: the importance slider is M2, so the
-        // override is load-bearing here — only override-covered images enrich (a
-        // rarely-browsed NAS scores low, so without an override it would defer forever).
-        let should_enrich = |os_path: &str| network::config::covers_override(volume_id, os_path);
+        // The conservative per-image gate (plan Decision 6 + M2): an excluded folder
+        // never enriches (privacy veto); otherwise enrich when an "always index"
+        // override covers it OR its folder importance meets the slider threshold.
+        // Importance keys on the INDEX identity, so strip the mount root off the OS
+        // path to look it up. When importance is unavailable (`None`) the network path
+        // stays conservative — override-only — never dragging the whole NAS.
+        let threshold = gate::importance_threshold();
+        let scores = self.folder_scores(volume_id, threshold);
+        let config = network::config::snapshot();
+        let should_enrich = |os_path: &str| -> bool {
+            if config.is_excluded(os_path) {
+                return false;
+            }
+            let covered = config.covers(volume_id, os_path);
+            let index_path = os_path.strip_prefix(mount_root.as_str()).unwrap_or(os_path);
+            let importance = scores
+                .as_ref()
+                .map(|m| m.get(enrich::parent_dir(index_path)).copied().unwrap_or(0.0) as f32);
+            network::policy::should_enrich_image(covered, importance, threshold as f32)
+        };
         let cancel = || gate::is_cancelled();
         let sleep = |d: Duration| std::thread::sleep(d);
 
@@ -278,6 +356,9 @@ impl MediaScheduler {
         match enrich_network_and_gc(&ctx)? {
             NetworkPassOutcome::Completed(summary) => {
                 network::config::clear_paused(volume_id);
+                if summary.enriched > 0 || summary.gc_count > 0 {
+                    super::vector::cache::invalidate(&super::store::media_db_path(&self.data_dir, volume_id));
+                }
                 log::info!(
                     target: "media_index",
                     "network enrichment of '{volume_id}': {} of {} images enriched, {} rows GC'd",
@@ -321,10 +402,16 @@ pub fn start(app: &AppHandle) {
     // settings (all off/empty by default; sparse-persisted, so absent keys mean off).
     let settings = crate::settings::load_settings(app);
     gate::set_enabled(settings.image_index_enabled == Some(true));
+    gate::set_importance_threshold(
+        settings
+            .media_index_importance_threshold
+            .unwrap_or(gate::DEFAULT_IMPORTANCE_THRESHOLD),
+    );
     network::config::set_config(network::config::NetworkEnrichConfig {
         opted_in_volumes: settings.media_index_network_volumes.iter().cloned().collect(),
         always_index_volumes: settings.media_index_always_index_volumes.iter().cloned().collect(),
         always_index_folders: settings.media_index_always_index_folders.iter().cloned().collect(),
+        excluded_folders: settings.media_index_excluded_folders.iter().cloned().collect(),
     });
 
     // Share the ONE resident-memory ceiling: the indexing memory watchdog's stop
@@ -332,6 +419,9 @@ pub fn start(app: &AppHandle) {
     // second independent 16 GB ceiling over the same pool (plan Resources).
     crate::indexing::register_subsystem_stop_hook(Box::new(|| {
         gate::request_cancel();
+        // Release the resident vector caches too, so they're counted against the ONE
+        // shared ceiling (plan § Query-time vector residency): they reload lazily.
+        super::vector::cache::clear_all();
     }));
 
     // Production selects the REAL Vision OCR backend on macOS; other platforms (where

@@ -49,11 +49,12 @@ use objc2_image_io::{
     kCGImageSourceThumbnailMaxPixelSize,
 };
 use objc2_vision::{
+    VNClassifyImageRequest, VNElementType, VNFeaturePrintObservation, VNGenerateImageFeaturePrintRequest,
     VNImageOption, VNImageRequestHandler, VNRecognizeTextRequest, VNRecognizedTextObservation, VNRequest,
     VNRequestTextRecognitionLevel,
 };
 
-use super::{ImageInput, OcrResult, VisionBackend, VisionError};
+use super::{Analysis, ImageInput, OcrResult, Tag, VisionBackend, VisionError};
 
 /// The longest-edge pixel size the in-memory decode downscales to before OCR. Vision
 /// text recognition gains little above a few thousand pixels while a full-resolution
@@ -62,37 +63,103 @@ use super::{ImageInput, OcrResult, VisionBackend, VisionError};
 /// (plan Decision 5 — feed a downscaled decode, never the original).
 const MAX_OCR_DIMENSION: i64 = 3072;
 
-/// One OCR job handed to the worker thread: the image identity, its byte source,
-/// and a one-shot reply channel. `bytes` is `Some` when the enrich layer already
-/// fetched the compressed image (the network case — read under a timeout off this
-/// thread); `None` means read `path` here (the local case).
+/// The most scene/object tags to keep per image, highest-confidence first. Vision's
+/// classifier returns the full ~1,300-label taxonomy every time with a confidence per
+/// label; keeping only the top few above [`MIN_TAG_SCORE`] holds `media_tags` small
+/// and the tags meaningful.
+const MAX_TAGS: usize = 12;
+
+/// The minimum classifier confidence a tag must clear to be stored. Most of the
+/// taxonomy comes back at near-zero for any given image; this drops the long tail.
+const MIN_TAG_SCORE: f32 = 0.1;
+
+/// What the worker should compute for one image. OCR-only serves the focused OCR
+/// tests; `Analyze` runs OCR + classify + feature-print on one decode (the enrichment
+/// path).
+enum JobReply {
+    /// Reply with OCR only.
+    Ocr(mpsc::Sender<Result<OcrResult, VisionError>>),
+    /// Reply with the full analysis (OCR + tags + feature print).
+    Analyze(mpsc::Sender<Result<Analysis, VisionError>>),
+}
+
+/// One job handed to the worker thread: the image identity, its byte source, and the
+/// typed reply channel. `bytes` is `Some` when the enrich layer already fetched the
+/// compressed image (the network case — read under a timeout off this thread); `None`
+/// means read `path` here (the local case).
 struct Job {
     path: String,
     bytes: Option<Vec<u8>>,
-    respond: mpsc::Sender<Result<OcrResult, VisionError>>,
+    reply: JobReply,
 }
 
-/// The real Vision OCR backend. Holds the OS/Vision engine stamp and the channel to
-/// its dedicated 8 MB-stack worker thread. `Send + Sync` (the channel sender is), so
-/// an `Arc<dyn VisionBackend>` can be shared by the scheduler.
+/// The real Vision backend. Holds the OCR engine + tag taxonomy stamps, the combined
+/// analyze provenance stamp, and the channel to its dedicated 8 MB-stack worker
+/// thread. `Send + Sync` (the channel sender is), so an `Arc<dyn VisionBackend>` can be
+/// shared by the scheduler.
 pub struct VisionOcrBackend {
     engine_version: String,
+    taxonomy_version: String,
+    analysis_stamp: String,
     sender: mpsc::SyncSender<Job>,
 }
 
 impl VisionOcrBackend {
-    /// Spawn the dedicated OCR worker thread and compute the engine stamp.
+    /// Spawn the dedicated worker thread and compute the provenance stamps.
     pub fn new() -> Self {
-        let engine_version = compute_engine_version();
-        // A small bound: `ocr` sends one job then blocks for its reply, so at most a
+        let (engine_version, taxonomy_version, analysis_stamp) = compute_stamps();
+        // A small bound: a caller sends one job then blocks for its reply, so at most a
         // few are ever queued even under concurrent callers.
         let (sender, receiver) = mpsc::sync_channel::<Job>(8);
         thread::Builder::new()
-            .name("media-vision-ocr".into())
+            .name("media-vision".into())
             .stack_size(8 * 1024 * 1024)
             .spawn(move || worker_loop(receiver))
-            .expect("spawn media-vision-ocr worker thread");
-        Self { engine_version, sender }
+            .expect("spawn media-vision worker thread");
+        Self {
+            engine_version,
+            taxonomy_version,
+            analysis_stamp,
+            sender,
+        }
+    }
+
+    /// Send a job to the worker and block for its reply, mapping a dead worker to a
+    /// typed error.
+    fn dispatch<T>(&self, path: &str, bytes: Option<Vec<u8>>, make_reply: impl FnOnce(mpsc::Sender<T>) -> JobReply) -> T
+    where
+        T: FromWorkerGone,
+    {
+        let (tx, rx) = mpsc::channel();
+        if self
+            .sender
+            .send(Job {
+                path: path.to_string(),
+                bytes,
+                reply: make_reply(tx),
+            })
+            .is_err()
+        {
+            return T::worker_gone("vision worker thread is gone");
+        }
+        rx.recv()
+            .unwrap_or_else(|_| T::worker_gone("vision worker dropped the job"))
+    }
+}
+
+/// A reply type that can synthesize its own "worker thread is gone" error, so
+/// [`VisionOcrBackend::dispatch`] stays generic over OCR vs full analysis.
+trait FromWorkerGone {
+    fn worker_gone(msg: &str) -> Self;
+}
+impl FromWorkerGone for Result<OcrResult, VisionError> {
+    fn worker_gone(msg: &str) -> Self {
+        Err(VisionError::Ocr(msg.to_string()))
+    }
+}
+impl FromWorkerGone for Result<Analysis, VisionError> {
+    fn worker_gone(msg: &str) -> Self {
+        Err(VisionError::Ocr(msg.to_string()))
     }
 }
 
@@ -107,17 +174,20 @@ impl VisionBackend for VisionOcrBackend {
         self.engine_version.clone()
     }
 
+    fn taxonomy_version(&self) -> String {
+        self.taxonomy_version.clone()
+    }
+
+    fn analysis_stamp(&self) -> String {
+        self.analysis_stamp.clone()
+    }
+
     fn ocr(&self, input: &ImageInput) -> Result<OcrResult, VisionError> {
-        let (tx, rx) = mpsc::channel();
-        self.sender
-            .send(Job {
-                path: input.path.clone(),
-                bytes: input.bytes.clone(),
-                respond: tx,
-            })
-            .map_err(|_| VisionError::Ocr("vision OCR worker thread is gone".to_string()))?;
-        rx.recv()
-            .map_err(|_| VisionError::Ocr("vision OCR worker dropped the job".to_string()))?
+        self.dispatch(&input.path, input.bytes.clone(), JobReply::Ocr)
+    }
+
+    fn analyze(&self, input: &ImageInput) -> Result<Analysis, VisionError> {
+        self.dispatch(&input.path, input.bytes.clone(), JobReply::Analyze)
     }
 }
 
@@ -126,32 +196,56 @@ impl VisionBackend for VisionOcrBackend {
 /// the backend (and thus the sender) is dropped.
 fn worker_loop(receiver: mpsc::Receiver<Job>) {
     while let Ok(job) = receiver.recv() {
-        let result = autoreleasepool(|_| recognize_text(&job.path, job.bytes.as_deref()));
         // The caller may have gone away (a cancelled pass); dropping the reply is fine.
-        let _ = job.respond.send(result);
+        match job.reply {
+            JobReply::Ocr(respond) => {
+                let result = autoreleasepool(|_| recognize_text(&job.path, job.bytes.as_deref()));
+                let _ = respond.send(result);
+            }
+            JobReply::Analyze(respond) => {
+                let result = autoreleasepool(|_| analyze_image(&job.path, job.bytes.as_deref()));
+                let _ = respond.send(result);
+            }
+        }
     }
 }
 
-/// Compute the engine stamp: the macOS version plus the current Vision OCR request
-/// revision. Both bump when the OS ships a new OCR engine, so a stored row's stamp
-/// mismatches and re-runs (data-coverage — plan M1). Cheap and stable within an OS
-/// version.
-fn compute_engine_version() -> String {
+/// Compute the provenance stamps: the OCR engine stamp, the tag-taxonomy stamp, and
+/// the combined analyze stamp. Each carries the macOS version plus the relevant Vision
+/// request revision, so any OS upgrade that bumps a recognizer, the tag taxonomy, or
+/// the feature-print model mismatches a stored row and re-runs analysis (data-coverage
+/// — plan M1/M2, Decision 4). Cheap and stable within an OS version.
+///
+/// Returns `(engine_version, taxonomy_version, analysis_stamp)`.
+fn compute_stamps() -> (String, String, String) {
     autoreleasepool(|_| {
         let info = NSProcessInfo::processInfo();
         let v = info.operatingSystemVersion();
-        // A freshly created request defaults to the current OCR revision for this OS,
-        // so its `revision` is the engine marker we want (it bumps when the OS ships a
-        // new text recognizer). Read it off an instance rather than the base
-        // `VNRequest` class accessor, which would report the wrong subclass's revision.
-        let request = VNRecognizeTextRequest::new();
-        // SAFETY: `revision` is a plain accessor on a valid, just-created request; it
-        // returns the request's revision as an integer.
-        let revision = unsafe { request.revision() };
-        format!(
-            "vision-ocr;os={}.{}.{};rev={}",
-            v.majorVersion, v.minorVersion, v.patchVersion, revision
-        )
+        let os = format!("{}.{}.{}", v.majorVersion, v.minorVersion, v.patchVersion);
+
+        // A freshly created request defaults to the current revision for this OS, so
+        // its `revision` is the engine/taxonomy marker (it bumps when the OS ships a
+        // new model). Read it off an instance, not the base `VNRequest` class accessor.
+        let text_request = VNRecognizeTextRequest::new();
+        // SAFETY: `revision` is a plain accessor on a valid, just-created request.
+        let ocr_rev = unsafe { text_request.revision() };
+        // SAFETY: `new()` constructs a valid classify request; `revision` is a plain
+        // accessor on it. Its revision tracks the scene/object tag taxonomy version.
+        let classify_rev = unsafe {
+            let r = VNClassifyImageRequest::new();
+            r.revision()
+        };
+        // SAFETY: `new()` constructs a valid feature-print request; `revision` is a
+        // plain accessor on it. Its revision tracks the feature-print model version.
+        let fp_rev = unsafe {
+            let r = VNGenerateImageFeaturePrintRequest::new();
+            r.revision()
+        };
+
+        let engine_version = format!("vision-ocr;os={os};rev={ocr_rev}");
+        let taxonomy_version = format!("vision-tax;os={os};rev={classify_rev}");
+        let analysis_stamp = format!("{engine_version};tax=rev{classify_rev};fp=rev{fp_rev}");
+        (engine_version, taxonomy_version, analysis_stamp)
     })
 }
 
@@ -166,11 +260,65 @@ fn compute_engine_version() -> String {
 ///
 /// Must run on the dedicated worker thread, inside an autoreleasepool.
 fn recognize_text(path: &str, prefetched: Option<&[u8]>) -> Result<OcrResult, VisionError> {
-    // Use the pre-fetched bytes when present; otherwise read the compressed bytes
-    // here (bounded — a photo/RAW is tens of MB at most). The memory hazard is the
-    // DECODED bitmap, which the downscaled thumbnail below caps. A network read is
-    // NEVER done here (it would block this serialized OCR thread on a hung mount);
-    // the enrich layer fetches network bytes under a timeout and passes them in.
+    let cg_image = decode_thumbnail(path, prefetched)?;
+    let text = run_recognize(&cg_image).map_err(|e| VisionError::Ocr(format!("'{path}': {e}")))?;
+    Ok(OcrResult { text })
+}
+
+/// Run the full enrichment analysis — OCR, scene/object tags, and the feature-print
+/// embedding — over ONE decode of the image (plan Decision 5), performing all three
+/// Vision requests on a single image request handler. Fails closed to a typed
+/// [`VisionError`] on hostile input, exactly as [`recognize_text`] does.
+///
+/// Must run on the dedicated worker thread, inside an autoreleasepool.
+fn analyze_image(path: &str, prefetched: Option<&[u8]>) -> Result<Analysis, VisionError> {
+    let cg_image = decode_thumbnail(path, prefetched)?;
+
+    let empty = NSDictionary::<VNImageOption, objc2::runtime::AnyObject>::new();
+    // SAFETY: `alloc()` yields a fresh unregistered instance; `cg_image` is a valid
+    // `CGImage`; `empty` is a valid (empty) options dictionary. `initWithCGImage:options:`
+    // consumes the allocation and returns the initialized, retained handler.
+    let handler =
+        unsafe { VNImageRequestHandler::initWithCGImage_options(VNImageRequestHandler::alloc(), &cg_image, &empty) };
+
+    let text_request = VNRecognizeTextRequest::new();
+    text_request.setRecognitionLevel(VNRequestTextRecognitionLevel::Accurate);
+    text_request.setUsesLanguageCorrection(true);
+    // SAFETY: `new()` constructs a valid, autoreleased classify / feature-print request.
+    let classify_request = unsafe { VNClassifyImageRequest::new() };
+    // SAFETY: as above.
+    let feature_request = unsafe { VNGenerateImageFeaturePrintRequest::new() };
+
+    // A `VNRecognizeTextRequest` / `VNClassifyImageRequest` /
+    // `VNGenerateImageFeaturePrintRequest` reference each coerce to their `VNRequest`
+    // superclass; Vision performs the whole array against the one handler.
+    let text_ref: &VNRequest = &text_request;
+    let classify_ref: &VNRequest = &classify_request;
+    let feature_ref: &VNRequest = &feature_request;
+    let requests = NSArray::from_slice(&[text_ref, classify_ref, feature_ref]);
+
+    handler
+        .performRequests_error(&requests)
+        .map_err(|e| VisionError::Ocr(format!("'{path}': performRequests failed: {e}")))?;
+
+    Ok(Analysis {
+        ocr: OcrResult {
+            text: read_recognized_text(&text_request),
+        },
+        tags: read_tags(&classify_request),
+        embedding: read_feature_print(&feature_request),
+    })
+}
+
+/// Decode an image downscaled in-memory (no thumbnail files — plan Decision 5),
+/// returning the `CGImage` for the Vision requests. Fails closed to a typed
+/// [`VisionError`] on any hostile input.
+///
+/// `prefetched` carries the compressed bytes when the enrich layer already read them
+/// (the network case — read under a timeout OFF this thread); when `None`, the bytes
+/// are read from `path` here (the local case). A network read is NEVER done here (it
+/// would block this serialized thread on a hung mount).
+fn decode_thumbnail(path: &str, prefetched: Option<&[u8]>) -> Result<CFRetained<CGImage>, VisionError> {
     let owned;
     let bytes: &[u8] = match prefetched {
         Some(b) => b,
@@ -196,11 +344,8 @@ fn recognize_text(path: &str, prefetched: Option<&[u8]>) -> Result<OcrResult, Vi
     // decodable source has count >= 1, and an out-of-range index yields `None`, not
     // UB); `options` is a valid CFDictionary of the documented ImageIO keys. Returns a
     // +1 `CFRetained<CGImage>` (Create rule), or `None` if the image can't be decoded.
-    let cg_image = unsafe { source.thumbnail_at_index(0, Some(&options)) }
-        .ok_or_else(|| VisionError::Decode(format!("thumbnail decode failed for '{path}'")))?;
-
-    let text = run_recognize(&cg_image).map_err(|e| VisionError::Ocr(format!("'{path}': {e}")))?;
-    Ok(OcrResult { text })
+    unsafe { source.thumbnail_at_index(0, Some(&options)) }
+        .ok_or_else(|| VisionError::Decode(format!("thumbnail decode failed for '{path}'")))
 }
 
 /// Build the ImageIO thumbnail options: always synthesize from the full image,
@@ -287,8 +432,13 @@ fn run_recognize(cg_image: &CGImage) -> Result<String, String> {
         .performRequests_error(&requests)
         .map_err(|e| format!("performRequests failed: {e}"))?;
 
-    // `request` was just performed by the handler above; each result element is a
-    // `VNRecognizedTextObservation` for a text request.
+    Ok(read_recognized_text(&request))
+}
+
+/// Read the recognized text off an already-performed [`VNRecognizeTextRequest`], the
+/// top candidate per region, newline-joined. Shared by the OCR-only path and the full
+/// analysis (which performs the request as part of its batch).
+fn read_recognized_text(request: &VNRecognizeTextRequest) -> String {
     let results = request.results();
     let mut lines = Vec::new();
     if let Some(observations) = results {
@@ -301,7 +451,71 @@ fn run_recognize(cg_image: &CGImage) -> Result<String, String> {
             }
         }
     }
-    Ok(lines.join("\n"))
+    lines.join("\n")
+}
+
+/// Read the scene/object tags off an already-performed [`VNClassifyImageRequest`]:
+/// the top [`MAX_TAGS`] classifications above [`MIN_TAG_SCORE`], highest confidence
+/// first (Vision already returns them sorted by confidence). An empty/`None` result
+/// (no confident tags) yields an empty vec.
+fn read_tags(request: &VNClassifyImageRequest) -> Vec<Tag> {
+    // SAFETY: `results` is a plain accessor on a just-performed classify request; it
+    // returns the classifications (or `None` if none were produced).
+    let Some(observations) = (unsafe { request.results() }) else {
+        return Vec::new();
+    };
+    let mut tags = Vec::new();
+    for obs in &observations {
+        // SAFETY: `confidence` is a plain accessor on a valid classification
+        // observation from this request.
+        let score = unsafe { obs.confidence() };
+        if score < MIN_TAG_SCORE {
+            // Sorted by confidence: once below the floor, the rest are too.
+            break;
+        }
+        // SAFETY: `identifier` is a plain accessor on the same valid observation; it
+        // returns the classification label as a retained `NSString`.
+        let label = unsafe { obs.identifier() }.to_string();
+        tags.push(Tag { label, score });
+        if tags.len() >= MAX_TAGS {
+            break;
+        }
+    }
+    tags
+}
+
+/// Read the feature-print embedding off an already-performed
+/// [`VNGenerateImageFeaturePrintRequest`] as an `f32` vector, or `None` when no
+/// observation was produced. The observation stores its raw bytes as either `Float`
+/// (4 bytes) or `Double` (8 bytes) elements; both are normalized to `f32`.
+fn read_feature_print(request: &VNGenerateImageFeaturePrintRequest) -> Option<Vec<f32>> {
+    // SAFETY: `results` is a plain accessor on a just-performed feature-print request.
+    let observations = unsafe { request.results() }?;
+    let first: objc2::rc::Retained<VNFeaturePrintObservation> = observations.iter().next()?;
+    // SAFETY: `elementType`, `elementCount`, and `data` are plain accessors on a valid
+    // observation from this request. `data()` returns a +1-retained `NSData`.
+    let (element_type, element_count, data) = unsafe { (first.elementType(), first.elementCount(), first.data()) };
+    let bytes = data.to_vec();
+
+    let vector: Vec<f32> = match element_type {
+        VNElementType::Float => bytes
+            .chunks_exact(4)
+            .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+            .collect(),
+        VNElementType::Double => bytes
+            .chunks_exact(8)
+            .map(|c| f64::from_le_bytes([c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7]]) as f32)
+            .collect(),
+        // An unknown element type (should never happen) ⇒ no usable embedding.
+        _ => return None,
+    };
+
+    // Guard against a length/type mismatch (a corrupt observation): the decoded count
+    // must match what the observation reported, else drop it rather than store garbage.
+    if vector.len() != element_count || vector.is_empty() {
+        return None;
+    }
+    Some(vector)
 }
 
 #[cfg(test)]

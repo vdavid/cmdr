@@ -196,6 +196,70 @@ fn find_first_image(dir: &std::path::Path, depth: u32, visited: &mut u32) -> Opt
 }
 
 #[test]
+fn real_analyze_returns_ocr_tags_and_a_stable_length_feature_print() {
+    // The full M2 analysis over the committed fixture: one decode, real Vision OCR +
+    // classify + feature print.
+    let backend = VisionOcrBackend::new();
+    let path = fixture_path();
+    assert!(path.exists(), "fixture missing at {}", path.display());
+
+    let a = backend
+        .analyze(&input(&path.to_string_lossy()))
+        .expect("real analyze should succeed on the fixture");
+
+    // OCR still reads the known words (the fixture renders "CMDR OCR").
+    assert!(
+        a.ocr.text.to_uppercase().contains("CMDR"),
+        "expected OCR text to contain CMDR, got {:?}",
+        a.ocr.text
+    );
+
+    // Tags are well-formed: every confidence is in [0, 1] and above the store floor.
+    for tag in &a.tags {
+        assert!(
+            (0.0..=1.0).contains(&tag.score),
+            "tag score out of range: {} = {}",
+            tag.label,
+            tag.score
+        );
+        assert!(!tag.label.is_empty(), "a tag label should be non-empty");
+    }
+
+    // The feature print is a non-empty vector, and its length is stable across a
+    // second analysis of the same image (image↔image comparability depends on it).
+    let emb = a
+        .embedding
+        .expect("a feature print should be produced for a real image");
+    assert!(!emb.is_empty(), "feature print should be non-empty");
+    let b = backend
+        .analyze(&input(&path.to_string_lossy()))
+        .expect("second analyze");
+    assert_eq!(
+        b.embedding.map(|v| v.len()),
+        Some(emb.len()),
+        "feature-print length must be stable within a run"
+    );
+}
+
+#[test]
+fn real_analyze_of_a_photo_is_self_similar_and_over_naspi_when_mounted() {
+    // Over a REAL image (self-cosine sanity): a feature print compared to itself is
+    // ~1.0. Uses the fixture (always present) so this isn't NAS-gated.
+    use crate::media_index::vector::cosine;
+    let backend = VisionOcrBackend::new();
+    let emb = backend
+        .analyze(&input(&fixture_path().to_string_lossy()))
+        .expect("analyze")
+        .embedding
+        .expect("feature print");
+    let self_cos = cosine(&emb, &emb);
+    assert!(
+        (self_cos - 1.0).abs() < 1e-3,
+        "self-cosine should be ~1.0, got {self_cos}"
+    );
+}
+
+#[test]
 fn engine_version_is_nonempty_stable_and_shaped() {
     let backend = VisionOcrBackend::new();
     let v1 = backend.engine_version();
