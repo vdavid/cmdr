@@ -1814,6 +1814,16 @@ export const commands = {
    */
   recordVisit: (location: Location) => typedError<null, string>(__TAURI_INVOKE('record_visit', { location })),
   /**
+   *  Search a volume's OCR text for `query`, returning up to `limit` hits (default
+   *  [`DEFAULT_LIMIT`], capped at [`MAX_LIMIT`]), each with a highlighted `snippet` —
+   *  the "why matched" reason the results grid shows.
+   *
+   *  An empty/whitespace query, an un-enriched volume, or an offline/purged `media.db`
+   *  returns an empty list rather than erroring.
+   */
+  mediaIndexSearchOcr: (volumeId: string, query: string, limit: number | null) =>
+    typedError<OcrHit[], string>(__TAURI_INVOKE('media_index_search_ocr', { volumeId, query, limit })),
+  /**
    *  Called when the search dialog opens. Starts loading the index in the background.
    *  Returns immediately with `{ ready, entryCount }`.
    */
@@ -5226,6 +5236,22 @@ export type NotRollbackableReason =
    *  incomplete record of what to reverse (D4 completeness).
    */
   | 'journalIncomplete'
+
+/**
+ *  One OCR search hit: the matched image's path and a highlighted snippet of the
+ *  matched text (the "why matched" reason the results grid shows). Crosses the IPC
+ *  boundary as the `media_index_search_ocr` result, so it derives `Serialize` +
+ *  `specta::Type` (camelCase).
+ */
+export type OcrHit = {
+  // The matched image's absolute path.
+  path: string
+  /**
+   *  A snippet of the recognized text around the match, with `[` / `]` markers
+   *  around the matched terms.
+   */
+  snippet: string
+}
 
 /**
  *  The operation taxonomy, mirroring `WriteOperationType`. Archive variants

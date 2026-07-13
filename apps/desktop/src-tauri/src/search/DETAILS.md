@@ -33,6 +33,15 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   be speculative. When v2 lands, replace the quarantine branch with a `match` on the version calling a
   `migrate_v1_to_v2` helper.
 
+## Image-OCR search boundary (`media_index`)
+
+"Text in images" search is a SEPARATE query path from filename search, and it reaches a volume's `media.db` ONLY through
+the [`MediaIndex`](../media_index/read/mod.rs) read API — never a raw `rusqlite` dep on `media.db` (plan Decision 8), so
+that store's `platform_case`/one-writer invariants don't leak into a second subsystem. The door is the
+`media_index_search_ocr` command (`media_index/commands.rs`), which returns `OcrHit { path, snippet }` (the snippet is
+the highlighted "why matched" reason). The frontend query-ui that blends OCR hits into the results surface is a later
+slice; `search/` itself takes no dependency on `media_index` today.
+
 ## Importance ranking (`ranking.rs`)
 
 Search ranks interesting files toward the top by blending a result's match quality with its parent folder's importance

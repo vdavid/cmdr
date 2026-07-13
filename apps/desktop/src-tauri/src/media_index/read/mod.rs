@@ -19,8 +19,11 @@ use std::path::PathBuf;
 use super::store::{MediaStoreError, media_db_path, open_read_connection};
 
 /// One OCR search hit: the matched image's path and a highlighted snippet of the
-/// matched text (the "why matched" reason the results grid shows).
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// matched text (the "why matched" reason the results grid shows). Crosses the IPC
+/// boundary as the `media_index_search_ocr` result, so it derives `Serialize` +
+/// `specta::Type` (camelCase).
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct OcrHit {
     /// The matched image's absolute path.
     pub path: String,
