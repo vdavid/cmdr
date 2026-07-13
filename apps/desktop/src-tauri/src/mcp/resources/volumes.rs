@@ -120,10 +120,23 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
 
     #[cfg(target_os = "macos")]
     {
-        let mut locations = crate::volumes::list_locations();
-        // Enrich with VolumeManager-derived SMB connection state so agents can see
-        // whether a share is `direct` (smb2), `os_mount`, or `disconnected`.
-        crate::volumes::enrich_smb_connection_state(&mut locations);
+        // Off-thread + timeout-guarded: `list_locations` runs blocking macOS
+        // metadata syscalls, and a resource read must never wedge the MCP handler
+        // (a dying mount once made `cmdr://state` reads take a flat 30s). SMB-state
+        // enrichment runs inside the same guarded closure so the whole snapshot is
+        // one bounded unit. Mirrors `volume_broadcast::do_emit`'s guard. See
+        // `volumes/DETAILS.md` § "Hung mounts".
+        let snapshot = tokio::task::spawn_blocking(|| {
+            let mut locations = crate::volumes::list_locations();
+            // Enrich with VolumeManager-derived SMB connection state so agents can
+            // see whether a share is `direct` (smb2), `os_mount`, or `disconnected`.
+            crate::volumes::enrich_smb_connection_state(&mut locations);
+            locations
+        });
+        let locations = match tokio::time::timeout(std::time::Duration::from_secs(2), snapshot).await {
+            Ok(Ok(locations)) => locations,
+            _ => Vec::new(),
+        };
         for loc in &locations {
             let smb_connection_state = loc.smb_connection_state.map(|state| match state {
                 crate::volumes::SmbConnectionState::Direct => "direct",

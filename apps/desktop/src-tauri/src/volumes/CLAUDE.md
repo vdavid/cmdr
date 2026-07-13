@@ -35,10 +35,14 @@ macOS volume and location discovery, plus live mount/unmount watching via `NSWor
   `lib/onboarding/CLAUDE.md` § "FDA gate".
 - **Detect SMB volumes via `is_smb_fs_type()`, never raw `"smbfs"`/`"cifs"` comparisons.** The helper handles macOS
   (`smbfs`) and Linux (`cifs`) in one place.
-- **`is_read_only` (statfs `MNT_RDONLY`) and `is_disk_image` (DiskArbitration, `disk_image.rs`) are set in BOTH
+- **Volume discovery must never block on a hung mount** (a wedged NAS once froze launch). Enumerate via
+  `getfsstat(MNT_NOWAIT)` (`enumerate_mounts`), not NSFileManager; run blocking NSURL/statfs/NSWorkspace/DiskArbitration
+  enrichment for LOCAL mounts only (`build_attached_location`; network mounts via `is_network_fs_type` come from the
+  snapshot); never discover on the main thread (`init_volume_manager` spawns `volume-init`). DETAILS § "Hung mounts".
+- **`is_read_only` (`MNT_RDONLY`) and `is_disk_image` (DiskArbitration, `disk_image.rs`) are set in BOTH
   `get_attached_volumes` and `resolve_path_volume_fast`; set them in both or they drift.** Gate the disk-image probe to
   local mounts (`!is_smb_fs_type`): it resolves the path, so a hung mount would stall it. Read-only is not a disk-image
-  proxy (a writable `.dmg` is read-write); see DETAILS.
+  proxy (a writable `.dmg` is read-write).
 - **`LocationInfo` enrichment with `VolumeManager` data lives only in `enrich_smb_connection_state`.** Three callers
   (`list_volumes` IPC, `volume_broadcast`, MCP `cmdr://state`) share it; new enrichment fields go there once.
 - **`append_mtp_volumes` is duplicated** across `commands/volumes.rs` and `volume_broadcast.rs` (plus Linux twins). Both

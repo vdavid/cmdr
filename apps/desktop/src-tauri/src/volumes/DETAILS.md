@@ -8,6 +8,43 @@ Aggregates all `LocationCategory` entries in order and deduplicates by path usin
 `/Network` browseable location doesn't surface as a sidebar entry yet, so `LocationCategory::Network` is currently
 unconstructed.
 
+## Hung mounts
+
+**The problem.** A network mount (SMB, NFS, …) can wedge so that every metadata syscall on it blocks in the kernel for
+30s–forever (uninterruptible — even `SIGKILL` won't land until the mount is force-unmounted). Volume discovery is riddled
+with such syscalls, and a single dead mount used to take the whole app down at launch: `init_volume_manager` ran
+`get_attached_volumes` synchronously on the main thread (inside the Tauri `setup` closure), and NSFileManager's
+`mountedVolumeURLsIncludingResourceValuesForKeys` `getattrlist`s every mount to build the URL array. On a wedged
+`/Volumes/naspi` the main thread stuck in `__getattrlist` for 90s+ and the webview never recovered (its startup IPC piled
+up behind the frozen process). The MCP `cmdr://state` resource hit the same wall through `list_locations`: reads took a
+flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
+
+**The fix — three layers.**
+
+1. **Non-blocking enumeration.** `get_attached_volumes` enumerates via `getfsstat(MNT_NOWAIT)` (`enumerate_mounts`), not
+   NSFileManager. `MNT_NOWAIT` returns the kernel's cached mount table (mount point, fs type, `MNT_RDONLY` flag, and the
+   `f_mntfromname` SMB source) without ever round-tripping to a filesystem, so a wedged mount can't stall it — this is
+   the difference between `df -n` and plain `df`. `getfsstat` was verified non-blocking on the exact wedged NAS state
+   from the incident. Because fs type and read-only come straight from the snapshot, three former per-volume `statfs`
+   calls (`get_fs_type`, `read_only_from_statfs`, `get_smb_mount_info`) are gone from this path.
+2. **Skip blocking enrichment for network mounts.** `build_attached_location` runs the blocking NSURL / NSWorkspace /
+   DiskArbitration enrichment (`resolve_local`) ONLY for local mounts. Network mounts (`is_network_fs_type`) derive
+   everything from the getfsstat snapshot: id/name from `f_mntfromname` (SMB → "share on server"), `is_ejectable = false`
+   (cosmetically moot — the eject affordance keys on `smbConnectionState` and `eject.rs` forces it true for SMB), no icon,
+   never a disk image. So a dead network mount contributes its entry and never blocks discovery of the healthy volumes
+   beside it.
+3. **Off-main + timeout-guarded callers.** `init_volume_manager` registers root synchronously (cheap, `/` never hangs)
+   and spawns attached/cloud discovery on the `volume-init` helper thread, then re-emits `volumes-changed`. Every caller
+   of `list_locations` is wrapped in a ~2s `spawn_blocking` timeout (`volume_broadcast::do_emit`, the MCP
+   `snapshot_volumes`, the `list_volumes` IPC via `blocking_with_timeout_flag`), so the remaining unguarded blocking
+   paths inside `list_locations` — `get_favorites` and `get_cloud_drives`, which still `statfs`/icon per item and would
+   hang on a favorite or cloud folder that lives on a wedged mount — degrade to a bounded 2s partial result instead of an
+   infinite stall. `get_main_volume` no longer enumerates: it builds root directly from `/`.
+
+**Follow-up.** `get_favorites` and `get_cloud_drives` still do unguarded per-item `statfs`/icon; a favorite pointing at a
+hung mount makes `list_locations` time out (2s) and drop the healthy volumes with it. Fully fixing "one dead mount never
+hides the others" here needs per-item timeouts for those two, tracked separately.
+
 ## Global state in `watcher.rs`
 
 - `APP_HANDLE: OnceLock<AppHandle>`: app handle for emitting events.

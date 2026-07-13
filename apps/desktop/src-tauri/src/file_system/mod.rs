@@ -157,6 +157,27 @@ pub fn init_volume_manager() {
     VOLUME_MANAGER.register("root", root_volume);
     VOLUME_MANAGER.set_default("root");
 
+    // Attached volumes and cloud drives are discovered and registered OFF the main
+    // thread. `init_volume_manager` runs inside the Tauri `setup` closure (the main
+    // thread), and volume discovery touches per-mount metadata that can block for
+    // many seconds on a hung network mount; doing it synchronously here froze the
+    // whole app at launch, past the point where it could even be force-quit. Root
+    // is enough for the default pane; the rest register a moment later and the
+    // `volumes-changed` re-emit refreshes the switcher (and SMB connection state).
+    // See `volumes/DETAILS.md` § "Hung mounts".
+    std::thread::Builder::new()
+        .name("volume-init".into())
+        .spawn(|| {
+            register_discovered_volumes();
+            crate::volume_broadcast::emit_volumes_changed();
+        })
+        .expect("spawn volume-init thread");
+}
+
+/// Register the attached volumes, cloud drives, and (Linux) network mounts with
+/// the `VolumeManager`. Runs on the `volume-init` helper thread so its blocking
+/// metadata syscalls never touch the main thread. See `init_volume_manager`.
+fn register_discovered_volumes() {
     // Register attached volumes and cloud drives (macOS)
     #[cfg(target_os = "macos")]
     {
