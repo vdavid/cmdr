@@ -1,0 +1,312 @@
+{
+  "askCmdr.title": "Ask Cmdr",
+  "@askCmdr.title": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name; kept verbatim in every locale (do-not-translate list)."
+  },
+  "askCmdr.close": "Stäng Ask Cmdr",
+  "@askCmdr.close": {
+    "sourceHash": "d34225d"
+  },
+  "askCmdr.newChat": "Ny chatt",
+  "@askCmdr.newChat": {
+    "sourceHash": "db18382"
+  },
+  "askCmdr.empty.title": "Fråga om dina filer",
+  "@askCmdr.empty.title": {
+    "sourceHash": "b2251fc"
+  },
+  "askCmdr.empty.hint": "Cmdr kan titta på det du bläddrar i, dina enheter och din filhistorik för att svara. Cmdr läser bara namn, sökvägar och storlekar, aldrig filinnehåll.",
+  "@askCmdr.empty.hint": {
+    "sourceHash": "6ccad75"
+  },
+  "askCmdr.composer.placeholder": "Fråga om dina filer…",
+  "@askCmdr.composer.placeholder": {
+    "sourceHash": "77e2636"
+  },
+  "askCmdr.composer.send": "Skicka meddelande",
+  "@askCmdr.composer.send": {
+    "sourceHash": "93a26b1"
+  },
+  "askCmdr.composer.stop": "Stoppa",
+  "@askCmdr.composer.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "askCmdr.thinking": "Tänker…",
+  "@askCmdr.thinking": {
+    "sourceHash": "a02f1ce"
+  },
+  "askCmdr.softCap.message": "Den här chatten börjar bli lång. En ny håller svaren snabba och fokuserade.",
+  "@askCmdr.softCap.message": {
+    "sourceHash": "60d2c54"
+  },
+  "askCmdr.softCap.action": "Starta en ny chatt",
+  "@askCmdr.softCap.action": {
+    "sourceHash": "677d4c2"
+  },
+  "askCmdr.tool.appState.doing": "Kontrollerar vad du tittar på",
+  "@askCmdr.tool.appState.doing": {
+    "sourceHash": "832e0cc"
+  },
+  "askCmdr.tool.appState.done": "Kontrollerade vad du tittar på",
+  "@askCmdr.tool.appState.done": {
+    "sourceHash": "155621e"
+  },
+  "askCmdr.tool.listDir.doing": "Listar en mapp",
+  "@askCmdr.tool.listDir.doing": {
+    "sourceHash": "64aa697"
+  },
+  "askCmdr.tool.listDir.done": "Listade en mapp",
+  "@askCmdr.tool.listDir.done": {
+    "sourceHash": "5746fef"
+  },
+  "askCmdr.tool.largestDirs.doing": "Hittar de största mapparna",
+  "@askCmdr.tool.largestDirs.doing": {
+    "sourceHash": "c5f2cc0"
+  },
+  "askCmdr.tool.largestDirs.done": "Hittade de största mapparna",
+  "@askCmdr.tool.largestDirs.done": {
+    "sourceHash": "a2f3de3"
+  },
+  "askCmdr.tool.importantFolders.doing": "Hittar dina viktiga mappar",
+  "@askCmdr.tool.importantFolders.doing": {
+    "sourceHash": "866aa38"
+  },
+  "askCmdr.tool.importantFolders.done": "Hittade dina viktiga mappar",
+  "@askCmdr.tool.importantFolders.done": {
+    "sourceHash": "1fd5db6"
+  },
+  "askCmdr.tool.folderImportance.doing": "Kontrollerar en mapps vikt",
+  "@askCmdr.tool.folderImportance.doing": {
+    "sourceHash": "594deff"
+  },
+  "askCmdr.tool.folderImportance.done": "Kontrollerade en mapps vikt",
+  "@askCmdr.tool.folderImportance.done": {
+    "sourceHash": "c7f397f"
+  },
+  "askCmdr.tool.listVolumes.doing": "Kontrollerar dina enheter",
+  "@askCmdr.tool.listVolumes.doing": {
+    "sourceHash": "2ed1808"
+  },
+  "askCmdr.tool.listVolumes.done": "Kontrollerade dina enheter",
+  "@askCmdr.tool.listVolumes.done": {
+    "sourceHash": "b13a0b3"
+  },
+  "askCmdr.tool.operationsList.doing": "Söker i din filhistorik",
+  "@askCmdr.tool.operationsList.doing": {
+    "sourceHash": "4e8c41a"
+  },
+  "askCmdr.tool.operationsList.done": "Sökte i din filhistorik",
+  "@askCmdr.tool.operationsList.done": {
+    "sourceHash": "03021d5"
+  },
+  "askCmdr.tool.operationsGet.doing": "Slår upp en åtgärd",
+  "@askCmdr.tool.operationsGet.doing": {
+    "sourceHash": "10be41f"
+  },
+  "askCmdr.tool.operationsGet.done": "Slog upp en åtgärd",
+  "@askCmdr.tool.operationsGet.done": {
+    "sourceHash": "80fe1e9"
+  },
+  "askCmdr.tool.unknown.doing": "Arbetar",
+  "@askCmdr.tool.unknown.doing": {
+    "sourceHash": "a92f044"
+  },
+  "askCmdr.tool.unknown.done": "Använde ett verktyg",
+  "@askCmdr.tool.unknown.done": {
+    "sourceHash": "05cc2be"
+  },
+  "askCmdr.tool.refused": "Den förfrågan var inte tillgänglig",
+  "@askCmdr.tool.refused": {
+    "sourceHash": "f5e6dcc"
+  },
+  "askCmdr.error.noKey": "Lägg till din API-nyckel i inställningarna för att börja chatta.",
+  "@askCmdr.error.noKey": {
+    "sourceHash": "0a78f37"
+  },
+  "askCmdr.error.notConfigured": "Aktivera en AI-leverantör i inställningarna för att använda Ask Cmdr.",
+  "@askCmdr.error.notConfigured": {
+    "sourceHash": "b84c5f4"
+  },
+  "askCmdr.error.unavailable": "Det gick inte att nå AI-leverantören. Kontrollera din anslutning och försök igen.",
+  "@askCmdr.error.unavailable": {
+    "sourceHash": "eb59e2b"
+  },
+  "askCmdr.error.timeout": "Det tog för lång tid. Försök igen?",
+  "@askCmdr.error.timeout": {
+    "sourceHash": "22cd775"
+  },
+  "askCmdr.error.authFailed": "Leverantören accepterade inte din API-nyckel. Kontrollera den i inställningarna.",
+  "@askCmdr.error.authFailed": {
+    "sourceHash": "a2302ca"
+  },
+  "askCmdr.error.rateLimited": "Leverantören är upptagen eller så har du slut på kvot. Försök igen om en liten stund.",
+  "@askCmdr.error.rateLimited": {
+    "sourceHash": "7b441e9"
+  },
+  "askCmdr.error.budgetExhausted": "Svaret nådde sin gräns innan det blev klart. Försök fråga något mer specifikt.",
+  "@askCmdr.error.budgetExhausted": {
+    "sourceHash": "ea2beb2"
+  },
+  "askCmdr.error.unfinishedReply": "Svaret blev inte klart. Försök igen?",
+  "@askCmdr.error.unfinishedReply": {
+    "sourceHash": "7cc85f5"
+  },
+  "askCmdr.error.provider": "Något gick fel hos leverantören. Försök igen?",
+  "@askCmdr.error.provider": {
+    "sourceHash": "d536cce"
+  },
+  "askCmdr.loadEarlier": "Läs in tidigare meddelanden",
+  "@askCmdr.loadEarlier": {
+    "sourceHash": "33fd46b"
+  },
+  "askCmdr.threads.open": "Chattar",
+  "@askCmdr.threads.open": {
+    "sourceHash": "ef5b404"
+  },
+  "askCmdr.sessions.title": "Chattar",
+  "@askCmdr.sessions.title": {
+    "sourceHash": "ef5b404"
+  },
+  "askCmdr.sessions.back": "Tillbaka till chatten",
+  "@askCmdr.sessions.back": {
+    "sourceHash": "5978844"
+  },
+  "askCmdr.sessions.searchPlaceholder": "Sök i dina chattar…",
+  "@askCmdr.sessions.searchPlaceholder": {
+    "sourceHash": "2de9074"
+  },
+  "askCmdr.sessions.searchLabel": "Sök chattar",
+  "@askCmdr.sessions.searchLabel": {
+    "sourceHash": "02a39c4"
+  },
+  "askCmdr.sessions.empty": "Inga chattar än",
+  "@askCmdr.sessions.empty": {
+    "sourceHash": "269208e"
+  },
+  "askCmdr.sessions.emptyArchived": "Inga arkiverade chattar",
+  "@askCmdr.sessions.emptyArchived": {
+    "sourceHash": "272c9ab"
+  },
+  "askCmdr.sessions.noResults": "Inga chattar matchar din sökning",
+  "@askCmdr.sessions.noResults": {
+    "sourceHash": "c53c411"
+  },
+  "askCmdr.sessions.showArchived": "Visa arkiverade",
+  "@askCmdr.sessions.showArchived": {
+    "sourceHash": "e9de9f2"
+  },
+  "askCmdr.sessions.hideArchived": "Dölj arkiverade",
+  "@askCmdr.sessions.hideArchived": {
+    "sourceHash": "dd1c793"
+  },
+  "askCmdr.sessions.loadMore": "Läs in fler",
+  "@askCmdr.sessions.loadMore": {
+    "sourceHash": "ac8991e"
+  },
+  "askCmdr.sessions.searching": "Söker…",
+  "@askCmdr.sessions.searching": {
+    "sourceHash": "c31723a"
+  },
+  "askCmdr.sessions.rename": "Byt namn",
+  "@askCmdr.sessions.rename": {
+    "sourceHash": "3064d79"
+  },
+  "askCmdr.sessions.renameLabel": "Chattens titel",
+  "@askCmdr.sessions.renameLabel": {
+    "sourceHash": "17a3048"
+  },
+  "askCmdr.sessions.archive": "Arkivera",
+  "@askCmdr.sessions.archive": {
+    "sourceHash": "66f4804"
+  },
+  "askCmdr.sessions.unarchive": "Avarkivera",
+  "@askCmdr.sessions.unarchive": {
+    "sourceHash": "f565318"
+  },
+  "askCmdr.sessions.archivedBadge": "Arkiverad",
+  "@askCmdr.sessions.archivedBadge": {
+    "sourceHash": "bdb8650"
+  },
+  "askCmdr.composer.attach": "Fråga om markeringen",
+  "@askCmdr.composer.attach": {
+    "sourceHash": "3e812c7"
+  },
+  "askCmdr.composer.dropHint": "Släpp för att bifoga",
+  "@askCmdr.composer.dropHint": {
+    "sourceHash": "34a7a63"
+  },
+  "askCmdr.attachment.remove": "Ta bort bilaga",
+  "@askCmdr.attachment.remove": {
+    "sourceHash": "595b066"
+  },
+  "askCmdr.consent.title": "Prata med Cmdr om dina filer",
+  "@askCmdr.consent.title": {
+    "sourceHash": "59b4ca9"
+  },
+  "askCmdr.consent.intro": "Ask Cmdr skickar dina frågor till den AI-leverantör du väljer, med din egen API-nyckel. Här är exakt vad som lämnar din Mac när du chattar:",
+  "@askCmdr.consent.intro": {
+    "sourceHash": "4366272"
+  },
+  "askCmdr.consent.item.messages": "Dina meddelanden",
+  "@askCmdr.consent.item.messages": {
+    "sourceHash": "befc6e9"
+  },
+  "askCmdr.consent.item.names": "Namnen och sökvägarna för filer och mappar som Cmdr tittar på för att svara dig",
+  "@askCmdr.consent.item.names": {
+    "sourceHash": "ce3259d"
+  },
+  "askCmdr.consent.item.sizes": "Deras storlekar och datum",
+  "@askCmdr.consent.item.sizes": {
+    "sourceHash": "2484530"
+  },
+  "askCmdr.consent.item.envelope": "Vad du tittar på just nu: din aktuella mapp, markör, markering och anslutna enheter",
+  "@askCmdr.consent.item.envelope": {
+    "sourceHash": "2e5a0ef"
+  },
+  "askCmdr.consent.item.attachments": "Filer eller mappar som du bifogar till en fråga, bara med namn och sökväg",
+  "@askCmdr.consent.item.attachments": {
+    "sourceHash": "b9ad2af"
+  },
+  "askCmdr.consent.noContents": "Cmdr skickar aldrig innehållet i dina filer. Det går inte: den här versionen har inget verktyg som läser dem. Ask Cmdr tittar och pratar bara. Den ändrar aldrig något.",
+  "@askCmdr.consent.noContents": {
+    "sourceHash": "0908765"
+  },
+  "askCmdr.consent.local": "Dina chattar stannar på din Mac, i en lokal databas du kan öppna och läsa. Du väljer leverantör och modell, och du kan se vad varje chatt kostar.",
+  "@askCmdr.consent.local": {
+    "sourceHash": "f7d4075"
+  },
+  "askCmdr.consent.logsNote": "Om du aktiverar loggning av LLM-anrop i Avancerat i inställningarna sparar Cmdr också varje förfrågan och svar till en mapp på din Mac. Även de loggarna stannar lokalt, de skickas aldrig någonstans.",
+  "@askCmdr.consent.logsNote": {
+    "sourceHash": "7e211fc"
+  },
+  "askCmdr.consent.accept": "Aktivera Ask Cmdr",
+  "@askCmdr.consent.accept": {
+    "sourceHash": "0d656c4"
+  },
+  "askCmdr.consent.decline": "Inte nu",
+  "@askCmdr.consent.decline": {
+    "sourceHash": "a0e63d7"
+  },
+  "askCmdr.cost.tokens": "{countText} {count, plural, one {token} other {tokens}}",
+  "@askCmdr.cost.tokens": {
+    "sourceHash": "6718764",
+    "sameAsSourceJustification": "'token'/'tokens' kept as the shared Swedish tech loanword for LLM tokens; no attested native Swedish plural in the reference pile (too new a sense), and Swedish tech press consistently uses the bare English plural 'tokens'."
+  },
+  "askCmdr.cost.free": "gratis, på enheten",
+  "@askCmdr.cost.free": {
+    "sourceHash": "f04f869"
+  },
+  "askCmdr.cost.estimate": "cirka {amount}",
+  "@askCmdr.cost.estimate": {
+    "sourceHash": "e448a4a"
+  },
+  "askCmdr.cost.unknown": "kostnad okänd",
+  "@askCmdr.cost.unknown": {
+    "sourceHash": "d05144e"
+  },
+  "askCmdr.cost.label": "Den här chattens användning",
+  "@askCmdr.cost.label": {
+    "sourceHash": "3b0dd81"
+  }
+}

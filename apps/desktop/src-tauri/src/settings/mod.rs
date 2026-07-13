@@ -4,6 +4,6 @@ pub mod loader;
 
 pub use loader::{
     FullDiskAccessChoice, RestrictedWindowSettings, early_load_global_go_to_latest_shortcut,
-    early_load_max_log_storage_mb, early_load_verbose_logging, load_operation_log_retention_limits,
-    load_restricted_window_settings, load_settings,
+    early_load_max_log_storage_mb, early_load_verbose_logging, load_ask_cmdr_interactive_model,
+    load_operation_log_retention_limits, load_restricted_window_settings, load_settings,
 };

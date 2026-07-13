@@ -43,6 +43,13 @@ vi.mock('./ask-cmdr-sessions.svelte', () => ({
   sessionsState: { open: false },
   openSessions: vi.fn(),
 }))
+// Consent granted so the rail renders the chat (not the opt-in gate).
+vi.mock('./ask-cmdr-consent.svelte', () => ({
+  consentState: { accepted: true, acceptedAt: null },
+  refreshConsent: vi.fn(),
+  acceptConsent: vi.fn(),
+  revokeConsent: vi.fn(),
+}))
 
 import AskCmdrRail from './AskCmdrRail.svelte'
 

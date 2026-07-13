@@ -316,6 +316,26 @@ pub fn early_load_max_log_storage_mb() -> Option<u64> {
     json.get("advanced.maxLogStorageMb").and_then(|v| v.as_u64())
 }
 
+/// The Ask Cmdr interactive-slot model override, read fresh from `settings.json` each
+/// send (so a settings change takes effect on the next message, no restart).
+///
+/// Empty/absent ⇒ use the model the shared `ai/` provider is already configured with (the
+/// v1 default, zero extra config). A non-empty value is a dedicated model id for Ask Cmdr,
+/// layered OVER the shared `ai/` provider config (agent-spec D43: two slots, interactive +
+/// a later bulk slot). The bulk slot slots in beside this as its own additive key
+/// (`askCmdr.bulkModel`), no migration. Only the model is slot-specific; provider on/off,
+/// keys, and base URLs stay single-sourced in the `ai/` config (D49: extend, don't fork).
+pub fn load_ask_cmdr_interactive_model<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<String> {
+    let data_dir = crate::config::resolved_app_data_dir(app).ok()?;
+    let contents = fs::read_to_string(data_dir.join("settings.json")).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&contents).ok()?;
+    json.get("askCmdr.interactiveModel")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+}
+
 /// Reads `developer.verboseLogging` from disk *before* the Tauri app handle exists.
 ///
 /// Mirrors [`early_load_max_log_storage_mb`]. Used by the logging dispatch builder so

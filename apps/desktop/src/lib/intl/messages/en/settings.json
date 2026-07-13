@@ -1454,6 +1454,80 @@
     "description": "Top-level Settings section title: AI (artificial intelligence). Sidebar and page heading. Keep short.",
     "screenshot": "settings-appearance.png"
   },
+  "settings.section.askCmdr": "Ask Cmdr",
+  "@settings.section.askCmdr": {
+    "description": "Top-level Settings section title: Ask Cmdr (the read-only chat rail). This is the product name; keep it as-is."
+  },
+  "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Ask Cmdr is read-only: it reads names, paths, and sizes to answer, and never changes anything.",
+  "@settings.askCmdr.intro": {
+    "description": "Intro paragraph at the top of the Ask Cmdr settings section."
+  },
+  "settings.askCmdr.status.on": "Ask Cmdr is on",
+  "@settings.askCmdr.status.on": {
+    "description": "Status line in Ask Cmdr settings when the feature is turned on. Sentence case, no period."
+  },
+  "settings.askCmdr.status.off": "Ask Cmdr is off",
+  "@settings.askCmdr.status.off": {
+    "description": "Status line in Ask Cmdr settings when the feature is turned off. Sentence case, no period."
+  },
+  "settings.askCmdr.status.onSince": "On since {date}",
+  "@settings.askCmdr.status.onSince": {
+    "description": "Smaller line under the status showing when the user turned Ask Cmdr on. date is a preformatted date string.",
+    "placeholders": {
+      "date": { "content": "The date the user turned Ask Cmdr on, already formatted for the locale." }
+    }
+  },
+  "settings.askCmdr.turnOn": "Turn on Ask Cmdr",
+  "@settings.askCmdr.turnOn": {
+    "description": "Button that opts into and turns on Ask Cmdr from settings. Starts with a verb. Sentence case."
+  },
+  "settings.askCmdr.turnOff": "Turn off Ask Cmdr",
+  "@settings.askCmdr.turnOff": {
+    "description": "Button that turns Ask Cmdr off from settings (chats are kept). Starts with a verb. Sentence case."
+  },
+  "settings.askCmdr.disclosure.title": "What Ask Cmdr sends",
+  "@settings.askCmdr.disclosure.title": {
+    "description": "Heading of the collapsible block in Ask Cmdr settings that shows exactly what leaves the Mac (the same copy as the opt-in screen). Sentence case."
+  },
+  "settings.askCmdr.provider.title": "Provider and model",
+  "@settings.askCmdr.provider.title": {
+    "description": "Heading of the provider/model group in Ask Cmdr settings. Sentence case."
+  },
+  "settings.askCmdr.provider.shared": "Ask Cmdr uses the AI provider and key you set up in Settings › AI ({provider}).",
+  "@settings.askCmdr.provider.shared": {
+    "description": "Line telling the user Ask Cmdr shares the provider configured in the AI settings section. provider is the current provider's name (Off, Cloud AI, or Local LLM). The › is a right-pointing angle separating the settings path.",
+    "placeholders": {
+      "provider": { "content": "The current AI provider label: Off, Cloud AI, or Local LLM." }
+    }
+  },
+  "settings.askCmdr.provider.off": "Turn on an AI provider in Settings › AI to use Ask Cmdr.",
+  "@settings.askCmdr.provider.off": {
+    "description": "Hint shown in Ask Cmdr settings when no AI provider is enabled, pointing the user to the AI settings section. The › is a right-pointing angle separating the settings path."
+  },
+  "settings.askCmdr.interactiveModel.label": "Ask Cmdr model",
+  "@settings.askCmdr.interactiveModel.label": {
+    "description": "Label for the text field where the user picks a dedicated model for Ask Cmdr. Sentence case."
+  },
+  "settings.askCmdr.interactiveModel.description": "The model Ask Cmdr chats with. Leave blank to use the same model as Cmdr’s other AI features. Example: claude-sonnet-4-5",
+  "@settings.askCmdr.interactiveModel.description": {
+    "description": "Help text under the Ask Cmdr model field. Explains that blank falls back to the shared AI model, and gives an example model id. The example id and the apostrophe (U+2019) stay as written; do not translate the example id."
+  },
+  "settings.askCmdr.interactiveModel.placeholder": "Same as Cmdr’s AI",
+  "@settings.askCmdr.interactiveModel.placeholder": {
+    "description": "Placeholder text in the empty Ask Cmdr model field, signalling that blank means the shared AI model is used. The apostrophe is U+2019."
+  },
+  "settings.askCmdr.spend.title": "Spending",
+  "@settings.askCmdr.spend.title": {
+    "description": "Heading of the spend/usage group in Ask Cmdr settings (per-day token use and estimated cost). Sentence case."
+  },
+  "settings.askCmdr.spend.empty": "No usage yet. Your token use and estimated cost will show up here.",
+  "@settings.askCmdr.spend.empty": {
+    "description": "Empty state under the Ask Cmdr spending heading before any chat has run."
+  },
+  "settings.askCmdr.spend.disclaimer": "These are estimates. Your provider bills you directly, so check your provider’s dashboard for the exact amount.",
+  "@settings.askCmdr.spend.disclaimer": {
+    "description": "Small print under the Ask Cmdr spend list: the costs shown are estimates, not the provider's actual bill. The apostrophe is U+2019."
+  },
   "settings.section.fileSystems": "File systems",
   "@settings.section.fileSystems": {
     "description": "Top-level Settings section title: File systems (network shares, USB devices, git). Sidebar and page heading.",

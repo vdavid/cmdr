@@ -91,6 +91,15 @@
   "@commands.logOperationLog.description": {
     "sourceHash": "ea2d082"
   },
+  "commands.askCmdrToggle.label": "Ask Cmdr",
+  "@commands.askCmdrToggle.label": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name; kept verbatim in every locale (do-not-translate list)."
+  },
+  "commands.askCmdrToggle.description": "Chatta med en AI om dina filer, enheter och historik",
+  "@commands.askCmdrToggle.description": {
+    "sourceHash": "c520468"
+  },
   "commands.feedbackSend.label": "Skicka återkoppling",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

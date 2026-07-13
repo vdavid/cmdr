@@ -91,6 +91,15 @@
   "@commands.logOperationLog.description": {
     "sourceHash": "ea2d082"
   },
+  "commands.askCmdrToggle.label": "Ask Cmdr",
+  "@commands.askCmdrToggle.label": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (the Ask Cmdr chat rail); kept verbatim in every locale (do-not-translate list)."
+  },
+  "commands.askCmdrToggle.description": "Converse com uma IA sobre seus arquivos, discos e histórico",
+  "@commands.askCmdrToggle.description": {
+    "sourceHash": "c520468"
+  },
   "commands.feedbackSend.label": "Enviar comentário",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

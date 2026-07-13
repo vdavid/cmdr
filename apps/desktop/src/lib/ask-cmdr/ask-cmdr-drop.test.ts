@@ -59,9 +59,7 @@ function handlers(overrides: Partial<DropHandlers> = {}): DropHandlers & {
 
 beforeEach(() => {
   resolveMock.mockReset()
-  resolveMock.mockImplementation((paths) =>
-    Promise.resolve(paths.map((path) => ({ path, kind: 'file' as const }))),
-  )
+  resolveMock.mockImplementation((paths) => Promise.resolve(paths.map((path) => ({ path, kind: 'file' as const }))))
   state.isSelf = false
   state.identity = null
 })
@@ -169,6 +167,8 @@ describe('installComposerDrop', () => {
       () => {},
     )
     expect(typeof unlisten).toBe('function')
-    expect(() => { unlisten(); }).not.toThrow()
+    expect(() => {
+      unlisten()
+    }).not.toThrow()
   })
 })

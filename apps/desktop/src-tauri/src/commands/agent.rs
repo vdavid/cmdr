@@ -381,10 +381,14 @@ impl ResolvedAgentLlm {
     }
 }
 
-/// Resolve the interactive LLM from the existing `ai/` config (M8 replaces this with the
-/// dedicated interactive slot). Returns the resolved backend plus the provider/model labels
-/// the cost meter records, or a typed error kind when AI is off/unconfigured.
-fn resolve_agent_llm() -> Result<(ResolvedAgentLlm, ProviderTag, String), AgentErrorKind> {
+/// Resolve the Ask Cmdr interactive slot into a ready LLM. The slot layers a dedicated
+/// model choice (`askCmdr.interactiveModel`, read fresh) OVER the shared `ai/` provider
+/// config (agent-spec D43): provider on/off, keys, and base URLs stay single-sourced in
+/// `ai/`; only the model is slot-specific, so the bulk slot slots in later with no
+/// migration (D49). An empty override uses the model the `ai/` provider is configured with.
+/// Returns the backend plus the provider/model the cost meter records, or a typed error
+/// when AI is off/unconfigured.
+fn resolve_agent_llm(app: &AppHandle) -> Result<(ResolvedAgentLlm, ProviderTag, String), AgentErrorKind> {
     // E2E harness path: drive a deterministic scripted assistant with zero network, so the
     // rail's send-and-render can be tested without a provider. Guarded by an explicit env
     // flag so it never activates in a normal run.
@@ -395,14 +399,15 @@ fn resolve_agent_llm() -> Result<(ResolvedAgentLlm, ProviderTag, String), AgentE
             "fake".to_string(),
         ));
     }
+    let model_override = crate::settings::load_ask_cmdr_interactive_model(app);
     use crate::ai::manager::BackendResolution;
-    match crate::ai::manager::resolve_backend() {
+    match crate::ai::manager::resolve_backend_with_model(model_override.as_deref()) {
         BackendResolution::Ready(backend) => {
-            let (provider, model) = provider_and_model();
+            let (provider, model) = provider_and_model(model_override.as_deref());
             Ok((ResolvedAgentLlm::Genai(backend), provider, model))
         }
         // "AI off", a blank cloud key, or a stopped local server all read the same to the
-        // rail: nothing is configured to talk to. M8's settings surface disambiguates.
+        // rail: nothing is configured to talk to. The settings surface disambiguates.
         BackendResolution::Off | BackendResolution::NotConfigured(_) | BackendResolution::UnknownProvider(_) => {
             Err(AgentErrorKind::NotConfigured)
         }
@@ -420,17 +425,24 @@ fn scripted_fake_llm() -> FakeAgentLlm {
     ])])
 }
 
-/// The provider tag + model label for cost metering, derived from the live `ai/` config.
-/// Interim (M8 owns real slot resolution + pricing): a cloud model is tagged by its name
-/// prefix, matching `ai::client`'s adapter routing.
-fn provider_and_model() -> (ProviderTag, String) {
+/// The provider tag + effective model label for cost metering. The model is the
+/// interactive slot's override when set, else the live `ai/` cloud model; a cloud model is
+/// tagged by its name prefix, matching `ai::client`'s adapter routing. Local uses its fixed
+/// model name.
+fn provider_and_model(model_override: Option<&str>) -> (ProviderTag, String) {
     if crate::ai::state::get_provider() == "local" {
         return (
             ProviderTag::Local,
             crate::ai::manager::get_ai_runtime_status().model_name,
         );
     }
-    let (_key, _base, model) = crate::ai::state::get_cloud_config();
+    let model = match model_override {
+        Some(m) if !m.is_empty() => m.to_string(),
+        _ => {
+            let (_key, _base, ai_model) = crate::ai::state::get_cloud_config();
+            ai_model
+        }
+    };
     let provider = if model.starts_with("claude-") {
         ProviderTag::Anthropic
     } else if model.starts_with("gemini-") {
@@ -528,7 +540,7 @@ pub async fn ask_cmdr_send_message(
 ) -> Result<i64, String> {
     // Resolve the LLM before touching the DB: if AI is off/unconfigured, say so and add
     // no thread.
-    let (llm_kind, provider, model) = match resolve_agent_llm() {
+    let (llm_kind, provider, model) = match resolve_agent_llm(&app) {
         Ok(resolved) => resolved,
         Err(kind) => {
             let _ = on_event.send(AskCmdrStreamEvent::Failed { kind: kind.into() });
@@ -824,6 +836,98 @@ fn pane_entry_to_attachment(entry: &crate::mcp::pane_state::PaneFileEntry) -> At
             AttachmentKindView::File
         },
     }
+}
+
+// ── Consent (the opt-in gate; plan §12) ─────────────────────────────────────────
+
+/// The current consent-copy version. **Bump when the consent screen's privacy copy
+/// changes materially**, so users re-accept the new wording. The copy itself lives in the
+/// frontend catalog (`askCmdr.consent.*`); this integer is the machine-checkable version of
+/// that copy, recorded in `main.db` when the user accepts.
+pub const CONSENT_COPY_VERSION: u32 = 1;
+
+/// Whether the user has opted into Ask Cmdr, and the audit of what they accepted. The rail
+/// gates on `accepted` (the CURRENT copy version): a never-accepted or stale-version record
+/// re-shows the consent screen, and nothing is ever sent to a provider without it.
+#[derive(Clone, Copy, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AskCmdrConsentStatus {
+    /// True only when the user accepted the CURRENT `current_version`. The one flag the
+    /// rail and the settings toggle read.
+    pub accepted: bool,
+    /// The copy version the user must have accepted to be `accepted`.
+    pub current_version: u32,
+    /// The version the user last accepted, or `None` if never.
+    pub accepted_version: Option<u32>,
+    /// When the user last accepted (unix secs), or `None` if never.
+    pub accepted_at: Option<i64>,
+}
+
+/// The Ask Cmdr consent status: whether the user opted into the CURRENT consent copy, plus
+/// the audit of what/when they accepted. Reads `main.db`; a missing store reads as
+/// not-accepted, so the gate stays closed rather than failing open.
+#[tauri::command]
+#[specta::specta]
+pub async fn ask_cmdr_consent_status(app: AppHandle) -> Result<AskCmdrConsentStatus, String> {
+    let not_accepted = AskCmdrConsentStatus {
+        accepted: false,
+        current_version: CONSENT_COPY_VERSION,
+        accepted_version: None,
+        accepted_at: None,
+    };
+    with_read_connection(app, not_accepted, move |conn| {
+        let stored = store::get_consent(conn)?;
+        Ok(AskCmdrConsentStatus {
+            accepted: stored.map(|c| c.version) == Some(CONSENT_COPY_VERSION),
+            current_version: CONSENT_COPY_VERSION,
+            accepted_version: stored.map(|c| c.version),
+            accepted_at: stored.map(|c| c.at),
+        })
+    })
+    .await
+}
+
+/// Record the user's opt-in to the current consent copy (timestamp + copy version), so the
+/// rail unlocks. Idempotent.
+#[tauri::command]
+#[specta::specta]
+pub async fn ask_cmdr_accept_consent(app: AppHandle) -> Result<(), String> {
+    let now = now_secs();
+    with_write_connection(app, move |conn| store::set_consent(conn, CONSENT_COPY_VERSION, now)).await
+}
+
+/// Turn Ask Cmdr off by clearing consent (the settings "turn off" path). The next rail
+/// open re-shows the consent screen. No delete of chats — history stays.
+#[tauri::command]
+#[specta::specta]
+pub async fn ask_cmdr_revoke_consent(app: AppHandle) -> Result<(), String> {
+    with_write_connection(app, store::clear_consent).await
+}
+
+// ── Cost visibility (per-thread footer + per-day rollup) ─────────────────────────
+
+/// One conversation's cumulative token + cost total (all days, all models), for the
+/// per-thread footer. Zeroed for a thread with no metered turn yet. Empty store ⇒ zeroed.
+#[tauri::command]
+#[specta::specta]
+pub async fn ask_cmdr_conversation_cost(app: AppHandle, id: i64) -> Result<store::ConversationCost, String> {
+    let empty = store::ConversationCost {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        cost_micros: 0,
+        fully_priced: true,
+        providers: Vec::new(),
+    };
+    with_read_connection(app, empty, move |conn| store::conversation_cost(conn, id)).await
+}
+
+/// The per-day cost rollup across every thread and model, newest day first (the settings
+/// spend display). Empty when the store never opened.
+#[tauri::command]
+#[specta::specta]
+pub async fn ask_cmdr_cost_summary(app: AppHandle) -> Result<store::CostSummary, String> {
+    let empty = store::CostSummary { days: Vec::new() };
+    with_read_connection(app, empty, store::cost_summary).await
 }
 
 /// Open a short-lived WRITE connection to `main.db` off the IPC thread and run `write`

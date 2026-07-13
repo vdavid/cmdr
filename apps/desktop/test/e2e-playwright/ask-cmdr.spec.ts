@@ -71,6 +71,35 @@ async function closeRailIfOpen(page: TauriPage): Promise<void> {
   await expect.poll(() => railOpen(page), { timeout: 3000 }).toBe(false)
 }
 
+/** The opt-in consent screen is showing (the rail is open but not yet unlocked). */
+function consentShown(page: TauriPage): Promise<boolean> {
+  return page.evaluate<boolean>(`document.querySelector('.ask-cmdr-rail .consent') !== null`)
+}
+
+/** The composer is present (the rail is unlocked past consent). */
+function composerPresent(page: TauriPage): Promise<boolean> {
+  return page.evaluate<boolean>(`document.querySelector('.ask-cmdr-rail textarea') !== null`)
+}
+
+/** Get the rail ready for a chat test: accept the consent opt-in if the gate is showing
+ * (consent is recorded in `main.db` and persists for the run, so it's a no-op once granted),
+ * then wait for the composer to render. Consent resolves asynchronously on open, so the
+ * composer isn't present on the first tick even when already consented — always wait. */
+async function ensureChatReady(page: TauriPage): Promise<void> {
+  await expect
+    .poll(
+      async () => {
+        if (await composerPresent(page)) return true
+        if (await consentShown(page)) {
+          await page.evaluate(`document.querySelector('.ask-cmdr-rail .consent .consent-accept')?.click()`)
+        }
+        return composerPresent(page)
+      },
+      { timeout: 5000 },
+    )
+    .toBe(true)
+}
+
 /** Count of completed fake assistant replies currently in the thread. */
 function assistantReplyCount(page: TauriPage): Promise<number> {
   return page.evaluate<number>(
@@ -110,6 +139,29 @@ test.describe('Ask Cmdr rail', () => {
     await closeRailIfOpen(tauriPage as TauriPage)
   })
 
+  // Runs FIRST (before any chat test accepts consent): on a fresh profile the rail opens to
+  // the opt-in gate, "Not now" closes it recording nothing, and accepting unlocks the chat.
+  test('gates on consent, and accepting unlocks the chat', async ({ tauriPage }) => {
+    const page = tauriPage as TauriPage
+    await openRailViaMenu(page)
+    // The gate is shown; the composer is not reachable yet.
+    await expect.poll(() => consentShown(page), { timeout: 3000 }).toBe(true)
+    expect(await composerPresent(page)).toBe(false)
+
+    // "Not now" closes the rail without opting in.
+    await page.evaluate(`document.querySelector('.ask-cmdr-rail .consent .consent-decline')?.click()`)
+    await expect.poll(() => railOpen(page), { timeout: 3000 }).toBe(false)
+
+    // Reopen: consent is still required (decline recorded nothing).
+    await openRailViaMenu(page)
+    await expect.poll(() => consentShown(page), { timeout: 3000 }).toBe(true)
+
+    // Accepting records consent and unlocks the composer.
+    await page.evaluate(`document.querySelector('.ask-cmdr-rail .consent .consent-accept')?.click()`)
+    await expect.poll(() => composerPresent(page), { timeout: 3000 }).toBe(true)
+    expect(await consentShown(page)).toBe(false)
+  })
+
   test('opens from the View menu item with the ALPHA badge', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     await dispatchMenuCommand(page, 'askCmdr.toggle')
@@ -137,6 +189,7 @@ test.describe('Ask Cmdr rail', () => {
   test('focuses the composer on open and returns focus to the panes on Escape', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     await openRailViaMenu(page)
+    await ensureChatReady(page)
     await expect.poll(() => composerFocused(page), { timeout: 3000 }).toBe(true)
 
     // Escape on the focused composer returns focus to the active pane.
@@ -149,6 +202,7 @@ test.describe('Ask Cmdr rail', () => {
   test('sends a message and streams the fake reply', async ({ tauriPage }) => {
     const page = tauriPage as TauriPage
     await openRailViaMenu(page)
+    await ensureChatReady(page)
 
     // Type into the composer and press Enter (Svelte's bind:value listens for input).
     await page.evaluate(`(() => {
@@ -179,6 +233,7 @@ test.describe('Ask Cmdr rail', () => {
     const beta = `${nonce} grocery list`
 
     await openRailViaMenu(page)
+    await ensureChatReady(page)
 
     // Start from a fresh chat: the rail may have bootstrapped a prior test's thread, so
     // without this the first send would append to it (and its reply would satisfy the
@@ -220,11 +275,14 @@ test.describe('Ask Cmdr rail', () => {
     // Click the result → it switches the rail to that thread and closes the panel.
     await page.evaluate(`document.querySelector('.ask-cmdr-rail .sessions .row')?.click()`)
     await expect
-      .poll(() => page.evaluate<boolean>(`document.querySelector('.ask-cmdr-rail .sessions') === null`), { timeout: 3000 })
+      .poll(() => page.evaluate<boolean>(`document.querySelector('.ask-cmdr-rail .sessions') === null`), {
+        timeout: 3000,
+      })
       .toBe(true)
     await expect
       .poll(
-        () => page.evaluate<boolean>(`(document.querySelector('.ask-cmdr-rail')?.textContent || '').includes('budget')`),
+        () =>
+          page.evaluate<boolean>(`(document.querySelector('.ask-cmdr-rail')?.textContent || '').includes('budget')`),
         { timeout: 3000 },
       )
       .toBe(true)

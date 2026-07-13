@@ -1,0 +1,311 @@
+{
+  "askCmdr.title": "Ask Cmdr",
+  "@askCmdr.title": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name, kept verbatim across the whole zh catalog per the @key description (\"keep it as-is\")."
+  },
+  "askCmdr.close": "关闭 Ask Cmdr",
+  "@askCmdr.close": {
+    "sourceHash": "d34225d"
+  },
+  "askCmdr.newChat": "新建聊天",
+  "@askCmdr.newChat": {
+    "sourceHash": "db18382"
+  },
+  "askCmdr.empty.title": "问问你的文件",
+  "@askCmdr.empty.title": {
+    "sourceHash": "b2251fc"
+  },
+  "askCmdr.empty.hint": "Cmdr 可以查看你正在浏览的内容、你的驱动器和文件历史来回答问题。它只读取名称、路径和大小，从不读取文件内容。",
+  "@askCmdr.empty.hint": {
+    "sourceHash": "6ccad75"
+  },
+  "askCmdr.composer.placeholder": "问问你的文件…",
+  "@askCmdr.composer.placeholder": {
+    "sourceHash": "77e2636"
+  },
+  "askCmdr.composer.send": "发送消息",
+  "@askCmdr.composer.send": {
+    "sourceHash": "93a26b1"
+  },
+  "askCmdr.composer.stop": "停止",
+  "@askCmdr.composer.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "askCmdr.thinking": "正在思考…",
+  "@askCmdr.thinking": {
+    "sourceHash": "a02f1ce"
+  },
+  "askCmdr.softCap.message": "这段聊天已经有点长了，开一段新的能让回复更快、更专注。",
+  "@askCmdr.softCap.message": {
+    "sourceHash": "60d2c54"
+  },
+  "askCmdr.softCap.action": "开始新的聊天",
+  "@askCmdr.softCap.action": {
+    "sourceHash": "677d4c2"
+  },
+  "askCmdr.tool.appState.doing": "正在查看你正在看的内容",
+  "@askCmdr.tool.appState.doing": {
+    "sourceHash": "832e0cc"
+  },
+  "askCmdr.tool.appState.done": "已查看你正在看的内容",
+  "@askCmdr.tool.appState.done": {
+    "sourceHash": "155621e"
+  },
+  "askCmdr.tool.listDir.doing": "正在列出一个文件夹",
+  "@askCmdr.tool.listDir.doing": {
+    "sourceHash": "64aa697"
+  },
+  "askCmdr.tool.listDir.done": "已列出一个文件夹",
+  "@askCmdr.tool.listDir.done": {
+    "sourceHash": "5746fef"
+  },
+  "askCmdr.tool.largestDirs.doing": "正在查找最大的文件夹",
+  "@askCmdr.tool.largestDirs.doing": {
+    "sourceHash": "c5f2cc0"
+  },
+  "askCmdr.tool.largestDirs.done": "已找到最大的文件夹",
+  "@askCmdr.tool.largestDirs.done": {
+    "sourceHash": "a2f3de3"
+  },
+  "askCmdr.tool.importantFolders.doing": "正在查找你的重要文件夹",
+  "@askCmdr.tool.importantFolders.doing": {
+    "sourceHash": "866aa38"
+  },
+  "askCmdr.tool.importantFolders.done": "已找到你的重要文件夹",
+  "@askCmdr.tool.importantFolders.done": {
+    "sourceHash": "1fd5db6"
+  },
+  "askCmdr.tool.folderImportance.doing": "正在检查文件夹的重要性",
+  "@askCmdr.tool.folderImportance.doing": {
+    "sourceHash": "594deff"
+  },
+  "askCmdr.tool.folderImportance.done": "已检查文件夹的重要性",
+  "@askCmdr.tool.folderImportance.done": {
+    "sourceHash": "c7f397f"
+  },
+  "askCmdr.tool.listVolumes.doing": "正在检查你的驱动器",
+  "@askCmdr.tool.listVolumes.doing": {
+    "sourceHash": "2ed1808"
+  },
+  "askCmdr.tool.listVolumes.done": "已检查你的驱动器",
+  "@askCmdr.tool.listVolumes.done": {
+    "sourceHash": "b13a0b3"
+  },
+  "askCmdr.tool.operationsList.doing": "正在搜索你的文件历史",
+  "@askCmdr.tool.operationsList.doing": {
+    "sourceHash": "4e8c41a"
+  },
+  "askCmdr.tool.operationsList.done": "已搜索你的文件历史",
+  "@askCmdr.tool.operationsList.done": {
+    "sourceHash": "03021d5"
+  },
+  "askCmdr.tool.operationsGet.doing": "正在查询一个操作",
+  "@askCmdr.tool.operationsGet.doing": {
+    "sourceHash": "10be41f"
+  },
+  "askCmdr.tool.operationsGet.done": "已查询一个操作",
+  "@askCmdr.tool.operationsGet.done": {
+    "sourceHash": "80fe1e9"
+  },
+  "askCmdr.tool.unknown.doing": "正在处理",
+  "@askCmdr.tool.unknown.doing": {
+    "sourceHash": "a92f044"
+  },
+  "askCmdr.tool.unknown.done": "已使用一个工具",
+  "@askCmdr.tool.unknown.done": {
+    "sourceHash": "05cc2be"
+  },
+  "askCmdr.tool.refused": "这个请求不可用",
+  "@askCmdr.tool.refused": {
+    "sourceHash": "f5e6dcc"
+  },
+  "askCmdr.error.noKey": "在设置中添加你的 API 密钥，即可开始聊天。",
+  "@askCmdr.error.noKey": {
+    "sourceHash": "0a78f37"
+  },
+  "askCmdr.error.notConfigured": "在设置中开启一个 AI 提供方，即可使用 Ask Cmdr。",
+  "@askCmdr.error.notConfigured": {
+    "sourceHash": "b84c5f4"
+  },
+  "askCmdr.error.unavailable": "无法连接到 AI 提供方，请检查网络连接后重试。",
+  "@askCmdr.error.unavailable": {
+    "sourceHash": "eb59e2b"
+  },
+  "askCmdr.error.timeout": "这次耗时太久，要再试一次吗？",
+  "@askCmdr.error.timeout": {
+    "sourceHash": "22cd775"
+  },
+  "askCmdr.error.authFailed": "提供方没有接受你的 API 密钥，请在设置中检查。",
+  "@askCmdr.error.authFailed": {
+    "sourceHash": "a2302ca"
+  },
+  "askCmdr.error.rateLimited": "提供方正忙，或者你的配额已用完，请稍后重试。",
+  "@askCmdr.error.rateLimited": {
+    "sourceHash": "7b441e9"
+  },
+  "askCmdr.error.budgetExhausted": "这次回答在完成前达到了限制，试着问一些更具体的问题吧。",
+  "@askCmdr.error.budgetExhausted": {
+    "sourceHash": "ea2beb2"
+  },
+  "askCmdr.error.unfinishedReply": "回复没有完成，要再试一次吗？",
+  "@askCmdr.error.unfinishedReply": {
+    "sourceHash": "7cc85f5"
+  },
+  "askCmdr.error.provider": "提供方那边出了点问题，要再试一次吗？",
+  "@askCmdr.error.provider": {
+    "sourceHash": "d536cce"
+  },
+  "askCmdr.loadEarlier": "加载更早的消息",
+  "@askCmdr.loadEarlier": {
+    "sourceHash": "33fd46b"
+  },
+  "askCmdr.threads.open": "聊天记录",
+  "@askCmdr.threads.open": {
+    "sourceHash": "ef5b404"
+  },
+  "askCmdr.sessions.title": "聊天记录",
+  "@askCmdr.sessions.title": {
+    "sourceHash": "ef5b404"
+  },
+  "askCmdr.sessions.back": "返回聊天",
+  "@askCmdr.sessions.back": {
+    "sourceHash": "5978844"
+  },
+  "askCmdr.sessions.searchPlaceholder": "搜索你的聊天记录…",
+  "@askCmdr.sessions.searchPlaceholder": {
+    "sourceHash": "2de9074"
+  },
+  "askCmdr.sessions.searchLabel": "搜索聊天记录",
+  "@askCmdr.sessions.searchLabel": {
+    "sourceHash": "02a39c4"
+  },
+  "askCmdr.sessions.empty": "还没有聊天记录",
+  "@askCmdr.sessions.empty": {
+    "sourceHash": "269208e"
+  },
+  "askCmdr.sessions.emptyArchived": "没有已存档的聊天记录",
+  "@askCmdr.sessions.emptyArchived": {
+    "sourceHash": "272c9ab"
+  },
+  "askCmdr.sessions.noResults": "没有符合搜索条件的聊天记录",
+  "@askCmdr.sessions.noResults": {
+    "sourceHash": "c53c411"
+  },
+  "askCmdr.sessions.showArchived": "显示已存档",
+  "@askCmdr.sessions.showArchived": {
+    "sourceHash": "e9de9f2"
+  },
+  "askCmdr.sessions.hideArchived": "隐藏已存档",
+  "@askCmdr.sessions.hideArchived": {
+    "sourceHash": "dd1c793"
+  },
+  "askCmdr.sessions.loadMore": "加载更多",
+  "@askCmdr.sessions.loadMore": {
+    "sourceHash": "ac8991e"
+  },
+  "askCmdr.sessions.searching": "正在搜索…",
+  "@askCmdr.sessions.searching": {
+    "sourceHash": "c31723a"
+  },
+  "askCmdr.sessions.rename": "重命名",
+  "@askCmdr.sessions.rename": {
+    "sourceHash": "3064d79"
+  },
+  "askCmdr.sessions.renameLabel": "聊天标题",
+  "@askCmdr.sessions.renameLabel": {
+    "sourceHash": "17a3048"
+  },
+  "askCmdr.sessions.archive": "存档",
+  "@askCmdr.sessions.archive": {
+    "sourceHash": "66f4804"
+  },
+  "askCmdr.sessions.unarchive": "取消存档",
+  "@askCmdr.sessions.unarchive": {
+    "sourceHash": "f565318"
+  },
+  "askCmdr.sessions.archivedBadge": "已存档",
+  "@askCmdr.sessions.archivedBadge": {
+    "sourceHash": "bdb8650"
+  },
+  "askCmdr.composer.attach": "询问所选内容",
+  "@askCmdr.composer.attach": {
+    "sourceHash": "3e812c7"
+  },
+  "askCmdr.composer.dropHint": "拖放以附加",
+  "@askCmdr.composer.dropHint": {
+    "sourceHash": "34a7a63"
+  },
+  "askCmdr.attachment.remove": "移除附件",
+  "@askCmdr.attachment.remove": {
+    "sourceHash": "595b066"
+  },
+  "askCmdr.consent.title": "和 Cmdr 聊聊你的文件",
+  "@askCmdr.consent.title": {
+    "sourceHash": "59b4ca9"
+  },
+  "askCmdr.consent.intro": "Ask Cmdr 会把你的问题发送给你选择的 AI 提供方，使用你自己的 API 密钥。以下是你聊天时，会离开你 Mac 的全部内容：",
+  "@askCmdr.consent.intro": {
+    "sourceHash": "4366272"
+  },
+  "askCmdr.consent.item.messages": "你的消息",
+  "@askCmdr.consent.item.messages": {
+    "sourceHash": "befc6e9"
+  },
+  "askCmdr.consent.item.names": "Cmdr 为了回答你而查看的文件和文件夹名称与路径",
+  "@askCmdr.consent.item.names": {
+    "sourceHash": "ce3259d"
+  },
+  "askCmdr.consent.item.sizes": "它们的大小和日期",
+  "@askCmdr.consent.item.sizes": {
+    "sourceHash": "2484530"
+  },
+  "askCmdr.consent.item.envelope": "你此刻正在看的内容：当前文件夹、光标位置、选择内容，以及已连接的驱动器",
+  "@askCmdr.consent.item.envelope": {
+    "sourceHash": "2e5a0ef"
+  },
+  "askCmdr.consent.item.attachments": "你附加到问题里的任何文件或文件夹，仅通过其名称和路径",
+  "@askCmdr.consent.item.attachments": {
+    "sourceHash": "b9ad2af"
+  },
+  "askCmdr.consent.noContents": "Cmdr 从不发送你文件的内容。它做不到：这个版本里没有能读取内容的工具。Ask Cmdr 只负责查看和交流，从不修改任何内容。",
+  "@askCmdr.consent.noContents": {
+    "sourceHash": "0908765"
+  },
+  "askCmdr.consent.local": "你的聊天记录留在你的 Mac 上，保存在一个你可以打开查看的本地数据库里。提供方和模型由你选择，你也能看到每次聊天的花费。",
+  "@askCmdr.consent.local": {
+    "sourceHash": "f7d4075"
+  },
+  "askCmdr.consent.logsNote": "如果你在“高级”设置中开启 AI 模型调用日志记录，Cmdr 还会把每次请求和回复保存到你 Mac 上的一个文件夹里。这些日志同样只保存在本地，从不会发送到任何地方。",
+  "@askCmdr.consent.logsNote": {
+    "sourceHash": "7e211fc"
+  },
+  "askCmdr.consent.accept": "开启 Ask Cmdr",
+  "@askCmdr.consent.accept": {
+    "sourceHash": "0d656c4"
+  },
+  "askCmdr.consent.decline": "暂不",
+  "@askCmdr.consent.decline": {
+    "sourceHash": "a0e63d7"
+  },
+  "askCmdr.cost.tokens": "{countText} {count, plural, other {个 token}}",
+  "@askCmdr.cost.tokens": {
+    "sourceHash": "6718764"
+  },
+  "askCmdr.cost.free": "免费，本地运行",
+  "@askCmdr.cost.free": {
+    "sourceHash": "f04f869"
+  },
+  "askCmdr.cost.estimate": "约 {amount}",
+  "@askCmdr.cost.estimate": {
+    "sourceHash": "e448a4a"
+  },
+  "askCmdr.cost.unknown": "费用未知",
+  "@askCmdr.cost.unknown": {
+    "sourceHash": "d05144e"
+  },
+  "askCmdr.cost.label": "这次聊天的用量",
+  "@askCmdr.cost.label": {
+    "sourceHash": "3b0dd81"
+  }
+}

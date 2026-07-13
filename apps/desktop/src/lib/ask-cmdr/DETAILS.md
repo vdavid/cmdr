@@ -52,20 +52,20 @@ result rows into their assistant tool line by `callId`, so the thread shows one 
   append can't overlap or desync; a full page (`SESSIONS_PAGE`) means "load more" is offered. Rename edits the row's
   title in place. The archived filter has two states: active-only (default) and "show archived", which shows ALL threads
   with archived ones badged (the backend `include_archived=true` returns everything, so the reverse label is "Hide
-  archived", not "Show active"). `setArchived` drops a row only when archiving in the active-only view; in the all view a
-  flip just updates the badge in place.
+  archived", not "Show active"). `setArchived` drops a row only when archiving in the active-only view; in the all view
+  a flip just updates the badge in place.
 - **Search** is debounced (`SEARCH_DEBOUNCE_MS`) and guarded by a monotonic `searchSeq` so a slow earlier response can't
   overwrite a newer one. A non-empty query replaces the list with FTS hits (`searchAskCmdrConversations`); clearing it
   restores the list. Each hit's `snippet` is backend FTS text rendered as plain `{text}` (never `{@html}`).
 - **Message paging is tail-first** (a chat shows newest at the bottom). `loadConversation` probes page 0 to learn
   `totalMessages`, then refetches the newest page when the thread exceeds `MESSAGE_PAGE`; `historyCount` tracks how many
-  rows are loaded from the tail. "Load earlier" (`loadOlderMessages`) prepends the previous page, its offset derived from
-  `messageTotal - historyCount` so pages tile without overlap and live-streamed rows (newer than the load-time total)
-  are never disturbed. The rail preserves the scroll position across a prepend (capture `scrollHeight` before, restore
-  after) and its auto-scroll-to-bottom only fires when the user was already near the bottom (`wasNearBottom`, tracked on
-  scroll), so streaming follows but loading older doesn't jump. Page-boundary caveat: `buildRailMessages` folds each
-  loaded page independently, so a tool result split across a page seam may render unfolded — negligible in practice
-  (threads sit under the ~40 soft cap, well below a 50-message page, so paging rarely fires at all).
+  rows are loaded from the tail. "Load earlier" (`loadOlderMessages`) prepends the previous page, its offset derived
+  from `messageTotal - historyCount` so pages tile without overlap and live-streamed rows (newer than the load-time
+  total) are never disturbed. The rail preserves the scroll position across a prepend (capture `scrollHeight` before,
+  restore after) and its auto-scroll-to-bottom only fires when the user was already near the bottom (`wasNearBottom`,
+  tracked on scroll), so streaming follows but loading older doesn't jump. Page-boundary caveat: `buildRailMessages`
+  folds each loaded page independently, so a tool result split across a page seam may render unfolded — negligible in
+  practice (threads sit under the ~40 soft cap, well below a 50-message page, so paging rarely fires at all).
 
 ## Attachments by reference (M7)
 
@@ -79,13 +79,13 @@ result rows into their assistant tool line by `callId`, so the thread shows one 
 - **Drag-onto-composer is a NATIVE webview drag, not HTML5** (`ask-cmdr-drop.ts`): a Cmdr pane drag is delivered through
   `getCurrentWebview().onDragDropEvent`, so a DOM `ondrop` would never fire. The composer subscribes to that event and
   hit-tests its own rect (via `toViewportPosition`, mirroring the pane drag-drop controller). For an in-app drag the
-  trustworthy source is the recorded self-drag identity (`getSelfDragIdentity`), not the pasteboard-round-tripped payload
-  paths; only LOCAL (`'root'`) self-drags are supported (virtual-volume paths mis-resolve). A Finder drop uses the
-  payload paths (genuine local absolute). Kinds are resolved backend-side (`ask_cmdr_resolve_attachments`) from known
-  pane state, defaulting to file. The Tauri APIs load lazily and swallow failures, so the composer still mounts outside a
-  Tauri webview (unit tests).
-- Chips render the escaped basename (`attachmentBasename`) as plain `{text}` — filesystem names are attacker-controllable
-  on a network share, so never `{@html}` (see the shared XSS-boundary rule).
+  trustworthy source is the recorded self-drag identity (`getSelfDragIdentity`), not the pasteboard-round-tripped
+  payload paths; only LOCAL (`'root'`) self-drags are supported (virtual-volume paths mis-resolve). A Finder drop uses
+  the payload paths (genuine local absolute). Kinds are resolved backend-side (`ask_cmdr_resolve_attachments`) from
+  known pane state, defaulting to file. The Tauri APIs load lazily and swallow failures, so the composer still mounts
+  outside a Tauri webview (unit tests).
+- Chips render the escaped basename (`attachmentBasename`) as plain `{text}` — filesystem names are
+  attacker-controllable on a network share, so never `{@html}` (see the shared XSS-boundary rule).
 
 ## Layout, persistence, focus
 
@@ -110,13 +110,33 @@ full event model (tool lines, stop, soft cap, message paging, attachments) with 
 end-to-end (create two threads, search finds the right one via real FTS over the persisted messages, switch works) — it
 seeds a per-run nonce into the message text so search never matches a thread left by an earlier run.
 
+## Consent gate, cost, and settings (M8)
+
+- **Consent** (`ask-cmdr-consent.svelte.ts` + `AskCmdrConsent.svelte`): the opt-in gate. `consentState.accepted` is
+  `null` (loading) / `false` (show the gate) / `true` (show the chat). The backend records consent in `main.db` (version
+  - timestamp) via `ask_cmdr_accept_consent`; the rail reads it with `ask_cmdr_consent_status` on open. The gate copy is
+    `askCmdr.consent.*`, human-reviewed (principle 6) and shared verbatim with the settings section's disclosure.
+    Nothing is sent to a provider until `accepted === true` for the CURRENT copy version. "Not now" closes the rail;
+    accepting re-runs `openRail` to bootstrap history + focus the composer.
+- **Cost footer** (`AskCmdrCostFooter.svelte` + pure `ask-cmdr-cost.ts`): the active thread's cumulative tokens + cost,
+  refetched (`ask_cmdr_conversation_cost`) when the thread changes or a turn finishes streaming. Honest miss-path: a
+  local-only thread reads "free, on-device", an unpriced model reads "cost unknown", a priced thread shows "about
+  {amount}" — never a silent $0. Hidden until a metered turn exists.
+- **Settings section** (`settings/sections/AskCmdrSection.svelte`, top-level `Ask Cmdr`): the enable toggle (drives the
+  same consent accept/revoke — enable state is consent, NOT a settings boolean), the "what Ask Cmdr sends" disclosure
+  (same copy as the gate), the provider hint (reads `ai.provider`) + the interactive-model row
+  (`askCmdr.interactiveModel`), and the per-day spend rollup (`ask_cmdr_cost_summary`). The interactive slot picks the
+  MODEL only; provider/keys stay in Settings › AI.
+
 ## i18n
 
 Copy lives in `intl/messages/en/askCmdr.json` (`askCmdr.*`, including the M7 `askCmdr.sessions.*`,
-`askCmdr.composer.attach`/`dropHint`, `askCmdr.attachment.*`, and `askCmdr.loadEarlier` keys) + the command label in
-`commands.json` (`commands.askCmdrToggle.*`), each with an `@key` translator description. English-only; the other nine
-locales are M8 (so `desktop-i18n-coverage` reports the gap until then). Tool + error labels are literal-keyed records in
-`ask-cmdr-labels.ts` (a computed prefix would trip the unused-key check).
+`askCmdr.composer.attach`/`dropHint`, `askCmdr.attachment.*`, `askCmdr.loadEarlier`, and the M8 `askCmdr.consent.*` +
+`askCmdr.cost.*` keys), the settings copy in `settings.json` (`settings.askCmdr.*`, `settings.section.askCmdr`), and the
+command label in `commands.json` (`commands.askCmdrToggle.*`), each with an `@key` translator description. Translated
+across all 10 locales in M8, so `desktop-i18n-coverage` is green. The name and the consent copy are the re-translation
+surface if David adjusts the product calls. Tool + error labels are literal-keyed records in `ask-cmdr-labels.ts` (a
+computed prefix would trip the unused-key check).
 
 ## Decisions
 

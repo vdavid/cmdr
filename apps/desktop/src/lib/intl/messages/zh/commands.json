@@ -91,6 +91,15 @@
   "@commands.logOperationLog.description": {
     "sourceHash": "ea2d082"
   },
+  "commands.askCmdrToggle.label": "Ask Cmdr",
+  "@commands.askCmdrToggle.label": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name, kept verbatim across the whole zh catalog per the @key description (\"keep it as-is\")."
+  },
+  "commands.askCmdrToggle.description": "和 AI 聊聊你的文件、驱动器和历史记录",
+  "@commands.askCmdrToggle.description": {
+    "sourceHash": "c520468"
+  },
   "commands.feedbackSend.label": "发送反馈",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

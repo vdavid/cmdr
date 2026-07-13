@@ -79,7 +79,7 @@ export async function installComposerDrop(
   try {
     const { getCurrentWebview } = await import('@tauri-apps/api/webview')
     return await getCurrentWebview().onDragDropEvent((event) => {
-      void handleDragDropEvent(event.payload as DragDropPayload, handlers)
+      void handleDragDropEvent(event.payload, handlers)
     })
   } catch {
     return () => {}

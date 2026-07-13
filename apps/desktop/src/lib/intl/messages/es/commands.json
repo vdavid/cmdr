@@ -91,6 +91,15 @@
   "@commands.logOperationLog.description": {
     "sourceHash": "ea2d082"
   },
+  "commands.askCmdrToggle.label": "Ask Cmdr",
+  "@commands.askCmdrToggle.label": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Nombre del producto; se mantiene igual en todos los idiomas, tal y como indica su descripción en el catálogo en inglés."
+  },
+  "commands.askCmdrToggle.description": "Chatea con una IA sobre tus archivos, unidades e historial",
+  "@commands.askCmdrToggle.description": {
+    "sourceHash": "c520468"
+  },
   "commands.feedbackSend.label": "Enviar comentarios",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

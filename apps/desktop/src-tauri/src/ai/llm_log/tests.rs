@@ -143,6 +143,7 @@ fn wait_for_files(session_dir: &Path, count: usize) -> Vec<String> {
             return names;
         }
         if Instant::now() >= deadline {
+            // allowed-pluralize-noun: test timeout panic; count is a fixed test expectation (never 1 in practice)
             panic!("timed out waiting for {count} files in {session_dir:?}; saw {names:?}");
         }
         std::thread::sleep(Duration::from_millis(10));

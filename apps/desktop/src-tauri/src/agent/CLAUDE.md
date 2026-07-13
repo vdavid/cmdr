@@ -18,6 +18,9 @@ surface, so later proactive slices (proposals, notifications) grow here too. Ful
   [`tools/CLAUDE.md`](tools/CLAUDE.md).
 - `chat/` (M5, here now): the chat runtime (`run_turn` + `ChatRuntime`, single-flight, budgets, cancellation, crash-safe
   persistence, the `AgentChatEvent` seam) and the pure context-assembly core. See [`chat/CLAUDE.md`](chat/CLAUDE.md).
+- `pricing.rs` (M8): the provisional per-model price table (USD per million tokens, Tier-1 defaults). Local ⇒ free +
+  priced; a known cloud model ⇒ estimated + priced; an unknown cloud model ⇒ `priced = false` (cost shown "unknown",
+  never a silent $0). **Prices drift** — re-verify at release. The runtime's `meter_cost` calls `price_call`.
 
 ## Must-knows
 
@@ -31,8 +34,18 @@ surface, so later proactive slices (proposals, notifications) grow here too. Ful
   `attachments: Vec<AttachmentRef>` folded into the envelope as path + kind only), `ask_cmdr_cancel`,
   `ask_cmdr_get_conversation`, `ask_cmdr_list_conversations`, plus M7's `ask_cmdr_search_conversations` (FTS hits with a
   snippet), `ask_cmdr_rename_conversation`, `ask_cmdr_archive_conversation`, and the attachment resolvers
-  `ask_cmdr_selection_attachments` / `ask_cmdr_resolve_attachments` (kinds from `PaneStateStore`, no filesystem stat).
-  Register a new command in BOTH `ipc.rs` and `ipc_collectors.rs`. The interactive LLM is resolved from the existing
-  `ai/` config as an interim (M8 adds the dedicated slot). Frontend: [`src/lib/ask-cmdr/`](../../../src/lib/ask-cmdr/CLAUDE.md).
+  `ask_cmdr_selection_attachments` / `ask_cmdr_resolve_attachments` (kinds from `PaneStateStore`, no filesystem stat),
+  plus M8's consent + cost commands: `ask_cmdr_consent_status` / `ask_cmdr_accept_consent` / `ask_cmdr_revoke_consent`
+  and `ask_cmdr_conversation_cost` / `ask_cmdr_cost_summary`. Register a new command in BOTH `ipc.rs` and
+  `ipc_collectors.rs`. Frontend: [`src/lib/ask-cmdr/`](../../../src/lib/ask-cmdr/CLAUDE.md).
+- **The interactive slot (M8) layers a dedicated model over the shared `ai/` config.** `resolve_agent_llm` reads
+  `askCmdr.interactiveModel` fresh (via `crate::settings::load_ask_cmdr_interactive_model`) and passes it to
+  `ai::manager::resolve_backend_with_model`: provider on/off, keys, and base URLs stay single-sourced in `ai/` (D49); only
+  the model is slot-specific, so the bulk slot slots in later with no migration (D43). An empty override uses the `ai/`
+  model.
+- **Consent is the opt-in gate, stored in `main.db` (not a preference).** `CONSENT_COPY_VERSION` in `commands/agent.rs`
+  is the machine-checkable version of the `askCmdr.consent.*` copy; the rail sends NOTHING to a provider until the user
+  accepts the current version. **Bump `CONSENT_COPY_VERSION` whenever the consent copy changes materially**, so users
+  re-accept. The record (version + timestamp) lives in the `meta` table via `store::{get,set,clear}_consent`.
 
 Depth (milestone layout, the read-only rationale, how the slice relates to the full agent): [DETAILS.md](DETAILS.md).

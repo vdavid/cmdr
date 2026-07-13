@@ -320,6 +320,11 @@ export {
   archiveAskCmdrConversation,
   askCmdrSelectionAttachments,
   resolveAskCmdrAttachments,
+  askCmdrConsentStatus,
+  acceptAskCmdrConsent,
+  revokeAskCmdrConsent,
+  askCmdrConversationCost,
+  askCmdrCostSummary,
 } from './ask-cmdr'
 export type {
   AskCmdrStreamEvent,
@@ -333,6 +338,9 @@ export type {
   MessageBlock,
   AttachmentRef,
   AttachmentKindView,
+  AskCmdrConsentStatus,
+  ConversationCost,
+  CostSummary,
 } from './ask-cmdr'
 
 // Crash reporter

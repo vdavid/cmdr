@@ -703,3 +703,61 @@ From the Operation-log pass (`operationLog.json` + `commands.logOperationLog.*`;
 - "and N more items" (trailing list line) → `en nog {countText} onderdeel(en)` · matches the FAT32 pass "en nog
   {countText} bestand(en)" pattern ("nog" carries the more/additional sense) · high
 - No `sameAsSourceJustification` needed except `initiator.agent` ("Agent").
+
+From the Ask Cmdr pass (`askCmdr.json` full catalog + `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`,
+`settings.section.askCmdr`, `commands.askCmdrToggle.*`; mined `_ignored/i18n/nl/`, 2026-07-13):
+
+- chat (the Ask Cmdr conversation feature, noun) → `chat` (plural `chats`) · Microsoft terminology confirms `chat` as a
+  native NLD/BEL noun (alongside `chatgesprek`); Cmdr's own UI already names the feature "Chats"
+  (`askCmdr.sessions.title`/`askCmdr.threads.open`), matching how mainstream Dutch chat UIs (WhatsApp, Messenger) label
+  a conversation list · high. This supersedes Microsoft's generic `session`→`sessie` for this concept: Cmdr calls a
+  saved conversation a "chat" throughout (`newChat`, `sessions.rename`, …), so `sessie` is reserved for other, unrelated
+  technical "session" concepts, not this one.
+- thinking (AI reasoning status, `askCmdr.thinking`) → `Nadenken…` · bare infinitive + ellipsis, following the
+  established "'-ing' progress titles → bare infinitive" convention already used for single-word progress
+  (`Doorzoeken…`, `Verbinden…`) · tentative (no AI-assistant precedent in the pile; Microsoft's dictionary entry for
+  "thinking" is a mistranslated ProperNoun sense, not usable).
+- tool (an AI tool call, `askCmdr.tool.*`) → `hulpmiddel` · Microsoft terminology ("tool"→"hulpmiddel") · high
+- attachment (a file/folder attached to a question) → `bijlage` · Microsoft terminology ("attachment"→"bijlage") · high
+- attach (verb, attach a file/folder to a question) → `bijvoegen` · paired with the settled noun `bijlage` (same root,
+  as in "een bijlage bijvoegen aan een e-mail"); Microsoft's "attach"→"beschikbaar maken" is the wrong sense
+  (device/service attach, not a file attachment) · tentative
+- archive / unarchive (hide or restore a chat from the active list, Gmail-style — NOT the zip/compress sense) →
+  `Archiveer` (button, bare-stem imperative) / `Uit archief halen`; archived (badge/adjective) → `gearchiveerd` · no
+  pile source for this sense (Nautilus/Total Commander "archive" is compression, a different concept per the
+  four-gotchas rule); coined from the settled noun `archief` · tentative. `Uit archief halen` is a full verb phrase, not
+  a single-word imperative, for lack of a natural single Dutch reverse-of-archiveren verb.
+- (tool-step or time) budget / limit (`askCmdr.error.budgetExhausted`) → `limiet` · reuses the general NL word for a
+  cap, distinct from the FAT32-specific `beperking` (glossary above); the literal word "budget" never appears in the
+  rendered NL string · tentative
+- estimate (AI cost estimate, `settings.askCmdr.spend.disclaimer`) → `schatting` · NOT Microsoft's first hit "offerte"
+  (that's the business-quote sense — a mining trap-4 wrong sense); "schatting" is the plain generic sense · high
+- dashboard (provider's billing dashboard) → `dashboard` · Microsoft terminology (unchanged loanword) · high
+- spending (`settings.askCmdr.spend.title`) → `Uitgaven` · Microsoft terminology ("spending"→"uitgaven") · high
+- usage (token/AI usage) → `gebruik` · Microsoft terminology ("usage"→"gebruik") · high
+- on-device (cost readout "free, on-device") → `lokaal` · concise for the terse lowercase cost readout; matches Cmdr's
+  on-device/local-model framing elsewhere · tentative
+- Brand + possessive ("Cmdr's other AI features", "Cmdr's AI") → rephrase with the settled `van Cmdr` construction
+  (`de andere AI-functies van Cmdr`, `de AI van Cmdr`), reapplying the cross-file-reconciliation rule against a
+  dropped-brand genitive-s (`errorReporter.dialog.description` precedent above) · high
+- Ask Cmdr + suffix (`settings.askCmdr.interactiveModel.label` "Ask Cmdr model") → `Ask Cmdr-model` · hyphenates after
+  the full two-word brand name, same shape as the existing brand+hyphen+noun pattern (`macOS-versie`,
+  `SMB-/netwerkshares`) · tentative
+- `askCmdr.cost.tokens` ICU plural string renders byte-identical to English (`sameAsSourceJustification` recorded):
+  Dutch CLDR has the same one/other categories as English, and `token`/`tokens` is the settled kept AI loanword
+  (glossary above) · high
+
+REVIEW FLAGS (Ask Cmdr pass):
+
+- The seven AI tool-status `doing`/`done` pairs
+  (`askCmdr.tool.appState/listDir/largestDirs/importantFolders/ folderImportance/listVolumes/operationsList/operationsGet`)
+  have no reference-pile precedent — these are AI-assistant tool-call status lines, a domain none of the five file
+  managers or macOS/Microsoft cover. Rendered as present-tense-no-subject for `doing` (e.g. "Controleert wat je
+  bekijkt") and past-participle-led for `done` (e.g. "Bekeken wat je bekijkt", "Grootste mappen gevonden"), picking a
+  distinct verb per tool so the seven pairs stay disambiguated. Subjective/tentative as a set; flagged for native review
+  if one becomes available.
+- `askCmdr.sessions.unarchive` "Uit archief halen": no single-word Dutch imperative exists for "unarchive" the way
+  `Archiveer` does for "archive". Confirm this reads acceptably next to the shorter sibling buttons, or shorten if a
+  better idiom turns up.
+- `askCmdr.composer.dropHint` "Drop to attach" → "Zet hier neer om bij te voegen": no pile source for a drag-and-drop
+  invitation overlay; phrased from the settled `bijvoegen` verb. Subjective.

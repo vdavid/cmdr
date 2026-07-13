@@ -332,6 +332,12 @@ export interface SettingsValues {
   'ai.cloudProvider': string
   'ai.cloudProviderConfigs': string // JSON blob
 
+  // Ask Cmdr
+  // The interactive-slot model override (empty = use the shared `ai/` provider's model).
+  // Read fresh backend-side each send (`load_ask_cmdr_interactive_model`); a later bulk
+  // slot slots in as its own additive key with no migration (agent-spec D43).
+  'askCmdr.interactiveModel': string
+
   // Developer
   'developer.mcpEnabled': boolean
   'developer.mcpPort': number

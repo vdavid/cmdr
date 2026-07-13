@@ -488,3 +488,54 @@ confirms `Vorgang`).
   (neuter, so "weiteres"/"weitere" declines inside each branch, unlike the invariant feminine "weitere Datei(en)"
   glossary entry) · high.
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+## Ask Cmdr (2026-07-13)
+
+Terms settled while translating the Ask Cmdr chat rail (`askCmdr.*`, `settings.askCmdr.*`,
+`settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`): the read-only AI chat feature, its rail UI, tool status
+labels, error copy, sessions, attachments, the consent screen, and the cost footer.
+
+- chat (the AI conversation, not a file-op concept) → `Chat` (singular)/`Chats` (plural) · Microsoft terminology maps
+  chat/instant messaging → `Chat`; kept as the standard German loanword · high. `sameAsSourceJustification` recorded on
+  `askCmdr.threads.open` and `askCmdr.sessions.title` (both bare "Chats").
+- token (LLM usage-accounting unit) → `Token` (singular) / `Tokens` (plural) · confirmed via OpenAI's German help center
+  ("Was sind Tokens und wie zählt man sie?") and general German AI/dev usage: unlike native nouns ending in `-en`
+  (invariant plural), the LLM-token loanword takes the English plural `-s` in German technical writing · high
+- tool (an LLM/agent tool call) → `Werkzeug` · generic, user-facing fallback status (`askCmdr.tool.unknown.done`); not
+  the dev-facing "Tool" loanword, since this surfaces in the chat rail to end users · tentative — no direct source,
+  picked for approachability over the AI-dev-tooling loanword
+- attachment (a file/folder staged in the Ask Cmdr composer to ask about) → `Anhang` (plural `Anhänge`); attach (verb) →
+  `anhängen` · macOS AppKit ("RTF mit Anhängen"); standard DE email-attachment vocabulary · high. Distinct from the
+  Archive-browsing `Archiv`/`archivieren` sense
+- drop (drag-and-drop deposit, e.g. "Drop to attach") → `ablegen` · macOS SystemSettings ("Im Dock ablegen" = drop in
+  the Dock) · high
+- archive a chat / unarchive (hide/restore a conversation from the active list; distinct from the zip-archive sense) →
+  `archivieren` (verb) / `Archiviert` (badge); unarchive → `Archivierung aufheben` · Microsoft terminology
+  (archive→archivieren, archived→Archiviert); "aufheben" mirrors the glossary's own `deselect all → Auswahl aufheben`
+  pattern for reversing a state · high for archive/archiviert, tentative for "Archivierung aufheben" (no direct
+  unarchive source)
+- tool-call status lines (doing/done pairs, e.g. `askCmdr.tool.*`) → doing uses passive present
+  `{Objekt} wird/werden {Partizip}`; done drops `wird`/`werden` and keeps the bare `{Objekt} {Partizip}` · derived from
+  the app's existing progress-line convention (`Wird durchsucht`, `Wird kopiert`) and the participle-final summary-line
+  pattern (`{items} kopiert`) · high. Article/possessive presence mirrors the English source exactly (`a folder` →
+  `Ein Ordner`, `your drives` → `Deine Laufwerke`) so doing/done stay parallel.
+- reply (an Ask Cmdr assistant reply, distinct from email "reply") → `Antwort`; "didn't finish" (a reply that stopped
+  mid-stream) → reuses the settled lifecycle-chip term `nicht abgeschlossen` (`operationLog.*`) · high
+- provider-side generic failure ("Something went wrong on the provider's side") →
+  `Beim {Anbieter} ist etwas schiefgelaufen` · reuses the settled calm-rephrase pattern from the update-check error
+  toast · high
+- rate-limited/out-of-quota (AI provider) → `ist ausgelastet` (busy) / `Kontingent ist ausgeschöpft` (quota exhausted) ·
+  aligned with the existing `ai.translateError.rateLimited.*` strings (same concept, already shipped) · high
+- API key rejected ("didn't accept your key") → `hat deinen API-Schlüssel abgelehnt` · aligned with the existing
+  `ai.translateError.authFailed.title` ("wurde abgelehnt") for one term across the app · high
+- budget/step limit exhausted (a single answer's tool-step or time budget) → `Limit erreicht` · aligned with the
+  existing `Tab-Limit erreicht` pattern (`commands.handler.tabLimitReached` / `fileExplorer.tabs.limitReached`) · high
+- on-device / free (local-model cost readout, `askCmdr.cost.free`) → `lokal` · aligned with the existing `Lokales LLM`
+  provider-option translation (`settings.ai.provider.opt.local`) · high
+- consent/opt-in screen tone → warm second-person imperative headline ("Sprich mit Cmdr über deine Dateien"), calm
+  declarative body; "it can't: there's no tool that reads them" → `Das kann es auch gar nicht: …` (emphatic negation,
+  not a literal capability statement) · product voice, no direct source · tentative
+- Ask Cmdr model / Ask Cmdr-Modell (settings field, brand+native-noun compound) → hyphenated `Ask Cmdr-Modell` ·
+  standard DE compounding rule for a multi-word loanword + native noun (parallel to `iPhone-App`) · high
+- "Same as Cmdr's AI" (empty-field placeholder) → `Wie die KI von Cmdr` · analytic genitive per the glossary's "don't
+  decline Cmdr to Cmdrs" rule, not `Cmdrs KI` · high

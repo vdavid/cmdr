@@ -446,6 +446,11 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		// Canonical "we're under E2E" marker; soft test hooks gate on this.
 		// See docs/testing.md § "E2E env-var hooks" and src-tauri/src/test_mode.rs.
 		"CMDR_E2E_MODE=1",
+		// Drive Ask Cmdr's send path through the deterministic scripted fake LLM
+		// (commands/agent.rs::resolve_agent_llm gates on this), so ask-cmdr.spec.ts can
+		// assert send-and-render with no provider. It MUST live on the APP process env:
+		// resolve_agent_llm runs in the app, not the Playwright runner.
+		"CMDR_E2E_ASK_CMDR_FAKE=1",
 	)
 	// Only the MTP shard registers the virtual MTP device. Non-MTP shards skip
 	// the startup wipe-and-recreate of the shared backing dir

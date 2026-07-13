@@ -989,6 +989,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.logLlmCalls.label": "Registrar chamadas do modelo de IA",
+  "@settings.advanced.logLlmCalls.label": {
+    "sourceHash": "f865b3e"
+  },
+  "settings.advanced.logLlmCalls.description": "Salva cada solicitação e resposta de IA em uma pasta local (llm-logs) para depuração. Esses arquivos ficam no seu Mac e incluem os nomes e caminhos de arquivo que o Cmdr envia ao seu provedor.",
+  "@settings.advanced.logLlmCalls.description": {
+    "sourceHash": "86b3d34"
+  },
   "settings.advanced.serviceResolveTimeout.label": "Tempo limite de resolução de serviço",
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
@@ -1148,6 +1156,75 @@
   "settings.section.ai": "IA",
   "@settings.section.ai": {
     "sourceHash": "11fb682"
+  },
+  "settings.section.askCmdr": "Ask Cmdr",
+  "@settings.section.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (the Ask Cmdr chat rail); kept verbatim in every locale (do-not-translate list)."
+  },
+  "settings.askCmdr.intro": "Converse com uma IA sobre seus arquivos, discos e histórico. O Ask Cmdr é somente leitura: ele lê nomes, caminhos e tamanhos para responder, e nunca muda nada.",
+  "@settings.askCmdr.intro": {
+    "sourceHash": "124b2d5"
+  },
+  "settings.askCmdr.status.on": "O Ask Cmdr está ativado",
+  "@settings.askCmdr.status.on": {
+    "sourceHash": "1003ff7"
+  },
+  "settings.askCmdr.status.off": "O Ask Cmdr está desativado",
+  "@settings.askCmdr.status.off": {
+    "sourceHash": "0420c9a"
+  },
+  "settings.askCmdr.status.onSince": "Ativado desde {date}",
+  "@settings.askCmdr.status.onSince": {
+    "sourceHash": "2f573fd"
+  },
+  "settings.askCmdr.turnOn": "Ativar o Ask Cmdr",
+  "@settings.askCmdr.turnOn": {
+    "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnOff": "Desativar o Ask Cmdr",
+  "@settings.askCmdr.turnOff": {
+    "sourceHash": "eb03374"
+  },
+  "settings.askCmdr.disclosure.title": "O que o Ask Cmdr envia",
+  "@settings.askCmdr.disclosure.title": {
+    "sourceHash": "8ccd3b9"
+  },
+  "settings.askCmdr.provider.title": "Provedor e modelo",
+  "@settings.askCmdr.provider.title": {
+    "sourceHash": "b9fdc88"
+  },
+  "settings.askCmdr.provider.shared": "O Ask Cmdr usa o provedor de IA e a chave que você configurou em Ajustes › IA ({provider}).",
+  "@settings.askCmdr.provider.shared": {
+    "sourceHash": "c84fd32"
+  },
+  "settings.askCmdr.provider.off": "Ative um provedor de IA em Ajustes › IA para usar o Ask Cmdr.",
+  "@settings.askCmdr.provider.off": {
+    "sourceHash": "8b378ae"
+  },
+  "settings.askCmdr.interactiveModel.label": "Modelo do Ask Cmdr",
+  "@settings.askCmdr.interactiveModel.label": {
+    "sourceHash": "194255a"
+  },
+  "settings.askCmdr.interactiveModel.description": "O modelo com o qual o Ask Cmdr conversa. Deixe em branco para usar o mesmo modelo dos outros recursos de IA do Cmdr. Exemplo: claude-sonnet-4-5",
+  "@settings.askCmdr.interactiveModel.description": {
+    "sourceHash": "e3f64a5"
+  },
+  "settings.askCmdr.interactiveModel.placeholder": "Igual à IA do Cmdr",
+  "@settings.askCmdr.interactiveModel.placeholder": {
+    "sourceHash": "2631f3d"
+  },
+  "settings.askCmdr.spend.title": "Gastos",
+  "@settings.askCmdr.spend.title": {
+    "sourceHash": "c2c7ae2"
+  },
+  "settings.askCmdr.spend.empty": "Ainda sem uso. Seu uso de tokens e custo estimado vão aparecer aqui.",
+  "@settings.askCmdr.spend.empty": {
+    "sourceHash": "baaf9d6"
+  },
+  "settings.askCmdr.spend.disclaimer": "Essas são estimativas. Seu provedor cobra você diretamente, então confira o painel dele para o valor exato.",
+  "@settings.askCmdr.spend.disclaimer": {
+    "sourceHash": "81fd190"
   },
   "settings.section.fileSystems": "Sistemas de arquivos",
   "@settings.section.fileSystems": {

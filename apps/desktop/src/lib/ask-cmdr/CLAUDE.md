@@ -18,6 +18,8 @@ E2E path, layout, decisions): [DETAILS.md](DETAILS.md).
   thread item, one collapsible tool line, the input (with attach button + drop target), one attachment chip.
 - `ask-cmdr-markdown.ts`: the XSS boundary (escape + snarkdown). `ask-cmdr-labels.ts`: typed enum → localized string
   maps. `ask-cmdr-drop.ts`: the native-webview drop target. `ask-cmdr-attachments.ts`: pure chip helpers.
+- `ask-cmdr-consent.svelte.ts`: the opt-in gate state + refresh/accept/revoke (shared by `AskCmdrConsent.svelte` and the
+  settings section). `ask-cmdr-cost.ts`: pure cost-format helpers for `AskCmdrCostFooter.svelte`.
 
 ## Must-knows
 
@@ -27,6 +29,9 @@ E2E path, layout, decisions): [DETAILS.md](DETAILS.md).
   (Svelte auto-escapes), NEVER `{@html}`. `escapeForMarkdownLite` escapes only `& < > [ ]` (kills raw HTML + links) and
   keeps
   `* _ \`` so markdown-lite still renders; don't swap in `errors/markdown-escape.ts`(it escapes the formatting chars too, so nothing renders). Pinned by`ask-cmdr-markdown.test.ts`.
+- **The rail gates on consent; it sends NOTHING until the user opts in.** `openRail` refreshes `consentState`: `false`
+  shows `AskCmdrConsent.svelte` (the §12 copy), `true` shows the chat, `null` shows neither (no flash). `AskCmdrSection`
+  is the other accept/revoke surface. Don't render the composer/thread outside the `consented` branch.
 - **The rail is a THIRD focus region via a parallel flag.** `explorerState.getRailFocused()` / `setRailFocused()` is a
   boolean ALONGSIDE the `'left'|'right'` `focusedPane` union — never widen that union. The rail is NON-modal: do NOT add
   it to `isModalDialogOpen()` in `+page.svelte` (that would suppress every shortcut while it's open). Opening focuses

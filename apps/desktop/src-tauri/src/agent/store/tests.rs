@@ -185,3 +185,89 @@ fn agent_role_tokens_round_trip_and_are_unique() {
     ];
     assert_token_round_trip(&roles, |r| r.as_token(), AgentRole::from_token);
 }
+
+/// Consent round-trips through the `meta` table: absent → recorded (version + timestamp) →
+/// cleared. A partial/absent record reads as no consent, so the gate stays closed.
+#[test]
+fn consent_round_trips() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let store = AgentStore::open(&main_db_path(dir.path())).expect("open");
+    let conn = store.conn();
+
+    assert!(get_consent(conn).expect("read").is_none(), "no consent on a fresh DB");
+
+    set_consent(conn, 1, 1_760_000_000).expect("record consent");
+    let recorded = get_consent(conn).expect("read").expect("consent present");
+    assert_eq!(recorded.version, 1);
+    assert_eq!(recorded.at, 1_760_000_000);
+
+    // Re-accepting a newer copy version overwrites in place.
+    set_consent(conn, 2, 1_760_000_100).expect("re-record");
+    assert_eq!(get_consent(conn).expect("read").expect("present").version, 2);
+
+    clear_consent(conn).expect("clear");
+    assert!(
+        get_consent(conn).expect("read").is_none(),
+        "cleared consent reads absent"
+    );
+}
+
+/// The per-conversation cost total sums across days/models, ANDs the priced flag (any
+/// unpriced contribution ⇒ not fully priced), and lists the distinct providers — the
+/// honest miss-path the footer renders.
+#[test]
+fn conversation_cost_sums_and_flags_unpriced() {
+    use crate::agent::llm::types::ProviderTag;
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let store = AgentStore::open(&main_db_path(dir.path())).expect("open");
+    let conn = store.conn();
+    let id = create_conversation(conn, "t", 1_760_000_000, None).expect("create");
+
+    // A priced local turn (free) plus an unpriced cloud turn (unknown model).
+    record_cost(
+        conn,
+        &CostRecord {
+            day: "2026-07-13".to_string(),
+            conversation_id: id,
+            provider: ProviderTag::Local,
+            model: "local-model".to_string(),
+            prompt_tokens: 100,
+            completion_tokens: 50,
+            cost_micros: 0,
+            priced: true,
+        },
+    )
+    .expect("record local");
+    record_cost(
+        conn,
+        &CostRecord {
+            day: "2026-07-13".to_string(),
+            conversation_id: id,
+            provider: ProviderTag::OpenAi,
+            model: "some-unpriced-model".to_string(),
+            prompt_tokens: 200,
+            completion_tokens: 20,
+            cost_micros: 0,
+            priced: false,
+        },
+    )
+    .expect("record cloud");
+
+    let cost = conversation_cost(conn, id).expect("cost");
+    assert_eq!(cost.prompt_tokens, 300, "prompt tokens sum across turns");
+    assert_eq!(cost.completion_tokens, 70);
+    assert!(
+        !cost.fully_priced,
+        "an unpriced turn makes the whole thread not fully priced"
+    );
+    assert!(cost.providers.contains(&ProviderTag::Local));
+    assert!(cost.providers.contains(&ProviderTag::OpenAi));
+
+    // A thread with no metered turn reads zeroed and fully priced (nothing unknown yet).
+    let empty_id = create_conversation(conn, "empty", 1_760_000_000, None).expect("create empty");
+    let empty = conversation_cost(conn, empty_id).expect("cost");
+    assert_eq!(empty.prompt_tokens, 0);
+    assert!(empty.fully_priced);
+    assert!(empty.providers.is_empty());
+}

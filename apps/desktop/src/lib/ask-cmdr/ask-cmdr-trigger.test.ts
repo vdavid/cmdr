@@ -9,9 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AskCmdrStreamEvent } from '$lib/tauri-commands'
 
 const sendMock =
-  vi.fn<
-    (c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>
-  >()
+  vi.fn<(c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) => Promise<number>>()
 const cancelMock = vi.fn<(id: number) => Promise<void>>()
 const listMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
 const getMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
@@ -34,6 +32,13 @@ vi.mock('$lib/logging/logger', () => ({
 }))
 vi.mock('$lib/file-explorer/pane/explorer-state.svelte', () => ({
   explorerState: { setRailFocused: vi.fn() },
+}))
+// Consent is granted for these tests, so `openRail` proceeds past the gate to bootstrap.
+vi.mock('./ask-cmdr-consent.svelte', () => ({
+  consentState: { accepted: true, acceptedAt: null },
+  refreshConsent: vi.fn(() => Promise.resolve()),
+  acceptConsent: vi.fn(() => Promise.resolve(true)),
+  revokeConsent: vi.fn(() => Promise.resolve()),
 }))
 
 import {
@@ -168,7 +173,15 @@ describe('openRail bootstrap + newChat + hydrate', () => {
       conversation: conversationRow(9),
       totalMessages: 3,
       messages: [
-        { id: 1, seq: 0, role: 'user', blocks: [{ type: 'text', text: 'hi' }], promptTokens: null, completionTokens: null, createdAt: 0 },
+        {
+          id: 1,
+          seq: 0,
+          role: 'user',
+          blocks: [{ type: 'text', text: 'hi' }],
+          promptTokens: null,
+          completionTokens: null,
+          createdAt: 0,
+        },
         {
           id: 2,
           seq: 1,
@@ -181,7 +194,15 @@ describe('openRail bootstrap + newChat + hydrate', () => {
           completionTokens: null,
           createdAt: 0,
         },
-        { id: 3, seq: 2, role: 'tool', blocks: [{ type: 'toolResult', callId: 'c1', ok: true, elided: false }], promptTokens: null, completionTokens: null, createdAt: 0 },
+        {
+          id: 3,
+          seq: 2,
+          role: 'tool',
+          blocks: [{ type: 'toolResult', callId: 'c1', ok: true, elided: false }],
+          promptTokens: null,
+          completionTokens: null,
+          createdAt: 0,
+        },
       ],
     })
     await openRail()

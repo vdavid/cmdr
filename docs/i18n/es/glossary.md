@@ -575,3 +575,64 @@ Settled while translating the Compress feature:
 - **initiator provenance labels → Tú / Cliente de IA / Agente** · "You"→"Tú" (direct-address, no gendered noun); "AI
   client"→"Cliente de IA" (AI→IA, glossary); "Agent"→"Agente" · high
 - No `sameAsSourceJustification` needed: every value differs from English.
+
+### Settled during the Ask Cmdr pass (`askCmdr.json` + `settings.askCmdr.*`/`settings.advanced.logLlmCalls.*`/
+
+`settings.section.askCmdr` + `commands.askCmdrToggle.*`; read-only AI chat rail: rail UI, tool-call labels, error copy,
+sessions, attachments, consent screen, cost footer, settings section; macOS AppKit/Finder + MS terminology greps,
+2026-07-13)
+
+- **chat (noun) → chat** · not in the pile (no chat feature in any of the five file managers or in Apple's macOS bundles
+  here); kept as the settled Spanish tech loanword (RAE-recognized, universal in WhatsApp/Slack/Teams-style Spanish UI:
+  "chat", plural "chats"). `askCmdr.threads.open`/`askCmdr.sessions.title` = "Chats" is genuinely identical to the
+  English value for this reason, so both carry `sameAsSourceJustification` rather than a forced re-wording · tentative
+  (no first-party source, but the loanword is uncontroversial)
+- **message → mensaje** · MS terminology ("message"→"mensaje", id 79920/342318, all regions incl. ESP/419) · high
+- **stop (button, halts an in-progress action) → Detener** · macOS AppKit FunctionKeyNames ("Stop"→"Detener") · high
+- **attach (verb, include a file with a message) → adjuntar**; **attachment (noun) → adjunto** · MS terminology
+  ("attach"→"adjuntar", id 16016/16017; "attachment"→"adjunto", id 16067/1815092), the message-attachment sense (not the
+  disk-image "attach"→"exponer" sense, id 1080693/1080066, which is a different concept) · high
+- **archive (verb, move a chat out of the active list, no delete) → archivar**; **archived → Archivado** · MS
+  terminology, the move-to-storage sense ("archive"→"archivar", id 14239/2699136/1250398 across three separate entries;
+  "Archived"→"Archivado", id 2110499/2265410). Distinct from the file-archive noun `archivo comprimido` (glossary,
+  archive-browsing pass) — this is the chat-list action, not a zip · high
+- **unarchive → Desarchivar** · composed; no direct pile hit, but "des-" is the established Spanish antonym prefix
+  already used across the catalog (desactivar, desconectar, desbloquear) · tentative
+- **quota → cuota** · MS terminology ("quota"→"cuota", id 1638643/1724756, all regions incl. ESP/419) · high
+- **usage (spend/usage sense, not disk "utilización") → uso** · chosen over MS terminology's formal "utilización" (id
+  607526/773199, mass-noun register); "uso" is the shorter, more natural word Cmdr's UI voice prefers and matches how
+  macOS/iOS commonly label per-feature usage. `settings.askCmdr.spend.title` = "Spending" → **Gasto** (the money-spent
+  framing, distinct from `askCmdr.cost.label` "This chat's usage" → "El uso de este chat", which uses "uso" for the
+  token/usage sense) · tentative (usage), high (quota)
+- **on-device (processing stays local, never leaves the Mac) → en el dispositivo** · macOS Finder ("Se conservará en el
+  dispositivo", AXBADGE12/NE88.3.2, iCloud-optimize-storage sense, same "stays local" concept) · high
+- **cost/coste → coste** (NOT "costo") · the `es` catalog already uses "coste" throughout (`onboarding.json` descCost,
+  networking desc); peninsular spelling, kept for catalog consistency even though the style guide's
+  LatAm-safe-vocabulary recommendation would lean "costo" — flag if David ever confirms a LatAm-primary audience · high
+  (consistency), tentative (regional choice)
+- **token (LLM unit of text, not the MS "security token" sense) → token / tokens** · kept as the industry-standard
+  loanword; no macOS/MS/file-manager source covers the LLM sense (MS's only "token" hits are the security-credential
+  sense, a different concept) — matches how Spanish-language AI products (ChatGPT, Claude apps) render it · tentative
+- **"Not now" (decline/dismiss button) → Ahora no** · macOS AppKit Document ("Not Now"→"Ahora no") · high
+- **"Try again?" (inline question, not a button) → ¿Lo intentas de nuevo?** · REAFFIRMS the dominant catalog pattern (5
+  existing hits: `commands.handler.favoriteAddFailed`, `feedback.dialog.softFailure`,
+  `onboarding.stepBeta.signup.failure`, `queryUi.dialog.aiTranslateFailedToast`) over the older, less common
+  "¿Reintentar?" (2 hits in `fileExplorer.json`) · high (consistency-settled)
+- **tool-call status lines (doing/done pairs, no subject) → gerund for "doing", impersonal "Se + preterite" for "done"**
+  · the gerund-no-subject form reuses the settled `queue.row.label` progress-arm pattern (Copiando, Renombrando, and its
+  literal `other` fallback "Trabajando" — reused verbatim for `askCmdr.tool.unknown.doing` "Working"); the past-tense
+  "Se + preterite" form reuses the settled operation-log summary pattern ("Se copió", "Se encontraron", singular/plural
+  verb agreement with the object). Applied across all seven `askCmdr.tool.*` pairs (appState, listDir, largestDirs,
+  importantFolders, folderImportance, listVolumes, operationsList, operationsGet) · high (pattern), tentative (the
+  specific verb choices: comprobar for "check", buscar for "find/search", consultar/ revisar for "look at")
+- **"in settings"/"in Advanced settings" (generic pointer to the app's own Settings window, lowercase in English) → en
+  Ajustes / en Ajustes avanzados** (capitalized) · REAFFIRMS the dominant catalog pattern (`onboarding.json`, `ai.json`,
+  `crashReporter.json`, `whatsNew.json` all capitalize "Ajustes" even when the English source is lowercase generic
+  "settings") · high (consistency-settled)
+- **"Settings › AI" (settings cross-reference with the explicit › separator)** · kept the `›` character exactly as the
+  en `@key` describes it ("a right-pointing angle separating the settings path"), rather than substituting the plain `>`
+  used in older `ai.json`/`crashReporter.json` cross-references — the en source deliberately calls out this specific
+  character for this key, so the translation preserves it verbatim · high
+- No `sameAsSourceJustification` needed except `askCmdr.title`, `commands.askCmdrToggle.label`,
+  `settings.section.askCmdr` (all "Ask Cmdr", the kept product name) and `askCmdr.threads.open`/
+  `askCmdr.sessions.title` (both "Chats", the settled chat loanword).

@@ -1,0 +1,311 @@
+{
+  "askCmdr.title": "Ask Cmdr",
+  "@askCmdr.title": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (Ask Cmdr); kept verbatim in every locale per the do-not-translate rule."
+  },
+  "askCmdr.close": "Đóng Ask Cmdr",
+  "@askCmdr.close": {
+    "sourceHash": "d34225d"
+  },
+  "askCmdr.newChat": "Trò chuyện mới",
+  "@askCmdr.newChat": {
+    "sourceHash": "db18382"
+  },
+  "askCmdr.empty.title": "Hỏi về tệp của bạn",
+  "@askCmdr.empty.title": {
+    "sourceHash": "b2251fc"
+  },
+  "askCmdr.empty.hint": "Cmdr có thể xem những gì bạn đang duyệt, ổ đĩa và lịch sử thao tác của bạn để trả lời. Cmdr chỉ đọc tên, đường dẫn và kích thước, không bao giờ đọc nội dung tệp.",
+  "@askCmdr.empty.hint": {
+    "sourceHash": "6ccad75"
+  },
+  "askCmdr.composer.placeholder": "Hỏi về tệp của bạn…",
+  "@askCmdr.composer.placeholder": {
+    "sourceHash": "77e2636"
+  },
+  "askCmdr.composer.send": "Gửi tin nhắn",
+  "@askCmdr.composer.send": {
+    "sourceHash": "93a26b1"
+  },
+  "askCmdr.composer.stop": "Dừng",
+  "@askCmdr.composer.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "askCmdr.thinking": "Đang suy nghĩ…",
+  "@askCmdr.thinking": {
+    "sourceHash": "a02f1ce"
+  },
+  "askCmdr.softCap.message": "Cuộc trò chuyện này đang dài dần. Một cuộc trò chuyện mới sẽ giúp câu trả lời nhanh và tập trung hơn.",
+  "@askCmdr.softCap.message": {
+    "sourceHash": "60d2c54"
+  },
+  "askCmdr.softCap.action": "Bắt đầu trò chuyện mới",
+  "@askCmdr.softCap.action": {
+    "sourceHash": "677d4c2"
+  },
+  "askCmdr.tool.appState.doing": "Đang kiểm tra những gì bạn đang xem",
+  "@askCmdr.tool.appState.doing": {
+    "sourceHash": "832e0cc"
+  },
+  "askCmdr.tool.appState.done": "Đã xem những gì bạn đang xem",
+  "@askCmdr.tool.appState.done": {
+    "sourceHash": "155621e"
+  },
+  "askCmdr.tool.listDir.doing": "Đang liệt kê một thư mục",
+  "@askCmdr.tool.listDir.doing": {
+    "sourceHash": "64aa697"
+  },
+  "askCmdr.tool.listDir.done": "Đã liệt kê một thư mục",
+  "@askCmdr.tool.listDir.done": {
+    "sourceHash": "5746fef"
+  },
+  "askCmdr.tool.largestDirs.doing": "Đang tìm các thư mục lớn nhất",
+  "@askCmdr.tool.largestDirs.doing": {
+    "sourceHash": "c5f2cc0"
+  },
+  "askCmdr.tool.largestDirs.done": "Đã tìm thấy các thư mục lớn nhất",
+  "@askCmdr.tool.largestDirs.done": {
+    "sourceHash": "a2f3de3"
+  },
+  "askCmdr.tool.importantFolders.doing": "Đang tìm các thư mục quan trọng của bạn",
+  "@askCmdr.tool.importantFolders.doing": {
+    "sourceHash": "866aa38"
+  },
+  "askCmdr.tool.importantFolders.done": "Đã tìm thấy các thư mục quan trọng của bạn",
+  "@askCmdr.tool.importantFolders.done": {
+    "sourceHash": "1fd5db6"
+  },
+  "askCmdr.tool.folderImportance.doing": "Đang kiểm tra mức độ quan trọng của một thư mục",
+  "@askCmdr.tool.folderImportance.doing": {
+    "sourceHash": "594deff"
+  },
+  "askCmdr.tool.folderImportance.done": "Đã kiểm tra mức độ quan trọng của một thư mục",
+  "@askCmdr.tool.folderImportance.done": {
+    "sourceHash": "c7f397f"
+  },
+  "askCmdr.tool.listVolumes.doing": "Đang kiểm tra ổ đĩa của bạn",
+  "@askCmdr.tool.listVolumes.doing": {
+    "sourceHash": "2ed1808"
+  },
+  "askCmdr.tool.listVolumes.done": "Đã kiểm tra ổ đĩa của bạn",
+  "@askCmdr.tool.listVolumes.done": {
+    "sourceHash": "b13a0b3"
+  },
+  "askCmdr.tool.operationsList.doing": "Đang tìm kiếm trong lịch sử thao tác của bạn",
+  "@askCmdr.tool.operationsList.doing": {
+    "sourceHash": "4e8c41a"
+  },
+  "askCmdr.tool.operationsList.done": "Đã tìm kiếm trong lịch sử thao tác của bạn",
+  "@askCmdr.tool.operationsList.done": {
+    "sourceHash": "03021d5"
+  },
+  "askCmdr.tool.operationsGet.doing": "Đang tra cứu một thao tác",
+  "@askCmdr.tool.operationsGet.doing": {
+    "sourceHash": "10be41f"
+  },
+  "askCmdr.tool.operationsGet.done": "Đã tra cứu một thao tác",
+  "@askCmdr.tool.operationsGet.done": {
+    "sourceHash": "80fe1e9"
+  },
+  "askCmdr.tool.unknown.doing": "Đang xử lý",
+  "@askCmdr.tool.unknown.doing": {
+    "sourceHash": "a92f044"
+  },
+  "askCmdr.tool.unknown.done": "Đã dùng một công cụ",
+  "@askCmdr.tool.unknown.done": {
+    "sourceHash": "05cc2be"
+  },
+  "askCmdr.tool.refused": "Yêu cầu đó không khả dụng",
+  "@askCmdr.tool.refused": {
+    "sourceHash": "f5e6dcc"
+  },
+  "askCmdr.error.noKey": "Thêm khóa API của bạn trong cài đặt để bắt đầu trò chuyện.",
+  "@askCmdr.error.noKey": {
+    "sourceHash": "0a78f37"
+  },
+  "askCmdr.error.notConfigured": "Bật một nhà cung cấp AI trong cài đặt để dùng Ask Cmdr.",
+  "@askCmdr.error.notConfigured": {
+    "sourceHash": "b84c5f4"
+  },
+  "askCmdr.error.unavailable": "Không thể kết nối với nhà cung cấp AI. Kiểm tra kết nối của bạn rồi thử lại.",
+  "@askCmdr.error.unavailable": {
+    "sourceHash": "eb59e2b"
+  },
+  "askCmdr.error.timeout": "Việc này mất quá nhiều thời gian. Thử lại?",
+  "@askCmdr.error.timeout": {
+    "sourceHash": "22cd775"
+  },
+  "askCmdr.error.authFailed": "Nhà cung cấp không chấp nhận khóa API của bạn. Kiểm tra lại trong cài đặt.",
+  "@askCmdr.error.authFailed": {
+    "sourceHash": "a2302ca"
+  },
+  "askCmdr.error.rateLimited": "Nhà cung cấp đang bận hoặc bạn đã hết hạn ngạch. Thử lại sau một chút.",
+  "@askCmdr.error.rateLimited": {
+    "sourceHash": "7b441e9"
+  },
+  "askCmdr.error.budgetExhausted": "Câu hỏi này đã đạt giới hạn trước khi hoàn tất. Hãy thử hỏi điều gì đó cụ thể hơn.",
+  "@askCmdr.error.budgetExhausted": {
+    "sourceHash": "ea2beb2"
+  },
+  "askCmdr.error.unfinishedReply": "Câu trả lời chưa hoàn tất được. Thử lại?",
+  "@askCmdr.error.unfinishedReply": {
+    "sourceHash": "7cc85f5"
+  },
+  "askCmdr.error.provider": "Đã xảy ra sự cố phía nhà cung cấp. Thử lại?",
+  "@askCmdr.error.provider": {
+    "sourceHash": "d536cce"
+  },
+  "askCmdr.loadEarlier": "Tải tin nhắn trước đó",
+  "@askCmdr.loadEarlier": {
+    "sourceHash": "33fd46b"
+  },
+  "askCmdr.threads.open": "Trò chuyện",
+  "@askCmdr.threads.open": {
+    "sourceHash": "ef5b404"
+  },
+  "askCmdr.sessions.title": "Trò chuyện",
+  "@askCmdr.sessions.title": {
+    "sourceHash": "ef5b404"
+  },
+  "askCmdr.sessions.back": "Quay lại trò chuyện",
+  "@askCmdr.sessions.back": {
+    "sourceHash": "5978844"
+  },
+  "askCmdr.sessions.searchPlaceholder": "Tìm kiếm trò chuyện của bạn…",
+  "@askCmdr.sessions.searchPlaceholder": {
+    "sourceHash": "2de9074"
+  },
+  "askCmdr.sessions.searchLabel": "Tìm kiếm trò chuyện",
+  "@askCmdr.sessions.searchLabel": {
+    "sourceHash": "02a39c4"
+  },
+  "askCmdr.sessions.empty": "Chưa có cuộc trò chuyện nào",
+  "@askCmdr.sessions.empty": {
+    "sourceHash": "269208e"
+  },
+  "askCmdr.sessions.emptyArchived": "Chưa có cuộc trò chuyện nào được lưu trữ",
+  "@askCmdr.sessions.emptyArchived": {
+    "sourceHash": "272c9ab"
+  },
+  "askCmdr.sessions.noResults": "Không có cuộc trò chuyện nào khớp với tìm kiếm của bạn",
+  "@askCmdr.sessions.noResults": {
+    "sourceHash": "c53c411"
+  },
+  "askCmdr.sessions.showArchived": "Hiện mục đã lưu trữ",
+  "@askCmdr.sessions.showArchived": {
+    "sourceHash": "e9de9f2"
+  },
+  "askCmdr.sessions.hideArchived": "Ẩn mục đã lưu trữ",
+  "@askCmdr.sessions.hideArchived": {
+    "sourceHash": "dd1c793"
+  },
+  "askCmdr.sessions.loadMore": "Tải thêm",
+  "@askCmdr.sessions.loadMore": {
+    "sourceHash": "ac8991e"
+  },
+  "askCmdr.sessions.searching": "Đang tìm kiếm…",
+  "@askCmdr.sessions.searching": {
+    "sourceHash": "c31723a"
+  },
+  "askCmdr.sessions.rename": "Đổi tên",
+  "@askCmdr.sessions.rename": {
+    "sourceHash": "3064d79"
+  },
+  "askCmdr.sessions.renameLabel": "Tiêu đề trò chuyện",
+  "@askCmdr.sessions.renameLabel": {
+    "sourceHash": "17a3048"
+  },
+  "askCmdr.sessions.archive": "Lưu trữ",
+  "@askCmdr.sessions.archive": {
+    "sourceHash": "66f4804"
+  },
+  "askCmdr.sessions.unarchive": "Bỏ lưu trữ",
+  "@askCmdr.sessions.unarchive": {
+    "sourceHash": "f565318"
+  },
+  "askCmdr.sessions.archivedBadge": "Đã lưu trữ",
+  "@askCmdr.sessions.archivedBadge": {
+    "sourceHash": "bdb8650"
+  },
+  "askCmdr.composer.attach": "Hỏi về mục đã chọn",
+  "@askCmdr.composer.attach": {
+    "sourceHash": "3e812c7"
+  },
+  "askCmdr.composer.dropHint": "Thả để đính kèm",
+  "@askCmdr.composer.dropHint": {
+    "sourceHash": "34a7a63"
+  },
+  "askCmdr.attachment.remove": "Gỡ tệp đính kèm",
+  "@askCmdr.attachment.remove": {
+    "sourceHash": "595b066"
+  },
+  "askCmdr.consent.title": "Trò chuyện với Cmdr về tệp của bạn",
+  "@askCmdr.consent.title": {
+    "sourceHash": "59b4ca9"
+  },
+  "askCmdr.consent.intro": "Ask Cmdr gửi câu hỏi của bạn đến nhà cung cấp AI mà bạn chọn, dùng khóa API của riêng bạn. Đây là chính xác những gì rời khỏi Mac của bạn khi bạn trò chuyện:",
+  "@askCmdr.consent.intro": {
+    "sourceHash": "4366272"
+  },
+  "askCmdr.consent.item.messages": "Tin nhắn của bạn",
+  "@askCmdr.consent.item.messages": {
+    "sourceHash": "befc6e9"
+  },
+  "askCmdr.consent.item.names": "Tên và đường dẫn của các tệp và thư mục mà Cmdr xem để trả lời bạn",
+  "@askCmdr.consent.item.names": {
+    "sourceHash": "ce3259d"
+  },
+  "askCmdr.consent.item.sizes": "Kích thước và ngày tháng của chúng",
+  "@askCmdr.consent.item.sizes": {
+    "sourceHash": "2484530"
+  },
+  "askCmdr.consent.item.envelope": "Những gì bạn đang xem ngay bây giờ: thư mục hiện tại, con trỏ, mục đã chọn và các ổ đĩa đang kết nối",
+  "@askCmdr.consent.item.envelope": {
+    "sourceHash": "2e5a0ef"
+  },
+  "askCmdr.consent.item.attachments": "Bất kỳ tệp hoặc thư mục nào bạn đính kèm vào câu hỏi, chỉ theo tên và đường dẫn của nó",
+  "@askCmdr.consent.item.attachments": {
+    "sourceHash": "b9ad2af"
+  },
+  "askCmdr.consent.noContents": "Cmdr không bao giờ gửi nội dung tệp của bạn. Cmdr không thể: trong phiên bản này không có công cụ nào đọc chúng. Ask Cmdr chỉ xem và nói; không bao giờ thay đổi bất cứ điều gì.",
+  "@askCmdr.consent.noContents": {
+    "sourceHash": "0908765"
+  },
+  "askCmdr.consent.local": "Các cuộc trò chuyện của bạn ở lại trên Mac, trong một cơ sở dữ liệu cục bộ mà bạn có thể mở và đọc. Bạn chọn nhà cung cấp và mô hình, và bạn có thể xem chi phí của mỗi cuộc trò chuyện.",
+  "@askCmdr.consent.local": {
+    "sourceHash": "f7d4075"
+  },
+  "askCmdr.consent.logsNote": "Nếu bạn bật tính năng ghi nhật ký lệnh gọi LLM trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên Mac của bạn. Các nhật ký đó cũng chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.",
+  "@askCmdr.consent.logsNote": {
+    "sourceHash": "7e211fc"
+  },
+  "askCmdr.consent.accept": "Bật Ask Cmdr",
+  "@askCmdr.consent.accept": {
+    "sourceHash": "0d656c4"
+  },
+  "askCmdr.consent.decline": "Để sau",
+  "@askCmdr.consent.decline": {
+    "sourceHash": "a0e63d7"
+  },
+  "askCmdr.cost.tokens": "{countText} {count, plural, other {token}}",
+  "@askCmdr.cost.tokens": {
+    "sourceHash": "6718764"
+  },
+  "askCmdr.cost.free": "miễn phí, cục bộ",
+  "@askCmdr.cost.free": {
+    "sourceHash": "f04f869"
+  },
+  "askCmdr.cost.estimate": "khoảng {amount}",
+  "@askCmdr.cost.estimate": {
+    "sourceHash": "e448a4a"
+  },
+  "askCmdr.cost.unknown": "chi phí không rõ",
+  "@askCmdr.cost.unknown": {
+    "sourceHash": "d05144e"
+  },
+  "askCmdr.cost.label": "Mức sử dụng của cuộc trò chuyện này",
+  "@askCmdr.cost.label": {
+    "sourceHash": "3b0dd81"
+  }
+}

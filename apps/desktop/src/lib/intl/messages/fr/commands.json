@@ -91,6 +91,15 @@
   "@commands.logOperationLog.description": {
     "sourceHash": "ea2d082"
   },
+  "commands.askCmdrToggle.label": "Ask Cmdr",
+  "@commands.askCmdrToggle.label": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (\"Ask Cmdr\" is the feature's brand name); kept verbatim in every locale per the @key description."
+  },
+  "commands.askCmdrToggle.description": "Discutez avec une IA à propos de vos fichiers, disques et historique",
+  "@commands.askCmdrToggle.description": {
+    "sourceHash": "c520468"
+  },
   "commands.feedbackSend.label": "Envoyer un retour",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

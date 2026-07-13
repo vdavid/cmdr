@@ -15,6 +15,7 @@
 
 pub mod chat;
 pub mod llm;
+pub mod pricing;
 pub mod store;
 pub mod tools;
 pub mod types;

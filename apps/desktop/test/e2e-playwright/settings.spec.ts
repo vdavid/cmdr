@@ -61,6 +61,7 @@ test.describe('Settings page', () => {
       'File system watching',
       'Search',
       'AI',
+      'Ask Cmdr',
       'File systems',
       'SMB/Network shares',
       'MTP (Android/Kindle/cameras)',

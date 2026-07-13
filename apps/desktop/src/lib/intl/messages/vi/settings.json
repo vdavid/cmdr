@@ -983,6 +983,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.logLlmCalls.label": "Ghi nhật ký lệnh gọi mô hình AI",
+  "@settings.advanced.logLlmCalls.label": {
+    "sourceHash": "f865b3e"
+  },
+  "settings.advanced.logLlmCalls.description": "Lưu mỗi yêu cầu và phản hồi AI vào một thư mục cục bộ (llm-logs) để gỡ lỗi. Các tệp này ở lại trên Mac của bạn và bao gồm tên tệp và đường dẫn mà Cmdr gửi đến nhà cung cấp của bạn.",
+  "@settings.advanced.logLlmCalls.description": {
+    "sourceHash": "86b3d34"
+  },
   "settings.advanced.serviceResolveTimeout.label": "Thời gian chờ phân giải dịch vụ",
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
@@ -1143,6 +1151,75 @@
   "@settings.section.ai": {
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "'AI' kept verbatim in Vietnamese tech UI (glossary: AI -> AI, high). Section title."
+  },
+  "settings.section.askCmdr": "Ask Cmdr",
+  "@settings.section.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (Ask Cmdr); kept verbatim in every locale per the do-not-translate rule."
+  },
+  "settings.askCmdr.intro": "Trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn. Ask Cmdr chỉ đọc: đọc tên, đường dẫn và kích thước để trả lời, không bao giờ thay đổi bất cứ điều gì.",
+  "@settings.askCmdr.intro": {
+    "sourceHash": "124b2d5"
+  },
+  "settings.askCmdr.status.on": "Ask Cmdr đang bật",
+  "@settings.askCmdr.status.on": {
+    "sourceHash": "1003ff7"
+  },
+  "settings.askCmdr.status.off": "Ask Cmdr đang tắt",
+  "@settings.askCmdr.status.off": {
+    "sourceHash": "0420c9a"
+  },
+  "settings.askCmdr.status.onSince": "Đã bật từ {date}",
+  "@settings.askCmdr.status.onSince": {
+    "sourceHash": "2f573fd"
+  },
+  "settings.askCmdr.turnOn": "Bật Ask Cmdr",
+  "@settings.askCmdr.turnOn": {
+    "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnOff": "Tắt Ask Cmdr",
+  "@settings.askCmdr.turnOff": {
+    "sourceHash": "eb03374"
+  },
+  "settings.askCmdr.disclosure.title": "Những gì Ask Cmdr gửi đi",
+  "@settings.askCmdr.disclosure.title": {
+    "sourceHash": "8ccd3b9"
+  },
+  "settings.askCmdr.provider.title": "Nhà cung cấp và mô hình",
+  "@settings.askCmdr.provider.title": {
+    "sourceHash": "b9fdc88"
+  },
+  "settings.askCmdr.provider.shared": "Ask Cmdr dùng nhà cung cấp AI và khóa mà bạn đã thiết lập trong Cài đặt › AI ({provider}).",
+  "@settings.askCmdr.provider.shared": {
+    "sourceHash": "c84fd32"
+  },
+  "settings.askCmdr.provider.off": "Bật một nhà cung cấp AI trong Cài đặt › AI để dùng Ask Cmdr.",
+  "@settings.askCmdr.provider.off": {
+    "sourceHash": "8b378ae"
+  },
+  "settings.askCmdr.interactiveModel.label": "Mô hình Ask Cmdr",
+  "@settings.askCmdr.interactiveModel.label": {
+    "sourceHash": "194255a"
+  },
+  "settings.askCmdr.interactiveModel.description": "Mô hình mà Ask Cmdr trò chuyện cùng. Để trống để dùng chung mô hình với các tính năng AI khác của Cmdr. Ví dụ: claude-sonnet-4-5",
+  "@settings.askCmdr.interactiveModel.description": {
+    "sourceHash": "e3f64a5"
+  },
+  "settings.askCmdr.interactiveModel.placeholder": "Giống AI của Cmdr",
+  "@settings.askCmdr.interactiveModel.placeholder": {
+    "sourceHash": "2631f3d"
+  },
+  "settings.askCmdr.spend.title": "Chi tiêu",
+  "@settings.askCmdr.spend.title": {
+    "sourceHash": "c2c7ae2"
+  },
+  "settings.askCmdr.spend.empty": "Chưa có sử dụng nào. Lượng token dùng và chi phí ước tính của bạn sẽ hiện ở đây.",
+  "@settings.askCmdr.spend.empty": {
+    "sourceHash": "baaf9d6"
+  },
+  "settings.askCmdr.spend.disclaimer": "Đây chỉ là ước tính. Nhà cung cấp của bạn sẽ thanh toán trực tiếp với bạn, vì vậy hãy kiểm tra bảng thông tin của nhà cung cấp để biết số tiền chính xác.",
+  "@settings.askCmdr.spend.disclaimer": {
+    "sourceHash": "81fd190"
   },
   "settings.section.fileSystems": "Hệ thống tệp",
   "@settings.section.fileSystems": {

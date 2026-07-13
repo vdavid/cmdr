@@ -988,6 +988,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.logLlmCalls.label": "Logga AI-modellanrop",
+  "@settings.advanced.logLlmCalls.label": {
+    "sourceHash": "f865b3e"
+  },
+  "settings.advanced.logLlmCalls.description": "Spara varje AI-förfrågan och -svar i en lokal mapp (llm-logs) för felsökning. De här filerna stannar på din Mac och innehåller filnamnen och sökvägarna som Cmdr skickar till din leverantör.",
+  "@settings.advanced.logLlmCalls.description": {
+    "sourceHash": "86b3d34"
+  },
   "settings.advanced.serviceResolveTimeout.label": "Tidsgräns för tjänstuppslag",
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
@@ -1152,6 +1160,75 @@
   "@settings.section.ai": {
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "'AI' (artificial intelligence) is kept verbatim in Swedish; the abbreviation is identical (matches queryUi.recent.mode.ai)."
+  },
+  "settings.section.askCmdr": "Ask Cmdr",
+  "@settings.section.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name; kept verbatim in every locale (do-not-translate list)."
+  },
+  "settings.askCmdr.intro": "Chatta med en AI om dina filer, enheter och historik. Ask Cmdr är skrivskyddad: den läser namn, sökvägar och storlekar för att svara, och ändrar aldrig något.",
+  "@settings.askCmdr.intro": {
+    "sourceHash": "124b2d5"
+  },
+  "settings.askCmdr.status.on": "Ask Cmdr är på",
+  "@settings.askCmdr.status.on": {
+    "sourceHash": "1003ff7"
+  },
+  "settings.askCmdr.status.off": "Ask Cmdr är av",
+  "@settings.askCmdr.status.off": {
+    "sourceHash": "0420c9a"
+  },
+  "settings.askCmdr.status.onSince": "På sedan {date}",
+  "@settings.askCmdr.status.onSince": {
+    "sourceHash": "2f573fd"
+  },
+  "settings.askCmdr.turnOn": "Aktivera Ask Cmdr",
+  "@settings.askCmdr.turnOn": {
+    "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnOff": "Stäng av Ask Cmdr",
+  "@settings.askCmdr.turnOff": {
+    "sourceHash": "eb03374"
+  },
+  "settings.askCmdr.disclosure.title": "Vad Ask Cmdr skickar",
+  "@settings.askCmdr.disclosure.title": {
+    "sourceHash": "8ccd3b9"
+  },
+  "settings.askCmdr.provider.title": "Leverantör och modell",
+  "@settings.askCmdr.provider.title": {
+    "sourceHash": "b9fdc88"
+  },
+  "settings.askCmdr.provider.shared": "Ask Cmdr använder AI-leverantören och nyckeln du har konfigurerat i Inställningar › AI ({provider}).",
+  "@settings.askCmdr.provider.shared": {
+    "sourceHash": "c84fd32"
+  },
+  "settings.askCmdr.provider.off": "Aktivera en AI-leverantör i Inställningar › AI för att använda Ask Cmdr.",
+  "@settings.askCmdr.provider.off": {
+    "sourceHash": "8b378ae"
+  },
+  "settings.askCmdr.interactiveModel.label": "Ask Cmdr-modell",
+  "@settings.askCmdr.interactiveModel.label": {
+    "sourceHash": "194255a"
+  },
+  "settings.askCmdr.interactiveModel.description": "Modellen Ask Cmdr chattar med. Lämna tomt för att använda samma modell som Cmdrs andra AI-funktioner. Exempel: claude-sonnet-4-5",
+  "@settings.askCmdr.interactiveModel.description": {
+    "sourceHash": "e3f64a5"
+  },
+  "settings.askCmdr.interactiveModel.placeholder": "Samma som Cmdrs AI",
+  "@settings.askCmdr.interactiveModel.placeholder": {
+    "sourceHash": "2631f3d"
+  },
+  "settings.askCmdr.spend.title": "Utgifter",
+  "@settings.askCmdr.spend.title": {
+    "sourceHash": "c2c7ae2"
+  },
+  "settings.askCmdr.spend.empty": "Ingen användning än. Din tokenanvändning och uppskattade kostnad visas här.",
+  "@settings.askCmdr.spend.empty": {
+    "sourceHash": "baaf9d6"
+  },
+  "settings.askCmdr.spend.disclaimer": "Det här är uppskattningar. Din leverantör fakturerar dig direkt, så kontrollera din leverantörs instrumentpanel för det exakta beloppet.",
+  "@settings.askCmdr.spend.disclaimer": {
+    "sourceHash": "81fd190"
   },
   "settings.section.fileSystems": "Filsystem",
   "@settings.section.fileSystems": {

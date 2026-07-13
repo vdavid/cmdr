@@ -29,6 +29,7 @@ const SECTION_TITLE_KEY: Partial<Record<string, MessageKey>> = {
   'File system watching': 'settings.section.fileSystemWatching',
   Search: 'settings.section.search',
   AI: 'settings.section.ai',
+  'Ask Cmdr': 'settings.section.askCmdr',
   'File systems': 'settings.section.fileSystems',
   'SMB/Network shares': 'settings.section.smbNetworkShares',
   'MTP (Android/Kindle/cameras)': 'settings.section.mtp',

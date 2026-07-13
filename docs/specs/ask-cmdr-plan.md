@@ -583,36 +583,37 @@ Outcome pointer: §3 above / [`ask-cmdr-genai-spike.md`](ask-cmdr-genai-spike.md
 
 ### M9 — LLM call logging (the observability gateway)
 
-- **Requirement (David, verbatim intent)**: "what is it exactly that we sent to this LLM? Was it set up for success?
-  And what did it respond?" A structural, no-call-can-bypass-it log of every LLM request and response to local disk.
+- **Requirement (David, verbatim intent)**: "what is it exactly that we sent to this LLM? Was it set up for success? And
+  what did it respond?" A structural, no-call-can-bypass-it log of every LLM request and response to local disk.
 - **Choke point**: all LLM traffic flows through `AiBackend` (`ai/client.rs`) — the agent (via M1's `AgentLlm` genai
   impl) AND the existing one-shot features (folder suggestions, translate, NL search). The logger taps at the
   `AiBackend`/genai boundary so interception is structural: both the M5 runtime's calls and the legacy prompt-helpers
   get logged through one seam, and no code path can skip it.
 - **Capture fidelity — verbatim wire body is available and cheap (researched).** genai `=0.6.0-beta.19` exposes
-  `AdapterDispatcher::to_web_request_data(target, service_type, chat_req, options_set) -> WebRequestData { url, headers,
-  payload: Value }` as a **public** function, and `payload` is the **exact per-adapter wire JSON** genai sends — it is
-  the very function `exec_chat` / `exec_chat_stream` call internally (`client_impl.rs`), so reproducing it for logging
-  yields the byte-identical body (post-transform: strict-schema injection, thinking config, tool-call formatting) with
-  **no network call and no proxy**. So v1 logs the verbatim wire `payload`, and records `fidelity: "wire"` in metadata.
-  (The documented fallback — serialize the genai `ChatRequest` to JSON — stays noted for any future adapter where
+  `AdapterDispatcher::to_web_request_data(target, service_type, chat_req, options_set) -> WebRequestData { url, headers, payload: Value }`
+  as a **public** function, and `payload` is the **exact per-adapter wire JSON** genai sends — it is the very function
+  `exec_chat` / `exec_chat_stream` call internally (`client_impl.rs`), so reproducing it for logging yields the
+  byte-identical body (post-transform: strict-schema injection, thinking config, tool-call formatting) with **no network
+  call and no proxy**. So v1 logs the verbatim wire `payload`, and records `fidelity: "wire"` in metadata. (The
+  documented fallback — serialize the genai `ChatRequest` to JSON — stays noted for any future adapter where
   `to_web_request_data` can't be reached, marked `fidelity: "request_struct"`; it still carries the full assembled
-  prompt: system, tools, history, envelope.) **Redact the auth header**: `WebRequestData.headers` carries the user's
-  API key — strip/redact it before writing; the `payload` body itself contains no secret. Responses: log the full raw
+  prompt: system, tools, history, envelope.) **Redact the auth header**: `WebRequestData.headers` carries the user's API
+  key — strip/redact it before writing; the `payload` body itself contains no secret. Responses: log the full raw
   response body (genai's non-stream path parses `WebResponse { status, body: Value }`); for streams, log the assembled
   final response plus, optionally, the raw delta log.
-- **File layout** (David's design): `{app data dir}/llm-logs/{session-or-thread-id}/{NNN}_{request|response}_{slug}.json`
-  — `NNN` a three-digit zero-padded per-session counter; `slug` is **deterministic** (job type + a few sanitized words
-  of the latest user message), never LLM-generated. JSON files (chat APIs are JSON), with metadata embedded: ISO
-  timestamp, provider, model, adapter kind, token counts (when the provider returns usage), latency, stop reason, and
-  the `fidelity` marker. Borrow OpenTelemetry GenAI semantic-convention field names where they fit (`gen_ai.request.model`-style)
-  so external tooling can consume the files later, but **add no OTel dependency**.
-- **Setting**: `logLlmCalls` in Settings › Advanced; **default ON in dev builds, OFF in prod/release**; runtime-toggleable
-  without restart (re-read the setting per call, like the AI config's read-fresh pattern). **Failure-isolated**: a
-  logging error (disk full, permission) never breaks or delays the LLM call — log-and-continue, the call result is
-  unaffected.
-- **Privacy**: logs contain everything the provider saw (names, paths, envelope) — **local only, never transmitted**,
-  in the app data dir. One line in the consent/settings docs points at the folder.
+- **File layout** (David's design):
+  `{app data dir}/llm-logs/{session-or-thread-id}/{NNN}_{request|response}_{slug}.json` — `NNN` a three-digit
+  zero-padded per-session counter; `slug` is **deterministic** (job type + a few sanitized words of the latest user
+  message), never LLM-generated. JSON files (chat APIs are JSON), with metadata embedded: ISO timestamp, provider,
+  model, adapter kind, token counts (when the provider returns usage), latency, stop reason, and the `fidelity` marker.
+  Borrow OpenTelemetry GenAI semantic-convention field names where they fit (`gen_ai.request.model`-style) so external
+  tooling can consume the files later, but **add no OTel dependency**.
+- **Setting**: `logLlmCalls` in Settings › Advanced; **default ON in dev builds, OFF in prod/release**;
+  runtime-toggleable without restart (re-read the setting per call, like the AI config's read-fresh pattern).
+  **Failure-isolated**: a logging error (disk full, permission) never breaks or delays the LLM call — log-and-continue,
+  the call result is unaffected.
+- **Privacy**: logs contain everything the provider saw (names, paths, envelope) — **local only, never transmitted**, in
+  the app data dir. One line in the consent/settings docs points at the folder.
 - **Intention**: answer David's three questions for both the agent and the legacy AI features, and give the M8 live
   certification runs their natural debugging companion (dev-default-ON).
 - **TDD-first** (real red→green, the pure parts): path/slug/counter generation (deterministic slug from job type +
@@ -833,7 +834,26 @@ friendly, sentence case, no "just/simple", never "error"/"failed", and the spec 
   template when real sizes exist.
 - **Bulk model slot, summarize-on-overflow compaction, local slot beyond drop-in, content reading, external MCP servers,
   memory writes** — all explicitly deferred by spec §3; design the tool layer so external mounts could slot in later
-  behind per-server consent and the same access gating, but build none of it now.
+  behind per-server consent and the same access gating, but build none of it now. **The interactive slot shipped (M8)**
+  as `askCmdr.interactiveModel` layered over the shared `ai/` provider config; the bulk slot slots in beside it as its
+  own additive key (`askCmdr.bulkModel`), no migration.
+- **getcmdr.com needs two human-written Ask Cmdr additions before ship (website copy, principle 6 — NOT edited here).**
+  (1) The privacy page needs a paragraph matching the app's consent screen (names/paths/metadata + the app-state
+  envelope + attachments by reference, never file contents; chats local; optional local-only LLM logs). (2) The features
+  page (`apps/website/src/pages/features.astro`) needs an `ask-cmdr` bento entry: `feature-status.json` has carried the
+  `ask-cmdr` id since M6, so `website-build` / `analytics-injection` FAIL ("features page out of sync … Missing:
+  [ask-cmdr]") until a human writes the title + description. This is a PRE-EXISTING red since M6, surfaced by the full
+  check; left for David per the do-not-edit-website instruction. Re-translation surface if David changes the name or the
+  consent copy: the `askCmdr.consent.*` keys + `askCmdr.title` + `commands.askCmdrToggle.*` +
+  `settings.section.askCmdr`.
+- **Verify the per-model price table at release** (`agent/pricing.rs`). The Tier-1 prices (USD per million tokens) are
+  provisional and drift; re-check each provider's pricing page when certifying, and treat any model not in the table as
+  honestly unpriced (tokens shown, cost "unknown", never a silent $0) rather than padding the table with stale guesses.
+- **Five live cloud certification checks + the local-slot cert** — see §11 Q7. The local (llama-server) slot is
+  keys-free and is the one cert runnable now; the five cloud checks (Anthropic thinking-off ≥3-step loop, Anthropic
+  thinking-on 400, OpenAI-Responses reasoning degrade, Gemini parallel-call pairing, Gemini thoughtSignature loop,
+  OpenAI-direct strict-schema 400) stay pending real API keys. M9's on-disk `llm-logs/` are the inspection companion for
+  those runs.
 
 ## 14. Top risks for the reviewer to attack
 

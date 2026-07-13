@@ -15,6 +15,7 @@
 import { saveAppStatus } from '$lib/app-status-store'
 import { explorerState } from '$lib/file-explorer/pane/explorer-state.svelte'
 import { getAppLogger } from '$lib/logging/logger'
+import { consentState, refreshConsent } from './ask-cmdr-consent.svelte'
 import {
   cancelAskCmdr,
   getAskCmdrConversation,
@@ -111,12 +112,16 @@ export function hydrateRail(open: boolean, width: number): void {
   if (open) void openRail()
 }
 
-/** Open the rail, focus its composer, and bootstrap the most recent thread if empty. */
+/** Open the rail, focus its composer, and bootstrap the most recent thread if empty. Also
+ * refreshes the consent gate: the rail shows the consent screen until the user opts in, and
+ * only then bootstraps history (no chat exists to load before consent). */
 export async function openRail(): Promise<void> {
   const wasOpen = askCmdrState.open
   askCmdrState.open = true
   explorerState.setRailFocused(true)
   saveAppStatus({ askCmdrRailOpen: true })
+  await refreshConsent()
+  if (consentState.accepted !== true) return
   if (!wasOpen && askCmdrState.conversationId === null && askCmdrState.messages.length === 0) {
     await bootstrapActiveThread()
   }
@@ -289,7 +294,7 @@ export function pathFromArguments(argumentsJson: string): string | null {
   try {
     const parsed = JSON.parse(argumentsJson) as unknown
     if (parsed && typeof parsed === 'object' && 'path' in parsed) {
-      const path = (parsed).path
+      const path = parsed.path
       if (typeof path === 'string' && path.length > 0) return path
     }
   } catch {

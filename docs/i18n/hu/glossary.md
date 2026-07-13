@@ -643,3 +643,122 @@ Settled while translating the Operation log feature (`operationLog.json` + `comm
 - items = `elem` (settled), "history" = `előzmények` (matches `settings.operationLog` `Előzmények megőrzése` +
   `átnézheted az előzményeidet`); "Couldn''t load…" body uses the settled `nem sikerült` calm-voice rule.
 - No `sameAsSourceJustification` needed: all values differ from English (`AI-kliens`/`Te`/`Ágens` all translate).
+
+Settled while translating the Ask Cmdr feature (`askCmdr.json` + the
+`settings.askCmdr.*`/`settings.advanced.logLlmCalls.*`/`settings.section.askCmdr`/`commands.askCmdrToggle.*` keys,
+2026-07-13):
+
+- chat (a conversation with the AI) → `csevegés` · MS terminology (`chat` noun = `csevegés`, verb `cseveg`) · high. No
+  macOS tier (Apple doesn''t localize a generic "chat" term; the one `macOS/` hit is the `iChat` brand, not useful).
+  Plural UI section "Chats" → `Csevegések`. "New chat" (nominal button, matches `Új mappa`/`Új fájl`/`Új lap`) →
+  `Új csevegés`.
+- "Ask about your files" / "Ask about your files…" (empty-state heading + composer placeholder) → `Kérdés a fájljaidról`
+  / `Kérdés a fájljaidról…` · reconciled to the shipped SEARCH-PLACEHOLDER convention: NOMINAL, not `te` imperative
+  (`commandPalette.searchPlaceholder` = "Parancsok keresése…", `settings.sidebar.searchPlaceholder` = "Beállítások
+  keresése…", both nominal "X keresése" not "keress X-et") · high. This settles the register question for Ask Cmdr
+  specifically: its input placeholders and small empty-state header follow the established placeholder pattern, NOT the
+  bigger warm-CTA `te` register used for full-screen onboarding headings (see the consent-title entry below for the
+  contrasting case). "Search chats" / "Search your chats…" (aria + placeholder) → `Csevegések keresése` /
+  `Csevegések keresése…`, same nominal "X keresése" pattern (`commandPalette.searchAriaLabel`,
+  `commands.searchOpen.label`, `viewer.search.ariaLabel` all confirm "Search X" → "X keresése" universally in this
+  catalog).
+- "Talk to Cmdr about your files" (consent-screen welcome heading, explicitly "Warm and inviting" per the en `@key`) →
+  `Beszélgess a Cmdrrel a fájljaidról` · `te` imperative, reconciled to the onboarding big-heading register (
+  `onboarding.stepAi.title` "Now, let''s talk AI" → "Most pedig beszéljünk az AI-ról", `onboarding.stepBeta.title` "Help
+  improve Cmdr!" → "Segíts jobbá tenni a Cmdrt!") rather than the placeholder-nominal register above · high. The split
+  is deliberate: a standalone warm welcome/consent heading reads differently from a small empty-state title or a search
+  box. `Cmdrrel` = Cmdr + comitative `-vel`, assimilated to `-rel` after the final `r` (standard Hungarian assimilation,
+  matches `vízzel` from `víz+vel`).
+- Close X (aria label for closing the rail) → `X bezárása` · REUSED verbatim pattern (`commands.volumeClose.label` =
+  "Kötetválasztó bezárása", `commands.aboutClose.label` = "Névjegyablak bezárása", `commands.paletteClose.label` =
+  "Paletta bezárása", `viewer.search.ariaLabel`-sibling `viewer.search.close` = "Keresés bezárása") · high. "Close Ask
+  Cmdr" → `Az Ask Cmdr bezárása` (article `Az` before the vowel-initial "Ask", per the `A(z)` rule).
+- stop (button that stops the assistant mid-answer) → `Leállítás` · MS terminology (`stop` verb = `leállítás`
+  noun/`leállít` verb) · high. Distinct from the running-transfer `cancel → megszakítás` (a different feature); no clash
+  since Ask Cmdr has no transfer-cancel concept.
+- thinking (status shown while the assistant reasons before replying) → `Gondolkodik…` · MS gives the noun
+  `gondolkodás`; rendered as the 3rd-person-present verb to match the catalog''s established live-status-word pattern
+  (`queue.row.status` `Fut`/`Várakozik`) · tentative (no exact "Thinking…" precedent in the pile; this is a novel
+  AI-chat-status concept).
+- AI tool-call status chips (`askCmdr.tool.*.doing`/`.done` pairs — narrating what the read-only assistant is doing/did:
+  reading app state, listing a folder, finding folders, checking importance, listing drives, searching/reading the
+  operation log): rendered as VERBAL NOUN (doing, ongoing) + adverbial `-va/-ve` PARTICIPLE (done, completed) pairs on
+  the SAME object, e.g. `A nézeted ellenőrzése` / `A nézeted ellenőrizve`, `Egy mappa listázása` / `Egy mappa listázva`
+  · descriptive, no direct pile precedent (a genuinely novel AI-agent narration concept), but the CONSTRUCTION reuses
+  two already-shipped Cmdr conventions rather than inventing a new one: the verbal-noun progress-status style (matches
+  `fileOperations` progress titles `Átvizsgálás`/`Tömörítés` and the settled "Checking for conflicts" →
+  `Ütközések keresése`), and the participle done/state style (matches `selectedCount` = `{# kijelölve}`,
+  `fileExplorer.clipboard.copied` = "… másolva", `queue.row.status` `Szüneteltetve`/`Megszakítva`) · tentative, FLAGGED
+  (kept genuinely distinct doing/done text on purpose — a screen reader or a scrollback reading the tool-call history
+  needs the two states to read differently, not just rely on a spinner/checkmark icon). "Finding X" / "Found X" pairs
+  use the `keres`/`talál` (search/find) verb pair instead (`A legnagyobb mappák keresése` / `… megtalálva`,
+  `A fontos mappáid keresése` / `… megtalálva`, `Egy művelet megkeresése` / `Egy művelet megtalálva`) since English
+  itself distinguishes "finding" from "checking". "Searching your file history" reuses the settled `scan → átvizsgálás`
+  term instead (`A fájlműveleti előzményeid átvizsgálása` / `… átvizsgálva`) since scanning a log is the same concept as
+  scanning a filesystem. Fallback `unknown.doing` "Working" → `Folyamatban` (REUSED verbatim from the shipped
+  `queue.row.label` "Working" fallback). `unknown.done` "Used a tool" → `Egy eszköz használva` (`tool` = internal AI
+  function = `eszköz`, generic dev sense).
+- "file history" (Ask Cmdr''s casual name for what the operation log holds, used in the empty-state hint and the
+  operationsList tool status) → `fájlműveleti előzményeid` · REUSES the settled `history → előzmények` term from the
+  Operation Log pass (same underlying concept: past copies/moves/deletes/renames) rather than inventing a new calque,
+  for cross-feature consistency · high.
+- attach (verb, attaching a file/folder to a question) / attachment (noun) → `csatol`/`csatolás` (verb/verbal noun) /
+  `Melléklet` (noun) · MS terminology: attach has TWO distinct senses in the tbx — `csatlakoztat` (hardware/device
+  connect) and `csatol` (file/document attach, the one Cmdr wants) — and `attachment` = `Melléklet` (the classic
+  email-attachment noun, reused generically) · high. NOTE: `csatol` is the SAME lemma the glossary already uses for
+  `mount → csatolás` (SMB/MTP volumes), but this mirrors the MS source material itself (macOS uses `csatol` for mount,
+  MS uses `csatol` for file-attach) and mirrors real Hungarian software (e.g. "csatolt fájl" vs "csatolt kötet");
+  context (Settings vs the chat composer) disambiguates, same as English overloads "attach/mount" differently but both
+  translate through the one verb. No clash in practice: the CONSENT copy''s "connected drives" deliberately uses
+  `csatlakoztatott` (connected, from `csatlakozik`) instead, sidestepping any ambiguity there. "Remove attachment" →
+  `Melléklet eltávolítása` (REUSES the settled "X eltávolítása" removal pattern, e.g. `downloads` "Remove download" =
+  "Letöltés eltávolítása").
+- drop (drag-and-drop release, "Drop to attach" overlay) → `Ejtsd ide a csatoláshoz` · Double Commander hu ("Húzd és
+  ejtsd" = drag and drop, confirming `ejt` = drop) · high.
+- archive / unarchive (hide/restore a chat from the active list — DISTINCT from the zip-archive `archívum` noun already
+  in this glossary) → `Archiválás` / `Archiválás visszavonása` · MS terminology (`archive` verb = `archivál`, distinct
+  termEntry from the zip-archive `Archívumok` noun sense) · high for `Archiválás` (matches real-world Hungarian mail-app
+  usage, e.g. Gmail hu "Archiválás"); `tentative` for `Archiválás visszavonása` (no direct "unarchive" pile hit; the "X
+  visszavonása" undo-toggle pattern is attested for reversible actions, e.g. macOS "Módosítások visszavonása" = "undo
+  changes"). Archived-chat BADGE (adjectival, not a button) → `Archivált`, matching the settled adjectival badge style
+  (`fixed (badge) → Rögzített`).
+- selection (Ask Cmdr''s "Ask about selection" attach button) → REUSES the settled `selection → kijelölés` term:
+  `Kérdés a kijelölésről` (nominal, matches the "Ask about your files" → "Kérdés a fájljaidról" pattern above).
+- quota → `kvóta` · MS · high. database → `adatbázis` · MS · high. dashboard → `irányítópult` · MS · high. spending
+  (settings section heading) → `Kiadás` · MS (`spending` = `kiadás`) · high. bill (verb, "your provider bills you") →
+  `számláz` · MS · high. consent (backing concept, not a literal surface string here) → `hozzájárulás` · MS · high (not
+  directly used verbatim in any translated value; the consent-screen strings are full sentences, not the bare noun).
+- estimate/estimated (cost) → `becslés`/`becsült` · descriptive, common vocabulary; MS''s only "estimate" hit
+  (`árajánlat`) is the commercial-quote sense, wrong for Cmdr''s "approximate token cost" sense, so rejected · tentative
+  for the specific UI collocations ("about {amount}" → `kb. {amount}`, REUSING the settled ETA abbreviation
+  `roughly → kb.`; "cost unknown" → `költség ismeretlen`; "free, on-device" → `ingyenes, az eszközön`, matching the
+  shipped `ai.local.notInstalled` "runs entirely on-device" → "teljes egészében az eszközödön fut" for the on-device
+  sense, generic/no-"your" since English itself drops "your device" for the terse "on-device").
+- "This chat''s usage" (cost-footer aria label) → `E csevegés felhasználása` · MS (`usage` = `felhasználás`) · high.
+- Provider/model labels ("Cloud AI", "Local LLM", "Off") inserted via the `{provider}` placeholder are NOT translated
+  here — they come pre-localized from `settings.ai.provider.opt.*` (`Felhő-AI`, `Helyi LLM`) at runtime; only the
+  surrounding sentence needed translating.
+- `Turn on Ask Cmdr` (shared string, both the consent accept-button and the settings turn-on button, same `sourceHash`)
+  → `Ask Cmdr bekapcsolása` · REUSES the shipped "X bekapcsolása" turn-on pattern (`indexing.firstConnect.enable` =
+  "Indexelés bekapcsolása", `fileExplorer.navigation.driveIndex.menuEnable` = "Indexelés bekapcsolása ehhez a
+  meghajtóhoz") · high. The generic sentence form "Turn on an AI provider in settings/Settings › AI to use Ask Cmdr"
+  instead reuses the imperative pattern from `ai.translateError.off.body` ("Kapcsolj be egy szolgáltatót itt:
+  Beállítások > AI, hogy használd az AI-keresést.") — note `settings.askCmdr.*` keeps the EN source''s literal `›` glyph
+  (a different navigation-arrow character than `ai.json`''s plain `>`); both are kept verbatim as punctuation, never
+  translated.
+- "Something went wrong on the provider''s side" / "That took too long" / "The reply didn''t finish" / budget-exhausted
+  error copy all REUSE settled calm-voice building blocks: `Something went wrong → Valami nem sikerült`,
+  `Try again? → Próbáld újra?` (matches `feedback.dialog.softFailure`), `didn''t finish → nem fejeződött be` (matches
+  the Operation Log `Didn''t finish` status), `limit → korlát` (possessive `korlátját`, matches the FAT32 pass''s
+  `méretkorlátja`/`összegkorlátja` possessive evidence).
+- "Chat with an AI about your files, drives, and history" (shared verbatim EN string:
+  `commands.askCmdrToggle.description` AND the first sentence of `settings.askCmdr.intro`) →
+  `Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről` · `te` imperative, matching the EN''s own
+  imperative mood and the `commands.feedbackSend.description` precedent ("Tell the maker of Cmdr what you think…" →
+  "Mondd el a Cmdr készítőjének, mit gondolsz…", also imperative) rather than the more common 3rd-person
+  `commands.*.description` style (`Megnyitja…`, `Elküldi…`) · high, reused verbatim in both places since it''s the
+  identical English string.
+- `sameAsSourceJustification` recorded for the three verbatim "Ask Cmdr" product-name occurrences (`askCmdr.title`,
+  `settings.section.askCmdr`, `commands.askCmdrToggle.label`): kept per the en `@key` note that this is the product
+  name. Everything else in this batch differs from English (all 96 keys across `askCmdr.json`, `settings.json`'s 17 Ask
+  Cmdr/LLM-logging keys, and `commands.json`'s 2 keys translate; no other identical-to-English residuals).

@@ -91,6 +91,15 @@
   "@commands.logOperationLog.description": {
     "sourceHash": "ea2d082"
   },
+  "commands.askCmdrToggle.label": "Ask Cmdr",
+  "@commands.askCmdrToggle.label": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (the read-only AI chat rail); kept verbatim in every locale, per the en @key note."
+  },
+  "commands.askCmdrToggle.description": "Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről",
+  "@commands.askCmdrToggle.description": {
+    "sourceHash": "c520468"
+  },
   "commands.feedbackSend.label": "Visszajelzés küldése",
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"

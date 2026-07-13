@@ -1,0 +1,311 @@
+{
+  "askCmdr.title": "Ask Cmdr",
+  "@askCmdr.title": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (\"Ask Cmdr\" is the feature's brand name); kept verbatim in every locale per the @key description."
+  },
+  "askCmdr.close": "Fermer Ask Cmdr",
+  "@askCmdr.close": {
+    "sourceHash": "d34225d"
+  },
+  "askCmdr.newChat": "Nouvelle conversation",
+  "@askCmdr.newChat": {
+    "sourceHash": "db18382"
+  },
+  "askCmdr.empty.title": "Posez des questions sur vos fichiers",
+  "@askCmdr.empty.title": {
+    "sourceHash": "b2251fc"
+  },
+  "askCmdr.empty.hint": "Pour répondre, Cmdr peut consulter ce que vous parcourez, vos disques et votre historique de fichiers. Il ne lit que les noms, chemins et tailles, jamais le contenu des fichiers.",
+  "@askCmdr.empty.hint": {
+    "sourceHash": "6ccad75"
+  },
+  "askCmdr.composer.placeholder": "Posez une question sur vos fichiers…",
+  "@askCmdr.composer.placeholder": {
+    "sourceHash": "77e2636"
+  },
+  "askCmdr.composer.send": "Envoyer le message",
+  "@askCmdr.composer.send": {
+    "sourceHash": "93a26b1"
+  },
+  "askCmdr.composer.stop": "Arrêter",
+  "@askCmdr.composer.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "askCmdr.thinking": "Réflexion…",
+  "@askCmdr.thinking": {
+    "sourceHash": "a02f1ce"
+  },
+  "askCmdr.softCap.message": "Cette conversation devient longue. Une nouvelle conversation garde les réponses rapides et pertinentes.",
+  "@askCmdr.softCap.message": {
+    "sourceHash": "60d2c54"
+  },
+  "askCmdr.softCap.action": "Démarrer une nouvelle conversation",
+  "@askCmdr.softCap.action": {
+    "sourceHash": "677d4c2"
+  },
+  "askCmdr.tool.appState.doing": "Vérification de ce que vous regardez",
+  "@askCmdr.tool.appState.doing": {
+    "sourceHash": "832e0cc"
+  },
+  "askCmdr.tool.appState.done": "A vérifié ce que vous regardez",
+  "@askCmdr.tool.appState.done": {
+    "sourceHash": "155621e"
+  },
+  "askCmdr.tool.listDir.doing": "Consultation d''un dossier",
+  "@askCmdr.tool.listDir.doing": {
+    "sourceHash": "64aa697"
+  },
+  "askCmdr.tool.listDir.done": "A consulté un dossier",
+  "@askCmdr.tool.listDir.done": {
+    "sourceHash": "5746fef"
+  },
+  "askCmdr.tool.largestDirs.doing": "Recherche des dossiers les plus volumineux",
+  "@askCmdr.tool.largestDirs.doing": {
+    "sourceHash": "c5f2cc0"
+  },
+  "askCmdr.tool.largestDirs.done": "A trouvé les dossiers les plus volumineux",
+  "@askCmdr.tool.largestDirs.done": {
+    "sourceHash": "a2f3de3"
+  },
+  "askCmdr.tool.importantFolders.doing": "Recherche de vos dossiers importants",
+  "@askCmdr.tool.importantFolders.doing": {
+    "sourceHash": "866aa38"
+  },
+  "askCmdr.tool.importantFolders.done": "A trouvé vos dossiers importants",
+  "@askCmdr.tool.importantFolders.done": {
+    "sourceHash": "1fd5db6"
+  },
+  "askCmdr.tool.folderImportance.doing": "Vérification de l''importance d''un dossier",
+  "@askCmdr.tool.folderImportance.doing": {
+    "sourceHash": "594deff"
+  },
+  "askCmdr.tool.folderImportance.done": "A vérifié l''importance d''un dossier",
+  "@askCmdr.tool.folderImportance.done": {
+    "sourceHash": "c7f397f"
+  },
+  "askCmdr.tool.listVolumes.doing": "Vérification de vos disques",
+  "@askCmdr.tool.listVolumes.doing": {
+    "sourceHash": "2ed1808"
+  },
+  "askCmdr.tool.listVolumes.done": "A vérifié vos disques",
+  "@askCmdr.tool.listVolumes.done": {
+    "sourceHash": "b13a0b3"
+  },
+  "askCmdr.tool.operationsList.doing": "Recherche dans votre historique de fichiers",
+  "@askCmdr.tool.operationsList.doing": {
+    "sourceHash": "4e8c41a"
+  },
+  "askCmdr.tool.operationsList.done": "A cherché dans votre historique de fichiers",
+  "@askCmdr.tool.operationsList.done": {
+    "sourceHash": "03021d5"
+  },
+  "askCmdr.tool.operationsGet.doing": "Consultation d''une opération",
+  "@askCmdr.tool.operationsGet.doing": {
+    "sourceHash": "10be41f"
+  },
+  "askCmdr.tool.operationsGet.done": "A consulté une opération",
+  "@askCmdr.tool.operationsGet.done": {
+    "sourceHash": "80fe1e9"
+  },
+  "askCmdr.tool.unknown.doing": "Travail en cours",
+  "@askCmdr.tool.unknown.doing": {
+    "sourceHash": "a92f044"
+  },
+  "askCmdr.tool.unknown.done": "A utilisé un outil",
+  "@askCmdr.tool.unknown.done": {
+    "sourceHash": "05cc2be"
+  },
+  "askCmdr.tool.refused": "Cette demande n''était pas disponible",
+  "@askCmdr.tool.refused": {
+    "sourceHash": "f5e6dcc"
+  },
+  "askCmdr.error.noKey": "Ajoutez votre clé d''API dans les réglages pour commencer à discuter.",
+  "@askCmdr.error.noKey": {
+    "sourceHash": "0a78f37"
+  },
+  "askCmdr.error.notConfigured": "Activez un fournisseur d''IA dans les réglages pour utiliser Ask Cmdr.",
+  "@askCmdr.error.notConfigured": {
+    "sourceHash": "b84c5f4"
+  },
+  "askCmdr.error.unavailable": "Impossible de joindre le fournisseur d''IA. Vérifiez votre connexion et réessayez.",
+  "@askCmdr.error.unavailable": {
+    "sourceHash": "eb59e2b"
+  },
+  "askCmdr.error.timeout": "Ça a pris trop de temps. Réessayer ?",
+  "@askCmdr.error.timeout": {
+    "sourceHash": "22cd775"
+  },
+  "askCmdr.error.authFailed": "Le fournisseur n''a pas accepté votre clé d''API. Vérifiez-la dans les réglages.",
+  "@askCmdr.error.authFailed": {
+    "sourceHash": "a2302ca"
+  },
+  "askCmdr.error.rateLimited": "Le fournisseur est occupé ou vous n''avez plus de quota. Réessayez dans un instant.",
+  "@askCmdr.error.rateLimited": {
+    "sourceHash": "7b441e9"
+  },
+  "askCmdr.error.budgetExhausted": "Celle-ci a atteint sa limite avant de terminer. Essayez de poser une question plus précise.",
+  "@askCmdr.error.budgetExhausted": {
+    "sourceHash": "ea2beb2"
+  },
+  "askCmdr.error.unfinishedReply": "La réponse ne s''est pas terminée. Réessayer ?",
+  "@askCmdr.error.unfinishedReply": {
+    "sourceHash": "7cc85f5"
+  },
+  "askCmdr.error.provider": "Un problème est survenu du côté du fournisseur. Réessayer ?",
+  "@askCmdr.error.provider": {
+    "sourceHash": "d536cce"
+  },
+  "askCmdr.loadEarlier": "Charger les messages précédents",
+  "@askCmdr.loadEarlier": {
+    "sourceHash": "33fd46b"
+  },
+  "askCmdr.threads.open": "Conversations",
+  "@askCmdr.threads.open": {
+    "sourceHash": "ef5b404"
+  },
+  "askCmdr.sessions.title": "Conversations",
+  "@askCmdr.sessions.title": {
+    "sourceHash": "ef5b404"
+  },
+  "askCmdr.sessions.back": "Retour à la conversation",
+  "@askCmdr.sessions.back": {
+    "sourceHash": "5978844"
+  },
+  "askCmdr.sessions.searchPlaceholder": "Rechercher dans vos conversations…",
+  "@askCmdr.sessions.searchPlaceholder": {
+    "sourceHash": "2de9074"
+  },
+  "askCmdr.sessions.searchLabel": "Rechercher des conversations",
+  "@askCmdr.sessions.searchLabel": {
+    "sourceHash": "02a39c4"
+  },
+  "askCmdr.sessions.empty": "Pas encore de conversation",
+  "@askCmdr.sessions.empty": {
+    "sourceHash": "269208e"
+  },
+  "askCmdr.sessions.emptyArchived": "Aucune conversation archivée",
+  "@askCmdr.sessions.emptyArchived": {
+    "sourceHash": "272c9ab"
+  },
+  "askCmdr.sessions.noResults": "Aucune conversation ne correspond à votre recherche",
+  "@askCmdr.sessions.noResults": {
+    "sourceHash": "c53c411"
+  },
+  "askCmdr.sessions.showArchived": "Afficher les archivées",
+  "@askCmdr.sessions.showArchived": {
+    "sourceHash": "e9de9f2"
+  },
+  "askCmdr.sessions.hideArchived": "Masquer les archivées",
+  "@askCmdr.sessions.hideArchived": {
+    "sourceHash": "dd1c793"
+  },
+  "askCmdr.sessions.loadMore": "Charger plus",
+  "@askCmdr.sessions.loadMore": {
+    "sourceHash": "ac8991e"
+  },
+  "askCmdr.sessions.searching": "Recherche…",
+  "@askCmdr.sessions.searching": {
+    "sourceHash": "c31723a"
+  },
+  "askCmdr.sessions.rename": "Renommer",
+  "@askCmdr.sessions.rename": {
+    "sourceHash": "3064d79"
+  },
+  "askCmdr.sessions.renameLabel": "Titre de la conversation",
+  "@askCmdr.sessions.renameLabel": {
+    "sourceHash": "17a3048"
+  },
+  "askCmdr.sessions.archive": "Archiver",
+  "@askCmdr.sessions.archive": {
+    "sourceHash": "66f4804"
+  },
+  "askCmdr.sessions.unarchive": "Désarchiver",
+  "@askCmdr.sessions.unarchive": {
+    "sourceHash": "f565318"
+  },
+  "askCmdr.sessions.archivedBadge": "Archivée",
+  "@askCmdr.sessions.archivedBadge": {
+    "sourceHash": "bdb8650"
+  },
+  "askCmdr.composer.attach": "Interroger la sélection",
+  "@askCmdr.composer.attach": {
+    "sourceHash": "3e812c7"
+  },
+  "askCmdr.composer.dropHint": "Déposer pour joindre",
+  "@askCmdr.composer.dropHint": {
+    "sourceHash": "34a7a63"
+  },
+  "askCmdr.attachment.remove": "Retirer la pièce jointe",
+  "@askCmdr.attachment.remove": {
+    "sourceHash": "595b066"
+  },
+  "askCmdr.consent.title": "Discutez avec Cmdr à propos de vos fichiers",
+  "@askCmdr.consent.title": {
+    "sourceHash": "59b4ca9"
+  },
+  "askCmdr.consent.intro": "Ask Cmdr envoie vos questions au fournisseur d''IA que vous choisissez, en utilisant votre propre clé d''API. Voici exactement ce qui quitte votre Mac lorsque vous discutez :",
+  "@askCmdr.consent.intro": {
+    "sourceHash": "4366272"
+  },
+  "askCmdr.consent.item.messages": "Vos messages",
+  "@askCmdr.consent.item.messages": {
+    "sourceHash": "befc6e9"
+  },
+  "askCmdr.consent.item.names": "Les noms et chemins des fichiers et dossiers que Cmdr consulte pour vous répondre",
+  "@askCmdr.consent.item.names": {
+    "sourceHash": "ce3259d"
+  },
+  "askCmdr.consent.item.sizes": "Leurs tailles et dates",
+  "@askCmdr.consent.item.sizes": {
+    "sourceHash": "2484530"
+  },
+  "askCmdr.consent.item.envelope": "Ce que vous regardez en ce moment : votre dossier actuel, le curseur, la sélection et les disques connectés",
+  "@askCmdr.consent.item.envelope": {
+    "sourceHash": "2e5a0ef"
+  },
+  "askCmdr.consent.item.attachments": "Tout fichier ou dossier que vous joignez à une question, uniquement par son nom et son chemin",
+  "@askCmdr.consent.item.attachments": {
+    "sourceHash": "b9ad2af"
+  },
+  "askCmdr.consent.noContents": "Cmdr n''envoie jamais le contenu de vos fichiers. C''est impossible : dans cette version, aucun outil ne les lit. Ask Cmdr ne fait que regarder et parler ; il ne change jamais rien.",
+  "@askCmdr.consent.noContents": {
+    "sourceHash": "0908765"
+  },
+  "askCmdr.consent.local": "Vos conversations restent sur votre Mac, dans une base de données locale que vous pouvez ouvrir et consulter. Vous choisissez le fournisseur et le modèle, et vous pouvez voir ce que coûte chaque conversation.",
+  "@askCmdr.consent.local": {
+    "sourceHash": "f7d4075"
+  },
+  "askCmdr.consent.logsNote": "Si vous activez la journalisation des appels au modèle d''IA dans les réglages avancés, Cmdr enregistre aussi chaque requête et réponse dans un dossier sur votre Mac. Ces journaux restent eux aussi en local, jamais envoyés nulle part.",
+  "@askCmdr.consent.logsNote": {
+    "sourceHash": "7e211fc"
+  },
+  "askCmdr.consent.accept": "Activer Ask Cmdr",
+  "@askCmdr.consent.accept": {
+    "sourceHash": "0d656c4"
+  },
+  "askCmdr.consent.decline": "Plus tard",
+  "@askCmdr.consent.decline": {
+    "sourceHash": "a0e63d7"
+  },
+  "askCmdr.cost.tokens": "{countText} {count, plural, one {jeton} many {jetons} other {jetons}}",
+  "@askCmdr.cost.tokens": {
+    "sourceHash": "6718764"
+  },
+  "askCmdr.cost.free": "gratuit, en local",
+  "@askCmdr.cost.free": {
+    "sourceHash": "f04f869"
+  },
+  "askCmdr.cost.estimate": "environ {amount}",
+  "@askCmdr.cost.estimate": {
+    "sourceHash": "e448a4a"
+  },
+  "askCmdr.cost.unknown": "coût inconnu",
+  "@askCmdr.cost.unknown": {
+    "sourceHash": "d05144e"
+  },
+  "askCmdr.cost.label": "Utilisation de cette conversation",
+  "@askCmdr.cost.label": {
+    "sourceHash": "3b0dd81"
+  }
+}

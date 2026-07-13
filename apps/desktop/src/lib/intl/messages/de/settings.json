@@ -989,6 +989,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.logLlmCalls.label": "KI-Modellaufrufe protokollieren",
+  "@settings.advanced.logLlmCalls.label": {
+    "sourceHash": "f865b3e"
+  },
+  "settings.advanced.logLlmCalls.description": "Speichert zur Fehlerbehebung jede KI-Anfrage und -Antwort in einem lokalen Ordner (llm-logs). Diese Dateien bleiben auf deinem Mac und enthalten die Dateinamen und Pfade, die Cmdr an deinen Anbieter sendet.",
+  "@settings.advanced.logLlmCalls.description": {
+    "sourceHash": "86b3d34"
+  },
   "settings.advanced.serviceResolveTimeout.label": "Zeitüberschreitung für Dienstauflösung",
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
@@ -1152,6 +1160,75 @@
   "settings.section.ai": "KI",
   "@settings.section.ai": {
     "sourceHash": "11fb682"
+  },
+  "settings.section.askCmdr": "Ask Cmdr",
+  "@settings.section.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Brand/product name, kept verbatim in every locale (do-not-translate list)."
+  },
+  "settings.askCmdr.intro": "Chatte mit einer KI über deine Dateien, Laufwerke und deinen Verlauf. Ask Cmdr ist schreibgeschützt: Es liest Namen, Pfade und Größen, um zu antworten, und verändert nie etwas.",
+  "@settings.askCmdr.intro": {
+    "sourceHash": "124b2d5"
+  },
+  "settings.askCmdr.status.on": "Ask Cmdr ist aktiviert",
+  "@settings.askCmdr.status.on": {
+    "sourceHash": "1003ff7"
+  },
+  "settings.askCmdr.status.off": "Ask Cmdr ist deaktiviert",
+  "@settings.askCmdr.status.off": {
+    "sourceHash": "0420c9a"
+  },
+  "settings.askCmdr.status.onSince": "Aktiviert seit {date}",
+  "@settings.askCmdr.status.onSince": {
+    "sourceHash": "2f573fd"
+  },
+  "settings.askCmdr.turnOn": "Ask Cmdr aktivieren",
+  "@settings.askCmdr.turnOn": {
+    "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnOff": "Ask Cmdr deaktivieren",
+  "@settings.askCmdr.turnOff": {
+    "sourceHash": "eb03374"
+  },
+  "settings.askCmdr.disclosure.title": "Was Ask Cmdr sendet",
+  "@settings.askCmdr.disclosure.title": {
+    "sourceHash": "8ccd3b9"
+  },
+  "settings.askCmdr.provider.title": "Anbieter und Modell",
+  "@settings.askCmdr.provider.title": {
+    "sourceHash": "b9fdc88"
+  },
+  "settings.askCmdr.provider.shared": "Ask Cmdr verwendet den Anbieter und Schlüssel, die du unter Einstellungen › KI eingerichtet hast ({provider}).",
+  "@settings.askCmdr.provider.shared": {
+    "sourceHash": "c84fd32"
+  },
+  "settings.askCmdr.provider.off": "Aktiviere unter Einstellungen › KI einen Anbieter, um Ask Cmdr zu nutzen.",
+  "@settings.askCmdr.provider.off": {
+    "sourceHash": "8b378ae"
+  },
+  "settings.askCmdr.interactiveModel.label": "Ask Cmdr-Modell",
+  "@settings.askCmdr.interactiveModel.label": {
+    "sourceHash": "194255a"
+  },
+  "settings.askCmdr.interactiveModel.description": "Das Modell, mit dem Ask Cmdr chattet. Leer lassen, um dasselbe Modell wie bei den anderen KI-Funktionen von Cmdr zu verwenden. Beispiel: claude-sonnet-4-5",
+  "@settings.askCmdr.interactiveModel.description": {
+    "sourceHash": "e3f64a5"
+  },
+  "settings.askCmdr.interactiveModel.placeholder": "Wie die KI von Cmdr",
+  "@settings.askCmdr.interactiveModel.placeholder": {
+    "sourceHash": "2631f3d"
+  },
+  "settings.askCmdr.spend.title": "Ausgaben",
+  "@settings.askCmdr.spend.title": {
+    "sourceHash": "c2c7ae2"
+  },
+  "settings.askCmdr.spend.empty": "Noch keine Nutzung. Hier erscheinen dein Token-Verbrauch und die geschätzten Kosten.",
+  "@settings.askCmdr.spend.empty": {
+    "sourceHash": "baaf9d6"
+  },
+  "settings.askCmdr.spend.disclaimer": "Das sind Schätzungen. Dein Anbieter rechnet direkt mit dir ab. Den genauen Betrag findest du im Dashboard deines Anbieters.",
+  "@settings.askCmdr.spend.disclaimer": {
+    "sourceHash": "81fd190"
   },
   "settings.section.fileSystems": "Dateisysteme",
   "@settings.section.fileSystems": {

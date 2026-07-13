@@ -16,10 +16,24 @@ import {
   type MessageBlock,
   type AttachmentRef,
   type AttachmentKindView,
+  type AskCmdrConsentStatus,
+  type ConversationCost,
+  type CostSummary,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { ConversationRow, ConversationDetailView, ConversationSearchHit, MessageView, MessageBlock, AttachmentRef, AttachmentKindView }
+export type {
+  ConversationRow,
+  ConversationDetailView,
+  ConversationSearchHit,
+  MessageView,
+  MessageBlock,
+  AttachmentRef,
+  AttachmentKindView,
+  AskCmdrConsentStatus,
+  ConversationCost,
+  CostSummary,
+}
 
 /** Why an assistant turn ended, on the wire (mirrors Rust `StopReasonView`). */
 export type StopReason = 'completed' | 'toolCall' | 'maxTokens' | 'contentFilter' | 'stopSequence' | 'other'
@@ -141,4 +155,38 @@ export async function askCmdrSelectionAttachments(): Promise<AttachmentRef[]> {
  * Only for local-volume drags; virtual-volume paths mis-resolve and aren't supported. */
 export async function resolveAskCmdrAttachments(paths: string[]): Promise<AttachmentRef[]> {
   return commands.askCmdrResolveAttachments(paths)
+}
+
+/** Whether the user has opted into the CURRENT Ask Cmdr consent copy, plus the audit of
+ * what/when they accepted. The rail gates on `accepted`. */
+export async function askCmdrConsentStatus(): Promise<AskCmdrConsentStatus> {
+  const res = await commands.askCmdrConsentStatus()
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** Record the user's opt-in to the current consent copy (timestamp + copy version). */
+export async function acceptAskCmdrConsent(): Promise<void> {
+  const res = await commands.askCmdrAcceptConsent()
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/** Turn Ask Cmdr off by clearing consent (chats are kept; the next open re-shows consent). */
+export async function revokeAskCmdrConsent(): Promise<void> {
+  const res = await commands.askCmdrRevokeConsent()
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/** One conversation's cumulative token + cost total (all days, all models). */
+export async function askCmdrConversationCost(id: number): Promise<ConversationCost> {
+  const res = await commands.askCmdrConversationCost(id)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/** The per-day cost rollup across every thread and model, newest day first. */
+export async function askCmdrCostSummary(): Promise<CostSummary> {
+  const res = await commands.askCmdrCostSummary()
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }

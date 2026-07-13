@@ -8,6 +8,7 @@
     import FileSystemWatchingSection from '$lib/settings/sections/FileSystemWatchingSection.svelte'
     import SearchSection from '$lib/settings/sections/SearchSection.svelte'
     import AiSection from '$lib/settings/sections/AiSection.svelte'
+    import AskCmdrSection from '$lib/settings/sections/AskCmdrSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
     import MtpSection from '$lib/settings/sections/MtpSection.svelte'
     import GitSection from '$lib/settings/sections/GitSection.svelte'
@@ -126,6 +127,13 @@
         {#if shouldShowTopLevel(['AI'])}
             <section data-section-id="ai">
                 <AiSection {searchQuery} />
+            </section>
+        {/if}
+
+        <!-- Ask Cmdr (top-level, no subsections) -->
+        {#if shouldShowTopLevel(['Ask Cmdr'])}
+            <section data-section-id="ask-cmdr">
+                <AskCmdrSection {searchQuery} />
             </section>
         {/if}
 

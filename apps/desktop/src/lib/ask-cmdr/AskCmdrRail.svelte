@@ -13,6 +13,8 @@
     import AskCmdrComposer from './AskCmdrComposer.svelte'
     import AskCmdrMessage from './AskCmdrMessage.svelte'
     import AskCmdrSessions from './AskCmdrSessions.svelte'
+    import AskCmdrConsent from './AskCmdrConsent.svelte'
+    import AskCmdrCostFooter from './AskCmdrCostFooter.svelte'
     import {
         askCmdrState,
         closeRail,
@@ -22,9 +24,13 @@
         newChat,
         setRailWidth,
     } from './ask-cmdr-trigger.svelte'
+    import { consentState } from './ask-cmdr-consent.svelte'
     import { openSessions, sessionsState } from './ask-cmdr-sessions.svelte'
 
     const badgeStatus = getBadgeStatus('ask-cmdr')
+    // Show the chat only once the user has opted into the CURRENT consent copy; `false`
+    // shows the consent screen, `null` (loading) shows neither, so nothing flashes.
+    const consented = $derived(consentState.accepted === true)
 
     let listElement = $state<HTMLDivElement | null>(null)
     // Whether the user was near the bottom before the last content change. Streaming
@@ -95,49 +101,56 @@
             <StatusBadge status={badgeStatus} />
         {/if}
         <span class="header-actions">
-            <button type="button" class="icon-button" onclick={openSessions} aria-label={tString('askCmdr.threads.open')} title={tString('askCmdr.threads.open')}>
-                <Icon name="messages-square" size={16} aria-hidden="true" />
-            </button>
-            <button type="button" class="icon-button" onclick={newChat} aria-label={tString('askCmdr.newChat')}>
-                <Icon name="file-plus" size={16} aria-hidden="true" />
-            </button>
+            {#if consented}
+                <button type="button" class="icon-button" onclick={openSessions} aria-label={tString('askCmdr.threads.open')} title={tString('askCmdr.threads.open')}>
+                    <Icon name="messages-square" size={16} aria-hidden="true" />
+                </button>
+                <button type="button" class="icon-button" onclick={newChat} aria-label={tString('askCmdr.newChat')}>
+                    <Icon name="file-plus" size={16} aria-hidden="true" />
+                </button>
+            {/if}
             <button type="button" class="icon-button" onclick={closeRail} aria-label={tString('askCmdr.close')}>
                 <Icon name="x" size={16} aria-hidden="true" />
             </button>
         </span>
     </header>
 
-    <div class="rail-body" bind:this={listElement} onscroll={onListScroll}>
-        {#if hasOlderMessages()}
-            <button type="button" class="load-earlier" disabled={askCmdrState.loadingOlder} onclick={() => void onLoadEarlier()}>
-                {tString('askCmdr.loadEarlier')}
-            </button>
-        {/if}
-        {#if askCmdrState.messages.length === 0}
-            <div class="empty">
-                <span class="empty-glyph"><Icon name="sparkles" size={28} aria-hidden="true" /></span>
-                <p class="empty-title">{tString('askCmdr.empty.title')}</p>
-                <p class="empty-hint">{tString('askCmdr.empty.hint')}</p>
-            </div>
-        {:else}
-            {#each askCmdrState.messages as message, index (index)}
-                <AskCmdrMessage {message} />
-            {/each}
-            {#if isOverSoftCap()}
-                <div class="soft-cap">
-                    <span>{tString('askCmdr.softCap.message')}</span>
-                    <button type="button" class="soft-cap-action" onclick={newChat}>
-                        {tString('askCmdr.softCap.action')}
-                    </button>
-                </div>
+    {#if consentState.accepted === false}
+        <AskCmdrConsent />
+    {:else if consented}
+        <div class="rail-body" bind:this={listElement} onscroll={onListScroll}>
+            {#if hasOlderMessages()}
+                <button type="button" class="load-earlier" disabled={askCmdrState.loadingOlder} onclick={() => void onLoadEarlier()}>
+                    {tString('askCmdr.loadEarlier')}
+                </button>
             {/if}
+            {#if askCmdrState.messages.length === 0}
+                <div class="empty">
+                    <span class="empty-glyph"><Icon name="sparkles" size={28} aria-hidden="true" /></span>
+                    <p class="empty-title">{tString('askCmdr.empty.title')}</p>
+                    <p class="empty-hint">{tString('askCmdr.empty.hint')}</p>
+                </div>
+            {:else}
+                {#each askCmdrState.messages as message, index (index)}
+                    <AskCmdrMessage {message} />
+                {/each}
+                {#if isOverSoftCap()}
+                    <div class="soft-cap">
+                        <span>{tString('askCmdr.softCap.message')}</span>
+                        <button type="button" class="soft-cap-action" onclick={newChat}>
+                            {tString('askCmdr.softCap.action')}
+                        </button>
+                    </div>
+                {/if}
+            {/if}
+        </div>
+
+        <AskCmdrComposer />
+        <AskCmdrCostFooter />
+
+        {#if sessionsState.open}
+            <AskCmdrSessions />
         {/if}
-    </div>
-
-    <AskCmdrComposer />
-
-    {#if sessionsState.open}
-        <AskCmdrSessions />
     {/if}
 </aside>
 

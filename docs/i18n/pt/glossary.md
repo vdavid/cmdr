@@ -351,3 +351,55 @@ Settled while translating the Compress feature:
   `operationLog.status.*`.
 - per-item outcome → `Concluído` (done) / `Ignorado` (skipped, glossary Skip → Ignorar) / `Não foi possível concluir`
   (didn’t finish) / `Revertido` (rolled back) · high. `operationLog.outcome.*`.
+
+### Ask Cmdr terms (read-only AI chat rail, `askCmdr.*` + `settings.askCmdr.*` + `commands.askCmdrToggle.*`, 2026-07-13)
+
+- chat (a conversation thread with the assistant) · **chat** (kept verbatim, masculine noun, plural **chats**) ·
+  Microsoft terminology pt-BR (`instant messaging` → id 2046699 "chat", and a direct `chat`→`chat` entry, both
+  BRA-tagged, masculine noun) · confirmed. Naturalized loanword in pt-BR tech UI (matches how Discord/Instagram render
+  it in Brazilian Portuguese); distinct from **conversa** (used once in `askCmdr.consent.local` for the English source's
+  own "conversation" variant, and in `bate-papo`-flavored running text elsewhere) — both source words appear in the
+  English catalog and are translated as their closest pt-BR cognate/near-synonym.
+- attach / attachment (a file or folder staged onto a chat message) · **anexar** (verb) / **anexo** (noun) · Microsoft
+  terminology pt-BR (`attach`→`anexar`, id 16026 BRA; `attached file`→`anexo`, id 16077 BRA) · confirmed.
+  `askCmdr.composer.dropHint` "Drop to attach"→"Solte para anexar" (**soltar** = drop, standard pt-BR drag-and-drop
+  verb, no direct pile source but high-confidence common usage); `askCmdr.attachment.remove` "Remove
+  attachment"→"Remover anexo".
+- archive a chat / archived (hide a chat from the active list, not the zip-archive sense) · **arquivar** (verb) /
+  **Arquivado** (status) / **Desarquivar** (restore) · Microsoft terminology pt-BR (`archive`→`arquivar` verb, id 14250
+  BRA; `Archived`→`Arquivado` status, id 2265623 BRA) · confirmed for arquivar/Arquivado; Desarquivar is the standard
+  morphological antonym (des- prefix), not directly in the pile · high. Distinct sense from the glossary's "archive (a
+  zip/tar/7z browsed like a folder) → arquivo compactado" entry above; no clash because this is a verb applied to a chat
+  session, never co-occurring with the noun sense in the same string.
+  `askCmdr.sessions.archive/unarchive/archivedBadge`.
+- Turn on / Turn off (a feature toggle) · button label → **Ativar** / **Desativar** X (infinitive); running-text advice
+  ("Turn on X to use Y") → **Ative** X (imperative) · matches the shipped pattern
+  (`fileExplorer.navigation.driveIndex.menuEnable` "Turn on indexing…"→"Ativar indexação…", `ai.translateError.off.body`
+  "Turn on a provider…"→"Ative um provedor…") · confirmed. Feature-on/off status line ("X is on"/"is off") → **está
+  ativado** / **está desativado**, matching `ai.translateError.off.title` "AI is turned off"→"A IA está desativada".
+  `askCmdr.consent.accept`, `askCmdr.consent.decline`, `settings.askCmdr.turnOn/turnOff/status.on/status.off`.
+- "Not now" (decline button on an opt-in screen) · **Agora não** · no direct pile hit; standard pt-BR dismissal idiom
+  used across major vendors' opt-in dialogs · high. `askCmdr.consent.decline`.
+- "No X yet" (empty-list state) · **Nenhum/Nenhuma X ainda** · matches shipped pt catalog (`operationLog.dialog.empty`
+  "No operations yet"→"Nenhuma operação ainda", `whatsNew.dialog.empty`, `queryUi.ai.empty`) · confirmed.
+  `askCmdr.sessions.empty` "No chats yet"→"Nenhum chat ainda".
+- token (LLM usage unit, cost footer) · **token** (kept verbatim, masculine noun, plural **tokens**) · naturalized pt-BR
+  tech loanword, no natural pt equivalent in AI-cost UI copy · high. Plural message needs the CLDR **many** branch like
+  every other pt plural (see the Plurals section above): `askCmdr.cost.tokens` writes `one`/`many`/`other`, not just
+  `one`/`other`.
+- cost / estimate / usage (spend footer) · cost → **custo**; "about {amount}" → **cerca de {amount}**; "cost unknown" →
+  **custo desconhecido**; "usage" (heading) → **Gastos** (Spending) / **uso** (running text, e.g. "token use" → "uso de
+  tokens") · standard pt-BR tech usage, no pile source (Cmdr-specific AI-billing feature) · high. `askCmdr.cost.*`,
+  `settings.askCmdr.spend.*`.
+- "free, on-device" (cost readout for the local model) · **grátis, no dispositivo** · "no seu dispositivo" already
+  shipped in `ai.local.notInstalled` ("runs entirely on your device"→"roda inteiramente no seu dispositivo"); "grátis"
+  is standard pt-BR for zero-cost · high. `askCmdr.cost.free`.
+- Log AI model calls (Advanced-settings toggle, `settings.advanced.logLlmCalls.*`) · **Registrar chamadas do modelo de
+  IA** · "log"→**registro/registrar** (glossary "changelog"/"crash report" rows), "AI model" = the LLM the user's AI
+  features talk to → **modelo de IA** · high. Referenced loosely (not as an exact string match) from
+  `askCmdr.consent.logsNote` as "o registro de chamadas de IA".
+- "Checking X" tool-status verb (used identically across three distinct Ask Cmdr tool calls: reading the current view,
+  listing drives, scoring a folder's importance) · doing: **Conferindo** X; done: **Conferiu** X · picked once and
+  reused across all three English "Checking…"/"Checked…" pairs for cross-file consistency, per the tool-status
+  doing/gerund + done/preterite pattern already established in `queue.row.label` and `operationLog.summary.*` · high.
+  `askCmdr.tool.appState.*`, `askCmdr.tool.listVolumes.*`, `askCmdr.tool.folderImportance.*`.

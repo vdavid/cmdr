@@ -519,21 +519,24 @@ fn search_text(parts: &[AgentPart]) -> String {
 }
 
 /// Fold one completed `respond` call's usage into the cost meter (crash case d: metered
-/// per completed `End`, so completed turns count once and are never lost). Pricing is a
-/// per-model table that arrives with M8; until then a local/on-device model is free and
-/// priced, and a cloud model records tokens with cost unknown (`priced = false`, never a
-/// silent $0 — spec §2.4 honesty).
+/// per completed `End`, so completed turns count once and are never lost). Cost is priced
+/// via the per-model table ([`crate::agent::pricing`]): a local/on-device model is free and
+/// priced, a known cloud model gets an honest estimate, and an unknown cloud model records
+/// its tokens with cost 0 but `priced = false` — shown "unknown", never a silent $0 (spec
+/// §2.4 honesty).
 fn meter_cost(conn: &rusqlite::Connection, params: &TurnParams<'_>, usage: AgentUsage) {
-    let priced = params.provider == ProviderTag::Local;
+    let prompt_tokens = usage.prompt_tokens as u64;
+    let completion_tokens = usage.completion_tokens as u64;
+    let priced = crate::agent::pricing::price_call(params.provider, &params.model, prompt_tokens, completion_tokens);
     let record = CostRecord {
         day: day_for(params.now_secs, params.offset),
         conversation_id: params.conversation_id,
         provider: params.provider,
         model: params.model.clone(),
-        prompt_tokens: usage.prompt_tokens as u64,
-        completion_tokens: usage.completion_tokens as u64,
-        cost_micros: 0,
-        priced,
+        prompt_tokens,
+        completion_tokens,
+        cost_micros: priced.cost_micros,
+        priced: priced.priced,
     };
     if let Err(e) = store::record_cost(conn, &record) {
         log::warn!(target: LOG_TARGET, "metering chat cost failed: {e}");

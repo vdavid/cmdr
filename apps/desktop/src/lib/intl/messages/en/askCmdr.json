@@ -238,5 +238,80 @@
   "askCmdr.attachment.remove": "Remove attachment",
   "@askCmdr.attachment.remove": {
     "description": "Accessible label for the small button that removes a staged file or folder attachment from the composer. Sentence case."
+  },
+  "askCmdr.consent.title": "Talk to Cmdr about your files",
+  "@askCmdr.consent.title": {
+    "description": "Heading of the one-time opt-in screen shown before the first Ask Cmdr chat. Warm and inviting. Sentence case."
+  },
+  "askCmdr.consent.intro": "Ask Cmdr sends your questions to the AI provider you choose, using your own API key. Here’s exactly what leaves your Mac when you chat:",
+  "@askCmdr.consent.intro": {
+    "description": "Opening paragraph of the Ask Cmdr consent screen, before the list of what gets sent. Ends with a colon introducing the list. The apostrophe is U+2019."
+  },
+  "askCmdr.consent.item.messages": "Your messages",
+  "@askCmdr.consent.item.messages": {
+    "description": "First item in the Ask Cmdr consent list of what leaves the Mac: the text the user types. Short noun phrase, sentence case."
+  },
+  "askCmdr.consent.item.names": "The names and paths of files and folders Cmdr looks at to answer you",
+  "@askCmdr.consent.item.names": {
+    "description": "Consent list item: the file and folder names and paths Cmdr reads to answer. Never the file contents. Sentence case, no period."
+  },
+  "askCmdr.consent.item.sizes": "Their sizes and dates",
+  "@askCmdr.consent.item.sizes": {
+    "description": "Consent list item: the sizes and dates of those files and folders. Short noun phrase, sentence case."
+  },
+  "askCmdr.consent.item.envelope": "What you’re looking at right now: your current folder, cursor, selection, and connected drives",
+  "@askCmdr.consent.item.envelope": {
+    "description": "Consent list item describing the app-state envelope sent with each question: the current folder, cursor position, selection, and connected drives. Sentence case, no period. The apostrophe is U+2019."
+  },
+  "askCmdr.consent.item.attachments": "Any file or folder you attach to a question, by its name and path only",
+  "@askCmdr.consent.item.attachments": {
+    "description": "Consent list item: files or folders the user attaches to a question are sent by reference (name and path), never their contents. Sentence case, no period."
+  },
+  "askCmdr.consent.noContents": "Cmdr never sends the contents of your files. It can’t: in this version there’s no tool that reads them. Ask Cmdr only looks and speaks; it never changes anything.",
+  "@askCmdr.consent.noContents": {
+    "description": "Reassurance paragraph on the Ask Cmdr consent screen: file contents are never sent, and the assistant is read-only. The apostrophes are U+2019."
+  },
+  "askCmdr.consent.local": "Your chats stay on your Mac, in a local database you can open and read. You pick the provider and model, and you can see what each conversation costs.",
+  "@askCmdr.consent.local": {
+    "description": "Paragraph on the Ask Cmdr consent screen: chats are stored locally and the user controls the provider, model, and cost visibility."
+  },
+  "askCmdr.consent.logsNote": "If you turn on LLM call logging in Advanced settings, Cmdr also saves each request and reply to a folder on your Mac. Those logs stay local too, never sent anywhere.",
+  "@askCmdr.consent.logsNote": {
+    "description": "Smaller note on the Ask Cmdr consent screen about the optional local LLM call log (the logLlmCalls setting): the logs are written to a local folder and never transmitted."
+  },
+  "askCmdr.consent.accept": "Turn on Ask Cmdr",
+  "@askCmdr.consent.accept": {
+    "description": "Primary button on the Ask Cmdr consent screen that opts in and unlocks the chat. Starts with a verb. Sentence case."
+  },
+  "askCmdr.consent.decline": "Not now",
+  "@askCmdr.consent.decline": {
+    "description": "Secondary button on the Ask Cmdr consent screen that closes the rail without opting in. Sentence case."
+  },
+  "askCmdr.cost.tokens": "{countText} {count, plural, one {token} other {tokens}}",
+  "@askCmdr.cost.tokens": {
+    "description": "The token count in the chat's cost footer. countText is the preformatted number (with thousands separators); count is the raw integer that selects singular or plural.",
+    "placeholders": {
+      "countText": { "content": "The token count, already formatted with thousands separators, like 1,234." },
+      "count": { "content": "The raw token count as an integer, used only to pick the singular or plural word." }
+    }
+  },
+  "askCmdr.cost.free": "free, on-device",
+  "@askCmdr.cost.free": {
+    "description": "Cost readout for a chat answered entirely by the local on-device model: it costs nothing. Lowercase, shown after the token count."
+  },
+  "askCmdr.cost.estimate": "about {amount}",
+  "@askCmdr.cost.estimate": {
+    "description": "Estimated cost of a chat with a known cloud model. amount is a preformatted currency string like $0.0023. Lowercase 'about' signals it's an estimate, not an exact bill.",
+    "placeholders": {
+      "amount": { "content": "The estimated cost, already formatted as a currency amount, like $0.0023." }
+    }
+  },
+  "askCmdr.cost.unknown": "cost unknown",
+  "@askCmdr.cost.unknown": {
+    "description": "Cost readout when the chat used a model that isn't in the price table: the tokens are known but the price isn't, so the cost is honestly unknown (never shown as free). Lowercase, shown after the token count."
+  },
+  "askCmdr.cost.label": "This chat’s usage",
+  "@askCmdr.cost.label": {
+    "description": "Accessible label for the chat's cost footer region (token count and estimated cost). The apostrophe is U+2019."
   }
 }

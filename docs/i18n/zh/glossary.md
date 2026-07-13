@@ -603,3 +603,49 @@ as one feature with the transfer queue.
 - **"Load 50 more" (loadMore button)** · `再加载 50 条` · `再加载` = load more; `条` measure word for log records ·
   `high`
 - No `sameAsSourceJustification` needed: every value differs from English (`AI 客户端` keeps only the brand token).
+
+### Ask Cmdr catalog (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `settings.section.askCmdr`, `commands.askCmdrToggle.*`, 2026-07-13)
+
+macOS zh-CN Tier 1 (no macOS coverage for this domain: Apple doesn't ship an AI-chat feature), Microsoft zh-Hans TBX
+Tier 2 cross-check. Reuses settled settings/errors-pass terms (`提供方`, `模型`, `API 密钥`, `设置`, `配额`, `超时`,
+`重试`, `驱动器`, `只读`, `附件`).
+
+- **chat (noun, a conversation with the AI)** · `聊天` · Microsoft TBX (`chat` noun → 聊天, CHN); no macOS tier exists
+  for this domain (Apple doesn't localize an AI-chat feature) · `high`
+- **chats (the list/history of past chats)** · `聊天记录` · descriptive, matching the everyday Chinese term for a chat
+  history list (the same collocation WeChat uses for its chat-history view); distinguishes the collection ("聊天记录")
+  from a single conversation ("聊天") throughout the catalog · `high`
+- **New chat (button)** · `新建聊天` · composed from settled `新建` (create-new, matches `新建文件夹`) + `聊天` · `high`
+- **archive / unarchive (a chat, hide from the active list)** · `存档` / `取消存档` · Microsoft TBX (`archive` verb →
+  `存档`, the dominant sense across 2 of 3 TBX hits; `档案` was rejected as the noun/record sense, wrong part of speech
+  here) · `high`. Archived badge → `已存档` (perfective, matches the shortcuts-pass badge convention).
+- **attach / attachment (a file or folder added to a question)** · `附加` (verb) / `附件` (noun) · Microsoft TBX
+  (`attach` → 附加, `attachment` → 附件) · `confirmed`
+- **drop (drag-and-drop a file onto the composer)** · `拖放` · standard, ubiquitous Chinese IT term for drag-and-drop
+  (no pile-specific hit; ubiquitous across every major OS/app localization) · `high`
+- **budget (a tool-step/time limit for one answer)** · `预算` · Microsoft TBX (`budget` → 预算) · `high`
+- **rate-limited / out of quota** · `速率限制` / `配额已用完` · Microsoft TBX (`rate limiting` → 速率限制); `配额`
+  reused from the errors-pass glossary · `high`
+- **token (AI usage-count unit)** · kept verbatim `token`, counted with the measure word `个` (`{countText} 个 token`,
+  matching the existing `{count} 个项目` counted-noun pattern and the settings pass's own `token 数`) · reaffirms the
+  earlier settings-pass "no settled Chinese UI term" call · `tentative`
+- **usage / spending (a chat's token count + estimated cost)** · `用量` (footer label "this chat's usage") / `花费` (the
+  settings section heading "Spending") · Microsoft TBX (`usage` → 使用情况, shortened to the more idiomatic `用量` for a
+  consumption metric; `spend` noun → 花费) · `high`
+- **estimate / estimated cost** · `约 {amount}` ("about {amount}") / `预计费用` ("estimated cost") · `约` = about,
+  standard; `预计` = estimated, standard · `high`
+- **cost unknown** · `费用未知` · `费用` = cost/fee (chosen over Microsoft's compound `成本费` for a cleaner, more
+  common noun); `未知` = unknown (style.md: no bare 失败/错误, `未知` is a neutral honest state) · `high`
+- **dashboard (a third-party AI provider's billing/usage web page)** · `仪表板` · Microsoft TBX (`dashboard` → 仪表板) ·
+  `high`
+- **free, on-device (cost readout for a local-model answer)** · `免费，本地运行` · `免费` = free (standard); `本地运行`
+  reuses the phrasing pattern already in the existing catalog (`ai.local.notInstalled`: "完全在你的设备上运行"),
+  shortened for the terse footer register · `high`
+- **Settings › AI (a settings-path reference inside a sentence)** · `“设置 › AI”` · `设置` = Settings (settled); `›`
+  kept verbatim (a literal typographic separator, not a token); wrapped in full-width quotes per the Simplified quoting
+  convention for UI-label references (style.md) · `high`
+- **Log AI model calls (advanced setting; the local LLM-call log feature)** · `记录 AI 模型调用` · `记录` = log/record
+  (verb-led descriptive title, matching sibling advanced-setting labels like `在 SMB 上过滤安全保存产生的临时文件`) ·
+  `high`
+- No `sameAsSourceJustification` needed except the three literal "Ask Cmdr" product-name keys (`askCmdr.title`,
+  `settings.section.askCmdr`, `commands.askCmdrToggle.label`), each justified per-key as the product name kept verbatim.

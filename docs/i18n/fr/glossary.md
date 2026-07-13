@@ -674,3 +674,73 @@ apostrophes are doubled in the catalog:
 - "and {countText} more item(s)" (overflow line) → "et {countText} élément(s) de plus" · reuses the macOS "et ^0 de
   plus" overflow pattern settled in the `filesystem-size-guard` pass · high.
 - No other `sameAsSourceJustification` needed: every value except `Agent` differs from English.
+
+Settled during the `ask-cmdr` pass (2026-07-13, the read-only AI chat rail: `askCmdr.*`, `settings.askCmdr.*`,
+`settings.advanced.logLlmCalls.*`, `settings.section.askCmdr`, `commands.askCmdrToggle.*`, ~97 keys). ICU values, so
+every apostrophe is doubled in the catalog:
+
+- chat / a saved conversation with the assistant (noun) → `conversation` · MS terminology FRA (`chat` → "conversation
+  instantanée"/"clavardage"/"messagerie instantanée", all live-chat-feature senses that don''t fit; the plain
+  `conversation` entry, feminine, is the generic term); macOS has no Messages-app bundle in the pile, so MS is the
+  anchor here. Confirmed by the EN source ITSELF: `askCmdr.consent.local` says "what each **conversation** costs" for
+  the very same saved-chat entity that `askCmdr.sessions.*` calls a "chat" — so English already treats the two words as
+  synonyms, and FR settles on the one word, `conversation`, everywhere. "New chat" → "Nouvelle conversation"; the
+  "Chats" panel heading/tooltip → "Conversations"; "chat title" → "Titre de la conversation" · high.
+- chat (verb, casually "to chat with the AI") → `discuter` · distinct from the noun above; matches the EN source's own
+  verb choice ("Ask Cmdr **chats** with", "start **chatting**") and macOS/MS''s general "discuter"/"conversation"
+  family; keeps `conversation` free for the noun sense (a saved thread) so the two senses don''t collide · high.
+- token (AI usage-cost unit) → `jeton` · MS terminology FRA (plain `token` → "jeton", masc.; distinct from "jeton de
+  sécurité"/"jeton d''authentification" which are the auth-token senses, wrong here) · high. FR CLDR
+  `one`/`many`/`other` written for `askCmdr.cost.tokens` (`many` identical to `other`, matching the catalog-wide
+  plain-integer convention).
+- archive (verb, put a chat away without deleting it) → `archiver`; unarchive → `désarchiver` · MS terminology FRA
+  (`archive` verb → "archiver", high); no pile hit for the un- form, but `désarchiver` is the standard, unambiguous FR
+  antonym (same des- + verb pattern as `désélectionner`/`désactiver` already in this catalog) · high for archiver,
+  tentative for désarchiver. NOTE: this is a DIFFERENT sense from the existing `archive (noun, a zip/tar/7z) → archive`
+  glossary entry (archive-browsing pass) — same English word, two unrelated senses (put-away-a-conversation vs.
+  compressed-file), exactly as in English; no collision because the chat sense is a VERB here and the zip sense stays a
+  noun.
+- archived (badge on a put-away conversation) → `Archivée` · agrees feminine with the implicit `conversation` (the
+  object, not a person), per the gender-restructuring rule · high.
+- on-device (a cost readout for the free local model) → `en local` · descriptive FR, no pile hit for this exact
+  compound; pairs with the already-brand-kept `Local LLM` provider option without reusing the brand name itself (the
+  cost readout is a plain-language footnote, not a provider label) · tentative.
+- "Ask about X" (a short invitation/placeholder to query files or a selection) → verb-first
+  `Poser une/des question(s) sur X`, EXCEPT the compact composer-attach button, which uses `Interroger X` (`interroger`
+  = query/ask a system) to stay short as a button label · tentative (idiomatic rendering, no exact pile phrase for
+  either).
+- thinking (assistant status while reasoning before it replies) → `Réflexion…` · descriptive FR noun-status, matching
+  the catalog''s existing noun+ellipsis progress-label convention (`Analyse…`, `Vérification…`); single `…` character
+  kept per the EN source (not three dots) · tentative.
+- tool-call status lines (present/past pairs shown while the assistant runs a read-only tool, e.g. "Checking your
+  drives" / "Checked your drives") → present tense as a deverbal-noun phrase (`Vérification de vos disques`), past tense
+  as `A [participe]é …` (`A vérifié vos disques`) · descriptive FR pattern, no direct pile precedent for this exact
+  present/past UI shape; chosen to read naturally as two tenses of the same action without needing a subject pronoun ·
+  tentative. Applied to all seven `askCmdr.tool.*` pairs (`appState`, `listDir`, `largestDirs`, `importantFolders`,
+  `folderImportance`, `listVolumes`, `operationsList`, `operationsGet`) plus the `unknown` fallback (`Travail en cours`
+  / `A utilisé un outil`).
+- "That request wasn''t available" (a read-only tool refusing an unsupported action) →
+  `Cette demande n''était pas disponible` · plain, calm FR; avoids "erreur"/"échec" per the style guide · high.
+- "This one hit its limit" (a single answer that used up its tool-step/time budget) → `Celle-ci a atteint sa limite` ·
+  `celle-ci` (fem.) refers back to the implicit `réponse` (the answer), agreeing with it rather than exposing an
+  ungendered pronoun · tentative.
+- "Not now" (consent-screen decline button) → `Plus tard` · reuses the catalog''s already-settled
+  `later (dismiss-for-now button) → plus tard` term (the `search`/`feedback`/… pass); same dismiss-without-committing
+  action · high.
+- log AI model calls (the LLM-call-logging Advanced setting, `settings.advanced.logLlmCalls.*`) →
+  `Journaliser les appels au modèle d''IA` (toggle label, infinitive verb form matching the catalog''s
+  `Activer le réseau`-style toggle labels); the consent-screen note (`askCmdr.consent.logsNote`) refers back to the same
+  phrase as a noun (`la journalisation des appels au modèle d''IA`) for consistency between the two surfaces · high
+  (reuses the settled `logging → journalisation` term).
+- drop to attach (a drag-and-drop hint on the composer) → `Déposer pour joindre` · `déposer` from macOS''s "Boîte de
+  dépôt" (Drop box, the only pile hit for "drop"); `joindre` from the catalog''s existing attach-an-email-address
+  precedent (`crashReporter.dialog.attachEmail` → "Joindre mon adresse e-mail…") · tentative (composed from two
+  separately-sourced roots, no single pile phrase for the whole hint).
+- attachment (a file/folder staged onto a chat message) → `pièce jointe` (noun); remove attachment →
+  `Retirer la pièce jointe` · MS terminology FRA (`attachment` → "pièce jointe", fem.); `retirer` matches macOS''s
+  sidebar-removal register · high.
+- Provider/model settings-path breadcrumb `Settings › AI` → `Réglages › IA` · reuses the settled `AI → IA` section name
+  and the catalog''s in-app `Réglages >` breadcrumb convention (the `updates`/`whatsNew` pass) · high.
+- `Ask Cmdr` (the product/brand name) is `sameAsSourceJustification`''d everywhere it appears alone (`askCmdr.title`,
+  `settings.section.askCmdr`, `commands.askCmdrToggle.label`) per its own `@key` description ("keep it as-is"); every
+  other value in this pass differs from English.

@@ -619,3 +619,75 @@ Agent → `Tác nhân`. Summary verbs reuse the transfer past-tense forms (`Đã
 `Đã chuyển … vào thùng rác`/`Đã đổi tên`/`Đã tạo`/`Đã nén`). Plurals collapse to a single `other` branch (vi has one
 CLDR category), keeping the `{count}`/`{countText}` placeholders. "and N more items" → `và thêm {countText} mục nữa`. No
 `sameAsSourceJustification` needed: all values differ from English.
+
+Settled while translating Ask Cmdr (the read-only AI chat rail: `askCmdr.json` + `settings.askCmdr.*` +
+`settings.advanced.logLlmCalls.*` + `settings.section.askCmdr` + `commands.askCmdrToggle.*`, 2026-07-13). Reuses prior
+terms (chỉ đọc = read-only, thao tác/lịch sử thao tác = operation/operation history, nhà cung cấp = provider, mô hình =
+model, token loanword, hạn ngạch = quota, giới hạn = limit, cục bộ = local, cơ sở dữ liệu = database, không thể =
+can''t, sự cố = issue/problem framing, thử lại = retry, ổ đĩa = drive, con trỏ = cursor, mục = item, khóa API = API key,
+nhật ký = log, đóng = close, đổi tên = rename, mục đã chọn = selected item(s), đính kèm = attach/attachment, Cài đặt =
+Settings, Nâng cao = Advanced). New terms below, each mined from `_ignored/i18n/vi/`:
+
+- **chat (a conversation with the AI, noun): `trò chuyện`** · MS terminology (`chat` → `trò chuyện`, VNM). Used as the
+  section/nav noun ("Chats" → `Trò chuyện`) and in compounds ("New chat" → `Trò chuyện mới`, "Back to chat" →
+  `Quay lại trò chuyện`). Vietnamese has no plural inflection so the same noun covers "chat"/"chats". `high`.
+- **message (a chat message): `tin nhắn`** · MS terminology (`message` → `tin nhắn`, VNM). "Send message" →
+  `Gửi tin nhắn`; "Load earlier messages" → `Tải tin nhắn trước đó`. `high`.
+- **archive (a chat, verb) / archived: `lưu trữ` / `đã lưu trữ`** · macOS Finder (key `AR40`, `Archive` → `Lưu trữ`,
+  cross-referenced key-to-key en↔vi). Deliberately NOT the browsable-zip sense `tệp nén` (a different concept — hiding a
+  conversation from the active list, not compressing a file). `high`.
+- **unarchive (a chat): `bỏ lưu trữ`** · no direct pile hit (the pile has no chat/mail app); mirrors the common
+  Vietnamese-software convention for undoing an archive action (Gmail/Zalo-style `Lưu trữ`/`Bỏ lưu trữ` pairing).
+  `tentative`.
+- **attachment (a staged file/folder attached to a question, noun): `tệp đính kèm`** · MS terminology (`attachment` →
+  `đính kèm`, VNM), combined with the established `tệp`/`thư mục` nouns. "Remove attachment" → `Gỡ tệp đính kèm` (`gỡ` =
+  detach, distinct from `xóa` = delete; the attachment is unstaged, not deleted). `high`.
+- **Not now (decline/dismiss button): `Để sau`** · macOS AppKit (`Not Now` → `Để sau`, `en/macOS/AppKit/Document.json`).
+  `high`.
+- **database: `cơ sở dữ liệu`** · MS terminology (`database` → `Cơ sở dữ liệu`, VNM). "local database" →
+  `cơ sở dữ liệu cục bộ`. `high`.
+- **dashboard (a provider's billing dashboard): `bảng thông tin`** · MS terminology (`dashboard` → `bảng thông tin`,
+  VNM). `high`.
+- **bill (verb, "your provider bills you"): `thanh toán`** · MS terminology (`billing` → `thanh toán`, VNM). "bills you
+  directly" → `thanh toán trực tiếp với bạn`. `high`.
+- **free (cost-free, not gratis-as-liberty): `miễn phí`** · standard everyday Vietnamese for "free of charge"; NOT MS's
+  first hit `tự do` (the liberty/freedom sense, wrong here — mining gotcha 4). "free, on-device" → `miễn phí, cục bộ`
+  (reuses `cục bộ` = local from `settings.ai.provider.opt.local` → `LLM cục bộ`). `high`.
+- **reach (couldn't reach the provider): reframed as `kết nối` (connect)** · macOS Finder
+  (`Could not connect to the server.` → `Không thể kết nối máy chủ.`, keys `CS204`/`CS208`) is the closest structural
+  parallel for an unreachable-network-endpoint sentence; there's no literal "reach" verb in the pile, so the sentence is
+  restructured around the attested "couldn't connect" pattern rather than translated word-for-word. `high` (structural
+  match).
+- **estimate / estimated (a spend estimate, adjective/adverb use): `ước tính`** · natural rendering; NOT MS's `báo giá`
+  (a price quotation, the sales-quote sense — wrong here). "about {amount}" → `khoảng {amount}`; "These are estimates" →
+  `Đây chỉ là ước tính`. `tentative` (no direct pile string for this UI sense, quotation sense rejected).
+- **cost (noun, chat spend): `chi phí`** · standard Vietnamese for a general cost/expense; NOT MS's `giá vốn` (cost of
+  goods sold, an accounting term — wrong here). "cost unknown" → `chi phí không rõ`. `tentative`.
+- **spending (settings section heading): `chi tiêu`** · standard Vietnamese for personal/app spending. `tentative` (no
+  direct pile hit; natural rendering).
+- **usage (token/spend usage): `sử dụng` / `mức sử dụng`** · standard Vietnamese tech usage; "This chat's usage" →
+  `Mức sử dụng của cuộc trò chuyện này`. `tentative`.
+- **debugging (verb, "for debugging"): `gỡ lỗi`** · standard Vietnamese dev term. `tentative` (no direct pile hit;
+  universal dev-audience convention).
+- **working (generic tool-call fallback status): `đang xử lý`** · natural present-tense fallback ("processing"), used
+  only when no specific tool label applies. `tentative`.
+- **look up (a logged operation's detail, verb): `tra cứu`** · standard Vietnamese for looking up a record. "Looking up
+  an operation" → `Đang tra cứu một thao tác`. `high`.
+- **available (a tool request that wasn't possible, read-only refusal): `khả dụng`** · standard Vietnamese IT adjective.
+  "That request wasn't available" → `Yêu cầu đó không khả dụng` (avoids "lỗi"/"thất bại" per the error voice). `high`.
+
+`askCmdr` phrasings settled here (for consistency in other files):
+
+- **"Chats" (nav/heading, both the rail-header button and the sessions-panel title) → `Trò chuyện`**; "New chat" →
+  `Trò chuyện mới`; "Start a fresh chat" → `Bắt đầu trò chuyện mới`.
+- **"file history" (the operation log, as referenced from Ask Cmdr's tool descriptions) → `lịch sử thao tác`**, not a
+  literal `lịch sử tệp` — Ask Cmdr's file history tool reads the operation log (past copies/moves/deletes/renames), so
+  this reuses the `operationLog` pass's `lịch sử thao tác` rather than coining a new "file history" term. "Searching
+  your file history" → `Đang tìm kiếm trong lịch sử thao tác của bạn`. Confidence: `high` (catalog-consistent with the
+  `operationLog` pass). Note: this is a small tension with the app-facing English string "file history", which reads
+  slightly broader than "operation history" — flagged here so a future pass doesn't fork the term if the English copy is
+  ever split.
+- **"Try again?" (short retry question, several error strings): `Thử lại?`** kept as a plain question (no softening
+  particle) for consistency across the five error strings that use it.
+- **Consent-screen items ("Sentence case, no period" per the en `@key` notes) keep no trailing period** in Vietnamese,
+  matching the English constraint.

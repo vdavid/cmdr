@@ -34,6 +34,7 @@
         'Appearance',
         'Behavior',
         'AI',
+        'Ask Cmdr',
         'File systems',
         'Viewer',
         'Operation log',

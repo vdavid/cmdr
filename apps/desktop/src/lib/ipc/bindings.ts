@@ -1986,6 +1986,33 @@ export const commands = {
   askCmdrResolveAttachments: (paths: string[]) =>
     __TAURI_INVOKE<AttachmentRef[]>('ask_cmdr_resolve_attachments', { paths }),
   /**
+   *  The Ask Cmdr consent status: whether the user opted into the CURRENT consent copy, plus
+   *  the audit of what/when they accepted. Reads `main.db`; a missing store reads as
+   *  not-accepted, so the gate stays closed rather than failing open.
+   */
+  askCmdrConsentStatus: () => typedError<AskCmdrConsentStatus, string>(__TAURI_INVOKE('ask_cmdr_consent_status')),
+  /**
+   *  Record the user's opt-in to the current consent copy (timestamp + copy version), so the
+   *  rail unlocks. Idempotent.
+   */
+  askCmdrAcceptConsent: () => typedError<null, string>(__TAURI_INVOKE('ask_cmdr_accept_consent')),
+  /**
+   *  Turn Ask Cmdr off by clearing consent (the settings "turn off" path). The next rail
+   *  open re-shows the consent screen. No delete of chats — history stays.
+   */
+  askCmdrRevokeConsent: () => typedError<null, string>(__TAURI_INVOKE('ask_cmdr_revoke_consent')),
+  /**
+   *  One conversation's cumulative token + cost total (all days, all models), for the
+   *  per-thread footer. Zeroed for a thread with no metered turn yet. Empty store ⇒ zeroed.
+   */
+  askCmdrConversationCost: (id: number) =>
+    typedError<ConversationCost, string>(__TAURI_INVOKE('ask_cmdr_conversation_cost', { id })),
+  /**
+   *  The per-day cost rollup across every thread and model, newest day first (the settings
+   *  spend display). Empty when the store never opened.
+   */
+  askCmdrCostSummary: () => typedError<CostSummary, string>(__TAURI_INVOKE('ask_cmdr_cost_summary')),
+  /**
    *  Translates a natural-language selection request into a glob/regex plus optional
    *  size and date filters.
    *
@@ -3092,6 +3119,25 @@ export type AppStatus =
  */
 export type ArchiveSubkind = 'compress' | 'edit' | 'extract'
 
+/**
+ *  Whether the user has opted into Ask Cmdr, and the audit of what they accepted. The rail
+ *  gates on `accepted` (the CURRENT copy version): a never-accepted or stale-version record
+ *  re-shows the consent screen, and nothing is ever sent to a provider without it.
+ */
+export type AskCmdrConsentStatus = {
+  /**
+   *  True only when the user accepted the CURRENT `current_version`. The one flag the
+   *  rail and the settings toggle read.
+   */
+  accepted: boolean
+  // The copy version the user must have accepted to be `accepted`.
+  currentVersion: number
+  // The version the user last accepted, or `None` if never.
+  acceptedVersion: number | null
+  // When the user last accepted (unix secs), or `None` if never.
+  acceptedAt: number | null
+}
+
 // Whether an attachment references a file or a folder, on the wire.
 export type AttachmentKindView = 'file' | 'folder'
 
@@ -3306,6 +3352,27 @@ export type ConnectionDiagnosticsDto = {
 export type ConnectionMode = 'guest' | 'credentials'
 
 /**
+ *  One conversation's cumulative token + cost totals across every day and model it used.
+ *  Wire type (the per-thread footer, M8).
+ */
+export type ConversationCost = {
+  promptTokens: number
+  completionTokens: number
+  costMicros: number
+  /**
+   *  True only when every contributing row was priced. False ⇒ the cost is a lower
+   *  bound (some model was unpriced), shown "unknown", never a silent $0 (spec §2.4).
+   */
+  fullyPriced: boolean
+  /**
+   *  The distinct providers that contributed. Empty when the thread has no metered
+   *  turn yet (a brand-new or local-only-before-any-answer thread). The footer stays
+   *  honest about a local/on-device thread by reading the tokens + this list.
+   */
+  providers: ProviderTag[]
+}
+
+/**
  *  A conversation header plus a page of its display messages, and the total count so a
  *  paged UI knows whether more exist.
  */
@@ -3350,6 +3417,28 @@ export type ConversationSearchHit = {
    *  Plain text with `…` ellipses; no markup (rendered as escaped text).
    */
   snippet: string
+}
+
+/**
+ *  One day's token + cost totals across every thread and model. Wire type (the settings
+ *  spend display, M8).
+ */
+export type CostDay = {
+  day: string
+  promptTokens: number
+  completionTokens: number
+  costMicros: number
+  /**
+   *  True only when every contributing row was priced. False ⇒ the day's cost is a
+   *  lower bound (some model was unpriced), shown as "unknown", never a silent $0
+   *  (spec §2.4 honesty).
+   */
+  fullyPriced: boolean
+}
+
+// The per-day cost rollup, newest day first. Wire type (M8).
+export type CostSummary = {
+  days: CostDay[]
 }
 
 // The crash report written to disk (JSON).
@@ -5431,6 +5520,22 @@ export type Provider =
   | 'cmVolumes'
   // Any unrecognized dir under `~/Library/CloudStorage/`.
   | 'genericCloudStorage'
+
+/**
+ *  Which provider a reasoning blob came from. The tag is descriptive: it records
+ *  where the opaque `blob` originated so a replay re-attaches it in the shape that
+ *  provider expects. Distinguishes the two OpenAI surfaces because their reasoning
+ *  round-trip differs (chat-completions is stateless; Responses carries encrypted
+ *  items — spike Gap B).
+ *
+ *  Two-way split, like the operation log's `token_enum!` types: the serde/specta
+ *  wire form is camelCase (for IPC + `bindings.ts` — the `cost_meter` provider on
+ *  the wire, M8's per-thread breakdown), while [`as_token`](Self::as_token) is the
+ *  stable snake_case DB token (the `cost_meter.provider` column, M2). The reasoning
+ *  `blob` in `content_blocks` persists this via serde and round-trips it untouched;
+ *  its exact string form is backend-only.
+ */
+export type ProviderTag = 'anthropic' | 'openAi' | 'openAiResponses' | 'gemini' | 'local'
 
 /**
  *  `quick-look-closed`: the preview panel left the screen (our `orderOut:`, the

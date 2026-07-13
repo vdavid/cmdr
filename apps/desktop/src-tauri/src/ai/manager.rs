@@ -181,6 +181,28 @@ pub fn resolve_backend() -> BackendResolution {
     )
 }
 
+/// Like [`resolve_backend`], but substitutes a dedicated `model_override` onto the
+/// resolved CLOUD backend — the Ask Cmdr interactive slot's own model choice. `None` (or a
+/// local provider, whose model is fixed) resolves exactly like [`resolve_backend`]. The
+/// slot layers a model choice OVER the shared `ai/` provider config (readiness, keys, base
+/// URL, on/off all come from `resolve_backend`), so it never forks provider management
+/// (agent-spec D49).
+pub fn resolve_backend_with_model(model_override: Option<&str>) -> BackendResolution {
+    let base = resolve_backend();
+    match model_override {
+        Some(model) if !model.is_empty() && get_provider() == "cloud" => match base {
+            // Rebuild the ready cloud backend with the slot's model; the adapter is still
+            // chosen from the model name inside `AiBackend::remote`.
+            BackendResolution::Ready(_) => {
+                let (api_key, base_url, _model) = get_cloud_config();
+                BackendResolution::Ready(super::client::AiBackend::remote(api_key, base_url, model.to_string()))
+            }
+            other => other,
+        },
+        _ => base,
+    }
+}
+
 impl BackendResolution {
     /// Maps a resolution onto the translate-command surface, where every
     /// non-ready case is a typed [`AiTranslateError`] the dialog toasts (the

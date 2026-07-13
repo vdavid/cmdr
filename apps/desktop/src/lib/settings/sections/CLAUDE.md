@@ -9,8 +9,8 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 
 ## Module map
 
-- One `*Section.svelte` per sidebar entry (Appearance, Behavior, AI cloud/local, File systems, Viewer, Developer,
-  Updates, License, Advanced, Keyboard shortcuts). Pure helpers: `ai-secret-error.ts`, `license-section-utils.ts`,
+- One `*Section.svelte` per sidebar entry (Appearance, Behavior, AI, Ask Cmdr, File systems, Viewer, Developer, Updates,
+  License, Advanced, Keyboard shortcuts). Pure helpers: `ai-secret-error.ts`, `license-section-utils.ts`,
   `ram-gauge-utils.ts`, `keyboard-shortcuts-grouping.ts`, `keyboard-shortcuts-banner.ts`.
 - The full file/responsibility table, test layout, and conventions are in DETAILS.md.
 

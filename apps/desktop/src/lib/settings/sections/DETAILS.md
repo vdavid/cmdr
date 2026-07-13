@@ -393,3 +393,21 @@ can read it before any window loads, and a global Carbon hotkey has no in-app sc
 keydown dispatch, so the scope/conflict apparatus doesn't apply. The toggle's description references the live binding
 (via `global-shortcut-description.ts`) and updates when the user rebinds. Both surfaces call the
 `set_global_go_to_latest_shortcut` IPC on change for live-apply.
+
+## Ask Cmdr section (`AskCmdrSection.svelte`)
+
+The `Ask Cmdr` top-level section, over the read-only chat rail. Its parts:
+
+- **Enable toggle IS consent, not a registry setting.** The on/off state lives in `main.db` (the consent record), driven
+  by the consent commands via `lib/ask-cmdr/ask-cmdr-consent.svelte` (`acceptConsent` / `revokeConsent`), not a settings
+  boolean. Deliberately so: the rail gates on the same consent record, and a separate `askCmdr.enabled` flag would drift
+  from it. The toggle is a `Button`, not a registry `SettingSwitch`.
+- **The "what Ask Cmdr sends" disclosure** reuses the `askCmdr.consent.*` catalog copy verbatim (the same human-reviewed
+  strings as the rail's opt-in gate), so the two surfaces never diverge.
+- **The interactive slot is a MODEL-only setting.** `askCmdr.interactiveModel` (a hand-rolled text row — the registry
+  has no generic text-input primitive) overrides the model; the provider, keys, and base URL come from the shared `ai/`
+  config (Settings › AI). The section shows the current `ai.provider` as a hint. Backend resolution:
+  `commands/agent.rs::resolve_agent_llm` + `settings::load_ask_cmdr_interactive_model`.
+- **Spend** is the per-day rollup from `ask_cmdr_cost_summary`, formatted with the same honest miss-path as the rail
+  footer (`lib/ask-cmdr/ask-cmdr-cost.ts`): a fully-priced day shows an estimate, a zero-cost fully-priced day is
+  local/free, an unpriced day is "cost unknown", never a silent $0.

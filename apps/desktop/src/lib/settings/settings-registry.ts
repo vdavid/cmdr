@@ -892,6 +892,27 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   },
 
   // ========================================================================
+  // Ask Cmdr
+  //
+  // The interactive-slot model override. Empty = use the model the shared `ai/`
+  // provider is already configured with. The backend reads it fresh each send
+  // (`load_ask_cmdr_interactive_model`), so it applies with no restart and needs no
+  // `settings-applier` case (same pattern as the operation-log retention limits). The
+  // enable/consent state is NOT a setting — it lives in `main.db` (agent state), driven
+  // by `AskCmdrSection.svelte` via the consent commands.
+  // ========================================================================
+  {
+    id: 'askCmdr.interactiveModel',
+    section: ['Ask Cmdr'],
+    labelKey: 'settings.askCmdr.interactiveModel.label',
+    descriptionKey: 'settings.askCmdr.interactiveModel.description',
+    keywords: ['ask cmdr', 'ai', 'chat', 'assistant', 'model', 'llm', 'interactive', 'slot'],
+    type: 'string',
+    default: '',
+    component: 'text-input',
+  },
+
+  // ========================================================================
   // File systems › SMB/Network shares
   // ========================================================================
   {

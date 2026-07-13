@@ -991,6 +991,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.logLlmCalls.label": "Journaliser les appels au modèle d''IA",
+  "@settings.advanced.logLlmCalls.label": {
+    "sourceHash": "f865b3e"
+  },
+  "settings.advanced.logLlmCalls.description": "Enregistre chaque requête et réponse de l''IA dans un dossier local (llm-logs) à des fins de débogage. Ces fichiers restent sur votre Mac et incluent les noms et chemins de fichiers que Cmdr envoie à votre fournisseur.",
+  "@settings.advanced.logLlmCalls.description": {
+    "sourceHash": "86b3d34"
+  },
   "settings.advanced.serviceResolveTimeout.label": "Délai d''attente de résolution de service",
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
@@ -1155,6 +1163,75 @@
   "settings.section.ai": "IA",
   "@settings.section.ai": {
     "sourceHash": "11fb682"
+  },
+  "settings.section.askCmdr": "Ask Cmdr",
+  "@settings.section.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (\"Ask Cmdr\" is the feature's brand name); kept verbatim in every locale per the @key description."
+  },
+  "settings.askCmdr.intro": "Discutez avec une IA à propos de vos fichiers, disques et historique. Ask Cmdr est en lecture seule : il lit les noms, chemins et tailles pour répondre, et ne change jamais rien.",
+  "@settings.askCmdr.intro": {
+    "sourceHash": "124b2d5"
+  },
+  "settings.askCmdr.status.on": "Ask Cmdr est activé",
+  "@settings.askCmdr.status.on": {
+    "sourceHash": "1003ff7"
+  },
+  "settings.askCmdr.status.off": "Ask Cmdr est désactivé",
+  "@settings.askCmdr.status.off": {
+    "sourceHash": "0420c9a"
+  },
+  "settings.askCmdr.status.onSince": "Activé depuis le {date}",
+  "@settings.askCmdr.status.onSince": {
+    "sourceHash": "2f573fd"
+  },
+  "settings.askCmdr.turnOn": "Activer Ask Cmdr",
+  "@settings.askCmdr.turnOn": {
+    "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnOff": "Désactiver Ask Cmdr",
+  "@settings.askCmdr.turnOff": {
+    "sourceHash": "eb03374"
+  },
+  "settings.askCmdr.disclosure.title": "Ce qu''Ask Cmdr envoie",
+  "@settings.askCmdr.disclosure.title": {
+    "sourceHash": "8ccd3b9"
+  },
+  "settings.askCmdr.provider.title": "Fournisseur et modèle",
+  "@settings.askCmdr.provider.title": {
+    "sourceHash": "b9fdc88"
+  },
+  "settings.askCmdr.provider.shared": "Ask Cmdr utilise le fournisseur d''IA et la clé que vous avez configurés dans Réglages › IA ({provider}).",
+  "@settings.askCmdr.provider.shared": {
+    "sourceHash": "c84fd32"
+  },
+  "settings.askCmdr.provider.off": "Activez un fournisseur d''IA dans Réglages › IA pour utiliser Ask Cmdr.",
+  "@settings.askCmdr.provider.off": {
+    "sourceHash": "8b378ae"
+  },
+  "settings.askCmdr.interactiveModel.label": "Modèle d''Ask Cmdr",
+  "@settings.askCmdr.interactiveModel.label": {
+    "sourceHash": "194255a"
+  },
+  "settings.askCmdr.interactiveModel.description": "Le modèle avec lequel Ask Cmdr discute. Laissez vide pour utiliser le même modèle que les autres fonctionnalités d''IA de Cmdr. Exemple : claude-sonnet-4-5",
+  "@settings.askCmdr.interactiveModel.description": {
+    "sourceHash": "e3f64a5"
+  },
+  "settings.askCmdr.interactiveModel.placeholder": "Identique à l''IA de Cmdr",
+  "@settings.askCmdr.interactiveModel.placeholder": {
+    "sourceHash": "2631f3d"
+  },
+  "settings.askCmdr.spend.title": "Dépenses",
+  "@settings.askCmdr.spend.title": {
+    "sourceHash": "c2c7ae2"
+  },
+  "settings.askCmdr.spend.empty": "Aucune utilisation pour l''instant. Votre consommation de jetons et le coût estimé s''afficheront ici.",
+  "@settings.askCmdr.spend.empty": {
+    "sourceHash": "baaf9d6"
+  },
+  "settings.askCmdr.spend.disclaimer": "Il s''agit d''estimations. Votre fournisseur vous facture directement, donc consultez son tableau de bord pour le montant exact.",
+  "@settings.askCmdr.spend.disclaimer": {
+    "sourceHash": "81fd190"
   },
   "settings.section.fileSystems": "Systèmes de fichiers",
   "@settings.section.fileSystems": {

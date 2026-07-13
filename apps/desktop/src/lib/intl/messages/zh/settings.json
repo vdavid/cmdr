@@ -985,6 +985,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.logLlmCalls.label": "记录 AI 模型调用",
+  "@settings.advanced.logLlmCalls.label": {
+    "sourceHash": "f865b3e"
+  },
+  "settings.advanced.logLlmCalls.description": "为方便调试，把每次 AI 请求和响应保存到本地文件夹（llm-logs）中。这些文件保留在你的 Mac 上，其中包含 Cmdr 发送给你的提供方的文件名和路径。",
+  "@settings.advanced.logLlmCalls.description": {
+    "sourceHash": "86b3d34"
+  },
   "settings.advanced.serviceResolveTimeout.label": "服务解析超时",
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
@@ -1145,6 +1153,75 @@
   "@settings.section.ai": {
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "\"AI\" is kept verbatim throughout Cmdrs zh catalog (e.g. \"AI 模型\", \"AI 已就绪\", \"设置 > AI\"), matching Apple zh-CN and Microsoft zh-Hans UI, which keep \"AI\" in Latin form. glossary.md records the AI section as \"AI\" (verbatim)."
+  },
+  "settings.section.askCmdr": "Ask Cmdr",
+  "@settings.section.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name, kept verbatim across the whole zh catalog per the @key description (\"keep it as-is\")."
+  },
+  "settings.askCmdr.intro": "和 AI 聊聊你的文件、驱动器和历史记录。Ask Cmdr 是只读的：它通过读取名称、路径和大小来回答问题，从不修改任何内容。",
+  "@settings.askCmdr.intro": {
+    "sourceHash": "124b2d5"
+  },
+  "settings.askCmdr.status.on": "Ask Cmdr 已开启",
+  "@settings.askCmdr.status.on": {
+    "sourceHash": "1003ff7"
+  },
+  "settings.askCmdr.status.off": "Ask Cmdr 已关闭",
+  "@settings.askCmdr.status.off": {
+    "sourceHash": "0420c9a"
+  },
+  "settings.askCmdr.status.onSince": "自 {date} 起开启",
+  "@settings.askCmdr.status.onSince": {
+    "sourceHash": "2f573fd"
+  },
+  "settings.askCmdr.turnOn": "开启 Ask Cmdr",
+  "@settings.askCmdr.turnOn": {
+    "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnOff": "关闭 Ask Cmdr",
+  "@settings.askCmdr.turnOff": {
+    "sourceHash": "eb03374"
+  },
+  "settings.askCmdr.disclosure.title": "Ask Cmdr 发送的内容",
+  "@settings.askCmdr.disclosure.title": {
+    "sourceHash": "8ccd3b9"
+  },
+  "settings.askCmdr.provider.title": "提供方和模型",
+  "@settings.askCmdr.provider.title": {
+    "sourceHash": "b9fdc88"
+  },
+  "settings.askCmdr.provider.shared": "Ask Cmdr 使用你在“设置 › AI”中设置好的 AI 提供方和密钥（{provider}）。",
+  "@settings.askCmdr.provider.shared": {
+    "sourceHash": "c84fd32"
+  },
+  "settings.askCmdr.provider.off": "在“设置 › AI”中开启一个 AI 提供方，即可使用 Ask Cmdr。",
+  "@settings.askCmdr.provider.off": {
+    "sourceHash": "8b378ae"
+  },
+  "settings.askCmdr.interactiveModel.label": "Ask Cmdr 模型",
+  "@settings.askCmdr.interactiveModel.label": {
+    "sourceHash": "194255a"
+  },
+  "settings.askCmdr.interactiveModel.description": "Ask Cmdr 聊天时使用的模型。留空则使用与 Cmdr 其他 AI 功能相同的模型。例如：claude-sonnet-4-5",
+  "@settings.askCmdr.interactiveModel.description": {
+    "sourceHash": "e3f64a5"
+  },
+  "settings.askCmdr.interactiveModel.placeholder": "与 Cmdr 的 AI 相同",
+  "@settings.askCmdr.interactiveModel.placeholder": {
+    "sourceHash": "2631f3d"
+  },
+  "settings.askCmdr.spend.title": "花费",
+  "@settings.askCmdr.spend.title": {
+    "sourceHash": "c2c7ae2"
+  },
+  "settings.askCmdr.spend.empty": "还没有使用记录。你的 token 用量和预计费用会显示在这里。",
+  "@settings.askCmdr.spend.empty": {
+    "sourceHash": "baaf9d6"
+  },
+  "settings.askCmdr.spend.disclaimer": "这些只是估算金额。你的提供方会直接向你收费，确切金额请查看你提供方的仪表板。",
+  "@settings.askCmdr.spend.disclaimer": {
+    "sourceHash": "81fd190"
   },
   "settings.section.fileSystems": "文件系统",
   "@settings.section.fileSystems": {

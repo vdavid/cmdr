@@ -428,6 +428,63 @@ pub fn record_cost(conn: &Connection, record: &CostRecord) -> Result<(), AgentSt
     Ok(())
 }
 
+/// One conversation's cumulative token + cost totals across every day and model it used.
+/// Wire type (the per-thread footer, M8).
+#[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ConversationCost {
+    pub prompt_tokens: u64,
+    pub completion_tokens: u64,
+    pub cost_micros: i64,
+    /// True only when every contributing row was priced. False ⇒ the cost is a lower
+    /// bound (some model was unpriced), shown "unknown", never a silent $0 (spec §2.4).
+    pub fully_priced: bool,
+    /// The distinct providers that contributed. Empty when the thread has no metered
+    /// turn yet (a brand-new or local-only-before-any-answer thread). The footer stays
+    /// honest about a local/on-device thread by reading the tokens + this list.
+    pub providers: Vec<ProviderTag>,
+}
+
+/// The cumulative token + cost total for one conversation (all days, all models). Zeroed
+/// when the thread has metered no turn yet. Drives the per-thread footer (M8).
+pub fn conversation_cost(conn: &Connection, conversation_id: i64) -> Result<ConversationCost, AgentStoreError> {
+    let (prompt_tokens, completion_tokens, cost_micros, fully_priced) = conn.query_row(
+        "SELECT COALESCE(SUM(prompt_tokens), 0),
+                COALESCE(SUM(completion_tokens), 0),
+                COALESCE(SUM(cost_micros), 0),
+                COALESCE(MIN(priced), 1)
+         FROM cost_meter WHERE conversation_id = ?1",
+        rusqlite::params![conversation_id],
+        |row| {
+            Ok((
+                row.get::<_, i64>(0)? as u64,
+                row.get::<_, i64>(1)? as u64,
+                row.get::<_, i64>(2)?,
+                row.get::<_, i64>(3)? != 0,
+            ))
+        },
+    )?;
+    let mut providers = Vec::new();
+    {
+        let mut stmt = conn
+            .prepare_cached("SELECT DISTINCT provider FROM cost_meter WHERE conversation_id = ?1 ORDER BY provider")?;
+        let mut rows = stmt.query(rusqlite::params![conversation_id])?;
+        while let Some(row) = rows.next()? {
+            let token: String = row.get(0)?;
+            if let Some(tag) = ProviderTag::from_token(&token) {
+                providers.push(tag);
+            }
+        }
+    }
+    Ok(ConversationCost {
+        prompt_tokens,
+        completion_tokens,
+        cost_micros,
+        fully_priced,
+        providers,
+    })
+}
+
 /// The per-day cost rollup across every thread and model, newest day first. A day reads
 /// `fully_priced = false` when any contributing row was unpriced (`MIN(priced) = 0`).
 pub fn cost_summary(conn: &Connection) -> Result<CostSummary, AgentStoreError> {
@@ -453,6 +510,74 @@ pub fn cost_summary(conn: &Connection) -> Result<CostSummary, AgentStoreError> {
         });
     }
     Ok(CostSummary { days })
+}
+
+// ── Consent (meta rows) ──────────────────────────────────────────────────────
+
+/// The `meta` key holding the accepted consent-copy version (as text).
+const CONSENT_VERSION_KEY: &str = "ask_cmdr_consent_version";
+/// The `meta` key holding the unix-secs timestamp the user accepted consent.
+const CONSENT_AT_KEY: &str = "ask_cmdr_consent_at";
+
+/// A recorded consent: which copy version the user accepted, and when. Stored in the
+/// durable `main.db` (agent state, not a preference — agent-spec D56), so it lives beside
+/// the chats it governs and is `sqlite3`-inspectable. Wire type (M8).
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AskCmdrConsent {
+    /// The `CONSENT_COPY_VERSION` the user accepted. A future copy change bumps the
+    /// constant, so a stale-version record no longer counts as current consent.
+    pub version: u32,
+    /// Unix secs when consent was recorded.
+    pub at: i64,
+}
+
+/// Read a `meta` value by key.
+fn read_meta(conn: &Connection, key: &str) -> Result<Option<String>, AgentStoreError> {
+    let mut stmt = conn.prepare_cached("SELECT value FROM meta WHERE key = ?1")?;
+    let mut rows = stmt.query(rusqlite::params![key])?;
+    match rows.next()? {
+        Some(row) => Ok(Some(row.get(0)?)),
+        None => Ok(None),
+    }
+}
+
+/// The recorded consent, or `None` if the user has never accepted (both keys must be
+/// present and parseable). A partial/garbage record reads as no consent, so the gate
+/// re-shows the consent screen rather than silently proceeding.
+pub fn get_consent(conn: &Connection) -> Result<Option<AskCmdrConsent>, AgentStoreError> {
+    let (Some(version_str), Some(at_str)) = (read_meta(conn, CONSENT_VERSION_KEY)?, read_meta(conn, CONSENT_AT_KEY)?)
+    else {
+        return Ok(None);
+    };
+    match (version_str.parse::<u32>(), at_str.parse::<i64>()) {
+        (Ok(version), Ok(at)) => Ok(Some(AskCmdrConsent { version, at })),
+        _ => Ok(None),
+    }
+}
+
+/// Record consent for copy `version` at `now` (unix secs). Idempotent — re-accepting
+/// overwrites the stored version + timestamp.
+pub fn set_consent(conn: &Connection, version: u32, now: i64) -> Result<(), AgentStoreError> {
+    conn.execute(
+        "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
+        rusqlite::params![CONSENT_VERSION_KEY, version.to_string()],
+    )?;
+    conn.execute(
+        "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
+        rusqlite::params![CONSENT_AT_KEY, now.to_string()],
+    )?;
+    Ok(())
+}
+
+/// Clear any recorded consent (the settings "turn off Ask Cmdr" path). The next rail open
+/// re-shows the consent screen.
+pub fn clear_consent(conn: &Connection) -> Result<(), AgentStoreError> {
+    conn.execute(
+        "DELETE FROM meta WHERE key IN (?1, ?2)",
+        rusqlite::params![CONSENT_VERSION_KEY, CONSENT_AT_KEY],
+    )?;
+    Ok(())
 }
 
 #[cfg(test)]

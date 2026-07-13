@@ -561,3 +561,70 @@ ones:
 - **more items (ICU plural tail): `och ytterligare {countText} objekt`** (both branches; `objekt` neuter invariant) ·
   reuses `fileOperations.errorDialog.tooLargeAndMore` "och ytterligare {countText}" pattern. `high`.
 - **recorded items: `registrerade objekt`** · `registrera`/`registrerad` (glossary register entry) + `objekt`. `high`.
+
+## Ask Cmdr pass (2026-07-13; `askCmdr.json` + the `settings.askCmdr.*`/`settings.advanced.logLlmCalls.*`/
+
+`settings.section.askCmdr`/`commands.askCmdrToggle.*` keys)
+
+The read-only AI chat rail: rail UI, tool-call status lines, error copy, chat sessions/search/archive, attachments, the
+one-time consent screen, the per-chat cost footer, and the settings section + LLM-call-logging toggle. Reuses
+`leverantör` (provider), `modell` (model), `kvot` (quota), `enhet` (drive), `sökväg` (path), `markering` (selection),
+`markör` (cursor), `mapp` (folder), `förfrågan` (request), `felsökning` (debugging), `aktivera`/`stäng av`
+(enable/disable), `radera`/`ta bort` family, and the "Something went wrong" → `Något gick fel` precedent
+(`ai.cloud.genericError` et al.). New terms:
+
+- **chat (a conversation with the assistant): `chatt`** (common gender: en chatt, definite `chatten`, plural `chattar`)
+  · MS terminology noun sense (`chatt`), matches everyday Swedish software usage (Messenger/Gmail "Chatt(ar)"). Used for
+  `askCmdr.newChat` → "Ny chatt", `threads.open`/`sessions.title` → "Chattar", `sessions.back` → "Tillbaka till
+  chatten". `high`.
+- **archive a chat (verb, hide from the active list, not delete): `arkivera`**; unarchive → `avarkivera`; archived
+  (badge) → `Arkiverad`. MS terminology archive-verb sense (`arkivera`), the mail/chat-app sense, distinct from the
+  existing `arkiv` (compressed-file) noun — no collision since the domains never meet in one sentence. `avarkivera` has
+  no direct pile hit; composed by the same av-prefix-reversal pattern as `avmontera`/`avinstallera`. `high` for
+  arkivera/Arkiverad, `tentative` (composed) for avarkivera.
+- **attach (a file/folder to a question, verb) / attachment (noun): `bifoga` / `bilaga`** · MS terminology, both senses
+  confirmed (`attach` → `bifoga`, `attachment` → `bilaga`). `askCmdr.attachment.remove` reuses the settled "ta bort"
+  (remove from a list/collection) sense: "Ta bort bilaga". `high`.
+- **drop (release a drag to attach it): `släpp`** · MS terminology's "Drag and drop" → "Dra och släpp" (ProperNoun);
+  `askCmdr.composer.dropHint` "Drop to attach" → "Släpp för att bifoga". `high`.
+- **thinking (assistant reasoning before it replies): `Tänker…`** · plain, literal; no jargon needed. `high` (direct,
+  unambiguous verb).
+- **reply (the assistant's answer, noun): `svar`** (neuter: ett svar, definite `svaret`) · MS terminology (`reply` →
+  `svara`/noun sense), matches the app's existing "svara"/"svar" usage. Used as the antecedent for "this one"/"the
+  reply" in `askCmdr.error.budgetExhausted` and `unfinishedReply` ("Svaret nådde sin gräns…", "Svaret blev inte klart…")
+  rather than a bare pronoun, since English's "this one"/"it" has no single Swedish gender-neutral equivalent standing
+  alone. `high`.
+- **request (a tool call the assistant asked to make): `förfrågan`** · reused from the existing glossary entry (API
+  request). `askCmdr.tool.refused` "That request wasn't available" → "Den förfrågan var inte tillgänglig". `high`.
+- **token (LLM usage unit): `token` / `tokens`** · kept identical to English in both CLDR branches (`sourceHash`
+  `askCmdr.cost.tokens` carries `sameAsSourceJustification`). No native Swedish plural is attested in the reference pile
+  for this (recent, AI-specific) sense of "token" (the pile's only hit is the older `säkerhetstoken` = security token, a
+  different concept); Swedish tech press consistently keeps the bare English plural "tokens" for LLM usage. `tentative`
+  (no reference-pile plural; convention from current Swedish tech usage).
+- **usage / spending (AI cost tracking): `användning` / `utgifter`** · MS terminology (`usage` → `användning`,
+  `spending` → `utgift`, pluralized for the settings section heading). `high`.
+- **estimate, adverbial ("about {amount}"): `cirka`** · matches the existing sv catalog's own "cirka"/"ungefär" usage
+  for approximate values (`indexing.scan.etaRough`, `onboarding.stepAi.local.help`). `high`.
+- **free (no cost): `gratis`** · matches the shipped `licensing.section.typePersonal` "Personal (free)" → "Personlig
+  (gratis)". `askCmdr.cost.free` "free, on-device" → "gratis, på enheten" (on-device processing framed as "på enheten",
+  built on the settled `enhet` = device/drive root; no direct pile hit for the Apple-Intelligence-style "on-device"
+  phrase, but "på enheten" is the natural, low-risk Swedish rendering). `high` for gratis, `tentative` (composed) for
+  "på enheten".
+- **dashboard (a provider's billing dashboard): `instrumentpanel`** · MS terminology. `high`.
+- **API model call (logged LLM request/response pair): `AI-modellanrop`** · composed on the MS-confirmed "API call" →
+  "API-anrop" pattern; `settings.advanced.logLlmCalls.label` "Log AI model calls" → "Logga AI-modellanrop". `high`
+  (pattern-confirmed compound).
+- **"Not now" (decline button on the consent screen): `Inte nu`** · macOS AppKit (`Not Now` → "Inte nu",
+  `en/macOS/AppKit/Document.json`). `high`.
+- **talk to (warm framing on the one-time consent screen): `prata med`** · deliberately warmer than `chatta med` (chat
+  with) for the one-time opt-in heading, matching the screen's inviting tone; `askCmdr.consent.title` "Talk to Cmdr
+  about your files" → "Prata med Cmdr om dina filer". `tentative` (stylistic choice, no single correct pile rendering
+  for this warmer register).
+- **importance (of a folder, the assistant's ranking feature): `vikt`; important → `viktig`** · no reference-pile hit
+  (Cmdr-specific ranking feature); composed on the standard adjective/noun pair (`viktig`↔`vikt`), parallel to how
+  `askCmdr.tool.importantFolders.*` already uses `viktig`. `tentative` (Cmdr-coined feature; review).
+- **Cmdr repeated instead of a bare pronoun, when the sentence names Cmdr's own behavior**: per the established sv
+  catalog convention (errors.json etc. always re-use "Cmdr" rather than "den"/"det"), `askCmdr.empty.hint` and
+  `askCmdr.consent.noContents` repeat "Cmdr" across sentences rather than introducing an ambiguous pronoun. Where the
+  antecedent is unambiguous within the same sentence (`settings.askCmdr.intro`'s "Ask Cmdr är skrivskyddad: den
+  läser…"), a pronoun is fine.

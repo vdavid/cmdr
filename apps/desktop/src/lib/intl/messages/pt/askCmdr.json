@@ -1,0 +1,313 @@
+{
+  "askCmdr.title": "Ask Cmdr",
+  "@askCmdr.title": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (the Ask Cmdr chat rail); kept verbatim in every locale (do-not-translate list)."
+  },
+  "askCmdr.close": "Fechar o Ask Cmdr",
+  "@askCmdr.close": {
+    "sourceHash": "d34225d"
+  },
+  "askCmdr.newChat": "Novo chat",
+  "@askCmdr.newChat": {
+    "sourceHash": "db18382"
+  },
+  "askCmdr.empty.title": "Pergunte sobre seus arquivos",
+  "@askCmdr.empty.title": {
+    "sourceHash": "b2251fc"
+  },
+  "askCmdr.empty.hint": "O Cmdr pode ver o que você está navegando, seus discos e seu histórico de arquivos para responder. Ele só lê nomes, caminhos e tamanhos, nunca o conteúdo dos arquivos.",
+  "@askCmdr.empty.hint": {
+    "sourceHash": "6ccad75"
+  },
+  "askCmdr.composer.placeholder": "Pergunte sobre seus arquivos…",
+  "@askCmdr.composer.placeholder": {
+    "sourceHash": "77e2636"
+  },
+  "askCmdr.composer.send": "Enviar mensagem",
+  "@askCmdr.composer.send": {
+    "sourceHash": "93a26b1"
+  },
+  "askCmdr.composer.stop": "Parar",
+  "@askCmdr.composer.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "askCmdr.thinking": "Pensando…",
+  "@askCmdr.thinking": {
+    "sourceHash": "a02f1ce"
+  },
+  "askCmdr.softCap.message": "Este chat está ficando longo. Um novo mantém as respostas rápidas e focadas.",
+  "@askCmdr.softCap.message": {
+    "sourceHash": "60d2c54"
+  },
+  "askCmdr.softCap.action": "Iniciar um novo chat",
+  "@askCmdr.softCap.action": {
+    "sourceHash": "677d4c2"
+  },
+  "askCmdr.tool.appState.doing": "Conferindo o que você está vendo",
+  "@askCmdr.tool.appState.doing": {
+    "sourceHash": "832e0cc"
+  },
+  "askCmdr.tool.appState.done": "Conferiu o que você está vendo",
+  "@askCmdr.tool.appState.done": {
+    "sourceHash": "155621e"
+  },
+  "askCmdr.tool.listDir.doing": "Listando uma pasta",
+  "@askCmdr.tool.listDir.doing": {
+    "sourceHash": "64aa697"
+  },
+  "askCmdr.tool.listDir.done": "Listou uma pasta",
+  "@askCmdr.tool.listDir.done": {
+    "sourceHash": "5746fef"
+  },
+  "askCmdr.tool.largestDirs.doing": "Procurando as maiores pastas",
+  "@askCmdr.tool.largestDirs.doing": {
+    "sourceHash": "c5f2cc0"
+  },
+  "askCmdr.tool.largestDirs.done": "Encontrou as maiores pastas",
+  "@askCmdr.tool.largestDirs.done": {
+    "sourceHash": "a2f3de3"
+  },
+  "askCmdr.tool.importantFolders.doing": "Procurando suas pastas importantes",
+  "@askCmdr.tool.importantFolders.doing": {
+    "sourceHash": "866aa38"
+  },
+  "askCmdr.tool.importantFolders.done": "Encontrou suas pastas importantes",
+  "@askCmdr.tool.importantFolders.done": {
+    "sourceHash": "1fd5db6"
+  },
+  "askCmdr.tool.folderImportance.doing": "Conferindo a importância de uma pasta",
+  "@askCmdr.tool.folderImportance.doing": {
+    "sourceHash": "594deff"
+  },
+  "askCmdr.tool.folderImportance.done": "Conferiu a importância de uma pasta",
+  "@askCmdr.tool.folderImportance.done": {
+    "sourceHash": "c7f397f"
+  },
+  "askCmdr.tool.listVolumes.doing": "Conferindo seus discos",
+  "@askCmdr.tool.listVolumes.doing": {
+    "sourceHash": "2ed1808"
+  },
+  "askCmdr.tool.listVolumes.done": "Conferiu seus discos",
+  "@askCmdr.tool.listVolumes.done": {
+    "sourceHash": "b13a0b3"
+  },
+  "askCmdr.tool.operationsList.doing": "Buscando no seu histórico de arquivos",
+  "@askCmdr.tool.operationsList.doing": {
+    "sourceHash": "4e8c41a"
+  },
+  "askCmdr.tool.operationsList.done": "Buscou no seu histórico de arquivos",
+  "@askCmdr.tool.operationsList.done": {
+    "sourceHash": "03021d5"
+  },
+  "askCmdr.tool.operationsGet.doing": "Consultando uma operação",
+  "@askCmdr.tool.operationsGet.doing": {
+    "sourceHash": "10be41f"
+  },
+  "askCmdr.tool.operationsGet.done": "Consultou uma operação",
+  "@askCmdr.tool.operationsGet.done": {
+    "sourceHash": "80fe1e9"
+  },
+  "askCmdr.tool.unknown.doing": "Trabalhando",
+  "@askCmdr.tool.unknown.doing": {
+    "sourceHash": "a92f044"
+  },
+  "askCmdr.tool.unknown.done": "Usou uma ferramenta",
+  "@askCmdr.tool.unknown.done": {
+    "sourceHash": "05cc2be"
+  },
+  "askCmdr.tool.refused": "Esse pedido não estava disponível",
+  "@askCmdr.tool.refused": {
+    "sourceHash": "f5e6dcc"
+  },
+  "askCmdr.error.noKey": "Adicione sua chave de API nos ajustes para começar a conversar.",
+  "@askCmdr.error.noKey": {
+    "sourceHash": "0a78f37"
+  },
+  "askCmdr.error.notConfigured": "Ative um provedor de IA nos ajustes para usar o Ask Cmdr.",
+  "@askCmdr.error.notConfigured": {
+    "sourceHash": "b84c5f4"
+  },
+  "askCmdr.error.unavailable": "Não foi possível falar com o provedor de IA. Verifique sua conexão e tente novamente.",
+  "@askCmdr.error.unavailable": {
+    "sourceHash": "eb59e2b"
+  },
+  "askCmdr.error.timeout": "Isso demorou demais. Tentar de novo?",
+  "@askCmdr.error.timeout": {
+    "sourceHash": "22cd775"
+  },
+  "askCmdr.error.authFailed": "O provedor não aceitou sua chave de API. Verifique-a nos ajustes.",
+  "@askCmdr.error.authFailed": {
+    "sourceHash": "a2302ca"
+  },
+  "askCmdr.error.rateLimited": "O provedor está ocupado ou sua cota acabou. Tente de novo daqui a pouco.",
+  "@askCmdr.error.rateLimited": {
+    "sourceHash": "7b441e9"
+  },
+  "askCmdr.error.budgetExhausted": "Esta resposta atingiu o limite antes de terminar. Tente perguntar algo mais específico.",
+  "@askCmdr.error.budgetExhausted": {
+    "sourceHash": "ea2beb2"
+  },
+  "askCmdr.error.unfinishedReply": "A resposta não terminou. Tentar de novo?",
+  "@askCmdr.error.unfinishedReply": {
+    "sourceHash": "7cc85f5"
+  },
+  "askCmdr.error.provider": "Algo deu errado do lado do provedor. Tentar de novo?",
+  "@askCmdr.error.provider": {
+    "sourceHash": "d536cce"
+  },
+  "askCmdr.loadEarlier": "Carregar mensagens anteriores",
+  "@askCmdr.loadEarlier": {
+    "sourceHash": "33fd46b"
+  },
+  "askCmdr.threads.open": "Chats",
+  "@askCmdr.threads.open": {
+    "sourceHash": "ef5b404",
+    "sameAsSourceJustification": "\"Chat(s)\" is a naturalized pt-BR loanword (Microsoft terminology pt-BR confirms \"chat\" verbatim, BRA-tagged), so the plural form is spelled identically to English here."
+  },
+  "askCmdr.sessions.title": "Chats",
+  "@askCmdr.sessions.title": {
+    "sourceHash": "ef5b404",
+    "sameAsSourceJustification": "\"Chat(s)\" is a naturalized pt-BR loanword (Microsoft terminology pt-BR confirms \"chat\" verbatim, BRA-tagged), so the plural form is spelled identically to English here."
+  },
+  "askCmdr.sessions.back": "Voltar ao chat",
+  "@askCmdr.sessions.back": {
+    "sourceHash": "5978844"
+  },
+  "askCmdr.sessions.searchPlaceholder": "Buscar nos seus chats…",
+  "@askCmdr.sessions.searchPlaceholder": {
+    "sourceHash": "2de9074"
+  },
+  "askCmdr.sessions.searchLabel": "Buscar chats",
+  "@askCmdr.sessions.searchLabel": {
+    "sourceHash": "02a39c4"
+  },
+  "askCmdr.sessions.empty": "Nenhum chat ainda",
+  "@askCmdr.sessions.empty": {
+    "sourceHash": "269208e"
+  },
+  "askCmdr.sessions.emptyArchived": "Nenhum chat arquivado",
+  "@askCmdr.sessions.emptyArchived": {
+    "sourceHash": "272c9ab"
+  },
+  "askCmdr.sessions.noResults": "Nenhum chat corresponde à sua busca",
+  "@askCmdr.sessions.noResults": {
+    "sourceHash": "c53c411"
+  },
+  "askCmdr.sessions.showArchived": "Mostrar arquivados",
+  "@askCmdr.sessions.showArchived": {
+    "sourceHash": "e9de9f2"
+  },
+  "askCmdr.sessions.hideArchived": "Ocultar arquivados",
+  "@askCmdr.sessions.hideArchived": {
+    "sourceHash": "dd1c793"
+  },
+  "askCmdr.sessions.loadMore": "Carregar mais",
+  "@askCmdr.sessions.loadMore": {
+    "sourceHash": "ac8991e"
+  },
+  "askCmdr.sessions.searching": "Buscando…",
+  "@askCmdr.sessions.searching": {
+    "sourceHash": "c31723a"
+  },
+  "askCmdr.sessions.rename": "Renomear",
+  "@askCmdr.sessions.rename": {
+    "sourceHash": "3064d79"
+  },
+  "askCmdr.sessions.renameLabel": "Título do chat",
+  "@askCmdr.sessions.renameLabel": {
+    "sourceHash": "17a3048"
+  },
+  "askCmdr.sessions.archive": "Arquivar",
+  "@askCmdr.sessions.archive": {
+    "sourceHash": "66f4804"
+  },
+  "askCmdr.sessions.unarchive": "Desarquivar",
+  "@askCmdr.sessions.unarchive": {
+    "sourceHash": "f565318"
+  },
+  "askCmdr.sessions.archivedBadge": "Arquivado",
+  "@askCmdr.sessions.archivedBadge": {
+    "sourceHash": "bdb8650"
+  },
+  "askCmdr.composer.attach": "Perguntar sobre a seleção",
+  "@askCmdr.composer.attach": {
+    "sourceHash": "3e812c7"
+  },
+  "askCmdr.composer.dropHint": "Solte para anexar",
+  "@askCmdr.composer.dropHint": {
+    "sourceHash": "34a7a63"
+  },
+  "askCmdr.attachment.remove": "Remover anexo",
+  "@askCmdr.attachment.remove": {
+    "sourceHash": "595b066"
+  },
+  "askCmdr.consent.title": "Converse com o Cmdr sobre seus arquivos",
+  "@askCmdr.consent.title": {
+    "sourceHash": "59b4ca9"
+  },
+  "askCmdr.consent.intro": "O Ask Cmdr envia suas perguntas para o provedor de IA que você escolher, usando sua própria chave de API. Veja exatamente o que sai do seu Mac quando você conversa:",
+  "@askCmdr.consent.intro": {
+    "sourceHash": "4366272"
+  },
+  "askCmdr.consent.item.messages": "Suas mensagens",
+  "@askCmdr.consent.item.messages": {
+    "sourceHash": "befc6e9"
+  },
+  "askCmdr.consent.item.names": "Os nomes e caminhos dos arquivos e pastas que o Cmdr vê para responder a você",
+  "@askCmdr.consent.item.names": {
+    "sourceHash": "ce3259d"
+  },
+  "askCmdr.consent.item.sizes": "Os tamanhos e datas deles",
+  "@askCmdr.consent.item.sizes": {
+    "sourceHash": "2484530"
+  },
+  "askCmdr.consent.item.envelope": "O que você está vendo agora: sua pasta atual, cursor, seleção e discos conectados",
+  "@askCmdr.consent.item.envelope": {
+    "sourceHash": "2e5a0ef"
+  },
+  "askCmdr.consent.item.attachments": "Qualquer arquivo ou pasta que você anexar a uma pergunta, apenas pelo nome e caminho",
+  "@askCmdr.consent.item.attachments": {
+    "sourceHash": "b9ad2af"
+  },
+  "askCmdr.consent.noContents": "O Cmdr nunca envia o conteúdo dos seus arquivos. Ele nem pode: nesta versão não existe nenhuma ferramenta que os leia. O Ask Cmdr só vê e fala; ele nunca muda nada.",
+  "@askCmdr.consent.noContents": {
+    "sourceHash": "0908765"
+  },
+  "askCmdr.consent.local": "Seus chats ficam no seu Mac, em um banco de dados local que você pode abrir e ler. Você escolhe o provedor e o modelo, e pode ver quanto cada conversa custa.",
+  "@askCmdr.consent.local": {
+    "sourceHash": "f7d4075"
+  },
+  "askCmdr.consent.logsNote": "Se você ativar o registro de chamadas de IA nos ajustes avançados, o Cmdr também salva cada solicitação e resposta em uma pasta no seu Mac. Esses registros também ficam locais e nunca são enviados a lugar nenhum.",
+  "@askCmdr.consent.logsNote": {
+    "sourceHash": "7e211fc"
+  },
+  "askCmdr.consent.accept": "Ativar o Ask Cmdr",
+  "@askCmdr.consent.accept": {
+    "sourceHash": "0d656c4"
+  },
+  "askCmdr.consent.decline": "Agora não",
+  "@askCmdr.consent.decline": {
+    "sourceHash": "a0e63d7"
+  },
+  "askCmdr.cost.tokens": "{countText} {count, plural, one {token} many {tokens} other {tokens}}",
+  "@askCmdr.cost.tokens": {
+    "sourceHash": "6718764"
+  },
+  "askCmdr.cost.free": "grátis, no dispositivo",
+  "@askCmdr.cost.free": {
+    "sourceHash": "f04f869"
+  },
+  "askCmdr.cost.estimate": "cerca de {amount}",
+  "@askCmdr.cost.estimate": {
+    "sourceHash": "e448a4a"
+  },
+  "askCmdr.cost.unknown": "custo desconhecido",
+  "@askCmdr.cost.unknown": {
+    "sourceHash": "d05144e"
+  },
+  "askCmdr.cost.label": "Uso deste chat",
+  "@askCmdr.cost.label": {
+    "sourceHash": "3b0dd81"
+  }
+}

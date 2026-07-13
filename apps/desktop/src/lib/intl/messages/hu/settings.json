@@ -986,6 +986,14 @@
   "@settings.advanced.filterSafeSaveArtifacts.description": {
     "sourceHash": "681b1dc"
   },
+  "settings.advanced.logLlmCalls.label": "AI-modellhívások naplózása",
+  "@settings.advanced.logLlmCalls.label": {
+    "sourceHash": "f865b3e"
+  },
+  "settings.advanced.logLlmCalls.description": "Elmenti minden AI-kérést és -választ egy helyi mappába (llm-logs) hibakereséshez. Ezek a fájlok a Mac-eden maradnak, és tartalmazzák azokat a fájlneveket és útvonalakat, amiket a Cmdr elküld a szolgáltatódnak.",
+  "@settings.advanced.logLlmCalls.description": {
+    "sourceHash": "86b3d34"
+  },
   "settings.advanced.serviceResolveTimeout.label": "Szolgáltatásfeloldási időtúllépés",
   "@settings.advanced.serviceResolveTimeout.label": {
     "sourceHash": "a4b4e3e"
@@ -1146,6 +1154,75 @@
   "@settings.section.ai": {
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "'AI' top-level Settings section title, kept verbatim per glossary (AI kept as the standard term across settings/ai/queryUi passes; matches the 'Beállítások > AI' navigation path)."
+  },
+  "settings.section.askCmdr": "Ask Cmdr",
+  "@settings.section.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (the read-only AI chat rail); kept verbatim in every locale, per the en @key note."
+  },
+  "settings.askCmdr.intro": "Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről. Az Ask Cmdr csak olvasásra képes: a válaszadáshoz neveket, útvonalakat és méreteket olvas, és soha semmit nem változtat.",
+  "@settings.askCmdr.intro": {
+    "sourceHash": "124b2d5"
+  },
+  "settings.askCmdr.status.on": "Az Ask Cmdr be van kapcsolva",
+  "@settings.askCmdr.status.on": {
+    "sourceHash": "1003ff7"
+  },
+  "settings.askCmdr.status.off": "Az Ask Cmdr ki van kapcsolva",
+  "@settings.askCmdr.status.off": {
+    "sourceHash": "0420c9a"
+  },
+  "settings.askCmdr.status.onSince": "Bekapcsolva ekkor: {date}",
+  "@settings.askCmdr.status.onSince": {
+    "sourceHash": "2f573fd"
+  },
+  "settings.askCmdr.turnOn": "Ask Cmdr bekapcsolása",
+  "@settings.askCmdr.turnOn": {
+    "sourceHash": "0d656c4"
+  },
+  "settings.askCmdr.turnOff": "Ask Cmdr kikapcsolása",
+  "@settings.askCmdr.turnOff": {
+    "sourceHash": "eb03374"
+  },
+  "settings.askCmdr.disclosure.title": "Amit az Ask Cmdr elküld",
+  "@settings.askCmdr.disclosure.title": {
+    "sourceHash": "8ccd3b9"
+  },
+  "settings.askCmdr.provider.title": "Szolgáltató és modell",
+  "@settings.askCmdr.provider.title": {
+    "sourceHash": "b9fdc88"
+  },
+  "settings.askCmdr.provider.shared": "Az Ask Cmdr azt az AI-szolgáltatót és kulcsot használja, amit itt állítottál be: Beállítások › AI ({provider}).",
+  "@settings.askCmdr.provider.shared": {
+    "sourceHash": "c84fd32"
+  },
+  "settings.askCmdr.provider.off": "Kapcsolj be egy AI-szolgáltatót itt: Beállítások › AI, hogy használhasd az Ask Cmdrt.",
+  "@settings.askCmdr.provider.off": {
+    "sourceHash": "8b378ae"
+  },
+  "settings.askCmdr.interactiveModel.label": "Ask Cmdr modellje",
+  "@settings.askCmdr.interactiveModel.label": {
+    "sourceHash": "194255a"
+  },
+  "settings.askCmdr.interactiveModel.description": "Az a modell, amivel az Ask Cmdr csevegni fog. Hagyd üresen, hogy ugyanazt a modellt használja, mint a Cmdr többi AI-funkciója. Példa: claude-sonnet-4-5",
+  "@settings.askCmdr.interactiveModel.description": {
+    "sourceHash": "e3f64a5"
+  },
+  "settings.askCmdr.interactiveModel.placeholder": "Mint a Cmdr más AI-funkciói",
+  "@settings.askCmdr.interactiveModel.placeholder": {
+    "sourceHash": "2631f3d"
+  },
+  "settings.askCmdr.spend.title": "Kiadás",
+  "@settings.askCmdr.spend.title": {
+    "sourceHash": "c2c7ae2"
+  },
+  "settings.askCmdr.spend.empty": "Még nincs felhasználás. A tokenhasználatod és a becsült költség itt fog megjelenni.",
+  "@settings.askCmdr.spend.empty": {
+    "sourceHash": "baaf9d6"
+  },
+  "settings.askCmdr.spend.disclaimer": "Ezek csak becslések. A szolgáltatód közvetlenül számláz neked, ezért a pontos összegért nézd meg a szolgáltatód irányítópultját.",
+  "@settings.askCmdr.spend.disclaimer": {
+    "sourceHash": "81fd190"
   },
   "settings.section.fileSystems": "Fájlrendszerek",
   "@settings.section.fileSystems": {

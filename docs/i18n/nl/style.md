@@ -98,6 +98,13 @@ The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier
   "Verstuur rapport" reads better than "Verzend rapport" for the crash-report button. Low stakes; both are correct.
 - **crash report → crashrapport** (high, but no exact macOS string for the noun): macOS has "Crashrapportage" (the
   reporting feature). Confirm "crashrapport" for the artifact reads natural in Cmdr's dialog.
+- **Ask Cmdr tool-status doing/done pairs** (`askCmdr.tool.*`): no pile precedent for AI-assistant status lines, so the
+  seven pairs are coined (present tense for "doing", past-participle-led for "done"; see glossary "Ask Cmdr pass" REVIEW
+  FLAGS). Confirm the tone lands, and that seven distinct verbs read as a coherent family rather than ad hoc.
+- **unarchive → "Uit archief halen"**: no single natural Dutch imperative verb for "unarchive" the way "Archiveer" works
+  for "archive". Confirm this multi-word button reads fine next to its short siblings.
+- **"Ask Cmdr model" → "Ask Cmdr-model"**: hyphenating after a two-word English brand name is a judgment call (no exact
+  pile precedent for a multi-word brand + suffix). Confirm it doesn't read as awkward.
 
 ## Glossary
 
