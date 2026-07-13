@@ -1539,6 +1539,13 @@ export const commands = {
    */
   setLogLlmCalls: (enabled: boolean) => __TAURI_INVOKE<void>('set_log_llm_calls', { enabled }),
   /**
+   *  Live-applies the master "Index image contents" toggle (`mediaIndex.enabled`) for
+   *  the media-ML enrichment subsystem. Enabling clears any prior memory-watchdog stop
+   *  so enrichment resumes; the scheduler starts a pass on the next scan completion.
+   *  Runtime-toggleable, no restart. (The frontend toggle UI lands in a later slice.)
+   */
+  setImageIndexEnabled: (enabled: boolean) => __TAURI_INVOKE<void>('set_image_index_enabled', { enabled }),
+  /**
    *  Updates the in-RAM log-storage cap and runs an eager prune so the user sees excess files
    *  disappear immediately when they lower the cap.
    *

@@ -97,6 +97,12 @@ pub struct Settings {
     /// no key. See `analytics_consent_granted` and `analytics/CLAUDE.md` § "Consent is tri-state".
     #[serde(alias = "analytics.enabled", default)]
     pub analytics_enabled: Option<bool>,
+    /// The master "Index image contents" toggle for the media-ML enrichment
+    /// subsystem (`media_index`). Off by default and sparse-persisted, so an absent
+    /// key means off. Seeded into `media_index::gate` at startup; live changes flow
+    /// through `set_image_index_enabled`.
+    #[serde(alias = "mediaIndex.enabled", default)]
+    pub image_index_enabled: Option<bool>,
 }
 
 fn default_show_hidden() -> bool {
@@ -137,6 +143,7 @@ impl Default for Settings {
             network_enabled: None,
             network_first_trigger_done: None,
             analytics_enabled: None,
+            image_index_enabled: None,
         }
     }
 }
@@ -208,6 +215,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let network_enabled = json.get("network.enabled").and_then(|v| v.as_bool());
     let network_first_trigger_done = json.get("network.firstTriggerDone").and_then(|v| v.as_bool());
     let analytics_enabled = json.get("analytics.enabled").and_then(|v| v.as_bool());
+    let image_index_enabled = json.get("mediaIndex.enabled").and_then(|v| v.as_bool());
 
     Ok(Settings {
         show_hidden_files,
@@ -233,6 +241,7 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         network_enabled,
         network_first_trigger_done,
         analytics_enabled,
+        image_index_enabled,
     })
 }
 

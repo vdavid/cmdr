@@ -119,6 +119,7 @@ mod location;
 #[cfg(target_os = "macos")]
 mod macos_icons;
 mod mcp;
+pub mod media_index;
 mod menu;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod mtp;
@@ -831,6 +832,14 @@ pub fn run() {
             // the bus fires whenever any scan completes. See
             // `importance/scheduler.rs` and the plan (Decision 4 / 5).
             importance::scheduler::start(app.handle());
+
+            // Start the media-ML enrichment scheduler: it seeds the master "Index
+            // image contents" toggle from settings (off by default), hooks its
+            // cancellation into the shared indexing memory watchdog, and subscribes
+            // to the same scan-completion bus so images enrich when a local volume's
+            // index finishes scanning. Off by default, so no work runs until the
+            // toggle is enabled. See `media_index/CLAUDE.md`.
+            media_index::scheduler::start(app.handle());
 
             // Keep the search ranker's importance weight map fresh: subscribe to the
             // root volume's recompute-completed notifications and (re)load the

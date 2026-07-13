@@ -145,6 +145,13 @@ All under `apps/desktop/src-tauri/src/`.
   neutral lifecycle bus in `indexing/` — and the consumable `ImportanceIndex` read API consumers reach it through
   (queryable even for an unmounted volume). See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/importance/CLAUDE.md)
   and [`docs/specs/importance-subsystem-plan.md`](specs/importance-subsystem-plan.md)
+- `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content. A read-consumer of
+  `indexing/`, ported from `importance/`, with its own per-volume disposable `media.db` (path-keyed, FTS5 OCR text), a
+  scheduler that enriches on the lifecycle-bus scan-completion edge, inference behind a `VisionBackend` seam (M1 ships a
+  fake; real objc2-vision OCR lands next), deletion-driven GC gated on a completed scan, and the consumable `MediaIndex`
+  read API (offline after unmount). M1 is OCR-only, local-only, off by default. See its
+  [`CLAUDE.md`](../apps/desktop/src-tauri/src/media_index/CLAUDE.md) and
+  [`docs/specs/media-ml-index-plan.md`](specs/media-ml-index-plan.md)
 - `operation_log/`: The durable, cross-volume journal of file mutations — the app's first durable DB
   (`operation-log.db`), the foundation for rollback, indexed name search, and a future undo. Single writer thread, a
   forward-migration ladder (not delete-and-recreate) and retention discipline, interned dir prefixes + per-item rows,
