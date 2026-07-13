@@ -43,6 +43,34 @@
   "@search.searchableFolder.disabledTooltip": {
     "sourceHash": "a90d24e"
   },
+  "search.imageResults.title": "Text in Bildern",
+  "@search.imageResults.title": {
+    "sourceHash": "d4c2a29"
+  },
+  "search.imageResults.count": "{totalText} gefunden",
+  "@search.imageResults.count": {
+    "sourceHash": "3132fe5"
+  },
+  "search.imageResults.countCapped": "{shownText} von {totalText} angezeigt",
+  "@search.imageResults.countCapped": {
+    "sourceHash": "3191a77"
+  },
+  "search.imageResults.off": "Die Bildindizierung ist aus. Aktiviere in den Einstellungen „Bildinhalte indizieren“, um den Text in deinen Bildern zu durchsuchen.",
+  "@search.imageResults.off": {
+    "sourceHash": "64feb20"
+  },
+  "search.imageResults.indexing": "Bilder werden noch indiziert, daher sind die Ergebnisse möglicherweise unvollständig.",
+  "@search.imageResults.indexing": {
+    "sourceHash": "20841d8"
+  },
+  "search.imageResults.notIndexed": "Die Bilder dieses Laufwerks sind noch nicht indiziert. Sobald die Indizierung läuft, werden sie durchsuchbar.",
+  "@search.imageResults.notIndexed": {
+    "sourceHash": "287b58e"
+  },
+  "search.imageResults.empty": "Kein Bild enthält diesen Text.",
+  "@search.imageResults.empty": {
+    "sourceHash": "edb6672"
+  },
   "search.snapshot.defaultLabel": "Suche",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

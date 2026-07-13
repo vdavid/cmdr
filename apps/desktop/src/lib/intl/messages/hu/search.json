@@ -43,6 +43,34 @@
   "@search.searchableFolder.disabledTooltip": {
     "sourceHash": "a90d24e"
   },
+  "search.imageResults.title": "Szöveg a képeken",
+  "@search.imageResults.title": {
+    "sourceHash": "d4c2a29"
+  },
+  "search.imageResults.count": "{totalText} találat",
+  "@search.imageResults.count": {
+    "sourceHash": "3132fe5"
+  },
+  "search.imageResults.countCapped": "{shownText} látható {totalText} találatból",
+  "@search.imageResults.countCapped": {
+    "sourceHash": "3191a77"
+  },
+  "search.imageResults.off": "A képek indexelése ki van kapcsolva. Kapcsold be a Beállításokban a „Képek tartalmának indexelése” lehetőséget a képeidben lévő szöveg kereséséhez.",
+  "@search.imageResults.off": {
+    "sourceHash": "64feb20"
+  },
+  "search.imageResults.indexing": "A képek indexelése még folyamatban van, ezért az eredmények hiányosak lehetnek.",
+  "@search.imageResults.indexing": {
+    "sourceHash": "20841d8"
+  },
+  "search.imageResults.notIndexed": "Ennek a meghajtónak a képei még nincsenek indexelve. Az indexelés lefutása után kereshetővé válnak.",
+  "@search.imageResults.notIndexed": {
+    "sourceHash": "287b58e"
+  },
+  "search.imageResults.empty": "Egyetlen kép sem tartalmazza ezt a szöveget.",
+  "@search.imageResults.empty": {
+    "sourceHash": "edb6672"
+  },
   "search.snapshot.defaultLabel": "Keresés",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

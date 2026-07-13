@@ -64,6 +64,41 @@
     "description": "Tooltip on the disabled 'Use current folder' button in the Search dialog's scope popover. Explains that the active pane is showing search results (a read-only view), so there's no real folder to search inside."
   },
 
+  "search.imageResults.title": "Text in images",
+  "@search.imageResults.title": {
+    "description": "Heading for the section of the Search dialog that shows images whose OCR-read text matches the query, rendered as a thumbnail grid below the filename results."
+  },
+  "search.imageResults.count": "{totalText} found",
+  "@search.imageResults.count": {
+    "description": "Count shown next to the \"Text in images\" heading when every match is displayed.",
+    "placeholders": {
+      "totalText": "the number of matching images, already formatted for display (for example 1,240)"
+    }
+  },
+  "search.imageResults.countCapped": "showing {shownText} of {totalText}",
+  "@search.imageResults.countCapped": {
+    "description": "Count shown next to the \"Text in images\" heading when there are more matches than the grid displays at once.",
+    "placeholders": {
+      "shownText": "how many images the grid shows, already formatted (for example 48)",
+      "totalText": "the total number of matching images, already formatted (for example 1,240)"
+    }
+  },
+  "search.imageResults.off": "Image indexing is off. Turn on \"Index image contents\" in Settings to search the text inside your images.",
+  "@search.imageResults.off": {
+    "description": "Shown in the \"Text in images\" section when the image-content indexing feature is turned off. \"Index image contents\" is the exact label of the Settings toggle (Settings > Behavior > File system watching); keep it matching."
+  },
+  "search.imageResults.indexing": "Still indexing images, so results may be incomplete.",
+  "@search.imageResults.indexing": {
+    "description": "Shown while a background pass is still reading text from this drive''s images, warning the user the image results aren''t complete yet."
+  },
+  "search.imageResults.notIndexed": "This drive''s images aren''t indexed yet. They''ll become searchable once indexing runs.",
+  "@search.imageResults.notIndexed": {
+    "description": "Shown when image indexing is on but no images on this drive have been read yet, so there''s nothing to search. Distinct from a genuine no-match."
+  },
+  "search.imageResults.empty": "No images contain this text.",
+  "@search.imageResults.empty": {
+    "description": "Shown when this drive''s images have been indexed but none of them contain the searched text (a genuine no-match, not \"not indexed yet\")."
+  },
   "search.snapshot.defaultLabel": "Search",
   "@search.snapshot.defaultLabel": {
     "description": "Fallback breadcrumb and tab title for a saved search-results view when there's no query text to name it. Same word as the dialog title."

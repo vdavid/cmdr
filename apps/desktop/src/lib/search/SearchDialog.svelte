@@ -80,6 +80,7 @@
         setIsIndexAvailable,
     } from './search-state.svelte'
     import QueryDialog from '$lib/query-ui/QueryDialog.svelte'
+    import ImageSearchResults from './ImageSearchResults.svelte'
     import { getBadgeStatus } from '$lib/feature-status'
     import type {
         QueryDialogConfig,
@@ -583,6 +584,10 @@
             indexEntryCount,
         },
 
+        // The "text in images" OCR grid, rendered below the filename results. Search-only
+        // (Selection passes no `resultsExtra`); the snippet owns its own data + lifecycle.
+        resultsExtra: imageResults,
+
         filterChipsExtras,
 
         scanning,
@@ -625,6 +630,14 @@
         // scope / excludeSystemDirs / AI label dangling.
         onClearState: clearSearchState,
     })
+    /** Open an image tile: route the active pane to the file, same exit as a result click. */
+    function openImage(path: string): void {
+        onNavigate(path)
+    }
 </script>
+
+{#snippet imageResults()}
+    <ImageSearchResults query={getQuery()} volumeId={ROOT_VOLUME_ID} active={true} onOpen={openImage} />
+{/snippet}
 
 <QueryDialog {config} />

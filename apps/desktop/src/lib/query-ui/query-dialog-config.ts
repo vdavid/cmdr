@@ -222,6 +222,16 @@ export interface QueryDialogConfig<E = unknown> {
   noticeBanner?: string
 
   /**
+   * Optional consumer-owned section rendered directly BELOW the main results table
+   * (and above the footer). Search uses it for the "text in images" OCR results grid
+   * (a distinct result type with its own thumbnails + coverage-honesty states); other
+   * consumers pass `undefined` and the row doesn't render. The snippet owns its own
+   * data fetching + lifecycle; QueryDialog only gives it a slot, so it never touches
+   * the shared `results` / `cursorIndex` contract.
+   */
+  resultsExtra?: import('svelte').Snippet
+
+  /**
    * Executes the query in the consumer's data source. Receives nothing; reads
    * what it needs off `state`. Returns the result set. QueryDialog handles
    * writing `state.results` / `state.totalCount` / `state.cursorIndex` and

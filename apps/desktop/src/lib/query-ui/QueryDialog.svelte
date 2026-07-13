@@ -880,6 +880,10 @@
             onRowMenu={openRowMenu}
         />
 
+        {#if config.resultsExtra}
+            {@render config.resultsExtra()}
+        {/if}
+
         <div class="dialog-footer" bind:this={footerRef}>
             <div class="footer-left">
                 <RecentItemsFooter

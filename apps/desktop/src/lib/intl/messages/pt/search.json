@@ -43,6 +43,34 @@
   "@search.searchableFolder.disabledTooltip": {
     "sourceHash": "a90d24e"
   },
+  "search.imageResults.title": "Texto nas imagens",
+  "@search.imageResults.title": {
+    "sourceHash": "d4c2a29"
+  },
+  "search.imageResults.count": "{totalText} encontradas",
+  "@search.imageResults.count": {
+    "sourceHash": "3132fe5"
+  },
+  "search.imageResults.countCapped": "mostrando {shownText} de {totalText}",
+  "@search.imageResults.countCapped": {
+    "sourceHash": "3191a77"
+  },
+  "search.imageResults.off": "A indexação de imagens está desativada. Ative \"Indexar o conteúdo das imagens\" nos Ajustes para buscar o texto dentro das suas imagens.",
+  "@search.imageResults.off": {
+    "sourceHash": "64feb20"
+  },
+  "search.imageResults.indexing": "As imagens ainda estão sendo indexadas, então os resultados podem estar incompletos.",
+  "@search.imageResults.indexing": {
+    "sourceHash": "20841d8"
+  },
+  "search.imageResults.notIndexed": "As imagens deste disco ainda não foram indexadas. Elas poderão ser buscadas assim que a indexação for executada.",
+  "@search.imageResults.notIndexed": {
+    "sourceHash": "287b58e"
+  },
+  "search.imageResults.empty": "Nenhuma imagem contém este texto.",
+  "@search.imageResults.empty": {
+    "sourceHash": "edb6672"
+  },
   "search.snapshot.defaultLabel": "Buscar",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

@@ -43,6 +43,34 @@
   "@search.searchableFolder.disabledTooltip": {
     "sourceHash": "a90d24e"
   },
+  "search.imageResults.title": "图像中的文字",
+  "@search.imageResults.title": {
+    "sourceHash": "d4c2a29"
+  },
+  "search.imageResults.count": "找到 {totalText} 个",
+  "@search.imageResults.count": {
+    "sourceHash": "3132fe5"
+  },
+  "search.imageResults.countCapped": "显示 {totalText} 个中的 {shownText} 个",
+  "@search.imageResults.countCapped": {
+    "sourceHash": "3191a77"
+  },
+  "search.imageResults.off": "图像索引已关闭。在设置中打开“索引图像内容”，即可搜索图像中的文字。",
+  "@search.imageResults.off": {
+    "sourceHash": "64feb20"
+  },
+  "search.imageResults.indexing": "仍在索引图像，因此结果可能不完整。",
+  "@search.imageResults.indexing": {
+    "sourceHash": "20841d8"
+  },
+  "search.imageResults.notIndexed": "此驱动器上的图像尚未编入索引。索引运行后即可搜索。",
+  "@search.imageResults.notIndexed": {
+    "sourceHash": "287b58e"
+  },
+  "search.imageResults.empty": "没有图像包含此文字。",
+  "@search.imageResults.empty": {
+    "sourceHash": "edb6672"
+  },
   "search.snapshot.defaultLabel": "搜索",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

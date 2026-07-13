@@ -43,6 +43,34 @@
   "@search.searchableFolder.disabledTooltip": {
     "sourceHash": "a90d24e"
   },
+  "search.imageResults.title": "Text i bilder",
+  "@search.imageResults.title": {
+    "sourceHash": "d4c2a29"
+  },
+  "search.imageResults.count": "{totalText} hittade",
+  "@search.imageResults.count": {
+    "sourceHash": "3132fe5"
+  },
+  "search.imageResults.countCapped": "visar {shownText} av {totalText}",
+  "@search.imageResults.countCapped": {
+    "sourceHash": "3191a77"
+  },
+  "search.imageResults.off": "Bildindexeringen är avstängd. Slå på ”Indexera bildinnehåll” i Inställningar för att söka i texten i dina bilder.",
+  "@search.imageResults.off": {
+    "sourceHash": "64feb20"
+  },
+  "search.imageResults.indexing": "Bilderna indexeras fortfarande, så resultaten kan vara ofullständiga.",
+  "@search.imageResults.indexing": {
+    "sourceHash": "20841d8"
+  },
+  "search.imageResults.notIndexed": "Bilderna på den här enheten är inte indexerade ännu. De blir sökbara när indexeringen körs.",
+  "@search.imageResults.notIndexed": {
+    "sourceHash": "287b58e"
+  },
+  "search.imageResults.empty": "Ingen bild innehåller den här texten.",
+  "@search.imageResults.empty": {
+    "sourceHash": "edb6672"
+  },
   "search.snapshot.defaultLabel": "Sök",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

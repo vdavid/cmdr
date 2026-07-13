@@ -19,7 +19,8 @@ safety argument, FFI discipline, and schema: [DETAILS.md](DETAILS.md).
 - `scheduler/` — the bus-driven, coalesced pass (`PassCoordinator` clone) and its registry-free walk+enrich+GC core
   (`enrich.rs`).
 - `read/` — the `MediaIndex` consumer read API (OCR search + `build_ocr_match_query`), the ONLY consumer entry point.
-- `commands.rs` — the `media_index_search_ocr` IPC command (thin; opens `MediaIndex`, searches off the IPC thread).
+- `commands.rs` — the thin IPC surface: OCR search, the per-volume coverage signal, and `cmdr-media://` thumbnail tokens
+  for the grid (Decision 5; frontend owns token lifetimes).
 - `gate.rs` — the master-toggle + emergency-stop atomics the scheduler gates on.
 
 ## Must-knows
@@ -52,5 +53,6 @@ safety argument, FFI discipline, and schema: [DETAILS.md](DETAILS.md).
 
 ## Not yet (later slices)
 
-The search/query-ui frontend + thumbnail grid + coverage-honesty line; the settings toggle UI + E2E; SMB/MTP enrichment
-(M1.5); tags, embeddings, faces (M2+).
+SMB/MTP enrichment (M1.5); the importance slider + full progress counts/ETA (M2); tags, embeddings, faces (M2+). The M1
+frontend (settings toggle, the "text in images" grid, coverage-honesty) shipped — see [DETAILS.md](DETAILS.md) § "The
+frontend surface (M1)".

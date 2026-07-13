@@ -43,6 +43,34 @@
   "@search.searchableFolder.disabledTooltip": {
     "sourceHash": "a90d24e"
   },
+  "search.imageResults.title": "Văn bản trong hình ảnh",
+  "@search.imageResults.title": {
+    "sourceHash": "d4c2a29"
+  },
+  "search.imageResults.count": "Đã tìm thấy {totalText}",
+  "@search.imageResults.count": {
+    "sourceHash": "3132fe5"
+  },
+  "search.imageResults.countCapped": "hiển thị {shownText} trong số {totalText}",
+  "@search.imageResults.countCapped": {
+    "sourceHash": "3191a77"
+  },
+  "search.imageResults.off": "Lập chỉ mục hình ảnh đang tắt. Hãy bật \"Lập chỉ mục nội dung hình ảnh\" trong Cài đặt để tìm văn bản bên trong hình ảnh của bạn.",
+  "@search.imageResults.off": {
+    "sourceHash": "64feb20"
+  },
+  "search.imageResults.indexing": "Vẫn đang lập chỉ mục hình ảnh, nên kết quả có thể chưa đầy đủ.",
+  "@search.imageResults.indexing": {
+    "sourceHash": "20841d8"
+  },
+  "search.imageResults.notIndexed": "Hình ảnh trên ổ đĩa này chưa được lập chỉ mục. Chúng sẽ có thể tìm kiếm được sau khi quá trình lập chỉ mục chạy.",
+  "@search.imageResults.notIndexed": {
+    "sourceHash": "287b58e"
+  },
+  "search.imageResults.empty": "Không có hình ảnh nào chứa văn bản này.",
+  "@search.imageResults.empty": {
+    "sourceHash": "edb6672"
+  },
   "search.snapshot.defaultLabel": "Tìm kiếm",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

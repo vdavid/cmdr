@@ -627,6 +627,15 @@ export {
   recordVisit,
 } from './indexing'
 
+// Media index (image-ML): OCR search, per-volume state, thumbnail tokens
+export {
+  mediaIndexSearchOcr,
+  mediaIndexVolumeState,
+  mediaIndexThumbnailToken,
+  mediaIndexDropThumbnailTokens,
+} from './media-index'
+export type { MediaIndexVolumeState, OcrHit } from './media-index'
+
 // Drive-indexing event listeners
 export {
   onIndexScanStarted,

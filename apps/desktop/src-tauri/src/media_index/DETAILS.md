@@ -167,6 +167,48 @@ yields to the SAME 16 GB resident-memory ceiling rather than a second independen
 `media_index` adds a THIRD long-lived writer thread per volume (index + importance + media) plus a per-volume `watch`
 listener. Fine at a few-volumes scale, but it scales per mounted volume — note it before adding more per-volume threads.
 
+## The frontend surface (M1)
+
+Three IPC doors feed the UI; all live in `commands.rs` and are registered in BOTH `ipc.rs`
+and `ipc_collectors.rs` (regen the typed bindings with `pnpm bindings:regen`).
+
+- **`media_index_search_ocr`** — the OCR search (above). Consumed by the Search dialog's
+  "Text in images" grid (`src/lib/search/ImageSearchResults.svelte`), which QueryDialog
+  renders via its `resultsExtra` snippet slot (Search-only; Selection passes none). The
+  grid reuses the SAME live query text as the filename results.
+- **`media_index_volume_state`** → `MediaIndexVolumeState { enabled, indexing,
+  enriched_count }` — the honest per-volume coverage signal (plan M1 § Coverage honesty +
+  per-volume state). `indexing` is a cheap in-memory snapshot off the scheduler's
+  `PassCoordinator::is_running` (`MediaScheduler::is_enriching`); `enriched_count` is a
+  `COUNT(*)` over `media_status` read off the IPC thread. Deliberately NOT a progress
+  percentage or ETA — those are M2. It lets the UI tell apart four states rather than ever
+  showing a confident-looking empty result that's really "not indexed yet": off (hint to
+  enable), still indexing ("results may be incomplete"), enriched-but-no-match (a genuine
+  miss), and not-indexed-yet. It's polled per search (no event subscription yet; a
+  subscription is a reasonable M2 upgrade).
+- **`media_index_thumbnail_token` / `media_index_drop_thumbnail_tokens`** — the grid's
+  thumbnails REUSE the existing viewer preview scheme (`cmdr-media://` via the viewer's
+  `file_viewer::media` token registry), never a media_index-produced thumbnail file (plan
+  Decision 5). `media_index_thumbnail_token` classifies a path by magic bytes and, for an
+  image, mints a `cmdr-media://` token; the frontend builds the URL via the viewer's
+  `mediaUrl` (single-source). **Token lifetime is the CALLER's here** — a viewer session
+  drops its token at the window-close choke point, but the grid has none, so
+  `ImageSearchResults.svelte` drops every token it minted when the result set changes or
+  the component unmounts (`media_index_drop_thumbnail_tokens`), or the token map leaks path
+  mappings. The scheme serves the FULL original bytes (browser-downscaled for the tile);
+  that's the accepted M1 cost of reusing the preview path rather than producing a
+  downscaled thumbnail — a real thumbnail cache would be a media_index-produced file
+  Decision 5 defers.
+
+The "why matched" snippet (`[`/`]`-wrapped matched terms) is parsed to structured
+segments by the pure `src/lib/search/ocr-snippet.ts` and rendered with `<mark>`, NEVER via
+`{@html}` — a document whose OCR text contains markup can't inject anything.
+
+The master toggle `mediaIndex.enabled` renders in Settings > Behavior > File system
+watching (a dedicated "Image search" card, `FileSystemWatchingSection.svelte`), off by
+default. It live-applies through `settings-applier.ts` → `setImageIndexEnabled` (no
+restart), the standard backend-affecting-setting pattern.
+
 ## What M1 leaves out
 
 The search/query-ui frontend + thumbnail grid + coverage-honesty line; the settings toggle UI + the M1 E2E; SMB/MTP

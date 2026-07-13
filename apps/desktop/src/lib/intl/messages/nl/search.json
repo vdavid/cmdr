@@ -43,6 +43,34 @@
   "@search.searchableFolder.disabledTooltip": {
     "sourceHash": "a90d24e"
   },
+  "search.imageResults.title": "Tekst in afbeeldingen",
+  "@search.imageResults.title": {
+    "sourceHash": "d4c2a29"
+  },
+  "search.imageResults.count": "{totalText} gevonden",
+  "@search.imageResults.count": {
+    "sourceHash": "3132fe5"
+  },
+  "search.imageResults.countCapped": "{shownText} van {totalText} weergegeven",
+  "@search.imageResults.countCapped": {
+    "sourceHash": "3191a77"
+  },
+  "search.imageResults.off": "Afbeeldingen indexeren staat uit. Zet \"Inhoud van afbeeldingen indexeren\" aan in Instellingen om de tekst in je afbeeldingen te doorzoeken.",
+  "@search.imageResults.off": {
+    "sourceHash": "64feb20"
+  },
+  "search.imageResults.indexing": "Afbeeldingen worden nog geïndexeerd, dus de resultaten zijn mogelijk onvolledig.",
+  "@search.imageResults.indexing": {
+    "sourceHash": "20841d8"
+  },
+  "search.imageResults.notIndexed": "De afbeeldingen op deze schijf zijn nog niet geïndexeerd. Ze worden doorzoekbaar zodra het indexeren draait.",
+  "@search.imageResults.notIndexed": {
+    "sourceHash": "287b58e"
+  },
+  "search.imageResults.empty": "Geen enkele afbeelding bevat deze tekst.",
+  "@search.imageResults.empty": {
+    "sourceHash": "edb6672"
+  },
   "search.snapshot.defaultLabel": "Zoeken",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

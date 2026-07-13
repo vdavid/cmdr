@@ -247,6 +247,9 @@
     "tauri-commands/clipboard-files.ts": {
       "reason": "Tauri command wrappers, tested via integration"
     },
+    "tauri-commands/media-index.ts": {
+      "reason": "Thin IPC pass-through wrappers (mediaIndexSearchOcr, mediaIndexVolumeState, mediaIndexThumbnailToken, mediaIndexDropThumbnailTokens); exercised via ImageSearchResults.svelte (whose a11y test mocks the wrapper layer) and the media_index Rust tests"
+    },
     "tauri-commands/debug.ts": {
       "reason": "Thin dev-only IPC pass-through wrapper (benchmarkLog); exercised via benchmark.ts"
     },

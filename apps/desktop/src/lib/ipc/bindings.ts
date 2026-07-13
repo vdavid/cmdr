@@ -1836,6 +1836,27 @@ export const commands = {
   mediaIndexVolumeState: (volumeId: string) =>
     typedError<MediaIndexVolumeState, string>(__TAURI_INVOKE('media_index_volume_state', { volumeId })),
   /**
+   *  Mint a `cmdr-media://` token so the search-results grid can render an image's
+   *  thumbnail through the EXISTING viewer preview scheme (plan Decision 5 — reuse the
+   *  preview path, never a media_index-produced thumbnail file). Returns `None` when the
+   *  path isn't a renderable image (the grid then falls back to a plain tile).
+   *
+   *  Token lifetime is the CALLER's here: a viewer session drops its token at the
+   *  window-close choke point, but the grid has none, so the frontend MUST drop every
+   *  token via [`media_index_drop_thumbnail_tokens`] when it re-renders or closes, or the
+   *  token map leaks path mappings. Runs off the IPC thread (a small header read + magic-
+   *  byte classification).
+   */
+  mediaIndexThumbnailToken: (path: string) =>
+    typedError<string | null, string>(__TAURI_INVOKE('media_index_thumbnail_token', { path })),
+  /**
+   *  Drop `cmdr-media://` tokens the grid minted via [`media_index_thumbnail_token`], once
+   *  they're no longer displayed. Idempotent; an unknown token is a no-op. Sync + trivial
+   *  (a map removal per token), so it needn't hop off the IPC thread.
+   */
+  mediaIndexDropThumbnailTokens: (tokens: string[]) =>
+    __TAURI_INVOKE<void>('media_index_drop_thumbnail_tokens', { tokens }),
+  /**
    *  Called when the search dialog opens. Starts loading the index in the background.
    *  Returns immediately with `{ ready, entryCount }`.
    */
