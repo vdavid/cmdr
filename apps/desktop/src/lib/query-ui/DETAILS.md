@@ -42,7 +42,8 @@ factory output), an `aiEnabled` flag, the per-chip visibility set, a `showPathCo
 history store + adapter + key, the empty-state hints, the filter-chips extras, the index lifecycle flags, an optional
 `noticeBanner`, the async `runQuery` + optional `translateAi` callbacks, primary + secondary action descriptors,
 callbacks for path-pill / example / row-menu / recent-activate / recent-remove / close events, optional `onMount` /
-`onDestroy` / `onClearState` hooks.
+`onDestroy` / `onClearState` hooks, and an optional `resultsExtra` snippet (a consumer-owned section rendered below the
+results table, owning its own data + lifecycle — Search's "text in images" OCR grid; other consumers omit it).
 
 ### Ownership contracts
 

@@ -281,6 +281,8 @@ The three freshness-UX toggles gate FRONTEND behavior, so they live in the FE se
 
 The memory watchdog is now a single PROCESS-WIDE budget, not per-volume. At 16 GB resident it stops EVERY registered volume's index via `state::stop_all_indexing` (snapshot ids, then `stop_indexing` each), not just `root`. Scans run in PARALLEL — the network/USB wire is the bottleneck, not RAM (real scan memory is the accumulator maps + the 20K writer channel, hundreds of MB per normal volume) — so there's no one-at-a-time serialization, just the catastrophe-stop safety net. `start()` is idempotent (a `WATCHDOG_RUNNING` atomic) so per-volume starts don't each spawn a redundant watchdog. The 16 GB number is machine protection, NOT expected usage; measuring real peak RSS is deferred to QA.
 
+That one budget covers OTHER resident-pool subsystems too, via `subsystem_stop.rs`: a subsystem (image enrichment in `media_index/`, which decodes HEIC/RAW and can spike RAM) calls `register_subsystem_stop_hook` once at startup, and `stop_all_indexing` runs every hook alongside stopping indexing. This is deliberate — a second independent 16 GB ceiling over the same pool would let the two sum to ~2× real headroom. Hooks run inline in the stop path, so they must be cheap and non-blocking (flip an atomic cancel flag).
+
 ## Index retention and cleanup
 
 Local disk has exactly one index DB; every SMB share and MTP storage now spawns its own `index-{volume_id}.db`, so the data dir can accumulate one DB per drive the user ever connected. Three mechanisms keep that bounded, all SAFE (never touch a live volume's DB):
