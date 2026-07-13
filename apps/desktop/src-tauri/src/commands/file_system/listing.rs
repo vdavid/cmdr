@@ -176,6 +176,9 @@ pub async fn list_directory_start(
     sort_order: SortOrder,
     directory_sort_mode: Option<DirectorySortMode>,
 ) -> Result<ListingStartResult, IpcError> {
+    // Foreground activity: the user navigated. Network image enrichment yields to this
+    // (it's idle-gated), so a NAS is never swept while the user is browsing.
+    crate::media_index::foreground::note_foreground_activity();
     let expanded_path = expand_tilde(&path);
     let path_buf = PathBuf::from(&expanded_path);
     let dir_sort_mode = directory_sort_mode.unwrap_or_default();
@@ -209,6 +212,9 @@ pub async fn list_directory_start_streaming(
     directory_sort_mode: Option<DirectorySortMode>,
     listing_id: String,
 ) -> Result<StreamingListingStartResult, String> {
+    // Foreground activity: the user navigated. Network image enrichment is idle-gated,
+    // so it yields to this rather than competing for the wire.
+    crate::media_index::foreground::note_foreground_activity();
     // Only expand tilde for local volumes (not MTP)
     let expanded_path = if volume_id == "root" {
         expand_tilde(&path)

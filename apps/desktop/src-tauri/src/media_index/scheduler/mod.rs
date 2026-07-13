@@ -20,18 +20,24 @@
 //!   here (the common restart case).
 //! - **The registration bus**: a volume registered after the sweep is wired then.
 //!
-//! Local volumes only in M1 (SMB/MTP enrichment is M1.5). The [`PassCoordinator`]
-//! clone guarantees ONE pass per volume, folding a concurrent request into a single
-//! re-run.
+//! Local volumes enrich by default when the master toggle is on; opted-in SMB volumes
+//! run the CONSERVATIVE network pass ([`MediaScheduler::run_network_pass_blocking`]);
+//! MTP is NEVER background-swept (on-demand only). The [`PassCoordinator`] clone
+//! guarantees ONE pass per volume, folding a concurrent request into a single re-run.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use tauri::{AppHandle, Manager};
 
 use super::backend::VisionBackend;
+use super::network;
+use super::network::enrich::{NetworkEnrichCtx, NetworkPassOutcome, PauseReason, enrich_network_and_gc};
+use super::network::fetch::FsByteFetcher;
+use super::network::policy::ConservativeFetchPolicy;
 // The fake backend is production's fallback only off-macOS (macOS uses real Vision);
 // tests import it themselves.
 #[cfg(not(target_os = "macos"))]
@@ -40,7 +46,7 @@ use super::gate;
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexVolumeKind;
 
-mod enrich;
+pub(crate) mod enrich;
 use enrich::{enrich_and_gc, load_statuses, walk_image_entries};
 
 #[cfg(test)]
@@ -202,16 +208,106 @@ impl MediaScheduler {
         );
         Ok(summary.enriched)
     }
+
+    /// Run one CONSERVATIVE network enrichment pass for an opted-in SMB volume
+    /// (plan M1.5): read each eligible image's bytes off the OS mount (bounded against
+    /// a hung mount), OCR them, and GC vanished rows — idle-gated, bandwidth-bounded,
+    /// resumable, and disconnect-paused.
+    ///
+    /// No-ops (returns `Ok`) when the master toggle is off, the volume isn't opted in,
+    /// the volume isn't registered (no mount root / no index) — the same skip-on-absence
+    /// discipline as the local pass. A disconnect mid-pass PAUSES the volume (keeps
+    /// completed rows, no `Failed`, no GC); it resumes on reconnect via the bus.
+    pub fn run_network_pass_blocking(&self, volume_id: &str) -> Result<(), String> {
+        if !gate::is_enabled() {
+            return Ok(());
+        }
+        // The per-volume SMB opt-in: turning on the master toggle does NOT auto-enrich
+        // network volumes (plan Decision 6).
+        if !network::config::is_opted_in(volume_id) {
+            log::debug!(target: "media_index", "network enrichment skips '{volume_id}': not opted in");
+            return Ok(());
+        }
+        // The OS mount root we read image bytes from (`/Volumes/<share>`), via the
+        // VolumeManager — the same source `indexing::routing` uses for the read-side
+        // mount strip. An unregistered volume (unmounted) is a no-op.
+        let Some(mount_root) = crate::file_system::get_volume_manager()
+            .get(volume_id)
+            .map(|v| v.root().to_string_lossy().into_owned())
+        else {
+            log::debug!(target: "media_index", "network enrichment skips '{volume_id}': volume not registered");
+            return Ok(());
+        };
+        let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
+            return Ok(());
+        };
+        let images = pool
+            .with_conn(walk_image_entries)
+            .map_err(|e| format!("read pool error: {e}"))??;
+        let statuses = load_statuses(&self.data_dir, volume_id);
+        let writer = self
+            .writers
+            .writer_for(&self.data_dir, volume_id)
+            .map_err(|e| e.to_string())?;
+
+        let policy = ConservativeFetchPolicy::default();
+        let fetcher = FsByteFetcher;
+        let idle_threshold = policy.idle_threshold;
+        let is_idle = move || super::foreground::global().idle_for(idle_threshold);
+        // Production override/importance gate: the importance slider is M2, so the
+        // override is load-bearing here — only override-covered images enrich (a
+        // rarely-browsed NAS scores low, so without an override it would defer forever).
+        let should_enrich = |os_path: &str| network::config::covers_override(volume_id, os_path);
+        let cancel = || gate::is_cancelled();
+        let sleep = |d: Duration| std::thread::sleep(d);
+
+        let ctx = NetworkEnrichCtx {
+            volume_id,
+            mount_root: &mount_root,
+            images: &images,
+            statuses: &statuses,
+            backend: self.backend.as_ref(),
+            fetcher: &fetcher,
+            writer: &writer,
+            policy: &policy,
+            is_idle: &is_idle,
+            should_enrich: &should_enrich,
+            cancel: &cancel,
+            sleep: &sleep,
+        };
+        match enrich_network_and_gc(&ctx)? {
+            NetworkPassOutcome::Completed(summary) => {
+                network::config::clear_paused(volume_id);
+                log::info!(
+                    target: "media_index",
+                    "network enrichment of '{volume_id}': {} of {} images enriched, {} rows GC'd",
+                    summary.enriched,
+                    images.len(),
+                    summary.gc_count,
+                );
+            }
+            NetworkPassOutcome::Paused { summary, reason } => {
+                if reason == PauseReason::Disconnected {
+                    // Mark paused so the coverage signal reads "paused, resumes on
+                    // reconnect" and the resume happens via the registration bus.
+                    network::config::mark_paused(volume_id);
+                }
+                log::info!(
+                    target: "media_index",
+                    "network enrichment of '{volume_id}' paused ({reason:?}) after {} enriched",
+                    summary.enriched,
+                );
+            }
+        }
+        Ok(())
+    }
 }
 
-/// Wire the scheduler to the app: seed the master toggle from settings, register the
-/// memory-watchdog stop hook, subscribe to registrations, sweep the registry for
-/// already-ready volumes, and wire each Local volume's scan-completion subscription.
-///
-/// M1 is LOCAL-only: SMB/MTP enrichment (which must read bytes off the wire) is
-/// M1.5. The fake backend is wired here as the M1 placeholder; the real
-/// `objc2-vision` OCR backend is the next slice and drops in behind the same seam
-/// with no change here.
+/// Wire the scheduler to the app: seed the master toggle + network opt-in/override
+/// state from settings, register the memory-watchdog stop hook, subscribe to
+/// registrations, sweep the registry for already-ready volumes, and wire each
+/// volume's scan-completion subscription by kind (local + opted-in SMB enrich; MTP
+/// never background-sweeps).
 pub fn start(app: &AppHandle) {
     let data_dir = match crate::config::resolved_app_data_dir(app) {
         Ok(d) => d,
@@ -221,9 +317,15 @@ pub fn start(app: &AppHandle) {
         }
     };
 
-    // Seed the master toggle from settings (off by default; sparse-persisted, so an
-    // absent key means off).
-    gate::set_enabled(crate::settings::load_settings(app).image_index_enabled == Some(true));
+    // Seed the master toggle + the network opt-in / always-index overrides from
+    // settings (all off/empty by default; sparse-persisted, so absent keys mean off).
+    let settings = crate::settings::load_settings(app);
+    gate::set_enabled(settings.image_index_enabled == Some(true));
+    network::config::set_config(network::config::NetworkEnrichConfig {
+        opted_in_volumes: settings.media_index_network_volumes.iter().cloned().collect(),
+        always_index_volumes: settings.media_index_always_index_volumes.iter().cloned().collect(),
+        always_index_folders: settings.media_index_always_index_folders.iter().cloned().collect(),
+    });
 
     // Share the ONE resident-memory ceiling: the indexing memory watchdog's stop
     // action runs this hook, telling in-flight enrichment to yield — rather than a
@@ -264,15 +366,38 @@ pub fn start(app: &AppHandle) {
     }
 }
 
-/// Wire one volume into the scheduler by its typed kind. M1 handles LOCAL only:
-/// SMB and MTP are skipped (their byte-fetch enrichment is M1.5). For a Local
-/// volume, subscribe to its scan-completion bus and enrich on each completion edge,
-/// plus once now if it's already `Completed` (the sweep / late-registration case).
+/// Whether a volume's pass reads bytes locally or off the network (SMB). The
+/// coalescing + bus wiring is identical; only which pass method runs differs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PassKind {
+    /// A local volume: the backend reads on-disk paths directly.
+    Local,
+    /// An opted-in SMB volume: the conservative byte-fetch pass reads off the mount.
+    Network,
+}
+
+/// Wire one volume into the scheduler by its typed kind.
+///
+/// - **Local**: subscribe to the scan-completion bus and enrich locally.
+/// - **SMB**: subscribe the same way and run the CONSERVATIVE network pass; the
+///   per-volume opt-in is checked INSIDE the pass, so flipping the opt-in on takes
+///   effect on the next scan completion (and the opt-in command kicks an immediate
+///   pass — see [`kick_network_pass`]).
+/// - **MTP**: NEVER background-swept (plan M1.5): a phone/camera on MTP is transient
+///   and slow, so enrichment is on-demand-per-visit, not a background sweep. The
+///   on-demand trigger is a later slice; this gate is real now.
 fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVolumeKind) {
-    if kind != IndexVolumeKind::Local {
-        log::debug!(target: "media_index", "media enrichment skips '{volume_id}' ({kind:?}): local-only in M1");
-        return;
-    }
+    let pass_kind = match kind {
+        IndexVolumeKind::Local => PassKind::Local,
+        IndexVolumeKind::Smb => PassKind::Network,
+        IndexVolumeKind::Mtp => {
+            log::debug!(
+                target: "media_index",
+                "media enrichment skips MTP '{volume_id}': never background-swept (on-demand-per-visit only)"
+            );
+            return;
+        }
+    };
 
     let sub_scheduler = Arc::clone(&scheduler);
     let sub_volume = volume_id.clone();
@@ -286,23 +411,30 @@ fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVol
             *rx.borrow_and_update(),
             crate::indexing::lifecycle_bus::ScanState::Completed { .. }
         ) {
-            spawn_pass(Arc::clone(&sub_scheduler), sub_volume.clone());
+            spawn_pass(Arc::clone(&sub_scheduler), sub_volume.clone(), pass_kind);
         }
         while rx.changed().await.is_ok() {
             if matches!(
                 *rx.borrow_and_update(),
                 crate::indexing::lifecycle_bus::ScanState::Completed { .. }
             ) {
-                spawn_pass(Arc::clone(&sub_scheduler), sub_volume.clone());
+                spawn_pass(Arc::clone(&sub_scheduler), sub_volume.clone(), pass_kind);
             }
         }
     });
 }
 
+/// Kick an immediate network pass for a volume (used when the user opts a volume in,
+/// so enrichment starts without waiting for the next scan completion). Coalesces with
+/// any running pass.
+pub fn kick_network_pass(scheduler: Arc<MediaScheduler>, volume_id: String) {
+    spawn_pass(scheduler, volume_id, PassKind::Network);
+}
+
 /// Request a coalesced enrichment pass and, if this request starts it, drive it
 /// (plus any coalesced re-run) on a blocking background task — never on the IPC
 /// thread, and on a dedicated worker (SQLite + backend), not rayon.
-fn spawn_pass(scheduler: Arc<MediaScheduler>, volume_id: String) {
+fn spawn_pass(scheduler: Arc<MediaScheduler>, volume_id: String, kind: PassKind) {
     if scheduler.coordinator.request(&volume_id) == BeginOutcome::Coalesced {
         return;
     }
@@ -310,11 +442,16 @@ fn spawn_pass(scheduler: Arc<MediaScheduler>, volume_id: String) {
         loop {
             let sched = Arc::clone(&scheduler);
             let vid = volume_id.clone();
-            let result = tauri::async_runtime::spawn_blocking(move || sched.run_pass_blocking(&vid)).await;
+            let result = tauri::async_runtime::spawn_blocking(move || match kind {
+                PassKind::Local => sched.run_pass_blocking(&vid),
+                // Unify the return shape (the network pass reports via its own logs).
+                PassKind::Network => sched.run_network_pass_blocking(&vid).map(|()| 0usize),
+            })
+            .await;
             match result {
                 Ok(Ok(count)) => log::debug!(
                     target: "media_index",
-                    "enrichment of '{volume_id}' enriched {}",
+                    "enrichment of '{volume_id}' ({kind:?}) enriched {}",
                     crate::pluralize::pluralize(count as u64, "image")
                 ),
                 Ok(Err(e)) => log::warn!(target: "media_index", "enrichment of '{volume_id}' failed: {e}"),

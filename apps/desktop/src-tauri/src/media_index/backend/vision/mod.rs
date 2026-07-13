@@ -62,10 +62,13 @@ use super::{ImageInput, OcrResult, VisionBackend, VisionError};
 /// (plan Decision 5 — feed a downscaled decode, never the original).
 const MAX_OCR_DIMENSION: i64 = 3072;
 
-/// One OCR job handed to the worker thread: the image path and a one-shot reply
-/// channel.
+/// One OCR job handed to the worker thread: the image identity, its byte source,
+/// and a one-shot reply channel. `bytes` is `Some` when the enrich layer already
+/// fetched the compressed image (the network case — read under a timeout off this
+/// thread); `None` means read `path` here (the local case).
 struct Job {
     path: String,
+    bytes: Option<Vec<u8>>,
     respond: mpsc::Sender<Result<OcrResult, VisionError>>,
 }
 
@@ -109,6 +112,7 @@ impl VisionBackend for VisionOcrBackend {
         self.sender
             .send(Job {
                 path: input.path.clone(),
+                bytes: input.bytes.clone(),
                 respond: tx,
             })
             .map_err(|_| VisionError::Ocr("vision OCR worker thread is gone".to_string()))?;
@@ -122,7 +126,7 @@ impl VisionBackend for VisionOcrBackend {
 /// the backend (and thus the sender) is dropped.
 fn worker_loop(receiver: mpsc::Receiver<Job>) {
     while let Ok(job) = receiver.recv() {
-        let result = autoreleasepool(|_| recognize_text(&job.path));
+        let result = autoreleasepool(|_| recognize_text(&job.path, job.bytes.as_deref()));
         // The caller may have gone away (a cancelled pass); dropping the reply is fine.
         let _ = job.respond.send(result);
     }
@@ -151,15 +155,30 @@ fn compute_engine_version() -> String {
     })
 }
 
-/// Decode `path` downscaled in-memory and run Vision text recognition over it,
+/// Decode an image downscaled in-memory and run Vision text recognition over it,
 /// returning the recognized lines newline-joined. Fails closed to a typed
 /// [`VisionError`] on any hostile input.
 ///
+/// `prefetched` carries the compressed bytes when the enrich layer already read them
+/// (the network case — read under a timeout OFF this thread); when `None`, the bytes
+/// are read from `path` here (the local case). `path` is used for error messages
+/// either way.
+///
 /// Must run on the dedicated worker thread, inside an autoreleasepool.
-fn recognize_text(path: &str) -> Result<OcrResult, VisionError> {
-    // Read the compressed bytes (bounded — a photo/RAW is tens of MB at most). The
-    // memory hazard is the DECODED bitmap, which the downscaled thumbnail below caps.
-    let bytes = std::fs::read(path).map_err(|e| VisionError::Decode(format!("read '{path}': {e}")))?;
+fn recognize_text(path: &str, prefetched: Option<&[u8]>) -> Result<OcrResult, VisionError> {
+    // Use the pre-fetched bytes when present; otherwise read the compressed bytes
+    // here (bounded — a photo/RAW is tens of MB at most). The memory hazard is the
+    // DECODED bitmap, which the downscaled thumbnail below caps. A network read is
+    // NEVER done here (it would block this serialized OCR thread on a hung mount);
+    // the enrich layer fetches network bytes under a timeout and passes them in.
+    let owned;
+    let bytes: &[u8] = match prefetched {
+        Some(b) => b,
+        None => {
+            owned = std::fs::read(path).map_err(|e| VisionError::Decode(format!("read '{path}': {e}")))?;
+            &owned
+        }
+    };
 
     // SAFETY: `bytes.as_ptr()` is valid for `bytes.len()` initialized bytes for the
     // duration of the call; `CFDataCreate` copies them, so the buffer needn't outlive

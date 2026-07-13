@@ -15,8 +15,9 @@ use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
 use super::gate;
+use super::network::config as network_config;
 use super::read::{MediaIndex, OcrHit};
-use super::scheduler::MediaScheduler;
+use super::scheduler::{self, MediaScheduler};
 
 /// The default hit cap when the caller doesn't specify one, and the hard ceiling on
 /// any caller-supplied limit (a photo-search grid never needs more, and it bounds the
@@ -76,6 +77,16 @@ pub struct MediaIndexVolumeState {
     /// with `indexing == false` and `enabled == true` reads as "not indexed yet",
     /// distinct from a genuinely empty search result over a populated index.
     pub enriched_count: u64,
+    /// Whether this volume is opted into background network (SMB) enrichment. Only
+    /// meaningful for network volumes; a local volume enriches by default when
+    /// `enabled`, so the UI shows the opt-in toggle only for network volumes (M1.5b).
+    pub network_opt_in: bool,
+    /// Whether this volume is marked "always index" (enrich regardless of the
+    /// importance threshold). The per-folder overrides aren't summarized here.
+    pub always_indexed: bool,
+    /// Whether enrichment is paused because the volume disconnected mid-pass. Its
+    /// coverage is intact and resumes on reconnect (never GC'd, never marked failed).
+    pub paused: bool,
 }
 
 /// Report the honest per-volume enrichment state for `volume_id`: the master toggle,
@@ -110,7 +121,53 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
         enabled,
         indexing,
         enriched_count,
+        network_opt_in: network_config::is_opted_in(&volume_id),
+        always_indexed: network_config::snapshot().always_index_volumes.contains(&volume_id),
+        paused: network_config::is_paused(&volume_id),
     })
+}
+
+/// Set (or clear) a volume's opt-in for background network (SMB) image enrichment
+/// (plan M1.5). Off by default: turning on the master toggle does NOT auto-enrich
+/// network volumes. Enabling kicks an immediate pass so the user sees progress without
+/// waiting for the next scan completion. Live-applied (no restart); the frontend
+/// persists `mediaIndex.networkVolumes` and calls this on change (M1.5b UI).
+#[tauri::command]
+#[specta::specta]
+pub fn media_index_set_network_volume_enabled(app: AppHandle, volume_id: String, enabled: bool) {
+    network_config::set_opted_in(&volume_id, enabled);
+    if enabled
+        && gate::is_enabled()
+        && let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>()
+    {
+        scheduler::kick_network_pass(Arc::clone(scheduler.inner()), volume_id);
+    }
+}
+
+/// Set (or clear) a whole-volume "always index" override: enrich regardless of the
+/// importance threshold (a rarely-browsed NAS scores low, so without this its photos
+/// defer forever — plan Decision 6). Enabling kicks an immediate pass. Live-applied;
+/// the frontend persists `mediaIndex.alwaysIndexVolumes` and calls this on change.
+#[tauri::command]
+#[specta::specta]
+pub fn media_index_set_always_index_volume(app: AppHandle, volume_id: String, always: bool) {
+    network_config::set_always_index_volume(&volume_id, always);
+    if always
+        && gate::is_enabled()
+        && network_config::is_opted_in(&volume_id)
+        && let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>()
+    {
+        scheduler::kick_network_pass(Arc::clone(scheduler.inner()), volume_id);
+    }
+}
+
+/// Set (or clear) a folder "always index" override: every image at or under `folder`
+/// (an absolute OS-mount path) enriches regardless of importance. Live-applied; the
+/// frontend persists `mediaIndex.alwaysIndexFolders` and calls this on change.
+#[tauri::command]
+#[specta::specta]
+pub fn media_index_set_always_index_folder(folder: String, always: bool) {
+    network_config::set_always_index_folder(&folder, always);
 }
 
 /// Mint a `cmdr-media://` token so the search-results grid can render an image's

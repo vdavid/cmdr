@@ -103,6 +103,24 @@ pub struct Settings {
     /// through `set_image_index_enabled`.
     #[serde(alias = "mediaIndex.enabled", default)]
     pub image_index_enabled: Option<bool>,
+    /// Volume ids the user opted into background network (SMB) image enrichment
+    /// (`media_index` M1.5). Off by default per volume: enabling the master toggle
+    /// does NOT auto-enrich network volumes. Seeded into
+    /// `media_index::network::config` at startup; live changes flow through
+    /// `set_media_index_network_volume_enabled`.
+    #[serde(alias = "mediaIndex.networkVolumes", default)]
+    pub media_index_network_volumes: Vec<String>,
+    /// Volume ids marked "always index": enrich regardless of the importance
+    /// threshold (a rarely-browsed NAS scores low on navigation-based importance, so
+    /// its photos would otherwise defer forever). Seeded + live-applied like the
+    /// opt-in.
+    #[serde(alias = "mediaIndex.alwaysIndexVolumes", default)]
+    pub media_index_always_index_volumes: Vec<String>,
+    /// Absolute folder paths (OS-mount form) marked "always index": every image at or
+    /// under one enriches regardless of importance. Seeded + live-applied like the
+    /// opt-in.
+    #[serde(alias = "mediaIndex.alwaysIndexFolders", default)]
+    pub media_index_always_index_folders: Vec<String>,
 }
 
 fn default_show_hidden() -> bool {
@@ -144,6 +162,9 @@ impl Default for Settings {
             network_first_trigger_done: None,
             analytics_enabled: None,
             image_index_enabled: None,
+            media_index_network_volumes: Vec::new(),
+            media_index_always_index_volumes: Vec::new(),
+            media_index_always_index_folders: Vec::new(),
         }
     }
 }
@@ -216,6 +237,9 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
     let network_first_trigger_done = json.get("network.firstTriggerDone").and_then(|v| v.as_bool());
     let analytics_enabled = json.get("analytics.enabled").and_then(|v| v.as_bool());
     let image_index_enabled = json.get("mediaIndex.enabled").and_then(|v| v.as_bool());
+    let media_index_network_volumes = parse_string_array(&json, "mediaIndex.networkVolumes");
+    let media_index_always_index_volumes = parse_string_array(&json, "mediaIndex.alwaysIndexVolumes");
+    let media_index_always_index_folders = parse_string_array(&json, "mediaIndex.alwaysIndexFolders");
 
     Ok(Settings {
         show_hidden_files,
@@ -242,7 +266,20 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         network_first_trigger_done,
         analytics_enabled,
         image_index_enabled,
+        media_index_network_volumes,
+        media_index_always_index_volumes,
+        media_index_always_index_folders,
     })
+}
+
+/// Parse a JSON array of strings at `key` into a `Vec<String>` (non-string elements
+/// dropped). A missing key or a non-array value yields an empty vec, so an absent
+/// setting reads as "none opted in / no overrides" (the sparse-store default).
+fn parse_string_array(json: &serde_json::Value, key: &str) -> Vec<String> {
+    json.get(key)
+        .and_then(|v| v.as_array())
+        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+        .unwrap_or_default()
 }
 
 /// The settings a restricted-capability window (the viewer) reads at startup via

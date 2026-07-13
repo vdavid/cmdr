@@ -1857,6 +1857,30 @@ export const commands = {
   mediaIndexDropThumbnailTokens: (tokens: string[]) =>
     __TAURI_INVOKE<void>('media_index_drop_thumbnail_tokens', { tokens }),
   /**
+   *  Set (or clear) a volume's opt-in for background network (SMB) image enrichment
+   *  (plan M1.5). Off by default: turning on the master toggle does NOT auto-enrich
+   *  network volumes. Enabling kicks an immediate pass so the user sees progress without
+   *  waiting for the next scan completion. Live-applied (no restart); the frontend
+   *  persists `mediaIndex.networkVolumes` and calls this on change (M1.5b UI).
+   */
+  mediaIndexSetNetworkVolumeEnabled: (volumeId: string, enabled: boolean) =>
+    __TAURI_INVOKE<void>('media_index_set_network_volume_enabled', { volumeId, enabled }),
+  /**
+   *  Set (or clear) a whole-volume "always index" override: enrich regardless of the
+   *  importance threshold (a rarely-browsed NAS scores low, so without this its photos
+   *  defer forever — plan Decision 6). Enabling kicks an immediate pass. Live-applied;
+   *  the frontend persists `mediaIndex.alwaysIndexVolumes` and calls this on change.
+   */
+  mediaIndexSetAlwaysIndexVolume: (volumeId: string, always: boolean) =>
+    __TAURI_INVOKE<void>('media_index_set_always_index_volume', { volumeId, always }),
+  /**
+   *  Set (or clear) a folder "always index" override: every image at or under `folder`
+   *  (an absolute OS-mount path) enriches regardless of importance. Live-applied; the
+   *  frontend persists `mediaIndex.alwaysIndexFolders` and calls this on change.
+   */
+  mediaIndexSetAlwaysIndexFolder: (folder: string, always: boolean) =>
+    __TAURI_INVOKE<void>('media_index_set_always_index_folder', { folder, always }),
+  /**
    *  Called when the search dialog opens. Starts loading the index in the background.
    *  Returns immediately with `{ ready, entryCount }`.
    */
@@ -4912,6 +4936,22 @@ export type MediaIndexVolumeState = {
    *  distinct from a genuinely empty search result over a populated index.
    */
   enrichedCount: number
+  /**
+   *  Whether this volume is opted into background network (SMB) enrichment. Only
+   *  meaningful for network volumes; a local volume enriches by default when
+   *  `enabled`, so the UI shows the opt-in toggle only for network volumes (M1.5b).
+   */
+  networkOptIn: boolean
+  /**
+   *  Whether this volume is marked "always index" (enrich regardless of the
+   *  importance threshold). The per-folder overrides aren't summarized here.
+   */
+  alwaysIndexed: boolean
+  /**
+   *  Whether enrichment is paused because the volume disconnected mid-pass. Its
+   *  coverage is intact and resumes on reconnect (never GC'd, never marked failed).
+   */
+  paused: boolean
 }
 
 /**

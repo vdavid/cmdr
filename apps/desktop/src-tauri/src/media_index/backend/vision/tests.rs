@@ -19,6 +19,7 @@ fn input(path: &str) -> ImageInput {
     ImageInput {
         path: path.to_string(),
         kind: MediaKind::Image,
+        bytes: None,
     }
 }
 
@@ -49,6 +50,34 @@ fn real_ocr_reads_the_known_words_from_the_fixture() {
         text.contains("2026"),
         "expected '2026' in recognized text, got: {:?}",
         result.text
+    );
+}
+
+#[test]
+fn real_ocr_reads_the_known_words_from_prefetched_bytes() {
+    // The network byte-fetch path: the enrich layer reads compressed bytes off the
+    // mount and passes them in via `ImageInput.bytes` (never a `std::fs` read on this
+    // serialized OCR thread). The backend must decode from those bytes and OCR them.
+    let backend = VisionOcrBackend::new();
+    let bytes = std::fs::read(fixture_path()).expect("read fixture bytes");
+    let input = ImageInput {
+        // A path that does NOT exist on disk, proving the backend used `bytes`, not it.
+        path: "/Volumes/naspi/DCIM/prefetched.png".to_string(),
+        kind: MediaKind::Image,
+        bytes: Some(bytes),
+    };
+    let text = backend
+        .ocr(&input)
+        .expect("OCR from prefetched bytes")
+        .text
+        .to_uppercase();
+    assert!(
+        text.contains("CMDR"),
+        "expected 'CMDR' from prefetched bytes, got: {text:?}"
+    );
+    assert!(
+        text.contains("OCR"),
+        "expected 'OCR' from prefetched bytes, got: {text:?}"
     );
 }
 
@@ -94,6 +123,76 @@ fn a_missing_file_returns_a_typed_decode_error() {
         matches!(err, VisionError::Decode(_)),
         "expected a typed Decode error, got {err:?}"
     );
+}
+
+/// End-to-end over a REAL SMB mount: read an image's bytes off `/Volumes/naspi`
+/// (the OS-mount byte-fetch path, `FsByteFetcher`) and OCR them with real Vision.
+/// Self-skips when the NAS isn't mounted (CI, most dev machines), so it's safe to
+/// leave un-ignored: it proves the real network path only where the NAS exists.
+/// Read-only on the NAS (it only reads image bytes; nothing is written there).
+#[test]
+fn real_smb_byte_fetch_over_naspi_then_ocr_when_mounted() {
+    use crate::media_index::network::fetch::{ByteFetcher, FsByteFetcher};
+    use std::time::Duration;
+
+    let root = std::path::Path::new("/Volumes/naspi");
+    if !root.exists() {
+        return; // NAS not mounted (CI, most dev machines): skip gracefully.
+    }
+    let Some(image_path) = find_first_image(root, 4, &mut 0) else {
+        return; // No image found in the bounded walk: skip.
+    };
+
+    // 1) Read the compressed bytes off the OS mount, timeout-bounded (the real
+    //    byte-fetch path the network pass uses).
+    let bytes = FsByteFetcher
+        .fetch(&image_path.to_string_lossy(), Duration::from_secs(30))
+        .unwrap_or_else(|e| panic!("SMB byte-fetch failed for {}: {e:?}", image_path.display()));
+    assert!(!bytes.is_empty(), "fetched image bytes should be non-empty");
+
+    // 2) OCR the pre-fetched bytes with real Vision (no `std::fs` on the OCR thread).
+    //    A real photo may or may not contain text; either way it must return a typed
+    //    result, never panic or hang — that's what this asserts.
+    let backend = VisionOcrBackend::new();
+    let _ = backend.ocr(&ImageInput {
+        path: image_path.to_string_lossy().into_owned(),
+        kind: MediaKind::Image,
+        bytes: Some(bytes),
+    });
+}
+
+/// A bounded recursive search for the first image file under `root` (depth-limited,
+/// entry-capped) so the real-NAS test doesn't deep-walk a huge library.
+#[cfg(test)]
+fn find_first_image(dir: &std::path::Path, depth: u32, visited: &mut u32) -> Option<PathBuf> {
+    const MAX_ENTRIES: u32 = 4000;
+    if depth == 0 || *visited >= MAX_ENTRIES {
+        return None;
+    }
+    let entries = std::fs::read_dir(dir).ok()?;
+    let mut subdirs = Vec::new();
+    for entry in entries.flatten() {
+        *visited += 1;
+        if *visited >= MAX_ENTRIES {
+            break;
+        }
+        let path = entry.path();
+        let file_type = entry.file_type().ok()?;
+        if file_type.is_dir() {
+            subdirs.push(path);
+        } else if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+            let ext = ext.to_ascii_lowercase();
+            if matches!(ext.as_str(), "jpg" | "jpeg" | "png" | "heic" | "heif" | "gif" | "tiff") {
+                return Some(path);
+            }
+        }
+    }
+    for sub in subdirs {
+        if let Some(found) = find_first_image(&sub, depth - 1, visited) {
+            return Some(found);
+        }
+    }
+    None
 }
 
 #[test]

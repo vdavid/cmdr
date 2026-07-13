@@ -162,6 +162,8 @@ pub(crate) fn enrich_and_gc(
         let input = ImageInput {
             path: image.path.clone(),
             kind: image.kind,
+            // Local volume: the backend reads the real on-disk path itself.
+            bytes: None,
         };
         match backend.ocr(&input) {
             Ok(result) => {
@@ -196,7 +198,7 @@ pub(crate) fn enrich_and_gc(
 }
 
 /// Build the `media_status` row for an image at a given state and engine stamp.
-fn status_row(image: &ImageEntry, state: EnrichmentState, engine: &str) -> MediaStatusRow {
+pub(crate) fn status_row(image: &ImageEntry, state: EnrichmentState, engine: &str) -> MediaStatusRow {
     MediaStatusRow {
         path: image.path.clone(),
         mtime: image.mtime,

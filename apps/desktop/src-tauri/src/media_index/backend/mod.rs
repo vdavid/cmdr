@@ -28,16 +28,28 @@ pub mod vision;
 
 use crate::media_index::predicate::MediaKind;
 
-/// One image handed to the backend. The fake reads only `path`; the real backend
-/// decodes the file at `path` (downscaled, in-memory — Decision 5) and never a
-/// thumbnail file. `kind` rides along so a backend can special-case a Live Photo
-/// still later.
+/// One image handed to the backend. `kind` rides along so a backend can
+/// special-case a Live Photo still later.
+///
+/// `bytes` is the byte-source seam that lets the SAME backend serve local and
+/// network volumes (plan Decision 6, M1.5):
+/// - `None` — the backend reads `path` itself via `std::fs::read` (the local case;
+///   `path` is a real on-disk filesystem path).
+/// - `Some(bytes)` — the caller ALREADY fetched the compressed image bytes (the
+///   network case: the enrich layer reads them off the SMB mount under a timeout,
+///   OFF the serialized OCR thread, so a hung mount can't wedge OCR). The backend
+///   decodes from memory and never touches `path` for I/O. `path` then carries only
+///   the image's index identity (for logging + the scripted-fake lookup).
 #[derive(Debug, Clone)]
 pub struct ImageInput {
-    /// The image's absolute path (the index's real identity).
+    /// The image's path identity (a real on-disk path for a local volume; the
+    /// index-relative identity for a network volume whose bytes are in `bytes`).
     pub path: String,
     /// The typed media kind the predicate assigned.
     pub kind: MediaKind,
+    /// Pre-fetched compressed image bytes, or `None` to have the backend read
+    /// `path` itself. See the type docs.
+    pub bytes: Option<Vec<u8>>,
 }
 
 /// The OCR result for one image. Deliberately minimal in M1 (the recognized text);
@@ -79,7 +91,8 @@ pub trait VisionBackend: Send + Sync {
     /// OCR text is disposable). See [`crate::media_index`] DETAILS.
     fn engine_version(&self) -> String;
 
-    /// Run OCR over one image. The real backend decodes and runs
-    /// `VNRecognizeTextRequest`; the fake returns scripted text.
+    /// Run OCR over one image. The real backend decodes (from `input.bytes` when
+    /// present, else by reading `input.path`) and runs `VNRecognizeTextRequest`; the
+    /// fake returns scripted text keyed on `input.path`.
     fn ocr(&self, input: &ImageInput) -> Result<OcrResult, VisionError>;
 }
