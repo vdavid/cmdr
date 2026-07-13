@@ -23,6 +23,7 @@ import History from '~icons/lucide/history'
 import Keyboard from '~icons/lucide/keyboard'
 import ListChecks from '~icons/lucide/list-checks'
 import MessageCircleQuestionMark from '~icons/lucide/message-circle-question-mark'
+import MessagesSquare from '~icons/lucide/messages-square'
 import Monitor from '~icons/lucide/monitor'
 import Navigation from '~icons/lucide/navigation'
 import PartyPopper from '~icons/lucide/party-popper'
@@ -54,6 +55,7 @@ export const ICONS = {
   keyboard: Keyboard,
   'list-checks': ListChecks,
   'message-circle-question-mark': MessageCircleQuestionMark,
+  'messages-square': MessagesSquare,
   monitor: Monitor,
   navigation: Navigation,
   'party-popper': PartyPopper,
