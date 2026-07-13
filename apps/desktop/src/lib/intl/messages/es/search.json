@@ -79,6 +79,22 @@
   "@search.imageResults.paused": {
     "sourceHash": "ec483f7"
   },
+  "search.imageResults.findSimilar": "Buscar imágenes similares",
+  "@search.imageResults.findSimilar": {
+    "sourceHash": "708c3bd"
+  },
+  "search.imageResults.similarTo": "Similar a {name}",
+  "@search.imageResults.similarTo": {
+    "sourceHash": "fc94bbb"
+  },
+  "search.imageResults.backToResults": "Volver a la búsqueda",
+  "@search.imageResults.backToResults": {
+    "sourceHash": "22252a1"
+  },
+  "search.imageResults.similarEmpty": "No se encontraron imágenes similares.",
+  "@search.imageResults.similarEmpty": {
+    "sourceHash": "d3ef9f7"
+  },
   "search.snapshot.defaultLabel": "Buscar",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

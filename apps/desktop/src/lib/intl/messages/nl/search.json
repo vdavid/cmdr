@@ -79,6 +79,22 @@
   "@search.imageResults.paused": {
     "sourceHash": "ec483f7"
   },
+  "search.imageResults.findSimilar": "Zoek vergelijkbare afbeeldingen",
+  "@search.imageResults.findSimilar": {
+    "sourceHash": "708c3bd"
+  },
+  "search.imageResults.similarTo": "Vergelijkbaar met {name}",
+  "@search.imageResults.similarTo": {
+    "sourceHash": "fc94bbb"
+  },
+  "search.imageResults.backToResults": "Terug naar zoekresultaten",
+  "@search.imageResults.backToResults": {
+    "sourceHash": "22252a1"
+  },
+  "search.imageResults.similarEmpty": "Geen vergelijkbare afbeeldingen gevonden.",
+  "@search.imageResults.similarEmpty": {
+    "sourceHash": "d3ef9f7"
+  },
   "search.snapshot.defaultLabel": "Zoeken",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

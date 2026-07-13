@@ -79,6 +79,22 @@
   "@search.imageResults.paused": {
     "sourceHash": "ec483f7"
   },
+  "search.imageResults.findSimilar": "查找相似图像",
+  "@search.imageResults.findSimilar": {
+    "sourceHash": "708c3bd"
+  },
+  "search.imageResults.similarTo": "与 {name} 相似",
+  "@search.imageResults.similarTo": {
+    "sourceHash": "fc94bbb"
+  },
+  "search.imageResults.backToResults": "返回搜索",
+  "@search.imageResults.backToResults": {
+    "sourceHash": "22252a1"
+  },
+  "search.imageResults.similarEmpty": "没有找到相似图像。",
+  "@search.imageResults.similarEmpty": {
+    "sourceHash": "d3ef9f7"
+  },
   "search.snapshot.defaultLabel": "搜索",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

@@ -79,6 +79,22 @@
   "@search.imageResults.paused": {
     "sourceHash": "ec483f7"
   },
+  "search.imageResults.findSimilar": "Tìm ảnh tương tự",
+  "@search.imageResults.findSimilar": {
+    "sourceHash": "708c3bd"
+  },
+  "search.imageResults.similarTo": "Tương tự {name}",
+  "@search.imageResults.similarTo": {
+    "sourceHash": "fc94bbb"
+  },
+  "search.imageResults.backToResults": "Quay lại tìm kiếm",
+  "@search.imageResults.backToResults": {
+    "sourceHash": "22252a1"
+  },
+  "search.imageResults.similarEmpty": "Không tìm thấy ảnh nào tương tự.",
+  "@search.imageResults.similarEmpty": {
+    "sourceHash": "d3ef9f7"
+  },
   "search.snapshot.defaultLabel": "Tìm kiếm",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

@@ -519,10 +519,6 @@
   "@settings.mediaIndex.networkVolumes.paused": {
     "sourceHash": "4df8d65"
   },
-  "settings.mediaIndex.networkVolumes.indexing": "Indexation des photos en cours",
-  "@settings.mediaIndex.networkVolumes.indexing": {
-    "sourceHash": "0d850c0"
-  },
   "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} photo indexée} many {{countText} photos indexées} other {{countText} photos indexées}}",
   "@settings.mediaIndex.networkVolumes.indexed": {
     "sourceHash": "3c6ee39"
@@ -530,6 +526,78 @@
   "settings.mediaIndex.networkVolumes.notIndexedYet": "Pas encore indexé",
   "@settings.mediaIndex.networkVolumes.notIndexedYet": {
     "sourceHash": "808e81b"
+  },
+  "settings.mediaIndex.importanceThreshold.label": "Portée de l''indexation",
+  "@settings.mediaIndex.importanceThreshold.label": {
+    "sourceHash": "dfe67c2"
+  },
+  "settings.mediaIndex.importanceThreshold.description": "Cmdr indexe d''abord les dossiers que vous utilisez le plus. Choisissez jusqu''où aller.",
+  "@settings.mediaIndex.importanceThreshold.description": {
+    "sourceHash": "2dc9c8b"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Uniquement mes dossiers les plus utilisés",
+  "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
+    "sourceHash": "1db4208"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.often": "Les dossiers que j''utilise souvent",
+  "@settings.mediaIndex.importanceThreshold.bucket.often": {
+    "sourceHash": "c53b31d"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.sometimes": "Les dossiers que j''ouvre de temps en temps",
+  "@settings.mediaIndex.importanceThreshold.bucket.sometimes": {
+    "sourceHash": "0c32ab7"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.most": "La plupart des dossiers",
+  "@settings.mediaIndex.importanceThreshold.bucket.most": {
+    "sourceHash": "8f4c535"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.everywhere": "Partout, même les dossiers que j''ouvre rarement",
+  "@settings.mediaIndex.importanceThreshold.bucket.everywhere": {
+    "sourceHash": "14b0e89"
+  },
+  "settings.mediaIndex.importanceThreshold.preview": "{images, plural, one {Indexe environ {imagesText} image} other {Indexe environ {imagesText} images} many {Indexe environ {imagesText} images}} {folders, plural, one {dans {foldersText} dossier} other {dans {foldersText} dossiers} many {dans {foldersText} dossiers}}",
+  "@settings.mediaIndex.importanceThreshold.preview": {
+    "sourceHash": "487dc79"
+  },
+  "settings.mediaIndex.importanceThreshold.previewNone": "Rien ne correspond à ce niveau pour l''instant. Faites glisser vers la droite pour indexer davantage.",
+  "@settings.mediaIndex.importanceThreshold.previewNone": {
+    "sourceHash": "c015ea6"
+  },
+  "settings.mediaIndex.importanceThreshold.previewCounting": "Calcul de la couverture…",
+  "@settings.mediaIndex.importanceThreshold.previewCounting": {
+    "sourceHash": "659de34"
+  },
+  "settings.mediaIndex.importanceThreshold.pending": "Certains disques sont encore en cours d''analyse, ces chiffres vont donc augmenter.",
+  "@settings.mediaIndex.importanceThreshold.pending": {
+    "sourceHash": "c144f80"
+  },
+  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, one {Ajoute environ {imagesText} image} other {Ajoute environ {imagesText} images} many {Ajoute environ {imagesText} images}}",
+  "@settings.mediaIndex.importanceThreshold.deltaAdd": {
+    "sourceHash": "d5fcbb4"
+  },
+  "settings.mediaIndex.importanceThreshold.deltaRemove": "{images, plural, one {Exclut environ {imagesText} image} other {Exclut environ {imagesText} images} many {Exclut environ {imagesText} images}}",
+  "@settings.mediaIndex.importanceThreshold.deltaRemove": {
+    "sourceHash": "1c1486e"
+  },
+  "settings.mediaIndex.importanceThreshold.floor": "Cmdr ignore toujours les éléments indésirables comme node_modules ou les caches système.",
+  "@settings.mediaIndex.importanceThreshold.floor": {
+    "sourceHash": "8839d14"
+  },
+  "settings.mediaIndex.progress.local": "Ce Mac",
+  "@settings.mediaIndex.progress.local": {
+    "sourceHash": "79a4aef"
+  },
+  "settings.mediaIndex.progress.ofTotal": "{total, plural, one {{enrichedText} image indexée sur {totalText}} other {{enrichedText} images indexées sur {totalText}} many {{enrichedText} images indexées sur {totalText}}}",
+  "@settings.mediaIndex.progress.ofTotal": {
+    "sourceHash": "2acda74"
+  },
+  "settings.mediaIndex.progress.counting": "Comptage des images…",
+  "@settings.mediaIndex.progress.counting": {
+    "sourceHash": "fa08ea7"
+  },
+  "settings.mediaIndex.progress.done": "{total, plural, one {{totalText} image indexée} other {{totalText} images indexées} many {{totalText} images indexées}}",
+  "@settings.mediaIndex.progress.done": {
+    "sourceHash": "104b27a"
   },
   "settings.indexing.askForEachDrive.label": "Demander pour chaque disque",
   "@settings.indexing.askForEachDrive.label": {

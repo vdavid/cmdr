@@ -520,10 +520,6 @@
   "@settings.mediaIndex.networkVolumes.paused": {
     "sourceHash": "4df8d65"
   },
-  "settings.mediaIndex.networkVolumes.indexing": "Indexando fotos agora",
-  "@settings.mediaIndex.networkVolumes.indexing": {
-    "sourceHash": "0d850c0"
-  },
   "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} foto indexada} many {{countText} fotos indexadas} other {{countText} fotos indexadas}}",
   "@settings.mediaIndex.networkVolumes.indexed": {
     "sourceHash": "3c6ee39"
@@ -531,6 +527,78 @@
   "settings.mediaIndex.networkVolumes.notIndexedYet": "Ainda não indexado",
   "@settings.mediaIndex.networkVolumes.notIndexedYet": {
     "sourceHash": "808e81b"
+  },
+  "settings.mediaIndex.importanceThreshold.label": "Quanto indexar",
+  "@settings.mediaIndex.importanceThreshold.label": {
+    "sourceHash": "dfe67c2"
+  },
+  "settings.mediaIndex.importanceThreshold.description": "O Cmdr indexa primeiro as pastas que você mais usa. Escolha até onde ir.",
+  "@settings.mediaIndex.importanceThreshold.description": {
+    "sourceHash": "2dc9c8b"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Somente minhas pastas mais usadas",
+  "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
+    "sourceHash": "1db4208"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.often": "Pastas que uso com frequência",
+  "@settings.mediaIndex.importanceThreshold.bucket.often": {
+    "sourceHash": "c53b31d"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.sometimes": "Pastas que abro de vez em quando",
+  "@settings.mediaIndex.importanceThreshold.bucket.sometimes": {
+    "sourceHash": "0c32ab7"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.most": "A maioria das pastas",
+  "@settings.mediaIndex.importanceThreshold.bucket.most": {
+    "sourceHash": "8f4c535"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.everywhere": "Em todo lugar, até pastas que raramente abro",
+  "@settings.mediaIndex.importanceThreshold.bucket.everywhere": {
+    "sourceHash": "14b0e89"
+  },
+  "settings.mediaIndex.importanceThreshold.preview": "{images, plural, one {Indexa cerca de {imagesText} imagem} other {Indexa cerca de {imagesText} imagens} many {Indexa cerca de {imagesText} imagens}} {folders, plural, one {em {foldersText} pasta} other {em {foldersText} pastas} many {em {foldersText} pastas}}",
+  "@settings.mediaIndex.importanceThreshold.preview": {
+    "sourceHash": "487dc79"
+  },
+  "settings.mediaIndex.importanceThreshold.previewNone": "Nada corresponde a este nível ainda. Arraste para a direita para indexar mais.",
+  "@settings.mediaIndex.importanceThreshold.previewNone": {
+    "sourceHash": "c015ea6"
+  },
+  "settings.mediaIndex.importanceThreshold.previewCounting": "Calculando quanto isso cobre…",
+  "@settings.mediaIndex.importanceThreshold.previewCounting": {
+    "sourceHash": "659de34"
+  },
+  "settings.mediaIndex.importanceThreshold.pending": "Alguns discos ainda estão sendo analisados, então esses números vão crescer.",
+  "@settings.mediaIndex.importanceThreshold.pending": {
+    "sourceHash": "c144f80"
+  },
+  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, one {Adiciona cerca de {imagesText} imagem} other {Adiciona cerca de {imagesText} imagens} many {Adiciona cerca de {imagesText} imagens}}",
+  "@settings.mediaIndex.importanceThreshold.deltaAdd": {
+    "sourceHash": "d5fcbb4"
+  },
+  "settings.mediaIndex.importanceThreshold.deltaRemove": "{images, plural, one {Deixa de fora cerca de {imagesText} imagem} other {Deixa de fora cerca de {imagesText} imagens} many {Deixa de fora cerca de {imagesText} imagens}}",
+  "@settings.mediaIndex.importanceThreshold.deltaRemove": {
+    "sourceHash": "1c1486e"
+  },
+  "settings.mediaIndex.importanceThreshold.floor": "Itens descartáveis como node_modules e caches do sistema são sempre ignorados.",
+  "@settings.mediaIndex.importanceThreshold.floor": {
+    "sourceHash": "8839d14"
+  },
+  "settings.mediaIndex.progress.local": "Este Mac",
+  "@settings.mediaIndex.progress.local": {
+    "sourceHash": "79a4aef"
+  },
+  "settings.mediaIndex.progress.ofTotal": "{total, plural, one {{enrichedText} de {totalText} imagem indexada} other {{enrichedText} de {totalText} imagens indexadas} many {{enrichedText} de {totalText} imagens indexadas}}",
+  "@settings.mediaIndex.progress.ofTotal": {
+    "sourceHash": "2acda74"
+  },
+  "settings.mediaIndex.progress.counting": "Contando imagens…",
+  "@settings.mediaIndex.progress.counting": {
+    "sourceHash": "fa08ea7"
+  },
+  "settings.mediaIndex.progress.done": "{total, plural, one {{totalText} imagem indexada} other {{totalText} imagens indexadas} many {{totalText} imagens indexadas}}",
+  "@settings.mediaIndex.progress.done": {
+    "sourceHash": "104b27a"
   },
   "settings.indexing.askForEachDrive.label": "Perguntar para cada disco",
   "@settings.indexing.askForEachDrive.label": {

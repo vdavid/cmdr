@@ -430,3 +430,22 @@ Settled while translating the Compress feature:
   object (o Mac), not the user, per the gender/inclusive-language rule (sidesteps the gendered "ocupado") · high.
   `networkVolumes.intro`.
 - No `sameAsSourceJustification` needed: all 19 values differ from English.
+
+### Image-indexing depth and similar-image search terms (`settings.mediaIndex.importanceThreshold.*` +
+`settings.mediaIndex.progress.*` + `search.imageResults.findSimilar/similarTo/backToResults/similarEmpty`, 2026-07-13)
+
+- similar (image-similarity search feature) · **semelhante** · standard pt-BR term for visual/content similarity
+  (GNOME/Nautilus-style file-manager usage); distinct from "similar" used loosely in running text elsewhere in the
+  catalog (`settings.fileOperations.mtpEnabled.description`), which is not this feature · high. `findSimilar` →
+  "Encontrar imagens semelhantes"; `similarTo` → "Semelhante a {name}"; `similarEmpty` → "Nenhuma imagem semelhante
+  encontrada."
+- covers (a slider level covers N images/folders) · **cobre** · reuses the exact verb already shipped in
+  `settings.mediaIndex.enabled.description` ("Por enquanto cobre discos locais") · confirmed. `previewCounting`
+  "Working out how much this covers…" → "Calculando quanto isso cobre…".
+- skipped (junk folders never indexed) · **ignorados** · reuses the glossary Skip → Ignorar row · high. `floor`
+  "Junk like node_modules and system caches is always skipped." → "Itens descartáveis como node_modules e caches do
+  sistema são sempre ignorados." ("Junk" avoids **Lixo**, since that word is reserved for the Trash noun in this
+  glossary; "descartável" sidesteps the collision.)
+- This Mac (local-disk label in the per-drive indexing progress list) · **Este Mac** · matches Apple Finder sidebar
+  convention · high. `progress.local`.
+- No `sameAsSourceJustification` needed: all 22 values differ from English.

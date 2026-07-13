@@ -79,6 +79,22 @@
   "@search.imageResults.paused": {
     "sourceHash": "ec483f7"
   },
+  "search.imageResults.findSimilar": "Hitta liknande bilder",
+  "@search.imageResults.findSimilar": {
+    "sourceHash": "708c3bd"
+  },
+  "search.imageResults.similarTo": "Liknar {name}",
+  "@search.imageResults.similarTo": {
+    "sourceHash": "fc94bbb"
+  },
+  "search.imageResults.backToResults": "Tillbaka till sökningen",
+  "@search.imageResults.backToResults": {
+    "sourceHash": "22252a1"
+  },
+  "search.imageResults.similarEmpty": "Inga liknande bilder hittades.",
+  "@search.imageResults.similarEmpty": {
+    "sourceHash": "d3ef9f7"
+  },
   "search.snapshot.defaultLabel": "Sök",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

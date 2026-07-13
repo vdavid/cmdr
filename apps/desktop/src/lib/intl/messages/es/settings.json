@@ -520,10 +520,6 @@
   "@settings.mediaIndex.networkVolumes.paused": {
     "sourceHash": "4df8d65"
   },
-  "settings.mediaIndex.networkVolumes.indexing": "Indexando fotos ahora",
-  "@settings.mediaIndex.networkVolumes.indexing": {
-    "sourceHash": "0d850c0"
-  },
   "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} foto indexada} many {{countText} fotos indexadas} other {{countText} fotos indexadas}}",
   "@settings.mediaIndex.networkVolumes.indexed": {
     "sourceHash": "3c6ee39"
@@ -531,6 +527,78 @@
   "settings.mediaIndex.networkVolumes.notIndexedYet": "Aún sin indexar",
   "@settings.mediaIndex.networkVolumes.notIndexedYet": {
     "sourceHash": "808e81b"
+  },
+  "settings.mediaIndex.importanceThreshold.label": "Cuánto indexar",
+  "@settings.mediaIndex.importanceThreshold.label": {
+    "sourceHash": "dfe67c2"
+  },
+  "settings.mediaIndex.importanceThreshold.description": "Cmdr indexa primero las carpetas que más usas. Elige hasta dónde llegar.",
+  "@settings.mediaIndex.importanceThreshold.description": {
+    "sourceHash": "2dc9c8b"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Solo mis carpetas más usadas",
+  "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
+    "sourceHash": "1db4208"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.often": "Carpetas que uso a menudo",
+  "@settings.mediaIndex.importanceThreshold.bucket.often": {
+    "sourceHash": "c53b31d"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.sometimes": "Carpetas que abro de vez en cuando",
+  "@settings.mediaIndex.importanceThreshold.bucket.sometimes": {
+    "sourceHash": "0c32ab7"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.most": "La mayoría de las carpetas",
+  "@settings.mediaIndex.importanceThreshold.bucket.most": {
+    "sourceHash": "8f4c535"
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.everywhere": "En todas partes, incluso las carpetas que casi nunca abro",
+  "@settings.mediaIndex.importanceThreshold.bucket.everywhere": {
+    "sourceHash": "14b0e89"
+  },
+  "settings.mediaIndex.importanceThreshold.preview": "{images, plural, one {Indexa alrededor de {imagesText} imagen} other {Indexa alrededor de {imagesText} imágenes} many {Indexa alrededor de {imagesText} imágenes}} {folders, plural, one {en {foldersText} carpeta} other {repartidas en {foldersText} carpetas} many {repartidas en {foldersText} carpetas}}",
+  "@settings.mediaIndex.importanceThreshold.preview": {
+    "sourceHash": "487dc79"
+  },
+  "settings.mediaIndex.importanceThreshold.previewNone": "Todavía no hay nada en este nivel. Arrastra hacia la derecha para indexar más.",
+  "@settings.mediaIndex.importanceThreshold.previewNone": {
+    "sourceHash": "c015ea6"
+  },
+  "settings.mediaIndex.importanceThreshold.previewCounting": "Calculando cuánto abarca esto…",
+  "@settings.mediaIndex.importanceThreshold.previewCounting": {
+    "sourceHash": "659de34"
+  },
+  "settings.mediaIndex.importanceThreshold.pending": "Algunas unidades todavía se están analizando, así que estos números aumentarán.",
+  "@settings.mediaIndex.importanceThreshold.pending": {
+    "sourceHash": "c144f80"
+  },
+  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, one {Añade alrededor de {imagesText} imagen} other {Añade alrededor de {imagesText} imágenes} many {Añade alrededor de {imagesText} imágenes}}",
+  "@settings.mediaIndex.importanceThreshold.deltaAdd": {
+    "sourceHash": "d5fcbb4"
+  },
+  "settings.mediaIndex.importanceThreshold.deltaRemove": "{images, plural, one {Omite alrededor de {imagesText} imagen} other {Omite alrededor de {imagesText} imágenes} many {Omite alrededor de {imagesText} imágenes}}",
+  "@settings.mediaIndex.importanceThreshold.deltaRemove": {
+    "sourceHash": "1c1486e"
+  },
+  "settings.mediaIndex.importanceThreshold.floor": "Elementos como node_modules o las cachés del sistema siempre se omiten.",
+  "@settings.mediaIndex.importanceThreshold.floor": {
+    "sourceHash": "8839d14"
+  },
+  "settings.mediaIndex.progress.local": "Este Mac",
+  "@settings.mediaIndex.progress.local": {
+    "sourceHash": "79a4aef"
+  },
+  "settings.mediaIndex.progress.ofTotal": "{total, plural, one {{enrichedText} de {totalText} imagen indexada} other {{enrichedText} de {totalText} imágenes indexadas} many {{enrichedText} de {totalText} imágenes indexadas}}",
+  "@settings.mediaIndex.progress.ofTotal": {
+    "sourceHash": "2acda74"
+  },
+  "settings.mediaIndex.progress.counting": "Contando imágenes…",
+  "@settings.mediaIndex.progress.counting": {
+    "sourceHash": "fa08ea7"
+  },
+  "settings.mediaIndex.progress.done": "{total, plural, one {{totalText} imagen indexada} other {{totalText} imágenes indexadas} many {{totalText} imágenes indexadas}}",
+  "@settings.mediaIndex.progress.done": {
+    "sourceHash": "104b27a"
   },
   "settings.indexing.askForEachDrive.label": "Preguntar por cada unidad",
   "@settings.indexing.askForEachDrive.label": {
