@@ -6,6 +6,12 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-13 [media-ml-index-plan.md](media-ml-index-plan.md) - Searchable image index (OCR, tags, faces,
+      text→image) as an ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation Models),
+      vectors in SQLite not Postgres, on-device by default with faces/cloud as separate opt-ins. Plan reviewed + the
+      Core ML/Rust path spike-verified (`docs/notes/clip-coreml-rust-spike.md`), then re-grounded on the shipped
+      `importance/`, lifecycle-bus, and `agent/` subsystems (copy the plumbing, not build it); importance-prioritized
+      enrichment + a settings threshold slider added. Execution pending.
 - [ ] 2026-07-12 [ask-cmdr-plan.md](ask-cmdr-plan.md) - Implementation plan for the "Ask Cmdr" chat slice: 9 milestones
       (`AgentLlm` trait + fake → `main.db` store → registry read/write gating + split → in-process tool layer →
       runtime + context assembly → rail UI + streaming → sessions/search/attachments → consent/settings/i18n/E2E → LLM
@@ -125,7 +131,3 @@ Deferred future work. Unchecked by default; the folder name is the status.
       canonical home)
 - [ ] 2026-06-28 later/drive-index-overall-eta.md - Overall indexing ETA across remaining steps, with the backend
       per-phase calibration it needs to stay honest (the step checklist ships per-step ETA only)
-- [ ] 2026-06-30 [later/media-ml-index-plan.md](later/media-ml-index-plan.md) - Searchable image index (OCR, tags,
-      faces, text→image) as an ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation
-      Models), vectors in SQLite not Postgres, on-device by default with faces/cloud as separate opt-ins. Plan
-      reviewed + the Core ML/Rust path spike-verified; backed by `docs/notes/clip-coreml-rust-spike.md`.
