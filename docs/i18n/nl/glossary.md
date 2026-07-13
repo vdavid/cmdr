@@ -774,8 +774,8 @@ From the network image-indexing pass (`settings.mediaIndex.networkVolumes.*` + `
   indexeren"), while the warm user-facing network-drive rows say `foto''s` (the network case is a photo archive/NAS).
 - image (technical/label sense) → `afbeelding` (plural `afbeeldingen`) · macOS ("Afbeelding"/"Afbeeldingen") · high.
   "Image indexing" (internal label + the search hint) → "afbeeldingen indexeren" / "het indexeren van afbeeldingen".
-- indexed → `geïndexeerd` (past participle) · glossary index→indexeren; "Not indexed yet"→"Nog niet geïndexeerd",
-  "N photos indexed"→"{countText} foto''s geïndexeerd" · high
+- indexed → `geïndexeerd` (past participle) · glossary index→indexeren; "Not indexed yet"→"Nog niet geïndexeerd", "N
+  photos indexed"→"{countText} foto''s geïndexeerd" · high
 - reconnect (drive comes back) → `opnieuw verbinding maken` · macOS Finder ("opnieuw verbinding maken met '^0'");
   "resumes when this drive reconnects"→"gaat verder zodra deze schijf opnieuw verbinding maakt" · high
 - disconnect / disconnected (drive drops off mid-pass) → `wordt losgekoppeld` / `is losgekoppeld` · reuses the

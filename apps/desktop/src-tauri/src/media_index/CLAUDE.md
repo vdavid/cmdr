@@ -56,6 +56,7 @@ decision, GC safety, FFI discipline, and schema: [DETAILS.md](DETAILS.md).
 ## Not yet (later slices)
 
 The M1.5b UI (per-volume SMB opt-in + volume "always index" toggle) ships in Settings > File system watching > Image
-search (see [DETAILS.md](DETAILS.md) § "The FE surface"). Still open: the per-FOLDER override's FE trigger (a native menu
-item), pointing the Search dialog at a network volume, full MTP on-demand wiring, the importance slider + progress/ETA
-(M2), and tags, embeddings, faces (M2+).
+search (see [DETAILS.md](DETAILS.md) § "The FE surface"). The Search dialog's image-OCR grid targets the focused pane's
+volume (see [`src/lib/search/CLAUDE.md`](../../../src/lib/search/CLAUDE.md)). Still open: the per-FOLDER override's FE
+trigger (a native menu item), full MTP on-demand wiring, the importance slider + progress/ETA (M2), and tags,
+embeddings, faces (M2+).

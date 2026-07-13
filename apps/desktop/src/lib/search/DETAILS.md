@@ -92,7 +92,23 @@ The wrapper has no line-count target; its size is what Search-specific glue cost
 the keyboard handler, the IME guard, the auto-apply debounce, the popover toggle, or any other orchestration concern.
 
 The route (`+page.svelte`) mounts SearchDialog with its props: `onNavigate`, `onClose`, `searchableFolder`,
-`onShowAllInMainWindow`.
+`imageSearchVolume`, `onShowAllInMainWindow`.
+
+### Which volume the image-OCR grid searches
+
+The filename search reads the LOCAL whole-drive index, so `SearchDialog` keys its index lifecycle and the QueryDialog
+scanning indicator on `ROOT_VOLUME_ID` — that scope is deliberate and stays root-only. The image-OCR grid is separate:
+it targets whatever volume the user is contextually searching, i.e. the focused pane's current volume, so browsing the
+NAS surfaces the NAS's photos and browsing local surfaces local.
+
+`+page.svelte` passes `imageSearchVolume={getFocusedPaneImageSearchVolume()}` (in `focused-pane-reads.ts`), which reads
+the focused pane's volume id and resolves it against the live volume store via the pure `resolveImageSearchVolume`
+(`active-media-volume.ts`). The pane's volume id IS the media-index volume id (`root` for the local disk, `smb-…` for an
+SMB share), so no mapping is needed; the mount root is that volume's `VolumeInfo.path` (`/` for root, `/Volumes/<share>`
+for SMB), which `ImageSearchResults` prepends to index-relative OCR hits via `resolveMediaHitPath`. `isNetwork`
+(`category === 'network'`) switches the grid's coverage-honesty copy to the network voice. A focused pane whose volume
+isn't a real filesystem volume in the list (a `search-results://` snapshot) falls back to the local root. The
+`SearchDialog` prop defaults to the local root, preserving the previous behavior when unset.
 
 ## State shape
 

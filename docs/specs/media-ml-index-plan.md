@@ -59,8 +59,8 @@ below were verified against the code on 2026-06-29, and the `importance/` + life
     it's a rename hint, not an identity. **We key on path, exactly as the index itself does.** (Decision 3.)
   - **Phase events are frontend-only, but a neutral in-process bus now ships (verified 2026-07-13):** `set_phase_for`
     still only `.emit(app)`s a Tauri event _to the webview_, so it's no subscription surface for a Rust subsystem. But
-    `indexing/lifecycle_bus.rs` IS that surface now: `state::apply_freshness_event_on` calls `publish_scan_completed`
-    on `FreshnessEvent::ScanCompleted` (the neutral chokepoint BOTH local and network scans funnel through — verified at
+    `indexing/lifecycle_bus.rs` IS that surface now: `state::apply_freshness_event_on` calls `publish_scan_completed` on
+    `FreshnessEvent::ScanCompleted` (the neutral chokepoint BOTH local and network scans funnel through — verified at
     `state.rs`), and `importance/`'s scheduler is a live subscriber. `media_index` subscribes the same way. Network
     volumes still emit only `Scanning → Live` at the phase layer, so drive "ready to enrich" off the bus, never a phase
     the network path never sends. (Decision 7 — now "subscribe to the existing bus", not "add one".)
@@ -124,24 +124,24 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
    `load_extension` (verified: `features = ["bundled","collation","fallible_uint"]`); enabling it also runs into
    hardened-runtime/notarization constraints for loading a dylib into a signed app. So **`sqlite-vec` is a real
    build+signing project, not a flag flip** — adopt it only if a real library crosses the threshold, behind the same
-   vector-store trait. **FTS5 needs NO rusqlite feature flag — PROVEN, not assumed** (`agent/store/`'s
-   `main.db`, verified 2026-07-13): its external-content FTS5 index compiles under the same `bundled` SQLite, and
-   rusqlite 0.39 has no `fts5` feature to flip anyway. The plan's earlier "might need a `libsqlite3-sys` build flag"
-   worry is CLOSED. Still keep a `CREATE VIRTUAL TABLE … USING fts5` runtime smoke at M1 start (as `agent/store`'s
+   vector-store trait. **FTS5 needs NO rusqlite feature flag — PROVEN, not assumed** (`agent/store/`'s `main.db`,
+   verified 2026-07-13): its external-content FTS5 index compiles under the same `bundled` SQLite, and rusqlite 0.39 has
+   no `fts5` feature to flip anyway. The plan's earlier "might need a `libsqlite3-sys` build flag" worry is CLOSED.
+   Still keep a `CREATE VIRTUAL TABLE … USING fts5` runtime smoke at M1 start (as `agent/store`'s
    `fresh_open_builds_current_schema` guards — a bundled build without FTS5 fails there), but there's no build-flag gate
-   to fear. _Why:_ a single user's library is small; Postgres+pgvector is
-   multi-user server overhead. Kills the "ship/download Postgres" question entirely.
+   to fear. _Why:_ a single user's library is small; Postgres+pgvector is multi-user server overhead. Kills the
+   "ship/download Postgres" question entirely.
 
 3. **A separate per-volume media DB (`media.db`), keyed on PATH identity.** Don't add ML tables to the index DB.
    - **Reference implementation to COPY, not re-derive: `importance/store/`** (verified 2026-07-13). It already carries
      the index's disposable-cache discipline verbatim — `platform_case` on every connection, delete-and-recreate on a
-     `SCHEMA_VERSION` mismatch, path-keyed rows, ONE long-lived writer per volume via a `WriterRegistry`, and a full pass
-     that clears + repopulates the table in ONE transaction while stamping each row with its as-of `recompute_generation`
-     (`importance`'s own persisted meta counter — NOT the lifecycle-bus generation). `media_index/store/` mirrors the
-     cache discipline, with two deliberate divergences: media enrichment is expensive and incremental (it does NOT
-     rewrite the whole table each scan), so it keeps a real GC (below) rather than importance's wholesale-replace; and it
-     does NOT copy the per-row generation stamp — its staleness is `(path, mtime[, size])`, which makes a generation
-     column redundant (see the last bullet of this decision).
+     `SCHEMA_VERSION` mismatch, path-keyed rows, ONE long-lived writer per volume via a `WriterRegistry`, and a full
+     pass that clears + repopulates the table in ONE transaction while stamping each row with its as-of
+     `recompute_generation` (`importance`'s own persisted meta counter — NOT the lifecycle-bus generation).
+     `media_index/store/` mirrors the cache discipline, with two deliberate divergences: media enrichment is expensive
+     and incremental (it does NOT rewrite the whole table each scan), so it keeps a real GC (below) rather than
+     importance's wholesale-replace; and it does NOT copy the per-row generation stamp — its staleness is
+     `(path, mtime[, size])`, which makes a generation column redundant (see the last bullet of this decision).
    - _Why separate DB:_ respects "one writer thread per DB" (no contention with the size-index writer), independent
      disposable lifecycle, mirrors the per-volume registry pattern (SMB/MTP slot in naturally).
    - _Why path-keyed:_ there is no stable cross-rebuild entry id (see Current state). `media.db` rows key on the **same
@@ -165,24 +165,24 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
      `generation` is an in-memory `watch` counter in a process-global map that starts empty every launch — the first
      completion after any restart is always `generation: 1`, it isn't persisted, and it resets on restart. If GC
      persisted it as a row stamp + "last reconciled" watermark and gated on "a higher generation," GC would break after
-     the first restart (the bus resets to 1, never exceeds the persisted value, so deleted-file rows would leak forever).
-     `importance/`'s scheduler pattern-matches `Completed { .. }` and coalesces via its `PassCoordinator`; it never reads
-     the generation value. (Do not confuse the bus generation with `importance/`'s `recompute_generation`, which is a
-     SEPARATE persisted meta counter `importance` mints itself via `ImportanceWriter::next_generation` and has nothing to
-     do with the bus.)
+     the first restart (the bus resets to 1, never exceeds the persisted value, so deleted-file rows would leak
+     forever). `importance/`'s scheduler pattern-matches `Completed { .. }` and coalesces via its `PassCoordinator`; it
+     never reads the generation value. (Do not confuse the bus generation with `importance/`'s `recompute_generation`,
+     which is a SEPARATE persisted meta counter `importance` mints itself via `ImportanceWriter::next_generation` and
+     has nothing to do with the bus.)
    - **The GC safety guarantee comes entirely from "only sweep when triggered by a `Completed` signal," plus serialized
      passes — no generation arithmetic.** The `Completed` signal is verified to fire AFTER the index writer flushes the
      truncate + repopulate: `indexing/scan_completion.rs` calls `writer.flush().await` before
      `apply_freshness_event_on(ScanCompleted)`, which is the only caller of `publish_scan_completed`. So a triggered
-     sweep always observes a complete tree, never the mid-scan truncate window. A `PassCoordinator`-style clone (Decision
-     7) serializes passes so a sweep and a concurrent trigger collapse to one pass. A volume mid-`Scanning` has published
-     no `Completed`, so the truncate window can never trigger a sweep. The startup sweep is safe for the same reason:
-     `ready_volumes_with_kind()` filters to `Fresh` only (verified — it excludes `Scanning`/`Stale`), so a mid-scan
-     volume is never swept at launch.
+     sweep always observes a complete tree, never the mid-scan truncate window. A `PassCoordinator`-style clone
+     (Decision 7) serializes passes so a sweep and a concurrent trigger collapse to one pass. A volume mid-`Scanning`
+     has published no `Completed`, so the truncate window can never trigger a sweep. The startup sweep is safe for the
+     same reason: `ready_volumes_with_kind()` filters to `Fresh` only (verified — it excludes `Scanning`/`Stale`), so a
+     mid-scan volume is never swept at launch.
    - **No per-row scan-generation column.** Per-row staleness is already `(path, mtime[, size])` from the index row
-     (below), which makes a generation stamp redundant. (If `media_index` ever needs a durable offline "as-of" marker, it
-     mints its OWN persisted counter à la `importance`'s `next_generation`, independent of the bus — but that's a future
-     option, not a requirement.)
+     (below), which makes a generation stamp redundant. (If `media_index` ever needs a durable offline "as-of" marker,
+     it mints its OWN persisted counter à la `importance`'s `next_generation`, independent of the bus — but that's a
+     future option, not a requirement.)
 
 4. **Disposable derived data vs durable human work — split the stores, and harden the durable side.** Detections,
    embeddings, tags, OCR text, and _computed_ clusters are **disposable** (`media.db`, regenerable). **Human work**
@@ -192,21 +192,21 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
    - **The compatibility key is an enrichment-provenance stamp, NOT a bare model-id string** (data-safety). A model-id +
      version string alone is too weak: `.mlmodelc` is recompiled on-device per OS version, and ANE inference can drift
      across an OS upgrade while the id + version string is unchanged, so a silent mislabel could slip the gate. The
-     durable compatibility key is `{model id + version, Core ML / OS version, tag-taxonomy version}`, stamped per durable
-     centroid AND per relevant `media.db` row. (This durable provenance stamp is a DIFFERENT concept from the dropped
-     ephemeral bus generation in Decision 3 — that one is transient and reset-on-launch; this one is durable and gates
-     mislabel safety. Don't conflate them.) The **tag-taxonomy-version** component also drives tag re-enrichment: an OS
-     upgrade that changes the Vision tag taxonomy bumps that component, so stale-taxonomy rows re-tag (this closes the
-     separate "OS upgrade changes the taxonomy → must re-index" gap in one field).
+     durable compatibility key is `{model id + version, Core ML / OS version, tag-taxonomy version}`, stamped per
+     durable centroid AND per relevant `media.db` row. (This durable provenance stamp is a DIFFERENT concept from the
+     dropped ephemeral bus generation in Decision 3 — that one is transient and reset-on-launch; this one is durable and
+     gates mislabel safety. Don't conflate them.) The **tag-taxonomy-version** component also drives tag re-enrichment:
+     an OS upgrade that changes the Vision tag taxonomy bumps that component, so stale-taxonomy rows re-tag (this closes
+     the separate "OS upgrade changes the taxonomy → must re-index" gap in one field).
    - **Cheap self-check on regenerate, before trusting ANY cosine re-attach:** re-embed one known-good stored face and
      verify its cosine to its stored centroid stays above a sanity floor. If it fails, treat it as a model change (→
      "needs re-confirm"), even when the provenance stamp claims a match — the stamp catches the labeled case, the
      self-check catches silent drift the stamp missed.
    - **Storage substrate is a genuine re-decision at impl time (lean: migrating SQLite ladder).** When the plan was
-     written, the only durable precedent was `favorites/` (atomic JSON), so JSON was the default. Two durable **MIGRATING
-     SQLite** stores now ship — `operation-log.db` (`operation_log/store/migrations.rs`, explicitly "the template future
-     durable DBs follow") and `agent/main.db` (`agent/store/migrations.rs`, which mirrors it) — with a shared ladder
-     discipline: an append-only forward ladder, NEVER edit or renumber a shipped step, refuse a downgrade
+     written, the only durable precedent was `favorites/` (atomic JSON), so JSON was the default. Two durable
+     **MIGRATING SQLite** stores now ship — `operation-log.db` (`operation_log/store/migrations.rs`, explicitly "the
+     template future durable DBs follow") and `agent/main.db` (`agent/store/migrations.rs`, which mirrors it) — with a
+     shared ladder discipline: an append-only forward ladder, NEVER edit or renumber a shipped step, refuse a downgrade
      (`SchemaDowngrade`, never wipe), and delete-and-recreate ONLY on a typed unparseable-file sqlite code (never a
      string). The trade-off: **atomic JSON** is dead-simple for a tiny human-work set and trivially inspectable, no
      schema; **a migrating ladder** buys relational queries (names, corrections, negatives, centroids joined and
@@ -234,11 +234,11 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
        removed from "Dóri" ("not this person") will, after a regenerate, again be cosine-nearest to Dóri's centroid — so
        a purely positive matcher would silently re-introduce the exact mislabel the user fixed. Any candidate suppressed
        by a durable negative (matched by embedding when spaces agree, else by its space-independent anchor) is **never
-       auto-attached**, only offered as "needs re-confirm." Likewise re-clustering must
-       honor durable cannot-link/must-link, or a manual split silently re-merges. **Cannot-link is the hard
-       constraint:** when a transitive must-link closure (a–b, b–c) would force a cannot-link violation (a–c), the
-       must-link is dropped and flagged, never silently applied. (This is the hole positive-only re-attach leaves; the
-       M4b tests target it explicitly, including the transitive-conflict case.)
+       auto-attached**, only offered as "needs re-confirm." Likewise re-clustering must honor durable
+       cannot-link/must-link, or a manual split silently re-merges. **Cannot-link is the hard constraint:** when a
+       transitive must-link closure (a–b, b–c) would force a cannot-link violation (a–c), the must-link is dropped and
+       flagged, never silently applied. (This is the hole positive-only re-attach leaves; the M4b tests target it
+       explicitly, including the transitive-conflict case.)
      - Even on a clean match, a **high threshold** plus a lightweight "Still <name>?" confirmation for low-confidence
        re-attaches — a silent false attribution is worse than asking. Mis-attach is a first-class failure mode here, not
        just "failed to attach."
@@ -275,14 +275,14 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
 
 7. **Enrichment subscribes to the SHIPPED neutral lifecycle bus and does an initial registry sweep — copy the
    `importance/` scheduler.** `indexing/lifecycle_bus.rs` already exists and is exactly the surface this plan asked for
-   (verified 2026-07-13); `media_index`'s scheduler subscribes to it the same way `importance/`'s scheduler does. Nothing
-   to add in `indexing/` FOR THE BUS; the bus plumbing below is a copy, not a build. (The memory-watchdog hook is
-   separate, real `indexing/` work — see Cross-cutting § Resources and M1.) The bus's design already resolves every
+   (verified 2026-07-13); `media_index`'s scheduler subscribes to it the same way `importance/`'s scheduler does.
+   Nothing to add in `indexing/` FOR THE BUS; the bus plumbing below is a copy, not a build. (The memory-watchdog hook
+   is separate, real `indexing/` work — see Cross-cutting § Resources and M1.) The bus's design already resolves every
    adversarial point this decision once flagged:
    - **Per-volume `watch`, not `broadcast` — done.** `publish_scan_completed` (fired from `apply_freshness_event_on` on
      `FreshnessEvent::ScanCompleted`, the chokepoint BOTH local and network funnel through) uses `send_replace` on a
-     `tokio::sync::watch<ScanState>`, so a completion fired during `setup()` before `media_index` subscribes is
-     RETAINED and a late subscriber replays it. A consumer coalesces repeats IN MEMORY via `borrow_and_update` (as
+     `tokio::sync::watch<ScanState>`, so a completion fired during `setup()` before `media_index` subscribes is RETAINED
+     and a late subscriber replays it. A consumer coalesces repeats IN MEMORY via `borrow_and_update` (as
      `importance/`'s scheduler does), never by reading or persisting `ScanState.generation` — that generation is a
      transient in-memory counter that resets to 1 every launch, so it must NOT be stamped or compared (Decision 3).
      `subscribe(volume_id)` returns the receiver; the senders live in a process-global map that outlives
@@ -295,7 +295,7 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
      subscriber through the registration `broadcast` bus (`publish_volume_registered` / `subscribe_registrations`,
      carrying the typed `IndexVolumeKind`). The `importance/` scheduler subscribes to registrations ONCE before its
      sweep (closing the gap), then wires each late volume's subscriptions on arrival. `media_index` reuses this
-     registration/scheduling wiring for its SMB/MTP milestone (M1.5) — no new *bus* mechanism needed. The **byte-fetch
+     registration/scheduling wiring for its SMB/MTP milestone (M1.5) — no new _bus_ mechanism needed. The **byte-fetch
      policy is genuinely new work**, though: only the scheduling, registration, and bus wiring is a copy; the
      conservative network-fetch path has no `importance/` sibling to reuse (importance never reads bytes off the wire —
      Decision 6, M1.5).
@@ -306,19 +306,19 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
    - **Network caveat (unchanged):** SMB/MTP emit only `Scanning → Live` at the phase layer, but **both kinds fire
      `FreshnessEvent::ScanCompleted`**, which is what the bus publishes — drive "ready to enrich" off the bus, never off
      a phase the network path never emits.
-   - **Incremental (optional, later):** the bus also carries a per-volume `dir-changed` `watch`
-     (`publish_dirs_changed` / `subscribe_dirs_changed`) that `importance/` drives its incremental rescore off. If
-     `media_index` ever wants incremental re-enrichment of just-changed folders, that channel is already there — but
-     note its accepted last-value-wins caveat (a burst can drop an earlier batch; the next full pass heals it), so treat
-     it as advisory, never the sole trigger for anything data-safety-critical.
+   - **Incremental (optional, later):** the bus also carries a per-volume `dir-changed` `watch` (`publish_dirs_changed`
+     / `subscribe_dirs_changed`) that `importance/` drives its incremental rescore off. If `media_index` ever wants
+     incremental re-enrichment of just-changed folders, that channel is already there — but note its accepted
+     last-value-wins caveat (a burst can drop an earlier batch; the next full pass heals it), so treat it as advisory,
+     never the sole trigger for anything data-safety-critical.
 
 8. **`search/` reaches `media.db` only through a `media_index` read API.** The closest mirror to copy is now
    `importance/`'s `ImportanceIndex` (`read/`, verified 2026-07-13): the ONE consumer entry point, no raw `rusqlite`
    dep, owning a `platform_case`-registered read connection and reading the DB directly so it answers OFFLINE after the
    volume unmounts (the same posture `media_index` wants — search a volume's photos after the NAS is unplugged). Model
    `media_index`'s read API on `ImportanceIndex` (it in turn mirrors `search/`→`indexing/`'s `ReadPool`/`IndexStore`).
-   `search/` stays a read-only consumer; it must not take a raw `rusqlite` dep on `media.db`, or the collation/one-writer
-   invariants leak into a second subsystem.
+   `search/` stays a read-only consumer; it must not take a raw `rusqlite` dep on `media.db`, or the
+   collation/one-writer invariants leak into a second subsystem.
 
 9. **Model install is new code (generic archive unpack + checksum verify), reusing only `download.rs`.** Core ML models
    ship as `.mlpackage` **directory bundles** (typically zipped); nothing in `ai/` unpacks an archive, and `ai/`
@@ -327,28 +327,30 @@ each `unsafe` block needs a specific `// SAFETY:` per `src-tauri/CLAUDE.md` (Dec
 
 10. **The cloud is opt-in and only for premium captions** (M5), reusing the whole shipped `agent/` LLM stack behind a
     _distinct_ explicit egress consent. On-device captions (Foundation Models) are the default for that feature. What to
-    reuse (all shipped as of Ask Cmdr M1–M8, verified 2026-07-13 — see `agent/CLAUDE.md` and `docs/specs/ask-cmdr-plan.md`):
+    reuse (all shipped as of Ask Cmdr M1–M8, verified 2026-07-13 — see `agent/CLAUDE.md` and
+    `docs/specs/ask-cmdr-plan.md`):
     - **The `AgentLlm` seam** (`agent/llm/`): a provider-agnostic trait (`AgentLlm::respond`), its genai-backed impl
       (`genai_impl.rs`), a deterministic zero-network `FakeAgentLlm` (`fake.rs`) for tests, and the typed message-part
       model (`types.rs`). **Caveat to check at impl time:** `AgentLlm::respond` is chat/tool-loop-shaped — one streaming
       call carrying an ordered list of typed parts plus opaque provider reasoning state (`ReasoningState.blob`). A
-      caption is a stateless one-shot VLM (image → text) call with no tool loop and no reasoning to round-trip. **Expect a
-      thinner sibling seam (image-in → text-out) as the DEFAULT outcome, not a coin-flip:** `AgentPart` today is
+      caption is a stateless one-shot VLM (image → text) call with no tool loop and no reasoning to round-trip. **Expect
+      a thinner sibling seam (image-in → text-out) as the DEFAULT outcome, not a coin-flip:** `AgentPart` today is
       `Text | ToolCall | ToolResult | Reasoning` (verified 2026-07-13) — there is no image part, so a VLM caption isn't
       representable in `AgentLlm::respond`'s type model. The consent gate and cost meter below reuse cleanly either way.
     - **The consent gate** (`agent/consent.rs`): `has_current_consent` + `CONSENT_COPY_VERSION`, enforced in the BACKEND
       send path (before any provider is resolved), fails CLOSED. A cloud-caption egress consent is a second, distinct
       copy version of the same shape — nothing reaches a frontier VLM without a recorded acceptance, even if the UI is
       bypassed.
-    - **The cost meter** (`agent/pricing.rs` + the store's `cost_meter`): honest per-call cost, `PricedCost { cost_micros,
-      priced }` where an unknown cloud model is `priced = false` (shown "unknown", never a silent $0). Extend the price
-      table with the caption VLM.
-    - **On-disk request/response logging is the egress AUDIT TRAIL** the sensitive-doc concern (Cross-cutting § Privacy —
-      don't silently upload an ID scan) needs. NOTE: this is `agent/`'s M9 (`llm-logs/`, auth-header redacted,
-      failure-isolated), **designed but not yet shipped** (Ask Cmdr landed through M8, verified 2026-07-13). Land or reuse
-      it before the cloud caption path so every egress is inspectable; if it hasn't shipped by M5, M5 carries it. **The
-      same consent gate and audit log must also cover the M6 photo-search tool** on the cloud agent path — that tool
-      egresses derived text content (OCR snippets, captions, tags, person names), not only captions, so it isn't exempt.
+    - **The cost meter** (`agent/pricing.rs` + the store's `cost_meter`): honest per-call cost,
+      `PricedCost { cost_micros, priced }` where an unknown cloud model is `priced = false` (shown "unknown", never a
+      silent $0). Extend the price table with the caption VLM.
+    - **On-disk request/response logging is the egress AUDIT TRAIL** the sensitive-doc concern (Cross-cutting § Privacy
+      — don't silently upload an ID scan) needs. NOTE: this is `agent/`'s M9 (`llm-logs/`, auth-header redacted,
+      failure-isolated), **designed but not yet shipped** (Ask Cmdr landed through M8, verified 2026-07-13). Land or
+      reuse it before the cloud caption path so every egress is inspectable; if it hasn't shipped by M5, M5 carries it.
+      **The same consent gate and audit log must also cover the M6 photo-search tool** on the cloud agent path — that
+      tool egresses derived text content (OCR snippets, captions, tags, person names), not only captions, so it isn't
+      exempt.
 
 ## Architecture
 
@@ -396,14 +398,14 @@ SHIPPED sibling in `importance/` to COPY (verified 2026-07-13). So M1 splits cle
 **genuinely new** work.
 
 - **Copied/adapted from `importance/` (not invented):** the per-volume store scaffolding (`store/` — `platform_case`,
-  delete+recreate on `SCHEMA_VERSION` mismatch, path-keyed rows, one long-lived writer per volume via a `WriterRegistry`;
-  no per-row generation stamp — staleness is `(path, mtime[, size])`, Decision 3), the scheduler that subscribes to
-  `indexing/lifecycle_bus.rs` + sweeps `ready_volumes_with_kind()` + coalesces per `volume_id` (a `PassCoordinator`
-  clone), and the `media_index` read API modeled on `ImportanceIndex` (`read/`). Read `importance/`'s `store/` +
-  `scheduler/` + `read/` and port them; don't re-derive.
+  delete+recreate on `SCHEMA_VERSION` mismatch, path-keyed rows, one long-lived writer per volume via a
+  `WriterRegistry`; no per-row generation stamp — staleness is `(path, mtime[, size])`, Decision 3), the scheduler that
+  subscribes to `indexing/lifecycle_bus.rs` + sweeps `ready_volumes_with_kind()` + coalesces per `volume_id` (a
+  `PassCoordinator` clone), and the `media_index` read API modeled on `ImportanceIndex` (`read/`). Read `importance/`'s
+  `store/` + `scheduler/` + `read/` and port them; don't re-derive.
   - **`media_index` gets its OWN `start()`, mirroring `importance/`'s ordering** (subscribe to registrations → sweep
-    `ready_volumes_with_kind()` → wire per-volume subscriptions): it can't piggyback `importance/`'s subscription. Because
-    `app.manage` is keyed by type, an `Arc<MediaScheduler>` coexists fine alongside `importance/`'s scheduler.
+    `ready_volumes_with_kind()` → wire per-volume subscriptions): it can't piggyback `importance/`'s subscription.
+    Because `app.manage` is keyed by type, an `Arc<MediaScheduler>` coexists fine alongside `importance/`'s scheduler.
 - **Genuinely new in M1 (where the real work is):**
   - **Image-qualification predicate FIRST** (M1's literal first need): decide what index entry counts as "an image"
     (UTType via `UTTypeConformsTo`/Vision, with an extension fast-path), and explicitly classify Live Photos
@@ -415,36 +417,37 @@ SHIPPED sibling in `importance/` to COPY (verified 2026-07-13). So M1 splits cle
   - **The `media.db` schema + the FTS5 OCR table**, `media_status` path-keyed staleness (`(path, mtime[, size])`), the
     **GC reconcile** (below), and the **search OCR query path** (below). SMB out of M1 — local only.
   - **A minimal OS/Vision-engine-version stamp on OCR rows, from the start.** `media_status` (or `media_ocr`) rows carry
-    a lightweight OS/Vision-engine-version component so an OS upgrade that changes the Vision OCR engine re-runs OCR. The
-    `(path, mtime, size)` staleness key alone never re-runs on an engine change, so coverage would go silently stale
+    a lightweight OS/Vision-engine-version component so an OS upgrade that changes the Vision OCR engine re-runs OCR.
+    The `(path, mtime, size)` staleness key alone never re-runs on an engine change, so coverage would go silently stale
     (the same text, decoded by a newer engine, would keep its old result forever). This is data-**coverage**, not
     data-safety — OCR text is disposable — so OCR needs ONLY the OS/Vision-version component, NOT the full
     `{model id, OS version, taxonomy}` provenance stamp that faces/tags carry (Decision 4). Adding the column in M1
-    avoids an awkward retrofit when the full provenance stamp first lands in M2 (tags) / M4a (faces); it unifies with how
-    tags re-enrich on a taxonomy bump (M2).
+    avoids an awkward retrofit when the full provenance stamp first lands in M2 (tags) / M4a (faces); it unifies with
+    how tags re-enrich on a taxonomy bump (M2).
   - **The memory-watchdog hook (real `indexing/` work).** Hook `media_index` cancellation into the existing indexing
     memory watchdog's stop action (Cross-cutting § Resources), rather than standing up a second 16 GB ceiling over the
     same resident pool. The watchdog is currently indexing-specific — `stop_all_indexing` "does not know about other
     subsystems" (`indexing/CLAUDE.md`) — so this IS a modification to `indexing/`, distinct from the bus (which is pure
-    reuse; see Decision 7). M1 already decodes HEIC/RAW, whose RAM spikes are exactly what the ceiling defends, so wire it
-    here, in the first milestone that can spike.
+    reuse; see Decision 7). M1 already decodes HEIC/RAW, whose RAM spikes are exactly what the ceiling defends, so wire
+    it here, in the first milestone that can spike.
 - **GC reconcile:** when a source file vanishes (index deletion), GC its media rows — but run the deletion sweep **only
   when triggered by a `Completed` signal off the bus (which fires post-flush), never mid-`Scanning`** (Decision 3), so
-  the index-truncate window can't wipe rows for files that still exist. Design the reconcile against index deletions now,
-  even though faces/embeddings arrive later.
+  the index-truncate window can't wipe rows for files that still exist. Design the reconcile against index deletions
+  now, even though faces/embeddings arrive later.
 - Vision `VNRecognizeTextRequest` → `media_ocr` FTS5 table. Decode via ImageIO downscale.
 - Search: a new image-OCR query path via the `media_index` read API (Decision 8); surface "text in images" through
   `query-ui`.
 - **Result presentation + "why matched" (a path list is a poor photo-search UX).** Present results as a **thumbnail grid
-  reusing the existing QuickLook/preview path** (NOT a `media_index`-produced thumbnail — Decision 5), each result showing
-  a **match reason** (the highlighted OCR snippet in M1; growing to "matched: person Dóri + tag beach" through M3/M4b).
-  M1 ships the basic grid + OCR-snippet reason.
+  reusing the existing QuickLook/preview path** (NOT a `media_index`-produced thumbnail — Decision 5), each result
+  showing a **match reason** (the highlighted OCR snippet in M1; growing to "matched: person Dóri + tag beach" through
+  M3/M4b). M1 ships the basic grid + OCR-snippet reason.
 - **Coverage honesty in the main results.** If enrichment is still running or off, the main `query-ui` results say so
   ("still indexing, results may be incomplete") — never a confident-looking result set that's really 30% of the library
   (Cross-cutting § Honest progress + coverage).
 - Settings: master "Index image contents" toggle (off by default); local-only in M1. **Disabling it** stops in-flight
   work and offers to delete `media.db`; the durable identity store survives with a notice (Decision 6). A minimal
-  **per-volume enrichment state** ("indexing / done / paused") surfaces here; the full count-and-ETA progress lands in M2.
+  **per-volume enrichment state** ("indexing / done / paused") surfaces here; the full count-and-ETA progress lands in
+  M2.
 - **Docs:** new `media_index/CLAUDE.md` + `DETAILS.md` (sibling, enforced); `media_index/` row in
   `docs/architecture.md`; note the new search read-API boundary in `search/DETAILS.md`; new settings string in the i18n
   catalog. The lifecycle bus is already documented in `indexing/DETAILS.md` (it ships) — link it from
@@ -456,13 +459,12 @@ SHIPPED sibling in `importance/` to COPY (verified 2026-07-13). So M1 splits cle
   - _TDD red→green (pure/risky):_ the **path-keyed staleness predicate** (stale vs `(path, mtime, size)`); the **GC
     reconcile is deletion-driven** (a _known_ entry deleted ⇒ rows gone) **and must NOT fire during an in-progress
     rescan** (transient truncate absence ⇒ rows kept; the sweep runs only when a `Completed` signal fires) — this is a
-    data-safety test,
-    not a nicety; **GC fires on a bus EDGE, never a poll** — assert the sweep consumes a `Completed` **transition**
-    (copy `importance/`'s `borrow_and_update` / `has_changed` edge-triggered consumption), never a `borrow()` of the
-    retained state, because the `watch` retains the last `Completed` across a new scan's truncate window, so a poll of
-    retained state could observe a stale `Completed` mid-truncate and sweep live rows (edge-triggered = safe; this test
-    makes the safety property explicit); the **scheduler throttle/cancel decision**; and **FTS query building** — fail
-    first for the right reason, then implement (`tdd-red-green`).
+    data-safety test, not a nicety; **GC fires on a bus EDGE, never a poll** — assert the sweep consumes a `Completed`
+    **transition** (copy `importance/`'s `borrow_and_update` / `has_changed` edge-triggered consumption), never a
+    `borrow()` of the retained state, because the `watch` retains the last `Completed` across a new scan's truncate
+    window, so a poll of retained state could observe a stale `Completed` mid-truncate and sweep live rows
+    (edge-triggered = safe; this test makes the safety property explicit); the **scheduler throttle/cancel decision**;
+    and **FTS query building** — fail first for the right reason, then implement (`tdd-red-green`).
   - _After:_ scheduler integration test using the **fake `VisionBackend`** over a synthetic index (no FFI); a macOS-
     gated integration test running real Vision OCR on a committed fixture image (asserts known words). The bus mechanism
     itself (late-subscriber replay, generation, registration) is already tested in `indexing/lifecycle_bus.rs`; M1's own
@@ -501,10 +503,10 @@ Vision OCR and adds no new models, so it proves the transport without model-down
   Cross-cutting § Importance-prioritized enrichment give the why, but no milestone owned it before. Navigation-based
   importance **starves** a NAS photo archive: a library the user rarely browses folder-by-folder scores LOW everywhere,
   so importance-first ordering plus the M2 slider would defer the user's actual photos indefinitely — the opposite of
-  intent. The override forces enrichment regardless of importance. (Optionally weigh a **photo-density** importance-input
-  candidate — a folder that's mostly images is likely an archive regardless of visit count — but keep it a candidate,
-  not load-bearing, per the plan's "measure, don't hardcode" posture; don't ship importance-first without at least the
-  manual override.)
+  intent. The override forces enrichment regardless of importance. (Optionally weigh a **photo-density**
+  importance-input candidate — a folder that's mostly images is likely an archive regardless of visit count — but keep
+  it a candidate, not load-bearing, per the plan's "measure, don't hardcode" posture; don't ship importance-first
+  without at least the manual override.)
 - **Resumability across unmount** (Cross-cutting § Cancellation defines it — scheduled and tested here): a mid-pass
   unmount is not a crash. Abandon the in-flight item cleanly, **KEEP every completed path-keyed row** (they're valid),
   and mark the volume "paused, resumes when reconnected" — it resumes via the bus's registration path on remount.
@@ -512,12 +514,12 @@ Vision OCR and adds no new models, so it proves the transport without model-down
 - **Offline search after unmount** (a property of Decision 8 — proven here on `/Volumes/naspi`): the `media_index` read
   API answers from `media.db` with the NAS unplugged, so a user can search their NAS photos while disconnected. Prove it
   with a test that unmounts and still returns results.
-- **GC vs unmount interaction:** a volume that is merely disconnected must **NOT** GC its rows. Only an index deletion on
-  a **completed** scan GCs rows (Decision 3); a disconnect is neither, so a paused volume's coverage survives intact
+- **GC vs unmount interaction:** a volume that is merely disconnected must **NOT** GC its rows. Only an index deletion
+  on a **completed** scan GCs rows (Decision 3); a disconnect is neither, so a paused volume's coverage survives intact
   until it reconnects.
 - **MTP stays on-demand, never background.** Keep `importance/`'s precedent: `ScoringPolicy::for_kind` **excludes MTP**
-  from background scoring (verified 2026-07-13). MTP media enrichment is likewise **on-demand-per-visit, NOT a background
-  sweep** — a phone or camera on MTP is transient and slow, so enrich what the user opens, when they open it.
+  from background scoring (verified 2026-07-13). MTP media enrichment is likewise **on-demand-per-visit, NOT a
+  background sweep** — a phone or camera on MTP is transient and slow, so enrich what the user opens, when they open it.
 - **Docs:** `media_index/DETAILS.md` — the network-fetch policy (idle/bandwidth/concurrency gating) and the
   resumable-across-unmount behavior; per-volume opt-in strings in the i18n catalog with `@key` descriptions; a note in
   `docs/architecture.md` that `media_index` enriches opt-in network volumes.
@@ -525,8 +527,8 @@ Vision OCR and adds no new models, so it proves the transport without model-down
   - _TDD red→green (data-safety + risky):_ the **conservative-fetch decision** (the idle/bandwidth gate defers or
     proceeds correctly, over a fake clock/bandwidth signal); the **resumable-across-unmount row preservation** (a
     mid-pass unmount keeps completed rows, marks the volume paused, and never marks rows failed); the **GC must NOT fire
-    on a mere disconnect** (a disconnect is not a completed-scan deletion ⇒ rows kept) — this is a data-safety case, fail
-    first for the right reason.
+    on a mere disconnect** (a disconnect is not a completed-scan deletion ⇒ rows kept) — this is a data-safety case,
+    fail first for the right reason.
   - _After:_ a macOS-gated integration test against **`/Volumes/naspi`** plus the existing `test/smb-servers/` fixtures
     — enrich over SMB, unmount, and assert offline search still answers from `media.db`.
   - _E2E:_ the per-volume SMB opt-in persists.
@@ -556,8 +558,8 @@ Vision OCR and adds no new models, so it proves the transport without model-down
     volume. The **multi-volume aggregate** composes per-volume counts and voices per-volume state ("about 38,900 images;
     naspi still scanning"), never a single confident wrong number. On drag, also show the **incremental work + ETA**
     ("this adds about 12,000 images, ~20 min"), tying the slider to the enrichment progress surface (§ Honest progress +
-    coverage). Compute counts in Rust behind an IPC command (backend does the work, thin frontend), debounced so dragging
-    doesn't thrash queries.
+    coverage). Compute counts in Rust behind an IPC command (backend does the work, thin frontend), debounced so
+    dragging doesn't thrash queries.
   - **Make it feel nice** (design-principles § delightful): a smooth slider with the covered counts updating live, the
     floor made legible ("junk like `node_modules` is always skipped"), and `prefers-reduced-motion` respected. The
     slider only refines the master toggle — it's disabled/hidden when image indexing is off.
@@ -567,8 +569,8 @@ Vision OCR and adds no new models, so it proves the transport without model-down
 - **Full enrichment progress surface** (§ Honest progress + coverage): the per-volume progress/coverage indicator with
   honest counts, ETA, and state ("12,000 of 38,900 images indexed on naspi, about 15 min left") lands here, sharing the
   slider's count machinery. M1 shipped only the minimal per-volume state.
-- **Per-folder "don't index for photo search" exclusion** (Cross-cutting § Privacy): the user-set exclude that protects a
-  sensitive high-importance folder (`~/Documents/IDs/`) the slider alone can't. Small; sits next to the slider.
+- **Per-folder "don't index for photo search" exclusion** (Cross-cutting § Privacy): the user-set exclude that protects
+  a sensitive high-importance folder (`~/Documents/IDs/`) the slider alone can't. Small; sits next to the slider.
 - **Docs:** `media_index/DETAILS.md` — note Vision's fixed tag taxonomy and **anchor the count**
   (`~1,303 on <macOS version>, verified <date>`) per `docs.md`; the slider + preview design and the covered-count IPC
   command; architecture note for "find similar".
@@ -584,8 +586,8 @@ Vision OCR and adds no new models, so it proves the transport without model-down
 - **Gate RESOLVED (spike, 2026-06-30):** the Core ML text encoder + `objc2-core-ml` round-trip work (bit-identical to
   the `coremltools` reference), so the native path stands. **Use a commercially-licensed CLIP — NOT Apple's MobileCLIP**
   (research-only weights, can't ship; see Decision 1 and
-  [`docs/notes/clip-coreml-rust-spike.md`](../notes/clip-coreml-rust-spike.md)). Candidates: OpenAI CLIP (MIT) or
-  SigLIP 2 (Apache-2.0); convert once with `coremltools` on a dev box, ship the pre-converted `.mlpackage` (image + text
+  [`docs/notes/clip-coreml-rust-spike.md`](../notes/clip-coreml-rust-spike.md)). Candidates: OpenAI CLIP (MIT) or SigLIP
+  2 (Apache-2.0); convert once with `coremltools` on a dev box, ship the pre-converted `.mlpackage` (image + text
   towers). **Verify the chosen model's license + Core ML conversion fidelity at impl time.**
 - Wrap the `objc2-core-ml` calls in a safe `encode_text`/`encode_image` API (~150–250 lines, per-block `// SAFETY:`).
   **Compile the `.mlpackage` to `.mlmodelc` on-device at first run and cache** (`.mlmodelc` is OS-version-specific —
@@ -621,10 +623,10 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
 - **Provenance stamp lands with the first stored embeddings:** stamp each durable centroid AND the relevant `media.db`
   rows with the `{model id + version, Core ML / OS version, tag-taxonomy version}` provenance key (Decision 4), so the
   M4b re-attach gate has it to check.
-- **Docs:** `media_index/DETAILS.md` faces pipeline + face-crop-at-rest storage + the provenance-stamp shape; architecture
-  map; `docs/security.md` on on-device face data + face-crop redaction/backup posture + consent, and — for the M5/M6
-  cloud path — that OCR snippets, captions, tags, and person names are derived text content that egresses to the provider
-  (not "just metadata"); i18n strings for the opt-in.
+- **Docs:** `media_index/DETAILS.md` faces pipeline + face-crop-at-rest storage + the provenance-stamp shape;
+  architecture map; `docs/security.md` on on-device face data + face-crop redaction/backup posture + consent, and — for
+  the M5/M6 cloud path — that OCR snippets, captions, tags, and person names are derived text content that egresses to
+  the provider (not "just metadata"); i18n strings for the opt-in.
 - **Tests:** _TDD red→green:_ cluster **merge/split** correctness; clustering honors **durable must-link/cannot-link**
   (forward ref to the store M4b adds — stub the store in M4a). _After:_ fake-backend faces pipeline; macOS-gated
   detect+embed on a fixture with known faces. _E2E:_ faces detected, cluster-id search returns the right photos.
@@ -632,10 +634,10 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
 
 ### M4b — Naming + durable identity store + conservative re-attach + People UI (the data-safety core)
 
-- **Durable identity store (Decision 4), hardened:** names + corrections (incl. **negative/cannot-link**, each carrying a
-  **space-independent anchor** `(path, IoU-tolerant face-locator)`) + **provenance-stamped centroids** (`{model id +
-  version, Core ML / OS version, tag-taxonomy version}`). **Decide the substrate here (Decision 4): atomic JSON
-  (`favorites/`-style) vs a migrating SQLite ladder (`operation-log.db` / `agent/main.db`-style), leaning ladder.**
+- **Durable identity store (Decision 4), hardened:** names + corrections (incl. **negative/cannot-link**, each carrying
+  a **space-independent anchor** `(path, IoU-tolerant face-locator)`) + **provenance-stamped centroids**
+  (`{model id + version, Core ML / OS version, tag-taxonomy version}`). **Decide the substrate here (Decision 4): atomic
+  JSON (`favorites/`-style) vs a migrating SQLite ladder (`operation-log.db` / `agent/main.db`-style), leaning ladder.**
   Re-attach is conservative whichever wins: links intact when `media.db` survives; provenance-stamp-gated cosine + the
   regenerate self-check otherwise; **negatives veto** (matched by anchor when spaces disagree); any mismatch ⇒ "needs
   re-confirm", never cross-space match; high threshold + confirm for low confidence.
@@ -645,15 +647,17 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
   update `docs/security.md`; i18n strings.
 - **Tests (data-safety critical — re-run yourself, don't trust delegation, per `verify-delegated-work`):**
   - _TDD red→green:_ **names+corrections re-attach after a simulated `media.db` wipe** (must re-bind); **refuse to
-    cross-space match** on a provenance-stamp mismatch (assert no mislabel); **same model version but drifted embeddings**
-    — the regenerate self-check fails the cosine sanity floor even though the stamp matches, so re-attach falls back to
-    "needs re-confirm" (distinct from the stamp-bump test); **a face with a durable "not this person: X" veto must NOT
-    re-attach to X after a regenerate, even when X's centroid is cosine-nearest** (the C-NEW-1 hole); **the same negative
-    veto is re-surfaced in the re-confirm UI after a model-version change** (matched by its space-independent anchor, since
-    the embedding can't be cosine-checked across spaces); the centroid-match threshold and the "needs re-confirm" path.
+    cross-space match** on a provenance-stamp mismatch (assert no mislabel); **same model version but drifted
+    embeddings** — the regenerate self-check fails the cosine sanity floor even though the stamp matches, so re-attach
+    falls back to "needs re-confirm" (distinct from the stamp-bump test); **a face with a durable "not this person: X"
+    veto must NOT re-attach to X after a regenerate, even when X's centroid is cosine-nearest** (the C-NEW-1 hole);
+    **the same negative veto is re-surfaced in the re-confirm UI after a model-version change** (matched by its
+    space-independent anchor, since the embedding can't be cosine-checked across spaces); the centroid-match threshold
+    and the "needs re-confirm" path.
   - _After:_ fake-backend identity-store round trips.
   - _E2E:_ name a cluster, search the name, find photos; rename/merge; remove a face then regenerate and assert it does
-    NOT snap back; simulate a provenance-stamp bump and assert the UI asks to re-confirm rather than silently relabeling.
+    NOT snap back; simulate a provenance-stamp bump and assert the UI asks to re-confirm rather than silently
+    relabeling.
 - **Checks:** full incl. `--include-slow`; a11y on the People UI (AA+ contrast, screen reader).
 
 ### M5 — LLM captions (premium, opt-in; on-device default, cloud optional) — clearly later, genuinely optional
@@ -663,8 +667,9 @@ milestones; M4a de-risks the faces FFI/pipeline before the curation/durable-stor
   sidecar, called over FFI. Spike the bridge early (can run in parallel as research); keep it isolated.
 - Captions feed the FTS index. **Optional cloud route** (frontier VLM) reusing the shipped `agent/` LLM stack per
   Decision 10 — the `AgentLlm` seam (check `respond`-fits-a-VLM vs a thinner image-in/text-out sibling), the
-  backend-enforced consent gate (`agent/consent.rs`, a distinct egress copy version), the cost meter (`agent/pricing.rs`),
-  and the on-disk request/response audit log (`agent/`'s M9 `llm-logs/` — land it if it hasn't shipped). Never default.
+  backend-enforced consent gate (`agent/consent.rs`, a distinct egress copy version), the cost meter
+  (`agent/pricing.rs`), and the on-disk request/response audit log (`agent/`'s M9 `llm-logs/` — land it if it hasn't
+  shipped). Never default.
 - **Docs:** the Swift-bridge build wiring (own `docs/guides/` doc); consent + privacy copy; point at `agent/CLAUDE.md`
   for the reused seam/consent/cost/logging (single-source, don't restate).
 - **Tests:** _TDD red→green:_ provider-selection + consent gate (on-device vs cloud vs off); **verify the cloud gate
@@ -685,16 +690,16 @@ looking, not a blocker for M1–M5; a short milestone or a future note.
 - **Agent tool:** add a "photos by description / OCR text / person" read family to `agent/tools/` as a
   `consumers: [Agent], access: Read` entry in the shared `mcp_tools!` registry, whose handler calls the `media_index`
   read API and only SHAPES the result (reuse-the-core rule; see `agent/tools/CLAUDE.md`). It keeps the "no image bytes /
-  no thumbnails to the provider" property as a **typed result DTO the tool structurally can't populate with bytes** (text
-  fields only: matched OCR snippet, person name, tag, path), enforced by a test — not just prose. A new `ToolId` variant +
-  its name in `EXPECTED_AGENT_TOOL_NAMES` / `ToolId::KNOWN`.
+  no thumbnails to the provider" property as a **typed result DTO the tool structurally can't populate with bytes**
+  (text fields only: matched OCR snippet, person name, tag, path), enforced by a test — not just prose. A new `ToolId`
+  variant + its name in `EXPECTED_AGENT_TOOL_NAMES` / `ToolId::KNOWN`.
 - **MCP tool + resource:** the same registry entry exposes it to external agents via `mcp/executor/`, alongside the
   existing `cmdr://importance` / `cmdr://indexing` surfaces.
 - **Honest coverage** (spec §2.4): the result voices its own staleness/coverage (image indexing off, a volume still
   scanning, a below-threshold folder not enriched) — never a confident empty answer that's really "not indexed yet".
 - Depends on: M1 (OCR text search) at minimum; person search needs M4b, semantic description search needs M3. Scope it
-  to whatever has shipped. **Tests:** fake-backend tool dispatch + the coverage-honesty path + a test that the result DTO
-  is text-only (can't carry image bytes); keep it small.
+  to whatever has shipped. **Tests:** fake-backend tool dispatch + the coverage-honesty path + a test that the result
+  DTO is text-only (can't carry image bytes); keep it small.
 
 ## Cross-cutting
 
@@ -708,41 +713,43 @@ looking, not a blocker for M1–M5; a short milestone or a future note.
   volume unmounts) and carries an as-of `recompute_generation` (importance's own persisted marker, NOT the lifecycle-bus
   generation), so the priority signal survives an unmount and is honestly stale-marked. This replaces the plan's earlier
   hand-waved "priority" with a real, shipped signal.
-  - **But navigation-based importance starves a rarely-browsed photo archive — so two escape hatches are decisive for the
-    NAS use case** (Decision 6). A NAS photo archive the user seldom opens folder-by-folder scores LOW everywhere, so
-    importance-first ordering plus the slider would defer their actual photos indefinitely. The **user-set "always index
-    this folder / this volume" override** forces enrichment regardless of score (it complements the per-folder exclude in
-    § Privacy). And a **photo-density signal** — a folder that's mostly images is likely a photo archive regardless of
-    visit count — is a candidate importance input for THIS feature, to lift a dense archive above the slider floor without
-    a manual override. Weigh both at impl time; don't ship importance-first without at least the manual override.
+  - **But navigation-based importance starves a rarely-browsed photo archive — so two escape hatches are decisive for
+    the NAS use case** (Decision 6). A NAS photo archive the user seldom opens folder-by-folder scores LOW everywhere,
+    so importance-first ordering plus the slider would defer their actual photos indefinitely. The **user-set "always
+    index this folder / this volume" override** forces enrichment regardless of score (it complements the per-folder
+    exclude in § Privacy). And a **photo-density signal** — a folder that's mostly images is likely a photo archive
+    regardless of visit count — is a candidate importance input for THIS feature, to lift a dense archive above the
+    slider floor without a manual override. Weigh both at impl time; don't ship importance-first without at least the
+    manual override.
 - **Resources + memory ceiling.** Enrichment runs on dedicated low-priority OS threads (not rayon), bounded concurrency,
   cancel token, starts only after the base index signals ready, yields to foreground. The existing watchdog already
   measures **process-wide** resident memory but only stops _indexing_ — so **hook `media_index` cancellation into that
   same watchdog's stop action**, rather than standing up a second independent 16 GB ceiling (two ceilings over one
   shared resident pool each see headroom and can sum to ~2×). Decode of full-res HEIC/RAW + Core ML can spike RAM, so
-  this must be **wired**, not asserted. Note the standing cost too: `media_index` adds a **THIRD long-lived writer thread
-  per volume** (index + importance + media) plus a third set of per-volume `watch` listeners and a registration listener.
-  Fine at a few-volumes scale, but not free — it scales 3× per mounted volume.
+  this must be **wired**, not asserted. Note the standing cost too: `media_index` adds a **THIRD long-lived writer
+  thread per volume** (index + importance + media) plus a third set of per-volume `watch` listeners and a registration
+  listener. Fine at a few-volumes scale, but not free — it scales 3× per mounted volume.
 - **Honest progress + coverage (a core Cmdr transparency value, not polish).** Background enrichment must surface honest
   per-volume progress with counts, ETA, and state ("12,000 of 38,900 images indexed on naspi, about 15 min left"; "naspi
-  still scanning") — a minimal per-volume state in M1, the full count-and-ETA surface in M2 (where it shares the slider's
-  count machinery). And a search run while enrichment is incomplete must voice it in the MAIN `query-ui` results ("still
-  indexing, results may be incomplete"), not only in the M6 agent tool — pull the coverage-honesty requirement up into
-  M1/M3's query surface.
+  still scanning") — a minimal per-volume state in M1, the full count-and-ETA surface in M2 (where it shares the
+  slider's count machinery). And a search run while enrichment is incomplete must voice it in the MAIN `query-ui`
+  results ("still indexing, results may be incomplete"), not only in the M6 agent tool — pull the coverage-honesty
+  requirement up into M1/M3's query surface.
 - **Query-time vector residency.** Brute-force cosine is cheap, but loading ~200 MB of embedding BLOBs from `media.db`
   per text query is not — and it's real work that must run **off the synchronous IPC thread** (alongside the text
   encode, not just it). Mirror `search/`'s warm in-memory arena (`SEARCH_INDEX`): keep a **resident vector cache**
   (load-once, invalidated on writes), counted against the same watchdog budget. Embedding storage on disk is small (512
   floats ≈ 2 KB/image; int8 if huge).
 - **Cancellation + crash-safety.** Every pass is resumable from path-keyed `media_status`; a crash resumes. `media.db`
-  is disposable; only the durable identity store must survive (separate, crash-safe, versioned — substrate per Decision 4).
+  is disposable; only the durable identity store must survive (separate, crash-safe, versioned — substrate per Decision
+  4).
   - **Mid-pass unmount (not a crash) is its own case.** An unmount mid-decode over SMB throws I/O errors on live work.
-    `media_index` abandons the in-flight item cleanly, **KEEPS every completed path-keyed row** (they're valid), and marks
-    the volume "paused, resumes when reconnected" — it resumes via the bus's registration path on remount. It **never
-    marks rows permanently failed** on an unmount; a disconnect isn't a bad file.
+    `media_index` abandons the in-flight item cleanly, **KEEPS every completed path-keyed row** (they're valid), and
+    marks the volume "paused, resumes when reconnected" — it resumes via the bus's registration path on remount. It
+    **never marks rows permanently failed** on an unmount; a disconnect isn't a bad file.
   - **Disabling image indexing** stops in-flight work via the cancel token and OFFERS to delete `media.db`; the durable
-    identity store survives with a clear notice (or is exportable), never silently wiped or silently retained (Decision 6,
-    M1 toggle).
+    identity store survives with a clear notice (or is exportable), never silently wiped or silently retained (Decision
+    6, M1 toggle).
 - **Deletion/GC.** `media_index` reconciles against index deletions (file vanished ⇒ media rows, face crops, embeddings
   GC'd). Resume ≠ cleanup; both are required.
 - **Privacy.** On-device by default; faces a separate opt-in; cloud captions a separate egress opt-in. Mirror
@@ -788,9 +795,9 @@ looking, not a blocker for M1–M5; a short milestone or a future note.
 - Enrichment is throttled, cancelable, crash-resumable, GC'd against deletions, under an explicit memory ceiling, and
   **importance-prioritized** (high-importance folders first, below-threshold junk deferred/skipped per the settings
   slider, with an "always index this" override for rarely-browsed photo archives). SMB is a conservative per-volume
-  opt-in with a genuine byte-fetch policy (idle-gated, bandwidth-bounded, resumable across unmount), validated on the NAS
-  (M1.5); MTP enrichment is on-demand-per-visit, never a background sweep. Enrichment surfaces honest per-volume progress
-  and coverage.
+  opt-in with a genuine byte-fetch policy (idle-gated, bandwidth-bounded, resumable across unmount), validated on the
+  NAS (M1.5); MTP enrichment is on-demand-per-visit, never a background sweep. Enrichment surfaces honest per-volume
+  progress and coverage.
 - Full `pnpm check --include-slow` green; new subsystem has `CLAUDE.md`+`DETAILS.md`; architecture map updated and the
   `media_index` lifecycle-bus subscription linked to `indexing/DETAILS.md`; privacy posture in `docs/security.md`.
 
@@ -827,5 +834,5 @@ looking, not a blocker for M1–M5; a short milestone or a future note.
   the same **scheduling, registration, and bus wiring** `importance/` already ships for network volumes. The one part
   with NO sibling to copy is the **byte-fetch path**: `importance/` hard-rules out ever reading bytes off an SMB/MTP
   mount (`importance/CLAUDE.md`: "NEVER a filesystem syscall against an SMB/MTP mount — read only the local index DB"),
-  whereas media enrichment MUST read image bytes to decode and run Vision/CLIP. That conservative-fetch policy is genuine
-  new work, scheduled in M1.5.
+  whereas media enrichment MUST read image bytes to decode and run Vision/CLIP. That conservative-fetch policy is
+  genuine new work, scheduled in M1.5.

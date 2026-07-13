@@ -15,7 +15,8 @@ second. Backend: `src-tauri/src/search/` + `src-tauri/src/commands/search.rs`.
   shared `QueryDialog` from `config.primaryAction` / `config.secondaryAction`; there's no Search-local footer
   component.)
 - `ImageSearchResults.svelte` + `ocr-snippet.ts`: the "text in images" OCR grid, below the filename results via
-  QueryDialog's `config.resultsExtra` slot (Search-only). Backend: `media_index`.
+  QueryDialog's `config.resultsExtra` slot (Search-only). Backend: `media_index`. `active-media-volume.ts` resolves
+  which volume it targets (`resolveImageSearchVolume`).
 
 ## Must-knows
 
@@ -49,6 +50,11 @@ second. Backend: `src-tauri/src/search/` + `src-tauri/src/commands/search.rs`.
   OPPOSITE pane is a snapshot. Source-side ops (Cmd+C/X, F5/F6, drag-out) run because the row is `canBeSource: true`.
 - **AI mode never auto-applies** (cost); only Enter / `⌘Enter` / the ⏎ button / chip clicks fire it. Don't add a
   per-consumer catch that swallows AI errors: QueryDialog surfaces them once for both consumers.
+- **Two volume scopes: filename search is root-only; the image grid follows the active pane.** Filename search reads the
+  LOCAL index, so `SearchDialog` keys its lifecycle + scanning indicator on `ROOT_VOLUME_ID` (don't network-scope that).
+  The image grid targets the focused pane's volume via the `imageSearchVolume` prop, so a NAS search finds NAS photos.
+  The pane's volume id IS the media-index id (`root` / `smb-…`); mount root is `VolumeInfo.path`. DETAILS § Which
+  volume.
 - **`ImageSearchResults` OWNS every `cmdr-media://` thumbnail token it mints** (no viewer-session close): drop the prior
   set before minting the next, and all on unmount (`mediaIndexDropThumbnailTokens`), or the backend token map leaks. It
   voices coverage from `mediaIndexVolumeState` (off / indexing / not-indexed / empty) so no empty result lies, and

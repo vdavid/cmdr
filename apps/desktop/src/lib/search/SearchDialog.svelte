@@ -81,6 +81,7 @@
     } from './search-state.svelte'
     import QueryDialog from '$lib/query-ui/QueryDialog.svelte'
     import ImageSearchResults from './ImageSearchResults.svelte'
+    import type { ImageSearchVolume } from './active-media-volume'
     import { getBadgeStatus } from '$lib/feature-status'
     import type {
         QueryDialogConfig,
@@ -134,9 +135,23 @@
          * `search-results://<id>`. The wrapper closes itself; the handler doesn't need to.
          */
         onShowAllInMainWindow?: (snapshotId: string) => void
+        /**
+         * The volume the image-OCR grid searches: the focused pane's current volume, so
+         * browsing a NAS surfaces its photos and browsing local surfaces local. Carries
+         * the media-index volume id, its mount root (to reconstruct openable OS paths from
+         * index-relative hits), and whether it's a network volume (for the coverage voice).
+         * Defaults to the local root, matching the filename search's local-index scope.
+         */
+        imageSearchVolume?: ImageSearchVolume
     }
 
-    const { onNavigate, onClose, searchableFolder, onShowAllInMainWindow }: Props = $props()
+    const {
+        onNavigate,
+        onClose,
+        searchableFolder,
+        onShowAllInMainWindow,
+        imageSearchVolume = { volumeId: ROOT_VOLUME_ID, mountRoot: '/', isNetwork: false },
+    }: Props = $props()
 
     // Index-readiness listener cleanup. Lives on the wrapper because the listener is
     // Search-specific (Selection has no whole-drive index).
@@ -637,7 +652,14 @@
 </script>
 
 {#snippet imageResults()}
-    <ImageSearchResults query={getQuery()} volumeId={ROOT_VOLUME_ID} active={true} onOpen={openImage} />
+    <ImageSearchResults
+        query={getQuery()}
+        volumeId={imageSearchVolume.volumeId}
+        mountRoot={imageSearchVolume.mountRoot}
+        isNetwork={imageSearchVolume.isNetwork}
+        active={true}
+        onOpen={openImage}
+    />
 {/snippet}
 
 <QueryDialog {config} />

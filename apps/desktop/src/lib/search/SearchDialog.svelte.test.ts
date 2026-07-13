@@ -38,14 +38,30 @@ let autoApplySetting = true
 const autoApplyListeners = new Set<(id: string, value: boolean) => void>()
 
 // vi.mock is hoisted above all top-level `const`s; use vi.hoisted for shared mock instances.
-const { translateSearchQueryMock, searchFilesMock, addRecentSearchMock } = vi.hoisted(() => ({
-  translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult)),
-  searchFilesMock: vi.fn(
-    (): Promise<{ entries: SearchResultEntry[]; totalCount: number }> =>
-      Promise.resolve({ entries: [], totalCount: 0 }),
-  ),
-  addRecentSearchMock: vi.fn(() => Promise.resolve()),
-}))
+const { translateSearchQueryMock, searchFilesMock, addRecentSearchMock, mediaSearchOcrMock, mediaVolumeStateMock } =
+  vi.hoisted(() => ({
+    translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult)),
+    searchFilesMock: vi.fn(
+      (): Promise<{ entries: SearchResultEntry[]; totalCount: number }> =>
+        Promise.resolve({ entries: [], totalCount: 0 }),
+    ),
+    addRecentSearchMock: vi.fn(() => Promise.resolve()),
+    // The image-OCR grid's IPC. Defaults: enrichment on, one hit, so the grid actually
+    // queries the passed volume (its state gates all work). Path is index-relative.
+    mediaSearchOcrMock: vi.fn((_v: string, _q: string, _l: number | null) =>
+      Promise.resolve([{ path: '/DCIM/photo.png', snippet: 'an [invoice] scan' }]),
+    ),
+    mediaVolumeStateMock: vi.fn((_v: string) =>
+      Promise.resolve({
+        enabled: true,
+        indexing: false,
+        enrichedCount: 3,
+        networkOptIn: true,
+        alwaysIndexed: false,
+        paused: false,
+      }),
+    ),
+  }))
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -66,6 +82,16 @@ vi.mock('$lib/tauri-commands', () => ({
   showFileContextMenu: vi.fn(() => Promise.resolve()),
   showInFinder: vi.fn(() => Promise.resolve()),
   trackEvent: vi.fn(() => Promise.resolve()),
+  // The image-OCR grid (`ImageSearchResults`, rendered via `resultsExtra`) reaches these.
+  mediaIndexSearchOcr: mediaSearchOcrMock,
+  mediaIndexVolumeState: mediaVolumeStateMock,
+  mediaIndexThumbnailToken: vi.fn(() => Promise.resolve(null)),
+  mediaIndexDropThumbnailTokens: vi.fn(() => Promise.resolve()),
+}))
+
+// The viewer's `mediaUrl`; a plain string is all the grid needs to render a tile.
+vi.mock('../../routes/viewer/media-view', () => ({
+  mediaUrl: (token: string) => `cmdr-media://localhost/${token}`,
 }))
 
 vi.mock('$lib/settings', () => ({
@@ -114,6 +140,7 @@ interface MountDialogOptions {
   onClose?: () => void
   onShowAllInMainWindow?: (snapshotId: string) => void
   onNavigate?: (path: string) => void
+  imageSearchVolume?: { volumeId: string; mountRoot: string; isNetwork: boolean }
 }
 
 /**
@@ -149,6 +176,7 @@ async function mountDialog(opts: MountDialogOptions = {}): Promise<{ overlay: El
       onClose: opts.onClose ?? (() => {}),
       searchableFolder: { path: '/Users/test', disabled: false, disabledReason: '' },
       onShowAllInMainWindow: opts.onShowAllInMainWindow,
+      ...(opts.imageSearchVolume ? { imageSearchVolume: opts.imageSearchVolume } : {}),
     },
   })
   const entry = { component, target }
@@ -1175,6 +1203,68 @@ describe('SearchDialog "Open in pane" (M8b)', () => {
     expect(btn?.disabled).toBe(true)
     btn?.click()
     expect(opened).toBe(false)
+    cleanup()
+  })
+})
+
+describe('SearchDialog image-OCR grid targets the active volume', () => {
+  beforeEach(() => {
+    clearSearchState()
+    aiProvider = 'off'
+    autoApplySetting = false // keep the filename search out of the way; the grid is query-driven
+    autoApplyListeners.clear()
+    mediaSearchOcrMock.mockClear()
+    mediaVolumeStateMock.mockClear()
+  })
+
+  it("searches the focused pane's network volume, resolving hits under its mount root", async () => {
+    // The whole point of the feature: browsing the NAS and searching must query the NAS's
+    // media index (not the hardcoded local `root`), and the index-relative hit must resolve
+    // to an openable OS path under the volume's mount root.
+    let navigatedTo: string | null = null
+    const { cleanup } = await mountDialog({
+      imageSearchVolume: { volumeId: 'smb-naspi', mountRoot: '/Volumes/naspi', isNetwork: true },
+      onNavigate: (path) => {
+        navigatedTo = path
+      },
+    })
+    vi.useFakeTimers()
+    try {
+      setQuery('invoice')
+      // Fire the grid's 300 ms debounce and let the awaited IPC mocks resolve.
+      await vi.advanceTimersByTimeAsync(400)
+      await tick()
+
+      // Both the coverage-state read and the OCR search hit the ACTIVE (network) volume id.
+      expect(mediaVolumeStateMock).toHaveBeenCalledWith('smb-naspi')
+      expect(mediaSearchOcrMock).toHaveBeenCalledWith('smb-naspi', 'invoice', null)
+    } finally {
+      vi.useRealTimers()
+    }
+
+    // The tile opens the mount-root-resolved absolute path, not the index-relative one.
+    const tile = document.body.querySelector<HTMLButtonElement>('.ir-tile')
+    expect(tile).not.toBeNull()
+    tile?.click()
+    await tick()
+    expect(navigatedTo).toBe('/Volumes/naspi/DCIM/photo.png')
+
+    cleanup()
+  })
+
+  it('defaults to the local root volume when no imageSearchVolume prop is passed', async () => {
+    // Back-compat: the filename search stays local-index-scoped, and an unspecified
+    // image volume must keep the previous local-root behavior (mount root "/").
+    const { cleanup } = await mountDialog()
+    vi.useFakeTimers()
+    try {
+      setQuery('invoice')
+      await vi.advanceTimersByTimeAsync(400)
+      await tick()
+      expect(mediaSearchOcrMock).toHaveBeenCalledWith('root', 'invoice', null)
+    } finally {
+      vi.useRealTimers()
+    }
     cleanup()
   })
 })

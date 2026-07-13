@@ -20,7 +20,11 @@
     import AskCmdrRail from '$lib/ask-cmdr/AskCmdrRail.svelte'
     import { askCmdrState } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
     import { goToPath } from '$lib/go-to-path/go-to-path'
-    import { getFocusedPanePath, getFocusedPaneSearchableFolder } from '$lib/file-explorer/pane/focused-pane-reads'
+    import {
+        getFocusedPanePath,
+        getFocusedPaneSearchableFolder,
+        getFocusedPaneImageSearchVolume,
+    } from '$lib/file-explorer/pane/focused-pane-reads'
     import type { FileEntry } from '$lib/file-explorer/types'
     import IndexingStatusIndicator from '$lib/indexing/IndexingStatusIndicator.svelte'
     import StaleDriveDialog from '$lib/indexing/StaleDriveDialog.svelte'
@@ -784,6 +788,7 @@
                 onNavigate={handleSearchNavigate}
                 onClose={handleSearchDialogClose}
                 searchableFolder={getFocusedPaneSearchableFolder()}
+                imageSearchVolume={getFocusedPaneImageSearchVolume()}
                 onShowAllInMainWindow={handleOpenSearchInPane}
             />
         {/if}

@@ -639,12 +639,32 @@ sessions, attachments, consent screen, cost footer, settings section; macOS AppK
 
 ### Settled during the network-drive image-indexing pass (`settings.mediaIndex.networkVolumes.*`/`alwaysIndex*` + `search.imageResults.networkOff`/`paused`; opting an SMB drive into background photo-content indexing + honest status lines; macOS Finder/AirDrop + Double/Total Commander + MS terminology, 2026-07-13)
 
-- **network drive → unidad de red** · Double Commander es (orthodox two-pane, exact concept: "Connect to network drive"→"Conectar a unidad de red", "Disconnect from network drive"→"Desconectar de unidad de red") + Total Commander ("Unidad de Red") + MS terminology (id 84431 "unidad de red"). Reuses settled drive→unidad + network→red. Plural "unidades de red" · high
-- **photo(s) → foto(s)** · macOS Finder/AirDrop ("Recibiendo ^0 fotos", "quiere enviarte una foto", "Abrir en Fotos"). The warm user-facing status/help lines say "photo" and get "foto"; kept DISTINCT from image→imagen, which stays for the feature/label names (the en source makes the same photo-vs-image split deliberately). "photos indexed" → "fotos indexadas" (participle agrees with fem. fotos) · high
-- **image indexing (feature/label name) → indexación de imágenes** · reuses index/indexing→índice/indexación (glossary) + image→imagen; used for the internal list label and the search opt-in pointer, kept parallel with the "Image search" card → "Búsqueda de imágenes" · high
-- **opt into (indexing) → activar** · reuses enable→activar (glossary); "opted into background image indexing" → "activó la indexación de imágenes en segundo plano" (background→en segundo plano) · high
-- **always-index (drive/folder) → indexar siempre** · the switch "Always index this drive" → "Indexar siempre esta unidad"; the internal list labels "Always-index drives/folders" → "Unidades/Carpetas para indexar siempre" (verb form, unambiguous over a noun like "indexación permanente") · high
-- **paused, resumes when the drive reconnects → En pausa, se reanuda cuando vuelvas a conectar la unidad** · reuses paused-state→En pausa + resume→reanudar (queue-pass glossary); "cuando vuelvas a conectar" is macOS Finder's exact resume-on-reconnect phrasing (`Finder/LocalizableMerged.json`: "puedas reanudar en otro momento cuando vuelvas a conectar «^0»") · high
-- **gently (reading over the network) → con cuidado** · composed; no direct pile hit. "reads photos over the network gently" → "lee las fotos a través de la red con cuidado". "while you''re not busy" restructured to the non-gendered "mientras no estás usando el Mac" (avoids the gendered "ocupado", per the gender rule) · tentative (gently), high (restructure)
-- **photo archive (a rarely-browsed collection, NOT a zip) → colección de fotos** · chosen over "archivo de fotos" to avoid the archivo≈file / archivo comprimido≈zip collision (glossary); "colección" is warm and unambiguous for the NAS-archive case · high
-- No `sameAsSourceJustification` needed: every value differs from English (SMB kept verbatim inside a translated sentence, per do-not-translate).
+- **network drive → unidad de red** · Double Commander es (orthodox two-pane, exact concept: "Connect to network
+  drive"→"Conectar a unidad de red", "Disconnect from network drive"→"Desconectar de unidad de red") + Total Commander
+  ("Unidad de Red") + MS terminology (id 84431 "unidad de red"). Reuses settled drive→unidad + network→red. Plural
+  "unidades de red" · high
+- **photo(s) → foto(s)** · macOS Finder/AirDrop ("Recibiendo ^0 fotos", "quiere enviarte una foto", "Abrir en Fotos").
+  The warm user-facing status/help lines say "photo" and get "foto"; kept DISTINCT from image→imagen, which stays for
+  the feature/label names (the en source makes the same photo-vs-image split deliberately). "photos indexed" → "fotos
+  indexadas" (participle agrees with fem. fotos) · high
+- **image indexing (feature/label name) → indexación de imágenes** · reuses index/indexing→índice/indexación
+  (glossary) + image→imagen; used for the internal list label and the search opt-in pointer, kept parallel with the
+  "Image search" card → "Búsqueda de imágenes" · high
+- **opt into (indexing) → activar** · reuses enable→activar (glossary); "opted into background image indexing" → "activó
+  la indexación de imágenes en segundo plano" (background→en segundo plano) · high
+- **always-index (drive/folder) → indexar siempre** · the switch "Always index this drive" → "Indexar siempre esta
+  unidad"; the internal list labels "Always-index drives/folders" → "Unidades/Carpetas para indexar siempre" (verb form,
+  unambiguous over a noun like "indexación permanente") · high
+- **paused, resumes when the drive reconnects → En pausa, se reanuda cuando vuelvas a conectar la unidad** · reuses
+  paused-state→En pausa + resume→reanudar (queue-pass glossary); "cuando vuelvas a conectar" is macOS Finder's exact
+  resume-on-reconnect phrasing (`Finder/LocalizableMerged.json`: "puedas reanudar en otro momento cuando vuelvas a
+  conectar «^0»") · high
+- **gently (reading over the network) → con cuidado** · composed; no direct pile hit. "reads photos over the network
+  gently" → "lee las fotos a través de la red con cuidado". "while you''re not busy" restructured to the non-gendered
+  "mientras no estás usando el Mac" (avoids the gendered "ocupado", per the gender rule) · tentative (gently), high
+  (restructure)
+- **photo archive (a rarely-browsed collection, NOT a zip) → colección de fotos** · chosen over "archivo de fotos" to
+  avoid the archivo≈file / archivo comprimido≈zip collision (glossary); "colección" is warm and unambiguous for the
+  NAS-archive case · high
+- No `sameAsSourceJustification` needed: every value differs from English (SMB kept verbatim inside a translated
+  sentence, per do-not-translate).

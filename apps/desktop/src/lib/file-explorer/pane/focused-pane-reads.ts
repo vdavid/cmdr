@@ -15,6 +15,8 @@
  */
 
 import { resolveSearchableFolder } from '$lib/search/searchable-folder'
+import { resolveImageSearchVolume, type ImageSearchVolume } from '$lib/search/active-media-volume'
+import { getVolumes } from '$lib/stores/volume-store.svelte'
 import { getActiveTab } from '../tabs/tab-state-manager.svelte'
 import { explorerState } from './explorer-state.svelte'
 
@@ -45,4 +47,14 @@ export function getFocusedPaneSearchableFolder(): {
     currentPath: tab.path,
     history: tab.history.stack.map((e) => e.path),
   })
+}
+
+/**
+ * The volume the Search dialog's image-OCR grid should search: the focused
+ * pane's current volume, resolved against the live volume list for its mount
+ * root + network flag. So browsing the NAS surfaces its photos, browsing local
+ * surfaces local. Delegates to the pure `resolveImageSearchVolume`. Reactive.
+ */
+export function getFocusedPaneImageSearchVolume(): ImageSearchVolume {
+  return resolveImageSearchVolume(getVolumes(), getFocusedPaneVolumeId())
 }
