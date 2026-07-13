@@ -21,7 +21,9 @@ const setSetting = vi.fn<(id: string, value: unknown) => void>()
 
 vi.mock('$lib/settings', () => ({
   getSetting: (id: string) => getSetting(id),
-  setSetting: (id: string, value: unknown) => { setSetting(id, value); },
+  setSetting: (id: string, value: unknown) => {
+    setSetting(id, value)
+  },
   onSpecificSettingChange: () => () => {},
 }))
 

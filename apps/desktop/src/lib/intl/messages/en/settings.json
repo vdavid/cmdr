@@ -671,7 +671,9 @@
     "placeholders": {
       "images": { "content": "The number of images that would be indexed, used to choose singular or plural wording." },
       "imagesText": { "content": "The same image count, preformatted with thousands separators." },
-      "folders": { "content": "The number of folders that would be indexed, used to choose singular or plural wording." },
+      "folders": {
+        "content": "The number of folders that would be indexed, used to choose singular or plural wording."
+      },
       "foldersText": { "content": "The same folder count, preformatted with thousands separators." }
     }
   },

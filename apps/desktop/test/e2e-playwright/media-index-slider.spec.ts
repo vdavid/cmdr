@@ -116,9 +116,7 @@ test.describe('Image-index importance slider', () => {
     // primary label changes live.
     expect(await settings.evaluate<boolean>(pressArrowJs('ArrowLeft'))).toBe(true)
     await expect.poll(() => settingOnDisk(THRESHOLD_KEY), { timeout: 3000 }).toBe(0.2)
-    await expect
-      .poll(async () => settings.evaluate<string>(bucketLabelJs()), { timeout: 3000 })
-      .not.toBe(initialLabel)
+    await expect.poll(async () => settings.evaluate<string>(bucketLabelJs()), { timeout: 3000 }).not.toBe(initialLabel)
 
     // Move back to the broadest bucket, then turn indexing off so no state leaks into later specs.
     expect(await settings.evaluate<boolean>(pressArrowJs('ArrowRight'))).toBe(true)
