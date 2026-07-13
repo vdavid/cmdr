@@ -5,12 +5,12 @@
 //! production (the wiremock tests can't catch a real-API contract drift).
 //!
 //! `#[ignore]`-gated: needs a valid `GROQ_API_KEY`. The `groq-smoke` check in the Go check runner
-//! resolves the key (env var, else the macOS Keychain) and runs this with `--run-ignored only`,
+//! resolves the key (env var, else the sops `secret` helper) and runs this with `--run-ignored only`,
 //! skipping cleanly when no key is available (contributors without a key, CI without the secret).
 //!
 //! Run manually:
 //! ```sh
-//! GROQ_API_KEY=$(security find-generic-password -a "$USER" -s "GROQ_API_KEY" -w) \
+//! GROQ_API_KEY=$(secret GROQ_API_KEY) \
 //!   cargo nextest run --lib --run-ignored only ai::client_real_groq_test
 //! ```
 

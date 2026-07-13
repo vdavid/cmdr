@@ -395,8 +395,8 @@ var AllChecks = []CheckDefinition{
 		// lane (`--include-slow`), in CI's slow-checks workflow, or when explicitly named
 		// (`pnpm check groq-smoke`). Self-skips when no GROQ_API_KEY is available.
 		IsSlow: true,
-		// Needs a GROQ_API_KEY (Keychain locally, GitHub secret in CI). Freestyle VMs have neither,
-		// so mark incompat (it would only ever self-skip there).
+		// Needs a GROQ_API_KEY (sops `secret` helper locally, GitHub secret in CI). Freestyle VMs have
+		// neither, so mark incompat (it would only ever self-skip there).
 		FreestyleIncompat: true,
 		DependsOn:         []string{"desktop-rust-clippy"},
 		Inputs:            rustInputs,

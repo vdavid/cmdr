@@ -4,7 +4,7 @@
 //! `OPENAI_API_KEY` env var. Run with:
 //!
 //! ```sh
-//! OPENAI_API_KEY=$(security find-generic-password -a "$USER" -s "OPENAI_API_KEY" -w) \
+//! OPENAI_API_KEY=$(secret OPENAI_API_KEY) \
 //!   cargo nextest run --lib --run-ignored only selection::ai::real_llm_eval_test
 //! ```
 //!

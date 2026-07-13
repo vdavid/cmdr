@@ -8,7 +8,7 @@
 //!
 //! Run with:
 //! ```sh
-//! ANTHROPIC_API_KEY=$(security find-generic-password -a "$USER" -s "ANTHROPIC_API_KEY" -w) \
+//! ANTHROPIC_API_KEY=$(secret ANTHROPIC_API_KEY) \
 //!   cargo nextest run --lib --run-ignored only ai::client_real_anthropic_test
 //! ```
 //!

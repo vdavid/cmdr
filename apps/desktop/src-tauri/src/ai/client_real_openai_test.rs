@@ -3,7 +3,7 @@
 //!
 //! Run with:
 //! ```sh
-//! OPENAI_API_KEY=$(security find-generic-password -a "$USER" -s "OPENAI_API_KEY" -w) \
+//! OPENAI_API_KEY=$(secret OPENAI_API_KEY) \
 //!   cargo nextest run --lib --run-ignored only ai::client_real_openai_test
 //! ```
 //!

@@ -232,6 +232,30 @@ func CommandExists(name string) bool {
 	return err == nil
 }
 
+// ResolveDevSecret returns one of the dev/CI tooling secrets (an API key or token),
+// resolving in order:
+//  1. the NAME environment variable (how CI passes a GitHub secret), then
+//  2. the `secret` helper (David's sops store) when it's on PATH, so a local `pnpm check`
+//     picks up the key without him exporting it.
+//
+// It returns "" when neither yields a value (the caller then skips or fails). CI boxes have
+// neither the env var populated for optional keys nor the `secret` helper, so this degrades to
+// the same graceful "no key" as before. It never touches the macOS Keychain: these secrets
+// live in the sops store now.
+func ResolveDevSecret(name string) string {
+	if v := strings.TrimSpace(os.Getenv(name)); v != "" {
+		return v
+	}
+	if !CommandExists("secret") {
+		return ""
+	}
+	out, err := RunCommand(exec.Command("secret", name), true)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
+}
+
 // EnsureGoTool ensures a Go tool is installed and returns the path to the binary.
 // If the tool is already in PATH, returns just the name. Otherwise installs it
 // and returns the full path to the installed binary.

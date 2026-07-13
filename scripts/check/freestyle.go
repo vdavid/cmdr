@@ -342,12 +342,10 @@ echo "SETUP_COMPLETE"
 // --- API helpers ---
 
 func getFreestyleAPIKey() (string, error) {
-	cmd := exec.Command("security", "find-generic-password", "-a", os.Getenv("USER"), "-s", "FREESTYLE_SH_API_TOKEN", "-w")
-	out, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("failed to get FREESTYLE_SH_API_TOKEN from Keychain: %w\nStore it with: security add-generic-password -a \"$USER\" -s FREESTYLE_SH_API_TOKEN -w <your-token>", err)
+	if key := checks.ResolveDevSecret("FREESTYLE_SH_API_TOKEN"); key != "" {
+		return key, nil
 	}
-	return strings.TrimSpace(string(out)), nil
+	return "", fmt.Errorf("FREESTYLE_SH_API_TOKEN not set (env or sops).\nExport it, or add it to the sops secrets store so the `secret` helper can read it")
 }
 
 func execOnVM(apiKey string, vmID string, command string) error {
