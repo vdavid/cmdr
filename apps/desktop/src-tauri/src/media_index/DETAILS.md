@@ -462,11 +462,44 @@ commands (all `spawn_blocking`, offline-capable, registered in BOTH `ipc.rs` + `
 `MediaIndexVolumeState { …, qualifying_count: Option<u64> }`. Live-apply for the threshold + exclude settings needs a
 `settings-applier.ts` entry (the one FE handoff the backend can't do).
 
+### M2 frontend (the settings slider, progress, and find-similar)
+
+The user-facing M2 surface lives in the Svelte frontend, not here; this section is the map so the two stay in sync.
+
+- **The importance slider** — `src/lib/settings/sections/MediaIndexImportanceSlider.svelte`, rendered in the "Image
+  search" card in `FileSystemWatchingSection.svelte` when `mediaIndex.enabled` is on. It exposes five NAMED BUCKETS
+  ("Only my most-used folders" → "Everywhere, even folders I rarely open") over the typed threshold; each bucket maps to
+  a fixed threshold stop `[0.8, 0.6, 0.4, 0.2, 0.0]` (left → right, restrictive → broad). Dragging RIGHT indexes MORE (a
+  LOWER threshold). The **default is the rightmost bucket, threshold `0.0`** — deliberately equal to the backend
+  `DEFAULT_IMPORTANCE_THRESHOLD`, so the UI and an unpersisted (sparse) store agree without eagerly writing a default,
+  and it's non-regressive vs M1 (junk is floored out at any level regardless). The persisted value is the raw threshold;
+  the slider maps it to the nearest bucket on load.
+- **Persist + live-apply** follows the `mediaIndex.enabled` precedent, NOT the per-item delta path: the slider calls
+  `setSetting('mediaIndex.importanceThreshold', threshold)` and the `settings-applier.ts` passthrough pushes it to
+  `media_index_set_importance_threshold`. (Threshold is a scalar, so it fits the applier's key→value table — unlike the
+  network/exclude delta setters, which co-locate persist+IPC in a prefs helper.)
+- **Live honest preview** — the slider debounces `media_index_covered_count(threshold, enabledVolumeIds)` over the
+  enabled volumes (local `root` + opted-in SMB; the backend drops non-opted-in SMB / MTP), rendering "Indexes about N
+  images across M folders" with thousands separators + ICU plurals. `pending` ⇒ a "still scanning" caveat. A drag also
+  shows the incremental delta vs the last settled level ("Adds about 12,000 images"), which folds into the baseline once
+  the value settles (~900 ms). No ETA on the slider: the enriched-rate isn't exposed and a fixed per-image cost would be
+  dishonest across HEIC/RAW/network, so counts stand alone.
+- **Honest per-volume progress** reads `qualifying_count` from `media_index_volume_state`: the local disk line lives in
+  the slider component, the network lines in `MediaIndexNetworkVolumes.svelte`, both showing "N of M images indexed" (or
+  "Counting images…" while `qualifying_count` is `null`).
+- **Find similar** — `ImageSearchResults.svelte` grows a per-tile "Find similar images" action that re-queries the grid
+  via `media_index_find_similar` from that tile's STORED (index-relative) path (NOT the resolved OS path — the command
+  keys on the stored path), showing a "Similar to <name>" header with a back button. A new query exits similar mode.
+- **Tags need no separate UI**: tag labels fold into `media_ocr` (`source='tag'`), so the existing OCR keyword search
+  already matches tag words and shows them in the snippet. `OcrHit` carries no `source`, so the grid can't label a hit
+  as "matched a tag" without a backend field — deferred, not needed for M2.
+
 ## What's left for later
 
-- **M2 frontend (next agent):** the importance-threshold slider + live covered-count preview, the find-similar UI, the
-  progress/ETA surface, the per-folder exclude UI, and tag-search surfacing. The backend commands + shapes above are
-  ready; live-apply of the threshold + exclude settings needs a `settings-applier.ts` entry.
+- **Per-folder photo-search exclude UI (FE trigger):** the backend setter (`media_index_set_excluded_folder`) + the
+  `mediaIndex.excludedFolders` setting are ready, but the natural trigger is a folder right-click action in the native
+  (Rust) file context menu, so wiring it is a small backend/menu follow-up (same shape as the deferred per-folder
+  "always index" override). No FE persist helper exists yet.
 - **M3+:** CLIP text→image semantic search, the model-install path, faces (detect/embed/cluster/name), the durable
   identity store, and LLM captions.
 

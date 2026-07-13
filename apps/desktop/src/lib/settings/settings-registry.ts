@@ -736,6 +736,23 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // The image-index importance threshold (`0.0..=1.0`): the lowest folder-importance
+    // level the scheduler enriches. Rendered as named buckets by the bespoke
+    // `MediaIndexImportanceSlider.svelte` inside the "Image search" card (not an auto
+    // row), so `hidden`. Default `0.0` matches the backend `DEFAULT_IMPORTANCE_THRESHOLD`
+    // (enrich every scored folder — non-regressive vs M1, junk is floored out anyway), so
+    // the UI and a sparse (unpersisted) store agree without eagerly writing a default.
+    // Live-applied via the `settings-applier.ts` passthrough → `media_index_set_importance_threshold`.
+    id: 'mediaIndex.importanceThreshold',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.mediaIndex.importanceThreshold.label',
+    descriptionKey: 'settings.mediaIndex.importanceThreshold.description',
+    keywords: ['image', 'photo', 'index', 'importance', 'folders', 'coverage', 'depth'],
+    type: 'number',
+    default: 0,
+    hidden: true,
+  },
+  {
     id: 'behavior.fileSystemWatching.downloadsNotifications',
     section: ['Behavior', 'File system watching'],
     labelKey: 'settings.behavior.fileSystemWatching.downloadsNotifications.label',

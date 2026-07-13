@@ -625,10 +625,6 @@
   "@settings.mediaIndex.networkVolumes.paused": {
     "description": "Status line for a network drive whose indexing paused because the drive disconnected mid-pass. What''s already indexed stays searchable."
   },
-  "settings.mediaIndex.networkVolumes.indexing": "Indexing photos now",
-  "@settings.mediaIndex.networkVolumes.indexing": {
-    "description": "Status line shown while a network drive''s photos are being indexed right now."
-  },
   "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} photo indexed} other {{countText} photos indexed}}",
   "@settings.mediaIndex.networkVolumes.indexed": {
     "description": "Status line showing how many of a drive''s photos are already indexed and searchable.",
@@ -640,6 +636,101 @@
   "settings.mediaIndex.networkVolumes.notIndexedYet": "Not indexed yet",
   "@settings.mediaIndex.networkVolumes.notIndexedYet": {
     "description": "Status line for a drive that''s opted in but hasn''t indexed any photos yet (the pass hasn''t run or found images)."
+  },
+  "settings.mediaIndex.importanceThreshold.label": "How much to index",
+  "@settings.mediaIndex.importanceThreshold.label": {
+    "description": "Label above the slider that sets how deep image indexing goes — from only the folders you use most, to everywhere. In the \"Image search\" card, Settings > Behavior > File system watching."
+  },
+  "settings.mediaIndex.importanceThreshold.description": "Cmdr indexes the folders you use most first. Choose how deep to go.",
+  "@settings.mediaIndex.importanceThreshold.description": {
+    "description": "Help text under the \"How much to index\" slider label. Explains that indexing is prioritized by how often you use a folder, and this slider sets the cut-off."
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Only my most-used folders",
+  "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
+    "description": "Slider position (most restrictive, far left): index only the folders the user opens most often."
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.often": "Folders I use often",
+  "@settings.mediaIndex.importanceThreshold.bucket.often": {
+    "description": "Slider position: index folders the user opens often, not only the very most-used ones."
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.sometimes": "Folders I open now and then",
+  "@settings.mediaIndex.importanceThreshold.bucket.sometimes": {
+    "description": "Slider position (middle): index folders the user opens occasionally."
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.most": "Most folders",
+  "@settings.mediaIndex.importanceThreshold.bucket.most": {
+    "description": "Slider position: index most folders, leaving out only rarely-touched ones."
+  },
+  "settings.mediaIndex.importanceThreshold.bucket.everywhere": "Everywhere, even folders I rarely open",
+  "@settings.mediaIndex.importanceThreshold.bucket.everywhere": {
+    "description": "Slider position (broadest, far right, the default): index images everywhere, including folders the user rarely opens."
+  },
+  "settings.mediaIndex.importanceThreshold.preview": "{images, plural, one {Indexes about {imagesText} image} other {Indexes about {imagesText} images}} {folders, plural, one {in {foldersText} folder} other {across {foldersText} folders}}",
+  "@settings.mediaIndex.importanceThreshold.preview": {
+    "description": "Live count under the slider, showing how much the current level covers across the drives being indexed. Both numbers are approximate and update as the user drags.",
+    "placeholders": {
+      "images": { "content": "The number of images that would be indexed, used to choose singular or plural wording." },
+      "imagesText": { "content": "The same image count, preformatted with thousands separators." },
+      "folders": { "content": "The number of folders that would be indexed, used to choose singular or plural wording." },
+      "foldersText": { "content": "The same folder count, preformatted with thousands separators." }
+    }
+  },
+  "settings.mediaIndex.importanceThreshold.previewNone": "Nothing matches at this level yet. Drag right to index more.",
+  "@settings.mediaIndex.importanceThreshold.previewNone": {
+    "description": "Shown in place of the count when the current slider level covers no folders (for example, set to the most restrictive level on a Mac with no strongly-used folders yet)."
+  },
+  "settings.mediaIndex.importanceThreshold.previewCounting": "Working out how much this covers…",
+  "@settings.mediaIndex.importanceThreshold.previewCounting": {
+    "description": "Placeholder shown under the slider while Cmdr is still computing the covered counts (before the first result comes back)."
+  },
+  "settings.mediaIndex.importanceThreshold.pending": "Some drives are still scanning, so these numbers will grow.",
+  "@settings.mediaIndex.importanceThreshold.pending": {
+    "description": "Caveat appended under the covered-count preview when at least one drive being indexed hasn''t finished scanning, so the shown totals are a lower bound."
+  },
+  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, one {Adds about {imagesText} image} other {Adds about {imagesText} images}}",
+  "@settings.mediaIndex.importanceThreshold.deltaAdd": {
+    "description": "Shown while dragging the slider toward more coverage: how many more images this new level would index compared with the saved level.",
+    "placeholders": {
+      "images": { "content": "The number of extra images, used to choose singular or plural wording." },
+      "imagesText": { "content": "The same number, preformatted with thousands separators." }
+    }
+  },
+  "settings.mediaIndex.importanceThreshold.deltaRemove": "{images, plural, one {Leaves out about {imagesText} image} other {Leaves out about {imagesText} images}}",
+  "@settings.mediaIndex.importanceThreshold.deltaRemove": {
+    "description": "Shown while dragging the slider toward less coverage: how many images this new level would leave out compared with the saved level.",
+    "placeholders": {
+      "images": { "content": "The number of images left out, used to choose singular or plural wording." },
+      "imagesText": { "content": "The same number, preformatted with thousands separators." }
+    }
+  },
+  "settings.mediaIndex.importanceThreshold.floor": "Junk like node_modules and system caches is always skipped.",
+  "@settings.mediaIndex.importanceThreshold.floor": {
+    "description": "Quiet reassurance under the slider that build/cache folders are never indexed at any level. Do not translate \"node_modules\" (a fixed folder name developers recognize)."
+  },
+  "settings.mediaIndex.progress.local": "This Mac",
+  "@settings.mediaIndex.progress.local": {
+    "description": "Name shown for the built-in local disk in the per-drive image-indexing progress list (as opposed to a named network drive)."
+  },
+  "settings.mediaIndex.progress.ofTotal": "{total, plural, one {{enrichedText} of {totalText} image indexed} other {{enrichedText} of {totalText} images indexed}}",
+  "@settings.mediaIndex.progress.ofTotal": {
+    "description": "Honest progress line for a drive: how many of its qualifying images are indexed so far.",
+    "placeholders": {
+      "total": { "content": "The total number of qualifying images, used to choose singular or plural wording." },
+      "enrichedText": { "content": "The number indexed so far, preformatted with thousands separators." },
+      "totalText": { "content": "The total number of qualifying images, preformatted with thousands separators." }
+    }
+  },
+  "settings.mediaIndex.progress.counting": "Counting images…",
+  "@settings.mediaIndex.progress.counting": {
+    "description": "Progress line shown for a drive while Cmdr is still counting how many images qualify (the honest total isn''t known yet)."
+  },
+  "settings.mediaIndex.progress.done": "{total, plural, one {{totalText} image indexed} other {{totalText} images indexed}}",
+  "@settings.mediaIndex.progress.done": {
+    "description": "Progress line for a drive whose images are all indexed (indexed count equals the total).",
+    "placeholders": {
+      "total": { "content": "The total number of indexed images, used to choose singular or plural wording." },
+      "totalText": { "content": "The same number, preformatted with thousands separators." }
+    }
   },
   "settings.indexing.askForEachDrive.label": "Ask for each drive",
   "@settings.indexing.askForEachDrive.label": {

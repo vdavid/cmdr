@@ -331,6 +331,17 @@ export interface SettingsValues {
    * live-applied via `media_index_set_always_index_folder`.
    */
   'mediaIndex.alwaysIndexFolders': string[]
+  /**
+   * The lowest folder-importance level (`0.0..=1.0`) the image indexer enriches — the M2
+   * "how deep do I index?" slider's typed value. `0.0` (the default, matching the backend
+   * `DEFAULT_IMPORTANCE_THRESHOLD`) enriches every scored folder (junk like `node_modules`
+   * is floored out regardless); raising it defers low-importance folders so a huge library
+   * indexes the folders you actually use first. Live-applied via
+   * `media_index_set_importance_threshold`; the scheduler reads the same signal, so the
+   * control and the behavior can't drift. Rendered as named buckets in the "Image search"
+   * card (`MediaIndexImportanceSlider.svelte`), not an auto row, so it's `hidden`.
+   */
+  'mediaIndex.importanceThreshold': number
 
   // File system watching - downloads notifications + global go-to-latest shortcut.
   'behavior.fileSystemWatching.downloadsNotifications': DownloadsNotificationsMode

@@ -3,10 +3,16 @@
 // search-results grid uses to reuse the EXISTING viewer preview path (plan Decision 5).
 // Every wrapper delegates to the typed `commands.*` bindings.
 
-import { commands, type MediaIndexVolumeState, type OcrHit } from '$lib/ipc/bindings'
+import {
+  commands,
+  type CoveredCount,
+  type MediaIndexVolumeState,
+  type OcrHit,
+  type SimilarImage,
+} from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { MediaIndexVolumeState, OcrHit }
+export type { CoveredCount, MediaIndexVolumeState, OcrHit, SimilarImage }
 
 /**
  * Search a volume's image OCR text for `query`, returning up to `limit` hits (backend
@@ -73,6 +79,48 @@ export async function mediaIndexSetNetworkVolumeEnabled(volumeId: string, enable
  */
 export async function mediaIndexSetAlwaysIndexVolume(volumeId: string, always: boolean): Promise<void> {
   await commands.mediaIndexSetAlwaysIndexVolume(volumeId, always)
+}
+
+/**
+ * Set the folder-importance threshold the image scheduler enriches by (the M2 slider's
+ * typed `0.0..=1.0` value, clamped backend-side). Below-threshold folders are deferred;
+ * an "always index" override still forces enrichment. Live-applied via the
+ * `settings-applier.ts` passthrough after the FE persists `mediaIndex.importanceThreshold`
+ * (the `mediaIndex.enabled` precedent). Fire-and-forget: a failed push only leaves the
+ * running scheduler one threshold behind until the next change or restart re-seeds it.
+ */
+export async function setImageImportanceThreshold(threshold: number): Promise<void> {
+  await commands.mediaIndexSetImportanceThreshold(threshold)
+}
+
+/**
+ * The live preview behind the M2 slider: across the ENABLED volumes in `volumeIds` (master
+ * on AND local-or-opted-in-SMB; the backend filters out non-opted-in SMB / MTP), how many
+ * folders score at or above `threshold` and how many images they hold. `pending` is `true`
+ * when any requested enabled volume isn't ready yet (still scanning / not yet scored), so
+ * the UI voices "still scanning" rather than a confident wrong number. Debounce-friendly:
+ * the per-folder image counts are cached, so a drag only re-runs the cheap importance filter.
+ */
+export async function mediaIndexCoveredCount(threshold: number, volumeIds: string[]): Promise<CoveredCount> {
+  const res = await commands.mediaIndexCoveredCount(threshold, volumeIds)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * Find the images most similar to the one at `sourcePath` on `volumeId` (feature-print
+ * cosine), highest first, excluding the source (plan M2 "find similar"). Answers from
+ * `media.db` + the resident vector cache even when the volume is offline. `limit` caps the
+ * result count (backend default when `null`).
+ */
+export async function mediaIndexFindSimilar(
+  volumeId: string,
+  sourcePath: string,
+  limit: number | null = null,
+): Promise<SimilarImage[]> {
+  const res = await commands.mediaIndexFindSimilar(volumeId, sourcePath, limit)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 // A typed wrapper for the per-folder override (`media_index_set_always_index_folder`) is

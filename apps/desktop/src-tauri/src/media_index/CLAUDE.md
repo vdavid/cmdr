@@ -56,7 +56,6 @@ Port rationale, network-fetch, GC safety, FFI, schema, M2 depth: [DETAILS.md](DE
 
 ## Not yet
 
-M2 frontend (next agent): the importance slider + covered-count preview, find-similar UI, progress/ETA, exclude UI,
-tag-search surfacing — backend commands + shapes are ready ([DETAILS.md](DETAILS.md) § M2), and live-apply of the
-threshold + exclude settings needs a `settings-applier.ts` entry. Later: the per-FOLDER override FE trigger, MTP
-on-demand, and M3+ (CLIP, faces, durable identity store, captions).
+The M2 frontend has landed (slider + covered-count preview, per-volume progress, find-similar; [DETAILS.md](DETAILS.md)
+§ M2 frontend). Still open: the per-FOLDER exclude + "always index" FE triggers (a native-menu follow-up; setters +
+settings ready), MTP on-demand, and M3+ (CLIP, faces, durable identity store, captions).

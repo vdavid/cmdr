@@ -9,19 +9,21 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushSync, tick } from 'svelte'
-import type { MediaIndexVolumeState, OcrHit } from '$lib/ipc/bindings'
+import type { MediaIndexVolumeState, OcrHit, SimilarImage } from '$lib/ipc/bindings'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 const searchOcr = vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<OcrHit[]>>()
 const volumeState = vi.fn<(volumeId: string) => Promise<MediaIndexVolumeState>>()
 const thumbnailToken = vi.fn<(path: string) => Promise<string | null>>()
 const dropTokens = vi.fn<(tokens: string[]) => Promise<void>>()
+const findSimilar = vi.fn<(volumeId: string, sourcePath: string, limit: number | null) => Promise<SimilarImage[]>>()
 
 vi.mock('$lib/tauri-commands', () => ({
   mediaIndexSearchOcr: (v: string, q: string, l: number | null) => searchOcr(v, q, l),
   mediaIndexVolumeState: (v: string) => volumeState(v),
   mediaIndexThumbnailToken: (p: string) => thumbnailToken(p),
   mediaIndexDropThumbnailTokens: (t: string[]) => dropTokens(t),
+  mediaIndexFindSimilar: (v: string, s: string, l: number | null) => findSimilar(v, s, l),
 }))
 
 // The viewer's `mediaUrl`; a plain string is all the grid needs for render + axe.
@@ -68,6 +70,7 @@ describe('ImageSearchResults a11y', () => {
     volumeState.mockResolvedValue(state())
     thumbnailToken.mockResolvedValue('tok123')
     dropTokens.mockResolvedValue()
+    findSimilar.mockResolvedValue([])
   })
 
   afterEach(() => {
@@ -126,5 +129,32 @@ describe('ImageSearchResults a11y', () => {
     expect(target.querySelectorAll('.ir-tile').length).toBe(2)
     expect(target.querySelector('.ir-snippet mark')?.textContent).toBe('invoice')
     await expectNoA11yViolations(target)
+  })
+
+  it('find-similar re-queries the grid, then back returns to the text results', async () => {
+    searchOcr.mockResolvedValue([{ path: '/photos/receipt.png', snippet: 'total [invoice] amount' }] satisfies OcrHit[])
+    findSimilar.mockResolvedValue([
+      { path: '/photos/similar-a.jpg', score: 0.98 },
+      { path: '/photos/similar-b.jpg', score: 0.91 },
+    ] satisfies SimilarImage[])
+    const target = await mountAndSettle()
+    expect(target.querySelectorAll('.ir-tile').length).toBe(1)
+
+    // Enter "similar" mode from the tile's find-similar button.
+    ;(target.querySelector('.ir-similar-btn') as HTMLButtonElement).click()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.ir-title-similar')).not.toBeNull()
+    })
+    // The command keys on the STORED (index-relative == absolute for local) path, capped at 48.
+    expect(findSimilar).toHaveBeenCalledWith('root', '/photos/receipt.png', 48)
+    expect(target.querySelectorAll('.ir-tile').length).toBe(2)
+    await expectNoA11yViolations(target)
+
+    // Back exits similar mode and restores the OCR results for the current query.
+    ;(target.querySelector('.ir-back') as HTMLButtonElement).click()
+    await vi.waitFor(() => {
+      expect(target.querySelector('.ir-title-similar')).toBeNull()
+    })
+    expect(target.querySelectorAll('.ir-tile').length).toBe(1)
   })
 })

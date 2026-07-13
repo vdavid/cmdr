@@ -107,6 +107,25 @@
   "@search.imageResults.paused": {
     "description": "Shown when a network drive disconnected mid-indexing: what was already indexed stays searchable, and indexing resumes when the drive reconnects."
   },
+  "search.imageResults.findSimilar": "Find similar images",
+  "@search.imageResults.findSimilar": {
+    "description": "Label for the action (a button on each image tile) that re-runs the grid to show images that look like this one, using on-device image similarity."
+  },
+  "search.imageResults.similarTo": "Similar to {name}",
+  "@search.imageResults.similarTo": {
+    "description": "Heading shown above the grid when it's showing images similar to a chosen one, instead of text-match results.",
+    "placeholders": {
+      "name": "the file name of the image the results are similar to, shown verbatim (for example beach.jpg)"
+    }
+  },
+  "search.imageResults.backToResults": "Back to search",
+  "@search.imageResults.backToResults": {
+    "description": "Button that leaves the \"similar images\" view and returns to the text-match results for the current query."
+  },
+  "search.imageResults.similarEmpty": "No similar images found.",
+  "@search.imageResults.similarEmpty": {
+    "description": "Shown in the \"similar images\" view when this drive has no images close enough to the chosen one (for example the chosen image isn't indexed yet)."
+  },
   "search.snapshot.defaultLabel": "Search",
   "@search.snapshot.defaultLabel": {
     "description": "Fallback breadcrumb and tab title for a saved search-results view when there's no query text to name it. Same word as the dialog title."

@@ -24,11 +24,13 @@
     import Icon from '$lib/ui/Icon.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import {
         mediaIndexSearchOcr,
         mediaIndexVolumeState,
         mediaIndexThumbnailToken,
         mediaIndexDropThumbnailTokens,
+        mediaIndexFindSimilar,
         type MediaIndexVolumeState,
         type OcrHit,
     } from '$lib/tauri-commands'
@@ -71,17 +73,29 @@
     const DEBOUNCE_MS = 300
 
     interface Tile {
+        /** Openable OS path (mount root prepended) — for the open action + thumbnail token. */
         path: string
+        /** The stored index-relative path — the key `mediaIndexFindSimilar` expects as a source. */
+        storedPath: string
         name: string
         segments: ReturnType<typeof parseOcrSnippet>
         /** `cmdr-media://` URL, or null when the image couldn't be tokenized (icon fallback). */
         thumbUrl: string | null
     }
 
+    /** One entry to render as a tile: its stored (index-relative) path + optional OCR snippet. */
+    interface TileEntry {
+        storedPath: string
+        snippet: string | null
+    }
+
     let volumeState = $state<MediaIndexVolumeState | null>(null)
     let tiles = $state<Tile[]>([])
     let totalHits = $state(0)
     let loading = $state(false)
+    // When set, the grid shows images similar to this one instead of the text-match results.
+    // Cleared (back to the query's OCR results) by the "Back to search" button or a new query.
+    let similarSource = $state<{ storedPath: string; name: string } | null>(null)
 
     // Tokens this component minted for the currently-shown tiles, so we can drop exactly
     // them when the result set changes or the component unmounts.
@@ -121,7 +135,10 @@
             if (seq !== requestSeq) return
             volumeState = state
             totalHits = hits.length
-            await buildTiles(hits.slice(0, MAX_TILES), seq)
+            const entries: TileEntry[] = hits
+                .slice(0, MAX_TILES)
+                .map((hit: OcrHit) => ({ storedPath: hit.path, snippet: hit.snippet }))
+            await buildTiles(entries, seq)
         } catch {
             if (seq !== requestSeq) return
             // A failed search reads as "no results" honestly; the volume-state line still
@@ -132,16 +149,33 @@
         }
     }
 
-    async function buildTiles(hits: OcrHit[], seq: number): Promise<void> {
+    /** Re-query the grid for images similar to `source` (feature-print cosine, backend-ranked). */
+    async function runSimilar(source: { storedPath: string; name: string }, seq: number): Promise<void> {
+        loading = true
+        try {
+            const hits = await mediaIndexFindSimilar(volumeId, source.storedPath, MAX_TILES)
+            if (seq !== requestSeq) return
+            totalHits = hits.length
+            const entries: TileEntry[] = hits.map((hit) => ({ storedPath: hit.path, snippet: null }))
+            await buildTiles(entries, seq)
+        } catch {
+            if (seq !== requestSeq) return
+            clearResults()
+        } finally {
+            if (seq === requestSeq) loading = false
+        }
+    }
+
+    async function buildTiles(entries: TileEntry[], seq: number): Promise<void> {
         // Drop the previous set's tokens before minting the new one.
         await releaseTokens()
         const minted: string[] = []
         const built = await Promise.all(
-            hits.map(async (hit): Promise<Tile> => {
-                // Stored hit paths are index-relative; reconstruct the openable OS path so
-                // both the thumbnail token (byte read) and the open action hit the real file
-                // (a no-op passthrough for the local root, where the mount root is `/`).
-                const osPath = resolveMediaHitPath(mountRoot, hit.path)
+            entries.map(async (entry): Promise<Tile> => {
+                // Stored paths are index-relative; reconstruct the openable OS path so both the
+                // thumbnail token (byte read) and the open action hit the real file (a no-op
+                // passthrough for the local root, where the mount root is `/`).
+                const osPath = resolveMediaHitPath(mountRoot, entry.storedPath)
                 let thumbUrl: string | null = null
                 try {
                     const token = await mediaIndexThumbnailToken(osPath)
@@ -154,8 +188,9 @@
                 }
                 return {
                     path: osPath,
+                    storedPath: entry.storedPath,
                     name: fileName(osPath),
-                    segments: parseOcrSnippet(hit.snippet),
+                    segments: entry.snippet === null ? [] : parseOcrSnippet(entry.snippet),
                     thumbUrl,
                 }
             }),
@@ -169,11 +204,33 @@
         tiles = built
     }
 
+    /** Enter "similar" mode from a tile, re-querying the grid by image similarity. */
+    function showSimilar(tile: Tile): void {
+        similarSource = { storedPath: tile.storedPath, name: tile.name }
+        const seq = ++requestSeq
+        void runSimilar(similarSource, seq)
+    }
+
+    /** Leave "similar" mode and restore the current query's text-match results. */
+    function backToResults(): void {
+        similarSource = null
+        const trimmed = query.trim()
+        if (!active || trimmed === '') {
+            clearResults()
+            return
+        }
+        const seq = ++requestSeq
+        void runOcrSearch(seq)
+    }
+
     // Debounced fetch on query / visibility change. An empty query or a hidden dialog
-    // clears the surface and does no work.
+    // clears the surface and does no work. A new query also exits "similar" mode (a plain
+    // write, NOT read reactively here, so entering similar mode from a tile doesn't re-run
+    // this effect).
     $effect(() => {
         const trimmed = query.trim()
         const isActive = active
+        similarSource = null
         if (debounceTimer) clearTimeout(debounceTimer)
         if (!isActive || trimmed === '') {
             requestSeq += 1
@@ -210,20 +267,66 @@
 {#if showSection}
     <section class="image-results" aria-label={tString('search.imageResults.title')}>
         <header class="ir-header">
-            <span class="ir-title">{tString('search.imageResults.title')}</span>
-            {#if hasHits}
-                <span class="ir-count">
-                    {moreCount > 0
-                        ? tString('search.imageResults.countCapped', {
-                              shownText: formatInteger(tiles.length),
-                              totalText: formatInteger(totalHits),
-                          })
-                        : tString('search.imageResults.count', { totalText: formatInteger(totalHits) })}
+            {#if similarSource}
+                <button type="button" class="ir-back" onclick={backToResults}>
+                    <Icon name="arrow-left" size={14} aria-hidden="true" />
+                    <span>{tString('search.imageResults.backToResults')}</span>
+                </button>
+                <span class="ir-title ir-title-similar">
+                    {tString('search.imageResults.similarTo', { name: similarSource.name })}
                 </span>
+            {:else}
+                <span class="ir-title">{tString('search.imageResults.title')}</span>
+                {#if hasHits}
+                    <span class="ir-count">
+                        {moreCount > 0
+                            ? tString('search.imageResults.countCapped', {
+                                  shownText: formatInteger(tiles.length),
+                                  totalText: formatInteger(totalHits),
+                              })
+                            : tString('search.imageResults.count', { totalText: formatInteger(totalHits) })}
+                    </span>
+                {/if}
             {/if}
         </header>
 
-        {#if !enabled && volumeState !== null}
+        {#if similarSource}
+            {#if hasHits}
+                <ul class="ir-grid" role="list">
+                    {#each tiles as tile (tile.path)}
+                        <li class="ir-tile-wrap">
+                            <button type="button" class="ir-tile" onclick={() => { onOpen(tile.path); }}>
+                                <span class="ir-thumb">
+                                    {#if tile.thumbUrl}
+                                        <!-- The filename is shown as visible text below (`.ir-name`), so the
+                                             thumbnail is presentational — an empty alt avoids a redundant
+                                             screen-reader announcement (axe image-redundant-alt). -->
+                                        <img src={tile.thumbUrl} alt="" loading="lazy" draggable="false" />
+                                    {:else}
+                                        <span class="ir-thumb-fallback">
+                                            <Icon name="file" size={24} aria-hidden="true" />
+                                        </span>
+                                    {/if}
+                                </span>
+                                <span
+                                    class="ir-name"
+                                    use:useShortenMiddle={{
+                                        text: tile.name,
+                                        preferBreakAt: '.',
+                                        startRatio: 0.7,
+                                        tooltipWhenTruncated: true,
+                                    }}
+                                ></span>
+                            </button>
+                        </li>
+                    {/each}
+                </ul>
+            {:else if loading}
+                <div class="ir-state"><Spinner size="sm" /></div>
+            {:else}
+                <p class="ir-empty">{tString('search.imageResults.similarEmpty')}</p>
+            {/if}
+        {:else if !enabled && volumeState !== null}
             <p class="ir-notice">{tString('search.imageResults.off')}</p>
         {:else if networkNeedsOptIn}
             <p class="ir-notice">{tString('search.imageResults.networkOff')}</p>
@@ -250,7 +353,10 @@
                             >
                                 <span class="ir-thumb">
                                     {#if tile.thumbUrl}
-                                        <img src={tile.thumbUrl} alt={tile.name} loading="lazy" draggable="false" />
+                                        <!-- The filename is shown as visible text below (`.ir-name`), so the
+                                             thumbnail is presentational — an empty alt avoids a redundant
+                                             screen-reader announcement (axe image-redundant-alt). -->
+                                        <img src={tile.thumbUrl} alt="" loading="lazy" draggable="false" />
                                     {:else}
                                         <span class="ir-thumb-fallback">
                                             <Icon name="file" size={24} aria-hidden="true" />
@@ -271,6 +377,15 @@
                                         {#if seg.matched}<mark>{seg.text}</mark>{:else}{seg.text}{/if}
                                     {/each}
                                 </span>
+                            </button>
+                            <button
+                                type="button"
+                                class="ir-similar-btn"
+                                onclick={() => { showSimilar(tile); }}
+                                aria-label={tString('search.imageResults.findSimilar')}
+                                use:tooltip={tString('search.imageResults.findSimilar')}
+                            >
+                                <Icon name="sparkles" size={14} aria-hidden="true" />
                             </button>
                         </li>
                     {/each}
@@ -345,6 +460,77 @@
 
     .ir-tile-wrap {
         min-width: 0;
+        position: relative;
+    }
+
+    /* "Find similar" overlay button, top-right of a tile. Hidden until the tile is hovered
+       or the button itself is focused (keyboard-reachable), so it doesn't clutter the grid. */
+    .ir-similar-btn {
+        position: absolute;
+        top: var(--spacing-xs);
+        right: var(--spacing-xs);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        background: var(--color-bg-primary);
+        color: var(--color-text-secondary);
+        cursor: default;
+        opacity: 0;
+        transition: opacity var(--transition-base);
+    }
+
+    .ir-tile-wrap:hover .ir-similar-btn,
+    .ir-similar-btn:focus-visible {
+        opacity: 1;
+    }
+
+    .ir-similar-btn:hover {
+        border-color: var(--color-accent);
+        color: var(--color-accent-text);
+    }
+
+    .ir-similar-btn:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ir-similar-btn {
+            transition: none;
+        }
+    }
+
+    .ir-back {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xxs);
+        padding: 0;
+        border: none;
+        background: none;
+        color: var(--color-accent-text);
+        font-size: var(--font-size-sm);
+        cursor: default;
+    }
+
+    .ir-back:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+        border-radius: var(--radius-sm);
+    }
+
+    .ir-title-similar {
+        font-size: var(--font-size-md);
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     .ir-tile {

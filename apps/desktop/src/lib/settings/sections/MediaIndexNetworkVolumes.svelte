@@ -118,14 +118,32 @@
         const state = states.get(volumeId)
         if (!state) return null
         if (state.paused) return tString('settings.mediaIndex.networkVolumes.paused')
-        if (state.indexing) return tString('settings.mediaIndex.networkVolumes.indexing')
-        if (state.enrichedCount > 0) {
-            return tString('settings.mediaIndex.networkVolumes.indexed', {
-                countText: formatInteger(state.enrichedCount),
-                count: state.enrichedCount,
+        // Honest "N of M" once the drive index knows the qualifying total; while that total is
+        // still unknown (scanning / offline) fall back to a plain count or "counting…".
+        if (state.qualifyingCount === null) {
+            if (state.indexing && state.enrichedCount === 0) {
+                return tString('settings.mediaIndex.progress.counting')
+            }
+            if (state.enrichedCount > 0) {
+                return tString('settings.mediaIndex.networkVolumes.indexed', {
+                    countText: formatInteger(state.enrichedCount),
+                    count: state.enrichedCount,
+                })
+            }
+            return tString('settings.mediaIndex.networkVolumes.notIndexedYet')
+        }
+        if (state.qualifyingCount === 0) return tString('settings.mediaIndex.networkVolumes.notIndexedYet')
+        if (state.enrichedCount >= state.qualifyingCount) {
+            return tString('settings.mediaIndex.progress.done', {
+                total: state.qualifyingCount,
+                totalText: formatInteger(state.qualifyingCount),
             })
         }
-        return tString('settings.mediaIndex.networkVolumes.notIndexedYet')
+        return tString('settings.mediaIndex.progress.ofTotal', {
+            total: state.qualifyingCount,
+            enrichedText: formatInteger(state.enrichedCount),
+            totalText: formatInteger(state.qualifyingCount),
+        })
     }
 </script>
 

@@ -41,6 +41,7 @@
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
     import MediaIndexNetworkVolumes from './MediaIndexNetworkVolumes.svelte'
+    import MediaIndexImportanceSlider from './MediaIndexImportanceSlider.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
@@ -370,6 +371,12 @@
             >
                 <SettingSwitch id="mediaIndex.enabled" />
             </SettingRow>
+
+            <!-- The importance-threshold slider ("how deep do I index?") + its per-volume
+                 progress. Refines the master toggle, so it's only shown when indexing is on. -->
+            {#if imageIndexEnabled}
+                <MediaIndexImportanceSlider />
+            {/if}
 
             <!-- Per-network-volume opt-in + "always index" overrides (M1.5). Only
                  meaningful once image indexing is on, so gate on the live master toggle. -->
