@@ -1,5 +1,5 @@
 /**
- * Tier 3 a11y + behavior tests for `MediaIndexImportanceSlider.svelte` (the M2 image-index
+ * Tier 3 a11y + behavior tests for `MediaIndexImportanceSlider.svelte` (the image-index
  * "how much to index" slider).
  *
  * Covers the default bucket label (threshold 0.0 ⇒ the broadest "everywhere" bucket), the

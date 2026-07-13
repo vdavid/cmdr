@@ -313,7 +313,7 @@ export interface SettingsValues {
   'mediaIndex.enabled': boolean
   /**
    * Internal (FE-owned): volume ids opted into background network (SMB) image enrichment
-   * (`media_index` M1.5). Off by default per volume: turning on the master toggle does NOT
+   * (`media_index` network enrichment). Off by default per volume: turning on the master toggle does NOT
    * auto-enrich network drives. Persisted as a real JSON array so the Rust loader reads it
    * as `Vec<String>`; seeded into `media_index::network::config` at startup and live-applied
    * via `media_index_set_network_volume_enabled` on change.
@@ -332,7 +332,7 @@ export interface SettingsValues {
    */
   'mediaIndex.alwaysIndexFolders': string[]
   /**
-   * The lowest folder-importance level (`0.0..=1.0`) the image indexer enriches — the M2
+   * The lowest folder-importance level (`0.0..=1.0`) the image indexer enriches — the
    * "how deep do I index?" slider's typed value. `0.0` (the default, matching the backend
    * `DEFAULT_IMPORTANCE_THRESHOLD`) enriches every scored folder (junk like `node_modules`
    * is floored out regardless); raising it defers low-importance folders so a huge library

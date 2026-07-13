@@ -1,12 +1,12 @@
 # Media index subsystem — details
 
 Image-ML enrichment: makes a volume's images searchable by their content. Full design and milestone plan:
-[`docs/specs/media-ml-index-plan.md`](../../../../../docs/specs/media-ml-index-plan.md). This doc covers what M1 shipped,
+[`docs/specs/media-ml-index-plan.md`](../../../../../docs/specs/media-ml-index-plan.md). This doc covers what the OCR slice shipped,
 the port-from-`importance/` rationale, the GC safety argument, and the schema.
 
-M1 (this slice) ships the plumbing + OCR-text search with **no model download and no vector math**: a per-volume
+The OCR slice ships the plumbing + OCR-text search with **no model download and no vector math**: a per-volume
 disposable `media.db`, a lifecycle-bus-driven scheduler, an OCR pipeline behind a fakeable `VisionBackend` seam,
-deletion-driven GC, and the `MediaIndex` read API. It's **local-only** (SMB/MTP is M1.5) and **off by default**.
+deletion-driven GC, and the `MediaIndex` read API. It's **local-only** (SMB/MTP comes with network enrichment) and **off by default**.
 
 ## Why a port of `importance/`, not a re-derivation
 
@@ -39,7 +39,7 @@ bus, why the sender outlives the registry) is documented once in [`indexing/DETA
 re-documented here (single-source).
 
 `wire_volume` routes by typed kind: LOCAL enriches by default (when the master toggle is on); an opted-in SMB volume
-runs the conservative network pass (§ "Network-volume enrichment (M1.5)"); MTP is NEVER background-swept. Both local and
+runs the conservative network pass (§ "Network-volume enrichment"); MTP is NEVER background-swept. Both local and
 SMB subscribe to the SAME bus the same way; only which pass method runs differs. The opt-in is checked INSIDE the network
 pass, so flipping it on takes effect on the next scan completion (and the opt-in command kicks an immediate pass).
 
@@ -63,12 +63,12 @@ walk. The safety comes entirely from **when** a pass (and thus its GC) runs, not
 - A cancelled pass (memory watchdog) skips GC entirely, yielding fully; vanished rows are collected on the next completed
   scan.
 
-## Network-volume enrichment (M1.5)
+## Network-volume enrichment
 
 Making an opted-in NAS's images searchable by content is the headline use case (`/Volumes/naspi` over SMB). This is the
 ONE part of the plan with no `importance/` sibling to copy: `importance` follows a hard rule ("never a filesystem syscall
 against an SMB/MTP mount"), but media enrichment MUST read image bytes off the wire. Everything lives under `network/`;
-the scheduler routes SMB volumes to it (§ "The lifecycle bus"). Scoped to OCR (it inherits M1's Vision backend — no new
+the scheduler routes SMB volumes to it (§ "The lifecycle bus"). Scoped to OCR (it inherits the OCR slice's Vision backend — no new
 models).
 
 ### The byte-fetch decision (`network/fetch.rs`) — why the OS mount, not a direct smb2 client
@@ -79,7 +79,7 @@ the SAME transport the file viewer already uses for SMB image preview** (`file_v
 client (`Volume::open_read_stream`). Why:
 
 - The viewer's OS-mount read is the ONE existing byte-read path for images over SMB; reusing it keeps a single transport
-  and matches what the M1 local pass already does (`std::fs::read`).
+  and matches what the local pass already does (`std::fs::read`).
 - The direct-`smb2` `open_read_stream` is the chunked large-transfer/copy path; an OCR fetch wants the whole (bounded)
   compressed file, which a single `std::fs::read` gives simply.
 - The whole use case is an OS-mounted NAS. The mount root comes from `VolumeManager::get(volume_id).root()` — the same
@@ -88,7 +88,7 @@ client (`Volume::open_read_stream`). Why:
 **Path mapping.** An SMB index's `ROOT_ID` is the mount root, so `walk_image_entries` reconstructs MOUNT-RELATIVE paths
 (`/DCIM/x.jpg`). `os_join(mount_root, rel)` prepends the mount root to reach the real file (`/Volumes/naspi/DCIM/x.jpg`);
 for the `root`/local volume the mount root is `/`, so the path passes through unchanged. The stored `media.db` row keeps
-the index-relative identity (matching the index + GC set); the M1.5b UI reconstructs the display/open path via the mount
+the index-relative identity (matching the index + GC set); the network-enrichment UI reconstructs the display/open path via the mount
 root.
 
 **Non-blocking discipline (the crux).** A network `std::fs::read` can block indefinitely on a hung mount. So `FsByteFetcher`
@@ -121,8 +121,8 @@ Typed knobs (`ConservativeFetchPolicy`), each a real gate, not a comment:
 
 Navigation-based importance scores a rarely-browsed NAS archive LOW everywhere, so importance-first ordering would defer
 the user's photos forever (plan Decision 6). The override forces enrichment regardless of importance. `should_enrich_image(covered_by_override, importance, threshold)` = `covered || importance ≥ threshold`. The importance
-slider is M2, so in M1.5 the production importance oracle yields `None` (defer) and **the override is the load-bearing
-input**: only override-covered volumes/folders enrich. The gate seam keeps the M2 importance path drop-in.
+slider is present, but for network volumes the production importance oracle yields `None` and **the override is the load-bearing
+input**: only override-covered volumes/folders enrich. The gate seam keeps the importance path drop-in.
 
 **Storage: a settings-seeded global, not a fourth per-volume store.** The opt-in and overrides are user config (a handful
 of volumes/folders), not per-image data, so they ride the sparse settings store (`mediaIndex.networkVolumes`,
@@ -133,8 +133,8 @@ through the `media_index_set_*` commands. Folder overrides store absolute OS-mou
 trailing-slash-safe prefix so `/Photos2` isn't "within" `/Photos`.
 
 *Non-load-bearing candidate (NOT built):* a photo-density importance input (a folder that's mostly images is likely an
-archive regardless of visit count) could feed the M2 importance oracle. Deliberately deferred; the manual override is the
-M1.5 mechanism.
+archive regardless of visit count) could feed the importance oracle. Deliberately deferred; the manual override is the
+current mechanism.
 
 ### Resumability across unmount + the disconnect data-safety lines
 
@@ -142,7 +142,7 @@ A mid-pass unmount is not a crash and not a bad file. On `FetchError::Disconnect
 `NetworkPassOutcome::Paused { reason: Disconnected }`: it flushes every completed row (they survive), writes NO `Failed`
 row for the in-flight image, and does NOT GC. The scheduler marks the volume paused (`network::config::mark_paused`),
 which the coverage signal surfaces; resume happens via the registration bus on remount (the next completed scan re-runs
-the pass, skipping already-Done rows). This is distinct from the M1 `Failed` state, which is reserved for a genuinely bad
+the pass, skipping already-Done rows). This is distinct from the `Failed` state, which is reserved for a genuinely bad
 file (a GOOD read but a decode/OCR failure) — a transport fault must never masquerade as one.
 
 **GC vs a mere disconnect.** Only a pass that ran to COMPLETION reaches GC (the same completed-scan edge the local pass
@@ -162,7 +162,7 @@ enriches over the fake fetcher, drops the writer (simulating unmount), and asser
 a background sweep (keeping `importance/`'s `ScoringPolicy::for_kind` MTP exclusion). The never-background-sweep gate is
 real now; the on-demand-per-visit trigger itself is a later slice (a clear TODO — nothing wires it yet).
 
-### Backend commands + typed state for the M1.5b UI
+### Backend commands + typed state for the network-enrichment UI
 
 The backend provides three setters + the extended state:
 
@@ -173,7 +173,7 @@ The backend provides three setters + the extended state:
 - `media_index_volume_state` extended with `network_opt_in`, `always_indexed`, `paused` (the "paused, resumes on
   reconnect" honesty).
 
-**The FE surface (shipped, M1.5b).** The opt-in + volume override live in Settings > Behavior > File system watching >
+**The FE surface (shipped).** The opt-in + volume override live in Settings > Behavior > File system watching >
 "Image search" card, below the master toggle, rendered by
 `src/lib/settings/sections/MediaIndexNetworkVolumes.svelte` (only when `mediaIndex.enabled` is on). It lists each mounted
 network (SMB) volume with an opt-in switch and, once opted in, an "always index this drive" switch plus a live status
@@ -192,8 +192,7 @@ Coverage-honesty for a network volume lives in `src/lib/search/ImageSearchResult
 ("turn on indexing for this drive" when not opted in, "disconnected, showing what's indexed" when paused). NOTE: the
 whole-drive Search dialog currently targets only `ROOT_VOLUME_ID` (a local-index surface), so those network states are
 reachable only once a caller points `ImageSearchResults` at a network volume — the component + path reconstruction are
-ready; wiring the dialog to search a chosen network volume is a separate search-feature change (deferred, see the M1.5b
-report).
+ready; wiring the dialog to search a chosen network volume is a separate search-feature change (deferred).
 
 **Per-folder override — FE trigger deferred.** The `media_index_set_always_index_folder` command +
 `mediaIndex.alwaysIndexFolders` setting are ready, but no FE control sets them yet: the natural trigger is a folder
@@ -203,25 +202,25 @@ its menu-event handler is a small backend follow-up rather than an FE change.
 ## Schema (`store/`)
 
 `SCHEMA_VERSION` is a disposable-cache version: a mismatch delete-and-recreates `media-{volume_id}.db`. It's now `2`
-(M2 added the tag + embedding tables and the FTS `source` column). Objects:
+(the tag + embedding tables and the FTS `source` column arrived with tags and embeddings). Objects:
 
 - `media_status` — `WITHOUT ROWID`, `path TEXT PRIMARY KEY COLLATE platform_case`; `mtime`, `size` (the `(path, mtime,
   size)` staleness key); `media_kind` + `state` (typed TEXT tokens, `sqlite3`-inspectable, parsed back to typed enums —
-  `no-string-matching`); `engine_version` (the combined **analyze provenance stamp** — § M2 — so an OS upgrade to the OCR
+  `no-string-matching`); `engine_version` (the combined **analyze provenance stamp** (§ The analyze provenance stamp) so an OS upgrade to the OCR
   engine, tag taxonomy, or feature-print model re-runs analysis even on an unchanged file — data-COVERAGE, not
   data-safety, since the derived data is disposable).
 - `media_ocr` — a **standalone** FTS5 table (`path UNINDEXED, source UNINDEXED, text`). Not external-content:
   `agent/store`'s `messages_fts` points at an integer `messages.id`, but `media_status` is path-keyed and `WITHOUT
   ROWID`, so there's no integer rowid to hang external content off. Standalone keeps enrichment and GC a simple `WHERE
   path = ?` delete with no trigger machinery to desync. It holds up to two rows per path: the OCR text (`source='ocr'`)
-  and the space-joined tag labels (`source='tag'`), so a keyword search matches **tags alongside OCR** (M2). Created via
+  and the space-joined tag labels (`source='tag'`), so a keyword search matches **tags alongside OCR**. Created via
   `CREATE VIRTUAL TABLE … USING fts5`, which doubles as the FTS5 availability guard (a `bundled` build without FTS5 fails
   there — Decision 2's build-flag worry is closed, `agent/store` proves it).
 - `media_tags` — `(path COLLATE platform_case, label, score)` with an index on `path` and on `label`: the STRUCTURED
   tags for tag-score filtering (`images_with_tag(label, min_score)`), distinct from the folded FTS keyword index above.
 - `media_embedding` — `WITHOUT ROWID`, `(path PRIMARY KEY COLLATE platform_case, dims, vector BLOB)`: the image
   feature-print embedding as a little-endian `f32` BLOB (`encode_embedding`/`decode_embedding`; `dims` = element count).
-  The vector store's load source (§ M2).
+  The vector store's load source (§ The vector store + resident cache).
 - `meta` — `schema_version` only.
 
 The `needs_enrichment` staleness predicate is `(path, mtime, size)` + the analyze stamp: stale when there's no row, or
@@ -232,7 +231,7 @@ re-enrichment leaves nothing stale); a failure clears them all and records only 
 
 ## The image-qualification predicate (`predicate.rs`)
 
-Pure over a directory's file names (sibling-aware): images enrich (JPEG/PNG/HEIC/…); videos skip (out of scope in M1,
+Pure over a directory's file names (sibling-aware): images enrich (JPEG/PNG/HEIC/…); videos skip (out of scope,
 also a Live Photo's motion `.mov`); an image with a same-stem `.mov` is tagged `LivePhotoStill`; `.aae` edit sidecars
 skip; a RAW beside a same-stem JPEG defers to the JPEG (cheaper decode), a lone RAW enriches. Classification is typed
 (`Qualification`/`MediaKind`/`SkipReason`), never a substring branch. The scheduler groups the index walk by parent
@@ -242,15 +241,15 @@ directory and runs `qualify_dir` per group.
 
 The inference boundary the scheduler, store, and GC sit behind, so all of that is testable with no GPU/ANE/FFI. The
 trait is `VisionBackend`: `ocr` (OCR only, for the focused OCR tests), `analyze` (the enrichment entry point — OCR +
-tags + feature print from ONE decode, M2), and the provenance stamps `engine_version` / `taxonomy_version` /
-`analysis_stamp` (§ M2). Two impls:
+tags + feature print from ONE decode), and the provenance stamps `engine_version` / `taxonomy_version` /
+`analysis_stamp` (§ The analyze provenance stamp). Two impls:
 
 - `fake::FakeVisionBackend` — deterministic, zero-FFI (scripted/derived OCR text, tags, and a stem-derived unit
   embedding). Every test injects it via `MediaScheduler::new`; it's also the production fallback off-macOS.
 - `vision::VisionOcrBackend` (macOS only) — the real OCR + classify + feature print. `scheduler::start` selects it on
   macOS.
 
-CLIP embeddings and faces become sibling methods on this trait as M3+ land, each returning its own typed result, each
+CLIP embeddings and faces become sibling methods on this trait as later work lands, each returning its own typed result, each
 fakeable the same way.
 
 ### The real Vision OCR backend (`backend/vision.rs`, macOS)
@@ -281,8 +280,8 @@ framework call — never a blanket file allow (`clippy::undocumented_unsafe_bloc
 file returns `Decode`; a request failure returns `Ocr`. The pass logs it and marks the row `Failed`.
 
 **`engine_version`** is `vision-ocr;os={major}.{minor}.{patch};rev={N}`: the macOS version (`NSProcessInfo`) plus the
-current `VNRecognizeTextRequest` revision (read off a fresh instance). The M2 `analyze` path additionally computes
-`taxonomy_version` (the `VNClassifyImageRequest` revision) and folds all three revisions into `analysis_stamp` (§ M2).
+current `VNRecognizeTextRequest` revision (read off a fresh instance). The `analyze` path additionally computes
+`taxonomy_version` (the `VNClassifyImageRequest` revision) and folds all three revisions into `analysis_stamp` (§ The analyze provenance stamp).
 
 The fixture for the macOS-gated real tests lives at `backend/test-fixtures/ocr-sample.png` (a tiny PNG rendering
 "CMDR OCR" / "hello 2026", generated once via CoreGraphics text drawing).
@@ -320,7 +319,7 @@ yields to the SAME 16 GB resident-memory ceiling rather than a second independen
 `media_index` adds a THIRD long-lived writer thread per volume (index + importance + media) plus a per-volume `watch`
 listener. Fine at a few-volumes scale, but it scales per mounted volume — note it before adding more per-volume threads.
 
-## The frontend surface (M1)
+## The frontend surface
 
 Three IPC doors feed the UI; all live in `commands.rs` and are registered in BOTH `ipc.rs`
 and `ipc_collectors.rs` (regen the typed bindings with `pnpm bindings:regen`).
@@ -330,15 +329,15 @@ and `ipc_collectors.rs` (regen the typed bindings with `pnpm bindings:regen`).
   renders via its `resultsExtra` snippet slot (Search-only; Selection passes none). The
   grid reuses the SAME live query text as the filename results.
 - **`media_index_volume_state`** → `MediaIndexVolumeState { enabled, indexing,
-  enriched_count }` — the honest per-volume coverage signal (plan M1 § Coverage honesty +
+  enriched_count }` — the honest per-volume coverage signal (plan § Coverage honesty +
   per-volume state). `indexing` is a cheap in-memory snapshot off the scheduler's
   `PassCoordinator::is_running` (`MediaScheduler::is_enriching`); `enriched_count` is a
   `COUNT(*)` over `media_status` read off the IPC thread. Deliberately NOT a progress
-  percentage or ETA — those are M2. It lets the UI tell apart four states rather than ever
+  percentage or ETA — those come later. It lets the UI tell apart four states rather than ever
   showing a confident-looking empty result that's really "not indexed yet": off (hint to
   enable), still indexing ("results may be incomplete"), enriched-but-no-match (a genuine
   miss), and not-indexed-yet. It's polled per search (no event subscription yet; a
-  subscription is a reasonable M2 upgrade).
+  subscription is a reasonable later upgrade).
 - **`media_index_thumbnail_token` / `media_index_drop_thumbnail_tokens`** — the grid's
   thumbnails REUSE the existing viewer preview scheme (`cmdr-media://` via the viewer's
   `file_viewer::media` token registry), never a media_index-produced thumbnail file (plan
@@ -349,7 +348,7 @@ and `ipc_collectors.rs` (regen the typed bindings with `pnpm bindings:regen`).
   `ImageSearchResults.svelte` drops every token it minted when the result set changes or
   the component unmounts (`media_index_drop_thumbnail_tokens`), or the token map leaks path
   mappings. The scheme serves the FULL original bytes (browser-downscaled for the tile);
-  that's the accepted M1 cost of reusing the preview path rather than producing a
+  that's the accepted cost of reusing the preview path rather than producing a
   downscaled thumbnail — a real thumbnail cache would be a media_index-produced file
   Decision 5 defers.
 
@@ -362,16 +361,16 @@ watching (a dedicated "Image search" card, `FileSystemWatchingSection.svelte`), 
 default. It live-applies through `settings-applier.ts` → `setImageIndexEnabled` (no
 restart), the standard backend-affecting-setting pattern.
 
-## M2 — Tags, image-similarity embeddings, vector search, importance-prioritization
+## Tags, image-similarity embeddings, vector search, importance-prioritization
 
-M2 adds Vision tags + image feature-print embeddings, a brute-force vector store, real importance-prioritized
+This slice adds Vision tags + image feature-print embeddings, a brute-force vector store, real importance-prioritized
 scheduling, the settings-slider covered-count preview, the per-folder photo-search exclude, and an honest per-volume
 progress denominator. Still zero model download (Vision-only); local + opted-in SMB both get tags + embeddings.
 
 ### `analyze`: one decode, three outputs (`backend/vision.rs`)
 
 The enrichment path calls `VisionBackend::analyze`, not `ocr`. The real backend decodes the thumbnail ONCE
-(`decode_thumbnail`, the shared M1 downscale) and performs THREE Vision requests on a single `VNImageRequestHandler`:
+(`decode_thumbnail`, the shared downscale) and performs THREE Vision requests on a single `VNImageRequestHandler`:
 `VNRecognizeTextRequest` (OCR), `VNClassifyImageRequest` (scene/object tags), and `VNGenerateImageFeaturePrintRequest`
 (the image↔image feature print). Reusing one decode + one handler is the Decision-5 "decode once" applied across all
 three — decoding the original three times would dominate cost.
@@ -382,7 +381,7 @@ three — decoding the original three times would dominate cost.
   taxonomy change on an OS upgrade re-tags via the provenance stamp below.
 - **Feature print** (`read_feature_print`): the first `VNFeaturePrintObservation`'s raw bytes decoded per `elementType`
   (`Float` → `f32`, `Double` → `f64`→`f32`), length-checked against `elementCount` (a mismatch drops it rather than
-  storing garbage). Vision's feature print is image↔image only (no text encoder — that's M3's CLIP).
+  storing garbage). Vision's feature print is image↔image only (no text encoder — that's the later CLIP work).
 - Every new `unsafe` block carries a per-site `// SAFETY:` (the request `new()`s, the observation accessors, the
   `NSData` byte read is the safe `to_vec`), same discipline as the OCR path.
 
@@ -412,7 +411,7 @@ memory-watchdog stop hook, so the resident vectors are counted against the ONE s
 ### Importance-prioritized scheduling (the headline — plan Cross-cutting)
 
 The local `run_pass_blocking` and the network `should_enrich` now read `importance/`'s `ImportanceIndex`
-(`MediaScheduler::folder_scores` → `above_threshold(threshold)`), the SAME signal the M2 slider sets. The scheduler:
+(`MediaScheduler::folder_scores` → `above_threshold(threshold)`), the SAME signal the importance slider sets. The scheduler:
 
 - **orders** the walk by folder importance descending (`enrich::prioritized`), so high-importance folders enrich first;
 - **filters** via a `should_enrich(path)` closure: an EXCLUDED folder never enriches (hard privacy veto, checked first);
@@ -426,7 +425,7 @@ The local `run_pass_blocking` and the network `should_enrich` now read `importan
 
 Threshold lives in `gate` as an `f64`-bits atomic (`set_importance_threshold` / `importance_threshold`, clamped
 `0.0..=1.0`), seeded from `mediaIndex.importanceThreshold` and live-applied by `media_index_set_importance_threshold`.
-Default `0.0` (`DEFAULT_IMPORTANCE_THRESHOLD`): enrich every scored folder (non-regressive vs M1's "enrich all real
+Default `0.0` (`DEFAULT_IMPORTANCE_THRESHOLD`): enrich every scored folder (non-regressive vs the prior "enrich all real
 folders"), the slider raises it to defer low-importance folders. Importance keys on the INDEX identity, so the network
 gate strips the mount root off the OS path before the lookup.
 
@@ -450,21 +449,21 @@ confident wrong number. `media_index_volume_state` gained `qualifying_count: Opt
 threshold alone can't). It stops FUTURE enrichment; existing rows for a now-excluded folder stay until the next GC/rescan
 (purging them on exclude is a possible follow-up).
 
-### M2 read API + commands
+### Read API + commands (tags, similarity, coverage)
 
 `MediaIndex` gained `find_similar(source_path, k)` (source embedding → `top_k` over the resident cache, source
 excluded), `dedup_clusters(threshold)`, and `images_with_tag(label, min_score)` (structured tag-score filter). New async
 commands (all `spawn_blocking`, offline-capable, registered in BOTH `ipc.rs` + `ipc_collectors.rs`; regen bindings):
 `media_index_find_similar`, `media_index_dedup_clusters`, `media_index_search_tag`, `media_index_covered_count`,
-`media_index_set_importance_threshold`, `media_index_set_excluded_folder`. **Shapes for the M2 frontend agent:**
+`media_index_set_importance_threshold`, `media_index_set_excluded_folder`. **Shapes for the frontend:**
 `SimilarImage { path, score: f32 }`, `DedupCluster { paths: Vec<String> }`, `TagHit { path, score: f32 }`,
 `CoveredCount { folders: u64, images: u64, pending: bool }`, `Tag { label, score: f32 }`, and the extended
 `MediaIndexVolumeState { …, qualifying_count: Option<u64> }`. Live-apply for the threshold + exclude settings needs a
 `settings-applier.ts` entry (the one FE handoff the backend can't do).
 
-### M2 frontend (the settings slider, progress, and find-similar)
+### Frontend surface (the settings slider, progress, and find-similar)
 
-The user-facing M2 surface lives in the Svelte frontend, not here; this section is the map so the two stay in sync.
+The user-facing surface lives in the Svelte frontend, not here; this section is the map so the two stay in sync.
 
 - **The importance slider** — `src/lib/settings/sections/MediaIndexImportanceSlider.svelte`, rendered in the "Image
   search" card in `FileSystemWatchingSection.svelte` when `mediaIndex.enabled` is on. It exposes five NAMED BUCKETS
@@ -472,7 +471,7 @@ The user-facing M2 surface lives in the Svelte frontend, not here; this section 
   a fixed threshold stop `[0.8, 0.6, 0.4, 0.2, 0.0]` (left → right, restrictive → broad). Dragging RIGHT indexes MORE (a
   LOWER threshold). The **default is the rightmost bucket, threshold `0.0`** — deliberately equal to the backend
   `DEFAULT_IMPORTANCE_THRESHOLD`, so the UI and an unpersisted (sparse) store agree without eagerly writing a default,
-  and it's non-regressive vs M1 (junk is floored out at any level regardless). The persisted value is the raw threshold;
+  and it's non-regressive (junk is floored out at any level regardless). The persisted value is the raw threshold;
   the slider maps it to the nearest bucket on load.
 - **Persist + live-apply** follows the `mediaIndex.enabled` precedent, NOT the per-item delta path: the slider calls
   `setSetting('mediaIndex.importanceThreshold', threshold)` and the `settings-applier.ts` passthrough pushes it to
@@ -492,7 +491,7 @@ The user-facing M2 surface lives in the Svelte frontend, not here; this section 
   keys on the stored path), showing a "Similar to <name>" header with a back button. A new query exits similar mode.
 - **Tags need no separate UI**: tag labels fold into `media_ocr` (`source='tag'`), so the existing OCR keyword search
   already matches tag words and shows them in the snippet. `OcrHit` carries no `source`, so the grid can't label a hit
-  as "matched a tag" without a backend field — deferred, not needed for M2.
+  as "matched a tag" without a backend field — deferred, not needed now.
 
 ## What's left for later
 
@@ -500,12 +499,12 @@ The user-facing M2 surface lives in the Svelte frontend, not here; this section 
   `mediaIndex.excludedFolders` setting are ready, but the natural trigger is a folder right-click action in the native
   (Rust) file context menu, so wiring it is a small backend/menu follow-up (same shape as the deferred per-folder
   "always index" override). No FE persist helper exists yet.
-- **M3+:** CLIP text→image semantic search, the model-install path, faces (detect/embed/cluster/name), the durable
+- **Later:** CLIP text→image semantic search, the model-install path, faces (detect/embed/cluster/name), the durable
   identity store, and LLM captions.
 
 ## Testing
 
-Most M1 tests are FFI-free and registry-free. Pure: the predicate (`predicate.rs`), the staleness key (`store/tests.rs`),
+Most tests are FFI-free and registry-free. Pure: the predicate (`predicate.rs`), the staleness key (`store/tests.rs`),
 `gc_targets`, `build_ocr_match_query`, the coalescer (`scheduler/coalescing_tests.rs`), the command's limit clamp
 (`commands/tests.rs`). Over the fake backend + a synthetic index: the walk, the enrich pass, deletion-driven GC, the
 throttle/cancel decision, the edge-triggered `Completed` consumption (`scheduler/enrich_tests.rs`), and the OCR search +
@@ -516,7 +515,7 @@ panic. The async wire-up (`ready_volumes_with_kind` sweep → `wire_volume` → 
 the reactive pieces (bus-edge consumption + coalescer + the enrich core); a full end-to-end async test needs the
 process-global index registry and is deferred to the E2E slice.
 
-**M2 tests** (all real red→green on the pure/risky bits): cosine + `top_k` ranking + source exclusion + dedup grouping
+**Tags + similarity tests** (all real red→green on the pure/risky bits): cosine + `top_k` ranking + source exclusion + dedup grouping
 (`vector/tests.rs`, pure); tags/embedding round-trip + tag-score filtering + the embedding codec + the
 clear-on-re-enrichment invariant (`store/tests.rs`); `prioritized` ordering + the scheduler DEFERS a below-threshold
 folder + ENRICHES an overridden one, both keeping deferred rows for GC (`scheduler/enrich_tests.rs`); the covered-count

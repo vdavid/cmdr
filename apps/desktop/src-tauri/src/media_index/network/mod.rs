@@ -1,5 +1,5 @@
 //! Network-volume (SMB) enrichment: the conservative byte-fetch pipeline + policy
-//! that make an opted-in NAS's images searchable by content (plan M1.5). This is the
+//! that make an opted-in NAS's images searchable by content (network enrichment). This is the
 //! one part of the plan with no `importance/` sibling to copy — `importance` never
 //! reads bytes off the wire; media enrichment must.
 //!

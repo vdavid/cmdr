@@ -1858,10 +1858,10 @@ export const commands = {
     __TAURI_INVOKE<void>('media_index_drop_thumbnail_tokens', { tokens }),
   /**
    *  Set (or clear) a volume's opt-in for background network (SMB) image enrichment
-   *  (plan M1.5). Off by default: turning on the master toggle does NOT auto-enrich
+   *  (network enrichment). Off by default: turning on the master toggle does NOT auto-enrich
    *  network volumes. Enabling kicks an immediate pass so the user sees progress without
    *  waiting for the next scan completion. Live-applied (no restart); the frontend
-   *  persists `mediaIndex.networkVolumes` and calls this on change (M1.5b UI).
+   *  persists `mediaIndex.networkVolumes` and calls this on change (network-enrichment UI).
    */
   mediaIndexSetNetworkVolumeEnabled: (volumeId: string, enabled: boolean) =>
     __TAURI_INVOKE<void>('media_index_set_network_volume_enabled', { volumeId, enabled }),
@@ -1882,7 +1882,7 @@ export const commands = {
     __TAURI_INVOKE<void>('media_index_set_always_index_folder', { folder, always }),
   /**
    *  Set (or clear) a per-folder photo-search EXCLUSION: no image at or under `folder`
-   *  (an absolute path) is enriched (the privacy complement to the opt-in — plan M2 §
+   *  (an absolute path) is enriched (the privacy complement to the opt-in — plan §
    *  Privacy). A hard veto that beats any "always index" override. Live-applied; the
    *  frontend persists `mediaIndex.excludedFolders` and calls this on change. Existing
    *  rows for the folder stay until the next GC/rescan; the veto stops FUTURE enrichment.
@@ -1890,7 +1890,7 @@ export const commands = {
   mediaIndexSetExcludedFolder: (folder: string, excluded: boolean) =>
     __TAURI_INVOKE<void>('media_index_set_excluded_folder', { folder, excluded }),
   /**
-   *  Set the folder-importance threshold the scheduler enriches by — the M2 settings
+   *  Set the folder-importance threshold the scheduler enriches by — the importance settings
    *  slider's typed value (`0.0..=1.0`, clamped), never a string (`no-string-matching`).
    *  Below-threshold folders are deferred; an override still forces enrichment. Live-
    *  applied; the frontend persists `mediaIndex.importanceThreshold` and calls this.
@@ -1901,7 +1901,7 @@ export const commands = {
     typedError<CoveredCount, string>(__TAURI_INVOKE('media_index_covered_count', { threshold, volumeIds })),
   /**
    *  Find the images most similar to the one at `source_path` on `volume_id` (by
-   *  feature-print cosine), highest first, excluding the source (plan M2 "find
+   *  feature-print cosine), highest first, excluding the source (plan "find
    *  similar"). Runs OFF the IPC thread; answers from `media.db` + the resident vector
    *  cache even when the volume is offline.
    */
@@ -3557,7 +3557,7 @@ export type CostSummary = {
 }
 
 /**
- *  The live preview behind the M2 importance slider: across the ENABLED volumes in
+ *  The live preview behind the importance slider: across the ENABLED volumes in
  *  `volume_ids`, how many folders score at or above `threshold` and how many images
  *  they hold ((importance ≥ `threshold`) AND volume opted-in — never a non-opted-in
  *  SMB/MTP volume). `pending` is `true` when any requested enabled volume isn't ready
@@ -4984,7 +4984,7 @@ export type MediaDimensions = {
 
 /**
  *  The minimal, honest per-volume enrichment state the search UI reads to voice its
- *  own coverage (plan M1 § Coverage honesty + per-volume state). Deliberately NOT a
+ *  own coverage (plan § Coverage honesty + per-volume state). Deliberately NOT a
  *  progress percentage or ETA — those are a later milestone; this only lets the UI
  *  tell apart "indexing is off", "still indexing", "indexed but empty result", and
  *  "not indexed yet". Crosses the IPC boundary, so it derives `Serialize` +
@@ -5009,7 +5009,7 @@ export type MediaIndexVolumeState = {
   enrichedCount: number
   /**
    *  How many images the drive index says QUALIFY for enrichment on this volume —
-   *  the honest denominator behind "12,000 of 38,900 images indexed" (plan M2 §
+   *  the honest denominator behind "12,000 of 38,900 images indexed" (plan §
    *  Honest progress). `None` when the volume's index isn't ready (offline / still
    *  scanning), so the UI voices that rather than a fabricated total. ETA math lives
    *  UI-side off `(enriched_count, qualifying_count)`.
@@ -5018,7 +5018,7 @@ export type MediaIndexVolumeState = {
   /**
    *  Whether this volume is opted into background network (SMB) enrichment. Only
    *  meaningful for network volumes; a local volume enriches by default when
-   *  `enabled`, so the UI shows the opt-in toggle only for network volumes (M1.5b).
+   *  `enabled`, so the UI shows the opt-in toggle only for network volumes (network-enrichment UI).
    */
   networkOptIn: boolean
   /**

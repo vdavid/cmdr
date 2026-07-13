@@ -1,7 +1,7 @@
 //! The byte-fetch seam for network enrichment: read one image's compressed bytes off
 //! an opted-in network volume, bounded against an indefinitely-blocking mount.
 //!
-//! ## Byte-fetch decision (plan Decision 6, M1.5)
+//! ## Byte-fetch decision (plan Decision 6, network enrichment)
 //!
 //! Media enrichment MUST read image bytes off the wire — unlike `importance/`, which
 //! never does. There is no sibling to copy, so this reuses the ONE byte-read path

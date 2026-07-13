@@ -12,7 +12,7 @@
 //!   JPEG (the cheaper, Vision-friendly decode) and skip the redundant RAW. A LONE
 //!   RAW (no JPEG sibling) is enriched as an image.
 //! - **`.aae` edit sidecars** are skipped outright (they hold no pixels).
-//! - **Videos are out of scope in M1** and skipped (this also covers a Live Photo's
+//! - **Videos are out of scope (images only)** and skipped (this also covers a Live Photo's
 //!   motion `.mov`, whether or not it pairs a still).
 //!
 //! Classification is TYPED, never a message/substring branch (`no-string-matching`):
@@ -22,7 +22,7 @@
 use std::collections::HashMap;
 
 /// What kind of media an ENRICHED entry is. Recorded on the `media_status` row so a
-/// later milestone can treat the two differently; both are OCR-enriched in M1.
+/// later milestone can treat the two differently; both are OCR-enriched today.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MediaKind {
     /// A plain still image.
@@ -57,7 +57,7 @@ impl MediaKind {
 pub enum SkipReason {
     /// Not a media file at all (a document, an archive, an extension-less file).
     NotMedia,
-    /// A video (out of scope in M1; also a Live Photo's motion component).
+    /// A video (out of scope, images only; also a Live Photo's motion component).
     Video,
     /// An `.aae` edit sidecar (no pixels to enrich).
     Sidecar,
@@ -87,7 +87,7 @@ const JPEG_EXTS: &[&str] = &["jpg", "jpeg"];
 /// skipped in favor of the JPEG.
 const RAW_EXTS: &[&str] = &["cr2", "cr3", "nef", "arw", "dng", "raf", "orf", "rw2", "srw", "pef"];
 
-/// Video extensions — out of scope in M1 (this also skips a Live Photo's motion
+/// Video extensions — out of scope, images only (this also skips a Live Photo's motion
 /// `.mov`).
 const VIDEO_EXTS: &[&str] = &["mov", "mp4", "m4v", "avi", "mkv", "webm", "hevc"];
 

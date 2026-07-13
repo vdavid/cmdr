@@ -1,4 +1,4 @@
-//! Enrichment-core tests (M1 TDD targets): the fake-backend pass over a synthetic
+//! Enrichment-core tests (TDD targets): the fake-backend pass over a synthetic
 //! index, path-keyed staleness in action, deletion-driven GC (and why it must NOT
 //! fire mid-rescan), the edge-triggered `Completed` consumption, and the
 //! throttle/cancel decision. No FFI, no registry, no async driver.
@@ -134,7 +134,7 @@ fn enrich_over_fake_backend_populates_ocr_for_images_only() {
     writer.shutdown();
 }
 
-// ── Importance-prioritized enrichment (M2) ──────────────────────────────────
+// ── Importance-prioritized enrichment ──────────────────────────────────
 
 fn image(path: &str) -> ImageEntry {
     ImageEntry {

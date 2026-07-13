@@ -697,7 +697,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   },
   {
     // Internal (FE-owned): JSON array of volume ids opted into background network (SMB)
-    // image enrichment (M1.5). Off by default per volume; the per-network-volume rows in
+    // image enrichment (network enrichment). Off by default per volume; the per-network-volume rows in
     // FileSystemWatchingSection's "Image search" card toggle it, persisting here AND
     // calling `media_index_set_network_volume_enabled`. Read by the Rust loader as an array.
     id: 'mediaIndex.networkVolumes',
@@ -740,7 +740,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
     // level the scheduler enriches. Rendered as named buckets by the bespoke
     // `MediaIndexImportanceSlider.svelte` inside the "Image search" card (not an auto
     // row), so `hidden`. Default `0.0` matches the backend `DEFAULT_IMPORTANCE_THRESHOLD`
-    // (enrich every scored folder — non-regressive vs M1, junk is floored out anyway), so
+    // (enrich every scored folder — non-regressive vs the OCR slice, junk is floored out anyway), so
     // the UI and a sparse (unpersisted) store agree without eagerly writing a default.
     // Live-applied via the `settings-applier.ts` passthrough → `media_index_set_importance_threshold`.
     id: 'mediaIndex.importanceThreshold',

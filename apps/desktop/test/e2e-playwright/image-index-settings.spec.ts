@@ -1,7 +1,7 @@
 /**
  * E2E for the "Index image contents" master toggle (`mediaIndex.enabled`).
  *
- * M1's one required E2E: the toggle persists across a settings-window reload. The
+ * The OCR slice's one required E2E: the toggle persists across a settings-window reload. The
  * setting is off by default; turning it on writes through the sparse settings store (in
  * the isolated `CMDR_DATA_DIR`) and live-applies to the backend `media_index` scheduler
  * via `set_image_index_enabled`. Reopening the window must re-read the persisted `true`.

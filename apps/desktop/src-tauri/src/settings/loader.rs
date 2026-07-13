@@ -104,7 +104,7 @@ pub struct Settings {
     #[serde(alias = "mediaIndex.enabled", default)]
     pub image_index_enabled: Option<bool>,
     /// Volume ids the user opted into background network (SMB) image enrichment
-    /// (`media_index` M1.5). Off by default per volume: enabling the master toggle
+    /// (`media_index` network enrichment). Off by default per volume: enabling the master toggle
     /// does NOT auto-enrich network volumes. Seeded into
     /// `media_index::network::config` at startup; live changes flow through
     /// `set_media_index_network_volume_enabled`.
@@ -121,7 +121,7 @@ pub struct Settings {
     /// opt-in.
     #[serde(alias = "mediaIndex.alwaysIndexFolders", default)]
     pub media_index_always_index_folders: Vec<String>,
-    /// The lowest folder-importance level (`0.0..=1.0`) to image-index — the M2
+    /// The lowest folder-importance level (`0.0..=1.0`) to image-index — the importance
     /// settings slider. Absent means the default (enrich every scored folder). Seeded
     /// into `media_index::gate` at startup; live changes flow through
     /// `set_media_index_importance_threshold`.

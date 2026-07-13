@@ -33,7 +33,7 @@ pub struct NetworkEnrichConfig {
     /// Absolute folder paths the user EXCLUDED from photo-search indexing (the privacy
     /// complement to the opt-in — a sensitive high-importance folder like
     /// `~/Documents/IDs`). A hard veto: an image at or under an excluded folder never
-    /// enriches, even under an "always index" override. Plan M2 § Privacy.
+    /// enriches, even under an "always index" override. Plan § Privacy.
     pub excluded_folders: HashSet<String>,
 }
 

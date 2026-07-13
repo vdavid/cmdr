@@ -1,4 +1,4 @@
-//! Store tests: the path-keyed staleness predicate (an M1 TDD target), the
+//! Store tests: the path-keyed staleness predicate (a TDD target), the
 //! disposable-cache delete-and-recreate on a schema bump, and a status round-trip.
 
 use super::*;
@@ -117,7 +117,7 @@ fn status_round_trips_through_the_writer() {
     writer.shutdown();
 }
 
-// ── Embedding codec + tags/embedding round-trip (M2) ────────────────────────
+// ── Embedding codec + tags/embedding round-trip ────────────────────────
 
 #[test]
 fn embedding_codec_round_trips() {

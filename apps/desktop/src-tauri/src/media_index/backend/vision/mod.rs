@@ -214,7 +214,7 @@ fn worker_loop(receiver: mpsc::Receiver<Job>) {
 /// the combined analyze stamp. Each carries the macOS version plus the relevant Vision
 /// request revision, so any OS upgrade that bumps a recognizer, the tag taxonomy, or
 /// the feature-print model mismatches a stored row and re-runs analysis (data-coverage
-/// — plan M1/M2, Decision 4). Cheap and stable within an OS version.
+/// — plan Decision 4). Cheap and stable within an OS version.
 ///
 /// Returns `(engine_version, taxonomy_version, analysis_stamp)`.
 fn compute_stamps() -> (String, String, String) {

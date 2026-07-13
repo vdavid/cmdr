@@ -1,6 +1,6 @@
 <script lang="ts">
     /**
-     * Per-network-volume image-enrichment controls (plan M1.5), rendered inside the
+     * Per-network-volume image-enrichment controls (network enrichment), rendered inside the
      * "Image search" card in `FileSystemWatchingSection.svelte` (only when the master
      * `mediaIndex.enabled` toggle is on). For each mounted network (SMB) volume:
      *

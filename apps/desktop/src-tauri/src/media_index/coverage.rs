@@ -1,5 +1,5 @@
-//! The covered-count machinery behind the M2 settings slider's live preview (plan
-//! M2): given a folder-importance threshold, how many folders and qualifying images
+//! The covered-count machinery behind the importance settings slider's live preview:
+//! given a folder-importance threshold, how many folders and qualifying images
 //! would be image-indexed on the ENABLED volumes.
 //!
 //! The qualifying-image count per folder comes from the drive index (the same

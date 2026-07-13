@@ -32,11 +32,11 @@
 //! - `media_ocr` — a standalone FTS5 table over searchable image text, keyed by path
 //!   (see [`CREATE_TABLES`] for why standalone rather than external-content). Holds
 //!   BOTH the recognized OCR text AND the scene/object tag labels (one folded row
-//!   per source), so a keyword search matches tags alongside OCR (plan M2).
+//!   per source), so a keyword search matches tags alongside OCR.
 //! - `media_tags` — the structured tags (`path, label, score`) for tag-score
 //!   filtering; the folded FTS rows above are its keyword-search index.
 //! - `media_embedding` — the image feature-print embedding (`path, dims, vector`
-//!   BLOB) for image↔image similarity + dedup (plan M2, Decision 2).
+//!   BLOB) for image↔image similarity + dedup (plan Decision 2).
 //! - `meta` — `schema_version`.
 
 mod connection;
@@ -66,7 +66,7 @@ const SCHEMA_VERSION: &str = "2";
 ///
 /// `media_ocr` folds tags in by carrying a `source` (`'ocr'` / `'tag'`) column and up
 /// to two rows per path: the recognized OCR text, and the space-joined tag labels. A
-/// keyword search matches either, so tags are searchable alongside OCR (plan M2); the
+/// keyword search matches either, so tags are searchable alongside OCR; the
 /// `WHERE path = ?` delete still clears every row for a path in one statement.
 const CREATE_TABLES_SQL: &str = "
     CREATE TABLE IF NOT EXISTS media_status (
@@ -154,7 +154,7 @@ pub struct MediaStatusRow {
 /// Whether an image at `path` needs (re-)enrichment given its stored status row and
 /// its CURRENT `(mtime, size)` and the backend's CURRENT engine version.
 ///
-/// This is the path-keyed staleness predicate (plan Decision 3, an M1 TDD target).
+/// This is the path-keyed staleness predicate (plan Decision 3, a TDD target).
 /// Stale when there is no row, or when the `(mtime, size)` identity changed, or when
 /// the analyze provenance stamp changed (an OS upgrade to the OCR engine, tag
 /// taxonomy, or feature-print model re-runs analysis even on an unchanged file — one
@@ -416,7 +416,7 @@ pub(crate) fn read_embedding_for(conn: &Connection, path: &str) -> Result<Option
 }
 
 /// The paths whose stored tags include `label` at or above `min_score`, each with the
-/// matching tag's score (the tag-score filter — plan M2). Ordered by score descending.
+/// matching tag's score (the tag-score filter). Ordered by score descending.
 pub(crate) fn read_tag_matches(
     conn: &Connection,
     label: &str,

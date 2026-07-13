@@ -1,4 +1,4 @@
-//! Image-ML enrichment: makes a volume's images searchable by their content. M1
+//! Image-ML enrichment: makes a volume's images searchable by their content. The OCR slice
 //! ships the plumbing + OCR-text search (no model download, no vector math): a
 //! per-volume disposable `media.db`, a scheduler driven by the indexing lifecycle
 //! bus, an OCR pipeline behind the [`VisionBackend`](backend::VisionBackend) seam

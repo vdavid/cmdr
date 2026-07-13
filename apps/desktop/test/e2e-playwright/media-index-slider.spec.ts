@@ -1,7 +1,7 @@
 /**
- * E2E for the M2 image-index importance slider (`mediaIndex.importanceThreshold`).
+ * E2E for the image-index importance slider (`mediaIndex.importanceThreshold`).
  *
- * The required M2 E2E: the slider persists a new level and its live preview updates as the
+ * The required slider E2E: the slider persists a new level and its live preview updates as the
  * user moves it. The slider only shows once the master "Index image contents" toggle is on,
  * so the spec enables that first (and turns it back off at the end so no state leaks).
  *

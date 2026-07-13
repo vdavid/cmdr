@@ -1,5 +1,5 @@
 /**
- * E2E for the M1.5 per-network-volume image-indexing opt-in UI
+ * E2E for the network-enrichment per-network-volume image-indexing opt-in UI
  * (Settings > Behavior > File system watching > "Image search").
  *
  * Two things proven in the real app + real settings store:

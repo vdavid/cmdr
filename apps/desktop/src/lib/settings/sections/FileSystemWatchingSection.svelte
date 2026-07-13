@@ -378,7 +378,7 @@
                 <MediaIndexImportanceSlider />
             {/if}
 
-            <!-- Per-network-volume opt-in + "always index" overrides (M1.5). Only
+            <!-- Per-network-volume opt-in + "always index" overrides (network enrichment). Only
                  meaningful once image indexing is on, so gate on the live master toggle. -->
             {#if imageIndexEnabled}
                 <MediaIndexNetworkVolumes />

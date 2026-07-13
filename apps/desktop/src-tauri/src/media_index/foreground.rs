@@ -1,5 +1,5 @@
 //! The app-wide foreground-activity signal that gates conservative network (SMB)
-//! enrichment (plan Decision 6, M1.5).
+//! enrichment (plan Decision 6, network enrichment).
 //!
 //! There is deliberately NO foreground/idle signal in `indexing/` (its only `Idle`
 //! is `ActivityPhase::Idle`, an indexing work-state, not a user-foreground signal),

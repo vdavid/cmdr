@@ -1,4 +1,4 @@
-//! Vector-store tests (M2 TDD targets): cosine correctness, top-k ranking + source
+//! Vector-store tests (TDD targets): cosine correctness, top-k ranking + source
 //! exclusion, and near-duplicate dedup grouping by cosine threshold. Pure, no FFI, no
 //! DB — the brute-force store is exercised directly over synthetic vectors.
 

@@ -1,4 +1,4 @@
-//! The conservative-fetch policy for network enrichment (plan Decision 6, M1.5): the
+//! The conservative-fetch policy for network enrichment (plan Decision 6): the
 //! typed knobs plus the PURE decisions the pass gates on, so "does it defer or
 //! proceed?" is unit-testable over a fake clock / fake idle signal.
 //!
@@ -79,9 +79,9 @@ pub fn throttle_delay(bytes: u64, max_bytes_per_sec: u64) -> Duration {
 /// defers (the "navigation-based importance starves a photo archive" hazard — plan
 /// Decision 6); the override is the escape hatch.
 ///
-/// In M1.5 the production importance oracle yields `None` (the importance slider is
-/// M2), so `covered_by_override` is the load-bearing input; the `importance` arg keeps
-/// the M2 gate behind the same seam.
+/// Before the importance slider lands the production importance oracle yields `None`,
+/// so `covered_by_override` is the load-bearing input; the `importance` arg keeps
+/// the importance gate behind the same seam.
 pub fn should_enrich_image(covered_by_override: bool, importance: Option<f32>, threshold: f32) -> bool {
     covered_by_override || matches!(importance, Some(score) if score >= threshold)
 }
@@ -110,7 +110,7 @@ mod tests {
     fn override_enriches_regardless_of_importance() {
         // Overridden low-importance folder ⇒ enriched.
         assert!(should_enrich_image(true, Some(0.0), 0.5));
-        // Overridden with no importance signal at all ⇒ enriched (the M1.5 case).
+        // Overridden with no importance signal at all ⇒ enriched (the network-enrichment case).
         assert!(should_enrich_image(true, None, 0.5));
     }
 
@@ -118,9 +118,9 @@ mod tests {
     fn without_override_low_importance_defers() {
         // Not overridden, below threshold ⇒ deferred.
         assert!(!should_enrich_image(false, Some(0.2), 0.5));
-        // Not overridden, no importance signal ⇒ deferred (M1.5 production default).
+        // Not overridden, no importance signal ⇒ deferred (network-enrichment production default).
         assert!(!should_enrich_image(false, None, 0.5));
-        // Not overridden but above threshold ⇒ enriched (the M2 slider path).
+        // Not overridden but above threshold ⇒ enriched (the importance-slider path).
         assert!(should_enrich_image(false, Some(0.8), 0.5));
     }
 }

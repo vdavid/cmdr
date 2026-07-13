@@ -119,7 +119,7 @@ fn join_path(dir: &str, name: &str) -> String {
 }
 
 /// The stored paths whose source files no longer qualify as images in the CURRENT
-/// (completed) index walk — the deletion-driven GC target set (an M1 TDD target).
+/// (completed) index walk — the deletion-driven GC target set (a TDD target).
 ///
 /// A pure set difference: everything stored but not in `current`. Safe ONLY because
 /// the caller runs it against a COMPLETED scan (the `Completed` bus edge fires

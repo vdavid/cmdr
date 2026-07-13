@@ -1,4 +1,4 @@
-//! Network-enrichment core tests (M1.5 data-safety + risky-path TDD targets), all
+//! Network-enrichment core tests (data-safety + risky-path TDD targets), all
 //! over a scripted fake fetcher + fake backend + a real writer — no real mount, no
 //! FFI, no clock. They pin the conservative-fetch decision, resumability across an
 //! unmount (completed rows survive, no false `Failed`), GC-never-on-disconnect, the

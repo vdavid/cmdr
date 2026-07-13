@@ -197,7 +197,7 @@ fn find_first_image(dir: &std::path::Path, depth: u32, visited: &mut u32) -> Opt
 
 #[test]
 fn real_analyze_returns_ocr_tags_and_a_stable_length_feature_print() {
-    // The full M2 analysis over the committed fixture: one decode, real Vision OCR +
+    // The full tags + similarity analysis over the committed fixture: one decode, real Vision OCR +
     // classify + feature print.
     let backend = VisionOcrBackend::new();
     let path = fixture_path();

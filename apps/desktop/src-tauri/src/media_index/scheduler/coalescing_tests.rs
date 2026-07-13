@@ -1,4 +1,4 @@
-//! Coalescing coordinator tests (an M1 TDD target): the pure `PassCoordinator`
+//! Coalescing coordinator tests (a TDD target): the pure `PassCoordinator`
 //! contract, unit-tested without an app, a runtime, or an index — ported from
 //! `importance`'s coalescing tests.
 

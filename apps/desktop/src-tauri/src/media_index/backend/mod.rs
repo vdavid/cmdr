@@ -16,7 +16,7 @@
 //! scene/object classification (tags), and an image feature-print embedding over ONE
 //! decode of the image (plan Decision 5 — decode once, reuse). OCR alone stays
 //! available via [`ocr`](VisionBackend::ocr) for the focused macOS OCR tests. CLIP
-//! embeddings (M3) and face detect/embed (M4) become sibling methods as those
+//! embeddings and face detect/embed become sibling methods as those
 //! milestones land.
 
 pub mod fake;
@@ -33,7 +33,7 @@ use crate::media_index::predicate::MediaKind;
 /// special-case a Live Photo still later.
 ///
 /// `bytes` is the byte-source seam that lets the SAME backend serve local and
-/// network volumes (plan Decision 6, M1.5):
+/// network volumes (plan Decision 6, network enrichment):
 /// - `None` — the backend reads `path` itself via `std::fs::read` (the local case;
 ///   `path` is a real on-disk filesystem path).
 /// - `Some(bytes)` — the caller ALREADY fetched the compressed image bytes (the
@@ -53,7 +53,7 @@ pub struct ImageInput {
     pub bytes: Option<Vec<u8>>,
 }
 
-/// The OCR result for one image. Deliberately minimal in M1 (the recognized text);
+/// The OCR result for one image. Deliberately minimal for now (the recognized text);
 /// bounding boxes / per-line confidence can join later without touching callers.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OcrResult {
@@ -63,7 +63,7 @@ pub struct OcrResult {
 
 /// One scene/object tag Vision's `VNClassifyImageRequest` assigned to an image: a
 /// taxonomy label (`"beach"`, `"dog"`) and its confidence in `0.0..=1.0`. Crosses
-/// the IPC boundary (tag surfacing is a next-agent M2 UI), so it derives `Serialize`
+/// the IPC boundary (tag surfacing is a later tags UI), so it derives `Serialize`
 /// + `specta::Type`.
 #[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

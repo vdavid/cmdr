@@ -1,4 +1,4 @@
-// FE-owned media-index network prefs (plan M1.5): the per-SMB-volume enrichment
+// FE-owned media-index network prefs (network enrichment): the per-SMB-volume enrichment
 // opt-in and the "always index" overrides (per volume and per folder). Each is
 // persisted as a real JSON array in the sparse settings store (the Rust loader
 // reads `mediaIndex.networkVolumes` / `mediaIndex.alwaysIndexVolumes` /

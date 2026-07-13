@@ -111,7 +111,7 @@ impl PassCoordinator {
 
     /// Whether a pass is currently running for `volume_id`. Drives the honest
     /// "still indexing images…" coverage state the search UI shows (a snapshot, not
-    /// a subscription — M1's minimal per-volume enrichment signal).
+    /// a subscription — the minimal per-volume enrichment signal).
     pub(crate) fn is_running(&self, volume_id: &str) -> bool {
         self.slots
             .lock_ignore_poison()
@@ -272,7 +272,7 @@ impl MediaScheduler {
     }
 
     /// Run one CONSERVATIVE network enrichment pass for an opted-in SMB volume
-    /// (plan M1.5): read each eligible image's bytes off the OS mount (bounded against
+    /// (network enrichment): read each eligible image's bytes off the OS mount (bounded against
     /// a hung mount), OCR them, and GC vanished rows — idle-gated, bandwidth-bounded,
     /// resumable, and disconnect-paused.
     ///
@@ -316,7 +316,7 @@ impl MediaScheduler {
         let fetcher = FsByteFetcher;
         let idle_threshold = policy.idle_threshold;
         let is_idle = move || super::foreground::global().idle_for(idle_threshold);
-        // The conservative per-image gate (plan Decision 6 + M2): an excluded folder
+        // The conservative per-image gate (plan Decision 6 + importance): an excluded folder
         // never enriches (privacy veto); otherwise enrich when an "always index"
         // override covers it OR its folder importance meets the slider threshold.
         // Importance keys on the INDEX identity, so strip the mount root off the OS
@@ -437,7 +437,7 @@ pub fn start(app: &AppHandle) {
     app.manage(Arc::clone(&scheduler));
 
     // Subscribe to registrations FIRST (before the sweep) so a volume registering in
-    // the gap isn't dropped (plan M4 late-registering volumes).
+    // the gap isn't dropped (late-registering volumes).
     let reg_scheduler = Arc::clone(&scheduler);
     let mut reg_rx = crate::indexing::lifecycle_bus::subscribe_registrations();
     tauri::async_runtime::spawn(async move {
@@ -473,7 +473,7 @@ enum PassKind {
 ///   per-volume opt-in is checked INSIDE the pass, so flipping the opt-in on takes
 ///   effect on the next scan completion (and the opt-in command kicks an immediate
 ///   pass — see [`kick_network_pass`]).
-/// - **MTP**: NEVER background-swept (plan M1.5): a phone/camera on MTP is transient
+/// - **MTP**: NEVER background-swept: a phone/camera on MTP is transient
 ///   and slow, so enrichment is on-demand-per-visit, not a background sweep. The
 ///   on-demand trigger is a later slice; this gate is real now.
 fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVolumeKind) {

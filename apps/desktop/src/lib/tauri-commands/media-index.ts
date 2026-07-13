@@ -62,7 +62,7 @@ export async function mediaIndexDropThumbnailTokens(tokens: string[]): Promise<v
 }
 
 /**
- * Opt a network (SMB) volume in or out of background image enrichment (plan M1.5). Off by
+ * Opt a network (SMB) volume in or out of background image enrichment (network enrichment). Off by
  * default: turning on the master toggle does NOT auto-enrich network drives. Enabling kicks
  * an immediate pass so the user sees progress without waiting for the next scan. The FE also
  * persists `mediaIndex.networkVolumes`; both happen together in `network-volume-prefs.ts`.
@@ -82,7 +82,7 @@ export async function mediaIndexSetAlwaysIndexVolume(volumeId: string, always: b
 }
 
 /**
- * Set the folder-importance threshold the image scheduler enriches by (the M2 slider's
+ * Set the folder-importance threshold the image scheduler enriches by (the importance slider's
  * typed `0.0..=1.0` value, clamped backend-side). Below-threshold folders are deferred;
  * an "always index" override still forces enrichment. Live-applied via the
  * `settings-applier.ts` passthrough after the FE persists `mediaIndex.importanceThreshold`
@@ -94,7 +94,7 @@ export async function setImageImportanceThreshold(threshold: number): Promise<vo
 }
 
 /**
- * The live preview behind the M2 slider: across the ENABLED volumes in `volumeIds` (master
+ * The live preview behind the importance slider: across the ENABLED volumes in `volumeIds` (master
  * on AND local-or-opted-in-SMB; the backend filters out non-opted-in SMB / MTP), how many
  * folders score at or above `threshold` and how many images they hold. `pending` is `true`
  * when any requested enabled volume isn't ready yet (still scanning / not yet scored), so
@@ -109,7 +109,7 @@ export async function mediaIndexCoveredCount(threshold: number, volumeIds: strin
 
 /**
  * Find the images most similar to the one at `sourcePath` on `volumeId` (feature-print
- * cosine), highest first, excluding the source (plan M2 "find similar"). Answers from
+ * cosine), highest first, excluding the source (plan "find similar"). Answers from
  * `media.db` + the resident vector cache even when the volume is offline. `limit` caps the
  * result count (backend default when `null`).
  */

@@ -19,7 +19,7 @@ static ENABLED: AtomicBool = AtomicBool::new(false);
 static CANCELLED: AtomicBool = AtomicBool::new(false);
 
 /// The lowest folder-importance level (`0.0..=1.0`) the user wants image-indexed —
-/// the M2 settings slider's typed value (plan M2). Stored as `f64` bits in an atomic
+/// the importance settings slider's typed value. Stored as `f64` bits in an atomic
 /// so the scheduler reads it lock-free on every pass. The default is
 /// [`DEFAULT_IMPORTANCE_THRESHOLD`]; the slider live-applies a new value.
 static IMPORTANCE_THRESHOLD_BITS: AtomicU64 = AtomicU64::new(DEFAULT_IMPORTANCE_THRESHOLD.to_bits());

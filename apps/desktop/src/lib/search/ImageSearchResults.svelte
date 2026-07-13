@@ -6,7 +6,7 @@
      * and owns its own data fetch + lifecycle rather than touching the shared
      * `results` / `cursorIndex` contract.
      *
-     * Honesty (plan M1 § Coverage honesty): the section voices its own coverage from the
+     * Honesty (plan § Coverage honesty): the section voices its own coverage from the
      * backend `mediaIndexVolumeState`, so an empty result is never a confident lie:
      *   - image indexing OFF        → say so, hint to turn it on.
      *   - a pass running for the vol → "still indexing images, results may be incomplete".
@@ -255,7 +255,7 @@
     const enabled = $derived(volumeState?.enabled ?? false)
     const indexing = $derived(volumeState?.indexing ?? false)
     const enrichedCount = $derived(volumeState?.enrichedCount ?? 0)
-    // Network-only honesty (M1.5): a network volume must be opted in, and it pauses when the
+    // Network-only honesty (network enrichment): a network volume must be opted in, and it pauses when the
     // drive disconnects mid-pass (its already-indexed rows survive, so we still show them).
     const paused = $derived(volumeState?.paused ?? false)
     const networkOptIn = $derived(volumeState?.networkOptIn ?? false)
