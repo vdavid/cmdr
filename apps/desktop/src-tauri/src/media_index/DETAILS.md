@@ -90,11 +90,49 @@ directory and runs `qualify_dir` per group.
 
 ## The `VisionBackend` seam (`backend/`)
 
-The inference boundary the scheduler, store, and GC sit behind, so all of that is testable with no GPU/ANE/FFI. M1
-defines `VisionBackend` (`engine_version` + `ocr`) and ships only `FakeVisionBackend` (scripted/derived OCR text). The
-real objc2-vision OCR impl is the NEXT slice; it implements the same trait — decoding downscaled in-memory (Decision 5,
-no thumbnail files) on dedicated OS threads inside an `objc2::rc::autoreleasepool`, with a per-block `// SAFETY:`. Tags,
-image feature prints, CLIP embeddings, and faces become sibling methods on this trait as M2+ land.
+The inference boundary the scheduler, store, and GC sit behind, so all of that is testable with no GPU/ANE/FFI. The
+trait is `VisionBackend` (`engine_version` + `ocr`). Two impls:
+
+- `fake::FakeVisionBackend` — deterministic, zero-FFI (scripted/derived OCR text). Every test injects it via
+  `MediaScheduler::new`; it's also the production fallback off-macOS.
+- `vision::VisionOcrBackend` (macOS only) — the real OCR. `scheduler::start` selects it on macOS.
+
+Tags, image feature prints, CLIP embeddings, and faces become sibling methods on this trait as M2+ land, each returning
+its own typed result, each fakeable the same way.
+
+### The real Vision OCR backend (`backend/vision.rs`, macOS)
+
+`ocr` decodes and recognizes text through Apple frameworks:
+
+1. **Decode downscaled, in-memory (Decision 5 — no thumbnail files).** Read the compressed bytes, wrap in a `CFData`,
+   open a `CGImageSource`, and `CGImageSourceCreateThumbnailAtIndex` with `kCGImageSourceThumbnailMaxPixelSize` = 3072
+   (long edge) + `…FromImageAlways` + `…WithTransform` (EXIF-upright). This caps the decoded bitmap (~36 MB worst case)
+   instead of letting Vision decode a 48-megapixel original (~190 MB). The compressed read is bounded; the decoded
+   bitmap is the memory hazard the cap defends.
+2. **Recognize.** `VNImageRequestHandler(cgImage:)` + `VNRecognizeTextRequest` (`.accurate`, language correction on),
+   `performRequests`, then the top candidate per `VNRecognizedTextObservation`, newline-joined.
+
+**Threading + the 8 MB stack.** Vision/ImageIO do synchronous XPC round-trips into system daemons (ANE) that can overrun
+a small worker stack — the same hazard as calling AppKit off rayon (`src-tauri/CLAUDE.md`). So the backend owns ONE
+dedicated OS thread with an 8 MB stack; `ocr` dispatches each image to it over a channel and blocks for the reply. One
+thread also SERIALIZES Vision calls (Apple's recommendation for pooled inference) and confines every `Retained`/
+`CFRetained` object to that thread (nothing `!Send` crosses a boundary — only the path `String` in and `OcrResult`
+out). Each job runs inside `objc2::rc::autoreleasepool`, so framework temporaries free per image, not per pass.
+
+**FFI discipline.** Every `unsafe` block carries a per-site `// SAFETY:` naming the concrete invariant — pointer/buffer
+validity for `CFData`/`CFNumber`/`CFDictionary` creation, Create-vs-Get ownership (the `+1 CFRetained` on every CF
+`Create`), the extern-static reads for the ImageIO/CF constant keys, and the success-gate `Option`/`Result` on each
+framework call — never a blanket file allow (`clippy::undocumented_unsafe_blocks`).
+
+**Hostile input fails closed to a typed `VisionError`, never a panic/hang:** an unreadable/empty/non-image/undecodable
+file returns `Decode`; a request failure returns `Ocr`. The pass logs it and marks the row `Failed`.
+
+**`engine_version`** is `vision-ocr;os={major}.{minor}.{patch};rev={N}`: the macOS version (`NSProcessInfo`) plus the
+current `VNRecognizeTextRequest` revision (read off a fresh instance). Both bump when the OS ships a new OCR engine, so a
+stored row's stamp mismatches and re-runs — data-COVERAGE, cheap and stable within an OS version.
+
+The fixture for the macOS-gated real-OCR test lives at `backend/test-fixtures/ocr-sample.png` (a tiny PNG rendering
+"CMDR OCR" / "hello 2026", generated once via CoreGraphics text drawing).
 
 ## The read API (`read/`)
 
@@ -104,6 +142,17 @@ unmounts. `search_ocr` returns `OcrHit`s (path + a highlighted `snippet` — the
 is the fts5 sanitizer: raw user input must NEVER hit `MATCH ?` (parens, colons, bareword `AND`/`OR` throw a syntax
 error, and binding doesn't help — the string is parsed as query syntax), so each whitespace token is quoted into a
 literal. Same gotcha as `agent/store`'s `sanitize_fts_query`.
+
+### The OCR search command (`commands.rs`)
+
+`media_index_search_ocr(volume_id, query, limit?)` is the IPC door onto the read API (plan Decision 8): it resolves the
+app data dir, opens `MediaIndex` for the volume, and runs `search_ocr` on a `spawn_blocking` worker (a sync
+`#[tauri::command]` would block the IPC thread). `limit` defaults to 200 and is clamped to 1000. It returns
+`Vec<OcrHit>` (path + highlighted snippet — the "why matched" reason); an empty query, an un-enriched volume, or an
+offline/purged `media.db` returns an empty list, never an error. Because the read API reads `media.db` directly, the
+command still answers with the volume offline (a NAS unplugged). Registered in BOTH `ipc.rs` and `ipc_collectors.rs`;
+regen the typed bindings with `pnpm bindings:regen` after any command change. The frontend query-ui + thumbnail grid
+that consumes it is a later slice.
 
 ## Settings + memory (`gate.rs`, wiring)
 
@@ -120,16 +169,19 @@ listener. Fine at a few-volumes scale, but it scales per mounted volume — note
 
 ## What M1 leaves out
 
-Real objc2-vision OCR FFI (next slice); the search/query-ui frontend + thumbnail grid + coverage-honesty line; the
-settings toggle UI + the M1 E2E; SMB/MTP enrichment + the conservative byte-fetch policy (M1.5); tags, feature prints,
-CLIP, faces, the durable identity store, and the importance-threshold slider (M2+).
+The search/query-ui frontend + thumbnail grid + coverage-honesty line; the settings toggle UI + the M1 E2E; SMB/MTP
+enrichment + the conservative byte-fetch policy (M1.5); tags, feature prints, CLIP, faces, the durable identity store,
+and the importance-threshold slider (M2+).
 
 ## Testing
 
-All M1 tests are FFI-free and registry-free. Pure: the predicate (`predicate.rs`), the staleness key (`store/tests.rs`),
-`gc_targets`, `build_ocr_match_query`, the coalescer (`scheduler/coalescing_tests.rs`). Over the fake backend + a
-synthetic index: the walk, the enrich pass, deletion-driven GC, the throttle/cancel decision, the edge-triggered
-`Completed` consumption (`scheduler/enrich_tests.rs`), and the OCR search + offline-after-unmount round-trip
-(`read/tests.rs`), plus the FTS5 availability smoke. The async wire-up (`ready_volumes_with_kind` sweep → `wire_volume` →
-`run_pass_blocking`) is covered indirectly by the three reactive pieces (bus-edge consumption + coalescer + the enrich
-core); a full end-to-end async test needs the process-global index registry and is deferred to the E2E slice.
+Most M1 tests are FFI-free and registry-free. Pure: the predicate (`predicate.rs`), the staleness key (`store/tests.rs`),
+`gc_targets`, `build_ocr_match_query`, the coalescer (`scheduler/coalescing_tests.rs`), the command's limit clamp
+(`commands/tests.rs`). Over the fake backend + a synthetic index: the walk, the enrich pass, deletion-driven GC, the
+throttle/cancel decision, the edge-triggered `Completed` consumption (`scheduler/enrich_tests.rs`), and the OCR search +
+offline-after-unmount round-trip (`read/tests.rs`), plus the FTS5 availability smoke. **macOS-gated real FFI**
+(`backend/vision/tests.rs`, the module is macOS-only so it can't run off-macOS): real Vision OCR reads the known words
+off the committed fixture, and hostile inputs (non-image, empty, missing) each return a typed `VisionError` with no
+panic. The async wire-up (`ready_volumes_with_kind` sweep → `wire_volume` → `run_pass_blocking`) is covered indirectly by
+the reactive pieces (bus-edge consumption + coalescer + the enrich core); a full end-to-end async test needs the
+process-global index registry and is deferred to the E2E slice.

@@ -32,6 +32,9 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
 use super::backend::VisionBackend;
+// The fake backend is production's fallback only off-macOS (macOS uses real Vision);
+// tests import it themselves.
+#[cfg(not(target_os = "macos"))]
 use super::backend::fake::FakeVisionBackend;
 use super::gate;
 use crate::ignore_poison::IgnorePoison;
@@ -212,11 +215,15 @@ pub fn start(app: &AppHandle) {
         gate::request_cancel();
     }));
 
+    // Production selects the REAL Vision OCR backend on macOS; other platforms (where
+    // Vision doesn't exist) fall back to the deterministic fake so the crate still
+    // builds and the scheduler still runs. Tests inject their own fake directly via
+    // `MediaScheduler::new`, never through `start`.
+    #[cfg(target_os = "macos")]
+    let backend: Arc<dyn VisionBackend> = Arc::new(super::backend::vision::VisionOcrBackend::new());
+    #[cfg(not(target_os = "macos"))]
     let backend: Arc<dyn VisionBackend> = Arc::new(FakeVisionBackend::new());
-    log::info!(
-        target: "media_index",
-        "media enrichment scheduler starting with the placeholder fake OCR backend (real objc2-vision backend lands next slice)"
-    );
+    log::info!(target: "media_index", "media enrichment scheduler starting");
     let scheduler = Arc::new(MediaScheduler::new(data_dir, backend));
     app.manage(Arc::clone(&scheduler));
 

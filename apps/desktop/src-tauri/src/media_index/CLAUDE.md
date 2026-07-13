@@ -1,9 +1,10 @@
 # Media index subsystem
 
 Image-ML enrichment: makes a volume's images searchable by their content. A read-consumer of `indexing/`, sibling to
-`importance/` and `search/`. **M1 (this slice): OCR-text search only, local volumes only, off by default, fake OCR
-backend.** Full plan: [`docs/specs/media-ml-index-plan.md`](../../../../../docs/specs/media-ml-index-plan.md). Depth,
-port rationale, GC safety argument, and schema: [DETAILS.md](DETAILS.md).
+`importance/` and `search/`. **M1: OCR-text search only, local volumes only, off by default. Real macOS Vision OCR in
+production; a fake backend for tests.** Full plan:
+[`docs/specs/media-ml-index-plan.md`](../../../../../docs/specs/media-ml-index-plan.md). Depth, port rationale, GC
+safety argument, FFI discipline, and schema: [DETAILS.md](DETAILS.md).
 
 ## Module map
 
@@ -12,11 +13,13 @@ port rationale, GC safety argument, and schema: [DETAILS.md](DETAILS.md).
 - `store/` — per-volume `media.db` (ported from `importance/store/`): `media_status` (path-keyed) + `media_ocr` (FTS5) +
   `meta`, the disposable-cache discipline, and the `needs_enrichment` staleness predicate.
 - `writer.rs` + `writer_registry.rs` — the ONE writer thread per volume and its lazy registry.
-- `backend/` — the `VisionBackend` seam + the deterministic `FakeVisionBackend`. The real objc2-vision OCR impl is the
-  NEXT slice; it implements this trait.
+- `backend/` — the `VisionBackend` seam, the deterministic `FakeVisionBackend`, and (macOS) `vision.rs`, the real
+  `objc2-vision` OCR backend: `VNRecognizeTextRequest` over a downscaled in-memory ImageIO decode on a dedicated
+  8 MB-stack OS thread.
 - `scheduler/` — the bus-driven, coalesced pass (`PassCoordinator` clone) and its registry-free walk+enrich+GC core
   (`enrich.rs`).
 - `read/` — the `MediaIndex` consumer read API (OCR search + `build_ocr_match_query`), the ONLY consumer entry point.
+- `commands.rs` — the `media_index_search_ocr` IPC command (thin; opens `MediaIndex`, searches off the IPC thread).
 - `gate.rs` — the master-toggle + emergency-stop atomics the scheduler gates on.
 
 ## Must-knows
@@ -34,16 +37,20 @@ port rationale, GC safety argument, and schema: [DETAILS.md](DETAILS.md).
   rows for files that still exist. Don't switch the consumption to a poll, and don't GC on volume-absence.
 - **The lifecycle bus is documented in [`indexing/DETAILS.md`](../indexing/DETAILS.md)** (single-source) — link it, don't
   re-document the mechanism here.
-- **Inference sits behind `VisionBackend`.** M1 wires `FakeVisionBackend` (zero FFI) so the scheduler/store/GC are fully
-  testable and shippable off-by-default; the real objc2-vision backend drops in behind the same seam with no change
-  above it. When it lands: dedicated OS threads + `objc2::rc::autoreleasepool`, per-block `// SAFETY:` (`src-tauri/CLAUDE.md`).
+- **Inference sits behind `VisionBackend`.** Production selects the real macOS `VisionOcrBackend` in `scheduler::start`;
+  every test injects `FakeVisionBackend` (zero FFI) via `MediaScheduler::new`, never through `start`. Off-macOS falls
+  back to the fake. The real backend runs ALL Vision/ImageIO calls on ONE dedicated 8 MB-stack OS thread inside
+  `objc2::rc::autoreleasepool`, with a per-block `// SAFETY:` (`src-tauri/CLAUDE.md`: never rayon/small stacks for macOS
+  frameworks). A hostile image (broken/empty/non-decodable/missing) returns a typed `VisionError`, never a panic or hang.
 - **Off by default + shared memory ceiling.** The master toggle (`mediaIndex.enabled`) defaults off; the scheduler
   no-ops until it's on. Cancellation hooks into the EXISTING indexing memory watchdog via
   `indexing::register_subsystem_stop_hook` — do NOT stand up a second 16 GB ceiling over the same resident pool.
 - **`search/` reaches `media.db` ONLY through `MediaIndex`** (plan Decision 8) — no raw `rusqlite` dep, or the
-  collation/one-writer invariants leak.
+  collation/one-writer invariants leak. The `media_index_search_ocr` command is that door; it's registered in BOTH
+  `ipc.rs` and `ipc_collectors.rs` (a new command missing from either breaks the typed bindings — regen with
+  `pnpm bindings:regen`).
 
 ## Not yet (later slices)
 
-Real objc2-vision OCR FFI; the search/query-ui frontend + thumbnail grid; the settings toggle UI + E2E; SMB/MTP
-enrichment (M1.5); tags, embeddings, faces (M2+).
+The search/query-ui frontend + thumbnail grid + coverage-honesty line; the settings toggle UI + E2E; SMB/MTP enrichment
+(M1.5); tags, embeddings, faces (M2+).

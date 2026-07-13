@@ -281,6 +281,18 @@ cmdr-fsevent-stream = { path = "../../../crates/fsevent-stream" }
 # Custom updater: signature verification (tarball extraction uses `tar` + `flate2`
 # from the untargeted archive codec block above).
 minisign-verify = "0.2"
+# Media-index OCR: real Vision text recognition + in-memory ImageIO decode/downscale
+# (media_index/backend/vision.rs). All 0.3.2, published 2025-10-04 (far outside the
+# 14-day cool-off), tracking the same objc2 0.6 family as the bindings above.
+objc2-vision = { version = "0.3.2", features = [
+    "VNRequest", "VNRequestHandler", "VNRecognizeTextRequest", "VNObservation",
+    "objc2-core-graphics",
+] }
+objc2-image-io = { version = "0.3.2", features = [
+    "CGImageSource", "objc2-core-graphics",
+] }
+objc2-core-graphics = { version = "0.3.2", features = ["CGImage"] }
+objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary", "CFString", "CFNumber", "CFBase"] }
 
 
 [dev-dependencies]

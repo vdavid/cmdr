@@ -1,11 +1,14 @@
 //! The `VisionBackend` seam: the inference boundary the scheduler, store, and GC
 //! sit behind, so all of that logic is testable with NO GPU/ANE/FFI.
 //!
-//! M1 defines the trait and ships ONLY a deterministic [`fake::FakeVisionBackend`].
-//! The real `objc2-vision` OCR implementation is the NEXT slice; it implements this
-//! same trait (decoding `ImageInput::path` on a dedicated OS thread inside an
-//! `objc2::rc::autoreleasepool`, with a per-block `// SAFETY:` — `src-tauri/CLAUDE.md`),
-//! and nothing above the seam changes.
+//! Two implementations sit behind the trait:
+//! - [`vision::VisionOcrBackend`] (macOS): real OCR via `VNRecognizeTextRequest` over
+//!   a downscaled in-memory ImageIO decode, on a dedicated 8 MB-stack OS thread inside
+//!   `objc2::rc::autoreleasepool` — production selects it in `scheduler::start`.
+//! - [`fake::FakeVisionBackend`]: deterministic, zero-FFI, injected by every test (and
+//!   the production fallback off-macOS, where Vision doesn't exist).
+//!
+//! Nothing above the seam knows which backend it holds.
 //!
 //! ## Room to grow
 //!
@@ -17,12 +20,18 @@
 
 pub mod fake;
 
+/// The real macOS Vision OCR backend. Only compiled on macOS (Vision/ImageIO are
+/// Apple frameworks); other platforms fall back to [`fake::FakeVisionBackend`] in the
+/// scheduler.
+#[cfg(target_os = "macos")]
+pub mod vision;
+
 use crate::media_index::predicate::MediaKind;
 
-/// One image handed to the backend. In M1 the fake reads only `path`; the real
-/// backend decodes the file at `path` (downscaled, in-memory — Decision 5) and
-/// never a thumbnail file. `kind` rides along so a backend can special-case a Live
-/// Photo still later.
+/// One image handed to the backend. The fake reads only `path`; the real backend
+/// decodes the file at `path` (downscaled, in-memory — Decision 5) and never a
+/// thumbnail file. `kind` rides along so a backend can special-case a Live Photo
+/// still later.
 #[derive(Debug, Clone)]
 pub struct ImageInput {
     /// The image's absolute path (the index's real identity).
