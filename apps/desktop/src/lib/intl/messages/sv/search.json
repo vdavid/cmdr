@@ -71,6 +71,14 @@
   "@search.imageResults.empty": {
     "sourceHash": "edb6672"
   },
+  "search.imageResults.networkOff": "Aktivera bildindexering för den här nätverksenheten i Inställningar för att söka i texten i dess bilder.",
+  "@search.imageResults.networkOff": {
+    "sourceHash": "ccf901b"
+  },
+  "search.imageResults.paused": "Den här enheten är frånkopplad, så det här är bilderna som indexerats hittills.",
+  "@search.imageResults.paused": {
+    "sourceHash": "ec483f7"
+  },
   "search.snapshot.defaultLabel": "Sök",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

@@ -71,6 +71,14 @@
   "@search.imageResults.empty": {
     "sourceHash": "edb6672"
   },
+  "search.imageResults.networkOff": "Activez l''indexation des images pour ce disque réseau dans les Réglages afin de rechercher le texte à l''intérieur de ses photos.",
+  "@search.imageResults.networkOff": {
+    "sourceHash": "ccf901b"
+  },
+  "search.imageResults.paused": "Ce disque est déconnecté, voici donc les photos indexées jusqu''à présent.",
+  "@search.imageResults.paused": {
+    "sourceHash": "ec483f7"
+  },
   "search.snapshot.defaultLabel": "Rechercher",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

@@ -71,6 +71,14 @@
   "@search.imageResults.empty": {
     "sourceHash": "edb6672"
   },
+  "search.imageResults.networkOff": "Bật lập chỉ mục hình ảnh cho ổ đĩa mạng này trong Cài đặt để tìm kiếm văn bản bên trong ảnh của nó.",
+  "@search.imageResults.networkOff": {
+    "sourceHash": "ccf901b"
+  },
+  "search.imageResults.paused": "Ổ đĩa này đang ngắt kết nối, nên đây là những ảnh đã lập chỉ mục cho đến nay.",
+  "@search.imageResults.paused": {
+    "sourceHash": "ec483f7"
+  },
   "search.snapshot.defaultLabel": "Tìm kiếm",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

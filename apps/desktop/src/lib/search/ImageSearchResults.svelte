@@ -36,6 +36,7 @@
     // see `routes/viewer/CLAUDE.md`), so the grid reuses the exact preview origin.
     import { mediaUrl } from '../../routes/viewer/media-view'
     import { parseOcrSnippet } from './ocr-snippet'
+    import { resolveMediaHitPath } from './media-path'
 
     interface Props {
         /** Live query text from the Search bar. */
@@ -44,11 +45,24 @@
         volumeId: string
         /** Whether the Search dialog is showing; gates all work so a closed dialog is idle. */
         active: boolean
-        /** Open the image (go to the file in the active pane). */
+        /** Open the image (go to the file in the active pane). Receives the reconstructed
+         *  absolute OS path (mount root prepended for a network volume). */
         onOpen: (path: string) => void
+        /**
+         * The volume's mount root, used to turn an index-relative OCR hit path into an
+         * openable OS path (`/` for the local root, `/Volumes/<share>` for an SMB volume).
+         * Defaults to `/`, so a local caller needs to pass nothing.
+         */
+        mountRoot?: string
+        /**
+         * Whether `volumeId` is a network (SMB) volume. Switches the coverage-honesty copy
+         * to the network voice (opt-in hint, "disconnected" when paused). Local volumes use
+         * the master-toggle voice.
+         */
+        isNetwork?: boolean
     }
 
-    const { query, volumeId, active, onOpen }: Props = $props()
+    const { query, volumeId, active, onOpen, mountRoot = '/', isNetwork = false }: Props = $props()
 
     // Cap displayed tiles so a broad match doesn't decode hundreds of full-res images at
     // once (the preview scheme serves originals; the browser downscales). The backend
@@ -124,9 +138,13 @@
         const minted: string[] = []
         const built = await Promise.all(
             hits.map(async (hit): Promise<Tile> => {
+                // Stored hit paths are index-relative; reconstruct the openable OS path so
+                // both the thumbnail token (byte read) and the open action hit the real file
+                // (a no-op passthrough for the local root, where the mount root is `/`).
+                const osPath = resolveMediaHitPath(mountRoot, hit.path)
                 let thumbUrl: string | null = null
                 try {
-                    const token = await mediaIndexThumbnailToken(hit.path)
+                    const token = await mediaIndexThumbnailToken(osPath)
                     if (token !== null) {
                         minted.push(token)
                         thumbUrl = mediaUrl(token)
@@ -135,8 +153,8 @@
                     // No token → the tile falls back to a file glyph.
                 }
                 return {
-                    path: hit.path,
-                    name: fileName(hit.path),
+                    path: osPath,
+                    name: fileName(osPath),
                     segments: parseOcrSnippet(hit.snippet),
                     thumbUrl,
                 }
@@ -180,6 +198,11 @@
     const enabled = $derived(volumeState?.enabled ?? false)
     const indexing = $derived(volumeState?.indexing ?? false)
     const enrichedCount = $derived(volumeState?.enrichedCount ?? 0)
+    // Network-only honesty (M1.5): a network volume must be opted in, and it pauses when the
+    // drive disconnects mid-pass (its already-indexed rows survive, so we still show them).
+    const paused = $derived(volumeState?.paused ?? false)
+    const networkOptIn = $derived(volumeState?.networkOptIn ?? false)
+    const networkNeedsOptIn = $derived(isNetwork && enabled && !networkOptIn && volumeState !== null)
     const hasHits = $derived(tiles.length > 0)
     const moreCount = $derived(Math.max(0, totalHits - tiles.length))
 </script>
@@ -202,8 +225,12 @@
 
         {#if !enabled && volumeState !== null}
             <p class="ir-notice">{tString('search.imageResults.off')}</p>
+        {:else if networkNeedsOptIn}
+            <p class="ir-notice">{tString('search.imageResults.networkOff')}</p>
         {:else}
-            {#if indexing}
+            {#if paused}
+                <p class="ir-notice">{tString('search.imageResults.paused')}</p>
+            {:else if indexing}
                 <p class="ir-notice ir-notice-indexing">
                     <Spinner size="sm" />
                     <span>{tString('search.imageResults.indexing')}</span>

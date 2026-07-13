@@ -71,6 +71,14 @@
   "@search.imageResults.empty": {
     "sourceHash": "edb6672"
   },
+  "search.imageResults.networkOff": "在“设置”中为此网络驱动器开启图像索引，即可搜索其照片中的文字。",
+  "@search.imageResults.networkOff": {
+    "sourceHash": "ccf901b"
+  },
+  "search.imageResults.paused": "此驱动器已断开连接，因此这些是目前已索引的照片。",
+  "@search.imageResults.paused": {
+    "sourceHash": "ec483f7"
+  },
   "search.snapshot.defaultLabel": "搜索",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

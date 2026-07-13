@@ -71,6 +71,14 @@
   "@search.imageResults.empty": {
     "sourceHash": "edb6672"
   },
+  "search.imageResults.networkOff": "Aktiviere in den Einstellungen die Bildindizierung für dieses Netzlaufwerk, um den Text in seinen Fotos zu durchsuchen.",
+  "@search.imageResults.networkOff": {
+    "sourceHash": "ccf901b"
+  },
+  "search.imageResults.paused": "Dieses Laufwerk ist getrennt, daher sind das die bisher indizierten Fotos.",
+  "@search.imageResults.paused": {
+    "sourceHash": "ec483f7"
+  },
   "search.snapshot.defaultLabel": "Suche",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

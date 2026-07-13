@@ -33,15 +33,23 @@ vi.mock('../../routes/viewer/media-view', () => ({
 const { default: ImageSearchResults } = await import('./ImageSearchResults.svelte')
 
 function state(overrides: Partial<MediaIndexVolumeState> = {}): MediaIndexVolumeState {
-  return { enabled: true, indexing: false, enrichedCount: 5, ...overrides }
+  return {
+    enabled: true,
+    indexing: false,
+    enrichedCount: 5,
+    networkOptIn: false,
+    alwaysIndexed: false,
+    paused: false,
+    ...overrides,
+  }
 }
 
-async function mountAndSettle(): Promise<HTMLElement> {
+async function mountAndSettle(props: Record<string, unknown> = {}): Promise<HTMLElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mount(ImageSearchResults, {
     target,
-    props: { query: 'invoice', volumeId: 'root', active: true, onOpen: () => {} },
+    props: { query: 'invoice', volumeId: 'root', active: true, onOpen: () => {}, ...props },
   })
   flushSync()
   // Fire the 300 ms debounce and let the awaited IPC mocks resolve.
@@ -91,6 +99,20 @@ describe('ImageSearchResults a11y', () => {
   it('a genuine no-match has no a11y violations', async () => {
     const target = await mountAndSettle()
     expect(target.querySelector('.ir-empty')).not.toBeNull()
+    await expectNoA11yViolations(target)
+  })
+
+  it('the network "not opted in" notice has no a11y violations', async () => {
+    volumeState.mockResolvedValue(state({ networkOptIn: false }))
+    const target = await mountAndSettle({ isNetwork: true })
+    expect(target.querySelector('.ir-notice')).not.toBeNull()
+    await expectNoA11yViolations(target)
+  })
+
+  it('the network "disconnected / paused" notice has no a11y violations', async () => {
+    volumeState.mockResolvedValue(state({ networkOptIn: true, paused: true }))
+    const target = await mountAndSettle({ isNetwork: true, mountRoot: '/Volumes/naspi' })
+    expect(target.querySelector('.ir-notice')).not.toBeNull()
     await expectNoA11yViolations(target)
   })
 

@@ -71,6 +71,14 @@
   "@search.imageResults.empty": {
     "sourceHash": "edb6672"
   },
+  "search.imageResults.networkOff": "Kapcsold be a képek indexelését ehhez a hálózati meghajtóhoz a Beállításokban, hogy rá tudj keresni a fotóiban lévő szövegre.",
+  "@search.imageResults.networkOff": {
+    "sourceHash": "ccf901b"
+  },
+  "search.imageResults.paused": "Ez a meghajtó jelenleg nincs csatlakoztatva, ezért ezek az eddig indexelt fotók.",
+  "@search.imageResults.paused": {
+    "sourceHash": "ec483f7"
+  },
   "search.snapshot.defaultLabel": "Keresés",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"

@@ -99,6 +99,14 @@
   "@search.imageResults.empty": {
     "description": "Shown when this drive''s images have been indexed but none of them contain the searched text (a genuine no-match, not \"not indexed yet\")."
   },
+  "search.imageResults.networkOff": "Turn on image indexing for this network drive in Settings to search the text inside its photos.",
+  "@search.imageResults.networkOff": {
+    "description": "Shown in the \"Text in images\" section when searching a network (SMB) drive that hasn''t been opted into image indexing. Points the user to the per-drive opt-in in Settings > Behavior > File system watching > Image search."
+  },
+  "search.imageResults.paused": "This drive is disconnected, so these are the photos indexed so far.",
+  "@search.imageResults.paused": {
+    "description": "Shown when a network drive disconnected mid-indexing: what was already indexed stays searchable, and indexing resumes when the drive reconnects."
+  },
   "search.snapshot.defaultLabel": "Search",
   "@search.snapshot.defaultLabel": {
     "description": "Fallback breadcrumb and tab title for a saved search-results view when there's no query text to name it. Same word as the dialog title."

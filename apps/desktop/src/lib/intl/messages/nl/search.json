@@ -71,6 +71,14 @@
   "@search.imageResults.empty": {
     "sourceHash": "edb6672"
   },
+  "search.imageResults.networkOff": "Schakel het indexeren van afbeeldingen voor deze netwerkschijf in via Instellingen om de tekst in de foto''s te doorzoeken.",
+  "@search.imageResults.networkOff": {
+    "sourceHash": "ccf901b"
+  },
+  "search.imageResults.paused": "Deze schijf is losgekoppeld, dus dit zijn de foto''s die tot nu toe zijn geïndexeerd.",
+  "@search.imageResults.paused": {
+    "sourceHash": "ec483f7"
+  },
   "search.snapshot.defaultLabel": "Zoeken",
   "@search.snapshot.defaultLabel": {
     "sourceHash": "49c266b"
