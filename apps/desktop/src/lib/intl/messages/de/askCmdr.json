@@ -128,6 +128,10 @@
   "@askCmdr.error.notConfigured": {
     "sourceHash": "b84c5f4"
   },
+  "askCmdr.error.noConsent": "Aktiviere Ask Cmdr, um loszuchatten. Du entscheidest zuerst, was es sehen darf.",
+  "@askCmdr.error.noConsent": {
+    "sourceHash": "30d75d8"
+  },
   "askCmdr.error.unavailable": "Der KI-Anbieter ließ sich nicht erreichen. Prüfe deine Verbindung und versuch es erneut.",
   "@askCmdr.error.unavailable": {
     "sourceHash": "eb59e2b"

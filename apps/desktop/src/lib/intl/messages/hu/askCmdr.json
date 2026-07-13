@@ -128,6 +128,10 @@
   "@askCmdr.error.notConfigured": {
     "sourceHash": "b84c5f4"
   },
+  "askCmdr.error.noConsent": "Kapcsold be az Ask Cmdrt a beszélgetéshez. Előbb te döntöd el, mit láthat.",
+  "@askCmdr.error.noConsent": {
+    "sourceHash": "30d75d8"
+  },
   "askCmdr.error.unavailable": "Nem sikerült elérni az AI-szolgáltatót. Ellenőrizd a kapcsolatodat, és próbáld újra.",
   "@askCmdr.error.unavailable": {
     "sourceHash": "eb59e2b"

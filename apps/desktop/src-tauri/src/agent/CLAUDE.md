@@ -18,6 +18,8 @@ surface, so later proactive slices (proposals, notifications) grow here too. Ful
   [`tools/CLAUDE.md`](tools/CLAUDE.md).
 - `chat/` (M5, here now): the chat runtime (`run_turn` + `ChatRuntime`, single-flight, budgets, cancellation, crash-safe
   persistence, the `AgentChatEvent` seam) and the pure context-assembly core. See [`chat/CLAUDE.md`](chat/CLAUDE.md).
+- `consent.rs` (M8): the consent gate — `CONSENT_COPY_VERSION` + `has_current_consent` (fails closed). Enforced in the
+  backend send path (see Must-knows), so it's structural, not just a rail-UI affordance.
 - `pricing.rs` (M8): the provisional per-model price table (USD per million tokens, Tier-1 defaults). Local ⇒ free +
   priced; a known cloud model ⇒ estimated + priced; an unknown cloud model ⇒ `priced = false` (cost shown "unknown",
   never a silent $0). **Prices drift** — re-verify at release. The runtime's `meter_cost` calls `price_call`.
@@ -43,9 +45,12 @@ surface, so later proactive slices (proposals, notifications) grow here too. Ful
   `ai::manager::resolve_backend_with_model`: provider on/off, keys, and base URLs stay single-sourced in `ai/` (D49); only
   the model is slot-specific, so the bulk slot slots in later with no migration (D43). An empty override uses the `ai/`
   model.
-- **Consent is the opt-in gate, stored in `main.db` (not a preference).** `CONSENT_COPY_VERSION` in `commands/agent.rs`
-  is the machine-checkable version of the `askCmdr.consent.*` copy; the rail sends NOTHING to a provider until the user
-  accepts the current version. **Bump `CONSENT_COPY_VERSION` whenever the consent copy changes materially**, so users
-  re-accept. The record (version + timestamp) lives in the `meta` table via `store::{get,set,clear}_consent`.
+- **Consent is the opt-in gate, enforced in the BACKEND send path — not just the rail UI.** `ask_cmdr_send_message`
+  calls `consent::has_current_consent` BEFORE creating a thread or resolving the LLM and refuses with a typed `NoConsent`
+  event if the user hasn't accepted the current copy (fails closed), so nothing reaches a provider without consent even
+  if the UI is bypassed. `agent::consent` owns `CONSENT_COPY_VERSION` (the machine-checkable version of the
+  `askCmdr.consent.*` copy) + `has_current_consent`. **Bump `CONSENT_COPY_VERSION` whenever the consent copy changes
+  materially**, so users re-accept. The record (version + timestamp) is stored in `main.db`'s `meta` table via
+  `store::{get,set,clear}_consent`.
 
 Depth (milestone layout, the read-only rationale, how the slice relates to the full agent): [DETAILS.md](DETAILS.md).

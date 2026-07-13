@@ -128,6 +128,10 @@
   "@askCmdr.error.notConfigured": {
     "sourceHash": "b84c5f4"
   },
+  "askCmdr.error.noConsent": "Aktivera Ask Cmdr för att börja chatta. Du väljer först vad det får se.",
+  "@askCmdr.error.noConsent": {
+    "sourceHash": "30d75d8"
+  },
   "askCmdr.error.unavailable": "Det gick inte att nå AI-leverantören. Kontrollera din anslutning och försök igen.",
   "@askCmdr.error.unavailable": {
     "sourceHash": "eb59e2b"

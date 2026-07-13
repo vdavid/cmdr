@@ -128,6 +128,10 @@
   "@askCmdr.error.notConfigured": {
     "sourceHash": "b84c5f4"
   },
+  "askCmdr.error.noConsent": "Activez Ask Cmdr pour commencer à discuter. Vous choisissez d''abord ce qu''il peut voir.",
+  "@askCmdr.error.noConsent": {
+    "sourceHash": "30d75d8"
+  },
   "askCmdr.error.unavailable": "Impossible de joindre le fournisseur d''IA. Vérifiez votre connexion et réessayez.",
   "@askCmdr.error.unavailable": {
     "sourceHash": "eb59e2b"

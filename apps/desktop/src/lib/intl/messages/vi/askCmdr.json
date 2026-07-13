@@ -128,6 +128,10 @@
   "@askCmdr.error.notConfigured": {
     "sourceHash": "b84c5f4"
   },
+  "askCmdr.error.noConsent": "Bật Ask Cmdr để bắt đầu trò chuyện. Bạn chọn trước những gì nó có thể xem.",
+  "@askCmdr.error.noConsent": {
+    "sourceHash": "30d75d8"
+  },
   "askCmdr.error.unavailable": "Không thể kết nối với nhà cung cấp AI. Kiểm tra kết nối của bạn rồi thử lại.",
   "@askCmdr.error.unavailable": {
     "sourceHash": "eb59e2b"

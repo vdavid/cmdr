@@ -129,6 +129,10 @@
   "@askCmdr.error.notConfigured": {
     "sourceHash": "b84c5f4"
   },
+  "askCmdr.error.noConsent": "Zet Ask Cmdr aan om te chatten. Jij kiest eerst wat het mag zien.",
+  "@askCmdr.error.noConsent": {
+    "sourceHash": "30d75d8"
+  },
   "askCmdr.error.unavailable": "Kon de AI-aanbieder niet bereiken. Controleer je verbinding en probeer het opnieuw.",
   "@askCmdr.error.unavailable": {
     "sourceHash": "eb59e2b"

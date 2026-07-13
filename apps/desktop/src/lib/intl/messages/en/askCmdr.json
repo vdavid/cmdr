@@ -127,6 +127,10 @@
   "@askCmdr.error.notConfigured": {
     "description": "Shown when no AI provider is set up. Friendly and actionable; avoids the words error and failed."
   },
+  "askCmdr.error.noConsent": "Turn Ask Cmdr on to start chatting. You choose what it can see first.",
+  "@askCmdr.error.noConsent": {
+    "description": "Shown when the user hasn't opted into Ask Cmdr yet (or the consent copy changed and needs re-accepting), so the backend refused to send. Friendly and actionable; avoids the words error and failed; points the user at the opt-in screen."
+  },
   "askCmdr.error.unavailable": "Couldn’t reach the AI provider. Check your connection and try again.",
   "@askCmdr.error.unavailable": {
     "description": "Shown when the AI provider is unreachable. Friendly and actionable; avoids the words error and failed. The apostrophe is U+2019."

@@ -56,14 +56,14 @@ describe('AskCmdrCostFooter', () => {
   })
 
   it('shows an estimated amount for a priced cloud thread', async () => {
-    const target = await renderWith({ ...base, costMicros: 1_230_000, fullyPriced: true, providers: ['openai'] })
+    const target = await renderWith({ ...base, costMicros: 1_230_000, fullyPriced: true, providers: ['openAi'] })
     expect(target.textContent).toContain('about')
     expect(target.textContent).toContain('$1.23')
     target.remove()
   })
 
   it('reads "cost unknown" for an unpriced thread, never a silent $0', async () => {
-    const target = await renderWith({ ...base, fullyPriced: false, providers: ['openai'] })
+    const target = await renderWith({ ...base, fullyPriced: false, providers: ['openAi'] })
     expect(target.textContent).toContain('unknown')
     expect(target.textContent).not.toContain('$0.00')
     target.remove()

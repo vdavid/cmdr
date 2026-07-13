@@ -14,6 +14,7 @@
 //! See `CLAUDE.md` for must-knows and `DETAILS.md` for the map.
 
 pub mod chat;
+pub mod consent;
 pub mod llm;
 pub mod pricing;
 pub mod store;

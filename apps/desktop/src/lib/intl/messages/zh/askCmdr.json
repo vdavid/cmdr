@@ -128,6 +128,10 @@
   "@askCmdr.error.notConfigured": {
     "sourceHash": "b84c5f4"
   },
+  "askCmdr.error.noConsent": "开启 Ask Cmdr 即可开始聊天。你先选择它能看到哪些内容。",
+  "@askCmdr.error.noConsent": {
+    "sourceHash": "30d75d8"
+  },
   "askCmdr.error.unavailable": "无法连接到 AI 提供方，请检查网络连接后重试。",
   "@askCmdr.error.unavailable": {
     "sourceHash": "eb59e2b"

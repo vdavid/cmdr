@@ -738,3 +738,61 @@ async fn attachments_reach_the_llm_in_the_envelope_and_nothing_more() {
         "no file contents reach the prompt: {joined}"
     );
 }
+
+/// The consent gate is STRUCTURAL: a send with no/stale consent never reaches the LLM.
+/// This mirrors `ask_cmdr_send_message`'s control flow — gate on `has_current_consent`,
+/// then drive `run_turn` only when it opens — and proves the fake records ZERO calls when
+/// the gate refuses, and exactly one when it opens (so the empty case is meaningful).
+#[tokio::test]
+async fn a_send_without_current_consent_never_calls_the_llm() {
+    use crate::agent::consent::{CONSENT_COPY_VERSION, has_current_consent};
+
+    let conn = migrated_conn();
+    let id = conversation(&conn);
+    let llm = ProgrammableLlm::new(vec![Program::Answer {
+        chunks: vec!["hi".to_string()],
+        usage: AgentUsage::default(),
+    }]);
+    let (tx, _rx) = unbounded_channel();
+
+    // No consent recorded, then a STALE copy version — both keep the gate closed.
+    assert!(!has_current_consent(&conn), "no consent record ⇒ gate closed");
+    store::set_consent(&conn, CONSENT_COPY_VERSION.wrapping_sub(1), 1_780_000_000).expect("set stale consent");
+    assert!(!has_current_consent(&conn), "a stale copy version ⇒ gate closed");
+
+    // The command skips `run_turn` while the gate is closed, so the LLM is never called.
+    if has_current_consent(&conn) {
+        run_turn(
+            &llm,
+            &OkDispatcher,
+            &conn,
+            &[],
+            &params(id, Some("hi")),
+            &tx,
+            &CancellationToken::new(),
+        )
+        .await;
+    }
+    assert!(llm.calls_seen().is_empty(), "a refused send makes ZERO LLM calls");
+
+    // Accepting the CURRENT copy opens the gate; the send then drives the LLM once.
+    store::set_consent(&conn, CONSENT_COPY_VERSION, 1_780_000_000).expect("set current consent");
+    assert!(has_current_consent(&conn), "current consent ⇒ gate open");
+    if has_current_consent(&conn) {
+        run_turn(
+            &llm,
+            &OkDispatcher,
+            &conn,
+            &[],
+            &params(id, Some("hi")),
+            &tx,
+            &CancellationToken::new(),
+        )
+        .await;
+    }
+    assert_eq!(
+        llm.calls_seen().len(),
+        1,
+        "with consent, the send drives the LLM exactly once"
+    );
+}

@@ -48,6 +48,7 @@ export interface AskCmdrUsage {
 export type AskCmdrErrorKind =
   | 'noKey'
   | 'notConfigured'
+  | 'noConsent'
   | 'unavailable'
   | 'timeout'
   | 'authFailed'

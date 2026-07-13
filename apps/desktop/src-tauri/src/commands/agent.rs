@@ -104,6 +104,10 @@ pub enum AskCmdrStreamEvent {
 pub enum AgentErrorKindView {
     NoKey,
     NotConfigured,
+    /// The user hasn't accepted the current consent copy — the backend refuses the send
+    /// before touching a provider (the privacy line, enforced structurally, not just in the
+    /// rail UI). Distinct from `NotConfigured` so the copy can say so honestly.
+    NoConsent,
     Unavailable,
     Timeout,
     AuthFailed,
@@ -538,7 +542,32 @@ pub async fn ask_cmdr_send_message(
     attachments: Vec<AttachmentRef>,
     on_event: Channel<AskCmdrStreamEvent>,
 ) -> Result<i64, String> {
-    // Resolve the LLM before touching the DB: if AI is off/unconfigured, say so and add
+    let Some(db_path) = app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf()) else {
+        let _ = on_event.send(AskCmdrStreamEvent::Failed {
+            kind: AgentErrorKindView::NotConfigured,
+        });
+        return Ok(conversation_id.unwrap_or(0));
+    };
+
+    // The consent gate, enforced structurally: refuse BEFORE creating a thread or resolving
+    // the LLM if the user hasn't accepted the current consent copy. The rail's frontend gate
+    // is the UX layer; this is what makes "nothing reaches a provider without consent" true
+    // even if a caller bypasses the UI. Fails closed (an unreadable store reads as refused).
+    let consented = match store::open_read_connection(&db_path) {
+        Ok(conn) => has_current_consent(&conn),
+        Err(e) => {
+            log::warn!(target: LOG_TARGET, "reading consent failed, refusing the send: {e}");
+            false
+        }
+    };
+    if !consented {
+        let _ = on_event.send(AskCmdrStreamEvent::Failed {
+            kind: AgentErrorKindView::NoConsent,
+        });
+        return Ok(conversation_id.unwrap_or(0));
+    }
+
+    // Resolve the LLM only after the consent gate: if AI is off/unconfigured, say so and add
     // no thread.
     let (llm_kind, provider, model) = match resolve_agent_llm(&app) {
         Ok(resolved) => resolved,
@@ -546,13 +575,6 @@ pub async fn ask_cmdr_send_message(
             let _ = on_event.send(AskCmdrStreamEvent::Failed { kind: kind.into() });
             return Ok(conversation_id.unwrap_or(0));
         }
-    };
-
-    let Some(db_path) = app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf()) else {
-        let _ = on_event.send(AskCmdrStreamEvent::Failed {
-            kind: AgentErrorKindView::NotConfigured,
-        });
-        return Ok(conversation_id.unwrap_or(0));
     };
 
     // Resolve/create the conversation id up front so cancel + the frontend can key on it.
@@ -840,11 +862,9 @@ fn pane_entry_to_attachment(entry: &crate::mcp::pane_state::PaneFileEntry) -> At
 
 // ── Consent (the opt-in gate; plan §12) ─────────────────────────────────────────
 
-/// The current consent-copy version. **Bump when the consent screen's privacy copy
-/// changes materially**, so users re-accept the new wording. The copy itself lives in the
-/// frontend catalog (`askCmdr.consent.*`); this integer is the machine-checkable version of
-/// that copy, recorded in `main.db` when the user accepts.
-pub const CONSENT_COPY_VERSION: u32 = 1;
+// The copy version + the gate predicate live in `crate::agent::consent` so both the send
+// path (structural enforcement) and these status/accept commands share one source.
+use crate::agent::consent::{CONSENT_COPY_VERSION, has_current_consent};
 
 /// Whether the user has opted into Ask Cmdr, and the audit of what they accepted. The rail
 /// gates on `accepted` (the CURRENT copy version): a never-accepted or stale-version record

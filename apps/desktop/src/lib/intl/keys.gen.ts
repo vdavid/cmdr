@@ -131,6 +131,7 @@ export type MessageKey =
   | 'askCmdr.empty.title'
   | 'askCmdr.error.authFailed'
   | 'askCmdr.error.budgetExhausted'
+  | 'askCmdr.error.noConsent'
   | 'askCmdr.error.noKey'
   | 'askCmdr.error.notConfigured'
   | 'askCmdr.error.provider'
