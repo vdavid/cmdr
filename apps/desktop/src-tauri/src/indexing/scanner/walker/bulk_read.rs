@@ -436,11 +436,14 @@ mod tests {
         let ns = walk_std(root);
         let std_ms = t.elapsed().as_millis();
 
-        println!("tree {} : {nb} (bulk) / {ns} (std) entries", root.display());
-        println!("getattrlistbulk : {bulk_ms} ms");
-        println!("read_dir+lstat  : {std_ms} ms");
+        // Emit via a stderr handle rather than `println!`/`eprintln!` (crate-banned).
+        use std::io::Write;
+        let mut err = std::io::stderr();
+        let _ = writeln!(err, "tree {} : {nb} (bulk) / {ns} (std) entries", root.display());
+        let _ = writeln!(err, "getattrlistbulk : {bulk_ms} ms");
+        let _ = writeln!(err, "read_dir+lstat  : {std_ms} ms");
         if bulk_ms > 0 {
-            println!("speedup: {:.1}x", std_ms as f64 / bulk_ms as f64);
+            let _ = writeln!(err, "speedup: {:.1}x", std_ms as f64 / bulk_ms as f64);
         }
     }
 }
