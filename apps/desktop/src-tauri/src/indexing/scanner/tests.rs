@@ -2,7 +2,7 @@
 //! canonicalization-alias check, and end-to-end scan behavior. Extracted verbatim
 //! from the former `scanner.rs` `mod tests`; pure code movement.
 use super::*;
-use crate::indexing::store::{self, IndexStore, ROOT_ID};
+use crate::indexing::store::{self, IndexStore, ROOT_ID, ScanContext};
 use crate::indexing::writer::IndexWriter;
 use std::fs;
 
@@ -156,15 +156,6 @@ fn should_not_exclude_linux_normal_paths() {
 // (indexing.spec.ts) which verify that get_dir_stats returns data for
 // fixture paths under /tmp on Linux Docker. A unit test here would require
 // mutating the env (unsafe set_var) and nextest (OnceLock is per-process).
-
-#[test]
-fn compute_parent_path_cases() {
-    assert_eq!(compute_parent_path("/Users/foo/bar.txt"), "/Users/foo");
-    assert_eq!(compute_parent_path("/Users"), "/");
-    assert_eq!(compute_parent_path("/a/b/c"), "/a/b");
-    // "/" returns "/" (top-level slash-only path). In practice, root is skipped (depth 0).
-    assert_eq!(compute_parent_path("/"), "/");
-}
 
 #[test]
 fn scan_temp_directory_tree() {
@@ -688,4 +679,90 @@ fn scan_summary_total_physical_bytes_equals_final_counter() {
         "summary.total_physical_bytes must equal the final counter value"
     );
     assert!(summary.total_physical_bytes > 0, "scan should sum some physical bytes");
+}
+
+#[test]
+fn timed_out_dir_is_not_marked_listed() {
+    use crate::indexing::scanner::walker::{RawDirEntry, RawFileType, ReadDirFn};
+    use std::collections::HashMap;
+
+    // Mock tree under "/root": "slow" (dir, its read hangs) and "ok" (dir, has a file).
+    let root = PathBuf::from("/root");
+    let mut dirs: HashMap<PathBuf, Vec<(&str, RawFileType)>> = HashMap::new();
+    dirs.insert(
+        root.clone(),
+        vec![("slow", RawFileType::Dir), ("ok", RawFileType::Dir)],
+    );
+    dirs.insert(root.join("slow"), vec![("hidden.txt", RawFileType::File)]);
+    dirs.insert(root.join("ok"), vec![("seen.txt", RawFileType::File)]);
+    let slow = root.join("slow");
+    let dirs = Arc::new(dirs);
+    let reader: ReadDirFn = {
+        let dirs = Arc::clone(&dirs);
+        let slow = slow.clone();
+        Arc::new(move |p: &Path| {
+            if p == slow {
+                std::thread::sleep(Duration::from_secs(2)); // hang past the timeout
+            }
+            match dirs.get(p) {
+                Some(children) => Ok(children
+                    .iter()
+                    .map(|(n, t)| RawDirEntry { path: p.join(n), file_type: *t })
+                    .collect()),
+                None => Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no mock dir")),
+            }
+        })
+    };
+
+    let (writer, db_path, _db_dir) = setup_writer();
+    let progress = Arc::new(ScanProgress::new());
+    let cancelled = AtomicBool::new(false);
+
+    let start = Instant::now();
+    let (summary, listed_ids, epoch) = run_scan(
+        &root,
+        &cancelled,
+        &progress,
+        &writer,
+        100,
+        4,
+        true,
+        reader,
+        Duration::from_millis(50), // short timeout so the hang is abandoned fast
+    )
+    .expect("run_scan");
+    assert!(start.elapsed() < Duration::from_secs(1), "must abandon the hang, not wait it out");
+    assert!(!summary.was_cancelled);
+
+    // Emit the marks exactly as scan_volume does, then flush.
+    send_marks(&listed_ids, epoch, &writer);
+    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer.flush_blocking().unwrap();
+    writer.shutdown();
+
+    let conn = IndexStore::open_read_connection(&db_path).unwrap();
+    let epoch_now = IndexStore::read_current_epoch(&conn).unwrap();
+
+    // Resolve the two child dirs' ids under ROOT_ID.
+    let slow_id = IndexStore::resolve_component(&conn, ROOT_ID, "slow")
+        .unwrap()
+        .expect("slow dir row exists (its parent listed it)");
+    let ok_id = IndexStore::resolve_component(&conn, ROOT_ID, "ok")
+        .unwrap()
+        .expect("ok dir row exists");
+
+    let listed_epoch = |id: i64| -> u64 {
+        conn.query_row("SELECT listed_epoch FROM entries WHERE id = ?1", [id], |r| r.get::<_, u64>(0))
+            .unwrap()
+    };
+
+    // The hung dir is inserted but NOT marked (honest unknown); its subtree is absent.
+    assert_eq!(listed_epoch(slow_id), 0, "timed-out dir must stay listed_epoch = 0");
+    assert!(
+        IndexStore::resolve_component(&conn, slow_id, "hidden.txt").unwrap().is_none(),
+        "hung dir's children must be absent",
+    );
+    // The healthy sibling and root ARE marked at the current epoch.
+    assert_eq!(listed_epoch(ok_id), epoch_now, "healthy dir marked at current epoch");
+    assert_eq!(listed_epoch(ROOT_ID), epoch_now, "root marked at current epoch");
 }

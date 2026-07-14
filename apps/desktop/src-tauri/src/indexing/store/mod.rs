@@ -108,14 +108,66 @@ pub struct EntryRow {
     pub inode: Option<u64>,
 }
 
-/// Mutable context held during a scan for assigning parent IDs.
+/// Resolve the entry id to use as a scan's root, seeding the `ROOT` sentinel for
+/// a volume-root scan.
+///
+/// For a volume-root scan the root is always `ROOT_ID` (the sentinel is created
+/// if absent). For a subtree scan the root's actual entry id is resolved from the
+/// DB, erroring if it isn't indexed yet (for example a subtree scan racing an
+/// ongoing full scan; the full scan will cover it).
+///
+/// Shared by both scanners. The network (SMB/MTP) `volume_scanner` wraps it in a
+/// [`ScanContext`] path→id map (its serial BFS resolves parents by path); the
+/// local scanner carries `parent_id` through its parallel walk and needs only the
+/// root id from here.
+pub fn resolve_scan_root(conn: &Connection, root: &Path, is_volume_root: bool) -> Result<i64, IndexStoreError> {
+    if is_volume_root {
+        // Only volume-root scans create the sentinel; subtree scans run after the
+        // full scan already inserted it, and their connection may be read-only or
+        // contending with the writer thread's write lock.
+        ensure_root_sentinel(conn)?;
+        return Ok(ROOT_ID);
+    }
+
+    let root_str = root.to_string_lossy();
+    if let Some(id) = resolve_path(conn, &root_str)? {
+        return Ok(id);
+    }
+
+    // Diagnose which component is missing by walking the path.
+    let stripped = root_str.strip_prefix('/').unwrap_or(&root_str);
+    let mut current_id = ROOT_ID;
+    for component in stripped.split('/') {
+        if component.is_empty() {
+            continue;
+        }
+        match IndexStore::resolve_component(conn, current_id, component) {
+            Ok(Some(id)) => current_id = id,
+            Ok(None) => {
+                log::debug!(
+                    "resolve_scan_root: resolve_path({root_str}) failed at component \"{component}\" (parent_id={current_id})"
+                );
+                break;
+            }
+            Err(e) => {
+                log::debug!(
+                    "resolve_scan_root: resolve_path({root_str}) errored at component \"{component}\" (parent_id={current_id}): {e}"
+                );
+                break;
+            }
+        }
+    }
+    Err(IndexStoreError::Sqlite(rusqlite::Error::QueryReturnedNoRows))
+}
+
+/// Mutable context held during a network (SMB/MTP) scan for assigning parent IDs.
 ///
 /// Maintains a `HashMap<PathBuf, i64>` mapping directory paths to their
-/// pre-assigned entry IDs. The scanner looks up each entry's parent path
-/// in this map to get its `parent_id`, assigns a fresh `id` from
-/// `next_id`, and (if the entry is a directory) inserts its own mapping.
-///
-/// Dropped after the scan completes, freeing ~100 MB for 538K directories.
+/// pre-assigned entry IDs. The `volume_scanner`'s serial BFS looks up each
+/// entry's parent path in this map to get its `parent_id`, assigns a fresh `id`
+/// from `next_id`, and (if the entry is a directory) inserts its own mapping. The
+/// LOCAL scanner does NOT use this — it carries `parent_id` through its parallel
+/// walk, so it never builds a whole-volume path map.
 pub struct ScanContext {
     /// Map from directory absolute path to its assigned entry ID.
     pub dir_ids: std::collections::HashMap<PathBuf, i64>,
@@ -128,65 +180,17 @@ impl ScanContext {
     /// Create a new scan context, seeding the map with the root's entry ID.
     ///
     /// `next_id` is the shared atomic counter from `IndexWriter`, the single
-    /// source of truth for ID allocation.
-    ///
-    /// `is_volume_root`: true for full volume scans (always maps root → ROOT_ID).
-    /// When false (subtree scans), resolves the root's actual entry ID from the DB.
-    /// Returns an error if the root isn't indexed yet (for example, a subtree scan
-    /// racing with an ongoing full scan; the full scan will cover it).
+    /// source of truth for ID allocation. `is_volume_root` selects root handling;
+    /// see [`resolve_scan_root`].
     pub fn new(
         conn: &Connection,
         root: &Path,
         is_volume_root: bool,
         next_id: Arc<AtomicI64>,
     ) -> Result<Self, IndexStoreError> {
-        // Only volume-root scans need to create the sentinel; subtree scans
-        // run after the full scan has already inserted it, and their connection
-        // may be read-only or contending with the writer thread's write lock.
-        if is_volume_root {
-            ensure_root_sentinel(conn)?;
-        }
-
-        let root_id = if is_volume_root {
-            ROOT_ID
-        } else {
-            let root_str = root.to_string_lossy();
-            match resolve_path(conn, &root_str)? {
-                Some(id) => id,
-                None => {
-                    // Diagnose which component is missing by walking the path
-                    let stripped = root_str.strip_prefix('/').unwrap_or(&root_str);
-                    let mut current_id = ROOT_ID;
-                    for component in stripped.split('/') {
-                        if component.is_empty() {
-                            continue;
-                        }
-                        match IndexStore::resolve_component(conn, current_id, component) {
-                            Ok(Some(id)) => current_id = id,
-                            Ok(None) => {
-                                log::debug!(
-                                    "ScanContext::new: resolve_path({root_str}) failed at \
-                                     component \"{component}\" (parent_id={current_id})"
-                                );
-                                break;
-                            }
-                            Err(e) => {
-                                log::debug!(
-                                    "ScanContext::new: resolve_path({root_str}) errored at \
-                                     component \"{component}\" (parent_id={current_id}): {e}"
-                                );
-                                break;
-                            }
-                        }
-                    }
-                    return Err(IndexStoreError::Sqlite(rusqlite::Error::QueryReturnedNoRows));
-                }
-            }
-        };
-
+        let root_id = resolve_scan_root(conn, root, is_volume_root)?;
         let mut dir_ids = std::collections::HashMap::new();
         dir_ids.insert(root.to_path_buf(), root_id);
-
         Ok(Self { dir_ids, next_id })
     }
 
