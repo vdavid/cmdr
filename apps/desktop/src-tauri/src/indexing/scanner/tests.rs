@@ -707,6 +707,7 @@ fn timed_out_dir_is_not_marked_listed() {
                     .map(|(n, t)| RawDirEntry {
                         path: p.join(n),
                         file_type: *t,
+                        stat: None,
                     })
                     .collect()),
                 None => Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no mock dir")),

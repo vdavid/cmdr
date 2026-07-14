@@ -29,6 +29,7 @@ impl MockFs {
                     .map(|(name, ft)| RawDirEntry {
                         path: p.join(name),
                         file_type: *ft,
+                        stat: None,
                     })
                     .collect()),
                 None => Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no such mock dir")),

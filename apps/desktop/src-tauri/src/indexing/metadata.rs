@@ -64,18 +64,17 @@ pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_sy
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;
-        let logical_size = metadata.len();
         let blocks = metadata.blocks();
         let physical_size = if blocks > 0 { blocks * 512 } else { 0 };
-        let ino = metadata.ino();
-        let nlink = metadata.nlink();
-        MetadataSnapshot {
-            logical_size: Some(logical_size),
-            physical_size: Some(physical_size),
+        metadata_from_raw(
+            metadata.len(),
+            physical_size,
             modified_at,
-            inode: if ino != 0 { Some(ino) } else { None },
-            nlink: Some(nlink),
-        }
+            metadata.ino(),
+            metadata.nlink(),
+            is_dir,
+            is_symlink,
+        )
     }
 
     #[cfg(not(unix))]
@@ -88,6 +87,53 @@ pub(super) fn extract_metadata(metadata: &std::fs::Metadata, is_dir: bool, is_sy
             inode: None,
             nlink: None,
         }
+    }
+}
+
+/// Build a [`MetadataSnapshot`] from already-extracted raw filesystem values,
+/// applying the SAME directory/symlink size rules as [`extract_metadata`]. This is
+/// the single source of those rules: `extract_metadata` (from a `std::fs::Metadata`)
+/// and the macOS `getattrlistbulk` bulk reader (from packed attribute bytes) both
+/// funnel through it, so a bulk-read entry and a `symlink_metadata` entry can't
+/// diverge on how sizes/inode/nlink are mapped. `physical_size` is bytes (the caller
+/// has already applied `st_blocks * 512` or read `ATTR_FILE_ALLOCSIZE`).
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(dead_code, reason = "only the macOS bulk reader calls this directly today")
+)]
+pub(super) fn metadata_from_raw(
+    logical_size: u64,
+    physical_size: u64,
+    modified_at: Option<u64>,
+    ino: u64,
+    nlink: u64,
+    is_dir: bool,
+    is_symlink: bool,
+) -> MetadataSnapshot {
+    if is_symlink {
+        return MetadataSnapshot {
+            logical_size: None,
+            physical_size: None,
+            modified_at,
+            inode: None,
+            nlink: None,
+        };
+    }
+    if is_dir {
+        return MetadataSnapshot {
+            logical_size: None,
+            physical_size: None,
+            modified_at,
+            inode: if ino != 0 { Some(ino) } else { None },
+            nlink: None,
+        };
+    }
+    MetadataSnapshot {
+        logical_size: Some(logical_size),
+        physical_size: Some(physical_size),
+        modified_at,
+        inode: if ino != 0 { Some(ino) } else { None },
+        nlink: Some(nlink),
     }
 }
 

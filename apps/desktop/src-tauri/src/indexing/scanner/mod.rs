@@ -25,7 +25,9 @@ mod exclusions;
 pub(in crate::indexing) use exclusions::*;
 
 mod walker;
-use walker::{DirTask, DirVisitor, RawDirEntry, RawFileType, ReadDirFn, WalkConfig, WalkReadError, std_read_dir, walk};
+use walker::{
+    DirTask, DirVisitor, RawDirEntry, RawFileType, ReadDirFn, WalkConfig, WalkReadError, default_reader, walk,
+};
 
 /// Per-directory read timeout for the LOCAL walk. Sits above any legitimate
 /// slow-but-alive provider listing (an online cloud dir lists in well under a
@@ -218,7 +220,7 @@ pub fn scan_volume(
     let thread_handle = std::thread::Builder::new()
         .name("index-scanner".into())
         .spawn(move || {
-            let reader: ReadDirFn = Arc::new(std_read_dir);
+            let reader: ReadDirFn = default_reader();
             let result = run_scan(
                 &config.root,
                 &cancelled,
@@ -261,7 +263,7 @@ pub fn scan_volume(
 /// `ComputeSubtreeAggregates` to the writer.
 pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());
-    let reader: ReadDirFn = Arc::new(std_read_dir);
+    let reader: ReadDirFn = default_reader();
     let (summary, listed_ids, epoch) = run_scan(
         root,
         cancelled,
@@ -558,14 +560,29 @@ impl DirVisitor for InsertVisitor {
             let is_dir = child.file_type == RawFileType::Dir;
             let is_symlink = child.file_type == RawFileType::Symlink;
 
-            let snap = match std::fs::symlink_metadata(&child.path) {
-                Ok(meta) => super::metadata::extract_metadata(&meta, is_dir, is_symlink),
-                Err(_) => super::metadata::MetadataSnapshot {
-                    logical_size: None,
-                    physical_size: None,
-                    modified_at: None,
-                    inode: None,
-                    nlink: None,
+            // Prefer the reader's inline stat (macOS `getattrlistbulk` supplies it,
+            // avoiding a per-entry `lstat` — the dominant local-walk cost). When the
+            // reader didn't provide it (`std_read_dir`, or a bulk-read fallback),
+            // stat the entry here. Both funnel through `metadata`'s rules.
+            let snap = match child.stat {
+                Some(s) => super::metadata::metadata_from_raw(
+                    s.logical_size,
+                    s.physical_size,
+                    s.modified_at,
+                    s.inode,
+                    s.nlink,
+                    is_dir,
+                    is_symlink,
+                ),
+                None => match std::fs::symlink_metadata(&child.path) {
+                    Ok(meta) => super::metadata::extract_metadata(&meta, is_dir, is_symlink),
+                    Err(_) => super::metadata::MetadataSnapshot {
+                        logical_size: None,
+                        physical_size: None,
+                        modified_at: None,
+                        inode: None,
+                        nlink: None,
+                    },
                 },
             };
 

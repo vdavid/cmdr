@@ -60,6 +60,9 @@ use std::time::{Duration, Instant};
 
 use crate::ignore_poison::IgnorePoison;
 
+#[cfg(target_os = "macos")]
+mod bulk_read;
+
 #[cfg(test)]
 mod tests;
 
@@ -100,13 +103,30 @@ pub enum RawFileType {
     Other,
 }
 
-/// A raw directory child yielded by the reader: its full path plus its
-/// (non-followed) file type. The visitor derives the name from `path` and does
-/// its own `lstat` for sizes/mtime.
+/// Raw filesystem stat a reader may supply inline with an entry, so the visitor
+/// can skip a per-entry `lstat`. Plain primitives (the engine stays generic); the
+/// visitor maps them via `metadata::metadata_from_raw`, the same rules a
+/// `std::fs::Metadata` goes through. `physical_size` is bytes (`ALLOCSIZE` /
+/// `st_blocks * 512`). The macOS `getattrlistbulk` reader fills this; `std_read_dir`
+/// and the test mock leave it `None`, so the visitor stats the entry itself.
+#[derive(Debug, Clone, Copy)]
+pub struct InlineStat {
+    pub logical_size: u64,
+    pub physical_size: u64,
+    pub modified_at: Option<u64>,
+    pub inode: u64,
+    pub nlink: u64,
+}
+
+/// A raw directory child yielded by the reader: its full path, its (non-followed)
+/// file type, and optionally its inline stat (see [`InlineStat`]). The visitor
+/// derives the name from `path`; when `stat` is `None` it does its own `lstat` for
+/// sizes/mtime.
 #[derive(Debug, Clone)]
 pub struct RawDirEntry {
     pub path: PathBuf,
     pub file_type: RawFileType,
+    pub stat: Option<InlineStat>,
 }
 
 /// Why a directory read didn't yield children.
@@ -188,9 +208,26 @@ pub fn std_read_dir(path: &Path) -> std::io::Result<Vec<RawDirEntry>> {
         out.push(RawDirEntry {
             path: entry.path(),
             file_type,
+            stat: None, // the visitor stats each entry itself
         });
     }
     Ok(out)
+}
+
+/// The production directory reader for this platform. On macOS this is the
+/// `getattrlistbulk` bulk reader (name + type + sizes + mtime + inode + nlink in
+/// one batched syscall, so the visitor skips a per-entry `lstat` — the dominant
+/// cost of a local walk); everywhere else it's [`std_read_dir`] plus per-entry
+/// `symlink_metadata`.
+pub fn default_reader() -> ReadDirFn {
+    #[cfg(target_os = "macos")]
+    {
+        Arc::new(bulk_read::bulk_read_dir)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Arc::new(std_read_dir)
+    }
 }
 
 /// Walk `root` and everything under it, calling `visitor` per directory. Blocks
