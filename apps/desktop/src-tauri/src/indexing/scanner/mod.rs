@@ -32,7 +32,7 @@ use walker::{DirTask, DirVisitor, RawDirEntry, RawFileType, ReadDirFn, WalkConfi
 /// second) while abandoning a disconnected File Provider mount quickly; a
 /// timed-out dir prunes its subtree, so a dead mount costs a handful of frontier
 /// dirs, not thousands. (The network scanner's 120 s is tuned for SMB-over-WAN.)
-const LOCAL_LIST_TIMEOUT: Duration = Duration::from_secs(15);
+pub(in crate::indexing) const LOCAL_LIST_TIMEOUT: Duration = Duration::from_secs(15);
 
 /// How often the walker watchdog checks for over-timeout reads (also the ceiling
 /// on caller-cancel latency).

@@ -33,14 +33,120 @@ use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Instant;
+use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
+use std::time::{Duration, Instant};
 
 use super::firmlinks;
 use super::metadata::extract_metadata;
 use super::reconciler::{self, LiveChild};
-use super::scanner::{ScanError, ScanHandle, ScanProgress, ScanSummary};
+use super::scanner::{LOCAL_LIST_TIMEOUT, ScanError, ScanHandle, ScanProgress, ScanSummary};
 use super::store::{self, IndexStore};
 use super::writer::{IndexWriter, WriteMessage};
+
+/// One directory's normalized filesystem children (name, metadata, is_symlink), or
+/// `None` when the directory can't be listed.
+type FsChildrenResult = Option<Vec<(String, std::fs::Metadata, bool)>>;
+
+/// The read closure a [`GuardedReader`] runs on its worker thread.
+type ReadFn = Arc<dyn Fn(&Path) -> FsChildrenResult + Send + Sync>;
+
+/// 8 MB worker stack, matching the parallel scanner: a File Provider `readdir` /
+/// `lstat` can descend deep XPC override chains that overflow a smaller stack.
+const READER_STACK_SIZE: usize = 8 * 1024 * 1024;
+
+/// A serial directory reader with a per-read wall-clock cap.
+///
+/// The reconcile walk is serial, but a single `read_dir` on a disconnected File
+/// Provider mount (a hung cloud / phone provider) blocks forever, which would
+/// freeze the whole rescan. This runs each read on a persistent helper thread and
+/// waits at most `timeout`: a read that overruns is *abandoned* (the helper is
+/// left parked in the syscall and a fresh one is spawned for the next read) and
+/// reported as `None`, so the walk treats a hung dir exactly like any other
+/// unlistable one — skip it, keep its prior `listed_epoch` (honest), heal later —
+/// and moves on. Only a genuinely hung read ever spawns a replacement, so the cost
+/// is bounded and self-clearing. Reusing one persistent worker (not a thread per
+/// read) keeps a healthy full rescan free of per-directory thread churn.
+struct GuardedReader {
+    read_fn: ReadFn,
+    timeout: Duration,
+    req_tx: Sender<PathBuf>,
+    res_rx: Receiver<FsChildrenResult>,
+}
+
+impl GuardedReader {
+    /// Guard the production filesystem read (`reconciler::read_fs_children`).
+    fn for_fs(timeout: Duration) -> Self {
+        Self::with_read_fn(timeout, Arc::new(|p: &Path| reconciler::read_fs_children(p)))
+    }
+
+    fn with_read_fn(timeout: Duration, read_fn: ReadFn) -> Self {
+        let (req_tx, res_rx) = Self::spawn_worker(&read_fn);
+        Self {
+            read_fn,
+            timeout,
+            req_tx,
+            res_rx,
+        }
+    }
+
+    fn spawn_worker(read_fn: &ReadFn) -> (Sender<PathBuf>, Receiver<FsChildrenResult>) {
+        let (req_tx, req_rx) = channel::<PathBuf>();
+        let (res_tx, res_rx) = channel::<FsChildrenResult>();
+        let read_fn = Arc::clone(read_fn);
+        std::thread::Builder::new()
+            .name("reconcile-read".into())
+            .stack_size(READER_STACK_SIZE)
+            .spawn(move || {
+                while let Ok(path) = req_rx.recv() {
+                    let result = read_fn(&path);
+                    // If the caller abandoned us (timed out and dropped the receiver),
+                    // stop rather than spin.
+                    if res_tx.send(result).is_err() {
+                        break;
+                    }
+                }
+            })
+            .expect("failed to spawn reconcile reader thread");
+        (req_tx, res_rx)
+    }
+
+    fn respawn(&mut self) {
+        let (req_tx, res_rx) = Self::spawn_worker(&self.read_fn);
+        self.req_tx = req_tx;
+        self.res_rx = res_rx;
+    }
+
+    /// List a directory, returning `None` if it can't be listed OR the read exceeds
+    /// the timeout.
+    fn read(&mut self, path: &Path) -> FsChildrenResult {
+        if self.req_tx.send(path.to_path_buf()).is_err() {
+            // Worker gone (a previous read is still parked, or it panicked): get a
+            // fresh one and retry once.
+            self.respawn();
+            if self.req_tx.send(path.to_path_buf()).is_err() {
+                return None;
+            }
+        }
+        match self.res_rx.recv_timeout(self.timeout) {
+            Ok(result) => result,
+            Err(RecvTimeoutError::Timeout) => {
+                log::warn!(
+                    "local reconcile: read timed out after {:?}, abandoning {} (kept stale, heals later)",
+                    self.timeout,
+                    path.display()
+                );
+                self.respawn();
+                None
+            }
+            Err(RecvTimeoutError::Disconnected) => {
+                // The worker exited without answering (e.g. `read_fn` panicked). Get a
+                // fresh one; report this read as unlistable.
+                self.respawn();
+                None
+            }
+        }
+    }
+}
 
 /// Start a LOCAL full-tree reconcile on a background `std::thread`.
 ///
@@ -227,6 +333,10 @@ fn run_local_reconcile(
     // delta. See `reconciler::BulkReconcileGuard`.
     let _bulk_guard = reconciler::BulkReconcileGuard::begin(writer);
 
+    // Each directory read is capped at `LOCAL_LIST_TIMEOUT`: a hung File Provider
+    // mount is abandoned and treated as unlistable instead of freezing the rescan.
+    let mut reader = GuardedReader::for_fs(LOCAL_LIST_TIMEOUT);
+
     while let Some((dir_path, dir_id)) = queue.pop_front() {
         if cancelled.load(Ordering::Relaxed) {
             // Cancel: leave the prior index intact (no truncate ran) and send
@@ -236,11 +346,12 @@ fn run_local_reconcile(
             return Ok(summary(total_entries, total_dirs, total_physical_bytes, start, true));
         }
 
-        let fs_children = match reconciler::read_fs_children(&dir_path) {
+        let fs_children = match reader.read(&dir_path) {
             Some(c) => c,
             None => {
                 if dir_path == *root {
-                    // The ROOT itself is unlistable: nothing to reconcile from.
+                    // The ROOT itself is unlistable (or its read timed out): nothing
+                    // to reconcile from.
                     // Surface as a failed rescan so the completion handler writes no
                     // `scan_completed_at`; the prior index is untouched.
                     return Err(ScanError::Io(std::io::Error::other(
@@ -349,6 +460,44 @@ mod tests {
     use super::*;
     use crate::indexing::store::{self, DirStatsById, IndexStore, ROOT_ID};
     use crate::indexing::writer::{IndexWriter, WriteMessage};
+
+    #[test]
+    fn guarded_reader_returns_a_quick_result() {
+        let read_fn: ReadFn = Arc::new(|_p| Some(vec![]));
+        let mut reader = GuardedReader::with_read_fn(Duration::from_secs(5), read_fn);
+        assert!(reader.read(Path::new("/x")).is_some(), "a fast read returns its result");
+    }
+
+    #[test]
+    fn guarded_reader_abandons_a_hung_read_and_recovers() {
+        use std::sync::atomic::AtomicUsize;
+        // Only the FIRST read hangs; later reads are fast. This proves both that the
+        // hung read is abandoned near the timeout (not waited out) AND that the reader
+        // recovers — respawns a worker — for the next read.
+        let calls = Arc::new(AtomicUsize::new(0));
+        let read_fn: ReadFn = {
+            let calls = Arc::clone(&calls);
+            Arc::new(move |_p| {
+                if calls.fetch_add(1, Ordering::SeqCst) == 0 {
+                    std::thread::sleep(Duration::from_secs(2));
+                }
+                Some(vec![])
+            })
+        };
+        let mut reader = GuardedReader::with_read_fn(Duration::from_millis(50), read_fn);
+
+        let start = Instant::now();
+        assert!(reader.read(Path::new("/hang")).is_none(), "a hung read returns None");
+        assert!(
+            start.elapsed() < Duration::from_secs(1),
+            "must abandon near the timeout, not wait out the ~2s hang (elapsed {:?})",
+            start.elapsed()
+        );
+        assert!(
+            reader.read(Path::new("/ok")).is_some(),
+            "the reader recovers after a timeout and serves the next read",
+        );
+    }
 
     struct Harness {
         writer: IndexWriter,
