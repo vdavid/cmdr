@@ -186,8 +186,8 @@ describe('StepBeta', () => {
     const link = mounted.target.querySelector<HTMLAnchorElement>('a[href="https://github.com/vdavid/cmdr"]')
     expect(link).not.toBeNull()
     expect(link?.textContent).toContain('here on GitHub')
-    // The CTA sentence names the star/watch/fork ask around the link.
-    expect(mounted.target.textContent).toContain('star, watch, and fork the repo')
+    // The CTA sentence names the star ask around the link (the fork/watch claim was dropped).
+    expect(mounted.target.textContent).toContain('star the repo')
   })
 
   it('does not call betaSignup for an invalid email', async () => {
