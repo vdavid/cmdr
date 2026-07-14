@@ -56,8 +56,12 @@ the visit signal, and the `ImportanceIndex` read API — including SMB scoring a
 - **`ImportanceIndex` (`read/`) is the ONLY consumer entry point** (no raw `rusqlite` dep). `explain` re-scores the STORED
   `FolderSignals` via the pure scorer (one formula, no drift). It reads the DB directly, never the index registry, so
   weights stay queryable OFFLINE after a volume unmounts.
-- **Incremental writes at the CURRENT generation and does NOT bump it** (`write_weights_incremental`) — it CLEARS each
-  changed subtree then re-inserts only non-floored folders, so a floor transition (to/from `node_modules`) leaves no stale
-  row; never route it through `write_weights` (that bumps). `dir-changed`-driven; ancestor walk capped.
+- **Incremental (`write_weights_incremental`) writes at the CURRENT generation, does NOT bump it, and NEVER escalates to
+  a full pass.** It CLEARS each changed subtree then re-inserts only non-floored folders (a `node_modules` floor
+  transition leaves no stale row); never route it through `write_weights` (bumps). `dir-changed`-driven, ancestor walk
+  capped. Every live batch carries the bare root `/` (universal ancestor via `collect_ancestor_paths`);
+  `sanitize_incremental_batch` drops it — ❌ don't reintroduce a `/`→full-pass escalation (it rewrote all folders every
+  batch: continuous full recomputes, pegged core, index WAL-checkpoint stalls). Full passes are `ScanCompleted`-only;
+  `spawn_incremental` throttles to ≤1 index walk per `INCREMENTAL_THROTTLE_WINDOW`.
 
 Adding a signal, and the signal catalog: [DETAILS.md](DETAILS.md).

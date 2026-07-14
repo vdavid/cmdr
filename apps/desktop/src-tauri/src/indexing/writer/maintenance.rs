@@ -66,12 +66,15 @@ pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection) {
 /// itself. After a big scan the WAL can balloon to 1+ GB, and without an
 /// explicit TRUNCATE that file size persists until the next app restart.
 ///
-/// TRUNCATE blocks waiting for readers. With `busy_timeout = 5000` already set
-/// on this connection (`apply_pragmas`), the call waits up to 5 s for any
-/// active reader to finish. If readers don't drain in that window, the call
-/// degrades to PASSIVE semantics automatically (busy code = 1 in the return
-/// tuple) — pages still get checkpointed, the file just doesn't shrink this
-/// time. Next tick tries again. No error path needed.
+/// TRUNCATE blocks waiting for readers, invoking this connection's busy handler
+/// (installed in `writer/mod.rs::spawn`) while it waits. That handler — NOT the
+/// `busy_timeout = 5000` pragma, which installing a `busy_handler` overrides —
+/// caps the wait at ~250 ms (it sleeps 5 ms per retry and gives up at attempt 51),
+/// after which the call degrades to PASSIVE semantics (busy code = 1 in the return
+/// tuple): pages still get checkpointed, the file just doesn't shrink this time.
+/// Next tick tries again. No error path needed. The short cap is deliberate: this
+/// runs on the writer thread, so a multi-second block would stall every live write
+/// queued behind it.
 pub(super) fn handle_wal_checkpoint(conn: &rusqlite::Connection) {
     // `PRAGMA wal_checkpoint(TRUNCATE)` returns a single row with three
     // columns: (busy, log_size, checkpointed). `busy = 0` means everything

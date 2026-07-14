@@ -300,8 +300,28 @@ changed subtree, and re-inserts only its non-floored folders.
 
 **Generation semantics.** An incremental pass writes its rows at the CURRENT generation and does NOT bump it, so every
 untouched folder keeps its as-of marker and the volume doesn't turn wholesale-stale after a one-file change. Only a full
-pass advances the generation. A `"/"` sentinel in the changed set (a full-refresh emit) escalates to a full pass rather
-than resolving `/` as one folder.
+pass advances the generation.
+
+**The incremental never escalates on `/`.** Every live `dir-changed` batch carries the bare root `/`:
+`reconciler::collect_ancestor_paths` walks each change up to `/` so the frontend can refresh every ancestor's displayed
+size, so `/` sits in essentially every batch as the *universal ancestor* — not a signal that the whole volume changed.
+`sanitize_incremental_batch` drops `/` (and empty strings) at the incremental boundary before `touched_folder_set` /
+`write_weights_incremental` see it; a batch that was only `/` is a no-op. Full recomputes are `ScanCompleted`-driven
+only — the incremental path never calls `run_pass_blocking`. **Gotcha/Why:** treating `/` as a full-refresh sentinel
+(escalate to a whole-volume rewrite) meant that because the root volume live-watches `/`, where macOS FSEvent churn is
+near-continuous, `/` arrived in almost every batch and full recomputes ran back-to-back forever — pegging a core and
+starving the index-DB WAL checkpoint (its `wal_checkpoint(TRUNCATE)` kept losing to importance's long read), which
+surfaced as `stall_probe::sqlite_busy` WARN bursts. ❌ Don't reintroduce a `/`→full-pass escalation.
+
+**Debounce (leading + trailing).** Each incremental still walks the whole index (O(dirs)) before rescoping to the
+touched subset — the walk, not the targeted write, dominates its cost — so `spawn_incremental` debounces per volume: the
+first pass of a burst runs immediately (leading edge), and under sustained change it runs at most once per
+`INCREMENTAL_THROTTLE_WINDOW` (60 s; a throttle, NOT a debounce that never fires under constant change). Coalesced
+requests accumulate during the wait and the next drain folds them all in. Importance is a background signal, so the lag
+is invisible to consumers. **Ideal follow-up (deferred):** a targeted walk reading only the changed subtree's directory
++ child rows would make each incremental ~O(touched) and remove the need to debounce; it's deferred because computing
+`has_marker_below` / `under_floored_ancestor` correctly across the subtree boundary (an ancestor outside the subtree can
+floor it) is a real correctness surface.
 
 ## The shared writer registry (`writer_registry.rs`, M3)
 

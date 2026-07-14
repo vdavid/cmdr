@@ -7,6 +7,28 @@ use super::*;
 
 // ── Incremental recompute (plan M3 TDD target) ────────────────────────────
 
+/// The bare root `/` (the universal ancestor carried by every live dir-changed
+/// batch) and empty strings are dropped, so a normal change never escalates to a
+/// whole-volume rewrite and a root-only batch is a no-op. Real paths pass through
+/// unchanged, in order.
+#[test]
+fn sanitize_incremental_batch_drops_root_and_empties() {
+    assert_eq!(
+        sanitize_incremental_batch(&["/".to_string(), "/a/b".to_string()]),
+        vec!["/a/b".to_string()],
+        "the bare root is dropped, the real path kept"
+    );
+    assert!(
+        sanitize_incremental_batch(&["/".to_string(), String::new()]).is_empty(),
+        "a batch of only root + empties has nothing real to rescore"
+    );
+    assert_eq!(
+        sanitize_incremental_batch(&["/a".to_string(), "/b/c".to_string()]),
+        vec!["/a".to_string(), "/b/c".to_string()],
+        "real paths pass through unchanged and in order"
+    );
+}
+
 /// The touched set is the changed folders PLUS their ancestor chains (so a marker
 /// or size change raises parents), and the ancestor walk is CAPPED so a deep
 /// change can't rescope half the volume (plan Decision 5 ancestor-fan-out cap).

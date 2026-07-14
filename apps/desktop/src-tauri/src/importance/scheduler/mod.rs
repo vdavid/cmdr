@@ -39,6 +39,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use tauri::{AppHandle, Manager};
 
@@ -48,7 +49,9 @@ use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexVolumeKind;
 
 mod recompute;
-use recompute::{IncrementalInputs, RecomputeInputs, incremental_rescore, load_visits, recompute_folders};
+use recompute::{
+    IncrementalInputs, RecomputeInputs, incremental_rescore, load_visits, recompute_folders, sanitize_incremental_batch,
+};
 // Re-exported for the eval corpus tool, which walks a real index the SAME way a
 // recompute does (so dumped signals match production exactly).
 pub(crate) use recompute::walk_index_folders;
@@ -297,7 +300,7 @@ impl ImportanceScheduler {
         // Time the two phases so real numbers surface any drift (a full pass on a
         // NAS-sized volume is the cost to watch): the READ phase (walk + visit load
         // + Spotlight sampling) vs the SCORE+WRITE phase (`recompute_folders`).
-        let read_started = std::time::Instant::now();
+        let read_started = Instant::now();
 
         // Walk the index ONCE; reuse the result for both the `kMDItemLastUsedDate`
         // path-set and the score (no second traversal — M2 cleanup).
@@ -324,7 +327,7 @@ impl ImportanceScheduler {
         };
         let read_elapsed = read_started.elapsed();
 
-        let write_started = std::time::Instant::now();
+        let write_started = Instant::now();
         let writer = self.writer_for(volume_id).map_err(|e| e.to_string())?;
         let outcome = recompute_folders(
             &RecomputeInputs {
@@ -373,10 +376,14 @@ impl ImportanceScheduler {
         changed_paths: &[String],
         now_secs: u64,
     ) -> Result<usize, String> {
-        // A full-refresh sentinel means "everything changed" — fall back to the
-        // full pass rather than resolving `/` as a single folder.
-        if changed_paths.iter().any(|p| p == "/") {
-            return self.run_pass_blocking(volume_id, available, now_secs);
+        // Drop the bare root and empties: a live batch ALWAYS carries `/` (the
+        // universal ancestor of every change), which is not a full-refresh signal.
+        // Never escalate to a full pass here — full recomputes are `ScanCompleted`
+        // -driven. A batch that was only `/` (or empty) has nothing real to rescore.
+        // See `sanitize_incremental_batch`.
+        let changed_paths = sanitize_incremental_batch(changed_paths);
+        if changed_paths.is_empty() {
+            return Ok(0);
         }
 
         let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
@@ -404,7 +411,7 @@ impl ImportanceScheduler {
                 visits: &visits,
             },
             &folders,
-            changed_paths,
+            &changed_paths,
         )?;
 
         if count > 0 {
@@ -548,6 +555,30 @@ fn incremental_key(volume_id: &str) -> String {
     format!("{volume_id}#incremental")
 }
 
+/// The minimum spacing between two incremental rescores of the same volume under
+/// sustained change. An incremental walks the whole index (O(dirs)) before it
+/// rescopes to the touched subset, so back-to-back incrementals under a constant
+/// FSEvent firehose (a busy boot volume is never truly idle) would peg a core.
+/// Debouncing to one walk per window bounds that; importance is a background
+/// signal, so a lag of this order is invisible to its consumers.
+const INCREMENTAL_THROTTLE_WINDOW: Duration = Duration::from_secs(60);
+
+/// How long to wait before the next incremental rescore of a volume may start,
+/// given when the previous one for this run started. The FIRST pass of a burst
+/// (`last_started == None`) runs immediately (leading edge — a real edit scores
+/// promptly); each further pass while change keeps arriving waits out the window
+/// (trailing edge — at most one walk per window under sustained churn). Pure so the
+/// spacing is unit-testable without a runtime; the caller sleeps this long.
+fn incremental_debounce_wait(last_started: Option<Instant>, now: Instant, window: Duration) -> Duration {
+    match last_started {
+        // Leading edge: nothing ran yet this run, so go now.
+        None => Duration::ZERO,
+        // Trailing edge: wait out whatever remains of the window since the last
+        // pass started (zero once the window has fully elapsed).
+        Some(started) => window.saturating_sub(now.saturating_duration_since(started)),
+    }
+}
+
 /// Request a coalesced incremental rescore, accumulating `paths` into the pending
 /// set. If this request starts the pass, drive it (plus any coalesced re-run,
 /// draining whatever accumulated meanwhile) on a blocking background task.
@@ -559,9 +590,19 @@ fn spawn_incremental(scheduler: Arc<ImportanceScheduler>, volume_id: String, ava
     }
     tauri::async_runtime::spawn(async move {
         let key = incremental_key(&volume_id);
+        // Debounce across this run's passes: the first runs immediately (leading
+        // edge), each further one waits out the window so sustained churn drives at
+        // most one index walk per window. Requests arriving during the wait coalesce
+        // (the coordinator slot stays running), so the next drain folds them all in.
+        let mut last_started: Option<Instant> = None;
         loop {
+            let wait = incremental_debounce_wait(last_started, Instant::now(), INCREMENTAL_THROTTLE_WINDOW);
+            if !wait.is_zero() {
+                tokio::time::sleep(wait).await;
+            }
             let batch = scheduler.take_incremental_paths(&volume_id);
             if !batch.is_empty() {
+                last_started = Some(Instant::now());
                 let sched = Arc::clone(&scheduler);
                 let vid = volume_id.clone();
                 let result = tauri::async_runtime::spawn_blocking(move || {

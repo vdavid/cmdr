@@ -537,3 +537,23 @@ pub(super) fn touched_folder_set(changed_paths: &[String]) -> std::collections::
     }
     set
 }
+
+/// Drop the paths that must never drive an incremental rescore from a live
+/// dir-changed batch: the bare root `/` and empty strings.
+///
+/// **Why the bare root matters (the "everything changed" trap):** every live
+/// FSEvent's affected-paths set carries the full ancestor chain up to `/`
+/// (`reconciler::collect_ancestor_paths`, so the frontend can refresh every
+/// ancestor's displayed size). So `/` is present in essentially *every* batch —
+/// it's the universal ancestor, NOT a signal that the whole volume changed. Left
+/// in, it would (a) get treated as a full-refresh sentinel and escalate every
+/// incremental to a whole-volume rewrite, and (b) reach `write_weights_incremental`'s
+/// subtree-clear. Full recomputes are driven by `ScanCompleted`, never by a live
+/// batch, so the incremental path drops `/` and scores only real folders.
+pub(super) fn sanitize_incremental_batch(changed_paths: &[String]) -> Vec<String> {
+    changed_paths
+        .iter()
+        .filter(|p| !p.is_empty() && p.as_str() != "/")
+        .cloned()
+        .collect()
+}

@@ -2,6 +2,7 @@
 //! contract, unit-tested without an app, a runtime, or the index fixtures.
 
 use super::*;
+use std::time::{Duration, Instant};
 
 // ── Coalescing coordinator (plan M2 TDD target) ──────────────────────────
 
@@ -60,4 +61,48 @@ fn many_midpass_requests_buffer_exactly_one_rerun() {
     }
     assert_eq!(coord.finish("root"), FinishOutcome::RunAgain);
     assert_eq!(coord.finish("root"), FinishOutcome::Done, "exactly one re-run, not 100");
+}
+
+// ── Incremental debounce (leading + trailing throttle) ────────────────────
+
+/// The FIRST incremental of a burst runs immediately: a genuine edit scores
+/// without waiting out a window (leading edge).
+#[test]
+fn debounce_first_pass_runs_immediately() {
+    let now = Instant::now();
+    assert_eq!(
+        incremental_debounce_wait(None, now, Duration::from_secs(60)),
+        Duration::ZERO,
+        "no prior pass this run ⇒ run now (leading edge)"
+    );
+}
+
+/// A second incremental that wants to run mid-window waits out the remainder, so
+/// sustained change fires at most once per window (trailing edge, the throttle
+/// guarantee — NOT a debounce that never fires under constant change).
+#[test]
+fn debounce_within_window_waits_the_remainder() {
+    let window = Duration::from_secs(60);
+    let started = Instant::now();
+    // 20 s into the window ⇒ ~40 s left before the next pass may start.
+    let now = started + Duration::from_secs(20);
+    let wait = incremental_debounce_wait(Some(started), now, window);
+    assert!(
+        wait >= Duration::from_secs(39) && wait <= Duration::from_secs(40),
+        "≈40 s remaining, got {wait:?}"
+    );
+}
+
+/// Once the window has fully elapsed since the last pass started, the next runs
+/// immediately — the throttle spaces passes, it never stalls a lone late change.
+#[test]
+fn debounce_after_window_runs_immediately() {
+    let window = Duration::from_secs(60);
+    let started = Instant::now();
+    let now = started + Duration::from_secs(90);
+    assert_eq!(
+        incremental_debounce_wait(Some(started), now, window),
+        Duration::ZERO,
+        "window elapsed ⇒ no wait"
+    );
 }
