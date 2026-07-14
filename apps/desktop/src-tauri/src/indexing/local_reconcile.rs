@@ -841,32 +841,32 @@ mod tests {
     }
 
     /// Convergence guard (the headline cross-check): a LOCAL reconcile run
-    /// immediately after a REAL jwalk scan of the SAME unchanged on-disk tree is a
-    /// NO-OP. This pins that the two independent code paths — jwalk's parallel
-    /// `run_scan` (metadata via `extract_metadata`, exclusion + canonicalization-alias
-    /// gating in `build_walker`) and the serial reconcile walk (its own
-    /// `read_fs_children` + `build_live_children` + `diff_dir_against_db`) — AGREE on
-    /// the exact same tree. A divergence (reconcile re-adds, deletes, or rewrites an
-    /// entry the scan didn't, the `/tmp`,`/var`,`/etc` alias / exclusion class of bug)
-    /// breaks one of the assertions below.
+    /// immediately after a REAL fresh scan of the SAME unchanged on-disk tree is a
+    /// NO-OP. This pins that the two independent code paths — the fresh scan's
+    /// parallel `run_scan` (metadata via `extract_metadata`, exclusion +
+    /// canonicalization-alias gating in the `InsertVisitor`) and the serial reconcile
+    /// walk (its own `read_fs_children` + `build_live_children` + `diff_dir_against_db`)
+    /// — AGREE on the exact same tree. A divergence (reconcile re-adds, deletes, or
+    /// rewrites an entry the scan didn't, the `/tmp`,`/var`,`/etc` alias / exclusion
+    /// class of bug) breaks one of the assertions below.
     ///
-    /// jwalk is driven via `scan_subtree`, NOT `scan_volume`: both run the identical
-    /// `run_scan` core, but `scan_volume` hardcodes the scan root to `ROOT_ID` (it
-    /// treats it as `/`), so only a literal `/` round-trips with the reconcile's
-    /// `resolve_path`-based root lookup. `scan_subtree` builds the tree under the temp
-    /// dir's resolved id — exactly the id the reconcile then walks — while exercising
-    /// the same real jwalk scan + metadata + exclusion logic. The tree contents come
-    /// entirely from jwalk; `ensure_path_in_db` only seeds the ancestor chain so the
-    /// subtree root resolves.
+    /// The fresh scan is driven via `scan_subtree`, NOT `scan_volume`: both run the
+    /// identical `run_scan` core, but `scan_volume` hardcodes the scan root to
+    /// `ROOT_ID` (it treats it as `/`), so only a literal `/` round-trips with the
+    /// reconcile's `resolve_path`-based root lookup. `scan_subtree` builds the tree
+    /// under the temp dir's resolved id — exactly the id the reconcile then walks —
+    /// while exercising the same real fresh scan + metadata + exclusion logic. The
+    /// tree contents come entirely from the fresh scan; `ensure_path_in_db` only seeds
+    /// the ancestor chain so the subtree root resolves.
     #[test]
-    fn reconcile_after_real_jwalk_scan_of_unchanged_tree_is_a_no_op() {
+    fn reconcile_after_real_fresh_scan_of_unchanged_tree_is_a_no_op() {
         use crate::indexing::scanner::scan_subtree;
 
         let h = setup();
         let root = tree_root();
         let rp = root.path();
         // Seed only the ancestor chain (so the subtree root resolves); the tree's
-        // CONTENTS are built solely by the real jwalk scan below.
+        // CONTENTS are built solely by the real fresh scan below.
         ensure_path_in_db(&h, &norm(rp));
 
         // A real nested tree on disk with known file sizes.
@@ -877,14 +877,17 @@ mod tests {
         std::fs::write(rp.join("b/b1.txt"), b"bbb").unwrap(); // 3
         std::fs::write(rp.join("top.txt"), b"topfil").unwrap(); // 6
 
-        // Build the index with the REAL jwalk scanner (epoch 1).
+        // Build the index with the REAL fresh scanner (epoch 1).
         let cancelled = AtomicBool::new(false);
-        let scan_summary = scan_subtree(rp, &h.writer, &cancelled).expect("jwalk scan");
+        let scan_summary = scan_subtree(rp, &h.writer, &cancelled).expect("fresh scan");
         h.writer.flush_blocking().unwrap();
         // 4 dirs (a, a/deep, b — the subtree root itself isn't counted by run_scan's
         // child walk) + 4 files. run_scan counts entries it WALKED (children), so the
         // subtree root is excluded from total_entries.
-        assert_eq!(scan_summary.total_entries, 7, "jwalk saw 3 child dirs + 4 files");
+        assert_eq!(
+            scan_summary.total_entries, 7,
+            "the fresh scan saw 3 child dirs + 4 files"
+        );
 
         // Resolve the dirs and capture the post-scan ground truth.
         let rp_id = resolve(&h, rp).expect("root resolved");
@@ -894,11 +897,11 @@ mod tests {
         assert_eq!(
             listed_epoch(&h, deep),
             Some(1),
-            "jwalk stamped the deepest dir at epoch 1"
+            "the fresh scan stamped the deepest dir at epoch 1"
         );
 
         // Scope the dir_stats comparison to the SUBTREE dirs. The finish aggregate
-        // commands differ in breadth by design (jwalk's `ComputeSubtreeAggregates`
+        // commands differ in breadth by design (the fresh scan's `ComputeSubtreeAggregates`
         // vs the reconcile's `ComputeAllAggregates`), and the reconcile additionally
         // writes zero-stat rows for the seeded ANCESTOR chain above the temp dir —
         // an artifact of this test's deep root (in prod the reconcile root is `/` =
@@ -915,13 +918,17 @@ mod tests {
         let entries_before = entries_snapshot(&h);
         let dir_stats_before = scoped_dir_stats(&h);
         let count_before = entries_before.len();
-        assert_eq!(dir_stats_before.len(), 4, "jwalk produced stats for all 4 subtree dirs");
+        assert_eq!(
+            dir_stats_before.len(),
+            4,
+            "the fresh scan produced stats for all 4 subtree dirs"
+        );
 
         // Bump the epoch (a continuity break would do this) and reconcile the SAME,
         // UNCHANGED tree.
         let new_epoch = bump_epoch(&h);
         assert_eq!(new_epoch, 2, "epoch advanced for the reconcile pass");
-        run_reconcile(&h, rp, false).expect("reconcile after jwalk");
+        run_reconcile(&h, rp, false).expect("reconcile after fresh scan");
 
         // 1. No spurious adds/deletes: the entry SET is byte-identical (same rows,
         //    same ids, same sizes/metadata) — the divergence catcher.
@@ -929,11 +936,11 @@ mod tests {
         assert_eq!(
             entries_after.len(),
             count_before,
-            "reconcile-after-jwalk must not change the entry count (no spurious add/delete)"
+            "reconcile-after-fresh-scan must not change the entry count (no spurious add/delete)"
         );
         assert_eq!(
             entries_after, entries_before,
-            "reconcile-after-jwalk must leave every entry row identical (no entry added, removed, re-id'd, or rewritten)"
+            "reconcile-after-fresh-scan must leave every entry row identical (no entry added, removed, re-id'd, or rewritten)"
         );
 
         // 2. Recursive dir_stats (sizes + counts) unchanged: the two paths agree on
@@ -941,7 +948,7 @@ mod tests {
         assert_eq!(
             scoped_dir_stats(&h),
             dir_stats_before,
-            "reconcile-after-jwalk must leave every subtree dir's recursive aggregates unchanged"
+            "reconcile-after-fresh-scan must leave every subtree dir's recursive aggregates unchanged"
         );
 
         // 3. Full coverage / recursion: every dir from the root down advanced to
@@ -956,20 +963,22 @@ mod tests {
     }
 
     /// Hardlink dedup convergence (data-safety): a reconcile of an unchanged tree
-    /// containing a hardlinked inode must agree with jwalk on the deduped byte totals.
+    /// containing a hardlinked inode must agree with the fresh scan on the deduped
+    /// byte totals.
     ///
-    /// jwalk's fresh `run_scan` counts each inode's physical bytes ONCE (zeroes the
+    /// The fresh scan's `run_scan` counts each inode's physical bytes ONCE (zeroes the
     /// 2nd+ occurrence). The reconcile's `build_live_children` must accumulate
     /// `total_physical_bytes` the same way, else `ScanSummary.total_physical_bytes`
     /// (and the live `bytes_scanned` progress) inflates by every hardlink's size — a
     /// fresh scan and a reconcile of the SAME tree would report different totals.
     ///
     /// We assert the order-independent TOTAL (the summary's `total_physical_bytes`),
-    /// which is invariant to which of the two hardlink names jwalk vs the reconcile
-    /// happens to size. (The PERSISTED entries are kept one-per-inode by the writer's
-    /// own `UpsertEntryV2` dedup, asserted as a guard via the root's recursive sizes.)
+    /// which is invariant to which of the two hardlink names the fresh scan vs the
+    /// reconcile happens to size. (The PERSISTED entries are kept one-per-inode by the
+    /// writer's own `UpsertEntryV2` dedup, asserted as a guard via the root's recursive
+    /// sizes.)
     #[test]
-    fn reconcile_after_jwalk_does_not_double_count_hardlinks() {
+    fn reconcile_after_fresh_scan_does_not_double_count_hardlinks() {
         use crate::indexing::scanner::scan_subtree;
 
         let h = setup();
@@ -996,27 +1005,27 @@ mod tests {
             );
         }
 
-        // Build the index with the REAL jwalk scanner (which dedups hardlinks).
+        // Build the index with the REAL fresh scanner (which dedups hardlinks).
         let cancelled = AtomicBool::new(false);
-        let jwalk_summary = scan_subtree(rp, &h.writer, &cancelled).expect("jwalk scan");
+        let fresh_summary = scan_subtree(rp, &h.writer, &cancelled).expect("fresh scan");
         h.writer.flush_blocking().unwrap();
 
         let rp_id = resolve(&h, rp).expect("root resolved");
         let physical_before = dir_stats(&h, rp_id)
-            .expect("root stats after jwalk")
+            .expect("root stats after fresh scan")
             .recursive_physical_size;
 
         // Reconcile the SAME, UNCHANGED tree.
         bump_epoch(&h);
-        let reconcile_summary = run_reconcile(&h, rp, false).expect("reconcile after jwalk");
+        let reconcile_summary = run_reconcile(&h, rp, false).expect("reconcile after fresh scan");
 
-        // Primary claim: the reconcile's deduped total matches jwalk's. RED before the
-        // fix (the reconcile counts the hardlink's bytes twice), GREEN after.
+        // Primary claim: the reconcile's deduped total matches the fresh scan's. RED
+        // before the fix (the reconcile counts the hardlink's bytes twice), GREEN after.
         assert_eq!(
-            reconcile_summary.total_physical_bytes, jwalk_summary.total_physical_bytes,
-            "reconcile must dedup hardlinks in total_physical_bytes exactly like jwalk \
-             (jwalk={}, reconcile={})",
-            jwalk_summary.total_physical_bytes, reconcile_summary.total_physical_bytes
+            reconcile_summary.total_physical_bytes, fresh_summary.total_physical_bytes,
+            "reconcile must dedup hardlinks in total_physical_bytes exactly like the fresh scan \
+             (fresh={}, reconcile={})",
+            fresh_summary.total_physical_bytes, reconcile_summary.total_physical_bytes
         );
 
         // Guard: the persisted aggregate is one-per-inode (the writer's UpsertEntryV2

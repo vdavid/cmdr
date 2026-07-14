@@ -7,3 +7,10 @@
 # Rebuilding application..." without this file, and stays quiet with it.
 # Vite has its own equivalent shield (`server.watch.ignored` in vite.config.js).
 *.md
+
+# Atomic-write temp files (`CLAUDE.md.tmp.<pid>.<hash>`, etc.). Editors and agents
+# save via temp+rename, and the `.tmp.<pid>.<hash>` intermediate doesn't end in
+# `.md`, so it leaks past the `*.md` shield above and rebuilds the whole app on
+# every doc edit. The real file's rename (e.g. → `CLAUDE.md`) still triggers a
+# rebuild when it should; only the transient temp is ignored.
+*.tmp.*
