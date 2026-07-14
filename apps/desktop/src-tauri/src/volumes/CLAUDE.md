@@ -5,13 +5,10 @@ macOS volume and location discovery, plus live mount/unmount watching via `NSWor
 
 ## Module map
 
-- **`mod.rs`**: `LocationInfo` (+ `VolumeInfo` alias), `LocationCategory` and `SmbConnectionState` enums,
-  `list_locations()`, `get_volume_space()`, `parse_cloud_provider_name()`, `get_mount_point()`,
-  `resolve_path_volume_fast()`, ID helpers (`path_to_id`, `smb_volume_id`, `volume_id_for_mount`), and the
-  `enrich_smb_connection_state` helper.
-- **`watcher.rs`**: `NSWorkspace` mount/unmount observer. On `NSWorkspaceDidMount`/`Unmount`, extracts the volume URL
-  from `userInfo[NSWorkspaceVolumeURLKey]`, registers/unregisters with `VolumeManager`, emits per-volume
-  `volume-mounted` / `volume-unmounted` Tauri events, and triggers `volume_broadcast::emit_volumes_changed()`.
+- **`mod.rs`**: the `LocationInfo` model, `LocationCategory` / `SmbConnectionState` enums, location discovery + space
+  queries, path→volume resolution, and the ID helpers (`path_to_id`, `smb_volume_id`, `volume_id_for_mount`).
+- **`watcher.rs`**: `NSWorkspace` mount/unmount observer. On each event it registers/unregisters with `VolumeManager`,
+  emits `volume-mounted` / `volume-unmounted`, and calls `volume_broadcast::emit_volumes_changed()`.
 
 ## Must-knows
 
@@ -29,9 +26,9 @@ macOS volume and location discovery, plus live mount/unmount watching via `NSWor
   prefix test (`match_cloud_drive_root`, pure) covers deep subfolders and is free for non-cloud paths. `get_cloud_drives()`
   and the resolver share `cloud_volume_info()` so IDs/categories can't drift.
 - **Don't add launch-time `NSWorkspace` icon/LaunchServices lookups, or `read_dir`/metadata on TCC-protected paths,
-  without the FDA gate** (`crate::fda_gate::is_fda_pending_runtime()`). The local `get_icon_for_path()` wrapper returns
-  `None` and `get_cloud_drives()` returns empty while the gate is pending; both re-emit with full data after the user
-  decides FDA. Skipping the gate stacks 5-10 macOS TCC popups during onboarding. See `fda_gate.rs` and
+  without the FDA gate** (`crate::fda_gate::is_fda_pending_runtime()`). The local `get_icon_for_path()` returns `None`
+  and `get_cloud_drives()` returns empty while the gate is pending; both re-emit fully after the FDA decision. Skipping
+  the gate stacks 5-10 macOS TCC popups during onboarding. See `fda_gate.rs` and
   `lib/onboarding/CLAUDE.md` § "FDA gate".
 - **Detect SMB volumes via `is_smb_fs_type()`, never raw `"smbfs"`/`"cifs"` comparisons.** The helper handles macOS
   (`smbfs`) and Linux (`cifs`) in one place.
@@ -43,28 +40,22 @@ macOS volume and location discovery, plus live mount/unmount watching via `NSWor
   `get_attached_volumes` and `resolve_path_volume_fast`; set them in both or they drift.** Gate the disk-image probe to
   local mounts (`!is_smb_fs_type`): it resolves the path, so a hung mount would stall it. Read-only is not a disk-image
   proxy (a writable `.dmg` is read-write).
-- **`LocationInfo` enrichment with `VolumeManager` data lives only in `enrich_smb_connection_state`.** Three callers
-  (`list_volumes` IPC, `volume_broadcast`, MCP `cmdr://state`) share it; new enrichment fields go there once.
+- **`LocationInfo` enrichment with `VolumeManager` data lives only in `enrich_smb_connection_state`**, shared by three
+  callers (`list_volumes` IPC, `volume_broadcast`, MCP `cmdr://state`); new enrichment fields go there once.
 - **`append_mtp_volumes` is duplicated** across `commands/volumes.rs` and `volume_broadcast.rs` (plus Linux twins). Both
-  must set every MTP-derived `LocationInfo` field (e.g. `usb_speed`); set a new field in BOTH or the bootstrap call
-  produces volumes with the field missing until a later push refreshes them.
+  must set every MTP-derived `LocationInfo` field (like `usb_speed`); set a new field in BOTH, or the bootstrap produces
+  volumes missing it until a later push.
 - **`start_volume_watcher` is idempotent** via `OnceLock` (`APP_HANDLE`, `OBSERVER_INSTALLED`); the observer block runs
   on the main thread (keep it cheap, no blocking I/O). `get_main_volume`/`get_attached_volumes`/`get_volume_space` wrap
   bodies in `objc2::rc::autoreleasepool` (called from `spawn_blocking`; without it the per-call objc objects leak).
 
-## Location categories and IDs
+## Location IDs (two cross-file sync points)
 
-- **Favorite**: user-editable, from the `favorites/` store.
-- **MainVolume**: root volume at `/`.
-- **AttachedVolume**: `/Volumes/*` (skips System, Preboot, Recovery, CloudStorage).
-- **CloudDrive**: iCloud at `~/Library/Mobile Documents/…`, providers at `~/Library/CloudStorage/`.
-- **Network**: variant exists but is currently unconstructed.
-
-`DEFAULT_VOLUME_ID = "root"`. `ICLOUD_VOLUME_ID = "cloud-icloud"` is the only hardcoded cloud-drive ID (others derive
-from the `~/Library/CloudStorage/<provider>` dir name); `friendly_error.rs` matches the literal with a sync-point
-comment because `crate::volumes` is macOS-only. `parse_cloud_provider_name` maps `~/Library/CloudStorage/` dir prefixes
-to display names (Dropbox, GoogleDrive→Google Drive, OneDrive/Business, Box, pCloud, else first `-`-segment); keep it in
-sync with `friendly_error::enrich_with_provider`'s separate provider list.
+`DEFAULT_VOLUME_ID = "root"`; `ICLOUD_VOLUME_ID = "cloud-icloud"` is the only hardcoded cloud-drive ID (others derive
+from the `~/Library/CloudStorage/<provider>` dir name). Both IDs and the provider mapping are mirrored in
+`friendly_error.rs` (which `crate::volumes` can't reach, being macOS-only): it matches the `ICLOUD_VOLUME_ID` literal
+under a sync-point comment, and `parse_cloud_provider_name`'s provider list must stay in sync with
+`friendly_error::enrich_with_provider`'s separate one. The `LocationCategory` catalog: [DETAILS.md](DETAILS.md).
 
 Full details (decision rationale, NSWorkspace-vs-FSEvents choice, volume-space key choice, `supports_trash` default,
 the `Retained::cast_unchecked` contract): [DETAILS.md](DETAILS.md).

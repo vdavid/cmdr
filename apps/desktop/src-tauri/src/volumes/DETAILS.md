@@ -2,6 +2,20 @@
 
 Depth and rationale. `CLAUDE.md` holds the must-knows; the decision detail lives here.
 
+## Location categories
+
+`LocationCategory` variants:
+
+- **Favorite**: user-editable, from the `favorites/` store.
+- **MainVolume**: root volume at `/`.
+- **AttachedVolume**: `/Volumes/*` (skips System, Preboot, Recovery, CloudStorage).
+- **CloudDrive**: iCloud at `~/Library/Mobile Documents/…`, providers at `~/Library/CloudStorage/`.
+- **Network**: variant exists but is currently unconstructed.
+
+`parse_cloud_provider_name` maps `~/Library/CloudStorage/` dir prefixes to display names (Dropbox, GoogleDrive→Google
+Drive, OneDrive/Business, Box, pCloud, else the first `-`-segment). The `ICLOUD_VOLUME_ID` / provider-list sync points
+with `friendly_error.rs` are called out in [CLAUDE.md](CLAUDE.md).
+
 ## `list_locations()`
 
 Aggregates all `LocationCategory` entries in order and deduplicates by path using a `HashSet<String>`. The OS-level
