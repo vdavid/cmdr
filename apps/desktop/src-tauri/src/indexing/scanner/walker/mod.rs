@@ -42,15 +42,7 @@
 //!
 //! The directory read is injected as a [`ReadDirFn`], so the hang, honest-skip,
 //! and parallel-correctness behaviors are unit-tested with a mock reader — no real
-//! hung mount required. Production passes [`std_read_dir`].
-
-// The engine is wired into the fresh-scan and reconcile paths in stages 2-3 of
-// `docs/specs/guarded-local-scan-plan.md`. Until then it's exercised only by its
-// own tests, so its production entry points legitimately read as dead code.
-#![allow(
-    dead_code,
-    reason = "walker engine is wired into the scan/reconcile paths in stages 2-3 of guarded-local-scan-plan.md; until then only its own tests exercise it"
-)]
+//! hung mount required. Production passes the platform [`default_reader`].
 
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
@@ -188,10 +180,19 @@ pub struct WalkStats {
     pub io_errors: u64,
 }
 
-/// Production reader: `std::fs::read_dir`, classifying each child without
-/// following symlinks. Read errors on individual entries are skipped (the
-/// directory read as a whole still succeeds); a failure to open the directory
-/// propagates as the `Err`.
+/// Non-macOS reader: `std::fs::read_dir`, classifying each child without
+/// following symlinks (the visitor stats each for sizes/mtime). Read errors on
+/// individual entries are skipped (the directory read as a whole still succeeds);
+/// a failure to open the directory propagates as the `Err`. On macOS
+/// [`default_reader`] uses the `getattrlistbulk` reader instead, so this is unused
+/// there.
+#[cfg_attr(
+    target_os = "macos",
+    allow(
+        dead_code,
+        reason = "macOS uses the getattrlistbulk reader; std_read_dir is the reader for other platforms"
+    )
+)]
 pub fn std_read_dir(path: &Path) -> std::io::Result<Vec<RawDirEntry>> {
     let mut out = Vec::new();
     for entry in std::fs::read_dir(path)? {

@@ -18,7 +18,7 @@
 //! single read connection, so there are no id races. Speed of the rare walk is
 //! secondary to safety here, so it stays serial. Each directory read is capped by
 //! a [`GuardedReader`] (15 s) so a hung File Provider mount can't freeze it; see
-//! `docs/specs/guarded-local-scan-plan.md`.
+//! `indexing/DETAILS.md` § "The guarded local walker".
 //!
 //! ## Integration shape
 //!
