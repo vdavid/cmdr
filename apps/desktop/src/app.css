@@ -221,14 +221,15 @@
   --color-selection-fg-fallback: var(--color-text-primary);
   --color-selection-fg: var(--color-selection-fg-primary);
   /* Selection background and hairline border applied to selected rows in
-   * both modes. Light mode: faint gray bg a touch darker than
-   * `--color-bg-primary` (lower than the stripe color, more distinct from
-   * the warm cursor highlight by luminance) and a faint dark hairline
-   * between consecutive selected rows. Dark mode: darker bg, faint white
-   * hairline. Border draws as `inset` box-shadow so row height doesn't
-   * change. Both axes are purely there to keep dense selections visually
-   * countable on top of the red text identity. */
-  --color-selection-bg: #f2f2f2;
+   * both modes. A translucent black (not an opaque hex) so it composites
+   * over whatever the row sits on: on a tinted pane the tint hue shows
+   * through (just darkened), rather than being wiped to a flat gray/black.
+   * On the untinted pane it lands on `--color-bg-primary`, reproducing the
+   * old opaque values (light ≈ `#f2f2f2`, dark ≈ `#141414`). Paired with a
+   * faint hairline between consecutive selected rows (`inset` box-shadow, so
+   * row height doesn't change). Both axes are purely there to keep dense
+   * selections visually countable on top of the red text identity. */
+  --color-selection-bg: rgba(0, 0, 0, 0.05);
   --color-selection-border: rgba(0, 0, 0, 0.03);
 
   /* === Git portal ===
@@ -466,16 +467,20 @@
   --color-age-old: var(--color-text-secondary);
 }
 
-/* selection-fg fallback: dark mode + pane tint + focused cursor on a selected
-   row. In this state the row bg becomes the translucent yellow accent
-   composited over a tinted dark surface — Y around 0.09. Even the brightest
-   gold we'd be willing to call "selection identity" can't reach 4.5:1 there.
-   Drop to `--color-text-primary` so the row stays readable; the gold
-   identity is sacrificed only in this one corner. The size tiers
+/* selection-fg fallback: dark mode + high contrast + pane tint + focused
+   cursor on a selected row. Only under `prefers-contrast: more` does the tint
+   jump to 25%, lightening the translucent-accent cursor bg enough that no red
+   variant clears AA (4.5:1) for the warm-neutral tints — there we drop to
+   `--color-text-primary` so the row stays legible, sacrificing the red
+   selection identity in this one accessibility corner. At normal contrast
+   (15% tint) the red cursor variant clears AA on every tint, so it stays and
+   the selected-under-cursor row still reads as selected. The size tiers
    (`--color-size-*-selected`) derive from `--color-selection-fg`, so they
-   switch in lockstep. Mirrored in `row_state_matrix.go`'s synthesizer. */
-@media (prefers-color-scheme: dark) {
-  .file-pane[data-pane-tint] .full-list-container.is-focused .file-entry.is-selected.is-under-cursor {
+   switch in lockstep. Both list views need the override. Mirrored in
+   `row_state_matrix.go`'s synthesizer. */
+@media (prefers-color-scheme: dark) and (prefers-contrast: more) {
+  .file-pane[data-pane-tint] .full-list-container.is-focused .file-entry.is-selected.is-under-cursor,
+  .file-pane[data-pane-tint] .brief-list-container.is-focused .file-entry.is-selected.is-under-cursor {
     --color-selection-fg: var(--color-selection-fg-fallback);
   }
 }
@@ -668,13 +673,14 @@
     --shadow-focus-contrast: 0 0 0 4px color-mix(in srgb, white, transparent 92%);
 
     /* === Selection (dark) === see light mode for primary/fallback rationale.
-       In dark mode we also paint a slightly darker bg on selected rows and a
-       faint hairline between consecutive selected rows; the tokens default
-       to transparent in light so they're effectively dark-mode-only. */
+       The selection bg stays translucent (see light mode) so a tinted pane
+       keeps its hue under selected rows; on the untinted `#1e1e1e` pane the
+       0.33 alpha reproduces the old opaque `#141414`. Hairline flips to a
+       faint white for dark rows. */
     --color-selection-fg-primary: #ffa0a0;
     --color-selection-fg-cursor: #ffb3b3;
     --color-selection-fg-fallback: var(--color-text-primary);
-    --color-selection-bg: #141414;
+    --color-selection-bg: rgba(0, 0, 0, 0.33);
     --color-selection-border: rgba(255, 255, 255, 0.025);
 
     /* Git portal: brighter teal in dark mode for readability against

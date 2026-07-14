@@ -1248,10 +1248,11 @@
         background-color: var(--color-bg-stripe);
     }
 
-    /* Selected rows: darker bg (in both modes — light's `#e6e6e6`, dark's
-       `#141414`) overrides the stripe so the selection reads as a single
-       block. Cursor rules win by specificity (see below), so cursor-on-
-       selected still shows the cursor highlight. */
+    /* Selected rows: a translucent darkening (`--color-selection-bg`)
+       overrides the stripe so the selection reads as a single block. Being
+       translucent, it keeps a tinted pane's hue (just darker) instead of
+       flattening it. Cursor rules win by specificity (see below), so cursor-
+       on-selected still shows the cursor highlight. */
     .file-entry.is-selected {
         background-color: var(--color-selection-bg);
     }

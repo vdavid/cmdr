@@ -70,10 +70,12 @@ fallback contract, and the snapshot-pane note.
   - `--color-selection-fg-primary` (strong red — `#cc0000` light, `#ff4040` dark) applies on the selection bg.
   - `--color-selection-fg-cursor` (`#b80808` / `#ff8c8c`) takes over when the row is also under the cursor
     (`.is-selected.is-under-cursor`), where the bg flips to the translucent cursor color.
-  - `--color-selection-fg-fallback` (= `--color-text-primary`) takes over in the dark + tinted + cursor-active corner
-    where no AA-clearing red exists; CSS rule keyed on `.file-pane[data-pane-tint]`.
-  - `--color-selection-bg` paints a faint darker block under selected rows (light `#f2f2f2`, dark `#141414`); zebra
-    stripes are auto-overridden by cascade order.
+  - `--color-selection-fg-fallback` (= `--color-text-primary`) takes over only in the dark + tinted + cursor-active
+    corner *under `prefers-contrast: more`* (25% tint), where no AA-clearing red exists; at normal contrast the red
+    cursor variant stays. CSS rule keyed on `.file-pane[data-pane-tint]`, both list containers.
+  - `--color-selection-bg` paints a faint darker block under selected rows. It's a translucent black, so on a tinted
+    pane the tint hue shows through (just darker) rather than being wiped flat; on the untinted pane it reproduces the
+    old opaque light/dark grays. Zebra stripes are auto-overridden by cascade order.
   - `--color-selection-border` draws a 1px `inset` `box-shadow` between consecutive selected rows so dense selections
     stay countable; suppressed on the cursor row's top.
   - Independent: every cursor row (focused or unfocused) gets a faint accent-colored `inset` outline via

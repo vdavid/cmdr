@@ -316,21 +316,22 @@ func evalRowText(
 }
 
 // selectionFgTokenFor picks which `--color-selection-fg-*` variant applies
-// to a given scenario, mirroring the three-tier cascade in `app.css` +
-// `FullList.svelte`. Keep this in sync with the CSS rules: the order from
-// least- to most-specific is primary → cursor → fallback.
+// to a given scenario, mirroring the cascade in `app.css` + `FullList.svelte`.
+// Keep this in sync with the CSS rules: least- to most-specific is
+// primary → cursor.
 //
 // The cascade today:
 //   - default: `--color-selection-fg-primary` (the strong red, AA-safe vs
 //     `--color-selection-bg`).
 //   - row is under cursor: `--color-selection-fg-cursor` (a hair darker
 //     red in light, lighter in dark, AA-safe vs the translucent cursor bg).
-//   - dark + tinted pane + cursor-active: `--color-selection-fg-fallback`
-//     (= `--color-text-primary`), because no red variant clears AA there.
-func selectionFgTokenFor(mode Mode, tint paneTintHue, variant string) string {
-	if mode == ModeDark && tint.VarName != "" && variant == "cursor-active" {
-		return "color-selection-fg-fallback"
-	}
+//
+// There's a fourth tier in the CSS — dark + tinted + cursor-active drops to
+// `--color-selection-fg-fallback` (= `--color-text-primary`) — but it fires
+// ONLY under `prefers-contrast: more` (25% tint), which this matrix doesn't
+// model (it evaluates the 15% baseline; see `resolvePaneBg`). At 15% the red
+// cursor variant clears AA on every tint, so the matrix uses it here too.
+func selectionFgTokenFor(_ Mode, _ paneTintHue, variant string) string {
 	if variant == "cursor-active" || variant == "cursor-inactive" {
 		return "color-selection-fg-cursor"
 	}

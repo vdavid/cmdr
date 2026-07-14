@@ -1049,8 +1049,8 @@
         background-color: var(--color-bg-stripe);
     }
 
-    /* Selected rows: darker bg (light `#e6e6e6`, dark `#141414`); see
-       FullList.svelte and app.css for the cascade rationale. Cursor
+    /* Selected rows: a translucent darkening that keeps a tinted pane's hue
+       (see FullList.svelte and app.css for the cascade rationale). Cursor
        rules win by specificity, so cursor-on-selected still shows the
        cursor highlight. */
     .file-entry.is-selected {
