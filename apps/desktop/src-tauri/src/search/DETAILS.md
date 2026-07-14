@@ -12,6 +12,11 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   is a pure filter engine.
 - **Path reconstruction at search time, not stored**: storing full paths would double memory. Reconstructing by walking
   the parent chain is O(depth) per result (for 30 results at average depth 8, ~240 HashMap lookups, microseconds).
+- **The load arena is right-sized from the row count, not a fixed worst case**: `load_search_index` runs one
+  `SELECT COUNT(*)` and reserves `Vec::with_capacity(count)` + `String::with_capacity(count * ~20 bytes)`, the arena
+  estimate clamped to a 512 MiB ceiling so a bogus count can't request gigabytes (both still grow if the estimate runs
+  low, so correctness is unchanged). A small index no longer pays the old fixed ~100 MB / 5M-slot allocation on every
+  load.
 - **`engine.rs` is pure (no I/O, no DB)**: it takes `&SearchIndex` + `&SearchQuery`, scans in-memory with rayon, returns
   results. Trivially testable without mocks; the hot path is isolated from side effects.
 - **`types.rs` (data) separate from `query.rs` (operations)**: `types.rs` is imported by everything, so keeping it
