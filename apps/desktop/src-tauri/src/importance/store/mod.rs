@@ -5,9 +5,14 @@
 //! index's `index-{volume_id}.db`, carrying the index's disposable-cache
 //! discipline verbatim (plan Decision 2):
 //!
-//! - **`platform_case` collation on every connection** (reused from
-//!   `indexing::store` — it isn't persisted in the file, so every read/write
-//!   connection must re-register it before any query touching `path`).
+//! - **Folded-key rows.** The primary key is a precomputed `path_folded` column
+//!   (`normalize_for_comparison(path)` — the same fold the `platform_case`
+//!   collation applies) with a plain BINARY collation, so equality and range
+//!   lookups are index-served; the verbatim `path` rides along for return values.
+//!   The `platform_case` collation is still registered on every connection for
+//!   parity with the index store, but no importance query relies on it. Why the
+//!   key is precomputed rather than a collated `path`: DETAILS "The folded-key
+//!   primary key".
 //! - **Delete-and-recreate on a schema mismatch** ([`SCHEMA_VERSION`]); no
 //!   migrations, exactly like the index. Weights are regenerable derived data, so
 //!   a wipe costs one recompute on the next scan completion.
@@ -16,7 +21,8 @@
 //!
 //! ## What a weight row holds (plan Decision 2)
 //!
-//! Path-keyed, and beyond the scalar `score` each row persists the serialized
+//! Keyed by the folded path, and beyond the scalar `score` each row persists the
+//! verbatim `path` plus the serialized
 //! [`FolderSignals`] it was computed from, so a future consumer can re-weight the
 //! same signals under its own profile without a rescan. Every row carries the
 //! **as-of scan generation** it was computed at, so a consumer can tell how stale
@@ -36,6 +42,7 @@ use std::path::{Path, PathBuf};
 
 use rusqlite::Connection;
 
+use crate::indexing::store::normalize_for_comparison;
 pub use connection::open_read_connection;
 pub(crate) use connection::open_write_connection;
 
@@ -47,7 +54,15 @@ pub(crate) use connection::open_write_connection;
 /// `2`: storage compaction — floored folders no longer get a row (they're derived
 /// on read), and `FolderSignals` serializes only its non-default fields. An older
 /// DB (full of floored rows and verbose JSON) recreates fresh on the next scan.
-const SCHEMA_VERSION: &str = "2";
+///
+/// `3`: folded-key primary key — the row identity is now the precomputed
+/// [`normalize_for_comparison`](crate::indexing::store::normalize_for_comparison)
+/// fold of the path (`path_folded`, a BINARY PK), with the verbatim `path` kept as a
+/// plain column for return values. The `platform_case`-collated PK made the
+/// incremental subtree-clear DELETE full-scan the table (a custom collation defeats
+/// the b-tree range/LIKE optimization); the BINARY folded key restores an
+/// index-served range delete. An older DB recreates fresh.
+const SCHEMA_VERSION: &str = "3";
 
 /// Meta key for the per-volume recompute generation: a monotonically increasing
 /// counter bumped once per full-volume recompute pass. Every weight row is
@@ -55,16 +70,22 @@ const SCHEMA_VERSION: &str = "2";
 /// Absent ⇒ generation 0 (no pass has run).
 pub const RECOMPUTE_GENERATION_KEY: &str = "recompute_generation";
 
+// `path_folded` is the BINARY primary key (the precomputed `normalize_for_comparison`
+// fold of the path), so equality and range lookups are index-served without the
+// custom `platform_case` collation defeating the b-tree optimization. `path` keeps the
+// verbatim string for return values (a case/NFD variant folds to the same PK).
 const CREATE_TABLES_SQL: &str = "
     CREATE TABLE IF NOT EXISTS weights (
-        path             TEXT    PRIMARY KEY COLLATE platform_case,
+        path_folded      TEXT    PRIMARY KEY,
+        path             TEXT    NOT NULL,
         score            REAL    NOT NULL,
         signals          TEXT    NOT NULL,
         as_of_generation INTEGER NOT NULL
     ) WITHOUT ROWID;
 
     CREATE TABLE IF NOT EXISTS visits (
-        path            TEXT    PRIMARY KEY COLLATE platform_case,
+        path_folded     TEXT    PRIMARY KEY,
+        path            TEXT    NOT NULL,
         visit_count     INTEGER NOT NULL DEFAULT 0,
         last_visit_secs INTEGER NOT NULL DEFAULT 0
     ) WITHOUT ROWID;
@@ -228,9 +249,9 @@ impl ImportanceStore {
         read_generation(&self.read_conn)
     }
 
-    /// Read one folder's stored weight, or `None` if unscored. Path-keyed via the
-    /// `platform_case` collation, so a case/normalization variant of a scored path
-    /// resolves to the same row.
+    /// Read one folder's stored weight, or `None` if unscored. Keyed by the folded
+    /// path (`normalize_for_comparison`), so a case/normalization variant of a scored
+    /// path resolves to the same row.
     pub fn weight_for(&self, path: &str) -> Result<Option<StoredWeight>, ImportanceStoreError> {
         read_weight(&self.read_conn, path)
     }
@@ -270,10 +291,13 @@ pub(super) fn read_generation(conn: &Connection) -> Result<u64, ImportanceStoreE
         .unwrap_or(0))
 }
 
-/// Read one weight row.
+/// Read one weight row. Keyed by the folded path (`normalize_for_comparison`), so a
+/// case/NFD variant of a stored path resolves to the same row; the verbatim `path`
+/// column is returned.
 pub(super) fn read_weight(conn: &Connection, path: &str) -> Result<Option<StoredWeight>, ImportanceStoreError> {
-    let mut stmt = conn.prepare_cached("SELECT path, score, signals, as_of_generation FROM weights WHERE path = ?1")?;
-    let mut rows = stmt.query_map(rusqlite::params![path], |row| {
+    let mut stmt =
+        conn.prepare_cached("SELECT path, score, signals, as_of_generation FROM weights WHERE path_folded = ?1")?;
+    let mut rows = stmt.query_map(rusqlite::params![normalize_for_comparison(path)], |row| {
         Ok(StoredWeight {
             path: row.get(0)?,
             score: row.get(1)?,
@@ -290,8 +314,8 @@ pub(super) fn read_weight(conn: &Connection, path: &str) -> Result<Option<Stored
 
 /// Read one visit row as `(count, last_visit_secs)`.
 pub(super) fn read_visit(conn: &Connection, path: &str) -> Result<Option<(u64, u64)>, ImportanceStoreError> {
-    let mut stmt = conn.prepare_cached("SELECT visit_count, last_visit_secs FROM visits WHERE path = ?1")?;
-    let mut rows = stmt.query_map(rusqlite::params![path], |row| {
+    let mut stmt = conn.prepare_cached("SELECT visit_count, last_visit_secs FROM visits WHERE path_folded = ?1")?;
+    let mut rows = stmt.query_map(rusqlite::params![normalize_for_comparison(path)], |row| {
         Ok((row.get::<_, i64>(0)? as u64, row.get::<_, i64>(1)? as u64))
     })?;
     match rows.next() {

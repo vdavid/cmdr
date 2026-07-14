@@ -7,10 +7,11 @@
 //!
 //! ## What it owns
 //!
-//! - A per-volume read pool over `importance.db` (a thread-local read connection
-//!   with the `platform_case` collation registered, mirroring the index's
-//!   `ReadPool`), so a case/normalization variant of a path resolves to the same
-//!   row and reads never contend with the single writer thread (WAL).
+//! - A per-volume read pool over `importance.db` (a thread-local read connection,
+//!   mirroring the index's `ReadPool`). Lookups bind the folded path
+//!   (`normalize_for_comparison`) against the `path_folded` key, so a
+//!   case/normalization variant of a path resolves to the same row, and reads never
+//!   contend with the single writer thread (WAL).
 //! - The read calls: [`weight_for`], [`top_n`], [`above_threshold`], [`explain`],
 //!   [`signals_for`] — each result carrying the **as-of recompute generation** it
 //!   was computed at, so a consumer can caveat staleness (the offline-unmounted
@@ -44,6 +45,7 @@ use tokio::sync::watch;
 use super::scorer::{Explanation, FolderSignals, Score, SignalSet, Weights, explain};
 use super::store::{ImportanceStoreError, importance_db_path, open_read_connection};
 use crate::ignore_poison::IgnorePoison;
+use crate::indexing::store::normalize_for_comparison;
 
 /// A stored weight for one folder, as the read API hands it back: the scalar, the
 /// deserialized raw signal vector it was computed from (plan Decision 2: a
@@ -200,8 +202,8 @@ impl ImportanceIndex {
     /// The weight for one folder, or `None` if it has no stored row. A floored
     /// folder has no row, so it reads `None` here too (its effective weight is
     /// `0.0`); a consumer that needs to tell *floored* from *unscored* uses
-    /// [`lookup`](ImportanceIndex::lookup) instead. Path-keyed via `platform_case`,
-    /// so a case/normalization variant resolves to the same row.
+    /// [`lookup`](ImportanceIndex::lookup) instead. Keyed by the folded path, so a
+    /// case/normalization variant resolves to the same row.
     pub fn weight_for(&self, path: &str) -> Result<Option<ScoredWeight>, ImportanceStoreError> {
         // A never-scored volume has no `importance.db` at all (offline/unmounted,
         // fresh install, purged cache). A read-only open of a missing file fails
@@ -346,9 +348,8 @@ impl ImportanceIndex {
 
     /// Run `f` with a thread-local read connection to this volume's
     /// `importance.db`, opening (and caching) it on first use. The connection is
-    /// read-only with the `platform_case` collation registered, so it never
-    /// contends with the writer thread (WAL) and resolves paths the way the store
-    /// wrote them.
+    /// read-only, so it never contends with the writer thread (WAL); path lookups
+    /// resolve through the folded `path_folded` key the store wrote.
     fn with_conn<T>(
         &self,
         f: impl FnOnce(&rusqlite::Connection) -> Result<T, ImportanceStoreError>,
@@ -375,10 +376,13 @@ thread_local! {
 
 // ── Read queries ──────────────────────────────────────────────────────────
 
-/// Read one folder's scored weight, deserializing its stored signal vector.
+/// Read one folder's scored weight, deserializing its stored signal vector. Keyed by
+/// the folded path, so a case/NFD variant resolves to the same row; the verbatim
+/// `path` column is returned.
 fn read_scored_weight(conn: &rusqlite::Connection, path: &str) -> Result<Option<ScoredWeight>, ImportanceStoreError> {
-    let mut stmt = conn.prepare_cached("SELECT path, score, signals, as_of_generation FROM weights WHERE path = ?1")?;
-    let mut rows = stmt.query_map(rusqlite::params![path], row_to_scored_weight)?;
+    let mut stmt =
+        conn.prepare_cached("SELECT path, score, signals, as_of_generation FROM weights WHERE path_folded = ?1")?;
+    let mut rows = stmt.query_map(rusqlite::params![normalize_for_comparison(path)], row_to_scored_weight)?;
     match rows.next() {
         Some(Ok(w)) => Ok(Some(w)),
         Some(Err(e)) => Err(e.into()),

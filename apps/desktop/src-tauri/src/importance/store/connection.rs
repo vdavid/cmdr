@@ -1,10 +1,11 @@
 //! Connection factories for `importance.db`.
 //!
 //! Every connection registers the shared `platform_case` collation (reused from
-//! `indexing::store` — it's the SAME filesystem case/normalization rule, and it
-//! isn't persisted in the file, so it must be re-registered per connection) and
-//! creates the tables if missing. Write connections get WAL pragmas; read
-//! connections open read-only.
+//! `indexing::store`) for parity with the index store's connection setup and creates
+//! the tables if missing. The tables key on a precomputed `path_folded` BINARY
+//! column, so no importance query relies on the collation now (see the store's
+//! `mod.rs` header and DETAILS "The folded-key primary key"); registering it is
+//! harmless. Write connections get WAL pragmas; read connections open read-only.
 
 use std::path::Path;
 

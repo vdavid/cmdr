@@ -2,7 +2,64 @@
 //! discipline and the as-of-generation staleness predicate.
 
 use super::*;
-use crate::importance::writer::{ImportanceWriter, WeightRow};
+use crate::importance::writer::{ImportanceWriter, SUBTREE_CLEAR_SQL, WeightRow};
+
+/// Run `EXPLAIN QUERY PLAN` over the given SQL and return the `detail` column of
+/// every step joined by newline. Binds a dummy string for each `?` placeholder (the
+/// plan is structural, so the bound values don't matter), which keeps this agnostic
+/// to how many parameters the statement carries.
+fn explain_plan(conn: &Connection, sql: &str) -> String {
+    let explain_sql = format!("EXPLAIN QUERY PLAN {sql}");
+    let mut stmt = conn.prepare(&explain_sql).expect("prepare explain");
+    let n = stmt.parameter_count();
+    let dummy = "/some/folder".to_string();
+    let params: Vec<&dyn rusqlite::ToSql> = (0..n).map(|_| &dummy as &dyn rusqlite::ToSql).collect();
+    stmt.query_map(params.as_slice(), |row| row.get::<_, String>(3))
+        .expect("explain rows")
+        .map(|r| r.expect("detail"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// The incremental rescore's subtree-clear DELETE MUST be index-served, not a full
+/// scan of the `weights` table. This is the whole point of the folded-key column:
+/// with a custom-collation PK the `LIKE`-prefix clear full-scanned ~166k rows and
+/// re-ran the NFD-folding comparison on every one, pegging a CPU core. A BINARY
+/// `path_folded` PK lets the equality + half-open range be served by index SEARCHes.
+///
+/// A full table scan shows as a bare `SCAN weights` with no `USING`; an index or PK
+/// lookup shows as `SEARCH`. We reject any bare `SCAN` step. The row count doesn't
+/// change the plan (it's structural), so a modest table proves it cheaply.
+#[test]
+fn subtree_clear_delete_is_index_served() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = importance_db_path(dir.path(), "root");
+    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+
+    // Populate a realistically-shaped tree so the planner sees a genuine b-tree.
+    let mut rows = Vec::new();
+    for i in 0..2_000 {
+        rows.push(WeightRow {
+            path: format!("/Volumes/data/dir{}/sub{}", i % 200, i),
+            score: 0.5,
+            signals_json: "{}".to_string(),
+        });
+    }
+    writer.write_weights(1, rows).expect("write");
+    writer.flush_blocking().expect("flush");
+
+    let store = ImportanceStore::open(&path).expect("open");
+    let plan = explain_plan(store.read_conn(), SUBTREE_CLEAR_SQL);
+    for line in plan.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("SCAN") && !trimmed.contains("USING") {
+            panic!(
+                "subtree-clear DELETE full-scans the weights table — offending step:\n{trimmed}\nfull plan:\n{plan}"
+            );
+        }
+    }
+    writer.shutdown();
+}
 
 /// Open a fresh store in a temp dir, returning it plus the temp dir (kept alive).
 fn fresh_store() -> (ImportanceStore, tempfile::TempDir) {
@@ -99,8 +156,9 @@ fn schema_mismatch_recreates_the_db() {
     );
 }
 
-/// The path key uses `platform_case`, so a case/normalization variant of a scored
-/// path resolves to the same weight row (matching how the index keys paths).
+/// The row is keyed by the folded path (`normalize_for_comparison`, the same fold
+/// `platform_case` applies), so a case/normalization variant of a scored path
+/// resolves to the same weight row (matching how the index keys paths).
 #[test]
 #[cfg(target_os = "macos")]
 fn weight_lookup_is_platform_case_insensitive() {
@@ -125,6 +183,59 @@ fn weight_lookup_is_platform_case_insensitive() {
         store.weight_for("/users/me/project").expect("read").is_some(),
         "platform_case collation must fold case on macOS"
     );
+    writer.shutdown();
+}
+
+/// A row written through the INCREMENTAL path is keyed by its folded path too, so a
+/// case + NFD variant of the query resolves to it — and the verbatim `path` column is
+/// returned, not the folded key. Guards that the folded-key change didn't only cover
+/// the full pass: `insert_rows` (shared by both) folds, and the incremental
+/// subtree-clear range operates on the same folded keys.
+#[test]
+#[cfg(target_os = "macos")]
+fn incremental_write_resolves_a_case_and_nfd_variant() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = importance_db_path(dir.path(), "root");
+    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+
+    // Full pass at generation 1 (an unrelated row, so the store isn't empty).
+    writer
+        .write_weights(
+            1,
+            vec![WeightRow {
+                path: "/Users/me/other".to_string(),
+                score: 0.4,
+                signals_json: "{}".to_string(),
+            }],
+        )
+        .expect("full pass");
+    writer.flush_blocking().expect("flush");
+
+    // Incremental rescore: clear the subtree, insert a mixed-case, NFC-composed path
+    // (`é` is U+00E9). No generation bump.
+    let stored = "/Users/Me/Café";
+    writer
+        .write_weights_incremental(
+            1,
+            vec![WeightRow {
+                path: stored.to_string(),
+                score: 0.77,
+                signals_json: "{}".to_string(),
+            }],
+            vec![stored.to_string()],
+        )
+        .expect("incremental");
+    writer.flush_blocking().expect("flush");
+
+    // Query with a lowercase, NFD-decomposed variant (`e` + U+0301 combining acute).
+    let variant = "/users/me/cafe\u{0301}";
+    let store = ImportanceStore::open(&path).expect("open");
+    let w = store
+        .weight_for(variant)
+        .expect("read")
+        .expect("a case/NFD variant resolves to the incrementally-written row");
+    assert_eq!(w.score, 0.77);
+    assert_eq!(w.path, stored, "the verbatim path is returned, not the folded key");
     writer.shutdown();
 }
 
@@ -201,7 +312,7 @@ fn a_full_pass_replaces_the_table_and_restamps_the_generation() {
     writer.shutdown();
 }
 
-/// A repeated write to the same path OVERWRITES (upsert on the path PK), keeping
+/// A repeated write to the same path OVERWRITES (upsert on the folded-path PK), keeping
 /// the latest score and generation. A recompute pass rewrites every folder, so an
 /// upsert is the correct semantics (no duplicate rows, no stale leftover).
 #[test]

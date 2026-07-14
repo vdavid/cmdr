@@ -31,8 +31,10 @@ the visit signal, and the `ImportanceIndex` read API — including SMB scoring a
 
 ### Storage + scheduler (depth in [DETAILS.md](DETAILS.md))
 
-- **`store/` carries the index's disposable-cache discipline verbatim** (`platform_case`, delete-and-recreate on
-  `SCHEMA_VERSION` mismatch, path-keyed rows). ONE shared long-lived `ImportanceWriter` per volume from the scheduler's
+- **`store/` carries the index's disposable-cache discipline verbatim** (delete-and-recreate on `SCHEMA_VERSION`
+  mismatch); rows key on a BINARY `path_folded` PK, ❌ never a `platform_case`-collated `path` PK — it makes the
+  incremental subtree-clear full-scan and peg a core (DETAILS "The folded-key primary key"). ONE shared long-lived
+  `ImportanceWriter` per volume from the scheduler's
   `WriterRegistry`; `record_visit` + every recompute route through it. A full pass REPLACES the whole table + bumps the
   generation in ONE transaction; every row carries its as-of generation (the offline-read marker).
 - **Floored folders get NO row; the read side derives them** (`ImportanceIndex::lookup` →

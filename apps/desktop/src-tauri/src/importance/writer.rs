@@ -9,7 +9,7 @@
 //!
 //! - [`write_weights`](ImportanceWriter::write_weights): write a recompute pass's
 //!   weights, stamping every row with the pass generation and advancing the
-//!   stored generation to it. Rows upsert on the path PK (a pass rewrites every
+//!   stored generation to it. Rows upsert on the folded-path PK (a pass rewrites every
 //!   folder).
 //! - [`purge_volume`](ImportanceWriter::purge_volume): drop all weights and
 //!   visits (a consumer forgot the volume). Schema stays.
@@ -31,6 +31,7 @@ use rusqlite::Connection;
 
 use super::store::{ImportanceStoreError, RECOMPUTE_GENERATION_KEY, open_write_connection};
 use crate::ignore_poison::IgnorePoison;
+use crate::indexing::store::normalize_for_comparison;
 
 /// Bounded channel capacity. A recompute pass sends one `WriteWeights` message
 /// carrying the whole volume, so the queue never holds many messages; a modest
@@ -50,7 +51,7 @@ pub struct WeightRow {
 /// Messages to the writer thread.
 enum WriteMessage {
     /// Write a recompute pass's weights at `generation`, advancing the stored
-    /// recompute generation to it. Rows upsert on the path PK.
+    /// recompute generation to it. Rows upsert on the folded-path PK.
     WriteWeights { generation: u64, rows: Vec<WeightRow> },
     /// Write an INCREMENTAL rescore's weights at `generation` WITHOUT advancing the
     /// stored generation, keeping untouched folders' as-of markers. In ONE
@@ -280,12 +281,14 @@ fn apply_full_pass(conn: &mut Connection, generation: u64, rows: &[WeightRow]) -
 /// away, deleted, or now floored, so only the currently-scored folders survive.
 /// Both in one transaction so a reader never sees a half-applied transition.
 ///
-/// The subtree clear is a literal-prefix delete (`path = P OR path LIKE P/%`).
-/// `LIKE` is case-sensitive and doesn't use the `platform_case` collation, which is
-/// correct here: stored paths and the changed path come from the same index in the
-/// same verbatim form, so the literal prefix matches the descendants exactly (the
-/// collation only folds the PK equality lookup, not the stored path string). The
-/// `/` guard means clearing `/a` never touches a sibling like `/ab`.
+/// The subtree clear is an index-served BINARY range over the folded PK
+/// (`path_folded`): an equality on the changed folder's own folded key, plus the
+/// half-open range `[folded(prefix) + "/", folded(prefix) + "0")` covering exactly
+/// its descendants. Every descendant's folded key starts with `folded(prefix) + "/"`
+/// (folding is byte-for-byte stable across the `/` boundary — `/` is ASCII, so NFD
+/// and case-folding never cross it), and `"0"` (0x30) is one past `"/"` (0x2f), so
+/// the range holds all descendants and nothing else. The `/` boundary means clearing
+/// `/a` never touches a sibling like `/ab`. See [`SUBTREE_CLEAR_SQL`].
 fn apply_incremental(
     conn: &mut Connection,
     generation: u64,
@@ -295,14 +298,12 @@ fn apply_incremental(
     let tx = conn.transaction()?;
     {
         if !delete_subtrees.is_empty() {
-            let mut del =
-                tx.prepare_cached("DELETE FROM weights WHERE path = ?1 OR path LIKE ?2 || '/%' ESCAPE '\\'")?;
+            let mut del = tx.prepare_cached(SUBTREE_CLEAR_SQL)?;
             for prefix in delete_subtrees {
-                // `?1` is the exact prefix (the changed folder itself); `?2` is the
-                // same prefix with LIKE metacharacters escaped, so a `%` or `_` in a
-                // real folder name can't widen the descendant match.
-                let escaped = prefix.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
-                del.execute(rusqlite::params![prefix, escaped])?;
+                let f = normalize_for_comparison(prefix);
+                // `?1` matches the changed folder itself (its folded PK); `?2`..`?3`
+                // is the half-open BINARY range covering exactly its descendants.
+                del.execute(rusqlite::params![f, format!("{f}/"), format!("{f}0")])?;
             }
         }
         insert_rows(&tx, generation, rows)?;
@@ -311,7 +312,19 @@ fn apply_incremental(
     Ok(())
 }
 
-/// Upsert `rows` on the path PK, stamping each at `generation`. Shared by the full
+/// The subtree-clear DELETE an incremental rescore runs per changed prefix.
+///
+/// Served by the BINARY `path_folded` primary key: an equality on the prefix's own
+/// folded key plus a half-open range over its descendants (`folded(prefix) + "/"` up
+/// to, but not including, `folded(prefix) + "0"`). Because the PK is BINARY (no custom
+/// collation), SQLite serves both with index SEARCHes instead of full-scanning every
+/// row and re-running the NFD-folding `platform_case` comparison on each — the fix
+/// that stops the incremental from pegging a CPU core. Kept as a `const` so the
+/// `subtree_clear_delete_is_index_served` test EXPLAINs the exact production SQL.
+pub(crate) const SUBTREE_CLEAR_SQL: &str =
+    "DELETE FROM weights WHERE path_folded = ?1 OR (path_folded >= ?2 AND path_folded < ?3)";
+
+/// Upsert `rows` on the folded-path PK, stamping each at `generation`. Shared by the full
 /// pass and the incremental rescore.
 fn insert_rows(
     tx: &rusqlite::Transaction<'_>,
@@ -319,11 +332,15 @@ fn insert_rows(
     rows: &[WeightRow],
 ) -> Result<(), ImportanceStoreError> {
     let mut stmt = tx.prepare_cached(
-        "INSERT INTO weights (path, score, signals, as_of_generation) VALUES (?1, ?2, ?3, ?4)
-         ON CONFLICT(path) DO UPDATE SET score = ?2, signals = ?3, as_of_generation = ?4",
+        "INSERT INTO weights (path_folded, path, score, signals, as_of_generation) VALUES (?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT(path_folded) DO UPDATE SET path = ?2, score = ?3, signals = ?4, as_of_generation = ?5",
     )?;
     for row in rows {
+        // `path_folded` is the fold of the verbatim path — the same rule the read
+        // side binds and the subtree-clear range compares against, so the three
+        // agree by going through one `normalize_for_comparison`.
         stmt.execute(rusqlite::params![
+            normalize_for_comparison(&row.path),
             row.path,
             row.score,
             row.signals_json,
@@ -342,9 +359,9 @@ fn apply_purge(conn: &Connection) -> Result<(), ImportanceStoreError> {
 /// Bump a path's visit count by one and set its last-visit timestamp.
 fn apply_visit(conn: &Connection, path: &str, at_secs: u64) -> Result<(), ImportanceStoreError> {
     conn.execute(
-        "INSERT INTO visits (path, visit_count, last_visit_secs) VALUES (?1, 1, ?2)
-         ON CONFLICT(path) DO UPDATE SET visit_count = visit_count + 1, last_visit_secs = ?2",
-        rusqlite::params![path, at_secs as i64],
+        "INSERT INTO visits (path_folded, path, visit_count, last_visit_secs) VALUES (?1, ?2, 1, ?3)
+         ON CONFLICT(path_folded) DO UPDATE SET visit_count = visit_count + 1, last_visit_secs = ?3",
+        rusqlite::params![normalize_for_comparison(path), path, at_secs as i64],
     )?;
     Ok(())
 }

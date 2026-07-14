@@ -107,9 +107,12 @@ from `indexing::store` — the SAME filesystem case/normalization rule) register
 on a `SCHEMA_VERSION` mismatch (no migrations — weights are regenerable), and ONE writer thread per DB
 (`ImportanceWriter`, mirroring `IndexWriter`).
 
-Three tables. `weights` is **path-keyed** (the index's real identity is the path, not the rebuild-unstable entry id): each
-row holds the scalar `score`, the serialized raw `FolderSignals` vector (so a future consumer can re-weight under its own
-profile without a rescan — plan Decision 2), and the **as-of `recompute_generation`** the pass stamped. `visits` holds the
+Three tables. `weights` is **keyed by the folded path** (`path_folded`, the BINARY primary key — the index's real
+identity is the path, not the rebuild-unstable entry id) with the verbatim `path` kept as a plain column for return
+values. Each row also holds the scalar `score`, the serialized raw `FolderSignals` vector (so a future consumer can
+re-weight under its own profile without a rescan — plan Decision 2), and the **as-of `recompute_generation`** the pass
+stamped. See "The folded-key primary key" below for why the key is precomputed rather than a `platform_case`-collated
+`path`. `visits` holds the
 navigation-visit signal (see below). `meta` holds `schema_version` and the per-volume `recompute_generation` counter, bumped
 once per full pass. Every weight carries the **as-of `recompute_generation`** it was scored at — the honest staleness marker
 an offline-unmounted read caveats with (all rows from the last full pass share it; the read API surfaces it). A full pass
@@ -118,10 +121,34 @@ REPLACES the whole `weights` table (see below), so a surviving row is never at a
 transaction, so a reader never sees a bumped generation with un-written rows), `write_weights_incremental(generation, rows,
 delete_subtrees)` (an incremental pass, below), `purge_volume` (forget), `record_visit`.
 
+### The folded-key primary key (Decision/Why)
+
+**Decision:** the primary key is a precomputed `path_folded` column — `normalize_for_comparison(path)` (the SAME fold the
+`platform_case` collation applies: NFD-normalize then lowercase on macOS, identity elsewhere) — with a plain BINARY
+collation, and the verbatim `path` rides along as a non-key column for return values. Every write folds the path once
+(`insert_rows`, `apply_visit`, single-sourced through `normalize_for_comparison`); every read binds `folded(query)`
+against `path_folded`. This reuses the index store's own `name_folded` pattern (`indexing/store`), for the same reason.
+
+**Why not a `platform_case`-collated `path` PK (the old shape):** a custom collation on the key defeats SQLite's b-tree
+range and LIKE-prefix optimizations. The incremental subtree-clear DELETE (`writer::apply_incremental`) therefore
+FULL-SCANNED the whole `weights` table and re-ran the NFD-folding `platform_case_compare` on every row, per changed
+prefix — CPU profiling put an incremental's entire cost in that comparison over the scan, and on the root volume (near-
+continuous FSEvent churn ⇒ incrementals firing constantly) it pegged a CPU core. With a BINARY `path_folded` PK the same
+DELETE is index-served: `EXPLAIN QUERY PLAN` shows `SEARCH weights USING PRIMARY KEY` for both the equality and the
+half-open descendant range (a `MULTI-INDEX OR`), instead of `SCAN weights`. Pinned by
+`subtree_clear_delete_is_index_served`.
+
+**Correctness is preserved exactly.** `path_folded` is byte-identical to what the collation computed, so which case/NFD
+variants collide into one row is unchanged; case/NFD-insensitive lookup still resolves (`weight_lookup_is_platform_case_insensitive`,
+`incremental_write_resolves_a_case_and_nfd_variant`). Ranking is unaffected: the score is pure Rust (never touches SQL
+collation), the search ranker looks up the verbatim `path` in a `HashMap`, and `ORDER BY score DESC, path ASC` is a
+determinism tiebreak on the verbatim path. On case-sensitive volumes `normalize_for_comparison` is identity, so
+`path_folded == path` (same fold-collision behavior as before — no regression). The `platform_case` collation stays
+registered on every connection for parity with the index store; no importance query relies on it now.
+
 ### Storage model: no floored rows, trimmed JSON (compaction)
 
-Two decisions keep the store small (`SCHEMA_VERSION = 2`; an older, un-compacted DB just recreates fresh on the next scan
-— it's a disposable cache):
+Two decisions keep the store small (an older DB just recreates fresh on the next scan — it's a disposable cache):
 
 - **A floored folder gets NO row.** On a dev home ~76% of folders floor (a `node_modules`, a `.git`, a cache, and their
   whole subtrees), and storing a `0.0` weight plus a full signal blob for each is pure waste. Floored-ness is derivable
@@ -150,9 +177,10 @@ Two decisions keep the store small (`SCHEMA_VERSION = 2`; an older, un-compacted
 
 ### Transition semantics on the incremental path (the subtle part)
 
-An incremental pass (`write_weights_incremental`) CLEARS each changed subtree (`path = P OR path LIKE P/%`), then inserts
-only the non-floored folders in the touched set (the changed subtrees plus each changed path's capped ancestor chain), at
-the CURRENT generation without bumping it. Clearing-then-inserting handles every floor transition in one model:
+An incremental pass (`write_weights_incremental`) CLEARS each changed subtree (an index-served range over `path_folded`;
+see "The subtree clear" below), then inserts only the non-floored folders in the touched set (the changed subtrees plus
+each changed path's capped ancestor chain), at the CURRENT generation without bumping it. Clearing-then-inserting handles
+every floor transition in one model:
 
 - a folder RENAMED AWAY or DELETED: its old-path row is cleared and never re-inserted (it's not in the current walk);
 - a folder that BECAME floored (e.g. renamed to `node_modules`) and its now-under-floored descendants: cleared, then
@@ -160,11 +188,13 @@ the CURRENT generation without bumping it. Clearing-then-inserting handles every
 - a folder that STOPPED being floored (e.g. `node_modules` renamed to an ordinary name) and its descendants: cleared (they
   had no row anyway), then inserted because they now score.
 
-The clear is a literal-prefix `LIKE` (case-sensitive, not the `platform_case` collation — correct, since stored paths and
-the changed path come from the same index verbatim; the collation only folds the PK equality lookup). Both directions are
-TDD'd (`incremental_deletes_rows_that_become_floored`, `incremental_scores_rows_that_stop_being_floored`) — the likeliest
-bug site. A full pass replaces the whole table instead (a full pass rewrites every folder, so clearing first purges any
-folder that floored or vanished since the last pass).
+**The subtree clear.** It's an index-served BINARY range over the folded PK: `path_folded = folded(P)` for the changed
+folder itself, plus `folded(P) + "/" <= path_folded < folded(P) + "0"` for every descendant (`"0"` at 0x30 is one past
+`"/"` at 0x2f, and `/` is an ASCII boundary that folding never crosses, so the range holds exactly `P`'s descendants). The
+`/` boundary means clearing `/a` never touches a sibling like `/ab`. Both floor directions are TDD'd
+(`incremental_deletes_rows_that_become_floored`, `incremental_scores_rows_that_stop_being_floored`) — the likeliest bug
+site. A full pass replaces the whole table instead (a full pass rewrites every folder, so clearing first purges any folder
+that floored or vanished since the last pass).
 
 The measurement/tuning entry point for this is `scheduler::recompute_index_to_db` (walk a real index read-only, score,
 write an `importance.db` — the full-pass core without the registry), wrapped by the `importance-measure` dev bin, which
@@ -314,8 +344,14 @@ starving the index-DB WAL checkpoint (its `wal_checkpoint(TRUNCATE)` kept losing
 surfaced as `stall_probe::sqlite_busy` WARN bursts. ❌ Don't reintroduce a `/`→full-pass escalation.
 
 **Debounce (leading + trailing).** Each incremental still walks the whole index (O(dirs)) before rescoping to the
-touched subset — the walk, not the targeted write, dominates its cost — so `spawn_incremental` debounces per volume: the
-first pass of a burst runs immediately (leading edge), and under sustained change it runs at most once per
+touched subset; that walk now dominates each incremental's cost, because the targeted write is index-served against the
+BINARY `path_folded` PK (sub-millisecond even on a 166k-row store). **Gotcha/Why:** before the folded-key column the
+subtree-clear DELETE keyed on a `platform_case`-collated `path` PK, which defeats SQLite's b-tree range/LIKE
+optimization — so it FULL-SCANNED every row and re-ran the NFD-folding comparison on each, per changed prefix. On the
+root volume, where FSEvent churn keeps incrementals firing, that single DELETE pegged a CPU core (CPU profiling put the
+whole incremental's cost in `platform_case_compare` over the scan). ❌ Don't revert the PK to a collated `path` or the
+clear to a `LIKE` prefix — both reintroduce the full scan. So `spawn_incremental` debounces per volume: the first pass
+of a burst runs immediately (leading edge), and under sustained change it runs at most once per
 `INCREMENTAL_THROTTLE_WINDOW` (60 s; a throttle, NOT a debounce that never fires under constant change). Coalesced
 requests accumulate during the wait and the next drain folds them all in. Importance is a background signal, so the lag
 is invisible to consumers. **Ideal follow-up (deferred):** a targeted walk reading only the changed subtree's directory
