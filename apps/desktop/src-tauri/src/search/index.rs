@@ -179,8 +179,21 @@ pub(crate) fn load_search_index(pool: &ReadPool, cancel: &AtomicBool) -> Result<
 
         // Phase 1: Load all entries into Vec (sequential writes to contiguous memory)
         // Arena-allocate all filenames into a single String to avoid per-entry heap allocations.
-        let mut names = String::with_capacity(100_000_000); // ~5M entries × ~20 bytes avg
-        let mut entries = Vec::with_capacity(5_000_000);
+        // Right-size both from the actual row count: a small index used to pay a fixed
+        // ~100 MB / 5M-slot worst-case allocation on every load. `COUNT(*)` is a cheap
+        // b-tree count, run once. The name arena estimate is clamped so a bogus count
+        // can't request gigabytes; the Vec/String still grow if the estimate is low.
+        const AVG_NAME_BYTES: usize = 20;
+        const NAMES_ARENA_CEILING: usize = 512 * 1024 * 1024; // 512 MiB
+        let row_count_estimate: usize = conn
+            .query_row("SELECT COUNT(*) FROM entries", [], |r| r.get::<_, i64>(0))
+            .map(|n| n.max(0) as usize)
+            .unwrap_or(0);
+        let names_capacity = row_count_estimate
+            .saturating_mul(AVG_NAME_BYTES)
+            .min(NAMES_ARENA_CEILING);
+        let mut names = String::with_capacity(names_capacity);
+        let mut entries = Vec::with_capacity(row_count_estimate);
 
         let mut rows = stmt.query([]).map_err(|e| format!("Query failed: {e}"))?;
         let mut row_count = 0usize;
@@ -370,6 +383,26 @@ mod tests {
         assert_eq!(result.total_count, 1);
         assert_eq!(result.entries[0].name, "report.pdf");
         assert_eq!(result.entries[0].path, "/Users/alice/report.pdf");
+    }
+
+    #[test]
+    fn load_rightsizes_arena_from_row_count() {
+        // A small index must not pre-allocate the ~5M-entry / ~100 MB worst-case
+        // arena. Capacity should track the actual row count.
+        let dir = tempfile::tempdir().expect("failed to create temp dir");
+        let db_path = dir.path().join("test-index.db");
+        let _store = IndexStore::open(&db_path).expect("failed to open store");
+
+        let pool = ReadPool::new(db_path).unwrap();
+        let cancel = AtomicBool::new(false);
+        let index = load_search_index(&pool, &cancel).unwrap();
+
+        // Root sentinel only: before right-sizing this was Vec::with_capacity(5_000_000).
+        assert!(
+            index.entries.capacity() < 1000,
+            "entries capacity {} should track the row count, not the 5M worst case",
+            index.entries.capacity()
+        );
     }
 
     #[test]
