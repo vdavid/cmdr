@@ -146,6 +146,9 @@ determinism tiebreak on the verbatim path. On case-sensitive volumes `normalize_
 `path_folded == path` (same fold-collision behavior as before — no regression). The `platform_case` collation stays
 registered on every connection for parity with the index store; no importance query relies on it now.
 
+Measurements (the index-served DELETE, plus why the full walk stays deferred rather than targeted):
+[`docs/notes/idle-cpu-indexing-streamlining-2026-07.md`](../../../../../docs/notes/idle-cpu-indexing-streamlining-2026-07.md).
+
 ### Storage model: no floored rows, trimmed JSON (compaction)
 
 Two decisions keep the store small (an older DB just recreates fresh on the next scan — it's a disposable cache):
