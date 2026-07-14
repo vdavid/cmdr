@@ -24,6 +24,8 @@ use crate::pluralize::{pluralize, pluralize_with};
 mod exclusions;
 pub(in crate::indexing) use exclusions::*;
 
+mod walker;
+
 #[cfg(test)]
 mod tests;
 

@@ -1,0 +1,453 @@
+//! Hang-tolerant parallel directory walker for the local drive scan.
+//!
+//! # Why this exists
+//!
+//! A local full-disk scan must survive a hung `readdir`. macOS File Provider
+//! mounts (`~/Library/CloudStorage/…` for Dropbox / Google Drive / a MacDroid
+//! phone, `~/Library/Mobile Documents/` for iCloud) block indefinitely on a
+//! `readdir` when the provider is disconnected (`fileproviderd … FP -1004`).
+//! `jwalk`'s strict-ordered delivery froze the whole scan on one such read, and
+//! the reconcile path's serial `read_dir` froze every rescan.
+//!
+//! This engine walks directories in parallel and puts a wall-clock cap on every
+//! single read. A read that exceeds [`WalkConfig::read_timeout`] is *abandoned*:
+//! the directory is reported as a read error (its subtree pruned, the dir left
+//! unmarked so freshness stays honest), a replacement worker is spawned to keep
+//! pool capacity, and the rest of the walk proceeds. A hung dir therefore costs
+//! at most one worker for at most the timeout — never the whole scan.
+//!
+//! # The abandon/replace protocol (the non-obvious part)
+//!
+//! A blocking `readdir` on a real OS thread can't be interrupted, so a worker
+//! that calls it directly can't time itself out. Instead a **watchdog** thread
+//! caps it from outside. Each in-flight read carries an `Arc<AtomicU8>` state:
+//! `READING → COMPLETED` (won by the worker) or `READING → ABANDONED` (won by the
+//! watchdog). Whoever wins the compare-and-swap owns the outcome exactly once:
+//!
+//! - Worker finishes its read, `CAS(READING → COMPLETED)`. On success it processes
+//!   the result and accounts the task done. On failure (watchdog already abandoned
+//!   it) it drops the result and exits — its slot was replaced.
+//! - Watchdog sees a read older than the timeout, `CAS(READING → ABANDONED)`. On
+//!   success it reports the timeout, accounts the task done, and spawns a
+//!   replacement worker. The stuck worker thread is left parked in the syscall; it
+//!   exits on its own once the File Provider layer finally errors. That lingering
+//!   thread is bounded (only genuinely-hung *frontier* dirs reach it, each pruning
+//!   its subtree) and self-clearing, so it's a bounded cost, not a leak.
+//!
+//! Because the driver must never block on a parked worker, workers are **not**
+//! joined; the walk returns when the outstanding-task count hits zero (only the
+//! watchdog is joined — it runs on a timer, never on a syscall).
+//!
+//! # Testability
+//!
+//! The directory read is injected as a [`ReadDirFn`], so the hang, honest-skip,
+//! and parallel-correctness behaviors are unit-tested with a mock reader — no real
+//! hung mount required. Production passes [`std_read_dir`].
+
+// The engine is wired into the fresh-scan and reconcile paths in stages 2-3 of
+// `docs/specs/guarded-local-scan-plan.md`. Until then it's exercised only by its
+// own tests, so its production entry points legitimately read as dead code.
+#![allow(
+    dead_code,
+    reason = "walker engine is wired into the scan/reconcile paths in stages 2-3 of guarded-local-scan-plan.md; until then only its own tests exercise it"
+)]
+
+use std::collections::VecDeque;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, AtomicU8, AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, Condvar, Mutex};
+use std::time::{Duration, Instant};
+
+use crate::ignore_poison::IgnorePoison;
+
+#[cfg(test)]
+mod tests;
+
+/// Scoped log target for the walker.
+const LOG_TARGET: &str = "cmdr::indexing::scanner::walker";
+
+/// 8 MB worker stack, matching `file_system::sync_status`: a File Provider
+/// `readdir` / `lstat` can descend deep XPC override chains that overflow
+/// rayon's 2 MB default. This is also why the walk uses dedicated OS threads,
+/// never rayon (project rule: never rayon for calls that reach macOS
+/// frameworks).
+const WORKER_STACK_SIZE: usize = 8 * 1024 * 1024;
+
+// In-flight read state (see the module-level abandon/replace protocol).
+const READING: u8 = 0;
+const COMPLETED: u8 = 1;
+const ABANDONED: u8 = 2;
+
+// ── Public API ───────────────────────────────────────────────────────
+
+/// One directory to read. `id` is opaque to the engine — it's the visitor's
+/// handle for the directory (in production, the entry's integer index id), passed
+/// back to the visitor so children can be attributed to their parent without any
+/// path→id lookup. The engine only uses `path`, to read the directory.
+#[derive(Debug, Clone)]
+pub struct DirTask {
+    pub path: PathBuf,
+    pub id: i64,
+}
+
+/// File kind of a directory child, as reported by the reader without following
+/// symlinks (an `lstat`-shaped classification).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RawFileType {
+    Dir,
+    File,
+    Symlink,
+    Other,
+}
+
+/// A raw directory child yielded by the reader: its full path plus its
+/// (non-followed) file type. The visitor derives the name from `path` and does
+/// its own `lstat` for sizes/mtime.
+#[derive(Debug, Clone)]
+pub struct RawDirEntry {
+    pub path: PathBuf,
+    pub file_type: RawFileType,
+}
+
+/// Why a directory read didn't yield children.
+#[derive(Debug)]
+pub enum WalkReadError {
+    /// `readdir` returned an error (permission denied, not a directory, …).
+    Io(std::io::Error),
+    /// The read exceeded the timeout and was abandoned. The directory's contents
+    /// are unknown this walk; the subtree is pruned and the dir is left unmarked.
+    TimedOut,
+}
+
+/// Injected directory reader. Production uses [`std_read_dir`]; tests inject a
+/// reader that can block, to exercise the timeout without a real hung mount.
+pub type ReadDirFn = Arc<dyn Fn(&Path) -> std::io::Result<Vec<RawDirEntry>> + Send + Sync>;
+
+/// Per-directory semantics, driven by the engine. Called concurrently from
+/// worker threads, so implementors must be `Sync`.
+pub trait DirVisitor: Send + Sync {
+    /// Handle a directory whose read succeeded. Returns the child directories to
+    /// descend into, each carrying the id the visitor assigned it (so the engine
+    /// can schedule the read without knowing anything about ids). The visitor does
+    /// its per-entry work (lstat, exclusions, row build, marking `dir` listed) here.
+    fn visit_dir(&self, dir: &DirTask, children: Vec<RawDirEntry>) -> Vec<DirTask>;
+
+    /// Handle a directory whose read failed or timed out. The engine has already
+    /// decided not to descend and not to mark the dir listed; this is for the
+    /// visitor's own bookkeeping (logging, denial recording).
+    fn visit_read_error(&self, dir: &DirTask, err: &WalkReadError);
+}
+
+/// Walk tuning.
+#[derive(Debug, Clone)]
+pub struct WalkConfig {
+    /// Worker threads. `0` = derive from available parallelism.
+    pub num_threads: usize,
+    /// Wall-clock cap on a single directory read before it's abandoned.
+    pub read_timeout: Duration,
+    /// How often the watchdog checks for over-timeout reads. Smaller = tighter
+    /// abandon latency and cancellation latency, at a little more wakeup cost.
+    pub watchdog_interval: Duration,
+}
+
+impl Default for WalkConfig {
+    fn default() -> Self {
+        Self {
+            num_threads: 0,
+            read_timeout: Duration::from_secs(15),
+            watchdog_interval: Duration::from_secs(1),
+        }
+    }
+}
+
+/// Engine-level outcome of a walk (visitor-level totals live in the visitor).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct WalkStats {
+    pub dirs_read: u64,
+    pub timed_out: u64,
+    pub io_errors: u64,
+}
+
+/// Production reader: `std::fs::read_dir`, classifying each child without
+/// following symlinks. Read errors on individual entries are skipped (the
+/// directory read as a whole still succeeds); a failure to open the directory
+/// propagates as the `Err`.
+pub fn std_read_dir(path: &Path) -> std::io::Result<Vec<RawDirEntry>> {
+    let mut out = Vec::new();
+    for entry in std::fs::read_dir(path)? {
+        let Ok(entry) = entry else { continue };
+        let file_type = match entry.file_type() {
+            Ok(ft) if ft.is_dir() => RawFileType::Dir,
+            Ok(ft) if ft.is_symlink() => RawFileType::Symlink,
+            Ok(ft) if ft.is_file() => RawFileType::File,
+            Ok(_) => RawFileType::Other,
+            // A per-entry file_type() failure is rare (the dirent usually carries
+            // the type); treat it as Other rather than dropping the entry.
+            Err(_) => RawFileType::Other,
+        };
+        out.push(RawDirEntry {
+            path: entry.path(),
+            file_type,
+        });
+    }
+    Ok(out)
+}
+
+/// Walk `root` and everything under it, calling `visitor` per directory. Blocks
+/// until the walk completes (outstanding tasks reach zero) or `cancelled` is set.
+/// Never blocks on a hung directory: see the module docs.
+pub fn walk<V: DirVisitor + 'static>(
+    root: DirTask,
+    cfg: WalkConfig,
+    reader: ReadDirFn,
+    visitor: Arc<V>,
+    cancelled: Arc<AtomicBool>,
+) -> WalkStats {
+    let num_threads = if cfg.num_threads == 0 {
+        std::thread::available_parallelism().map_or(4, |n| n.get())
+    } else {
+        cfg.num_threads
+    };
+
+    let engine = Arc::new(Engine {
+        queue: Mutex::new(VecDeque::new()),
+        cv: Condvar::new(),
+        outstanding: AtomicUsize::new(0),
+        done: AtomicBool::new(false),
+        cancelled,
+        reader,
+        visitor,
+        timeout: cfg.read_timeout,
+        slots: Mutex::new(Vec::with_capacity(num_threads)),
+        dirs_read: AtomicU64::new(0),
+        timed_out: AtomicU64::new(0),
+        io_errors: AtomicU64::new(0),
+    });
+
+    engine.enqueue(root);
+
+    // Give each initial worker its own slot up front so the watchdog can see it.
+    let initial_slots: Vec<Slot> = {
+        let mut slots = engine.slots.lock_ignore_poison();
+        for _ in 0..num_threads {
+            slots.push(Arc::new(Mutex::new(None)));
+        }
+        slots.clone()
+    };
+    for slot in initial_slots {
+        engine.clone().spawn_worker(slot);
+    }
+
+    let watchdog = {
+        let engine = engine.clone();
+        let interval = cfg.watchdog_interval;
+        std::thread::Builder::new()
+            .name("index-walk-watchdog".into())
+            .spawn(move || engine.run_watchdog(interval))
+            .expect("failed to spawn walker watchdog thread")
+    };
+
+    // Wait for completion. Workers are intentionally not joined — an abandoned
+    // one is parked in a syscall and would block forever. The watchdog runs on a
+    // timer, so it's safe to join.
+    {
+        let mut q = engine.queue.lock_ignore_poison();
+        while !engine.done.load(Ordering::SeqCst) {
+            q = engine.cv.wait(q).unwrap_or_else(|e| e.into_inner());
+        }
+    }
+    let _ = watchdog.join();
+
+    WalkStats {
+        dirs_read: engine.dirs_read.load(Ordering::Relaxed),
+        timed_out: engine.timed_out.load(Ordering::Relaxed),
+        io_errors: engine.io_errors.load(Ordering::Relaxed),
+    }
+}
+
+// ── Internals ────────────────────────────────────────────────────────
+
+/// An in-flight directory read, registered in a worker's slot so the watchdog
+/// can time it out.
+struct InFlight {
+    state: Arc<AtomicU8>,
+    task: DirTask,
+    started: Instant,
+}
+
+/// A worker's current-read slot. `None` between reads. Each worker owns one; the
+/// watchdog scans all of them.
+type Slot = Arc<Mutex<Option<InFlight>>>;
+
+struct Engine<V: DirVisitor> {
+    /// Directories still to read. Drained by workers, grown as dirs are discovered.
+    queue: Mutex<VecDeque<DirTask>>,
+    /// Signals queue-non-empty and walk-done. Paired with `queue`'s mutex.
+    cv: Condvar,
+    /// Tasks enqueued but not yet accounted done. Walk completes when this hits 0.
+    outstanding: AtomicUsize,
+    /// Set (under the `queue` lock) when the walk is finished or cancelled.
+    done: AtomicBool,
+    cancelled: Arc<AtomicBool>,
+    reader: ReadDirFn,
+    visitor: Arc<V>,
+    timeout: Duration,
+    /// One slot per live worker (initial + replacements). Grows on abandonment.
+    slots: Mutex<Vec<Slot>>,
+    dirs_read: AtomicU64,
+    timed_out: AtomicU64,
+    io_errors: AtomicU64,
+}
+
+impl<V: DirVisitor + 'static> Engine<V> {
+    /// Push a directory to read. Bumps the outstanding count first so completion
+    /// can't race to zero before the child is queued.
+    fn enqueue(&self, task: DirTask) {
+        self.outstanding.fetch_add(1, Ordering::SeqCst);
+        self.queue.lock_ignore_poison().push_back(task);
+        self.cv.notify_one();
+    }
+
+    /// Account one task done. When the last one completes, mark the walk done
+    /// (under the queue lock, so a worker mid-`wait` can't miss the wakeup).
+    fn complete_one(&self) {
+        if self.outstanding.fetch_sub(1, Ordering::SeqCst) == 1 {
+            let _guard = self.queue.lock_ignore_poison();
+            self.done.store(true, Ordering::SeqCst);
+            drop(_guard);
+            self.cv.notify_all();
+        }
+    }
+
+    /// Mark the walk done and wake everyone (used by the cancel path).
+    fn signal_done(&self) {
+        let _guard = self.queue.lock_ignore_poison();
+        self.done.store(true, Ordering::SeqCst);
+        drop(_guard);
+        self.cv.notify_all();
+    }
+
+    fn spawn_worker(self: Arc<Self>, slot: Slot) {
+        let spawned = std::thread::Builder::new()
+            .name("index-walk".into())
+            .stack_size(WORKER_STACK_SIZE)
+            .spawn(move || self.run_worker(slot));
+        if let Err(e) = spawned {
+            // A failed spawn only reduces capacity; the remaining workers still
+            // drain the queue. Never panic a replacement (it'd abort mid-scan).
+            crate::log_error!(target: LOG_TARGET, "failed to spawn walk worker: {e}");
+        }
+    }
+
+    fn run_worker(self: Arc<Self>, slot: Slot) {
+        loop {
+            // Pop the next task, or exit when the walk is done/cancelled.
+            let task = {
+                let mut q = self.queue.lock_ignore_poison();
+                loop {
+                    if self.done.load(Ordering::SeqCst) || self.cancelled.load(Ordering::SeqCst) {
+                        return;
+                    }
+                    if let Some(task) = q.pop_front() {
+                        break task;
+                    }
+                    q = self.cv.wait(q).unwrap_or_else(|e| e.into_inner());
+                }
+            };
+
+            // Register the read so the watchdog can time it out, then do the
+            // (potentially blocking) read.
+            let state = Arc::new(AtomicU8::new(READING));
+            *slot.lock_ignore_poison() = Some(InFlight {
+                state: Arc::clone(&state),
+                task: task.clone(),
+                started: Instant::now(),
+            });
+            let result = (self.reader)(&task.path);
+
+            // Resolve the race with the watchdog. If it already abandoned this
+            // read, drop the result and exit — a replacement worker took over.
+            if state
+                .compare_exchange(READING, COMPLETED, Ordering::SeqCst, Ordering::SeqCst)
+                .is_err()
+            {
+                return;
+            }
+            *slot.lock_ignore_poison() = None;
+
+            if self.cancelled.load(Ordering::SeqCst) {
+                self.complete_one();
+                continue;
+            }
+
+            match result {
+                Ok(children) => {
+                    self.dirs_read.fetch_add(1, Ordering::Relaxed);
+                    for sub in self.visitor.visit_dir(&task, children) {
+                        self.enqueue(sub);
+                    }
+                }
+                Err(e) => {
+                    self.io_errors.fetch_add(1, Ordering::Relaxed);
+                    self.visitor.visit_read_error(&task, &WalkReadError::Io(e));
+                }
+            }
+            self.complete_one();
+        }
+    }
+
+    fn run_watchdog(self: Arc<Self>, interval: Duration) {
+        loop {
+            std::thread::sleep(interval);
+            if self.done.load(Ordering::SeqCst) {
+                return;
+            }
+            if self.cancelled.load(Ordering::SeqCst) {
+                self.signal_done();
+                return;
+            }
+
+            let now = Instant::now();
+            // Snapshot the slot handles (cheap Arc clones) so we don't hold the
+            // slots lock across per-slot work or a worker spawn.
+            let slots = self.slots.lock_ignore_poison().clone();
+            for slot in slots {
+                let inflight = slot
+                    .lock_ignore_poison()
+                    .as_ref()
+                    .map(|f| (Arc::clone(&f.state), f.task.clone(), f.started));
+                let Some((state, task, started)) = inflight else {
+                    continue;
+                };
+                if now.duration_since(started) < self.timeout {
+                    continue;
+                }
+                // Try to claim the abandonment. If the worker just finished, its
+                // CAS won and this fails — leave it alone.
+                if state
+                    .compare_exchange(READING, ABANDONED, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_err()
+                {
+                    continue;
+                }
+                *slot.lock_ignore_poison() = None;
+                self.timed_out.fetch_add(1, Ordering::Relaxed);
+                log::warn!(
+                    target: LOG_TARGET,
+                    "read timed out after {:?}, abandoning {} (subtree skipped this scan)",
+                    self.timeout,
+                    task.path.display(),
+                );
+                self.visitor.visit_read_error(&task, &WalkReadError::TimedOut);
+
+                // Restore capacity: the parked worker is gone, so add a fresh slot
+                // and a replacement worker.
+                let new_slot: Slot = Arc::new(Mutex::new(None));
+                self.slots.lock_ignore_poison().push(Arc::clone(&new_slot));
+                Arc::clone(&self).spawn_worker(new_slot);
+
+                self.complete_one();
+            }
+        }
+    }
+}

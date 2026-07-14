@@ -6,6 +6,13 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-14 [guarded-local-scan-plan.md](guarded-local-scan-plan.md) - Hang-tolerant, jwalk-free local scan: a
+      full-disk scan freezes indefinitely descending into disconnected File Provider mounts (`~/Library/CloudStorage`
+      MacDroid/Google Drive, iCloud) because both local walkers lack a `readdir` timeout (jwalk's strict-ordered
+      delivery freezes the whole fresh scan on one hung read; `local_reconcile`'s serial BFS freezes every rescan).
+      Replace both with one owned guarded parallel walker (worker pool + 15 s per-read watchdog with abandon/replace,
+      injectable reader for testability, `parent_id`-carried model that deletes the whole-volume `HashMap<PathBuf,i64>`),
+      driven by a fresh-scan visitor and a reconcile visitor. Plan ready; execution starting.
 - [ ] 2026-07-13 [media-ml-index-plan.md](media-ml-index-plan.md) - Searchable image index (OCR, tags, faces,
       text→image) as an ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation Models),
       vectors in SQLite not Postgres, on-device by default with faces/cloud as separate opt-ins. Plan reviewed + the
