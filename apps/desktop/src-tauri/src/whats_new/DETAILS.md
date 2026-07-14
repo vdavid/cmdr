@@ -6,10 +6,20 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; this is the exact parse c
 
 - Recognizes `## [x.y.z] - YYYY-MM-DD` release headings top-down. Skips the top `## [Unreleased]` block (no date, not a
   release) and ends the current release on any other H2.
-- Captures the **lead** (prose paragraphs between the heading and the first `###`, blank lines preserved as paragraph
-  breaks) and the Added / Changed / Fixed / Security sections, in changelog order. Drops `Non-app` and any unknown
-  section name.
+- Captures the **lead** (the block between the heading and the first `###`) and the Added / Changed / Fixed / Security
+  sections, in changelog order. Drops `Non-app` and any unknown section name.
 - Omits a release that has no lead AND no displayable section.
+
+### Lead newlines are preserved (so a lead can carry a numbered list)
+
+`build_lead` joins the lines *within* a paragraph with `\n`, not a space, and separates blank-line-delimited paragraphs
+with `\n\n`. Preserving the in-paragraph newlines is load-bearing: it lets a lead be a bold headline followed by a real
+Markdown numbered list (`1.` / `2.` / `3.`, each on its own line). Both renderers (snarkdown in the app popup, marked on
+the website) only recognize a list marker at the **start of a line**, so a space-join would flatten `1. … 2. … 3. …`
+into literal inline text instead of an `<ol>`. Soft-wrapped prose is unaffected: a single in-paragraph `\n` collapses to
+a space when either renderer emits HTML, so wrapped sentences still read as one line. This is faithful rendering, not
+fix-up logic (the changelog stays the single source of truth); the standard lead shape is a `**bold headline**`,
+optionally followed by a blank line and a short numbered list of highlights.
 
 ## Per-entry post-processing
 

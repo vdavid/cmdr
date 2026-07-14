@@ -13,7 +13,7 @@ use super::menu_items::{
     show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 use super::{
-    ABOUT_ID, ASK_CMDR_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID,
+    ABOUT_ID, ASK_CMDR_ID, CHANGELOG_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID,
     COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID,
     EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
     FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID,
@@ -49,6 +49,8 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         true,
         None::<&str>,
     )?;
+    // Opens the "What's new" popup showing the latest releases (same command as Help > What's new).
+    let changelog_item = MenuItem::with_id(app, CHANGELOG_ID, "Changelog\u{2026}", true, None::<&str>)?;
     // Re-entry to the onboarding wizard. Placed under "Check for updates…".
     // Linux gets no menu entry (palette-only) by design — see
     // `lib/onboarding/CLAUDE.md` § "Re-entry points".
@@ -63,6 +65,7 @@ pub(crate) fn build_menu_macos<R: Runtime>(
             &about_item,
             &license_item,
             &check_for_updates_item,
+            &changelog_item,
             &open_onboarding_item,
             &PredefinedMenuItem::separator(app)?,
             &settings_item,
@@ -511,11 +514,12 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         5,
     );
 
-    // cmdr menu positions: about(0), license(1), check_for_updates(2), open_onboarding(3),
-    // sep(4), settings(5), sep(6), services(7), sep(8), hide(9), hide_others(10),
-    // show_all(11), sep(12), quit(13)
+    // cmdr menu positions: about(0), license(1), check_for_updates(2), changelog(3),
+    // open_onboarding(4), sep(5), settings(6), sep(7), services(8), sep(9), hide(10),
+    // hide_others(11), show_all(12), sep(13), quit(14)
     register_item(&mut items, CHECK_FOR_UPDATES_ID, &check_for_updates_item, &app_menu, 2);
-    register_item(&mut items, OPEN_ONBOARDING_ID, &open_onboarding_item, &app_menu, 3);
+    register_item(&mut items, CHANGELOG_ID, &changelog_item, &app_menu, 3);
+    register_item(&mut items, OPEN_ONBOARDING_ID, &open_onboarding_item, &app_menu, 4);
 
     Ok(MenuItems {
         menu,
@@ -638,6 +642,7 @@ fn set_macos_menu_icons_inner() {
                 ("Enter license key\u{2026}", "key"),
                 ("See license details\u{2026}", "key"),
                 ("Check for updates\u{2026}", "arrow.down.circle"),
+                ("Changelog\u{2026}", "list.bullet.rectangle"),
                 ("Onboarding\u{2026}", "sparkles"),
                 ("Settings\u{2026}", "gearshape"),
             ],

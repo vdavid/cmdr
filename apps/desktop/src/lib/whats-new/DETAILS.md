@@ -3,6 +3,40 @@
 Read [CLAUDE.md](CLAUDE.md) first for the module map and must-knows. This file holds the depth: the show-once decision
 table, the manual entry, and the E2E seam.
 
+## Show-once decision table
+
+`whatsNew.lastSeenVersion` is the stamp. On startup, after settings load, `runWhatsNewStartupTrigger` resolves the
+current version and acts on `decideWhatsNew`:
+
+- **Fresh install** (no `lastSeenVersion`, NOT onboarded): silent stamp, never a popup. Also keeps every E2E run
+  popup-free (fresh data dir → not onboarded).
+- **Inaugural showcase** (no `lastSeenVersion`, onboarded): the user updated INTO the feature, so show the current
+  release only (`since=null, max=1`), then stamp. Disabled → stamp silently. Keyed on `isOnboarded`, NOT the version key
+  alone: that flag is the only thing telling a fresh install from an existing user updating in.
+- **Upgrade**: enabled → show `lastSeen < v <= current`, newest first, `max:5`, then stamp. Disabled → stamp silently.
+- **Downgrade**: rewrite `lastSeenVersion` to current, no popup. **Unchanged**: nothing.
+
+`isOnboarded` lives OUTSIDE the settings registry (`$lib/settings-store`), so the trigger can't read it via
+`getSetting`; the caller (`routes/(main)/+page.svelte`) passes it in via `loadSettings()`.
+
+`compareVersions` compares numerically per component: a string compare would order `0.10.0` before `0.9.0` and misread
+an upgrade as a downgrade.
+
+## Lead rendering
+
+The dialog renders each release's `lead` through `snarkdown` inside a `<div class="lead">` (NOT a `<p>`). A lead can be
+a `**bold headline**` followed by a Markdown numbered list; snarkdown emits a block `<ol>`, which a `<p>` can't legally
+contain (the browser force-closes the paragraph). CSS styles `.lead strong` (lifted to primary text, the part most
+people read) and `.lead ol`. The list only renders because the backend `build_lead` preserves in-paragraph newlines; the
+parse contract lives in `src-tauri/src/whats_new/DETAILS.md`.
+
+## Dev override
+
+`CMDR_SIMULATE_UPDATE_FROM=0.22.0` makes a dev session behave as if it just updated from that version. The backend
+surfaces it via `whatsNewDevOverride()`. When set, the trigger BYPASSES `decideWhatsNew`: it diffs from that version
+(`getWhatsNew(v, 5)`), force-opens the dialog regardless of the setting / onboarding / modals, and does NOT stamp, so
+every relaunch keeps showing it until the var is unset.
+
 ## Menu + palette (manual entry)
 
 The manual reopen is the `help.whatsNew` command (Help > What's new / command palette), `App`-scoped, no default
@@ -11,6 +45,10 @@ the latest five releases (no lower bound), force-opens the dialog (empty state i
 stamps `lastSeenVersion`. The native menu side lives in `src-tauri/src/menu/` (id `HELP_WHATS_NEW_ID`, placed above
 "Send feedback…"); see that module's `DETAILS.md` for the menu order and the SF Symbol / mnemonic. `help.whatsNew` is in
 `menuCommands` (`shortcuts-store.ts`) so a future custom binding syncs its accelerator to the menu.
+
+A **second** native entry point opens the same popup: Cmdr > Changelog… (id `CHANGELOG_ID`, below "Check for updates…"),
+mapped to the same `help.whatsNew` command, so both menu items open the identical latest-five slice. Details (SF Symbol,
+the shared-command reverse-map note) in `src-tauri/src/menu/DETAILS.md`.
 
 ## E2E seam
 

@@ -7,9 +7,11 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [0.33.0] - 2026-07-09
 
-1. Cmdr now handles archives: browse `.zip`, `.tar`, `.tar.gz`, and `.7z` files like folders, edit them in place, even
-   ones stored on a phone or SMB share. 2. Can now paste text or images straight into new files with ⌘V. 3. Search now
-   ranks your most interesting files first.
+**Archives open like folders, the clipboard pastes straight into files, and search shows your best files first.**
+
+1. Browse and edit `.zip`, `.tar`, `.tar.gz`, and `.7z` archives like folders, even ones on a phone or SMB share.
+2. Paste text or an image straight into a new file with ⌘V.
+3. Search ranks your most interesting files first.
 
 ### Added
 
@@ -61,8 +63,11 @@ The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [0.32.0] - 2026-07-01
 
-Design tweaks: colors, icons, dropdown design, and text alignment. Detect and display file systems, disallow copying
-4GB+ files to FAT32 volumes.
+**Design polish across the app, plus filesystem-aware copies.**
+
+1. Refreshed colors, icons, dropdowns, and text alignment across the app.
+2. Every volume shows its filesystem: APFS, exFAT, FAT32, and more.
+3. Copying a file over 4 GB to a FAT32 drive is blocked before it fails.
 
 ### Added
 
@@ -108,8 +113,11 @@ Design tweaks: colors, icons, dropdown design, and text alignment. Detect and di
 
 ## [0.31.0] - 2026-06-30
 
-See/set macOS Finder colored tags. Nicer Drive indexing UI, live folder sizes during scans, plus network and phone scans
-finish several times faster than before.
+**Finder color tags, a nicer indexing UI, and much faster network and phone scans.**
+
+1. See and set macOS Finder color tags right from Cmdr.
+2. A refreshed drive-indexing UI with live folder sizes during scans.
+3. Network and phone scans finish several times faster than before.
 
 ### Added
 
@@ -168,8 +176,11 @@ finish several times faster than before.
 
 ## [0.30.0] - 2026-06-28
 
-See folder sizes while indexing is going, browse your phone while a copy/move/delete is going, and get better
-mouse-driven navigation. Network drive rescans are also faster now.
+**Live folder sizes, browse while transfers run, and smoother mouse navigation.**
+
+1. Watch folder sizes fill in while indexing runs.
+2. Browse your phone while a copy, move, or delete is underway.
+3. Smoother mouse-driven navigation, plus faster network-drive rescans.
 
 ### Added
 
@@ -242,8 +253,12 @@ mouse-driven navigation. Network drive rescans are also faster now.
 
 ## [0.29.0] - 2026-06-22
 
-Four big features: 1. Operations (copy, move, and delete) got pause/resume. 2. Operations can be queued. 3. Drive
-indexing extended to all volume types incl. SMB shares and MTP devices. 4. Cmdr is now localized into nine languages.
+**Four big ones: pause/resume, a transfer queue, indexing everywhere, and nine languages.**
+
+1. Copy, move, and delete operations can pause and resume.
+2. Operations can be queued to run one after another.
+3. Drive indexing now covers every volume type, including SMB shares and MTP devices.
+4. Cmdr is now translated into nine languages.
 
 ### Added
 

@@ -242,6 +242,12 @@ future custom binding still flows into the menu. Its macOS SF Symbol is `sparkle
 title, so `What's new` must stay byte-identical); the Linux mnemonic is `&What's new` (`W` is free; `A`/`K`/`f`/`S` are
 claimed by the other Help items).
 
+A **second** entry point opens the same popup: `Changelog…` (`CHANGELOG_ID` (`"changelog"`)), placed directly below
+`Check for updates…` (macOS cmdr menu; Linux: bottom of the Edit menu). It maps to the same `help.whatsNew` command, so
+both menu items open the identical latest-five slice. Its macOS SF Symbol is `list.bullet.rectangle`. Because two menu
+IDs share one command, `command_id_to_menu_id("help.whatsNew")` resolves only to `HELP_WHATS_NEW_ID`; that's fine since
+neither carries a default shortcut (a future binding would just track the Help item).
+
 The **Zoom** submenu (`build_zoom_submenu`) holds the text-size presets (75/100/125/150 %) plus Zoom in (`Cmd+Plus`) /
 Zoom out (`Cmd+Minus`) / 100 % (`Cmd+0`). Items are `App`-scoped so the keyboard accelerators fire in any focused window.
 Linux skips the in/out accelerators because GTK intercepts `Cmd+Plus` / `Cmd+Minus` at the toolkit level; the JS

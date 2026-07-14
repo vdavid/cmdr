@@ -10,7 +10,7 @@ use super::menu_items::{
     show_in_file_manager_accelerator, show_in_file_manager_label,
 };
 use super::{
-    ABOUT_ID, ASK_CMDR_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID,
+    ABOUT_ID, ASK_CMDR_ID, CHANGELOG_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID,
     COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID,
     EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FILE_COMPRESS_ID, FILE_COPY_ID,
     FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID,
@@ -112,6 +112,8 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         true,
         None::<&str>,
     )?;
+    // Opens the "What's new" popup showing the latest releases (same command as Help > What's new).
+    let changelog_item = MenuItem::with_id(app, CHANGELOG_ID, "Chan&gelog\u{2026}", true, None::<&str>)?;
 
     let edit_menu = Submenu::with_items(
         app,
@@ -131,6 +133,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
             &settings_item,
             &license_item,
             &check_for_updates_item,
+            &changelog_item,
         ],
     )?;
     menu.append(&edit_menu)?;
@@ -397,7 +400,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
 
     // Edit menu positions: cut(0), copy(1), paste(2), move_here(3), sep(4),
     // copy_path(5), copy_filename(6), sep(7), search_files(8), sep(9), settings(10),
-    // license(11), check_for_updates(12)
+    // license(11), check_for_updates(12), changelog(13)
     register_item(&mut items, EDIT_CUT_ID, &edit_cut_item, &edit_menu, 0);
     register_item(&mut items, EDIT_COPY_ID, &edit_copy_item, &edit_menu, 1);
     register_item(&mut items, EDIT_PASTE_ID, &edit_paste_item, &edit_menu, 2);
@@ -413,6 +416,7 @@ pub(crate) fn build_menu_linux<R: Runtime>(
         &edit_menu,
         12,
     );
+    register_item(&mut items, CHANGELOG_ID, &changelog_item, &edit_menu, 13);
 
     // Select menu positions: select_all(0), deselect_all(1), sep(2), select_files(3),
     // deselect_files(4). The two dialog openers carry no accelerator; bare `+` / `-` are

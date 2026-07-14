@@ -173,6 +173,11 @@ pub const ASK_CMDR_ID: &str = "ask_cmdr";
 /// Menu item ID for "Check for updates…" (under the Cmdr / Help menu).
 pub const CHECK_FOR_UPDATES_ID: &str = "check_for_updates";
 
+/// Menu item ID for "Changelog…" (under the Cmdr app menu, below "Check for updates…").
+/// A second entry point to the "What's new" popup: it maps to the same `help.whatsNew`
+/// command as the Help-menu "What's new" item, so both open the latest-five changelog slice.
+pub const CHANGELOG_ID: &str = "changelog";
+
 /// Menu item ID for "Onboarding…" (under the Cmdr app menu, macOS only).
 /// Linux re-entry to the onboarding wizard is palette-only by design (see
 /// `apps/desktop/src/lib/onboarding/CLAUDE.md` § "Re-entry points").
@@ -197,6 +202,10 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         HELP_SHORTCUTS_ID => Some(("help.openShortcuts", CommandScope::App)),
         QUEUE_SHOW_ID => Some(("queue.show", CommandScope::App)),
         HELP_WHATS_NEW_ID => Some(("help.whatsNew", CommandScope::App)),
+        // Second entry point (Cmdr menu) to the same "What's new" popup. Deliberately maps
+        // to `help.whatsNew`; the reverse `command_id_to_menu_id` keeps pointing at the Help
+        // item, which is fine (neither carries a default shortcut).
+        CHANGELOG_ID => Some(("help.whatsNew", CommandScope::App)),
         OPERATION_LOG_ID => Some(("log.operationLog", CommandScope::App)),
         ASK_CMDR_ID => Some(("askCmdr.toggle", CommandScope::App)),
         HELP_SEND_ERROR_REPORT_ID => Some(("help.sendErrorReport", CommandScope::App)),

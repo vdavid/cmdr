@@ -114,14 +114,44 @@ fn recognizes_release_headings_in_order() {
 }
 
 #[test]
-fn extracts_single_line_lead() {
+fn extracts_wrapped_prose_lead() {
     let releases = parse(FIXTURE);
     let r = releases.iter().find(|r| r.version == "0.10.0").unwrap();
     let lead = r.lead.as_ref().unwrap();
     assert!(lead.starts_with("Double-digit minor lead."));
-    // Wrapped lead lines join with a space, not a newline.
-    assert!(lead.contains("sorts after 0.9.0 by semver, not by string order."));
-    assert!(!lead.contains('\n'));
+    // Wrapped lead lines keep their source newline (the renderer collapses a single
+    // in-paragraph `\n` to a space, so the sentence still reads as one line on screen).
+    assert_eq!(
+        lead,
+        "Double-digit minor lead. This release sorts after 0.9.0 by semver, not by string\norder."
+    );
+}
+
+#[test]
+fn preserves_numbered_list_lead() {
+    // A lead written as a bold headline plus a Markdown numbered list must reach the
+    // renderer with each `N.` marker at the start of its own line; otherwise snarkdown
+    // (app) and marked (website) show literal "1. 2. 3." text instead of an <ol>.
+    let md = "\
+# Changelog
+
+## [1.0.0] - 2026-07-14
+
+**Big release.**
+
+1. First highlight.
+2. Second highlight.
+3. Third highlight.
+
+### Added
+
+- Something ([abc123](https://github.com/vdavid/cmdr/commit/abc123))
+";
+    let releases = parse(md);
+    assert_eq!(
+        releases[0].lead.as_deref(),
+        Some("**Big release.**\n\n1. First highlight.\n2. Second highlight.\n3. Third highlight.")
+    );
 }
 
 #[test]
@@ -319,7 +349,8 @@ fn smoke_real_changelog_parses() {
         "newest displayable release must be the current version"
     );
 
-    // Each parsed release has a lead (the release flow mandates a 1-2 sentence lead per release).
+    // Each parsed release has a lead (the release flow mandates a lead per release: a bold
+    // headline, optionally followed by a short numbered list of the highlights).
     for release in &latest_five {
         assert!(
             release.lead.is_some(),

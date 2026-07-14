@@ -283,8 +283,15 @@ impl ReleaseBuilder {
     }
 }
 
-/// Joins the lead lines into paragraphs, preserving blank-line paragraph breaks.
-/// Returns `None` when there's no prose.
+/// Joins the lead lines into paragraphs, preserving both blank-line paragraph breaks
+/// and the newlines *within* a paragraph. Returns `None` when there's no prose.
+///
+/// Within a paragraph the source lines are joined with `\n`, not a space, so the
+/// author's line structure survives to the Markdown renderer. That's what lets a lead
+/// carry a real numbered list (`1.` / `2.` / `3.`, each on its own line): both snarkdown
+/// (app popup) and marked (website) only recognize a list marker at the start of a line.
+/// Soft-wrapped prose is unaffected: a single `\n` inside a paragraph collapses to a
+/// space when either renderer emits HTML, so wrapped sentences still read as one line.
 fn build_lead(lines: &[String]) -> Option<String> {
     let mut paragraphs: Vec<String> = Vec::new();
     let mut current: Vec<&str> = Vec::new();
@@ -292,7 +299,7 @@ fn build_lead(lines: &[String]) -> Option<String> {
     for line in lines {
         if line.trim().is_empty() {
             if !current.is_empty() {
-                paragraphs.push(current.join(" "));
+                paragraphs.push(current.join("\n"));
                 current.clear();
             }
         } else {
@@ -300,7 +307,7 @@ fn build_lead(lines: &[String]) -> Option<String> {
         }
     }
     if !current.is_empty() {
-        paragraphs.push(current.join(" "));
+        paragraphs.push(current.join("\n"));
     }
 
     let joined = paragraphs.join("\n\n");

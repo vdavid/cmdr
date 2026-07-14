@@ -79,8 +79,10 @@
                             <span class="date">{release.date}</span>
                         </h3>
                         {#if release.lead != null}
+                            <!-- A <div>, not a <p>: a lead can be a bold headline plus a Markdown numbered
+                                 list, and snarkdown emits a block <ol> that's invalid inside a <p>. -->
                             <!-- eslint-disable-next-line svelte/no-at-html-tags -- trusted: renders our committed CHANGELOG via renderMarkdown(), not user input -->
-                            <p class="lead">{@html renderMarkdown(release.lead)}</p>
+                            <div class="lead">{@html renderMarkdown(release.lead)}</div>
                         {/if}
                         {#each release.sections as section (section.title)}
                             <h4 class="section-title">{section.title}</h4>
@@ -170,6 +172,23 @@
         font-size: var(--font-size-md);
         color: var(--color-text-secondary);
         line-height: 1.55;
+    }
+
+    /* The lead's bold headline (the part most people read): lift it to the primary
+       text color so it reads as the summary, above the secondary-toned detail. */
+    .lead :global(strong) {
+        color: var(--color-text-primary);
+        font-weight: 600;
+    }
+
+    /* A numbered list authored into the lead (snarkdown emits a bare <ol>). */
+    .lead :global(ol) {
+        margin: 0;
+        padding-left: var(--spacing-lg);
+    }
+
+    .lead :global(li + li) {
+        margin-top: var(--spacing-xxs);
     }
 
     .section-title {
