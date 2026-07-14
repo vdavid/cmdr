@@ -35,6 +35,30 @@ use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 use crate::pluralize::pluralize;
 
+mod throttle;
+use throttle::{Throttle, ThrottleOutcome};
+
+/// The live-path throttle, carrying the exact upsert to replay on the trailing
+/// flush (see [`PendingUpsert`]). Only the live reconciler holds one; the replay
+/// path threads `None` so journal catch-up stays unthrottled. Visible to
+/// `indexing` because it rides `process_fs_event`'s signature.
+pub(super) type LiveThrottle = Throttle<PendingUpsert>;
+
+/// The suppressed upsert a throttled file's trailing flush replays. Built from
+/// the already-stat'd suppressed event, so the sweep never re-stats (which would
+/// risk blocking the live loop on a dead mount, and add a phantom-apply-on-
+/// deleted-file case). Only regular files are throttled, so `is_directory` /
+/// `is_symlink` are always false at flush time.
+pub(super) struct PendingUpsert {
+    parent_id: i64,
+    name: String,
+    logical_size: Option<u64>,
+    physical_size: Option<u64>,
+    modified_at: Option<u64>,
+    inode: Option<u64>,
+    nlink: Option<u64>,
+}
+
 // ── EventReconciler ──────────────────────────────────────────────────
 
 /// Maximum number of events the reconciler will buffer during a scan.
@@ -155,18 +179,35 @@ pub struct EventReconciler {
     pending_rescans: Arc<Mutex<HashSet<PathBuf>>>,
     /// Whether a MustScanSubDirs rescan is currently running.
     rescan_active: Arc<AtomicBool>,
+    /// Per-file throttle for live upserts (leading + trailing, 60 s window). Only
+    /// consulted on the live path; the trailing flush runs off the event loop's
+    /// sweep tick via [`EventReconciler::sweep_throttle`].
+    throttle: LiveThrottle,
 }
 
 impl EventReconciler {
     /// Create a new reconciler in buffering mode.
     pub fn new() -> Self {
+        Self::with_throttle(Throttle::new(resolve_downloads_prefix()))
+    }
+
+    /// Construct with a caller-supplied throttle (tests inject a short window).
+    fn with_throttle(throttle: LiveThrottle) -> Self {
         Self {
             buffer: Vec::new(),
             buffering: true,
             buffer_overflow: false,
             pending_rescans: Arc::new(Mutex::new(HashSet::new())),
             rescan_active: Arc::new(AtomicBool::new(false)),
+            throttle,
         }
+    }
+
+    /// Test constructor with an explicit throttle window, so the trailing flush is
+    /// exercised without sleeping a real [`THROTTLE_WINDOW`].
+    #[cfg(test)]
+    pub(super) fn new_with_throttle_window(window: std::time::Duration) -> Self {
+        Self::with_throttle(Throttle::with_window(window, None))
     }
 
     /// Buffer an event during scan. If the buffer cap is reached, stops
@@ -221,7 +262,9 @@ impl EventReconciler {
                 continue;
             }
 
-            if let Some(paths) = process_fs_event(event, conn, writer) {
+            // Replay stays unthrottled (None): journal catch-up must converge
+            // fully and fast; throttling is a live-steady-state concern.
+            if let Some(paths) = process_fs_event(event, conn, writer, None) {
                 affected_paths.extend(paths);
             }
 
@@ -279,7 +322,7 @@ impl EventReconciler {
             return Some(event.event_id);
         }
 
-        if let Some(affected_paths) = process_fs_event(event, conn, writer) {
+        if let Some(affected_paths) = process_fs_event(event, conn, writer, Some(&mut self.throttle)) {
             pending_paths.extend(affected_paths);
         }
 
@@ -287,6 +330,30 @@ impl EventReconciler {
         // instead of per-event, to reduce writer channel pressure during event storms.
 
         Some(event.event_id)
+    }
+
+    /// Flush every throttled key whose 60 s window has elapsed, applying its
+    /// last-seen size (never re-statting). Called on the event loop's ~1 s
+    /// throttle-sweep tick. Returns the ancestor paths whose `dir_stats` the
+    /// flushes changed, for the caller's batched `index-dir-updated` emit.
+    pub(super) fn sweep_throttle(&mut self, writer: &IndexWriter, now: Instant) -> Vec<String> {
+        let flushes = self.throttle.sweep(now);
+        let mut affected: Vec<String> = Vec::new();
+        for (path, upsert) in flushes {
+            let _ = writer.send(WriteMessage::UpsertEntryV2 {
+                parent_id: upsert.parent_id,
+                name: upsert.name,
+                is_directory: false,
+                is_symlink: false,
+                logical_size: upsert.logical_size,
+                physical_size: upsert.physical_size,
+                modified_at: upsert.modified_at,
+                inode: upsert.inode,
+                nlink: upsert.nlink,
+            });
+            affected.extend(collect_ancestor_paths(&path));
+        }
+        affected
     }
 
     /// Queue a MustScanSubDirs rescan, throttled to max 1 concurrent.
@@ -925,7 +992,17 @@ pub(super) fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::
 /// Shared between replay and live mode. Normalizes paths, checks exclusions,
 /// stats the file, resolves paths to integer entry IDs, and sends appropriate
 /// integer-keyed write messages (`UpsertEntryV2`, `DeleteEntryById`, etc.).
-pub(super) fn process_fs_event(event: &FsChangeEvent, conn: &Connection, writer: &IndexWriter) -> Option<Vec<String>> {
+///
+/// `throttle` is `Some` ONLY on the live path (`process_live_event`). Replay and
+/// cold-start pass `None` so journal catch-up applies every event immediately.
+/// When present, a regular file's in-place rewrite may be suppressed here (its
+/// last-seen size flushed later by [`EventReconciler::sweep_throttle`]).
+pub(super) fn process_fs_event(
+    event: &FsChangeEvent,
+    conn: &Connection,
+    writer: &IndexWriter,
+    throttle: Option<&mut LiveThrottle>,
+) -> Option<Vec<String>> {
     let normalized = firmlinks::normalize_path(&event.path);
 
     // Skip excluded paths
@@ -942,16 +1019,32 @@ pub(super) fn process_fs_event(event: &FsChangeEvent, conn: &Connection, writer:
     let mut affected = collect_ancestor_paths(&normalized);
 
     if event.flags.item_removed {
-        return handle_removal(&normalized, conn, event, writer, affected);
+        return handle_removal(&normalized, conn, event, writer, affected, throttle);
     }
 
     if event.flags.item_created || event.flags.item_modified || event.flags.item_renamed {
-        return handle_creation_or_modification(&normalized, &parent_path, conn, event, writer, &mut affected);
+        return handle_creation_or_modification(
+            &normalized,
+            &parent_path,
+            conn,
+            event,
+            writer,
+            &mut affected,
+            throttle,
+        );
     }
 
     // For other flag combinations (xattr, owner change, etc.), just stat and update
     if event.flags.item_is_file || event.flags.item_is_dir {
-        return handle_creation_or_modification(&normalized, &parent_path, conn, event, writer, &mut affected);
+        return handle_creation_or_modification(
+            &normalized,
+            &parent_path,
+            conn,
+            event,
+            writer,
+            &mut affected,
+            throttle,
+        );
     }
 
     None
@@ -970,12 +1063,14 @@ fn handle_removal(
     event: &FsChangeEvent,
     writer: &IndexWriter,
     mut affected: Vec<String>,
+    throttle: Option<&mut LiveThrottle>,
 ) -> Option<Vec<String>> {
     // Check if the path actually exists on disk before deleting from the DB.
     if Path::new(normalized).symlink_metadata().is_ok() {
-        // Path still exists, so treat as a modification, not a removal.
+        // Path still exists, so treat as a modification, not a removal (throttled
+        // like any other in-place rewrite). Deletes themselves are never throttled.
         let parent_path = compute_parent_path(normalized);
-        return handle_creation_or_modification(normalized, &parent_path, conn, event, writer, &mut affected);
+        return handle_creation_or_modification(normalized, &parent_path, conn, event, writer, &mut affected, throttle);
     }
 
     // Path is truly gone; resolve and delete from DB
@@ -1017,6 +1112,7 @@ fn handle_creation_or_modification(
     event: &FsChangeEvent,
     writer: &IndexWriter,
     affected: &mut Vec<String>,
+    throttle: Option<&mut LiveThrottle>,
 ) -> Option<Vec<String>> {
     // Stat the file to get current metadata
     let path = Path::new(normalized);
@@ -1074,6 +1170,37 @@ fn handle_creation_or_modification(
 
     let snap = extract_metadata(&metadata, is_dir, is_symlink);
 
+    // Live-path throttle: a regular file rewritten in place may be suppressed so
+    // rapid rewrites collapse to ≤1 index write per THROTTLE_WINDOW. Only files
+    // (dirs/symlinks carry no size), never on replay (`throttle` is None), and
+    // never under the user's Downloads (active downloads want a live size). The
+    // trailing flush that applies the suppressed size runs from the sweep tick.
+    let is_regular_file = !is_dir && !is_symlink;
+    let suppress = match throttle {
+        Some(t) if is_regular_file && !t.is_exempt(normalized) => {
+            let payload = PendingUpsert {
+                parent_id,
+                name: name.clone(),
+                logical_size: snap.logical_size,
+                physical_size: snap.physical_size,
+                modified_at: snap.modified_at,
+                inode: snap.inode,
+                nlink: snap.nlink,
+            };
+            matches!(
+                t.on_change(normalized, snap.logical_size.unwrap_or(0), payload, Instant::now()),
+                ThrottleOutcome::Suppress
+            )
+        }
+        _ => false,
+    };
+
+    if suppress {
+        // Nothing written, so no dir_stats changed: don't notify ancestors. The
+        // last-seen size is applied by the trailing-flush sweep.
+        return Some(Vec::new());
+    }
+
     let _ = writer.send(WriteMessage::UpsertEntryV2 {
         parent_id,
         name,
@@ -1098,6 +1225,16 @@ fn handle_creation_or_modification(
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+/// Resolve the user's Downloads directory to a normalized prefix, so the live
+/// throttle can exempt it (active downloads want a live size). Resolved once at
+/// reconciler construction via the OS dir API, not a hardcoded string; `None`
+/// when the OS reports no Downloads dir (rare). Normalized the same way live
+/// event paths are, so the prefix comparison lines up. This is purely a
+/// "don't throttle" flag — it reads no new metadata, so adds no TCC surface.
+fn resolve_downloads_prefix() -> Option<String> {
+    dirs::download_dir().map(|p| firmlinks::normalize_path(&p.to_string_lossy()))
+}
 
 /// Compute parent path from a normalized path.
 fn compute_parent_path(path: &str) -> String {

@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
 use tauri::AppHandle;
@@ -29,6 +29,12 @@ use crate::pluralize::pluralize;
 /// agents writing simultaneously) at the cost of slightly delayed UI
 /// updates.
 pub(super) const LIVE_FLUSH_INTERVAL_MS: u64 = 1000;
+
+/// How often the live loop sweeps the reconciler's per-file throttle for keys
+/// whose window elapsed, applying their last-seen size. Runs on the existing
+/// `tokio::select!` (no new thread). ~1 s keeps trailing flushes prompt relative
+/// to the 60 s window while staying negligible work when idle.
+pub(super) const THROTTLE_SWEEP_INTERVAL_MS: u64 = 1000;
 
 /// Threshold for detecting a journal gap. If the first event ID received is
 /// more than this many IDs ahead of the stored `since_event_id`, we consider
@@ -202,6 +208,10 @@ pub(super) async fn run_live_event_loop(
     let mut flush_interval = tokio::time::interval(Duration::from_millis(LIVE_FLUSH_INTERVAL_MS));
     flush_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
+    // Trailing-flush sweep for the per-file throttle (no new thread).
+    let mut throttle_sweep_interval = tokio::time::interval(Duration::from_millis(THROTTLE_SWEEP_INTERVAL_MS));
+    throttle_sweep_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+
     // Phase 1 instrumentation: heartbeat every 5s with batch/event metrics.
     let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(5));
     heartbeat_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -275,7 +285,7 @@ pub(super) async fn run_live_event_loop(
                     }
 
                 let batch_size = pending_events.len() as u64;
-                let batch_start = std::time::Instant::now();
+                let batch_start = Instant::now();
                 process_live_batch(
                     &mut pending_events, &mut reconciler, &conn,
                     &writer, &mut pending_paths,
@@ -299,6 +309,12 @@ pub(super) async fn run_live_event_loop(
                         mark_pending_and_drain(&mut pending_paths),
                     ));
                 }
+            }
+            _ = throttle_sweep_interval.tick() => {
+                // Apply any throttled files whose 60 s window elapsed. The
+                // resulting ancestor paths ride the next flush tick's emit.
+                let affected = reconciler.sweep_throttle(&writer, Instant::now());
+                pending_paths.extend(affected);
             }
             _ = heartbeat_interval.tick() => {
                 log::info!(
@@ -599,8 +615,8 @@ pub(super) async fn run_replay_event_loop(
     let mut pending_rescans_overflow = false;
 
     // Progress reporting interval
-    let mut last_progress = std::time::Instant::now();
-    let replay_start = std::time::Instant::now();
+    let mut last_progress = Instant::now();
+    let replay_start = Instant::now();
 
     // Wrap all replay writes in a single SQLite transaction.
     // Without this, each write is auto-committed (separate fsync), making
@@ -659,7 +675,7 @@ pub(super) async fn run_replay_event_loop(
             ) as u64;
 
             // Process the HistoryDone event itself (it may carry other flags)
-            if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer)
+            if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer, None)
                 && !affected_paths_overflow
             {
                 affected_paths.extend(paths);
@@ -753,7 +769,7 @@ pub(super) async fn run_replay_event_loop(
                 estimated_total,
             }
             .emit(&app);
-            last_progress = std::time::Instant::now();
+            last_progress = Instant::now();
         }
 
         // Log milestone counts
@@ -889,6 +905,11 @@ pub(super) async fn run_replay_event_loop(
     let mut flush_interval = tokio::time::interval(Duration::from_millis(LIVE_FLUSH_INTERVAL_MS));
     flush_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
+    // Trailing-flush sweep for the per-file throttle (no new thread). Both live
+    // loops run it so a volume that took the post-replay path is throttled too.
+    let mut throttle_sweep_interval = tokio::time::interval(Duration::from_millis(THROTTLE_SWEEP_INTERVAL_MS));
+    throttle_sweep_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+
     loop {
         tokio::select! {
             event = event_rx.recv() => {
@@ -962,6 +983,12 @@ pub(super) async fn run_replay_event_loop(
                     reconciler::emit_dir_updated(&app, changed);
                 }
             }
+            _ = throttle_sweep_interval.tick() => {
+                // Apply any throttled files whose 60 s window elapsed; the
+                // resulting ancestor paths ride the next flush tick's emit.
+                let affected = reconciler.sweep_throttle(&writer, Instant::now());
+                live_pending_paths.extend(affected);
+            }
         }
     }
 
@@ -982,7 +1009,7 @@ pub(super) async fn run_replay_event_loop(
 /// which serializes them with live writes.
 pub(super) async fn run_background_verification(affected_paths: HashSet<String>, writer: IndexWriter, app: AppHandle) {
     DEBUG_STATS.verifying.store(true, Ordering::Relaxed);
-    let verify_start = std::time::Instant::now();
+    let verify_start = Instant::now();
     log::debug!(
         "Background verification started ({} affected dirs)",
         affected_paths.len(),
@@ -1190,7 +1217,7 @@ fn flush_replay_batch(
 ) -> usize {
     let count = pending.len();
     for (_path, event) in pending.drain() {
-        if let Some(paths) = reconciler::process_fs_event(&event, conn, writer)
+        if let Some(paths) = reconciler::process_fs_event(&event, conn, writer, None)
             && !*affected_paths_overflow
         {
             affected_paths.extend(paths);

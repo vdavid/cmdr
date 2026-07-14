@@ -6,6 +6,11 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-14 [idle-cpu-throttle-plan.md](idle-cpu-throttle-plan.md) - Cut idle CPU + disk-write thrash from live
+      indexing (#37). L1 (importance folded-key subtree clear) and M1 (per-file live-upsert throttle: 60 s leading +
+      trailing, 2%/512 KiB bypass, Downloads-exempt, self-write loop subsumed) shipped; M2 (search-index prealloc
+      right-size) and M3 (per-hot-directory coalescing) remain. Backend-only, no schema/marker (pane file sizes are live
+      `lstat`). See `indexing/DETAILS.md` § "Live per-file write throttle".
 - [ ] 2026-07-13 [media-ml-index-plan.md](media-ml-index-plan.md) - Searchable image index (OCR, tags, faces,
       text→image) as an ML enrichment layer on the drive index: macOS-native (Vision + Core ML + Foundation Models),
       vectors in SQLite not Postgres, on-device by default with faces/cloud as separate opt-ins. Plan reviewed + the

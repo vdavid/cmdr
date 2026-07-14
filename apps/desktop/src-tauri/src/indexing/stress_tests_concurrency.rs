@@ -548,7 +548,7 @@ fn live_event_storm_with_concurrent_reads() {
     let event_thread = std::thread::spawn(move || {
         let conn = IndexStore::open_read_connection(&db_path_a).expect("open event conn");
         for event in &events_clone {
-            let _affected = reconciler::process_fs_event(event, &conn, &writer_a);
+            let _affected = reconciler::process_fs_event(event, &conn, &writer_a, None);
         }
     });
 
@@ -844,7 +844,7 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
                     };
                     let event = FsChangeEvent { path, event_id, flags };
                     event_id += 1;
-                    let _ = reconciler::process_fs_event(&event, &conn, &writer);
+                    let _ = reconciler::process_fs_event(&event, &conn, &writer, None);
                     events_fired.fetch_add(1, Ordering::Relaxed);
                     counter += 1;
                     // No sleep; apply full pressure. The 20K-bounded writer channel
