@@ -274,7 +274,7 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
       "<call>Schedule a call with me</call>: I won't be doing this for very long, but while Cmdr is an open beta, I'd love to talk to you about your files!",
     )
     expect(renderRich('onboarding.stepBeta.star', ['github', 'code'])).toBe(
-      'And one more very important way you can help in one minute: star, watch, and fork the repo <github>here on GitHub</github>. Homebrew wants me to present 225 stars, 90 forks, and 90 watches to enable <code>brew install cmdr</code>.',
+      'And one more very important way you can help in one minute: star the repo <github>here on GitHub</github>. Once it hits 225 stars, Homebrew lets me enable <code>brew install cmdr</code>.',
     )
   })
 

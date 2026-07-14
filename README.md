@@ -17,8 +17,8 @@ brew tap vdavid/tap && brew trust --cask vdavid/tap/cmdr && brew install --cask 
 The `brew trust` step is new in Homebrew 6: it asks you to okay any third-party tap once before it runs. Cmdr's tap is
 one of those for now.
 
-**Note:** If you'd love a nice short `brew install --cask cmdr`, **star**, **watch**, and **fork** this repo! Homebrew
-needs 225 stars, 90 watchers, and 90 forks before it allows apps to its main tap.
+**Note:** If you'd love a nice short `brew install --cask cmdr`, **star** this repo! Once it hits 225 stars, Homebrew
+lets it into its main tap.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="brand/screenshots/app-main-dark.png" />

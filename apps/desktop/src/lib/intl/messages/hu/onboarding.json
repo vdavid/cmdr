@@ -323,9 +323,9 @@
   "@onboarding.stepBeta.feedback.call": {
     "sourceHash": "5e198ee"
   },
-  "onboarding.stepBeta.star": "És még egy nagyon fontos módja annak, hogyan segíthetsz egy perc alatt: csillagozd, kövesd és forkold a repót <github>itt a GitHubon</github>. A Homebrew 225 csillagot, 90 forkot és 90 követést kér tőlem, hogy engedélyezze a(z) <code>brew install cmdr</code> parancsot.",
+  "onboarding.stepBeta.star": "És még egy nagyon fontos módja annak, hogyan segíthetsz egy perc alatt: csillagozd meg a repót <github>itt a GitHubon</github>. Amint eléri a 225 csillagot, a Homebrew engedélyezi a(z) <code>brew install cmdr</code> parancsot.",
   "@onboarding.stepBeta.star": {
-    "sourceHash": "d88a7e2"
+    "sourceHash": "30c25f2"
   },
   "onboarding.stepBeta.analyticsLede": "Hogy megtudjuk, mi működik és mi nem, a Cmdr a nyílt béta alatt névtelen használati statisztikát küld: mely funkciókat használják és milyen gyakran, soha semmit a fájljaidból. Most be van kapcsolva, és bármikor kikapcsolhatod.",
   "@onboarding.stepBeta.analyticsLede": {

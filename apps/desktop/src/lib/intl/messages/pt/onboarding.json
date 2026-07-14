@@ -323,9 +323,9 @@
   "@onboarding.stepBeta.feedback.call": {
     "sourceHash": "5e198ee"
   },
-  "onboarding.stepBeta.star": "E mais uma forma muito importante de ajudar em um minuto: dê estrela, acompanhe e faça fork do repo <github>aqui no GitHub</github>. O Homebrew quer que eu apresente 225 estrelas, 90 forks e 90 acompanhamentos para liberar o <code>brew install cmdr</code>.",
+  "onboarding.stepBeta.star": "E mais uma forma muito importante de ajudar em um minuto: dê uma estrela ao repo <github>aqui no GitHub</github>. Assim que chegar a 225 estrelas, o Homebrew me deixa liberar o <code>brew install cmdr</code>.",
   "@onboarding.stepBeta.star": {
-    "sourceHash": "d88a7e2"
+    "sourceHash": "30c25f2"
   },
   "onboarding.stepBeta.analyticsLede": "Para saber o que está funcionando e o que não está, durante o beta aberto o Cmdr envia estatísticas de uso anônimas: quais recursos são usados e com que frequência, nunca nada dos seus arquivos. Está ativo agora, e você pode desativar quando quiser.",
   "@onboarding.stepBeta.analyticsLede": {

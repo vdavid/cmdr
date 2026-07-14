@@ -323,9 +323,9 @@
   "@onboarding.stepBeta.feedback.call": {
     "sourceHash": "5e198ee"
   },
-  "onboarding.stepBeta.star": "Và một cách rất quan trọng nữa mà bạn có thể giúp trong một phút: gắn sao, theo dõi, và fork repo <github>tại đây trên GitHub</github>. Homebrew muốn mình đạt 225 sao, 90 fork, và 90 lượt theo dõi để bật <code>brew install cmdr</code>.",
+  "onboarding.stepBeta.star": "Và một cách rất quan trọng nữa mà bạn có thể giúp trong một phút: gắn sao cho repo <github>tại đây trên GitHub</github>. Ngay khi đạt 225 sao, Homebrew sẽ cho mình bật <code>brew install cmdr</code>.",
   "@onboarding.stepBeta.star": {
-    "sourceHash": "d88a7e2"
+    "sourceHash": "30c25f2"
   },
   "onboarding.stepBeta.analyticsLede": "Để biết điều gì hiệu quả và điều gì không, trong giai đoạn open beta Cmdr gửi số liệu sử dụng ẩn danh: tính năng nào được dùng và dùng bao nhiêu lần, không bao giờ gửi bất cứ thứ gì từ các tệp của bạn. Nó đang bật, và bạn có thể tắt bất cứ lúc nào.",
   "@onboarding.stepBeta.analyticsLede": {

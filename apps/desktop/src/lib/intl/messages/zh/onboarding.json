@@ -323,9 +323,9 @@
   "@onboarding.stepBeta.feedback.call": {
     "sourceHash": "5e198ee"
   },
-  "onboarding.stepBeta.star": "还有一个非常重要、一分钟就能帮上忙的方式：在 <github>GitHub 上这里</github> 给仓库点 star、watch 和 fork。Homebrew 要求我拿出 225 个 star、90 个 fork 和 90 个 watch，才能启用 <code>brew install cmdr</code>。",
+  "onboarding.stepBeta.star": "还有一个非常重要、一分钟就能帮上忙的方式：在 <github>GitHub 上这里</github> 给仓库点 star。等达到 225 个 star，Homebrew 就会让我启用 <code>brew install cmdr</code>。",
   "@onboarding.stepBeta.star": {
-    "sourceHash": "d88a7e2"
+    "sourceHash": "30c25f2"
   },
   "onboarding.stepBeta.analyticsLede": "为了了解哪些有效、哪些无效，在公开测试期间 Cmdr 会发送匿名使用统计：哪些功能被用到、用得多频繁，绝不包含你文件里的任何内容。它现在是开启的，你随时可以关掉。",
   "@onboarding.stepBeta.analyticsLede": {

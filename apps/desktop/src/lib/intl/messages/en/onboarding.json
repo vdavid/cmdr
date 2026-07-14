@@ -506,9 +506,9 @@
     "screenshot": "onboarding-beta.png"
   },
 
-  "onboarding.stepBeta.star": "And one more very important way you can help in one minute: star, watch, and fork the repo <github>here on GitHub</github>. Homebrew wants me to present 225 stars, 90 forks, and 90 watches to enable <code>brew install cmdr</code>.",
+  "onboarding.stepBeta.star": "And one more very important way you can help in one minute: star the repo <github>here on GitHub</github>. Once it hits 225 stars, Homebrew lets me enable <code>brew install cmdr</code>.",
   "@onboarding.stepBeta.star": {
-    "description": "Asks the user to star, watch, and fork the GitHub repository to help reach Homebrew's thresholds. <github> wraps the repo link. <code> wraps the literal install command, which must NOT be translated. \"star\", \"watch\", and \"fork\" are GitHub actions; \"repo\" is the code repository; \"Homebrew\" and \"GitHub\" are brand names; all stay untranslated. The numbers 225, 90, and 90 are Homebrew's required thresholds.",
+    "description": "Asks the user to star the GitHub repository to help reach Homebrew's threshold. <github> wraps the repo link. <code> wraps the literal install command, which must NOT be translated. \"star\" is the GitHub action; \"repo\" is the code repository; \"Homebrew\" and \"GitHub\" are brand names; all stay untranslated. The number 225 is Homebrew's star threshold.",
     "screenshot": "onboarding-beta.png"
   },
 
