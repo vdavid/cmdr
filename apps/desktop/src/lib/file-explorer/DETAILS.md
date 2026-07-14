@@ -71,7 +71,7 @@ fallback contract, and the snapshot-pane note.
   - `--color-selection-fg-cursor` (`#b80808` / `#ff8c8c`) takes over when the row is also under the cursor
     (`.is-selected.is-under-cursor`), where the bg flips to the translucent cursor color.
   - `--color-selection-fg-fallback` (= `--color-text-primary`) takes over only in the dark + tinted + cursor-active
-    corner *under `prefers-contrast: more`* (25% tint), where no AA-clearing red exists; at normal contrast the red
+    corner _under `prefers-contrast: more`_ (25% tint), where no AA-clearing red exists; at normal contrast the red
     cursor variant stays. CSS rule keyed on `.file-pane[data-pane-tint]`, both list containers.
   - `--color-selection-bg` paints a faint darker block under selected rows. It's a translucent black, so on a tinted
     pane the tint hue shows through (just darker) rather than being wiped flat; on the untinted pane it reproduces the
