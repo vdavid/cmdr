@@ -29,7 +29,10 @@ via `set_tags` / `toggle_color` behind the `toggle_tags` command).
   FSEvents reports canonical paths (`/private/tmp/…`) while `LISTING_CACHE` holds the user-navigated form (`/tmp/…`).
   The incremental handler compares the firmlink-normalized forms (`indexing::firmlinks::normalize_path`) and rebases
   matching event paths onto the listing's directory. A raw `path.parent() == dir_path` comparison silently dropped every
-  event for listings under `/tmp`, `/var`, and `/etc`, so the pane never updated until the user re-navigated.
+  event for listings under `/tmp`, `/var`, and `/etc`, so the pane never updated until the user re-navigated. FSEvents
+  also resolves a **symlinked watch root** and reports events under the real target, so the handler also matches against
+  the `canonicalize`d watch dir. This bit Google Drive, whose `My Drive` is a symlink to `~/My Drive`, so rename/create/
+  delete never refreshed the pane; iCloud and Dropbox mount real directories and hit the firmlink path instead.
 - **`cloud_actions.rs` is iCloud Drive only.** The `NSFileProviderManager` host-side methods look cross-provider but are
   reserved for the app that *bundles* the File Provider extension, so third-party apps get
   `NSFileProviderErrorProviderNotFound`. The `FileManager` ubiquity APIs route through iCloud's path and accept any URL

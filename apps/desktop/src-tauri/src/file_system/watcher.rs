@@ -176,22 +176,31 @@ pub fn stop_watching(listing_id: &str) {
 /// Maps an FSEvents/inotify path to the watched listing's path space, returning the
 /// rebased path when the event is for a direct child of the watched directory.
 ///
-/// On macOS, FSEvents reports canonical paths (`/private/tmp/…`) while the listing
-/// cache holds the user-navigated form (`/tmp/…`). A raw parent comparison silently
-/// drops every event for listings under `/tmp`, `/var`, or `/etc` — the pane then
-/// never updates until the user re-navigates. The comparison runs on the
-/// symlink/firmlink-normalized forms (`firmlinks::normalize_path`, the same
-/// canonicalization the index uses), and the returned path is rebased onto
-/// `dir_path` so cache lookups (`has_entry`) and diff entries stay consistent with
-/// the listing's own paths.
-pub(super) fn rebase_event_path(event_path: &Path, dir_path: &Path) -> Option<PathBuf> {
+/// Two path-form mismatches make a raw `parent == dir_path` comparison silently drop
+/// events, leaving the pane stale until the user re-navigates:
+///
+/// 1. **Firmlinks / well-known `/private` symlinks.** FSEvents reports canonical paths
+///    (`/private/tmp/…`) while the listing cache holds the user-navigated form
+///    (`/tmp/…`). `firmlinks::normalize_path` (the same canonicalization the index
+///    uses) aligns both.
+/// 2. **A symlinked watch root.** Google Drive exposes "My Drive" as a symlink
+///    (`…/CloudStorage/GoogleDrive-…/My Drive` → `~/My Drive`), and FSEvents resolves
+///    the watched symlink and reports events under the real target. `canonical_dir` is
+///    `dir_path` with its symlinks resolved (see the caller); matching against it
+///    catches this case. iCloud and Dropbox mount real directories, so they hit the
+///    firmlink path above; only Google Drive needs this branch.
+///
+/// The returned path is always rebased onto `dir_path` so cache lookups (`has_entry`)
+/// and diff entries stay consistent with the listing's own path space.
+pub(super) fn rebase_event_path(event_path: &Path, dir_path: &Path, canonical_dir: &Path) -> Option<PathBuf> {
     let parent = event_path.parent()?;
     if parent == dir_path {
         return Some(event_path.to_path_buf());
     }
     let parent_normalized = crate::indexing::firmlinks::normalize_path(&parent.to_string_lossy());
     let dir_normalized = crate::indexing::firmlinks::normalize_path(&dir_path.to_string_lossy());
-    if parent_normalized == dir_normalized {
+    let canonical_normalized = crate::indexing::firmlinks::normalize_path(&canonical_dir.to_string_lossy());
+    if parent_normalized == dir_normalized || parent_normalized == canonical_normalized {
         event_path.file_name().map(|name| dir_path.join(name))
     } else {
         None
@@ -221,6 +230,13 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
         return;
     };
 
+    // Resolve the watched dir's symlinks once per batch, so events FSEvents reports
+    // under a symlinked root's real target (Google Drive's "My Drive" → `~/My Drive`)
+    // still match. This is a `realpath` syscall like the per-event `get_single_entry`
+    // stats below, so it adds no new blocking class here; falls back to `dir_path` if
+    // the dir vanished mid-batch (the re-read path handles a deleted watch root).
+    let canonical_dir = std::fs::canonicalize(&dir_path).unwrap_or_else(|_| dir_path.clone());
+
     // Collect unique direct-child paths, skipping access events. Event paths are
     // rebased into the listing's path space (see `rebase_event_path`).
     let mut unique_paths: HashSet<PathBuf> = HashSet::new();
@@ -229,7 +245,7 @@ fn handle_directory_change_incremental(listing_id: &str, events: Vec<DebouncedEv
             continue;
         }
         for path in &event.paths {
-            if let Some(rebased) = rebase_event_path(path, &dir_path) {
+            if let Some(rebased) = rebase_event_path(path, &dir_path, &canonical_dir) {
                 unique_paths.insert(rebased);
             }
         }
