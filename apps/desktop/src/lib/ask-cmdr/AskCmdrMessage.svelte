@@ -63,7 +63,14 @@
 {:else if message.kind === 'error'}
     <div class="msg error" role="status">
         <Icon name="triangle-alert" size={14} aria-hidden="true" />
-        <span>{errorMessage(message.errorKind)}</span>
+        <div class="error-stack">
+            <span>{errorMessage(message.errorKind)}</span>
+            {#if message.detail}
+                <!-- The provider's own wording, so the user sees what to fix. Plain {text}
+                     (Svelte auto-escapes) — never {@html}; this string is untrusted. -->
+                <span class="error-detail">{message.detail}</span>
+            {/if}
+        </div>
     </div>
 {/if}
 
@@ -180,5 +187,18 @@
         color: var(--color-text-secondary);
         background: var(--color-bg-tertiary);
         border-radius: var(--radius-md);
+    }
+
+    .error-stack {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xxs);
+        min-width: 0;
+    }
+
+    .error-detail {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        overflow-wrap: anywhere;
     }
 </style>

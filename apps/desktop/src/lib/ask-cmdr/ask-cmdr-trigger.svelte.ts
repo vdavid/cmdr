@@ -56,7 +56,13 @@ export interface RailToolCall {
 export type RailMessage =
   | { kind: 'user'; id: number | null; text: string; attachments: AttachmentRef[] }
   | { kind: 'assistant'; id: number | null; text: string; tools: RailToolCall[]; thinking: boolean; streaming: boolean }
-  | { kind: 'error'; errorKind: AskCmdrErrorKind }
+  | {
+      kind: 'error'
+      errorKind: AskCmdrErrorKind
+      /** The provider's own wording, shown as escaped plain text under the friendly
+       * headline so the user sees what to fix. Display only; never branched on. */
+      detail?: string
+    }
 
 interface AskCmdrState {
   open: boolean
@@ -379,7 +385,7 @@ function handleStreamEvent(event: AskCmdrStreamEvent): void {
       applyDone(event.messageId)
       return
     case 'failed':
-      applyFailed(event.kind)
+      applyFailed(event.kind, event.detail)
   }
 }
 
@@ -423,9 +429,9 @@ function applyDone(messageId: number): void {
   askCmdrState.streaming = false
 }
 
-function applyFailed(kind: AskCmdrErrorKind): void {
+function applyFailed(kind: AskCmdrErrorKind, detail: string | null): void {
   finalizeAssistant()
-  askCmdrState.messages.push({ kind: 'error', errorKind: kind })
+  askCmdrState.messages.push({ kind: 'error', errorKind: kind, detail: detail ?? undefined })
   askCmdrState.streaming = false
 }
 

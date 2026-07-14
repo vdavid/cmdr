@@ -138,11 +138,23 @@ describe('sendMessage + streaming', () => {
   it('a typed failure ends streaming and shows an honest notice', () => {
     sendMessage('hi')
     fire({ type: 'assistantStarted' })
-    fire({ type: 'failed', kind: 'rateLimited' })
+    fire({ type: 'failed', kind: 'rateLimited', detail: null })
     expect(askCmdrState.streaming).toBe(false)
     // The empty assistant bubble is dropped; an error item takes its place.
     const last = askCmdrState.messages.at(-1)
-    expect(last).toEqual({ kind: 'error', errorKind: 'rateLimited' })
+    expect(last).toEqual({ kind: 'error', errorKind: 'rateLimited', detail: undefined })
+  })
+
+  it("a failure with provider detail keeps the provider's wording for display", () => {
+    sendMessage('hi')
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'failed', kind: 'provider', detail: 'HTTP 404: This model is unavailable for free.' })
+    const last = askCmdrState.messages.at(-1)
+    expect(last).toEqual({
+      kind: 'error',
+      errorKind: 'provider',
+      detail: 'HTTP 404: This model is unavailable for free.',
+    })
   })
 
   it('ignores a second send while one is streaming (single-flight)', () => {

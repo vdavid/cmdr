@@ -99,6 +99,8 @@ enum Program {
     },
     /// Stream text chunks then END THE STREAM with no `End` delta (a mid-stream drop).
     DropAfterText { chunks: Vec<String> },
+    /// Stream text chunks then yield a typed stream error (a mid-stream provider problem).
+    ErrorAfterText { chunks: Vec<String>, error: AgentLlmError },
 }
 
 struct ProgrammableLlm {
@@ -192,6 +194,12 @@ fn program_to_deltas(program: Program) -> Vec<Result<AgentDelta, AgentLlmError>>
         }
         // No `End`: the stream just ends after the text (a provider drop / crash).
         Program::DropAfterText { chunks } => chunks.into_iter().map(|c| Ok(AgentDelta::Text(c))).collect(),
+        Program::ErrorAfterText { chunks, error } => {
+            let mut deltas: Vec<Result<AgentDelta, AgentLlmError>> =
+                chunks.into_iter().map(|c| Ok(AgentDelta::Text(c))).collect();
+            deltas.push(Err(error));
+            deltas
+        }
     }
 }
 
@@ -317,7 +325,8 @@ async fn max_tool_turns_halts_before_the_ninth_respond() {
     );
     assert!(
         drain(&mut rx).contains(&AgentChatEvent::Failed {
-            kind: AgentErrorKind::BudgetExhausted
+            kind: AgentErrorKind::BudgetExhausted,
+            detail: None,
         }),
         "the budget-exhausted notice is emitted"
     );
@@ -428,7 +437,8 @@ async fn crash_a_stream_dropped_mid_text_persists_nothing() {
     );
     let events = drain(&mut rx);
     assert!(events.contains(&AgentChatEvent::Failed {
-        kind: AgentErrorKind::UnfinishedReply
+        kind: AgentErrorKind::UnfinishedReply,
+        detail: None,
     }));
     assert!(
         !events.iter().any(|e| matches!(e, AgentChatEvent::UserPersisted { .. })),
@@ -637,8 +647,8 @@ fn agent_llm_errors_map_to_typed_kinds() {
     assert_eq!(K::from(E::NotConfigured), K::NotConfigured);
     assert_eq!(K::from(E::Unavailable), K::Unavailable);
     assert_eq!(K::from(E::Timeout), K::Timeout);
-    assert_eq!(K::from(E::AuthFailed), K::AuthFailed);
-    assert_eq!(K::from(E::RateLimited), K::RateLimited);
+    assert_eq!(K::from(E::AuthFailed("bad key".into())), K::AuthFailed);
+    assert_eq!(K::from(E::RateLimited("slow down".into())), K::RateLimited);
     assert_eq!(K::from(E::BudgetExhausted), K::BudgetExhausted);
     assert_eq!(K::from(E::Provider("detail".into())), K::Provider);
 }
@@ -664,11 +674,40 @@ async fn a_pre_stream_provider_error_persists_nothing_and_is_typed() {
 
     assert_eq!(result, TurnResult::Failed(AgentErrorKind::Provider));
     assert!(store::list_messages(&conn, id, 100, 0).expect("list").is_empty());
-    assert!(
-        drain(&mut rx)
-            .iter()
-            .any(|e| matches!(e, AgentChatEvent::Failed { .. }))
-    );
+    // The event carries the provider's own wording so the UI can show the user what to
+    // fix (display only — the frontend still branches on `kind`, never on this string).
+    assert!(drain(&mut rx).contains(&AgentChatEvent::Failed {
+        kind: AgentErrorKind::Provider,
+        detail: Some("programmable: script exhausted".to_string()),
+    }));
+}
+
+#[tokio::test]
+async fn a_mid_stream_provider_error_carries_its_detail() {
+    let conn = migrated_conn();
+    let id = conversation(&conn);
+    let llm = ProgrammableLlm::new(vec![Program::ErrorAfterText {
+        chunks: vec!["partial".to_string()],
+        error: AgentLlmError::Provider("HTTP 404: model gone".to_string()),
+    }]);
+    let (tx, mut rx) = unbounded_channel();
+
+    let result = run_turn(
+        &llm,
+        &OkDispatcher,
+        &conn,
+        &[],
+        &params(id, Some("hello")),
+        &tx,
+        &CancellationToken::new(),
+    )
+    .await;
+
+    assert_eq!(result, TurnResult::Failed(AgentErrorKind::Provider));
+    assert!(drain(&mut rx).contains(&AgentChatEvent::Failed {
+        kind: AgentErrorKind::Provider,
+        detail: Some("HTTP 404: model gone".to_string()),
+    }));
 }
 
 // ── Attachments reach the LLM in the envelope (and nothing more) ────────────────

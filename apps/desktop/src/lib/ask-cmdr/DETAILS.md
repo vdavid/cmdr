@@ -33,7 +33,10 @@ stays simple:
 - `toolCallStarted` / `toolCallFinished` → push / update a `RailToolCall` (the collapsible "looked at X" line;
   `ok = false` is a refusal or handler problem).
 - `done` → finalize the bubble, stamp its persisted id, `streaming = false`.
-- `failed` → drop an empty bubble, push a typed `{ kind: 'error' }` item, `streaming = false`.
+- `failed` → drop an empty bubble, push a typed `{ kind: 'error' }` item, `streaming = false`. The item carries the
+  source error's own wording (`detail`, when the backend has one — a retired model slug, a quota reset time) under the
+  friendly headline, rendered as escaped plain text (never `{@html}`), so the user sees what to fix. Display only: the
+  UI branches on `errorKind`, never on `detail`.
 
 **Cancel finalizes locally.** The runtime returns `Cancelled` with no terminal event, so `stopStreaming` cancels the
 backend AND finalizes the current bubble itself (a late `textDelta` that races in is harmless — it just appends a little

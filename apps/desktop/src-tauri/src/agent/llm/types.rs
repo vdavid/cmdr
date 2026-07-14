@@ -339,8 +339,8 @@ pub enum AgentDelta {
 
 /// The typed error surface of the `AgentLlm` seam. Provider transport details are
 /// classified by HTTP status upstream (`crate::ai`'s `ai_error_for_status`), never
-/// by message-string matching (`no-string-matching`); `Provider` carries a detail
-/// string for display only, never for control flow.
+/// by message-string matching (`no-string-matching`); the `String` payloads carry the
+/// provider's own wording for display only, never for control flow.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AgentLlmError {
     /// No API key configured for the selected provider.
@@ -351,14 +351,27 @@ pub enum AgentLlmError {
     Unavailable,
     /// The request timed out.
     Timeout,
-    /// The provider rejected the API key (HTTP 401 / 403).
-    AuthFailed,
-    /// The provider is rate-limiting or the account is out of quota (HTTP 429).
-    RateLimited,
+    /// The provider rejected the API key (HTTP 401 / 403); the string is for display only.
+    AuthFailed(String),
+    /// The provider is rate-limiting or the account is out of quota (HTTP 429); the
+    /// string is for display only.
+    RateLimited(String),
     /// A per-message budget (tool turns / wall time / tokens) was exhausted.
     BudgetExhausted,
     /// Any other provider-side failure; the string is for display only.
     Provider(String),
+}
+
+impl AgentLlmError {
+    /// The provider-authored detail, where the variant carries one. The UI shows it
+    /// under the typed headline so the user sees what to fix (a retired model slug, a
+    /// quota reset time); it never drives control flow.
+    pub fn detail(&self) -> Option<&str> {
+        match self {
+            Self::AuthFailed(detail) | Self::RateLimited(detail) | Self::Provider(detail) => Some(detail),
+            _ => None,
+        }
+    }
 }
 
 impl std::fmt::Display for AgentLlmError {
@@ -368,8 +381,8 @@ impl std::fmt::Display for AgentLlmError {
             Self::NotConfigured => write!(f, "the AI provider is not configured"),
             Self::Unavailable => write!(f, "the AI provider is unavailable"),
             Self::Timeout => write!(f, "the AI request timed out"),
-            Self::AuthFailed => write!(f, "the AI provider rejected the API key"),
-            Self::RateLimited => write!(f, "the AI provider is rate-limiting or out of quota"),
+            Self::AuthFailed(detail) => write!(f, "the AI provider rejected the API key: {detail}"),
+            Self::RateLimited(detail) => write!(f, "the AI provider is rate-limiting or out of quota: {detail}"),
             Self::BudgetExhausted => write!(f, "the message budget was exhausted"),
             Self::Provider(detail) => write!(f, "the AI provider returned a problem: {detail}"),
         }
@@ -382,6 +395,23 @@ impl std::error::Error for AgentLlmError {}
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn detail_returns_the_provider_wording_only_where_the_variant_carries_it() {
+        // Display-only: callers show this under the typed headline, never branch on it.
+        use AgentLlmError as E;
+        assert_eq!(E::AuthFailed("bad key".into()).detail(), Some("bad key"));
+        assert_eq!(E::RateLimited("slow down".into()).detail(), Some("slow down"));
+        assert_eq!(
+            E::Provider("HTTP 404: model gone".into()).detail(),
+            Some("HTTP 404: model gone")
+        );
+        assert_eq!(E::NoKey.detail(), None);
+        assert_eq!(E::NotConfigured.detail(), None);
+        assert_eq!(E::Unavailable.detail(), None);
+        assert_eq!(E::Timeout.detail(), None);
+        assert_eq!(E::BudgetExhausted.detail(), None);
+    }
 
     #[test]
     fn tool_id_serializes_as_bare_wire_name() {

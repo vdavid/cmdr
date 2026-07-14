@@ -71,7 +71,9 @@ export type AskCmdrStreamEvent =
   | { type: 'toolCallStarted'; callId: string; tool: string }
   | { type: 'toolCallFinished'; callId: string; ok: boolean }
   | { type: 'done'; messageId: number; seq: number; stop: StopReason; usage: AskCmdrUsage }
-  | { type: 'failed'; kind: AskCmdrErrorKind }
+  /** `detail` is the source error's own wording for display under the typed headline
+   * (a retired model slug, a quota reset time); never branch on it. */
+  | { type: 'failed'; kind: AskCmdrErrorKind; detail: string | null }
 
 /**
  * Send one message and stream the answer. `conversationId` is `null` to start a fresh

@@ -71,4 +71,14 @@ describe('AskCmdrMessage a11y', () => {
     await tick()
     await expectNoA11yViolations(target)
   })
+
+  it('an error notice with provider detail has no a11y violations', async () => {
+    const target = mountMessage({
+      kind: 'error',
+      errorKind: 'provider',
+      detail: 'HTTP 404: This model is unavailable for free.',
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
 })

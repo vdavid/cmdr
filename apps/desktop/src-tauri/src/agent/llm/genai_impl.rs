@@ -304,8 +304,8 @@ impl From<AiError> for AgentLlmError {
         match error {
             AiError::Unavailable => AgentLlmError::Unavailable,
             AiError::Timeout => AgentLlmError::Timeout,
-            AiError::AuthFailed(_) => AgentLlmError::AuthFailed,
-            AiError::RateLimited(_) => AgentLlmError::RateLimited,
+            AiError::AuthFailed(detail) => AgentLlmError::AuthFailed(detail),
+            AiError::RateLimited(detail) => AgentLlmError::RateLimited(detail),
             AiError::EmptyResponse => AgentLlmError::Provider("the model returned no text".to_string()),
             AiError::ServerError(detail) => AgentLlmError::Provider(detail),
             AiError::ParseError(detail) => AgentLlmError::Provider(detail),
@@ -479,13 +479,14 @@ mod tests {
         // here — never by matching the message string.
         assert_eq!(AgentLlmError::from(AiError::Unavailable), AgentLlmError::Unavailable);
         assert_eq!(AgentLlmError::from(AiError::Timeout), AgentLlmError::Timeout);
+        // The provider's own wording rides along for display (never for control flow).
         assert_eq!(
             AgentLlmError::from(AiError::AuthFailed("bad key".into())),
-            AgentLlmError::AuthFailed
+            AgentLlmError::AuthFailed("bad key".into())
         );
         assert_eq!(
             AgentLlmError::from(AiError::RateLimited("slow down".into())),
-            AgentLlmError::RateLimited
+            AgentLlmError::RateLimited("slow down".into())
         );
         assert!(matches!(
             AgentLlmError::from(AiError::EmptyResponse),

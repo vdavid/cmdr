@@ -95,8 +95,13 @@ pub enum AskCmdrStreamEvent {
         usage: UsageView,
     },
     /// The turn ended without an answer, typed and honest (rendered without the words
-    /// "error"/"failed" — the frontend owns the copy).
-    Failed { kind: AgentErrorKindView },
+    /// "error"/"failed" — the frontend owns the copy). `detail` is the source error's own
+    /// wording, shown verbatim under the typed headline so the user sees what to fix;
+    /// display only — the frontend branches on `kind`, never on this string.
+    Failed {
+        kind: AgentErrorKindView,
+        detail: Option<String>,
+    },
 }
 
 /// The wire form of [`AgentErrorKind`] — the frontend renders each honestly.
@@ -201,7 +206,10 @@ fn to_wire_event(event: AgentChatEvent) -> AskCmdrStreamEvent {
             stop: stop.into(),
             usage: usage.into(),
         },
-        AgentChatEvent::Failed { kind } => AskCmdrStreamEvent::Failed { kind: kind.into() },
+        AgentChatEvent::Failed { kind, detail } => AskCmdrStreamEvent::Failed {
+            kind: kind.into(),
+            detail,
+        },
     }
 }
 
@@ -546,6 +554,7 @@ pub async fn ask_cmdr_send_message(
     let Some(db_path) = app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf()) else {
         let _ = on_event.send(AskCmdrStreamEvent::Failed {
             kind: AgentErrorKindView::NotConfigured,
+            detail: None,
         });
         return Ok(conversation_id.unwrap_or(0));
     };
@@ -564,6 +573,7 @@ pub async fn ask_cmdr_send_message(
     if !consented {
         let _ = on_event.send(AskCmdrStreamEvent::Failed {
             kind: AgentErrorKindView::NoConsent,
+            detail: None,
         });
         return Ok(conversation_id.unwrap_or(0));
     }
@@ -573,7 +583,10 @@ pub async fn ask_cmdr_send_message(
     let (llm_kind, provider, model) = match resolve_agent_llm(&app) {
         Ok(resolved) => resolved,
         Err(kind) => {
-            let _ = on_event.send(AskCmdrStreamEvent::Failed { kind: kind.into() });
+            let _ = on_event.send(AskCmdrStreamEvent::Failed {
+                kind: kind.into(),
+                detail: None,
+            });
             return Ok(conversation_id.unwrap_or(0));
         }
     };
@@ -587,6 +600,7 @@ pub async fn ask_cmdr_send_message(
                 log::warn!(target: LOG_TARGET, "creating a conversation failed: {e}");
                 let _ = on_event.send(AskCmdrStreamEvent::Failed {
                     kind: AgentErrorKindView::Provider,
+                    detail: Some(e.to_string()),
                 });
                 return Ok(0);
             }
@@ -608,6 +622,7 @@ pub async fn ask_cmdr_send_message(
                 crate::log_error!(target: LOG_TARGET, "building the chat turn runtime failed: {e}");
                 let _ = on_event.send(AskCmdrStreamEvent::Failed {
                     kind: AgentErrorKindView::Provider,
+                    detail: Some(e.to_string()),
                 });
                 unregister_cancel(conversation_id);
                 return;
@@ -662,6 +677,7 @@ async fn drive_turn(
     let Some(runtime) = app.try_state::<ChatRuntime>() else {
         let _ = on_event.send(AskCmdrStreamEvent::Failed {
             kind: AgentErrorKindView::Provider,
+            detail: None,
         });
         return;
     };
@@ -693,6 +709,7 @@ async fn drive_turn(
         log::warn!(target: LOG_TARGET, "chat turn failed: {e}");
         let _ = on_event.send(AskCmdrStreamEvent::Failed {
             kind: AgentErrorKindView::Provider,
+            detail: Some(e.to_string()),
         });
     }
 }

@@ -11,6 +11,7 @@
 //!   OpenAI-compatible provider (Groq, OpenRouter, DeepSeek, …) is forced onto OpenAI
 //!   chat-completions so `genai` doesn't mis-route it to Ollama.
 
+use std::fmt::Display;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -315,7 +316,7 @@ pub enum AiError {
     ParseError(String),
 }
 
-impl std::fmt::Display for AiError {
+impl Display for AiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Unavailable => write!(f, "AI server unavailable"),
@@ -567,6 +568,27 @@ fn ai_error_for_status(status: u16, detail: String) -> AiError {
     }
 }
 
+/// Builds the display detail for a failed provider response: `HTTP <status>: <message>`.
+/// The message is the JSON body's `error.message` when present (OpenAI, OpenRouter,
+/// Anthropic, and Gemini all put the human sentence there), else the raw body, capped so
+/// an HTML error page (a proxy, Cloudflare) can't flood the UI or the logs. Display only,
+/// never control flow: classification stays on the numeric status (`ai_error_for_status`),
+/// per `no-string-matching`.
+fn provider_error_detail(status: impl Display, body: &str) -> String {
+    const MAX_CHARS: usize = 400;
+    let message = serde_json::from_str::<Value>(body)
+        .ok()
+        .and_then(|value| Some(value.get("error")?.get("message")?.as_str()?.to_string()))
+        .unwrap_or_else(|| body.to_string());
+    let message = message.trim();
+    if message.chars().count() > MAX_CHARS {
+        let capped: String = message.chars().take(MAX_CHARS).collect();
+        format!("HTTP {status}: {capped}…")
+    } else {
+        format!("HTTP {status}: {message}")
+    }
+}
+
 /// Maps `genai`'s rich error tree to our flat [`AiError`]. Pattern-matches on the
 /// known transport variants instead of grepping the `Display` output. Shared with
 /// the agent LLM (`crate::agent::llm`), which maps `AiError` on to its own typed
@@ -586,7 +608,7 @@ pub(crate) fn map_genai_error(e: genai::Error) -> AiError {
             W::Reqwest(req) if req.is_connect() => return AiError::Unavailable,
             W::Reqwest(req) => return AiError::ServerError(format!("network error: {req}")),
             W::ResponseFailedStatus { status, body, .. } => {
-                return ai_error_for_status(status.as_u16(), format!("HTTP {status}: {body}"));
+                return ai_error_for_status(status.as_u16(), provider_error_detail(status, body));
             }
             W::ResponseFailedNotJson { content_type, body } => {
                 return AiError::ParseError(format!(
@@ -708,6 +730,39 @@ mod tests {
         assert!(matches!(ai_error_for_status(429, "x".into()), AiError::RateLimited(_)));
         assert!(matches!(ai_error_for_status(500, "x".into()), AiError::ServerError(_)));
         assert!(matches!(ai_error_for_status(404, "x".into()), AiError::ServerError(_)));
+    }
+
+    #[test]
+    fn provider_error_detail_extracts_the_json_error_message() {
+        // OpenAI, OpenRouter, Anthropic, and Gemini all put the human sentence at
+        // `error.message`; the rest of the body is noise for a user.
+        let body = r#"{"error":{"message":"This model is unavailable for free.","code":404},"user_id":"u1"}"#;
+        assert_eq!(
+            provider_error_detail("404 Not Found", body),
+            "HTTP 404 Not Found: This model is unavailable for free."
+        );
+    }
+
+    #[test]
+    fn provider_error_detail_falls_back_to_the_raw_body() {
+        assert_eq!(
+            provider_error_detail("502 Bad Gateway", "upstream exploded"),
+            "HTTP 502 Bad Gateway: upstream exploded"
+        );
+        // JSON without the well-known shape also falls back whole.
+        assert_eq!(
+            provider_error_detail("500", r#"{"oops":true}"#),
+            r#"HTTP 500: {"oops":true}"#
+        );
+    }
+
+    #[test]
+    fn provider_error_detail_truncates_a_huge_body() {
+        // An HTML error page (a proxy, Cloudflare) must not flood the UI or the logs.
+        let body = "x".repeat(5000);
+        let detail = provider_error_detail("500", &body);
+        assert!(detail.chars().count() < 450, "got {} chars", detail.chars().count());
+        assert!(detail.ends_with('…'));
     }
 
     #[test]

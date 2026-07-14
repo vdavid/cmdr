@@ -93,8 +93,13 @@ pub enum AgentChatEvent {
         usage: AgentUsage,
     },
     /// The turn ended without an answer, honestly and typed. Rendered by the frontend
-    /// without the words "error"/"failed" (the frontend owns the copy).
-    Failed { kind: AgentErrorKind },
+    /// without the words "error"/"failed" (the frontend owns the copy). `detail` is the
+    /// source error's own wording — shown under the typed headline so the user sees what
+    /// to fix (a retired model slug, a quota reset time); display only, never control flow.
+    Failed {
+        kind: AgentErrorKind,
+        detail: Option<String>,
+    },
 }
 
 /// The typed reasons a turn can end without an answer. A pure classification the
@@ -128,8 +133,8 @@ impl From<AgentLlmError> for AgentErrorKind {
             AgentLlmError::NotConfigured => AgentErrorKind::NotConfigured,
             AgentLlmError::Unavailable => AgentErrorKind::Unavailable,
             AgentLlmError::Timeout => AgentErrorKind::Timeout,
-            AgentLlmError::AuthFailed => AgentErrorKind::AuthFailed,
-            AgentLlmError::RateLimited => AgentErrorKind::RateLimited,
+            AgentLlmError::AuthFailed(_) => AgentErrorKind::AuthFailed,
+            AgentLlmError::RateLimited(_) => AgentErrorKind::RateLimited,
             AgentLlmError::BudgetExhausted => AgentErrorKind::BudgetExhausted,
             AgentLlmError::Provider(_) => AgentErrorKind::Provider,
         }
@@ -266,6 +271,7 @@ pub async fn run_turn(
                 sink,
                 AgentChatEvent::Failed {
                     kind: AgentErrorKind::Provider,
+                    detail: Some(e.to_string()),
                 },
             );
             return TurnResult::Failed(AgentErrorKind::Provider);
@@ -295,6 +301,7 @@ pub async fn run_turn(
                 sink,
                 AgentChatEvent::Failed {
                     kind: AgentErrorKind::BudgetExhausted,
+                    detail: None,
                 },
             );
             return TurnResult::Failed(AgentErrorKind::BudgetExhausted);
@@ -314,9 +321,11 @@ pub async fn run_turn(
             Ok(stream) => stream,
             Err(error) => {
                 // The call never opened, so it never reached `End`: nothing is
-                // persisted (crash case b). Surface the typed error.
+                // persisted (crash case b). Surface the typed error plus the
+                // provider's own wording for display.
+                let detail = error.detail().map(str::to_string);
                 let kind = AgentErrorKind::from(error);
-                emit(sink, AgentChatEvent::Failed { kind });
+                emit(sink, AgentChatEvent::Failed { kind, detail });
                 return TurnResult::Failed(kind);
             }
         };
@@ -337,10 +346,11 @@ pub async fn run_turn(
                 if cancel.is_cancelled() {
                     return TurnResult::Cancelled;
                 }
+                let detail = stream_error.as_ref().and_then(|e| e.detail().map(str::to_string));
                 let kind = stream_error
                     .map(AgentErrorKind::from)
                     .unwrap_or(AgentErrorKind::UnfinishedReply);
-                emit(sink, AgentChatEvent::Failed { kind });
+                emit(sink, AgentChatEvent::Failed { kind, detail });
                 return TurnResult::Failed(kind);
             }
         };
@@ -486,6 +496,7 @@ fn persist_failed(sink: &ChatEventSink, error: AgentStoreError) -> TurnResult {
         sink,
         AgentChatEvent::Failed {
             kind: AgentErrorKind::Provider,
+            detail: Some(error.to_string()),
         },
     );
     TurnResult::Failed(AgentErrorKind::Provider)
