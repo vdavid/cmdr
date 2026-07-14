@@ -33,6 +33,21 @@ The exact schema is in `migrations.rs`. The non-obvious choices:
   (the operation log folds a column in Rust instead), so these were authored fresh and are the area most prone to a
   subtle desync.
 
+## v2: `last_model` + event rows
+
+`conversations.last_model` (nullable; NULL = no completed turn yet) records the model a
+thread's most recent completed turn (or recorded model-change event) used. The chat
+runtime and the `ask_cmdr_record_model_change` command compare against it to decide when
+to log a "switched to X" timeline event; the full flow is `agent/chat/DETAILS.md` § Model-change events.
+
+Event rows reuse the `messages` table with `role = 'event'` and `content_blocks` holding a
+typed `ConversationEvent` (not `Vec<AgentPart>`): they share the per-conversation `seq`,
+so ordering against real messages is free, and paging/history need no second table or
+merge. The reader (`map_message_row`) branches on the role token into `StoredContent`
+(`Message { role, parts }` vs `Event`); the token deliberately lives outside `AgentRole`
+so the transcript loader can't feed an event to a provider. `text_for_search` stays empty
+— a model name is not conversation content and never matches search.
+
 ## FTS5 comes from `bundled`, not a feature
 
 rusqlite 0.39 has no `fts5` feature; the FTS5 module is compiled into the `bundled` SQLite amalgamation by default. So

@@ -100,6 +100,10 @@ pub enum AgentChatEvent {
         kind: AgentErrorKind,
         detail: Option<String>,
     },
+    /// The conversation's effective model changed since its previous turn; a UI-facing
+    /// event row was persisted (its identity rides along). The rail shows it as a small
+    /// timeline line before this turn's user message.
+    ModelChanged { message_id: i64, seq: i64, model: String },
 }
 
 /// The typed reasons a turn can end without an answer. A pure classification the
@@ -214,6 +218,12 @@ impl ConversationLocks {
         emit(sink, AgentChatEvent::Queued);
         lock.lock_owned().await
     }
+
+    /// Acquire the conversation's lock with no event stream (the non-turn callers, like
+    /// recording a model change, have no sink to announce queuing on).
+    pub async fn acquire_quiet(&self, conversation_id: i64) -> tokio::sync::OwnedMutexGuard<()> {
+        self.lock_for(conversation_id).lock_owned().await
+    }
 }
 
 // ── The turn driver ───────────────────────────────────────────────────────────
@@ -289,6 +299,7 @@ pub async fn run_turn(
 
     let started = Instant::now();
     let mut tool_turns = 0usize;
+    let mut model_recorded = false;
 
     loop {
         // Cancellation and both budgets are checked at the top, so no `respond` fires
@@ -355,8 +366,14 @@ pub async fn run_turn(
             }
         };
 
-        // A completed `respond`: persist the user row (first `End` only), then the
-        // assistant row (content written only now), then meter this call's cost.
+        // A completed `respond`: record a model transition (first `End` only, BEFORE the
+        // user row so the event line sits between the turns), persist the user row (first
+        // `End` only), then the assistant row (content written only now), then meter this
+        // call's cost.
+        if !model_recorded {
+            model_recorded = true;
+            record_model_transition(conn, params, sink);
+        }
         if user_needs_persist && let Some(text) = params.user_text {
             match store::append_message(
                 conn,
@@ -502,16 +519,60 @@ fn persist_failed(sink: &ChatEventSink, error: AgentStoreError) -> TurnResult {
     TurnResult::Failed(AgentErrorKind::Provider)
 }
 
-/// Load a conversation's persisted messages as the working transcript.
+/// On the turn's first completed `respond`: if the effective model differs from the
+/// conversation's last recorded one, persist a UI-facing model-change event row (BEFORE
+/// this turn's user row, so the line sits between the turns) and tell the live rail;
+/// then stamp `last_model`. Running at the first `End` on purpose: a failed first
+/// attempt records nothing (crash case b), and the next successful turn re-runs this
+/// comparison — the event is deferred, never lost. A conversation with no recorded model
+/// yet (its first turn) only stamps; there is nothing to switch from.
+fn record_model_transition(conn: &rusqlite::Connection, params: &TurnParams<'_>, sink: &ChatEventSink) {
+    let last = match store::conversation_last_model(conn, params.conversation_id) {
+        Ok(last) => last,
+        Err(e) => {
+            log::warn!(target: LOG_TARGET, "reading the conversation's last model failed: {e}");
+            return;
+        }
+    };
+    if last.as_deref() == Some(params.model.as_str()) {
+        return;
+    }
+    if last.is_some() {
+        let event = store::ConversationEvent::ModelChanged {
+            model: params.model.clone(),
+        };
+        match store::append_event(conn, params.conversation_id, &event, params.now_secs) {
+            Ok((message_id, seq)) => emit(
+                sink,
+                AgentChatEvent::ModelChanged {
+                    message_id,
+                    seq,
+                    model: params.model.clone(),
+                },
+            ),
+            Err(e) => log::warn!(target: LOG_TARGET, "recording the model-change event failed: {e}"),
+        }
+    }
+    if let Err(e) = store::set_conversation_last_model(conn, params.conversation_id, &params.model) {
+        log::warn!(target: LOG_TARGET, "stamping the conversation's model failed: {e}");
+    }
+}
+
+/// Load a conversation's persisted messages as the working transcript. Event rows are
+/// UI-facing timeline entries (a model change), NOT transcript content — they never
+/// reach a provider, so they're filtered out here.
 fn load_transcript(conn: &rusqlite::Connection, conversation_id: i64) -> Result<Vec<AgentMessage>, AgentStoreError> {
     const ALL: u32 = 10_000;
     let stored = store::list_messages(conn, conversation_id, ALL, 0)?;
     Ok(stored
         .into_iter()
-        .map(|m| AgentMessage {
-            role: m.role,
-            parts: m.parts,
-            at: m.created_at,
+        .filter_map(|m| match m.content {
+            store::StoredContent::Message { role, parts } => Some(AgentMessage {
+                role,
+                parts,
+                at: m.created_at,
+            }),
+            store::StoredContent::Event(_) => None,
         })
         .collect())
 }
@@ -629,6 +690,35 @@ impl ChatRuntime {
         };
         run_turn(llm, &dispatcher, &conn, &tools, &params, &sink, &cancel).await;
         Ok(conversation_id)
+    }
+
+    /// Record that a settings change switched an open thread's effective model, honoring
+    /// the single-flight lock so the event lands only AFTER any in-flight turn finishes
+    /// (that turn keeps its already-resolved model; the event marks the boundary). Returns
+    /// the persisted event row's `(message_id, seq, created_at)`, or `None` when there is
+    /// nothing to record: the conversation has no completed turn yet, or the effective
+    /// model is unchanged (for example the interactive override masks the changed shared
+    /// model).
+    pub async fn record_model_change(
+        &self,
+        conversation_id: i64,
+        model: &str,
+    ) -> Result<Option<(i64, i64, i64)>, AgentStoreError> {
+        let _guard = self.locks.acquire_quiet(conversation_id).await;
+        let conn = store::open_write_connection(&self.db_path)?;
+        match store::conversation_last_model(&conn, conversation_id)? {
+            None => Ok(None),
+            Some(last) if last == model => Ok(None),
+            Some(_) => {
+                let now = now_secs();
+                let event = store::ConversationEvent::ModelChanged {
+                    model: model.to_string(),
+                };
+                let (message_id, seq) = store::append_event(&conn, conversation_id, &event, now)?;
+                store::set_conversation_last_model(&conn, conversation_id, model)?;
+                Ok(Some((message_id, seq, now)))
+            }
+        }
     }
 }
 

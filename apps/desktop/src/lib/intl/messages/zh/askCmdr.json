@@ -160,6 +160,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.modelChanged": "已切换到 {model}",
+  "@askCmdr.event.modelChanged": {
+    "sourceHash": "dd0a934"
+  },
   "askCmdr.loadEarlier": "加载更早的消息",
   "@askCmdr.loadEarlier": {
     "sourceHash": "33fd46b"

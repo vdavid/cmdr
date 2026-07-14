@@ -34,6 +34,7 @@ surface, so later proactive slices (proposals, notifications) grow here too. Ful
   [`commands/agent.rs`](../commands/agent.rs) is the thin frontend surface: `ask_cmdr_send_message` (streaming over a
   Tauri `Channel`, driven on a worker thread because `run_turn` holds a non-`Send` connection across awaits; takes
   `attachments: Vec<AttachmentRef>` folded into the envelope as path + kind only), `ask_cmdr_cancel`,
+  `ask_cmdr_record_model_change` (the model-change timeline event; see `chat/DETAILS.md` § Model-change events),
   `ask_cmdr_get_conversation`, `ask_cmdr_list_conversations`, plus `ask_cmdr_search_conversations` (FTS hits with a
   snippet), `ask_cmdr_rename_conversation`, `ask_cmdr_archive_conversation`, and the attachment resolvers
   `ask_cmdr_selection_attachments` / `ask_cmdr_resolve_attachments` (kinds from `PaneStateStore`, no filesystem stat),

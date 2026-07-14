@@ -41,11 +41,18 @@ pub struct Migration {
 
 /// The production ladder. Version 1 creates the whole initial schema; later schema
 /// changes append steps here.
-pub const MIGRATIONS: &[Migration] = &[Migration {
-    version: 1,
-    description: "initial schema: conversations, messages, messages_fts, cost_meter",
-    up: migrate_v1_initial,
-}];
+pub const MIGRATIONS: &[Migration] = &[
+    Migration {
+        version: 1,
+        description: "initial schema: conversations, messages, messages_fts, cost_meter",
+        up: migrate_v1_initial,
+    },
+    Migration {
+        version: 2,
+        description: "conversations.last_model for model-change events",
+        up: migrate_v2_last_model,
+    },
+];
 
 /// The meta key holding the integer schema version (as text). Absent ⇒ 0 (a fresh DB
 /// that hasn't run any step). The migration anchor, outside the ladder.
@@ -191,4 +198,12 @@ fn migrate_v1_initial(tx: &Transaction<'_>) -> rusqlite::Result<()> {
         );
         ",
     )
+}
+
+/// Version 2: `conversations.last_model` — the model name the conversation's most recent
+/// completed turn (or recorded model-change event) used. NULL means no turn has run yet.
+/// The chat runtime compares against it to insert honest "switched to X" event rows when
+/// the effective model changes between turns.
+fn migrate_v2_last_model(tx: &Transaction<'_>) -> rusqlite::Result<()> {
+    tx.execute_batch("ALTER TABLE conversations ADD COLUMN last_model TEXT;")
 }

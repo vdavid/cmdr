@@ -161,6 +161,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.modelChanged": "Overgeschakeld naar {model}",
+  "@askCmdr.event.modelChanged": {
+    "sourceHash": "dd0a934"
+  },
   "askCmdr.loadEarlier": "Laad eerdere berichten",
   "@askCmdr.loadEarlier": {
     "sourceHash": "33fd46b"

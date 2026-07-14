@@ -172,6 +172,10 @@
   "@ai.cloud.modelLabel": {
     "sourceHash": "5e2c614"
   },
+  "ai.cloud.askCmdrOverrideHint": "O Ask Cmdr usa um modelo próprio ({model}) em vez deste. Altere-o na seção Ask Cmdr.",
+  "@ai.cloud.askCmdrOverrideHint": {
+    "sourceHash": "0d278f6"
+  },
   "ai.cloud.modelDescription": "O nome do modelo a usar para conclusões.",
   "@ai.cloud.modelDescription": {
     "sourceHash": "809fa50"

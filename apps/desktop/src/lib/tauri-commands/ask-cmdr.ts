@@ -74,6 +74,9 @@ export type AskCmdrStreamEvent =
   /** `detail` is the source error's own wording for display under the typed headline
    * (a retired model slug, a quota reset time); never branch on it. */
   | { type: 'failed'; kind: AskCmdrErrorKind; detail: string | null }
+  /** The thread's effective model changed since its previous turn; the persisted event
+   * row's identity rides along. Render the line BEFORE this turn's user bubble. */
+  | { type: 'modelChanged'; messageId: number; seq: number; model: string }
 
 /**
  * Send one message and stream the answer. `conversationId` is `null` to start a fresh
@@ -100,6 +103,15 @@ export function sendAskCmdrMessage(
 /** Stop the in-flight turn for a thread. Idempotent; safe after natural completion. */
 export async function cancelAskCmdr(conversationId: number): Promise<void> {
   await commands.askCmdrCancel(conversationId)
+}
+
+/** Record that a settings change switched a thread's effective model. Resolves once any
+ * in-flight turn finished (the backend queues on the thread's single-flight lock), with
+ * the persisted event's display view — or `null` when nothing changed for this thread. */
+export async function recordAskCmdrModelChange(conversationId: number): Promise<MessageView | null> {
+  const res = await commands.askCmdrRecordModelChange(conversationId)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /** One conversation's header plus a page of its display messages (oldest first). */

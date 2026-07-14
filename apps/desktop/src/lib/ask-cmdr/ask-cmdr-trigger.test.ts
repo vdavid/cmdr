@@ -13,6 +13,7 @@ const sendMock =
 const cancelMock = vi.fn<(id: number) => Promise<void>>()
 const listMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
 const getMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
+const recordMock = vi.fn<(id: number) => Promise<unknown>>()
 const saveMock = vi.fn()
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -21,6 +22,7 @@ vi.mock('$lib/tauri-commands', () => ({
   cancelAskCmdr: (id: number) => cancelMock(id),
   listAskCmdrConversations: (...a: unknown[]) => listMock(...a),
   getAskCmdrConversation: (...a: unknown[]) => getMock(...a),
+  recordAskCmdrModelChange: (id: number) => recordMock(id),
 }))
 vi.mock('$lib/app-status-store', () => ({
   saveAppStatus: (s: unknown) => {
@@ -50,6 +52,7 @@ import {
   loadOlderMessages,
   MESSAGE_PAGE,
   newChat,
+  noteModelSettingChanged,
   openRail,
   pathFromArguments,
   RAIL_MAX_WIDTH,
@@ -78,6 +81,7 @@ beforeEach(() => {
   saveMock.mockReset()
   listMock.mockReset()
   getMock.mockReset()
+  recordMock.mockReset()
   listMock.mockResolvedValue([])
   sendMock.mockImplementation((c, _t, _a, o) => {
     lastOnEvent = o
@@ -162,6 +166,88 @@ describe('sendMessage + streaming', () => {
     sendMessage('second')
     expect(sendMock).toHaveBeenCalledTimes(1)
   })
+
+  it('a modelChanged stream event inserts a timeline line before the current user bubble', () => {
+    sendMessage('hi')
+    fire({ type: 'assistantStarted' })
+    fire({ type: 'modelChanged', messageId: 9, seq: 0, model: 'model-two' })
+    expect(askCmdrState.messages.map((m) => m.kind)).toEqual(['modelChange', 'user', 'assistant'])
+    expect(askCmdrState.messages[0]).toEqual({ kind: 'modelChange', model: 'model-two' })
+  })
+})
+
+describe('model settings changes', () => {
+  it('records an event for the active thread and appends the line (debounced)', async () => {
+    vi.useFakeTimers()
+    try {
+      askCmdrState.conversationId = 7
+      recordMock.mockResolvedValue({
+        id: 9,
+        seq: 4,
+        role: 'event',
+        blocks: [{ type: 'modelChanged', model: 'model-two' }],
+        promptTokens: null,
+        completionTokens: null,
+        createdAt: 0,
+      })
+      noteModelSettingChanged()
+      noteModelSettingChanged() // rapid keystrokes collapse to one backend call
+      await vi.advanceTimersByTimeAsync(1500)
+      expect(recordMock).toHaveBeenCalledTimes(1)
+      expect(recordMock).toHaveBeenCalledWith(7)
+      expect(askCmdrState.messages.at(-1)).toEqual({ kind: 'modelChange', model: 'model-two' })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does nothing without an active thread, or when the backend reports no change', async () => {
+    vi.useFakeTimers()
+    try {
+      noteModelSettingChanged()
+      await vi.advanceTimersByTimeAsync(1500)
+      expect(recordMock).not.toHaveBeenCalled()
+
+      askCmdrState.conversationId = 7
+      recordMock.mockResolvedValue(null) // same effective model (e.g. masked by the override)
+      noteModelSettingChanged()
+      await vi.advanceTimersByTimeAsync(1500)
+      expect(recordMock).toHaveBeenCalledTimes(1)
+      expect(askCmdrState.messages).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('drops a recorded event that resolves after the user switched threads', async () => {
+    vi.useFakeTimers()
+    try {
+      askCmdrState.conversationId = 7
+      let resolveRecord: (v: unknown) => void = () => {}
+      recordMock.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveRecord = resolve
+          }),
+      )
+      noteModelSettingChanged()
+      await vi.advanceTimersByTimeAsync(1500)
+      askCmdrState.conversationId = 8 // switched threads while the backend waited
+      resolveRecord({
+        id: 9,
+        seq: 4,
+        role: 'event',
+        blocks: [{ type: 'modelChanged', model: 'model-two' }],
+        promptTokens: null,
+        completionTokens: null,
+        createdAt: 0,
+      })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(askCmdrState.messages).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 
 describe('stopStreaming', () => {
@@ -226,6 +312,39 @@ describe('openRail bootstrap + newChat + hydrate', () => {
     const assistant = assistantAt(1)
     expect(assistant.text).toBe('hello')
     expect(assistant.tools[0]).toMatchObject({ callId: 'c1', tool: 'list_dir', ok: true, path: '/x' })
+  })
+
+  it('folds persisted event rows into model-change timeline lines', async () => {
+    listMock.mockResolvedValue([conversationRow(9)])
+    getMock.mockResolvedValue({
+      conversation: conversationRow(9),
+      totalMessages: 2,
+      messages: [
+        {
+          id: 1,
+          seq: 0,
+          role: 'user',
+          blocks: [{ type: 'text', text: 'hi' }],
+          promptTokens: null,
+          completionTokens: null,
+          createdAt: 0,
+        },
+        {
+          id: 2,
+          seq: 1,
+          role: 'event',
+          blocks: [{ type: 'modelChanged', model: 'model-two' }],
+          promptTokens: null,
+          completionTokens: null,
+          createdAt: 0,
+        },
+      ],
+    })
+    await openRail()
+    expect(askCmdrState.messages).toEqual([
+      { kind: 'user', id: 1, text: 'hi', attachments: [] },
+      { kind: 'modelChange', model: 'model-two' },
+    ])
   })
 
   it('opens cleanly when there is no prior thread', async () => {

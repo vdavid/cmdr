@@ -160,6 +160,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.modelChanged": "Gewechselt zu {model}",
+  "@askCmdr.event.modelChanged": {
+    "sourceHash": "dd0a934"
+  },
   "askCmdr.loadEarlier": "Frühere Nachrichten laden",
   "@askCmdr.loadEarlier": {
     "sourceHash": "33fd46b"

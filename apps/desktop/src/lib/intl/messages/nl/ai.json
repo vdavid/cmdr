@@ -173,6 +173,10 @@
     "sourceHash": "5e2c614",
     "sameAsSourceJustification": "'Model' is a genuine Dutch word for an AI model (MS NL terminology: model -> model). Kept across the AI surface in Dutch."
   },
+  "ai.cloud.askCmdrOverrideHint": "Ask Cmdr gebruikt een eigen model ({model}) in plaats van dit model. Wijzig het in het Ask Cmdr-gedeelte.",
+  "@ai.cloud.askCmdrOverrideHint": {
+    "sourceHash": "0d278f6"
+  },
   "ai.cloud.modelDescription": "De modelnaam die voor completions wordt gebruikt.",
   "@ai.cloud.modelDescription": {
     "sourceHash": "809fa50"

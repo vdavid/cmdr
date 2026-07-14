@@ -72,6 +72,12 @@
             {/if}
         </div>
     </div>
+{:else if message.kind === 'modelChange'}
+    <!-- A timeline line, not a bubble: the thread switched models here. The model name
+         renders as plain {text} (Svelte auto-escapes), never {@html}. -->
+    <div class="msg model-change" role="status">
+        {tString('askCmdr.event.modelChanged', { model: message.model })}
+    </div>
 {/if}
 
 <style>
@@ -197,6 +203,13 @@
     }
 
     .error-detail {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        overflow-wrap: anywhere;
+    }
+
+    .msg.model-change {
+        text-align: center;
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
         overflow-wrap: anywhere;

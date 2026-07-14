@@ -97,6 +97,14 @@
     })
     unlistenFns.push(unsubCloudConfigs)
 
+    // When the Ask Cmdr slot has its own model, this section's model doesn't reach Ask
+    // Cmdr — say so under the picker instead of letting the change silently not apply.
+    let askCmdrModelOverride = $state(getSetting('askCmdr.interactiveModel').trim())
+    const unsubAskCmdrModel = onSpecificSettingChange('askCmdr.interactiveModel', (_id, newValue) => {
+        askCmdrModelOverride = newValue.trim()
+    })
+    unlistenFns.push(unsubAskCmdrModel)
+
     onDestroy(() => {
         // Flush any in-flight typing before tearing down: closing Settings (or navigating to a
         // different section) shouldn't drop a key the user already typed.
@@ -441,6 +449,12 @@
         />
     </SettingRow>
 
+    {#if askCmdrModelOverride}
+        <p class="askcmdr-override-hint" role="note">
+            {tString('ai.cloud.askCmdrOverrideHint', { model: askCmdrModelOverride })}
+        </p>
+    {/if}
+
     <!-- Connection status -->
     {#if secretError}
         <div class="secret-error" role="alert">
@@ -510,6 +524,14 @@
         color: var(--color-text-secondary);
         margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-md);
         line-height: 1.4;
+    }
+
+    .askcmdr-override-hint {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin: calc(-1 * var(--spacing-sm)) 0 var(--spacing-md);
+        line-height: 1.4;
+        overflow-wrap: anywhere;
     }
 
     /* Text input (same style as other setting inputs) */

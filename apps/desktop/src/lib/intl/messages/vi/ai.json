@@ -171,6 +171,10 @@
   "@ai.cloud.modelLabel": {
     "sourceHash": "5e2c614"
   },
+  "ai.cloud.askCmdrOverrideHint": "Ask Cmdr dùng mô hình riêng ({model}) thay vì mô hình này. Thay đổi trong phần Ask Cmdr.",
+  "@ai.cloud.askCmdrOverrideHint": {
+    "sourceHash": "0d278f6"
+  },
   "ai.cloud.modelDescription": "Tên mô hình dùng để hoàn thành.",
   "@ai.cloud.modelDescription": {
     "sourceHash": "809fa50"

@@ -35,6 +35,7 @@ import {
 import { addToast } from '$lib/ui/toast/toast-store.svelte'
 import { tString, setLocale } from '$lib/intl/messages.svelte'
 import { pushConfigToBackend } from './ai-config'
+import { noteModelSettingChanged } from '$lib/ask-cmdr/ask-cmdr-trigger.svelte'
 import { pushLowDiskSpaceConfigToBackend } from '$lib/low-disk-space/notifications-mode'
 import { applyAutoCheckEnabled } from '$lib/updates/updater.svelte'
 
@@ -202,9 +203,26 @@ const passthroughBackendHandlers: Partial<Record<string, (value: unknown) => voi
   // whichever provider/key/model is current at the actual IPC moment wins (handles the race
   // where the user toggles things mid-flight). Three entries instead of one because each
   // setting fires independently; one shared handler keeps them in lockstep.
-  'ai.provider': () => void pushConfigToBackend(),
-  'ai.cloudProvider': () => void pushConfigToBackend(),
-  'ai.cloudProviderConfigs': () => void pushConfigToBackend(),
+  // Each also nudges the Ask Cmdr rail: if the change switched the active thread's
+  // effective model, the backend records a "switched to X" timeline event (debounced +
+  // deduped in the trigger store / backend, so the pair of calls stays cheap).
+  'ai.provider': () => {
+    void pushConfigToBackend()
+    noteModelSettingChanged()
+  },
+  'ai.cloudProvider': () => {
+    void pushConfigToBackend()
+    noteModelSettingChanged()
+  },
+  'ai.cloudProviderConfigs': () => {
+    void pushConfigToBackend()
+    noteModelSettingChanged()
+  },
+  // The Ask Cmdr slot's own model: the backend reads it fresh from disk per send, so
+  // there is no config push — only the model-change timeline nudge.
+  'askCmdr.interactiveModel': () => {
+    noteModelSettingChanged()
+  },
   // `updates.autoCheck` flips the background poll loop on or off live. `applyAutoCheckEnabled`
   // also fires an immediate check on `true` so the user gets a fresh state right after
   // re-enabling. Without this entry the wizard's step 3 toggle would only take effect after

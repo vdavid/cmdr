@@ -37,6 +37,18 @@ stays simple:
   source error's own wording (`detail`, when the backend has one — a retired model slug, a quota reset time) under the
   friendly headline, rendered as escaped plain text (never `{@html}`), so the user sees what to fix. Display only: the
   UI branches on `errorKind`, never on `detail`.
+- `modelChanged` → insert a `{ kind: 'modelChange' }` timeline line BEFORE the current user bubble (the switch happened
+  between the turns; the backend already persisted the event row).
+
+**Model-change events, live path.** `settings-applier.ts` calls the trigger's `noteModelSettingChanged()` on the four
+model-affecting settings (`ai.provider` / `ai.cloudProvider` / `ai.cloudProviderConfigs` / `askCmdr.interactiveModel`),
+which debounces 1 s (outlasting the settings store's 500 ms disk flush, which the backend re-reads, and the model text
+field's keystrokes) and then calls `ask_cmdr_record_model_change` for the active thread. The backend queues on the
+thread's single-flight lock — with a turn in flight the promise resolves right after that reply — and answers the
+persisted event view, or `null` when nothing effectively changed (no turn yet, same model, or the interactive override
+masks the changed shared model). A resolution that arrives after the user switched threads is dropped locally (the row
+still shows on revisit). History renders the same lines via the `event`-role fold in `buildRailMessages`. Backend
+mechanics: `src-tauri/src/agent/chat/DETAILS.md` § Model-change events.
 
 **Cancel finalizes locally.** The runtime returns `Cancelled` with no terminal event, so `stopStreaming` cancels the
 backend AND finalizes the current bubble itself (a late `textDelta` that races in is harmless — it just appends a little

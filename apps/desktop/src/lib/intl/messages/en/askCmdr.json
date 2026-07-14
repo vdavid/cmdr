@@ -159,6 +159,10 @@
   "@askCmdr.error.provider": {
     "description": "Shown for any other provider-side problem. Friendly; avoids the words error and failed. The apostrophe is U+2019."
   },
+  "askCmdr.event.modelChanged": "Switched to {model}",
+  "@askCmdr.event.modelChanged": {
+    "description": "A small centered timeline line in the chat thread marking that the AI model changed between turns. {model} is the model's technical name, for example openai/gpt-oss-120b."
+  },
   "askCmdr.loadEarlier": "Load earlier messages",
   "@askCmdr.loadEarlier": {
     "description": "Button at the top of a long Ask Cmdr chat that loads the previous page of older messages. Sentence case."

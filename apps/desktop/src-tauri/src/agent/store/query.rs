@@ -40,14 +40,37 @@ pub struct ConversationRow {
     pub origin: Option<ConversationOrigin>,
 }
 
-/// One stored message, fully decoded. Backend-only: `parts` carries the opaque provider
-/// reasoning blob, so this never crosses IPC (the IPC layer derives a display `MessageView`).
+/// A UI-facing event recorded in a conversation's timeline (a `role = 'event'` message
+/// row). Events share the conversation's `seq` ordering but NEVER enter the LLM
+/// transcript — they exist for the user's eyes (and the history view) only.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum ConversationEvent {
+    /// The conversation's effective model changed between turns; `model` is the new name.
+    ModelChanged { model: String },
+}
+
+/// The `messages.role` token for event rows. Kept OUTSIDE `AgentRole` on purpose: an
+/// event is not an LLM transcript role, so the seam's enum can't represent one and the
+/// transcript loader can't accidentally feed one to a provider.
+const EVENT_ROLE_TOKEN: &str = "event";
+
+/// What one stored message row holds: a transcript message (an LLM-facing role plus its
+/// ordered typed parts) or a UI-facing conversation event.
+#[derive(Debug, Clone, PartialEq)]
+pub enum StoredContent {
+    Message { role: AgentRole, parts: Vec<AgentPart> },
+    Event(ConversationEvent),
+}
+
+/// One stored message, fully decoded. Backend-only: transcript `parts` carry the opaque
+/// provider reasoning blob, so this never crosses IPC (the IPC layer derives a display
+/// `MessageView`).
 #[derive(Debug, Clone, PartialEq)]
 pub struct StoredMessage {
     pub id: i64,
     pub seq: i64,
-    pub role: AgentRole,
-    pub parts: Vec<AgentPart>,
+    pub content: StoredContent,
     pub text_for_search: String,
     pub prompt_tokens: Option<u32>,
     pub completion_tokens: Option<u32>,
@@ -234,17 +257,22 @@ const MESSAGE_COLUMNS: &str =
 
 fn map_message_row(row: &rusqlite::Row<'_>) -> Result<StoredMessage, AgentStoreError> {
     let role_token: String = row.get(2)?;
-    let role = AgentRole::from_token(&role_token).ok_or_else(|| AgentStoreError::Decode {
-        column: "role",
-        value: role_token,
-    })?;
     let content_blocks: String = row.get(3)?;
-    let parts: Vec<AgentPart> = serde_json::from_str(&content_blocks).map_err(AgentStoreError::ContentBlocks)?;
+    let content = if role_token == EVENT_ROLE_TOKEN {
+        let event: ConversationEvent = serde_json::from_str(&content_blocks).map_err(AgentStoreError::ContentBlocks)?;
+        StoredContent::Event(event)
+    } else {
+        let role = AgentRole::from_token(&role_token).ok_or_else(|| AgentStoreError::Decode {
+            column: "role",
+            value: role_token,
+        })?;
+        let parts: Vec<AgentPart> = serde_json::from_str(&content_blocks).map_err(AgentStoreError::ContentBlocks)?;
+        StoredContent::Message { role, parts }
+    };
     Ok(StoredMessage {
         id: row.get(0)?,
         seq: row.get(1)?,
-        role,
-        parts,
+        content,
         text_for_search: row.get(4)?,
         prompt_tokens: row.get::<_, Option<i64>>(5)?.map(|n| n as u32),
         completion_tokens: row.get::<_, Option<i64>>(6)?.map(|n| n as u32),
@@ -292,6 +320,82 @@ pub fn append_message(
     now: i64,
 ) -> Result<(i64, i64), AgentStoreError> {
     let content_blocks = serde_json::to_string(parts).map_err(AgentStoreError::ContentBlocks)?;
+    insert_message_row(
+        conn,
+        conversation_id,
+        role.as_token(),
+        &content_blocks,
+        text_for_search,
+        prompt_tokens,
+        completion_tokens,
+        now,
+    )
+}
+
+/// Append a UI-facing event row (see [`ConversationEvent`]) to a conversation, returning
+/// `(message_id, seq)`. Events interleave with messages via the shared per-conversation
+/// `seq`, carry no searchable text, and never enter the LLM transcript.
+pub fn append_event(
+    conn: &Connection,
+    conversation_id: i64,
+    event: &ConversationEvent,
+    now: i64,
+) -> Result<(i64, i64), AgentStoreError> {
+    let content_blocks = serde_json::to_string(event).map_err(AgentStoreError::ContentBlocks)?;
+    insert_message_row(
+        conn,
+        conversation_id,
+        EVENT_ROLE_TOKEN,
+        &content_blocks,
+        "",
+        None,
+        None,
+        now,
+    )
+}
+
+/// The model name the conversation's most recent completed turn (or recorded model-change
+/// event) used. `None` means no turn has run yet.
+pub fn conversation_last_model(conn: &Connection, conversation_id: i64) -> Result<Option<String>, AgentStoreError> {
+    let mut stmt = conn.prepare_cached("SELECT last_model FROM conversations WHERE id = ?1")?;
+    let mut rows = stmt.query(rusqlite::params![conversation_id])?;
+    match rows.next()? {
+        Some(row) => Ok(row.get(0)?),
+        None => Ok(None),
+    }
+}
+
+/// Record the model a conversation last used (stamped per completed turn, and when a
+/// model-change event is recorded).
+pub fn set_conversation_last_model(
+    conn: &Connection,
+    conversation_id: i64,
+    model: &str,
+) -> Result<(), AgentStoreError> {
+    conn.execute(
+        "UPDATE conversations SET last_model = ?2 WHERE id = ?1",
+        rusqlite::params![conversation_id, model],
+    )?;
+    Ok(())
+}
+
+/// The shared insert for message and event rows: derive the per-conversation `seq` and
+/// bump the conversation's `updated_at`, all inside one transaction so the seq can't race
+/// and the two writes commit together.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "one row's full column set; a params struct would just relocate the arity"
+)]
+fn insert_message_row(
+    conn: &Connection,
+    conversation_id: i64,
+    role_token: &str,
+    content_blocks: &str,
+    text_for_search: &str,
+    prompt_tokens: Option<u32>,
+    completion_tokens: Option<u32>,
+    now: i64,
+) -> Result<(i64, i64), AgentStoreError> {
     let tx = conn.unchecked_transaction()?;
     let seq: i64 = tx.query_row(
         "SELECT COALESCE(MAX(seq), -1) + 1 FROM messages WHERE conversation_id = ?1",
@@ -305,7 +409,7 @@ pub fn append_message(
         rusqlite::params![
             conversation_id,
             seq,
-            role.as_token(),
+            role_token,
             content_blocks,
             text_for_search,
             prompt_tokens,

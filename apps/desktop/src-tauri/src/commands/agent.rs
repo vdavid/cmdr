@@ -102,6 +102,10 @@ pub enum AskCmdrStreamEvent {
         kind: AgentErrorKindView,
         detail: Option<String>,
     },
+    /// The conversation's effective model changed since its previous turn; the persisted
+    /// event row's identity rides along. The rail inserts the line BEFORE this turn's
+    /// user bubble (the change happened between the turns).
+    ModelChanged { message_id: i64, seq: i64, model: String },
 }
 
 /// The wire form of [`AgentErrorKind`] — the frontend renders each honestly.
@@ -210,6 +214,9 @@ fn to_wire_event(event: AgentChatEvent) -> AskCmdrStreamEvent {
             kind: kind.into(),
             detail,
         },
+        AgentChatEvent::ModelChanged { message_id, seq, model } => {
+            AskCmdrStreamEvent::ModelChanged { message_id, seq, model }
+        }
     }
 }
 
@@ -223,6 +230,8 @@ pub enum MessageRoleView {
     User,
     Assistant,
     Tool,
+    /// A UI-facing timeline entry (a model change), not transcript content.
+    Event,
 }
 
 impl From<AgentRole> for MessageRoleView {
@@ -255,6 +264,9 @@ pub enum MessageBlock {
     /// A tool result, reduced to its status (`ok`/`elided`) — the raw content stays
     /// backend-only.
     ToolResult { call_id: String, ok: bool, elided: bool },
+    /// The conversation's effective model changed between turns; `model` is the new name.
+    /// Rendered as a small centered timeline line, escaped plain text (never `{@html}`).
+    ModelChanged { model: String },
 }
 
 /// A message as the rail displays it: id/seq/role, its display blocks, and token counts.
@@ -322,30 +334,38 @@ fn tool_result_ok(content: &Value) -> bool {
     !(refused || problem)
 }
 
-/// Project one stored message into its display form, dropping reasoning parts.
+/// Project one stored message into its display form, dropping reasoning parts. Event
+/// rows project to `role: Event` with their single typed block.
 fn to_message_view(message: StoredMessage) -> MessageView {
-    let blocks = message
-        .parts
-        .into_iter()
-        .filter_map(|part| match part {
-            AgentPart::Text(text) => Some(MessageBlock::Text { text }),
-            AgentPart::ToolCall(call) => Some(MessageBlock::ToolCall {
-                call_id: call.call_id,
-                tool: call.tool.as_wire_name().to_string(),
-                arguments: call.arguments.to_string(),
-            }),
-            AgentPart::ToolResult(result) => Some(MessageBlock::ToolResult {
-                ok: tool_result_ok(&result.content),
-                call_id: result.call_id,
-                elided: result.elided,
-            }),
-            AgentPart::Reasoning(_) => None,
-        })
-        .collect();
+    let (role, blocks): (MessageRoleView, Vec<MessageBlock>) = match message.content {
+        store::StoredContent::Message { role, parts } => {
+            let blocks = parts
+                .into_iter()
+                .filter_map(|part| match part {
+                    AgentPart::Text(text) => Some(MessageBlock::Text { text }),
+                    AgentPart::ToolCall(call) => Some(MessageBlock::ToolCall {
+                        call_id: call.call_id,
+                        tool: call.tool.as_wire_name().to_string(),
+                        arguments: call.arguments.to_string(),
+                    }),
+                    AgentPart::ToolResult(result) => Some(MessageBlock::ToolResult {
+                        ok: tool_result_ok(&result.content),
+                        call_id: result.call_id,
+                        elided: result.elided,
+                    }),
+                    AgentPart::Reasoning(_) => None,
+                })
+                .collect();
+            (role.into(), blocks)
+        }
+        store::StoredContent::Event(store::ConversationEvent::ModelChanged { model }) => {
+            (MessageRoleView::Event, vec![MessageBlock::ModelChanged { model }])
+        }
+    };
     MessageView {
         id: message.id,
         seq: message.seq,
-        role: message.role.into(),
+        role,
         blocks,
         prompt_tokens: message.prompt_tokens,
         completion_tokens: message.completion_tokens,
@@ -436,6 +456,53 @@ fn scripted_fake_llm() -> FakeAgentLlm {
         "I'm the ".to_string(),
         "test assistant.".to_string(),
     ])])
+}
+
+/// The model an Ask Cmdr turn would use right now, for the model-change event: the
+/// interactive override when set, else the shared `ai/` model — the same resolution a
+/// send performs. `None` when AI is off (nothing will run, so nothing to record).
+fn effective_model_for_event(app: &AppHandle) -> Option<String> {
+    if std::env::var("CMDR_E2E_ASK_CMDR_FAKE").is_ok() {
+        return Some("fake".to_string());
+    }
+    if crate::ai::state::get_provider() == "off" {
+        return None;
+    }
+    let model_override = crate::settings::load_ask_cmdr_interactive_model(app);
+    Some(provider_and_model(model_override.as_deref()).1)
+}
+
+/// A settings change may have switched the model for an open thread: record it as a
+/// conversation event once any in-flight turn finishes (the turn keeps its already-resolved
+/// model; the event marks the boundary). Returns the persisted event's display view, or
+/// `None` when nothing changed for this thread — AI is off, no turn has run yet, or the
+/// effective model is the same (for example the interactive override masks the changed
+/// shared model).
+#[tauri::command]
+#[specta::specta]
+pub async fn ask_cmdr_record_model_change(app: AppHandle, conversation_id: i64) -> Result<Option<MessageView>, String> {
+    let Some(model) = effective_model_for_event(&app) else {
+        return Ok(None);
+    };
+    let Some(runtime) = app.try_state::<ChatRuntime>() else {
+        return Ok(None);
+    };
+    match runtime.record_model_change(conversation_id, &model).await {
+        Ok(Some((id, seq, created_at))) => Ok(Some(MessageView {
+            id,
+            seq,
+            role: MessageRoleView::Event,
+            blocks: vec![MessageBlock::ModelChanged { model }],
+            prompt_tokens: None,
+            completion_tokens: None,
+            created_at,
+        })),
+        Ok(None) => Ok(None),
+        Err(e) => {
+            log::warn!(target: LOG_TARGET, "recording a model change failed: {e}");
+            Err(e.to_string())
+        }
+    }
 }
 
 /// The provider tag + effective model label for cost metering. The model is the

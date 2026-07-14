@@ -160,6 +160,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.modelChanged": "Bytte till {model}",
+  "@askCmdr.event.modelChanged": {
+    "sourceHash": "dd0a934"
+  },
   "askCmdr.loadEarlier": "Läs in tidigare meddelanden",
   "@askCmdr.loadEarlier": {
     "sourceHash": "33fd46b"

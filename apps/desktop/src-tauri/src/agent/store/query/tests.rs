@@ -32,6 +32,77 @@ fn append_user_text(conn: &Connection, conversation_id: i64, text: &str, now: i6
     .expect("append message")
 }
 
+// ── Conversation events + last model ─────────────────────────────────────────
+
+#[test]
+fn event_rows_round_trip_and_interleave_by_seq() {
+    let conn = migrated_conn();
+    let id = create_conversation(&conn, "t", 100, None).expect("create");
+    append_user_text(&conn, id, "hello", 100);
+    let (event_id, event_seq) = append_event(
+        &conn,
+        id,
+        &ConversationEvent::ModelChanged {
+            model: "openai/gpt-oss-120b".to_string(),
+        },
+        200,
+    )
+    .expect("append event");
+    assert_eq!(event_seq, 1, "events share the conversation's seq ordering");
+
+    let messages = list_messages(&conn, id, 10, 0).expect("list");
+    assert_eq!(messages.len(), 2);
+    assert!(matches!(
+        &messages[0].content,
+        StoredContent::Message {
+            role: AgentRole::User,
+            ..
+        }
+    ));
+    match &messages[1].content {
+        StoredContent::Event(ConversationEvent::ModelChanged { model }) => {
+            assert_eq!(model, "openai/gpt-oss-120b");
+        }
+        other => panic!("expected an event row, got {other:?}"),
+    }
+    assert_eq!(messages[1].id, event_id);
+}
+
+#[test]
+fn last_model_starts_absent_and_round_trips() {
+    let conn = migrated_conn();
+    let id = create_conversation(&conn, "t", 100, None).expect("create");
+    assert_eq!(conversation_last_model(&conn, id).expect("get"), None);
+    set_conversation_last_model(&conn, id, "model-one").expect("set");
+    assert_eq!(
+        conversation_last_model(&conn, id).expect("get"),
+        Some("model-one".to_string())
+    );
+    set_conversation_last_model(&conn, id, "model-two").expect("set");
+    assert_eq!(
+        conversation_last_model(&conn, id).expect("get"),
+        Some("model-two".to_string())
+    );
+}
+
+#[test]
+fn event_rows_never_match_search() {
+    // Event rows carry no `text_for_search`, so a model name can't surface as a
+    // conversation search hit.
+    let conn = migrated_conn();
+    let id = create_conversation(&conn, "t", 100, None).expect("create");
+    append_event(
+        &conn,
+        id,
+        &ConversationEvent::ModelChanged {
+            model: "searchable-model-name".to_string(),
+        },
+        100,
+    )
+    .expect("append event");
+    assert!(search_ids(&conn, "searchable").is_empty());
+}
+
 // ── Conversations ────────────────────────────────────────────────────────────
 
 #[test]
@@ -124,8 +195,14 @@ fn content_blocks_round_trip_the_opaque_reasoning_blob_through_the_db() {
 
     let detail = get_conversation(&conn, id, 10, 0).expect("get").expect("present");
     let msg = &detail.messages[0];
-    assert_eq!(msg.role, AgentRole::Assistant);
-    assert_eq!(msg.parts, parts, "parts round-trip through the DB untouched");
+    assert_eq!(
+        msg.content,
+        StoredContent::Message {
+            role: AgentRole::Assistant,
+            parts,
+        },
+        "role + parts round-trip through the DB untouched"
+    );
     assert_eq!((msg.prompt_tokens, msg.completion_tokens), (Some(12), Some(34)));
 }
 

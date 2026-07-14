@@ -46,7 +46,9 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
   read `$lib/intl`'s `getLocale()`; don't hardcode a locale or add a fresh formatter. DETAILS § Date display.
 - **AI hot-apply** routes `ai.provider` / `ai.cloudProvider` / `ai.cloudProviderConfigs` through `settings-applier.ts`
   to `ai-config.ts::pushConfigToBackend()`, which re-reads every setting fresh — never pass cached values (sections and
-  the wizard just call `setSetting(...)`).
+  the wizard just call `setSetting(...)`). The same four entries (plus `askCmdr.interactiveModel`) also nudge the Ask
+  Cmdr rail's `noteModelSettingChanged()`, so a model switch lands in the open thread as a timeline event; see
+  `lib/ask-cmdr/DETAILS.md` § Model-change events.
 - **Cloud AI API keys live in the OS secret store, never `settings.json`** (`saveAiApiKey` / `getAiApiKey`);
   `ai.cloudProviderConfigs` holds only non-secret `model` / `baseUrl`.
 - **A self-closing webview defers `close()` past the current tick** (`setTimeout(0)`, not `rAF`): synchronous `close()`

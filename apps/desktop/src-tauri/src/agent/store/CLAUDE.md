@@ -32,6 +32,10 @@ rationale, the FTS design, the search-JOIN gotcha, no-retention-in-v1): [DETAILS
   NULL; the per-day cross-thread rollup is computed at query time (`SUM … GROUP BY day`).
 - **`content_blocks` is a backend-only column.** It carries the opaque provider reasoning blob, which must NEVER cross to
   the frontend. `StoredMessage` is deliberately not a wire type; the IPC layer derives a display `MessageView`.
+- **`role = 'event'` rows are UI timeline entries (typed `ConversationEvent`), NEVER transcript content.** The token
+  lives outside `AgentRole` on purpose, so the transcript loader can't feed one to a provider — a new reader of
+  `messages` must branch on `StoredContent` and decide what an event row means for it. They carry no `text_for_search`
+  (never searchable). `conversations.last_model` (v2) records the last turn's model to power model-change events.
 - **Consent lives in the `meta` table, not a settings preference.** `get_consent`/`set_consent`/`clear_consent`
   read/write the `ask_cmdr_consent_version` + `ask_cmdr_consent_at` meta rows (agent state, `sqlite3`-inspectable). A
   partial/absent record reads as no consent, so the gate fails CLOSED. The copy version is owned by

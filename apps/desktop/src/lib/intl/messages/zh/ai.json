@@ -171,6 +171,10 @@
   "@ai.cloud.modelLabel": {
     "sourceHash": "5e2c614"
   },
+  "ai.cloud.askCmdrOverrideHint": "Ask Cmdr 使用自己的模型（{model}），而不是这里的模型。请在 Ask Cmdr 部分中更改。",
+  "@ai.cloud.askCmdrOverrideHint": {
+    "sourceHash": "0d278f6"
+  },
   "ai.cloud.modelDescription": "用于生成补全的模型名称。",
   "@ai.cloud.modelDescription": {
     "sourceHash": "809fa50"

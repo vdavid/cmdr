@@ -81,4 +81,10 @@ describe('AskCmdrMessage a11y', () => {
     await tick()
     await expectNoA11yViolations(target)
   })
+
+  it('a model-change timeline line has no a11y violations', async () => {
+    const target = mountMessage({ kind: 'modelChange', model: 'openai/gpt-oss-120b' })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
 })

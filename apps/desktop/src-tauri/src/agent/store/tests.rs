@@ -140,6 +140,28 @@ fn fresh_open_builds_current_schema() {
     assert_eq!(hits, 0);
 }
 
+/// A v1 database (the shipped initial schema) with an existing conversation migrates
+/// forward to the current version, gaining `last_model` as NULL without touching rows.
+#[test]
+fn production_v1_db_migrates_forward_gaining_last_model() {
+    let conn = rusqlite::Connection::open_in_memory().expect("in-memory db");
+    run_migrations(&conn, &MIGRATIONS[..1]).expect("run v1 only");
+    conn.execute(
+        "INSERT INTO conversations (id, title, created_at, updated_at) VALUES (1, 'old thread', 10, 10)",
+        [],
+    )
+    .expect("insert v1 row");
+
+    run_migrations(&conn, MIGRATIONS).expect("migrate to current");
+
+    let last_model: Option<String> = conn
+        .query_row("SELECT last_model FROM conversations WHERE id = 1", [], |row| {
+            row.get(0)
+        })
+        .expect("last_model column exists after the migration");
+    assert_eq!(last_model, None, "pre-existing rows read as no recorded model");
+}
+
 // ── Token round-trips + uniqueness ─────────────────────────────────────────────
 
 /// Assert every token round-trips through `as_token`/`from_token` and the tokens are

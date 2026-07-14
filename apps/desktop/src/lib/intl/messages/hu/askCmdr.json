@@ -160,6 +160,10 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
+  "askCmdr.event.modelChanged": "Váltás erre: {model}",
+  "@askCmdr.event.modelChanged": {
+    "sourceHash": "dd0a934"
+  },
   "askCmdr.loadEarlier": "Korábbi üzenetek betöltése",
   "@askCmdr.loadEarlier": {
     "sourceHash": "33fd46b"

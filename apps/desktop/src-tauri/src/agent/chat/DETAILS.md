@@ -92,6 +92,30 @@ state is unambiguous:
 `TurnResult` (`Answered` / `Failed(kind)` / `Cancelled`) is the caller's bookkeeping; the
 `AgentChatEvent`s already told the frontend everything.
 
+### Model-change events
+
+A settings change can switch a thread's effective model mid-conversation; the thread logs
+it honestly as a UI-facing event row (`store::ConversationEvent::ModelChanged`) so the
+user sees which replies used which model. Two cooperating paths, one comparison
+(`conversations.last_model` vs the effective model):
+
+- **Send-time** (`record_model_transition`, at the turn's FIRST `End`, before the user
+  row): covers threads that weren't active when the setting changed (a resumed thread).
+  Running at first `End` keeps crash case b intact — a failed first attempt records
+  nothing, and the next successful turn re-runs the comparison, so the event is deferred,
+  never lost. The first turn of a thread only stamps `last_model` (nothing to switch from).
+- **Change-time** (`ChatRuntime::record_model_change`, called by the
+  `ask_cmdr_record_model_change` command when a model-affecting setting changes): awaits
+  the thread's single-flight lock, so with a turn in flight the event lands right AFTER
+  that reply (the turn keeps its already-resolved model — a change never yanks a running
+  request). The two paths can't double-log: whichever runs first updates `last_model`, and
+  the other sees "unchanged" and no-ops.
+
+The event's identity reaches the live rail via `AgentChatEvent::ModelChanged` (send-time)
+or the command's returned `MessageView` (change-time); history shows it via the `Event`
+role projection. Event rows never enter the LLM transcript (`load_transcript` filters
+them) or the prompt prefix.
+
 **Decision: `Failed` carries `detail: Option<String>` — the source error's own wording —
 alongside the typed `kind`.** Why: the typed kinds alone left the user blind on the
 catch-all `Provider` case (a retired model slug's "use this slug instead" hint died in the

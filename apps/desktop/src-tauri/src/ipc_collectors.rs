@@ -259,6 +259,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::operation_log::get_operation_log_detail,
         // ask_cmdr_send_message is Channel-based (not specta); registered only in ipc.rs.
         crate::commands::agent::ask_cmdr_cancel,
+        crate::commands::agent::ask_cmdr_record_model_change,
         crate::commands::agent::ask_cmdr_get_conversation,
         crate::commands::agent::ask_cmdr_list_conversations,
         crate::commands::agent::ask_cmdr_search_conversations,

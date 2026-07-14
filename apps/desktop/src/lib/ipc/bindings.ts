@@ -2050,6 +2050,27 @@ export const commands = {
    */
   askCmdrCancel: (conversationId: number) => __TAURI_INVOKE<void>('ask_cmdr_cancel', { conversationId }),
   /**
+   *  A settings change may have switched the model for an open thread: record it as a
+   *  conversation event once any in-flight turn finishes (the turn keeps its already-resolved
+   *  model; the event marks the boundary). Returns the persisted event's display view, or
+   *  `None` when nothing changed for this thread — AI is off, no turn has run yet, or the
+   *  effective model is the same (for example the interactive override masks the changed
+   *  shared model).
+   */
+  askCmdrRecordModelChange: (conversationId: number) =>
+    typedError<
+      {
+        id: number
+        seq: number
+        role: MessageRoleView
+        blocks: MessageBlock[]
+        promptTokens: number | null
+        completionTokens: number | null
+        createdAt: number
+      } | null,
+      string
+    >(__TAURI_INVOKE('ask_cmdr_record_model_change', { conversationId })),
+  /**
    *  One conversation's header plus a page of its display messages (oldest first). `None`
    *  when the thread is absent or the store never opened.
    */
@@ -5063,9 +5084,20 @@ export type MessageBlock =
    *  backend-only.
    */
   | { type: 'toolResult'; callId: string; ok: boolean; elided: boolean }
+  /**
+   *  The conversation's effective model changed between turns; `model` is the new name.
+   *  Rendered as a small centered timeline line, escaped plain text (never `{@html}`).
+   */
+  | { type: 'modelChanged'; model: string }
 
 // A message's role, on the wire.
-export type MessageRoleView = 'system' | 'user' | 'assistant' | 'tool'
+export type MessageRoleView =
+  | 'system'
+  | 'user'
+  | 'assistant'
+  | 'tool'
+  // A UI-facing timeline entry (a model change), not transcript content.
+  | 'event'
 
 // A message as the rail displays it: id/seq/role, its display blocks, and token counts.
 export type MessageView = {

@@ -20,6 +20,7 @@ import {
   cancelAskCmdr,
   getAskCmdrConversation,
   listAskCmdrConversations,
+  recordAskCmdrModelChange,
   sendAskCmdrMessage,
   type AskCmdrErrorKind,
   type AskCmdrStreamEvent,
@@ -63,6 +64,8 @@ export type RailMessage =
        * headline so the user sees what to fix. Display only; never branched on. */
       detail?: string
     }
+  /** A timeline line marking that the thread's effective model changed between turns. */
+  | { kind: 'modelChange'; model: string }
 
 interface AskCmdrState {
   open: boolean
@@ -270,6 +273,10 @@ function buildRailMessages(detail: ConversationDetailView): RailMessage[] {
         thinking: false,
         streaming: false,
       })
+    } else if (message.role === 'event') {
+      for (const block of message.blocks) {
+        if (block.type === 'modelChanged') out.push({ kind: 'modelChange', model: block.model })
+      }
     }
     // `tool`-role messages carry only results, already folded into the tool lines above.
   }
@@ -386,6 +393,9 @@ function handleStreamEvent(event: AskCmdrStreamEvent): void {
       return
     case 'failed':
       applyFailed(event.kind, event.detail)
+      return
+    case 'modelChanged':
+      applyModelChanged(event.model)
   }
 }
 
@@ -433,6 +443,52 @@ function applyFailed(kind: AskCmdrErrorKind, detail: string | null): void {
   finalizeAssistant()
   askCmdrState.messages.push({ kind: 'error', errorKind: kind, detail: detail ?? undefined })
   askCmdrState.streaming = false
+}
+
+/** The model changed between the previous turn and this one, so the line belongs BEFORE
+ * this turn's user bubble (which is already rendered optimistically). */
+function applyModelChanged(model: string): void {
+  const item: RailMessage = { kind: 'modelChange', model }
+  const lastUserIndex = askCmdrState.messages.findLastIndex((m) => m.kind === 'user')
+  if (lastUserIndex >= 0) askCmdrState.messages.splice(lastUserIndex, 0, item)
+  else askCmdrState.messages.push(item)
+}
+
+/** How long to wait after a model-affecting settings change before asking the backend to
+ * record it: outlasts the settings store's 500 ms debounced disk flush (the backend
+ * re-reads `settings.json`) and collapses the model text field's keystrokes. */
+const MODEL_CHANGE_DEBOUNCE_MS = 1000
+
+let modelChangeTimer: ReturnType<typeof setTimeout> | null = null
+
+/** A model-affecting setting changed (wired from `settings-applier.ts`). After the
+ * debounce, asks the backend to record the change for the active thread — the backend
+ * queues on the thread's single-flight lock, so with a turn in flight the line lands
+ * right after the reply. The backend answers `null` when nothing actually changed for
+ * this thread (no turn yet, or the effective model is the same). */
+export function noteModelSettingChanged(): void {
+  if (modelChangeTimer) clearTimeout(modelChangeTimer)
+  modelChangeTimer = setTimeout(() => {
+    modelChangeTimer = null
+    void recordModelChangeForActiveThread()
+  }, MODEL_CHANGE_DEBOUNCE_MS)
+}
+
+async function recordModelChangeForActiveThread(): Promise<void> {
+  const conversationId = askCmdrState.conversationId
+  if (conversationId == null) return
+  try {
+    const event = await recordAskCmdrModelChange(conversationId)
+    if (!event) return
+    // The backend may have waited out an in-flight turn; if the user switched threads
+    // meanwhile, the row is persisted (it shows on revisit) but doesn't belong here.
+    if (askCmdrState.conversationId !== conversationId) return
+    for (const block of event.blocks) {
+      if (block.type === 'modelChanged') askCmdrState.messages.push({ kind: 'modelChange', model: block.model })
+    }
+  } catch (e) {
+    log.warn('recording a model change failed: {error}', { error: String(e) })
+  }
 }
 
 function currentAssistant(): Extract<RailMessage, { kind: 'assistant' }> | null {
