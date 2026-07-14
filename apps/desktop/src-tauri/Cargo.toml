@@ -98,8 +98,8 @@ encoding_rs = "0.8.35"
 # in transitively; declaring it makes the dependency explicit.
 arc-swap = "1.9.1"
 walkdir = "2"
-# Drive indexing: parallel directory walker, SQLite store, and macOS FSEvents watcher
-jwalk = "0.8"
+# Drive indexing: SQLite store and macOS FSEvents watcher (the parallel directory
+# walker is now the in-tree `indexing::scanner::walker`, not a dependency)
 rusqlite = { version = "0.39", features = ["bundled", "collation", "fallible_uint"] }
 # For chunked copy metadata preservation (network filesystems)
 xattr = "1"

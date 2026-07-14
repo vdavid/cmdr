@@ -689,10 +689,7 @@ fn timed_out_dir_is_not_marked_listed() {
     // Mock tree under "/root": "slow" (dir, its read hangs) and "ok" (dir, has a file).
     let root = PathBuf::from("/root");
     let mut dirs: HashMap<PathBuf, Vec<(&str, RawFileType)>> = HashMap::new();
-    dirs.insert(
-        root.clone(),
-        vec![("slow", RawFileType::Dir), ("ok", RawFileType::Dir)],
-    );
+    dirs.insert(root.clone(), vec![("slow", RawFileType::Dir), ("ok", RawFileType::Dir)]);
     dirs.insert(root.join("slow"), vec![("hidden.txt", RawFileType::File)]);
     dirs.insert(root.join("ok"), vec![("seen.txt", RawFileType::File)]);
     let slow = root.join("slow");
@@ -707,7 +704,10 @@ fn timed_out_dir_is_not_marked_listed() {
             match dirs.get(p) {
                 Some(children) => Ok(children
                     .iter()
-                    .map(|(n, t)| RawDirEntry { path: p.join(n), file_type: *t })
+                    .map(|(n, t)| RawDirEntry {
+                        path: p.join(n),
+                        file_type: *t,
+                    })
                     .collect()),
                 None => Err(std::io::Error::new(std::io::ErrorKind::NotFound, "no mock dir")),
             }
@@ -731,7 +731,10 @@ fn timed_out_dir_is_not_marked_listed() {
         Duration::from_millis(50), // short timeout so the hang is abandoned fast
     )
     .expect("run_scan");
-    assert!(start.elapsed() < Duration::from_secs(1), "must abandon the hang, not wait it out");
+    assert!(
+        start.elapsed() < Duration::from_secs(1),
+        "must abandon the hang, not wait it out"
+    );
     assert!(!summary.was_cancelled);
 
     // Emit the marks exactly as scan_volume does, then flush.
@@ -752,14 +755,18 @@ fn timed_out_dir_is_not_marked_listed() {
         .expect("ok dir row exists");
 
     let listed_epoch = |id: i64| -> u64 {
-        conn.query_row("SELECT listed_epoch FROM entries WHERE id = ?1", [id], |r| r.get::<_, u64>(0))
-            .unwrap()
+        conn.query_row("SELECT listed_epoch FROM entries WHERE id = ?1", [id], |r| {
+            r.get::<_, u64>(0)
+        })
+        .unwrap()
     };
 
     // The hung dir is inserted but NOT marked (honest unknown); its subtree is absent.
     assert_eq!(listed_epoch(slow_id), 0, "timed-out dir must stay listed_epoch = 0");
     assert!(
-        IndexStore::resolve_component(&conn, slow_id, "hidden.txt").unwrap().is_none(),
+        IndexStore::resolve_component(&conn, slow_id, "hidden.txt")
+            .unwrap()
+            .is_none(),
         "hung dir's children must be absent",
     );
     // The healthy sibling and root ARE marked at the current epoch.

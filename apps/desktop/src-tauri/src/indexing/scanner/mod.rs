@@ -262,7 +262,17 @@ pub fn scan_volume(
 pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -> Result<ScanSummary, ScanError> {
     let progress = Arc::new(ScanProgress::new());
     let reader: ReadDirFn = Arc::new(std_read_dir);
-    let (summary, listed_ids, epoch) = run_scan(root, cancelled, &progress, writer, 2000, 0, false, reader, LOCAL_LIST_TIMEOUT)?;
+    let (summary, listed_ids, epoch) = run_scan(
+        root,
+        cancelled,
+        &progress,
+        writer,
+        2000,
+        0,
+        false,
+        reader,
+        LOCAL_LIST_TIMEOUT,
+    )?;
 
     if !summary.was_cancelled {
         // Stamp the listed dirs before the subtree aggregate (ordering invariant).
@@ -397,7 +407,11 @@ fn run_scan(
 
     let was_cancelled = cancelled.load(Ordering::Relaxed);
     // A cancelled scan emits no marks (the caller discards/heals the partial).
-    let listed_ids = if was_cancelled { Vec::new() } else { visitor.take_listed_ids() };
+    let listed_ids = if was_cancelled {
+        Vec::new()
+    } else {
+        visitor.take_listed_ids()
+    };
     let snap = progress.snapshot();
 
     log::debug!(

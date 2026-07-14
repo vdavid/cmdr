@@ -37,11 +37,6 @@ use proptest as _;
 use env_logger as _;
 //noinspection RsUnusedImport
 use mimalloc as _;
-//noinspection RsUnusedImport
-// The guarded walker replaced jwalk in the local scan (stage 2 of
-// `docs/specs/guarded-local-scan-plan.md`); the dependency itself is dropped in
-// stage 4. Until then this marker keeps `unused_crate_dependencies` quiet.
-use jwalk as _;
 //noinspection ALL
 // smb2 crate is used in network/smb_client module (macOS + Linux)
 #[cfg(any(target_os = "macos", target_os = "linux"))]
