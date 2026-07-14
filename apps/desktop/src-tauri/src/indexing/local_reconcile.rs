@@ -1,4 +1,4 @@
-//! The LOCAL full-tree reconcile rescan for the jwalk-indexed local volume.
+//! The LOCAL full-tree reconcile rescan for the local volume.
 //!
 //! A LOCAL rescan of an already-populated index reconciles in place instead of
 //! truncating and rebuilding: it BFS-walks the tree from the volume root over
@@ -7,16 +7,18 @@
 //! and the network `reconcile_volume_via_trait`), and writes only the changes — so
 //! the last-good directory sizes stay visible (marked stale) throughout, and a
 //! rescan never mints the large freelist a mass-DELETE + bulk-reinsert does. A
-//! FIRST/empty scan keeps today's truncate + parallel-jwalk path (the onboarding
+//! FIRST/empty scan keeps today's truncate + parallel-walk path (the onboarding
 //! moment stays fast); the `manager::start_scan` predicate picks between them.
 //!
-//! ## Why a separate serial walk (not jwalk)
+//! ## Why a separate serial walk
 //!
-//! jwalk's fast parallel build is kept for the fresh scan. The reconcile is a
-//! separate serial BFS used only on the rare rescan (journal gap / overflow /
-//! stale-on-launch / forced); it reuses proven per-dir diff code and a single
-//! read connection, so there are no id races. Speed of the rare walk is secondary
-//! to safety here.
+//! The guarded parallel walker (`scanner::walker`) builds the fresh scan. The
+//! reconcile is a separate serial BFS used only on the rare rescan (journal gap /
+//! overflow / stale-on-launch / forced); it reuses proven per-dir diff code and a
+//! single read connection, so there are no id races. Speed of the rare walk is
+//! secondary to safety here, so it stays serial. Each directory read is capped by
+//! a [`GuardedReader`] (15 s) so a hung File Provider mount can't freeze it; see
+//! `docs/specs/guarded-local-scan-plan.md`.
 //!
 //! ## Integration shape
 //!
@@ -205,7 +207,7 @@ fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
 /// multi-minute reconcile doesn't show a frozen bar) and the summary totals.
 ///
 /// `seen_inodes` is the SINGLE set threaded across the whole BFS (NOT per-dir),
-/// mirroring jwalk's one global `seen_inodes` in `run_scan`: it dedups hardlinks
+/// mirroring the fresh scan's one global `seen_inodes` in `run_scan`: it dedups hardlinks
 /// so each inode's physical bytes land in `total_physical_bytes` / `bytes_scanned`
 /// exactly ONCE, keeping the reconcile's `ScanSummary` byte totals identical to a
 /// fresh scan of the same tree. Files with `nlink == 1` skip the set entirely.
@@ -309,7 +311,7 @@ fn run_local_reconcile(
     };
 
     let mut listed_ids: Vec<i64> = Vec::new();
-    // ONE set for the whole walk (NOT per-dir), exactly like jwalk's single
+    // ONE set for the whole walk (NOT per-dir), exactly like the fresh scan's single
     // `seen_inodes` in `run_scan`: dedups hardlinks across the entire tree so an
     // inode's bytes hit the summary totals once. See `build_live_children`.
     let mut seen_inodes: HashSet<u64> = HashSet::new();
