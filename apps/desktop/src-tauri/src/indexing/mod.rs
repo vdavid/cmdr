@@ -29,6 +29,8 @@ pub mod store;
 pub mod subsystem_stop;
 pub mod writer;
 
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod local_external_index;
 mod memory_watchdog;
 mod metadata;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -97,6 +99,8 @@ pub(crate) use smb_index::{on_smb_overflow, on_smb_watcher_died, start_indexing_
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use smb_watch::{apply_smb_change, discard_buffered_changes, replay_buffered_changes};
 
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) use local_external_index::{LocalExternalEnable, start_indexing_for_local_external};
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) use mtp_index::{on_mtp_device_disconnected, start_indexing_for_mtp};
 #[cfg(any(target_os = "macos", target_os = "linux"))]

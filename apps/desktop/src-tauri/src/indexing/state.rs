@@ -512,10 +512,6 @@ pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum IndexVolumeKind {
     Local,
-    #[allow(
-        dead_code,
-        reason = "constructed once the enable branch routes plain local external drives into start_indexing_for; until then only the capability tests reference it"
-    )]
     LocalExternal,
     Smb,
     Mtp,
@@ -769,6 +765,22 @@ pub(crate) fn start_indexing_for_mtp_inner(
     volume_root: PathBuf,
 ) -> Result<(), String> {
     start_indexing_for(app, volume_id, volume_root, IndexVolumeKind::Mtp)
+}
+
+/// Internal local-external-start entry point, called by
+/// `local_external_index::start_indexing_for_local_external` after the volume is
+/// classified as a plain local external drive. Funnels into the shared
+/// `start_indexing_for` with the `LocalExternal` kind so the lock-first
+/// reservation, load-as-Stale freshness seeding, and the LOCAL jwalk + FSEvents
+/// scan path all apply. `mount_root` is the drive's mount point (`/Volumes/X`),
+/// so the index is mount-rooted (unlike the boot disk's `/`).
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+pub(crate) fn start_indexing_for_local_external_inner(
+    app: &AppHandle,
+    volume_id: &str,
+    mount_root: PathBuf,
+) -> Result<(), String> {
+    start_indexing_for(app, volume_id, mount_root, IndexVolumeKind::LocalExternal)
 }
 
 /// All registered MTP volume ids belonging to `device_id` (one device hosts N

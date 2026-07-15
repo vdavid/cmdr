@@ -163,6 +163,32 @@ fn local_rescan_reconciles(entry_count: u64, prior_scan_completed: bool) -> bool
     entry_count > 1 && prior_scan_completed
 }
 
+/// Whether `resume_or_scan`'s local branch should replay the FSEvents journal on
+/// launch, rather than (re)scanning.
+///
+/// **Gate on `has_event_journal()`, NEVER on `stored_event_id.is_some()`** (plan
+/// Decision 2). The shared local event loop and scan-completion handler persist
+/// `last_event_id` for ANY local-scanner volume, so a completed `LocalExternal`
+/// index carries BOTH a stored event id AND `scan_completed_at` — yet an external
+/// volume has no `.fseventsd` journal to replay. Gating on the id would route it
+/// into an empty/garbage replay of a journal it doesn't have; gating on the kind
+/// sends it to a fresh scan (empty DB) or reconcile-in-place (populated DB), the
+/// path that (re)starts the live `DriveWatcher`. Only the boot disk (`Local`) has
+/// a journal, so only it replays. A future cleanup that collapses this back to an
+/// id-based gate silently breaks external drives — keep it kind-based.
+///
+/// The remaining conditions match the original: replay needs platform support
+/// (macOS FSEvents; false on Linux), a completed prior scan, and a positive
+/// stored event id. Pure so the gate is unit-testable without an `AppHandle`.
+fn should_replay_journal(
+    kind: IndexVolumeKind,
+    supports_event_replay: bool,
+    scan_completed: bool,
+    stored_event_id: Option<u64>,
+) -> bool {
+    kind.has_event_journal() && supports_event_replay && scan_completed && stored_event_id.is_some_and(|id| id > 0)
+}
+
 impl IndexManager {
     /// Create a new IndexManager for a volume of the given kind.
     ///
@@ -238,45 +264,52 @@ impl IndexManager {
             .store
             .get_index_status()
             .map_err(|e| format!("Failed to get index status: {e}"))?;
+        let stored_event_id = status.last_event_id.as_deref().and_then(|s| s.parse::<u64>().ok());
 
-        // Event ID replay is only available on macOS (FSEvents journal).
-        // On Linux (inotify), always rescan -- there's no journal to replay.
-        if watcher::supports_event_replay() && status.scan_completed_at.is_some() {
-            if let Some(ref last_event_id_str) = status.last_event_id {
-                let last_event_id: u64 = last_event_id_str.parse().unwrap_or(0);
-                if last_event_id > 0 {
-                    // Pre-check: compare stored event ID with current system event ID.
-                    // If the gap is too large, skip replay entirely. Replaying tens of
-                    // millions of events is slower than a fresh scan. The watcher channel
-                    // (32K capacity) has overflow detection as a secondary safety net.
-                    let current_id = watcher::current_event_id();
-                    if current_id > 0 && current_id > last_event_id + JOURNAL_GAP_THRESHOLD {
-                        let gap = current_id - last_event_id;
-                        emit_rescan_notification(
-                            &self.app,
-                            &self.volume_id,
-                            RescanReason::StaleIndex,
-                            format!(
-                                "Stored last_event_id={last_event_id}, current system \
-                                 event_id={current_id}, gap={gap} \
-                                 (threshold={JOURNAL_GAP_THRESHOLD}). \
-                                 The app likely hasn't run for a long time."
-                            ),
-                        );
-                        return self.start_scan("stale index: journal gap too large");
-                    }
+        // Replay the FSEvents journal ONLY for a volume that actually has one —
+        // gated on the kind, never on a stored event id (see
+        // `should_replay_journal` for the load-bearing why).
+        if should_replay_journal(
+            self.kind,
+            watcher::supports_event_replay(),
+            status.scan_completed_at.is_some(),
+            stored_event_id,
+        ) {
+            let last_event_id = stored_event_id.unwrap_or(0);
 
-                    let current_id = watcher::current_event_id();
-                    let gap = current_id.saturating_sub(last_event_id);
-                    log::info!(
-                        "Startup: cold-start replay (last_event_id={last_event_id}, current={current_id}, gap={gap})",
-                    );
-                    return self.start_replay(last_event_id);
-                }
+            // Pre-check: compare stored event ID with current system event ID.
+            // If the gap is too large, skip replay entirely. Replaying tens of
+            // millions of events is slower than a fresh scan. The watcher channel
+            // (32K capacity) has overflow detection as a secondary safety net.
+            let current_id = watcher::current_event_id();
+            if current_id > 0 && current_id > last_event_id + JOURNAL_GAP_THRESHOLD {
+                let gap = current_id - last_event_id;
+                emit_rescan_notification(
+                    &self.app,
+                    &self.volume_id,
+                    RescanReason::StaleIndex,
+                    format!(
+                        "Stored last_event_id={last_event_id}, current system \
+                         event_id={current_id}, gap={gap} \
+                         (threshold={JOURNAL_GAP_THRESHOLD}). \
+                         The app likely hasn't run for a long time."
+                    ),
+                );
+                return self.start_scan("stale index: journal gap too large");
             }
-            log::info!("Startup: fresh scan (existing index has no last_event_id)");
-        } else if status.scan_completed_at.is_some() {
-            log::info!("Startup: full rescan (no event replay on this platform)");
+
+            let gap = current_id.saturating_sub(last_event_id);
+            log::info!("Startup: cold-start replay (last_event_id={last_event_id}, current={current_id}, gap={gap})",);
+            return self.start_replay(last_event_id);
+        }
+
+        // No journal replay: a (re)scan brings the index current. A populated DB
+        // reconciles in place (which (re)starts the `DriveWatcher`), an empty DB
+        // fresh-scans. This is the path a `LocalExternal` volume ALWAYS takes (it
+        // has a stored event id but no journal), plus every non-journaled/no-replay
+        // case for the boot disk.
+        if status.scan_completed_at.is_some() {
+            log::info!("Startup: rescan of the existing index (no journal replay)");
         } else if status.last_event_id.is_some() {
             emit_rescan_notification(
                 &self.app,
@@ -294,7 +327,7 @@ impl IndexManager {
         let trigger = if status.last_event_id.is_some() && status.scan_completed_at.is_none() {
             "incomplete previous scan"
         } else if status.scan_completed_at.is_some() {
-            "full rescan (no event replay on this platform)"
+            "rescan of existing index"
         } else {
             "fresh scan"
         };
@@ -1045,5 +1078,41 @@ mod tests {
             RescanScanner::LocalJwalk,
             "only a local disk uses the jwalk + FSEvents scanner",
         );
+    }
+
+    #[test]
+    fn journal_replay_is_gated_on_the_kind_having_a_journal_not_a_stored_event_id() {
+        // Regression lock (plan Decision 2): the shared local event loop persists
+        // `last_event_id` for ANY local-scanner volume, so a completed
+        // `LocalExternal` index carries the SAME persisted state as the boot disk
+        // (a stored event id + a completed scan) — yet it has no `.fseventsd`
+        // journal to replay. Replay must gate on `has_event_journal()`, NOT on
+        // `stored_event_id.is_some()`. A future collapse back to an id-based gate
+        // routes `LocalExternal` into an empty/garbage replay and fails here.
+        let completed = true;
+        let id = Some(42);
+
+        // The boot disk HAS a journal → replays.
+        assert!(
+            should_replay_journal(IndexVolumeKind::Local, true, completed, id),
+            "the boot disk replays its FSEvents journal",
+        );
+        // A local external drive with the IDENTICAL persisted state has NO journal
+        // → must NOT replay (this is the load-bearing assertion).
+        assert!(
+            !should_replay_journal(IndexVolumeKind::LocalExternal, true, completed, id),
+            "a local external drive has no journal and must never replay",
+        );
+
+        // The other conditions still hold for a journaled volume: no platform
+        // replay support (Linux), no completed scan, or no positive stored id all
+        // route to a scan.
+        assert!(
+            !should_replay_journal(IndexVolumeKind::Local, false, completed, id),
+            "no platform replay support ⇒ scan, not replay",
+        );
+        assert!(!should_replay_journal(IndexVolumeKind::Local, true, false, id));
+        assert!(!should_replay_journal(IndexVolumeKind::Local, true, completed, None));
+        assert!(!should_replay_journal(IndexVolumeKind::Local, true, completed, Some(0)));
     }
 }

@@ -210,6 +210,17 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
             return Ok(EnableIndexingOutcome::Started);
         }
 
+        // Local external drive (USB stick, SD card, extra disk, mounted disk
+        // image): the LOCAL jwalk + FSEvents pipeline, mount-rooted, with NO
+        // connection gate (a local mount is already directly readable). Classify
+        // by typed volume facts; a network mount (SMB os-mount, NFS, ...) is NOT
+        // this branch and falls through to the SMB gate below. This is the branch
+        // whose absence refused a healthy local drive as `NotAnSmbVolume`.
+        match indexing::start_indexing_for_local_external(app.clone(), volume_id.clone()).await? {
+            indexing::LocalExternalEnable::Started => return Ok(EnableIndexingOutcome::Started),
+            indexing::LocalExternalEnable::NotLocalExternal => {}
+        }
+
         // SMB: gate on the direct-smb2 connection. Kick mDNS first so a
         // freshly-typed server name resolves during the upgrade, then start. The
         // typed gate reason is the refusal surface for the UI.
