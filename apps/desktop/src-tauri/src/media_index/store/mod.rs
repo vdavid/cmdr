@@ -338,6 +338,46 @@ pub(crate) fn read_all_status(conn: &Connection) -> Result<Vec<MediaStatusRow>, 
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
+/// Every stored `media_status` path (the reclaim partition's stored-row set — plan M4).
+/// A cheap `path`-only scan; the partition then classifies each in Rust.
+pub(crate) fn read_status_paths(conn: &Connection) -> Result<Vec<String>, MediaStoreError> {
+    let mut stmt = conn.prepare_cached("SELECT path FROM media_status")?;
+    let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+}
+
+/// Sum the on-disk content bytes of the rows for `paths` across `media_ocr` (the OCR +
+/// folded-tag FTS text), `media_tags` (the structured tag labels), and `media_embedding`
+/// (the feature-print BLOBs) — the honest "about" byte estimate a reclaim prune would
+/// free (plan M4). Streams each table once and sums only the paths in the set, so it
+/// needs no giant `IN (…)` for a doomed set of hundreds of thousands and no temp table
+/// on the read connection. It's a content estimate (excludes FTS index + page overhead),
+/// so a `VACUUM` reclaims at least this much on disk.
+pub(crate) fn sum_bytes_for_paths(
+    conn: &Connection,
+    paths: &std::collections::HashSet<String>,
+) -> Result<u64, MediaStoreError> {
+    if paths.is_empty() {
+        return Ok(0);
+    }
+    let mut total: u64 = 0;
+    for sql in [
+        "SELECT path, length(text) FROM media_ocr",
+        "SELECT path, length(label) FROM media_tags",
+        "SELECT path, length(vector) FROM media_embedding",
+    ] {
+        let mut stmt = conn.prepare(sql)?;
+        let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)))?;
+        for row in rows {
+            let (path, len) = row?;
+            if paths.contains(&path) {
+                total += len.max(0) as u64;
+            }
+        }
+    }
+    Ok(total)
+}
+
 fn row_to_status(row: &rusqlite::Row<'_>) -> rusqlite::Result<MediaStatusRow> {
     Ok(MediaStatusRow {
         path: row.get(0)?,

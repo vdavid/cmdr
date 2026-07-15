@@ -527,6 +527,52 @@ OCR text stops being searchable at once (privacy is a hard requirement, not "eve
   rollback pattern from `network-volume-prefs.ts`, in `src/lib/media-index/excluded-folders.ts`, wired in the main
   route's `setupMenuListeners`.
 
+### Reclaim space (M4)
+
+Lowering the importance slider is forward-only: it never deletes rows, so a drive indexed at a broad setting keeps that
+coverage after the user narrows the setting (the GC `current` set stays the full walked image set — § The GC safety
+argument). The reclaim UI surfaces that leftover coverage and offers to delete it. Like the privacy retro-delete, the
+prune is USER-EXPLICIT and derives ONLY from settings state, so it needs no `Completed` edge — it's deletion path (b) of
+the three the slider's forward-only contract allows.
+
+- **One arithmetic source, or the numbers don't add up.** `MediaScheduler::stored_coverage(volume_id, mount_root,
+  threshold)` computes THREE quantities from ONE pass so the reclaim preview, the prune, and M5's `keptCount` can never
+  disagree: `surviving_stored` (stored rows inside coverage), `doomed_stored` (outside it — M4's "delete N" AND M5's
+  `keptCount`, the SAME set), and `covered_qualifying` (drive-index qualifying images in covered folders — the slider
+  preview's number, a DIFFERENT thing: it counts what WOULD be indexed, not what IS). It guarantees `total_stored =
+  surviving_stored + doomed_stored`, and reuses the `coverage.rs` cache path for `covered_qualifying` (never a second
+  derivation). It returns `None` when importance hasn't scored the volume (M2 makes that transient) — the partition
+  can't be computed safely, so the command reports `pending` and the UI hides the reclaim line rather than proposing a
+  destructive count off a lower bound.
+- **The partition rule** (`coverage::partition_stored`, pure) reuses the SAME precedence enrichment does: a stored row
+  survives when it's NOT under an excluded folder AND (covered by an "always index" override OR its parent folder scores
+  at or above the threshold). Crucially it keys on score-MAP MEMBERSHIP, not a `>= 0.0` on a defaulted score: a folder
+  with NO importance row (floored junk, or scored away since enrichment) is treated as below any threshold → doomed,
+  even at threshold 0.0. Spell this out — otherwise a floored folder's rows leak into neither bucket. `is_override` /
+  `is_excluded` take the stored (index) path; the wrapper wires the OS-mount mapping (`os_join`, identity on a local
+  volume) so override/exclude config (OS-path keyed) and importance (index-keyed) both resolve.
+- **The writer thread IS the race guarantee.** `prune_below_threshold` computes the doomed set up front and hands it to
+  the volume's ONE writer thread (`prune_paths`) as a single serialized delete unit, then `VACUUM`s and drops the vector
+  + coverage caches. A concurrent enrichment pass can't interleave mid-batch (both flow through the one writer), and it
+  enriches only ABOVE-threshold or override-covered rows — a set disjoint from the doomed (below-threshold) set by
+  definition — so a pass running NEW rows during the prune is fine. No snapshot-vs-live dance is needed here (unlike the
+  exclusion veto): the doomed set is a concrete path list, not a live predicate.
+- **Byte estimate.** `store::sum_bytes_for_paths` streams `media_ocr` + `media_tags` + `media_embedding` once each and
+  sums the content bytes of the doomed paths (a set membership test, so no giant `IN (…)` for a 200k doomed set). It's a
+  content estimate (excludes FTS-index + page overhead), so it's an honest "about" and a `VACUUM` reclaims at least it.
+  The preview's "free about X" and the prune's "Freed X" use the SAME method, so the two numbers agree.
+- **Commands** (both thin, `spawn_blocking`, offline-capable): `media_index_reclaim_preview(threshold, volume_ids) →
+  ReclaimPreview { total_stored, covered_stored, doomed_count, estimated_bytes, pending }` and
+  `media_index_prune_below_threshold(threshold, volume_ids) → ReclaimResult { deleted_rows, freed_bytes }`. Both resolve
+  the enabled volumes (local root, mount `/`; opted-in SMB, its mount root; MTP and non-opted-in SMB dropped) and
+  aggregate `stored_coverage` / `prune_below_threshold` per volume.
+- **The FE surface** is `MediaIndexReclaim.svelte` under the slider (`getEnabledMediaIndexVolumeIds` shared with the
+  slider preview). It shows the line + button only once counts settle (parent-passed `blocked` while waiting on
+  importance / a scan, plus the backend `pending`) AND the leftover clears the pure `shouldOfferReclaim` floor (> 100
+  rows AND > 5% of stored). The copy frames value first (the extra entries "stay searchable"), then the button offers
+  the space-vs-reindex tradeoff — one narrative, composing with M5's kept-rows line, never two sentences in tension. A
+  confirm dialog (recoverable, but re-reading costs time) precedes the prune; an honest toast reports the freed space.
+
 ### Read API + commands (tags, similarity, coverage)
 
 `MediaIndex` gained `find_similar(source_path, k)` (source embedding → `top_k` over the resident cache, source

@@ -102,8 +102,9 @@ fn deferred_flag_is_read_once_per_deferral() {
 
 // ── Test helpers for the scheduler-level tests ──────────────────────────────
 
-/// Build a tiny index DB at `path` with `(dir, file)` images (mtime/size fixed).
-fn build_index(path: &std::path::Path, files: &[(&str, &str)]) {
+/// Build a tiny index DB at `path` with `(dir, file)` images (mtime/size fixed). Shared
+/// with `reclaim_tests` (same shape).
+pub(super) fn build_index(path: &std::path::Path, files: &[(&str, &str)]) {
     let store = IndexStore::open(path).expect("open index");
     let conn = store.read_conn();
     let mut path_to_id: HashMap<String, i64> = HashMap::new();
@@ -245,7 +246,7 @@ fn seed_media_row(data_dir: &std::path::Path, path: &str) {
     writer.shutdown();
 }
 
-fn reset_gate() {
+pub(super) fn reset_gate() {
     gate::set_enabled(false);
     gate::set_importance_threshold(gate::DEFAULT_IMPORTANCE_THRESHOLD);
     network::config::set_config(NetworkEnrichConfig::default());

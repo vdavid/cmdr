@@ -746,6 +746,58 @@
       "totalText": { "content": "The same number, preformatted with thousands separators." }
     }
   },
+  "settings.mediaIndex.reclaim.line": "You have {totalText} images indexed; your setting covers {coveredText}. The extra {doomed, plural, one {{doomedText} entry stays} other {{doomedText} entries stay}} searchable until you delete them.",
+  "@settings.mediaIndex.reclaim.line": {
+    "description": "Shown under the slider when the drive holds many more indexed images than the current level covers (because lowering the level never deletes anything). Frames the leftover entries as still useful before offering to delete them. Pairs with the reclaim button below it.",
+    "placeholders": {
+      "totalText": { "content": "The total number of indexed images, preformatted with thousands separators." },
+      "coveredText": { "content": "How many indexed images the current level covers, preformatted with thousands separators." },
+      "doomed": {
+        "content": "The number of leftover indexed entries outside the current level, used to choose singular or plural wording."
+      },
+      "doomedText": { "content": "The same leftover count, preformatted with thousands separators." }
+    }
+  },
+  "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Delete the extra entry and free about {size}} other {Delete the extra entries and free about {size}}}",
+  "@settings.mediaIndex.reclaim.button": {
+    "description": "Button under the reclaim line that deletes the leftover indexed entries and reclaims their disk space. {size} is a human-friendly size like \"1.9 GB\".",
+    "placeholders": {
+      "doomed": {
+        "content": "The number of leftover entries that would be deleted, used to choose singular or plural wording."
+      },
+      "size": { "content": "The approximate disk space that would be freed, preformatted (for example \"1.9 GB\")." }
+    }
+  },
+  "settings.mediaIndex.reclaim.confirmTitle": "Delete extra indexed entries",
+  "@settings.mediaIndex.reclaim.confirmTitle": {
+    "description": "Title of the confirmation dialog shown before deleting leftover indexed image entries."
+  },
+  "settings.mediaIndex.reclaim.confirmBody": "Delete {doomed, plural, one {{doomedText} indexed entry} other {{doomedText} indexed entries}} to free about {size}? You can index these images again later, but re-reading them takes time.",
+  "@settings.mediaIndex.reclaim.confirmBody": {
+    "description": "Body of the confirmation dialog before deleting leftover indexed entries. Makes clear the delete is recoverable but re-indexing costs time.",
+    "placeholders": {
+      "doomed": {
+        "content": "The number of entries that would be deleted, used to choose singular or plural wording."
+      },
+      "doomedText": { "content": "The same count, preformatted with thousands separators." },
+      "size": { "content": "The approximate disk space that would be freed, preformatted (for example \"1.9 GB\")." }
+    }
+  },
+  "settings.mediaIndex.reclaim.freed": "Freed about {size}",
+  "@settings.mediaIndex.reclaim.freed": {
+    "description": "Success toast after deleting leftover indexed entries, reporting the disk space reclaimed.",
+    "placeholders": {
+      "size": { "content": "The disk space freed, preformatted (for example \"1.9 GB\")." }
+    }
+  },
+  "settings.mediaIndex.reclaim.alreadyCleared": "Those entries are already cleared",
+  "@settings.mediaIndex.reclaim.alreadyCleared": {
+    "description": "Toast shown if the leftover entries were already deleted (for example by a rescan) by the time the user confirmed, so nothing was removed."
+  },
+  "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr couldn''t delete the extra entries. Please try again.",
+  "@settings.mediaIndex.reclaim.couldNotDelete": {
+    "description": "Toast shown when deleting the leftover indexed entries did not complete. Avoids the words \"error\" and \"failed\" per the app voice."
+  },
   "settings.indexing.askForEachDrive.label": "Ask for each drive",
   "@settings.indexing.askForEachDrive.label": {
     "description": "Label for the toggle that controls whether Cmdr asks, the first time you open a network share or USB device, if you''d like to index it. In Settings > Behavior > File system watching.",

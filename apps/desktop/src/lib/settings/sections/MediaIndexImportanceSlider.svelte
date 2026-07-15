@@ -27,10 +27,8 @@
     import { getSetting, setSetting, onSpecificSettingChange } from '$lib/settings'
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
+    import { getEnabledMediaIndexVolumeIds } from '$lib/media-index/enabled-volumes'
     import { ROOT_VOLUME_ID } from '$lib/indexing'
-    import { getVolumes } from '$lib/stores/volume-store.svelte'
-    import type { VolumeInfo } from '$lib/file-explorer/types'
-    import { getNetworkOptInVolumes } from '$lib/media-index/network-volume-prefs'
     import {
         mediaIndexCoveredCount,
         mediaIndexVolumeState,
@@ -39,6 +37,7 @@
     } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
     import { shouldRepollPreview } from './media-index-preview-poll'
+    import MediaIndexReclaim from './MediaIndexReclaim.svelte'
 
     const log = getAppLogger('media-index')
 
@@ -91,20 +90,11 @@
     // Per-volume enrichment progress (local root + opted-in network), polled while visible.
     let localState = $state<MediaIndexVolumeState | null>(null)
 
-    /** The enabled media-index volume ids to count over: local root + opted-in SMB volumes. */
-    function enabledVolumeIds(): string[] {
-        const optedIn = new Set(getNetworkOptInVolumes())
-        const networkIds = getVolumes()
-            .filter((v: VolumeInfo) => v.category === 'network' && optedIn.has(v.id))
-            .map((v) => v.id)
-        return [ROOT_VOLUME_ID, ...networkIds]
-    }
-
     async function refreshPreview(targetBucket: number): Promise<void> {
         const seq = ++previewSeq
         const threshold = BUCKETS[targetBucket].threshold
         try {
-            const result = await mediaIndexCoveredCount(threshold, enabledVolumeIds())
+            const result = await mediaIndexCoveredCount(threshold, getEnabledMediaIndexVolumeIds())
             if (seq !== previewSeq) return
             covered = result
             // Seed the baseline the first time we get a real number, so the first drag has
@@ -310,6 +300,14 @@
             <span class="mi-progress-line">{localProgress}</span>
         </div>
     {/if}
+
+    <!-- Reclaim space: lowering the slider never deletes rows, so a drive indexed at a
+         broader setting keeps that coverage. This offers to delete the leftover, but only
+         once counts have settled (not while waiting on importance or a scan). -->
+    <MediaIndexReclaim
+        threshold={BUCKETS[bucket].threshold}
+        blocked={waitingForImportance || covered === null || covered.pending}
+    />
 </div>
 
 <style>

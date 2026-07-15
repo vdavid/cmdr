@@ -82,6 +82,56 @@ pub fn covered_for_volume(
     (folders, images)
 }
 
+/// The reclaim partition of a volume's STORED media rows: the set that SURVIVES the
+/// current setting, and the DOOMED set a reclaim prune would delete.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct StoredPartition {
+    /// How many stored rows fall INSIDE current coverage (they stay).
+    pub surviving: u64,
+    /// The stored paths OUTSIDE current coverage — the reclaim prune's doomed set
+    /// (also M5's `keptCount`, the same rows framed as "still searchable").
+    pub doomed: Vec<String>,
+}
+
+/// Partition a volume's stored media rows into surviving vs doomed by the SAME
+/// precedence enrichment uses, so the destructive reclaim selection can't drift from
+/// what the pass would keep. Pure over its inputs (no DB, no importance store, no app),
+/// so it's unit-testable directly.
+///
+/// A stored path SURVIVES when it would still be enriched at `threshold`: NOT under an
+/// excluded folder (a hard privacy veto) AND (covered by an "always index" override OR
+/// its parent folder scores at or above `threshold`). `folder_scores` holds every
+/// scored folder (`folder → score`); a folder ABSENT from it counts as below any
+/// threshold — floored junk, or a folder scored away since enrichment — so its rows are
+/// DOOMED (matching the enrichment gate, which keys on score-map membership, never a
+/// `>= 0.0` on a defaulted 0.0). Everything not surviving is doomed, so
+/// `surviving + doomed.len()` is exactly the stored-row count: no row lands in neither
+/// bucket (the partition invariant the reclaim arithmetic leans on).
+///
+/// `is_override` / `is_excluded` take the STORED (index-relative) path; the caller wires
+/// the OS-mount mapping (identity on a local volume, mount-root join on a network one),
+/// keeping this core pure and shared across both volume kinds.
+pub fn partition_stored(
+    stored_paths: &[String],
+    folder_scores: &HashMap<String, f64>,
+    threshold: f64,
+    is_override: &dyn Fn(&str) -> bool,
+    is_excluded: &dyn Fn(&str) -> bool,
+) -> StoredPartition {
+    let mut surviving = 0u64;
+    let mut doomed = Vec::new();
+    for path in stored_paths {
+        let survives = !is_excluded(path)
+            && (is_override(path) || folder_scores.get(parent_dir(path)).is_some_and(|s| *s >= threshold));
+        if survives {
+            surviving += 1;
+        } else {
+            doomed.push(path.clone());
+        }
+    }
+    StoredPartition { surviving, doomed }
+}
+
 /// Convenience: read a volume's importance folder scores as a `folder → score` map, or
 /// `None` when importance never scored it (offline / fresh). Mirrors the scheduler's
 /// `folder_scores`, but returns EVERY scored folder (threshold applied by
@@ -160,5 +210,75 @@ mod tests {
             .into_iter()
             .collect();
         assert_eq!(covered_for_volume(&counts, &scores, 0.5), (2, 10));
+    }
+
+    // ── The reclaim partition (M4): stored rows inside vs outside coverage ──────
+
+    fn scores(entries: &[(&str, f64)]) -> HashMap<String, f64> {
+        entries.iter().map(|(p, s)| (p.to_string(), *s)).collect()
+    }
+
+    #[test]
+    fn partition_splits_stored_rows_at_the_threshold_boundary() {
+        // A folder scoring exactly AT the threshold survives; one below is doomed; one
+        // with no score row at all is doomed (floored / scored away → score 0.0).
+        let stored = vec![
+            "/at/a.jpg".to_string(),
+            "/below/b.jpg".to_string(),
+            "/floored/c.jpg".to_string(),
+        ];
+        let folder_scores = scores(&[("/at", 0.4), ("/below", 0.2)]);
+        let no = |_: &str| false;
+        let part = partition_stored(&stored, &folder_scores, 0.4, &no, &no);
+        assert_eq!(part.surviving, 1, "the at-threshold folder survives");
+        assert_eq!(
+            part.doomed,
+            vec!["/below/b.jpg".to_string(), "/floored/c.jpg".to_string()],
+            "the below-threshold and the no-score-row folders are doomed"
+        );
+        // The partition invariant: every stored row lands in exactly one bucket.
+        assert_eq!(part.surviving as usize + part.doomed.len(), stored.len());
+    }
+
+    #[test]
+    fn partition_keeps_an_override_covered_row_below_threshold() {
+        // An "always index" override survives even when its folder scores below the
+        // threshold (or isn't scored at all) — same precedence as enrichment.
+        let stored = vec!["/archive/a.jpg".to_string()];
+        let folder_scores = scores(&[]);
+        let is_override = |p: &str| p.starts_with("/archive/");
+        let no = |_: &str| false;
+        let part = partition_stored(&stored, &folder_scores, 0.8, &is_override, &no);
+        assert_eq!(part.surviving, 1, "an override-covered row survives");
+        assert!(part.doomed.is_empty());
+    }
+
+    #[test]
+    fn partition_dooms_an_excluded_row_even_when_covered() {
+        // The privacy exclusion is a HARD veto: an excluded row is doomed even if an
+        // override would otherwise cover it (exclusion beats coverage everywhere).
+        let stored = vec!["/archive/secret.jpg".to_string()];
+        let folder_scores = scores(&[]);
+        let always = |_: &str| true; // override covers everything
+        let is_excluded = |p: &str| p.starts_with("/archive/");
+        let part = partition_stored(&stored, &folder_scores, 0.0, &always, &is_excluded);
+        assert_eq!(part.surviving, 0, "an excluded row never survives");
+        assert_eq!(part.doomed, vec!["/archive/secret.jpg".to_string()]);
+    }
+
+    #[test]
+    fn partition_at_threshold_zero_still_dooms_a_floored_folder() {
+        // At threshold 0.0 a SCORED folder survives, but a floored folder (no score row)
+        // is still doomed — it keys on map membership, never a `>= 0.0` on a default 0.0.
+        let stored = vec!["/scored/a.jpg".to_string(), "/floored/b.jpg".to_string()];
+        let folder_scores = scores(&[("/scored", 0.0)]);
+        let no = |_: &str| false;
+        let part = partition_stored(&stored, &folder_scores, 0.0, &no, &no);
+        assert_eq!(part.surviving, 1, "the scored folder survives at threshold 0");
+        assert_eq!(
+            part.doomed,
+            vec!["/floored/b.jpg".to_string()],
+            "the floored folder (no score row) is doomed even at threshold 0"
+        );
     }
 }

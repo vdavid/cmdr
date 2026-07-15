@@ -640,9 +640,11 @@ export {
   mediaIndexSetExcludedFolder,
   setImageImportanceThreshold,
   mediaIndexCoveredCount,
+  mediaIndexReclaimPreview,
+  mediaIndexPruneBelowThreshold,
   mediaIndexFindSimilar,
 } from './media-index'
-export type { CoveredCount, MediaIndexVolumeState, OcrHit, SimilarImage } from './media-index'
+export type { CoveredCount, MediaIndexVolumeState, OcrHit, ReclaimPreview, ReclaimResult, SimilarImage } from './media-index'
 
 // Drive-indexing event listeners
 export {

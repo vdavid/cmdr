@@ -368,6 +368,179 @@ pub async fn media_index_covered_count(
     .map_err(|e| format!("covered-count task panicked: {e}"))?
 }
 
+/// The reclaim-space preview behind the settings "delete the extra entries" line (plan
+/// M4): across the ENABLED volumes in `volume_ids`, how many stored image rows fall
+/// inside the current setting vs outside it, and the bytes the outside set would free.
+/// `totalStored = coveredStored + doomedCount` (the single-source partition invariant),
+/// so the copy's "you have N indexed; your setting covers M; delete the extra K" always
+/// adds up. `pending` is `true` when a requested enabled volume isn't ready (still
+/// scanning, or importance hasn't scored it), so the UI hides the reclaim line rather
+/// than proposing a destructive count off a lower bound.
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ReclaimPreview {
+    /// All stored image rows across the enabled volumes (`coveredStored + doomedCount`).
+    pub total_stored: u64,
+    /// Stored rows inside the current setting — they stay searchable.
+    pub covered_stored: u64,
+    /// Stored rows outside the current setting — what a prune would delete.
+    pub doomed_count: u64,
+    /// The content bytes the doomed rows hold (an honest "about" — `VACUUM` reclaims at
+    /// least this on disk).
+    pub estimated_bytes: u64,
+    /// Whether some enabled requested volume's count is unknown (scanning / not yet
+    /// scored), so the totals are a lower bound the UI must not act on.
+    pub pending: bool,
+}
+
+/// What a reclaim prune freed (plan M4): the rows deleted and the bytes reclaimed.
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ReclaimResult {
+    /// The image rows deleted across the enabled volumes.
+    pub deleted_rows: u64,
+    /// The content bytes freed (an "about" estimate; the toast voices it).
+    pub freed_bytes: u64,
+}
+
+/// Resolve the enabled media-index volumes to reclaim over from `volume_ids`, each with
+/// the OS mount root the stored (index) paths map into: a local volume (mount `/`), or an
+/// opted-in SMB volume (its mount root). MTP and non-opted-in SMB are dropped. The
+/// `pending` flag is set when a requested volume the user expects isn't ready (offline /
+/// not scanned, or opted-in-but-unmounted SMB), so the caller can caveat the totals.
+fn resolve_reclaim_volumes(volume_ids: &[String]) -> (Vec<(String, String)>, bool) {
+    use crate::indexing::IndexVolumeKind;
+    let kinds: std::collections::HashMap<String, IndexVolumeKind> =
+        crate::indexing::ready_volumes_with_kind().into_iter().collect();
+    let mounts: std::collections::HashMap<String, String> = crate::file_system::get_volume_manager()
+        .list_volumes_with_handles()
+        .into_iter()
+        .map(|(id, vol)| (id, vol.root().to_string_lossy().into_owned()))
+        .collect();
+    let mut enabled = Vec::new();
+    let mut pending = false;
+    for vid in volume_ids {
+        match kinds.get(vid) {
+            // A local volume's index path == its OS path, so the mount root is `/`.
+            Some(IndexVolumeKind::Local) => {
+                let mount = mounts.get(vid).cloned().unwrap_or_else(|| "/".to_string());
+                enabled.push((vid.clone(), mount));
+            }
+            // An opted-in SMB volume: needs its live mount root to map index paths back to
+            // OS space; opted-in-but-unmounted is pending (its rows are reachable only on
+            // reconnect).
+            Some(IndexVolumeKind::Smb) if network_config::is_opted_in(vid) => match mounts.get(vid) {
+                Some(mount) => enabled.push((vid.clone(), mount.clone())),
+                None => pending = true,
+            },
+            // Not opted-in SMB / MTP: never reclaimed here (nothing enriched).
+            Some(IndexVolumeKind::Smb) | Some(IndexVolumeKind::Mtp) => {}
+            // Requested but offline / not scanned: the user expects it, so it's pending.
+            None => pending = true,
+        }
+    }
+    (enabled, pending)
+}
+
+/// Preview the reclaim-space split across `volume_ids` at the CURRENT `threshold` (plan
+/// M4). Thin: resolves the enabled volumes and aggregates the scheduler's single-source
+/// `stored_coverage` per volume (the doomed-row SELECTION is Rust-side, the same
+/// precedence enrichment uses; only the byte SUM over the chosen set is a `media.db`
+/// query). Runs OFF the IPC thread; answers offline from `media.db`.
+#[tauri::command]
+#[specta::specta]
+pub async fn media_index_reclaim_preview(
+    app: AppHandle,
+    threshold: f64,
+    volume_ids: Vec<String>,
+) -> Result<ReclaimPreview, String> {
+    let empty = ReclaimPreview {
+        total_stored: 0,
+        covered_stored: 0,
+        doomed_count: 0,
+        estimated_bytes: 0,
+        pending: false,
+    };
+    // Feature off ⇒ nothing is enriched, so there's nothing to reclaim.
+    if !gate::is_enabled() {
+        return Ok(empty);
+    }
+    // The scheduler owns the data dir + the writer/read paths; a missing state (an early
+    // call before `start`) honestly reads as pending (nothing enriched yet).
+    let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>().map(|s| Arc::clone(s.inner())) else {
+        return Ok(ReclaimPreview { pending: true, ..empty });
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        let (volumes, mut pending) = resolve_reclaim_volumes(&volume_ids);
+        let mut total_stored = 0u64;
+        let mut covered_stored = 0u64;
+        let mut doomed_count = 0u64;
+        let mut estimated_bytes = 0u64;
+        for (vid, mount) in &volumes {
+            match scheduler.stored_coverage(vid, mount, threshold) {
+                Some(cov) => {
+                    total_stored += cov.surviving_stored + cov.doomed_stored;
+                    covered_stored += cov.surviving_stored;
+                    doomed_count += cov.doomed_stored;
+                    estimated_bytes += scheduler.estimate_doomed_bytes(vid, &cov.doomed_paths);
+                }
+                // Importance hasn't scored this volume yet ⇒ can't partition safely.
+                None => pending = true,
+            }
+        }
+        Ok(ReclaimPreview {
+            total_stored,
+            covered_stored,
+            doomed_count,
+            estimated_bytes,
+            pending,
+        })
+    })
+    .await
+    .map_err(|e| format!("reclaim-preview task panicked: {e}"))?
+}
+
+/// Prune the stored image rows OUTSIDE the current `threshold` across `volume_ids` (plan
+/// M4 reclaim). Thin: delegates to the scheduler's `prune_below_threshold` per volume,
+/// which selects the doomed set Rust-side, deletes it through the volume's ONE writer
+/// thread (the serialization guarantee), `VACUUM`s, and drops the vector + coverage
+/// caches. A USER-EXPLICIT deletion (derives only from settings state), so it needs no
+/// completed-scan edge. Runs OFF the IPC thread. Returns the rows deleted and bytes freed.
+#[tauri::command]
+#[specta::specta]
+pub async fn media_index_prune_below_threshold(
+    app: AppHandle,
+    threshold: f64,
+    volume_ids: Vec<String>,
+) -> Result<ReclaimResult, String> {
+    let empty = ReclaimResult {
+        deleted_rows: 0,
+        freed_bytes: 0,
+    };
+    if !gate::is_enabled() {
+        return Ok(empty);
+    }
+    let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>().map(|s| Arc::clone(s.inner())) else {
+        return Ok(empty);
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        let (volumes, _pending) = resolve_reclaim_volumes(&volume_ids);
+        let mut deleted_rows = 0u64;
+        let mut freed_bytes = 0u64;
+        for (vid, mount) in &volumes {
+            let outcome = scheduler.prune_below_threshold(vid, mount, threshold);
+            deleted_rows += outcome.deleted_rows;
+            freed_bytes += outcome.freed_bytes;
+        }
+        Ok(ReclaimResult {
+            deleted_rows,
+            freed_bytes,
+        })
+    })
+    .await
+    .map_err(|e| format!("reclaim-prune task panicked: {e}"))?
+}
+
 /// Find the images most similar to the one at `source_path` on `volume_id` (by
 /// feature-print cosine), highest first, excluding the source (plan "find
 /// similar"). Runs OFF the IPC thread; answers from `media.db` + the resident vector

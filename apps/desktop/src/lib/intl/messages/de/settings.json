@@ -611,6 +611,34 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
+  "settings.mediaIndex.reclaim.line": "Du hast {totalText} Bilder indiziert; deine Einstellung deckt {coveredText} ab. {doomed, plural, one {Der zusätzliche Eintrag bleibt durchsuchbar, bis du ihn löschst} other {Die zusätzlichen {doomedText} Einträge bleiben durchsuchbar, bis du sie löschst}}.",
+  "@settings.mediaIndex.reclaim.line": {
+    "sourceHash": "aaef941"
+  },
+  "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Zusätzlichen Eintrag löschen und etwa {size} freigeben} other {Zusätzliche Einträge löschen und etwa {size} freigeben}}",
+  "@settings.mediaIndex.reclaim.button": {
+    "sourceHash": "21c3b4b"
+  },
+  "settings.mediaIndex.reclaim.confirmTitle": "Zusätzliche indizierte Einträge löschen",
+  "@settings.mediaIndex.reclaim.confirmTitle": {
+    "sourceHash": "778e9c6"
+  },
+  "settings.mediaIndex.reclaim.confirmBody": "{doomed, plural, one {{doomedText} indizierten Eintrag löschen} other {{doomedText} indizierte Einträge löschen}}, um etwa {size} freizugeben? Du kannst diese Bilder später erneut indizieren, aber das erneute Einlesen dauert.",
+  "@settings.mediaIndex.reclaim.confirmBody": {
+    "sourceHash": "1491b12"
+  },
+  "settings.mediaIndex.reclaim.freed": "Etwa {size} freigegeben",
+  "@settings.mediaIndex.reclaim.freed": {
+    "sourceHash": "8606f6b"
+  },
+  "settings.mediaIndex.reclaim.alreadyCleared": "Diese Einträge sind bereits gelöscht",
+  "@settings.mediaIndex.reclaim.alreadyCleared": {
+    "sourceHash": "742a715"
+  },
+  "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr konnte die zusätzlichen Einträge nicht löschen. Bitte versuche es erneut.",
+  "@settings.mediaIndex.reclaim.couldNotDelete": {
+    "sourceHash": "3295df4"
+  },
   "settings.indexing.askForEachDrive.label": "Für jedes Laufwerk fragen",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

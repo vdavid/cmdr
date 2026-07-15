@@ -182,6 +182,90 @@ fn tags_and_embedding_round_trip_and_filter_by_score() {
 }
 
 #[test]
+fn sum_bytes_for_paths_totals_the_doomed_rows_content_and_only_those() {
+    use crate::media_index::backend::Tag;
+    use crate::media_index::writer::UpsertAnalysis;
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = media_db_path(dir.path(), "root");
+    MediaStore::open(&db_path).expect("open");
+    let writer = MediaWriter::spawn(&db_path).expect("writer");
+
+    // Image a: OCR text "hello" (5 bytes) + a 2-float embedding (8 bytes), no tags.
+    writer
+        .upsert(
+            MediaStatusRow {
+                path: "/a.jpg".to_string(),
+                mtime: Some(1),
+                size: Some(1),
+                media_kind: MediaKind::Image,
+                state: EnrichmentState::Done,
+                engine_version: "e1".to_string(),
+            },
+            Some(UpsertAnalysis {
+                ocr_text: "hello".to_string(),
+                tags: vec![],
+                embedding: Some(vec![0.1, 0.2]),
+            }),
+        )
+        .expect("upsert a");
+    // Image b: no OCR text, one tag "beach" (folded FTS text 5 + structured label 5),
+    // and a 1-float embedding (4 bytes).
+    writer
+        .upsert(
+            MediaStatusRow {
+                path: "/b.jpg".to_string(),
+                mtime: Some(1),
+                size: Some(1),
+                media_kind: MediaKind::Image,
+                state: EnrichmentState::Done,
+                engine_version: "e1".to_string(),
+            },
+            Some(UpsertAnalysis {
+                ocr_text: String::new(),
+                tags: vec![Tag {
+                    label: "beach".to_string(),
+                    score: 0.9,
+                }],
+                embedding: Some(vec![1.0]),
+            }),
+        )
+        .expect("upsert b");
+    writer.flush_blocking().expect("flush");
+
+    let store = MediaStore::open(&db_path).expect("reopen");
+    let conn = store.read_conn();
+
+    let only_a: std::collections::HashSet<String> = ["/a.jpg".to_string()].into_iter().collect();
+    let only_b: std::collections::HashSet<String> = ["/b.jpg".to_string()].into_iter().collect();
+    let both: std::collections::HashSet<String> = ["/a.jpg".to_string(), "/b.jpg".to_string()].into_iter().collect();
+    let none: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    assert_eq!(
+        sum_bytes_for_paths(conn, &only_a).expect("sum a"),
+        5 + 8,
+        "a: ocr text + embedding"
+    );
+    assert_eq!(
+        sum_bytes_for_paths(conn, &only_b).expect("sum b"),
+        5 + 5 + 4,
+        "b: folded tag text + structured label + embedding"
+    );
+    assert_eq!(
+        sum_bytes_for_paths(conn, &both).expect("sum both"),
+        (5 + 8) + (5 + 5 + 4),
+        "both is the sum of each"
+    );
+    assert_eq!(
+        sum_bytes_for_paths(conn, &none).expect("sum none"),
+        0,
+        "empty set totals nothing"
+    );
+
+    writer.shutdown();
+}
+
+#[test]
 fn re_enrichment_replaces_prior_tags_and_embedding() {
     use crate::media_index::backend::Tag;
     use crate::media_index::writer::UpsertAnalysis;

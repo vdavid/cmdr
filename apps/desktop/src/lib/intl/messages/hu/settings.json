@@ -609,6 +609,34 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
+  "settings.mediaIndex.reclaim.line": "{totalText} kép van indexelve; a beállításod {coveredText} képet fed le. {doomed, plural, one {A további bejegyzés kereshető marad, amíg nem törlöd} other {A további {doomedText} bejegyzés kereshető marad, amíg nem törlöd}}.",
+  "@settings.mediaIndex.reclaim.line": {
+    "sourceHash": "aaef941"
+  },
+  "settings.mediaIndex.reclaim.button": "{doomed, plural, one {A további bejegyzés törlése, és kb. {size} felszabadítása} other {A további bejegyzések törlése, és kb. {size} felszabadítása}}",
+  "@settings.mediaIndex.reclaim.button": {
+    "sourceHash": "21c3b4b"
+  },
+  "settings.mediaIndex.reclaim.confirmTitle": "További indexelt bejegyzések törlése",
+  "@settings.mediaIndex.reclaim.confirmTitle": {
+    "sourceHash": "778e9c6"
+  },
+  "settings.mediaIndex.reclaim.confirmBody": "Törlöd {doomed, plural, one {a további {doomedText} indexelt bejegyzést} other {a további {doomedText} indexelt bejegyzést}}, hogy kb. {size} szabaduljon fel? Ezeket a képeket később újraindexelheted, de az újraolvasásuk időbe telik.",
+  "@settings.mediaIndex.reclaim.confirmBody": {
+    "sourceHash": "1491b12"
+  },
+  "settings.mediaIndex.reclaim.freed": "Kb. {size} felszabadítva",
+  "@settings.mediaIndex.reclaim.freed": {
+    "sourceHash": "8606f6b"
+  },
+  "settings.mediaIndex.reclaim.alreadyCleared": "Ezek a bejegyzések már törölve vannak",
+  "@settings.mediaIndex.reclaim.alreadyCleared": {
+    "sourceHash": "742a715"
+  },
+  "settings.mediaIndex.reclaim.couldNotDelete": "A Cmdr nem tudta törölni a további bejegyzéseket. Próbáld újra.",
+  "@settings.mediaIndex.reclaim.couldNotDelete": {
+    "sourceHash": "3295df4"
+  },
   "settings.indexing.askForEachDrive.label": "Kérdezzen meghajtónként",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

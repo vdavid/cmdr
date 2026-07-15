@@ -612,6 +612,34 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
+  "settings.mediaIndex.reclaim.line": "Você tem {totalText} imagens indexadas; sua configuração cobre {coveredText}. {doomed, plural, one {A entrada extra continua pesquisável até você excluí-la} other {As {doomedText} entradas extras continuam pesquisáveis até você excluí-las} many {As {doomedText} entradas extras continuam pesquisáveis até você excluí-las}}.",
+  "@settings.mediaIndex.reclaim.line": {
+    "sourceHash": "aaef941"
+  },
+  "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Excluir a entrada extra e liberar cerca de {size}} other {Excluir as entradas extras e liberar cerca de {size}} many {Excluir as entradas extras e liberar cerca de {size}}}",
+  "@settings.mediaIndex.reclaim.button": {
+    "sourceHash": "21c3b4b"
+  },
+  "settings.mediaIndex.reclaim.confirmTitle": "Excluir entradas indexadas extras",
+  "@settings.mediaIndex.reclaim.confirmTitle": {
+    "sourceHash": "778e9c6"
+  },
+  "settings.mediaIndex.reclaim.confirmBody": "Excluir {doomed, plural, one {{doomedText} entrada indexada} other {{doomedText} entradas indexadas} many {{doomedText} entradas indexadas}} para liberar cerca de {size}? Você pode indexar essas imagens novamente depois, mas relê-las leva tempo.",
+  "@settings.mediaIndex.reclaim.confirmBody": {
+    "sourceHash": "1491b12"
+  },
+  "settings.mediaIndex.reclaim.freed": "Cerca de {size} liberado",
+  "@settings.mediaIndex.reclaim.freed": {
+    "sourceHash": "8606f6b"
+  },
+  "settings.mediaIndex.reclaim.alreadyCleared": "Essas entradas já foram excluídas",
+  "@settings.mediaIndex.reclaim.alreadyCleared": {
+    "sourceHash": "742a715"
+  },
+  "settings.mediaIndex.reclaim.couldNotDelete": "O Cmdr não conseguiu excluir as entradas extras. Tente novamente.",
+  "@settings.mediaIndex.reclaim.couldNotDelete": {
+    "sourceHash": "3295df4"
+  },
   "settings.indexing.askForEachDrive.label": "Perguntar para cada disco",
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"

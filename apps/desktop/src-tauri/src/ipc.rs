@@ -614,6 +614,8 @@ pub fn builder() -> Builder<tauri::Wry> {
         crate::media_index::commands::media_index_set_excluded_folder,
         crate::media_index::commands::media_index_set_importance_threshold,
         crate::media_index::commands::media_index_covered_count,
+        crate::media_index::commands::media_index_reclaim_preview,
+        crate::media_index::commands::media_index_prune_below_threshold,
         crate::media_index::commands::media_index_find_similar,
         crate::media_index::commands::media_index_dedup_clusters,
         crate::media_index::commands::media_index_search_tag,

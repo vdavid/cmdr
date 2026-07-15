@@ -8,11 +8,13 @@ import {
   type CoveredCount,
   type MediaIndexVolumeState,
   type OcrHit,
+  type ReclaimPreview,
+  type ReclaimResult,
   type SimilarImage,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { CoveredCount, MediaIndexVolumeState, OcrHit, SimilarImage }
+export type { CoveredCount, MediaIndexVolumeState, OcrHit, ReclaimPreview, ReclaimResult, SimilarImage }
 
 /**
  * Search a volume's image OCR text for `query`, returning up to `limit` hits (backend
@@ -114,6 +116,34 @@ export async function setImageImportanceThreshold(threshold: number): Promise<vo
  */
 export async function mediaIndexCoveredCount(threshold: number, volumeIds: string[]): Promise<CoveredCount> {
   const res = await commands.mediaIndexCoveredCount(threshold, volumeIds)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * Preview the reclaim-space split across `volumeIds` at the CURRENT `threshold` (the
+ * settled slider value): how many stored image rows fall inside the setting
+ * (`coveredStored`, still searchable) vs outside it (`doomedCount`, what a prune would
+ * delete), and the bytes that would free. `totalStored === coveredStored + doomedCount`
+ * always, so the reclaim copy adds up. `pending` is `true` when a requested volume isn't
+ * ready (scanning / not yet scored), so the UI hides the reclaim line rather than acting
+ * on a lower bound. Answers offline from `media.db`.
+ */
+export async function mediaIndexReclaimPreview(threshold: number, volumeIds: string[]): Promise<ReclaimPreview> {
+  const res = await commands.mediaIndexReclaimPreview(threshold, volumeIds)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * Delete the stored image rows OUTSIDE the current `threshold` across `volumeIds` (the
+ * user-explicit reclaim). Selects the doomed set with the same precedence enrichment
+ * uses, deletes it through each volume's one writer thread, `VACUUM`s to reclaim the
+ * disk, and drops the derived caches. Returns the rows deleted and bytes freed for the
+ * honest "Freed X" toast. Recoverable: a later pass re-indexes anything still covered.
+ */
+export async function mediaIndexPruneBelowThreshold(threshold: number, volumeIds: string[]): Promise<ReclaimResult> {
+  const res = await commands.mediaIndexPruneBelowThreshold(threshold, volumeIds)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

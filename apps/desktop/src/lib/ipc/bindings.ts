@@ -1922,6 +1922,25 @@ export const commands = {
   mediaIndexCoveredCount: (threshold: number, volumeIds: string[]) =>
     typedError<CoveredCount, string>(__TAURI_INVOKE('media_index_covered_count', { threshold, volumeIds })),
   /**
+   *  Preview the reclaim-space split across `volume_ids` at the CURRENT `threshold` (plan
+   *  M4). Thin: resolves the enabled volumes and aggregates the scheduler's single-source
+   *  `stored_coverage` per volume (the doomed-row SELECTION is Rust-side, the same
+   *  precedence enrichment uses; only the byte SUM over the chosen set is a `media.db`
+   *  query). Runs OFF the IPC thread; answers offline from `media.db`.
+   */
+  mediaIndexReclaimPreview: (threshold: number, volumeIds: string[]) =>
+    typedError<ReclaimPreview, string>(__TAURI_INVOKE('media_index_reclaim_preview', { threshold, volumeIds })),
+  /**
+   *  Prune the stored image rows OUTSIDE the current `threshold` across `volume_ids` (plan
+   *  M4 reclaim). Thin: delegates to the scheduler's `prune_below_threshold` per volume,
+   *  which selects the doomed set Rust-side, deletes it through the volume's ONE writer
+   *  thread (the serialization guarantee), `VACUUM`s, and drops the vector + coverage
+   *  caches. A USER-EXPLICIT deletion (derives only from settings state), so it needs no
+   *  completed-scan edge. Runs OFF the IPC thread. Returns the rows deleted and bytes freed.
+   */
+  mediaIndexPruneBelowThreshold: (threshold: number, volumeIds: string[]) =>
+    typedError<ReclaimResult, string>(__TAURI_INVOKE('media_index_prune_below_threshold', { threshold, volumeIds })),
+  /**
    *  Find the images most similar to the one at `source_path` on `volume_id` (by
    *  feature-print cosine), highest first, excluding the source (plan "find
    *  similar"). Runs OFF the IPC thread; answers from `media.db` + the resident vector
@@ -5900,6 +5919,43 @@ export type RecentPathEntry = {
   timestamp: number
   // The resolved target we actually jumped to (dir, file, or ancestor).
   path: string
+}
+
+/**
+ *  The reclaim-space preview behind the settings "delete the extra entries" line (plan
+ *  M4): across the ENABLED volumes in `volume_ids`, how many stored image rows fall
+ *  inside the current setting vs outside it, and the bytes the outside set would free.
+ *  `totalStored = coveredStored + doomedCount` (the single-source partition invariant),
+ *  so the copy's "you have N indexed; your setting covers M; delete the extra K" always
+ *  adds up. `pending` is `true` when a requested enabled volume isn't ready (still
+ *  scanning, or importance hasn't scored it), so the UI hides the reclaim line rather
+ *  than proposing a destructive count off a lower bound.
+ */
+export type ReclaimPreview = {
+  // All stored image rows across the enabled volumes (`coveredStored + doomedCount`).
+  totalStored: number
+  // Stored rows inside the current setting — they stay searchable.
+  coveredStored: number
+  // Stored rows outside the current setting — what a prune would delete.
+  doomedCount: number
+  /**
+   *  The content bytes the doomed rows hold (an honest "about" — `VACUUM` reclaims at
+   *  least this on disk).
+   */
+  estimatedBytes: number
+  /**
+   *  Whether some enabled requested volume's count is unknown (scanning / not yet
+   *  scored), so the totals are a lower bound the UI must not act on.
+   */
+  pending: boolean
+}
+
+// What a reclaim prune freed (plan M4): the rows deleted and the bytes reclaimed.
+export type ReclaimResult = {
+  // The image rows deleted across the enabled volumes.
+  deletedRows: number
+  // The content bytes freed (an "about" estimate; the toast voices it).
+  freedBytes: number
 }
 
 /**
