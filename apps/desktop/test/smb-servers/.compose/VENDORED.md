@@ -17,9 +17,11 @@ the Docker container where those deps aren't installed. Vendoring sidesteps the 
 ## How to update (when you bump the smb2 git dep)
 
 1. Bump `smb2` in `apps/desktop/src-tauri/Cargo.toml` (or `Cargo.lock`).
-2. Re-vendor the compose files, preserving this `VENDORED.md` (it lives only here, not upstream):
+2. Re-vendor the compose files, preserving the two cmdr-owned files (`VENDORED.md` and
+   `docker-compose.override.yml` live only here, not upstream — without both excludes, `--delete` removes the
+   override):
    ```bash
-   rsync -a --delete --exclude=VENDORED.md \
+   rsync -a --delete --exclude=VENDORED.md --exclude=docker-compose.override.yml \
        ~/projects-git/vdavid/smb2/src/testing/fixtures/consumer/ \
        apps/desktop/test/smb-servers/.compose/
    ```

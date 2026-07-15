@@ -96,6 +96,26 @@ mod tests {
         assert!(!is_auth_error(&smb2::Error::Disconnected));
     }
 
+    /// macOS smbd rejects a guest/anonymous SessionSetup with
+    /// `STATUS_ACCOUNT_RESTRICTION` (0xC000006E). smb2 0.13.1+ classifies the
+    /// whole logon-rejection family as `ErrorKind::AuthRequired`; on 0.12 this
+    /// status fell through to `Other`, so the guest attempt against a
+    /// credentials-requiring server (like the user's own Mac) surfaced as
+    /// `ProtocolError` — a misleading "falling back to smbutil/smbclient" WARN
+    /// plus a pointless CLI-fallback subprocess instead of the credentials path.
+    #[test]
+    fn test_guest_rejection_status_is_auth_error() {
+        let err = smb2::Error::Protocol {
+            status: smb2::types::status::NtStatus::ACCOUNT_RESTRICTION,
+            command: smb2::types::Command::SessionSetup,
+        };
+        assert!(is_auth_error(&err));
+        match classify_error(&err) {
+            ShareListError::AuthRequired { .. } => {}
+            e => panic!("Expected AuthRequired for STATUS_ACCOUNT_RESTRICTION, got {:?}", e),
+        }
+    }
+
     /// When the caller supplied explicit credentials, an auth-class rejection means the
     /// credentials are WRONG, not that authentication is required. Without the
     /// context-aware classifier, a wrong password surfaced as "Authentication required.

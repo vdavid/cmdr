@@ -1915,9 +1915,11 @@ impl Volume for SmbVolume {
             // of the 3-RTT streaming open. Drives the compound on a cloned
             // `Connection` with no lock held, so N concurrent small reads
             // pipeline over one SMB session. Falls through to the streaming
-            // path when the hint is missing, too large, or the compound read
-            // returns short (truncated file, rare but possible if size
-            // changed since the scan).
+            // path when the hint is missing or too large, or when the file
+            // changed size since the scan: shrunk files come back short
+            // (`data.len() != size`), grown-past-`max_read` files come back as
+            // a typed `ErrorKind::TooLarge` (smb2 refuses to truncate a file
+            // that no longer fits in one READ).
             if let Some(size) = size_hint {
                 let (tree, mut conn) = self.clone_session().await?;
                 let max_read = conn.params().map(|p| p.max_read_size).unwrap_or(65536) as u64;
@@ -1926,16 +1928,25 @@ impl Volume for SmbVolume {
                         "SmbVolume::open_read_stream_with_hint: share={}, path={:?}, size={}; using compound fast-path",
                         self.share_name, smb_path, size
                     );
-                    let read_result = tree.read_file_compound(&mut conn, &smb_path).await;
-                    let data = self.handle_smb_result("open_read_stream_with_hint(compound)", read_result)?;
-                    if data.len() as u64 == size {
-                        return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
+                    match tree.read_file_compound(&mut conn, &smb_path).await {
+                        Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => {
+                            debug!(
+                                "SmbVolume::open_read_stream_with_hint: file grew past max_read since the scan ({}); falling back to streaming",
+                                e
+                            );
+                        }
+                        read_result => {
+                            let data = self.handle_smb_result("open_read_stream_with_hint(compound)", read_result)?;
+                            if data.len() as u64 == size {
+                                return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
+                            }
+                            debug!(
+                                "SmbVolume::open_read_stream_with_hint: compound read returned {} bytes, expected {}; falling back to streaming",
+                                data.len(),
+                                size
+                            );
+                        }
                     }
-                    debug!(
-                        "SmbVolume::open_read_stream_with_hint: compound read returned {} bytes, expected {}; falling back to streaming",
-                        data.len(),
-                        size
-                    );
                 }
             }
 
