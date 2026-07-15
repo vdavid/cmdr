@@ -542,4 +542,134 @@ mod tests {
             "expected a live FSEvents callback for a mutation on {mount_str} (no journal, but live events must fire)"
         );
     }
+
+    /// End-to-end mount-relative scan on a REAL FAT32 image: the one flow no other
+    /// test covers on an actual `msdos` filesystem. Attaches a synthetic FAT32
+    /// image, populates a known tree, then drives the production local scan pipeline
+    /// (`scan_volume` with the `MountRooted` exclusion scope and FAT's
+    /// untrusted-inode flag, built from an `IndexPathSpace` exactly as `manager.rs`
+    /// does for a `LocalExternal` drive) into a store, and asserts the drive's own
+    /// index reflects the tree.
+    ///
+    /// This pins the exclusion + mount-relative core against a real mount: with the
+    /// boot-disk-scope exclusions, a `/Volumes/X`-rooted scan excluded its own
+    /// subtree and false-completed with 0 entries; here the full tree must land
+    /// under `ROOT_ID` by mount-relative name with recursive sizes aggregated. It
+    /// also verifies FAT's derived inodes are nulled in the index, the behavior
+    /// unique to a real FAT/exFAT mount.
+    #[test]
+    #[ignore = "attaches a real FAT32 disk image via hdiutil; run with --run-ignored"]
+    fn fat32_mount_relative_scan_indexes_the_tree_with_sizes_and_null_inodes() {
+        use crate::indexing::IndexPathSpace;
+        use crate::indexing::scanner::{ScanConfig, scan_volume};
+        use crate::indexing::store::{CURRENT_EPOCH_KEY, IndexStore, ROOT_ID};
+        use crate::indexing::writer::{IndexWriter, WriteMessage};
+
+        // The index DB lives on a normal temp dir, never on the FAT mount (which
+        // can't host a reliable SQLite WAL). Seed current_epoch = 1 so the scan
+        // stamps real listed epochs, matching a production fresh scan.
+        let db_dir = tempfile::tempdir().expect("temp db dir");
+        let db_path = db_dir.path().join("external-scan.db");
+        IndexStore::open(&db_path).expect("open store");
+        let writer = IndexWriter::spawn(&db_path, None).expect("spawn writer");
+        writer
+            .send(WriteMessage::UpdateMeta {
+                key: CURRENT_EPOCH_KEY.to_string(),
+                value: "1".to_string(),
+            })
+            .expect("seed epoch");
+        writer.flush_blocking().expect("flush epoch seed");
+
+        let fixture = DiskImageFixture::attach(DiskImageFilesystem::Fat32, "CMDRSCAN").expect("attach FAT32");
+        let known = fixture.populate_known_tree().expect("populate tree");
+        let mount = fixture.mount_point().to_path_buf();
+
+        // Build the scan config the way the manager does for a LocalExternal drive.
+        // Inode-trust is resolved from the mount's REAL filesystem, exactly as
+        // `local_external_index::classify` does in production: a FAT mount detects
+        // as inode-untrusted, so the space carries that fact.
+        let fs = crate::file_system::filesystem_kind::detect_filesystem_for_path(&mount);
+        let inodes_trustworthy = fs.kind.has_stable_inodes();
+        assert!(
+            !inodes_trustworthy,
+            "a real FAT32 mount must detect as inode-untrusted (fs kind {:?})",
+            fs.kind
+        );
+        let space = IndexPathSpace::mount_rooted(mount.to_string_lossy().to_string())
+            .with_inodes_trustworthy(inodes_trustworthy);
+        let config = ScanConfig {
+            root: mount.clone(),
+            scope: space.exclusion_scope(),
+            inodes_trustworthy: space.inodes_trustworthy(),
+            ..ScanConfig::default()
+        };
+
+        // Run the scan to completion: the scanner thread walks the mount, then sends
+        // the mark + ComputeAllAggregates messages before returning, so joining it
+        // and flushing the writer yields a fully aggregated index.
+        let (_handle, join) = scan_volume(config, &writer).expect("start scan");
+        let summary = join.join().expect("scan thread panicked").expect("scan ok");
+        assert!(!summary.was_cancelled, "scan ran to completion, not cancelled");
+        writer.flush_blocking().expect("flush aggregates");
+
+        // Known-tree minimums (macOS may add AppleDouble `._*` sidecars on FAT, so
+        // assert lower bounds, never exact counts): 4 files, 3 dirs, and the summed
+        // logical bytes of the known files.
+        let known_files = known.iter().filter(|e| !e.is_dir).count() as u64;
+        let known_dirs = known.iter().filter(|e| e.is_dir).count() as u64;
+        let known_bytes: u64 = known.iter().filter(|e| !e.is_dir).map(|e| e.size).sum();
+
+        let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
+        let root_stats = IndexStore::get_dir_stats_by_id(&conn, ROOT_ID)
+            .expect("dir stats query")
+            .expect("root has aggregated stats (NOT a false-complete empty scan)");
+        assert!(
+            root_stats.recursive_file_count >= known_files,
+            "all {known_files} known files indexed under the mount root (got {})",
+            root_stats.recursive_file_count
+        );
+        assert!(
+            root_stats.recursive_dir_count >= known_dirs,
+            "all {known_dirs} known dirs indexed (got {})",
+            root_stats.recursive_dir_count
+        );
+        assert!(
+            root_stats.recursive_logical_size >= known_bytes,
+            "recursive size >= {known_bytes} known bytes (got {})",
+            root_stats.recursive_logical_size
+        );
+
+        // Mount-relative resolution: `docs` is a real child of ROOT_ID (resolved by
+        // mount-relative name, not walked from an absolute /Volumes/... chain), and
+        // its subtree size covers its two files (readme 11 + nested/data.bin 4096).
+        let docs_id = IndexStore::resolve_component(&conn, ROOT_ID, "docs")
+            .expect("resolve docs")
+            .expect("docs resolves as a child of the mount root");
+        let docs_stats = IndexStore::get_dir_stats_by_id(&conn, docs_id)
+            .expect("docs stats query")
+            .expect("docs has stats");
+        assert!(
+            docs_stats.recursive_logical_size >= 4107,
+            "docs subtree covers readme + nested/data.bin (got {})",
+            docs_stats.recursive_logical_size
+        );
+
+        // FAT inode nulling: a real FAT file's derived inode is untrustworthy, so
+        // the scanner stores `inode: None`, keeping the live rename pre-pass inert.
+        // Verify on a real msdos file, not a simulated one.
+        let top_id = IndexStore::resolve_component(&conn, ROOT_ID, "top.bin")
+            .expect("resolve top.bin")
+            .expect("top.bin resolves under the mount root");
+        let top_row = IndexStore::get_entry_by_id(&conn, top_id)
+            .expect("entry query")
+            .expect("top.bin row present");
+        assert!(
+            top_row.inode.is_none(),
+            "FAT32's derived inode must be nulled in the index (got {:?})",
+            top_row.inode
+        );
+
+        // fixture drops here -> guarded hdiutil detach (the writer holds no handle
+        // on the mount; the DB is on a separate temp dir).
+    }
 }

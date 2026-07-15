@@ -15,7 +15,9 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
       Stale, live FSEvents keep Fresh — verified live delivery fires on FAT/exFAT despite no `.fseventsd`), eject-stop
       before unmount (a real FAT-unmount kernel panic motivates it), and the `cmdr://state` indexStatus routing fix.
       Synthetic disk-image test fixture (timeout-guarded, never a physical card). Reviewed 2× (Opus) + FSEvents/inode
-      facts empirically verified; execution pending.
+      facts empirically verified. M0–M8 landed; M9 done as a focused `#[ignore]` Rust integration test (real-FAT
+      mount-relative scan → dir_stats + null inodes) plus a live MCP validation on a synthetic FAT32 image — NO CI
+      Playwright E2E by decision (the panic-class `hdiutil`/FSKit op is deliberately kept out of CI; see the plan's M9).
 - [ ] 2026-07-14 [idle-cpu-throttle-plan.md](idle-cpu-throttle-plan.md) - Cut idle CPU + disk-write thrash from live
       indexing (#37). L1 (importance folded-key subtree clear) and M1 (per-file live-upsert throttle: 60 s leading +
       trailing, 2%/512 KiB bypass, Downloads-exempt, self-write loop subsumed) shipped; M2 (search-index prealloc

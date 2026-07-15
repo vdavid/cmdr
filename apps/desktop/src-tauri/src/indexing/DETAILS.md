@@ -548,6 +548,15 @@ journal** (no `sinceWhen` replay, but a running watcher keeps an external index 
 are `docs/specs/local-drive-indexing-probes/{fat32-probe.sh,fsevents-probe.swift}`; the Rust fixture is the automated
 form.
 
+`fat32_mount_relative_scan_indexes_the_tree_with_sizes_and_null_inodes` is the one end-to-end test on a real `msdos`
+filesystem: it drives `scanner::scan_volume` with the mount-rooted `IndexPathSpace` (MountRooted exclusion scope + FAT's
+untrusted-inode flag, resolved from the real `detect_filesystem_for_path` as `local_external_index::classify` does) and
+asserts the drive's own index holds the tree under `ROOT_ID` by mount-relative name with recursive sizes, and the FAT
+inode nulled. Asserts are lower bounds (macOS adds AppleDouble `._*` sidecars on FAT). The full app-level lifecycle
+(enable → scan → sizes → eject-safe stop → detach) is not an automated CI test — the scan pipeline is `AppHandle`-bound
+(no mock-app harness) and driving `hdiutil` in CI is the deliberately-avoided panic-class op; it's validated live via MCP
+against the running dev app instead.
+
 ### Testing bar: state machine + IndexPhase lifecycle
 
 The per-volume `IndexPhase` lifecycle (`(absent) → Initializing → Running`, plus the `Initializing → removed` race during cancel) is the trickiest backend state machine to test cleanly. Four rules for tests in this area:

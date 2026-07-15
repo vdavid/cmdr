@@ -368,15 +368,37 @@ Tests: Vitest for the `category`-based predicate (`local` → local checklist; `
 existing `IndexingStatusBody` prop seam; a test that an internal-error refusal renders the internal-error copy.
 Parallelizable immediately (no backend dependency). Checks: `pnpm check svelte`, `pnpm check desktop`.
 
-### M9 — E2E (only if the M0 fixture drives cleanly from the harness)
+### M9 — E2E (done: Rust integration test + live validation; NO CI E2E, by decision)
 
-- Playwright/integration E2E: attach an M0 FAT32 image → **enable indexing directly** (via MCP/menu — an attached image is
-  a disk image, so `isDriveRow` is false and the first-connect prompt does NOT fire; prompt coverage stays unit-level per
-  Decision #1) → scan completes → sizes render → detach cleanly; assert no stuck "scanning" row after detach.
-- Gate on feasibility: if driving `hdiutil` from the E2E harness can't be made reliably timeout-safe, keep coverage at the
-  Rust integration level (M3–M6) and `log()`/note the gap explicitly rather than shipping a flaky or unsafe E2E.
+Two feasibility facts settle the shape:
 
-Checks: `pnpm check --include-slow`; the E2E suite per `test/e2e-playwright/CLAUDE.md`.
+1. **A full enable→scan→sizes→stop lifecycle test is `AppHandle`-bound and the repo has no mock-`AppHandle` harness.**
+   `start_indexing_for` (and the whole registry/event pipeline) takes a real `AppHandle`; building a Tauri mock app solely
+   for this test is a large, invasive infra investment out of proportion to M9. But the scan pipeline exposes an
+   AppHandle-free seam: `scanner::scan_volume(ScanConfig, &IndexWriter)` runs the full walk + aggregate into a store, and
+   `store::get_dir_stats_by_id` reads the result — the same seam `manager.rs` builds from an `IndexPathSpace`.
+2. **The panic-class `hdiutil`/FSKit operation is deliberately kept out of CI.** Every disk-image test in the repo is
+   `#[ignore]`d (`external_drive_fixture.rs`), so `pnpm check rust` compiles but never runs them — precisely because the
+   2026-07-15 incident showed FSKit `msdos` can wedge the kernel on uncontrolled hardware. A Playwright E2E under
+   `pnpm check desktop-e2e-playwright` DOES run in CI (GitHub macOS runners, uncontrolled FSKit), so attaching disk images
+   there would reintroduce the exact panic-class operation the incident burned out. That's "unsafe from the harness" — the
+   gate's escape hatch applies.
+
+**Decision:** add a focused `#[ignore]` **Rust integration test** at the AppHandle-free seam — `external_drive_fixture.rs`
+`fat32_mount_relative_scan_indexes_the_tree_with_sizes_and_null_inodes`: attach a real FAT32 image → populate a known tree
+→ run `scan_volume` with the mount-rooted `IndexPathSpace` (MountRooted exclusion scope + FAT-derived untrusted-inode flag,
+resolved from the real `detect_filesystem_for_path` exactly as `classify` does) → assert the drive's own index has the tree
+under `ROOT_ID` by mount-relative name with recursive sizes aggregated (lower-bound asserts; macOS adds AppleDouble `._*`
+sidecars on FAT) and FAT's derived inode is nulled. It's the only automated test exercising the exclusion + mount-relative
+core on a real `msdos` filesystem; timeout-safe via the fixture's guarded detach; never runs in CI. **NO CI Playwright E2E**
+(reason above). The full end-to-end lifecycle (drive appears `off` → enable → real `LocalExternal` scan, no SMB refusal, no
+false-complete → sizes render → clean index stop, watcher dropped → detach, no stuck scanning row) was **validated live**
+against the running dev app on a synthetic FAT32 image via MCP, 2026-07-15 (worktree `david/local-drive-indexing`); that
+run is the end-to-end proof, and the component tests (M2 exclusions, M3 resolve/reconcile, M4 classify/resume, M5 inode,
+M7 status) plus the fixture's attach/read/live-FSEvents tests cover each stage.
+
+Checks: `pnpm check rust`; run the added `#[ignore]` test explicitly with
+`cargo nextest run --run-ignored ignored-only -E 'test(fat32_mount_relative_scan_indexes_the_tree_with_sizes_and_null_inodes)'`.
 
 ## Docs to update (per the C.md/D.md contract)
 
