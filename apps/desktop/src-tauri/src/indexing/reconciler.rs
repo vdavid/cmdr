@@ -26,13 +26,13 @@ use rusqlite::Connection;
 use tauri::AppHandle;
 
 use crate::ignore_poison::IgnorePoison;
-use crate::indexing::DEBUG_STATS;
 use crate::indexing::firmlinks;
 use crate::indexing::metadata::extract_metadata;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore, IndexStoreError};
 use crate::indexing::watcher::FsChangeEvent;
 use crate::indexing::writer::{IndexWriter, WriteMessage};
+use crate::indexing::{DEBUG_STATS, IndexPathSpace};
 use crate::pluralize::pluralize;
 
 mod throttle;
@@ -183,16 +183,26 @@ pub struct EventReconciler {
     /// consulted on the live path; the trailing flush runs off the event loop's
     /// sweep tick via [`EventReconciler::sweep_throttle`].
     throttle: LiveThrottle,
+    /// The volume's path space: pass-through for the boot disk, mount-relative strip
+    /// for a mount-rooted external drive. Threaded to `process_fs_event` and the
+    /// `MustScanSubDirs` `reconcile_subtree` so both speak the right space.
+    space: IndexPathSpace,
 }
 
 impl EventReconciler {
-    /// Create a new reconciler in buffering mode.
+    /// Create a new reconciler in buffering mode for the boot disk (`root` space).
     pub fn new() -> Self {
-        Self::with_throttle(Throttle::new(resolve_downloads_prefix()))
+        Self::new_for(IndexPathSpace::root())
     }
 
-    /// Construct with a caller-supplied throttle (tests inject a short window).
-    fn with_throttle(throttle: LiveThrottle) -> Self {
+    /// Create a reconciler bound to a volume's path space. A mount-rooted external
+    /// drive passes its space so live/replay resolution strips the mount root.
+    pub(super) fn new_for(space: IndexPathSpace) -> Self {
+        Self::with_space_and_throttle(space, Throttle::new(resolve_downloads_prefix()))
+    }
+
+    /// Construct with a caller-supplied space + throttle (tests inject a short window).
+    fn with_space_and_throttle(space: IndexPathSpace, throttle: LiveThrottle) -> Self {
         Self {
             buffer: Vec::new(),
             buffering: true,
@@ -200,6 +210,7 @@ impl EventReconciler {
             pending_rescans: Arc::new(Mutex::new(HashSet::new())),
             rescan_active: Arc::new(AtomicBool::new(false)),
             throttle,
+            space,
         }
     }
 
@@ -207,7 +218,7 @@ impl EventReconciler {
     /// exercised without sleeping a real [`THROTTLE_WINDOW`].
     #[cfg(test)]
     pub(super) fn new_with_throttle_window(window: std::time::Duration) -> Self {
-        Self::with_throttle(Throttle::with_window(window, None))
+        Self::with_space_and_throttle(IndexPathSpace::root(), Throttle::with_window(window, None))
     }
 
     /// Buffer an event during scan. If the buffer cap is reached, stops
@@ -264,7 +275,7 @@ impl EventReconciler {
 
             // Replay stays unthrottled (None): journal catch-up must converge
             // fully and fast; throttling is a live-steady-state concern.
-            if let Some(paths) = process_fs_event(event, conn, writer, None) {
+            if let Some(paths) = process_fs_event(event, &self.space, conn, writer, None) {
                 affected_paths.extend(paths);
             }
 
@@ -317,12 +328,14 @@ impl EventReconciler {
 
         // Handle MustScanSubDirs
         if event.flags.must_scan_sub_dirs {
-            let normalized = firmlinks::normalize_path(&event.path);
-            self.queue_must_scan_sub_dirs(PathBuf::from(&normalized), writer);
+            // Keep the path absolute (the reconcile walks the FS from it); the
+            // mount-relative strip happens inside `reconcile_subtree`'s resolve.
+            let absolute = self.space.absolute(&event.path);
+            self.queue_must_scan_sub_dirs(PathBuf::from(&absolute), writer);
             return Some(event.event_id);
         }
 
-        if let Some(affected_paths) = process_fs_event(event, conn, writer, Some(&mut self.throttle)) {
+        if let Some(affected_paths) = process_fs_event(event, &self.space, conn, writer, Some(&mut self.throttle)) {
             pending_paths.extend(affected_paths);
         }
 
@@ -372,6 +385,7 @@ impl EventReconciler {
         start_next_rescan(
             Arc::clone(&self.pending_rescans),
             Arc::clone(&self.rescan_active),
+            self.space.clone(),
             writer,
         );
     }
@@ -401,6 +415,7 @@ impl EventReconciler {
 fn start_next_rescan(
     pending_rescans: Arc<Mutex<HashSet<PathBuf>>>,
     rescan_active: Arc<AtomicBool>,
+    space: IndexPathSpace,
     writer: &IndexWriter,
 ) {
     let path = {
@@ -418,6 +433,7 @@ fn start_next_rescan(
     let writer = writer.clone();
     let pending_for_task = Arc::clone(&pending_rescans);
     let active_for_task = Arc::clone(&rescan_active);
+    let space_for_task = space.clone();
 
     log::info!("MustScanSubDirs: reconcile starting for {}", path.display());
 
@@ -432,12 +448,12 @@ fn start_next_rescan(
                 );
                 active_for_task.store(false, Ordering::Relaxed);
                 // Try the next pending rescan even if this one failed
-                start_next_rescan(pending_for_task, active_for_task, &writer);
+                start_next_rescan(pending_for_task, active_for_task, space_for_task, &writer);
                 return;
             }
         };
 
-        match reconcile_subtree(&path, &conn, &writer, &cancelled) {
+        match reconcile_subtree(&path, &space_for_task, &conn, &writer, &cancelled) {
             Ok(summary) => {
                 if summary.duration.as_secs() > 10 {
                     log::warn!(
@@ -468,7 +484,7 @@ fn start_next_rescan(
         active_for_task.store(false, Ordering::Relaxed);
 
         // Automatically start the next queued rescan
-        start_next_rescan(pending_for_task, active_for_task, &writer);
+        start_next_rescan(pending_for_task, active_for_task, space_for_task, &writer);
     });
 }
 
@@ -742,6 +758,7 @@ impl Drop for BulkReconcileGuard {
 /// single-aggregate constraint the perf bench measured), never per-dir propagation.
 pub(super) fn reconcile_subtree(
     root: &Path,
+    space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
     cancelled: &AtomicBool,
@@ -761,15 +778,18 @@ pub(super) fn reconcile_subtree(
     // regression this milestone guards against.
     let mut listed_dir_ids: Vec<i64> = Vec::new();
 
-    let root_str = firmlinks::normalize_path(&root.to_string_lossy());
-    let root_id = match store::resolve_path(conn, &root_str) {
+    // The absolute path in this volume's world (firmlink-normalized for the boot
+    // disk, raw for a mount-rooted drive); the mount-relative strip is applied only
+    // at the `resolve_abs` argument, so `root_str` stays absolute for the FS reads.
+    let root_str = space.absolute(&root.to_string_lossy());
+    let root_id = match space.resolve_abs(conn, &root_str) {
         Ok(Some(id)) => id,
         Ok(None) => {
             // Root not in DB. This happens when must_scan_sub_dirs fires for a
             // newly created/copied directory. Try to create it: resolve the parent,
             // stat the root, and upsert it via the writer.
             let parent_path = compute_parent_path(&root_str);
-            let parent_id = match store::resolve_path(conn, &parent_path) {
+            let parent_id = match space.resolve_abs(conn, &parent_path) {
                 Ok(Some(id)) => id,
                 Ok(None) => {
                     log::debug!("reconcile_subtree: neither root nor parent in DB, skipping: {root_str}");
@@ -820,7 +840,7 @@ pub(super) fn reconcile_subtree(
             }
             added += 1;
 
-            match store::resolve_path(conn, &root_str) {
+            match space.resolve_abs(conn, &root_str) {
                 Ok(Some(id)) => id,
                 Ok(None) => {
                     log::warn!("reconcile_subtree: root still not in DB after upsert, skipping: {root_str}");
@@ -849,7 +869,7 @@ pub(super) fn reconcile_subtree(
             break;
         }
 
-        let fs_children = match read_fs_children(&dir_path) {
+        let fs_children = match read_fs_children(&dir_path, space) {
             Some(c) => c,
             None => continue,
         };
@@ -893,8 +913,8 @@ pub(super) fn reconcile_subtree(
                 log::warn!("reconcile_subtree: flush failed: {e}");
             }
             for new_dir in new_dir_paths.drain(..) {
-                let path_str = firmlinks::normalize_path(&new_dir.to_string_lossy());
-                if let Ok(Some(id)) = store::resolve_path(conn, &path_str) {
+                let path_str = space.absolute(&new_dir.to_string_lossy());
+                if let Ok(Some(id)) = space.resolve_abs(conn, &path_str) {
                     queue.push_back((new_dir, id));
                 }
             }
@@ -949,7 +969,10 @@ pub(super) fn reconcile_subtree(
 ///   (`scanner::run_scan`); a reconcile that DIDN'T would find them absent from the
 ///   DB and re-add them every pass, diverging from the fresh-scan tree.
 ///   Skipping here keeps fresh and reconcile in lock-step.
-pub(super) fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::Metadata, bool)>> {
+pub(super) fn read_fs_children(
+    dir_path: &Path,
+    space: &IndexPathSpace,
+) -> Option<Vec<(String, std::fs::Metadata, bool)>> {
     let read_dir = match std::fs::read_dir(dir_path) {
         Ok(rd) => rd,
         Err(e) => {
@@ -967,10 +990,11 @@ pub(super) fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::
         let name = entry.file_name().to_string_lossy().to_string();
         let child_path = dir_path.join(&name);
         let child_path_str = child_path.to_string_lossy();
-        let normalized_child = firmlinks::normalize_path(&child_path_str);
-        // The local reconcile runs only on the boot disk today, so `BootDisk`;
-        // the mount-rooted reconcile threads the kind-derived scope here.
-        if scanner::should_exclude(&normalized_child, scanner::ExclusionScope::BootDisk) {
+        // The canonical absolute child path (firmlink-normalized only for the boot
+        // disk); the scope comes from the volume kind so a mount-rooted drive skips
+        // only junk basenames, not its own `/Volumes/X` subtree.
+        let normalized_child = space.absolute(&child_path_str);
+        if scanner::should_exclude(&normalized_child, space.exclusion_scope()) {
             continue;
         }
         // Skip the canonicalization-alias symlinks (/tmp, /var, /etc) so we don't
@@ -1001,16 +1025,22 @@ pub(super) fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::
 /// last-seen size flushed later by [`EventReconciler::sweep_throttle`]).
 pub(super) fn process_fs_event(
     event: &FsChangeEvent,
+    space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
     throttle: Option<&mut LiveThrottle>,
 ) -> Option<Vec<String>> {
-    let normalized = firmlinks::normalize_path(&event.path);
+    // The canonical ABSOLUTE path in this volume's world. It stays absolute through
+    // the whole function (FS stat, exclusion, ancestor/affected paths, the FE emit);
+    // the mount-relative strip is applied ONLY at each `resolve_abs` argument. For
+    // the boot disk this firmlink-normalizes; for a mount-rooted drive it's the raw
+    // path (firmlink semantics don't apply under `/Volumes`).
+    let normalized = space.absolute(&event.path);
 
-    // Skip excluded paths. The live local event loop runs only on the boot disk
-    // today, so `BootDisk`; the mount-relative live pipeline threads the
-    // kind-derived scope here (a mount-rooted drive uses `MountRooted`).
-    if scanner::should_exclude(&normalized, scanner::ExclusionScope::BootDisk) {
+    // Skip excluded paths, scoped by the volume kind: `BootDisk` keeps the `/`-rooted
+    // boot disk off `/Volumes/`/system trees; `MountRooted` skips only junk basenames
+    // so an external drive still indexes its own subtree.
+    if scanner::should_exclude(&normalized, space.exclusion_scope()) {
         return None;
     }
 
@@ -1023,13 +1053,14 @@ pub(super) fn process_fs_event(
     let mut affected = collect_ancestor_paths(&normalized);
 
     if event.flags.item_removed {
-        return handle_removal(&normalized, conn, event, writer, affected, throttle);
+        return handle_removal(&normalized, space, conn, event, writer, affected, throttle);
     }
 
     if event.flags.item_created || event.flags.item_modified || event.flags.item_renamed {
         return handle_creation_or_modification(
             &normalized,
             &parent_path,
+            space,
             conn,
             event,
             writer,
@@ -1043,6 +1074,7 @@ pub(super) fn process_fs_event(
         return handle_creation_or_modification(
             &normalized,
             &parent_path,
+            space,
             conn,
             event,
             writer,
@@ -1063,6 +1095,7 @@ pub(super) fn process_fs_event(
 /// when the path is truly gone from the filesystem.
 fn handle_removal(
     normalized: &str,
+    space: &IndexPathSpace,
     conn: &Connection,
     event: &FsChangeEvent,
     writer: &IndexWriter,
@@ -1070,15 +1103,25 @@ fn handle_removal(
     throttle: Option<&mut LiveThrottle>,
 ) -> Option<Vec<String>> {
     // Check if the path actually exists on disk before deleting from the DB.
+    // `normalized` is the absolute FS path, so this stat is correct on any volume.
     if Path::new(normalized).symlink_metadata().is_ok() {
         // Path still exists, so treat as a modification, not a removal (throttled
         // like any other in-place rewrite). Deletes themselves are never throttled.
         let parent_path = compute_parent_path(normalized);
-        return handle_creation_or_modification(normalized, &parent_path, conn, event, writer, &mut affected, throttle);
+        return handle_creation_or_modification(
+            normalized,
+            &parent_path,
+            space,
+            conn,
+            event,
+            writer,
+            &mut affected,
+            throttle,
+        );
     }
 
-    // Path is truly gone; resolve and delete from DB
-    let entry_id = match store::resolve_path(conn, normalized) {
+    // Path is truly gone; resolve (mount-strip for a mount-rooted drive) and delete.
+    let entry_id = match space.resolve_abs(conn, normalized) {
         Ok(Some(id)) => id,
         Ok(None) => {
             // Per-event line at TRACE: useful when actively debugging reconciler/index
@@ -1109,16 +1152,21 @@ fn handle_removal(
 /// Resolves the parent path to an integer ID and sends `UpsertEntryV2`.
 /// For new entries (create), also sends `PropagateDeltaById` starting
 /// from the parent so dir_stats are updated along the ancestor chain.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "shares the event-processing param set (path/parent/space/conn/event/writer/affected/throttle); a struct would add indirection without clarity, matching run_scan"
+)]
 fn handle_creation_or_modification(
     normalized: &str,
     parent_path: &str,
+    space: &IndexPathSpace,
     conn: &Connection,
     event: &FsChangeEvent,
     writer: &IndexWriter,
     affected: &mut Vec<String>,
     throttle: Option<&mut LiveThrottle>,
 ) -> Option<Vec<String>> {
-    // Stat the file to get current metadata
+    // Stat the file to get current metadata. `normalized` is the absolute FS path.
     let path = Path::new(normalized);
     let metadata = match std::fs::symlink_metadata(path) {
         Ok(m) => m,
@@ -1128,7 +1176,7 @@ fn handle_creation_or_modification(
             // Use DeleteSubtreeById for directories to also remove child entries;
             // journal replay may coalesce child events into a parent dir event,
             // leaving orphaned children without a subtree delete.
-            match store::resolve_path(conn, normalized) {
+            match space.resolve_abs(conn, normalized) {
                 Ok(Some(id)) => {
                     if event.flags.item_is_dir {
                         let _ = writer.send(WriteMessage::DeleteSubtreeById(id));
@@ -1147,8 +1195,8 @@ fn handle_creation_or_modification(
         }
     };
 
-    // Resolve parent path to integer ID
-    let parent_id = match store::resolve_path(conn, parent_path) {
+    // Resolve parent path to integer ID (mount-strip for a mount-rooted drive).
+    let parent_id = match space.resolve_abs(conn, parent_path) {
         Ok(Some(id)) => id,
         Ok(None) => {
             // Parent not in DB -- stale event (intermediate directory missing), skip.

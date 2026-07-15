@@ -115,7 +115,7 @@ fn excluded_paths_are_skipped() {
 
     let event = make_event(excluded_path, 1, created_file_flags());
     let (writer, _dir, conn) = setup_test_writer();
-    let result = process_fs_event(&event, &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
     assert!(result.is_none());
     writer.shutdown();
 }
@@ -126,7 +126,7 @@ fn system_paths_without_firmlink_are_skipped() {
     // /System/foo paths that aren't firmlinked should be excluded
     let event = make_event("/System/Library/Frameworks/foo", 1, created_file_flags());
     let (writer, _dir, conn) = setup_test_writer();
-    let result = process_fs_event(&event, &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
     assert!(result.is_none());
     writer.shutdown();
 }
@@ -135,7 +135,7 @@ fn system_paths_without_firmlink_are_skipped() {
 fn history_done_events_are_skipped() {
     let event = make_event("/test/file.txt", 1, history_done_flags());
     let (writer, _dir, conn) = setup_test_writer();
-    let result = process_fs_event(&event, &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
     assert!(result.is_none());
     writer.shutdown();
 }
@@ -200,7 +200,7 @@ fn process_file_creation_writes_entry() {
 
     let event = make_event(&file_path.to_string_lossy(), 50, created_file_flags());
 
-    let result = process_fs_event(&event, &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
     assert!(result.is_some());
 
     writer.flush_blocking().unwrap();
@@ -241,7 +241,7 @@ fn process_file_removal_deletes_entry() {
     }
 
     let event = make_event("/gone/deleted.txt", 60, removed_file_flags());
-    let result = process_fs_event(&event, &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
     assert!(result.is_some());
 
     writer.flush_blocking().unwrap();
@@ -268,7 +268,7 @@ fn process_dir_creation_writes_entry_and_propagates() {
 
     let event = make_event(&new_dir.to_string_lossy(), 70, created_dir_flags());
 
-    let result = process_fs_event(&event, &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
     assert!(result.is_some());
 
     // The affected paths should include both the parent and the new dir itself
@@ -314,7 +314,7 @@ fn process_dir_removal_deletes_subtree() {
     }
 
     let event = make_event("/parent/removed_dir", 80, removed_dir_flags());
-    process_fs_event(&event, &conn, &writer, None);
+    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
 
     writer.flush_blocking().unwrap();
     writer.shutdown();
@@ -332,7 +332,7 @@ fn process_nonexistent_file_treated_as_removal() {
     // Event for a file that was created and immediately deleted
     // Use a path not under any excluded prefix (for example, /tmp/ is excluded on Linux)
     let event = make_event("/nonexistent_cmdr_test_dir/ghost_file.txt", 90, created_file_flags());
-    let result = process_fs_event(&event, &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
     // Should still return Some (stat fails, treated as removal)
     assert!(result.is_some());
 
@@ -375,7 +375,7 @@ fn removal_event_for_existing_path_upserts_instead_of_deleting() {
 
     // Send a removal event even though the file exists on disk
     let event = make_event(&real_file.to_string_lossy(), 99, removed_file_flags());
-    process_fs_event(&event, &conn, &writer, None);
+    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
 
     writer.flush_blocking().unwrap();
     writer.shutdown();
@@ -437,7 +437,7 @@ fn atomic_swap_event_upserts_existing_file() {
         ..Default::default()
     };
     let event = make_event(&file_path.to_string_lossy(), 120, flags);
-    let result = process_fs_event(&event, &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
     assert!(result.is_some());
 
     writer.flush_blocking().unwrap();
@@ -512,7 +512,7 @@ fn must_scan_sub_dirs_preserves_existing_children() {
 
     // Run reconcile_subtree (what MustScanSubDirs triggers)
     let cancelled = AtomicBool::new(false);
-    let result = reconcile_subtree(&sub_dir, &conn, &writer, &cancelled);
+    let result = reconcile_subtree(&sub_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.added, 0, "no new entries expected");
@@ -577,7 +577,7 @@ fn removal_event_for_existing_directory_upserts_not_deletes() {
         ..Default::default()
     };
     let event = make_event(&target_dir.to_string_lossy(), 150, flags);
-    let result = process_fs_event(&event, &conn, &writer, None);
+    let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
     assert!(result.is_some());
 
     writer.flush_blocking().unwrap();
@@ -624,7 +624,7 @@ fn reconcile_new_file() {
     ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
     let cancelled = AtomicBool::new(false);
-    let result = reconcile_subtree(test_dir.path(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.added, 1);
@@ -670,7 +670,7 @@ fn reconcile_deleted_file() {
     }
 
     let cancelled = AtomicBool::new(false);
-    let result = reconcile_subtree(test_dir.path(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.removed, 1);
@@ -720,7 +720,7 @@ fn reconcile_unchanged() {
     }
 
     let cancelled = AtomicBool::new(false);
-    let result = reconcile_subtree(test_dir.path(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.added, 0);
@@ -761,7 +761,7 @@ fn reconcile_modified_file() {
     }
 
     let cancelled = AtomicBool::new(false);
-    let result = reconcile_subtree(test_dir.path(), &conn, &writer, &cancelled);
+    let result = reconcile_subtree(test_dir.path(), &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.updated, 1);
@@ -802,7 +802,7 @@ fn reconcile_subtree_new_nested_dir_with_child() {
     ensure_path_in_db(&db_path, &parent.to_string_lossy(), &writer);
 
     let cancelled = AtomicBool::new(false);
-    let result = reconcile_subtree(&parent, &conn, &writer, &cancelled);
+    let result = reconcile_subtree(&parent, &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.added, 2, "new_dir and child.txt should both be added");
@@ -871,7 +871,7 @@ fn reconcile_subtree_dir_replaced_by_file() {
     }
 
     let cancelled = AtomicBool::new(false);
-    let result = reconcile_subtree(&parent, &conn, &writer, &cancelled);
+    let result = reconcile_subtree(&parent, &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
 
@@ -924,7 +924,7 @@ fn reconcile_subtree_deep_nested_dirs() {
     ensure_path_in_db(&db_path, &root_dir.to_string_lossy(), &writer);
 
     let cancelled = AtomicBool::new(false);
-    let result = reconcile_subtree(&root_dir, &conn, &writer, &cancelled);
+    let result = reconcile_subtree(&root_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
     assert_eq!(summary.added, 4, "dirs a, b, c and file.txt should all be added");
@@ -993,7 +993,7 @@ fn reconcile_subtree_indexes_new_directory_not_in_db() {
     ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
     let cancelled = AtomicBool::new(false);
-    let result = reconcile_subtree(&new_dir, &conn, &writer, &cancelled);
+    let result = reconcile_subtree(&new_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled);
     assert!(result.is_ok());
     let summary = result.unwrap();
 
@@ -1044,7 +1044,7 @@ fn reconcile_subtree_marks_listed_dirs_at_current_epoch() {
     ensure_path_in_db(&db_path, &test_dir.path().to_string_lossy(), &writer);
 
     let cancelled = AtomicBool::new(false);
-    reconcile_subtree(&new_dir, &conn, &writer, &cancelled).unwrap();
+    reconcile_subtree(&new_dir, &IndexPathSpace::root(), &conn, &writer, &cancelled).unwrap();
     writer.flush_blocking().unwrap();
     writer.shutdown();
 
@@ -1301,6 +1301,113 @@ fn replay_all_events_before_scan_start_returns_unchanged() {
 
     assert_eq!(result, 100);
     assert!(!callback_called);
+}
+
+// ── Mount-rooted path space (external drive) ─────────────────────
+
+/// A live create under a MOUNT-ROOTED index resolves its parent only after the
+/// mount-relative strip: with `root` space (the pre-strip behavior) the
+/// mount-absolute parent is walked from `ROOT_ID` and misses, so the change is
+/// dropped; with the drive's `mount_rooted` space the mount root strips to `/` and
+/// the parent resolves, so the file is indexed. Pins that the strip at the
+/// `resolve_path` argument is load-bearing (dropping it silently drops live events).
+#[test]
+fn live_create_under_mount_rooted_index_resolves_via_strip() {
+    let (writer, dir, conn) = setup_test_writer();
+    let db_path = dir.path().join("test-reconciler.db");
+
+    // A tempdir stands in for the drive's mount root (`/Volumes/X`). The index is
+    // MOUNT-ROOTED: `ROOT_ID` IS the mount, and a scanned "sub" dir hangs off
+    // `ROOT_ID` by its mount-relative name — NOT the absolute path chain a `/`-rooted
+    // index would seed.
+    let mount = non_excluded_tempdir();
+    let mount_root = mount.path().to_string_lossy().to_string();
+    let sub_id = {
+        let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+        let id = IndexStore::insert_entry_v2(&wconn, ROOT_ID, "sub", true, false, None, None, None, None).unwrap();
+        let next = IndexStore::get_next_id(&wconn).unwrap();
+        writer.next_id().fetch_max(next, Ordering::Relaxed);
+        id
+    };
+
+    // A real file on disk at `<mount>/sub/new.txt`, and the absolute FS event for it.
+    std::fs::create_dir(mount.path().join("sub")).unwrap();
+    let file_path = mount.path().join("sub/new.txt");
+    std::fs::write(&file_path, "hello mount").unwrap();
+    let event = make_event(&file_path.to_string_lossy(), 50, created_file_flags());
+
+    // `root` space (pre-strip): the absolute parent `<mount>/sub` is walked from
+    // `ROOT_ID` (which holds only "sub") and misses, so the create is dropped.
+    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    writer.flush_blocking().unwrap();
+    assert_eq!(
+        IndexStore::list_children_on(sub_id, &conn).unwrap().len(),
+        0,
+        "root space can't resolve the mount-absolute parent, so the create is dropped (the pre-fix miss)"
+    );
+
+    // `mount_rooted` space: `<mount>/sub` strips to `/sub`, resolves to `sub_id`, upserts.
+    let space = IndexPathSpace::mount_rooted(mount_root);
+    process_fs_event(&event, &space, &conn, &writer, None);
+    writer.flush_blocking().unwrap();
+    writer.shutdown();
+
+    let store = IndexStore::open(&db_path).unwrap();
+    let children = store.list_children(sub_id).unwrap();
+    assert_eq!(
+        children.len(),
+        1,
+        "the mount-relative strip resolves the parent, so the file is indexed"
+    );
+    assert_eq!(children[0].name, "new.txt");
+    assert!(children[0].logical_size.unwrap_or(0) > 0);
+}
+
+/// A live delete under a MOUNT-ROOTED index resolves the target only after the
+/// strip: `root` space misses (leaving the stale row), `mount_rooted` space
+/// resolves and removes it.
+#[test]
+fn live_delete_under_mount_rooted_index_resolves_via_strip() {
+    let (writer, dir, conn) = setup_test_writer();
+    let db_path = dir.path().join("test-reconciler.db");
+
+    let mount = non_excluded_tempdir();
+    let mount_root = mount.path().to_string_lossy().to_string();
+    let (sub_id, _gone_id) = {
+        let wconn = IndexStore::open_write_connection(&db_path).unwrap();
+        let sub = IndexStore::insert_entry_v2(&wconn, ROOT_ID, "sub", true, false, None, None, None, None).unwrap();
+        let gone =
+            IndexStore::insert_entry_v2(&wconn, sub, "gone.txt", false, false, Some(9), Some(9), None, None).unwrap();
+        let next = IndexStore::get_next_id(&wconn).unwrap();
+        writer.next_id().fetch_max(next, Ordering::Relaxed);
+        (sub, gone)
+    };
+
+    // The file is truly gone on disk (never created under the mount), so a removal
+    // event should delete the row — but only once the path resolves.
+    let gone_abs = mount.path().join("sub/gone.txt");
+    let event = make_event(&gone_abs.to_string_lossy(), 60, removed_file_flags());
+
+    // `root` space misses the mount-absolute path, so the stale row survives.
+    process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None);
+    writer.flush_blocking().unwrap();
+    assert_eq!(
+        IndexStore::list_children_on(sub_id, &conn).unwrap().len(),
+        1,
+        "root space can't resolve the mount-absolute path, so the stale row survives (the pre-fix miss)"
+    );
+
+    // `mount_rooted` space strips and resolves, so the delete lands.
+    let space = IndexPathSpace::mount_rooted(mount_root);
+    process_fs_event(&event, &space, &conn, &writer, None);
+    writer.flush_blocking().unwrap();
+    writer.shutdown();
+
+    let store = IndexStore::open(&db_path).unwrap();
+    assert!(
+        store.list_children(sub_id).unwrap().is_empty(),
+        "the mount-relative strip resolves the target, so the delete removes the row"
+    );
 }
 
 // ── Test helpers ─────────────────────────────────────────────────

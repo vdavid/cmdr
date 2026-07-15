@@ -38,11 +38,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::time::{Duration, Instant};
 
-use super::firmlinks;
+use super::IndexPathSpace;
 use super::metadata::extract_metadata;
 use super::reconciler::{self, LiveChild};
 use super::scanner::{LOCAL_LIST_TIMEOUT, ScanError, ScanHandle, ScanProgress, ScanSummary};
-use super::store::{self, IndexStore};
+use super::store::IndexStore;
 use super::writer::{IndexWriter, WriteMessage};
 
 /// One directory's normalized filesystem children (name, metadata, is_symlink), or
@@ -76,9 +76,14 @@ struct GuardedReader {
 }
 
 impl GuardedReader {
-    /// Guard the production filesystem read (`reconciler::read_fs_children`).
-    fn for_fs(timeout: Duration) -> Self {
-        Self::with_read_fn(timeout, Arc::new(|p: &Path| reconciler::read_fs_children(p)))
+    /// Guard the production filesystem read (`reconciler::read_fs_children`) for the
+    /// given volume path space (so a mount-rooted drive uses the right exclusion
+    /// scope and skips firmlink normalization).
+    fn for_fs(timeout: Duration, space: IndexPathSpace) -> Self {
+        Self::with_read_fn(
+            timeout,
+            Arc::new(move |p: &Path| reconciler::read_fs_children(p, &space)),
+        )
     }
 
     fn with_read_fn(timeout: Duration, read_fn: ReadFn) -> Self {
@@ -157,6 +162,7 @@ impl GuardedReader {
 /// cancellation, and a `JoinHandle` the handler joins for the [`ScanSummary`].
 pub(super) fn start_local_reconcile(
     root: PathBuf,
+    space: IndexPathSpace,
     writer: &IndexWriter,
 ) -> Result<(ScanHandle, std::thread::JoinHandle<Result<ScanSummary, ScanError>>), ScanError> {
     let progress = Arc::new(ScanProgress::new());
@@ -172,7 +178,7 @@ pub(super) fn start_local_reconcile(
             // `Ok(Err(_))` (clean logged message + `ScanFailed` ⇒ Stale) rather
             // than a raw thread panic that surfaces as the handler's opaque
             // `Err(_)` "thread panicked" arm.
-            run_catching_panics(|| run_local_reconcile(&root, &writer, &progress, &cancelled))
+            run_catching_panics(|| run_local_reconcile(&root, &space, &writer, &progress, &cancelled))
         })
         .map_err(ScanError::Io)?;
 
@@ -283,6 +289,7 @@ fn summary(entries: u64, dirs: u64, physical_bytes: u64, start: Instant, cancell
 /// fresh rows.
 fn run_local_reconcile(
     root: &Path,
+    space: &IndexPathSpace,
     writer: &IndexWriter,
     progress: &ScanProgress,
     cancelled: &AtomicBool,
@@ -297,11 +304,17 @@ fn run_local_reconcile(
     // walk, so read the bumped value back and stamp every re-listed dir with it.
     let epoch = IndexStore::read_current_epoch(&conn).map_err(|e| ScanError::WriterSend(e.to_string()))?;
 
-    // The volume root maps to its DB id (`ROOT_ID` in production, since
-    // `resolve_path("/")` is `ROOT_ID`). Resolving it (rather than hardcoding
-    // `ROOT_ID`) also lets the walker be exercised from any root in tests.
-    let root_str = firmlinks::normalize_path(&root.to_string_lossy());
-    let root_id = match store::resolve_path(&conn, &root_str).map_err(|e| ScanError::WriterSend(e.to_string()))? {
+    // The volume root maps to its DB id (`ROOT_ID`). For the boot disk
+    // `resolve_path("/")` is `ROOT_ID`; for a mount-rooted drive the mount root
+    // (`/Volumes/X`) strips to `/` and resolves to `ROOT_ID` the same way — the
+    // strip is applied at `resolve_abs`, while `root_str` stays absolute for the FS
+    // walk below. Resolving it (rather than hardcoding `ROOT_ID`) also lets the
+    // walker be exercised from any root in tests.
+    let root_str = space.absolute(&root.to_string_lossy());
+    let root_id = match space
+        .resolve_abs(&conn, &root_str)
+        .map_err(|e| ScanError::WriterSend(e.to_string()))?
+    {
         Some(id) => id,
         None => {
             return Err(ScanError::Io(std::io::Error::other(
@@ -337,7 +350,7 @@ fn run_local_reconcile(
 
     // Each directory read is capped at `LOCAL_LIST_TIMEOUT`: a hung File Provider
     // mount is abandoned and treated as unlistable instead of freezing the rescan.
-    let mut reader = GuardedReader::for_fs(LOCAL_LIST_TIMEOUT);
+    let mut reader = GuardedReader::for_fs(LOCAL_LIST_TIMEOUT, space.clone());
 
     while let Some((dir_path, dir_id)) = queue.pop_front() {
         if cancelled.load(Ordering::Relaxed) {
@@ -460,6 +473,7 @@ mod tests {
     use rusqlite::Connection;
 
     use super::*;
+    use crate::indexing::firmlinks;
     use crate::indexing::store::{self, DirStatsById, IndexStore, ROOT_ID};
     use crate::indexing::writer::{IndexWriter, WriteMessage};
 
@@ -648,7 +662,10 @@ mod tests {
     fn run_reconcile(h: &Harness, root: &Path, cancel: bool) -> Result<ScanSummary, ScanError> {
         let progress = ScanProgress::new();
         let flag = AtomicBool::new(cancel);
-        let result = run_local_reconcile(root, &h.writer, &progress, &flag);
+        // The existing tests seed the FULL absolute path chain in the DB, so the
+        // `root` space (absolute == index-relative) is what round-trips them; the
+        // mount-rooted variant is exercised by `reconcile_resolves_mount_rooted_root`.
+        let result = run_local_reconcile(root, &IndexPathSpace::root(), &h.writer, &progress, &flag);
         h.writer.flush_blocking().unwrap();
         result
     }
@@ -1084,6 +1101,70 @@ mod tests {
         assert_eq!(a_stats.recursive_file_count, 3, "a must count f1, f2, deep/f3");
         assert_eq!(a_stats.recursive_dir_count, 1, "a must count deep");
         assert_eq!(a_stats.recursive_logical_size, 60, "a must sum 10 + 20 + 30");
+    }
+
+    /// A MOUNT-ROOTED reconcile resolves its root only after the mount-relative
+    /// strip. With `root` space (the pre-strip behavior) the absolute mount path is
+    /// walked from `ROOT_ID` and misses, failing with `local reconcile: root is not
+    /// in the index`; with the drive's `mount_rooted` space the mount root strips to
+    /// `/` → `ROOT_ID` and the reconcile builds the tree in place. Pins that the
+    /// strip at the reconcile's root resolve is load-bearing.
+    #[test]
+    fn reconcile_resolves_mount_rooted_root_via_strip() {
+        let h = setup();
+        // A tempdir stands in for the drive's mount root (`/Volumes/X`). Unlike a
+        // `/`-rooted index, the absolute mount-path chain is NOT seeded — `ROOT_ID`
+        // (the sentinel from `setup`) IS the mount.
+        let mount = tree_root();
+        let rp = mount.path();
+        let mount_root = rp.to_string_lossy().to_string();
+
+        std::fs::create_dir_all(rp.join("a/deep")).unwrap();
+        std::fs::write(rp.join("a/f1.txt"), vec![b'x'; 10]).unwrap();
+        std::fs::write(rp.join("a/deep/f2.txt"), vec![b'x'; 20]).unwrap();
+        std::fs::write(rp.join("top.txt"), vec![b'x'; 5]).unwrap();
+
+        // `root` space walks the absolute mount path from `ROOT_ID` and misses → the
+        // pre-fix `root is not in the index` failure. (Typed variant match, no string
+        // match per the `no-string-matching` rule.)
+        let progress = ScanProgress::new();
+        let flag = AtomicBool::new(false);
+        let red = run_local_reconcile(rp, &IndexPathSpace::root(), &h.writer, &progress, &flag);
+        assert!(
+            matches!(red, Err(ScanError::Io(_))),
+            "root space can't resolve the mount root from ROOT_ID: {red:?}"
+        );
+
+        // `mount_rooted` space strips the mount root to `/` → `ROOT_ID` → reconciles.
+        let progress2 = ScanProgress::new();
+        let flag2 = AtomicBool::new(false);
+        let green = run_local_reconcile(
+            rp,
+            &IndexPathSpace::mount_rooted(mount_root),
+            &h.writer,
+            &progress2,
+            &flag2,
+        );
+        h.writer.flush_blocking().unwrap();
+        assert!(
+            green.is_ok(),
+            "mount-rooted space resolves the root and reconciles: {green:?}"
+        );
+
+        // The whole tree is indexed under `ROOT_ID`, by mount-relative name.
+        let root_stats = dir_stats(&h, ROOT_ID).expect("root stats after reconcile");
+        assert_eq!(
+            root_stats.recursive_file_count, 3,
+            "all 3 files indexed under the mount"
+        );
+        assert_eq!(root_stats.recursive_dir_count, 2, "a + a/deep indexed");
+        assert_eq!(root_stats.recursive_logical_size, 35, "10 + 20 + 5");
+
+        // Children hang off ROOT_ID by mount-relative name (not the absolute chain).
+        let a_id = IndexStore::resolve_component(&conn(&h), ROOT_ID, "a")
+            .unwrap()
+            .expect("a resolves under ROOT_ID");
+        assert!(a_id > ROOT_ID, "a is a real child entry of the mount root");
     }
 
     /// Cancel (data-safety): a cancelled reconcile returns `was_cancelled`

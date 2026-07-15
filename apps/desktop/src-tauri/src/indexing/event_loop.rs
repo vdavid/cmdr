@@ -9,6 +9,7 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 
 use super::DEBUG_STATS;
+use super::IndexPathSpace;
 use super::enrichment::get_read_pool;
 use super::events::{
     IndexReplayCompleteEvent, IndexReplayProgressEvent, RescanReason, emit_rescan_notification, set_phase_for,
@@ -69,6 +70,11 @@ const REPLAY_DEDUP_BATCH_SIZE: u64 = 1_000;
 /// Configuration for a replay event loop.
 pub(super) struct ReplayConfig {
     pub(super) volume_id: String,
+    /// The volume's path space. Journal replay only runs for a `has_event_journal()`
+    /// volume (the boot disk today), so this is `root` in practice; it's threaded
+    /// rather than hardcoded so the replay resolves in the same space as the live
+    /// loop that follows it, and it's ready if a journaled mount-rooted kind appears.
+    pub(super) space: IndexPathSpace,
     pub(super) since_event_id: u64,
     pub(super) estimated_total: Option<u64>,
 }
@@ -154,8 +160,11 @@ async fn open_read_conn_with_retry(db_path: &Path) -> Result<Connection, store::
 /// `writer::writer_loop` and `indexing/pending_sizes.rs`). Live-path only — the
 /// shared `process_fs_event` is deliberately not instrumented, so replay doesn't
 /// flag everything during startup (the global indexing flag covers scans).
-fn mark_pending_and_drain(pending_paths: &mut HashSet<String>) -> Vec<String> {
-    if let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes() {
+///
+/// Marks on the VOLUME's tracker (`get_pending_sizes_for`), so an external drive's
+/// hourglass shows on its own rows, not root's.
+fn mark_pending_and_drain(volume_id: &str, pending_paths: &mut HashSet<String>) -> Vec<String> {
+    if let Some(tracker) = crate::indexing::pending_sizes::get_pending_sizes_for(volume_id) {
         for path in pending_paths.iter() {
             tracker.mark(path);
         }
@@ -177,6 +186,7 @@ pub(super) async fn run_live_event_loop(
     writer: IndexWriter,
     app: AppHandle,
     volume_id: String,
+    space: IndexPathSpace,
     watcher_overflow: Option<Arc<AtomicBool>>,
 ) {
     log::info!("Live event processing: started");
@@ -224,14 +234,18 @@ pub(super) async fn run_live_event_loop(
             event = event_rx.recv() => {
                 match event {
                     Some(event) => {
-                        let normalized = firmlinks::normalize_path(&event.path);
+                        // Keep the dedup key + stored path ABSOLUTE (the FS reads and
+                        // FE emit use it); the mount-relative strip happens only at
+                        // the reconciler's `resolve_abs`. `absolute` firmlink-
+                        // normalizes for the boot disk, passes through for a drive.
+                        let canonical = space.absolute(&event.path);
                         let deduped_event = watcher::FsChangeEvent {
-                            path: normalized.clone(),
+                            path: canonical.clone(),
                             event_id: event.event_id,
                             flags: event.flags,
                         };
                         pending_events
-                            .entry(normalized)
+                            .entry(canonical)
                             .and_modify(|existing| {
                                 *existing = merge_fs_events(existing, &deduped_event);
                             })
@@ -249,12 +263,12 @@ pub(super) async fn run_live_event_loop(
                     None => {
                         // Channel closed: process remaining events before exit
                         process_live_batch(
-                            &mut pending_events, &mut reconciler, &conn,
+                            &mut pending_events, &mut reconciler, &space, &conn,
                             &writer, &mut pending_paths,
                         );
                         if !pending_paths.is_empty() {
                             let _ = writer.send(WriteMessage::EmitDirUpdated(
-                                mark_pending_and_drain(&mut pending_paths),
+                                mark_pending_and_drain(&volume_id, &mut pending_paths),
                             ));
                         }
                         break;
@@ -287,7 +301,7 @@ pub(super) async fn run_live_event_loop(
                 let batch_size = pending_events.len() as u64;
                 let batch_start = Instant::now();
                 process_live_batch(
-                    &mut pending_events, &mut reconciler, &conn,
+                    &mut pending_events, &mut reconciler, &space, &conn,
                     &writer, &mut pending_paths,
                 );
                 let batch_ms = batch_start.elapsed().as_millis();
@@ -306,7 +320,7 @@ pub(super) async fn run_live_event_loop(
                     // Without this, multi-message operations (e.g. rename =
                     // delete + insert) show intermediate dir_stats to the UI.
                     let _ = writer.send(WriteMessage::EmitDirUpdated(
-                        mark_pending_and_drain(&mut pending_paths),
+                        mark_pending_and_drain(&volume_id, &mut pending_paths),
                     ));
                 }
             }
@@ -361,6 +375,7 @@ pub(super) async fn run_live_event_loop(
 pub(super) fn process_live_batch(
     pending_events: &mut HashMap<String, watcher::FsChangeEvent>,
     reconciler: &mut EventReconciler,
+    space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
     pending_paths: &mut HashSet<String>,
@@ -402,7 +417,8 @@ pub(super) fn process_live_batch(
     // Pass 1.5: rename detection by inode. Removes matched events from
     // `other_events` and replaces the create/delete dance with a single
     // `MoveEntryV2`, preserving the entry's `dir_stats`.
-    let rename_handled = detect_renames_by_inode(&mut other_events, conn, writer, pending_paths, &mut max_event_id);
+    let rename_handled =
+        detect_renames_by_inode(&mut other_events, space, conn, writer, pending_paths, &mut max_event_id);
     if rename_handled > 0 {
         // Flush so Phase 2's `resolve_path` calls see the moved rows. Without
         // this, the OLD-path event of a matched rename could see the row at
@@ -435,6 +451,7 @@ pub(super) fn process_live_batch(
 /// has moved, or true removals/unrelated noise that Phase 2 needs to see).
 pub(super) fn detect_renames_by_inode(
     events: &mut Vec<(String, watcher::FsChangeEvent)>,
+    space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
     pending_paths: &mut HashSet<String>,
@@ -481,7 +498,10 @@ pub(super) fn detect_renames_by_inode(
             None => return true,
         };
 
-        let new_parent_id = match store::resolve_path(conn, &new_parent_path) {
+        // `new_parent_path` is FS-event-derived (absolute); strip the mount root for
+        // a mount-rooted drive at the resolve. `pending_paths.insert` below keeps it
+        // absolute (it drives the FE emit).
+        let new_parent_id = match space.resolve_abs(conn, &new_parent_path) {
             Ok(Some(id)) => id,
             // New parent isn't in the DB yet; let Phase 2 handle it via the
             // existing create/modify path. Without a parent ID we can't move.
@@ -582,6 +602,7 @@ pub(super) async fn run_replay_event_loop(
 ) -> Result<(), String> {
     let ReplayConfig {
         volume_id,
+        space,
         since_event_id,
         estimated_total,
     } = config;
@@ -668,6 +689,7 @@ pub(super) async fn run_replay_event_loop(
             // Flush remaining deduplicated events before leaving Phase 1
             deduped_total += flush_replay_batch(
                 &mut replay_pending,
+                &space,
                 &conn,
                 &writer,
                 &mut affected_paths,
@@ -675,7 +697,7 @@ pub(super) async fn run_replay_event_loop(
             ) as u64;
 
             // Process the HistoryDone event itself (it may carry other flags)
-            if let Some(paths) = reconciler::process_fs_event(&event, &conn, &writer, None)
+            if let Some(paths) = reconciler::process_fs_event(&event, &space, &conn, &writer, None)
                 && !affected_paths_overflow
             {
                 affected_paths.extend(paths);
@@ -697,8 +719,8 @@ pub(super) async fn run_replay_event_loop(
                     pending_rescans_overflow = true;
                     pending_rescans.clear();
                 } else {
-                    let normalized = firmlinks::normalize_path(&event.path);
-                    pending_rescans.push(normalized);
+                    // Keep absolute; the reconcile strips at its resolve.
+                    pending_rescans.push(space.absolute(&event.path));
                 }
             }
             last_event_id = event.event_id;
@@ -707,15 +729,15 @@ pub(super) async fn run_replay_event_loop(
         }
 
         // Accumulate into dedup buffer instead of processing immediately.
-        // Same pattern as the live event loop: normalize path, merge flags.
-        let normalized = firmlinks::normalize_path(&event.path);
+        // Same pattern as the live event loop: canonicalize path, merge flags.
+        let canonical = space.absolute(&event.path);
         let deduped_event = watcher::FsChangeEvent {
-            path: normalized.clone(),
+            path: canonical.clone(),
             event_id: event.event_id,
             flags: event.flags.clone(),
         };
         replay_pending
-            .entry(normalized)
+            .entry(canonical)
             .and_modify(|existing| {
                 *existing = merge_fs_events(existing, &deduped_event);
             })
@@ -749,6 +771,7 @@ pub(super) async fn run_replay_event_loop(
         if event_count.is_multiple_of(REPLAY_DEDUP_BATCH_SIZE) {
             deduped_total += flush_replay_batch(
                 &mut replay_pending,
+                &space,
                 &conn,
                 &writer,
                 &mut affected_paths,
@@ -915,14 +938,14 @@ pub(super) async fn run_replay_event_loop(
             event = event_rx.recv() => {
                 match event {
                     Some(event) => {
-                        let normalized = firmlinks::normalize_path(&event.path);
+                        let canonical = space.absolute(&event.path);
                         let deduped_event = watcher::FsChangeEvent {
-                            path: normalized.clone(),
+                            path: canonical.clone(),
                             event_id: event.event_id,
                             flags: event.flags,
                         };
                         live_pending_events
-                            .entry(normalized)
+                            .entry(canonical)
                             .and_modify(|existing| {
                                 *existing = merge_fs_events(existing, &deduped_event);
                             })
@@ -938,11 +961,11 @@ pub(super) async fn run_replay_event_loop(
                     }
                     None => {
                         process_live_batch(
-                            &mut live_pending_events, &mut reconciler, &conn,
+                            &mut live_pending_events, &mut reconciler, &space, &conn,
                             &writer, &mut live_pending_paths,
                         );
                         if !live_pending_paths.is_empty() {
-                            let changed = mark_pending_and_drain(&mut live_pending_paths);
+                            let changed = mark_pending_and_drain(&volume_id, &mut live_pending_paths);
                             super::lifecycle_bus::publish_dirs_changed(&volume_id, &changed);
                             reconciler::emit_dir_updated(&app, changed);
                         }
@@ -974,11 +997,11 @@ pub(super) async fn run_replay_event_loop(
                     }
 
                 process_live_batch(
-                    &mut live_pending_events, &mut reconciler, &conn,
+                    &mut live_pending_events, &mut reconciler, &space, &conn,
                     &writer, &mut live_pending_paths,
                 );
                 if !live_pending_paths.is_empty() {
-                    let changed = mark_pending_and_drain(&mut live_pending_paths);
+                    let changed = mark_pending_and_drain(&volume_id, &mut live_pending_paths);
                     super::lifecycle_bus::publish_dirs_changed(&volume_id, &changed);
                     reconciler::emit_dir_updated(&app, changed);
                 }
@@ -1211,6 +1234,7 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
 /// deduplicated events processed.
 fn flush_replay_batch(
     pending: &mut HashMap<String, watcher::FsChangeEvent>,
+    space: &IndexPathSpace,
     conn: &Connection,
     writer: &IndexWriter,
     affected_paths: &mut HashSet<String>,
@@ -1218,7 +1242,7 @@ fn flush_replay_batch(
 ) -> usize {
     let count = pending.len();
     for (_path, event) in pending.drain() {
-        if let Some(paths) = reconciler::process_fs_event(&event, conn, writer, None)
+        if let Some(paths) = reconciler::process_fs_event(&event, space, conn, writer, None)
             && !*affected_paths_overflow
         {
             affected_paths.extend(paths);

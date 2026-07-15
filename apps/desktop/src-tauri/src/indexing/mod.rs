@@ -80,7 +80,7 @@ pub use queries::{
     get_debug_status, get_dir_stats, get_dir_stats_batch, get_status, get_volume_index_status,
     get_volume_index_status_for_path, list_dir_children,
 };
-pub(crate) use routing::index_read_path;
+pub(crate) use routing::{IndexPathSpace, index_read_path};
 pub(crate) use state::ROOT_VOLUME_ID;
 pub(crate) use state::get_freshness;
 pub(crate) use state::{IndexVolumeKind, all_registered_volume_ids, ready_volumes_with_kind, volume_kind};

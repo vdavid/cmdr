@@ -18,7 +18,14 @@
 //! registry core in `state.rs`, because they're pure path arithmetic the read
 //! query surface (`queries.rs`) and enrichment (`enrichment.rs`) both depend on.
 
-use super::state::{ROOT_VOLUME_ID, VolumeId};
+use std::path::Path;
+
+use rusqlite::Connection;
+
+use super::firmlinks;
+use super::scanner::ExclusionScope;
+use super::state::{IndexVolumeKind, ROOT_VOLUME_ID, VolumeId};
+use super::store::{self, IndexStoreError};
 
 /// Resolve a filesystem path to its index volume id.
 ///
@@ -144,6 +151,110 @@ pub(crate) fn index_read_path(volume_id: &str, abs_path: &str) -> Option<String>
     index_read_path_pure(volume_id, abs_path, mount_root.as_deref())
 }
 
+/// How a volume's LOCAL scan/reconcile/live pipeline maps between the path spaces
+/// its code touches, so the same code drives both the `/`-rooted boot disk and a
+/// mount-rooted external drive without forking.
+///
+/// The pipeline handles the SAME path string in three spaces:
+/// - **absolute FS path** — `read_dir`, `symlink_metadata`, `Path::exists`, and the
+///   `index-dir-updated` emit (which must match pane paths);
+/// - **index-relative path** — the argument `store::resolve_path` walks from
+///   `ROOT_ID`.
+///
+/// For the boot disk the two coincide after firmlink normalization, so this is a
+/// pass-through. For a `mount_rooted()` volume the index `ROOT_ID` is the mount
+/// (`/Volumes/X`), so the mount root is stripped to reach the index-relative path —
+/// via the SAME [`smb_watch::index_relative_path`](super::smb_watch::index_relative_path)
+/// transform the SMB read/write sides funnel through, never a second copy.
+///
+/// **Discipline (the trap):** keep every path SET (`affected_paths`,
+/// `pending_paths`, `new_dir_paths`) in the absolute space via [`absolute`]; apply
+/// the mount-relative strip ONLY at the `store::resolve_path` argument via
+/// [`resolve_abs`]. Stripping at set insertion breaks the FS reads and the FE emit;
+/// omitting it breaks resolution.
+///
+/// [`absolute`]: IndexPathSpace::absolute
+/// [`resolve_abs`]: IndexPathSpace::resolve_abs
+#[derive(Clone, Debug)]
+pub(crate) struct IndexPathSpace {
+    /// `None` for the `/`-rooted boot disk; `Some(mount_root)` for a mount-rooted
+    /// volume (the prefix stripped to reach the index-relative path).
+    mount_root: Option<String>,
+}
+
+impl IndexPathSpace {
+    /// The `/`-rooted boot-disk space: absolute == index-relative (after firmlink
+    /// normalization).
+    pub(crate) fn root() -> Self {
+        Self { mount_root: None }
+    }
+
+    /// A mount-rooted space whose index `ROOT_ID` is `mount_root` (`/Volumes/X`).
+    pub(crate) fn mount_rooted(mount_root: impl Into<String>) -> Self {
+        Self {
+            mount_root: Some(mount_root.into()),
+        }
+    }
+
+    /// Derive the space from a volume's kind + root path: a `mount_rooted()` kind
+    /// strips its mount, the boot disk passes through.
+    pub(crate) fn for_volume(kind: IndexVolumeKind, volume_root: &Path) -> Self {
+        if kind.mount_rooted() {
+            Self::mount_rooted(volume_root.to_string_lossy().into_owned())
+        } else {
+            Self::root()
+        }
+    }
+
+    /// The volume's root path as a string: `/Volumes/X` for a mount-rooted drive, `/`
+    /// for the boot disk. Used for the stored `volume_path` meta.
+    pub(crate) fn volume_root_string(&self) -> String {
+        self.mount_root.clone().unwrap_or_else(|| "/".to_string())
+    }
+
+    /// The exclusion scope this volume's scan/live gate uses. A mount-rooted scan
+    /// skips only per-volume junk basenames — under `BootDisk` its own `/Volumes/X`
+    /// subtree would be excluded and the scan would falsely complete empty. The boot
+    /// disk keeps the absolute-prefix tier.
+    pub(crate) fn exclusion_scope(&self) -> ExclusionScope {
+        if self.mount_root.is_some() {
+            ExclusionScope::MountRooted
+        } else {
+            ExclusionScope::BootDisk
+        }
+    }
+
+    /// Canonicalize a raw FSEvents/`read_dir` path into the absolute path this
+    /// volume uses everywhere EXCEPT the `resolve_path` argument (FS reads,
+    /// exclusion checks, the FE emit). The boot disk firmlink-normalizes (`/private`
+    /// symlinks, Data firmlinks); a mount-rooted external drive keeps the raw path —
+    /// firmlink semantics are boot-disk-only and don't apply under `/Volumes`.
+    pub(crate) fn absolute(&self, raw_path: &str) -> String {
+        if self.mount_root.is_some() {
+            raw_path.to_string()
+        } else {
+            firmlinks::normalize_path(raw_path)
+        }
+    }
+
+    /// Resolve a canonical absolute path (from [`absolute`](Self::absolute)) to its
+    /// index entry id, applying the mount-relative strip for a mount-rooted volume.
+    ///
+    /// `Ok(None)` means "not in this index" — the entry is genuinely absent OR the
+    /// path lies outside the mount root — which every caller already treats as
+    /// skip/no-op (mirrors the SMB read side dropping an off-volume path rather than
+    /// mis-rooting it at `ROOT_ID`). Drop-in for a direct `store::resolve_path` call.
+    pub(crate) fn resolve_abs(&self, conn: &Connection, absolute: &str) -> Result<Option<i64>, IndexStoreError> {
+        match &self.mount_root {
+            None => store::resolve_path(conn, absolute),
+            Some(root) => match super::smb_watch::index_relative_path(root, absolute) {
+                Some(rel) => store::resolve_path(conn, &rel),
+                None => Ok(None),
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,6 +346,38 @@ mod tests {
             index_read_path_pure(colon_vid, "mtp://mtp-AA:BB/65537/Music", None),
             Some("/Music".to_string()),
             "a serial device id containing a colon maps correctly",
+        );
+    }
+
+    /// The `IndexPathSpace` seam: `root` is a pass-through (absolute == index-relative
+    /// after firmlink normalization, `BootDisk` scope), while a mount-rooted space
+    /// keeps the raw absolute path for FS/emit but resolves in the mount-relative
+    /// space (`MountRooted` scope). The mount strip itself is `smb_watch`'s and is
+    /// unit-tested there; here we pin the root-vs-mount decision the pipeline branches on.
+    #[test]
+    fn index_path_space_root_vs_mount() {
+        use std::path::Path;
+
+        let root = IndexPathSpace::root();
+        assert_eq!(root.exclusion_scope(), ExclusionScope::BootDisk);
+        assert_eq!(root.volume_root_string(), "/");
+        // Root's `absolute` firmlink-normalizes; a plain path is already canonical.
+        assert_eq!(root.absolute("/Users/me/x"), "/Users/me/x");
+
+        let mount = IndexPathSpace::mount_rooted("/Volumes/NONAME");
+        assert_eq!(mount.exclusion_scope(), ExclusionScope::MountRooted);
+        assert_eq!(mount.volume_root_string(), "/Volumes/NONAME");
+        // A mount-rooted space keeps the raw absolute path (no firmlink normalization).
+        assert_eq!(mount.absolute("/Volumes/NONAME/sub"), "/Volumes/NONAME/sub");
+
+        // `for_volume` derives the space from the kind + root.
+        assert_eq!(
+            IndexPathSpace::for_volume(IndexVolumeKind::Local, Path::new("/")).exclusion_scope(),
+            ExclusionScope::BootDisk,
+        );
+        assert_eq!(
+            IndexPathSpace::for_volume(IndexVolumeKind::LocalExternal, Path::new("/Volumes/NONAME")).exclusion_scope(),
+            ExclusionScope::MountRooted,
         );
     }
 

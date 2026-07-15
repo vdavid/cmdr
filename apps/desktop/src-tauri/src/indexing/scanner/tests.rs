@@ -232,6 +232,7 @@ fn scan_temp_directory_tree() {
         root: scan_root.path().to_path_buf(),
         batch_size: 100,
         num_threads: 1,
+        ..ScanConfig::default()
     };
 
     let (handle, join_handle) = scan_volume(config, &writer).unwrap();
@@ -288,6 +289,7 @@ fn clean_scan_stamps_every_listed_dir_with_current_epoch() {
         root: scan_root.path().to_path_buf(),
         batch_size: 100,
         num_threads: 1,
+        ..ScanConfig::default()
     };
 
     let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
@@ -366,6 +368,7 @@ fn scan_cancellation() {
         root: scan_root.path().to_path_buf(),
         batch_size: 1, // Tiny batch so we check cancellation frequently
         num_threads: 1,
+        ..ScanConfig::default()
     };
 
     let (handle, join_handle) = scan_volume(config, &writer).unwrap();
@@ -387,6 +390,7 @@ fn scan_empty_directory() {
         root: scan_root.path().to_path_buf(),
         batch_size: 100,
         num_threads: 1,
+        ..ScanConfig::default()
     };
 
     let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
@@ -413,6 +417,7 @@ fn physical_size_is_captured() {
         root: scan_root.path().to_path_buf(),
         batch_size: 100,
         num_threads: 1,
+        ..ScanConfig::default()
     };
 
     let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
@@ -451,6 +456,7 @@ fn scan_handles_symlinks() {
         root: scan_root.path().to_path_buf(),
         batch_size: 100,
         num_threads: 1,
+        ..ScanConfig::default()
     };
 
     let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
@@ -493,6 +499,7 @@ fn scan_sets_recursive_has_symlinks_for_symlink_only_dir() {
         root: scan_root.path().to_path_buf(),
         batch_size: 100,
         num_threads: 1,
+        ..ScanConfig::default()
     };
     let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
     let _summary = join_handle.join().expect("scan thread panicked").unwrap();
@@ -551,6 +558,7 @@ fn scan_assigns_integer_ids() {
         root: scan_root.path().to_path_buf(),
         batch_size: 100,
         num_threads: 1,
+        ..ScanConfig::default()
     };
 
     let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
@@ -695,6 +703,7 @@ fn bytes_scanned_matches_stored_physical_sum_with_hardlinks() {
         root: scan_root.path().to_path_buf(),
         batch_size: 100,
         num_threads: 1,
+        ..ScanConfig::default()
     };
 
     let (handle, join_handle) = scan_volume(config, &writer).unwrap();
@@ -731,6 +740,7 @@ fn scan_summary_total_physical_bytes_equals_final_counter() {
         root: scan_root.path().to_path_buf(),
         batch_size: 100,
         num_threads: 1,
+        ..ScanConfig::default()
     };
 
     let (handle, join_handle) = scan_volume(config, &writer).unwrap();
@@ -792,6 +802,7 @@ fn timed_out_dir_is_not_marked_listed() {
         100,
         4,
         true,
+        ExclusionScope::BootDisk,
         reader,
         Duration::from_millis(50), // short timeout so the hang is abandoned fast
     )

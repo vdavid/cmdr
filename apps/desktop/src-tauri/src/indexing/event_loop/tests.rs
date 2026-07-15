@@ -742,7 +742,14 @@ fn detect_renames_by_inode_same_parent_uses_move_and_preserves_stats() {
     let mut max_event_id = 0u64;
 
     let conn = IndexStore::open_write_connection(&db_path).unwrap();
-    let handled = detect_renames_by_inode(&mut events, &conn, &writer, &mut pending_paths, &mut max_event_id);
+    let handled = detect_renames_by_inode(
+        &mut events,
+        &IndexPathSpace::root(),
+        &conn,
+        &writer,
+        &mut pending_paths,
+        &mut max_event_id,
+    );
     writer.flush_blocking().unwrap();
 
     assert_eq!(handled, 1, "should detect the rename and emit one MoveEntryV2");
@@ -836,7 +843,14 @@ fn detect_renames_by_inode_cross_parent_propagates_deltas() {
     let mut max_event_id = 0u64;
 
     let read_conn = IndexStore::open_write_connection(&db_path).unwrap();
-    let handled = detect_renames_by_inode(&mut events, &read_conn, &writer, &mut pending_paths, &mut max_event_id);
+    let handled = detect_renames_by_inode(
+        &mut events,
+        &IndexPathSpace::root(),
+        &read_conn,
+        &writer,
+        &mut pending_paths,
+        &mut max_event_id,
+    );
     writer.flush_blocking().unwrap();
 
     assert_eq!(handled, 1);
@@ -885,7 +899,14 @@ fn detect_renames_by_inode_no_match_keeps_event() {
     let mut max_event_id = 0u64;
 
     let conn = IndexStore::open_write_connection(&db_path).unwrap();
-    let handled = detect_renames_by_inode(&mut events, &conn, &writer, &mut pending_paths, &mut max_event_id);
+    let handled = detect_renames_by_inode(
+        &mut events,
+        &IndexPathSpace::root(),
+        &conn,
+        &writer,
+        &mut pending_paths,
+        &mut max_event_id,
+    );
 
     assert_eq!(handled, 0, "no inode match → no rename detected");
     assert_eq!(events.len(), 1, "event remains for Phase 2");
@@ -926,7 +947,14 @@ fn detect_renames_by_inode_ignores_non_renamed_events() {
     let mut max_event_id = 0u64;
 
     let conn = IndexStore::open_write_connection(&db_path).unwrap();
-    let handled = detect_renames_by_inode(&mut events, &conn, &writer, &mut pending_paths, &mut max_event_id);
+    let handled = detect_renames_by_inode(
+        &mut events,
+        &IndexPathSpace::root(),
+        &conn,
+        &writer,
+        &mut pending_paths,
+        &mut max_event_id,
+    );
 
     assert_eq!(handled, 0);
     assert_eq!(events.len(), 1, "non-renamed event is passed through");
@@ -951,7 +979,14 @@ fn detect_renames_by_inode_keeps_old_path_event_when_path_is_gone() {
     let mut max_event_id = 0u64;
 
     let conn = IndexStore::open_write_connection(&db_path).unwrap();
-    let handled = detect_renames_by_inode(&mut events, &conn, &writer, &mut pending_paths, &mut max_event_id);
+    let handled = detect_renames_by_inode(
+        &mut events,
+        &IndexPathSpace::root(),
+        &conn,
+        &writer,
+        &mut pending_paths,
+        &mut max_event_id,
+    );
 
     assert_eq!(handled, 0);
     assert_eq!(events.len(), 1, "gone-path event must remain for Phase 2 to handle");
@@ -1021,7 +1056,14 @@ fn process_live_batch_rename_preserves_dir_stats_and_old_path_no_ops() {
     rt.block_on(async {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let mut pending_paths = HashSet::new();
-        process_live_batch(&mut pending_events, &mut reconciler, &conn, &writer, &mut pending_paths);
+        process_live_batch(
+            &mut pending_events,
+            &mut reconciler,
+            &IndexPathSpace::root(),
+            &conn,
+            &writer,
+            &mut pending_paths,
+        );
     });
     writer.flush_blocking().unwrap();
 

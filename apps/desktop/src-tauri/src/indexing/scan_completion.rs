@@ -14,6 +14,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::AppHandle;
 use tauri_specta::Event;
 
+use super::IndexPathSpace;
 use super::event_loop::run_live_event_loop;
 use super::events::{
     ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanCompleteEvent,
@@ -48,6 +49,10 @@ pub(super) struct ScanCompletion {
     pub watcher_overflow_flag: Option<Arc<AtomicBool>>,
     /// Volume id (for events, phases, and freshness).
     pub volume_id: String,
+    /// The volume's path space (pass-through for the boot disk, mount-relative strip
+    /// for a mount-rooted external drive). Threaded to the reconciler's post-scan
+    /// buffered replay and the live event loop so both resolve in the right space.
+    pub space: IndexPathSpace,
     /// Tauri app handle for emitting events.
     pub app: AppHandle,
     /// Writer handle for meta writes, flushing, and backfill.
@@ -72,6 +77,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
         event_rx,
         watcher_overflow_flag,
         volume_id,
+        space,
         app,
         writer,
         freshness,
@@ -112,8 +118,9 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             ]);
             set_phase_for(&app, &volume_id, ActivityPhase::Aggregating, "post-scan");
 
-            // Step 4: Reconcile buffered watcher events
-            let mut reconciler = EventReconciler::new();
+            // Step 4: Reconcile buffered watcher events, in this volume's path space
+            // (a mount-rooted drive strips its mount root before `resolve_path`).
+            let mut reconciler = EventReconciler::new_for(space.clone());
 
             // Drain all buffered events from the channel into the reconciler
             let mut event_rx = event_rx;
@@ -234,7 +241,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
                 });
                 let _ = writer.send(WriteMessage::UpdateMeta {
                     key: "volume_path".to_string(),
-                    value: "/".to_string(),
+                    value: space.volume_root_string(),
                 });
             }
 
@@ -299,6 +306,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
             let app_live = app.clone();
             let volume_id_live = volume_id.clone();
             let overflow_live = watcher_overflow_flag.clone();
+            let space_live = space.clone();
             let handle = tauri::async_runtime::spawn(async move {
                 run_live_event_loop(
                     event_rx,
@@ -306,6 +314,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
                     writer_live,
                     app_live,
                     volume_id_live,
+                    space_live,
                     overflow_live,
                 )
                 .await;

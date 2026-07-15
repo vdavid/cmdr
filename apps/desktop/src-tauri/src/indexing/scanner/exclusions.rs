@@ -23,7 +23,7 @@ use std::sync::OnceLock;
 /// scan applies only the per-volume junk tier (`.Spotlight-V100`, `.fseventsd`,
 /// ...), which is junk on any volume.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::indexing) enum ExclusionScope {
+pub(crate) enum ExclusionScope {
     /// The boot-disk scan rooted at `/`: apply the absolute-prefix set AND the
     /// junk basenames.
     BootDisk,

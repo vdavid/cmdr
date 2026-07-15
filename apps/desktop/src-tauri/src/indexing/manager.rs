@@ -371,6 +371,8 @@ impl IndexManager {
         let writer = self.writer.clone();
         let app = self.app.clone();
         let volume_id = self.volume_id.clone();
+        let kind = self.kind;
+        let volume_root = self.volume_root.clone();
         let live_event_task_slot = Arc::clone(&self.live_event_task);
         let scanning = Arc::clone(&self.scanning);
 
@@ -393,6 +395,10 @@ impl IndexManager {
                 app.clone(),
                 ReplayConfig {
                     volume_id: volume_id.clone(),
+                    // Journal replay only runs for a journaled volume (the boot disk),
+                    // so this is `root` today; it's derived rather than hardcoded so
+                    // replay resolves in the same space as the live loop that follows.
+                    space: super::IndexPathSpace::for_volume(kind, &volume_root),
                     since_event_id,
                     estimated_total,
                 },
@@ -607,6 +613,11 @@ impl IndexManager {
             log::warn!("Failed to flush before scan: {e}");
         }
 
+        // The volume's path space: pass-through for the boot disk, mount-relative
+        // strip for a mount-rooted external drive. Threaded to the scanner (exclusion
+        // scope), the reconcile walk, and the completion handler's replay + live loop.
+        let space = super::IndexPathSpace::for_volume(self.kind, &self.volume_root);
+
         // Step 1: Start the FSEvents watcher BEFORE the scan so we don't miss events
         let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
         let scan_start_event_id = watcher::current_event_id();
@@ -669,7 +680,7 @@ impl IndexManager {
         // fresh scan runs the fast parallel jwalk `scan_volume`.
         let (scan_handle, join_handle) = if reconcile {
             log::info!("local scan: reconcile rescan for '{}' ({scan_trigger})", self.volume_id);
-            local_reconcile::start_local_reconcile(self.volume_root.clone(), &self.writer)
+            local_reconcile::start_local_reconcile(self.volume_root.clone(), space.clone(), &self.writer)
                 .map_err(|e| format!("Failed to start reconcile rescan: {e}"))?
         } else {
             log::info!(
@@ -678,6 +689,9 @@ impl IndexManager {
             );
             let config = ScanConfig {
                 root: self.volume_root.clone(),
+                // A mount-rooted drive uses `MountRooted` so its `/Volumes/X` subtree
+                // isn't excluded (which would falsely complete the scan empty).
+                scope: space.exclusion_scope(),
                 ..ScanConfig::default()
             };
             scanner::scan_volume(config, &self.writer).map_err(|e| format!("Failed to start scan: {e}"))?
@@ -729,6 +743,7 @@ impl IndexManager {
                 event_rx,
                 watcher_overflow_flag,
                 volume_id,
+                space,
                 app,
                 writer,
                 freshness,

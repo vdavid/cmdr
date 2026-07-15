@@ -70,6 +70,13 @@ pub struct ScanConfig {
     pub batch_size: usize,
     /// Number of walker worker threads (0 = auto-detect).
     pub num_threads: usize,
+    /// Exclusion scope for the per-child gate. `BootDisk` for the `/`-rooted boot
+    /// scan (keeps it off `/Volumes/`, system trees); `MountRooted` for an external
+    /// drive scan rooted at `/Volumes/X` (skips only junk basenames, else it would
+    /// exclude its own subtree and falsely complete empty). `pub(crate)` because
+    /// `ExclusionScope` is a crate-internal type and `ScanConfig` is only built
+    /// in-crate.
+    pub(crate) scope: ExclusionScope,
 }
 
 impl Default for ScanConfig {
@@ -78,6 +85,7 @@ impl Default for ScanConfig {
             root: PathBuf::from("/"),
             batch_size: 2000,
             num_threads: 0,
+            scope: ExclusionScope::BootDisk,
         }
     }
 }
@@ -229,6 +237,7 @@ pub fn scan_volume(
                 config.batch_size,
                 config.num_threads,
                 true, // volume scan: root always maps to ROOT_ID
+                config.scope,
                 reader,
                 LOCAL_LIST_TIMEOUT,
             );
@@ -272,6 +281,9 @@ pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -
         2000,
         0,
         false,
+        // Subtree scans don't apply global exclusions (the subtree was chosen
+        // explicitly), so the scope is inert here; pass `BootDisk`.
+        ExclusionScope::BootDisk,
         reader,
         LOCAL_LIST_TIMEOUT,
     )?;
@@ -310,6 +322,7 @@ fn run_scan(
     batch_size: usize,
     num_threads: usize,
     is_volume_root: bool,
+    scope: ExclusionScope,
     reader: ReadDirFn,
     read_timeout: Duration,
 ) -> Result<(ScanSummary, Vec<i64>, u64), ScanError> {
@@ -350,6 +363,7 @@ fn run_scan(
     let visitor = Arc::new(InsertVisitor::new(
         writer.clone(),
         is_volume_root,
+        scope,
         batch_size,
         progress,
         Arc::clone(&walk_cancel),
@@ -449,6 +463,8 @@ struct InsertVisitor {
     /// Shared id counter from `IndexWriter` (the single allocation source).
     next_id: Arc<AtomicI64>,
     is_volume_root: bool,
+    /// Exclusion scope for the per-child gate (see `ScanConfig::scope`).
+    scope: ExclusionScope,
     batch_size: usize,
     /// Live progress counters (shared with the manager-facing `ScanHandle`); the
     /// scan summary reads their final values.
@@ -471,6 +487,7 @@ impl InsertVisitor {
     fn new(
         writer: IndexWriter,
         is_volume_root: bool,
+        scope: ExclusionScope,
         batch_size: usize,
         progress: &ScanProgress,
         walk_cancel: Arc<AtomicBool>,
@@ -480,6 +497,7 @@ impl InsertVisitor {
             writer,
             next_id,
             is_volume_root,
+            scope,
             batch_size,
             entries_scanned: Arc::clone(&progress.entries_scanned),
             dirs_found: Arc::clone(&progress.dirs_found),
@@ -545,11 +563,11 @@ impl DirVisitor for InsertVisitor {
             let path_str = child.path.to_string_lossy();
 
             // Volume-root scans apply the exclusion policy; subtree scans were
-            // explicitly chosen, so global exclusions don't apply. The local
-            // scanner runs only on the boot disk today, so the scope is
-            // `BootDisk`; the mount-relative local scan wires the kind-derived
-            // scope here (a mount-rooted drive uses `MountRooted`).
-            if self.is_volume_root && should_exclude(&path_str, ExclusionScope::BootDisk) {
+            // explicitly chosen, so global exclusions don't apply. The scope comes
+            // from the volume kind: `BootDisk` for the `/`-rooted boot scan,
+            // `MountRooted` for an external drive rooted at `/Volumes/X` (which must
+            // index its own subtree, skipping only junk basenames).
+            if self.is_volume_root && should_exclude(&path_str, self.scope) {
                 continue;
             }
             // Skip canonicalization aliases (/tmp, /var, /etc, Data-volume

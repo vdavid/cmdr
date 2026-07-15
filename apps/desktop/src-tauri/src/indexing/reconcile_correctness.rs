@@ -132,7 +132,14 @@ mod tests {
     /// Run a full (uninterrupted) reconcile and flush.
     fn reconcile_full(h: &Harness, root: &Path) {
         let cancelled = AtomicBool::new(false);
-        reconcile_subtree(root, &h.conn, &h.writer, &cancelled).expect("reconcile");
+        reconcile_subtree(
+            root,
+            &crate::indexing::IndexPathSpace::root(),
+            &h.conn,
+            &h.writer,
+            &cancelled,
+        )
+        .expect("reconcile");
         h.writer.flush_blocking().unwrap();
     }
 
@@ -311,7 +318,13 @@ mod tests {
             //     (children pushed, but none of them visited). This is the worst case: the deleted
             //     subtree's rows are NOT swept by this pass.
             let pretripped = AtomicBool::new(true);
-            let _ = reconcile_subtree(root_path, &h.conn, &h.writer, &pretripped);
+            let _ = reconcile_subtree(
+                root_path,
+                &crate::indexing::IndexPathSpace::root(),
+                &h.conn,
+                &h.writer,
+                &pretripped,
+            );
             h.writer.flush_blocking().unwrap();
             // The root itself got listed+marked; its children diffs did not run. Deleted subtree rows
             // may still be present here — that's the hazard the next complete pass must heal.
@@ -415,7 +428,13 @@ mod tests {
         bump_epoch(&h);
 
         let pretripped = AtomicBool::new(true);
-        let _ = reconcile_subtree(root_path, &h.conn, &h.writer, &pretripped);
+        let _ = reconcile_subtree(
+            root_path,
+            &crate::indexing::IndexPathSpace::root(),
+            &h.conn,
+            &h.writer,
+            &pretripped,
+        );
         h.writer.flush_blocking().unwrap();
 
         // Document (and pin) the interrupted state — THIS IS THE HAZARD: the interrupted pass listed

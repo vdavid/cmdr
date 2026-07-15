@@ -550,12 +550,9 @@ impl IndexVolumeKind {
     /// external drives, SMB shares, and MTP devices all index relative to their
     /// mount.
     ///
-    /// The mount-relative local scan/live pipeline that consumes this lands with
-    /// the external-drive scan work; today only the capability tests call it.
-    #[allow(
-        dead_code,
-        reason = "the mount-relative local pipeline that consumes it lands with the external-drive scan work; until then only the capability tests call it"
-    )]
+    /// Consumed by [`IndexPathSpace`](crate::indexing::IndexPathSpace) to decide
+    /// whether the local scan/reconcile/live pipeline strips a mount root before
+    /// `store::resolve_path`, and to pick the [`ExclusionScope`].
     pub(crate) fn mount_rooted(self) -> bool {
         matches!(
             self,
