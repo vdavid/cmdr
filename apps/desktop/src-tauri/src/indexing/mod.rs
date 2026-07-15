@@ -75,6 +75,8 @@ mod reconcile_correctness;
 
 pub(crate) use enrichment::{ReadPool, get_read_pool, get_read_pool_for};
 pub use enrichment::{enrich_entries_with_index, enrich_entries_with_index_on_volume};
+#[cfg(test)]
+pub(crate) use enrichment::{test_install_root_read_pool, test_read_pool_lock, test_uninstall_root_read_pool};
 pub(crate) use events::DEBUG_STATS;
 pub use events::*;
 

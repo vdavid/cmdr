@@ -2160,6 +2160,7 @@ export type MessageKey =
   | 'settings.mediaIndex.importanceThreshold.preview'
   | 'settings.mediaIndex.importanceThreshold.previewCounting'
   | 'settings.mediaIndex.importanceThreshold.previewNone'
+  | 'settings.mediaIndex.importanceThreshold.waitingForImportance'
   | 'settings.mediaIndex.networkVolumes.alwaysAria'
   | 'settings.mediaIndex.networkVolumes.alwaysHelp'
   | 'settings.mediaIndex.networkVolumes.alwaysLabel'

@@ -143,12 +143,17 @@ pub fn set_log_llm_calls(enabled: bool) {
 
 /// Live-applies the master "Index image contents" toggle (`mediaIndex.enabled`) for
 /// the media-ML enrichment subsystem. Enabling clears any prior memory-watchdog stop
-/// so enrichment resumes; the scheduler starts a pass on the next scan completion.
-/// Runtime-toggleable, no restart. (The frontend toggle UI lands in a later slice.)
+/// so enrichment resumes AND kicks an immediate pass for every ready volume, so work
+/// starts the moment the user flips it on rather than waiting for the next scan
+/// completion (plan M1; mirrors `media_index_set_network_volume_enabled`).
+/// Runtime-toggleable, no restart.
 #[tauri::command]
 #[specta::specta]
-pub fn set_image_index_enabled(enabled: bool) {
+pub fn set_image_index_enabled(app: AppHandle, enabled: bool) {
     crate::media_index::gate::set_enabled(enabled);
+    if enabled {
+        crate::media_index::scheduler::kick_all_ready_passes(&app);
+    }
 }
 
 /// Updates the in-RAM log-storage cap and runs an eager prune so the user sees excess files

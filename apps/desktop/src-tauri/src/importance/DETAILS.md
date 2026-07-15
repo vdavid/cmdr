@@ -212,8 +212,10 @@ Recomputes a volume's folder weights when its index finishes scanning. Two trigg
 - **The lifecycle bus** ([`indexing/lifecycle_bus.rs`](../indexing/DETAILS.md) — the mechanism is documented there,
   single-source): the scheduler subscribes per volume; a `ScanCompleted` publish ⇒ recompute.
 - **The startup registry sweep** (`indexing::ready_volumes_with_kind`): a volume already Fresh at launch never re-fires
-  `ScanCompleted`, so a bus-only scheduler would miss the common restart case. The sweep enqueues those once, WITH each
-  volume's typed kind (so MTP is excluded and SMB degrades correctly — see "Multi-volume" below).
+  `ScanCompleted` (its retained bus value stays `Pending`), so wiring its subscription alone never recomputes it — the
+  common restart case. The sweep wires each ready volume WITH its typed kind (so MTP is excluded and SMB degrades
+  correctly — see "Multi-volume" below), then runs `enqueue_initial_full_pass_if_unscored` per volume to actually score a
+  fresh/recreated store (see § The initial full pass).
 - **The registration bus** (`indexing::lifecycle_bus::subscribe_registrations`): a volume that registers AFTER the sweep
   (a share mounted mid-session) is wired then. The scheduler subscribes to it BEFORE the sweep, so no volume registering
   in the gap is lost (plan M4 late-registering volumes).
@@ -224,6 +226,32 @@ arriving mid-pass sets a single re-run flag rather than starting a second pass (
 through the read pool (`get_read_pool_for`), assemble a `FolderSignals` per folder (`signals::signals_for_dir`), run the
 pure scorer, and write every row at a freshly-bumped generation. It runs on a blocking background task (SQLite +
 scoring), never on the IPC thread; a `None` read pool (index not registered) is a no-op.
+
+### The initial full pass (the fresh/recreated-store trigger)
+
+**Generation-stamp semantics.** `recompute_generation` (a `meta` counter) is stamped ONLY by a full pass
+(`write_weights` → `apply_full_pass`, in the same transaction as the table replace). The incremental path
+(`write_weights_incremental`) deliberately never bumps or stamps it. So "generation 0" does NOT mean "no weights": a
+store maintained only by incremental rescores holds hundreds of thousands of usable weight rows at generation 0, and a
+schema-recreated store sits at generation 0 until its first full pass. Consumers that must tell "genuinely unscored" from
+"scored but no generation" key on the weight-row count, not the generation (media's `coverage::importance_scored`).
+
+**A fresh/recreated store must get a full pass — the invariant.** Because a Fresh-at-launch volume never fires
+`ScanCompleted`, the bus subscription alone never scores it. The sweep therefore runs
+`enqueue_initial_full_pass_if_unscored` per ready volume: it enqueues a full recompute IFF the store carries no
+generation. Gating on "no generation" (not an unconditional kick) is deliberate — importance is expensive, so an
+unconditional kick would rescore every volume on every launch; media's kick is unconditional because a redundant
+enrichment pass is a cheap staleness no-op. The policies differ on purpose.
+
+**The recreate-ordering trap, and why the decision binds to the write-path open.** The schema delete-and-recreate happens
+LAZILY, only inside `ImportanceStore::open` on a WRITE-path open (`open_write_connection`); the read path never
+recreates. So on the prod schema-3 upgrade launch, the db is still on the OLD schema at sweep time WITH its old stamped
+generation. A naive sweep-time generation READ would read that non-zero generation, decide "already scored", skip the
+full pass — and THEN the recreate fires on the first incremental write, wiping the generation, leaving the volume stuck
+at "never scored" forever. `store::needs_initial_full_pass` avoids this by opening the store on the WRITE path FIRST
+(forcing the recreate), then reading the generation, so the decision reflects the current schema. ❌ Never probe the
+generation via the read path before the write-path open. The store test drives this exact ordering (old-schema db with a
+stamped generation → read probe sees it → the write-path-bound probe recreates and reports "needs a full pass").
 
 ### The walk is O(dirs), not O(entries) (`walk_index_folders`)
 

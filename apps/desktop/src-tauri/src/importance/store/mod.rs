@@ -96,6 +96,26 @@ const CREATE_TABLES_SQL: &str = "
     ) WITHOUT ROWID;
 ";
 
+/// Whether a volume's store needs an INITIAL full recompute: `true` when it carries
+/// no [`RECOMPUTE_GENERATION_KEY`] after the write-path open — a fresh install, a
+/// schema-recreated store (the prod schema-3 upgrade path), or one maintained only by
+/// incremental rescores (which never stamp a generation).
+///
+/// **The decision binds to the write-path open, deliberately.** The schema
+/// delete-and-recreate happens lazily, ONLY inside [`ImportanceStore::open`] on a
+/// WRITE-path open (`open_write_connection`); the read path never recreates. So on a
+/// schema-upgrade launch a read-side generation probe still reads the OUTGOING
+/// schema's stamped generation ("already scored"), skips the full pass, and THEN the
+/// recreate fires on the first incremental write — generation gone, trigger already
+/// passed, the volume stuck at "never scored" forever. Opening the store here forces
+/// the recreate FIRST, so the generation we read reflects the CURRENT schema. This is
+/// the exact prod-upgrade ordering (plan M2); a sweep-time read probe is the trap this
+/// avoids.
+pub fn needs_initial_full_pass(data_dir: &Path, volume_id: &str) -> Result<bool, ImportanceStoreError> {
+    let store = ImportanceStore::open(&importance_db_path(data_dir, volume_id))?;
+    Ok(store.recompute_generation()? == 0)
+}
+
 /// Resolve the `importance.db` path for a volume, beside the drive index's DB in
 /// the app data dir. Mirrors the index's `index-{volume_id}.db` naming so the two
 /// disposable caches live together and relocate together (plan Decision 2:

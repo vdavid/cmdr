@@ -9,6 +9,8 @@
 //!
 //! ## What drives a pass
 //!
+//! Three triggers, all folded through the [`PassCoordinator`]:
+//!
 //! - **The lifecycle bus** ([`crate::indexing::lifecycle_bus`]): a `ScanCompleted`
 //!   for a volume ⇒ enrich it. Consumed **edge-triggered** (`borrow_and_update` /
 //!   `has_changed`), NEVER a `borrow()` poll — the `watch` retains the last
@@ -16,8 +18,19 @@
 //!   stale `Completed` mid-truncate and GC live rows. The edge is the data-safety
 //!   guarantee (plan Decision 3).
 //! - **The startup registry sweep** ([`crate::indexing::ready_volumes_with_kind`]):
-//!   a volume Fresh at launch never re-fires `ScanCompleted`, so it's enqueued once
-//!   here (the common restart case).
+//!   a volume Fresh at launch never re-fires `ScanCompleted`, so the bus subscription
+//!   alone would never enrich it (the retained value stays `Pending`). The sweep only
+//!   WIRES each ready volume's subscriptions; the actual startup enrichment comes from
+//!   [`kick_all_ready_passes_with`], called at the end of [`start`] when the master
+//!   toggle is on (the persisted-on restart case).
+//! - **User actions** ([`kick_all_ready_passes`] / [`kick_network_pass`]): enabling
+//!   the master toggle, a threshold DECREASE (coverage broadens), or opting a network
+//!   volume in kicks an immediate pass so work starts without waiting for the next
+//!   scan (plan M1).
+//! - **The importance bridge** ([`wire_volume`]'s subscriber): a pass that ran while
+//!   importance hadn't scored the volume DEFERS its gated remainder; when importance
+//!   first completes a recompute, the deferred volume is re-kicked so it enriches at
+//!   the threshold (plan M1 defer-until-scored).
 //! - **The registration bus**: a volume registered after the sweep is wired then.
 //!
 //! Local volumes enrich by default when the master toggle is on; opted-in SMB volumes
@@ -26,6 +39,7 @@
 //! guarantees ONE pass per volume, folding a concurrent request into a single re-run.
 
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -53,6 +67,8 @@ use enrich::{enrich_and_gc, load_statuses, walk_image_entries};
 mod coalescing_tests;
 #[cfg(test)]
 mod enrich_tests;
+#[cfg(test)]
+mod kick_tests;
 
 // ── Coalescing coordinator (pure, testable — a `PassCoordinator` clone) ────
 
@@ -146,6 +162,14 @@ pub struct MediaScheduler {
     data_dir: PathBuf,
     writers: super::writer_registry::WriterRegistry,
     backend: Arc<dyn VisionBackend>,
+    /// Volume ids whose last pass DEFERRED its importance-gated remainder because
+    /// importance hadn't scored the volume yet (`folder_scores` was `None`). The
+    /// unscored → scored bridge reads and clears this: when importance first
+    /// completes a recompute, [`wire_volume`]'s subscriber re-kicks exactly these
+    /// volumes so the deferred images enrich, then clears the flag. Scoped to the
+    /// bridge so a normal volume (scored from the start) never re-kicks, and a later
+    /// incremental bump doesn't re-walk the index for nothing.
+    deferred_for_importance: Mutex<HashSet<String>>,
 }
 
 impl MediaScheduler {
@@ -156,7 +180,24 @@ impl MediaScheduler {
             data_dir,
             writers: super::writer_registry::WriterRegistry::new(),
             backend,
+            deferred_for_importance: Mutex::new(HashSet::new()),
         }
+    }
+
+    /// Mark `volume_id` as having deferred its importance-gated remainder (its last
+    /// pass ran with importance unavailable). The unscored → scored bridge re-kicks
+    /// it once importance lands.
+    fn mark_deferred_for_importance(&self, volume_id: &str) {
+        self.deferred_for_importance
+            .lock_ignore_poison()
+            .insert(volume_id.to_string());
+    }
+
+    /// Take (read-and-clear) whether `volume_id` deferred on importance. Returns
+    /// `true` exactly once per deferral, so the importance subscriber re-kicks the
+    /// bridge only on the unscored → scored transition, never on every later bump.
+    fn take_deferred_for_importance(&self, volume_id: &str) -> bool {
+        self.deferred_for_importance.lock_ignore_poison().remove(volume_id)
     }
 
     /// The app data dir this scheduler resolves `media.db` paths under.
@@ -199,22 +240,22 @@ impl MediaScheduler {
         // Importance-prioritized enrichment (plan Cross-cutting): read the folder
         // scores at the user's threshold, enrich the qualifying folders (high score
         // first), and defer the rest. When importance hasn't scored this volume yet
-        // (`None`), a LOCAL volume falls back to enriching everything (the pre-slider
-        // behavior; local reads are cheap) — the next pass, after importance scores,
-        // applies the threshold. An "always index" override always enriches; a
-        // user-excluded folder never does (privacy veto).
+        // (`None`), DEFER the importance-gated remainder while still honoring an
+        // explicit "always index" override — never enrich the whole volume, or a
+        // first-run race (importance's multi-second recompute hasn't finished) would
+        // over-index everything permanently (forward-only semantics). The unscored →
+        // scored bridge re-kicks the deferred remainder once importance lands. An
+        // "always index" override always enriches; a user-excluded folder never does
+        // (privacy veto).
         let threshold = gate::importance_threshold();
         let scores = self.folder_scores(volume_id, threshold);
+        if scores.is_none() {
+            // Importance unavailable ⇒ this pass deferred its gated remainder; the
+            // importance subscriber re-kicks once a recompute completes.
+            self.mark_deferred_for_importance(volume_id);
+        }
         let config = network::config::snapshot();
-        let should_enrich = |path: &str| -> bool {
-            if config.is_excluded(path) {
-                return false;
-            }
-            match &scores {
-                None => true,
-                Some(map) => config.covers(volume_id, path) || map.contains_key(enrich::parent_dir(path)),
-            }
-        };
+        let should_enrich = |path: &str| -> bool { local_should_enrich(path, scores.as_ref(), &config, volume_id) };
         let folder_score = |dir: &str| -> f64 { scores.as_ref().and_then(|m| m.get(dir)).copied().unwrap_or(0.0) };
         let ordered = enrich::prioritized(&images, &folder_score);
 
@@ -257,9 +298,11 @@ impl MediaScheduler {
     pub(crate) fn folder_scores(&self, volume_id: &str, threshold: f64) -> Option<HashMap<String, f64>> {
         use crate::importance::{ImportanceIndex, SignalSet};
         let index = ImportanceIndex::open(&self.data_dir, volume_id, SignalSet::all());
-        // A generation of 0 means never-scored (missing DB / offline volume); treat
-        // as "importance unavailable", not "everything scores 0".
-        if index.recompute_generation().unwrap_or(0) == 0 {
+        // "Importance unavailable" (missing DB / offline / genuinely unscored) ⇒
+        // `None`. Keys on live weight rows, not solely the generation stamp — an
+        // incrementally-maintained or schema-recreated store has usable weights at
+        // generation 0 (`super::coverage::importance_scored`).
+        if !super::coverage::importance_scored(&index) {
             return None;
         }
         match index.above_threshold(threshold) {
@@ -324,6 +367,12 @@ impl MediaScheduler {
         // stays conservative — override-only — never dragging the whole NAS.
         let threshold = gate::importance_threshold();
         let scores = self.folder_scores(volume_id, threshold);
+        if scores.is_none() {
+            // Same bridge as the local pass: importance unavailable ⇒ this pass ran
+            // override-only; re-kick once a recompute completes so the threshold
+            // applies (the network fallback stays conservative until then).
+            self.mark_deferred_for_importance(volume_id);
+        }
         let config = network::config::snapshot();
         let should_enrich = |os_path: &str| -> bool {
             if config.is_excluded(os_path) {
@@ -381,6 +430,68 @@ impl MediaScheduler {
             }
         }
         Ok(())
+    }
+}
+
+/// Whether a LOCAL image at index path `path` should enrich this pass — the pure
+/// per-image gate (unit-testable without a DB or an app).
+///
+/// - A user-EXCLUDED folder is a hard veto (privacy), beating any override.
+/// - When importance HASN'T scored the volume yet (`scores` is `None`), DEFER the
+///   importance-gated remainder but still honor an explicit "always index" override
+///   (`config.covers`), so a user directive is never postponed on a fresh volume.
+///   This mirrors the network `None` → override-only fallback, keeping the two paths
+///   symmetric. ❌ Never fall back to "enrich all" here: a first-run race against
+///   importance's multi-second recompute would over-index the whole volume, and
+///   forward-only semantics make that permanent until a manual reclaim. The
+///   unscored → scored bridge ([`wire_volume`]'s subscriber) re-kicks the remainder
+///   once importance lands.
+/// - When SCORED, enrich an override-covered folder OR one whose parent folder met
+///   the threshold (already filtered into `scores`).
+fn local_should_enrich(
+    path: &str,
+    scores: Option<&HashMap<String, f64>>,
+    config: &network::config::NetworkEnrichConfig,
+    volume_id: &str,
+) -> bool {
+    if config.is_excluded(path) {
+        return false;
+    }
+    match scores {
+        None => config.covers(volume_id, path),
+        Some(map) => config.covers(volume_id, path) || map.contains_key(enrich::parent_dir(path)),
+    }
+}
+
+/// Kick a coalesced enrichment pass for every volume ready to enrich right now —
+/// the user-action entry point behind the master toggle, a persisted-on restart, and
+/// a threshold decrease (plan M1). Resolves the managed scheduler and delegates to
+/// [`kick_all_ready_passes_with`]. A no-op when the scheduler isn't managed yet (an
+/// early call before [`start`]).
+pub fn kick_all_ready_passes(app: &AppHandle) {
+    if let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>() {
+        kick_all_ready_passes_with(scheduler.inner());
+    }
+}
+
+/// Kick a coalesced pass for every ready volume, given the scheduler handle
+/// directly (so [`start`] can call it without a managed-state round-trip). Iterates
+/// [`crate::indexing::ready_volumes_with_kind`] and spawns the kind-mapped pass
+/// (Local → local, SMB → network which self-checks opt-in, MTP → never). The
+/// [`PassCoordinator`] folds a kick that races a running pass into one re-run, and
+/// each pass self-gates on the master toggle, so an errant kick while disabled is a
+/// cheap no-op. Unconditional by design: staleness makes a redundant pass a fast
+/// no-op, so there's no need to gate per volume (contrast importance, which gates on
+/// "store has no generation" — plan M2).
+pub fn kick_all_ready_passes_with(scheduler: &Arc<MediaScheduler>) {
+    for (volume_id, kind) in crate::indexing::ready_volumes_with_kind() {
+        let pass_kind = match kind {
+            IndexVolumeKind::Local => PassKind::Local,
+            IndexVolumeKind::Smb => PassKind::Network,
+            // MTP is never background-swept (on-demand only); nothing to kick.
+            IndexVolumeKind::Mtp => continue,
+        };
+        spawn_pass(Arc::clone(scheduler), volume_id, pass_kind);
     }
 }
 
@@ -450,9 +561,19 @@ pub fn start(app: &AppHandle) {
         }
     });
 
-    // Startup sweep: volumes Fresh at launch never re-fire ScanCompleted.
+    // Startup sweep: wire each ready volume's subscriptions. A volume Fresh at launch
+    // keeps a `Pending` bus and never re-fires `ScanCompleted`, so wiring alone never
+    // enriches it — the kick below is what starts work.
     for (volume_id, kind) in crate::indexing::ready_volumes_with_kind() {
         wire_volume(Arc::clone(&scheduler), volume_id, kind);
+    }
+
+    // The persisted-on restart case: with the master toggle already on, kick every
+    // ready volume now. Without this, a user whose toggle is on gets "0 of N indexed"
+    // after every restart until some volume happens to rescan (plan M1). Each pass
+    // self-gates, and coalescing folds this into any pass a concurrent scan starts.
+    if gate::is_enabled() {
+        kick_all_ready_passes_with(&scheduler);
     }
 }
 
@@ -488,6 +609,31 @@ fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVol
             return;
         }
     };
+
+    // The unscored → scored bridge (plan M1 defer-until-scored). Subscribe to
+    // importance's recompute-completed `watch` SYNCHRONOUSLY here — BEFORE and
+    // independent of the first pass. Watch semantics: a receiver is caught up to the
+    // current version at subscribe time, so `changed()` fires only on the NEXT bump. A
+    // lazy "a pass reads `None` → then subscribe" flow has a hole: importance can
+    // complete in the gap, the receiver comes up already-caught-up, and the volume
+    // defers forever. Subscribing up front (mirroring `search`'s
+    // `start_importance_weight_subscriber`) closes it. Re-kick only the unscored →
+    // scored transition: `take_deferred_for_importance` gates on a per-volume flag a
+    // deferring pass set, so a normal volume never re-kicks and a later incremental
+    // bump doesn't re-walk the index for nothing.
+    let bridge_scheduler = Arc::clone(&scheduler);
+    let bridge_volume = volume_id.clone();
+    let mut imp_rx = crate::importance::read::subscribe(&volume_id);
+    tauri::async_runtime::spawn(async move {
+        // Catch up to the current version so `changed()` fires only on a later bump.
+        imp_rx.borrow_and_update();
+        while imp_rx.changed().await.is_ok() {
+            imp_rx.borrow_and_update();
+            if bridge_scheduler.take_deferred_for_importance(&bridge_volume) {
+                spawn_pass(Arc::clone(&bridge_scheduler), bridge_volume.clone(), pass_kind);
+            }
+        }
+    });
 
     let sub_scheduler = Arc::clone(&scheduler);
     let sub_volume = volume_id.clone();

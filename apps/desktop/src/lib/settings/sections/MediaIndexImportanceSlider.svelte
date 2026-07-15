@@ -38,6 +38,7 @@
         type MediaIndexVolumeState,
     } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
+    import { shouldRepollPreview } from './media-index-preview-poll'
 
     const log = getAppLogger('media-index')
 
@@ -164,7 +165,14 @@
                 scheduleSettle(next)
             }
         })
-        const timer = setInterval(() => void refreshLocalState(), 3000)
+        const timer = setInterval(() => {
+            void refreshLocalState()
+            // Re-poll the covered-count preview while it's unresolved (first fetch not
+            // yet landed, or the backend still reports pending — a drive scanning, or
+            // importance not scored yet), so a `pending` result resolves on its own
+            // instead of sitting forever. Stops once resolved.
+            if (shouldRepollPreview(covered)) void refreshPreview(bucket)
+        }, 3000)
         return () => {
             unsub()
             clearInterval(timer)
@@ -174,6 +182,12 @@
     })
 
     const currentLabel = $derived(tString(BUCKETS[bucket].labelKey))
+
+    // Image indexing is deferred on the local disk because importance hasn't scored
+    // its folders yet (drive scanned + enabled, but the ranking that decides indexing
+    // order isn't ready). Voiced honestly, and it REPLACES the generic covered-count
+    // spinner so the panel never shows two spinners for one wait (plan M1).
+    const waitingForImportance = $derived(localState?.waitingForImportance ?? false)
 
     // The incremental hint: the signed image delta vs the last settled bucket. Shown only while
     // the live bucket differs from the settled baseline (i.e. mid-adjustment).
@@ -247,7 +261,11 @@
     </Slider.Root>
 
     <p class="mi-preview" aria-live="polite">
-        {#if covered === null}
+        {#if waitingForImportance}
+            <!-- Deferred on importance: one honest line, replacing the generic
+                 "Working out how much this covers…" spinner (same underlying wait). -->
+            {tString('settings.mediaIndex.importanceThreshold.waitingForImportance')}
+        {:else if covered === null}
             {tString('settings.mediaIndex.importanceThreshold.previewCounting')}
         {:else if covered.folders > 0}
             {tString('settings.mediaIndex.importanceThreshold.preview', {

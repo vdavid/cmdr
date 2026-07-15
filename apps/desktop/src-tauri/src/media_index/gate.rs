@@ -67,3 +67,30 @@ pub fn set_importance_threshold(threshold: f64) {
 pub fn importance_threshold() -> f64 {
     f64::from_bits(IMPORTANCE_THRESHOLD_BITS.load(Ordering::SeqCst))
 }
+
+/// Whether a threshold change from `previous` to `next` is a DECREASE (coverage
+/// broadens). Only a decrease should kick an immediate pass: the newly-covered
+/// folders start enriching now, while a raise merely defers future work
+/// (forward-only — nothing to enrich now), so kicking on a raise would re-walk the
+/// index for nothing (plan M1). Both operands are already-clamped stored values, so
+/// the comparison can't be fooled by an out-of-range incoming request.
+pub fn threshold_decreased(previous: f64, next: f64) -> bool {
+    next < previous
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_a_decrease_kicks() {
+        // A decrease broadens coverage ⇒ kick.
+        assert!(threshold_decreased(0.6, 0.2));
+        assert!(threshold_decreased(0.2, 0.0));
+        // A raise defers future work only ⇒ no kick.
+        assert!(!threshold_decreased(0.2, 0.6));
+        assert!(!threshold_decreased(0.0, 0.8));
+        // No change ⇒ no kick.
+        assert!(!threshold_decreased(0.4, 0.4));
+    }
+}

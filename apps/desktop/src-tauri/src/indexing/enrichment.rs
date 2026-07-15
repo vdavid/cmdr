@@ -123,6 +123,30 @@ pub(super) fn uninstall_read_pool(volume_id: &str) -> Option<Arc<ReadPool>> {
     }
 }
 
+/// Test-only: install a root read pool over `db_path` (an existing index DB) so a
+/// consumer in a sibling module (media-index scheduler tests) can drive a pass through
+/// `get_read_pool_for("root")`. Callers MUST hold [`test_read_pool_lock`] for the
+/// duration, since the root pool is a process-global shared across parallel tests.
+#[cfg(test)]
+pub(crate) fn test_install_root_read_pool(db_path: PathBuf) -> Result<(), IndexStoreError> {
+    install_read_pool(ROOT_VOLUME_ID, Arc::new(ReadPool::new(db_path)?));
+    Ok(())
+}
+
+/// Test-only: drop the root read pool installed by [`test_install_root_read_pool`].
+#[cfg(test)]
+pub(crate) fn test_uninstall_root_read_pool() {
+    uninstall_read_pool(ROOT_VOLUME_ID);
+}
+
+/// Test-only: the shared lock serializing access to the process-global root read pool
+/// across parallel test threads. A sibling module's test acquires this before
+/// installing the root pool (mirrors `READ_POOL_TEST_MUTEX`'s use inside this module).
+#[cfg(test)]
+pub(crate) fn test_read_pool_lock() -> std::sync::MutexGuard<'static, ()> {
+    READ_POOL_TEST_MUTEX.lock_ignore_poison()
+}
+
 /// The common parent directory of a sibling listing (all entries in a listing share one
 /// parent). Returns `None` when the listing has no enrichable directory entry or the
 /// first such entry's path is malformed (no `/`). Firmlink-normalized so it matches the

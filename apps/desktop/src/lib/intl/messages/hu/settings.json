@@ -565,6 +565,10 @@
   "@settings.mediaIndex.importanceThreshold.previewCounting": {
     "sourceHash": "659de34"
   },
+  "settings.mediaIndex.importanceThreshold.waitingForImportance": "Kiszámítjuk, mely mappák a fontosak. A képek indexelése rögtön ezután indul.",
+  "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
+    "sourceHash": "2116b55"
+  },
   "settings.mediaIndex.importanceThreshold.pending": "Néhány meghajtó átvizsgálása még folyamatban van, ezért ezek a számok tovább nőnek majd.",
   "@settings.mediaIndex.importanceThreshold.pending": {
     "sourceHash": "c144f80"

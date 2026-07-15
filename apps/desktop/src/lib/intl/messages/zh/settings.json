@@ -565,6 +565,10 @@
   "@settings.mediaIndex.importanceThreshold.previewCounting": {
     "sourceHash": "659de34"
   },
+  "settings.mediaIndex.importanceThreshold.waitingForImportance": "正在确定哪些文件夹更重要。图片索引会紧接着开始。",
+  "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
+    "sourceHash": "2116b55"
+  },
   "settings.mediaIndex.importanceThreshold.pending": "部分驱动器仍在扫描中，因此这些数字还会继续增加。",
   "@settings.mediaIndex.importanceThreshold.pending": {
     "sourceHash": "c144f80"

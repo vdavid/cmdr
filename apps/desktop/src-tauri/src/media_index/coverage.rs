@@ -90,13 +90,30 @@ pub fn covered_for_volume(
 pub fn importance_scores(data_dir: &Path, volume_id: &str) -> Option<HashMap<String, f64>> {
     use crate::importance::{ImportanceIndex, SignalSet};
     let index = ImportanceIndex::open(data_dir, volume_id, SignalSet::all());
-    if index.recompute_generation().unwrap_or(0) == 0 {
+    if !importance_scored(&index) {
         return None;
     }
     match index.above_threshold(0.0) {
         Ok(weights) => Some(weights.into_iter().map(|w| (w.path, w.score.value())).collect()),
         Err(_) => None,
     }
+}
+
+/// Whether importance genuinely has data for this volume — the "has it scored?"
+/// check both the scheduler's `folder_scores` and [`importance_scores`] gate on.
+///
+/// Keys on live weight rows, NOT solely the `recompute_generation` stamp: a store
+/// maintained only by INCREMENTAL rescores carries hundreds of thousands of weight
+/// rows but no generation (the incremental path deliberately never bumps it), and a
+/// schema-recreated store starts at generation 0 until its first FULL pass stamps
+/// one. Gating on the generation alone reads such a volume as "never scored" forever
+/// and reports "0 covered" at every threshold, even though the weights are perfectly
+/// usable (`importance/DETAILS.md` § Generation-stamp semantics). So: scored when a
+/// full pass stamped a generation OR any weight row exists. Reuses the cheap
+/// `scored_folder_count` probe (a `COUNT(*)`, short-circuits to 0 for a missing DB) —
+/// don't add a second method.
+pub(crate) fn importance_scored(index: &crate::importance::ImportanceIndex) -> bool {
+    index.recompute_generation().unwrap_or(0) > 0 || index.scored_folder_count().unwrap_or(0) > 0
 }
 
 #[cfg(test)]

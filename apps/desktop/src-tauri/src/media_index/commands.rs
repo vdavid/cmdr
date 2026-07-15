@@ -101,6 +101,16 @@ pub struct MediaIndexVolumeState {
     /// Whether enrichment is paused because the volume disconnected mid-pass. Its
     /// coverage is intact and resumes on reconnect (never GC'd, never marked failed).
     pub paused: bool,
+    /// Whether image indexing is DEFERRED on this volume because importance hasn't
+    /// scored its folders yet: the master toggle is on, the drive index is ready, but
+    /// importance has no data (fresh or a recompute still running). The scheduler
+    /// enriches only override-covered folders until importance lands, then the
+    /// unscored → scored bridge kicks the rest. The settings UI voices this honestly
+    /// ("Working out which folders matter — image indexing starts right after")
+    /// instead of the generic covered-count spinner, so a persistently-failing
+    /// importance recompute surfaces as a visible wait rather than a silent "0 of N"
+    /// (plan M1: the residual risk must be VISIBLE, never silent).
+    pub waiting_for_importance: bool,
 }
 
 /// Report the honest per-volume enrichment state for `volume_id`: the master toggle,
@@ -123,17 +133,29 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
 
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
     let vid = volume_id.clone();
-    let (enriched_count, qualifying_count) = tauri::async_runtime::spawn_blocking(move || {
+    let (enriched_count, qualifying_count, importance_scored) = tauri::async_runtime::spawn_blocking(move || {
         let enriched = MediaIndex::open(&data_dir, &vid)
             .enriched_count()
             .map_err(|e| e.to_string())?;
-        // The honest denominator: how many images qualify per the drive index. `None`
-        // when the index isn't registered (offline / still scanning).
+        // The honest denominator: how many images qualify per the drive index.
+        // `None` when the index isn't registered (offline / still scanning).
         let qualifying = coverage::get_or_build(&vid).map(|c| c.total);
-        Ok::<_, String>((enriched, qualifying))
+        // Whether importance has data for this volume — the same "has it scored?"
+        // check the scheduler gates enrichment on (live weight rows OR a stamped
+        // generation), so the deferred state can't disagree with the scheduler.
+        let importance_scored = {
+            use crate::importance::{ImportanceIndex, SignalSet};
+            let index = ImportanceIndex::open(&data_dir, &vid, SignalSet::all());
+            coverage::importance_scored(&index)
+        };
+        Ok::<_, String>((enriched, qualifying, importance_scored))
     })
     .await
     .map_err(|e| format!("media volume state task panicked: {e}"))??;
+
+    // Deferred-on-importance: enabled, the index is ready (a real qualifying count),
+    // but importance has no data yet, so enrichment waits on the recompute.
+    let waiting_for_importance = enabled && qualifying_count.is_some() && !importance_scored;
 
     Ok(MediaIndexVolumeState {
         enabled,
@@ -143,6 +165,7 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
         network_opt_in: network_config::is_opted_in(&volume_id),
         always_indexed: network_config::snapshot().always_index_volumes.contains(&volume_id),
         paused: network_config::is_paused(&volume_id),
+        waiting_for_importance,
     })
 }
 
@@ -204,10 +227,22 @@ pub fn media_index_set_excluded_folder(folder: String, excluded: bool) {
 /// slider's typed value (`0.0..=1.0`, clamped), never a string (`no-string-matching`).
 /// Below-threshold folders are deferred; an override still forces enrichment. Live-
 /// applied; the frontend persists `mediaIndex.importanceThreshold` and calls this.
+///
+/// A DECREASE broadens coverage, so newly-covered folders should start enriching now
+/// rather than waiting for the next scan — this kicks a pass. A RAISE only defers
+/// future work (forward-only semantics: nothing to enrich now, and the deferred rows
+/// persist), so kicking on a raise would re-walk the index for nothing. The comparison
+/// reads the stored value BEFORE and AFTER the (clamped) set, so a clamp can't
+/// misclassify the direction (plan M1).
 #[tauri::command]
 #[specta::specta]
-pub fn media_index_set_importance_threshold(threshold: f64) {
+pub fn media_index_set_importance_threshold(app: AppHandle, threshold: f64) {
+    let previous = gate::importance_threshold();
     gate::set_importance_threshold(threshold);
+    let next = gate::importance_threshold();
+    if gate::threshold_decreased(previous, next) && gate::is_enabled() {
+        scheduler::kick_all_ready_passes(&app);
+    }
 }
 
 /// The live preview behind the importance slider: across the ENABLED volumes in

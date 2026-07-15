@@ -10,10 +10,16 @@
 //!    scan that finishes while the app runs.
 //! 2. **The startup registry sweep** ([`crate::indexing::ready_volumes_with_kind`]):
 //!    a volume already `Fresh` at launch (loaded from its persisted
-//!    `scan_completed_at`) never re-fires a `ScanCompleted`, so a bus-only
-//!    scheduler would never score it — the common restart case. The sweep
-//!    enqueues those once at startup, each with its typed kind (so MTP is
-//!    excluded and SMB degrades correctly).
+//!    `scan_completed_at`) never re-fires a `ScanCompleted`, so the bus subscription
+//!    the sweep WIRES would never score it — the common restart case (its retained
+//!    bus value stays `Pending`). To close that, the sweep ALSO runs
+//!    [`enqueue_initial_full_pass_if_unscored`] per ready volume: it forces the
+//!    write-path store open (triggering any lazy schema recreate) and enqueues a full
+//!    recompute IFF the store then carries no generation. Gating on "no generation"
+//!    (not an unconditional kick) means an already-scored volume isn't rescored on
+//!    every launch, while a fresh / schema-recreated / incremental-only store finally
+//!    gets its full pass (plan M2). Each carries its typed kind (MTP excluded, SMB
+//!    degraded).
 //! 3. **The registration bus** ([`crate::indexing::lifecycle_bus::subscribe_registrations`]):
 //!    a volume that registers AFTER the sweep (a share mounted mid-session) is
 //!    wired then (plan M4 late-registering volumes).
@@ -473,10 +479,57 @@ pub fn start(app: &AppHandle) {
 
     // Startup sweep: any volume already ready at launch (loaded from its persisted
     // scan_completed_at) never re-fires ScanCompleted, so catch it here — WITH its
-    // typed kind so MTP is excluded and SMB degrades correctly.
+    // typed kind so MTP is excluded and SMB degrades correctly. Wiring alone only
+    // sets up subscriptions (the retained bus value stays `Pending`); the
+    // initial-pass trigger is what actually scores a fresh / recreated store.
     for (volume_id, kind) in crate::indexing::ready_volumes_with_kind() {
-        wire_volume(Arc::clone(&scheduler), volume_id, kind);
+        wire_volume(Arc::clone(&scheduler), volume_id.clone(), kind);
+        enqueue_initial_full_pass_if_unscored(Arc::clone(&scheduler), volume_id, kind);
     }
+}
+
+/// For a volume READY at launch (Fresh, so no `ScanCompleted` will fire), enqueue a
+/// full recompute IFF its store has no generation yet — a fresh install, a
+/// schema-recreated store (the prod schema-3 upgrade), or one maintained only by
+/// incremental rescores (which never stamp a generation). An already-scored volume is
+/// left alone; an unconditional kick would rescore every volume on every launch (plan
+/// M2 — importance's policy differs from media's cheap unconditional kick).
+///
+/// The "unscored?" decision binds to the WRITE-path store open via
+/// [`super::store::needs_initial_full_pass`], which forces the lazy schema recreate
+/// BEFORE reading the generation — never a sweep-time read probe, which would read the
+/// outgoing schema's stamped generation and skip, only for the recreate to wipe it
+/// moments later (the prod-upgrade ordering trap). The probe (a DB open) runs on a
+/// blocking task; when unscored it hands off to the normal coordinated
+/// [`spawn_recompute`], so a concurrent `ScanCompleted` coalesces correctly.
+fn enqueue_initial_full_pass_if_unscored(
+    scheduler: Arc<ImportanceScheduler>,
+    volume_id: String,
+    kind: IndexVolumeKind,
+) {
+    let available = match ScoringPolicy::for_kind(kind) {
+        ScoringPolicy::Scored { available } => available,
+        // MTP: on-demand only, never background-scored.
+        ScoringPolicy::Excluded => return,
+    };
+    tauri::async_runtime::spawn(async move {
+        let data_dir = scheduler.data_dir().to_path_buf();
+        let vid = volume_id.clone();
+        let needs =
+            tauri::async_runtime::spawn_blocking(move || super::store::needs_initial_full_pass(&data_dir, &vid)).await;
+        match needs {
+            Ok(Ok(true)) => {
+                log::info!(
+                    target: "importance",
+                    "volume '{volume_id}' ready at launch with no generation (fresh/recreated); enqueuing an initial full recompute"
+                );
+                spawn_recompute(scheduler, volume_id, available);
+            }
+            Ok(Ok(false)) => {} // already scored — leave it.
+            Ok(Err(e)) => log::warn!(target: "importance", "initial-pass probe for '{volume_id}' failed: {e}"),
+            Err(e) => log::warn!(target: "importance", "initial-pass probe task for '{volume_id}' panicked: {e}"),
+        }
+    });
 }
 
 /// Wire one volume into the scheduler by its typed kind: skip MTP (on-demand

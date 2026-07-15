@@ -401,3 +401,91 @@ fn record_visit_accumulates_count_and_recency() {
     assert_eq!(last, 2000, "last-visit timestamp advances to the newer visit");
     writer.shutdown();
 }
+
+/// The prod schema-3 upgrade ordering trap (plan M2). A prod user's `importance.db`
+/// arrives at the upgrade launch on the OLD schema WITH a stamped generation, so a
+/// naive sweep-time READ of the generation reads "already scored" and skips the full
+/// recompute — and THEN the schema recreate fires on the first write-path open,
+/// wiping the generation, leaving the volume stuck at "never scored" forever.
+/// `needs_initial_full_pass` avoids the trap by binding the decision to the write-path
+/// open: it forces the recreate FIRST, so the generation it reads reflects the current
+/// schema and it correctly reports "needs a full pass".
+#[test]
+fn needs_initial_full_pass_binds_to_the_write_path_open_not_a_read_probe() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = importance_db_path(dir.path(), "root");
+
+    // Seed an OLD-schema store WITH a stamped generation (prod's schema-2 db).
+    {
+        let conn = open_write_connection(&path).expect("seed conn");
+        conn.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '2')",
+            [],
+        )
+        .expect("stamp old schema");
+        conn.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, '2')",
+            rusqlite::params![RECOMPUTE_GENERATION_KEY],
+        )
+        .expect("stamp generation");
+    }
+
+    // The trap: a READ-path generation probe still reads the OLD schema's stamped
+    // generation, so a sweep-time read would decide "already scored" and skip.
+    {
+        let read = open_read_connection(&path).expect("read conn");
+        assert_eq!(
+            read_generation(&read).expect("gen"),
+            2,
+            "a read-path probe sees the outgoing schema's generation (the ordering trap)"
+        );
+    }
+
+    // The fix: the write-path-bound probe forces the delete-and-recreate first
+    // (schema 2 → 3), so it reads generation 0 and reports "needs a full pass".
+    assert!(
+        needs_initial_full_pass(dir.path(), "root").expect("probe"),
+        "binding to the write-path open recreates the store, so no generation remains ⇒ full pass needed"
+    );
+
+    // The store is genuinely recreated at the current schema with no generation.
+    let store = ImportanceStore::open(&path).expect("reopen");
+    assert_eq!(
+        store.recompute_generation().expect("gen"),
+        0,
+        "generation wiped by the recreate"
+    );
+    assert_eq!(
+        read_meta_value(store.read_conn(), "schema_version")
+            .expect("v")
+            .as_deref(),
+        Some(SCHEMA_VERSION),
+        "store recreated at the current schema"
+    );
+}
+
+/// A store already carrying a generation (the normal case) does NOT need an initial
+/// full pass — so a scheduler gating on this never rescores every volume on launch.
+#[test]
+fn needs_initial_full_pass_is_false_for_an_already_scored_store() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = importance_db_path(dir.path(), "root");
+    let writer = ImportanceWriter::spawn(&path).expect("spawn");
+    writer
+        .write_weights(
+            1,
+            vec![WeightRow {
+                path: "/p".to_string(),
+                score: 0.5,
+                signals_json: "{}".to_string(),
+            }],
+        )
+        .expect("write");
+    writer.flush_blocking().expect("flush");
+    writer.shutdown();
+
+    assert!(
+        !needs_initial_full_pass(dir.path(), "root").expect("probe"),
+        "a generation-stamped store is already scored ⇒ no initial full pass"
+    );
+}

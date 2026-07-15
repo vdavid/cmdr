@@ -421,17 +421,56 @@ The local `run_pass_blocking` and the network `should_enrich` now read `importan
 - **filters** via a `should_enrich(path)` closure: an EXCLUDED folder never enriches (hard privacy veto, checked first);
   otherwise enrich when an "always index" override covers it OR its folder importance meets the threshold. A deferred
   image stays in the GC `current` set, so a below-threshold folder's rows are never wiped — only vanished files are GC'd.
-- **`folder_scores` returns `Option`** — `None` when importance NEVER scored the volume (fresh, offline, importance
-  disabled; detected via `recompute_generation() == 0`). This `None` is load-bearing and differs by path: a LOCAL volume
-  falls back to "enrich everything" (cheap local reads; the next pass after importance scores applies the threshold), a
-  NETWORK volume falls back to "override only" (conservative — never drag a whole NAS off importance-absence). Floored
-  junk (`node_modules`, caches, hidden/system) has no importance row at all, so it's excluded at any threshold.
+- **`folder_scores` returns `Option`** — `None` when importance genuinely has no data for the volume (fresh, offline,
+  importance disabled). "Has data" is `coverage::importance_scored`: a stamped `recompute_generation` OR any live weight
+  row. Keying on the generation alone is wrong — an incrementally-maintained or schema-recreated store carries usable
+  weights at generation 0 (see § The importance "has scored" detection). Floored junk (`node_modules`, caches,
+  hidden/system) has no importance row at all, so it's excluded at any threshold.
 
 Threshold lives in `gate` as an `f64`-bits atomic (`set_importance_threshold` / `importance_threshold`, clamped
 `0.0..=1.0`), seeded from `mediaIndex.importanceThreshold` and live-applied by `media_index_set_importance_threshold`.
-Default `0.0` (`DEFAULT_IMPORTANCE_THRESHOLD`): enrich every scored folder (non-regressive vs the prior "enrich all real
-folders"), the slider raises it to defer low-importance folders. Importance keys on the INDEX identity, so the network
-gate strips the mount root off the OS path before the lookup.
+Default `0.0` (`DEFAULT_IMPORTANCE_THRESHOLD`): enrich every scored folder, the slider raises it to defer low-importance
+folders. Importance keys on the INDEX identity, so the network gate strips the mount root off the OS path before the lookup.
+
+### Defer-until-scored (M1)
+
+When `folder_scores` is `None` (importance unavailable), BOTH the local and network passes DEFER their
+importance-gated remainder while still honoring an explicit `config.covers` override — `local_should_enrich` and the
+network `should_enrich` share this shape. The local pass does NOT fall back to enrich-all: importance's recompute over a
+big volume takes seconds, and a pass that read `None` and enriched everything would over-index the whole volume
+permanently, because the slider is forward-only (a below-threshold row is never deleted by moving the slider; only an
+explicit reclaim or the privacy veto deletes). A visible, recoverable wait beats permanent over-indexing.
+
+The **unscored → scored bridge** re-kicks the deferred remainder once importance lands:
+
+- `wire_volume` subscribes to `importance::read::subscribe(volume_id)` SYNCHRONOUSLY, before the first pass. Watch-channel
+  semantics: a receiver is caught up to the current version at subscribe time, so `changed()` fires only on the NEXT
+  bump. A lazy "pass reads `None` → then subscribe" flow has a hole — importance can complete in the gap, the receiver
+  comes up already-caught-up, and the volume defers forever. Subscribing up front (mirroring `search`'s
+  `start_importance_weight_subscriber`) closes it.
+- A pass that deferred sets a per-volume flag (`mark_deferred_for_importance`); the subscriber's
+  `take_deferred_for_importance` reads-and-clears it and re-kicks a pass ONLY on that unscored → scored transition. Both
+  the lifecycle bus and incremental rescores bump the recompute watch, so scoping the re-kick to the flag keeps a normal
+  (already-scored) volume from re-kicking and a later incremental bump from re-walking the index for nothing.
+
+The residual risk is made VISIBLE, never silent: M2 guarantees the recompute *trigger*, not its *success* (a read-pool
+or write error leaves generation 0 with no notify). Under defer-until-scored that would mean image indexing silently
+never starts. So `media_index_volume_state` exposes `waiting_for_importance` (enabled + index ready + not scored), and the
+settings slider voices it ("Working out which folders matter…") REPLACING the generic covered-count spinner — one honest
+line for one wait, never two spinners. There is deliberately NO silent fallback to enrich-all on timeout: a persistently
+failing recompute is an importance bug to surface, not to paper over.
+
+### The importance "has scored" detection (M2)
+
+`media_index` decides "has importance scored this volume?" via `coverage::importance_scored` — used by BOTH
+`MediaScheduler::folder_scores` and `coverage::importance_scores`. It returns `true` when a full pass stamped a
+`recompute_generation` OR any weight row exists (`ImportanceIndex::scored_folder_count() > 0`, a cheap `COUNT(*)`). The
+generation-only check that predated this reported "never scored" for two real stores that carry perfectly usable
+weights: a store maintained only by INCREMENTAL rescores (the incremental path never bumps the generation), and a
+schema-recreated store between its recreate and its first full pass. Both then showed "0 covered" at every threshold. The
+matching importance-side fix (a fresh/recreated store actually GETS a full pass at startup) lives in
+`importance/DETAILS.md` § The initial full pass; fixing both means media's read-side check is defense in depth, not the
+only guard.
 
 ### Covered-count preview + honest progress (`coverage.rs`, `commands.rs`)
 

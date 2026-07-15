@@ -1541,8 +1541,10 @@ export const commands = {
   /**
    *  Live-applies the master "Index image contents" toggle (`mediaIndex.enabled`) for
    *  the media-ML enrichment subsystem. Enabling clears any prior memory-watchdog stop
-   *  so enrichment resumes; the scheduler starts a pass on the next scan completion.
-   *  Runtime-toggleable, no restart. (The frontend toggle UI lands in a later slice.)
+   *  so enrichment resumes AND kicks an immediate pass for every ready volume, so work
+   *  starts the moment the user flips it on rather than waiting for the next scan
+   *  completion (plan M1; mirrors `media_index_set_network_volume_enabled`).
+   *  Runtime-toggleable, no restart.
    */
   setImageIndexEnabled: (enabled: boolean) => __TAURI_INVOKE<void>('set_image_index_enabled', { enabled }),
   /**
@@ -1894,6 +1896,13 @@ export const commands = {
    *  slider's typed value (`0.0..=1.0`, clamped), never a string (`no-string-matching`).
    *  Below-threshold folders are deferred; an override still forces enrichment. Live-
    *  applied; the frontend persists `mediaIndex.importanceThreshold` and calls this.
+   *
+   *  A DECREASE broadens coverage, so newly-covered folders should start enriching now
+   *  rather than waiting for the next scan — this kicks a pass. A RAISE only defers
+   *  future work (forward-only semantics: nothing to enrich now, and the deferred rows
+   *  persist), so kicking on a raise would re-walk the index for nothing. The comparison
+   *  reads the stored value BEFORE and AFTER the (clamped) set, so a clamp can't
+   *  misclassify the direction (plan M1).
    */
   mediaIndexSetImportanceThreshold: (threshold: number) =>
     __TAURI_INVOKE<void>('media_index_set_importance_threshold', { threshold }),
@@ -5077,6 +5086,18 @@ export type MediaIndexVolumeState = {
    *  coverage is intact and resumes on reconnect (never GC'd, never marked failed).
    */
   paused: boolean
+  /**
+   *  Whether image indexing is DEFERRED on this volume because importance hasn't
+   *  scored its folders yet: the master toggle is on, the drive index is ready, but
+   *  importance has no data (fresh or a recompute still running). The scheduler
+   *  enriches only override-covered folders until importance lands, then the
+   *  unscored → scored bridge kicks the rest. The settings UI voices this honestly
+   *  ("Working out which folders matter — image indexing starts right after")
+   *  instead of the generic covered-count spinner, so a persistently-failing
+   *  importance recompute surfaces as a visible wait rather than a silent "0 of N"
+   *  (plan M1: the residual risk must be VISIBLE, never silent).
+   */
+  waitingForImportance: boolean
 }
 
 /**

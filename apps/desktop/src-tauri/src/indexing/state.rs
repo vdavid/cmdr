@@ -1018,21 +1018,20 @@ pub fn stop_scan(volume_id: &str) -> Result<(), String> {
     }
 }
 
-/// Snapshot the volume ids that are ready to score right now: a registered
-/// instance whose freshness is `Fresh` (a completed, authoritative scan). Used by
-/// the importance scheduler's startup sweep — a volume that loaded `Fresh` at
-/// launch from its persisted `scan_completed_at` never re-fires a `ScanCompleted`
-/// event, so a scheduler that only waited on the bus would never score it (the
-/// common restart case, plan Decision 4). `Scanning`/`Stale` volumes are excluded:
-/// a `Scanning` one will fire `ScanCompleted` on the bus when it finishes, and a
-/// `Stale` one has no authoritative scan to score yet.
-/// Snapshot the ready-to-score volume ids WITH their typed kind. The importance
-/// scheduler's startup sweep uses this to branch typed on the kind (score Local +
-/// SMB, exclude MTP — plan M4) without re-deriving the kind from the volume-id
+/// Snapshot the ready-to-score volume ids WITH their typed kind. The importance and
+/// media-index schedulers' startup sweeps use this to branch typed on the kind (score
+/// Local + SMB, exclude MTP — plan M4) without re-deriving the kind from the volume-id
 /// string (`no-string-matching`). Readiness filter: a registered instance whose
-/// freshness is `Fresh` (an authoritative completed scan). `Scanning`/`Stale`
-/// volumes are excluded (a `Scanning` one fires `ScanCompleted` on the bus when it
-/// finishes; a `Stale` one has nothing to score yet).
+/// freshness is `Fresh` (an authoritative completed scan). `Scanning`/`Stale` volumes
+/// are excluded (a `Scanning` one fires `ScanCompleted` on the bus when it finishes; a
+/// `Stale` one has nothing to score yet).
+///
+/// A volume that loaded `Fresh` at launch from its persisted `scan_completed_at` never
+/// re-fires a `ScanCompleted`, so a scheduler that only waited on the bus would never
+/// act on it (its retained bus value stays `Pending`) — the common restart case. This
+/// snapshot is how the sweeps find those volumes; wiring their subscriptions is NOT
+/// enough on its own, so each scheduler pairs this with an explicit startup enqueue
+/// (media's `kick_all_ready_passes`, importance's `enqueue_initial_full_pass_if_unscored`).
 pub(crate) fn ready_volumes_with_kind() -> Vec<(VolumeId, IndexVolumeKind)> {
     let reg = INDEX_REGISTRY.lock().expect("INDEX_REGISTRY lock poisoned");
     reg.iter()

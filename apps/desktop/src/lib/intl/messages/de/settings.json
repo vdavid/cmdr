@@ -567,6 +567,10 @@
   "@settings.mediaIndex.importanceThreshold.previewCounting": {
     "sourceHash": "659de34"
   },
+  "settings.mediaIndex.importanceThreshold.waitingForImportance": "Cmdr ermittelt, welche Ordner wichtig sind. Die Bildindizierung startet gleich danach.",
+  "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
+    "sourceHash": "2116b55"
+  },
   "settings.mediaIndex.importanceThreshold.pending": "Manche Laufwerke werden noch durchsucht, daher werden diese Zahlen noch steigen.",
   "@settings.mediaIndex.importanceThreshold.pending": {
     "sourceHash": "c144f80"

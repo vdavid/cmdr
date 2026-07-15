@@ -685,6 +685,10 @@
   "@settings.mediaIndex.importanceThreshold.previewCounting": {
     "description": "Placeholder shown under the slider while Cmdr is still computing the covered counts (before the first result comes back)."
   },
+  "settings.mediaIndex.importanceThreshold.waitingForImportance": "Working out which folders matter. Image indexing starts right after.",
+  "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
+    "description": "Shown under the slider when image indexing is enabled and the drive is scanned, but Cmdr hasn''t yet worked out which folders the user relies on most (the ranking that decides indexing order). It replaces the generic covered-count placeholder so there''s one honest line, not two spinners. Indexing starts as soon as that ranking finishes."
+  },
   "settings.mediaIndex.importanceThreshold.pending": "Some drives are still scanning, so these numbers will grow.",
   "@settings.mediaIndex.importanceThreshold.pending": {
     "description": "Caveat appended under the covered-count preview when at least one drive being indexed hasn''t finished scanning, so the shown totals are a lower bound."

@@ -568,6 +568,10 @@
   "@settings.mediaIndex.importanceThreshold.previewCounting": {
     "sourceHash": "659de34"
   },
+  "settings.mediaIndex.importanceThreshold.waitingForImportance": "Calculando qué carpetas son importantes. La indexación de imágenes empieza justo después.",
+  "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
+    "sourceHash": "2116b55"
+  },
   "settings.mediaIndex.importanceThreshold.pending": "Algunas unidades todavía se están analizando, así que estos números aumentarán.",
   "@settings.mediaIndex.importanceThreshold.pending": {
     "sourceHash": "c144f80"

@@ -38,7 +38,11 @@ Storage + scheduler:
   `all_entries` walk (hundreds of MB on NAS).
 - **Categorical signals live in `classify.rs`**, shared by prod + fixtures/evals — don't re-derive.
 - **Drive full recompute off the bus `ScanCompleted` + sweep, NEVER phase events** (network never emits them). Coalesce
-  per volume.
+  per volume. A volume Fresh at launch never re-fires `ScanCompleted`, so the sweep ALSO runs
+  `enqueue_initial_full_pass_if_unscored`: a store with no generation (fresh / schema-recreated / incremental-only) gets
+  one full pass. The "unscored?" check binds to `store::needs_initial_full_pass`, which forces the WRITE-path open
+  (triggering the lazy schema recreate) BEFORE reading the generation — ❌ never a sweep-time read probe (it reads the OLD
+  schema's stamped generation, skips, then the recreate wipes it: the stuck-at-generation-0 prod-upgrade trap).
 - **Volume kind ⇒ policy TYPED** (`ScoringPolicy::for_kind`): Local + SMB scored, **MTP excluded**. ❌ NEVER a filesystem
   syscall against an SMB/MTP mount — read the local DB only.
 
