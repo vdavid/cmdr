@@ -366,18 +366,15 @@ frontend.
 ### M6 — Settings home: AI > Image search
 
 - Move the image-search settings (master toggle, slider, reclaim, network volumes) out of Behavior > File system
-  watching into a new "Image search" SUB-ITEM under AI — the sidebar is a registry-driven tree and nested sections
-  already exist (`['Appearance', 'Colors and formats']` is the precedent), so this is `section: ['AI', 'Image search']`
-  on the registry entries; `AI` is already in `TOP_LEVEL_ORDER`, so no top-level change.
-- **This is a RESTRUCTURING of the AI section, not a pure addition — budget for it.** AI today is a FLAT leaf section
-  (`shouldShowTopLevel(['AI'])` renders `AiSection` directly, and AI is NOT in `SettingsContent`'s
-  `sectionsWithSubsections`). There is no "flat parent content + subsections" hybrid — a section is summary-grid parent
-  OR flat leaf. Giving AI its first subsection therefore forces: the existing AI provider settings move into their own
-  named subsection (suggest `['AI', 'Providers']` — copy is David's call, flag it for his visual review), `'AI'` joins
-  `sectionsWithSubsections`, BOTH new routing blocks land in `SettingsContent`, and the `settings.spec.ts`
-  `expectedOrder` gains TWO subsection lines under AI, not one. Plus the usual: registry `section` updates, new
-  `ImageSearchSection.svelte` composing the existing components — per the sections-CLAUDE checklist. A setting's
-  `section` is its ONE home; no mirror rows left behind in the old card.
+  watching into a new "Image search" SUB-ITEM under AI: `section: ['AI', 'Image search']` on the registry entries, a
+  new `ImageSearchSection.svelte` composing the existing components, `SettingsContent` routing for the subsection, and
+  the `settings.spec.ts` mirror — per the sections-CLAUDE checklist. A setting's `section` is its ONE home; no mirror
+  rows left behind in the old card.
+- **AI is ALREADY a card-menu parent (a change merged to main mid-effort, 2026-07-15): `AiSection` = `AI › Provider`,
+  `AskCmdrSection` = `AI › Ask Cmdr`.** So this milestone is purely additive — Image search joins as a third card.
+  REBASE the worktree onto latest local `main` before starting this milestone and follow the AI-section structure AS IT
+  IS on main then (read `settings/sections/CLAUDE.md` + `SettingsContent.svelte` fresh; don't trust this plan's earlier
+  description of a flat AI section — it described the pre-restructure world).
 - Copy: one line making the privacy posture explicit — this runs entirely on the user's Mac via Apple's built-in Vision
   framework; nothing leaves the machine, no AI provider or API key involved. (The AI section otherwise implies the
   configured provider.)
@@ -407,6 +404,9 @@ frontend.
 - Recommended agent split: (A) M1+M2 together (shared files, shared TDD context), (B) M3 after A (shared
   `scheduler/mod.rs` + `commands.rs`), (C) M4 after B, (D) M5 after A, (E) M6 anytime alone, (F) M7 last. The only
   safe parallel pair is E alongside anything; everything else is sequential by file overlap.
+- **Rebase the worktree onto latest local `main` between milestones** (David's standing instruction for this effort —
+  `main` is advancing in parallel, including the AI-settings restructure M6 depends on). Rebase only at agent
+  handoffs, never under a running agent.
 - Every agent reads `media_index/CLAUDE.md` + `DETAILS.md`, `importance/CLAUDE.md` (A), `lib/indexing/CLAUDE.md` (D),
   settings CLAUDE.md chain (C/E) before editing.
 - The dev app may be running while agents work; nothing here touches its data dir except the live QA step.
