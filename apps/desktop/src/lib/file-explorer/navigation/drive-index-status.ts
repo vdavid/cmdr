@@ -7,7 +7,7 @@
 // state→copy contracts are unit-testable without mounting a component.
 
 import type { MessageKey } from '$lib/intl/keys.gen'
-import type { Freshness, VolumeIndexStatus } from '$lib/ipc/bindings'
+import type { Freshness, SmbIndexGateReason, VolumeIndexStatus } from '$lib/ipc/bindings'
 
 /** The four visible badge states. `disabled` is gray (no live index). */
 export type DriveIndexState = 'disabled' | 'scanning' | 'fresh' | 'stale'
@@ -108,4 +108,30 @@ export function driveIndexDuration(
  */
 export function hasLastScanFacts(status: VolumeIndexStatus): boolean {
   return status.scanCompletedAt != null && status.scanDurationMs != null
+}
+
+/**
+ * The toast message key for a typed SMB index refusal, or `null` for
+ * `credentials_needed` (which routes into the reconnect/login flow instead of a
+ * toast). Branch on the typed variant, never the message string
+ * (`no-string-matching`).
+ *
+ * `not_registered` / `not_an_smb_volume` map to the INTERNAL-error copy, not
+ * reconnect advice: a drive the user can turn indexing on for can't reach those
+ * states through a healthy path, so they signal a "shouldn't happen" internal
+ * snag rather than something reconnecting would fix. The remaining SMB-specific
+ * reasons keep their share-oriented copy.
+ */
+export function driveIndexRefusalMessageKey(reason: SmbIndexGateReason): MessageKey | null {
+  switch (reason) {
+    case 'credentials_needed':
+      return null
+    case 'upgrade_failed':
+      return 'fileExplorer.navigation.driveIndex.refusedUpgradeFailed'
+    case 'disconnected':
+      return 'fileExplorer.navigation.driveIndex.refusedDisconnected'
+    case 'not_registered':
+    case 'not_an_smb_volume':
+      return 'fileExplorer.navigation.driveIndex.refusedInternal'
+  }
 }

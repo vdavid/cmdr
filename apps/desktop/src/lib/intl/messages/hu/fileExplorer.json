@@ -1300,5 +1300,9 @@
   "fileExplorer.navigation.driveIndex.refusedGeneric": "A Cmdr most nem tudja indexelni ezt: {name}. Csatlakoztasd újra a meghajtót, és próbáld újra.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"
+  },
+  "fileExplorer.navigation.driveIndex.refusedInternal": "A Cmdr valamibe beleütközött, miközben bekapcsolta az indexelést ehhez: {name}. Ennek nem szabadna előfordulnia. A Cmdr újraindítása általában megoldja.",
+  "@fileExplorer.navigation.driveIndex.refusedInternal": {
+    "sourceHash": "e9adbcc"
   }
 }

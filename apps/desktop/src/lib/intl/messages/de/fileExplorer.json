@@ -1309,5 +1309,9 @@
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr kann {name} gerade nicht indizieren. Verbinde das Laufwerk erneut und versuche es erneut.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"
+  },
+  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr ist beim Einschalten der Indizierung für {name} auf ein Problem gestoßen. Das sollte nicht passieren. Ein Neustart von Cmdr behebt das normalerweise.",
+  "@fileExplorer.navigation.driveIndex.refusedInternal": {
+    "sourceHash": "e9adbcc"
   }
 }

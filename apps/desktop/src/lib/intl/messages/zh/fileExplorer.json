@@ -1299,5 +1299,9 @@
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr 现在无法为 {name} 建立索引。请重新连接驱动器，然后重试。",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"
+  },
+  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr 在为 {name} 打开索引时遇到了问题。这本不该发生。重新启动 Cmdr 通常就能解决。",
+  "@fileExplorer.navigation.driveIndex.refusedInternal": {
+    "sourceHash": "e9adbcc"
   }
 }

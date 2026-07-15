@@ -1300,5 +1300,9 @@
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr không thể lập chỉ mục {name} ngay lúc này. Hãy kết nối lại ổ đĩa và thử lại.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"
+  },
+  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr gặp một trục trặc khi bật lập chỉ mục cho {name}. Điều này không nên xảy ra. Khởi động lại Cmdr thường khắc phục được.",
+  "@fileExplorer.navigation.driveIndex.refusedInternal": {
+    "sourceHash": "e9adbcc"
   }
 }

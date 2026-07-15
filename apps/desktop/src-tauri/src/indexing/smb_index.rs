@@ -105,13 +105,22 @@ fn is_direct_smb(volume_id: &str) -> bool {
 async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReason> {
     let manager = get_volume_manager();
 
-    let volume = manager.get(volume_id).ok_or(SmbIndexGateReason::NotRegistered)?;
+    let Some(volume) = manager.get(volume_id) else {
+        // No volume registered for this id. Logged (like every gate refusal) so a
+        // future refusal isn't invisible in the logs — the reason the missing
+        // local-drive branch stayed hidden for so long.
+        log::warn!(target: "indexing::smb_index", "SMB index gate: no volume registered for '{volume_id}'");
+        return Err(SmbIndexGateReason::NotRegistered);
+    };
     match volume.smb_connection_state() {
         // Already a direct smb2 session: ready to index.
         Some(SmbConnectionState::Direct) => return Ok(volume.root().to_path_buf()),
         // A live SmbVolume whose session dropped. Don't silently index a stale
         // session; the FE reconnect flow owns recovery.
-        Some(SmbConnectionState::Disconnected) => return Err(SmbIndexGateReason::Disconnected),
+        Some(SmbConnectionState::Disconnected) => {
+            log::warn!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' smb2 session is disconnected");
+            return Err(SmbIndexGateReason::Disconnected);
+        }
         // os_mount: a LocalPosixVolume on an smbfs mount. Fall through to upgrade.
         Some(SmbConnectionState::OsMount) | None => {}
     }
@@ -121,6 +130,7 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
     // ISN'T an smbfs mount is a non-SMB volume — reject it rather than trying to
     // upgrade a local disk.
     if volume.smb_connection_state().is_none() && smb_volume_id_for_path(&volume.root().to_string_lossy()).is_none() {
+        log::warn!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' is not an SMB volume");
         return Err(SmbIndexGateReason::NotAnSmbVolume);
     }
 
@@ -130,13 +140,16 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
         use crate::network::smb_upgrade::UpgradeResult;
         match crate::commands::network::upgrade_to_smb_volume_inner(volume_id.to_string()).await {
             Ok(UpgradeResult::Success) => {}
-            Ok(UpgradeResult::CredentialsNeeded { .. }) => return Err(SmbIndexGateReason::CredentialsNeeded),
+            Ok(UpgradeResult::CredentialsNeeded { .. }) => {
+                log::info!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' needs credentials for a direct smb2 connection");
+                return Err(SmbIndexGateReason::CredentialsNeeded);
+            }
             Ok(UpgradeResult::NetworkError { message }) => {
-                log::warn!("SMB index gate: upgrade network error for '{volume_id}': {message}");
+                log::warn!(target: "indexing::smb_index", "SMB index gate: upgrade network error for '{volume_id}': {message}");
                 return Err(SmbIndexGateReason::UpgradeFailed);
             }
             Err(e) => {
-                log::warn!("SMB index gate: upgrade failed for '{volume_id}': {e}");
+                log::warn!(target: "indexing::smb_index", "SMB index gate: upgrade failed for '{volume_id}': {e}");
                 return Err(SmbIndexGateReason::UpgradeFailed);
             }
         }

@@ -42,7 +42,7 @@ getVolumePhase(volumeId): ActivityPhase | undefined  // that volume's current mi
 getAggregatingVolumeIds(): string[]               // every volume currently aggregating
 getActivePhaseVolumeIds(): string[]               // every volume with a live phase (incl. reconcile, no scan/agg entry)
 placeholderActivity(volumeId): VolumeIndexActivity  // a zero-valued activity for an aggregation-/reconcile-only row
-ROOT_VOLUME_ID: 'root'                             // the local volume id; everything else is a network (SMB/MTP) drive
+ROOT_VOLUME_ID: 'root'                             // the boot-disk volume id (the checklist shape is keyed on `category`, not this — see `isNetworkIndexRun`)
 // Per-volume predicates (per-folder size hourglass scopes to the folder's own volume):
 isVolumeScanning(volumeId): boolean  // is THIS volume scanning (NOT replaying) right now
 isVolumeAggregating(volumeId): boolean  // is THIS volume aggregating right now
@@ -112,7 +112,10 @@ content inside a `<div hidden>` host and passes the inner content div (not the h
 
 **Body / wrapper split.** `IndexingDriveRow` is a thin WRAPPER: it owns the stateful glue — this volume's two ETA
 sliding windows (scan + replay) and a 1 Hz `now` tick (gated on scanning/aggregating) — plus the reactive reads
-`getVolumePhase(volumeId)` and `isNetwork` (`volumeId !== ROOT_VOLUME_ID`), and renders the heading + a
+`getVolumePhase(volumeId)` and `isNetwork` (`isNetworkIndexRun(volumeId, getVolumes())`, keyed on the volume's
+`category`: `network`/`mobile_device` → network checklist, every local category → local — so a non-root LOCAL drive like
+a USB stick gets the Save + Catch-up steps, NOT the network shape a `volumeId !== root` test would have handed it), and
+renders the heading + a
 `IndexingStatusBody`. The body is PRESENTATIONAL: it takes the `activity`, `aggregation`, `now`, `windowedEta`, `phase`,
 and `isNetwork`, and renders the step checklist. No `$effect`, no window state in the body, so two surfaces rendering
 the same volume can't collide on window state — each WRAPPER instance keeps its own window. Both surfaces (the corner

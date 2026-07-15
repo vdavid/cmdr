@@ -21,11 +21,12 @@
     } from './eta'
     import {
         getVolumePhase,
-        ROOT_VOLUME_ID,
         type VolumeIndexActivity,
         type AggregationActivity,
     } from './index-state.svelte'
+    import { isNetworkIndexRun } from './index-run-kind'
     import IndexingStatusBody from './IndexingStatusBody.svelte'
+    import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -174,10 +175,12 @@
 
     // This volume's top-level pipeline phase (the checklist's authoritative driver
     // for the catch-up step) and whether it's a network drive (which skips the
-    // Save and Catch-up steps). Read here in the stateful wrapper; the body stays
-    // presentational, taking both as props.
+    // Save and Catch-up steps). Network-ness is keyed on the volume's `category`
+    // from the store, so a non-root LOCAL drive (a USB stick / SD card) gets the
+    // local checklist, not the network one. Read here in the stateful wrapper; the
+    // body stays presentational, taking both as props.
     const phase = $derived(getVolumePhase(activity.volumeId))
-    const isNetwork = $derived(activity.volumeId !== ROOT_VOLUME_ID)
+    const isNetwork = $derived(isNetworkIndexRun(activity.volumeId, getVolumes()))
 </script>
 
 <div class="drive-row">

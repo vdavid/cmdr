@@ -922,6 +922,7 @@ export type MessageKey =
   | 'fileExplorer.navigation.driveIndex.menuStop'
   | 'fileExplorer.navigation.driveIndex.refusedDisconnected'
   | 'fileExplorer.navigation.driveIndex.refusedGeneric'
+  | 'fileExplorer.navigation.driveIndex.refusedInternal'
   | 'fileExplorer.navigation.driveIndex.refusedUpgradeFailed'
   | 'fileExplorer.navigation.driveIndex.tooltipDisabled'
   | 'fileExplorer.navigation.driveIndex.tooltipFresh'

@@ -1304,5 +1304,9 @@
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr no puede indexar {name} ahora mismo. Vuelve a conectar la unidad e inténtalo de nuevo.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"
+  },
+  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr tuvo un problema al activar la indexación de {name}. Esto no debería pasar. Reiniciar Cmdr suele solucionarlo.",
+  "@fileExplorer.navigation.driveIndex.refusedInternal": {
+    "sourceHash": "e9adbcc"
   }
 }

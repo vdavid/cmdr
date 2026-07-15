@@ -1873,7 +1873,14 @@
   },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr can''t index {name} right now. Reconnect the drive and try again.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
-    "description": "Fallback toast when turning on indexing for a drive is refused for a reason not covered by a more specific message (not registered, not an SMB volume).",
+    "description": "Fallback toast when turning on indexing for a drive doesn''t go through because the per-drive command threw an unexpected exception (not one of the typed refusal reasons).",
+    "placeholders": {
+      "name": "the drive''s display name (e.g. Backups)"
+    }
+  },
+  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr hit a snag turning on indexing for {name}. This shouldn''t happen. Restarting Cmdr usually clears it.",
+  "@fileExplorer.navigation.driveIndex.refusedInternal": {
+    "description": "Toast shown when turning on indexing for a drive is refused for a reason that signals an internal problem rather than something the user can fix by reconnecting (the drive isn''t registered, or it''s classified as a non-SMB volume when it shouldn''t be). Reassuring and conversational; avoid the words ''error'' and ''failed''.",
     "placeholders": {
       "name": "the drive''s display name (e.g. Backups)"
     }

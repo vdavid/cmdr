@@ -9,10 +9,10 @@
     // there's a trustworthy denominator, else the honest running count).
     import {
         getVolumePhase,
-        ROOT_VOLUME_ID,
         type VolumeIndexActivity,
         type AggregationActivity,
     } from './index-state.svelte'
+    import { isNetworkIndexRun } from './index-run-kind'
     import {
         deriveSteps,
         activeStep,
@@ -22,6 +22,7 @@
     } from './indexing-steps'
     import { computeScanProgress } from './eta'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
+    import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -33,7 +34,7 @@
     const { activity, aggregation, driveName }: Props = $props()
 
     const phase = $derived(getVolumePhase(activity.volumeId))
-    const isNetwork = $derived(activity.volumeId !== ROOT_VOLUME_ID)
+    const isNetwork = $derived(isNetworkIndexRun(activity.volumeId, getVolumes()))
     const runKind = $derived<IndexRunKind>(
         activity.phase === 'replaying' ? 'replay' : isNetwork ? 'network' : 'local',
     )

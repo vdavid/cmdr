@@ -66,7 +66,7 @@
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelte'
     import DriveIndexBadge from './DriveIndexBadge.svelte'
-    import type { DriveIndexMenuAction } from './drive-index-status'
+    import { driveIndexRefusalMessageKey, type DriveIndexMenuAction } from './drive-index-status'
     import type { SmbIndexGateReason } from '$lib/ipc/bindings'
     import { maybePromptFirstConnect } from '$lib/indexing/first-connect-trigger'
     import { silenceDrive } from '$lib/indexing/drive-index-prefs'
@@ -672,25 +672,17 @@
         await driveIndex.fetchStatus(vid)
     }
 
-    /** Surface a typed SMB index refusal: route credentials to login, else a friendly toast. */
+    /** Surface a typed index refusal: route credentials to login, else a friendly toast.
+     *  The variant→copy mapping is the pure `driveIndexRefusalMessageKey` (unit-tested). */
     function handleIndexRefusal(vid: string, name: string, reason: SmbIndexGateReason) {
-        switch (reason) {
-            case 'credentials_needed':
-                // Reuse the direct-connect flow, which prompts for the password and
-                // reconnects; the user can then turn indexing on again.
-                void handleSubmenuAction(vid)
-                break
-            case 'upgrade_failed':
-                addToast(tString('fileExplorer.navigation.driveIndex.refusedUpgradeFailed', { name }), { level: 'error' })
-                break
-            case 'disconnected':
-                addToast(tString('fileExplorer.navigation.driveIndex.refusedDisconnected', { name }), { level: 'error' })
-                break
-            case 'not_registered':
-            case 'not_an_smb_volume':
-                addToast(tString('fileExplorer.navigation.driveIndex.refusedGeneric', { name }), { level: 'error' })
-                break
+        const messageKey = driveIndexRefusalMessageKey(reason)
+        if (messageKey === null) {
+            // `credentials_needed`: reuse the direct-connect flow, which prompts for
+            // the password and reconnects; the user can then turn indexing on again.
+            void handleSubmenuAction(vid)
+            return
         }
+        addToast(tString(messageKey, { name }), { level: 'error' })
     }
 
     function handleBreadcrumbPopupClickOutside(event: MouseEvent) {
