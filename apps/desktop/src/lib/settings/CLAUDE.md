@@ -4,8 +4,8 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
 
 ## Module map
 
-- `settings-registry.ts` (single source of truth), `settings-store.ts` (persistence + cache + cross-window sync),
-  `settings-applier.ts` (side effects), `reactive-settings.svelte.ts` (`$state` for render-affecting settings).
+- `settings-registry.ts` (logic; data in `definitions/*.ts`), `settings-store.ts` (persistence + cache + cross-window
+  sync), `settings-applier.ts` (side effects), `reactive-settings.svelte.ts` (`$state` for render-affecting settings).
 - `sections/` (one component per UI section) and `components/` (row primitives) carry their own CLAUDE.md.
 - Shortcuts are a separate subsystem (`shortcuts.json`); see `lib/shortcuts/CLAUDE.md`.
 

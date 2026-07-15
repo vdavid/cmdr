@@ -21,9 +21,25 @@ defined once in `settings-registry.ts` and accessed uniformly by both UI and MCP
 
 ## Architecture
 
-### Registry (`settings-registry.ts`)
+### Registry (`settings-registry.ts` + `definitions/`)
 
-Single source of truth for all settings. Each entry is authored as a `SettingDefinitionSource` (in `types.ts`) carrying:
+Single source of truth for all settings. `settings-registry.ts` holds the LOGIC (resolution of message keys →
+getter-backed definitions, validation, the section-tree builder, and the public API: `settingsRegistry`,
+`getSettingDefinition`, `getSettingsInSection`, `getAdvancedSettings`, `getDefaultValue`, `validateSettingValue`,
+`buildSectionTree`). The authored DATA lives in `definitions/*.ts`, one file per top-level section — `appearance.ts`,
+`behavior.ts`, `ai.ts`, `file-systems.ts`, `viewer.ts`, `operation-log.ts`, `developer.ts`, `updates-privacy.ts`,
+`advanced.ts` — each exporting a `<section>Settings: SettingDefinitionSource[]`. `settings-registry.ts` builds
+`settingsRegistrySource` by spreading those arrays in section order, and **that concatenation order IS the registry
+order** (`buildSectionTree` reads first-appearance order; search and Advanced grouping preserve it). Data-only helpers a
+section needs are colocated with it (the language-picker and volume-tint option builders live in `appearance.ts`, the
+only place they're used).
+
+One deliberate wrinkle: `whatsNew.lastSeenVersion` has `section: ['Advanced']` but is authored in `updates-privacy.ts`
+(colocated with `whatsNew.showOnUpdate`), preserving its original mid-array position so the concatenated array stays
+byte-for-byte identical. It's a hidden state flag, so it renders on the Advanced page regardless of which file it's
+authored in.
+
+Each entry is authored as a `SettingDefinitionSource` (in `types.ts`) carrying:
 
 - `id`: Unique key (e.g., `appearance.uiDensity`)
 - `section`: Path in settings tree (e.g., `['Appearance', 'Colors and formats']`) — stays English (see i18n below)
