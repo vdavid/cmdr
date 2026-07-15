@@ -19,6 +19,13 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
       integration test (real-FAT mount-relative scan → dir_stats + null inodes) plus a live MCP validation on a
       synthetic FAT32 image — NO CI Playwright E2E by decision (the panic-class `hdiutil`/FSKit op is deliberately kept
       out of CI; see the plan's M9).
+- [ ] 2026-07-15 [media-index-polish-plan.md](media-index-polish-plan.md) - Finish + polish image search: fix the
+      dead-start bugs (toggle/startup/threshold now kick passes; defer-until-scored replaces the enrich-all race), the
+      importance "never scored" detection (recreate-bound full-recompute trigger + weights-probe fallback), preview
+      re-polling, the excluded-folder privacy retro-delete (live veto + double-tap delete), reclaim-space UX
+      (single-sourced arithmetic + VACUUM), image indexing joins the top-right progress indicator (throttled events,
+      honest per-volume ETA, terminal events on every exit), and settings move to AI > Image search. Plan reviewed in
+      five rounds.
 - [ ] 2026-07-14 [idle-cpu-throttle-plan.md](idle-cpu-throttle-plan.md) - Cut idle CPU + disk-write thrash from live
       indexing (#37). L1 (importance folded-key subtree clear) and M1 (per-file live-upsert throttle: 60 s leading +
       trailing, 2%/512 KiB bypass, Downloads-exempt, self-write loop subsumed) shipped; M2 (search-index prealloc
