@@ -453,6 +453,10 @@
   "@settings.mediaIndex.card": {
     "sourceHash": "a4a68f1"
   },
+  "settings.mediaIndex.privacyNote": "Ez teljes egészében a Macen fut az Apple beépített Vision keretrendszerével. A képeid soha nem hagyják el a számítógépedet, és nincs benne AI-szolgáltató vagy API-kulcs.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.enabled.label": "Képek tartalmának indexelése",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"
@@ -1352,6 +1356,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the read-only AI chat rail); kept verbatim in every locale, per the en @key note."
   },
+  "settings.section.imageSearch": "Képkeresés",
+  "@settings.section.imageSearch": {
+    "sourceHash": "a4a68f1"
+  },
   "settings.askCmdr.intro": "Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről. Az Ask Cmdr csak olvasásra képes: a válaszadáshoz neveket, útvonalakat és méreteket olvas, és soha semmit nem változtat.",
   "@settings.askCmdr.intro": {
     "sourceHash": "124b2d5"
@@ -1594,6 +1602,10 @@
   "settings.summary.askCmdr": "Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről, és válaszd ki, melyik modellt használja.",
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
+  },
+  "settings.summary.imageSearch": "Keress a képeidben lévő szövegben. A Macen fut, és semmi sem hagyja el.",
+  "@settings.summary.imageSearch": {
+    "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Ennek a szakasznak nincsenek alszakaszai.",
   "@settings.summary.noSubsections": {

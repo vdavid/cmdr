@@ -63,6 +63,7 @@ test.describe('Settings page', () => {
       'AI',
       'Provider',
       'Ask Cmdr',
+      'Image search',
       'File systems',
       'SMB/Network shares',
       'MTP (Android/Kindle/cameras)',

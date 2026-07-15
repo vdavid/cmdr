@@ -456,6 +456,10 @@
   "@settings.mediaIndex.card": {
     "sourceHash": "a4a68f1"
   },
+  "settings.mediaIndex.privacyNote": "Isto roda inteiramente no seu Mac usando o framework Vision integrado da Apple. Suas imagens nunca saem do seu computador e nenhum provedor de IA ou chave de API está envolvido.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.enabled.label": "Indexar o conteúdo das imagens",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"
@@ -1354,6 +1358,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the Ask Cmdr chat rail); kept verbatim in every locale (do-not-translate list)."
   },
+  "settings.section.imageSearch": "Busca de imagens",
+  "@settings.section.imageSearch": {
+    "sourceHash": "a4a68f1"
+  },
   "settings.askCmdr.intro": "Converse com uma IA sobre seus arquivos, discos e histórico. O Ask Cmdr é somente leitura: ele lê nomes, caminhos e tamanhos para responder, e nunca muda nada.",
   "@settings.askCmdr.intro": {
     "sourceHash": "124b2d5"
@@ -1596,6 +1604,10 @@
   "settings.summary.askCmdr": "Converse com uma IA sobre seus arquivos, discos e histórico, e escolha o modelo que ela usa.",
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
+  },
+  "settings.summary.imageSearch": "Busque o texto dentro das suas imagens. Roda no seu Mac e nada sai dele.",
+  "@settings.summary.imageSearch": {
+    "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Esta seção não tem subseções.",
   "@settings.summary.noSubsections": {

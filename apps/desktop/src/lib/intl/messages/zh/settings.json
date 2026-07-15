@@ -453,6 +453,10 @@
   "@settings.mediaIndex.card": {
     "sourceHash": "a4a68f1"
   },
+  "settings.mediaIndex.privacyNote": "这一切完全在你的 Mac 上通过 Apple 内置的 Vision 框架运行。你的图像绝不离开你的电脑，也不涉及任何 AI 提供商或 API 密钥。",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.enabled.label": "索引图像内容",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"
@@ -1351,6 +1355,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name, kept verbatim across the whole zh catalog per the @key description (\"keep it as-is\")."
   },
+  "settings.section.imageSearch": "图像搜索",
+  "@settings.section.imageSearch": {
+    "sourceHash": "a4a68f1"
+  },
   "settings.askCmdr.intro": "和 AI 聊聊你的文件、驱动器和历史记录。Ask Cmdr 是只读的：它通过读取名称、路径和大小来回答问题，从不修改任何内容。",
   "@settings.askCmdr.intro": {
     "sourceHash": "124b2d5"
@@ -1593,6 +1601,10 @@
   "settings.summary.askCmdr": "和 AI 聊聊你的文件、驱动器和历史记录，并选择它使用的模型。",
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
+  },
+  "settings.summary.imageSearch": "搜索图像中的文字。在你的 Mac 上运行，绝不外传。",
+  "@settings.summary.imageSearch": {
+    "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "此部分没有子部分。",
   "@settings.summary.noSubsections": {

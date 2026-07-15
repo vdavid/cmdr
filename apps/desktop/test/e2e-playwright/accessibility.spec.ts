@@ -345,6 +345,7 @@ for (const mode of ['light', 'dark'] as const) {
           },
           { name: 'AI > Provider', path: ['AI', 'Provider'], sectionId: 'ai-provider' },
           { name: 'AI > Ask Cmdr', path: ['AI', 'Ask Cmdr'], sectionId: 'ai-ask-cmdr' },
+          { name: 'AI > Image search', path: ['AI', 'Image search'], sectionId: 'ai-image-search' },
           {
             name: 'File systems > SMB/Network shares',
             path: ['File systems', 'SMB/Network shares'],

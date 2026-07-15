@@ -458,6 +458,10 @@
   "@settings.mediaIndex.card": {
     "sourceHash": "a4a68f1"
   },
+  "settings.mediaIndex.privacyNote": "Dit draait volledig op je Mac met Apples ingebouwde Vision-framework. Je afbeeldingen verlaten je computer nooit, en er komt geen AI-aanbieder of API-sleutel aan te pas.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.enabled.label": "Inhoud van afbeeldingen indexeren",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"
@@ -1359,6 +1363,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (the Ask Cmdr Settings section); kept verbatim in every locale, matches askCmdr.title and commands.askCmdrToggle.label."
   },
+  "settings.section.imageSearch": "Afbeeldingen doorzoeken",
+  "@settings.section.imageSearch": {
+    "sourceHash": "a4a68f1"
+  },
   "settings.askCmdr.intro": "Chat met een AI over je bestanden, schijven en geschiedenis. Ask Cmdr is alleen-lezen: het leest namen, paden en groottes om te antwoorden, en verandert nooit iets.",
   "@settings.askCmdr.intro": {
     "sourceHash": "124b2d5"
@@ -1601,6 +1609,10 @@
   "settings.summary.askCmdr": "Chat met een AI over je bestanden, schijven en geschiedenis, en kies het model dat het gebruikt.",
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
+  },
+  "settings.summary.imageSearch": "Doorzoek de tekst in je afbeeldingen. Draait op je Mac en niets verlaat die.",
+  "@settings.summary.imageSearch": {
+    "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Dit onderdeel heeft geen subonderdelen.",
   "@settings.summary.noSubsections": {

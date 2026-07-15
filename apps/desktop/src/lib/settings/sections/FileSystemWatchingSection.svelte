@@ -40,16 +40,12 @@
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingNumberInput from '../components/SettingNumberInput.svelte'
-    import MediaIndexNetworkVolumes from './MediaIndexNetworkVolumes.svelte'
-    import MediaIndexImportanceSlider from './MediaIndexImportanceSlider.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
-    import StatusBadge from '$lib/ui/StatusBadge.svelte'
-    import { getBadgeStatus } from '$lib/feature-status'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { getSetting, getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
+    import { getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
     import { clearSilencedDrives, hasSilencedDrives } from '$lib/indexing/drive-index-prefs'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -95,13 +91,6 @@
     const enabledDef = getSettingDefinition('indexing.enabled') ?? { label: '', description: '' }
     const askForEachDriveDef = getSettingDefinition('indexing.askForEachDrive') ?? { label: '', description: '' }
     const staleNotifyDef = getSettingDefinition('indexing.staleNotify') ?? { label: '', description: '' }
-    const imageIndexDef = getSettingDefinition('mediaIndex.enabled') ?? { label: '', description: '' }
-
-    const imageSearchBadge = getBadgeStatus('image-search')
-
-    // Live master-toggle state, so the per-network-volume controls appear/disappear the
-    // moment the user flips "Index image contents" (no restart, matches the live-apply rule).
-    let imageIndexEnabled = $state(getSetting('mediaIndex.enabled'))
 
     // The "Re-enable notifications for all drives" button is disabled until the
     // user has silenced at least one drive's first-connect prompt. Tracked
@@ -249,11 +238,6 @@
         const unsubSilenced = onSpecificSettingChange('indexing.silencedDrives', () => {
             hasSilenced = hasSilencedDrives()
         })
-        // Track the image-index master toggle so the per-network-volume controls reveal
-        // live (the toggle applies in this same window before this section re-reads it).
-        const unsubImageIndex = onSpecificSettingChange('mediaIndex.enabled', (_id, value) => {
-            imageIndexEnabled = value
-        })
         // Refresh DB size every 2 seconds while visible
         refreshTimer = setInterval(() => void refreshDbSize(), 2000)
 
@@ -263,7 +247,6 @@
             unsubEnabled()
             unsubLowDiskSpace()
             unsubSilenced()
-            unsubImageIndex()
         }
     })
 </script>
@@ -361,34 +344,6 @@
                 >
                     <SettingSwitch id="indexing.staleNotify" />
                 </SettingRow>
-            {/if}
-        </SectionCard>
-    {/if}
-
-    {#if shouldShow('mediaIndex.enabled')}
-        <SectionCard label={tString('settings.mediaIndex.card')}>
-            {#snippet badge()}
-                {#if imageSearchBadge}<StatusBadge status={imageSearchBadge} />{/if}
-            {/snippet}
-            <SettingRow
-                id="mediaIndex.enabled"
-                label={imageIndexDef.label}
-                description={imageIndexDef.description}
-                {searchQuery}
-            >
-                <SettingSwitch id="mediaIndex.enabled" />
-            </SettingRow>
-
-            <!-- The importance-threshold slider ("how deep do I index?") + its per-volume
-                 progress. Refines the master toggle, so it's only shown when indexing is on. -->
-            {#if imageIndexEnabled}
-                <MediaIndexImportanceSlider />
-            {/if}
-
-            <!-- Per-network-volume opt-in + "always index" overrides (network enrichment). Only
-                 meaningful once image indexing is on, so gate on the live master toggle. -->
-            {#if imageIndexEnabled}
-                <MediaIndexNetworkVolumes />
             {/if}
         </SectionCard>
     {/if}

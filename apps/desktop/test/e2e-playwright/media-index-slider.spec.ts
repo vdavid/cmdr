@@ -21,7 +21,7 @@ import { closeScopedWindow, openSettingsWindowViaProd } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
 
 const MASTER_LABEL = 'Index image contents'
-const SECTION_ID = 'behavior-file-system-watching'
+const SECTION_ID = 'ai-image-search'
 const MASTER_KEY = 'mediaIndex.enabled'
 const THRESHOLD_KEY = 'mediaIndex.importanceThreshold'
 
@@ -83,9 +83,9 @@ function pressArrowJs(key: 'ArrowLeft' | 'ArrowRight'): string {
   })()`
 }
 
-async function openFileSystemWatching(settings: TauriPage): Promise<void> {
-  const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('File system watching'))
-  expect(clicked, 'File system watching sidebar item exists').toBe(true)
+async function openImageSearch(settings: TauriPage): Promise<void> {
+  const clicked = await settings.evaluate<boolean>(clickSectionByTextJs('Image search'))
+  expect(clicked, 'Image search sidebar item exists').toBe(true)
   await settings.waitForSelector(`[data-section-id="${SECTION_ID}"]`, 3000)
   await settings.waitForSelector(`[aria-label="${MASTER_LABEL}"]`, 3000)
 }
@@ -94,7 +94,7 @@ async function openSettings(tauriPage: TauriPage): Promise<TauriPage> {
   const settings = await openSettingsWindowViaProd(tauriPage)
   await settings.waitForSelector('.settings-window', 3000)
   await settings.waitForSelector('.settings-sidebar', 3000)
-  await openFileSystemWatching(settings)
+  await openImageSearch(settings)
   return settings
 }
 

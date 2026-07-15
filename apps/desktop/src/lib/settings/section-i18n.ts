@@ -31,6 +31,7 @@ const SECTION_TITLE_KEY: Partial<Record<string, MessageKey>> = {
   AI: 'settings.section.ai',
   Provider: 'settings.section.aiProvider',
   'Ask Cmdr': 'settings.section.askCmdr',
+  'Image search': 'settings.section.imageSearch',
   'File systems': 'settings.section.fileSystems',
   'SMB/Network shares': 'settings.section.smbNetworkShares',
   'MTP (Android/Kindle/cameras)': 'settings.section.mtp',

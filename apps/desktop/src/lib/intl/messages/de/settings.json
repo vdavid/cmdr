@@ -455,6 +455,10 @@
   "@settings.mediaIndex.card": {
     "sourceHash": "a4a68f1"
   },
+  "settings.mediaIndex.privacyNote": "Das läuft vollständig auf deinem Mac über Apples integriertes Vision-Framework. Deine Bilder verlassen deinen Computer nie, und es sind kein KI-Anbieter und kein API-Schlüssel beteiligt.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.enabled.label": "Bildinhalte indizieren",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"
@@ -1358,6 +1362,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Brand/product name, kept verbatim in every locale (do-not-translate list)."
   },
+  "settings.section.imageSearch": "Bildersuche",
+  "@settings.section.imageSearch": {
+    "sourceHash": "a4a68f1"
+  },
   "settings.askCmdr.intro": "Chatte mit einer KI über deine Dateien, Laufwerke und deinen Verlauf. Ask Cmdr ist schreibgeschützt: Es liest Namen, Pfade und Größen, um zu antworten, und verändert nie etwas.",
   "@settings.askCmdr.intro": {
     "sourceHash": "124b2d5"
@@ -1600,6 +1608,10 @@
   "settings.summary.askCmdr": "Chatte mit einer KI über deine Dateien, Laufwerke und deinen Verlauf und wähle das Modell, das sie verwendet.",
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
+  },
+  "settings.summary.imageSearch": "Durchsuche den Text in deinen Bildern. Läuft auf deinem Mac, und nichts verlässt ihn.",
+  "@settings.summary.imageSearch": {
+    "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Dieser Abschnitt hat keine Unterabschnitte.",
   "@settings.summary.noSubsections": {

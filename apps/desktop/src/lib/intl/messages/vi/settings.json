@@ -451,6 +451,10 @@
   "@settings.mediaIndex.card": {
     "sourceHash": "a4a68f1"
   },
+  "settings.mediaIndex.privacyNote": "Việc này chạy hoàn toàn trên máy Mac của bạn bằng Vision framework tích hợp của Apple. Hình ảnh của bạn không bao giờ rời khỏi máy tính, và không có nhà cung cấp AI hay khóa API nào tham gia.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.enabled.label": "Lập chỉ mục nội dung hình ảnh",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"
@@ -1349,6 +1353,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (Ask Cmdr); kept verbatim in every locale per the do-not-translate rule."
   },
+  "settings.section.imageSearch": "Tìm kiếm hình ảnh",
+  "@settings.section.imageSearch": {
+    "sourceHash": "a4a68f1"
+  },
   "settings.askCmdr.intro": "Trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn. Ask Cmdr chỉ đọc: đọc tên, đường dẫn và kích thước để trả lời, không bao giờ thay đổi bất cứ điều gì.",
   "@settings.askCmdr.intro": {
     "sourceHash": "124b2d5"
@@ -1591,6 +1599,10 @@
   "settings.summary.askCmdr": "Trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn, và chọn mô hình mà nó sử dụng.",
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
+  },
+  "settings.summary.imageSearch": "Tìm kiếm văn bản bên trong hình ảnh của bạn. Chạy trên máy Mac của bạn và không có gì rời khỏi đó.",
+  "@settings.summary.imageSearch": {
+    "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Mục này không có tiểu mục.",
   "@settings.summary.noSubsections": {

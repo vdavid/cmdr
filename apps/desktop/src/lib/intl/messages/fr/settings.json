@@ -455,6 +455,10 @@
   "@settings.mediaIndex.card": {
     "sourceHash": "a4a68f1"
   },
+  "settings.mediaIndex.privacyNote": "Tout cela fonctionne entièrement sur votre Mac grâce au framework Vision intégré d''Apple. Vos images ne quittent jamais votre ordinateur, et aucun fournisseur d''IA ni clé d''API n''est impliqué.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.enabled.label": "Indexer le contenu des images",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"
@@ -1361,6 +1365,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name (\"Ask Cmdr\" is the feature's brand name); kept verbatim in every locale per the @key description."
   },
+  "settings.section.imageSearch": "Recherche d''images",
+  "@settings.section.imageSearch": {
+    "sourceHash": "a4a68f1"
+  },
   "settings.askCmdr.intro": "Discutez avec une IA à propos de vos fichiers, disques et historique. Ask Cmdr est en lecture seule : il lit les noms, chemins et tailles pour répondre, et ne change jamais rien.",
   "@settings.askCmdr.intro": {
     "sourceHash": "124b2d5"
@@ -1603,6 +1611,10 @@
   "settings.summary.askCmdr": "Discutez avec une IA à propos de vos fichiers, disques et historique, et choisissez le modèle qu''elle utilise.",
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
+  },
+  "settings.summary.imageSearch": "Recherchez le texte à l''intérieur de vos images. Fonctionne sur votre Mac, et rien ne le quitte.",
+  "@settings.summary.imageSearch": {
+    "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Cette section n''a aucune sous-section.",
   "@settings.summary.noSubsections": {

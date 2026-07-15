@@ -455,6 +455,10 @@
   "@settings.mediaIndex.card": {
     "sourceHash": "a4a68f1"
   },
+  "settings.mediaIndex.privacyNote": "Det här körs helt på din Mac med Apples inbyggda Vision-ramverk. Dina bilder lämnar aldrig din dator, och ingen AI-leverantör eller API-nyckel är inblandad.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "817fc60"
+  },
   "settings.mediaIndex.enabled.label": "Indexera bildinnehåll",
   "@settings.mediaIndex.enabled.label": {
     "sourceHash": "a2e6604"
@@ -1358,6 +1362,10 @@
     "sourceHash": "aafb1ce",
     "sameAsSourceJustification": "Product name; kept verbatim in every locale (do-not-translate list)."
   },
+  "settings.section.imageSearch": "Bildsökning",
+  "@settings.section.imageSearch": {
+    "sourceHash": "a4a68f1"
+  },
   "settings.askCmdr.intro": "Chatta med en AI om dina filer, enheter och historik. Ask Cmdr är skrivskyddad: den läser namn, sökvägar och storlekar för att svara, och ändrar aldrig något.",
   "@settings.askCmdr.intro": {
     "sourceHash": "124b2d5"
@@ -1600,6 +1608,10 @@
   "settings.summary.askCmdr": "Chatta med en AI om dina filer, enheter och historik, och välj vilken modell den använder.",
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
+  },
+  "settings.summary.imageSearch": "Sök i texten i dina bilder. Körs på din Mac, och inget lämnar den.",
+  "@settings.summary.imageSearch": {
+    "sourceHash": "cbeb785"
   },
   "settings.summary.noSubsections": "Den här sektionen har inga underavsnitt.",
   "@settings.summary.noSubsections": {

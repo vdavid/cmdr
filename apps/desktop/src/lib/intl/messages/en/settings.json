@@ -557,11 +557,15 @@
 
   "settings.mediaIndex.card": "Image search",
   "@settings.mediaIndex.card": {
-    "description": "Title of the settings card that groups image-content indexing (searching the text inside images). In Settings > Behavior > File system watching."
+    "description": "Title of the settings card that groups image-content indexing (searching the text inside images). In Settings > AI > Image search."
+  },
+  "settings.mediaIndex.privacyNote": "This runs entirely on your Mac using Apple''s built-in Vision framework. Your images never leave your computer, and no AI provider or API key is involved.",
+  "@settings.mediaIndex.privacyNote": {
+    "description": "Privacy reassurance shown in Settings > AI > Image search, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple''s framework name (do not translate); \"API key\" is a credential for a cloud AI provider."
   },
   "settings.mediaIndex.enabled.label": "Index image contents",
   "@settings.mediaIndex.enabled.label": {
-    "description": "Label for the toggle that turns on reading the text inside images (OCR) so you can search it. Off by default. In Settings > Behavior > File system watching."
+    "description": "Label for the toggle that turns on reading the text inside images (OCR) so you can search it. Off by default. In Settings > AI > Image search."
   },
   "settings.mediaIndex.enabled.description": "Read the text inside your images so you can search it. Runs on your Mac and never leaves it. Covers local drives for now.",
   "@settings.mediaIndex.enabled.description": {
@@ -1707,6 +1711,10 @@
   "@settings.section.askCmdr": {
     "description": "Top-level Settings section title: Ask Cmdr (the read-only chat rail). This is the product name; keep it as-is."
   },
+  "settings.section.imageSearch": "Image search",
+  "@settings.section.imageSearch": {
+    "description": "Settings subsection title under AI: Image search (on-device search of the text inside images, via OCR). Sidebar and page heading. Keep short; match the card title \"settings.mediaIndex.card\"."
+  },
   "settings.askCmdr.intro": "Chat with an AI about your files, drives, and history. Ask Cmdr is read-only: it reads names, paths, and sizes to answer, and never changes anything.",
   "@settings.askCmdr.intro": {
     "description": "Intro paragraph at the top of the Ask Cmdr settings section."
@@ -1961,6 +1969,10 @@
   "settings.summary.askCmdr": "Chat with an AI about your files, drives, and history, and pick the model it uses.",
   "@settings.summary.askCmdr": {
     "description": "One-line summary shown on the AI section's Ask Cmdr card. \"Ask Cmdr\" is the product name; keep it as-is."
+  },
+  "settings.summary.imageSearch": "Search the text inside your images. Runs on your Mac, and nothing leaves it.",
+  "@settings.summary.imageSearch": {
+    "description": "One-line summary shown on the AI section's Image search card. The feature reads the text inside images (OCR) so it can be searched; it runs on-device. \"Mac\" is the Apple computer."
   },
   "settings.summary.noSubsections": "This section has no subsections.",
   "@settings.summary.noSubsections": {

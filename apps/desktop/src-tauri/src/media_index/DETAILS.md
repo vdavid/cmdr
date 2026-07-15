@@ -173,7 +173,7 @@ The backend provides three setters + the extended state:
 - `media_index_volume_state` extended with `network_opt_in`, `always_indexed`, `paused` (the "paused, resumes on
   reconnect" honesty).
 
-**The FE surface (shipped).** The opt-in + volume override live in Settings > Behavior > File system watching >
+**The FE surface (shipped).** The opt-in + volume override live in Settings > AI > Image search >
 "Image search" card, below the master toggle, rendered by
 `src/lib/settings/sections/MediaIndexNetworkVolumes.svelte` (only when `mediaIndex.enabled` is on). It lists each mounted
 network (SMB) volume with an opt-in switch and, once opted in, an "always index this drive" switch plus a live status
@@ -360,8 +360,8 @@ The "why matched" snippet (`[`/`]`-wrapped matched terms) is parsed to structure
 segments by the pure `src/lib/search/ocr-snippet.ts` and rendered with `<mark>`, NEVER via
 `{@html}` — a document whose OCR text contains markup can't inject anything.
 
-The master toggle `mediaIndex.enabled` renders in Settings > Behavior > File system
-watching (a dedicated "Image search" card, `FileSystemWatchingSection.svelte`), off by
+The master toggle `mediaIndex.enabled` renders in Settings > AI > Image search
+(a dedicated "Image search" card, `ImageSearchSection.svelte`), off by
 default. It live-applies through `settings-applier.ts` → `setImageIndexEnabled` (no
 restart), the standard backend-affecting-setting pattern.
 
@@ -633,7 +633,7 @@ commands (all `spawn_blocking`, offline-capable, registered in BOTH `ipc.rs` + `
 The user-facing surface lives in the Svelte frontend, not here; this section is the map so the two stay in sync.
 
 - **The importance slider** — `src/lib/settings/sections/MediaIndexImportanceSlider.svelte`, rendered in the "Image
-  search" card in `FileSystemWatchingSection.svelte` when `mediaIndex.enabled` is on. It exposes five NAMED BUCKETS
+  search" card in `ImageSearchSection.svelte` when `mediaIndex.enabled` is on. It exposes five NAMED BUCKETS
   ("Only my most-used folders" → "Everywhere, even folders I rarely open") over the typed threshold; each bucket maps to
   a fixed threshold stop `[0.8, 0.6, 0.4, 0.2, 0.0]` (left → right, restrictive → broad). Dragging RIGHT indexes MORE (a
   LOWER threshold). The **default is the rightmost bucket, threshold `0.0`** — deliberately equal to the backend

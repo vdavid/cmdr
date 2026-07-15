@@ -1,7 +1,7 @@
 <script lang="ts">
     /**
      * Per-network-volume image-enrichment controls (network enrichment), rendered inside the
-     * "Image search" card in `FileSystemWatchingSection.svelte` (only when the master
+     * "Image search" card in `ImageSearchSection.svelte` (only when the master
      * `mediaIndex.enabled` toggle is on). For each mounted network (SMB) volume:
      *
      *   - an opt-in Switch ("Index photos on this drive") — off by default, because

@@ -31,6 +31,7 @@
         Search: 'settings.summary.search',
         Provider: 'settings.summary.aiProvider',
         'Ask Cmdr': 'settings.summary.askCmdr',
+        'Image search': 'settings.summary.imageSearch',
         'SMB/Network shares': 'settings.summary.smbNetworkShares',
         'MTP (Android/Kindle/cameras)': 'settings.summary.mtp',
         Git: 'settings.summary.git',

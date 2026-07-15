@@ -9,6 +9,7 @@
     import SearchSection from '$lib/settings/sections/SearchSection.svelte'
     import AiSection from '$lib/settings/sections/AiSection.svelte'
     import AskCmdrSection from '$lib/settings/sections/AskCmdrSection.svelte'
+    import ImageSearchSection from '$lib/settings/sections/ImageSearchSection.svelte'
     import NetworkSection from '$lib/settings/sections/NetworkSection.svelte'
     import MtpSection from '$lib/settings/sections/MtpSection.svelte'
     import GitSection from '$lib/settings/sections/GitSection.svelte'
@@ -132,6 +133,11 @@
         {#if shouldShowSection(['AI', 'Ask Cmdr'])}
             <section data-section-id="ai-ask-cmdr">
                 <AskCmdrSection {searchQuery} />
+            </section>
+        {/if}
+        {#if shouldShowSection(['AI', 'Image search'])}
+            <section data-section-id="ai-image-search">
+                <ImageSearchSection {searchQuery} />
             </section>
         {/if}
 

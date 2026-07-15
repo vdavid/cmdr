@@ -1,7 +1,7 @@
 <script lang="ts">
     /**
      * The image-index importance-threshold slider (the "make it feel nice" ask),
-     * rendered inside the "Image search" card in `FileSystemWatchingSection.svelte` once the
+     * rendered inside the "Image search" card in `ImageSearchSection.svelte` once the
      * master `mediaIndex.enabled` toggle is on. It sets how deep image indexing goes, from
      * "only my most-used folders" to "everywhere".
      *

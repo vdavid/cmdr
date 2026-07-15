@@ -73,6 +73,18 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
     `{#if modelInstalled && shouldShow('ai.localContextSize')}` guard, so no empty card renders before the model is
     installed. The `.status-card`, install/`.actions` buttons, and the body-level delete `ModalDialog` stay OUTSIDE any
     card on purpose (already visually distinct full-bleed blocks).
+- **`ImageSearchSection.svelte`**: `AI › Image search` subsection (third card under the AI card-menu parent): on-device
+  image-content (OCR) search. One `SectionCard` (titled by `settings.mediaIndex.card`) holding the `mediaIndex.enabled`
+  master toggle, an explicit on-device privacy note (`settings.mediaIndex.privacyNote` — this feature touches no AI
+  provider or API key, unlike the rest of AI, so the note says so), and, once the toggle is on, the bespoke
+  `MediaIndexImportanceSlider` (which itself hosts `MediaIndexReclaim`) and the `MediaIndexNetworkVolumes` opt-in list.
+  Composes the self-contained media components — it renders and gates them; the logic lives in each. The `mediaIndex.*`
+  registry entries all live at `section: ['AI', 'Image search']` (a setting's one home).
+- **`MediaIndexImportanceSlider.svelte`** / **`MediaIndexReclaim.svelte`** / **`MediaIndexNetworkVolumes.svelte`**: the
+  three self-contained image-search controls `ImageSearchSection` composes — the importance-threshold slider with its
+  live coverage preview (the slider hosts the reclaim line), the reclaim-space line + prune confirm, and the
+  per-network-volume opt-in list. Each owns its own state and IPC; the section only renders and gates them on the live
+  `mediaIndex.enabled` toggle.
 - **`NetworkSection.svelte`**: `File systems > SMB/Network shares`: two `SectionCard` card groups — Connection
   (`network.enabled` master switch + the inline Local Network access info block + `network.directSmbConnection`) and
   Performance and timeouts (`shareCacheDuration` select, `timeoutMode` radio with its inline custom-timeout number).

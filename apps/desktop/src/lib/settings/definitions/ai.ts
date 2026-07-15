@@ -115,4 +115,100 @@ export const aiSettings: SettingDefinitionSource[] = [
     default: '',
     component: 'text-input',
   },
+
+  // ========================================================================
+  // AI › Image search
+  //
+  // On-device image-content (OCR) search. Runs entirely on the user's Mac via
+  // Apple's Vision framework — no cloud, no AI provider, no API key — so it
+  // lives under AI but stands apart from the provider-backed features above.
+  // Rendered by `ImageSearchSection.svelte`; only `mediaIndex.enabled` is a
+  // visible row, the rest back the bespoke slider / network-volume components.
+  // ========================================================================
+  {
+    // Master toggle for image-content (OCR) indexing. Off by default; live-applied to
+    // the `media_index` backend scheduler via `set_image_index_enabled`. Its own card
+    // in `ImageSearchSection.svelte`, titled by `cardKey`.
+    id: 'mediaIndex.enabled',
+    section: ['AI', 'Image search'],
+    labelKey: 'settings.mediaIndex.enabled.label',
+    descriptionKey: 'settings.mediaIndex.enabled.description',
+    cardKey: 'settings.mediaIndex.card',
+    keywords: ['image', 'photo', 'ocr', 'text', 'search', 'index', 'picture', 'screenshot', 'content'],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
+  {
+    // Internal (FE-owned): JSON array of volume ids opted into background network (SMB)
+    // image enrichment (network enrichment). Off by default per volume; the per-network-volume rows in
+    // `ImageSearchSection`'s "Image search" card toggle it, persisting here AND
+    // calling `media_index_set_network_volume_enabled`. Read by the Rust loader as an array.
+    id: 'mediaIndex.networkVolumes',
+    section: ['AI', 'Image search'],
+    labelKey: 'settings.mediaIndex.networkVolumes.label',
+    descriptionKey: 'settings.mediaIndex.networkVolumes.description',
+    keywords: [],
+    type: 'string-array',
+    default: [],
+    hidden: true,
+  },
+  {
+    // Internal (FE-owned): JSON array of volume ids marked "always index" (enrich
+    // regardless of importance). Toggled by the per-network-volume rows; persisted here
+    // AND pushed via `media_index_set_always_index_volume`.
+    id: 'mediaIndex.alwaysIndexVolumes',
+    section: ['AI', 'Image search'],
+    labelKey: 'settings.mediaIndex.alwaysIndexVolumes.label',
+    descriptionKey: 'settings.mediaIndex.alwaysIndexVolumes.description',
+    keywords: [],
+    type: 'string-array',
+    default: [],
+    hidden: true,
+  },
+  {
+    // Internal (FE-owned): JSON array of absolute OS-mount folder paths marked "always
+    // index". Set by the per-folder override; persisted here AND pushed via
+    // `media_index_set_always_index_folder`.
+    id: 'mediaIndex.alwaysIndexFolders',
+    section: ['AI', 'Image search'],
+    labelKey: 'settings.mediaIndex.alwaysIndexFolders.label',
+    descriptionKey: 'settings.mediaIndex.alwaysIndexFolders.description',
+    keywords: [],
+    type: 'string-array',
+    default: [],
+    hidden: true,
+  },
+  {
+    // Internal (FE-owned): JSON array of absolute OS folder paths EXCLUDED from image
+    // indexing (the privacy veto). Set by the folder context-menu "Don't index images
+    // in this folder" item; persisted here AND pushed via `media_index_set_excluded_folder`
+    // (which also retro-deletes the folder's existing rows). Read by the Rust loader as
+    // an array.
+    id: 'mediaIndex.excludedFolders',
+    section: ['AI', 'Image search'],
+    labelKey: 'settings.mediaIndex.excludedFolders.label',
+    descriptionKey: 'settings.mediaIndex.excludedFolders.description',
+    keywords: [],
+    type: 'string-array',
+    default: [],
+    hidden: true,
+  },
+  {
+    // The image-index importance threshold (`0.0..=1.0`): the lowest folder-importance
+    // level the scheduler enriches. Rendered as named buckets by the bespoke
+    // `MediaIndexImportanceSlider.svelte` inside the "Image search" card (not an auto
+    // row), so `hidden`. Default `0.0` matches the backend `DEFAULT_IMPORTANCE_THRESHOLD`
+    // (enrich every scored folder — non-regressive vs the OCR slice, junk is floored out anyway), so
+    // the UI and a sparse (unpersisted) store agree without eagerly writing a default.
+    // Live-applied via the `settings-applier.ts` passthrough → `media_index_set_importance_threshold`.
+    id: 'mediaIndex.importanceThreshold',
+    section: ['AI', 'Image search'],
+    labelKey: 'settings.mediaIndex.importanceThreshold.label',
+    descriptionKey: 'settings.mediaIndex.importanceThreshold.description',
+    keywords: ['image', 'photo', 'index', 'importance', 'folders', 'coverage', 'depth'],
+    type: 'number',
+    default: 0,
+    hidden: true,
+  },
 ]
