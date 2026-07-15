@@ -56,7 +56,14 @@ list).
 - **`pane-mcp-sync.svelte.ts`**: Mirrors pane state into the MCP `PaneState` store; skips network/search panes
 - **`persistence-subscriber.svelte.ts`**: The single nav-state persistence subscriber (A5): reactive `$effect`s →
   `app-status.json`
-- **`listing-diff-sync.svelte.ts`**: File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core)
+- **`listing-diff-sync.svelte.ts`**: File-watcher listeners + `reconcileCursorAndSelection` (pure, off-by-one core). The
+  `directory-diff` handler splits into two rates: cursor/selection reconciliation runs immediately (must stay exact),
+  while the visible-listing refetch (soft-refresh tick + `totalCount` + stats + brief column widths) is coalesced by a
+  leading + trailing `createThrottle` at `INDEX_LISTING_UPDATE_MIN_INTERVAL_MS` (250 ms, ≤4/sec). Under heavy churn the
+  backend `diff_emitter` only collapses to ~50 ms (~20/sec), and each unthrottled refetch re-renders the range into
+  fresh WebKit compositor surfaces (1+ GB GPU under a storm); the throttle is the demand-side cap. The index-SIZE
+  refresh path (`index-dir-updated` → `refreshIndexSizes`) is a separate source, already leading-throttled at 2 s/pane
+  in `index-events.ts`.
 - **`drag-drop-controller.svelte.ts`**: Native drag band: drop-target state, drag handlers, auto-scroll loop, Tauri
   listeners
 - **`tab-mcp-sync.svelte.ts`**: Debounced mirror of each pane's tab structure into the MCP backend store

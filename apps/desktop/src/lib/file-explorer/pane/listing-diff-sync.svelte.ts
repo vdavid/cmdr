@@ -10,11 +10,24 @@ import { resolveValidPath } from '../navigation/path-resolution'
 import { adjustSelectionIndices } from '../operations/adjust-selection-indices'
 import { buildFrontendIndices, extractFilename } from '../operations/selection-adjustment'
 import { getAppLogger } from '$lib/logging/logger'
+import { createThrottle } from '$lib/utils/timing'
 import type { DiffChange } from '../types'
 import type { createSelectionState } from './selection-state.svelte'
 import type { createRenameState } from '../rename/rename-state.svelte'
 
 const log = getAppLogger('fileExplorer')
+
+/**
+ * Minimum interval between visible-listing refetches driven by streaming
+ * `directory-diff` events — the ≤4 updates/sec (250 ms) cap on the demand side.
+ * Under heavy churn (a clonefile loop, a scan of a live filesystem) the backend
+ * `diff_emitter` already collapses events to ~20/sec, but each frontend refetch
+ * re-enriches and re-renders the visible range, allocating fresh WebKit
+ * compositor surfaces (1+ GB GPU under a storm). A leading + trailing throttle
+ * keeps the first update instant and caps the rest here. Tweak this one knob if
+ * the reveal ever feels laggy.
+ */
+export const INDEX_LISTING_UPDATE_MIN_INTERVAL_MS = 250
 
 /**
  * Pure reconciliation of cursor + selection against a directory diff. Backend
@@ -108,6 +121,24 @@ export interface ListingDiffSyncDeps {
 export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
   // Listen for file watcher diff events
   $effect(() => {
+    // Leading + trailing throttle for the visible-listing refetch. The first
+    // diff fires it immediately (instant feedback); a burst then coalesces to
+    // ≤4/sec, with the trailing flush landing the final count. Cursor and
+    // selection reconciliation below stays UNthrottled so it's always exact.
+    // `latestTotalCount` carries the newest count into the trailing flush.
+    let latestTotalCount = 0
+    const throttledListingRefresh = createThrottle(() => {
+      deps.setTotalCount(latestTotalCount)
+      // Bump the soft-refresh tick (renames don't change totalCount, so the
+      // tick is what guarantees a refresh), and schedule the brief-mode
+      // column-width refetch. We deliberately DON'T bump `cacheGeneration`:
+      // that'd cause a destructive wipe on every diff event, flickering the
+      // source pane empty mid-bulk-op.
+      deps.bumpSoftRefreshTick()
+      deps.scheduleColumnWidthRefetch()
+      deps.fetchListingStats()
+    }, INDEX_LISTING_UPDATE_MIN_INTERVAL_MS)
+
     const listenerPromise = onDirectoryDiff((diff) => {
       const listingId = deps.getListingId()
       // Only process diffs for our current listing
@@ -130,16 +161,11 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
 
       const includeHidden = deps.getIncludeHidden()
 
-      // Refetch total count, bump the soft-refresh tick (renames don't
-      // change totalCount, so the tick is what guarantees a refresh),
-      // and schedule a throttled column-width refetch in brief mode.
-      // We deliberately DON'T bump `cacheGeneration` here: that'd cause
-      // a destructive wipe on every diff event, flickering the source
-      // pane empty mid-bulk-op.
       void getTotalCount(listingId, includeHidden).then(async (count) => {
-        deps.setTotalCount(count)
-        deps.bumpSoftRefreshTick()
-        deps.scheduleColumnWidthRefetch()
+        // The visible-range refetch (soft tick + count + stats + column widths)
+        // is throttled to ≤4/sec; the reconciliation that follows is immediate.
+        latestTotalCount = count
+        throttledListingRefresh.call()
 
         const hasParent = deps.getHasParent()
 
@@ -173,7 +199,6 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
         }
 
         deps.fetchEntryUnderCursor()
-        deps.fetchListingStats()
 
         // Diff-driven selection adjustment: re-resolve selected names to new indices
         if (operationSelectedNames !== null && operationSelectedNames !== 'all') {
@@ -187,6 +212,7 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
     })
 
     return () => {
+      throttledListingRefresh.cancel()
       void listenerPromise
         .then((unsub) => {
           unsub()

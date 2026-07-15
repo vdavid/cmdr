@@ -1161,9 +1161,10 @@
         font-size: var(--font-size-sm);
     }
 
-    .virtual-window {
-        will-change: transform;
-    }
+    /* No `will-change: transform` on `.virtual-window`: it force-promoted a
+       permanent GPU layer that WebKit kept re-backing on every scroll/content
+       change, ballooning compositor (IOAccelerator) memory to 1+ GB under heavy
+       re-render. The translateY scroll still composites on demand. */
 
     .file-entry {
         display: grid;
