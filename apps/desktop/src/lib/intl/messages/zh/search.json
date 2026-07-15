@@ -55,10 +55,6 @@
   "@search.imageResults.countCapped": {
     "sourceHash": "3191a77"
   },
-  "search.imageResults.off": "图像索引已关闭。在设置中打开“索引图像内容”，即可搜索图像中的文字。",
-  "@search.imageResults.off": {
-    "sourceHash": "64feb20"
-  },
   "search.imageResults.indexing": "仍在索引图像，因此结果可能不完整。",
   "@search.imageResults.indexing": {
     "sourceHash": "20841d8"

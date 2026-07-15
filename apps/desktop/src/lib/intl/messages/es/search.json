@@ -55,10 +55,6 @@
   "@search.imageResults.countCapped": {
     "sourceHash": "3191a77"
   },
-  "search.imageResults.off": "La indexación de imágenes está desactivada. Activa \"Indexar el contenido de las imágenes\" en Ajustes para buscar el texto dentro de tus imágenes.",
-  "@search.imageResults.off": {
-    "sourceHash": "64feb20"
-  },
   "search.imageResults.indexing": "Todavía se están indexando las imágenes, así que los resultados pueden estar incompletos.",
   "@search.imageResults.indexing": {
     "sourceHash": "20841d8"

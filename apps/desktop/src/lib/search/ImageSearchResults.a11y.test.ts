@@ -31,6 +31,14 @@ vi.mock('../../routes/viewer/media-view', () => ({
   mediaUrl: (token: string) => `cmdr-media://localhost/${token}`,
 }))
 
+// The master "Index image contents" toggle. These a11y cases exercise the ENABLED
+// states (the section renders), so keep it on; `beforeEach` resets it.
+let masterEnabled = true
+vi.mock('$lib/settings', () => ({
+  getSetting: (key: string) => (key === 'mediaIndex.enabled' ? masterEnabled : undefined),
+  onSpecificSettingChange: () => () => {},
+}))
+
 // Imported AFTER the mocks so the component picks them up.
 const { default: ImageSearchResults } = await import('./ImageSearchResults.svelte')
 
@@ -65,6 +73,7 @@ async function mountAndSettle(props: Record<string, unknown> = {}): Promise<HTML
 
 describe('ImageSearchResults a11y', () => {
   beforeEach(() => {
+    masterEnabled = true
     vi.useFakeTimers()
     searchOcr.mockResolvedValue([])
     volumeState.mockResolvedValue(state())
@@ -77,13 +86,6 @@ describe('ImageSearchResults a11y', () => {
     vi.useRealTimers()
     document.body.innerHTML = ''
     vi.clearAllMocks()
-  })
-
-  it('the "indexing off" notice has no a11y violations', async () => {
-    volumeState.mockResolvedValue(state({ enabled: false }))
-    const target = await mountAndSettle()
-    expect(target.querySelector('.ir-notice')).not.toBeNull()
-    await expectNoA11yViolations(target)
   })
 
   it('the "still indexing" notice has no a11y violations', async () => {

@@ -6,12 +6,17 @@
      * and owns its own data fetch + lifecycle rather than touching the shared
      * `results` / `cursorIndex` contract.
      *
-     * Honesty (plan § Coverage honesty): the section voices its own coverage from the
-     * backend `mediaIndexVolumeState`, so an empty result is never a confident lie:
-     *   - image indexing OFF        → say so, hint to turn it on.
+     * Master toggle: when `mediaIndex.enabled` is OFF the whole section is a no-op — it
+     * renders NOTHING and fires NO backend IPC (read reactively + cheaply from settings,
+     * never learned from the backend, so a keystroke never opens `media.db`). Flipping the
+     * setting live-hides / reveals the section with no restart.
+     *
+     * Honesty (plan § Coverage honesty): when enabled, the section voices its own coverage
+     * from the backend `mediaIndexVolumeState`, so an empty result is never a confident lie:
      *   - a pass running for the vol → "still indexing images, results may be incomplete".
      *   - no images enriched yet     → "not indexed yet", distinct from a genuine miss.
      *   - enriched but no match      → an honest "no text found".
+     *   - a network volume not opted in / paused → the network-voice hints.
      *
      * Thumbnails reuse the EXISTING viewer preview scheme (`cmdr-media://` via
      * `mediaUrl`), never a media_index-produced thumbnail file (plan Decision 5). Each
@@ -19,6 +24,7 @@
      * result set changes or it unmounts, so the backend token map never leaks.
      */
     import { onDestroy } from 'svelte'
+    import { getSetting, onSpecificSettingChange } from '$lib/settings'
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import Icon from '$lib/ui/Icon.svelte'
@@ -88,6 +94,13 @@
         storedPath: string
         snippet: string | null
     }
+
+    // The master "Index image contents" toggle (`mediaIndex.enabled`), read reactively and
+    // cheaply from settings — NOT learned from the backend `volumeState`. When off, the whole
+    // section is a no-op: it renders nothing and fires no IPC (so a keystroke never opens
+    // `media.db`). Flipping the setting live-hides/reveals the section with no restart.
+    let masterEnabled = $state(getSetting('mediaIndex.enabled'))
+    $effect(() => onSpecificSettingChange('mediaIndex.enabled', (_id, v) => (masterEnabled = v)))
 
     let volumeState = $state<MediaIndexVolumeState | null>(null)
     let tiles = $state<Tile[]>([])
@@ -230,9 +243,13 @@
     $effect(() => {
         const trimmed = query.trim()
         const isActive = active
+        const isMasterEnabled = masterEnabled
         similarSource = null
         if (debounceTimer) clearTimeout(debounceTimer)
-        if (!isActive || trimmed === '') {
+        // Master toggle off ⇒ the section is hidden anyway; do NO backend work (no
+        // `mediaIndexVolumeState`, no `mediaIndexSearchOcr`), just release any tokens and
+        // clear. Flipping it back on re-runs this effect and resumes the query.
+        if (!isMasterEnabled || !isActive || trimmed === '') {
             requestSeq += 1
             clearResults()
             loading = false
@@ -251,7 +268,7 @@
     })
 
     // ── Derived coverage-honesty state ────────────────────────────────────────
-    const showSection = $derived(active && query.trim() !== '')
+    const showSection = $derived(masterEnabled && active && query.trim() !== '')
     const enabled = $derived(volumeState?.enabled ?? false)
     const indexing = $derived(volumeState?.indexing ?? false)
     const enrichedCount = $derived(volumeState?.enrichedCount ?? 0)
@@ -326,8 +343,6 @@
             {:else}
                 <p class="ir-empty">{tString('search.imageResults.similarEmpty')}</p>
             {/if}
-        {:else if !enabled && volumeState !== null}
-            <p class="ir-notice">{tString('search.imageResults.off')}</p>
         {:else if networkNeedsOptIn}
             <p class="ir-notice">{tString('search.imageResults.networkOff')}</p>
         {:else}

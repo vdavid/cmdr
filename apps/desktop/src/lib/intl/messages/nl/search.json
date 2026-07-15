@@ -55,10 +55,6 @@
   "@search.imageResults.countCapped": {
     "sourceHash": "3191a77"
   },
-  "search.imageResults.off": "Afbeeldingen indexeren staat uit. Zet \"Inhoud van afbeeldingen indexeren\" aan in Instellingen om de tekst in je afbeeldingen te doorzoeken.",
-  "@search.imageResults.off": {
-    "sourceHash": "64feb20"
-  },
   "search.imageResults.indexing": "Afbeeldingen worden nog geïndexeerd, dus de resultaten zijn mogelijk onvolledig.",
   "@search.imageResults.indexing": {
     "sourceHash": "20841d8"

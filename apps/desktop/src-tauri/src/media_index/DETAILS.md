@@ -303,7 +303,9 @@ literal. Same gotcha as `agent/store`'s `sanitize_fts_query`.
 app data dir, opens `MediaIndex` for the volume, and runs `search_ocr` on a `spawn_blocking` worker (a sync
 `#[tauri::command]` would block the IPC thread). `limit` defaults to 200 and is clamped to 1000. It returns
 `Vec<OcrHit>` (path + highlighted snippet — the "why matched" reason); an empty query, an un-enriched volume, or an
-offline/purged `media.db` returns an empty list, never an error. Because the read API reads `media.db` directly, the
+offline/purged `media.db` returns an empty list, never an error. When the master toggle is off it short-circuits to an
+empty list before opening `media.db` (defense in depth, mirroring `media_index_covered_count`; the frontend also hides
+the OCR section entirely when off, so the command never fires from there). Because the read API reads `media.db` directly, the
 command still answers with the volume offline (a NAS unplugged). Registered in BOTH `ipc.rs` and `ipc_collectors.rs`;
 regen the typed bindings with `pnpm bindings:regen` after any command change. The frontend query-ui + thumbnail grid
 that consumes it is a later slice.

@@ -55,10 +55,6 @@
   "@search.imageResults.countCapped": {
     "sourceHash": "3191a77"
   },
-  "search.imageResults.off": "Die Bildindizierung ist aus. Aktiviere in den Einstellungen „Bildinhalte indizieren“, um den Text in deinen Bildern zu durchsuchen.",
-  "@search.imageResults.off": {
-    "sourceHash": "64feb20"
-  },
   "search.imageResults.indexing": "Bilder werden noch indiziert, daher sind die Ergebnisse möglicherweise unvollständig.",
   "@search.imageResults.indexing": {
     "sourceHash": "20841d8"

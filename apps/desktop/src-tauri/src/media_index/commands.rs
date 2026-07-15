@@ -41,6 +41,12 @@ pub async fn media_index_search_ocr(
     query: String,
     limit: Option<u32>,
 ) -> Result<Vec<OcrHit>, String> {
+    // Feature off ⇒ no volume is enriched, so there's nothing to search; skip opening
+    // `media.db` entirely (defense in depth — the frontend also hides the OCR section when
+    // off, so this command never fires from there).
+    if !gate::is_enabled() {
+        return Ok(Vec::new());
+    }
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
     let limit = resolve_limit(limit);
 

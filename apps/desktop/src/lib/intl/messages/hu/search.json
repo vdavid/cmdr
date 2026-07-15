@@ -55,10 +55,6 @@
   "@search.imageResults.countCapped": {
     "sourceHash": "3191a77"
   },
-  "search.imageResults.off": "A képek indexelése ki van kapcsolva. Kapcsold be a Beállításokban a „Képek tartalmának indexelése” lehetőséget a képeidben lévő szöveg kereséséhez.",
-  "@search.imageResults.off": {
-    "sourceHash": "64feb20"
-  },
   "search.imageResults.indexing": "A képek indexelése még folyamatban van, ezért az eredmények hiányosak lehetnek.",
   "@search.imageResults.indexing": {
     "sourceHash": "20841d8"

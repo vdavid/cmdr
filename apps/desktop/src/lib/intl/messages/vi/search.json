@@ -55,10 +55,6 @@
   "@search.imageResults.countCapped": {
     "sourceHash": "3191a77"
   },
-  "search.imageResults.off": "Lập chỉ mục hình ảnh đang tắt. Hãy bật \"Lập chỉ mục nội dung hình ảnh\" trong Cài đặt để tìm văn bản bên trong hình ảnh của bạn.",
-  "@search.imageResults.off": {
-    "sourceHash": "64feb20"
-  },
   "search.imageResults.indexing": "Vẫn đang lập chỉ mục hình ảnh, nên kết quả có thể chưa đầy đủ.",
   "@search.imageResults.indexing": {
     "sourceHash": "20841d8"

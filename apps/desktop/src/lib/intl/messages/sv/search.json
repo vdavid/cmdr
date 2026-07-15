@@ -55,10 +55,6 @@
   "@search.imageResults.countCapped": {
     "sourceHash": "3191a77"
   },
-  "search.imageResults.off": "Bildindexeringen är avstängd. Slå på ”Indexera bildinnehåll” i Inställningar för att söka i texten i dina bilder.",
-  "@search.imageResults.off": {
-    "sourceHash": "64feb20"
-  },
   "search.imageResults.indexing": "Bilderna indexeras fortfarande, så resultaten kan vara ofullständiga.",
   "@search.imageResults.indexing": {
     "sourceHash": "20841d8"

@@ -98,6 +98,9 @@ vi.mock('$lib/settings', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'ai.provider') return aiProvider
     if (key === 'search.autoApply') return autoApplySetting
+    // Image indexing on, so the "text in images" grid renders and fires its IPC (the
+    // grid is a no-op when this is off — see `ImageSearchResults.gating.test.ts`).
+    if (key === 'mediaIndex.enabled') return true
     return undefined
   }),
   onSpecificSettingChange: vi.fn((id: string, listener: (id: string, value: boolean) => void) => {

@@ -83,10 +83,6 @@
       "totalText": "the total number of matching images, already formatted (for example 1,240)"
     }
   },
-  "search.imageResults.off": "Image indexing is off. Turn on \"Index image contents\" in Settings to search the text inside your images.",
-  "@search.imageResults.off": {
-    "description": "Shown in the \"Text in images\" section when the image-content indexing feature is turned off. \"Index image contents\" is the exact label of the Settings toggle (Settings > Behavior > File system watching); keep it matching."
-  },
   "search.imageResults.indexing": "Still indexing images, so results may be incomplete.",
   "@search.imageResults.indexing": {
     "description": "Shown while a background pass is still reading text from this drive''s images, warning the user the image results aren''t complete yet."
