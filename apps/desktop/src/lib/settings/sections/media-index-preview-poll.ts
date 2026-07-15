@@ -14,5 +14,5 @@ import type { CoveredCount } from '$lib/tauri-commands'
 
 /** Whether the covered-count preview is unresolved and should be re-polled. */
 export function shouldRepollPreview(covered: CoveredCount | null): boolean {
-    return covered === null || covered.pending
+  return covered === null || covered.pending
 }

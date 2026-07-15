@@ -375,7 +375,8 @@ impl MediaScheduler {
                 super::coverage::invalidate(volume_id);
                 log::info!(
                     target: "media_index",
-                    "retro-delete under '{folder}' on '{volume_id}': {deleted} rows removed"
+                    "retro-delete under '{folder}' on '{volume_id}': {} removed",
+                    crate::pluralize::pluralize(deleted as u64, "row")
                 );
                 total += deleted;
             }
