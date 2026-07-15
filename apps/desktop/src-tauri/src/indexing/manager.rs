@@ -32,8 +32,8 @@ use crate::pluralize::pluralize;
 pub(crate) struct IndexManager {
     /// Volume ID (for example, "root" for /)
     pub(super) volume_id: String,
-    /// What kind of volume this is, which selects the scan strategy (jwalk +
-    /// FSEvents for `Local`, the `Volume`-trait scanner with no journal for
+    /// What kind of volume this is, which selects the scan strategy (the guarded
+    /// walker + FSEvents for `Local`, the `Volume`-trait scanner with no journal for
     /// `Smb`) and the launch-time freshness. See `IndexVolumeKind`.
     pub(super) kind: IndexVolumeKind,
     /// Volume root path
@@ -119,23 +119,23 @@ fn live_scan_counters(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RescanScanner {
     /// The `Volume`-trait walk from the share/storage root (`start_volume_scan`).
-    /// SMB and MTP — there is no local filesystem to jwalk and no FSEvents journal.
+    /// SMB and MTP — there is no local filesystem to walk and no FSEvents journal.
     VolumeTrait,
-    /// The jwalk + FSEvents walk from the volume root (`start_scan`). Local disk only.
-    LocalJwalk,
+    /// The guarded walker + FSEvents walk from the volume root (`start_scan`). Local disk only.
+    LocalWalker,
 }
 
 /// Pure routing for `force_rescan`: pick the scanner by the TYPED volume kind.
 ///
 /// This is the regression anchor for the real-hardware bug where a NAS "Rescan
-/// now" ran the local jwalk scanner over the SMB mount (walking nothing, then
+/// now" ran the local guarded walker over the SMB mount (walking nothing, then
 /// falsely marking the index complete). A local-scanner kind (boot disk or a
-/// local external drive) maps to `LocalJwalk`; a trait-scanned kind (SMB/MTP)
+/// local external drive) maps to `LocalWalker`; a trait-scanned kind (SMB/MTP)
 /// maps to `VolumeTrait`. Kept as a separate pure function so the dispatch is
 /// unit-testable without an `AppHandle`.
 fn rescan_scanner_for_kind(kind: IndexVolumeKind) -> RescanScanner {
     if kind.uses_local_scanner() {
-        RescanScanner::LocalJwalk
+        RescanScanner::LocalWalker
     } else {
         RescanScanner::VolumeTrait
     }
@@ -149,18 +149,18 @@ fn rescan_scanner_for_kind(kind: IndexVolumeKind) -> RescanScanner {
 /// inserts the ROOT row (id=1), and `TruncateData` re-inserts it, so a
 /// never-scanned DB has `entry_count == 1`. A `> 0` predicate would route a
 /// brand-new user's FIRST `/` scan to the serial reconcile instead of the fast
-/// parallel jwalk bulk build.
+/// parallel guarded-walker bulk build.
 ///
 /// `prior_scan_completed` (the completeness gate): reconcile ONLY a previously
 /// COMPLETED index (`scan_completed_at` was present at scan start). A partial that
 /// never finished (first scan interrupted, or repeated mid-scan quits) takes the
-/// fast truncate + parallel-jwalk rebuild instead. Reason: reconcile's per-dir
+/// fast truncate + parallel guarded-walker rebuild instead. Reason: reconcile's per-dir
 /// serial walk plus its add-everything delta is far slower than a parallel bulk
 /// rebuild when the existing index is only a small fraction complete — a 4%-complete
 /// partial made the app look hung for ~15 min on a real `/`. Reconcile is the right
 /// call only when the index is substantially complete (a rescan with a small delta:
 /// sizes stay visible, no freelist). A tiny partial is mostly `<dir>` anyway, so
-/// keeping it "visible" buys little, and jwalk is fast. (LOCAL-only; the network
+/// keeping it "visible" buys little, and the guarded walker is fast. (LOCAL-only; the network
 /// predicate stays unchanged — a NAS rescan is slow, so keeping the partial visible
 /// is worth more there, and network partials are small.)
 ///
@@ -347,17 +347,17 @@ impl IndexManager {
     ///
     /// A trait-scanned volume (SMB/MTP) goes to `start_volume_scan` (the
     /// `Volume`-trait walk from the share/storage root); a `Local` volume goes to
-    /// `start_scan` (jwalk + FSEvents from `/`). This is the manual-rescan entry
+    /// `start_scan` (the guarded walker + FSEvents from `/`). This is the manual-rescan entry
     /// point behind `state::force_scan` / the "Rescan now" menu. Routing by kind
     /// HERE (not unconditionally calling `start_scan`) is what keeps an SMB/MTP
-    /// rescan from running the local jwalk scanner over a network mount — which
+    /// rescan from running the local guarded walker over a network mount — which
     /// walked nothing in ~2 ms and falsely marked the index complete (the
     /// real-hardware "rescan does nothing to the NAS" bug). Classifies by the
     /// typed `kind`, never a volume-id substring.
     pub fn force_rescan(&mut self, scan_trigger: &str) -> Result<(), String> {
         match rescan_scanner_for_kind(self.kind) {
             RescanScanner::VolumeTrait => self.start_volume_scan(scan_trigger),
-            RescanScanner::LocalJwalk => self.start_scan(scan_trigger),
+            RescanScanner::LocalWalker => self.start_scan(scan_trigger),
         }
     }
 
@@ -572,8 +572,8 @@ impl IndexManager {
         // The completeness gate for reconcile-vs-truncate (see `local_rescan_reconciles`):
         // snapshot whether the prior scan COMPLETED, read BEFORE `DeleteMeta` clears
         // `scan_completed_at` below. A partial that never finished must NOT reconcile
-        // (its add-everything delta wedges the serial walk); it takes the fast jwalk
-        // rebuild instead.
+        // (its add-everything delta wedges the serial walk); it takes the fast
+        // guarded-walker rebuild instead.
         let prior_scan_completed = self
             .store
             .get_index_status()
@@ -632,7 +632,7 @@ impl IndexManager {
         // (rows beyond the ROOT sentinel) is RESCANNED in place by `local_reconcile`
         // (diff each dir, write only changes) so the last-good directory sizes stay
         // visible (stale) throughout and no large freelist is minted. A first/empty
-        // scan OR a never-completed partial keeps the fast parallel jwalk bulk build
+        // scan OR a never-completed partial keeps the fast parallel guarded-walker bulk build
         // (see `local_rescan_reconciles` for the completeness gate). Read the entry
         // count from the live read connection BEFORE any truncate. (NOTE: the network
         // predicate in `network_scan.rs` is intentionally left unchanged.)
@@ -719,7 +719,7 @@ impl IndexManager {
         // `local_reconcile` walker (returns the SAME `(ScanHandle, JoinHandle)` shape
         // as `scan_volume`, runs on a `std::thread`, does its marks + single aggregate
         // in-thread), so the completion handler below is reused literally unchanged. A
-        // fresh scan runs the fast parallel jwalk `scan_volume`.
+        // fresh scan runs the fast parallel guarded-walker `scan_volume`.
         let (scan_handle, join_handle) = if reconcile {
             log::info!("local scan: reconcile rescan for '{}' ({scan_trigger})", self.volume_id);
             local_reconcile::start_local_reconcile(self.volume_root.clone(), space.clone(), &self.writer)
@@ -753,7 +753,7 @@ impl IndexManager {
         // by the completion handler. The tick loop lives in `progress_reporter`.
         // Source by scan kind: a RECONCILE rescan leaves the accumulator maps empty
         // (it's all `UpsertEntryV2`), so it must recompute partial sizes from
-        // committed rows (`Sql`); a FRESH jwalk scan populates the maps (`Maps`).
+        // committed rows (`Sql`); a FRESH guarded-walker scan populates the maps (`Maps`).
         let partial_agg_source = if reconcile {
             PartialAggSource::Sql
         } else {
@@ -1030,16 +1030,16 @@ mod tests {
 
     /// Regression anchor for the real-hardware "SMB Rescan indexes nothing" bug:
     /// `force_rescan` routes by the TYPED volume kind, so an SMB/MTP rescan hits
-    /// the `Volume`-trait scanner — NOT the local jwalk `start_scan`, which ran
+    /// the `Volume`-trait scanner — NOT the local guarded-walker `start_scan`, which ran
     /// over the network mount, walked nothing, and falsely marked the index
     /// complete. Pre-fix `force_scan` called `start_scan` unconditionally, so an
-    /// SMB id wrongly mapped to `LocalJwalk`; this pins the correct mapping.
+    /// SMB id wrongly mapped to `LocalWalker`; this pins the correct mapping.
     /// The reconcile-vs-truncate boundary: reconcile ONLY a previously-completed,
     /// populated index. A sentinel-only DB (`entry_count == 1`, never scanned) takes
-    /// FRESH/truncate jwalk. `> 1` not `> 0` — the latter would send a brand-new
+    /// the FRESH/truncate guarded-walker rebuild. `> 1` not `> 0` — the latter would send a brand-new
     /// user's first `/` scan down the serial reconcile (the onboarding bug). AND the
     /// completeness gate: a populated-but-never-completed partial (`scan_completed_at`
-    /// absent) also takes the fast jwalk rebuild, because reconciling its
+    /// absent) also takes the fast guarded-walker rebuild, because reconciling its
     /// add-everything delta wedges the serial walk (the ~15-min "looks hung" bug on a
     /// real `/`). The sentinel-makes-it-1 fact is verified against a fresh store below.
     #[test]
@@ -1057,7 +1057,7 @@ mod tests {
         );
         assert!(
             !local_rescan_reconciles(2, false),
-            "populated but never-completed partial ⇒ fast jwalk rebuild, NOT reconcile"
+            "populated but never-completed partial ⇒ fast guarded-walker rebuild, NOT reconcile"
         );
 
         // A fresh store has exactly the ROOT sentinel, so its entry_count is 1 and
@@ -1074,21 +1074,21 @@ mod tests {
     }
 
     #[test]
-    fn force_rescan_routes_smb_and_mtp_to_the_trait_scanner_not_jwalk() {
+    fn force_rescan_routes_smb_and_mtp_to_the_trait_scanner_not_the_local_walker() {
         assert_eq!(
             rescan_scanner_for_kind(IndexVolumeKind::Smb),
             RescanScanner::VolumeTrait,
-            "an SMB rescan must walk the Volume trait from the share root, not jwalk the mount",
+            "an SMB rescan must walk the Volume trait from the share root, not walk the mount with the local guarded walker",
         );
         assert_eq!(
             rescan_scanner_for_kind(IndexVolumeKind::Mtp),
             RescanScanner::VolumeTrait,
-            "an MTP rescan must walk the Volume trait, not jwalk",
+            "an MTP rescan must walk the Volume trait, not the local guarded walker",
         );
         assert_eq!(
             rescan_scanner_for_kind(IndexVolumeKind::Local),
-            RescanScanner::LocalJwalk,
-            "only a local disk uses the jwalk + FSEvents scanner",
+            RescanScanner::LocalWalker,
+            "only a local disk uses the guarded-walker + FSEvents scanner",
         );
     }
 

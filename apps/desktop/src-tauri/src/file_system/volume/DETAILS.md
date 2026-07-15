@@ -27,7 +27,7 @@ FTP). Callers never touch the filesystem directly; they call `Volume` methods wi
 ```
 VolumeManager (registry)
   └─ Arc<dyn Volume>  (async trait: most methods return Pin<Box<dyn Future>>)
-        ├─ LocalPosixVolume   → real FS (spawn_blocking for I/O), FSEvents watcher, jwalk scanner
+        ├─ LocalPosixVolume   → real FS (spawn_blocking for I/O), FSEvents watcher, guarded-walker scanner
         ├─ MtpVolume          → direct async MTP ops
         ├─ SmbVolume          → direct async smb2 ops (direct protocol, not OS mount)
         └─ InMemoryVolume     → HashMap, test/stress use only
@@ -262,6 +262,14 @@ Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `Decision`, `Failed
 without string-matching. Returns once teardown is *initiated* — `volume-unmounted` / `mtp-device-disconnected` fire
 shortly after and panes rooted at the volume redirect to root. `disconnect_smb_volume` (in `commands::network`) is the
 same `diskutil unmount` pattern for the explicit SMB-disconnect path.
+
+**Why the drive indexer stops before `diskutil unmount` runs.** Unmounting a local volume — especially FAT/exFAT via
+macOS's FSKit `msdos` service — while a process still holds it open (an FSEvents watcher or open file handle) can wedge
+the FSKit service mid-unmount, which on macOS 26 escalated to a WindowServer watchdog kernel panic (observed
+2026-07-15). So `stop_index_then_unmount` above stops a `LocalExternal` volume's index — dropping its FSEvents watcher
+and closing its SQLite handles — BEFORE the `diskutil` subprocess runs. The post-unmount `NSWorkspaceDidUnmountNotification`
+hook is only cleanup (the volume's already gone), not wedge-prevention. See `indexing/DETAILS.md` § "Unmount/eject
+lifecycle for a LocalExternal index (the wedge-safe ordering)" for the full incident writeup and the ordering guarantee.
 
 ## Key decisions
 

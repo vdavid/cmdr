@@ -1089,7 +1089,7 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
             log::warn!("Background verification pre-scan flush failed: {e}");
         }
 
-        // jwalk-based parallel walk + sync writer-channel sends — same blocking-pool
+        // Guarded-walker-based parallel walk + sync writer-channel sends — same blocking-pool
         // reasoning as `verify_affected_dirs` above. A subtree scan can take many
         // seconds and saturates multiple rayon threads; keeping it off the async
         // pool is essential.

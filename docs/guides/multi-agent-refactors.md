@@ -11,7 +11,7 @@ entry points; this is the playbook they assume.
    review rounds, each a NEW agent coming from a different angle, until one returns no meaningful input (usually 3-4
    rounds). Every round tends to find real bugs, so don't skip them. For template examples, read a past refactor plan in
    git history (the explorer phase plans and `command-handler-record-plan.md`, since wiped from `docs/specs/`).
-2. **Execute.** One Opus agent per milestone, sequential. Each reads the spec itself and reports back in ≤350 words. The
+2. **Execute.** One agent per milestone, sequential. Each reads the spec itself and reports back in ≤350 words. The
    orchestrator reads every spec in full and reviews every diff (full read for seam commits), and otherwise only
    coordinates: delegate all debugging.
 3. **Characterize-then-convert** for risky rewrites. Regression tests that pin CURRENT behavior land as their own

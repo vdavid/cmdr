@@ -5,7 +5,7 @@
 //! `getattrlistbulk` returns a batch of directory entries *with* their attributes
 //! (name, type, size, allocated size, mtime, inode, link count) in a single
 //! syscall per batch, so the visitor never stats an entry individually. This is
-//! how the old `jwalk` path enumerated on macOS; here it also carries the sizes
+//! how the former third-party directory-walking crate enumerated on macOS; here it also carries the sizes
 //! inline, eliminating the separate stat the old scanner still paid.
 //!
 //! # Correctness is fallback-protected

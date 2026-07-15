@@ -16,6 +16,6 @@ Plan the feature implementation we discussed.
 6. Leave notes about what can be executed in parallel, but only if it's extremely safe; we're usually not in a hurry and
    sequential running is totally fine.
 7. DO NOT enter "Plan mode" unless specifically asked to "Enter plan mode". Use `docs/specs`.
-8. Get an Opus agent to review the plan with fresh eyes, and point out any mistakes. Then fix up the plan based on that.
-   Link the most crucial docs and design principles to the agent.
+8. Get an agent to review the plan with fresh eyes, and point out any mistakes. Then fix up the plan based on that. Link
+   the most crucial docs and design principles to the agent.
 9. Do this review round again and again, until the reviewer agent has no meaningful input, or maximum 5 times.

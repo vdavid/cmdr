@@ -1,6 +1,6 @@
 //! A `Volume`-trait recursive scanner for indexing network/USB volumes.
 //!
-//! The jwalk [`scanner`](super::scanner) is local-FS-only (`getattrlistbulk`)
+//! The local guarded walker (the [`scanner`](super::scanner) module) is local-FS-only (`getattrlistbulk`)
 //! and its `should_exclude` deliberately blocks `/Volumes/`. SMB (and, later,
 //! MTP) shares are walked here instead, over the SAME `Volume::list_directory`
 //! API the live pane uses, pulling sizes from the backend's stat. EVERYTHING
@@ -65,7 +65,7 @@ use super::scanner::{ScanProgress, ScanSummary};
 /// instead of parking it. Generous enough for a slow-but-alive NAS directory.
 const LIST_TIMEOUT: Duration = Duration::from_secs(120);
 
-/// Batch size for `InsertEntriesV2` sends — matches the jwalk scanner's default.
+/// Batch size for `InsertEntriesV2` sends — matches the local guarded walker's default.
 const BATCH_SIZE: usize = 2000;
 
 /// How many `list_directory` round trips run concurrently during a walk. Directory
@@ -180,8 +180,8 @@ pub(crate) async fn scan_volume_via_trait(
     let start = Instant::now();
 
     // Set up the scan context against a write connection (it creates the root
-    // sentinel), mapping the scan root to ROOT_ID — identical to the jwalk
-    // scanner's volume-root setup, so all downstream id/parent logic is shared.
+    // sentinel), mapping the scan root to ROOT_ID — identical to the local guarded
+    // walker's volume-root setup, so all downstream id/parent logic is shared.
     let db_path = writer.db_path();
     // The scan reads `current_epoch` once at start (seeding meta to "1" if
     // absent) and stamps every successfully-listed dir with it. The caller
@@ -283,8 +283,8 @@ pub(crate) async fn scan_volume_via_trait(
             Err(err) => {
                 // A sub-directory we can't list (permission, transient, timeout),
                 // or a disconnect-shaped error that didn't map to the typed
-                // variant. Skip it and keep walking the rest, like the jwalk
-                // scanner skips errored entries — BUT count consecutive failures.
+                // variant. Skip it and keep walking the rest, like the local guarded
+                // walker skips errored entries — BUT count consecutive failures.
                 // A vanished volume that surfaces as an untyped error makes EVERY
                 // listing fail, so the backstop aborts the walk (terminal) instead of
                 // fabricating empties. Concurrency loosens "consecutive" (up to

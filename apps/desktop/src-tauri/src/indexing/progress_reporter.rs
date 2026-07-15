@@ -1,5 +1,5 @@
 //! `ScanProgressReporter`: the 500 ms progress + mid-scan partial-aggregation
-//! tick loop, shared by EVERY scan path (local jwalk fresh/reconcile, SMB/MTP
+//! tick loop, shared by EVERY scan path (local guarded-walker fresh/reconcile, SMB/MTP
 //! trait fresh/reconcile).
 //!
 //! Each scan path spawns one of these alongside its scan thread so the

@@ -133,10 +133,10 @@ const WRITER_CHANNEL_CAPACITY: usize = 20_000;
 /// map emptiness) so the handler routes deterministically:
 ///
 /// - `Maps`: the writer's in-memory accumulator maps, populated only by
-///   `InsertEntriesV2`. Correct for fresh jwalk scans; the maps are empty on the
+///   `InsertEntriesV2`. Correct for fresh guarded-walker scans; the maps are empty on the
 ///   reconcile / network paths, where this source is a no-op by design.
 /// - `Sql`: the committed `entries` / `dir_stats` rows, scoped to the hot dirs.
-///   Works for ALL write paths (jwalk, `UpsertEntryV2` reconcile, network).
+///   Works for ALL write paths (the guarded walker, `UpsertEntryV2` reconcile, network).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartialAggSource {
     Maps,

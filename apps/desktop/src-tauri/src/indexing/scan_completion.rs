@@ -372,7 +372,7 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
         Err(_) => {
             log::warn!("Volume scan thread panicked");
             // The walker thread itself panicked (the reconcile walk is
-            // `catch_unwind`-wrapped, so this is the residual jwalk/thread
+            // `catch_unwind`-wrapped, so this is the residual guarded-walker/thread
             // case). Same honest reset as the `Ok(Err(_))` arm above.
             super::state::apply_freshness_event_on(
                 &freshness,

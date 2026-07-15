@@ -476,7 +476,7 @@ pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
 /// apart for [`LocalExternal`](IndexVolumeKind::LocalExternal), so each is an
 /// explicit, orthogonal method rather than a single conflated predicate:
 ///
-/// - [`uses_local_scanner`](Self::uses_local_scanner): jwalk + FSEvents pipeline
+/// - [`uses_local_scanner`](Self::uses_local_scanner): the guarded walker + FSEvents pipeline
 ///   (`Local`, `LocalExternal`) vs the `Volume` trait scanner (`Smb`, `Mtp`).
 ///   Its exact complement is [`is_trait_scanned`](Self::is_trait_scanned).
 /// - [`has_event_journal`](Self::has_event_journal): self-heals watch continuity
@@ -488,19 +488,19 @@ pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
 ///
 /// The kinds:
 ///
-/// - [`Local`](IndexVolumeKind::Local): the boot disk. jwalk scan + FSEvents
+/// - [`Local`](IndexVolumeKind::Local): the boot disk. The guarded walker's scan + FSEvents
 ///   journal, so a persisted index replays to **Fresh** on launch (continuity
 ///   self-heals). `/`-rooted and the sole search-feeding volume. The only kind
 ///   started when no network drive is indexed.
 /// - [`LocalExternal`](IndexVolumeKind::LocalExternal): a plain local external
 ///   drive (USB stick, SD card, extra disk, mounted disk image). Uses the same
-///   jwalk + FSEvents pipeline as `Local`, but mount-rooted (`ROOT_ID` =
+///   guarded walker + FSEvents pipeline as `Local`, but mount-rooted (`ROOT_ID` =
 ///   `/Volumes/X`). It has no FSEvents journal (external volumes carry no
 ///   `.fseventsd`), so a persisted index loads **Stale** on launch; live
 ///   FSEvents still fire while mounted, so a running watcher keeps it current.
 ///   Doesn't feed search.
 /// - [`Smb`](IndexVolumeKind::Smb): an SMB share scanned over the `Volume` trait
-///   (no jwalk; `/Volumes/` is excluded from the local scanner). Mount-rooted.
+///   (no guarded walker; `/Volumes/` is excluded from the local scanner). Mount-rooted.
 ///   No event journal, so a persisted index loads **Stale** on launch and the
 ///   live watcher is what keeps it Fresh while connected.
 /// - [`Mtp`](IndexVolumeKind::Mtp): a phone/camera storage scanned over the same
@@ -518,7 +518,7 @@ pub(crate) enum IndexVolumeKind {
 }
 
 impl IndexVolumeKind {
-    /// Whether this volume is scanned and watched by the local jwalk + FSEvents
+    /// Whether this volume is scanned and watched by the local guarded walker + FSEvents
     /// pipeline rather than the `Volume` trait scanner. True for the boot disk
     /// and local external drives. Exact complement of
     /// [`is_trait_scanned`](Self::is_trait_scanned).
@@ -527,7 +527,7 @@ impl IndexVolumeKind {
     }
 
     /// Whether this volume scans over the `Volume` trait (network/USB) rather
-    /// than jwalk. SMB and MTP both do. Exact complement of
+    /// than the local guarded walker. SMB and MTP both do. Exact complement of
     /// [`uses_local_scanner`](Self::uses_local_scanner).
     pub(crate) fn is_trait_scanned(self) -> bool {
         matches!(self, IndexVolumeKind::Smb | IndexVolumeKind::Mtp)
@@ -783,7 +783,7 @@ pub(crate) fn start_indexing_for_mtp_inner(
 /// `local_external_index::start_indexing_for_local_external` after the volume is
 /// classified as a plain local external drive. Funnels into the shared
 /// `start_indexing_for` with the `LocalExternal` kind so the lock-first
-/// reservation, load-as-Stale freshness seeding, and the LOCAL jwalk + FSEvents
+/// reservation, load-as-Stale freshness seeding, and the LOCAL guarded-walker + FSEvents
 /// scan path all apply. `mount_root` is the drive's mount point (`/Volumes/X`),
 /// so the index is mount-rooted (unlike the boot disk's `/`).
 ///
@@ -980,10 +980,10 @@ pub fn force_scan(volume_id: &str) -> Result<(), String> {
     };
 
     // Guard released: run the (blocking-prelude) scan start off the lock.
-    // `force_rescan` routes by the volume's TYPED kind: a `Local` volume jwalks
-    // (`start_scan`), an SMB/MTP volume walks the `Volume` trait from its share
+    // `force_rescan` routes by the volume's TYPED kind: a `Local` volume runs the
+    // guarded walker (`start_scan`), an SMB/MTP volume walks the `Volume` trait from its share
     // root (`start_volume_scan`). Calling `start_scan` unconditionally here ran
-    // the local jwalk scanner over a network mount — walking nothing and falsely
+    // the local guarded walker over a network mount — walking nothing and falsely
     // marking the index complete — so a NAS "Rescan now" indexed zero entries.
     let result = mgr.force_rescan("manual start");
 

@@ -20,42 +20,42 @@ operation goes through a `Volume`, with **paths relative to the volume root**.
 ## Must-knows
 
 - **Optional trait methods default to `Err(NotSupported)` / `false`**, so new backends start with `list_directory` +
-  `get_metadata` and opt into capabilities incrementally. Adding a backend? Read [DETAILS.md](DETAILS.md) § "Building a
-  new volume" first.
+  `get_metadata` and opt into capabilities incrementally. New backend? See [DETAILS.md](DETAILS.md) § "Building a new
+  volume".
 - **`lane_key()` is the operation manager's serialization key** (default = volume root): write ops sharing a lane run
   one at a time, disjoint lanes run in parallel. Override it when multiple `Volume` instances share one physical
-  resource (MTP device, SMB server) so they don't thrash.
+  resource so they don't thrash.
 - **At a site that calls a `Volume` method with a path, use `VolumeManager::resolve(volume_id, path).await`, not
   `get(volume_id)`.** `resolve` routes a `.zip`-crossing path to a read-only `ArchiveVolume` (on-demand, LRU-capped),
-  returning the path UNCHANGED; a non-archive path is a plain `get`. It's **async** because a REMOTE `.zip` can't be
-  `std::fs`-confirmed (it's confirmed through the parent's `get_metadata` + a four-byte `read_range`). The sync-only
-  `resolve_local_only` is for the ONE caller that can't `.await` (the write-op fresh-listing oracle). See
+  returning the path UNCHANGED; otherwise it's a plain `get`. It's **async** because a REMOTE `.zip` needs a
+  network probe (`get_metadata` + a four-byte `read_range`), not `std::fs`. The sync-only `resolve_local_only` is for
+  the ONE caller that can't `.await` (the write-op fresh-listing oracle). See
   [`backends/archive/DETAILS.md`](backends/archive/DETAILS.md) § "Routing and lifecycle".
-- **Register watcher-pre-registered volumes via `VolumeManager::register_if_absent`, not `register`.** The FSEvents
-  watcher would otherwise overwrite a pre-registered `SmbVolume` with a `LocalPosixVolume`. `register` (overwrite) is
-  only for explicit replacement (SmbVolume replacing itself on reconnect).
+- **Register watcher-pre-registered volumes via `VolumeManager::register_if_absent`, not `register`.** Otherwise the
+  FSEvents watcher overwrites a pre-registered `SmbVolume` with a `LocalPosixVolume`; `register` (overwrite) is only for
+  explicit replacement (a reconnecting `SmbVolume`).
 - **All cross-volume copy flows through `open_read_stream` / `write_from_stream`.** Don't reintroduce
-  `export_to_local` / `import_from_local`. New backends implement those two streaming methods to get cross-volume copy.
+  `export_to_local` / `import_from_local`. New backends implement those two methods for cross-volume copy.
 - **Never buffer a whole file in a transfer path** — don't drain a `VolumeReadStream` or collect a remote file into a
-  `Vec<u8>`; an 8 GB copy would allocate 8 GB. Stream chunk-by-chunk. See [DETAILS.md](DETAILS.md) § "Streaming
+  `Vec<u8>` (an 8 GB copy would allocate 8 GB). Stream chunk-by-chunk. See [DETAILS.md](DETAILS.md) § "Streaming
   patterns".
-- **`write_from_stream` is a mutation: call `notify_mutation` on success** on backends with unreliable out-of-band
-  notifications (the SMB watcher and MTP USB events are lossy under load). `LocalPosixVolume` is the exception (FSEvents
-  is reliable).
-- **On macOS, never use `statvfs` alone for disk space.** It ignores purgeable space (APFS snapshots, iCloud caches), so
-  it over-blocks copies. Use `NSURLVolumeAvailableCapacityForImportantUsageKey` (`get_space_info_for_path`; `statvfs`
-  fallback on Linux).
+- **`write_from_stream` is a mutation: call `notify_mutation` on success** on backends with unreliable notifications
+  (SMB watcher / MTP USB events are lossy under load). `LocalPosixVolume` is the exception (FSEvents is reliable).
+- **On macOS, never use `statvfs` alone for disk space** (ignores purgeable space: APFS snapshots, iCloud caches). Use
+  `NSURLVolumeAvailableCapacityForImportantUsageKey` (`get_space_info_for_path`; `statvfs` fallback on Linux).
 - **`MtpVolume` reports `create_directory_errors_on_existing_dir() = false`**: MTP allows same-name siblings and
-  `create_folder` silently duplicates, so the folder-merge walker pre-checks existence on MTP — else a merge targets
-  the wrong directory.
+  `create_folder` silently duplicates, so the folder-merge walker pre-checks existence there — else a merge targets the
+  wrong directory.
 - **`listing_is_watched(path)` defaults `false`**: a backend without a real watcher must not claim freshness, or
-  write-op pre-flight scans reuse stale cache. `true` means "fresh as our latest observation"; honor the per-backend
-  debounce window. See [DETAILS.md](DETAILS.md) § "Trait capability model".
+  pre-flight scans reuse stale cache. `true` means "fresh as our latest observation"; honor the per-backend debounce
+  window. See [DETAILS.md](DETAILS.md) § "Trait capability model".
 - **`LocalPosixVolume::resolve` has a three-way branch for absolute paths** (the frontend sends full absolute paths, not
   always root-relative). Getting it wrong silently serves the wrong directory. See [DETAILS.md](DETAILS.md) § "Path
   handling gotchas".
 - **`LocalPosixVolume` delegates `.git` read paths to the git module after `resolve()`**; mutations reject virtual
   paths via `git::is_virtual`. The hook order (`resolve()` then `try_route_*`) is fixed. See [DETAILS.md](DETAILS.md)
   § "Git delegation hooks".
+- **`eject.rs` stops a `LocalExternal` index BEFORE `diskutil` runs.** An open FSEvents watcher/handle at unmount can
+  wedge macOS FSKit (kernel-panic risk). See [DETAILS.md](DETAILS.md) § "Eject".
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

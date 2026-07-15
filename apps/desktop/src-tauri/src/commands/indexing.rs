@@ -211,7 +211,7 @@ pub async fn enable_drive_index(app: AppHandle, volume_id: String) -> Result<Ena
         }
 
         // Local external drive (USB stick, SD card, extra disk, mounted disk
-        // image): the LOCAL jwalk + FSEvents pipeline, mount-rooted, with NO
+        // image): the LOCAL guarded-walker + FSEvents pipeline, mount-rooted, with NO
         // connection gate (a local mount is already directly readable). Classify
         // by typed volume facts; a network mount (SMB os-mount, NFS, ...) is NOT
         // this branch and falls through to the SMB gate below. This is the branch

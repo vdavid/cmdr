@@ -359,8 +359,8 @@ pub fn compute_partial_aggregates(
     // `depth(ROOT_ID) = 0` is the explicit base case: ROOT_ID's parent is the
     // `0` sentinel (in no map), so a naive walk would assign it `usize::MAX` and
     // the most visible row (the `/` pane's `..`) would never get a partial
-    // total. Any dir whose chain can't reach ROOT_ID (shouldn't happen — jwalk
-    // inserts parents before children — but cheap to guard) gets `usize::MAX`,
+    // total. Any dir whose chain can't reach ROOT_ID (shouldn't happen — the guarded
+    // walker inserts parents before children — but cheap to guard) gets `usize::MAX`,
     // so it's never written by the depth cap (it stays a placeholder until the
     // final pass).
     let parent_of: HashMap<i64, i64> = dir_entries.iter().map(|&(id, pid)| (id, pid)).collect();
@@ -546,7 +546,7 @@ pub fn compute_subtree_aggregates(conn: &Connection, root: &str) -> Result<u64, 
 ///
 /// This is the unified-partials counterpart to [`compute_partial_aggregates`]
 /// (which reads the writer's in-memory accumulator maps). The maps are only
-/// populated by `InsertEntriesV2` (fresh jwalk scans), so the maps path is silent
+/// populated by `InsertEntriesV2` (fresh guarded-walker scans), so the maps path is silent
 /// on the reconcile / network paths (`UpsertEntryV2`, maps empty). This path
 /// reads committed SQL instead, so it works for ALL write paths.
 ///

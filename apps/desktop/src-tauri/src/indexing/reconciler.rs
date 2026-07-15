@@ -964,7 +964,7 @@ pub(super) fn reconcile_subtree(
 /// Returns `None` when the directory itself can't be listed (a permission wall or a
 /// vanished dir), distinct from `Some(vec![])` for an empty-but-readable dir.
 ///
-/// Applies the SAME two filters the jwalk fresh scan uses, so a reconcile converges
+/// Applies the SAME two filters the guarded-walker fresh scan uses, so a reconcile converges
 /// to the identical DB the fresh scan would build:
 /// - `scanner::should_exclude` (system/virtual prefixes, `/Volumes/`, the E2E
 ///   allowlist), and

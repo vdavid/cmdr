@@ -728,7 +728,7 @@ impl Volume for LocalPosixVolume {
 
 // ── Indexing trait implementations ────────────────────────────────────
 
-/// Scanner for local POSIX volumes using jwalk parallel directory traversal.
+/// Scanner for local POSIX volumes using the guarded walker's parallel directory traversal.
 struct LocalPosixScanner;
 
 impl VolumeScanner for LocalPosixScanner {

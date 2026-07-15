@@ -23,7 +23,7 @@
 //! (`—`/`≥`), the honest state, rather than `0 B`.
 //!
 //! Scope: applied by the `Volume`-trait network scanner (`volume_scanner.rs`) only,
-//! which walks SMB/MTP shares — the home of these dirs. The local jwalk scanner has its
+//! which walks SMB/MTP shares — the home of these dirs. The local guarded walker has its
 //! own `should_exclude`. `FileEntry` carries no DOS hidden/system attribute, so matching
 //! the canonical names is the available signal; if attributes are plumbed through later,
 //! "hidden + system" would generalize this without a hardcoded list.

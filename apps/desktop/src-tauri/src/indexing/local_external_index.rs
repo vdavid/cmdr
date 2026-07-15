@@ -2,8 +2,8 @@
 //!
 //! A plain local external drive (USB stick, SD card, extra internal disk, or a
 //! mounted disk image) is the first volume that is BOTH mount-rooted (its index
-//! `ROOT_ID` is `/Volumes/X`, not `/`) AND scanned/watched by the LOCAL jwalk +
-//! FSEvents pipeline. It differs from the two existing external kinds at enable
+//! `ROOT_ID` is `/Volumes/X`, not `/`) AND scanned/watched by the LOCAL guarded
+//! walker + FSEvents pipeline. It differs from the two existing external kinds at enable
 //! time:
 //!
 //! - **No connection gate** (unlike SMB). A local mount is already directly
@@ -48,7 +48,7 @@ pub(crate) enum LocalExternalEnable {
 ///
 /// A volume falls through when it carries a live smb2 session OR its mount
 /// filesystem is a network type (SMB os-mount, NFS, AFP, WebDAV, ...): those must
-/// never run the local jwalk scanner (a network `readdir` can hang, and the
+/// never run the local guarded walker (a network `readdir` can hang, and the
 /// index would be mis-scanned). Pure so the routing decision is unit-testable
 /// without a `VolumeManager` or an `AppHandle`.
 fn routes_to_local_external(is_smb_session: bool, fs_is_network: bool) -> bool {
@@ -192,7 +192,7 @@ mod tests {
             "no smb2 session + local fs => local external drive",
         );
         // A live smb2 session or a network filesystem must fall through to the
-        // SMB gate (the local jwalk scanner must never walk a network mount).
+        // SMB gate (the local guarded walker must never walk a network mount).
         assert!(!routes_to_local_external(true, false), "smb2 session => SMB gate");
         assert!(!routes_to_local_external(false, true), "network fs => SMB gate");
         assert!(!routes_to_local_external(true, true), "both => SMB gate");

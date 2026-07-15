@@ -189,7 +189,7 @@ pub enum ScanError {
     /// vanished root can't be read at all. The completion handler treats this as an
     /// aborted scan — it writes NO `scan_completed_at` and emits `index-scan-aborted`
     /// so the frontend clears the stuck "scanning" row — mirroring the network path's
-    /// disconnect arm. Surfaced by the fresh jwalk scan (`run_scan`, when the root is
+    /// disconnect arm. Surfaced by the fresh guarded-walker scan (`run_scan`, when the root is
     /// the only dir and never read) and the LOCAL reconcile walk (`local_reconcile`,
     /// when its root read returns `None`).
     RootUnlistable,

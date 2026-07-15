@@ -1,8 +1,8 @@
 //! The SMB/MTP `Volume`-trait scan path for [`IndexManager`].
 //!
-//! Network volumes (SMB shares, MTP storages) have no local filesystem to jwalk
+//! Network volumes (SMB shares, MTP storages) have no local filesystem to walk
 //! and no FSEvents journal, so they scan through the async `Volume` trait
-//! (`volume_scanner`) instead of the local jwalk path in [`super::manager`]. This
+//! (`volume_scanner`) instead of the local guarded-walker path in [`super::manager`]. This
 //! module owns that family: the startup dispatch for a journal-less volume
 //! (`resume_or_scan_network`), the scan/rescan entry (`start_volume_scan`), and
 //! its bespoke completion handling — partial-aggregation-free progress loop,
@@ -29,14 +29,14 @@ use super::writer::{PartialAggSource, WriteMessage};
 /// Replay the changes the live watcher buffered during a `Volume`-trait scan,
 /// dispatching to the right per-backend buffer (SMB `CHANGE_NOTIFY` vs. MTP PTP
 /// events). Returns whether the volume stays Fresh (false ⇒ overflow forced
-/// Stale). `Local` never reaches here (jwalk path), so it's a trivially-Fresh
+/// Stale). `Local` never reaches here (the guarded-walker path), so it's a trivially-Fresh
 /// no-op. The buffers are macOS/Linux-only (the only `Volume`-trait backends).
 fn replay_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) -> bool {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     match kind {
         IndexVolumeKind::Smb => return super::replay_buffered_changes(volume_id),
         IndexVolumeKind::Mtp => return super::replay_buffered_mtp_changes(volume_id),
-        // Local-scanner kinds take the jwalk path and never buffer network changes.
+        // Local-scanner kinds take the guarded-walker path and never buffer network changes.
         IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => {}
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -51,7 +51,7 @@ fn discard_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) {
     match kind {
         IndexVolumeKind::Smb => super::discard_buffered_changes(volume_id),
         IndexVolumeKind::Mtp => super::discard_buffered_mtp_changes(volume_id),
-        // Local-scanner kinds take the jwalk path and never buffer network changes.
+        // Local-scanner kinds take the guarded-walker path and never buffer network changes.
         IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => {}
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
@@ -102,7 +102,7 @@ impl IndexManager {
     }
 
     /// A short label for this volume kind, for diagnostics. Only `Smb`/`Mtp`
-    /// reach the network scan path; `Local` is handled by the jwalk path.
+    /// reach the network scan path; `Local` is handled by the guarded-walker path.
     fn kind_label(&self) -> &'static str {
         match self.kind {
             IndexVolumeKind::Mtp => "MTP",
@@ -115,7 +115,7 @@ impl IndexManager {
     /// Start a `Volume`-trait scan/rescan for a network volume (SMB or MTP).
     ///
     /// Mirrors `start_scan`'s shape (bump epoch → walk → aggregate → meta on clean
-    /// completion) but walks via `volume_scanner` instead of jwalk, and starts NO
+    /// completion) but walks via `volume_scanner` instead of the guarded walker, and starts NO
     /// `DriveWatcher` (the live-watch layer owns that). Picks the WALK by whether
     /// the index already has data: an empty DB does a fresh `scan_volume_via_trait`
     /// (truncate + bulk build); a populated DB does a non-destructive
@@ -238,7 +238,7 @@ impl IndexManager {
 
         // Progress + mid-scan partial-aggregation reporter (500 ms), stops when the
         // scan signals done. The SAME generalized `ScanProgressReporter` the local
-        // jwalk path uses: it emits the identical `index-scan-progress` event AND
+        // guarded-walker path uses: it emits the identical `index-scan-progress` event AND
         // drives mid-scan partial aggregation (which the bespoke inline loop never
         // did), so network fresh/reconcile and MTP fresh/reconcile all get growing
         // sizes through one path. Source by scan kind: a RECONCILE rescan leaves the

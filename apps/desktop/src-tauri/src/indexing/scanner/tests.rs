@@ -274,7 +274,7 @@ fn scan_temp_directory_tree() {
 }
 
 /// After a clean local scan, EVERY directory (root + every subdir, all of
-/// which jwalk read successfully) has `listed_epoch == current_epoch`. This
+/// which the guarded walker read successfully) has `listed_epoch == current_epoch`. This
 /// is the ordering-invariant anchor: a `MarkDirsListed` queued *behind* the
 /// final `ComputeAllAggregates` would leave a dir at epoch 0, so this test
 /// would catch the "renders incomplete/stale forever" race.

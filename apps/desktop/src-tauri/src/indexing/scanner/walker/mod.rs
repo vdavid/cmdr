@@ -6,8 +6,9 @@
 //! mounts (`~/Library/CloudStorage/…` for Dropbox / Google Drive / a MacDroid
 //! phone, `~/Library/Mobile Documents/` for iCloud) block indefinitely on a
 //! `readdir` when the provider is disconnected (`fileproviderd … FP -1004`).
-//! `jwalk`'s strict-ordered delivery froze the whole scan on one such read, and
-//! the reconcile path's serial `read_dir` froze every rescan.
+//! The former third-party directory-walking crate's strict-ordered delivery froze
+//! the whole scan on one such read, and the reconcile path's serial `read_dir`
+//! froze every rescan.
 //!
 //! This engine walks directories in parallel and puts a wall-clock cap on every
 //! single read. A read that exceeds [`WalkConfig::read_timeout`] is *abandoned*:

@@ -96,7 +96,7 @@ pub trait SequentialExtract: Send {
 
 /// Bulk enumeration for drive indexing. Each volume type implements its optimal strategy.
 ///
-/// `LocalPosixVolume` uses jwalk for fast parallel traversal. Future volume types
+/// `LocalPosixVolume` uses the guarded walker for fast parallel traversal. Future volume types
 /// (SMB, MTP, S3, etc.) will implement their own scanning strategies.
 pub trait VolumeScanner: Send + Sync {
     /// Start a full-volume scan on a background thread.
@@ -546,7 +546,7 @@ pub trait Volume: Send + Sync {
     /// Returns a scanner for bulk enumeration during drive indexing.
     ///
     /// Only volume types that support efficient bulk traversal return `Some`.
-    /// Currently: `LocalPosixVolume` (via jwalk). Returns `None` by default.
+    /// Currently: `LocalPosixVolume` (via the guarded walker). Returns `None` by default.
     fn scanner(&self) -> Option<Box<dyn VolumeScanner>> {
         None
     }

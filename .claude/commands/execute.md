@@ -1,4 +1,4 @@
-Lead a team of Opus agents to deliver on this plan.
+Lead a team of agents to deliver on this plan.
 
 ## Setup
 
@@ -58,8 +58,8 @@ not with a doc-sync chore at the end.
 
 ## Final review
 
-- Ask +1 Opus agent to thoroughly review the execution and flag anything skipped, broken, or incomplete.
-- Have +1 Opus agent run `pnpm check` and confirm it's green (even if unrelated checks fail, surface those).
+- Ask +1 agent to thoroughly review the execution and flag anything skipped, broken, or incomplete.
+- Have +1 agent run `pnpm check` and confirm it's green (even if unrelated checks fail, surface those).
 - Strip milestone tags from the touched code and docs. Plan-specific names like "M1", "M2a", "Milestone 3", "Phase 2"
   leak into inline comments, dead-code `reason` strings, test helper prefixes, doc strings, and `CLAUDE.md` text during
   execution. Grep the touched files (`rg -n '\b(M[0-9][a-z]?|Milestone\s*[0-9]|Phase\s*[0-9])\b' <paths>`) and replace
