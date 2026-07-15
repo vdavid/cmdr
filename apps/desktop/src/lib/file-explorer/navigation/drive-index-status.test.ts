@@ -124,21 +124,15 @@ describe('hasLastScanFacts', () => {
 
 describe('driveIndexRefusalMessageKey', () => {
   it('maps an internal-error refusal (not an SMB volume) to the internal-error copy, not reconnect advice', () => {
-    expect(driveIndexRefusalMessageKey('not_an_smb_volume')).toBe(
-      'fileExplorer.navigation.driveIndex.refusedInternal',
-    )
-    expect(driveIndexRefusalMessageKey('not_registered')).toBe(
-      'fileExplorer.navigation.driveIndex.refusedInternal',
-    )
+    expect(driveIndexRefusalMessageKey('not_an_smb_volume')).toBe('fileExplorer.navigation.driveIndex.refusedInternal')
+    expect(driveIndexRefusalMessageKey('not_registered')).toBe('fileExplorer.navigation.driveIndex.refusedInternal')
   })
 
   it('keeps the SMB-specific reasons on their share-oriented copy', () => {
     expect(driveIndexRefusalMessageKey('upgrade_failed')).toBe(
       'fileExplorer.navigation.driveIndex.refusedUpgradeFailed',
     )
-    expect(driveIndexRefusalMessageKey('disconnected')).toBe(
-      'fileExplorer.navigation.driveIndex.refusedDisconnected',
-    )
+    expect(driveIndexRefusalMessageKey('disconnected')).toBe('fileExplorer.navigation.driveIndex.refusedDisconnected')
   })
 
   it('returns null for credentials_needed (routes to the reconnect flow, no toast)', () => {
