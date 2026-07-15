@@ -283,3 +283,11 @@ fine (measured). Latin is fine (measured). Expanding the measured set is a follo
 cache-reset path, not a separate trigger **Why**: When `recursive_size` enrichment lands, the listing may re-sort; the
 existing `cacheGeneration` bump propagates into BriefList's reset-cache effect, which clears `columnWidths`, bumps
 `widthsGeneration`, and kicks off `fetchColumnWidths()`. Don't add a separate trigger: it would double-fetch.
+
+**Gotcha**: No `will-change: transform` on `.virtual-window` (`FullList.svelte`). **Why**: it force-promoted a permanent
+GPU compositor layer that WebKit kept re-backing on every scroll/content change, ballooning `IOAccelerator` (GPU) memory
+to 1+ GB under heavy re-render; the `translateY` scroll still composites on demand. Don't re-add it, and don't reach for
+per-row `contain: layout paint` either (it backfires: one retained backing store per row). The full
+GPU/compositor-memory investigation — findings, the reclaimable-not-a-leak conclusion, the measurement methodology and
+its gotchas, and kick-off context for any future high-memory report — is in
+[`docs/notes/high-memory-gpu-compositor-investigation-2026-07.md`](../../../../../../docs/notes/high-memory-gpu-compositor-investigation-2026-07.md).
