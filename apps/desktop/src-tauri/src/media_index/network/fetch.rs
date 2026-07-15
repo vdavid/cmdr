@@ -120,6 +120,27 @@ pub fn os_join(mount_root: &str, index_relative: &str) -> String {
     format!("{trimmed}{index_relative}")
 }
 
+/// The inverse of [`os_join`]: map an OS-mount folder path back into a volume's
+/// index-path space by stripping the mount root, so the privacy retro-delete can match
+/// it against the stored (index-relative) rows. `Some("/Photos")` for
+/// `/Volumes/naspi/Photos` under mount `/Volumes/naspi`; `Some("")` for the mount root
+/// itself (the whole volume); the OS folder passes through unchanged on a `root`/local
+/// volume (mount root `/`). `None` when the folder isn't under this volume's mount at
+/// all (a different volume) — the caller skips it.
+pub fn os_folder_to_index_prefix(folder: &str, mount_root: &str) -> Option<String> {
+    if mount_root == "/" || mount_root.is_empty() {
+        return Some(folder.to_string());
+    }
+    let trimmed = mount_root.trim_end_matches('/');
+    if folder == trimmed {
+        return Some(String::new());
+    }
+    folder
+        .strip_prefix(trimmed)
+        .filter(|rest| rest.starts_with('/'))
+        .map(|rest| rest.to_string())
+}
+
 /// A scripted fetcher for tests: maps an OS path to bytes, or to a disconnect, so the
 /// enrich core's pause/resume paths run with no real mount.
 #[cfg(test)]
@@ -181,6 +202,29 @@ mod tests {
         // Root / local volume: index-relative is already absolute.
         assert_eq!(os_join("/", "/a/b.jpg"), "/a/b.jpg");
         assert_eq!(os_join("", "/a/b.jpg"), "/a/b.jpg");
+    }
+
+    #[test]
+    fn os_folder_to_index_prefix_is_the_inverse_of_os_join() {
+        // Network volume: strip the mount root to reach the stored index-path space.
+        assert_eq!(
+            os_folder_to_index_prefix("/Volumes/naspi/Photos", "/Volumes/naspi"),
+            Some("/Photos".to_string())
+        );
+        // The mount root itself ⇒ the whole volume (empty prefix matches every path).
+        assert_eq!(
+            os_folder_to_index_prefix("/Volumes/naspi", "/Volumes/naspi"),
+            Some(String::new())
+        );
+        // Local / root volume: index path == OS path, so the folder passes through.
+        assert_eq!(
+            os_folder_to_index_prefix("/Users/me/Documents/IDs", "/"),
+            Some("/Users/me/Documents/IDs".to_string())
+        );
+        // A folder on a DIFFERENT volume isn't under this mount ⇒ None (skip it).
+        assert_eq!(os_folder_to_index_prefix("/Volumes/other/x", "/Volumes/naspi"), None);
+        // A name-prefix sibling is NOT within the mount.
+        assert_eq!(os_folder_to_index_prefix("/Volumes/naspi2/x", "/Volumes/naspi"), None);
     }
 
     #[test]

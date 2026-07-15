@@ -332,6 +332,14 @@ export interface SettingsValues {
    */
   'mediaIndex.alwaysIndexFolders': string[]
   /**
+   * Internal (FE-owned): absolute OS folder paths EXCLUDED from image indexing (the privacy
+   * veto — no image at or under one is enriched, beating any "always index" override). Set
+   * by the folder context-menu "Don't index images in this folder" item. Persisted as a real
+   * JSON array; live-applied via `media_index_set_excluded_folder`, which also retro-deletes
+   * the folder's already-indexed rows.
+   */
+  'mediaIndex.excludedFolders': string[]
+  /**
    * The lowest folder-importance level (`0.0..=1.0`) the image indexer enriches — the
    * "how deep do I index?" slider's typed value. `0.0` (the default, matching the backend
    * `DEFAULT_IMPORTANCE_THRESHOLD`) enriches every scored folder (junk like `node_modules`

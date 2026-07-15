@@ -21,6 +21,12 @@ fake for tests.
 - **GC is deletion-driven + edge-triggered (data-safety).** GC ONLY on a `Completed` bus edge (`borrow_and_update`,
   never a `borrow()` poll) or the Fresh sweep; never on volume-absence. Deferred/below-threshold rows stay; only vanished
   files collect. Never persist the lifecycle-bus `generation` (a transient wake counter).
+- **Two USER-EXPLICIT deletions bypass the edge** (they derive from SETTINGS state, not scan/bus/gate state, so they
+  need no `Completed` edge): the privacy retro-delete (excluding a folder) and the reclaim prune (M4). Both go through
+  the writer (`prune_under_folder` / `prune_paths` + `VACUUM`), delete all four row kinds atomically, and drop the
+  vector + coverage caches. ❌ The exclusion veto reads LIVE `network::config::is_excluded`, NEVER the pass snapshot, and
+  re-checks before each upsert (the in-flight-analyze TOCTOU) — else a pass already running re-inserts what the
+  retro-delete removed. D.md § Privacy retro-delete.
 - **Importance-prioritized (headline).** Filter + order by `ImportanceIndex` at the slider threshold. `folder_scores`
   `None` (unscored) defers to override-only, NEVER enrich-all (forward-only, so a first-run race would over-index
   permanently); the `wire_volume` importance-subscribe bridge re-kicks once scored. "Scored" = live weight rows OR a
@@ -36,7 +42,8 @@ fake for tests.
 - **`search/` reaches `media.db` ONLY through `MediaIndex`.** Commands register in BOTH `ipc.rs` + `ipc_collectors.rs`
   (`pnpm bindings:regen`).
 
-Still open: per-FOLDER exclude/always-index triggers (setters ready), MTP on-demand, CLIP/faces/captions.
+Still open: per-FOLDER always-index trigger (setter ready; the exclude trigger shipped as a folder context-menu item),
+MTP on-demand, CLIP/faces/captions.
 
 Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

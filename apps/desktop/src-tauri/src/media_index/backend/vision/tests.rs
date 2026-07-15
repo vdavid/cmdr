@@ -15,12 +15,36 @@ fn fixture_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/media_index/backend/test-fixtures/ocr-sample.png")
 }
 
+/// A committed 2×2 PNG — under Vision's 3 px floor, so it stands in for the
+/// framework-decoration / spacer noise the too-small skip must handle quietly.
+fn tiny_fixture_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/media_index/backend/test-fixtures/tiny-2x2.png")
+}
+
 fn input(path: &str) -> ImageInput {
     ImageInput {
         path: path.to_string(),
         kind: MediaKind::Image,
         bytes: None,
     }
+}
+
+#[test]
+fn analyze_skips_a_too_small_image_quietly() {
+    // A 2×2 image is under Vision's 3 px floor. Rather than erroring (which the pass
+    // would log as a per-file WARN and record as `Failed`), `analyze` returns an EMPTY
+    // analysis — a done, empty row that never re-tries and never shows in search (plan
+    // M3, David-requested).
+    let backend = VisionOcrBackend::new();
+    let path = tiny_fixture_path();
+    assert!(path.exists(), "tiny fixture missing at {}", path.display());
+
+    let analysis = backend
+        .analyze(&input(&path.to_string_lossy()))
+        .expect("a too-small image is a quiet skip, not an error");
+    assert!(analysis.ocr.text.is_empty(), "no OCR text for a too-small image");
+    assert!(analysis.tags.is_empty(), "no tags for a too-small image");
+    assert!(analysis.embedding.is_none(), "no embedding for a too-small image");
 }
 
 #[test]

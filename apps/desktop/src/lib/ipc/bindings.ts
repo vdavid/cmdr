@@ -1884,13 +1884,26 @@ export const commands = {
     __TAURI_INVOKE<void>('media_index_set_always_index_folder', { folder, always }),
   /**
    *  Set (or clear) a per-folder photo-search EXCLUSION: no image at or under `folder`
-   *  (an absolute path) is enriched (the privacy complement to the opt-in — plan §
-   *  Privacy). A hard veto that beats any "always index" override. Live-applied; the
-   *  frontend persists `mediaIndex.excludedFolders` and calls this on change. Existing
-   *  rows for the folder stay until the next GC/rescan; the veto stops FUTURE enrichment.
+   *  (an absolute OS path) enriches (the privacy complement to the opt-in — plan §
+   *  Privacy). A hard veto that beats any "always index" override.
+   *
+   *  EXCLUDING retro-deletes existing rows at or under the folder across the reachable
+   *  volumes, so already-extracted OCR text stops being searchable at once (privacy is a
+   *  hard requirement, not "eventually on the next GC"). The sequence is deliberate:
+   *
+   *  1. set the live veto FIRST, so any in-flight pass re-checks against the excluded
+   *     state and can't re-insert rows behind the delete (the pre-upsert TOCTOU close);
+   *  2. THEN retro-delete (a double-tap through each volume's one writer thread, so a
+   *     straggler upsert that squeezed in is swept), off the IPC thread.
+   *
+   *  Un-EXCLUDING only clears the veto: NO re-delete and NO auto re-enrich — the next
+   *  natural pass picks the folder up again. An offline network volume is skipped by the
+   *  retro-delete (no mount root) and re-fires on reconnect via the registration bus.
+   *  Live-applied; the frontend persists `mediaIndex.excludedFolders` and calls this on
+   *  change (rolling the persisted value back if this rejects).
    */
   mediaIndexSetExcludedFolder: (folder: string, excluded: boolean) =>
-    __TAURI_INVOKE<void>('media_index_set_excluded_folder', { folder, excluded }),
+    typedError<null, string>(__TAURI_INVOKE('media_index_set_excluded_folder', { folder, excluded })),
   /**
    *  Set the folder-importance threshold the scheduler enriches by — the importance settings
    *  slider's typed value (`0.0..=1.0`, clamped), never a string (`no-string-matching`).
@@ -3042,6 +3055,7 @@ export const events = {
   listingReadComplete: makeEvent<ListingReadCompleteEvent>('listing-read-complete'),
   lowDiskSpace: makeEvent<LowDiskSpacePayload>('low-disk-space'),
   mcpSettingsClose: makeEvent<McpSettingsClose>('mcp-settings-close'),
+  mediaIndexFolderExclusion: makeEvent<MediaIndexFolderExclusion>('media-index-folder-exclusion'),
   menuSort: makeEvent<MenuSort>('menu-sort'),
   mtpDeviceConnected: makeEvent<MtpDeviceConnected>('mtp-device-connected'),
   mtpDeviceDisconnected: makeEvent<MtpDeviceDisconnected>('mtp-device-disconnected'),
@@ -5035,6 +5049,19 @@ export type McpSettingsClose = null
 export type MediaDimensions = {
   width: number
   height: number
+}
+
+/**
+ *  `media-index-folder-exclusion`: a folder's "Don't index images in this folder" /
+ *  "Index images here again" context-menu item was clicked. Carries the right-clicked
+ *  folder's absolute path and the target state. The FE listens and drives its persist +
+ *  live-apply path (`mediaIndex.excludedFolders` + `media_index_set_excluded_folder`),
+ *  so the setting survives a restart (the native menu can't write the FE settings
+ *  store). Emitted `emit_to("main")`.
+ */
+export type MediaIndexFolderExclusion = {
+  folder: string
+  excluded: boolean
 }
 
 /**

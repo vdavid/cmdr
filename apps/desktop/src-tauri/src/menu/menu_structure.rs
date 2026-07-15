@@ -29,9 +29,9 @@ use super::{CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, GET_INFO_ID, QUICK_
 use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
     FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_MOVE_ID, FILE_NEW_FOLDER_ID,
-    FILE_VIEW_ID, MenuItems, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_PASSWORD_ID,
-    NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID,
-    TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
+    FILE_VIEW_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID, MEDIA_INDEX_INCLUDE_FOLDER_ID, MenuItems, NETWORK_HOST_DISCONNECT_ID,
+    NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID, SHOW_IN_FINDER_ID,
+    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -104,6 +104,11 @@ pub fn build_context_menu<R: Runtime>(
     )]
     info: &FileContextInfo,
     restrict_destination_actions: bool,
+    // Media-index image-search exclusion: whether the master toggle is on (gates whether
+    // the folder-only exclude/un-exclude item shows at all) and whether THIS folder is
+    // already excluded (picks which of the two items to show).
+    image_index_enabled: bool,
+    image_index_excluded: bool,
 ) -> tauri::Result<ContextMenuResult<R>> {
     let menu = Menu::new(app)?;
 
@@ -199,6 +204,22 @@ pub fn build_context_menu<R: Runtime>(
             MenuItem::with_id(app, FAVORITES_ADD_CONTEXT_ID, "Add to favorites", true, None::<&str>)?;
         menu.append(&PredefinedMenuItem::separator(app)?)?;
         menu.append(&add_favorite_item)?;
+    }
+
+    // Image-search exclusion (media_index privacy veto): a folder-only toggle, shown
+    // only when image indexing is enabled. Exactly one item, keyed on whether the
+    // folder is already excluded. Handled specially in `handle_menu_event` (it acts on
+    // the right-clicked folder and drives a FE persist path), never via
+    // `menu_id_to_command`.
+    if is_directory && image_index_enabled {
+        let (id, label) = if image_index_excluded {
+            (MEDIA_INDEX_INCLUDE_FOLDER_ID, "Index images here again")
+        } else {
+            (MEDIA_INDEX_EXCLUDE_FOLDER_ID, "Don't index images in this folder")
+        };
+        let exclusion_item = MenuItem::with_id(app, id, label, true, None::<&str>)?;
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+        menu.append(&exclusion_item)?;
     }
 
     // Cloud actions (macOS File Provider): only show when the file is in a

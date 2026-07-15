@@ -487,6 +487,14 @@
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "sourceHash": "7fbc7f3"
   },
+  "settings.mediaIndex.excludedFolders.label": "Uteslutna mappar",
+  "@settings.mediaIndex.excludedFolders.label": {
+    "sourceHash": "7ec409b"
+  },
+  "settings.mediaIndex.excludedFolders.description": "Internt: mappar som användaren uteslutit från bildindexering.",
+  "@settings.mediaIndex.excludedFolders.description": {
+    "sourceHash": "af670b1"
+  },
   "settings.mediaIndex.networkVolumes.intro": "Nätverksenheter indexeras bara när du aktiverar dem här. Cmdr läser bilder över nätverket skonsamt: bara när du inte är upptagen, med begränsad hastighet, och pausar när enheten kopplas från.",
   "@settings.mediaIndex.networkVolumes.intro": {
     "sourceHash": "165a9eb"

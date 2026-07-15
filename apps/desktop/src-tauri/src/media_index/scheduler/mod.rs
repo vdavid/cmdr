@@ -254,8 +254,13 @@ impl MediaScheduler {
             // importance subscriber re-kicks once a recompute completes.
             self.mark_deferred_for_importance(volume_id);
         }
+        // Coverage (override + importance threshold) is read from the START-OF-PASS
+        // snapshot; the privacy exclusion is read LIVE (`network::config::is_excluded`),
+        // so a folder excluded WHILE this pass runs is vetoed immediately — the veto is
+        // a hard privacy line, not a tuning knob that can wait for the next pass.
         let config = network::config::snapshot();
         let should_enrich = |path: &str| -> bool { local_should_enrich(path, scores.as_ref(), &config, volume_id) };
+        let is_excluded = |path: &str| -> bool { network::config::is_excluded(path) };
         let folder_score = |dir: &str| -> f64 { scores.as_ref().and_then(|m| m.get(dir)).copied().unwrap_or(0.0) };
         let ordered = enrich::prioritized(&images, &folder_score);
 
@@ -265,6 +270,7 @@ impl MediaScheduler {
             self.backend.as_ref(),
             &writer,
             &should_enrich,
+            &is_excluded,
             &gate::is_cancelled,
         )?;
 
@@ -312,6 +318,69 @@ impl MediaScheduler {
                 None
             }
         }
+    }
+
+    /// Retro-delete every stored row at or under `folder` (an OS-mount path) across the
+    /// reachable volumes in `mounts` (`volume_id`, `mount_root`) — the privacy
+    /// complement to the veto, invoked when the user excludes a folder. USER-EXPLICIT
+    /// deletion: it derives ONLY from settings state, never scan/bus/gate state, so it
+    /// needs no completed-scan edge (unlike GC — see `DETAILS.md` § GC safety).
+    ///
+    /// Each volume maps the OS folder into its own index-path space
+    /// ([`os_folder_to_index_prefix`]): the folder passes through on a local volume,
+    /// strips the mount root on a network one, and a volume the folder isn't under is
+    /// skipped. The delete is a DOUBLE-TAP through the volume's ONE writer thread (the
+    /// second prune sweeps any straggler an in-flight upsert re-added), then a `VACUUM`
+    /// reclaims the pages (privacy: the OCR text leaves the disk), then the vector +
+    /// coverage caches for the volume drop. Returns the total rows deleted.
+    ///
+    /// **Offline network volumes** aren't in `mounts` (no mount root while unmounted),
+    /// so they're skipped here and the retro-delete re-fires on reconnect via
+    /// [`wire_volume`]. Runs off the IPC thread (the caller uses `spawn_blocking`), so
+    /// the blocking prunes are deadlock-safe.
+    ///
+    /// [`os_folder_to_index_prefix`]: super::network::fetch::os_folder_to_index_prefix
+    pub fn retro_delete_excluded_folder(&self, folder: &str, mounts: &[(String, String)]) -> usize {
+        let mut total = 0usize;
+        for (volume_id, mount_root) in mounts {
+            // Only volumes that were actually enriched have a `media.db`; don't create an
+            // empty one just to prune nothing.
+            let db_path = super::store::media_db_path(&self.data_dir, volume_id);
+            if !db_path.exists() {
+                continue;
+            }
+            // Map the OS folder into this volume's index-path space; `None` ⇒ the folder
+            // isn't under this mount, so this volume has no matching rows.
+            let Some(index_prefix) = network::fetch::os_folder_to_index_prefix(folder, mount_root) else {
+                continue;
+            };
+            let writer = match self.writers.writer_for(&self.data_dir, volume_id) {
+                Ok(w) => w,
+                Err(e) => {
+                    log::warn!(target: "media_index", "retro-delete: writer for '{volume_id}' failed: {e}");
+                    continue;
+                }
+            };
+            // Double-tap through the ONE writer thread: the first (blocking) prune drains
+            // the queue up to it; the second sweeps any straggler an in-flight upsert
+            // re-added before its own pre-upsert veto re-check could stop it.
+            let n1 = writer.prune_under_folder(&index_prefix).unwrap_or(0);
+            let n2 = writer.prune_under_folder(&index_prefix).unwrap_or(0);
+            let deleted = n1 + n2;
+            if deleted > 0 {
+                // Reclaim the pages (privacy: the OCR text leaves the disk), then drop
+                // the derived caches so a later search / slider preview rebuilds honestly.
+                let _ = writer.vacuum();
+                super::vector::cache::invalidate(&db_path);
+                super::coverage::invalidate(volume_id);
+                log::info!(
+                    target: "media_index",
+                    "retro-delete under '{folder}' on '{volume_id}': {deleted} rows removed"
+                );
+                total += deleted;
+            }
+        }
+        total
     }
 
     /// Run one CONSERVATIVE network enrichment pass for an opted-in SMB volume
@@ -373,11 +442,11 @@ impl MediaScheduler {
             // applies (the network fallback stays conservative until then).
             self.mark_deferred_for_importance(volume_id);
         }
+        // Coverage (override + importance threshold) rides the start-of-pass snapshot;
+        // the privacy exclusion is read LIVE, so a folder excluded mid-pass is vetoed
+        // at once (a hard privacy line, not a tuning knob).
         let config = network::config::snapshot();
         let should_enrich = |os_path: &str| -> bool {
-            if config.is_excluded(os_path) {
-                return false;
-            }
             let covered = config.covers(volume_id, os_path);
             let index_path = os_path.strip_prefix(mount_root.as_str()).unwrap_or(os_path);
             let importance = scores
@@ -385,6 +454,7 @@ impl MediaScheduler {
                 .map(|m| m.get(enrich::parent_dir(index_path)).copied().unwrap_or(0.0) as f32);
             network::policy::should_enrich_image(covered, importance, threshold as f32)
         };
+        let is_excluded = |os_path: &str| -> bool { network::config::is_excluded(os_path) };
         let cancel = || gate::is_cancelled();
         let sleep = |d: Duration| std::thread::sleep(d);
 
@@ -399,6 +469,7 @@ impl MediaScheduler {
             policy: &policy,
             is_idle: &is_idle,
             should_enrich: &should_enrich,
+            is_excluded: &is_excluded,
             cancel: &cancel,
             sleep: &sleep,
         };
@@ -433,10 +504,12 @@ impl MediaScheduler {
     }
 }
 
-/// Whether a LOCAL image at index path `path` should enrich this pass — the pure
-/// per-image gate (unit-testable without a DB or an app).
+/// Whether a LOCAL image at index path `path` is COVERED this pass — the pure
+/// coverage gate (override + importance threshold), unit-testable without a DB or an
+/// app. The privacy exclusion is a SEPARATE, live hard veto applied in
+/// [`enrich::enrich_and_gc`] (never here), so coverage stays snapshot-pure while the
+/// veto reads live config.
 ///
-/// - A user-EXCLUDED folder is a hard veto (privacy), beating any override.
 /// - When importance HASN'T scored the volume yet (`scores` is `None`), DEFER the
 ///   importance-gated remainder but still honor an explicit "always index" override
 ///   (`config.covers`), so a user directive is never postponed on a fresh volume.
@@ -446,7 +519,7 @@ impl MediaScheduler {
 ///   forward-only semantics make that permanent until a manual reclaim. The
 ///   unscored → scored bridge ([`wire_volume`]'s subscriber) re-kicks the remainder
 ///   once importance lands.
-/// - When SCORED, enrich an override-covered folder OR one whose parent folder met
+/// - When SCORED, cover an override-covered folder OR one whose parent folder met
 ///   the threshold (already filtered into `scores`).
 fn local_should_enrich(
     path: &str,
@@ -454,9 +527,6 @@ fn local_should_enrich(
     config: &network::config::NetworkEnrichConfig,
     volume_id: &str,
 ) -> bool {
-    if config.is_excluded(path) {
-        return false;
-    }
     match scores {
         None => config.covers(volume_id, path),
         Some(map) => config.covers(volume_id, path) || map.contains_key(enrich::parent_dir(path)),
@@ -609,6 +679,29 @@ fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVol
             return;
         }
     };
+
+    // Privacy retro-delete re-fire (plan M3): a folder excluded while this volume was
+    // OFFLINE never got purged (the retro-delete had no mount root then). On
+    // (re)registration the volume is mounted, so purge any currently-excluded folder
+    // that falls under it now. Idempotent and cheap: skipped entirely when nothing is
+    // excluded, and a folder on another volume maps to `None` and no-ops.
+    {
+        let excluded = network::config::snapshot().excluded_folders;
+        if !excluded.is_empty()
+            && let Some(mount_root) = crate::file_system::get_volume_manager()
+                .get(&volume_id)
+                .map(|v| v.root().to_string_lossy().into_owned())
+        {
+            let re_scheduler = Arc::clone(&scheduler);
+            let re_volume = volume_id.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                let mounts = [(re_volume, mount_root)];
+                for folder in &excluded {
+                    re_scheduler.retro_delete_excluded_folder(folder, &mounts);
+                }
+            });
+        }
+    }
 
     // The unscored → scored bridge (plan M1 defer-until-scored). Subscribe to
     // importance's recompute-completed `watch` SYNCHRONOUSLY here — BEFORE and

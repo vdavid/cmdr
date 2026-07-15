@@ -252,6 +252,14 @@ M1 and M2 sequentially or as one agent.
 - Justify the new deletion path against the GC safety doctrine in `DETAILS.md`: it's user-explicit and derives from
   settings state only, never from scan/bus/gate state — that's why it doesn't need a Completed edge.
 
+**Also in this milestone (small, David-requested 2026-07-15): skip tiny images quietly.** Vision refuses images with
+any dimension under 3 px ("The image is too small in at least one dimension 4 x 2"), and today that surfaces as a WARN
+per file per pass (framework decoration like `evd_blackline.tif` spams the log). Pixel dimensions are only knowable at
+decode time, so the skip lives in the analyze path: detect the too-small case as a TYPED outcome (never a string match
+on the Vision message), store a normal empty-analysis row (no OCR, no tags, no embedding) so the image counts as done,
+never re-tries until its `(mtime, size)` changes, and never shows up in search; log at DEBUG, not WARN. Intention:
+"we're not interested in these as images" — they're indexable-file noise, not failures.
+
 **Tests (TDD — deletion logic is data-safety-critical).** Failing tests first: exclude deletes rows under the folder
 and ONLY those; nested overrides don't resurrect them (exclude beats always-index, same precedence as enrichment);
 **excluding mid-pass leaves no re-added rows** — cover BOTH races: a pass holding a pre-exclusion snapshot, and an

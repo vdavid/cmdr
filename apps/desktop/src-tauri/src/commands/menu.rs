@@ -73,8 +73,22 @@ pub fn show_file_context_menu<R: Runtime>(
         }
     }
 
-    let result = build_context_menu(app, &filename, is_directory, &info, restrict_destination_actions)
-        .map_err(|e| e.to_string())?;
+    // Media-index folder exclusion: show the exclude/un-exclude item only while image
+    // indexing is enabled, keyed on whether THIS folder is already excluded (an OS-path
+    // membership check against the live config).
+    let image_index_enabled = crate::media_index::gate::is_enabled();
+    let image_index_excluded = image_index_enabled && crate::media_index::network::config::is_excluded(&path);
+
+    let result = build_context_menu(
+        app,
+        &filename,
+        is_directory,
+        &info,
+        restrict_destination_actions,
+        image_index_enabled,
+        image_index_excluded,
+    )
+    .map_err(|e| e.to_string())?;
 
     // Stash the bundle_id → app_path map so on_menu_event can resolve clicks on
     // `open-with:<bundle-id>` items back to a real app URL.

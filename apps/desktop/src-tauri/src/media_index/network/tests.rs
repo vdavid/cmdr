@@ -47,6 +47,11 @@ fn always_enrich(_os_path: &str) -> bool {
     true
 }
 
+/// The default "nothing is excluded" privacy veto for tests not exercising exclusion.
+fn never_excluded(_os_path: &str) -> bool {
+    false
+}
+
 fn no_sleep(_d: Duration) {}
 
 // ── The conservative-fetch decision (idle gate), over a fake idle signal ────
@@ -74,6 +79,7 @@ fn defers_when_not_idle_enriches_nothing() {
         policy: &policy,
         is_idle: &not_idle,
         should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
     };
@@ -118,6 +124,7 @@ fn proceeds_when_idle_and_enriches_over_the_fetched_bytes() {
         policy: &policy,
         is_idle: &idle,
         should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
     };
@@ -162,6 +169,7 @@ fn bandwidth_throttle_is_invoked_per_fetched_image() {
         policy: &policy,
         is_idle: &idle,
         should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &record,
     };
@@ -199,6 +207,7 @@ fn disconnect_mid_pass_keeps_completed_rows_and_writes_no_failure() {
         policy: &policy,
         is_idle: &idle,
         should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
     };
@@ -272,6 +281,7 @@ fn gc_does_not_fire_on_a_disconnect() {
         policy: &policy,
         is_idle: &idle,
         should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
     };
@@ -332,6 +342,7 @@ fn override_enriches_a_low_importance_folder_while_the_rest_defers() {
         policy: &policy,
         is_idle: &idle,
         should_enrich: &gate,
+        is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
     };
@@ -373,6 +384,7 @@ fn search_answers_offline_after_the_volume_unmounts() {
         policy: &policy,
         is_idle: &idle,
         should_enrich: &always_enrich,
+        is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
     };
@@ -389,4 +401,52 @@ fn search_answers_offline_after_the_volume_unmounts() {
         "the NAS's photos stay searchable with the volume unplugged"
     );
     assert_eq!(hits[0].path, "/DCIM/a.jpg");
+}
+
+#[test]
+fn exclusion_landing_during_network_analyze_writes_no_row() {
+    // The network mirror of the local in-flight-analyze TOCTOU: an image passes the
+    // filter veto (false), the exclude lands DURING analyze, and the pre-upsert
+    // re-check (the second `is_excluded` call) drops the row. Modeled by a stateful
+    // veto that flips false → true across its two calls.
+    use std::cell::Cell;
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "smb-vol");
+    let images = [image("/DCIM/a.jpg", 1, 10)];
+    let fetcher = FakeByteFetcher::new().with_bytes(os("/DCIM/a.jpg"), b"jpeg".to_vec());
+    let backend = FakeVisionBackend::new();
+    let policy = ConservativeFetchPolicy::default();
+
+    let idle = || true;
+    let cancel = || false;
+    let calls = Cell::new(0u32);
+    let excluded = |_: &str| {
+        let n = calls.get();
+        calls.set(n + 1);
+        n >= 1
+    };
+    let ctx = NetworkEnrichCtx {
+        volume_id: "smb-vol",
+        mount_root: MOUNT,
+        images: &images,
+        statuses: &HashMap::new(),
+        backend: &backend,
+        fetcher: &fetcher,
+        writer: &writer,
+        policy: &policy,
+        is_idle: &idle,
+        should_enrich: &always_enrich,
+        is_excluded: &excluded,
+        cancel: &cancel,
+        sleep: &no_sleep,
+    };
+    let outcome = enrich_network_and_gc(&ctx).expect("pass");
+    assert!(matches!(outcome, NetworkPassOutcome::Completed(s) if s.enriched == 0));
+    assert!(calls.get() >= 2, "the veto is re-checked before the upsert");
+    let store = MediaStore::open(&media_db_path(dir.path(), "smb-vol")).expect("reopen");
+    assert!(
+        store.status_for("/DCIM/a.jpg").expect("read").is_none(),
+        "nothing persisted for the mid-analyze network exclusion"
+    );
+    writer.shutdown();
 }

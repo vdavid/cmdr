@@ -484,13 +484,48 @@ requested volume isn't ready (still scanning / not yet scored), so the UI voices
 confident wrong number. `media_index_volume_state` gained `qualifying_count: Option<u64>` (the honest denominator for
 "12,000 of 38,900 images", `None` when offline/scanning); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
 
-### Per-folder photo-search exclude (privacy complement)
+### Per-folder photo-search exclude + the privacy retro-delete (M3)
 
 `network::config` gained `excluded_folders` (seeded from `mediaIndex.excludedFolders`, live-applied by
 `media_index_set_excluded_folder`): an image at or under an excluded folder never enriches, a HARD veto that beats any
 "always index" override — the privacy complement to the opt-in (protect a high-importance `~/Documents/IDs` the
-threshold alone can't). It stops FUTURE enrichment; existing rows for a now-excluded folder stay until the next GC/rescan
-(purging them on exclude is a possible follow-up).
+threshold alone can't).
+
+Excluding a folder does more than veto the future: it **retro-deletes** the folder's already-indexed rows so extracted
+OCR text stops being searchable at once (privacy is a hard requirement, not "eventually on the next GC"). The pieces:
+
+- **Why it's a new deletion path (vs the GC-safety doctrine).** GC's safety comes from *when* it runs (only a
+  `Completed` edge, tree whole — § The GC safety argument). The retro-delete is USER-EXPLICIT and derives ONLY from
+  settings state (the exclusion the user just set), never scan/bus/gate state, so it can't wipe live coverage by
+  mistiming — it needs no edge. This is the same doctrine the reclaim prune (M4) rides. The slider stays forward-only;
+  the ONLY row deletions are (a) vanished files via GC, (b) the reclaim prune, (c) this privacy retro-delete.
+- **Precedence + path mapping.** Exclusion beats coverage everywhere (enrichment gate AND retro-delete), same
+  trailing-slash-safe `path_is_within` the veto uses. The exclusion config is OS-path keyed; local rows store index
+  paths == OS paths, network rows store mount-stripped index paths — so the retro-delete maps the OS folder into each
+  volume's index space via `network::fetch::os_folder_to_index_prefix` (the inverse of `os_join`: passes through on a
+  local volume, strips the mount root on a network one, `None` when the folder isn't under that mount).
+  `MediaScheduler::retro_delete_excluded_folder(folder, mounts)` iterates the reachable volumes, prunes each via its ONE
+  writer, `VACUUM`s (privacy: the text leaves the disk), and drops the vector + coverage caches.
+- **Two mid-pass races, both closed** (else the retro-delete is cosmetic). (1) A pass already running holds a
+  start-of-pass config snapshot, so its coverage gate is stale — but exclusion is read LIVE
+  (`network::config::is_excluded`, the ONLY live part; threshold/override stay snapshot), so the next image it looks at
+  is vetoed. (2) The in-flight-analyze TOCTOU: a pass checks the veto, runs a SECONDS-long `analyze`, then upserts; an
+  exclusion landing during the analyze would slip a row past the passed check, and a later pass won't collect it (the
+  file is still in the GC `current` set). Closed by re-checking the live veto immediately before EACH upsert (both
+  cores). Belt-and-suspenders: the command sequences config-set (live veto first) → retro-delete → retro-delete again
+  (a double-tap; the blocking prune is its own barrier), so a straggler upsert that squeezed into the enqueue window is
+  swept. Order matters — the config write MUST precede the first delete, or in-flight images re-check stale state.
+- **Un-excluding** only clears the veto: NO re-delete and NO auto re-enrich — the next natural pass picks the folder up
+  again.
+- **Offline network volumes** aren't reachable when the exclusion is set (no mount root to map with), so the
+  retro-delete skips them and RE-FIRES on reconnect: `wire_volume` (the registration hook) purges any currently-excluded
+  folder under a volume as it (re)registers. Cheap when nothing is excluded.
+- **The trigger** is a folder context-menu item ("Don't index images in this folder" / "Index images here again", shown
+  only while image indexing is on, exactly one keyed on the current state). It's a NATIVE (Rust) menu, so the click
+  emits a `MediaIndexFolderExclusion` event to the FE, which persists `mediaIndex.excludedFolders` and calls
+  `media_index_set_excluded_folder` (the native menu can't write the FE settings store) — the persist + live-apply +
+  rollback pattern from `network-volume-prefs.ts`, in `src/lib/media-index/excluded-folders.ts`, wired in the main
+  route's `setupMenuListeners`.
 
 ### Read API + commands (tags, similarity, coverage)
 
@@ -538,10 +573,10 @@ The user-facing surface lives in the Svelte frontend, not here; this section is 
 
 ## What's left for later
 
-- **Per-folder photo-search exclude UI (FE trigger):** the backend setter (`media_index_set_excluded_folder`) + the
-  `mediaIndex.excludedFolders` setting are ready, but the natural trigger is a folder right-click action in the native
-  (Rust) file context menu, so wiring it is a small backend/menu follow-up (same shape as the deferred per-folder
-  "always index" override). No FE persist helper exists yet.
+- **Per-folder "always index" UI (FE trigger):** the backend setter (`media_index_set_always_index_folder`) + the
+  `mediaIndex.alwaysIndexFolders` setting are ready, but no FE control sets them yet. The natural trigger is a folder
+  right-click action, the same native-menu shape the exclude trigger now uses (§ Per-folder photo-search exclude), so
+  it's a small backend/menu follow-up.
 - **Later:** CLIP text→image semantic search, the model-install path, faces (detect/embed/cluster/name), the durable
   identity store, and LLM captions.
 
@@ -565,3 +600,12 @@ folder + ENRICHES an overridden one, both keeping deferred rows for GC (`schedul
 arithmetic over a synthetic counts+scores map (`coverage.rs`); the fake backend's deterministic tags/feature-prints
 (`backend/fake.rs`). **macOS-gated real FFI** (`backend/vision/tests.rs`): `analyze` returns real OCR + well-formed tags
 + a stable-length feature print off the fixture, and a real feature print's self-cosine is ~1.0.
+
+**Privacy retro-delete tests (M3, all real red→green — deletion is data-safety-critical):** the writer prune primitives
+(`writer.rs`) — `prune_under_folder` deletes rows at or under a folder across ALL four tables and only those,
+trailing-slash-safe (`/Photos2` survives pruning `/Photos`); `prune_paths` deletes only the explicit set; prune + VACUUM
+round-trips. The live privacy veto (`scheduler/enrich_tests.rs` + `network/tests.rs`): exclusion beats an override-covered
+image, and an exclusion landing mid-`analyze` (a stateful veto flipping false → true across its two calls) persists NO
+row — both the local and network cores. The OS-folder → index-prefix mapping is the inverse of `os_join`
+(`network/fetch.rs`). The scheduler retro-delete (`scheduler/kick_tests.rs`) prunes a local folder and skips a volume the
+folder isn't under, and maps a network folder into the volume's index space.

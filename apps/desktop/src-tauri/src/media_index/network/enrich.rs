@@ -71,8 +71,13 @@ pub(crate) struct NetworkEnrichCtx<'a> {
     pub(crate) policy: &'a ConservativeFetchPolicy,
     /// Whether the app is idle enough to fetch right now (checked between images).
     pub(crate) is_idle: &'a dyn Fn() -> bool,
-    /// Whether an image at this OS path should enrich (override / importance gate).
+    /// Whether an image at this OS path is COVERED (override / importance gate,
+    /// snapshot-based).
     pub(crate) should_enrich: &'a dyn Fn(&str) -> bool,
+    /// The LIVE privacy veto at this OS path (read fresh, not snapshot): a hard veto
+    /// that beats coverage, checked before enriching AND again immediately before the
+    /// upsert (the in-flight-analyze TOCTOU close).
+    pub(crate) is_excluded: &'a dyn Fn(&str) -> bool,
     /// The emergency-stop check (memory watchdog), checked between images.
     pub(crate) cancel: &'a dyn Fn() -> bool,
     /// The bandwidth-throttle sleep (real `thread::sleep` in production; a recorder /
@@ -99,8 +104,13 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
         }
 
         let os_path = os_join(ctx.mount_root, &image.path);
-        // Override / importance gate: a low-importance NAS folder defers unless the
-        // user marked it "always index".
+        // Privacy veto (LIVE hard veto, beats coverage): an excluded image is deferred,
+        // so it stays in `current` and GC never wipes it.
+        if (ctx.is_excluded)(&os_path) {
+            continue;
+        }
+        // Coverage gate: a low-importance NAS folder defers unless the user marked it
+        // "always index".
         if !(ctx.should_enrich)(&os_path) {
             continue;
         }
@@ -117,23 +127,30 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
                     kind: image.kind,
                     bytes: Some(bytes),
                 };
-                match ctx.backend.analyze(&input) {
-                    Ok(analysis) => {
-                        ctx.writer
-                            .upsert(
-                                status_row(image, EnrichmentState::Done, &stamp),
-                                Some(to_upsert_analysis(analysis)),
-                            )
-                            .map_err(|e| e.to_string())?;
-                        summary.enriched += 1;
-                    }
-                    Err(e) => {
-                        // A GOOD read but a bad decode/analysis ⇒ a genuinely bad file
-                        // ⇒ `Failed` (same as the local pass). NOT a disconnect.
-                        log::warn!(target: "media_index", "network analysis failed for '{}': {e}", image.path);
-                        ctx.writer
-                            .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
-                            .map_err(|e| e.to_string())?;
+                let analysis = ctx.backend.analyze(&input);
+                // Re-check the LIVE veto AFTER the slow analyze: an exclusion landing
+                // during it must not persist a row (the in-flight-analyze TOCTOU). The
+                // bytes were already fetched, so still throttle below for honest
+                // bandwidth accounting; only the upsert is skipped.
+                if !(ctx.is_excluded)(&os_path) {
+                    match analysis {
+                        Ok(analysis) => {
+                            ctx.writer
+                                .upsert(
+                                    status_row(image, EnrichmentState::Done, &stamp),
+                                    Some(to_upsert_analysis(analysis)),
+                                )
+                                .map_err(|e| e.to_string())?;
+                            summary.enriched += 1;
+                        }
+                        Err(e) => {
+                            // A GOOD read but a bad decode/analysis ⇒ a genuinely bad file
+                            // ⇒ `Failed` (same as the local pass). NOT a disconnect.
+                            log::warn!(target: "media_index", "network analysis failed for '{}': {e}", image.path);
+                            ctx.writer
+                                .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
+                                .map_err(|e| e.to_string())?;
+                        }
                     }
                 }
                 // Bandwidth throttle: hold the sustained fetch rate under the cap.

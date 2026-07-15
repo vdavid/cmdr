@@ -161,10 +161,17 @@ pub(crate) fn prioritized(images: &[ImageEntry], folder_score: &dyn Fn(&str) -> 
 ///
 /// - `images` is the caller's priority-ordered list ([`prioritized`]); enrichment
 ///   walks it in that order so high-importance folders land first.
-/// - `should_enrich(path)` is the importance/override/exclude filter: an image it
-///   rejects is DEFERRED (not enriched) but stays in the GC `current` set, so a
-///   below-threshold folder's existing rows aren't wiped — only genuinely vanished
-///   files are GC'd.
+/// - `should_enrich(path)` is the COVERAGE filter (importance threshold + "always
+///   index" override, snapshot-based): an image it rejects is DEFERRED (not enriched)
+///   but stays in the GC `current` set, so a below-threshold folder's existing rows
+///   aren't wiped — only genuinely vanished files are GC'd.
+/// - `is_excluded(path)` is the LIVE privacy veto (read fresh, NOT from a pass
+///   snapshot). It's a hard veto that beats coverage, checked BOTH before enriching
+///   AND again immediately before the upsert: the second check closes the in-flight
+///   TOCTOU where an exclusion lands DURING the slow `analyze`, so a just-excluded
+///   folder never gets a row persisted (which a later pass wouldn't collect, since the
+///   file is still present in the GC `current` set). An excluded image is deferred, so
+///   like any deferred image it stays in `current` and isn't GC'd.
 /// - Enriches only images the staleness predicate marks stale ([`needs_enrichment`]).
 /// - Checks `cancel` BETWEEN images so an emergency stop (the memory watchdog)
 ///   yields promptly; a cancelled pass ALSO skips GC (yield fully) — the vanished
@@ -177,6 +184,7 @@ pub(crate) fn enrich_and_gc(
     backend: &dyn VisionBackend,
     writer: &MediaWriter,
     should_enrich: &dyn Fn(&str) -> bool,
+    is_excluded: &dyn Fn(&str) -> bool,
     cancel: &dyn Fn() -> bool,
 ) -> Result<PassSummary, String> {
     let stamp = backend.analysis_stamp();
@@ -189,8 +197,13 @@ pub(crate) fn enrich_and_gc(
             cancelled = true;
             break;
         }
-        // Importance / override / exclude gate: a deferred image is skipped here but
-        // stays in `current`, so GC never wipes it.
+        // Privacy veto (LIVE hard veto, beats coverage): an excluded image is deferred
+        // like any other, so it stays in `current` and GC never wipes it.
+        if is_excluded(&image.path) {
+            continue;
+        }
+        // Coverage gate: a deferred image is skipped here but stays in `current`, so
+        // GC never wipes it.
         if !should_enrich(&image.path) {
             continue;
         }
@@ -203,7 +216,14 @@ pub(crate) fn enrich_and_gc(
             // Local volume: the backend reads the real on-disk path itself.
             bytes: None,
         };
-        match backend.analyze(&input) {
+        let analysis = backend.analyze(&input);
+        // Re-check the LIVE veto AFTER the slow analyze: an exclusion that landed during
+        // it must not persist a row (the in-flight-analyze TOCTOU — a later pass wouldn't
+        // collect it, since the file is still in the GC `current` set).
+        if is_excluded(&image.path) {
+            continue;
+        }
+        match analysis {
             Ok(analysis) => {
                 writer
                     .upsert(

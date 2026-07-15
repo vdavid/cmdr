@@ -18,7 +18,8 @@ use crate::ignore_poison::IgnorePoison;
 use super::menu_items::{brief_view_label, full_view_label};
 use super::{
     CLOSE_TAB_ID, CommandScope, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_PASTE_ID, EJECT_VOLUME_ID, FAVORITE_REMOVE_ID,
-    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MenuItemEntry, MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID,
+    FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, MEDIA_INDEX_EXCLUDE_FOLDER_ID, MEDIA_INDEX_INCLUDE_FOLDER_ID,
+    MediaIndexFolderExclusion, MenuItemEntry, MenuSort, MenuState, NETWORK_HOST_DISCONNECT_ID,
     NETWORK_HOST_FORGET_PASSWORD_ID, NETWORK_HOST_FORGET_SERVER_ID, SELECT_ALL_ID, SHOW_HIDDEN_FILES_ID,
     SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID,
     SORT_DESCENDING_ID, SettingsChanged, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID,
@@ -451,6 +452,27 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
             }
             crate::volume_broadcast::emit_volumes_changed();
         });
+        return;
+    }
+
+    // === Image-search folder exclusion (media_index privacy veto) ===
+    // Acts on the RIGHT-CLICKED folder in `MenuState.context.path` (not the focused-pane
+    // selection), so it can't route through `execute-command`. Emit the target folder +
+    // state to the FE, which persists `mediaIndex.excludedFolders` and calls
+    // `media_index_set_excluded_folder` (the native menu can't write the FE store).
+    if id == MEDIA_INDEX_EXCLUDE_FOLDER_ID || id == MEDIA_INDEX_INCLUDE_FOLDER_ID {
+        let menu_state = app.state::<MenuState<tauri::Wry>>();
+        let folder = menu_state.context.lock_ignore_poison().path.clone();
+        if folder.is_empty() {
+            log::warn!(target: "media_index", "folder exclusion clicked with no context path, ignoring");
+            return;
+        }
+        use tauri_specta::Event as _;
+        let _ = MediaIndexFolderExclusion {
+            folder,
+            excluded: id == MEDIA_INDEX_EXCLUDE_FOLDER_ID,
+        }
+        .emit_to(app, "main");
         return;
     }
 

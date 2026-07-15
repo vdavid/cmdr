@@ -19,6 +19,7 @@ import {
   activateWindowMenu,
   onViewModeChanged,
   onMenuSort,
+  onMediaIndexFolderExclusion,
   onExecuteCommand,
   onOpenSettings,
   onFocusAbout,
@@ -31,6 +32,7 @@ import {
   onCloseConfirmation,
 } from '$lib/tauri-commands'
 import { markDispatchSource } from './dispatch-dedup'
+import { setFolderExcluded } from '$lib/media-index/excluded-folders'
 import { isCommandId, type CommandId, type CommandDispatchArgs } from '$lib/commands'
 import type { ViewMode } from '$lib/app-status-store'
 import { openSettingsWindow } from '$lib/settings/settings-window'
@@ -273,6 +275,17 @@ export async function setupMenuListeners(ctx: ListenerSetupContext): Promise<voi
     await onMenuSort((payload) => {
       const command = menuSortToCommand(payload.action, payload.value)
       if (command) void dispatch(command)
+    }),
+  )
+
+  // Folder "Don't index images in this folder" / "Index images here again" click.
+  // Rust emits the right-clicked folder + target state directly; the FE persists
+  // `mediaIndex.excludedFolders` and live-applies it (excluding retro-deletes the
+  // folder's indexed rows backend-side). The helper rolls back + logs on failure, so a
+  // rejection here needs no extra handling (a background privacy action, no toast).
+  unlistenFns.push(
+    await onMediaIndexFolderExclusion((payload) => {
+      void setFolderExcluded(payload.folder, payload.excluded).catch(() => {})
     }),
   )
 }

@@ -54,6 +54,15 @@ pub const TOGGLE_SELECTION_ID: &str = "toggle_selection";
 pub const CLOUD_MAKE_OFFLINE_ID: &str = "cloud_make_offline";
 pub const CLOUD_REMOVE_DOWNLOAD_ID: &str = "cloud_remove_download";
 
+/// Menu item IDs for the per-folder image-search exclusion (media_index privacy veto).
+/// Shown on a folder's context menu only while image indexing is enabled; exactly one
+/// of the two appears, keyed on whether the folder is already excluded. Handled
+/// specially in `handle_menu_event` (they act on the RIGHT-CLICKED folder in
+/// `MenuState.context.path` and drive a FE persist path, so they can't route through
+/// `execute-command`), never via `menu_id_to_command`.
+pub const MEDIA_INDEX_EXCLUDE_FOLDER_ID: &str = "media_index_exclude_folder";
+pub const MEDIA_INDEX_INCLUDE_FOLDER_ID: &str = "media_index_include_folder";
+
 /// Menu item ID prefix for the seven Finder-tag color items in the file context menu
 /// (macOS). Followed by the color index (1..=7), e.g. `tag-color:6`. Prefix-routed in
 /// `handle_menu_event` (like `open-with:`) straight to the tag write, NOT through

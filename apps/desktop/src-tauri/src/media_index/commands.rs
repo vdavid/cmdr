@@ -213,14 +213,51 @@ pub fn media_index_set_always_index_folder(folder: String, always: bool) {
 }
 
 /// Set (or clear) a per-folder photo-search EXCLUSION: no image at or under `folder`
-/// (an absolute path) is enriched (the privacy complement to the opt-in — plan §
-/// Privacy). A hard veto that beats any "always index" override. Live-applied; the
-/// frontend persists `mediaIndex.excludedFolders` and calls this on change. Existing
-/// rows for the folder stay until the next GC/rescan; the veto stops FUTURE enrichment.
+/// (an absolute OS path) enriches (the privacy complement to the opt-in — plan §
+/// Privacy). A hard veto that beats any "always index" override.
+///
+/// EXCLUDING retro-deletes existing rows at or under the folder across the reachable
+/// volumes, so already-extracted OCR text stops being searchable at once (privacy is a
+/// hard requirement, not "eventually on the next GC"). The sequence is deliberate:
+///
+/// 1. set the live veto FIRST, so any in-flight pass re-checks against the excluded
+///    state and can't re-insert rows behind the delete (the pre-upsert TOCTOU close);
+/// 2. THEN retro-delete (a double-tap through each volume's one writer thread, so a
+///    straggler upsert that squeezed in is swept), off the IPC thread.
+///
+/// Un-EXCLUDING only clears the veto: NO re-delete and NO auto re-enrich — the next
+/// natural pass picks the folder up again. An offline network volume is skipped by the
+/// retro-delete (no mount root) and re-fires on reconnect via the registration bus.
+/// Live-applied; the frontend persists `mediaIndex.excludedFolders` and calls this on
+/// change (rolling the persisted value back if this rejects).
 #[tauri::command]
 #[specta::specta]
-pub fn media_index_set_excluded_folder(folder: String, excluded: bool) {
+pub async fn media_index_set_excluded_folder(app: AppHandle, folder: String, excluded: bool) -> Result<(), String> {
+    // Live state FIRST (step 1): the veto must precede any delete.
     network_config::set_excluded_folder(&folder, excluded);
+
+    if !excluded {
+        return Ok(());
+    }
+    // Step 2: retro-delete across reachable volumes. Skip cleanly if the scheduler isn't
+    // managed yet (nothing has been enriched, so there's nothing to purge).
+    let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>() else {
+        return Ok(());
+    };
+    let scheduler = Arc::clone(scheduler.inner());
+    // The reachable volumes + their mount roots. An unmounted volume isn't listed, so
+    // its retro-delete re-fires on reconnect (`wire_volume`).
+    let mounts: Vec<(String, String)> = crate::file_system::get_volume_manager()
+        .list_volumes_with_handles()
+        .into_iter()
+        .map(|(id, vol)| (id, vol.root().to_string_lossy().into_owned()))
+        .collect();
+    // The prune blocks on the writer thread, so run it off the IPC thread.
+    tauri::async_runtime::spawn_blocking(move || {
+        scheduler.retro_delete_excluded_folder(&folder, &mounts);
+    })
+    .await
+    .map_err(|e| format!("retro-delete task panicked: {e}"))
 }
 
 /// Set the folder-importance threshold the scheduler enriches by — the importance settings

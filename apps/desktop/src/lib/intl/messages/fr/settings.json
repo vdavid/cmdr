@@ -487,6 +487,14 @@
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "sourceHash": "7fbc7f3"
   },
+  "settings.mediaIndex.excludedFolders.label": "Dossiers exclus",
+  "@settings.mediaIndex.excludedFolders.label": {
+    "sourceHash": "7ec409b"
+  },
+  "settings.mediaIndex.excludedFolders.description": "Interne : dossiers que l''utilisateur a exclus de l''indexation des images.",
+  "@settings.mediaIndex.excludedFolders.description": {
+    "sourceHash": "af670b1"
+  },
   "settings.mediaIndex.networkVolumes.intro": "Les disques réseau ne sont indexés que lorsque vous les activez ici. Cmdr lit les photos sur le réseau en douceur : uniquement pendant vos moments d''inactivité, à vitesse limitée, et l''indexation se met en pause quand le disque se déconnecte.",
   "@settings.mediaIndex.networkVolumes.intro": {
     "sourceHash": "165a9eb"

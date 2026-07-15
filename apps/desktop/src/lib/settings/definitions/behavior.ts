@@ -258,6 +258,21 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // Internal (FE-owned): JSON array of absolute OS folder paths EXCLUDED from image
+    // indexing (the privacy veto). Set by the folder context-menu "Don't index images
+    // in this folder" item; persisted here AND pushed via `media_index_set_excluded_folder`
+    // (which also retro-deletes the folder's existing rows). Read by the Rust loader as
+    // an array.
+    id: 'mediaIndex.excludedFolders',
+    section: ['Behavior', 'File system watching'],
+    labelKey: 'settings.mediaIndex.excludedFolders.label',
+    descriptionKey: 'settings.mediaIndex.excludedFolders.description',
+    keywords: [],
+    type: 'string-array',
+    default: [],
+    hidden: true,
+  },
+  {
     // The image-index importance threshold (`0.0..=1.0`): the lowest folder-importance
     // level the scheduler enriches. Rendered as named buckets by the bespoke
     // `MediaIndexImportanceSlider.svelte` inside the "Image search" card (not an auto

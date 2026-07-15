@@ -490,6 +490,14 @@
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "sourceHash": "7fbc7f3"
   },
+  "settings.mediaIndex.excludedFolders.label": "Uitgesloten mappen",
+  "@settings.mediaIndex.excludedFolders.label": {
+    "sourceHash": "7ec409b"
+  },
+  "settings.mediaIndex.excludedFolders.description": "Intern: mappen die de gebruiker heeft uitgesloten van beeldindexering.",
+  "@settings.mediaIndex.excludedFolders.description": {
+    "sourceHash": "af670b1"
+  },
   "settings.mediaIndex.networkVolumes.intro": "Netwerkschijven worden alleen geïndexeerd als je ze hier inschakelt. Cmdr leest foto''s voorzichtig over het netwerk: alleen wanneer je niet bezig bent, met een beperkte snelheid, en het pauzeert wanneer de schijf wordt losgekoppeld.",
   "@settings.mediaIndex.networkVolumes.intro": {
     "sourceHash": "165a9eb"

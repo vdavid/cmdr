@@ -488,6 +488,14 @@
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "sourceHash": "7fbc7f3"
   },
+  "settings.mediaIndex.excludedFolders.label": "Pastas excluídas",
+  "@settings.mediaIndex.excludedFolders.label": {
+    "sourceHash": "7ec409b"
+  },
+  "settings.mediaIndex.excludedFolders.description": "Interno: pastas que o usuário excluiu da indexação de imagens.",
+  "@settings.mediaIndex.excludedFolders.description": {
+    "sourceHash": "af670b1"
+  },
   "settings.mediaIndex.networkVolumes.intro": "Discos de rede só são indexados quando você os ativa aqui. O Cmdr lê as fotos pela rede com cuidado: só quando o Mac está ocioso, em velocidade limitada, e pausa quando o disco se desconecta.",
   "@settings.mediaIndex.networkVolumes.intro": {
     "sourceHash": "165a9eb"

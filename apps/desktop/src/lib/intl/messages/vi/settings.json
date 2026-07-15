@@ -483,6 +483,14 @@
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "sourceHash": "7fbc7f3"
   },
+  "settings.mediaIndex.excludedFolders.label": "Thư mục bị loại trừ",
+  "@settings.mediaIndex.excludedFolders.label": {
+    "sourceHash": "7ec409b"
+  },
+  "settings.mediaIndex.excludedFolders.description": "Nội bộ: các thư mục người dùng đã loại trừ khỏi việc lập chỉ mục hình ảnh.",
+  "@settings.mediaIndex.excludedFolders.description": {
+    "sourceHash": "af670b1"
+  },
   "settings.mediaIndex.networkVolumes.intro": "Ổ đĩa mạng chỉ được lập chỉ mục khi bạn bật chúng ở đây. Cmdr đọc ảnh qua mạng một cách nhẹ nhàng: chỉ khi bạn không bận, ở tốc độ giới hạn, và tạm dừng khi ổ đĩa ngắt kết nối.",
   "@settings.mediaIndex.networkVolumes.intro": {
     "sourceHash": "165a9eb"

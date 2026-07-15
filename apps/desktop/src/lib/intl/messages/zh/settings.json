@@ -485,6 +485,14 @@
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "sourceHash": "7fbc7f3"
   },
+  "settings.mediaIndex.excludedFolders.label": "已排除的文件夹",
+  "@settings.mediaIndex.excludedFolders.label": {
+    "sourceHash": "7ec409b"
+  },
+  "settings.mediaIndex.excludedFolders.description": "内部：用户从图像索引中排除的文件夹。",
+  "@settings.mediaIndex.excludedFolders.description": {
+    "sourceHash": "af670b1"
+  },
   "settings.mediaIndex.networkVolumes.intro": "只有在这里开启后，网络驱动器才会被索引。Cmdr 通过网络读取照片时很克制：只在你空闲时读取，速度有限，并会在驱动器断开连接时暂停。",
   "@settings.mediaIndex.networkVolumes.intro": {
     "sourceHash": "165a9eb"

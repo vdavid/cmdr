@@ -83,6 +83,17 @@ Exceptions that do NOT use `"execute-command"`:
     (yellow) reads on light/dark menus; colors mirror the light-mode `--color-tag-*` tokens. The 14
     bitmaps (7 colors × {normal, checked}) are cached once in a `LazyLock`. macOS-only — Linux menus
     carry no icons.
+- **Image-search folder exclusion** (media_index privacy veto): a folder's context menu carries ONE
+  of "Don't index images in this folder" / "Index images here again", shown only while image indexing
+  is enabled and keyed on whether the folder is already excluded (`build_context_menu` takes
+  `image_index_enabled` + `image_index_excluded`, computed in `show_file_context_menu` from
+  `media_index::gate::is_enabled` + `network::config::is_excluded`). IDs
+  `media_index_{exclude,include}_folder`. Like tag colors, it acts on the RIGHT-CLICKED folder
+  (`MenuState.context.path`), so it's special-cased in `handle_menu_event` (NOT in
+  `menu_id_to_command`) — but instead of doing the work in Rust it emits a `MediaIndexFolderExclusion`
+  event to the FE, which persists `mediaIndex.excludedFolders` and calls `media_index_set_excluded_folder`
+  (the native menu can't write the FE settings store). Full backend flow: `media_index/DETAILS.md`
+  § Per-folder photo-search exclude.
 
 ### MenuState
 

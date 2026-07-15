@@ -487,6 +487,14 @@
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "sourceHash": "7fbc7f3"
   },
+  "settings.mediaIndex.excludedFolders.label": "Ausgeschlossene Ordner",
+  "@settings.mediaIndex.excludedFolders.label": {
+    "sourceHash": "7ec409b"
+  },
+  "settings.mediaIndex.excludedFolders.description": "Intern: Ordner, die der Benutzer von der Bildindizierung ausgeschlossen hat.",
+  "@settings.mediaIndex.excludedFolders.description": {
+    "sourceHash": "af670b1"
+  },
   "settings.mediaIndex.networkVolumes.intro": "Netzlaufwerke werden nur indiziert, wenn du sie hier aktivierst. Cmdr liest Fotos schonend über das Netzwerk: nur, während du nicht beschäftigt bist, mit begrenzter Geschwindigkeit, und die Indizierung hält an, wenn das Laufwerk getrennt wird.",
   "@settings.mediaIndex.networkVolumes.intro": {
     "sourceHash": "165a9eb"

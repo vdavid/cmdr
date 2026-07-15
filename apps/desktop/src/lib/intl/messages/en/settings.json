@@ -591,6 +591,14 @@
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "description": "Internal (hidden setting): help text for the always-index folder list. Not shown as a normal settings row."
   },
+  "settings.mediaIndex.excludedFolders.label": "Excluded folders",
+  "@settings.mediaIndex.excludedFolders.label": {
+    "description": "Internal (hidden setting): label for the list of folders the user excluded from image indexing (the privacy veto). Not shown as a normal settings row."
+  },
+  "settings.mediaIndex.excludedFolders.description": "Internal: folders the user excluded from image indexing.",
+  "@settings.mediaIndex.excludedFolders.description": {
+    "description": "Internal (hidden setting): help text for the excluded-folder list. Not shown as a normal settings row."
+  },
   "settings.mediaIndex.networkVolumes.intro": "Network drives are indexed only when you turn them on here. Cmdr reads photos over the network gently: only while you''re not busy, at a limited speed, and it pauses when the drive disconnects.",
   "@settings.mediaIndex.networkVolumes.intro": {
     "description": "Intro paragraph above the per-network-drive opt-in list, inside the \"Image search\" card in Settings > Behavior > File system watching. Sets honest expectations about the conservative network reading."

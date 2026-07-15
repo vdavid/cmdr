@@ -485,6 +485,14 @@
   "@settings.mediaIndex.alwaysIndexFolders.description": {
     "sourceHash": "7fbc7f3"
   },
+  "settings.mediaIndex.excludedFolders.label": "Kizárt mappák",
+  "@settings.mediaIndex.excludedFolders.label": {
+    "sourceHash": "7ec409b"
+  },
+  "settings.mediaIndex.excludedFolders.description": "Belső: mappák, amelyeket a felhasználó kizárt a képindexelésből.",
+  "@settings.mediaIndex.excludedFolders.description": {
+    "sourceHash": "af670b1"
+  },
   "settings.mediaIndex.networkVolumes.intro": "A hálózati meghajtók csak akkor indexelődnek, ha itt bekapcsolod őket. A Cmdr kíméletesen olvassa a fotókat a hálózaton: csak amikor épp nem vagy elfoglalt, korlátozott sebességgel, és szünetel, ha megszakad a kapcsolat a meghajtóval.",
   "@settings.mediaIndex.networkVolumes.intro": {
     "sourceHash": "165a9eb"

@@ -6,7 +6,7 @@
 // against the settings shape there.
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { events, type MenuSort, type ViewModeChanged } from '$lib/ipc/bindings'
+import { events, type MediaIndexFolderExclusion, type MenuSort, type ViewModeChanged } from '$lib/ipc/bindings'
 
 /**
  * A per-pane view-mode CheckMenuItem (Full / Brief) flipped from the native
@@ -26,6 +26,21 @@ export function onViewModeChanged(handler: (payload: ViewModeChanged) => void): 
  */
 export function onMenuSort(handler: (payload: MenuSort) => void): Promise<UnlistenFn> {
   return events.menuSort.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * A folder's "Don't index images in this folder" / "Index images here again"
+ * context-menu item clicked. The payload carries the right-clicked folder's
+ * absolute path and the target `excluded` state; the FE persists
+ * `mediaIndex.excludedFolders` and live-applies it via
+ * `media_index_set_excluded_folder`.
+ */
+export function onMediaIndexFolderExclusion(
+  handler: (payload: MediaIndexFolderExclusion) => void,
+): Promise<UnlistenFn> {
+  return events.mediaIndexFolderExclusion.listen((event) => {
     handler(event.payload)
   })
 }

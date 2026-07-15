@@ -60,19 +60,10 @@ fn unscored_local_defers_the_gated_remainder_but_honors_overrides() {
     );
 }
 
-#[test]
-fn excluded_folder_is_a_hard_veto_even_over_an_override() {
-    let config = config_with(&["/archive"], &["/archive/secret"]);
-    // Excluded beats the override (privacy veto), whether scored or not.
-    assert!(!local_should_enrich("/archive/secret/x.jpg", None, &config, ROOT));
-    let scores: HashMap<String, f64> = [("/archive/secret".to_string(), 0.9)].into_iter().collect();
-    assert!(!local_should_enrich(
-        "/archive/secret/x.jpg",
-        Some(&scores),
-        &config,
-        ROOT
-    ));
-}
+// The privacy exclusion is no longer part of `local_should_enrich` (which is now the
+// pure COVERAGE gate); it's a live hard veto applied in `enrich::enrich_and_gc`, tested
+// there (`exclusion_vetoes_even_an_override_covered_image`,
+// `exclusion_landing_during_analyze_writes_no_row`).
 
 #[test]
 fn scored_local_enriches_folders_in_the_map_and_defers_the_rest() {
@@ -205,6 +196,29 @@ fn seed_importance_incremental_only(data_dir: &std::path::Path, rows: &[(&str, f
     writer
         .write_weights_incremental(1, rows, Vec::new())
         .expect("write incremental");
+    writer.flush_blocking().expect("flush");
+    writer.shutdown();
+}
+
+/// A scratch media writer over the scheduler's data dir, to pre-seed a `media.db` row
+/// for `volume_id` at `path`.
+fn seed_media_row_for(data_dir: &std::path::Path, volume_id: &str, path: &str) {
+    let db_path = media_db_path(data_dir, volume_id);
+    MediaStore::open(&db_path).expect("open media store");
+    let writer = MediaWriter::spawn(&db_path).expect("media writer");
+    writer
+        .upsert(
+            MediaStatusRow {
+                path: path.to_string(),
+                mtime: Some(10),
+                size: Some(10),
+                media_kind: MediaKind::Image,
+                state: EnrichmentState::Done,
+                engine_version: "fake-vision-1".to_string(),
+            },
+            Some(crate::media_index::writer::UpsertAnalysis::ocr_only("seeded")),
+        )
+        .expect("seed row");
     writer.flush_blocking().expect("flush");
     writer.shutdown();
 }
@@ -412,4 +426,68 @@ fn folder_scores_is_none_for_a_genuinely_empty_store() {
     let dir = tempfile::tempdir().expect("temp");
     let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
     assert!(sched.folder_scores(ROOT, 0.0).is_none(), "a missing store is unscored");
+}
+
+// ── M3 privacy retro-delete: across path spaces, and only reachable volumes ──
+
+#[test]
+fn retro_delete_prunes_a_local_folder_and_skips_volumes_it_isnt_under() {
+    // Excluding an OS folder deletes its rows on the local volume (index path == OS
+    // path) and does NOT touch a NAS the folder isn't under (its index space is
+    // different).
+    let dir = tempfile::tempdir().expect("temp");
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    seed_media_row_for(dir.path(), ROOT, "/secret/id.jpg");
+    seed_media_row_for(dir.path(), ROOT, "/keep/a.jpg");
+    seed_media_row_for(dir.path(), "smb-vol", "/Photos/p.jpg");
+
+    let deleted = sched.retro_delete_excluded_folder(
+        "/secret",
+        &[
+            (ROOT.to_string(), "/".to_string()),
+            ("smb-vol".to_string(), "/Volumes/naspi".to_string()),
+        ],
+    );
+    assert_eq!(
+        deleted, 1,
+        "only the local /secret row goes; /secret isn't under the NAS mount"
+    );
+
+    let root = MediaStore::open(&media_db_path(dir.path(), ROOT)).expect("open root");
+    assert!(
+        root.status_for("/secret/id.jpg").expect("read").is_none(),
+        "excluded gone"
+    );
+    assert!(root.status_for("/keep/a.jpg").expect("read").is_some(), "sibling kept");
+    let smb = MediaStore::open(&media_db_path(dir.path(), "smb-vol")).expect("open smb");
+    assert!(
+        smb.status_for("/Photos/p.jpg").expect("read").is_some(),
+        "the NAS row is untouched (the folder isn't under its mount)"
+    );
+}
+
+#[test]
+fn retro_delete_maps_a_network_folder_into_the_volumes_index_space() {
+    // Excluding an OS-mount folder on a NAS strips the mount root to reach the stored
+    // (index-relative) rows.
+    let dir = tempfile::tempdir().expect("temp");
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    seed_media_row_for(dir.path(), "smb-vol", "/Photos/p.jpg");
+    seed_media_row_for(dir.path(), "smb-vol", "/Docs/d.jpg");
+
+    let deleted = sched.retro_delete_excluded_folder(
+        "/Volumes/naspi/Photos",
+        &[("smb-vol".to_string(), "/Volumes/naspi".to_string())],
+    );
+    assert_eq!(deleted, 1);
+
+    let smb = MediaStore::open(&media_db_path(dir.path(), "smb-vol")).expect("open smb");
+    assert!(
+        smb.status_for("/Photos/p.jpg").expect("read").is_none(),
+        "mapped + pruned"
+    );
+    assert!(
+        smb.status_for("/Docs/d.jpg").expect("read").is_some(),
+        "other folder kept"
+    );
 }

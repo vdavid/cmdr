@@ -63,6 +63,13 @@ use super::{Analysis, ImageInput, OcrResult, Tag, VisionBackend, VisionError};
 /// (plan Decision 5 — feed a downscaled decode, never the original).
 const MAX_OCR_DIMENSION: i64 = 3072;
 
+/// Vision refuses an image with ANY pixel dimension under this (it errors "The image is
+/// too small in at least one dimension, W x H"). Such files — framework decorations,
+/// spacer GIFs, `evd_blackline.tif`-style rules — are indexable-file noise, not photos,
+/// so we skip them QUIETLY (a done, empty row) rather than logging a WARN per file per
+/// pass. The check is by DIMENSION (typed), never a string-match on the Vision message.
+const MIN_ANALYZE_DIMENSION: usize = 3;
+
 /// The most scene/object tags to keep per image, highest-confidence first. Vision's
 /// classifier returns the full ~1,300-label taxonomy every time with a confidence per
 /// label; keeping only the top few above [`MIN_TAG_SCORE`] holds `media_tags` small
@@ -273,6 +280,25 @@ fn recognize_text(path: &str, prefetched: Option<&[u8]>) -> Result<OcrResult, Vi
 /// Must run on the dedicated worker thread, inside an autoreleasepool.
 fn analyze_image(path: &str, prefetched: Option<&[u8]>) -> Result<Analysis, VisionError> {
     let cg_image = decode_thumbnail(path, prefetched)?;
+
+    // Skip a too-small image QUIETLY (plan M3): Vision would refuse it ("too small in at
+    // least one dimension"), so without this it'd log a WARN per file per pass. Detect it
+    // by the decoded dimensions (typed, never a string-match on the Vision message) and
+    // return an EMPTY analysis — a normal done row that never re-tries (unchanged
+    // `(mtime, size)`) and never surfaces in search.
+    let image_ref: &CGImage = &cg_image;
+    let (width, height) = (CGImage::width(Some(image_ref)), CGImage::height(Some(image_ref)));
+    if width < MIN_ANALYZE_DIMENSION || height < MIN_ANALYZE_DIMENSION {
+        log::debug!(
+            target: "media_index",
+            "skipping too-small image '{path}' ({width}x{height}); indexable-file noise, not a photo"
+        );
+        return Ok(Analysis {
+            ocr: OcrResult { text: String::new() },
+            tags: Vec::new(),
+            embedding: None,
+        });
+    }
 
     let empty = NSDictionary::<VNImageOption, objc2::runtime::AnyObject>::new();
     // SAFETY: `alloc()` yields a fresh unregistered instance; `cg_image` is a valid

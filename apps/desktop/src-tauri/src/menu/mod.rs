@@ -88,6 +88,19 @@ pub struct MenuSort {
     pub value: String,
 }
 
+/// `media-index-folder-exclusion`: a folder's "Don't index images in this folder" /
+/// "Index images here again" context-menu item was clicked. Carries the right-clicked
+/// folder's absolute path and the target state. The FE listens and drives its persist +
+/// live-apply path (`mediaIndex.excludedFolders` + `media_index_set_excluded_folder`),
+/// so the setting survives a restart (the native menu can't write the FE settings
+/// store). Emitted `emit_to("main")`.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaIndexFolderExclusion {
+    pub folder: String,
+    pub excluded: bool,
+}
+
 /// Whether a command requires the main window to be focused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommandScope {

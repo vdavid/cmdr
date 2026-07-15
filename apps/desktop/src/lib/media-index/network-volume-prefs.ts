@@ -18,8 +18,9 @@ import { getAppLogger } from '$lib/logging/logger'
 const log = getAppLogger('media-index')
 
 /** Toggle `id` within a JSON-array setting, always replacing by reference so the
- *  store's `===` idempotency guard sees a change and persists. */
-function toggleInArray(current: readonly string[], id: string, on: boolean): string[] {
+ *  store's `===` idempotency guard sees a change and persists. Shared with the
+ *  excluded-folder prefs (`excluded-folders.ts`). */
+export function toggleInArray(current: readonly string[], id: string, on: boolean): string[] {
   const has = current.includes(id)
   if (on && !has) return [...current, id]
   if (!on && has) return current.filter((v) => v !== id)

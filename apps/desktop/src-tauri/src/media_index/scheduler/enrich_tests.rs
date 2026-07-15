@@ -119,7 +119,16 @@ fn enrich_over_fake_backend_populates_ocr_for_images_only() {
 
     let backend = FakeVisionBackend::new().with_text("/photos/beach.jpg", "a sunny beach with waves");
     let writer = media_writer(dir.path(), "root");
-    let summary = enrich_and_gc(&images, &HashMap::new(), &backend, &writer, &|_| true, &|| false).expect("pass");
+    let summary = enrich_and_gc(
+        &images,
+        &HashMap::new(),
+        &backend,
+        &writer,
+        &|_| true,
+        &|_| false,
+        &|| false,
+    )
+    .expect("pass");
     assert_eq!(summary.enriched, 1);
 
     let index = MediaIndex::open(dir.path(), "root");
@@ -129,7 +138,8 @@ fn enrich_over_fake_backend_populates_ocr_for_images_only() {
     // A second pass over the loaded statuses re-enriches nothing (path-keyed
     // staleness: same mtime/size/engine ⇒ fresh).
     let statuses = load_statuses(dir.path(), "root");
-    let again = enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|| false).expect("second pass");
+    let again =
+        enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|_| false, &|| false).expect("second pass");
     assert_eq!(again.enriched, 0, "unchanged images aren't re-enriched");
     writer.shutdown();
 }
@@ -169,7 +179,16 @@ fn enrich_defers_below_threshold_folder_but_keeps_it_for_gc() {
     // (should_enrich false). Neither is stored yet, so /keep enriches, /skip defers.
     let images = [image("/keep/a.jpg"), image("/skip/b.jpg")];
     let should_enrich = |path: &str| parent_dir(path) == "/keep";
-    let summary = enrich_and_gc(&images, &HashMap::new(), &backend, &writer, &should_enrich, &|| false).expect("pass");
+    let summary = enrich_and_gc(
+        &images,
+        &HashMap::new(),
+        &backend,
+        &writer,
+        &should_enrich,
+        &|_| false,
+        &|| false,
+    )
+    .expect("pass");
     assert_eq!(summary.enriched, 1, "only the qualifying folder enriches");
     assert_eq!(summary.gc_count, 0, "the deferred image is present, so it is NOT GC'd");
 
@@ -195,7 +214,16 @@ fn override_enriches_a_folder_the_threshold_would_defer() {
     // enriches while the rest defers (the escape hatch for a rarely-browsed archive).
     let images = [image("/archive/a.jpg"), image("/misc/b.jpg")];
     let overridden = |path: &str| parent_dir(path) == "/archive";
-    let summary = enrich_and_gc(&images, &HashMap::new(), &backend, &writer, &overridden, &|| false).expect("pass");
+    let summary = enrich_and_gc(
+        &images,
+        &HashMap::new(),
+        &backend,
+        &writer,
+        &overridden,
+        &|_| false,
+        &|| false,
+    )
+    .expect("pass");
     assert_eq!(summary.enriched, 1);
 
     let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen");
@@ -206,6 +234,86 @@ fn override_enriches_a_folder_the_threshold_would_defer() {
     assert!(
         store.status_for("/misc/b.jpg").expect("read").is_none(),
         "the rest defers"
+    );
+    writer.shutdown();
+}
+
+// ── Privacy veto: exclusion beats coverage, live, and closes the TOCTOU ─────
+
+#[test]
+fn exclusion_vetoes_even_an_override_covered_image() {
+    // The hard privacy veto beats coverage: even an override-covered folder
+    // (`should_enrich` true) is skipped when `is_excluded` says so, and no row lands.
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "root");
+    let backend = FakeVisionBackend::new();
+
+    let images = [image("/secret/a.jpg")];
+    let covered = |_: &str| true; // coverage would enrich it
+    let excluded = |_: &str| true; // …but the privacy veto forbids it
+    let summary = enrich_and_gc(
+        &images,
+        &HashMap::new(),
+        &backend,
+        &writer,
+        &covered,
+        &excluded,
+        &|| false,
+    )
+    .expect("pass");
+    assert_eq!(
+        summary.enriched, 0,
+        "an excluded image never enriches, even when covered"
+    );
+
+    let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen");
+    assert!(
+        store.status_for("/secret/a.jpg").expect("read").is_none(),
+        "no row is written for an excluded image"
+    );
+    writer.shutdown();
+}
+
+#[test]
+fn exclusion_landing_during_analyze_writes_no_row() {
+    // The in-flight-analyze TOCTOU: the image passes the filter `is_excluded` (false),
+    // then the exclusion lands DURING the slow `analyze`, so the pre-upsert re-check
+    // (the SECOND `is_excluded` call) must return true and skip the upsert. Modeled by
+    // a stateful veto that flips false → true across its two calls for the image.
+    use std::cell::Cell;
+    let dir = tempfile::tempdir().expect("temp");
+    let writer = media_writer(dir.path(), "root");
+    let backend = FakeVisionBackend::new();
+
+    let images = [image("/mid/a.jpg")];
+    let calls = Cell::new(0u32);
+    // 1st call (filter): not excluded ⇒ proceed into analyze. 2nd call (pre-upsert
+    // recheck): the exclude landed ⇒ veto, so the just-analyzed row is dropped.
+    let excluded = |_: &str| {
+        let n = calls.get();
+        calls.set(n + 1);
+        n >= 1
+    };
+    let summary = enrich_and_gc(
+        &images,
+        &HashMap::new(),
+        &backend,
+        &writer,
+        &|_| true,
+        &excluded,
+        &|| false,
+    )
+    .expect("pass");
+    assert_eq!(summary.enriched, 0, "an exclude landing mid-analyze drops the row");
+    assert!(
+        calls.get() >= 2,
+        "the veto is re-checked before the upsert, not only up front"
+    );
+
+    let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen");
+    assert!(
+        store.status_for("/mid/a.jpg").expect("read").is_none(),
+        "nothing is persisted for the mid-analyze exclusion"
     );
     writer.shutdown();
 }
@@ -266,7 +374,7 @@ fn a_completed_pass_gcs_a_vanished_known_entry() {
     }];
     let statuses = load_statuses(dir.path(), "root");
     let backend = FakeVisionBackend::new();
-    let summary = enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|| false).expect("pass");
+    let summary = enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|_| false, &|| false).expect("pass");
     assert_eq!(summary.gc_count, 1);
 
     let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen");
@@ -330,7 +438,7 @@ fn a_cancelled_pass_enriches_nothing_and_skips_gc() {
     let backend = FakeVisionBackend::new();
     // Cancel returns true immediately ⇒ no enrichment, and GC is skipped (yield
     // fully), so the pre-existing row survives even though it's absent from `images`.
-    let summary = enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|| true).expect("pass");
+    let summary = enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|_| false, &|| true).expect("pass");
     assert_eq!(summary.enriched, 0);
     assert_eq!(summary.gc_count, 0, "a cancelled pass skips GC");
 

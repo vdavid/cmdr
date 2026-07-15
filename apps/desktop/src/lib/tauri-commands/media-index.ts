@@ -82,6 +82,17 @@ export async function mediaIndexSetAlwaysIndexVolume(volumeId: string, always: b
 }
 
 /**
+ * Set (or clear) a per-folder image-search EXCLUSION (the privacy veto): no image at or under
+ * `folder` is enriched, beating any "always index" override. Excluding also retro-deletes the
+ * folder's already-indexed rows backend-side; un-excluding just clears the veto. The FE also
+ * persists `mediaIndex.excludedFolders`; both happen together in `excluded-folders.ts`. Rejects
+ * if the backend rejects, so the caller can roll the persisted value back.
+ */
+export async function mediaIndexSetExcludedFolder(folder: string, excluded: boolean): Promise<void> {
+  await commands.mediaIndexSetExcludedFolder(folder, excluded)
+}
+
+/**
  * Set the folder-importance threshold the image scheduler enriches by (the importance slider's
  * typed `0.0..=1.0` value, clamped backend-side). Below-threshold folders are deferred;
  * an "always index" override still forces enrichment. Live-applied via the

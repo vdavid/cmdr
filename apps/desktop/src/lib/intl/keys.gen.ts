@@ -2146,6 +2146,8 @@ export type MessageKey =
   | 'settings.mediaIndex.card'
   | 'settings.mediaIndex.enabled.description'
   | 'settings.mediaIndex.enabled.label'
+  | 'settings.mediaIndex.excludedFolders.description'
+  | 'settings.mediaIndex.excludedFolders.label'
   | 'settings.mediaIndex.importanceThreshold.bucket.everywhere'
   | 'settings.mediaIndex.importanceThreshold.bucket.most'
   | 'settings.mediaIndex.importanceThreshold.bucket.mostUsed'

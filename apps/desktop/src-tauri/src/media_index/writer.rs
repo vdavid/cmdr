@@ -15,6 +15,14 @@
 //!   `media_tags` + `media_embedding` rows for a set of paths whose source files
 //!   vanished (deletion-driven GC, run ONLY on a completed-scan edge — see
 //!   [`super::scheduler`]).
+//! - [`prune_paths`](MediaWriter::prune_paths) /
+//!   [`prune_under_folder`](MediaWriter::prune_under_folder): USER-EXPLICIT deletion
+//!   (the privacy retro-delete + the reclaim prune), by an explicit path list or by a
+//!   folder prefix. Distinct from GC (which derives from scan state): these delete
+//!   because the user asked, so they need no completed-scan edge. Both return the row
+//!   count deleted (blocking, so they double as a flush barrier).
+//! - [`vacuum`](MediaWriter::vacuum): reclaim the free pages a prune leaves behind
+//!   (privacy: the deleted OCR text is gone from disk, not just logically). Blocking.
 //! - [`purge_volume`](MediaWriter::purge_volume): drop all rows (the feature was
 //!   disabled and the user chose to delete `media.db`'s contents).
 
@@ -47,6 +55,23 @@ enum WriteMessage {
     /// Delete the status + OCR rows for each path (deletion-driven GC). One
     /// transaction over the whole batch.
     GcPaths { paths: Vec<String> },
+    /// USER-EXPLICIT prune of an explicit path list (the reclaim prune passes its
+    /// Rust-selected doomed set here). Replies with the row count deleted, so the
+    /// caller both learns the count and gets a flush barrier. One transaction.
+    PrunePaths {
+        paths: Vec<String>,
+        done: mpsc::Sender<usize>,
+    },
+    /// USER-EXPLICIT prune of every row at or under a folder `prefix` (the privacy
+    /// retro-delete). The doomed set is derived on the writer thread from the CURRENT
+    /// committed rows (trailing-slash-safe `path_is_within`), so it can't miss a row a
+    /// concurrent upsert just committed. Replies with the row count deleted. One
+    /// transaction.
+    PrunePrefix { prefix: String, done: mpsc::Sender<usize> },
+    /// Reclaim free pages after a prune (`VACUUM`). `media.db` is a disposable cache,
+    /// so `VACUUM` is acceptable, and for the privacy retro-delete it's what actually
+    /// removes the deleted text from disk. Replies when done (a barrier).
+    Vacuum { done: mpsc::Sender<()> },
     /// Drop every status and OCR row for this volume (disable + delete contents).
     PurgeVolume,
     /// Barrier: signal once all prior messages are committed.
@@ -129,6 +154,41 @@ impl MediaWriter {
         self.send(WriteMessage::GcPaths { paths })
     }
 
+    /// Prune an explicit path list (the reclaim prune's Rust-selected doomed set).
+    /// Blocks until the delete commits and returns the row count removed. A no-op on an
+    /// empty batch.
+    pub fn prune_paths(&self, paths: Vec<String>) -> Result<usize, MediaStoreError> {
+        if paths.is_empty() {
+            return Ok(0);
+        }
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::PrunePaths { paths, done: tx })?;
+        Ok(rx.recv().unwrap_or(0))
+    }
+
+    /// Prune every row at or under a folder `prefix` (the privacy retro-delete). Blocks
+    /// until the delete commits and returns the row count removed. Because it blocks
+    /// until committed, calling it twice in a row is a "delete → barrier → delete"
+    /// double-tap: the second call sweeps any straggler an in-flight upsert re-added
+    /// between the first delete and its barrier.
+    pub fn prune_under_folder(&self, prefix: &str) -> Result<usize, MediaStoreError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::PrunePrefix {
+            prefix: prefix.to_string(),
+            done: tx,
+        })?;
+        Ok(rx.recv().unwrap_or(0))
+    }
+
+    /// `VACUUM` the DB to reclaim the free pages a prune left (and, for the privacy
+    /// retro-delete, actually remove the deleted text from disk). Blocks until done.
+    pub fn vacuum(&self) -> Result<(), MediaStoreError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::Vacuum { done: tx })?;
+        let _ = rx.recv();
+        Ok(())
+    }
+
     /// Drop every status and OCR row for this volume. Schema stays.
     pub fn purge_volume(&self) -> Result<(), MediaStoreError> {
         self.send(WriteMessage::PurgeVolume)
@@ -174,6 +234,26 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
                 if let Err(e) = apply_gc(&mut conn, &paths) {
                     log::warn!(target: "media_index", "gc failed ({} paths): {e}", paths.len());
                 }
+            }
+            WriteMessage::PrunePaths { paths, done } => {
+                let n = apply_prune_paths(&mut conn, &paths).unwrap_or_else(|e| {
+                    log::warn!(target: "media_index", "prune ({} paths) failed: {e}", paths.len());
+                    0
+                });
+                let _ = done.send(n);
+            }
+            WriteMessage::PrunePrefix { prefix, done } => {
+                let n = apply_prune_prefix(&mut conn, &prefix).unwrap_or_else(|e| {
+                    log::warn!(target: "media_index", "prune under '{prefix}' failed: {e}");
+                    0
+                });
+                let _ = done.send(n);
+            }
+            WriteMessage::Vacuum { done } => {
+                if let Err(e) = apply_vacuum(&conn) {
+                    log::warn!(target: "media_index", "vacuum failed: {e}");
+                }
+                let _ = done.send(());
             }
             WriteMessage::PurgeVolume => {
                 if let Err(e) = apply_purge(&conn) {
@@ -280,10 +360,196 @@ fn apply_gc(conn: &mut Connection, paths: &[String]) -> Result<(), MediaStoreErr
     Ok(())
 }
 
+/// Prune the four tables for an explicit path list in one transaction, returning the
+/// count of `media_status` rows removed (the same delete primitive GC uses, but reused
+/// for the user-explicit prune). The count is `media_status` rows, so it matches the
+/// number of images the user removed even though four tables are touched.
+fn apply_prune_paths(conn: &mut Connection, paths: &[String]) -> Result<usize, MediaStoreError> {
+    let tx = conn.transaction()?;
+    let mut deleted = 0usize;
+    {
+        let mut del_status = tx.prepare_cached("DELETE FROM media_status WHERE path = ?1")?;
+        let mut del_ocr = tx.prepare_cached("DELETE FROM media_ocr WHERE path = ?1")?;
+        let mut del_tags = tx.prepare_cached("DELETE FROM media_tags WHERE path = ?1")?;
+        let mut del_emb = tx.prepare_cached("DELETE FROM media_embedding WHERE path = ?1")?;
+        for path in paths {
+            deleted += del_status.execute(rusqlite::params![path])?;
+            del_ocr.execute(rusqlite::params![path])?;
+            del_tags.execute(rusqlite::params![path])?;
+            del_emb.execute(rusqlite::params![path])?;
+        }
+    }
+    tx.commit()?;
+    Ok(deleted)
+}
+
+/// Prune every row at or under a folder `prefix`. The doomed set is derived on the
+/// writer thread from the CURRENT committed `media_status` paths, filtered by the SAME
+/// trailing-slash-safe [`path_is_within`](super::network::config::path_is_within) the
+/// exclusion veto uses (so the delete set can't drift from what the veto forbids), then
+/// deleted via [`apply_prune_paths`]. An empty `prefix` matches every path (the whole
+/// volume — the user excluded the mount root).
+fn apply_prune_prefix(conn: &mut Connection, prefix: &str) -> Result<usize, MediaStoreError> {
+    let doomed: Vec<String> = {
+        let mut stmt = conn.prepare_cached("SELECT path FROM media_status")?;
+        let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+        let mut out = Vec::new();
+        for path in rows {
+            let path = path?;
+            if super::network::config::path_is_within(&path, prefix) {
+                out.push(path);
+            }
+        }
+        out
+    };
+    apply_prune_paths(conn, &doomed)
+}
+
+/// `VACUUM` the DB (reclaim free pages; can't run inside a transaction, so it's its own
+/// statement).
+fn apply_vacuum(conn: &Connection) -> Result<(), MediaStoreError> {
+    conn.execute_batch("VACUUM")?;
+    Ok(())
+}
+
 /// Drop every derived row. Schema stays.
 fn apply_purge(conn: &Connection) -> Result<(), MediaStoreError> {
     conn.execute_batch(
         "DELETE FROM media_status; DELETE FROM media_ocr; DELETE FROM media_tags; DELETE FROM media_embedding;",
     )?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::media_index::backend::Tag;
+    use crate::media_index::predicate::MediaKind;
+    use crate::media_index::store::{EnrichmentState, MediaStore, media_db_path, open_read_connection};
+
+    /// A fresh media store + writer over a scratch volume.
+    fn writer(dir: &Path, volume_id: &str) -> MediaWriter {
+        let db_path = media_db_path(dir, volume_id);
+        MediaStore::open(&db_path).expect("open media store");
+        MediaWriter::spawn(&db_path).expect("media writer")
+    }
+
+    /// Seed one fully-enriched image (a row in ALL FOUR tables), so a prune test can
+    /// assert every kind of row goes.
+    fn seed(writer: &MediaWriter, path: &str) {
+        writer
+            .upsert(
+                MediaStatusRow {
+                    path: path.to_string(),
+                    mtime: Some(1),
+                    size: Some(2),
+                    media_kind: MediaKind::Image,
+                    state: EnrichmentState::Done,
+                    engine_version: "e1".to_string(),
+                },
+                Some(UpsertAnalysis {
+                    ocr_text: "some text".to_string(),
+                    tags: vec![Tag {
+                        label: "beach".to_string(),
+                        score: 0.5,
+                    }],
+                    embedding: Some(vec![1.0, 0.0, 0.0]),
+                }),
+            )
+            .expect("seed");
+    }
+
+    /// Count the rows for `path` across all four tables (status, ocr, tags, embedding),
+    /// so a deletion assertion covers every table, not just `media_status`. A fully
+    /// `seed`ed image has TWO `media_ocr` rows (the OCR text + the folded tag labels),
+    /// so a kept image reads `(1, 2, 1, 1)`.
+    fn row_counts(db_path: &Path, path: &str) -> (i64, i64, i64, i64) {
+        let conn = open_read_connection(db_path).expect("open read");
+        let count = |sql: &str| -> i64 {
+            conn.query_row(sql, rusqlite::params![path], |r| r.get(0))
+                .expect("count")
+        };
+        (
+            count("SELECT COUNT(*) FROM media_status WHERE path = ?1"),
+            count("SELECT COUNT(*) FROM media_ocr WHERE path = ?1"),
+            count("SELECT COUNT(*) FROM media_tags WHERE path = ?1"),
+            count("SELECT COUNT(*) FROM media_embedding WHERE path = ?1"),
+        )
+    }
+
+    #[test]
+    fn prune_under_folder_deletes_rows_at_or_under_and_only_those() {
+        let dir = tempfile::tempdir().expect("temp");
+        let w = writer(dir.path(), "root");
+        let db_path = media_db_path(dir.path(), "root");
+        seed(&w, "/a/x.jpg");
+        seed(&w, "/a/sub/y.jpg");
+        seed(&w, "/b/z.jpg");
+        w.flush_blocking().expect("flush");
+
+        // Pruning /a removes both rows under it, across all four tables, and only those.
+        let deleted = w.prune_under_folder("/a").expect("prune");
+        assert_eq!(deleted, 2, "both rows under /a are counted");
+
+        assert_eq!(row_counts(&db_path, "/a/x.jpg"), (0, 0, 0, 0), "/a/x.jpg fully gone");
+        assert_eq!(
+            row_counts(&db_path, "/a/sub/y.jpg"),
+            (0, 0, 0, 0),
+            "/a/sub/y.jpg fully gone (nested under /a)"
+        );
+        assert_eq!(row_counts(&db_path, "/b/z.jpg"), (1, 2, 1, 1), "/b/z.jpg untouched");
+        w.shutdown();
+    }
+
+    #[test]
+    fn prune_under_folder_is_trailing_slash_safe() {
+        let dir = tempfile::tempdir().expect("temp");
+        let w = writer(dir.path(), "root");
+        let db_path = media_db_path(dir.path(), "root");
+        seed(&w, "/Photos/a.jpg");
+        seed(&w, "/Photos2/b.jpg");
+        w.flush_blocking().expect("flush");
+
+        // A sibling that shares a name prefix is NOT within (/Photos2 ≠ under /Photos).
+        let deleted = w.prune_under_folder("/Photos").expect("prune");
+        assert_eq!(deleted, 1, "only the real child of /Photos goes");
+        assert_eq!(row_counts(&db_path, "/Photos/a.jpg").0, 0, "/Photos/a.jpg gone");
+        assert_eq!(row_counts(&db_path, "/Photos2/b.jpg").0, 1, "/Photos2 kept");
+        w.shutdown();
+    }
+
+    #[test]
+    fn prune_paths_deletes_only_the_explicit_set() {
+        let dir = tempfile::tempdir().expect("temp");
+        let w = writer(dir.path(), "root");
+        let db_path = media_db_path(dir.path(), "root");
+        seed(&w, "/p1.jpg");
+        seed(&w, "/p2.jpg");
+        seed(&w, "/p3.jpg");
+        w.flush_blocking().expect("flush");
+
+        let deleted = w
+            .prune_paths(vec!["/p1.jpg".to_string(), "/p3.jpg".to_string()])
+            .expect("prune");
+        assert_eq!(deleted, 2);
+        assert_eq!(row_counts(&db_path, "/p1.jpg"), (0, 0, 0, 0), "/p1 gone");
+        assert_eq!(row_counts(&db_path, "/p2.jpg"), (1, 2, 1, 1), "/p2 kept");
+        assert_eq!(row_counts(&db_path, "/p3.jpg"), (0, 0, 0, 0), "/p3 gone");
+        w.shutdown();
+    }
+
+    #[test]
+    fn prune_then_vacuum_round_trips() {
+        // A smoke that VACUUM after a prune commits cleanly and the rows stay gone
+        // (VACUUM can't run inside a transaction, so this guards the message ordering).
+        let dir = tempfile::tempdir().expect("temp");
+        let w = writer(dir.path(), "root");
+        let db_path = media_db_path(dir.path(), "root");
+        seed(&w, "/a/x.jpg");
+        w.flush_blocking().expect("flush");
+        assert_eq!(w.prune_under_folder("/a").expect("prune"), 1);
+        w.vacuum().expect("vacuum");
+        assert_eq!(row_counts(&db_path, "/a/x.jpg"), (0, 0, 0, 0), "row gone after vacuum");
+        w.shutdown();
+    }
 }

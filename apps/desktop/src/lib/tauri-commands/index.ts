@@ -381,7 +381,7 @@ export {
 } from './appearance'
 
 // Native-menu events
-export { onViewModeChanged, onMenuSort } from './menu-events'
+export { onViewModeChanged, onMenuSort, onMediaIndexFolderExclusion } from './menu-events'
 
 // Directory-watcher events
 export { onDirectoryDiff, onDirectoryDeleted } from './directory-watcher'
@@ -637,6 +637,7 @@ export {
   mediaIndexDropThumbnailTokens,
   mediaIndexSetNetworkVolumeEnabled,
   mediaIndexSetAlwaysIndexVolume,
+  mediaIndexSetExcludedFolder,
   setImageImportanceThreshold,
   mediaIndexCoveredCount,
   mediaIndexFindSimilar,
