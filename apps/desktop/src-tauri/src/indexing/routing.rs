@@ -5,7 +5,8 @@
 //! - **Which volume does a path belong to?** `volume_id_for_local_path` maps a
 //!   filesystem (or `mtp://`) path to the index volume id that owns it — an SMB
 //!   mount to its `smb_volume_id`, an `mtp://` path to its `{device}:{storage}`
-//!   id, everything else to `root`.
+//!   id, a registered local external mount (`/Volumes/X`) to its own id, and the
+//!   boot disk (plus cloud-drive folders `root`'s index owns) to `root`.
 //! - **How does a read path map into that volume's index path space?**
 //!   `index_read_path` (and the pure `index_read_path_pure` it wraps) translate a
 //!   mount-absolute listing / dir-stats path into the mount-relative path the
@@ -29,18 +30,20 @@ use super::store::{self, IndexStoreError};
 
 /// Resolve a filesystem path to its index volume id.
 ///
-/// An SMB-mounted path (`/Volumes/<share>/…` on macOS, an `smbfs`/`cifs` mount
-/// on Linux) maps to its `smb_volume_id(server, port, share)` — the SAME id the
-/// `VolumeManager` and the SMB index register under — so a listing under that
-/// share routes to the SMB volume's index, not `root`. Everything else (local
-/// absolute paths) is `root`. The routed read paths still skip cleanly when the
-/// resolved volume has no registered index (`get_read_pool_for` → `None`), so an
-/// SMB share that isn't indexed costs zero DB work, exactly like before.
+/// Four routing tiers, tried in order; each maps to the SAME id its volume and
+/// index register under, so a read routes to the owning index (or skips cleanly
+/// when that volume has no registered index — `get_read_pool_for` → `None` — so an
+/// unindexed volume costs zero DB work):
 ///
-/// An `mtp://{device_id}/{storage_id}[/inner…]` virtual path maps to its MTP
-/// volume id `{device_id}:{storage_id}` (the SAME id the `MtpConnectionManager`
-/// registers the volume and its index under), so dir-stats / status reads on an
-/// MTP path route to that device-storage's index. Everything else is `root`.
+/// - **SMB** (`/Volumes/<share>/…` on macOS, an `smbfs`/`cifs` mount on Linux) →
+///   `smb_volume_id(server, port, share)`.
+/// - **MTP** (`mtp://{device_id}/{storage_id}[/inner…]`) → `{device_id}:{storage_id}`.
+/// - **Local external mount** (a registered `/Volumes/X` drive on macOS,
+///   `/mnt`/`/media` on Linux) → the mount's registered id, so an external drive's
+///   dir-stats and `cmdr://state` status come from ITS OWN index, not `root`'s. See
+///   [`external_mount_volume_id_for_path`].
+/// - **Everything else** (the boot disk, and cloud-drive folders in the home dir
+///   that `root`'s index owns) → `root`.
 pub(super) fn volume_id_for_local_path(path: &str) -> VolumeId {
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     if let Some(smb_id) = super::smb_index::smb_volume_id_for_path(path) {
@@ -49,7 +52,32 @@ pub(super) fn volume_id_for_local_path(path: &str) -> VolumeId {
     if let Some(mtp_id) = mtp_volume_id_for_path(path) {
         return mtp_id;
     }
+    if let Some(mount_id) = external_mount_volume_id_for_path(path) {
+        return mount_id;
+    }
     ROOT_VOLUME_ID.to_string()
+}
+
+/// Resolve a path on a registered local external mount to that mount's volume id,
+/// or `None` for a path `root`'s index owns.
+///
+/// The fast-reject (a pure string check, no registry lock) is the load-bearing
+/// distinction: ONLY a path under an excluded mount prefix (`is_on_mounted_external_volume`)
+/// can belong to a separate per-mount index. A boot-disk path — and, crucially, a
+/// registered cloud-drive folder in the home dir (`~/Library/CloudStorage/…`) — is
+/// inside `root`'s indexed tree, so it bails here and stays on `root`, keeping its
+/// recursive sizes. (A naive "any registered non-root volume" prefix match would
+/// wrongly divert cloud drives to an index-less id and drop their sizes.)
+///
+/// Past the reject, the id comes from the `VolumeManager` registry (route by what's
+/// REGISTERED, never a hardcoded path shape): the non-root volume whose mount root
+/// is the longest ancestor of `path`. An external path with no registered mount
+/// (drive not in the manager) yields `None` → falls back to `root`.
+fn external_mount_volume_id_for_path(path: &str) -> Option<VolumeId> {
+    if !super::scanner::is_on_mounted_external_volume(path) {
+        return None;
+    }
+    crate::file_system::get_volume_manager().mount_id_for_path(path)
 }
 
 /// Map an `mtp://{device_id}/{storage_id}[/…]` path to its MTP volume id
@@ -443,6 +471,63 @@ mod tests {
 
         // The boot disk (APFS) is always trustworthy.
         assert!(IndexPathSpace::root().inodes_trustworthy());
+    }
+
+    /// A path under a REGISTERED external mount routes to that mount's volume id
+    /// (so its own index owns its dir-stats + status), while a boot-disk path — and
+    /// a registered cloud-drive folder that lives INSIDE root's indexed tree — stay
+    /// on `root`. The cloud case is the trap: a cloud drive is a registered non-root
+    /// volume too, but root's index owns it (it's not under an excluded mount
+    /// prefix), so routing it away would drop its recursive sizes.
+    #[test]
+    fn volume_id_for_local_path_routes_registered_external_mount() {
+        use std::sync::Arc;
+
+        use crate::file_system::get_volume_manager;
+        use crate::file_system::volume::LocalPosixVolume;
+
+        // A platform-appropriate external mount root (macOS: `/Volumes/X`; Linux:
+        // `/media/X`), plus a cloud-drive folder that sits inside the home dir.
+        #[cfg(target_os = "macos")]
+        let ext_root = "/Volumes/RoutingTestExt";
+        #[cfg(not(target_os = "macos"))]
+        let ext_root = "/media/RoutingTestExt";
+        let cloud_root = "/Users/routingtest/Library/CloudStorage/RoutingTest";
+
+        let manager = get_volume_manager();
+        let ext_id = "volumes-routing-test-ext";
+        let cloud_id = "cloud-routing-test";
+        manager.register(ext_id, Arc::new(LocalPosixVolume::new("Ext", ext_root)));
+        manager.register(cloud_id, Arc::new(LocalPosixVolume::new("Cloud", cloud_root)));
+
+        // A path under the external mount → the mount's registered id.
+        assert_eq!(
+            volume_id_for_local_path(&format!("{ext_root}/sub/deep")),
+            ext_id,
+            "an external-mount path routes to the mount's own index",
+        );
+        // The mount root itself → the mount's id.
+        assert_eq!(
+            volume_id_for_local_path(ext_root),
+            ext_id,
+            "the mount root routes to its id"
+        );
+        // A boot-disk path → root.
+        assert_eq!(
+            volume_id_for_local_path("/Users/routingtest/project"),
+            ROOT_VOLUME_ID,
+            "a boot-disk path stays on root",
+        );
+        // A cloud-drive path (registered, but root's index owns it) → root, NOT the
+        // cloud volume's id.
+        assert_eq!(
+            volume_id_for_local_path(&format!("{cloud_root}/x")),
+            ROOT_VOLUME_ID,
+            "a cloud-drive folder stays on root so its sizes survive",
+        );
+
+        manager.unregister(ext_id);
+        manager.unregister(cloud_id);
     }
 
     /// `volume_id_for_local_path`'s pure MTP half: an `mtp://device/storage` path

@@ -101,6 +101,29 @@ impl VolumeManager {
             .map(|(id, v)| (id.clone(), Arc::clone(v)))
     }
 
+    /// Find the registered non-root volume whose mount root is the longest
+    /// ancestor (or equal) of `path`, returning its registry id.
+    ///
+    /// Used by index read routing to map a `/Volumes/X/…` path to the per-mount
+    /// index it belongs to. `root` (`/`) is skipped: it prefixes every path and is
+    /// the fallback the router uses when nothing more specific matches. Component-
+    /// wise `starts_with` avoids a `/Volumes/XY`-matches-`/Volumes/X` false hit, and
+    /// the longest-root wins so a nested mount (`/Volumes/X/Y`) beats its parent.
+    ///
+    /// In-memory (one `RwLock<HashMap>` read, no syscall), so it's safe on the
+    /// enrichment / dir-stats hot path.
+    pub fn mount_id_for_path(&self, path: &str) -> Option<String> {
+        let target = Path::new(path);
+        self.volumes
+            .read()
+            .ok()?
+            .iter()
+            .filter(|(_, v)| v.root() != Path::new("/"))
+            .filter(|(_, v)| target.starts_with(v.root()))
+            .max_by_key(|(_, v)| v.root().as_os_str().len())
+            .map(|(id, _)| id.clone())
+    }
+
     /// Gets the default volume.
     pub fn default_volume(&self) -> Option<Arc<dyn Volume>> {
         let default_id = self.default_volume_id.read().ok()?.clone()?;
@@ -229,6 +252,30 @@ mod tests {
 
         manager.unregister("test");
         assert!(manager.default_volume().is_none());
+    }
+
+    #[test]
+    fn mount_id_for_path_returns_longest_non_root_ancestor() {
+        use crate::file_system::LocalPosixVolume;
+
+        let manager = VolumeManager::new();
+        manager.register("root", Arc::new(LocalPosixVolume::new("Root", "/")));
+        manager.register("ext", Arc::new(LocalPosixVolume::new("Ext", "/Volumes/X")));
+        manager.register("nested", Arc::new(LocalPosixVolume::new("Nested", "/Volumes/X/Y")));
+
+        // A path under the external mount routes to it, never to `root`.
+        assert_eq!(manager.mount_id_for_path("/Volumes/X/sub").as_deref(), Some("ext"));
+        // A nested mount wins over its parent (longest ancestor).
+        assert_eq!(
+            manager.mount_id_for_path("/Volumes/X/Y/deep").as_deref(),
+            Some("nested")
+        );
+        // The mount root itself matches.
+        assert_eq!(manager.mount_id_for_path("/Volumes/X").as_deref(), Some("ext"));
+        // A component-boundary sibling is NOT a false prefix hit.
+        assert_eq!(manager.mount_id_for_path("/Volumes/XY/z"), None);
+        // A boot-disk path matches only `root` (skipped) → None.
+        assert_eq!(manager.mount_id_for_path("/Users/me"), None);
     }
 
     #[test]

@@ -74,6 +74,36 @@ pub(in crate::indexing) const EXCLUDED_PREFIXES: &[&str] = &[
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub(in crate::indexing) const EXCLUDED_PREFIXES: &[&str] = &["/dev/", "/proc/"];
 
+/// The subset of [`EXCLUDED_PREFIXES`] that marks a MOUNTED EXTERNAL VOLUME
+/// (`/Volumes/` on macOS; `/mnt/`, `/media/` on Linux), as opposed to the system
+/// trees and caches the boot scan also skips (`/System/…`, `/private/var/`, …).
+///
+/// Read routing uses this — NOT a raw `/Volumes/` literal — to decide when a path
+/// belongs to a separate per-mount index rather than `root`'s: a path under one of
+/// these is a subtree the boot-disk scan deliberately disowns, so its owning
+/// external drive's index is the sole source of its dir-stats and status. A path
+/// NOT under one of these (a boot-disk path, or a cloud-drive folder in the home
+/// dir) stays on `root`, whose index owns it. Single-sourced with the scan
+/// exclusions via the `external_mount_prefixes_are_excluded` test, so the two
+/// can't drift.
+#[cfg(target_os = "macos")]
+pub(in crate::indexing) const EXTERNAL_MOUNT_PREFIXES: &[&str] = &["/Volumes/"];
+#[cfg(target_os = "linux")]
+pub(in crate::indexing) const EXTERNAL_MOUNT_PREFIXES: &[&str] = &["/mnt/", "/media/"];
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+pub(in crate::indexing) const EXTERNAL_MOUNT_PREFIXES: &[&str] = &[];
+
+/// Whether `path` sits on a mounted external volume ([`EXTERNAL_MOUNT_PREFIXES`]),
+/// so it belongs to that mount's own index rather than `root`'s. Pure string work
+/// (no syscall), safe on the enrichment / dir-stats hot path. A cheap fast-reject
+/// for the common boot-disk / cloud-drive path: it returns `false` before routing
+/// ever touches the `VolumeManager` registry.
+pub(in crate::indexing) fn is_on_mounted_external_volume(path: &str) -> bool {
+    EXTERNAL_MOUNT_PREFIXES
+        .iter()
+        .any(|prefix| path.starts_with(prefix) || path == prefix.trim_end_matches('/'))
+}
+
 /// Per-volume junk directory basenames skipped at ANY scan root (both the boot
 /// disk and a mount-rooted volume). macOS seeds these into every volume's root;
 /// they hold OS bookkeeping, not user data. On the boot disk they sit at `/`; on
@@ -215,4 +245,47 @@ pub(in crate::indexing) fn is_canonicalization_alias(real_path: &str, normalized
 #[cfg(test)]
 pub(in crate::indexing) fn default_exclusions() -> Vec<String> {
     EXCLUDED_PREFIXES.iter().map(|s| (*s).to_string()).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every external-mount prefix MUST also be a boot-disk exclusion prefix.
+    /// That's the invariant read routing rests on: a path under one of these is a
+    /// subtree `root`'s scan skips, so the external drive's own index is its sole
+    /// owner. If someone drops `/Volumes/` from `EXCLUDED_PREFIXES`, `root` would
+    /// start indexing external drives AND routing would still divert them — this
+    /// test fails loudly before that ships.
+    #[test]
+    fn external_mount_prefixes_are_excluded() {
+        for prefix in EXTERNAL_MOUNT_PREFIXES {
+            assert!(
+                EXCLUDED_PREFIXES.contains(prefix),
+                "{prefix} must be in EXCLUDED_PREFIXES so root's scan disowns the mount",
+            );
+        }
+    }
+
+    /// `is_on_mounted_external_volume` accepts a mounted-external path (mount root
+    /// and anything beneath it) and rejects boot-disk and cloud-drive paths.
+    #[test]
+    fn mounted_external_volume_detection() {
+        #[cfg(target_os = "macos")]
+        {
+            assert!(is_on_mounted_external_volume("/Volumes/NONAME"));
+            assert!(is_on_mounted_external_volume("/Volumes/NONAME/sub/deep"));
+        }
+        #[cfg(target_os = "linux")]
+        {
+            assert!(is_on_mounted_external_volume("/media/usb"));
+            assert!(is_on_mounted_external_volume("/mnt/data/sub"));
+        }
+        // Boot-disk and cloud-drive paths are NOT on an external mount.
+        assert!(!is_on_mounted_external_volume("/Users/me/project"));
+        assert!(!is_on_mounted_external_volume(
+            "/Users/me/Library/CloudStorage/Dropbox/x"
+        ));
+        assert!(!is_on_mounted_external_volume("/"));
+    }
 }

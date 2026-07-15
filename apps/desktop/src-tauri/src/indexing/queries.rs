@@ -56,8 +56,10 @@ pub fn get_volume_index_status(volume_id: &str) -> VolumeIndexStatus {
 }
 
 /// Per-volume index status, resolving the owning volume from a path (the IPC
-/// stays path-based, like `get_dir_stats`). An SMB path resolves to its SMB
-/// volume id; everything else to `root`.
+/// stays path-based, like `get_dir_stats`). Routes via
+/// [`volume_id_for_local_path`]: SMB / MTP / a registered local external mount map
+/// to their own index, so an external drive reports ITS status (`off` when
+/// unindexed), not `root`'s. The boot disk and cloud-drive folders map to `root`.
 pub fn get_volume_index_status_for_path(path: &str) -> VolumeIndexStatus {
     get_volume_index_status(&volume_id_for_local_path(path))
 }
@@ -208,7 +210,8 @@ pub fn get_dir_stats_on_volume(volume_id: &str, path: &str) -> Result<Option<Dir
 
 /// Look up recursive stats for a single directory, resolving the owning volume
 /// from the path. IPC stays path-based (see `commands/indexing.rs`); the volume
-/// is resolved internally. Every absolute local path resolves to `root`.
+/// is resolved internally via [`volume_id_for_local_path`] (a registered external
+/// mount routes to its own index; the boot disk to `root`).
 pub fn get_dir_stats(path: &str) -> Result<Option<DirStats>, String> {
     get_dir_stats_on_volume(&volume_id_for_local_path(path), path)
 }
@@ -316,12 +319,50 @@ pub fn list_dir_children(path: &str) -> Result<Option<Vec<store::EntryRow>>, Str
 
 /// Batch lookup of dir_stats, resolving the owning volume from the paths. The
 /// IPC `get_dir_stats_batch` sends one directory's children, which all live on
-/// one volume; resolving from the first path is sufficient. Every
-/// absolute local path resolves to `root`.
+/// one volume; resolving from the first path is sufficient. Routes via
+/// [`volume_id_for_local_path`] (a registered external mount → its own index; the
+/// boot disk → `root`).
 pub fn get_dir_stats_batch(paths: &[String]) -> Result<Vec<Option<DirStats>>, String> {
     let volume_id = paths
         .first()
         .map(|p| volume_id_for_local_path(p))
         .unwrap_or_else(|| ROOT_VOLUME_ID.to_string());
     get_dir_stats_batch_on_volume(&volume_id, paths)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use super::*;
+    use crate::file_system::get_volume_manager;
+    use crate::file_system::volume::LocalPosixVolume;
+
+    /// A mounted-but-unindexed external drive reports its OWN index status (`off` —
+    /// no index registered under its id), not `root`'s. `cmdr://state`'s
+    /// `indexStatus` reads through this resolution, so before the routing fix the
+    /// drive inherited `root`'s id (and `root`'s freshness). The `volume_id` field
+    /// is the proof the status now resolves to the drive, not `root`.
+    #[test]
+    fn volume_index_status_for_external_drive_resolves_to_the_drive_not_root() {
+        #[cfg(target_os = "macos")]
+        let ext_root = "/Volumes/StatusTestExt";
+        #[cfg(not(target_os = "macos"))]
+        let ext_root = "/media/StatusTestExt";
+
+        let manager = get_volume_manager();
+        let ext_id = "volumes-status-test-ext";
+        manager.register(ext_id, Arc::new(LocalPosixVolume::new("Ext", ext_root)));
+
+        let status = get_volume_index_status_for_path(&format!("{ext_root}/photos"));
+        assert_eq!(status.volume_id, ext_id, "status resolves to the drive's own index id");
+        // No index is registered for the drive, so it's off — not `root`'s freshness.
+        assert!(
+            !status.enabled,
+            "an unindexed external drive reports off, not root's status"
+        );
+        assert!(status.freshness.is_none());
+
+        manager.unregister(ext_id);
+    }
 }

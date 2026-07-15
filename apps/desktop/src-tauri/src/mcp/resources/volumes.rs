@@ -145,6 +145,10 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
             });
             let is_smb = smb_connection_state.is_some() || crate::volumes::is_smb_fs_type(loc.fs_type.as_deref());
             let kind = if is_smb { VolumeKind::Smb } else { VolumeKind::Local };
+            // Path-based status resolution routes each volume to its OWN index (see
+            // `indexing::routing::volume_id_for_local_path`): a mounted-but-unindexed
+            // external drive (`/Volumes/X`) reports `off`, not `root`'s freshness, so
+            // this can't disagree with `cmdr://indexing`.
             let status = crate::indexing::get_volume_index_status_for_path(&loc.path);
             out.push(VolumeSummary {
                 name: loc.name.clone(),
