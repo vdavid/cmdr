@@ -4394,7 +4394,23 @@ export type IndexFreshnessChangedEvent = {
  *  Drives a user-visible toast.
  */
 export type IndexMemoryWarningEvent = {
+  /**
+   *  Resident set size (RSS) at the time, in GB. Over-counts GPU/WebView
+   *  graphics memory, so it's kept for context but is NOT the trigger metric.
+   */
   residentGb: number
+  /**
+   *  `phys_footprint` at the time, in GB — the machine-pressure metric the
+   *  watchdog thresholds key on (what Activity Monitor shows, what jetsam
+   *  watches). A large `resident_gb - phys_footprint_gb` gap is graphics
+   *  memory, not the indexing heap.
+   */
+  physFootprintGb: number
+  /**
+   *  The real Rust/C malloc heap in use, in MB — indexing's actual footprint.
+   *  Tiny next to a multi-GB `resident_gb` means the spike isn't indexing.
+   */
+  heapMb: number
   // What the watchdog did. Currently always `"stopped_indexing"`.
   action: string
 }

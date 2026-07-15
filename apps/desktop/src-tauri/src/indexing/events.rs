@@ -137,7 +137,17 @@ pub struct IndexAggregationCompleteEvent {
 #[tauri_specta(event_name = "index-memory-warning")]
 #[serde(rename_all = "camelCase")]
 pub struct IndexMemoryWarningEvent {
+    /// Resident set size (RSS) at the time, in GB. Over-counts GPU/WebView
+    /// graphics memory, so it's kept for context but is NOT the trigger metric.
     pub resident_gb: u64,
+    /// `phys_footprint` at the time, in GB — the machine-pressure metric the
+    /// watchdog thresholds key on (what Activity Monitor shows, what jetsam
+    /// watches). A large `resident_gb - phys_footprint_gb` gap is graphics
+    /// memory, not the indexing heap.
+    pub phys_footprint_gb: u64,
+    /// The real Rust/C malloc heap in use, in MB — indexing's actual footprint.
+    /// Tiny next to a multi-GB `resident_gb` means the spike isn't indexing.
+    pub heap_mb: u64,
     /// What the watchdog did. Currently always `"stopped_indexing"`.
     pub action: String,
 }
