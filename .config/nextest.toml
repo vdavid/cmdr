@@ -39,10 +39,28 @@ virtual-mtp = { max-threads = 1 }
 # delivery, retries) covers load from the rest of the suite. See the two
 # overrides below for which tests self-heal in-test and which lean on retries.
 real-notify = { max-threads = 1 }
+# Synthetic FAT32/exFAT disk-image fixtures (`indexing::external_drive_fixture`,
+# macOS-only, `#[ignore]`d — run via `--run-ignored`). Each attaches a real disk
+# image via hdiutil (FSKit `msdos`) and the live-FSEvents probes block on real
+# event delivery. Serialize them: concurrent attach/detach churn on the same
+# FSKit service is exactly the surface the FAT-unmount panic incident warns
+# about, and multiplying live watches starves delivery. See the override below
+# for the timeout headroom.
+disk-image = { max-threads = 1 }
 
 [[profile.default.overrides]]
 filter = 'test(mtp_scan) + test(listing_is_watched_flips_with_connection)'
 test-group = 'virtual-mtp'
+
+[[profile.default.overrides]]
+# Disk-image fixtures: hdiutil create+attach+detach plus, for the FSEvents
+# probes, a 15 s internal wait for real live delivery — all past the global 8 s
+# cap. 30 s matches the fixture's own `HDIUTIL_TIMEOUT` SIGKILL guard, so a
+# genuinely wedged FSKit service is caught by the fixture first and the cap
+# stays a backstop. Serialized via the `disk-image` group above.
+filter = 'test(indexing::external_drive_fixture::)'
+test-group = 'disk-image'
+slow-timeout = { period = "30s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 # SMB integration tests (`#[ignore]`-gated, only run by the

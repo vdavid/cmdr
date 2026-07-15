@@ -449,6 +449,42 @@ Key test files are alongside each module (test functions within `#[cfg(test)]` b
 - stress_tests_partial_aggregation.rs: the partial-aggregation differential test — same synthetic tree fed to two writers (final-only vs partial-passes-interleaved), both compared after the final aggregation; the primary oracle is `check_db_consistency`'s independent recompute-from-`entries` on the partial-pass arm (it catches a maps-corruption bug an (a)==(b) comparison would miss, since corruption poisons both arms identically), with `check_recursive_has_symlinks` and the row-for-row (a)==(b) comparison as secondary oracles
 - stress_test_helpers.rs: shared helpers for stress tests (`setup_writer`, `build_synthetic_tree`, `check_db_consistency`, `make_file_entry`, plus `build_synthetic_tree_with_symlinks_and_hardlinks` (injects symlink rows + a hardlink pair with the secondary link's sizes `None`) and `check_recursive_has_symlinks` (separate from `check_db_consistency` to keep the shared helper's blast radius small))
 
+### Testing external drives (synthetic disk images only)
+
+⚠️ **Never mount, unmount, or probe a physical removable card in a test or a research script.** On 2026-07-15 a
+`diskutil unmount` on a physical, nearly-full FAT32 SD card wedged macOS 26's userspace FSKit `msdos` service mid-unmount;
+it held kernel vnode locks until the pile-up blocked WindowServer and the watchdog **kernel-panicked and rebooted the
+machine**. The wedge happens *during* unmount, so no post-unmount hook can undo it — the only defense is to never trigger
+it.
+
+So every external-drive test uses a **disposable synthetic disk image**, through `indexing::external_drive_fixture`
+(macOS-only, `#[cfg(all(test, target_os = "macos"))]`):
+
+- `DiskImageFixture::attach(DiskImageFilesystem::Fat32 | ExFat, volume_name)` runs `hdiutil create` + `hdiutil attach
+  -nobrowse` on a fresh temp image, parses the `/dev/diskN` node and `/Volumes/…` mount, and returns a guard.
+- `mount_point()` is the mount; `populate_known_tree()` writes a fixed tree (nested dirs, sized files, and an **empty**
+  file — the empty file matters because FAT/exFAT give it a sentinel inode that changes once content is written) and
+  returns the entries for assertions.
+- The guard's `Drop` detaches once — `hdiutil detach`, then a `hdiutil detach -force` fallback — so teardown runs even on
+  panic or early return. **Attach once, detach once; never cycle mount/unmount, never `diskutil unmount` a path.**
+- **Every `hdiutil` call is hard-timeout-guarded** (`run_hdiutil_guarded`, 30 s): past the deadline the child is
+  SIGKILLed (`Child::kill` → `SIGKILL`), so a wedged FSKit service is killed, never awaited. ❌ Don't "clean up" these
+  timeouts or the single-detach discipline — they're the guardrail against the incident above.
+
+The tests are `#[ignore]`d (each attaches a real disk image via hdiutil), so `pnpm check rust` compiles them but the
+default suite skips them; run them explicitly:
+
+```sh
+cd apps/desktop/src-tauri && cargo nextest run --run-ignored only -E 'test(indexing::external_drive_fixture::)'
+```
+
+They're serialized and granted a 30 s cap via the `disk-image` nextest group (`.config/nextest.toml`) — concurrent
+attach/detach churn on one FSKit service is the very surface the incident warns about, and the live-FSEvents probes block
+on real delivery. Those probes pin the load-bearing fact that **live FSEvents fire on FAT/exFAT despite no `.fseventsd`
+journal** (no `sinceWhen` replay, but a running watcher keeps an external index current). The human-run reference probes
+are `docs/specs/local-drive-indexing-probes/{fat32-probe.sh,fsevents-probe.swift}`; the Rust fixture is the automated
+form.
+
 ### Testing bar: state machine + IndexPhase lifecycle
 
 The per-volume `IndexPhase` lifecycle (`(absent) → Initializing → Running`, plus the `Initializing → removed` race during cancel) is the trickiest backend state machine to test cleanly. Four rules for tests in this area:

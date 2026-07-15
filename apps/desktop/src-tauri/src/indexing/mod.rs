@@ -51,6 +51,10 @@ pub(crate) mod watcher;
 #[path = "smb_scan_integration_test.rs"]
 mod smb_scan_integration_test;
 
+// Synthetic FAT32/exFAT disk-image fixtures for external-drive indexing tests.
+// macOS-only (hdiutil); see the module and DETAILS § "Testing external drives".
+#[cfg(all(test, target_os = "macos"))]
+mod external_drive_fixture;
 #[cfg(test)]
 mod integration_tests;
 #[cfg(test)]

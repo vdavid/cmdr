@@ -31,24 +31,23 @@ Writer discipline (one writer thread per DB):
   **`IndexWriter` owns the shared `Arc<AtomicI64>` ID counter** — don't allocate from `MAX(id)` (uncommitted inserts →
   double-assign).
 - **Live file upserts are throttled 60 s** (leading + trailing, not debounce; `reconciler/throttle.rs`): a file
-  rewritten in place writes ≤1/window, with a 2%/512 KiB jump bypass; the trailing flush applies the last-seen size
-  (never re-stats). UNthrottled: replay, `diff_dir_against_db`/subtree-rescan, dirs/symlinks, `~/Downloads`, SMB/MTP.
-  Invisible for files (pane sizes are live `lstat`), so no schema/marker; a `pending` key is NEVER evictable. DETAILS §
-  "Live per-file write throttle".
+  rewritten in place writes ≤1/window. Invisible for files (pane sizes are live `lstat`), so no schema/marker; a
+  `pending` key is NEVER evictable. Bypass thresholds, trailing-flush, UNthrottled paths: DETAILS § "Live per-file write
+  throttle".
 - **Mid-scan partial aggregation has four easy-to-break rules** — DETAILS § "Key decisions".
 - **The index is a disposable cache**: a schema mismatch or corruption deletes and rebuilds the DB (no migrations;
   schema in [`store/CLAUDE.md`](store/CLAUDE.md)). Gate only `scan_completed_at` writes (absence ⇒ heal to rescan).
-- **Defer `root` auto-start until FDA is decided** (`should_auto_start_indexing`): scanning from `/` stacks TCC popups.
-  FDA gates ONLY `root` — don't route SMB/MTP through it.
+- **Defer `root` auto-start** (`should_auto_start_indexing`): scanning from `/` stacks TCC popups. FDA gates ONLY
+  `root`; don't route SMB/MTP through it.
 
 SMB/MTP indexing:
 
 - **Gated on a `direct` (smb2) connection; an `os_mount` upgrades first** (`start_indexing_for_smb` refuses with a TYPED
   `SmbIndexGateReason`); MTP has no gate.
 - **Manual rescan routes by TYPED kind** (`force_scan`): SMB/MTP → `start_volume_scan`, `Local` → `start_scan`. ❌
-  Never `start_scan` a trait-scanned volume (the local walker walks nothing over a network mount and falsely completes —
-  the "rescan does nothing to the NAS" bug). LOCAL `start_scan` reconciles a populated index in place, truncate-walks a
-  fresh one; both are hang-tolerant. DETAILS § "LOCAL full rescan reconciles in place".
+  Never `start_scan` a trait-scanned volume — it walks nothing over a network mount and falsely completes (the "rescan
+  does nothing to the NAS" bug). LOCAL `start_scan` reconciles a populated index in place, truncate-walks a fresh one;
+  both hang-tolerant. DETAILS § "LOCAL full rescan reconciles in place".
 - **Never write `scan_completed_at` for an empty root** (an empty `/` must not blank the index; the reconcile returns
   typed `EmptyRoot`, not `Ok`). DETAILS § "No completion marker on an empty root".
 - **Freshness has ONE transition table (`freshness.rs`); don't branch elsewhere.** No journal ⇒ loads **Stale** on
@@ -60,6 +59,9 @@ SMB/MTP indexing:
 - **Threads + resources.** One GLOBAL 16 GB memory watchdog (`stop_all_indexing`; idempotent). Wrap ObjC/Cocoa threads
   in `objc2::rc::autoreleasepool` (else multi-GB leaks). Use `tauri::async_runtime::spawn`; `tokio::spawn` panics from
   the sync `setup()` hook.
+
+- **External-drive tests: synthetic disk images ONLY, `hdiutil` calls timeout-guarded** (a real-card unmount once
+  kernel-panicked the machine). `indexing::external_drive_fixture`; DETAILS § "Testing external drives".
 
 Flows, decisions, and gotchas: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
