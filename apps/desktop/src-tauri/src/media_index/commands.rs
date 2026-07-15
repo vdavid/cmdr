@@ -262,7 +262,7 @@ pub async fn media_index_covered_count(
             // volume: a local volume always, an SMB volume only when opted in, MTP
             // never (it's on-demand, not previewed).
             let enabled = match kinds.get(vid) {
-                Some(IndexVolumeKind::Local) => true,
+                Some(IndexVolumeKind::Local | IndexVolumeKind::LocalExternal) => true,
                 Some(IndexVolumeKind::Smb) => network_config::is_opted_in(vid),
                 Some(IndexVolumeKind::Mtp) | None => false,
             };

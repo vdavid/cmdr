@@ -478,7 +478,7 @@ enum PassKind {
 ///   on-demand trigger is a later slice; this gate is real now.
 fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVolumeKind) {
     let pass_kind = match kind {
-        IndexVolumeKind::Local => PassKind::Local,
+        IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => PassKind::Local,
         IndexVolumeKind::Smb => PassKind::Network,
         IndexVolumeKind::Mtp => {
             log::debug!(

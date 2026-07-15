@@ -86,6 +86,7 @@ fn kind_token(volume_id: &str) -> Option<&'static str> {
     use crate::indexing::IndexVolumeKind;
     crate::indexing::volume_kind(volume_id).map(|k| match k {
         IndexVolumeKind::Local => "local",
+        IndexVolumeKind::LocalExternal => "external",
         IndexVolumeKind::Smb => "smb",
         IndexVolumeKind::Mtp => "mtp",
     })

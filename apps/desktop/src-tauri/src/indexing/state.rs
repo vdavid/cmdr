@@ -470,40 +470,104 @@ pub(crate) fn get_freshness(volume_id: &str) -> Option<Freshness> {
         .and_then(|i| i.freshness.lock().ok().and_then(|f| *f))
 }
 
-/// How a volume's index sources its freshness, which decides the scan strategy
-/// and the launch-time freshness.
+/// How a volume's index is scanned, watched, rooted, and searched.
+///
+/// Four capabilities that move together for the three original kinds but pull
+/// apart for [`LocalExternal`](IndexVolumeKind::LocalExternal), so each is an
+/// explicit, orthogonal method rather than a single conflated predicate:
+///
+/// - [`uses_local_scanner`](Self::uses_local_scanner): jwalk + FSEvents pipeline
+///   (`Local`, `LocalExternal`) vs the `Volume` trait scanner (`Smb`, `Mtp`).
+///   Its exact complement is [`is_trait_scanned`](Self::is_trait_scanned).
+/// - [`has_event_journal`](Self::has_event_journal): self-heals watch continuity
+///   by replaying an FSEvents journal on launch. Only the boot disk (`Local`).
+/// - [`mount_rooted`](Self::mount_rooted): the index `ROOT_ID` is the mount
+///   (`/Volumes/X`), not `/`. True for `LocalExternal`, `Smb`, `Mtp`.
+/// - [`feeds_search`](Self::feeds_search): the single volume whose writes back
+///   the in-memory search index. Only the boot disk (`Local`).
+///
+/// The kinds:
 ///
 /// - [`Local`](IndexVolumeKind::Local): the boot disk. jwalk scan + FSEvents
 ///   journal, so a persisted index replays to **Fresh** on launch (continuity
-///   self-heals). The only kind started when no network drive is indexed.
+///   self-heals). `/`-rooted and the sole search-feeding volume. The only kind
+///   started when no network drive is indexed.
+/// - [`LocalExternal`](IndexVolumeKind::LocalExternal): a plain local external
+///   drive (USB stick, SD card, extra disk, mounted disk image). Uses the same
+///   jwalk + FSEvents pipeline as `Local`, but mount-rooted (`ROOT_ID` =
+///   `/Volumes/X`). It has no FSEvents journal (external volumes carry no
+///   `.fseventsd`), so a persisted index loads **Stale** on launch; live
+///   FSEvents still fire while mounted, so a running watcher keeps it current.
+///   Doesn't feed search.
 /// - [`Smb`](IndexVolumeKind::Smb): an SMB share scanned over the `Volume` trait
-///   (no jwalk; `/Volumes/` is excluded from the local scanner). No event
-///   journal, so a persisted index loads **Stale** on launch and the live
-///   watcher is what keeps it Fresh while connected.
+///   (no jwalk; `/Volumes/` is excluded from the local scanner). Mount-rooted.
+///   No event journal, so a persisted index loads **Stale** on launch and the
+///   live watcher is what keeps it Fresh while connected.
 /// - [`Mtp`](IndexVolumeKind::Mtp): a phone/camera storage scanned over the same
 ///   `Volume` trait. Identical to `Smb` for indexing purposes (non-journaled,
-///   network/USB scan path, loads Stale on launch); the live PTP event loop keeps
-///   it Fresh while the device is connected (D4). A distinct variant only so the
-///   scan path and any future MTP-specific tuning have a name to branch on.
+///   mount-rooted, network/USB scan path, loads Stale on launch); the live PTP
+///   event loop keeps it Fresh while the device is connected (D4). A distinct
+///   variant only so the scan path and any future MTP-specific tuning have a
+///   name to branch on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum IndexVolumeKind {
     Local,
+    #[allow(
+        dead_code,
+        reason = "constructed once the enable branch routes plain local external drives into start_indexing_for; until then only the capability tests reference it"
+    )]
+    LocalExternal,
     Smb,
     Mtp,
 }
 
 impl IndexVolumeKind {
-    /// Whether this volume self-heals watch continuity from an event journal on
-    /// launch. Only the local boot disk does (FSEvents replay). Feeds
-    /// `freshness::initial_freshness_on_launch`. SMB and MTP have no journal.
-    fn is_journaled(self) -> bool {
-        matches!(self, IndexVolumeKind::Local)
+    /// Whether this volume is scanned and watched by the local jwalk + FSEvents
+    /// pipeline rather than the `Volume` trait scanner. True for the boot disk
+    /// and local external drives. Exact complement of
+    /// [`is_trait_scanned`](Self::is_trait_scanned).
+    pub(crate) fn uses_local_scanner(self) -> bool {
+        matches!(self, IndexVolumeKind::Local | IndexVolumeKind::LocalExternal)
     }
 
     /// Whether this volume scans over the `Volume` trait (network/USB) rather
-    /// than jwalk. SMB and MTP both do; only `Local` uses jwalk + FSEvents.
+    /// than jwalk. SMB and MTP both do. Exact complement of
+    /// [`uses_local_scanner`](Self::uses_local_scanner).
     pub(crate) fn is_trait_scanned(self) -> bool {
         matches!(self, IndexVolumeKind::Smb | IndexVolumeKind::Mtp)
+    }
+
+    /// Whether this volume self-heals watch continuity from an event journal on
+    /// launch. Only the local boot disk does (FSEvents replay). Feeds
+    /// `freshness::initial_freshness_on_launch`. Local external drives carry no
+    /// `.fseventsd`, and SMB and MTP have no journal.
+    pub(crate) fn has_event_journal(self) -> bool {
+        matches!(self, IndexVolumeKind::Local)
+    }
+
+    /// Whether the index's `ROOT_ID` is the volume's mount point (`/Volumes/X`)
+    /// rather than `/`. True for every volume except the boot disk: local
+    /// external drives, SMB shares, and MTP devices all index relative to their
+    /// mount.
+    ///
+    /// The mount-relative local scan/live pipeline that consumes this lands with
+    /// the external-drive scan work; today only the capability tests call it.
+    #[allow(
+        dead_code,
+        reason = "the mount-relative local pipeline that consumes it lands with the external-drive scan work; until then only the capability tests call it"
+    )]
+    pub(crate) fn mount_rooted(self) -> bool {
+        matches!(
+            self,
+            IndexVolumeKind::LocalExternal | IndexVolumeKind::Smb | IndexVolumeKind::Mtp
+        )
+    }
+
+    /// Whether this volume's writes back the single in-memory search index.
+    /// Search is single-volume by construction (D7): only the boot disk
+    /// (`Local`) feeds it. See `writer::WRITER_GENERATION`.
+    pub(crate) fn feeds_search(self) -> bool {
+        matches!(self, IndexVolumeKind::Local)
     }
 }
 
@@ -553,7 +617,7 @@ fn start_indexing_for(
         .get_index_status()
         .map(|s| s.scan_completed_at.is_some())
         .unwrap_or(false);
-    let initial_freshness = super::freshness::initial_freshness_on_launch(scan_completed, kind.is_journaled());
+    let initial_freshness = super::freshness::initial_freshness_on_launch(scan_completed, kind.has_event_journal());
 
     // Launch-as-Stale ⇒ bump `current_epoch` at THIS call site (the pure
     // `initial_freshness_on_launch` has no DB handle and can't bump). A
@@ -1004,6 +1068,54 @@ pub fn is_active(volume_id: &str) -> bool {
 mod tests {
     use super::super::enrichment::get_read_pool_for;
     use super::*;
+
+    /// Every `IndexVolumeKind`, so a new variant can't be added without deciding
+    /// its capabilities here.
+    const ALL_KINDS: [IndexVolumeKind; 4] = [
+        IndexVolumeKind::Local,
+        IndexVolumeKind::LocalExternal,
+        IndexVolumeKind::Smb,
+        IndexVolumeKind::Mtp,
+    ];
+
+    /// The five capability axes must match the plan's table exactly. Each tuple is
+    /// `(uses_local_scanner, is_trait_scanned, has_event_journal, mount_rooted,
+    /// feeds_search)`.
+    #[test]
+    fn capability_axes_match_the_table() {
+        let expected = |kind: IndexVolumeKind| -> (bool, bool, bool, bool, bool) {
+            (
+                kind.uses_local_scanner(),
+                kind.is_trait_scanned(),
+                kind.has_event_journal(),
+                kind.mount_rooted(),
+                kind.feeds_search(),
+            )
+        };
+
+        // (local_scanner, trait_scanned, event_journal, mount_rooted, feeds_search)
+        assert_eq!(expected(IndexVolumeKind::Local), (true, false, true, false, true));
+        assert_eq!(
+            expected(IndexVolumeKind::LocalExternal),
+            (true, false, false, true, false)
+        );
+        assert_eq!(expected(IndexVolumeKind::Smb), (false, true, false, true, false));
+        assert_eq!(expected(IndexVolumeKind::Mtp), (false, true, false, true, false));
+    }
+
+    /// `uses_local_scanner` and `is_trait_scanned` are exact complements: every
+    /// kind is scanned by exactly one of the two pipelines, so they can't silently
+    /// drift (a new variant landing in neither, or both, fails here).
+    #[test]
+    fn scanner_axes_partition_the_enum() {
+        for kind in ALL_KINDS {
+            assert_ne!(
+                kind.uses_local_scanner(),
+                kind.is_trait_scanned(),
+                "{kind:?} must be scanned by exactly one pipeline"
+            );
+        }
+    }
 
     /// The read path's skip-vs-route gate is "does `get_read_pool_for` return a
     /// pool?". An unregistered volume must return `None` (so its listings skip

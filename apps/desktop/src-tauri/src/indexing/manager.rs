@@ -123,15 +123,15 @@ enum RescanScanner {
 ///
 /// This is the regression anchor for the real-hardware bug where a NAS "Rescan
 /// now" ran the local jwalk scanner over the SMB mount (walking nothing, then
-/// falsely marking the index complete). A trait-scanned kind (SMB/MTP) must map
-/// to `VolumeTrait`; only `Local` maps to `LocalJwalk`. Mirrors
-/// `resume_or_scan`'s `is_trait_scanned` routing, kept as a separate pure
-/// function so the dispatch is unit-testable without an `AppHandle`.
+/// falsely marking the index complete). A local-scanner kind (boot disk or a
+/// local external drive) maps to `LocalJwalk`; a trait-scanned kind (SMB/MTP)
+/// maps to `VolumeTrait`. Kept as a separate pure function so the dispatch is
+/// unit-testable without an `AppHandle`.
 fn rescan_scanner_for_kind(kind: IndexVolumeKind) -> RescanScanner {
-    if kind.is_trait_scanned() {
-        RescanScanner::VolumeTrait
-    } else {
+    if kind.uses_local_scanner() {
         RescanScanner::LocalJwalk
+    } else {
+        RescanScanner::VolumeTrait
     }
 }
 
@@ -187,7 +187,7 @@ impl IndexManager {
         // SMB/MTP writer must not invalidate the root search index it doesn't
         // feed, or every NAS/phone change-notify event would thrash a full root
         // search reload. See `writer::WRITER_GENERATION` and `indexing/DETAILS.md`.
-        let feeds_search = kind == IndexVolumeKind::Local;
+        let feeds_search = kind.feeds_search();
         let writer = IndexWriter::spawn_for(&db_path, Some(app.clone()), feeds_search, volume_id.clone())
             .map_err(|e| format!("Failed to spawn index writer: {e}"))?;
 

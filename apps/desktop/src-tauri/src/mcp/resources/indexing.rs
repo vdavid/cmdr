@@ -355,6 +355,7 @@ fn kind_token(kind: crate::indexing::IndexVolumeKind) -> &'static str {
     use crate::indexing::IndexVolumeKind;
     match kind {
         IndexVolumeKind::Local => "local",
+        IndexVolumeKind::LocalExternal => "external",
         IndexVolumeKind::Smb => "smb",
         IndexVolumeKind::Mtp => "mtp",
     }

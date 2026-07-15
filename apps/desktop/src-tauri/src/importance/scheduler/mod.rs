@@ -106,8 +106,10 @@ impl ScoringPolicy {
     fn for_kind(kind: IndexVolumeKind) -> Self {
         match kind {
             // Local macOS produces both optional signals (visits + Spotlight where
-            // the OS supports it; off macOS Spotlight is simply absent).
-            IndexVolumeKind::Local => ScoringPolicy::Scored {
+            // the OS supports it; off macOS Spotlight is simply absent). A local
+            // external drive shares the local scan path and reads its own local DB,
+            // so it scores identically; a per-folder missing signal redistributes.
+            IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => ScoringPolicy::Scored {
                 available: SignalSet {
                     visit_available: true,
                     last_used_available: super::last_used::is_available(),

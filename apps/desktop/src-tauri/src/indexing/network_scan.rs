@@ -36,7 +36,8 @@ fn replay_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) -> b
     match kind {
         IndexVolumeKind::Smb => return super::replay_buffered_changes(volume_id),
         IndexVolumeKind::Mtp => return super::replay_buffered_mtp_changes(volume_id),
-        IndexVolumeKind::Local => {}
+        // Local-scanner kinds take the jwalk path and never buffer network changes.
+        IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => {}
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     let _ = (kind, volume_id);
@@ -50,7 +51,8 @@ fn discard_buffered_changes_for_kind(kind: IndexVolumeKind, volume_id: &str) {
     match kind {
         IndexVolumeKind::Smb => super::discard_buffered_changes(volume_id),
         IndexVolumeKind::Mtp => super::discard_buffered_mtp_changes(volume_id),
-        IndexVolumeKind::Local => {}
+        // Local-scanner kinds take the jwalk path and never buffer network changes.
+        IndexVolumeKind::Local | IndexVolumeKind::LocalExternal => {}
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     let _ = (kind, volume_id);
@@ -106,6 +108,7 @@ impl IndexManager {
             IndexVolumeKind::Mtp => "MTP",
             IndexVolumeKind::Smb => "SMB",
             IndexVolumeKind::Local => "local",
+            IndexVolumeKind::LocalExternal => "local-external",
         }
     }
 
