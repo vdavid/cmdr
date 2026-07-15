@@ -338,6 +338,14 @@ the visibility rule (extract to a pure helper).
     strings; a `Drop`-guard or a single exit choke point beats per-return-site emission.
 - Keep emission out of the per-image hot path except a cheap counter + time check. Events, not polled state, per
   "subscribe, don't poll".
+- **Also in this milestone (small, David-requested 2026-07-15): vanished and phantom files are DEBUG, never WARN.**
+  Two observed cases spam WARNs today: (a) a file deleted between the index walk and its analyze (Zoom's self-update
+  wiped old bundle resources mid-life) hits ENOENT at decode; (b) ORPHANED index rows — children whose parent entries
+  were already removed — reconstruct as root-level phantom paths (`/NewUI_Chats_Mention@2x.png`) that can never read.
+  Handle both as a typed skip: an ENOENT-class read failure at analyze time logs DEBUG (aggregate if chatty), writes NO
+  row (not `Failed` — the file is gone; the next completed pass's GC collects any stale row), and counts as processed
+  in the progress math so `done` still reaches `total`. Never string-match the error text (use the typed io/decode
+  error kind). The underlying index-orphan hygiene issue is out of scope — flagged to David separately.
 - Extend `media_index_volume_state` with the threshold-aware split: `coveredQualifyingCount` (qualifying images in
   covered folders at the current threshold) alongside the existing full `qualifyingCount`, plus `keptCount` (stored rows
   outside current coverage — computed by the SAME single-source function as M4's doomed set; see M4). Intention: the
@@ -388,6 +396,38 @@ frontend.
 - **Parallel-safe** with everything except M4/M5's settings-line edits (same components). Run before or after, not
   during.
 
+### M8 — Live enrichment: follow the index (added 2026-07-15, David-requested; runs after M5, before M7)
+
+Today enrichment triggers are scan-completion edges, user-action kicks, and the importance bridge — so a NEW or
+MODIFIED image waits for the next completed scan, and a DELETED image's rows linger until a later pass GCs them.
+David's expectation as a user: an image that changes and falls inside the covered set is re-indexed within seconds.
+Importance already solves exactly this with its live incremental path (bounded, throttled, subtree-scoped); media
+mirrors that proven pattern rather than inventing a new one.
+
+- **Subscribe to the SAME live index-update signal importance's incremental rescore consumes** (read
+  `importance/scheduler/` for the wiring — the throttled per-volume live-update subscription), coalesced per volume
+  with a comparable throttle window (once per window under churn, never per-event). MTP stays excluded; network
+  volumes follow their existing conservative gates (idle + opt-in) — live-follow must never wake a NAS outside them.
+- **A live tick runs a SCOPED incremental pass**: walk only the touched directories' qualifying images (not the full
+  index), apply the normal coverage + override + live-exclusion gates and the staleness predicate (`(path, mtime,
+  size)` + stamp — this is what makes a modified image re-enrich and an untouched one a no-op), enrich through the
+  same writer. Reuse `enrich_and_gc`'s core with a scoped image set, or extract the shared per-image step — don't fork
+  the enrichment logic.
+- **Deletions: rows for index-CONFIRMED removals may be deleted in the live path** (the index removal is a fact about
+  the tree, like importance's subtree clear — NOT a scan-state inference, so the GC-needs-a-complete-tree doctrine
+  isn't violated). A disconnect/unmount still never deletes (the existing pause semantics stand). When in doubt,
+  defer to the next completed-pass GC — correctness over immediacy.
+- **Progress honesty**: a live tick is small; do NOT light up the top-right indicator for a two-image tick (respect
+  the indicator's purpose — sweeps, not blips). Reuse the M5 events only when a tick exceeds a small threshold
+  (suggest: >25 images), else stay silent.
+- **Tests (TDD)**: modified covered image re-enriches on a live tick; below-threshold stays deferred; excluded never;
+  index-confirmed removal deletes the row; unmount does NOT; throttle coalesces a burst into one tick; the scoped
+  walk touches only the changed subtree (no full-index walk per tick).
+- **Docs**: media_index C.md trigger list gains "live index updates (throttled, scoped)"; D.md § Live enrichment with
+  the deletion-safety justification above.
+- **Review gate**: this milestone was added after the plan's five review rounds — the executing agent's brief gets one
+  focused Opus review of THIS section against `importance/scheduler/`'s real wiring before implementation starts.
+
 ### M7 — Verification, docs sync, wrap
 
 - Full `pnpm check` then `pnpm check --include-slow`.
@@ -398,7 +438,8 @@ frontend.
   updates preview + delta; slider right→left→right loses nothing; reclaim preview + prune round-trip (on a small fixture
   volume, not David's 223k root, unless he says otherwise); exclude a folder via the new context-menu item → its hits
   disappear from search, and excluding mid-pass leaves nothing behind; top-right indicator shows the enrichment row with
-  sane rate/ETA; NAS opt-in still kicks and idle-gates.
+  sane rate/ETA; NAS opt-in still kicks and idle-gates; modify a covered image on disk → it re-enriches within the
+  live-follow throttle window without a rescan, and the log stays quiet (no WARNs for vanished/tiny/phantom files).
 - Docs pass per `docs.md` rule; changelog entry (impact-focused: "Image indexing now starts the moment you enable it",
   the privacy retro-delete, reclaim, live progress).
 - Milestone-by-milestone commits per `git-conventions.md`; leave the branch ready for FF-merge; David reviews visuals
