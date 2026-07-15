@@ -69,9 +69,9 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
 - **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry.
 - **`index-scan-aborted`** (`{ volumeId }`): a scan ended WITHOUT completing — a network (SMB/MTP) disconnect/cancel/
   timeout, or a local external drive whose root became unlistable because the volume was yanked mid-scan — so no
-  `index-scan-complete` fires. Remove the volume's `activity` AND `aggregation` entries — otherwise the
-  partial scan leaves a stuck "scanning" row in the corner and the badge tooltip. Carries no completion facts (it isn't
-  a finished index). The badge dot color is handled separately by the manager's freshness subscription. Emitted by
+  `index-scan-complete` fires. Remove the volume's `activity` AND `aggregation` entries — otherwise the partial scan
+  leaves a stuck "scanning" row in the corner and the badge tooltip. Carries no completion facts (it isn't a finished
+  index). The badge dot color is handled separately by the manager's freshness subscription. Emitted by
   `network_scan.rs`'s disconnect (→ Stale) and cancel/fail (→ not-indexed) arms.
 - **`index-rescan-notification`** (`{ volumeId, reason, details }`): show an info toast with a reason-specific message.
 - **`index-replay-progress`** (`{ volumeId, eventsProcessed, estimatedTotal }`): create/replace the volume's `activity`
