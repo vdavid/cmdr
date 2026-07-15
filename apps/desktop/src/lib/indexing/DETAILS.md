@@ -223,8 +223,9 @@ the gate keeps it from lighting the corner on its own.
 
 **Listen-first-then-query at init** (`initMediaEnrichState`): with plan M1, enrichment can start at backend setup BEFORE
 the frontend mounts, so the pass-start event is lost. After registering the listeners, seed the ROOT volume from
-`media_index_volume_state` if it's enriching (`done = enrichedCount − keptCount` capped, `total = coveredQualifyingCount`),
-mirroring `initIndexState`'s root-only backfill; network volumes hydrate from their next progress tick.
+`media_index_volume_state` if it's enriching (`done = enrichedCount − keptCount` capped,
+`total = coveredQualifyingCount`), mirroring `initIndexState`'s root-only backfill; network volumes hydrate from their
+next progress tick.
 
 **`IndexingEnrichRow`** is the WRAPPER (owns its own rate/ETA sliding window over `done` + a 1 Hz tick, like
 `IndexingDriveRow`): an images bar + a bytes bar (both aria-labeled), an "N of M images" line, images/min

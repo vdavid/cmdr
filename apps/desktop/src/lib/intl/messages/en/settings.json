@@ -751,7 +751,9 @@
     "description": "Shown under the slider when the drive holds many more indexed images than the current level covers (because lowering the level never deletes anything). Frames the leftover entries as still useful before offering to delete them. Pairs with the reclaim button below it.",
     "placeholders": {
       "totalText": { "content": "The total number of indexed images, preformatted with thousands separators." },
-      "coveredText": { "content": "How many indexed images the current level covers, preformatted with thousands separators." },
+      "coveredText": {
+        "content": "How many indexed images the current level covers, preformatted with thousands separators."
+      },
       "doomed": {
         "content": "The number of leftover indexed entries outside the current level, used to choose singular or plural wording."
       },

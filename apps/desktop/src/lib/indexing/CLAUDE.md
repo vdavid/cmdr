@@ -11,9 +11,9 @@ via `getVolumePhase`) fed by the Tauri index events; `index-events.ts` bridges `
 (`IndexingStatusIndicator` → the `IndexingDriveRow` wrapper → the presentational `IndexingStatusBody` +
 `IndexingDriveSummary`) is the top-right hourglass rendering the per-drive step checklist; the breadcrumb badge reuses
 `IndexingDriveRow`. `media-enrich-state.svelte.ts` + `IndexingEnrichRow.svelte`: image indexing (2nd publisher, below).
-Prompts (FE-owned): `first-connect-trigger.ts` + `FirstConnectIndexToastContent`,
-`StaleDriveDialog.svelte`, `drive-index-prefs.ts`. Public API barrel: `index.ts`. Per-file detail + the event tables:
-DETAILS.md or `codegraph_search`.
+Prompts (FE-owned): `first-connect-trigger.ts` + `FirstConnectIndexToastContent`, `StaleDriveDialog.svelte`,
+`drive-index-prefs.ts`. Public API barrel: `index.ts`. Per-file detail + the event tables: DETAILS.md or
+`codegraph_search`.
 
 ## Must-knows
 
@@ -29,10 +29,10 @@ DETAILS.md or `codegraph_search`.
   / `index-aggregation-complete`). A network (SMB/MTP) scan that aborts fires no completion, so the backend emits
   `index-scan-aborted { volumeId }` and `index-state` drops that volume's activity + aggregation — else an aborted
   network scan leaves a stuck "scanning" row. Don't clear activity off `index-freshness-changed` (not subscribed here).
-- **Image indexing is a SECOND publisher here** (`media-enrich-state.svelte.ts`, plan M5): `media-enrich-progress` drives
-  a per-volume row; `media-enrich-terminal` clears or re-voices it paused. The corner gate ORs `isAnyVolumeEnriching()`
-  (active only; a paused-only volume never pins it up). Same `index-state` discipline. DETAILS § Image-enrichment
-  publisher.
+- **Image indexing is a SECOND publisher here** (`media-enrich-state.svelte.ts`, plan M5): `media-enrich-progress`
+  drives a per-volume row; `media-enrich-terminal` clears or re-voices it paused. The corner gate ORs
+  `isAnyVolumeEnriching()` (active only; a paused-only volume never pins it up). Same `index-state` discipline. DETAILS
+  § Image-enrichment publisher.
 - **Checklist STEPS are composed from the events that fire for THIS volume** (`deriveSteps`), never a fixed list: a
   network scan omits Save and Catch-up; a roll-on collapses to one Update step. Branch on typed discriminants only.
   Per-step ETA only; NO overall ETA by design (deferred — `docs/specs/later/drive-index-overall-eta.md`). The catch-up

@@ -89,7 +89,13 @@ describe('MediaIndexReclaim', () => {
   })
 
   it('stays hidden when the leftover is too small to bother', async () => {
-    previewMock.mockResolvedValue({ totalStored: 200_000, coveredStored: 199_950, doomedCount: 50, estimatedBytes: 1, pending: false })
+    previewMock.mockResolvedValue({
+      totalStored: 200_000,
+      coveredStored: 199_950,
+      doomedCount: 50,
+      estimatedBytes: 1,
+      pending: false,
+    })
     const target = await mountReclaim({ threshold: 0.0, blocked: false })
     expect(target.querySelector('.mi-reclaim')).toBeNull()
     target.remove()
