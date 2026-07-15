@@ -1066,7 +1066,8 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
         if let Err(e) = tauri::async_runtime::spawn_blocking(move || {
             let cancelled = AtomicBool::new(false);
             for dir_path in &scan_dirs {
-                if scanner::should_exclude(dir_path) {
+                // Background verification is root-scoped (boot disk), so `BootDisk`.
+                if scanner::should_exclude(dir_path, scanner::ExclusionScope::BootDisk) {
                     continue;
                 }
                 match scanner::scan_subtree(Path::new(dir_path), &scan_writer, &cancelled) {
@@ -1117,7 +1118,7 @@ pub(super) async fn run_background_verification(affected_paths: HashSet<String>,
         let visible_new_dirs: Vec<String> = verify_result
             .new_dir_paths
             .iter()
-            .filter(|p| !scanner::should_exclude(p))
+            .filter(|p| !scanner::should_exclude(p, scanner::ExclusionScope::BootDisk))
             .cloned()
             .collect();
         if !visible_new_dirs.is_empty() {
@@ -1356,8 +1357,9 @@ fn verify_affected_dirs(affected_paths: &HashSet<String>, writer: &IndexWriter) 
                 continue;
             }
 
-            // Skip excluded system paths (e.g. /System, /dev, /Volumes)
-            if scanner::should_exclude(&normalized) {
+            // Skip excluded system paths (e.g. /System, /dev, /Volumes).
+            // Root-scoped background verification (boot disk), so `BootDisk`.
+            if scanner::should_exclude(&normalized, scanner::ExclusionScope::BootDisk) {
                 continue;
             }
 

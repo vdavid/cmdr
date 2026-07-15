@@ -545,8 +545,11 @@ impl DirVisitor for InsertVisitor {
             let path_str = child.path.to_string_lossy();
 
             // Volume-root scans apply the exclusion policy; subtree scans were
-            // explicitly chosen, so global exclusions don't apply.
-            if self.is_volume_root && should_exclude(&path_str) {
+            // explicitly chosen, so global exclusions don't apply. The local
+            // scanner runs only on the boot disk today, so the scope is
+            // `BootDisk`; the mount-relative local scan wires the kind-derived
+            // scope here (a mount-rooted drive uses `MountRooted`).
+            if self.is_volume_root && should_exclude(&path_str, ExclusionScope::BootDisk) {
                 continue;
             }
             // Skip canonicalization aliases (/tmp, /var, /etc, Data-volume

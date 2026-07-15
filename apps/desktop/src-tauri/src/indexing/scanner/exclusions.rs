@@ -1,11 +1,36 @@
-//! Scan exclusion policy: the absolute-path prefixes skipped during scanning
-//! (platform-specific), the firmlinked-`/System` allowlist, the E2E scan
-//! restriction, and the canonicalization-alias check. `should_exclude` is the
-//! single exclusion gate for every code path (scanner, reconciler, event-loop
-//! verification, per-navigation verifier). Pure code movement from the former
-//! monolithic `scanner.rs`.
+//! Scan exclusion policy in two tiers: (a) boot-disk absolute-path prefixes
+//! skipped only when scanning the boot disk from `/` (platform-specific, plus the
+//! firmlinked-`/System` allowlist), and (b) per-volume junk basenames skipped at
+//! any scan root. `should_exclude` is the single exclusion gate for every code
+//! path (scanner, reconciler, event-loop verification, per-navigation verifier);
+//! it takes an [`ExclusionScope`] so a mount-rooted scan (an external drive under
+//! `/Volumes/X`, SMB, MTP) applies only tier (b), while the boot-disk scan applies
+//! both. See [`ExclusionScope`] for why the split exists.
 
 use std::sync::OnceLock;
+
+/// Which exclusion tier applies to a `should_exclude` check, derived from the
+/// volume being scanned (never from `is_volume_root` — the boot `/` scan is also
+/// a volume root, so that bool can't tell the two apart).
+///
+/// The boot disk scans from `/` and must stay on the boot volume, so it skips the
+/// absolute-prefix set (`/Volumes/`, `/System/...`, `/private/var/`, ...) that
+/// keeps the walk off mounted volumes and system trees. A mount-rooted volume is
+/// ALREADY rooted under `/Volumes/X` (or an SMB/MTP mount) and must index
+/// everything beneath it: applying those same absolute prefixes there would
+/// exclude EVERY child of the scan root, yield zero rows, and let the completion
+/// path write `scan_completed_at` — a silent false-complete. So a mount-rooted
+/// scan applies only the per-volume junk tier (`.Spotlight-V100`, `.fseventsd`,
+/// ...), which is junk on any volume.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::indexing) enum ExclusionScope {
+    /// The boot-disk scan rooted at `/`: apply the absolute-prefix set AND the
+    /// junk basenames.
+    BootDisk,
+    /// A scan rooted at a mount point (`/Volumes/X`, an SMB share, an MTP store):
+    /// apply only the junk basenames, so the mount's own subtree is fully indexed.
+    MountRooted,
+}
 
 // ── Exclusion prefixes ──────────────────────────────────────────────
 
@@ -22,8 +47,6 @@ pub(in crate::indexing) const EXCLUDED_PREFIXES: &[&str] = &[
     "/Volumes/", // Skip mounted volumes (network shares, external drives) -- index boot volume only
     "/private/var/",
     "/Library/Caches/",
-    "/.Spotlight-V100/",
-    "/.fseventsd/",
     "/dev/",
     "/proc/",
 ];
@@ -51,6 +74,13 @@ pub(in crate::indexing) const EXCLUDED_PREFIXES: &[&str] = &[
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub(in crate::indexing) const EXCLUDED_PREFIXES: &[&str] = &["/dev/", "/proc/"];
 
+/// Per-volume junk directory basenames skipped at ANY scan root (both the boot
+/// disk and a mount-rooted volume). macOS seeds these into every volume's root;
+/// they hold OS bookkeeping, not user data. On the boot disk they sit at `/`; on
+/// an external drive they sit under `/Volumes/X`, so they're matched by basename
+/// (not an absolute prefix) to catch both. Harmless no-op on Linux (no such dirs).
+const JUNK_BASENAMES: &[&str] = &[".Spotlight-V100", ".fseventsd", ".Trashes", ".TemporaryItems"];
+
 /// macOS: `/System/` paths reachable via firmlinks (from `/usr/share/firmlinks`).
 /// These are the ONLY `/System/` subdirectories we allow through the exclusion filter.
 #[cfg(target_os = "macos")]
@@ -65,6 +95,18 @@ pub(in crate::indexing) const FIRMLINKED_SYSTEM_PREFIXES: &[&str] = &[
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+/// Whether the path's final component is a per-volume junk directory
+/// ([`JUNK_BASENAMES`]). Matched on the basename so it catches the dir at the
+/// boot root (`/.Spotlight-V100`) and under a mount (`/Volumes/X/.Spotlight-V100`)
+/// alike. A user folder that merely contains a junk name as a substring is not
+/// matched.
+fn is_junk_basename(path_str: &str) -> bool {
+    std::path::Path::new(path_str)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|name| JUNK_BASENAMES.contains(&name))
+}
 
 /// Returns the E2E allowlist path from `CMDR_E2E_START_PATH`, if set.
 ///
@@ -90,12 +132,18 @@ pub(in crate::indexing) fn e2e_allowlist_path() -> Option<&'static str> {
         .as_deref()
 }
 
-/// Check if a path should be excluded from scanning.
-pub(in crate::indexing) fn should_exclude(path_str: &str) -> bool {
+/// Check if a path should be excluded from scanning, given the scan's
+/// [`ExclusionScope`]. Tier (b) junk basenames are skipped under both scopes;
+/// tier (a) absolute prefixes only under [`ExclusionScope::BootDisk`].
+pub(in crate::indexing) fn should_exclude(path_str: &str, scope: ExclusionScope) -> bool {
     // E2E mode: restrict scanning to only the fixture path and its ancestors.
     // Without this, the scanner traverses the entire filesystem from `/` which
-    // is too slow in Docker containers (Linux E2E tests time out).
-    if let Some(e2e_path) = e2e_allowlist_path() {
+    // is too slow in Docker containers (Linux E2E tests time out). This bounds
+    // the otherwise-unbounded boot-disk `/` scan; a mount-rooted scan is already
+    // bounded to its mount, so the restriction is a boot-disk concept only.
+    if scope == ExclusionScope::BootDisk
+        && let Some(e2e_path) = e2e_allowlist_path()
+    {
         // Allow the fixture path and its children
         if path_str.starts_with(e2e_path) {
             return false;
@@ -106,6 +154,20 @@ pub(in crate::indexing) fn should_exclude(path_str: &str) -> bool {
         }
         // Exclude everything else: we only care about the fixture subtree
         return true;
+    }
+
+    // Tier (b): per-volume junk basenames — skipped at any scan root.
+    if is_junk_basename(path_str) {
+        return true;
+    }
+
+    // Tier (a): boot-disk absolute-prefix exclusions apply ONLY to the `/`-rooted
+    // boot scan. A mount-rooted scan sits under `/Volumes/X` and must index its
+    // whole subtree, so these prefixes would exclude EVERY child of the scan root
+    // → zero rows → a silent false-complete (`scan_completed_at` written on an
+    // empty tree). See `ExclusionScope`.
+    if scope == ExclusionScope::MountRooted {
+        return false;
     }
 
     // Check explicit exclusion prefixes

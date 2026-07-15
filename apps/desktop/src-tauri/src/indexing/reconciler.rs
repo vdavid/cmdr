@@ -968,7 +968,9 @@ pub(super) fn read_fs_children(dir_path: &Path) -> Option<Vec<(String, std::fs::
         let child_path = dir_path.join(&name);
         let child_path_str = child_path.to_string_lossy();
         let normalized_child = firmlinks::normalize_path(&child_path_str);
-        if scanner::should_exclude(&normalized_child) {
+        // The local reconcile runs only on the boot disk today, so `BootDisk`;
+        // the mount-rooted reconcile threads the kind-derived scope here.
+        if scanner::should_exclude(&normalized_child, scanner::ExclusionScope::BootDisk) {
             continue;
         }
         // Skip the canonicalization-alias symlinks (/tmp, /var, /etc) so we don't
@@ -1005,8 +1007,10 @@ pub(super) fn process_fs_event(
 ) -> Option<Vec<String>> {
     let normalized = firmlinks::normalize_path(&event.path);
 
-    // Skip excluded paths
-    if scanner::should_exclude(&normalized) {
+    // Skip excluded paths. The live local event loop runs only on the boot disk
+    // today, so `BootDisk`; the mount-relative live pipeline threads the
+    // kind-derived scope here (a mount-rooted drive uses `MountRooted`).
+    if scanner::should_exclude(&normalized, scanner::ExclusionScope::BootDisk) {
         return None;
     }
 

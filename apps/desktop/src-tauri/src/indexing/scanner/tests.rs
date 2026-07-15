@@ -60,41 +60,100 @@ fn ensure_path_in_db(db_path: &Path, path: &Path, writer: &IndexWriter) {
 #[test]
 #[cfg(target_os = "macos")]
 fn should_exclude_system_volumes() {
-    assert!(should_exclude("/System/Volumes/Data/"));
-    assert!(should_exclude("/System/Volumes/Data/Users/foo"));
-    assert!(should_exclude("/System/Volumes/VM/"));
-    assert!(should_exclude("/System/Volumes/Preboot/"));
-    assert!(should_exclude("/dev"));
-    assert!(should_exclude("/dev/null"));
-    assert!(should_exclude("/proc"));
-    assert!(should_exclude("/private/var/"));
-    assert!(should_exclude("/private/var/folders/xx"));
+    use ExclusionScope::BootDisk;
+    assert!(should_exclude("/System/Volumes/Data/", BootDisk));
+    assert!(should_exclude("/System/Volumes/Data/Users/foo", BootDisk));
+    assert!(should_exclude("/System/Volumes/VM/", BootDisk));
+    assert!(should_exclude("/System/Volumes/Preboot/", BootDisk));
+    assert!(should_exclude("/dev", BootDisk));
+    assert!(should_exclude("/dev/null", BootDisk));
+    assert!(should_exclude("/proc", BootDisk));
+    assert!(should_exclude("/private/var/", BootDisk));
+    assert!(should_exclude("/private/var/folders/xx", BootDisk));
 }
 
 #[test]
 #[cfg(target_os = "macos")]
 fn should_exclude_system_except_firmlinked() {
+    use ExclusionScope::BootDisk;
     // Generic /System/ paths should be excluded
-    assert!(should_exclude("/System/foo"));
-    assert!(should_exclude("/System/Library/Frameworks"));
-    assert!(should_exclude("/System"));
+    assert!(should_exclude("/System/foo", BootDisk));
+    assert!(should_exclude("/System/Library/Frameworks", BootDisk));
+    assert!(should_exclude("/System", BootDisk));
 
     // Firmlinked /System/ paths should NOT be excluded
-    assert!(!should_exclude("/System/Library/Caches"));
-    assert!(!should_exclude("/System/Library/Caches/com.apple.something"));
-    assert!(!should_exclude("/System/Library/Assets"));
-    assert!(!should_exclude("/System/Library/Speech"));
-    assert!(!should_exclude("/System/Library/Speech/Voices"));
+    assert!(!should_exclude("/System/Library/Caches", BootDisk));
+    assert!(!should_exclude("/System/Library/Caches/com.apple.something", BootDisk));
+    assert!(!should_exclude("/System/Library/Assets", BootDisk));
+    assert!(!should_exclude("/System/Library/Speech", BootDisk));
+    assert!(!should_exclude("/System/Library/Speech/Voices", BootDisk));
 }
 
 #[test]
 #[cfg(target_os = "macos")]
 fn should_not_exclude_normal_paths() {
-    assert!(!should_exclude("/Users/foo"));
-    assert!(!should_exclude("/Users/foo/Documents"));
-    assert!(!should_exclude("/Applications"));
-    assert!(!should_exclude("/tmp"));
-    assert!(!should_exclude("/opt/homebrew"));
+    use ExclusionScope::BootDisk;
+    assert!(!should_exclude("/Users/foo", BootDisk));
+    assert!(!should_exclude("/Users/foo/Documents", BootDisk));
+    assert!(!should_exclude("/Applications", BootDisk));
+    assert!(!should_exclude("/tmp", BootDisk));
+    assert!(!should_exclude("/opt/homebrew", BootDisk));
+}
+
+/// A mount-rooted scan (an external drive rooted at `/Volumes/X`, SMB, or MTP)
+/// must index everything beneath its mount: the boot-disk `/Volumes/`,
+/// `/System/...`, and `/private/var/` prefixes must NOT exclude its children,
+/// or the walk emits zero rows and the completion path writes a false Fresh.
+#[test]
+#[cfg(target_os = "macos")]
+fn mount_rooted_scan_indexes_under_volumes() {
+    use ExclusionScope::MountRooted;
+    // The exact false-complete case: a child of the external drive's mount root.
+    assert!(!should_exclude("/Volumes/NO NAME/photos", MountRooted));
+    assert!(!should_exclude("/Volumes/NO NAME/photos/img.jpg", MountRooted));
+    assert!(!should_exclude("/Volumes/My Backup/Documents/report.pdf", MountRooted));
+    // Paths that only look system-ish because the mount happens to be named so.
+    assert!(!should_exclude("/Volumes/USB/private/var/data", MountRooted));
+    assert!(!should_exclude("/Volumes/USB/System/thing", MountRooted));
+}
+
+/// The boot-disk scan still keeps off mounted volumes and system trees.
+#[test]
+#[cfg(target_os = "macos")]
+fn boot_disk_scan_still_excludes_volumes_and_system() {
+    use ExclusionScope::BootDisk;
+    assert!(should_exclude("/Volumes/NO NAME", BootDisk));
+    assert!(should_exclude("/Volumes/NO NAME/photos", BootDisk));
+    assert!(should_exclude("/System/Volumes/Data/Users/foo", BootDisk));
+    assert!(should_exclude("/private/var/folders/xx", BootDisk));
+}
+
+/// Per-volume junk (`.Spotlight-V100`, `.fseventsd`, `.Trashes`,
+/// `.TemporaryItems`) is skipped under BOTH scopes — junk is junk on any volume.
+/// On the boot disk these once lived only as root-anchored prefixes; on a
+/// mount-rooted drive they sit under `/Volumes/X`, so they're matched by basename.
+#[test]
+#[cfg(target_os = "macos")]
+fn junk_basenames_excluded_under_both_scopes() {
+    use ExclusionScope::{BootDisk, MountRooted};
+    for junk in [".Spotlight-V100", ".fseventsd", ".Trashes", ".TemporaryItems"] {
+        assert!(should_exclude(&format!("/{junk}"), BootDisk), "{junk} on boot root");
+        assert!(
+            should_exclude(&format!("/Users/foo/{junk}"), BootDisk),
+            "{junk} deep on boot"
+        );
+        assert!(
+            should_exclude(&format!("/Volumes/USB/{junk}"), MountRooted),
+            "{junk} on mount root"
+        );
+        assert!(
+            should_exclude(&format!("/Volumes/USB/sub/{junk}"), MountRooted),
+            "{junk} deep on mount"
+        );
+    }
+    // A user folder that merely contains a junk name as a substring is NOT junk.
+    assert!(!should_exclude("/Volumes/USB/My .Trashes notes", MountRooted));
+    assert!(!should_exclude("/Volumes/USB/Spotlight-V100", MountRooted));
 }
 
 #[test]
@@ -126,30 +185,35 @@ fn canonicalization_aliases_are_skipped() {
 #[test]
 #[cfg(target_os = "linux")]
 fn should_exclude_linux_virtual_filesystems() {
-    assert!(should_exclude("/dev"));
-    assert!(should_exclude("/dev/null"));
-    assert!(should_exclude("/proc"));
-    assert!(should_exclude("/proc/1/status"));
-    assert!(should_exclude("/sys"));
-    assert!(should_exclude("/sys/class/block"));
-    assert!(should_exclude("/run"));
-    assert!(should_exclude("/run/user/1000"));
-    assert!(should_exclude("/snap"));
-    assert!(should_exclude("/mnt"));
-    assert!(should_exclude("/media"));
-    assert!(should_exclude("/boot"));
-    assert!(should_exclude("/tmp"));
+    use ExclusionScope::{BootDisk, MountRooted};
+    assert!(should_exclude("/dev", BootDisk));
+    assert!(should_exclude("/dev/null", BootDisk));
+    assert!(should_exclude("/proc", BootDisk));
+    assert!(should_exclude("/proc/1/status", BootDisk));
+    assert!(should_exclude("/sys", BootDisk));
+    assert!(should_exclude("/sys/class/block", BootDisk));
+    assert!(should_exclude("/run", BootDisk));
+    assert!(should_exclude("/run/user/1000", BootDisk));
+    assert!(should_exclude("/snap", BootDisk));
+    assert!(should_exclude("/mnt", BootDisk));
+    assert!(should_exclude("/media", BootDisk));
+    assert!(should_exclude("/boot", BootDisk));
+    assert!(should_exclude("/tmp", BootDisk));
+    // A mount-rooted scan under one of these mounts indexes its own subtree.
+    assert!(!should_exclude("/mnt/usb/data", MountRooted));
+    assert!(!should_exclude("/media/card/photos", MountRooted));
 }
 
 #[test]
 #[cfg(target_os = "linux")]
 fn should_not_exclude_linux_normal_paths() {
-    assert!(!should_exclude("/home/user"));
-    assert!(!should_exclude("/home/user/Documents"));
-    assert!(!should_exclude("/usr/local/bin"));
-    assert!(!should_exclude("/opt/app"));
-    assert!(!should_exclude("/etc/config"));
-    assert!(!should_exclude("/var/lib"));
+    use ExclusionScope::BootDisk;
+    assert!(!should_exclude("/home/user", BootDisk));
+    assert!(!should_exclude("/home/user/Documents", BootDisk));
+    assert!(!should_exclude("/usr/local/bin", BootDisk));
+    assert!(!should_exclude("/opt/app", BootDisk));
+    assert!(!should_exclude("/etc/config", BootDisk));
+    assert!(!should_exclude("/var/lib", BootDisk));
 }
 
 // E2E scan restriction is tested end-to-end by the indexing E2E tests
