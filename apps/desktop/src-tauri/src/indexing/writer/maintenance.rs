@@ -5,7 +5,51 @@
 //! background timer (and the WAL checkpoint also right after a full scan); they
 //! mutate no `entries` rows, so they don't bump the writer generation.
 
+use std::cell::Cell;
+
 use crate::pluralize::pluralize;
+
+// ── Busy-handler checkpoint suppression ──────────────────────────────
+
+thread_local! {
+    /// Set while THIS writer thread is inside [`handle_wal_checkpoint`]'s
+    /// `PRAGMA wal_checkpoint(TRUNCATE)`, which deliberately waits readers out
+    /// (to ~attempt 51, ~250 ms) before degrading to PASSIVE. The busy handler
+    /// reads it to keep that expected wait at debug instead of escalating to warn.
+    static IN_WAL_CHECKPOINT: Cell<bool> = const { Cell::new(false) };
+}
+
+/// RAII guard marking the writer thread as inside the WAL checkpoint's reader
+/// wait. Resets the flag on drop, so a panic mid-checkpoint can't leave it stuck.
+struct WalCheckpointGuard;
+
+impl WalCheckpointGuard {
+    fn enter() -> Self {
+        IN_WAL_CHECKPOINT.with(|f| f.set(true));
+        WalCheckpointGuard
+    }
+}
+
+impl Drop for WalCheckpointGuard {
+    fn drop(&mut self) {
+        IN_WAL_CHECKPOINT.with(|f| f.set(false));
+    }
+}
+
+/// Whether the writer's busy handler escalates to warn at `attempt`. Sustained
+/// contention (>= 20 attempts, ~100 ms lock wait) is a genuine stall signal —
+/// except during the WAL checkpoint's deliberate reader wait, which is working
+/// as designed and stays at debug. Pure, so the policy is unit-testable;
+/// [`busy_handler_should_warn`] supplies the live flag.
+pub(super) fn busy_handler_escalates(attempt: i32, in_checkpoint: bool) -> bool {
+    attempt >= 20 && !in_checkpoint
+}
+
+/// The live decision the writer's busy handler (in `writer/mod.rs`) calls: reads
+/// the per-thread checkpoint flag and applies [`busy_handler_escalates`].
+pub(super) fn busy_handler_should_warn(attempt: i32) -> bool {
+    busy_handler_escalates(attempt, IN_WAL_CHECKPOINT.with(|f| f.get()))
+}
 
 /// Cap thresholds for the tiered incremental-vacuum policy. Below `MIN`,
 /// holding the write lock isn't worth the work. Between `MIN` and `BACKLOG`,
@@ -50,7 +94,7 @@ pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection) {
         return;
     };
 
-    if let Err(e) = conn.execute_batch(&format!("PRAGMA incremental_vacuum({cap});")) {
+    if let Err(e) = crate::sqlite_util::run_incremental_vacuum(conn, Some(cap)) {
         log::warn!("Writer: incremental_vacuum failed: {e}");
     } else {
         log::debug!(
@@ -75,7 +119,13 @@ pub(super) fn handle_incremental_vacuum(conn: &rusqlite::Connection) {
 /// Next tick tries again. No error path needed. The short cap is deliberate: this
 /// runs on the writer thread, so a multi-second block would stall every live write
 /// queued behind it.
+///
+/// A `WalCheckpointGuard` brackets the TRUNCATE, so the busy handler stays at
+/// debug for the whole reader wait rather than escalating to warn past attempt 20
+/// — a persistent reader here is working-as-designed, not a stall. Every OTHER
+/// writer contention still warns past attempt 20.
 pub(super) fn handle_wal_checkpoint(conn: &rusqlite::Connection) {
+    let _guard = WalCheckpointGuard::enter();
     // `PRAGMA wal_checkpoint(TRUNCATE)` returns a single row with three
     // columns: (busy, log_size, checkpointed). `busy = 0` means everything
     // got checkpointed AND the file was truncated; `busy = 1` means at least
@@ -138,18 +188,89 @@ mod tests {
         assert_eq!(pick_vacuum_cap(1_000_000), Some(VACUUM_BACKLOG_CAP));
     }
 
-    /// End-to-end check: after a truncate that leaves a large freelist, the
-    /// vacuum handler actually drops `freelist_count`. Doesn't pin the exact
-    /// per-tier cap (that's covered by the policy tests above); pins the
-    /// invariant that "freelist went down".
+    /// The capped `incremental_vacuum` handler must reclaim the FULL per-tick
+    /// cap, not a single page. `PRAGMA incremental_vacuum(N)` frees one page per
+    /// `sqlite3_step()`, so a single `execute_batch` step drains one page
+    /// regardless of the cap — which stranded the freelist, draining it one page
+    /// per 30 s tick. Build a multi-thousand-page freelist with a subtree delete
+    /// (which, unlike `TruncateData`, does not self-vacuum), then assert one
+    /// `IncrementalVacuum` reclaims far more than a single page.
     #[test]
-    fn handle_incremental_vacuum_reclaims_pages_after_truncate() {
+    fn handle_incremental_vacuum_reclaims_capped_batch() {
         let (db_path, _dir) = setup_db();
         let writer = IndexWriter::spawn(&db_path, None).unwrap();
 
-        // Insert enough entries that TruncateData later creates a real
-        // freelist. Long names so each row touches its own page; 5000 rows
-        // ≥ several thousand pages = at least one band above MIN.
+        // A directory to hang the children off, then a large batch of children.
+        // Deleting the subtree frees a few thousand pages onto the freelist with
+        // no auto-drain (rows pack ~20/page, so it takes tens of thousands to
+        // clear the vacuum's 1 000-page MIN and reach the 2 000-page steady cap).
+        let dir_id = 100;
+        let mut entries: Vec<EntryRow> = vec![EntryRow {
+            id: dir_id,
+            parent_id: ROOT_ID,
+            name: "subtree".to_string(),
+            is_directory: true,
+            is_symlink: false,
+            logical_size: None,
+            physical_size: None,
+            modified_at: None,
+            inode: None,
+        }];
+        entries.extend((0..60_000).map(|i| EntryRow {
+            id: 101 + i,
+            parent_id: dir_id,
+            name: format!("test-entry-with-a-reasonably-long-name-{i:08}"),
+            is_directory: false,
+            is_symlink: false,
+            logical_size: Some(4096),
+            physical_size: Some(4096),
+            modified_at: None,
+            inode: None,
+        }));
+        writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
+        writer.send(WriteMessage::DeleteSubtreeById(dir_id)).unwrap();
+        writer.flush_blocking().unwrap();
+
+        let probe = IndexStore::open_read_connection(&db_path).unwrap();
+        let free_before: i64 = probe
+            .pragma_query_value(None, "freelist_count", |row| row.get(0))
+            .unwrap();
+        drop(probe);
+        // The freelist must comfortably exceed a single page for the reclaim
+        // assertion below to be unambiguous.
+        assert!(
+            free_before > 1_000,
+            "test setup: expected a multi-thousand-page freelist, got {free_before}"
+        );
+
+        writer.send(WriteMessage::IncrementalVacuum).unwrap();
+        writer.flush_blocking().unwrap();
+
+        let probe = IndexStore::open_read_connection(&db_path).unwrap();
+        let free_after: i64 = probe
+            .pragma_query_value(None, "freelist_count", |row| row.get(0))
+            .unwrap();
+
+        let reclaimed = free_before - free_after;
+        assert!(
+            reclaimed >= 1_000,
+            "one IncrementalVacuum must reclaim the per-tick cap, not a single page; \
+             before={free_before}, after={free_after}, reclaimed={reclaimed}"
+        );
+
+        writer.shutdown();
+    }
+
+    /// After a full `TruncateData`, the uncapped post-truncate vacuum must drain
+    /// the whole freelist (not one page), so the file returns its space instead
+    /// of stranding thousands of dead pages.
+    #[test]
+    fn truncate_drains_freelist() {
+        let (db_path, _dir) = setup_db();
+        let writer = IndexWriter::spawn(&db_path, None).unwrap();
+
+        // Long names so each row touches its own page; 5000 rows ≥ several
+        // thousand pages freed by the truncate's DELETE.
         let entries: Vec<EntryRow> = (0..5000)
             .map(|i| EntryRow {
                 id: 100 + i,
@@ -167,30 +288,16 @@ mod tests {
         writer.send(WriteMessage::TruncateData).unwrap();
         writer.flush_blocking().unwrap();
 
-        // Read the freelist via a separate connection. The post-truncate
-        // `PRAGMA incremental_vacuum;` inside the truncate handler already
-        // drained some pages, but the cap was unbounded and ran inside the
-        // same transaction; on a busy DB there can still be a meaningful
-        // residual freelist. If the post-truncate vacuum already drained
-        // everything, the subsequent IncrementalVacuum should still leave
-        // freelist_count == 0 (a no-op), which the assertion below allows.
-        let probe = IndexStore::open_read_connection(&db_path).unwrap();
-        let free_before: i64 = probe
-            .pragma_query_value(None, "freelist_count", |row| row.get(0))
-            .unwrap();
-        drop(probe);
-
-        writer.send(WriteMessage::IncrementalVacuum).unwrap();
-        writer.flush_blocking().unwrap();
-
+        // No reader pinned a snapshot during the truncate, so the uncapped drain
+        // reclaims every freed page. A residual near zero is expected; thousands
+        // would mean the vacuum only stepped once.
         let probe = IndexStore::open_read_connection(&db_path).unwrap();
         let free_after: i64 = probe
             .pragma_query_value(None, "freelist_count", |row| row.get(0))
             .unwrap();
-
         assert!(
-            free_after <= free_before,
-            "IncrementalVacuum must not grow the freelist; before={free_before}, after={free_after}"
+            free_after < 100,
+            "TruncateData's uncapped vacuum must drain the freelist; residual={free_after}"
         );
 
         writer.shutdown();

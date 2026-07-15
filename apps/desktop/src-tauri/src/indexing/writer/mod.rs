@@ -371,9 +371,12 @@ impl IndexWriter {
         let conn = IndexStore::open_write_connection(db_path)?;
         // SQLite busy retry logger. Brief contention is routine (WAL checkpoints, long-lived
         // readers), so per-attempt logging stays at debug; sustained contention (>=20 attempts
-        // = >100ms lock wait) is a genuine stall signal and logs at warn.
+        // = >100ms lock wait) is a genuine stall signal and logs at warn — EXCEPT while this
+        // thread is inside `handle_wal_checkpoint`, whose TRUNCATE deliberately waits out
+        // readers to ~attempt 51. `busy_handler_should_warn` applies that policy (it reads the
+        // maintenance-owned checkpoint flag).
         conn.busy_handler(Some(|attempt: i32| {
-            if attempt >= 20 {
+            if maintenance::busy_handler_should_warn(attempt) {
                 log::warn!(target: "stall_probe::sqlite_busy", "writer busy_handler attempt={attempt}");
             } else {
                 log::debug!(target: "stall_probe::sqlite_busy", "writer busy_handler attempt={attempt}");

@@ -573,3 +573,23 @@ fn try_send_with_depth_undoes_bump_on_full() {
         "a dropped (full) send must leave depth unchanged — bump undone"
     );
 }
+
+// ── Busy-handler escalation policy ───────────────────────────────────
+
+/// The busy handler escalates to warn only for sustained contention (attempt
+/// >= 20) AND only outside the WAL checkpoint's deliberate reader wait. Inside
+/// > the checkpoint the wait is working-as-designed, so it stays at debug — this
+/// > is what stops the ~32 warn lines per checkpoint that met a persistent reader.
+#[test]
+fn busy_handler_escalates_only_for_unexpected_sustained_contention() {
+    use super::maintenance::busy_handler_escalates;
+    // Outside a checkpoint: quiet below 20, warns at/above.
+    assert!(!busy_handler_escalates(0, false));
+    assert!(!busy_handler_escalates(19, false));
+    assert!(busy_handler_escalates(20, false));
+    assert!(busy_handler_escalates(51, false));
+    // Inside the checkpoint's reader wait: never escalate, even past attempt 20.
+    assert!(!busy_handler_escalates(0, true));
+    assert!(!busy_handler_escalates(20, true));
+    assert!(!busy_handler_escalates(51, true));
+}

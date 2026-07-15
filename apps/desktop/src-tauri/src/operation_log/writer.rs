@@ -726,7 +726,7 @@ fn live_size_bytes(conn: &Connection) -> Result<u64, OperationLogStoreError> {
 /// the point, not a stall to avoid.
 fn reclaim_fully(conn: &Connection) {
     // No cap: reclaim every free page in one pass.
-    if let Err(e) = conn.execute_batch("PRAGMA incremental_vacuum;") {
+    if let Err(e) = crate::sqlite_util::run_incremental_vacuum(conn, None) {
         log::warn!(target: "operation_log", "incremental_vacuum failed: {e}");
     }
     // TRUNCATE so the vacuum's page-count reduction reaches the on-disk file (in
@@ -769,7 +769,7 @@ fn run_bounded_vacuum(conn: &Connection) {
     let Some(cap) = pick_vacuum_cap(free) else {
         return;
     };
-    if let Err(e) = conn.execute_batch(&format!("PRAGMA incremental_vacuum({cap});")) {
+    if let Err(e) = crate::sqlite_util::run_incremental_vacuum(conn, Some(cap)) {
         log::warn!(target: "operation_log", "incremental_vacuum failed: {e}");
     }
 }

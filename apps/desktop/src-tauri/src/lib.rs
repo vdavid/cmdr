@@ -146,6 +146,7 @@ pub mod selection;
 mod settings;
 mod short_id;
 mod space_poller;
+mod sqlite_util;
 mod system_events;
 mod system_memory;
 mod system_strings;
