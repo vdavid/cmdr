@@ -513,8 +513,9 @@ mod tests {
 
         // A LocalExternal drive with a live index is ejected: the index MUST be
         // stopped (its FSEvents watcher + SQLite handles released) BEFORE the unmount
-        // runs — the wedge-safe ordering. Red before M6: the eject path never touched
-        // indexing, so a live index survived into the unmount. This drives the REAL
+        // runs — the wedge-safe ordering. Pre-fix this would have passed wrongly: the
+        // eject path never touched indexing, so a live index survived into the unmount.
+        // This drives the REAL
         // `stop_indexing` through the ordering seam with a fake unmount that records
         // whether the index was still active when it ran.
         let vid = "volumes-cmdr-test-eject-stop-order";

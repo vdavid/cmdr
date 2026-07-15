@@ -547,9 +547,9 @@ mod tests {
         use crate::indexing;
 
         // A LocalExternal drive whose volume unmounts: the cleanup must stop the
-        // index so its dangling FSEvents watcher + SQLite handles are released. Red
-        // before M6: the unmount path never touched indexing, so the instance
-        // survived (a leaked watcher/handles on a gone volume).
+        // index so its dangling FSEvents watcher + SQLite handles are released.
+        // Pre-fix this would have passed wrongly: the unmount path never touched
+        // indexing, so the instance survived (a leaked watcher/handles on a gone volume).
         let vid = "volumes-cmdr-test-unmount-cleanup";
         let _tmp = indexing::reserve_initializing_index_for_test(vid, indexing::IndexVolumeKind::LocalExternal);
         assert!(indexing::is_active(vid), "precondition: the index is active");
