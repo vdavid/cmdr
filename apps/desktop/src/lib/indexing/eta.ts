@@ -40,6 +40,22 @@ export function computeElapsedEta(elapsedSeconds: number, done: number, remainin
 }
 
 /**
+ * The processing rate (items per second) from a sliding window of recent progress
+ * snapshots, or `null` when it can't be computed (fewer than two samples, a zero-width
+ * window, or a non-positive rate). The building block of {@link computeWindowEta},
+ * exposed so a row can show a live "N images/min" rate off the same window.
+ */
+export function computeWindowRate(snapshots: EtaSnapshot[]): number | null {
+  if (snapshots.length < 2) return null
+  const oldest = snapshots[0]
+  const newest = snapshots[snapshots.length - 1]
+  const windowElapsed = (newest.timestamp - oldest.timestamp) / 1000
+  if (windowElapsed <= 0) return null
+  const windowRate = (newest.eventsProcessed - oldest.eventsProcessed) / windowElapsed
+  return windowRate > 0 ? windowRate : null
+}
+
+/**
  * Estimate seconds remaining from a sliding window of recent progress snapshots.
  *
  * Needs at least two samples to derive a rate. Returns `null` when the rate can't be
@@ -47,13 +63,8 @@ export function computeElapsedEta(elapsedSeconds: number, done: number, remainin
  * extrapolation alone — which is wildly wrong at the start — doesn't dominate.
  */
 export function computeWindowEta(snapshots: EtaSnapshot[], remaining: number): number | null {
-  if (snapshots.length < 2) return null
-  const oldest = snapshots[0]
-  const newest = snapshots[snapshots.length - 1]
-  const windowElapsed = (newest.timestamp - oldest.timestamp) / 1000
-  if (windowElapsed <= 0) return null
-  const windowRate = (newest.eventsProcessed - oldest.eventsProcessed) / windowElapsed
-  return windowRate > 0 ? remaining / windowRate : null
+  const rate = computeWindowRate(snapshots)
+  return rate != null ? remaining / rate : null
 }
 
 /** Blend two ETA estimates 50-50, falling back to whichever one is available. */

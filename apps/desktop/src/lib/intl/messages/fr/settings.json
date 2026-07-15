@@ -1999,5 +1999,17 @@
   "settings.applier.logStorageRestart": "Redémarrez Cmdr pour appliquer le changement de stockage des journaux.",
   "@settings.applier.logStorageRestart": {
     "sourceHash": "b833dee"
+  },
+  "settings.mediaIndex.progress.coveredOfTotal": "{total, plural, one {{enrichedText} image indexée sur {totalText} dans vos dossiers couverts} other {{enrichedText} images indexées sur {totalText} dans vos dossiers couverts} many {{enrichedText} images indexées sur {totalText} dans vos dossiers couverts}}",
+  "@settings.mediaIndex.progress.coveredOfTotal": {
+    "sourceHash": "73d547e"
+  },
+  "settings.mediaIndex.progress.coveredDone": "{total, plural, one {{totalText} image indexée dans vos dossiers couverts} other {{totalText} images indexées dans vos dossiers couverts} many {{totalText} images indexées dans vos dossiers couverts}}",
+  "@settings.mediaIndex.progress.coveredDone": {
+    "sourceHash": "98e10c0"
+  },
+  "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} image de plus indexée depuis un réglage plus large, toujours consultable} other {{keptText} images de plus indexées depuis un réglage plus large, toujours consultables} many {{keptText} images de plus indexées depuis un réglage plus large, toujours consultables}}",
+  "@settings.mediaIndex.progress.kept": {
+    "sourceHash": "24bf4ee"
   }
 }

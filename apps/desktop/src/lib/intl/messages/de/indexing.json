@@ -172,5 +172,39 @@
   "indexing.staleDialog.close": "Schließen",
   "@indexing.staleDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "indexing.enrich.label": "Bildindizierung",
+  "@indexing.enrich.label": {
+    "sourceHash": "442068b"
+  },
+  "indexing.enrich.progress": "{done, plural, one {{doneText} von {totalText} Bild} other {{doneText} von {totalText} Bildern}}",
+  "@indexing.enrich.progress": {
+    "sourceHash": "b307416"
+  },
+  "indexing.enrich.rate": "{rateText}/min",
+  "@indexing.enrich.rate": {
+    "sourceHash": "255f3b4",
+    "sameAsSourceJustification": "SI-Symbol für Minute; in dieser kompakten Rate-Einheit sprachübergreifend identisch (auch DE schreibt \"/min\")."
+  },
+  "indexing.enrich.rateEta": "{rate} · {eta}",
+  "@indexing.enrich.rateEta": {
+    "sourceHash": "ac6a373",
+    "sameAsSourceJustification": "Reiner Platzhalter-String; der Mittelpunkt als Trenner ist in jeder Sprache identisch."
+  },
+  "indexing.enrich.pausedIdle": "Wartet, bis du nicht mehr beschäftigt bist",
+  "@indexing.enrich.pausedIdle": {
+    "sourceHash": "d63ee91"
+  },
+  "indexing.enrich.pausedDisconnected": "Angehalten, wird bei erneuter Verbindung fortgesetzt",
+  "@indexing.enrich.pausedDisconnected": {
+    "sourceHash": "1483989"
+  },
+  "indexing.enrich.imagesBarLabel": "Indizierte Bilder",
+  "@indexing.enrich.imagesBarLabel": {
+    "sourceHash": "f4b2ca5"
+  },
+  "indexing.enrich.bytesBarLabel": "Verarbeitete Bilddaten",
+  "@indexing.enrich.bytesBarLabel": {
+    "sourceHash": "58952a9"
   }
 }

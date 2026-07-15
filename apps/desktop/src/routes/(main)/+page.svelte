@@ -29,7 +29,12 @@
     import IndexingStatusIndicator from '$lib/indexing/IndexingStatusIndicator.svelte'
     import StaleDriveDialog from '$lib/indexing/StaleDriveDialog.svelte'
     import { initPathLimits } from '$lib/utils/filename-validation'
-    import { initIndexState, destroyIndexState } from '$lib/indexing/index'
+    import {
+        initIndexState,
+        destroyIndexState,
+        initMediaEnrichState,
+        destroyMediaEnrichState,
+    } from '$lib/indexing/index'
     import { initShortcutDispatch, destroyShortcutDispatch, lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
     import { markDispatchSource } from './dispatch-dedup'
     import { navCommandForMouseButton } from './mouse-nav'
@@ -513,6 +518,9 @@
             isAiEnabled: () => getSetting('ai.provider') !== 'off',
         })
         await initIndexState()
+        // Image-enrichment progress joins the same top-right indicator (plan M5), a
+        // second publisher; listen-first-then-query, like initIndexState.
+        await initMediaEnrichState()
         await setupWindowFocusListener(listenerSetupCtx)
         // Native Quick Look (macOS) event wiring: `quick-look-closed` flips
         // `isOpen` on the state singleton; `quick-look-key` routes panel
@@ -546,6 +554,7 @@
     onDestroy(() => {
         destroyShortcutDispatch()
         destroyIndexState()
+        destroyMediaEnrichState()
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)
         }

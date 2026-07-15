@@ -573,6 +573,49 @@ the three the slider's forward-only contract allows.
   the space-vs-reindex tradeoff — one narrative, composing with M5's kept-rows line, never two sentences in tension. A
   confirm dialog (recoverable, but re-reading costs time) precedes the prune; an honest toast reports the freed space.
 
+### Progress events + vanished-file skip (M5)
+
+A pass joins the top-right indexing indicator as a second publisher (the FE side is `lib/indexing/DETAILS.md` §
+Image-enrichment publisher). `events.rs` defines two typed Tauri events + the emission machinery:
+
+- **`MediaEnrichProgressEvent`** (`media-enrich-progress`): throttled progress. `total` / `bytes_total` are the
+  ENRICHABLE-subset denominators (`enrichable_totals` / `network_enrichable_totals` = images passing `should_enrich` AND
+  not `is_excluded`), NEVER the full walked set — a raw `images.len()` denominator rebuilds the never-finishes bug inside
+  the indicator. `done` counts every subset image the pass finishes handling (enriched, already-current, or a quiet
+  skip), so it reaches `total` on completion. Bytes ride `ImageEntry.size` (`Option`, `None` counts 0 — under-count,
+  never lie). The pure `should_emit_progress` throttle (`progress.rs`) fires at pass start, then ≤ every 500 ms or 100
+  images. Emission is a cheap counter + time check per image; the `EnrichProgressSink` seam keeps the registry-free
+  cores testable (a recorder in tests, the throttled `TauriEnrichEmitter` in production).
+- **`MediaEnrichTerminalEvent`** (`media-enrich-terminal`): exactly one per pass on EVERY exit path. The
+  `EnrichTerminalGuard` (RAII, `events.rs`) guarantees it: it defaults to `Failed` and emits on `Drop`, so a `?`-error
+  bubble (a writer-send failure) still reports a terminal; `run_pass_blocking` / `run_network_pass_blocking` override the
+  reason (`Completed { enriched, gc_count }` / `Cancelled` / the two `Paused*`) before a clean exit. Without a terminal
+  on every path the FE row sticks at "enriching" (the `index-scan-aborted` stuck-row bug). The local pass distinguishes
+  cancel from completion via `PassSummary.cancelled`; the network pass maps its `NetworkPassOutcome`.
+
+The scheduler holds an `Option<AppHandle>` (set in `start` via `new_with_app`, `None` in unit tests via `new`), so a
+pass emits nothing under test. `pass_emitters` builds the sink + guard (both no-ops when the app is absent).
+
+**Vanished / phantom files are DEBUG, never WARN.** A file deleted between the index walk and its analyze, or an
+orphaned index row whose reconstructed path can never read, surfaces at analyze as a typed `VisionError::Missing` (the
+real backend classifies the local `std::fs::read` ENOENT by io kind, never a message match; the fake scripts it via
+`missing_for`). The local core skips it QUIETLY (DEBUG), writes NO row (not `Failed` — the file is gone, so a later
+completed pass's GC collects any stale row), and counts it as processed so `done` still reaches `total`. The network
+core already handles a vanished source via `FetchError::NotFound` (same quiet skip). The too-small-image skip (M3) is a
+sibling quiet case: it writes an empty `Done` row instead. Pinned by
+`enrich_tests::a_vanished_image_still_completes_the_pass_at_done_equals_total` and
+`enrichable_totals_excludes_deferred_and_excluded_images`.
+
+### Threshold-aware volume state (M5)
+
+`media_index_volume_state` gained `covered_qualifying_count` + `kept_count`, from `MediaScheduler::stored_coverage_counts`
+— a counts-only sibling of the M4 `stored_coverage` that does NOT allocate the doomed-path `Vec` (the settings poll runs
+it every few seconds). Both share the ONE canonical survival rule (`coverage::stored_row_survives`) and the `coverage`
+cache, so they can never disagree with the reclaim preview. `covered_qualifying_count` drives the settings progress line
+"N of M in your covered folders" (N = `enriched_count − kept_count`, capped); `kept_count` (= the M4 doomed count) drives
+the quiet "K more indexed from broader settings, still searchable" line, gated by the SAME `shouldOfferReclaim` floor so
+it never duplicates the reclaim offer. Both `None` when importance hasn't scored the volume.
+
 ### Read API + commands (tags, similarity, coverage)
 
 `MediaIndex` gained `find_similar(source_path, k)` (source embedding → `top_k` over the resident cache, source

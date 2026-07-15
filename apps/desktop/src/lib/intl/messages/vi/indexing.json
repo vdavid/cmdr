@@ -173,5 +173,38 @@
   "indexing.staleDialog.close": "Đóng",
   "@indexing.staleDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "indexing.enrich.label": "Lập chỉ mục hình ảnh",
+  "@indexing.enrich.label": {
+    "sourceHash": "442068b"
+  },
+  "indexing.enrich.progress": "{done, plural, other {{doneText} trên {totalText} ảnh}}",
+  "@indexing.enrich.progress": {
+    "sourceHash": "b307416"
+  },
+  "indexing.enrich.rate": "{rateText}/phút",
+  "@indexing.enrich.rate": {
+    "sourceHash": "255f3b4"
+  },
+  "indexing.enrich.rateEta": "{rate} · {eta}",
+  "@indexing.enrich.rateEta": {
+    "sourceHash": "ac6a373",
+    "sameAsSourceJustification": "Chuỗi chỉ gồm phần giữ chỗ; dấu chấm giữa dòng là dấu phân cách, giống nhau ở mọi ngôn ngữ."
+  },
+  "indexing.enrich.pausedIdle": "Đang chờ đến khi bạn rảnh",
+  "@indexing.enrich.pausedIdle": {
+    "sourceHash": "d63ee91"
+  },
+  "indexing.enrich.pausedDisconnected": "Đã tạm dừng, sẽ tiếp tục khi kết nối lại",
+  "@indexing.enrich.pausedDisconnected": {
+    "sourceHash": "1483989"
+  },
+  "indexing.enrich.imagesBarLabel": "Ảnh đã lập chỉ mục",
+  "@indexing.enrich.imagesBarLabel": {
+    "sourceHash": "f4b2ca5"
+  },
+  "indexing.enrich.bytesBarLabel": "Dữ liệu ảnh đã xử lý",
+  "@indexing.enrich.bytesBarLabel": {
+    "sourceHash": "58952a9"
   }
 }

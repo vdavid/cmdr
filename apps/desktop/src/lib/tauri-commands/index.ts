@@ -643,8 +643,20 @@ export {
   mediaIndexReclaimPreview,
   mediaIndexPruneBelowThreshold,
   mediaIndexFindSimilar,
+  onMediaEnrichProgress,
+  onMediaEnrichTerminal,
 } from './media-index'
-export type { CoveredCount, MediaIndexVolumeState, OcrHit, ReclaimPreview, ReclaimResult, SimilarImage } from './media-index'
+export type {
+  CoveredCount,
+  MediaEnrichProgressEvent,
+  MediaEnrichTerminalEvent,
+  MediaEnrichTerminalReason,
+  MediaIndexVolumeState,
+  OcrHit,
+  ReclaimPreview,
+  ReclaimResult,
+  SimilarImage,
+} from './media-index'
 
 // Drive-indexing event listeners
 export {

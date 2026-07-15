@@ -40,7 +40,12 @@ fake for tests.
   watchdog, so don't add a second.
 - **A disconnect is NOT a bad file.** A mid-pass SMB unmount PAUSES (keeps rows, no GC, no `Failed`).
 - **`search/` reaches `media.db` ONLY through `MediaIndex`.** Commands register in BOTH `ipc.rs` + `ipc_collectors.rs`
-  (`pnpm bindings:regen`).
+  (`pnpm bindings:regen`); events (`events.rs`) register in `ipc.rs`'s `collect_events!` only.
+- **A pass publishes progress to the top-right indicator** (`events.rs`, plan M5): throttled `media-enrich-progress` over
+  the ENRICHABLE subset (never `images.len()`) + one `media-enrich-terminal` on EVERY exit path (a `Drop`-guard emits
+  `Failed` on an error bubble). A VANISHED source (typed `VisionError::Missing`, ENOENT at analyze) is skipped quietly
+  (DEBUG, no row) and counts as processed. `run_pass_blocking` needs the `AppHandle` (`None` in unit tests ⇒ no emit).
+  D.md § Progress events.
 
 Still open: per-FOLDER always-index trigger (setter ready; the exclude trigger shipped as a folder context-menu item),
 MTP on-demand, CLIP/faces/captions.

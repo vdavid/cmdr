@@ -39,6 +39,19 @@ pub struct StoredCoverage {
     pub doomed_paths: Vec<String>,
 }
 
+/// The counts-only stored-coverage split (no `doomed_paths` allocation): what the M5
+/// per-volume state poll needs. Same three quantities as [`StoredCoverage`], shared
+/// through the one canonical survival rule.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct StoredCoverageCounts {
+    /// Stored rows INSIDE current coverage.
+    pub surviving_stored: u64,
+    /// Stored rows OUTSIDE current coverage (M5's `keptCount`).
+    pub doomed_stored: u64,
+    /// Drive-index qualifying images in covered folders (the slider-preview number).
+    pub covered_qualifying: u64,
+}
+
 /// What a reclaim prune did: the rows deleted and the freed-byte estimate.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct PruneOutcome {
@@ -95,6 +108,55 @@ impl MediaScheduler {
             doomed_stored: partition.doomed.len() as u64,
             covered_qualifying,
             doomed_paths: partition.doomed,
+        })
+    }
+
+    /// The counts-only stored-coverage split for `volume_id` at `threshold` (plan M5):
+    /// `surviving_stored` / `doomed_stored` (= `keptCount`) / `covered_qualifying`,
+    /// WITHOUT allocating the doomed-path list. The M5 `media_index_volume_state` poll
+    /// calls this every few seconds while the settings panel is open, so it avoids the
+    /// 200k-path `Vec` [`stored_coverage`](Self::stored_coverage) builds for a prune. It
+    /// reuses the ONE canonical survival rule ([`coverage::stored_row_survives`]) and the
+    /// [`coverage`] cache, so its numbers can never disagree with the reclaim preview.
+    /// `None` when importance hasn't scored the volume (the partition isn't safe yet).
+    pub fn stored_coverage_counts(
+        &self,
+        volume_id: &str,
+        mount_root: &str,
+        threshold: f64,
+    ) -> Option<StoredCoverageCounts> {
+        let scores = coverage::importance_scores(&self.data_dir, volume_id)?;
+
+        let db_path = store::media_db_path(&self.data_dir, volume_id);
+        let stored: Vec<String> = store::open_read_connection(&db_path)
+            .ok()
+            .and_then(|conn| store::read_status_paths(&conn).ok())
+            .unwrap_or_default();
+
+        let config = network::config::snapshot();
+        let mount_root = mount_root.to_string();
+        let is_override =
+            |index_path: &str| config.covers(volume_id, &network::fetch::os_join(&mount_root, index_path));
+        let is_excluded = |index_path: &str| config.is_excluded(&network::fetch::os_join(&mount_root, index_path));
+
+        let mut surviving_stored = 0u64;
+        let mut doomed_stored = 0u64;
+        for path in &stored {
+            if coverage::stored_row_survives(path, &scores, threshold, &is_override, &is_excluded) {
+                surviving_stored += 1;
+            } else {
+                doomed_stored += 1;
+            }
+        }
+
+        let covered_qualifying = coverage::get_or_build(volume_id)
+            .map(|counts| coverage::covered_for_volume(&counts, &scores, threshold).1)
+            .unwrap_or(0);
+
+        Some(StoredCoverageCounts {
+            surviving_stored,
+            doomed_stored,
+            covered_qualifying,
         })
     }
 

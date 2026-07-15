@@ -67,6 +67,7 @@ use crate::indexing::{
     IndexScanAbortedEvent, IndexScanCompleteEvent, IndexScanProgressEvent, IndexScanStartedEvent,
 };
 use crate::ipc_collectors::collect_all_types;
+use crate::media_index::events::{MediaEnrichProgressEvent, MediaEnrichTerminalEvent};
 use crate::mtp::{
     MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,
     MtpPtpcameradSuppressed, MtpStorageRemoved, MtpTransferProgress,
@@ -756,6 +757,10 @@ pub fn builder() -> Builder<tauri::Wry> {
             IndexMemoryWarningEvent,       // event_name = "index-memory-warning"
             IndexFreshnessChangedEvent,    // event_name = "index-freshness-changed"
             SearchIndexReadyEvent,         // event_name = "search-index-ready"
+            // Image enrichment progress (media_index/events.rs, plan M5): image
+            // indexing joins the top-right indicator as a second publisher.
+            MediaEnrichProgressEvent, // event_name = "media-enrich-progress"
+            MediaEnrichTerminalEvent, // event_name = "media-enrich-terminal"
             // MTP device events (mtp/connection/, mtp/watcher.rs). Struct names
             // kebab-case directly to the wire names, so no `event_name` override.
             MtpDeviceConnected,

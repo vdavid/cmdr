@@ -37,6 +37,7 @@
     } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
     import { shouldRepollPreview } from './media-index-preview-poll'
+    import { shouldOfferReclaim } from './media-index-reclaim'
     import MediaIndexReclaim from './MediaIndexReclaim.svelte'
 
     const log = getAppLogger('media-index')
@@ -186,11 +187,32 @@
         return covered.images - baselineImages
     })
 
-    // Progress line for the local disk. `qualifyingCount === null` → still counting; equal to
-    // enriched → done; otherwise "N of M".
+    // Progress line for the local disk, threshold-aware (plan M5): "N of M in your
+    // covered folders", where M is `coveredQualifyingCount` (the folders the current
+    // slider setting includes) and N is the indexed rows INSIDE that coverage
+    // (`enrichedCount - keptCount`). It can honestly reach done at any slider position,
+    // unlike the whole-drive total. When importance hasn't scored the volume yet
+    // (`coveredQualifyingCount === null`), fall back to the whole-drive count.
     const localProgress = $derived.by(() => {
         const s = localState
         if (!s || !s.enabled) return null
+        if (s.coveredQualifyingCount != null) {
+            const covered = s.coveredQualifyingCount
+            if (covered === 0) return null
+            const indexed = Math.max(0, Math.min(covered, s.enrichedCount - (s.keptCount ?? 0)))
+            if (indexed >= covered) {
+                return tString('settings.mediaIndex.progress.coveredDone', {
+                    total: covered,
+                    totalText: formatInteger(covered),
+                })
+            }
+            return tString('settings.mediaIndex.progress.coveredOfTotal', {
+                total: covered,
+                enrichedText: formatInteger(indexed),
+                totalText: formatInteger(covered),
+            })
+        }
+        // Not scored yet: the whole-drive count (or "counting" before the index is ready).
         if (s.qualifyingCount === null) {
             return s.enrichedCount > 0 ? null : tString('settings.mediaIndex.progress.counting')
         }
@@ -205,6 +227,22 @@
             total: s.qualifyingCount,
             enrichedText: formatInteger(s.enrichedCount),
             totalText: formatInteger(s.qualifyingCount),
+        })
+    })
+
+    // The quiet kept-rows line (plan M5): images indexed under a BROADER past setting,
+    // kept searchable (the slider is forward-only). Shown only when the fuller reclaim
+    // line ISN'T offered, so the two never duplicate — they're ONE narrative (the kept
+    // line frames the value; the reclaim line adds the delete-to-free tradeoff). Keys on
+    // the SAME `shouldOfferReclaim` floor the reclaim component uses, over the same
+    // single-source counts (`enrichedCount` = total stored, `keptCount` = doomed).
+    const keptLine = $derived.by(() => {
+        const s = localState
+        if (!s || !s.enabled || s.keptCount == null || s.keptCount === 0) return null
+        if (shouldOfferReclaim(s.enrichedCount, s.keptCount)) return null
+        return tString('settings.mediaIndex.progress.kept', {
+            kept: s.keptCount,
+            keptText: formatInteger(s.keptCount),
         })
     })
 
@@ -299,6 +337,10 @@
             <span class="mi-progress-name">{tString('settings.mediaIndex.progress.local')}</span>
             <span class="mi-progress-line">{localProgress}</span>
         </div>
+    {/if}
+
+    {#if keptLine}
+        <p class="mi-kept">{keptLine}</p>
     {/if}
 
     <!-- Reclaim space: lowering the slider never deletes rows, so a drive indexed at a
@@ -450,6 +492,15 @@
     .mi-progress-line {
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);
+    }
+
+    /* The quiet kept-rows line: still-searchable images from a broader past setting.
+       Tertiary + small so it reads as a reassuring aside, not a call to action. */
+    .mi-kept {
+        margin: var(--spacing-xxs) 0 0;
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-sm);
+        line-height: 1.4;
     }
 
     /* Honor reduced-motion: drop the range-fill transition (WKWebView reflects this media

@@ -60,6 +60,10 @@ function vstate(overrides: Partial<MediaIndexVolumeState> = {}): MediaIndexVolum
     alwaysIndexed: false,
     paused: false,
     waitingForImportance: false,
+    // Default to the un-scored fallback (whole-drive count path); the covered/kept tests
+    // below opt into the threshold-aware split explicitly.
+    coveredQualifyingCount: null,
+    keptCount: null,
     ...overrides,
   }
 }
@@ -128,6 +132,31 @@ describe('MediaIndexImportanceSlider', () => {
     const target = await mountAndSettle()
     const preview = target.querySelector('.mi-preview')?.textContent ?? ''
     expect(preview.toLowerCase()).toContain('nothing')
+  })
+
+  it('shows the threshold-aware covered progress and the quiet kept-rows line (plan M5)', async () => {
+    // 1,000 stored, 50 outside coverage (kept), 900 qualifying in covered folders ⇒
+    // 950 indexed inside coverage caps to the 900 covered total (done), and the 50 kept
+    // rows show as a quiet still-searchable line (below the reclaim-offer floor).
+    volumeState.mockResolvedValue(
+      vstate({ enrichedCount: 1000, keptCount: 50, coveredQualifyingCount: 900, qualifyingCount: 2000 }),
+    )
+    const target = await mountAndSettle()
+    const line = target.querySelector('.mi-progress-line')?.textContent ?? ''
+    expect(line).toContain('900')
+    expect(line.toLowerCase()).toContain('covered')
+    const kept = target.querySelector('.mi-kept')?.textContent ?? ''
+    expect(kept).toContain('50')
+    expect(kept.toLowerCase()).toContain('searchable')
+    await expectNoA11yViolations(target)
+  })
+
+  it('hides the kept line when the fuller reclaim offer would show instead (one narrative)', async () => {
+    // 50,000 kept of 100,000 stored ⇒ over the reclaim floor ⇒ the reclaim component owns
+    // the narrative, so the quiet kept line stays hidden (never two sentences in tension).
+    volumeState.mockResolvedValue(vstate({ enrichedCount: 100_000, keptCount: 50_000, coveredQualifyingCount: 60_000 }))
+    const target = await mountAndSettle()
+    expect(target.querySelector('.mi-kept')).toBeNull()
   })
 
   it('shows a done line once every qualifying image is indexed', async () => {

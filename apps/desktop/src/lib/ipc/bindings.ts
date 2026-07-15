@@ -3074,6 +3074,8 @@ export const events = {
   listingReadComplete: makeEvent<ListingReadCompleteEvent>('listing-read-complete'),
   lowDiskSpace: makeEvent<LowDiskSpacePayload>('low-disk-space'),
   mcpSettingsClose: makeEvent<McpSettingsClose>('mcp-settings-close'),
+  mediaEnrichProgress: makeEvent<MediaEnrichProgressEvent>('media-enrich-progress'),
+  mediaEnrichTerminal: makeEvent<MediaEnrichTerminalEvent>('media-enrich-terminal'),
   mediaIndexFolderExclusion: makeEvent<MediaIndexFolderExclusion>('media-index-folder-exclusion'),
   menuSort: makeEvent<MenuSort>('menu-sort'),
   mtpDeviceConnected: makeEvent<MtpDeviceConnected>('mtp-device-connected'),
@@ -5071,6 +5073,50 @@ export type MediaDimensions = {
 }
 
 /**
+ *  Throttled progress for one volume's enrichment pass. `total` / `bytes_total` are the
+ *  ENRICHABLE-subset denominators (images passing the coverage gates), NEVER the full
+ *  walked set — a raw walked-set denominator rebuilds the never-finishes bug inside the
+ *  indicator (plan M5). Wire name pinned (the `…Event` suffix wouldn't kebab-case to it).
+ */
+export type MediaEnrichProgressEvent = {
+  volumeId: string
+  // Subset images processed so far (enriched, already-current, or quietly skipped).
+  done: number
+  // Total images in the enrichable subset (the honest denominator).
+  total: number
+  // Bytes processed so far.
+  bytesDone: number
+  // Total bytes across the enrichable subset.
+  bytesTotal: number
+}
+
+/**
+ *  A pass ended. EVERY pass exit emits exactly one (see the module docs), so the
+ *  indicator row never sticks at "enriching". Wire name pinned.
+ */
+export type MediaEnrichTerminalEvent = {
+  volumeId: string
+  reason: MediaEnrichTerminalReason
+}
+
+/**
+ *  Why a volume's enrichment pass ended. A typed discriminant, never a string
+ *  (`no-string-matching`): the frontend clears the indicator row on `Completed` /
+ *  `Cancelled` / `Failed` and re-voices it paused on the two pause reasons.
+ */
+export type MediaEnrichTerminalReason =
+  // The pass enriched every eligible image and GC'd vanished rows.
+  | { kind: 'completed'; enriched: number; gcCount: number }
+  // A network pass paused because the app is in use (resumes when idle again).
+  | { kind: 'pausedWaitingForIdle' }
+  // A network pass paused because the volume disconnected (resumes on reconnect).
+  | { kind: 'pausedDisconnected' }
+  // The memory watchdog stopped the pass (resumes on the next scan / re-enable).
+  | { kind: 'cancelled' }
+  // The pass bubbled an error (e.g. a writer-send failure). The row must still clear.
+  | { kind: 'failed' }
+
+/**
  *  `media-index-folder-exclusion`: a folder's "Don't index images in this folder" /
  *  "Index images here again" context-menu item was clicked. Carries the right-clicked
  *  folder's absolute path and the target state. The FE listens and drives its persist +
@@ -5144,6 +5190,23 @@ export type MediaIndexVolumeState = {
    *  (plan M1: the residual risk must be VISIBLE, never silent).
    */
   waitingForImportance: boolean
+  /**
+   *  How many drive-index qualifying images fall in the folders COVERED at the
+   *  current slider threshold — the honest denominator for the settings progress line
+   *  "N of M in your covered folders", which can reach done at any slider position
+   *  (unlike `qualifying_count`, the full volume total). `None` when importance hasn't
+   *  scored the volume yet (the same `stored_coverage` single source as M4's reclaim
+   *  numbers, so they never disagree; plan M5).
+   */
+  coveredQualifyingCount: number | null
+  /**
+   *  How many STORED rows fall OUTSIDE current coverage — indexed under a broader past
+   *  setting and kept searchable (the slider is forward-only). Drives the quiet
+   *  kept-rows line "K more indexed from broader settings — still searchable", which
+   *  composes with M4's reclaim line as one narrative. `None` when importance is
+   *  unscored (plan M5).
+   */
+  keptCount: number | null
 }
 
 /**

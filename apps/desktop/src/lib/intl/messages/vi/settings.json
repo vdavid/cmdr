@@ -1986,5 +1986,17 @@
   "settings.applier.logStorageRestart": "Khởi động lại Cmdr để áp dụng thay đổi lưu trữ nhật ký.",
   "@settings.applier.logStorageRestart": {
     "sourceHash": "b833dee"
+  },
+  "settings.mediaIndex.progress.coveredOfTotal": "{total, plural, other {Đã lập chỉ mục {enrichedText} trên {totalText} ảnh trong các thư mục được bao phủ}}",
+  "@settings.mediaIndex.progress.coveredOfTotal": {
+    "sourceHash": "73d547e"
+  },
+  "settings.mediaIndex.progress.coveredDone": "{total, plural, other {Đã lập chỉ mục {totalText} ảnh trong các thư mục được bao phủ}}",
+  "@settings.mediaIndex.progress.coveredDone": {
+    "sourceHash": "98e10c0"
+  },
+  "settings.mediaIndex.progress.kept": "{kept, plural, other {Đã lập chỉ mục thêm {keptText} ảnh từ thiết lập rộng hơn, vẫn có thể tìm kiếm}}",
+  "@settings.mediaIndex.progress.kept": {
+    "sourceHash": "24bf4ee"
   }
 }

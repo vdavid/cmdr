@@ -14,10 +14,12 @@
 pub mod backend;
 pub mod commands;
 pub mod coverage;
+pub mod events;
 pub mod foreground;
 pub mod gate;
 pub mod network;
 pub mod predicate;
+pub(crate) mod progress;
 pub mod read;
 pub mod scheduler;
 pub mod store;

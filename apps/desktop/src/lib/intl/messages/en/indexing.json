@@ -259,5 +259,59 @@
   "indexing.staleDialog.close": "Close",
   "@indexing.staleDialog.close": {
     "description": "Button in the one-time stale-drive dialog that dismisses it without changing the notification setting."
+  },
+
+  "indexing.enrich.label": "Image indexing",
+  "@indexing.enrich.label": {
+    "description": "Row title in the top-right indexing tooltip for image content-indexing (Cmdr reading images so they can be searched by what's in them), shown above the progress bar. Sits alongside the drive-indexing rows. Sentence case, terse.",
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.enrich.progress": "{done, plural, one {{doneText} of {totalText} image} other {{doneText} of {totalText} images}}",
+  "@indexing.enrich.progress": {
+    "description": "Running count under the Image-indexing row, e.g. '1,200 of 5,000 images'. {doneText}/{totalText} are already-formatted numbers; {done} drives the plural. No trailing words (a separate rate/ETA line follows).",
+    "placeholders": {
+      "done": "raw count done, drives plural",
+      "doneText": "images processed so far, formatted (e.g. 1,200)",
+      "total": "raw total",
+      "totalText": "total images to index, formatted (e.g. 5,000)"
+    },
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.enrich.rate": "{rateText}/min",
+  "@indexing.enrich.rate": {
+    "description": "Processing speed shown beside the Image-indexing progress, e.g. '320/min' meaning 320 images per minute. Keep it compact; '/min' is per minute.",
+    "placeholders": {
+      "rateText": "images processed per minute, formatted (e.g. 320)"
+    },
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.enrich.rateEta": "{rate} · {eta}",
+  "@indexing.enrich.rateEta": {
+    "description": "Joins the speed and the time-left into one detail line, e.g. '320/min · 2m left'. The middle dot is a separator; keep spaces around it.",
+    "placeholders": {
+      "rate": "the already-built rate text (e.g. 320/min)",
+      "eta": "the already-built time-left text (e.g. 2m left)"
+    },
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.enrich.pausedIdle": "Waiting until you''re idle",
+  "@indexing.enrich.pausedIdle": {
+    "description": "Status shown for a network (NAS) drive whose image indexing paused because you're actively using the app; it resumes when you stop. Reassuring, not an error.",
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.enrich.pausedDisconnected": "Paused, resumes on reconnect",
+  "@indexing.enrich.pausedDisconnected": {
+    "description": "Status shown for a network drive whose image indexing paused because the drive disconnected; it resumes automatically when the drive reconnects. Reassuring, not an error. No em-dash.",
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.enrich.imagesBarLabel": "Images indexed",
+  "@indexing.enrich.imagesBarLabel": {
+    "description": "Accessible label (screen-reader only) for the images progress bar in the Image-indexing row. Not shown visually.",
+    "screenshot": "indexing-checklist.png"
+  },
+  "indexing.enrich.bytesBarLabel": "Image data processed",
+  "@indexing.enrich.bytesBarLabel": {
+    "description": "Accessible label (screen-reader only) for the second progress bar, which tracks how much image DATA (bytes) has been processed. Not shown visually.",
+    "screenshot": "indexing-checklist.png"
   }
 }

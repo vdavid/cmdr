@@ -6,11 +6,13 @@
 use std::collections::{HashMap, HashSet};
 
 use super::enrich::{
-    ImageEntry, enrich_and_gc, gc_targets, load_statuses, parent_dir, prioritized, walk_image_entries,
+    ImageEntry, PassHooks, enrich_and_gc, enrichable_totals, gc_targets, load_statuses, parent_dir, prioritized,
+    walk_image_entries,
 };
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::media_index::backend::fake::FakeVisionBackend;
 use crate::media_index::predicate::MediaKind;
+use crate::media_index::progress::{EnrichProgress, EnrichProgressSink, NoopProgressSink};
 use crate::media_index::read::MediaIndex;
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, media_db_path};
 use crate::media_index::writer::MediaWriter;
@@ -80,6 +82,18 @@ fn media_writer(dir: &std::path::Path, volume_id: &str) -> MediaWriter {
     MediaWriter::spawn(&db_path).expect("media writer")
 }
 
+/// A pass-hooks bundle that never cancels and drops progress on the floor — the default
+/// for tests that don't assert cancellation or progress.
+fn never_cancels() -> bool {
+    false
+}
+fn no_op_hooks() -> PassHooks<'static> {
+    PassHooks {
+        cancel: &never_cancels,
+        progress: &NoopProgressSink,
+    }
+}
+
 #[test]
 fn walk_qualifies_images_only() {
     let dir = tempfile::tempdir().expect("temp");
@@ -126,7 +140,10 @@ fn enrich_over_fake_backend_populates_ocr_for_images_only() {
         &writer,
         &|_| true,
         &|_| false,
-        &|| false,
+        &PassHooks {
+            cancel: &|| false,
+            progress: &NoopProgressSink,
+        },
     )
     .expect("pass");
     assert_eq!(summary.enriched, 1);
@@ -138,8 +155,16 @@ fn enrich_over_fake_backend_populates_ocr_for_images_only() {
     // A second pass over the loaded statuses re-enriches nothing (path-keyed
     // staleness: same mtime/size/engine ⇒ fresh).
     let statuses = load_statuses(dir.path(), "root");
-    let again =
-        enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|_| false, &|| false).expect("second pass");
+    let again = enrich_and_gc(
+        &images,
+        &statuses,
+        &backend,
+        &writer,
+        &|_| true,
+        &|_| false,
+        &no_op_hooks(),
+    )
+    .expect("second pass");
     assert_eq!(again.enriched, 0, "unchanged images aren't re-enriched");
     writer.shutdown();
 }
@@ -186,7 +211,10 @@ fn enrich_defers_below_threshold_folder_but_keeps_it_for_gc() {
         &writer,
         &should_enrich,
         &|_| false,
-        &|| false,
+        &PassHooks {
+            cancel: &|| false,
+            progress: &NoopProgressSink,
+        },
     )
     .expect("pass");
     assert_eq!(summary.enriched, 1, "only the qualifying folder enriches");
@@ -221,7 +249,10 @@ fn override_enriches_a_folder_the_threshold_would_defer() {
         &writer,
         &overridden,
         &|_| false,
-        &|| false,
+        &PassHooks {
+            cancel: &|| false,
+            progress: &NoopProgressSink,
+        },
     )
     .expect("pass");
     assert_eq!(summary.enriched, 1);
@@ -258,7 +289,10 @@ fn exclusion_vetoes_even_an_override_covered_image() {
         &writer,
         &covered,
         &excluded,
-        &|| false,
+        &PassHooks {
+            cancel: &|| false,
+            progress: &NoopProgressSink,
+        },
     )
     .expect("pass");
     assert_eq!(
@@ -301,7 +335,10 @@ fn exclusion_landing_during_analyze_writes_no_row() {
         &writer,
         &|_| true,
         &excluded,
-        &|| false,
+        &PassHooks {
+            cancel: &|| false,
+            progress: &NoopProgressSink,
+        },
     )
     .expect("pass");
     assert_eq!(summary.enriched, 0, "an exclude landing mid-analyze drops the row");
@@ -374,7 +411,16 @@ fn a_completed_pass_gcs_a_vanished_known_entry() {
     }];
     let statuses = load_statuses(dir.path(), "root");
     let backend = FakeVisionBackend::new();
-    let summary = enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|_| false, &|| false).expect("pass");
+    let summary = enrich_and_gc(
+        &images,
+        &statuses,
+        &backend,
+        &writer,
+        &|_| true,
+        &|_| false,
+        &no_op_hooks(),
+    )
+    .expect("pass");
     assert_eq!(summary.gc_count, 1);
 
     let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen");
@@ -438,14 +484,133 @@ fn a_cancelled_pass_enriches_nothing_and_skips_gc() {
     let backend = FakeVisionBackend::new();
     // Cancel returns true immediately ⇒ no enrichment, and GC is skipped (yield
     // fully), so the pre-existing row survives even though it's absent from `images`.
-    let summary = enrich_and_gc(&images, &statuses, &backend, &writer, &|_| true, &|_| false, &|| true).expect("pass");
+    let summary = enrich_and_gc(
+        &images,
+        &statuses,
+        &backend,
+        &writer,
+        &|_| true,
+        &|_| false,
+        &PassHooks {
+            cancel: &|| true,
+            progress: &NoopProgressSink,
+        },
+    )
+    .expect("pass");
     assert_eq!(summary.enriched, 0);
     assert_eq!(summary.gc_count, 0, "a cancelled pass skips GC");
+    assert!(summary.cancelled, "the pass reports it was cancelled");
 
     let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen");
     assert!(
         store.status_for("/survivor.jpg").expect("read").is_some(),
         "a cancelled pass never GCs"
+    );
+    writer.shutdown();
+}
+
+// ── Progress denominator + vanished-file handling (plan M5) ─────────────────
+
+/// A progress sink that records the last reported snapshot, so a test can assert the
+/// enrichable-subset denominator and that `done` reaches `total`.
+#[derive(Default)]
+struct RecordingSink {
+    last: std::sync::Mutex<Option<EnrichProgress>>,
+}
+impl EnrichProgressSink for RecordingSink {
+    fn report(&self, progress: EnrichProgress) {
+        *self.last.lock().expect("recording sink lock") = Some(progress);
+    }
+}
+
+#[test]
+fn enrichable_totals_excludes_deferred_and_excluded_images() {
+    // Pure denominator: only images passing BOTH gates count; a below-threshold
+    // (should_enrich false) and an excluded image are left out, and bytes track the
+    // subset (a `None` size counts 0).
+    let img = |path: &str, size: Option<u64>| ImageEntry {
+        path: path.to_string(),
+        mtime: Some(1),
+        size,
+        kind: MediaKind::Image,
+    };
+    let images = vec![
+        img("/keep/a.jpg", Some(100)),
+        img("/keep/b.jpg", None),          // covered but size-unknown ⇒ counts, 0 bytes
+        img("/skip/c.jpg", Some(999)),     // below threshold ⇒ not in the subset
+        img("/keep/secret.jpg", Some(50)), // excluded ⇒ not in the subset
+    ];
+    let should_enrich = |p: &str| parent_dir(p) == "/keep";
+    let is_excluded = |p: &str| p == "/keep/secret.jpg";
+    let (total, bytes_total) = enrichable_totals(&images, &should_enrich, &is_excluded);
+    assert_eq!(total, 2, "only the two covered, non-excluded images count");
+    assert_eq!(bytes_total, 100, "bytes sum the subset; a None size counts 0");
+}
+
+#[test]
+fn a_vanished_image_still_completes_the_pass_at_done_equals_total() {
+    // The enrichable subset is /keep/a.jpg + /keep/gone.jpg (both covered); /skip/b.jpg
+    // is below threshold, so it's NOT in `total`. /keep/gone.jpg reads ENOENT (vanished),
+    // so it writes NO row but STILL counts as processed — the bar reaches done == total,
+    // never the never-finishes bug.
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(
+        &index_path,
+        &[
+            ("/keep", "a.jpg", 10, 100),
+            ("/skip", "b.jpg", 11, 999),
+            ("/keep", "gone.jpg", 12, 50),
+        ],
+    );
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let images = walk_image_entries(store.read_conn()).expect("walk");
+    let statuses = load_statuses(dir.path(), "root");
+    let writer = media_writer(dir.path(), "root");
+    // The vanished source: analyze returns `VisionError::Missing`.
+    let backend = FakeVisionBackend::new().missing_for("/keep/gone.jpg");
+
+    let should_enrich = |p: &str| parent_dir(p) == "/keep";
+    let sink = RecordingSink::default();
+    let summary = enrich_and_gc(
+        &images,
+        &statuses,
+        &backend,
+        &writer,
+        &should_enrich,
+        &|_| false,
+        &PassHooks {
+            cancel: &never_cancels,
+            progress: &sink,
+        },
+    )
+    .expect("pass");
+
+    // /keep/a.jpg enriched; /keep/gone.jpg vanished (skipped, no row). Both counted.
+    assert_eq!(summary.enriched, 1, "only the readable covered image enriches");
+    let last = sink.last.lock().expect("sink").expect("a progress tick");
+    assert_eq!(
+        last.total, 2,
+        "the below-threshold /skip image is NOT in the denominator"
+    );
+    assert_eq!(
+        last.done, 2,
+        "the vanished image still completes the pass (done == total)"
+    );
+    assert_eq!(last.bytes_total, 150, "bytes denominator is the covered subset only");
+
+    let media = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen media");
+    assert!(
+        media.status_for("/keep/a.jpg").expect("read").is_some(),
+        "the readable image has a row"
+    );
+    assert!(
+        media.status_for("/keep/gone.jpg").expect("read").is_none(),
+        "a vanished image writes NO row (not Failed); GC collects any stale one"
+    );
+    assert!(
+        media.status_for("/skip/b.jpg").expect("read").is_none(),
+        "a deferred image writes no row"
     );
     writer.shutdown();
 }

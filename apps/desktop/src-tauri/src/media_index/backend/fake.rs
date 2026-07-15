@@ -31,6 +31,7 @@ pub struct FakeVisionBackend {
     scripted_tags: HashMap<String, Vec<Tag>>,
     scripted_embedding: HashMap<String, Vec<f32>>,
     failing: HashSet<String>,
+    missing: HashSet<String>,
     engine_version: Option<String>,
     taxonomy_version: Option<String>,
 }
@@ -62,6 +63,14 @@ impl FakeVisionBackend {
     /// Script a decode failure for a path.
     pub fn failing_for(mut self, path: impl Into<String>) -> Self {
         self.failing.insert(path.into());
+        self
+    }
+
+    /// Script a vanished-source failure for a path (an ENOENT-class read failure): the
+    /// backend returns [`VisionError::Missing`], as the real backend does when a file
+    /// disappears between the index walk and its analyze (plan M5).
+    pub fn missing_for(mut self, path: impl Into<String>) -> Self {
+        self.missing.insert(path.into());
         self
     }
 
@@ -124,6 +133,9 @@ impl VisionBackend for FakeVisionBackend {
     }
 
     fn ocr(&self, input: &ImageInput) -> Result<OcrResult, VisionError> {
+        if self.missing.contains(&input.path) {
+            return Err(VisionError::Missing(input.path.clone()));
+        }
         if self.failing.contains(&input.path) {
             return Err(VisionError::Decode(input.path.clone()));
         }
@@ -137,6 +149,9 @@ impl VisionBackend for FakeVisionBackend {
     }
 
     fn analyze(&self, input: &ImageInput) -> Result<Analysis, VisionError> {
+        if self.missing.contains(&input.path) {
+            return Err(VisionError::Missing(input.path.clone()));
+        }
         if self.failing.contains(&input.path) {
             return Err(VisionError::Decode(input.path.clone()));
         }

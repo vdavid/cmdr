@@ -3,9 +3,14 @@
 // search-results grid uses to reuse the EXISTING viewer preview path (plan Decision 5).
 // Every wrapper delegates to the typed `commands.*` bindings.
 
+import { type UnlistenFn } from '@tauri-apps/api/event'
 import {
   commands,
+  events,
   type CoveredCount,
+  type MediaEnrichProgressEvent,
+  type MediaEnrichTerminalEvent,
+  type MediaEnrichTerminalReason,
   type MediaIndexVolumeState,
   type OcrHit,
   type ReclaimPreview,
@@ -14,7 +19,40 @@ import {
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
-export type { CoveredCount, MediaIndexVolumeState, OcrHit, ReclaimPreview, ReclaimResult, SimilarImage }
+export type {
+  CoveredCount,
+  MediaEnrichProgressEvent,
+  MediaEnrichTerminalEvent,
+  MediaEnrichTerminalReason,
+  MediaIndexVolumeState,
+  OcrHit,
+  ReclaimPreview,
+  ReclaimResult,
+  SimilarImage,
+}
+
+/**
+ * Fires (throttled) while a volume's image-enrichment pass runs, carrying the honest
+ * per-volume progress: `done` / `total` over the ENRICHABLE subset (never the full
+ * walked set), plus the bytes double-bar. Drives the "Image indexing" row in the
+ * top-right indexing indicator (plan M5). Call the returned `UnlistenFn` on teardown.
+ */
+export function onMediaEnrichProgress(callback: (payload: MediaEnrichProgressEvent) => void): Promise<UnlistenFn> {
+  return events.mediaEnrichProgress.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/**
+ * Fires exactly once when a volume's enrichment pass ends (any exit path). Its typed
+ * `reason` tells the indicator to clear the row (completion / cancel / failure) or
+ * re-voice it paused (the two pause reasons), so the row never sticks at "enriching".
+ */
+export function onMediaEnrichTerminal(callback: (payload: MediaEnrichTerminalEvent) => void): Promise<UnlistenFn> {
+  return events.mediaEnrichTerminal.listen((event) => {
+    callback(event.payload)
+  })
+}
 
 /**
  * Search a volume's image OCR text for `query`, returning up to `limit` hits (backend

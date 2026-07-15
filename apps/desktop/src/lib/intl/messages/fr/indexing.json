@@ -172,5 +172,39 @@
   "indexing.staleDialog.close": "Fermer",
   "@indexing.staleDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "indexing.enrich.label": "Indexation des images",
+  "@indexing.enrich.label": {
+    "sourceHash": "442068b"
+  },
+  "indexing.enrich.progress": "{done, plural, one {{doneText} image sur {totalText}} other {{doneText} images sur {totalText}} many {{doneText} images sur {totalText}}}",
+  "@indexing.enrich.progress": {
+    "sourceHash": "b307416"
+  },
+  "indexing.enrich.rate": "{rateText}/min",
+  "@indexing.enrich.rate": {
+    "sourceHash": "255f3b4",
+    "sameAsSourceJustification": "Symbole SI de la minute ; identique dans toutes les langues pour cette unité compacte."
+  },
+  "indexing.enrich.rateEta": "{rate} · {eta}",
+  "@indexing.enrich.rateEta": {
+    "sourceHash": "ac6a373",
+    "sameAsSourceJustification": "Chaîne composée uniquement de marqueurs ; le point médian séparateur est identique dans toutes les langues."
+  },
+  "indexing.enrich.pausedIdle": "En attente de votre inactivité",
+  "@indexing.enrich.pausedIdle": {
+    "sourceHash": "d63ee91"
+  },
+  "indexing.enrich.pausedDisconnected": "En pause, reprend à la reconnexion",
+  "@indexing.enrich.pausedDisconnected": {
+    "sourceHash": "1483989"
+  },
+  "indexing.enrich.imagesBarLabel": "Images indexées",
+  "@indexing.enrich.imagesBarLabel": {
+    "sourceHash": "f4b2ca5"
+  },
+  "indexing.enrich.bytesBarLabel": "Données d''images traitées",
+  "@indexing.enrich.bytesBarLabel": {
+    "sourceHash": "58952a9"
   }
 }

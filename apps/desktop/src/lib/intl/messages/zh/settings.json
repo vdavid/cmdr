@@ -1988,5 +1988,17 @@
   "settings.applier.logStorageRestart": "重启 Cmdr 以应用日志存储的更改。",
   "@settings.applier.logStorageRestart": {
     "sourceHash": "b833dee"
+  },
+  "settings.mediaIndex.progress.coveredOfTotal": "{total, plural, other {覆盖范围内的 {totalText} 张图像中，已索引 {enrichedText} 张}}",
+  "@settings.mediaIndex.progress.coveredOfTotal": {
+    "sourceHash": "73d547e"
+  },
+  "settings.mediaIndex.progress.coveredDone": "{total, plural, other {已为覆盖范围内的全部 {totalText} 张图像建立索引}}",
+  "@settings.mediaIndex.progress.coveredDone": {
+    "sourceHash": "98e10c0"
+  },
+  "settings.mediaIndex.progress.kept": "{kept, plural, other {另有 {keptText} 张图像根据更宽的设置已索引，仍可搜索}}",
+  "@settings.mediaIndex.progress.kept": {
+    "sourceHash": "24bf4ee"
   }
 }

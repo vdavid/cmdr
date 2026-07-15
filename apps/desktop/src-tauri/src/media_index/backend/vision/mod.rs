@@ -349,7 +349,18 @@ fn decode_thumbnail(path: &str, prefetched: Option<&[u8]>) -> Result<CFRetained<
     let bytes: &[u8] = match prefetched {
         Some(b) => b,
         None => {
-            owned = std::fs::read(path).map_err(|e| VisionError::Decode(format!("read '{path}': {e}")))?;
+            owned = std::fs::read(path).map_err(|e| {
+                // An ENOENT-class read failure is a VANISHED source (a file deleted
+                // between the index walk and its analyze, or an orphaned index row's
+                // phantom path), not a bad image: a typed `Missing` so the enrich core
+                // skips it quietly (DEBUG, no row) rather than a WARN + `Failed` row
+                // (plan M5). Classified by the io error KIND, never a message match.
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    VisionError::Missing(format!("read '{path}': {e}"))
+                } else {
+                    VisionError::Decode(format!("read '{path}': {e}"))
+                }
+            })?;
             &owned
         }
     };

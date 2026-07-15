@@ -121,15 +121,32 @@ pub fn partition_stored(
     let mut surviving = 0u64;
     let mut doomed = Vec::new();
     for path in stored_paths {
-        let survives = !is_excluded(path)
-            && (is_override(path) || folder_scores.get(parent_dir(path)).is_some_and(|s| *s >= threshold));
-        if survives {
+        if stored_row_survives(path, folder_scores, threshold, is_override, is_excluded) {
             surviving += 1;
         } else {
             doomed.push(path.clone());
         }
     }
     StoredPartition { surviving, doomed }
+}
+
+/// Whether a single stored row SURVIVES the current setting — the one canonical
+/// survival rule, shared by [`partition_stored`] (which collects the doomed paths for a
+/// prune) and the counts-only [`MediaScheduler::stored_coverage_counts`] (which the M5
+/// volume-state poll calls without allocating a 200k-path list). A row survives when
+/// it's NOT under an excluded folder AND (covered by an "always index" override OR its
+/// parent folder scores at or above `threshold`); keys on score-MAP MEMBERSHIP, so a
+/// floored folder (no row) is below any threshold.
+///
+/// [`MediaScheduler::stored_coverage_counts`]: crate::media_index::scheduler::MediaScheduler::stored_coverage_counts
+pub(crate) fn stored_row_survives(
+    path: &str,
+    folder_scores: &HashMap<String, f64>,
+    threshold: f64,
+    is_override: &dyn Fn(&str) -> bool,
+    is_excluded: &dyn Fn(&str) -> bool,
+) -> bool {
+    !is_excluded(path) && (is_override(path) || folder_scores.get(parent_dir(path)).is_some_and(|s| *s >= threshold))
 }
 
 /// Convenience: read a volume's importance folder scores as a `folder → score` map, or

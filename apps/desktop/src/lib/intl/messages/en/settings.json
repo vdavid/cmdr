@@ -2459,5 +2459,31 @@
   "settings.applier.logStorageRestart": "Restart Cmdr to apply the log storage change.",
   "@settings.applier.logStorageRestart": {
     "description": "Toast shown after the log-storage setting changes, telling the user a restart is needed for it to take effect. \"Cmdr\" is the product name; keep it."
+  },
+
+  "settings.mediaIndex.progress.coveredOfTotal": "{total, plural, one {{enrichedText} of {totalText} image in your covered folders} other {{enrichedText} of {totalText} images in your covered folders}}",
+  "@settings.mediaIndex.progress.coveredOfTotal": {
+    "description": "Progress line under the image-search depth slider: how many images in the folders your CURRENT slider setting covers are indexed so far, e.g. '1,200 of 5,000 images in your covered folders'. 'covered folders' = the folders the current setting includes. Can reach done at any slider position (unlike the whole-drive total).",
+    "placeholders": {
+      "total": "raw covered total, drives plural",
+      "enrichedText": "images indexed so far, formatted",
+      "totalText": "images in covered folders, formatted"
+    }
+  },
+  "settings.mediaIndex.progress.coveredDone": "{total, plural, one {{totalText} image in your covered folders} other {{totalText} images in your covered folders}}",
+  "@settings.mediaIndex.progress.coveredDone": {
+    "description": "Progress line when every image in your covered folders is indexed, e.g. '5,000 images in your covered folders'. 'covered folders' = the folders your current slider setting includes.",
+    "placeholders": {
+      "total": "raw covered total, drives plural",
+      "totalText": "images in covered folders, formatted"
+    }
+  },
+  "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} more image indexed from broader settings, still searchable} other {{keptText} more images indexed from broader settings, still searchable}}",
+  "@settings.mediaIndex.progress.kept": {
+    "description": "Quiet line under the slider noting images that were indexed at a BROADER past setting and are being kept (still searchable) even though the current setting is narrower, e.g. '200,000 more images indexed from broader settings, still searchable'. The slider is forward-only: narrowing never deletes. Composes with the reclaim line as one narrative. No em-dash.",
+    "placeholders": {
+      "kept": "raw kept count, drives plural",
+      "keptText": "kept images, formatted (e.g. 200,000)"
+    }
   }
 }

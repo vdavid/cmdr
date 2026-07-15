@@ -59,6 +59,8 @@ function state(overrides: Partial<MediaIndexVolumeState> = {}): MediaIndexVolume
     alwaysIndexed: false,
     paused: false,
     waitingForImportance: false,
+    coveredQualifyingCount: null,
+    keptCount: null,
     ...overrides,
   }
 }

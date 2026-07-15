@@ -20,6 +20,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use crate::media_index::backend::{ImageInput, VisionBackend};
+use crate::media_index::progress::{EnrichProgress, EnrichProgressSink};
 use crate::media_index::scheduler::enrich::{ImageEntry, PassSummary, gc_targets, status_row, to_upsert_analysis};
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, needs_enrichment};
 use crate::media_index::writer::MediaWriter;
@@ -83,6 +84,9 @@ pub(crate) struct NetworkEnrichCtx<'a> {
     /// The bandwidth-throttle sleep (real `thread::sleep` in production; a recorder /
     /// no-op in tests so the pass never actually sleeps).
     pub(crate) sleep: &'a dyn Fn(Duration),
+    /// The throttled progress sink (the top-right indicator's second publisher, plan
+    /// M5). A no-op in tests that don't assert progress.
+    pub(crate) progress: &'a dyn EnrichProgressSink,
 }
 
 /// Run one conservative network enrichment pass. See the module docs for the
@@ -93,6 +97,21 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
     // so a present-but-deferred image is never GC'd.
     let current: HashSet<String> = ctx.images.iter().map(|i| i.path.clone()).collect();
     let mut summary = PassSummary::default();
+
+    // The honest progress denominator (plan M5): the enrichable subset (images passing
+    // the coverage gates over their OS path), never the full walked set — a NAS archive
+    // mostly deferred below the slider would otherwise stick the bar. `done` counts every
+    // subset image the pass finishes handling (enriched, already-current, vanished, or
+    // oversized skips), so a completed pass reaches `total`.
+    let (total, bytes_total) = network_enrichable_totals(ctx);
+    let mut done = 0u64;
+    let mut bytes_done = 0u64;
+    ctx.progress.report(EnrichProgress {
+        done,
+        total,
+        bytes_done,
+        bytes_total,
+    });
 
     for image in ctx.images {
         // Yield promptly to the memory watchdog and to foreground activity.
@@ -105,77 +124,84 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
 
         let os_path = os_join(ctx.mount_root, &image.path);
         // Privacy veto (LIVE hard veto, beats coverage): an excluded image is deferred,
-        // so it stays in `current` and GC never wipes it.
+        // so it stays in `current` and GC never wipes it. Not in the enrichable subset.
         if (ctx.is_excluded)(&os_path) {
             continue;
         }
         // Coverage gate: a low-importance NAS folder defers unless the user marked it
-        // "always index".
+        // "always index". Not in the subset.
         if !(ctx.should_enrich)(&os_path) {
             continue;
         }
-        // Path-keyed staleness: unchanged images (same mtime/size/stamp) are skipped.
-        if !needs_enrichment(ctx.statuses.get(&image.path), image.mtime, image.size, &stamp) {
-            continue;
-        }
+        // In the enrichable subset ⇒ count it as processed no matter the outcome.
+        done += 1;
+        bytes_done += image.size.unwrap_or(0);
 
-        match ctx.fetcher.fetch(&os_path, ctx.policy.read_timeout) {
-            Ok(bytes) => {
-                let fetched = bytes.len() as u64;
-                let input = ImageInput {
-                    path: image.path.clone(),
-                    kind: image.kind,
-                    bytes: Some(bytes),
-                };
-                let analysis = ctx.backend.analyze(&input);
-                // Re-check the LIVE veto AFTER the slow analyze: an exclusion landing
-                // during it must not persist a row (the in-flight-analyze TOCTOU). The
-                // bytes were already fetched, so still throttle below for honest
-                // bandwidth accounting; only the upsert is skipped.
-                if !(ctx.is_excluded)(&os_path) {
-                    match analysis {
-                        Ok(analysis) => {
-                            ctx.writer
-                                .upsert(
-                                    status_row(image, EnrichmentState::Done, &stamp),
-                                    Some(to_upsert_analysis(analysis)),
-                                )
-                                .map_err(|e| e.to_string())?;
-                            summary.enriched += 1;
-                        }
-                        Err(e) => {
-                            // A GOOD read but a bad decode/analysis ⇒ a genuinely bad file
-                            // ⇒ `Failed` (same as the local pass). NOT a disconnect.
-                            log::warn!(target: "media_index", "network analysis failed for '{}': {e}", image.path);
-                            ctx.writer
-                                .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
-                                .map_err(|e| e.to_string())?;
+        // Path-keyed staleness: unchanged images (same mtime/size/stamp) are skipped,
+        // but still count as processed (already-current).
+        if needs_enrichment(ctx.statuses.get(&image.path), image.mtime, image.size, &stamp) {
+            match ctx.fetcher.fetch(&os_path, ctx.policy.read_timeout) {
+                Ok(bytes) => {
+                    let fetched = bytes.len() as u64;
+                    let input = ImageInput {
+                        path: image.path.clone(),
+                        kind: image.kind,
+                        bytes: Some(bytes),
+                    };
+                    let analysis = ctx.backend.analyze(&input);
+                    // Re-check the LIVE veto AFTER the slow analyze: an exclusion landing
+                    // during it must not persist a row (the in-flight-analyze TOCTOU). The
+                    // bytes were already fetched, so still throttle below for honest
+                    // bandwidth accounting; only the upsert is skipped.
+                    if !(ctx.is_excluded)(&os_path) {
+                        match analysis {
+                            Ok(analysis) => {
+                                ctx.writer
+                                    .upsert(
+                                        status_row(image, EnrichmentState::Done, &stamp),
+                                        Some(to_upsert_analysis(analysis)),
+                                    )
+                                    .map_err(|e| e.to_string())?;
+                                summary.enriched += 1;
+                            }
+                            Err(e) => {
+                                // A GOOD read but a bad decode/analysis ⇒ a genuinely bad
+                                // file ⇒ `Failed` (same as the local pass). NOT a disconnect.
+                                log::warn!(target: "media_index", "network analysis failed for '{}': {e}", image.path);
+                                ctx.writer
+                                    .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
+                                    .map_err(|e| e.to_string())?;
+                            }
                         }
                     }
+                    // Bandwidth throttle: hold the sustained fetch rate under the cap.
+                    (ctx.sleep)(throttle_delay(fetched, ctx.policy.max_bytes_per_sec));
                 }
-                // Bandwidth throttle: hold the sustained fetch rate under the cap.
-                (ctx.sleep)(throttle_delay(fetched, ctx.policy.max_bytes_per_sec));
-            }
-            Err(FetchError::Disconnected(msg)) => {
-                // The mount went away: PAUSE. Keep completed rows, write no `Failed`
-                // for this image, and skip GC entirely (a disconnect is not a
-                // completed-scan deletion — plan Decision 3).
-                log::info!(
-                    target: "media_index",
-                    "network enrichment of '{}' paused (disconnected): {msg}", ctx.volume_id
-                );
-                return finish_paused(ctx, summary, PauseReason::Disconnected);
-            }
-            Err(FetchError::NotFound) => {
-                // The source vanished between the walk and the fetch: skip it (a
-                // completed scan's GC collects it). Never `Failed`.
-                continue;
-            }
-            Err(FetchError::TooLarge) => {
-                log::debug!(target: "media_index", "network enrichment skips oversized '{}'", image.path);
-                continue;
+                Err(FetchError::Disconnected(msg)) => {
+                    // The mount went away: PAUSE. Keep completed rows, write no `Failed`
+                    // for this image, and skip GC entirely (a disconnect is not a
+                    // completed-scan deletion — plan Decision 3).
+                    log::info!(
+                        target: "media_index",
+                        "network enrichment of '{}' paused (disconnected): {msg}", ctx.volume_id
+                    );
+                    return finish_paused(ctx, summary, PauseReason::Disconnected);
+                }
+                Err(FetchError::NotFound) => {
+                    // The source vanished between the walk and the fetch: skip it (a
+                    // completed scan's GC collects it). Never `Failed`. Already counted.
+                }
+                Err(FetchError::TooLarge) => {
+                    log::debug!(target: "media_index", "network enrichment skips oversized '{}'", image.path);
+                }
             }
         }
+        ctx.progress.report(EnrichProgress {
+            done,
+            total,
+            bytes_done,
+            bytes_total,
+        });
     }
 
     // Completed the walk ⇒ deletion-driven GC is safe here (see module docs). A paused
@@ -185,6 +211,22 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
     ctx.writer.gc_paths(targets).map_err(|e| e.to_string())?;
     ctx.writer.flush_blocking().map_err(|e| e.to_string())?;
     Ok(NetworkPassOutcome::Completed(summary))
+}
+
+/// The ENRICHABLE-subset denominators for a network pass: the count and total bytes of
+/// images passing the coverage gates over their OS path (`should_enrich` AND not
+/// `is_excluded`), the honest progress denominator (never the full walked set — plan M5).
+fn network_enrichable_totals(ctx: &NetworkEnrichCtx) -> (u64, u64) {
+    let mut total = 0u64;
+    let mut bytes_total = 0u64;
+    for image in ctx.images {
+        let os_path = os_join(ctx.mount_root, &image.path);
+        if !(ctx.is_excluded)(&os_path) && (ctx.should_enrich)(&os_path) {
+            total += 1;
+            bytes_total += image.size.unwrap_or(0);
+        }
+    }
+    (total, bytes_total)
 }
 
 /// Flush the completed rows (so a pause never loses finished work) and return the

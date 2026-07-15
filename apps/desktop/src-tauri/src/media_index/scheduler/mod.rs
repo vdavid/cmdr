@@ -53,10 +53,13 @@ use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexVolumeKind;
 
 pub(crate) mod enrich;
-use enrich::{enrich_and_gc, load_statuses, walk_image_entries};
+use enrich::{PassHooks, enrich_and_gc, load_statuses, walk_image_entries};
+
+use super::events::{EnrichTerminalGuard, MediaEnrichTerminalReason, TauriEnrichEmitter};
+use super::progress::{EnrichProgressSink, NoopProgressSink};
 
 mod reclaim;
-pub use reclaim::{PruneOutcome, StoredCoverage};
+pub use reclaim::{PruneOutcome, StoredCoverage, StoredCoverageCounts};
 
 #[cfg(test)]
 mod coalescing_tests;
@@ -159,6 +162,10 @@ pub struct MediaScheduler {
     data_dir: PathBuf,
     writers: super::writer_registry::WriterRegistry,
     backend: Arc<dyn VisionBackend>,
+    /// The app handle used to emit `media-enrich-progress` / `media-enrich-terminal`
+    /// events (plan M5). `None` in unit tests (constructed via [`MediaScheduler::new`],
+    /// no app), so a pass emits nothing; production wires it in [`start`].
+    app: Option<AppHandle>,
     /// Volume ids whose last pass DEFERRED its importance-gated remainder because
     /// importance hadn't scored the volume yet (`folder_scores` was `None`). The
     /// unscored → scored bridge reads and clears this: when importance first
@@ -170,14 +177,39 @@ pub struct MediaScheduler {
 }
 
 impl MediaScheduler {
-    /// Construct a scheduler over `data_dir` with the given inference backend.
+    /// Construct a scheduler over `data_dir` with the given inference backend, NOT wired
+    /// to an app (so it emits no progress events — the unit-test constructor).
     pub fn new(data_dir: PathBuf, backend: Arc<dyn VisionBackend>) -> Self {
         Self {
             coordinator: PassCoordinator::new(),
             data_dir,
             writers: super::writer_registry::WriterRegistry::new(),
             backend,
+            app: None,
             deferred_for_importance: Mutex::new(HashSet::new()),
+        }
+    }
+
+    /// Construct a scheduler wired to `app`, so its passes emit the M5 progress +
+    /// terminal events onto the top-right indicator. Used by [`start`].
+    fn new_with_app(data_dir: PathBuf, backend: Arc<dyn VisionBackend>, app: AppHandle) -> Self {
+        Self {
+            app: Some(app),
+            ..Self::new(data_dir, backend)
+        }
+    }
+
+    /// Build the throttled progress sink + terminal guard for a pass (plan M5). When the
+    /// scheduler has an app, the sink emits `media-enrich-progress` and the guard emits
+    /// `media-enrich-terminal` on drop (its default `Failed` reason covers an error
+    /// bubble); without an app (unit tests) both are no-ops.
+    fn pass_emitters(&self, volume_id: &str) -> (Box<dyn EnrichProgressSink>, EnrichTerminalGuard) {
+        match &self.app {
+            Some(app) => (
+                Box::new(TauriEnrichEmitter::new(app.clone(), volume_id.to_string())),
+                EnrichTerminalGuard::for_app(app.clone(), volume_id.to_string()),
+            ),
+            None => (Box::new(NoopProgressSink), EnrichTerminalGuard::disabled()),
         }
     }
 
@@ -261,6 +293,14 @@ impl MediaScheduler {
         let folder_score = |dir: &str| -> f64 { scores.as_ref().and_then(|m| m.get(dir)).copied().unwrap_or(0.0) };
         let ordered = enrich::prioritized(&images, &folder_score);
 
+        // Progress + terminal emitters (plan M5). The guard emits `Failed` on drop if the
+        // pass bubbles an error before we set a clean reason below (the `?` on
+        // `enrich_and_gc`), so EVERY exit path reports a terminal.
+        let (progress, mut terminal) = self.pass_emitters(volume_id);
+        let hooks = PassHooks {
+            cancel: &gate::is_cancelled,
+            progress: progress.as_ref(),
+        };
         let summary = enrich_and_gc(
             &ordered,
             &statuses,
@@ -268,8 +308,16 @@ impl MediaScheduler {
             &writer,
             &should_enrich,
             &is_excluded,
-            &gate::is_cancelled,
+            &hooks,
         )?;
+        terminal.set(if summary.cancelled {
+            MediaEnrichTerminalReason::Cancelled
+        } else {
+            MediaEnrichTerminalReason::Completed {
+                enriched: summary.enriched as u64,
+                gc_count: summary.gc_count as u64,
+            }
+        });
 
         // The volume's embeddings changed; drop the resident cache so the next
         // find-similar / dedup reloads (per-pass invalidation, not per-write — plan §
@@ -456,6 +504,9 @@ impl MediaScheduler {
         let cancel = || gate::is_cancelled();
         let sleep = |d: Duration| std::thread::sleep(d);
 
+        // Progress + terminal emitters (plan M5); the guard's default `Failed` covers an
+        // error bubble on the `?` below, so every exit path reports a terminal.
+        let (progress, mut terminal) = self.pass_emitters(volume_id);
         let ctx = NetworkEnrichCtx {
             volume_id,
             mount_root: &mount_root,
@@ -470,6 +521,7 @@ impl MediaScheduler {
             is_excluded: &is_excluded,
             cancel: &cancel,
             sleep: &sleep,
+            progress: progress.as_ref(),
         };
         match enrich_network_and_gc(&ctx)? {
             NetworkPassOutcome::Completed(summary) => {
@@ -477,6 +529,10 @@ impl MediaScheduler {
                 if summary.enriched > 0 || summary.gc_count > 0 {
                     super::vector::cache::invalidate(&super::store::media_db_path(&self.data_dir, volume_id));
                 }
+                terminal.set(MediaEnrichTerminalReason::Completed {
+                    enriched: summary.enriched as u64,
+                    gc_count: summary.gc_count as u64,
+                });
                 log::info!(
                     target: "media_index",
                     "network enrichment of '{volume_id}': {} of {} images enriched, {} rows GC'd",
@@ -491,6 +547,13 @@ impl MediaScheduler {
                     // reconnect" and the resume happens via the registration bus.
                     network::config::mark_paused(volume_id);
                 }
+                // The terminal event re-voices the row (paused) or clears it (cancelled),
+                // so it never sticks at "enriching" — the stuck-row bug (plan M5).
+                terminal.set(match reason {
+                    PauseReason::NotIdle => MediaEnrichTerminalReason::PausedWaitingForIdle,
+                    PauseReason::Disconnected => MediaEnrichTerminalReason::PausedDisconnected,
+                    PauseReason::Cancelled => MediaEnrichTerminalReason::Cancelled,
+                });
                 log::info!(
                     target: "media_index",
                     "network enrichment of '{volume_id}' paused ({reason:?}) after {} enriched",
@@ -612,7 +675,7 @@ pub fn start(app: &AppHandle) {
     #[cfg(not(target_os = "macos"))]
     let backend: Arc<dyn VisionBackend> = Arc::new(FakeVisionBackend::new());
     log::info!(target: "media_index", "media enrichment scheduler starting");
-    let scheduler = Arc::new(MediaScheduler::new(data_dir, backend));
+    let scheduler = Arc::new(MediaScheduler::new_with_app(data_dir, backend, app.clone()));
     app.manage(Arc::clone(&scheduler));
 
     // Subscribe to registrations FIRST (before the sweep) so a volume registering in

@@ -93,6 +93,13 @@ pub struct Analysis {
 /// (`no-string-matching`): a caller branches on the variant, not the message.
 #[derive(Debug, Clone)]
 pub enum VisionError {
+    /// The source file was gone at read time (an ENOENT-class read failure) — a file
+    /// deleted between the index walk and its analyze, or an orphaned index row that
+    /// reconstructs to a path that can never read (plan M5). The enrich core skips it
+    /// QUIETLY (DEBUG, not WARN): it writes no row (the file is gone, so a later
+    /// completed pass's GC collects any stale row) and counts it as processed. Distinct
+    /// from [`Decode`](VisionError::Decode), which is a present-but-bad file.
+    Missing(String),
     /// The image couldn't be decoded (a broken or unsupported file).
     Decode(String),
     /// The OCR request itself failed.
@@ -102,6 +109,7 @@ pub enum VisionError {
 impl std::fmt::Display for VisionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            VisionError::Missing(m) => write!(f, "image source vanished: {m}"),
             VisionError::Decode(m) => write!(f, "image decode failed: {m}"),
             VisionError::Ocr(m) => write!(f, "vision OCR failed: {m}"),
         }

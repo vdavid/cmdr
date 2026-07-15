@@ -173,5 +173,39 @@
   "indexing.staleDialog.close": "Cerrar",
   "@indexing.staleDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "indexing.enrich.label": "Indexación de imágenes",
+  "@indexing.enrich.label": {
+    "sourceHash": "442068b"
+  },
+  "indexing.enrich.progress": "{done, plural, one {{doneText} de {totalText} imagen} other {{doneText} de {totalText} imágenes} many {{doneText} de {totalText} imágenes}}",
+  "@indexing.enrich.progress": {
+    "sourceHash": "b307416"
+  },
+  "indexing.enrich.rate": "{rateText}/min",
+  "@indexing.enrich.rate": {
+    "sourceHash": "255f3b4",
+    "sameAsSourceJustification": "Símbolo SI de minuto; idéntico en todos los idiomas en esta unidad compacta."
+  },
+  "indexing.enrich.rateEta": "{rate} · {eta}",
+  "@indexing.enrich.rateEta": {
+    "sourceHash": "ac6a373",
+    "sameAsSourceJustification": "Cadena solo con marcadores; el punto medio separador es idéntico en todos los idiomas."
+  },
+  "indexing.enrich.pausedIdle": "Esperando a que dejes de usar el Mac",
+  "@indexing.enrich.pausedIdle": {
+    "sourceHash": "d63ee91"
+  },
+  "indexing.enrich.pausedDisconnected": "En pausa, se reanuda al reconectar",
+  "@indexing.enrich.pausedDisconnected": {
+    "sourceHash": "1483989"
+  },
+  "indexing.enrich.imagesBarLabel": "Imágenes indexadas",
+  "@indexing.enrich.imagesBarLabel": {
+    "sourceHash": "f4b2ca5"
+  },
+  "indexing.enrich.bytesBarLabel": "Datos de imagen procesados",
+  "@indexing.enrich.bytesBarLabel": {
+    "sourceHash": "58952a9"
   }
 }

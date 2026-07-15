@@ -10,6 +10,7 @@ use std::time::Duration;
 
 use crate::media_index::backend::fake::FakeVisionBackend;
 use crate::media_index::predicate::MediaKind;
+use crate::media_index::progress::NoopProgressSink;
 use crate::media_index::read::MediaIndex;
 use crate::media_index::scheduler::enrich::ImageEntry;
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, media_db_path};
@@ -82,6 +83,7 @@ fn defers_when_not_idle_enriches_nothing() {
         is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
+        progress: &NoopProgressSink,
     };
     let outcome = enrich_network_and_gc(&ctx).expect("pass");
     assert!(
@@ -127,6 +129,7 @@ fn proceeds_when_idle_and_enriches_over_the_fetched_bytes() {
         is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
+        progress: &NoopProgressSink,
     };
     let outcome = enrich_network_and_gc(&ctx).expect("pass");
     assert!(matches!(outcome, NetworkPassOutcome::Completed(s) if s.enriched == 1));
@@ -172,6 +175,7 @@ fn bandwidth_throttle_is_invoked_per_fetched_image() {
         is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &record,
+        progress: &NoopProgressSink,
     };
     enrich_network_and_gc(&ctx).expect("pass");
     let delays = recorded.borrow();
@@ -210,6 +214,7 @@ fn disconnect_mid_pass_keeps_completed_rows_and_writes_no_failure() {
         is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
+        progress: &NoopProgressSink,
     };
     let outcome = enrich_network_and_gc(&ctx).expect("pass");
     assert!(
@@ -284,6 +289,7 @@ fn gc_does_not_fire_on_a_disconnect() {
         is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
+        progress: &NoopProgressSink,
     };
     let outcome = enrich_network_and_gc(&ctx).expect("pass");
     assert!(matches!(
@@ -345,6 +351,7 @@ fn override_enriches_a_low_importance_folder_while_the_rest_defers() {
         is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
+        progress: &NoopProgressSink,
     };
     let outcome = enrich_network_and_gc(&ctx).expect("pass");
     assert!(matches!(outcome, NetworkPassOutcome::Completed(s) if s.enriched == 1));
@@ -387,6 +394,7 @@ fn search_answers_offline_after_the_volume_unmounts() {
         is_excluded: &never_excluded,
         cancel: &cancel,
         sleep: &no_sleep,
+        progress: &NoopProgressSink,
     };
     enrich_network_and_gc(&ctx).expect("pass");
     // Simulate unmount: drop the writer (the mount/volume is gone). The read API opens
@@ -439,6 +447,7 @@ fn exclusion_landing_during_network_analyze_writes_no_row() {
         is_excluded: &excluded,
         cancel: &cancel,
         sleep: &no_sleep,
+        progress: &NoopProgressSink,
     };
     let outcome = enrich_network_and_gc(&ctx).expect("pass");
     assert!(matches!(outcome, NetworkPassOutcome::Completed(s) if s.enriched == 0));

@@ -194,6 +194,45 @@ right-anchored, viewport-clamped box and clipping off the window edge.
 The hourglass is a ~14px `<Icon>` (the same icon as the size-column stale indicator), `position: absolute` top/right at
 `var(--spacing-sm)`, tertiary text color, gentle opacity pulse gated behind `prefers-reduced-motion: reduce`.
 
+## Image-enrichment publisher (plan M5)
+
+Image indexing (`media_index/`, the on-device Vision OCR + tags + embeddings pass) joins the SAME top-right indicator as
+a second publisher, alongside the drive indexer — not a second corner widget. `media-enrich-state.svelte.ts` is its
+reactive core (mirroring `index-state.svelte`), and `IndexingStatusIndicator` renders an `IndexingEnrichRow` per
+enriching volume below the drive rows.
+
+**Two backend events** (`media_index/events.rs`, typed `on*` wrappers in `tauri-commands/media-index.ts`):
+
+- **`media-enrich-progress`** (`{ volumeId, done, total, bytesDone, bytesTotal }`): throttled (pass start, then ≤ every
+  500 ms or 100 images, and a final tick). `total` / `bytesTotal` are the ENRICHABLE-subset denominators (images passing
+  the coverage gates), NEVER the full walked set — a raw walked-set denominator rebuilds the never-finishes bug the
+  slider fixed, inside the indicator. `done` counts every processed subset image (enriched, already-current, or a quiet
+  vanished/tiny/phantom skip), so it reaches `total` on completion. Upserts the volume's row (a FRESH object per tick),
+  clearing any paused flag (the pass resumed).
+- **`media-enrich-terminal`** (`{ volumeId, reason }`): exactly one per pass on EVERY exit path (a `Drop`-guard in the
+  scheduler guarantees it — an error `?`-bubble still emits `Failed`). The typed `reason` decides the FE behavior:
+  `completed` / `cancelled` / `failed` CLEAR the row; `pausedWaitingForIdle` / `pausedDisconnected` RE-VOICE it paused
+  (keeping the last counts), so it never sticks at "enriching" (the stuck-row bug `index-scan-aborted` fixed for drive
+  scans). Branch on `reason.kind`, never wording.
+
+**The visibility gate** (`isAnyVolumeEnriching`) counts only ACTIVELY-enriching entries, not paused ones: a paused-only
+volume (a disconnected NAS) never pins the hourglass up forever, but its row still shows while the hourglass is up for
+another reason (the settings panel also voices `paused` via `media_index_volume_state`). This is the deliberate
+reconciliation of "terminal events clear the row" with "paused states voiced": a pause re-labels rather than clears, and
+the gate keeps it from lighting the corner on its own.
+
+**Listen-first-then-query at init** (`initMediaEnrichState`): with plan M1, enrichment can start at backend setup BEFORE
+the frontend mounts, so the pass-start event is lost. After registering the listeners, seed the ROOT volume from
+`media_index_volume_state` if it's enriching (`done = enrichedCount − keptCount` capped, `total = coveredQualifyingCount`),
+mirroring `initIndexState`'s root-only backfill; network volumes hydrate from their next progress tick.
+
+**`IndexingEnrichRow`** is the WRAPPER (owns its own rate/ETA sliding window over `done` + a 1 Hz tick, like
+`IndexingDriveRow`): an images bar + a bytes bar (both aria-labeled), an "N of M images" line, images/min
+(`computeWindowRate`), and the per-volume ETA (`blendEtas` over elapsed + windowed). A paused row shows the paused
+message and no bars. No overall ETA (per-row only, consistent with the drive rows). Tests:
+`media-enrich-state.svelte.test.ts` (terminal clears / re-voices, listen-first seeding, fresh-object reactivity) and
+`IndexingEnrichRow.a11y.test.ts` (mirrors `IndexingDriveRow.a11y.test.ts`).
+
 ## Two-tier scan progress (`computeScanProgress`)
 
 - **Tier 1** (`priorTotalEntries` present): `entriesScanned / priorTotalEntries`, clamped to 0.99, apples-to-apples.

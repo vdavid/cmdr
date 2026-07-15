@@ -138,14 +138,17 @@ fn an_empty_file_returns_a_typed_decode_error() {
 }
 
 #[test]
-fn a_missing_file_returns_a_typed_decode_error() {
+fn a_missing_file_returns_a_typed_missing_error() {
+    // An ENOENT-class read failure is a VANISHED source, not a bad image: a typed
+    // `Missing` so the enrich core skips it quietly (DEBUG, no row) rather than a WARN +
+    // `Failed` row (plan M5). Classified by the io error kind, never a message match.
     let backend = VisionOcrBackend::new();
     let err = backend
         .ocr(&input("/no/such/path/definitely-missing.png"))
         .expect_err("a missing file must not OCR");
     assert!(
-        matches!(err, VisionError::Decode(_)),
-        "expected a typed Decode error, got {err:?}"
+        matches!(err, VisionError::Missing(_)),
+        "expected a typed Missing error, got {err:?}"
     );
 }
 

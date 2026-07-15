@@ -173,5 +173,39 @@
   "indexing.staleDialog.close": "Sluit",
   "@indexing.staleDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "indexing.enrich.label": "Afbeeldingen indexeren",
+  "@indexing.enrich.label": {
+    "sourceHash": "442068b"
+  },
+  "indexing.enrich.progress": "{done, plural, one {{doneText} van {totalText} afbeelding} other {{doneText} van {totalText} afbeeldingen}}",
+  "@indexing.enrich.progress": {
+    "sourceHash": "b307416"
+  },
+  "indexing.enrich.rate": "{rateText}/min",
+  "@indexing.enrich.rate": {
+    "sourceHash": "255f3b4",
+    "sameAsSourceJustification": "SI-symbool voor minuut; in deze compacte eenheid in elke taal identiek."
+  },
+  "indexing.enrich.rateEta": "{rate} · {eta}",
+  "@indexing.enrich.rateEta": {
+    "sourceHash": "ac6a373",
+    "sameAsSourceJustification": "String met alleen tijdelijke aanduidingen; het middelpunt als scheidingsteken is in elke taal identiek."
+  },
+  "indexing.enrich.pausedIdle": "Wacht tot je niet bezig bent",
+  "@indexing.enrich.pausedIdle": {
+    "sourceHash": "d63ee91"
+  },
+  "indexing.enrich.pausedDisconnected": "Gepauzeerd, gaat verder bij opnieuw verbinden",
+  "@indexing.enrich.pausedDisconnected": {
+    "sourceHash": "1483989"
+  },
+  "indexing.enrich.imagesBarLabel": "Geïndexeerde afbeeldingen",
+  "@indexing.enrich.imagesBarLabel": {
+    "sourceHash": "f4b2ca5"
+  },
+  "indexing.enrich.bytesBarLabel": "Verwerkte afbeeldingsgegevens",
+  "@indexing.enrich.bytesBarLabel": {
+    "sourceHash": "58952a9"
   }
 }

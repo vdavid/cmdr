@@ -1997,5 +1997,17 @@
   "settings.applier.logStorageRestart": "Starte Cmdr neu, um die Änderung der Protokollspeicherung anzuwenden.",
   "@settings.applier.logStorageRestart": {
     "sourceHash": "b833dee"
+  },
+  "settings.mediaIndex.progress.coveredOfTotal": "{total, plural, one {{enrichedText} von {totalText} Bild in deinen abgedeckten Ordnern indiziert} other {{enrichedText} von {totalText} Bildern in deinen abgedeckten Ordnern indiziert}}",
+  "@settings.mediaIndex.progress.coveredOfTotal": {
+    "sourceHash": "73d547e"
+  },
+  "settings.mediaIndex.progress.coveredDone": "{total, plural, one {{totalText} Bild in deinen abgedeckten Ordnern indiziert} other {{totalText} Bilder in deinen abgedeckten Ordnern indiziert}}",
+  "@settings.mediaIndex.progress.coveredDone": {
+    "sourceHash": "98e10c0"
+  },
+  "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} weiteres Bild aus einer breiteren Einstellung indiziert, weiterhin durchsuchbar} other {{keptText} weitere Bilder aus einer breiteren Einstellung indiziert, weiterhin durchsuchbar}}",
+  "@settings.mediaIndex.progress.kept": {
+    "sourceHash": "24bf4ee"
   }
 }

@@ -173,5 +173,38 @@
   "indexing.staleDialog.close": "Bezárás",
   "@indexing.staleDialog.close": {
     "sourceHash": "7d9eb7a"
+  },
+  "indexing.enrich.label": "Képek indexelése",
+  "@indexing.enrich.label": {
+    "sourceHash": "442068b"
+  },
+  "indexing.enrich.progress": "{done, plural, one {{doneText} / {totalText} kép} other {{doneText} / {totalText} kép}}",
+  "@indexing.enrich.progress": {
+    "sourceHash": "b307416"
+  },
+  "indexing.enrich.rate": "{rateText}/perc",
+  "@indexing.enrich.rate": {
+    "sourceHash": "255f3b4"
+  },
+  "indexing.enrich.rateEta": "{rate} · {eta}",
+  "@indexing.enrich.rateEta": {
+    "sourceHash": "ac6a373",
+    "sameAsSourceJustification": "Csak helyettesítőket tartalmazó szöveg; a középső pont elválasztó minden nyelvben azonos."
+  },
+  "indexing.enrich.pausedIdle": "Vár, amíg épp nem vagy elfoglalt",
+  "@indexing.enrich.pausedIdle": {
+    "sourceHash": "d63ee91"
+  },
+  "indexing.enrich.pausedDisconnected": "Szüneteltetve, újracsatlakozáskor folytatódik",
+  "@indexing.enrich.pausedDisconnected": {
+    "sourceHash": "1483989"
+  },
+  "indexing.enrich.imagesBarLabel": "Indexelt képek",
+  "@indexing.enrich.imagesBarLabel": {
+    "sourceHash": "f4b2ca5"
+  },
+  "indexing.enrich.bytesBarLabel": "Feldolgozott képadatok",
+  "@indexing.enrich.bytesBarLabel": {
+    "sourceHash": "58952a9"
   }
 }

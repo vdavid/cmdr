@@ -9,8 +9,9 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::indexing::store::{IndexStore, ROOT_ID};
-use crate::media_index::backend::{Analysis, ImageInput, VisionBackend};
+use crate::media_index::backend::{Analysis, ImageInput, VisionBackend, VisionError};
 use crate::media_index::predicate::{MediaKind, Qualification, qualify_dir};
+use crate::media_index::progress::{EnrichProgress, EnrichProgressSink};
 use crate::media_index::store::{EnrichmentState, MediaStatusRow, needs_enrichment};
 use crate::media_index::writer::{MediaWriter, UpsertAnalysis};
 
@@ -24,11 +25,47 @@ pub(crate) struct ImageEntry {
     pub(crate) kind: MediaKind,
 }
 
-/// What one pass did: how many images it enriched and how many rows it GC'd.
+/// What one pass did: how many images it enriched, how many rows it GC'd, and whether
+/// the memory watchdog cancelled it partway (so the scheduler maps a cancelled pass to
+/// a `Cancelled` terminal event, distinct from a clean `Completed`).
 #[derive(Debug, Default, PartialEq, Eq)]
 pub(crate) struct PassSummary {
     pub(crate) enriched: usize,
     pub(crate) gc_count: usize,
+    pub(crate) cancelled: bool,
+}
+
+/// The pass's side-channels to the outside world: cooperative cancellation and progress
+/// reporting. Bundled so the enrich core stays under the argument-count lint and callers
+/// pass one value (mirroring the network core's `NetworkEnrichCtx`).
+pub(crate) struct PassHooks<'a> {
+    /// The emergency-stop check (memory watchdog), checked between images.
+    pub(crate) cancel: &'a dyn Fn() -> bool,
+    /// The throttled progress sink (the top-right indicator's second publisher, plan
+    /// M5). A no-op in unit tests that don't assert progress.
+    pub(crate) progress: &'a dyn EnrichProgressSink,
+}
+
+/// The ENRICHABLE-subset denominators for a pass: the count of images passing the
+/// coverage gates (`should_enrich` AND not `is_excluded`) and their total bytes
+/// (`ImageEntry.size`, a `None` counting 0). This is the honest progress denominator —
+/// NEVER `images.len()`, which would leave the bar stuck at "150 of 223,228" for a
+/// volume most of whose images are deferred below the slider threshold (plan M5). Pure,
+/// so the denominator rule is unit-testable.
+pub(crate) fn enrichable_totals(
+    images: &[ImageEntry],
+    should_enrich: &dyn Fn(&str) -> bool,
+    is_excluded: &dyn Fn(&str) -> bool,
+) -> (u64, u64) {
+    let mut total = 0u64;
+    let mut bytes_total = 0u64;
+    for image in images {
+        if !is_excluded(&image.path) && should_enrich(&image.path) {
+            total += 1;
+            bytes_total += image.size.unwrap_or(0);
+        }
+    }
+    (total, bytes_total)
 }
 
 /// Walk every directory in a volume's index, qualify each directory's files
@@ -173,9 +210,14 @@ pub(crate) fn prioritized(images: &[ImageEntry], folder_score: &dyn Fn(&str) -> 
 ///   file is still present in the GC `current` set). An excluded image is deferred, so
 ///   like any deferred image it stays in `current` and isn't GC'd.
 /// - Enriches only images the staleness predicate marks stale ([`needs_enrichment`]).
-/// - Checks `cancel` BETWEEN images so an emergency stop (the memory watchdog)
+/// - A VANISHED source (a typed [`VisionError::Missing`], an ENOENT-class read
+///   failure) is skipped QUIETLY (DEBUG, no row) but still counts toward `done` —
+///   the plan-M5 vanished/phantom-file handling.
+/// - Checks `hooks.cancel` BETWEEN images so an emergency stop (the memory watchdog)
 ///   yields promptly; a cancelled pass ALSO skips GC (yield fully) — the vanished
-///   rows are collected on the next completed scan.
+///   rows are collected on the next completed scan — and returns `cancelled: true`.
+/// - Reports throttled progress through `hooks.progress` over the ENRICHABLE subset
+///   (the honest denominator), so image indexing joins the top-right indicator.
 /// - GC uses the FULL walked image set as `current` (not just the freshly enriched
 ///   ones), so a still-present image whose enrichment this pass skipped isn't GC'd.
 pub(crate) fn enrich_and_gc(
@@ -185,61 +227,96 @@ pub(crate) fn enrich_and_gc(
     writer: &MediaWriter,
     should_enrich: &dyn Fn(&str) -> bool,
     is_excluded: &dyn Fn(&str) -> bool,
-    cancel: &dyn Fn() -> bool,
+    hooks: &PassHooks,
 ) -> Result<PassSummary, String> {
     let stamp = backend.analysis_stamp();
     let current: HashSet<String> = images.iter().map(|i| i.path.clone()).collect();
 
+    // The honest progress denominator (plan M5): the enrichable subset, never the full
+    // walked set. `done` counts every subset image the pass finishes handling — enriched,
+    // already-current, or a quiet vanished skip — so it reaches `total` on completion.
+    let (total, bytes_total) = enrichable_totals(images, should_enrich, is_excluded);
+    let mut done = 0u64;
+    let mut bytes_done = 0u64;
+    // The pass-start tick, so the indicator row appears immediately at 0 / total.
+    hooks.progress.report(EnrichProgress {
+        done,
+        total,
+        bytes_done,
+        bytes_total,
+    });
+
     let mut enriched = 0;
     let mut cancelled = false;
     for image in images {
-        if cancel() {
+        if (hooks.cancel)() {
             cancelled = true;
             break;
         }
         // Privacy veto (LIVE hard veto, beats coverage): an excluded image is deferred
-        // like any other, so it stays in `current` and GC never wipes it.
+        // like any other, so it stays in `current` and GC never wipes it. Not in the
+        // enrichable subset, so it doesn't count toward `done` / `total`.
         if is_excluded(&image.path) {
             continue;
         }
         // Coverage gate: a deferred image is skipped here but stays in `current`, so
-        // GC never wipes it.
+        // GC never wipes it. Also not in the subset.
         if !should_enrich(&image.path) {
             continue;
         }
-        if !needs_enrichment(statuses.get(&image.path), image.mtime, image.size, &stamp) {
-            continue;
-        }
-        let input = ImageInput {
-            path: image.path.clone(),
-            kind: image.kind,
-            // Local volume: the backend reads the real on-disk path itself.
-            bytes: None,
-        };
-        let analysis = backend.analyze(&input);
-        // Re-check the LIVE veto AFTER the slow analyze: an exclusion that landed during
-        // it must not persist a row (the in-flight-analyze TOCTOU — a later pass wouldn't
-        // collect it, since the file is still in the GC `current` set).
-        if is_excluded(&image.path) {
-            continue;
-        }
-        match analysis {
-            Ok(analysis) => {
-                writer
-                    .upsert(
-                        status_row(image, EnrichmentState::Done, &stamp),
-                        Some(to_upsert_analysis(analysis)),
-                    )
-                    .map_err(|e| e.to_string())?;
-                enriched += 1;
+        // In the enrichable subset ⇒ count it as processed no matter the outcome
+        // (enriched, already-current, or a quiet skip), so the bar reaches `total`.
+        done += 1;
+        bytes_done += image.size.unwrap_or(0);
+
+        if needs_enrichment(statuses.get(&image.path), image.mtime, image.size, &stamp) {
+            let input = ImageInput {
+                path: image.path.clone(),
+                kind: image.kind,
+                // Local volume: the backend reads the real on-disk path itself.
+                bytes: None,
+            };
+            let analysis = backend.analyze(&input);
+            // Re-check the LIVE veto AFTER the slow analyze: an exclusion that landed
+            // during it must not persist a row (the in-flight-analyze TOCTOU — a later
+            // pass wouldn't collect it, since the file is still in the GC `current` set).
+            if !is_excluded(&image.path) {
+                match analysis {
+                    Ok(analysis) => {
+                        writer
+                            .upsert(
+                                status_row(image, EnrichmentState::Done, &stamp),
+                                Some(to_upsert_analysis(analysis)),
+                            )
+                            .map_err(|e| e.to_string())?;
+                        enriched += 1;
+                    }
+                    // A VANISHED source (ENOENT-class) — a file deleted between the walk
+                    // and its analyze, or an orphaned index row's phantom path: skip
+                    // QUIETLY (DEBUG, never WARN), write NO row (the file is gone; a
+                    // later completed pass's GC collects any stale row). It already
+                    // counted toward `done` above, so the bar still reaches `total`
+                    // (plan M5). Typed variant, never a message match.
+                    Err(VisionError::Missing(msg)) => {
+                        log::debug!(target: "media_index", "skipping vanished image '{}': {msg}", image.path);
+                    }
+                    // A present-but-bad file (a good read, a decode/OCR failure) ⇒ a real
+                    // per-file failure ⇒ `Failed`.
+                    Err(e) => {
+                        log::warn!(target: "media_index", "analysis failed for '{}': {e}", image.path);
+                        writer
+                            .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
+                            .map_err(|e| e.to_string())?;
+                    }
+                }
             }
-            Err(e) => {
-                log::warn!(target: "media_index", "analysis failed for '{}': {e}", image.path);
-                writer
-                    .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
-                    .map_err(|e| e.to_string())?;
-            }
         }
+        hooks.progress.report(EnrichProgress {
+            done,
+            total,
+            bytes_done,
+            bytes_total,
+        });
     }
 
     // Deletion-driven GC — only on a completed scan (this fn's caller runs it on a
@@ -255,7 +332,11 @@ pub(crate) fn enrich_and_gc(
     };
 
     writer.flush_blocking().map_err(|e| e.to_string())?;
-    Ok(PassSummary { enriched, gc_count })
+    Ok(PassSummary {
+        enriched,
+        gc_count,
+        cancelled,
+    })
 }
 
 /// Build the `media_status` row for an image at a given state and analyze provenance

@@ -1989,5 +1989,17 @@
   "settings.applier.logStorageRestart": "Indítsd újra a Cmdrt a naplótárolási módosítás alkalmazásához.",
   "@settings.applier.logStorageRestart": {
     "sourceHash": "b833dee"
+  },
+  "settings.mediaIndex.progress.coveredOfTotal": "{total, plural, one {{enrichedText} / {totalText} kép indexelve a lefedett mappáidban} other {{enrichedText} / {totalText} kép indexelve a lefedett mappáidban}}",
+  "@settings.mediaIndex.progress.coveredOfTotal": {
+    "sourceHash": "73d547e"
+  },
+  "settings.mediaIndex.progress.coveredDone": "{total, plural, one {{totalText} kép indexelve a lefedett mappáidban} other {{totalText} kép indexelve a lefedett mappáidban}}",
+  "@settings.mediaIndex.progress.coveredDone": {
+    "sourceHash": "98e10c0"
+  },
+  "settings.mediaIndex.progress.kept": "{kept, plural, one {még {keptText} kép indexelve egy tágabb beállításból, továbbra is kereshető} other {még {keptText} kép indexelve egy tágabb beállításból, továbbra is kereshető}}",
+  "@settings.mediaIndex.progress.kept": {
+    "sourceHash": "24bf4ee"
   }
 }

@@ -111,6 +111,19 @@ pub struct MediaIndexVolumeState {
     /// importance recompute surfaces as a visible wait rather than a silent "0 of N"
     /// (plan M1: the residual risk must be VISIBLE, never silent).
     pub waiting_for_importance: bool,
+    /// How many drive-index qualifying images fall in the folders COVERED at the
+    /// current slider threshold — the honest denominator for the settings progress line
+    /// "N of M in your covered folders", which can reach done at any slider position
+    /// (unlike `qualifying_count`, the full volume total). `None` when importance hasn't
+    /// scored the volume yet (the same `stored_coverage` single source as M4's reclaim
+    /// numbers, so they never disagree; plan M5).
+    pub covered_qualifying_count: Option<u64>,
+    /// How many STORED rows fall OUTSIDE current coverage — indexed under a broader past
+    /// setting and kept searchable (the slider is forward-only). Drives the quiet
+    /// kept-rows line "K more indexed from broader settings — still searchable", which
+    /// composes with M4's reclaim line as one narrative. `None` when importance is
+    /// unscored (plan M5).
+    pub kept_count: Option<u64>,
 }
 
 /// Report the honest per-volume enrichment state for `volume_id`: the master toggle,
@@ -127,31 +140,48 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
     let enabled = gate::is_enabled();
     // The scheduler is `app.manage`d only once `media_index::scheduler::start` ran; a
     // missing state (e.g. an early call) honestly reads as "not enriching".
-    let indexing = app
-        .try_state::<Arc<MediaScheduler>>()
-        .is_some_and(|scheduler| scheduler.is_enriching(&volume_id));
+    let scheduler = app.try_state::<Arc<MediaScheduler>>().map(|s| Arc::clone(s.inner()));
+    let indexing = scheduler.as_ref().is_some_and(|s| s.is_enriching(&volume_id));
 
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
+    let threshold = gate::importance_threshold();
     let vid = volume_id.clone();
-    let (enriched_count, qualifying_count, importance_scored) = tauri::async_runtime::spawn_blocking(move || {
-        let enriched = MediaIndex::open(&data_dir, &vid)
-            .enriched_count()
-            .map_err(|e| e.to_string())?;
-        // The honest denominator: how many images qualify per the drive index.
-        // `None` when the index isn't registered (offline / still scanning).
-        let qualifying = coverage::get_or_build(&vid).map(|c| c.total);
-        // Whether importance has data for this volume — the same "has it scored?"
-        // check the scheduler gates enrichment on (live weight rows OR a stamped
-        // generation), so the deferred state can't disagree with the scheduler.
-        let importance_scored = {
-            use crate::importance::{ImportanceIndex, SignalSet};
-            let index = ImportanceIndex::open(&data_dir, &vid, SignalSet::all());
-            coverage::importance_scored(&index)
-        };
-        Ok::<_, String>((enriched, qualifying, importance_scored))
-    })
-    .await
-    .map_err(|e| format!("media volume state task panicked: {e}"))??;
+    // The threshold-aware stored-coverage split (`covered_qualifying_count` + `kept_count`,
+    // plan M5) needs the volume's OS mount root to map override/exclude config; resolving
+    // it here (a reclaim-eligible enabled volume only) keeps the split `None` for a
+    // volume that isn't background-enriched.
+    let mount_root = resolve_reclaim_volumes(std::slice::from_ref(&volume_id))
+        .0
+        .into_iter()
+        .next()
+        .map(|(_, mount)| mount);
+    let (enriched_count, qualifying_count, importance_scored, coverage_counts) =
+        tauri::async_runtime::spawn_blocking(move || {
+            let enriched = MediaIndex::open(&data_dir, &vid)
+                .enriched_count()
+                .map_err(|e| e.to_string())?;
+            // The honest denominator: how many images qualify per the drive index.
+            // `None` when the index isn't registered (offline / still scanning).
+            let qualifying = coverage::get_or_build(&vid).map(|c| c.total);
+            // Whether importance has data for this volume — the same "has it scored?"
+            // check the scheduler gates enrichment on (live weight rows OR a stamped
+            // generation), so the deferred state can't disagree with the scheduler.
+            let importance_scored = {
+                use crate::importance::{ImportanceIndex, SignalSet};
+                let index = ImportanceIndex::open(&data_dir, &vid, SignalSet::all());
+                coverage::importance_scored(&index)
+            };
+            // The threshold-aware split (`None` unless the volume is reclaim-eligible AND
+            // importance has scored it — the SAME single source as M4's reclaim numbers,
+            // via `stored_coverage_counts`, so they never disagree).
+            let coverage_counts = match (&scheduler, &mount_root) {
+                (Some(scheduler), Some(mount)) => scheduler.stored_coverage_counts(&vid, mount, threshold),
+                _ => None,
+            };
+            Ok::<_, String>((enriched, qualifying, importance_scored, coverage_counts))
+        })
+        .await
+        .map_err(|e| format!("media volume state task panicked: {e}"))??;
 
     // Deferred-on-importance: enabled, the index is ready (a real qualifying count),
     // but importance has no data yet, so enrichment waits on the recompute.
@@ -166,6 +196,8 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
         always_indexed: network_config::snapshot().always_index_volumes.contains(&volume_id),
         paused: network_config::is_paused(&volume_id),
         waiting_for_importance,
+        covered_qualifying_count: coverage_counts.as_ref().map(|c| c.covered_qualifying),
+        kept_count: coverage_counts.as_ref().map(|c| c.doomed_stored),
     })
 }
 

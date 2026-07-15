@@ -1992,5 +1992,17 @@
   "settings.applier.logStorageRestart": "Reinicia Cmdr para aplicar el cambio de almacenamiento de registros.",
   "@settings.applier.logStorageRestart": {
     "sourceHash": "b833dee"
+  },
+  "settings.mediaIndex.progress.coveredOfTotal": "{total, plural, one {{enrichedText} de {totalText} imagen indexada en tus carpetas cubiertas} other {{enrichedText} de {totalText} imágenes indexadas en tus carpetas cubiertas} many {{enrichedText} de {totalText} imágenes indexadas en tus carpetas cubiertas}}",
+  "@settings.mediaIndex.progress.coveredOfTotal": {
+    "sourceHash": "73d547e"
+  },
+  "settings.mediaIndex.progress.coveredDone": "{total, plural, one {{totalText} imagen indexada en tus carpetas cubiertas} other {{totalText} imágenes indexadas en tus carpetas cubiertas} many {{totalText} imágenes indexadas en tus carpetas cubiertas}}",
+  "@settings.mediaIndex.progress.coveredDone": {
+    "sourceHash": "98e10c0"
+  },
+  "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} imagen más indexada de una configuración más amplia, todavía se puede buscar} other {{keptText} imágenes más indexadas de una configuración más amplia, todavía se pueden buscar} many {{keptText} imágenes más indexadas de una configuración más amplia, todavía se pueden buscar}}",
+  "@settings.mediaIndex.progress.kept": {
+    "sourceHash": "24bf4ee"
   }
 }
