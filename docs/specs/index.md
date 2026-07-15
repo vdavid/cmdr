@@ -6,6 +6,16 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-15 [local-drive-indexing-plan.md](local-drive-indexing-plan.md) - Index local external drives (USB sticks,
+      SD cards): the missing `enable_drive_index` branch. Core is splitting `IndexVolumeKind`'s conflated "which scanner"
+      vs "has a journal" axes and adding a `LocalExternal` variant — the first volume that is BOTH mount-rooted AND uses
+      the local jwalk + FSEvents pipeline, so the local scan/reconcile/live-event path must learn a mount-relative path
+      space (reuse `smb_watch::index_relative_path`). Plus: scan-root-relative exclusions (the `/Volumes/` false-complete
+      bug), inode-safety on FAT/exFAT (untrusted → `inode: None`, reuse `FilesystemKind`), non-journaled freshness (loads
+      Stale, live FSEvents keep Fresh — verified live delivery fires on FAT/exFAT despite no `.fseventsd`), eject-stop
+      before unmount (a real FAT-unmount kernel panic motivates it), and the `cmdr://state` indexStatus routing fix.
+      Synthetic disk-image test fixture (timeout-guarded, never a physical card). Reviewed 2× (Opus) + FSEvents/inode
+      facts empirically verified; execution pending.
 - [ ] 2026-07-14 [idle-cpu-throttle-plan.md](idle-cpu-throttle-plan.md) - Cut idle CPU + disk-write thrash from live
       indexing (#37). L1 (importance folded-key subtree clear) and M1 (per-file live-upsert throttle: 60 s leading +
       trailing, 2%/512 KiB bypass, Downloads-exempt, self-write loop subsumed) shipped; M2 (search-index prealloc
