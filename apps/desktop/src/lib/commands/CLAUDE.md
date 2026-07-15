@@ -8,8 +8,9 @@ Centralized command registry and fuzzy search engine for the command palette.
   boundary guard.
 - **`types.ts`**: `Command`, `CommandMatch`, `CommandScope`, plus `CommandArgs` / `CommandDispatchArgs` (the dispatch
   arg-tuple shape).
-- **`command-registry.ts`**: the `commands` array (single source of truth), `getPaletteCommands()`,
-  `updateLicenseCommandName()`, and the `NATIVE_SHORTCUT_COMMAND_IDS` / `FIXED_KEY_COMMAND_IDS` lists.
+- **`command-registry.ts`**: the `commands` array, `getPaletteCommands()`, `updateLicenseCommandName()`, and the
+  `NATIVE_SHORTCUT_COMMAND_IDS` / `FIXED_KEY_COMMAND_IDS` lists. Registry DATA is in **`sources/*.ts`** (add commands
+  there, not inline).
 - **`fuzzy-search.ts`**: `searchCommands()` (palette set) + `searchAllCommands()` (full registry), via
   `@leeoniya/ufuzzy`.
 - Tests: `fuzzy-search.test.ts`, `command-registry.test.ts` (tuple ↔ registry set-equality, palette-visible-set pin),

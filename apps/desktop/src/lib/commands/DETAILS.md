@@ -74,10 +74,13 @@ adapter validate-parses each raw payload into these arg shapes before dispatchin
 
 ## Command registry
 
-`command-registry.ts` holds the commands grouped by scope (most are palette-visible; the rest are
-`showInPalette: false`: low-level navigation and MCP-only per-pane commands). `app.commandPalette` is
-`showInPalette: false` (opening the palette from inside itself makes no sense). `getPaletteCommands()` is the only
-filter exported; `commands` (the full array) is exported too, for shortcut documentation and Settings panes.
+The registry data is split by top-level scope into `sources/*.ts` (`app`, `main-window`, `file-list`, `browsers`, `mcp`,
+`about-window`, `command-palette`), each exporting a `CommandSource[]`. `command-registry.ts` concatenates them in
+authoring order into `commandSources` (order is load-bearing: it drives palette listing and shortcut conflict
+resolution) and holds all the logic. Most commands are palette-visible; the rest are `showInPalette: false`: low-level
+navigation and MCP-only per-pane commands. `app.commandPalette` is `showInPalette: false` (opening the palette from
+inside itself makes no sense). `getPaletteCommands()` is the only filter exported; `commands` (the full array) is
+exported too, for shortcut documentation and Settings panes.
 
 `isMacOS()` is called at module load so the registry contains platform-correct names and `showInPalette` values
 (`Get info`, `Quick look`, `Show in Finder` only make sense on macOS), keeping the palette and shortcut systems
@@ -105,9 +108,9 @@ Two special cases:
 
 1. Add the id to `COMMAND_IDS` in `command-ids.ts`. Skipping this makes the registry entry a compile error (`Command.id`
    is `CommandId`).
-2. Add a `CommandSource` entry to `commandSources` in `command-registry.ts` (with a `nameKey`, and a `descriptionKey` if
-   it needs help text), and add the matching `commands.<idish>.label` / `.description` to `messages/en/commands.json`
-   with a `@key` description, then run `pnpm intl:keys`. Skipping the entry fails the set-equality test in
+2. Add a `CommandSource` entry to the matching `sources/*.ts` scope file (with a `nameKey`, and a `descriptionKey` if it
+   needs help text), and add the matching `commands.<idish>.label` / `.description` to `messages/en/commands.json` with
+   a `@key` description, then run `pnpm intl:keys`. Skipping the entry fails the set-equality test in
    `command-registry.test.ts`; a `nameKey` with no catalog entry fails the key-gen build.
 3. If the command carries a REQUIRED dispatch payload, declare its shape in `CommandArgsOverrides` in `types.ts`; if the
    payload is OPTIONAL (dispatched both arg-less and with a payload, like the MCP `file.copy`/`move`/`delete` tools),
