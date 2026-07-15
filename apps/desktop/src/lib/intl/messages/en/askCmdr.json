@@ -243,6 +243,10 @@
   "@askCmdr.composer.dropHint": {
     "description": "Overlay shown on the composer while a file or folder is dragged over it, inviting a drop. Sentence case."
   },
+  "askCmdr.composer.providerOff": "Turn on an AI provider in settings to start chatting.",
+  "@askCmdr.composer.providerOff": {
+    "description": "Inline hint shown under the Ask Cmdr composer when no AI provider is turned on, so the Send button is disabled. Points the user at settings to turn one on. Friendly and actionable; avoids the words error and failed."
+  },
   "askCmdr.attachment.remove": "Remove attachment",
   "@askCmdr.attachment.remove": {
     "description": "Accessible label for the small button that removes a staged file or folder attachment from the composer. Sentence case."

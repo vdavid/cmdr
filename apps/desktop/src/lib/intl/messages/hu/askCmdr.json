@@ -244,6 +244,10 @@
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"
   },
+  "askCmdr.composer.providerOff": "Kapcsolj be egy AI-szolgáltatót a beállításokban, hogy elkezdhess csevegni.",
+  "@askCmdr.composer.providerOff": {
+    "sourceHash": "e466415"
+  },
   "askCmdr.attachment.remove": "Melléklet eltávolítása",
   "@askCmdr.attachment.remove": {
     "sourceHash": "595b066"

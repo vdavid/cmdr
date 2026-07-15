@@ -247,6 +247,10 @@
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"
   },
+  "askCmdr.composer.providerOff": "Zet een AI-aanbieder aan in instellingen om te beginnen met chatten.",
+  "@askCmdr.composer.providerOff": {
+    "sourceHash": "e466415"
+  },
   "askCmdr.attachment.remove": "Verwijder bijlage",
   "@askCmdr.attachment.remove": {
     "sourceHash": "595b066"

@@ -244,6 +244,10 @@
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"
   },
+  "askCmdr.composer.providerOff": "在设置中开启一个 AI 提供方，即可开始聊天。",
+  "@askCmdr.composer.providerOff": {
+    "sourceHash": "e466415"
+  },
   "askCmdr.attachment.remove": "移除附件",
   "@askCmdr.attachment.remove": {
     "sourceHash": "595b066"

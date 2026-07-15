@@ -246,6 +246,10 @@
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"
   },
+  "askCmdr.composer.providerOff": "Aktiviere einen KI-Anbieter in den Einstellungen, um chatten zu können.",
+  "@askCmdr.composer.providerOff": {
+    "sourceHash": "e466415"
+  },
   "askCmdr.attachment.remove": "Anhang entfernen",
   "@askCmdr.attachment.remove": {
     "sourceHash": "595b066"

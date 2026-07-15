@@ -11,6 +11,7 @@
     import { onMount } from 'svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { getSetting, onSpecificSettingChange, type AiProvider } from '$lib/settings'
     import { askCmdrSelectionAttachments } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
     import AskCmdrAttachmentChip from './AskCmdrAttachmentChip.svelte'
@@ -49,8 +50,15 @@
         return () => unlisten?.()
     })
 
+    // Which AI provider Ask Cmdr uses, read live so flipping it in settings gates Send
+    // immediately (no restart). Provider off ⇒ can't start a new turn; an in-flight turn
+    // is unaffected (Send is already disabled while streaming).
+    let provider = $state<AiProvider>(getSetting('ai.provider'))
+    $effect(() => onSpecificSettingChange('ai.provider', (_id, v) => { provider = v }))
+    const providerOff = $derived(provider === 'off')
+
     const streaming = $derived(askCmdrState.streaming)
-    const canSend = $derived(text.trim().length > 0)
+    const canSend = $derived(text.trim().length > 0 && !providerOff)
     const attachments = $derived(askCmdrState.attachments)
 
     function submit(): void {
@@ -125,6 +133,9 @@
             </button>
         {/if}
     </div>
+    {#if providerOff}
+        <p class="provider-off-hint">{tString('askCmdr.composer.providerOff')}</p>
+    {/if}
     {#if dragOver}
         <div class="drop-hint" aria-hidden="true">
             <Icon name="paperclip" size={16} aria-hidden="true" />
@@ -214,6 +225,13 @@
     .composer-button.ghost:hover {
         color: var(--color-text-primary);
         background: var(--color-bg-tertiary);
+    }
+
+    .provider-off-hint {
+        margin: 0;
+        font-size: var(--font-size-xs);
+        color: var(--color-text-tertiary);
+        line-height: 1.4;
     }
 
     .drop-hint {

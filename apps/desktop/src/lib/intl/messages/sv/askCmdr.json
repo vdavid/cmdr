@@ -244,6 +244,10 @@
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"
   },
+  "askCmdr.composer.providerOff": "Aktivera en AI-leverantör i inställningarna för att börja chatta.",
+  "@askCmdr.composer.providerOff": {
+    "sourceHash": "e466415"
+  },
   "askCmdr.attachment.remove": "Ta bort bilaga",
   "@askCmdr.attachment.remove": {
     "sourceHash": "595b066"

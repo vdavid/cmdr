@@ -246,6 +246,10 @@
   "@askCmdr.composer.dropHint": {
     "sourceHash": "34a7a63"
   },
+  "askCmdr.composer.providerOff": "Ative um provedor de IA nos ajustes para começar a conversar.",
+  "@askCmdr.composer.providerOff": {
+    "sourceHash": "e466415"
+  },
   "askCmdr.attachment.remove": "Remover anexo",
   "@askCmdr.attachment.remove": {
     "sourceHash": "595b066"
