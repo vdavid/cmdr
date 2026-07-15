@@ -77,6 +77,13 @@ pub struct ScanConfig {
     /// `ExclusionScope` is a crate-internal type and `ScanConfig` is only built
     /// in-crate.
     pub(crate) scope: ExclusionScope,
+    /// Whether the scanned volume's inode is a trustworthy identity. `false` only
+    /// for a local external drive on FAT/exFAT, whose derived inodes are unstable:
+    /// the visitor then stores `inode: None` for every entry (and skips hardlink
+    /// dedup, inert at `nlink == 1` anyway) so the live rename pre-pass can never
+    /// match a reused inode. Defaults to `true`; the manager feeds it from the
+    /// volume's `IndexPathSpace`. See `filesystem_kind::has_stable_inodes`.
+    pub(crate) inodes_trustworthy: bool,
 }
 
 impl Default for ScanConfig {
@@ -86,6 +93,7 @@ impl Default for ScanConfig {
             batch_size: 2000,
             num_threads: 0,
             scope: ExclusionScope::BootDisk,
+            inodes_trustworthy: true,
         }
     }
 }
@@ -238,6 +246,7 @@ pub fn scan_volume(
                 config.num_threads,
                 true, // volume scan: root always maps to ROOT_ID
                 config.scope,
+                config.inodes_trustworthy,
                 reader,
                 LOCAL_LIST_TIMEOUT,
             );
@@ -284,6 +293,9 @@ pub fn scan_subtree(root: &Path, writer: &IndexWriter, cancelled: &AtomicBool) -
         // Subtree scans don't apply global exclusions (the subtree was chosen
         // explicitly), so the scope is inert here; pass `BootDisk`.
         ExclusionScope::BootDisk,
+        // Subtree scans back post-replay background verification, which is
+        // root-only (the boot disk, APFS) — trustworthy inodes.
+        true,
         reader,
         LOCAL_LIST_TIMEOUT,
     )?;
@@ -323,6 +335,7 @@ fn run_scan(
     num_threads: usize,
     is_volume_root: bool,
     scope: ExclusionScope,
+    inodes_trustworthy: bool,
     reader: ReadDirFn,
     read_timeout: Duration,
 ) -> Result<(ScanSummary, Vec<i64>, u64), ScanError> {
@@ -364,6 +377,7 @@ fn run_scan(
         writer.clone(),
         is_volume_root,
         scope,
+        inodes_trustworthy,
         batch_size,
         progress,
         Arc::clone(&walk_cancel),
@@ -465,6 +479,10 @@ struct InsertVisitor {
     is_volume_root: bool,
     /// Exclusion scope for the per-child gate (see `ScanConfig::scope`).
     scope: ExclusionScope,
+    /// Whether the scanned volume's inode is a trustworthy identity (see
+    /// `ScanConfig::inodes_trustworthy`). `false` on FAT/exFAT ⇒ every stored
+    /// `inode` is nulled and hardlink dedup is skipped.
+    inodes_trustworthy: bool,
     batch_size: usize,
     /// Live progress counters (shared with the manager-facing `ScanHandle`); the
     /// scan summary reads their final values.
@@ -488,6 +506,7 @@ impl InsertVisitor {
         writer: IndexWriter,
         is_volume_root: bool,
         scope: ExclusionScope,
+        inodes_trustworthy: bool,
         batch_size: usize,
         progress: &ScanProgress,
         walk_cancel: Arc<AtomicBool>,
@@ -498,6 +517,7 @@ impl InsertVisitor {
             next_id,
             is_volume_root,
             scope,
+            inodes_trustworthy,
             batch_size,
             entries_scanned: Arc::clone(&progress.entries_scanned),
             dirs_found: Arc::clone(&progress.dirs_found),
@@ -608,17 +628,24 @@ impl DirVisitor for InsertVisitor {
             };
 
             // Deduplicate hardlinks: if nlink > 1, count each inode's size once.
-            let (logical_size, physical_size, modified_at, inode) =
-                if !is_dir && !is_symlink && matches!(snap.nlink, Some(n) if n > 1) {
-                    let ino = snap.inode.unwrap_or(0);
-                    if !self.seen_inodes.lock_ignore_poison().insert(ino) {
-                        (None, None, snap.modified_at, snap.inode)
-                    } else {
-                        (snap.logical_size, snap.physical_size, snap.modified_at, snap.inode)
-                    }
+            //
+            // On a volume without stable inodes (FAT/exFAT), never STORE the
+            // derived inode: it's an unstable identity that would let the live
+            // rename pre-pass false-match a reused inode. Hardlink dedup is skipped
+            // there for the same reason (it keys off the inode) — and `nlink` is
+            // always 1 on those formats anyway, so the branch would never fire.
+            let (logical_size, physical_size, modified_at, inode) = if !self.inodes_trustworthy {
+                (snap.logical_size, snap.physical_size, snap.modified_at, None)
+            } else if !is_dir && !is_symlink && matches!(snap.nlink, Some(n) if n > 1) {
+                let ino = snap.inode.unwrap_or(0);
+                if !self.seen_inodes.lock_ignore_poison().insert(ino) {
+                    (None, None, snap.modified_at, snap.inode)
                 } else {
                     (snap.logical_size, snap.physical_size, snap.modified_at, snap.inode)
-                };
+                }
+            } else {
+                (snap.logical_size, snap.physical_size, snap.modified_at, snap.inode)
+            };
 
             let id = self.next_id.fetch_add(1, Ordering::Relaxed);
             let name = child

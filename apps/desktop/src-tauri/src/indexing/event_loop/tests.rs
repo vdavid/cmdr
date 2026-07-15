@@ -916,6 +916,80 @@ fn detect_renames_by_inode_no_match_keeps_event() {
     writer.shutdown();
 }
 
+/// The corruption-prevention lock for inode-untrusted filesystems (FAT/exFAT):
+/// a delete+create that REUSES a freed inode must NEVER be mistaken for a rename.
+///
+/// On FAT/exFAT `st_ino` is derived from the file's first data cluster, so a
+/// delete+create can alias a fresh, unrelated file onto a freed inode. If that
+/// inode were stored in the index, the live rename pre-pass would match the new
+/// file against the deleted file's row and emit a `MoveEntryV2`, silently
+/// re-homing the old entry's `dir_stats` onto the unrelated file (index
+/// corruption). The fix stores `inode: None` for every entry on such a volume,
+/// so `find_entry_by_inode` never matches and the change falls back to a safe
+/// delete+create.
+///
+/// This pins BOTH directions at the pre-pass decision point, feeding the DB the
+/// value each volume kind would store for the OLD entry: with the inode STORED (a
+/// trusted volume) the same inode still detects a genuine move; with it NULLED (an
+/// untrusted volume) the reused inode finds no row, so no false `MoveEntryV2`.
+#[test]
+fn inode_reuse_is_never_a_false_move_when_inodes_are_nulled() {
+    // One on-disk entry whose real inode we reuse to simulate cluster aliasing:
+    // on disk it's a brand-new "FreshFile", but the DB's OLD entry may carry the
+    // same inode value (what a trusted volume would have stored).
+    let fs_root = rename_test_tempdir();
+    let reused_path = fs_root.path().join("FreshFile");
+    std::fs::create_dir(&reused_path).expect("create the fresh on-disk entry");
+    let reused_inode =
+        std::os::unix::fs::MetadataExt::ino(&std::fs::symlink_metadata(&reused_path).expect("stat fresh entry"));
+
+    // Seed a DB whose OLD entry "Deleted" carries `stored_inode`, then run the
+    // rename pre-pass for a rename event on the fresh entry. Returns how many
+    // renames it handled (each emits a `MoveEntryV2`).
+    let handled_for = |stored_inode: Option<u64>| -> usize {
+        let (writer, db_path, _db_dir) = rename_test_setup();
+        let parent_id = insert_path_chain(&db_path, fs_root.path(), &writer);
+        {
+            let conn = IndexStore::open_write_connection(&db_path).unwrap();
+            IndexStore::insert_entry_v2(&conn, parent_id, "Deleted", true, false, None, None, None, stored_inode)
+                .unwrap();
+        }
+        let mut events = vec![(
+            reused_path.to_string_lossy().to_string(),
+            renamed_event(&reused_path.to_string_lossy(), 100),
+        )];
+        let mut pending_paths = HashSet::new();
+        let mut max_event_id = 0u64;
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let handled = detect_renames_by_inode(
+            &mut events,
+            &IndexPathSpace::root(),
+            &conn,
+            &writer,
+            &mut pending_paths,
+            &mut max_event_id,
+        );
+        writer.shutdown();
+        handled
+    };
+
+    // Trusted volume (inode stored): a stable inode genuinely IS the same file, so
+    // the pre-pass matches and emits one MoveEntryV2 (correct rename detection).
+    assert_eq!(
+        handled_for(Some(reused_inode)),
+        1,
+        "with the inode stored, a real move is still detected",
+    );
+
+    // Untrusted volume (inode nulled on FAT/exFAT): the reused inode finds no DB
+    // row, so NO MoveEntryV2 — the delete+create is not corrupted into a move.
+    assert_eq!(
+        handled_for(None),
+        0,
+        "with the inode nulled, inode reuse never becomes a false move",
+    );
+}
+
 /// Events without `item_renamed` set are passed through untouched even
 /// if their inode would happen to match a DB row.
 #[test]

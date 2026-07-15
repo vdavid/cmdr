@@ -180,30 +180,73 @@ pub(crate) struct IndexPathSpace {
     /// `None` for the `/`-rooted boot disk; `Some(mount_root)` for a mount-rooted
     /// volume (the prefix stripped to reach the index-relative path).
     mount_root: Option<String>,
+    /// Whether this volume's filesystem inode is a trustworthy identity, resolved
+    /// ONCE per scan from the volume's [`FilesystemKind`](crate::file_system::filesystem_kind::FilesystemKind).
+    /// `false` only for a local external drive on FAT/exFAT (derived, unstable
+    /// inodes). When `false`, the local scan/reconcile/live pipeline stores
+    /// `inode: None` for every entry so the rename pre-pass can never match — an
+    /// inode-reused delete+create must not become a false `MoveEntryV2` (see
+    /// `has_stable_inodes` and [`trust_inode`](Self::trust_inode)). The boot disk
+    /// (APFS) and every trait-scanned volume (SMB/MTP, which don't run the local
+    /// inode pre-pass) are `true`.
+    inodes_trustworthy: bool,
 }
 
 impl IndexPathSpace {
     /// The `/`-rooted boot-disk space: absolute == index-relative (after firmlink
-    /// normalization).
+    /// normalization). The boot disk is APFS, so inodes are trustworthy.
     pub(crate) fn root() -> Self {
-        Self { mount_root: None }
+        Self {
+            mount_root: None,
+            inodes_trustworthy: true,
+        }
     }
 
     /// A mount-rooted space whose index `ROOT_ID` is `mount_root` (`/Volumes/X`).
+    /// Defaults to trustworthy inodes; use [`for_volume`](Self::for_volume) (or
+    /// [`with_inodes_trustworthy`](Self::with_inodes_trustworthy)) to carry a
+    /// FAT/exFAT drive's untrusted-inode fact.
     pub(crate) fn mount_rooted(mount_root: impl Into<String>) -> Self {
         Self {
             mount_root: Some(mount_root.into()),
+            inodes_trustworthy: true,
         }
     }
 
-    /// Derive the space from a volume's kind + root path: a `mount_rooted()` kind
-    /// strips its mount, the boot disk passes through.
-    pub(crate) fn for_volume(kind: IndexVolumeKind, volume_root: &Path) -> Self {
-        if kind.mount_rooted() {
+    /// Override the inode-trust flag (builder form). Used by `for_volume` and by
+    /// tests exercising the FAT/exFAT nulling path.
+    pub(crate) fn with_inodes_trustworthy(mut self, trustworthy: bool) -> Self {
+        self.inodes_trustworthy = trustworthy;
+        self
+    }
+
+    /// Derive the space from a volume's kind + root path + inode trust: a
+    /// `mount_rooted()` kind strips its mount, the boot disk passes through.
+    /// `inodes_trustworthy` is resolved once per scan from the volume's
+    /// filesystem (see `local_external_index::classify`); only a FAT/exFAT local
+    /// external drive is `false`.
+    pub(crate) fn for_volume(kind: IndexVolumeKind, volume_root: &Path, inodes_trustworthy: bool) -> Self {
+        let base = if kind.mount_rooted() {
             Self::mount_rooted(volume_root.to_string_lossy().into_owned())
         } else {
             Self::root()
-        }
+        };
+        base.with_inodes_trustworthy(inodes_trustworthy)
+    }
+
+    /// Whether this volume's stored inodes are a trustworthy identity. See the
+    /// field doc; `false` only for a FAT/exFAT local external drive.
+    pub(crate) fn inodes_trustworthy(&self) -> bool {
+        self.inodes_trustworthy
+    }
+
+    /// Map a freshly-stat'd inode to the value to STORE for this volume: the raw
+    /// inode on a trustworthy filesystem, `None` on FAT/exFAT (where a derived,
+    /// unstable inode must never reach the index and drive the rename pre-pass).
+    /// The single choke point every local write path funnels a snapshot's inode
+    /// through before persisting it.
+    pub(crate) fn trust_inode(&self, raw: Option<u64>) -> Option<u64> {
+        if self.inodes_trustworthy { raw } else { None }
     }
 
     /// The volume's root path as a string: `/Volumes/X` for a mount-rooted drive, `/`
@@ -372,13 +415,34 @@ mod tests {
 
         // `for_volume` derives the space from the kind + root.
         assert_eq!(
-            IndexPathSpace::for_volume(IndexVolumeKind::Local, Path::new("/")).exclusion_scope(),
+            IndexPathSpace::for_volume(IndexVolumeKind::Local, Path::new("/"), true).exclusion_scope(),
             ExclusionScope::BootDisk,
         );
         assert_eq!(
-            IndexPathSpace::for_volume(IndexVolumeKind::LocalExternal, Path::new("/Volumes/NONAME")).exclusion_scope(),
+            IndexPathSpace::for_volume(IndexVolumeKind::LocalExternal, Path::new("/Volumes/NONAME"), true)
+                .exclusion_scope(),
             ExclusionScope::MountRooted,
         );
+    }
+
+    /// The inode-trust axis: `trust_inode` passes a raw inode through on a
+    /// trustworthy volume and nulls it on a FAT/exFAT one, so the local write
+    /// paths store `inode: None` there and the rename pre-pass can never match.
+    #[test]
+    fn index_path_space_trust_inode_nulls_on_untrusted() {
+        use std::path::Path;
+
+        let trusted = IndexPathSpace::for_volume(IndexVolumeKind::LocalExternal, Path::new("/Volumes/USB"), true);
+        assert!(trusted.inodes_trustworthy());
+        assert_eq!(trusted.trust_inode(Some(42)), Some(42), "trusted keeps the inode");
+
+        let untrusted = IndexPathSpace::for_volume(IndexVolumeKind::LocalExternal, Path::new("/Volumes/USB"), false);
+        assert!(!untrusted.inodes_trustworthy());
+        assert_eq!(untrusted.trust_inode(Some(42)), None, "FAT/exFAT nulls the inode");
+        assert_eq!(untrusted.trust_inode(None), None);
+
+        // The boot disk (APFS) is always trustworthy.
+        assert!(IndexPathSpace::root().inodes_trustworthy());
     }
 
     /// `volume_id_for_local_path`'s pure MTP half: an `mtp://device/storage` path

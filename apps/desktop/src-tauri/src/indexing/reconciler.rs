@@ -830,7 +830,8 @@ pub(super) fn reconcile_subtree(
                 logical_size: snap.logical_size,
                 physical_size: snap.physical_size,
                 modified_at: snap.modified_at,
-                inode: snap.inode,
+                // Null the inode on FAT/exFAT (unstable derived inode).
+                inode: space.trust_inode(snap.inode),
                 nlink: snap.nlink,
             });
 
@@ -886,11 +887,15 @@ pub(super) fn reconcile_subtree(
             .iter()
             .map(|(name, meta, is_symlink)| {
                 let is_dir = meta.is_dir();
+                let mut snap = extract_metadata(meta, is_dir, *is_symlink);
+                // Null the inode on FAT/exFAT so the value `diff_dir_against_db`
+                // stores can never feed a false rename match.
+                snap.inode = space.trust_inode(snap.inode);
                 LiveChild {
                     name: name.clone(),
                     is_directory: is_dir,
                     is_symlink: *is_symlink,
-                    snap: extract_metadata(meta, is_dir, *is_symlink),
+                    snap,
                 }
             })
             .collect();
@@ -1221,6 +1226,9 @@ fn handle_creation_or_modification(
         .unwrap_or_default();
 
     let snap = extract_metadata(&metadata, is_dir, is_symlink);
+    // On a volume without stable inodes (FAT/exFAT) store `inode: None`, so a
+    // reused inode can never let the live rename pre-pass false-match a move.
+    let inode = space.trust_inode(snap.inode);
 
     // Live-path throttle: a regular file rewritten in place may be suppressed so
     // rapid rewrites collapse to ≤1 index write per THROTTLE_WINDOW. Only files
@@ -1236,7 +1244,7 @@ fn handle_creation_or_modification(
                 logical_size: snap.logical_size,
                 physical_size: snap.physical_size,
                 modified_at: snap.modified_at,
-                inode: snap.inode,
+                inode,
                 nlink: snap.nlink,
             };
             matches!(
@@ -1261,7 +1269,7 @@ fn handle_creation_or_modification(
         logical_size: snap.logical_size,
         physical_size: snap.physical_size,
         modified_at: snap.modified_at,
-        inode: snap.inode,
+        inode,
         nlink: snap.nlink,
     });
 

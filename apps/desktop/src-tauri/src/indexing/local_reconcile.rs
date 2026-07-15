@@ -227,6 +227,7 @@ fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {
 /// UNDER-counting the inode. So the snapshot stays raw and only the totals dedup.
 fn build_live_children(
     fs_children: &[(String, std::fs::Metadata, bool)],
+    space: &IndexPathSpace,
     seen_inodes: &mut HashSet<u64>,
     total_entries: &mut u64,
     total_dirs: &mut u64,
@@ -236,7 +237,11 @@ fn build_live_children(
     let mut live = Vec::with_capacity(fs_children.len());
     for (name, meta, is_symlink) in fs_children {
         let is_dir = meta.is_dir();
-        let snap = extract_metadata(meta, is_dir, *is_symlink);
+        let mut snap = extract_metadata(meta, is_dir, *is_symlink);
+        // Null the inode on FAT/exFAT (unstable derived inode): the stored value
+        // must never let the live rename pre-pass false-match a reused inode. The
+        // byte-total dedup below is inert on those formats (`nlink` is always 1).
+        snap.inode = space.trust_inode(snap.inode);
         // Hardlink dedup for the byte totals, matching `run_scan`: count each inode's
         // physical bytes once. `insert` returns false on a repeat inode → contributes 0.
         let counts_physical = if !is_dir && !*is_symlink && matches!(snap.nlink, Some(n) if n > 1) {
@@ -400,6 +405,7 @@ fn run_local_reconcile(
             IndexStore::list_children_on(dir_id, &conn).map_err(|e| ScanError::WriterSend(e.to_string()))?;
         let live_children = build_live_children(
             &fs_children,
+            space,
             &mut seen_inodes,
             &mut total_entries,
             &mut total_dirs,

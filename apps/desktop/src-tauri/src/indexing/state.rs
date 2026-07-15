@@ -574,15 +574,22 @@ impl IndexVolumeKind {
 /// `start_indexing` starts the local `root` volume; `start_indexing_for_smb`
 /// starts an SMB share. Both funnel through `start_indexing_for`.
 pub fn start_indexing(app: &AppHandle) -> Result<(), String> {
-    start_indexing_for(app, ROOT_VOLUME_ID, PathBuf::from("/"), IndexVolumeKind::Local)
+    // The boot disk is APFS, so its inodes are trustworthy.
+    start_indexing_for(app, ROOT_VOLUME_ID, PathBuf::from("/"), IndexVolumeKind::Local, true)
 }
 
 /// Start indexing for a specific volume id and root path.
+///
+/// `inodes_trustworthy` is the volume's filesystem inode-identity fact, resolved
+/// once by the caller (from the volume's `FilesystemKind` for a local external
+/// drive; `true` for the boot disk and trait-scanned volumes). It threads to the
+/// per-scan `IndexPathSpace` so a FAT/exFAT drive stores `inode: None`.
 fn start_indexing_for(
     app: &AppHandle,
     volume_id: &str,
     volume_root: PathBuf,
     kind: IndexVolumeKind,
+    inodes_trustworthy: bool,
 ) -> Result<(), String> {
     log::info!("start_indexing: begin for '{volume_id}' ({kind:?})");
     super::memory_watchdog::start(app.clone());
@@ -669,6 +676,7 @@ fn start_indexing_for(
         volume_root,
         app.clone(),
         kind,
+        inodes_trustworthy,
         Arc::clone(&freshness),
     ) {
         Ok(m) => m,
@@ -750,7 +758,9 @@ pub(crate) fn start_indexing_for_smb_inner(
     volume_id: &str,
     mount_root: PathBuf,
 ) -> Result<(), String> {
-    start_indexing_for(app, volume_id, mount_root, IndexVolumeKind::Smb)
+    // SMB stores trait-provided inodes and doesn't run the local inode-keyed
+    // rename pre-pass, so its inode identity is treated as trustworthy.
+    start_indexing_for(app, volume_id, mount_root, IndexVolumeKind::Smb, true)
 }
 
 /// Internal MTP-start entry point, called by `mtp_index::start_indexing_for_mtp`
@@ -764,7 +774,9 @@ pub(crate) fn start_indexing_for_mtp_inner(
     volume_id: &str,
     volume_root: PathBuf,
 ) -> Result<(), String> {
-    start_indexing_for(app, volume_id, volume_root, IndexVolumeKind::Mtp)
+    // MTP reuses the `inode` column for PTP object handles and doesn't run the
+    // local rename pre-pass, so its inode identity is treated as trustworthy.
+    start_indexing_for(app, volume_id, volume_root, IndexVolumeKind::Mtp, true)
 }
 
 /// Internal local-external-start entry point, called by
@@ -774,13 +786,26 @@ pub(crate) fn start_indexing_for_mtp_inner(
 /// reservation, load-as-Stale freshness seeding, and the LOCAL jwalk + FSEvents
 /// scan path all apply. `mount_root` is the drive's mount point (`/Volumes/X`),
 /// so the index is mount-rooted (unlike the boot disk's `/`).
+///
+/// `inodes_trustworthy` is the drive's filesystem inode-identity fact, resolved
+/// once by `local_external_index::classify` (from its `FilesystemKind`): `false`
+/// for FAT/exFAT so the scan/reconcile/live pipeline stores `inode: None` and the
+/// rename pre-pass stays inert (an inode-reused delete+create must never become a
+/// false move), `true` for every other local format.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub(crate) fn start_indexing_for_local_external_inner(
     app: &AppHandle,
     volume_id: &str,
     mount_root: PathBuf,
+    inodes_trustworthy: bool,
 ) -> Result<(), String> {
-    start_indexing_for(app, volume_id, mount_root, IndexVolumeKind::LocalExternal)
+    start_indexing_for(
+        app,
+        volume_id,
+        mount_root,
+        IndexVolumeKind::LocalExternal,
+        inodes_trustworthy,
+    )
 }
 
 /// All registered MTP volume ids belonging to `device_id` (one device hosts N

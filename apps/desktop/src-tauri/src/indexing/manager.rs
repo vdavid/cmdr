@@ -38,6 +38,12 @@ pub(crate) struct IndexManager {
     pub(super) kind: IndexVolumeKind,
     /// Volume root path
     pub(super) volume_root: PathBuf,
+    /// Whether this volume's filesystem inode is a trustworthy identity, resolved
+    /// once at construction (from the volume's `FilesystemKind` for a local
+    /// external drive; `true` for the boot disk and trait-scanned volumes). Feeds
+    /// the per-scan [`IndexPathSpace`] so a FAT/exFAT drive stores `inode: None`
+    /// and its rename pre-pass stays inert. See `filesystem_kind::has_stable_inodes`.
+    pub(super) inodes_trustworthy: bool,
     /// SQLite store for reads
     pub(super) store: IndexStore,
     /// Writer handle for sending writes
@@ -199,6 +205,7 @@ impl IndexManager {
         volume_root: PathBuf,
         app: AppHandle,
         kind: IndexVolumeKind,
+        inodes_trustworthy: bool,
         freshness: Arc<std::sync::Mutex<Option<super::freshness::Freshness>>>,
     ) -> Result<Self, String> {
         let data_dir = crate::config::resolved_app_data_dir(&app)?;
@@ -226,6 +233,7 @@ impl IndexManager {
             volume_id,
             kind,
             volume_root,
+            inodes_trustworthy,
             store,
             writer,
             scan_handle: None,
@@ -405,6 +413,7 @@ impl IndexManager {
         let app = self.app.clone();
         let volume_id = self.volume_id.clone();
         let kind = self.kind;
+        let inodes_trustworthy = self.inodes_trustworthy;
         let volume_root = self.volume_root.clone();
         let live_event_task_slot = Arc::clone(&self.live_event_task);
         let scanning = Arc::clone(&self.scanning);
@@ -431,7 +440,7 @@ impl IndexManager {
                     // Journal replay only runs for a journaled volume (the boot disk),
                     // so this is `root` today; it's derived rather than hardcoded so
                     // replay resolves in the same space as the live loop that follows.
-                    space: super::IndexPathSpace::for_volume(kind, &volume_root),
+                    space: super::IndexPathSpace::for_volume(kind, &volume_root, inodes_trustworthy),
                     since_event_id,
                     estimated_total,
                 },
@@ -649,7 +658,7 @@ impl IndexManager {
         // The volume's path space: pass-through for the boot disk, mount-relative
         // strip for a mount-rooted external drive. Threaded to the scanner (exclusion
         // scope), the reconcile walk, and the completion handler's replay + live loop.
-        let space = super::IndexPathSpace::for_volume(self.kind, &self.volume_root);
+        let space = super::IndexPathSpace::for_volume(self.kind, &self.volume_root, self.inodes_trustworthy);
 
         // Step 1: Start the FSEvents watcher BEFORE the scan so we don't miss events
         let (event_tx, event_rx) = tokio::sync::mpsc::channel(WATCHER_CHANNEL_CAPACITY);
@@ -725,6 +734,9 @@ impl IndexManager {
                 // A mount-rooted drive uses `MountRooted` so its `/Volumes/X` subtree
                 // isn't excluded (which would falsely complete the scan empty).
                 scope: space.exclusion_scope(),
+                // A FAT/exFAT drive's derived inodes are untrusted, so the scanner
+                // stores `inode: None` (keeping the rename pre-pass inert).
+                inodes_trustworthy: space.inodes_trustworthy(),
                 ..ScanConfig::default()
             };
             scanner::scan_volume(config, &self.writer).map_err(|e| format!("Failed to start scan: {e}"))?

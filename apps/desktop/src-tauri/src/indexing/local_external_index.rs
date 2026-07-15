@@ -57,27 +57,42 @@ fn routes_to_local_external(is_smb_session: bool, fs_is_network: bool) -> bool {
 
 /// The result of classifying an enable target by its typed volume facts.
 enum Classified {
-    /// A local external drive rooted at this mount point.
-    LocalExternal { mount_root: PathBuf },
+    /// A local external drive rooted at this mount point. `inodes_trustworthy` is
+    /// resolved from the mount's `FilesystemKind` (`false` for FAT/exFAT, whose
+    /// derived inodes must not drive the rename pre-pass) and threaded to the scan.
+    LocalExternal {
+        mount_root: PathBuf,
+        inodes_trustworthy: bool,
+    },
     /// Route to the SMB gate (network mount, smb2 session, or unresolved).
     FallThrough,
 }
 
-/// Whether the filesystem at `path` is a network type whose metadata syscalls
-/// can block on a hung mount. Blocking — call only inside the timeout guard.
-fn fs_type_is_network(path: &std::path::Path) -> bool {
+/// The two typed filesystem facts the enable decision needs, read from ONE
+/// `detect_filesystem_for_path` probe (a `statfs` on macOS, `/proc/mounts` on
+/// Linux): whether the mount is a network type (must never be walked by the local
+/// scanner) and whether its inode identity is trustworthy (FAT/exFAT is not).
+/// Blocking — call only inside the timeout guard.
+fn probe_fs_facts(path: &std::path::Path) -> FsFacts {
     let info = crate::file_system::filesystem_kind::detect_filesystem_for_path(path);
     #[cfg(target_os = "macos")]
-    {
-        crate::volumes::is_network_fs_type(info.raw_type.as_deref())
-    }
+    let is_network = crate::volumes::is_network_fs_type(info.raw_type.as_deref());
     #[cfg(target_os = "linux")]
-    {
-        info.raw_type
-            .as_deref()
-            .map(crate::file_system::linux_mounts::is_network_fs_type)
-            .unwrap_or(false)
+    let is_network = info
+        .raw_type
+        .as_deref()
+        .map(crate::file_system::linux_mounts::is_network_fs_type)
+        .unwrap_or(false);
+    FsFacts {
+        is_network,
+        inodes_trustworthy: info.kind.has_stable_inodes(),
     }
+}
+
+/// Typed filesystem facts for the enable decision (see [`probe_fs_facts`]).
+struct FsFacts {
+    is_network: bool,
+    inodes_trustworthy: bool,
 }
 
 /// Resolve the volume and classify it by typed facts. The fs-type probe runs on
@@ -95,20 +110,26 @@ async fn classify(volume_id: &str) -> Classified {
     let is_smb_session = volume.smb_connection_state().is_some();
 
     let probe_root = mount_root.clone();
-    let fs_is_network = match tokio::time::timeout(
+    let facts = match tokio::time::timeout(
         FS_PROBE_TIMEOUT,
-        tokio::task::spawn_blocking(move || fs_type_is_network(&probe_root)),
+        tokio::task::spawn_blocking(move || probe_fs_facts(&probe_root)),
     )
     .await
     {
-        Ok(Ok(is_network)) => is_network,
+        Ok(Ok(facts)) => facts,
         // Timeout or join error: a probe that won't return means a slow/hung
-        // mount — treat it as network so the local scanner never touches it.
-        _ => true,
+        // mount — treat it as network (and inode-trust is moot; we fall through).
+        _ => FsFacts {
+            is_network: true,
+            inodes_trustworthy: true,
+        },
     };
 
-    if routes_to_local_external(is_smb_session, fs_is_network) {
-        Classified::LocalExternal { mount_root }
+    if routes_to_local_external(is_smb_session, facts.is_network) {
+        Classified::LocalExternal {
+            mount_root,
+            inodes_trustworthy: facts.inodes_trustworthy,
+        }
     } else {
         Classified::FallThrough
     }
@@ -136,8 +157,11 @@ pub(crate) async fn start_indexing_for_local_external(
 
     match classify(&volume_id).await {
         Classified::FallThrough => Ok(LocalExternalEnable::NotLocalExternal),
-        Classified::LocalExternal { mount_root } => {
-            super::state::start_indexing_for_local_external_inner(&app, &volume_id, mount_root)?;
+        Classified::LocalExternal {
+            mount_root,
+            inodes_trustworthy,
+        } => {
+            super::state::start_indexing_for_local_external_inner(&app, &volume_id, mount_root, inodes_trustworthy)?;
 
             // A new external index DB just came online (or resumed): cap
             // accumulation by evicting the least-recently-used OFFLINE external
@@ -184,8 +208,14 @@ mod tests {
         get_volume_manager().register(vid, Arc::new(LocalPosixVolume::new("Test drive", dir.path())));
 
         match classify(vid).await {
-            Classified::LocalExternal { mount_root } => {
+            Classified::LocalExternal {
+                mount_root,
+                inodes_trustworthy,
+            } => {
                 assert_eq!(mount_root, dir.path(), "resolves to the registered mount root");
+                // A temp dir sits on APFS (macOS) / ext4 or tmpfs (Linux), all of
+                // which keep stable inodes, so the drive is inode-trustworthy.
+                assert!(inodes_trustworthy, "a local temp dir has trustworthy inodes");
             }
             Classified::FallThrough => panic!("a local temp-dir volume must classify as LocalExternal"),
         }

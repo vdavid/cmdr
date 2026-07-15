@@ -440,6 +440,52 @@ fn physical_size_is_captured() {
     assert_eq!(logical, 8192, "logical size should be exactly 8192");
 }
 
+/// A scan on an inode-untrusted volume (FAT/exFAT) stores `inode: None` for
+/// every entry, so the derived, unstable inode can never reach the index and
+/// drive the live rename pre-pass. The identical scan on a trusted volume keeps
+/// the real inode. This is the write-side half of the FAT/exFAT corruption
+/// guard; the temp dir supplies real (trustworthy) inodes so the contrast is
+/// observable without a synthetic FAT image.
+#[test]
+#[cfg(unix)]
+fn scan_nulls_inode_on_inode_untrusted_volume() {
+    let scan_root = scan_test_tempdir();
+    fs::write(scan_root.path().join("file.txt"), "hello").unwrap();
+
+    // Scan the SAME tree twice, toggling only `inodes_trustworthy`, and read back
+    // the stored inode for the file.
+    let stored_inode = |inodes_trustworthy: bool| -> Option<u64> {
+        let (writer, db_path, _db_dir) = setup_writer();
+        let config = ScanConfig {
+            root: scan_root.path().to_path_buf(),
+            batch_size: 100,
+            num_threads: 1,
+            inodes_trustworthy,
+            ..ScanConfig::default()
+        };
+        let (_handle, join_handle) = scan_volume(config, &writer).unwrap();
+        join_handle.join().expect("scan thread panicked").unwrap();
+        writer.flush_blocking().unwrap();
+        writer.shutdown();
+
+        let store = IndexStore::open(&db_path).unwrap();
+        let children = store.list_children(ROOT_ID).unwrap();
+        children.iter().find(|e| e.name == "file.txt").unwrap().inode
+    };
+
+    // Trusted volume (default, e.g. APFS): the real inode is stored.
+    assert!(
+        stored_inode(true).is_some(),
+        "a trusted volume stores the file's real inode"
+    );
+    // Untrusted volume (FAT/exFAT): the inode is nulled at write time.
+    assert_eq!(
+        stored_inode(false),
+        None,
+        "an inode-untrusted volume must store inode: None so the rename pre-pass stays inert"
+    );
+}
+
 #[test]
 fn scan_handles_symlinks() {
     let scan_root = scan_test_tempdir();
@@ -803,6 +849,7 @@ fn timed_out_dir_is_not_marked_listed() {
         4,
         true,
         ExclusionScope::BootDisk,
+        true, // inodes trustworthy (boot-disk-scope test)
         reader,
         Duration::from_millis(50), // short timeout so the hang is abandoned fast
     )

@@ -94,6 +94,25 @@ impl FilesystemKind {
             Self::Smb | Self::Other => MaxFileSize::Unknown,
         }
     }
+
+    /// Whether this filesystem's inode (`st_ino`) is a stable, trustworthy
+    /// identity for a file across its lifetime.
+    ///
+    /// `false` for FAT32 and exFAT: neither stores an inode, so macOS/Linux
+    /// DERIVE `st_ino` from the file's first data cluster. That derived value is
+    /// unstable — writing content into an empty file changes it, and a
+    /// delete+create ALIASES a fresh, unrelated file onto a freed cluster's
+    /// inode. The live-indexing rename pre-pass (`find_entry_by_inode` →
+    /// `MoveEntryV2`) keys off inode identity, so on these formats it would both
+    /// miss real renames AND, worse, mistake an inode-reused delete+create for a
+    /// move (re-homing the old entry's `dir_stats` onto an unrelated file). Every
+    /// other format we recognize (APFS, HFS+, ext4/btrfs/XFS/ZFS, NTFS) keeps the
+    /// inode stable across rename. `Smb`/`Mtp`/`Other` return `true` (their
+    /// indexes don't run the local inode-keyed rename pre-pass), so only the two
+    /// derived-inode formats opt out.
+    pub fn has_stable_inodes(self) -> bool {
+        !matches!(self, Self::Fat32 | Self::ExFat)
+    }
 }
 
 /// The largest single file a filesystem accepts. Derived from [`FilesystemKind`].
@@ -212,6 +231,28 @@ mod tests {
         assert_eq!(FilesystemKind::Ntfs.max_file_size(), MaxFileSize::Unlimited);
         assert_eq!(FilesystemKind::Apfs.max_file_size(), MaxFileSize::Unlimited);
         assert_eq!(FilesystemKind::Mtp.max_file_size(), MaxFileSize::Unlimited);
+    }
+
+    #[test]
+    fn only_derived_inode_filesystems_lack_stable_inodes() {
+        // FAT32 and exFAT synthesize `st_ino` from the first data cluster, so it
+        // isn't a trustworthy identity: the local rename pre-pass must not key off
+        // it (delete+create inode reuse would false-match a move).
+        assert!(!FilesystemKind::Fat32.has_stable_inodes());
+        assert!(!FilesystemKind::ExFat.has_stable_inodes());
+        // Every other recognized format keeps the inode stable across rename.
+        assert!(FilesystemKind::Apfs.has_stable_inodes());
+        assert!(FilesystemKind::HfsPlus.has_stable_inodes());
+        assert!(FilesystemKind::Ext4.has_stable_inodes());
+        assert!(FilesystemKind::Btrfs.has_stable_inodes());
+        assert!(FilesystemKind::Xfs.has_stable_inodes());
+        assert!(FilesystemKind::Zfs.has_stable_inodes());
+        assert!(FilesystemKind::Ntfs.has_stable_inodes());
+        // Trait-scanned / unknown formats don't run the local inode pre-pass, so
+        // they report trustworthy (the flag only gates the local scanner path).
+        assert!(FilesystemKind::Smb.has_stable_inodes());
+        assert!(FilesystemKind::Mtp.has_stable_inodes());
+        assert!(FilesystemKind::Other.has_stable_inodes());
     }
 
     #[test]
