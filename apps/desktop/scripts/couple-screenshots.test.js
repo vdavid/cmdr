@@ -268,8 +268,10 @@ describe('REPRESENTATIVE_SCREENSHOTS config', () => {
       for (let j = i + 1; j < REPRESENTATIVE_SCREENSHOTS.length; j++) {
         const a = REPRESENTATIVE_SCREENSHOTS[i].prefix
         const b = REPRESENTATIVE_SCREENSHOTS[j].prefix
-        // A later entry must not be a prefix of an earlier one (that would shadow it).
-        expect(a.startsWith(b), `'${b}' (later) shadows '${a}' (earlier)`).toBe(false)
+        // An earlier entry must not be a prefix of a later one: `representativeFor`
+        // returns the first match, so a broader prefix placed earlier would shadow
+        // the more-specific one that follows, leaving it dead.
+        expect(b.startsWith(a), `'${a}' (earlier) shadows '${b}' (later)`).toBe(false)
       }
     }
   })

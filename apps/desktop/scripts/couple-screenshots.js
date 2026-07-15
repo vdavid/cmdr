@@ -169,6 +169,13 @@ export const REPRESENTATIVE_SCREENSHOTS = [
       'browse surface for context. Keep device/protocol names (MTP, PTP) as-is.',
   },
   {
+    // The Ask Cmdr model-override hint renders conditionally, so it keeps a precise
+    // note explaining the screenshot may not show it (more specific than the `ai.` rule below).
+    prefix: 'ai.cloud.askCmdrOverrideHint',
+    screenshot: 'settings-ai.png',
+    note: 'The hint renders under the model picker in the Settings > AI section pictured here (only while the Ask Cmdr override is set, so the screenshot may not show it).',
+  },
+  {
     // AI provider/cloud connection states render in the Settings > AI section.
     prefix: 'ai.',
     screenshot: 'settings-ai.png',
