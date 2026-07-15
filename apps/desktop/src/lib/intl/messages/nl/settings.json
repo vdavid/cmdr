@@ -1310,6 +1310,10 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "'AI' is a brand-like term kept as-is in Dutch (glossary: AI kept as-is); the Settings section title."
   },
+  "settings.section.aiProvider": "Aanbieder",
+  "@settings.section.aiProvider": {
+    "sourceHash": "472590a"
+  },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
@@ -1549,6 +1553,14 @@
   "settings.summary.logging": "Uitgebreide console-uitvoer, toegang tot het logbestand, en diagnostische info.",
   "@settings.summary.logging": {
     "sourceHash": "6fce936"
+  },
+  "settings.summary.aiProvider": "Schakel AI uit, verbind een cloudaanbieder of draai een model lokaal.",
+  "@settings.summary.aiProvider": {
+    "sourceHash": "2fe940b"
+  },
+  "settings.summary.askCmdr": "Chat met een AI over je bestanden, schijven en geschiedenis, en kies het model dat het gebruikt.",
+  "@settings.summary.askCmdr": {
+    "sourceHash": "67eef6a"
   },
   "settings.summary.noSubsections": "Dit onderdeel heeft geen subonderdelen.",
   "@settings.summary.noSubsections": {

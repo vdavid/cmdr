@@ -1303,6 +1303,10 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "'AI' top-level Settings section title, kept verbatim per glossary (AI kept as the standard term across settings/ai/queryUi passes; matches the 'Beállítások > AI' navigation path)."
   },
+  "settings.section.aiProvider": "Szolgáltató",
+  "@settings.section.aiProvider": {
+    "sourceHash": "472590a"
+  },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
@@ -1542,6 +1546,14 @@
   "settings.summary.logging": "Részletes konzolkimenet, naplófájl-hozzáférés és diagnosztikai infó.",
   "@settings.summary.logging": {
     "sourceHash": "6fce936"
+  },
+  "settings.summary.aiProvider": "Kapcsold ki az AI-t, csatlakoztass egy felhőszolgáltatót, vagy futtass egy modellt helyben.",
+  "@settings.summary.aiProvider": {
+    "sourceHash": "2fe940b"
+  },
+  "settings.summary.askCmdr": "Csevegj egy AI-val a fájljaidról, meghajtóidról és előzményeidről, és válaszd ki, melyik modellt használja.",
+  "@settings.summary.askCmdr": {
+    "sourceHash": "67eef6a"
   },
   "settings.summary.noSubsections": "Ennek a szakasznak nincsenek alszakaszai.",
   "@settings.summary.noSubsections": {

@@ -1305,6 +1305,10 @@
   "@settings.section.ai": {
     "sourceHash": "11fb682"
   },
+  "settings.section.aiProvider": "Provedor",
+  "@settings.section.aiProvider": {
+    "sourceHash": "472590a"
+  },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
@@ -1544,6 +1548,14 @@
   "settings.summary.logging": "Saída detalhada no console, acesso ao arquivo de registro e informações de diagnóstico.",
   "@settings.summary.logging": {
     "sourceHash": "6fce936"
+  },
+  "settings.summary.aiProvider": "Desative a IA, conecte um provedor na nuvem ou execute um modelo localmente.",
+  "@settings.summary.aiProvider": {
+    "sourceHash": "2fe940b"
+  },
+  "settings.summary.askCmdr": "Converse com uma IA sobre seus arquivos, discos e histórico, e escolha o modelo que ela usa.",
+  "@settings.summary.askCmdr": {
+    "sourceHash": "67eef6a"
   },
   "settings.summary.noSubsections": "Esta seção não tem subseções.",
   "@settings.summary.noSubsections": {

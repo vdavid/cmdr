@@ -1302,6 +1302,10 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "\"AI\" is kept verbatim throughout Cmdrs zh catalog (e.g. \"AI 模型\", \"AI 已就绪\", \"设置 > AI\"), matching Apple zh-CN and Microsoft zh-Hans UI, which keep \"AI\" in Latin form. glossary.md records the AI section as \"AI\" (verbatim)."
   },
+  "settings.section.aiProvider": "提供方",
+  "@settings.section.aiProvider": {
+    "sourceHash": "472590a"
+  },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
@@ -1541,6 +1545,14 @@
   "settings.summary.logging": "详细的控制台输出、日志文件访问，以及诊断信息。",
   "@settings.summary.logging": {
     "sourceHash": "6fce936"
+  },
+  "settings.summary.aiProvider": "关闭 AI、连接云提供方，或在本地运行模型。",
+  "@settings.summary.aiProvider": {
+    "sourceHash": "2fe940b"
+  },
+  "settings.summary.askCmdr": "和 AI 聊聊你的文件、驱动器和历史记录，并选择它使用的模型。",
+  "@settings.summary.askCmdr": {
+    "sourceHash": "67eef6a"
   },
   "settings.summary.noSubsections": "此部分没有子部分。",
   "@settings.summary.noSubsections": {

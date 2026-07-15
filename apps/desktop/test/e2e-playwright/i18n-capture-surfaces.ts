@@ -93,7 +93,8 @@ const SETTINGS_SECTIONS: { path: string[]; sectionId: string; label: string }[] 
     label: 'settings-behavior-file-system-watching',
   },
   { path: ['Behavior', 'Search'], sectionId: 'behavior-search', label: 'settings-behavior-search' },
-  { path: ['AI'], sectionId: 'ai', label: 'settings-ai' },
+  { path: ['AI', 'Provider'], sectionId: 'ai-provider', label: 'settings-ai-provider' },
+  { path: ['AI', 'Ask Cmdr'], sectionId: 'ai-ask-cmdr', label: 'settings-ai-ask-cmdr' },
   {
     path: ['File systems', 'SMB/Network shares'],
     sectionId: 'file-systems-smb-network-shares',

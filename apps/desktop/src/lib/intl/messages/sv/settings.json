@@ -1309,6 +1309,10 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "'AI' (artificial intelligence) is kept verbatim in Swedish; the abbreviation is identical (matches queryUi.recent.mode.ai)."
   },
+  "settings.section.aiProvider": "Leverantör",
+  "@settings.section.aiProvider": {
+    "sourceHash": "472590a"
+  },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
@@ -1548,6 +1552,14 @@
   "settings.summary.logging": "Utförlig konsolutdata, åtkomst till loggfilen och diagnostikinformation.",
   "@settings.summary.logging": {
     "sourceHash": "6fce936"
+  },
+  "settings.summary.aiProvider": "Stäng av AI, anslut en molnleverantör eller kör en modell lokalt.",
+  "@settings.summary.aiProvider": {
+    "sourceHash": "2fe940b"
+  },
+  "settings.summary.askCmdr": "Chatta med en AI om dina filer, enheter och historik, och välj vilken modell den använder.",
+  "@settings.summary.askCmdr": {
+    "sourceHash": "67eef6a"
   },
   "settings.summary.noSubsections": "Den här sektionen har inga underavsnitt.",
   "@settings.summary.noSubsections": {

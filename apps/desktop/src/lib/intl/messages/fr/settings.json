@@ -1312,6 +1312,10 @@
   "@settings.section.ai": {
     "sourceHash": "11fb682"
   },
+  "settings.section.aiProvider": "Fournisseur",
+  "@settings.section.aiProvider": {
+    "sourceHash": "472590a"
+  },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
@@ -1551,6 +1555,14 @@
   "settings.summary.logging": "Sortie console détaillée, accès au fichier journal, et infos de diagnostic.",
   "@settings.summary.logging": {
     "sourceHash": "6fce936"
+  },
+  "settings.summary.aiProvider": "Désactivez l''IA, connectez un fournisseur cloud ou exécutez un modèle en local.",
+  "@settings.summary.aiProvider": {
+    "sourceHash": "2fe940b"
+  },
+  "settings.summary.askCmdr": "Discutez avec une IA à propos de vos fichiers, disques et historique, et choisissez le modèle qu''elle utilise.",
+  "@settings.summary.askCmdr": {
+    "sourceHash": "67eef6a"
   },
   "settings.summary.noSubsections": "Cette section n''a aucune sous-section.",
   "@settings.summary.noSubsections": {

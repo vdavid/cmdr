@@ -1633,6 +1633,10 @@
     "description": "Top-level Settings section title: AI (artificial intelligence). Sidebar and page heading. Keep short.",
     "screenshot": "settings-appearance.png"
   },
+  "settings.section.aiProvider": "Provider",
+  "@settings.section.aiProvider": {
+    "description": "Settings subsection title under AI: Provider (which AI backend the app uses). Sidebar and page heading. Keep short."
+  },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "description": "Top-level Settings section title: Ask Cmdr (the read-only chat rail). This is the product name; keep it as-is."
@@ -1883,6 +1887,14 @@
   "settings.summary.logging": "Verbose console output, log file access, and diagnostic info.",
   "@settings.summary.logging": {
     "description": "One-line summary shown under the \"Logging\" subsection heading. \"console\" = the developer log output; \"info\" = information."
+  },
+  "settings.summary.aiProvider": "Turn AI off, connect a cloud provider, or run a model locally.",
+  "@settings.summary.aiProvider": {
+    "description": "One-line summary shown on the AI section's Provider card. \"AI\" = artificial intelligence."
+  },
+  "settings.summary.askCmdr": "Chat with an AI about your files, drives, and history, and pick the model it uses.",
+  "@settings.summary.askCmdr": {
+    "description": "One-line summary shown on the AI section's Ask Cmdr card. \"Ask Cmdr\" is the product name; keep it as-is."
   },
   "settings.summary.noSubsections": "This section has no subsections.",
   "@settings.summary.noSubsections": {

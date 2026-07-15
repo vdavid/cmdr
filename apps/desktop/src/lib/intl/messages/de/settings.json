@@ -1309,6 +1309,10 @@
   "@settings.section.ai": {
     "sourceHash": "11fb682"
   },
+  "settings.section.aiProvider": "Anbieter",
+  "@settings.section.aiProvider": {
+    "sourceHash": "472590a"
+  },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
@@ -1548,6 +1552,14 @@
   "settings.summary.logging": "Ausführliche Konsolenausgabe, Zugriff auf die Protokolldatei und Diagnoseinfos.",
   "@settings.summary.logging": {
     "sourceHash": "6fce936"
+  },
+  "settings.summary.aiProvider": "KI ausschalten, einen Cloud-Anbieter verbinden oder ein Modell lokal ausführen.",
+  "@settings.summary.aiProvider": {
+    "sourceHash": "2fe940b"
+  },
+  "settings.summary.askCmdr": "Chatte mit einer KI über deine Dateien, Laufwerke und deinen Verlauf und wähle das Modell, das sie verwendet.",
+  "@settings.summary.askCmdr": {
+    "sourceHash": "67eef6a"
   },
   "settings.summary.noSubsections": "Dieser Abschnitt hat keine Unterabschnitte.",
   "@settings.summary.noSubsections": {

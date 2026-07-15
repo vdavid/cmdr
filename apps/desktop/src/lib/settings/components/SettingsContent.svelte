@@ -35,7 +35,7 @@
     // True when a top-level section that itself has navigable subsections is selected — those
     // render a summary card grid instead of their settings directly.
     const isTopLevelSection = $derived(!searchQuery.trim() && selectedSection.length === 1)
-    const sectionsWithSubsections = ['Appearance', 'Behavior', 'File systems', 'Developer']
+    const sectionsWithSubsections = ['Appearance', 'Behavior', 'AI', 'File systems', 'Developer']
     const showSummary = $derived(isTopLevelSection && sectionsWithSubsections.includes(selectedSection[0]))
 
     function handleNavigate(path: string[]) {
@@ -123,16 +123,14 @@
             </section>
         {/if}
 
-        <!-- AI (top-level, no subsections) -->
-        {#if shouldShowTopLevel(['AI'])}
-            <section data-section-id="ai">
+        <!-- AI -->
+        {#if shouldShowSection(['AI', 'Provider'])}
+            <section data-section-id="ai-provider">
                 <AiSection {searchQuery} />
             </section>
         {/if}
-
-        <!-- Ask Cmdr (top-level, no subsections) -->
-        {#if shouldShowTopLevel(['Ask Cmdr'])}
-            <section data-section-id="ask-cmdr">
+        {#if shouldShowSection(['AI', 'Ask Cmdr'])}
+            <section data-section-id="ai-ask-cmdr">
                 <AskCmdrSection {searchQuery} />
             </section>
         {/if}

@@ -101,7 +101,7 @@
     }
 </script>
 
-<SettingsSection title={tString('settings.section.ai')}>
+<SettingsSection title={tString('settings.section.aiProvider')}>
     {#if isLoading}
         <p class="loading-text">{tString('settings.ai.loading')}</p>
     {:else}

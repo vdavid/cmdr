@@ -314,7 +314,7 @@ for (const mode of ['light', 'dark'] as const) {
         // All settings sections with their sidebar paths and data-section-id selectors.
         // Mirror the tree declared in `SettingsSidebar.svelte::TOP_LEVEL_ORDER` and the
         // section bindings in `SettingsContent.svelte`. Top-level sections that own
-        // subsections (Appearance, Behavior, File systems, Developer) show a summary card
+        // subsections (Appearance, Behavior, AI, File systems, Developer) show a summary card
         // grid when clicked at the top level, so the audit targets each subsection directly.
         const sections: { name: string; path: string[]; sectionId: string }[] = [
           {
@@ -343,7 +343,8 @@ for (const mode of ['light', 'dark'] as const) {
             path: ['Behavior', 'File system watching'],
             sectionId: 'behavior-file-system-watching',
           },
-          { name: 'AI', path: ['AI'], sectionId: 'ai' },
+          { name: 'AI > Provider', path: ['AI', 'Provider'], sectionId: 'ai-provider' },
+          { name: 'AI > Ask Cmdr', path: ['AI', 'Ask Cmdr'], sectionId: 'ai-ask-cmdr' },
           {
             name: 'File systems > SMB/Network shares',
             path: ['File systems', 'SMB/Network shares'],

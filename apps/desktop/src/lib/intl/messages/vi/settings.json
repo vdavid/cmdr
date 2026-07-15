@@ -1300,6 +1300,10 @@
     "sourceHash": "11fb682",
     "sameAsSourceJustification": "'AI' kept verbatim in Vietnamese tech UI (glossary: AI -> AI, high). Section title."
   },
+  "settings.section.aiProvider": "Nhà cung cấp",
+  "@settings.section.aiProvider": {
+    "sourceHash": "472590a"
+  },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
@@ -1539,6 +1543,14 @@
   "settings.summary.logging": "Xuất chi tiết ra console, truy cập tệp nhật ký, và thông tin chẩn đoán.",
   "@settings.summary.logging": {
     "sourceHash": "6fce936"
+  },
+  "settings.summary.aiProvider": "Tắt AI, kết nối nhà cung cấp đám mây, hoặc chạy mô hình cục bộ.",
+  "@settings.summary.aiProvider": {
+    "sourceHash": "2fe940b"
+  },
+  "settings.summary.askCmdr": "Trò chuyện với AI về tệp, ổ đĩa và lịch sử của bạn, và chọn mô hình mà nó sử dụng.",
+  "@settings.summary.askCmdr": {
+    "sourceHash": "67eef6a"
   },
   "settings.summary.noSubsections": "Mục này không có tiểu mục.",
   "@settings.summary.noSubsections": {

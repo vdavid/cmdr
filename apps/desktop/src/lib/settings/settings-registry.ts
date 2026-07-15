@@ -879,7 +879,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   // ========================================================================
   {
     id: 'ai.provider',
-    section: ['AI'],
+    section: ['AI', 'Provider'],
     labelKey: 'settings.ai.provider.label',
     descriptionKey: 'settings.ai.provider.description',
     keywords: ['ai', 'provider', 'cloud', 'openai', 'anthropic', 'claude', 'gemini', 'local', 'llm', 'off', 'model'],
@@ -896,7 +896,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   },
   {
     id: 'ai.cloudProvider',
-    section: ['AI'],
+    section: ['AI', 'Provider'],
     labelKey: 'settings.ai.cloudProvider.label',
     descriptionKey: 'settings.ai.cloudProvider.description',
     keywords: [
@@ -930,7 +930,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   },
   {
     id: 'ai.cloudProviderConfigs',
-    section: ['AI'],
+    section: ['AI', 'Provider'],
     labelKey: 'settings.ai.cloudProviderConfigs.label',
     descriptionKey: 'settings.ai.cloudProviderConfigs.description',
     keywords: [],
@@ -940,7 +940,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   },
   {
     id: 'ai.localContextSize',
-    section: ['AI'],
+    section: ['AI', 'Provider'],
     labelKey: 'settings.ai.localContextSize.label',
     descriptionKey: 'settings.ai.localContextSize.description',
     keywords: ['context', 'window', 'tokens', 'memory', 'size', 'local'],
@@ -963,7 +963,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   },
 
   // ========================================================================
-  // Ask Cmdr
+  // AI › Ask Cmdr
   //
   // The interactive-slot model override. Empty = use the model the shared `ai/`
   // provider is already configured with. The backend reads it fresh each send
@@ -974,7 +974,7 @@ const settingsRegistrySource: SettingDefinitionSource[] = [
   // ========================================================================
   {
     id: 'askCmdr.interactiveModel',
-    section: ['Ask Cmdr'],
+    section: ['AI', 'Ask Cmdr'],
     labelKey: 'settings.askCmdr.interactiveModel.label',
     descriptionKey: 'settings.askCmdr.interactiveModel.description',
     keywords: ['ask cmdr', 'ai', 'chat', 'assistant', 'model', 'llm', 'interactive', 'slot'],

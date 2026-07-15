@@ -1305,6 +1305,10 @@
   "@settings.section.ai": {
     "sourceHash": "11fb682"
   },
+  "settings.section.aiProvider": "Proveedor",
+  "@settings.section.aiProvider": {
+    "sourceHash": "472590a"
+  },
   "settings.section.askCmdr": "Ask Cmdr",
   "@settings.section.askCmdr": {
     "sourceHash": "aafb1ce",
@@ -1544,6 +1548,14 @@
   "settings.summary.logging": "Salida detallada de consola, acceso al archivo de registro e información de diagnóstico.",
   "@settings.summary.logging": {
     "sourceHash": "6fce936"
+  },
+  "settings.summary.aiProvider": "Desactiva la IA, conecta un proveedor en la nube o ejecuta un modelo localmente.",
+  "@settings.summary.aiProvider": {
+    "sourceHash": "2fe940b"
+  },
+  "settings.summary.askCmdr": "Chatea con una IA sobre tus archivos, unidades e historial, y elige el modelo que usa.",
+  "@settings.summary.askCmdr": {
+    "sourceHash": "67eef6a"
   },
   "settings.summary.noSubsections": "Esta sección no tiene subsecciones.",
   "@settings.summary.noSubsections": {

@@ -1,56 +1,41 @@
 # Settings sections
 
-One Svelte component per UI section in the settings window. The registry decides which setting exists and what UI hint
-it carries; these files decide where and how it renders. `SettingsContent.svelte` routes each sidebar entry to its
-component via `getSettingDefinition(id).section`.
+One Svelte component per settings sidebar entry. The registry says which setting exists and its UI hint; these files
+decide where and how it renders. `SettingsContent.svelte` routes each entry via `getSettingDefinition(id).section`.
 
-Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
-[`../components/CLAUDE.md`](../components/CLAUDE.md) (the row primitives these sections compose).
+Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search),
+[`../components/CLAUDE.md`](../components/CLAUDE.md) (row primitives).
 
 ## Module map
 
-- One `*Section.svelte` per sidebar entry (Appearance, Behavior, AI, Ask Cmdr, File systems, Viewer, Developer, Updates,
-  License, Advanced, Keyboard shortcuts). Pure helpers: `ai-secret-error.ts`, `license-section-utils.ts`,
-  `ram-gauge-utils.ts`, `keyboard-shortcuts-grouping.ts`, `keyboard-shortcuts-banner.ts`.
-- The full file/responsibility table, test layout, and conventions are in DETAILS.md.
+- One `*Section.svelte` per sidebar entry. AI is a card-menu parent: `AiSection` = `AI › Provider`, `AskCmdrSection` =
+  `AI › Ask Cmdr`. Pure helpers: `ai-secret-error.ts`, `license-section-utils.ts`, `ram-gauge-utils.ts`,
+  `keyboard-shortcuts-grouping.ts`, `keyboard-shortcuts-banner.ts`. Full file/responsibility table in DETAILS.md.
 
 ## Must-knows
 
-- **Adding a setting to an existing section means hand-rendering its row HERE.** A `settings-registry.ts` entry alone
-  doesn't render: add a `SettingRow` (with the matching control + a `shouldShow(id)` guard), or the setting is
-  invisible. Only `AdvancedSection` auto-renders (`section: ['Advanced']`). Checklist:
-  [adding a new setting](../../../../../../docs/guides/adding-a-new-setting.md).
-- **Adding a section: register the route in `SettingsContent.svelte` AND the top-level entry in `TOP_LEVEL_ORDER`
-  (`SettingsSidebar.svelte`), and mirror it in `apps/desktop/test/e2e-playwright/settings.spec.ts`.** Sections are
-  picked by registry-driven routing, not string match.
-- **`KeyboardShortcutsSection`'s "+ add" flow is UI-only state; never write a provisional `''` to the store.** Clicking
-  `+` only sets `editingShortcut` at `index === length`; nothing reaches `shortcuts-store` until a key is confirmed.
-  Every store mutator saves to disk AND broadcasts cross-window, so a placeholder `addShortcut(id, '')` leaks a real
-  `['']` entry (framed `(none)` pills accumulate). The store has no concept of an empty shortcut.
-- **macOS-native (`app.quit`/`hide`/`hideOthers`/`showAll`) and `FIXED_KEY_COMMAND_IDS` rows render read-only** (badge,
-  no edit/add/remove/reset), keyed off `isNativeShortcutCommand` / `isFixedKeyCommand`. AppKit (or a hardcoded keydown
-  handler) owns both behavior and accelerator, so an editable control would be a double illusion; the store refuses
-  these writes too.
-- **Conflict-banner honesty:** a native conflict (even mixed with a normal command) offers ONLY Cancel
-  (`reservedByMacOsMessage`), no "Remove from other" / "Keep both" (both would lie). A fixed-key collision is also
-  non-resolvable (Cancel only). Classification is the pure `classifyConflict` in `keyboard-shortcuts-banner.ts`; keep it
-  there, don't inline string checks in the component.
-- **`KeyboardShortcutsSection` groups one titled group per `CommandScope` via the pure `groupCommandsByScope`.** Don't
-  reintroduce an ad-hoc title list matched against scopes: the group set must stay the scope union, or whole groups of
-  commands silently vanish from the rebinding UI. The set-equality test in `keyboard-shortcuts-grouping.test.ts` is the
-  guard (it also fails when a new `CommandScope` lacks a `scopeOrder` entry).
-- **Cloud AI API keys never go through registry primitives.** `AiCloudSection` uses `SettingPasswordInput` in
-  **controlled** mode (so the store isn't touched); keys live in the OS secret store via `saveAiApiKey` / `getAiApiKey`.
-- **The AI model picker is `ui/Combobox`, and the list loads on open.** `AiCloudSection` populates it on mount from the
-  shared `ai-model-cache.ts` (warm hit) or a debounced check (cold miss, cached on success). Don't zero
-  `availableModels` at the start of a refetch (flashes an empty list). The mount-trigger is suppressed only in automated
-  E2E (`getAppMode() === 'e2e'`); `CloudProviderSetup` gets none (it already loads on open). The cache key is a SHA-256
-  digest; never store/log the raw key. DETAILS § "The model picker loads on open".
-- **Don't push the AI config from a section.** Sections just call `setSetting(...)`; hot-apply is wired in
-  `settings-applier.ts` → `ai-config.ts::pushConfigToBackend()` (re-reads fresh). See parent CLAUDE.md.
-- **Don't hand-render a `section: ['Advanced']` setting on a feature page** (it auto-renders in `AdvancedSection`; a
-  setting's `section` is its ONE home). The canonical/mirror pattern is only for a setting that belongs on two FEATURE
-  pages, never to surface an Advanced setting elsewhere.
+- **A registry entry alone doesn't render.** Hand-render the row here (`SettingRow` + control + `shouldShow(id)` guard),
+  or the setting is invisible. Only `AdvancedSection` auto-renders (`section: ['Advanced']`).
+  [Checklist](../../../../../../docs/guides/adding-a-new-setting.md).
+- **New section = route in `SettingsContent.svelte` + entry in `TOP_LEVEL_ORDER` (`SettingsSidebar.svelte`) + mirror in
+  `settings.spec.ts`.** Routing is registry-driven, not string match.
+- **Don't push AI config from a section.** Just `setSetting(...)`; `settings-applier.ts` →
+  `ai-config.ts::pushConfigToBackend()` hot-applies (re-reads fresh).
+- **Cloud AI keys never touch registry primitives.** `AiCloudSection` uses `SettingPasswordInput` in controlled mode;
+  keys live in the OS secret store (`saveAiApiKey` / `getAiApiKey`).
+- **AI model picker (`ui/Combobox`) loads on open.** Don't zero `availableModels` mid-refetch (empty-list flash); never
+  store or log the raw key (SHA-256 cache key). DETAILS § model picker.
+- **Don't hand-render a `section: ['Advanced']` setting on a feature page.** It auto-renders in `AdvancedSection`; a
+  setting's `section` is its ONE home. (The mirror pattern is for two FEATURE pages only.)
+- **`KeyboardShortcutsSection` "+ add" is UI-only; never write a provisional `''` to the store.** Nothing hits
+  `shortcuts-store` until a key is confirmed; a placeholder `addShortcut(id, '')` leaks framed `(none)` pills
+  cross-window.
+- **macOS-native + `FIXED_KEY_COMMAND_IDS` rows render read-only** (badge, no edit/add/remove/reset). AppKit or
+  hardcoded handlers own them, and the store refuses these writes.
+- **Conflict-banner honesty:** native or fixed-key conflicts offer ONLY Cancel (no "Remove from other" / "Keep both" —
+  both would lie). Classify via the pure `classifyConflict`, not inline string checks.
+- **One group per `CommandScope` via the pure `groupCommandsByScope`.** Don't ad-hoc a title list; the group set must
+  stay the scope union or commands vanish. `keyboard-shortcuts-grouping.test.ts` guards it.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

@@ -55,8 +55,10 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **`SearchSection.svelte`**: `Behavior > Search`: one unlabeled `SectionCard` wrapping only the auto-apply switch. The
   `recentSearches.maxCount` / `recentSelections.maxCount` caps live ONLY in Advanced now, never mirrored here. The card
   is gated via `anyVisible(shouldShow, ...)` so an all-filtered-out search leaves no empty frame.
-- **`AiSection.svelte`**: `AI` wrapper: provider toggle (Off / Cloud / Local), auto-stops local server on switch-away,
-  dispatches to one of the two sub-sections below. The provider toggle row sits in its own unlabeled `SectionCard` (the
+- **`AiSection.svelte`**: `AI › Provider` subsection: provider toggle (Off / Cloud / Local), auto-stops local server on
+  switch-away, dispatches to one of the two sub-sections below. `AI` itself is a card-menu parent (a `SectionSummary`
+  grid of two cards, Provider + Ask Cmdr); this file is the Provider card's page and titles itself
+  `settings.section.aiProvider`. The provider toggle row sits in its own unlabeled `SectionCard` (the
   row already carries a "Provider" label, so an unlabeled card avoids a duplicate heading). Card boundaries are a
   deliberate "tasteful, not one-big-card" choice: only the registry-row clusters are card-framed; the AI status blocks,
   gauge, action buttons, and the delete modal stay full-bleed (they already read as distinct blocks and don't belong
@@ -396,7 +398,8 @@ keydown dispatch, so the scope/conflict apparatus doesn't apply. The toggle's de
 
 ## Ask Cmdr section (`AskCmdrSection.svelte`)
 
-The `Ask Cmdr` top-level section, over the read-only chat rail. Its parts:
+The `AI › Ask Cmdr` subsection (second card under the AI card-menu), over the read-only chat rail. Its
+`askCmdr.interactiveModel` registry entry lives at `section: ['AI', 'Ask Cmdr']`. Its parts:
 
 - **Enable toggle IS consent, not a registry setting.** The on/off state lives in `main.db` (the consent record), driven
   by the consent commands via `lib/ask-cmdr/ask-cmdr-consent.svelte` (`acceptConsent` / `revokeConsent`), not a settings
