@@ -183,7 +183,7 @@ pub(crate) fn index_read_path(volume_id: &str, abs_path: &str) -> Option<String>
 /// its code touches, so the same code drives both the `/`-rooted boot disk and a
 /// mount-rooted external drive without forking.
 ///
-/// The pipeline handles the SAME path string in three spaces:
+/// The pipeline handles the SAME path string in two spaces:
 /// - **absolute FS path** — `read_dir`, `symlink_metadata`, `Path::exists`, and the
 ///   `index-dir-updated` emit (which must match pane paths);
 /// - **index-relative path** — the argument `store::resolve_path` walks from

@@ -464,6 +464,16 @@ pub(super) fn detect_renames_by_inode(
             return true;
         }
 
+        // A volume whose inodes aren't trustworthy (FAT/exFAT) stores `inode: None`
+        // for every entry, so `find_entry_by_inode` below can never match — the
+        // pre-pass is inert there and renames fall back to the safe create/delete
+        // path. Short-circuit up front so a FAT volume skips the per-event stat +
+        // query entirely (the raw `symlink_metadata` inode here is the unstable
+        // derived-cluster value, so it must NOT drive a match).
+        if !space.inodes_trustworthy() {
+            return true;
+        }
+
         let metadata = match std::fs::symlink_metadata(path) {
             Ok(m) => m,
             // Path doesn't exist (or is unreadable). Could be the OLD-path
@@ -476,8 +486,7 @@ pub(super) fn detect_renames_by_inode(
         let is_symlink = metadata.is_symlink();
         let snap = super::metadata::extract_metadata(&metadata, is_dir, is_symlink);
 
-        // Symlink, or a filesystem without stable inodes (exFAT/FAT-family).
-        // Fall through to today's create/delete behaviour.
+        // Symlinks carry no inode. Fall through to the create/delete path.
         let inode = match snap.inode {
             Some(i) => i,
             None => return true,

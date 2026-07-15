@@ -67,8 +67,9 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
 - **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update that volume's counters
   (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
 - **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry.
-- **`index-scan-aborted`** (`{ volumeId }`): a network (SMB/MTP) scan ended WITHOUT completing (disconnect, cancel,
-  timeout), so no `index-scan-complete` fires. Remove the volume's `activity` AND `aggregation` entries — otherwise the
+- **`index-scan-aborted`** (`{ volumeId }`): a scan ended WITHOUT completing — a network (SMB/MTP) disconnect/cancel/
+  timeout, or a local external drive whose root became unlistable because the volume was yanked mid-scan — so no
+  `index-scan-complete` fires. Remove the volume's `activity` AND `aggregation` entries — otherwise the
   partial scan leaves a stuck "scanning" row in the corner and the badge tooltip. Carries no completion facts (it isn't
   a finished index). The badge dot color is handled separately by the manager's freshness subscription. Emitted by
   `network_scan.rs`'s disconnect (→ Stale) and cancel/fail (→ not-indexed) arms.
@@ -115,12 +116,11 @@ sliding windows (scan + replay) and a 1 Hz `now` tick (gated on scanning/aggrega
 `getVolumePhase(volumeId)` and `isNetwork` (`isNetworkIndexRun(volumeId, getVolumes())`, keyed on the volume's
 `category`: `network`/`mobile_device` → network checklist, every local category → local — so a non-root LOCAL drive like
 a USB stick gets the Save + Catch-up steps, NOT the network shape a `volumeId !== root` test would have handed it), and
-renders the heading + a
-`IndexingStatusBody`. The body is PRESENTATIONAL: it takes the `activity`, `aggregation`, `now`, `windowedEta`, `phase`,
-and `isNetwork`, and renders the step checklist. No `$effect`, no window state in the body, so two surfaces rendering
-the same volume can't collide on window state — each WRAPPER instance keeps its own window. Both surfaces (the corner
-indicator and the breadcrumb badge's scanning tooltip) render `IndexingDriveRow` (the badge with the heading off), so
-the representation is identical.
+renders the heading + a `IndexingStatusBody`. The body is PRESENTATIONAL: it takes the `activity`, `aggregation`, `now`,
+`windowedEta`, `phase`, and `isNetwork`, and renders the step checklist. No `$effect`, no window state in the body, so
+two surfaces rendering the same volume can't collide on window state — each WRAPPER instance keeps its own window. Both
+surfaces (the corner indicator and the breadcrumb badge's scanning tooltip) render `IndexingDriveRow` (the badge with
+the heading off), so the representation is identical.
 
 ## Step checklist
 
