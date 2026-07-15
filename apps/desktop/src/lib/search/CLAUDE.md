@@ -48,9 +48,9 @@ natural-language queries into structured filters. First consumer of the shared Q
   The image grid targets the focused pane's volume via `imageSearchVolume` (a NAS search finds NAS photos). The pane's
   volume id IS the media-index id (`root` / `smb-…`). DETAILS § Which volume.
 - **`ImageSearchResults` OWNS every `cmdr-media://` thumbnail token it mints** (no viewer-session close): drop the prior
-  set before minting the next, and all on unmount (`mediaIndexDropThumbnailTokens`), or the backend token map leaks. With
-  `mediaIndex.enabled` OFF the section renders nothing, fires no IPC; ON, it voices coverage and renders the `[`/`]`
-  snippet via `parseOcrSnippet` + `<mark>`, never `{@html}`.
+  set before minting the next, and all on unmount (`mediaIndexDropThumbnailTokens`), or the backend token map leaks.
+  With `mediaIndex.enabled` OFF the section renders nothing, fires no IPC; ON, it voices coverage and renders the
+  `[`/`]` snippet via `parseOcrSnippet` + `<mark>`, never `{@html}`.
 
 Architecture, flows, and decision detail: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

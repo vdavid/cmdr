@@ -58,11 +58,11 @@ Parents: [`../CLAUDE.md`](../CLAUDE.md) (registry, store, applier, search) and
 - **`AiSection.svelte`**: `AI › Provider` subsection: provider toggle (Off / Cloud / Local), auto-stops local server on
   switch-away, dispatches to one of the two sub-sections below. `AI` itself is a card-menu parent (a `SectionSummary`
   grid of two cards, Provider + Ask Cmdr); this file is the Provider card's page and titles itself
-  `settings.section.aiProvider`. The provider toggle row sits in its own unlabeled `SectionCard` (the
-  row already carries a "Provider" label, so an unlabeled card avoids a duplicate heading). Card boundaries are a
-  deliberate "tasteful, not one-big-card" choice: only the registry-row clusters are card-framed; the AI status blocks,
-  gauge, action buttons, and the delete modal stay full-bleed (they already read as distinct blocks and don't belong
-  inside a card).
+  `settings.section.aiProvider`. The provider toggle row sits in its own unlabeled `SectionCard` (the row already
+  carries a "Provider" label, so an unlabeled card avoids a duplicate heading). Card boundaries are a deliberate
+  "tasteful, not one-big-card" choice: only the registry-row clusters are card-framed; the AI status blocks, gauge,
+  action buttons, and the delete modal stay full-bleed (they already read as distinct blocks and don't belong inside a
+  card).
 - **`AiCloudSection.svelte`**: Cloud provider config: preset dropdown, per-provider endpoint/model in
   `ai.cloudProviderConfigs`, API key in OS secret store, two-step connection check. Its whole row list plus the
   connection-status block live in one unlabeled `SectionCard` (no `anyVisible` gate: the section mounts only when
