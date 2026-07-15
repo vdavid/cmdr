@@ -8,7 +8,7 @@ fake for tests.
 
 - `predicate.rs` PURE `qualify_dir`. `store/` per-volume `media.db` + ONE writer thread (`writer_registry`). `backend/`
   the `VisionBackend` seam (`FakeVisionBackend`, macOS `vision/`).
-- `scheduler/` bus-driven coalesced pass + `enrich.rs`. `network/` SMB byte-fetch + `config`
+- `scheduler/` bus-driven coalesced pass + `enrich.rs` + `reclaim.rs` (M4 stored-coverage split + prune). `network/` SMB byte-fetch + `config`
   (opt-in/override/exclude/paused). `vector/` `VectorStore` + resident `cache`; `coverage.rs` covered-count.
 - `read/` `MediaIndex` (the ONLY consumer entry). `commands.rs` IPC; `gate.rs` toggle + threshold atomics.
 

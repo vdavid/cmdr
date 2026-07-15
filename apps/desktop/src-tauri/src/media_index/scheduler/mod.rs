@@ -9,29 +9,21 @@
 //!
 //! ## What drives a pass
 //!
-//! Three triggers, all folded through the [`PassCoordinator`]:
+//! Triggers, all folded through the [`PassCoordinator`] (full detail in `DETAILS.md`):
 //!
-//! - **The lifecycle bus** ([`crate::indexing::lifecycle_bus`]): a `ScanCompleted`
-//!   for a volume ⇒ enrich it. Consumed **edge-triggered** (`borrow_and_update` /
-//!   `has_changed`), NEVER a `borrow()` poll — the `watch` retains the last
-//!   `Completed` across a new scan's truncate window, so a poll could observe a
-//!   stale `Completed` mid-truncate and GC live rows. The edge is the data-safety
-//!   guarantee (plan Decision 3).
-//! - **The startup registry sweep** ([`crate::indexing::ready_volumes_with_kind`]):
-//!   a volume Fresh at launch never re-fires `ScanCompleted`, so the bus subscription
-//!   alone would never enrich it (the retained value stays `Pending`). The sweep only
-//!   WIRES each ready volume's subscriptions; the actual startup enrichment comes from
-//!   [`kick_all_ready_passes_with`], called at the end of [`start`] when the master
-//!   toggle is on (the persisted-on restart case).
-//! - **User actions** ([`kick_all_ready_passes`] / [`kick_network_pass`]): enabling
-//!   the master toggle, a threshold DECREASE (coverage broadens), or opting a network
-//!   volume in kicks an immediate pass so work starts without waiting for the next
-//!   scan (plan M1).
-//! - **The importance bridge** ([`wire_volume`]'s subscriber): a pass that ran while
-//!   importance hadn't scored the volume DEFERS its gated remainder; when importance
-//!   first completes a recompute, the deferred volume is re-kicked so it enriches at
-//!   the threshold (plan M1 defer-until-scored).
-//! - **The registration bus**: a volume registered after the sweep is wired then.
+//! - **The lifecycle bus** ([`crate::indexing::lifecycle_bus`]): a `ScanCompleted` ⇒
+//!   enrich. Consumed **edge-triggered** (`borrow_and_update`), NEVER a `borrow()` poll:
+//!   the `watch` retains the last `Completed` across a new scan's truncate window, so a
+//!   poll could GC live rows mid-truncate. The edge is the data-safety line (Decision 3).
+//! - **The startup sweep** ([`crate::indexing::ready_volumes_with_kind`]) only WIRES
+//!   subscriptions — a volume Fresh at launch keeps a `Pending` bus and never re-fires,
+//!   so [`kick_all_ready_passes_with`] at the end of [`start`] (master toggle on) is what
+//!   actually enriches on a persisted-on restart.
+//! - **User actions** ([`kick_all_ready_passes`] / [`kick_network_pass`]): toggle-on, a
+//!   threshold DECREASE, or a network opt-in kicks an immediate pass (plan M1).
+//! - **The importance bridge** ([`wire_volume`]'s subscriber): a pass that DEFERRED its
+//!   gated remainder (importance unscored) is re-kicked when importance first scores
+//!   (plan M1 defer-until-scored). **The registration bus** wires a late-registered volume.
 //!
 //! Local volumes enrich by default when the master toggle is on; opted-in SMB volumes
 //! run the CONSERVATIVE network pass ([`MediaScheduler::run_network_pass_blocking`]);
@@ -62,6 +54,9 @@ use crate::indexing::IndexVolumeKind;
 
 pub(crate) mod enrich;
 use enrich::{enrich_and_gc, load_statuses, walk_image_entries};
+
+mod reclaim;
+pub use reclaim::{PruneOutcome, StoredCoverage};
 
 #[cfg(test)]
 mod coalescing_tests;
@@ -151,38 +146,6 @@ impl PassCoordinator {
             FinishOutcome::Done
         }
     }
-}
-
-// ── Reclaim-space quantities (the single-source stored-coverage split) ───────
-
-/// The threshold-aware split of a volume's STORED media rows plus the drive-index
-/// coverage count — all from ONE computation ([`MediaScheduler::stored_coverage`]) so the
-/// reclaim preview, the prune, and M5's per-volume state can never disagree (plan M4
-/// single-source arithmetic).
-#[derive(Debug, Default, PartialEq, Eq)]
-pub struct StoredCoverage {
-    /// Stored rows INSIDE current coverage (they stay). `surviving_stored +
-    /// doomed_stored` is the total stored-row count (the partition invariant).
-    pub surviving_stored: u64,
-    /// Stored rows OUTSIDE current coverage — the reclaim prune's "delete N" AND M5's
-    /// `keptCount` (the same set).
-    pub doomed_stored: u64,
-    /// Drive-index qualifying images in covered folders — what WOULD be indexed (the
-    /// slider-preview number), a DIFFERENT thing from `surviving_stored` (a
-    /// vanished-but-not-yet-GC'd file or a half-enriched folder makes them disagree).
-    pub covered_qualifying: u64,
-    /// The doomed rows' stored paths, handed to the writer as one serialized prune unit.
-    pub doomed_paths: Vec<String>,
-}
-
-/// What a reclaim prune did: the rows deleted and the freed-byte estimate.
-#[derive(Debug, Default, PartialEq, Eq)]
-pub struct PruneOutcome {
-    /// The `media_status` rows removed (the images the user reclaimed).
-    pub deleted_rows: u64,
-    /// The content bytes the prune freed (OCR text + tags + embeddings; an "about"
-    /// estimate — a `VACUUM` reclaims at least this on disk).
-    pub freed_bytes: u64,
 }
 
 // ── The scheduler handle ────────────────────────────────────────────────────
@@ -416,120 +379,6 @@ impl MediaScheduler {
             }
         }
         total
-    }
-
-    /// The single-source stored-coverage split for `volume_id` at `threshold` (plan
-    /// M4): how many stored `media.db` rows fall INSIDE the current setting
-    /// (`surviving_stored`) vs OUTSIDE it (`doomed_stored` + the `doomed_paths` a reclaim
-    /// prune would delete), plus `covered_qualifying` (the drive-index qualifying images
-    /// in covered folders — the slider-preview number, a DIFFERENT quantity from stored
-    /// rows). BOTH the reclaim commands and M5's `keptCount` call this, so the three
-    /// numbers can never disagree.
-    ///
-    /// `mount_root` maps a stored (index-relative) path into OS space for the
-    /// override/exclude config lookup ("/" on a local volume, the mount root on a network
-    /// one), exactly as enrichment does; importance keys on the index identity directly.
-    /// Returns `None` when importance hasn't scored the volume (M2 makes that transient) —
-    /// the partition can't be computed safely, so the caller reports pending rather than
-    /// proposing a destructive count. The selection reuses [`coverage::partition_stored`]
-    /// (the enrichment precedence) and the [`coverage`] cache (the slider's qualifying
-    /// counts), never a second derivation.
-    pub fn stored_coverage(&self, volume_id: &str, mount_root: &str, threshold: f64) -> Option<StoredCoverage> {
-        // Importance must be scored to partition safely (plan M4 depends on M2).
-        let scores = super::coverage::importance_scores(&self.data_dir, volume_id)?;
-
-        // The stored-row paths (empty when the volume was never enriched).
-        let db_path = super::store::media_db_path(&self.data_dir, volume_id);
-        let stored: Vec<String> = super::store::open_read_connection(&db_path)
-            .ok()
-            .and_then(|conn| super::store::read_status_paths(&conn).ok())
-            .unwrap_or_default();
-
-        // Override/exclude are OS-path keyed; map each stored (index) path into OS space.
-        let config = network::config::snapshot();
-        let mount_root = mount_root.to_string();
-        let is_override =
-            |index_path: &str| config.covers(volume_id, &network::fetch::os_join(&mount_root, index_path));
-        let is_excluded = |index_path: &str| config.is_excluded(&network::fetch::os_join(&mount_root, index_path));
-        let partition = super::coverage::partition_stored(&stored, &scores, threshold, &is_override, &is_excluded);
-
-        // Covered qualifying reuses the slider-preview cache path (single-source).
-        let covered_qualifying = super::coverage::get_or_build(volume_id)
-            .map(|counts| super::coverage::covered_for_volume(&counts, &scores, threshold).1)
-            .unwrap_or(0);
-
-        Some(StoredCoverage {
-            surviving_stored: partition.surviving,
-            doomed_stored: partition.doomed.len() as u64,
-            covered_qualifying,
-            doomed_paths: partition.doomed,
-        })
-    }
-
-    /// The freed-byte estimate for a doomed path set: the content bytes those rows hold
-    /// in `media.db` (OCR text, tags, and embeddings), the "about" figure the reclaim
-    /// preview shows and the prune reports (a `VACUUM` reclaims at least this on disk),
-    /// or `0` for an empty set or an unopenable DB.
-    pub fn estimate_doomed_bytes(&self, volume_id: &str, doomed_paths: &[String]) -> u64 {
-        if doomed_paths.is_empty() {
-            return 0;
-        }
-        let db_path = super::store::media_db_path(&self.data_dir, volume_id);
-        let set: HashSet<String> = doomed_paths.iter().cloned().collect();
-        super::store::open_read_connection(&db_path)
-            .ok()
-            .and_then(|conn| super::store::sum_bytes_for_paths(&conn, &set).ok())
-            .unwrap_or(0)
-    }
-
-    /// Prune the stored rows OUTSIDE the current setting for `volume_id` at `threshold`
-    /// (plan M4 reclaim): compute the doomed set via [`stored_coverage`], estimate the
-    /// content bytes it frees, delete it through the volume's ONE writer thread (the
-    /// serialization guarantee — the prune and any concurrent pass can't interleave
-    /// mid-batch, and a concurrent pass only enriches ABOVE-threshold rows, a disjoint
-    /// set), `VACUUM` to reclaim the pages, and drop the vector + coverage caches. A
-    /// USER-EXPLICIT deletion: it derives ONLY from settings state, so like the privacy
-    /// retro-delete it needs no completed-scan edge (see `DETAILS.md` § GC safety).
-    /// Returns the rows deleted and the freed-byte estimate; a no-op (all zeros) when
-    /// importance is unscored or nothing is doomed.
-    pub fn prune_below_threshold(&self, volume_id: &str, mount_root: &str, threshold: f64) -> PruneOutcome {
-        let Some(coverage) = self.stored_coverage(volume_id, mount_root, threshold) else {
-            return PruneOutcome::default();
-        };
-        if coverage.doomed_paths.is_empty() {
-            return PruneOutcome::default();
-        }
-        let db_path = super::store::media_db_path(&self.data_dir, volume_id);
-
-        // The freed-byte estimate over the doomed set, BEFORE deleting (same content-byte
-        // method the reclaim preview reports, so the "free about X" and "Freed X" numbers
-        // agree). `VACUUM` reclaims at least this much on disk.
-        let freed_bytes = self.estimate_doomed_bytes(volume_id, &coverage.doomed_paths);
-
-        let writer = match self.writers.writer_for(&self.data_dir, volume_id) {
-            Ok(w) => w,
-            Err(e) => {
-                log::warn!(target: "media_index", "reclaim prune: writer for '{volume_id}' failed: {e}");
-                return PruneOutcome::default();
-            }
-        };
-        let deleted = writer.prune_paths(coverage.doomed_paths).unwrap_or(0);
-        if deleted > 0 {
-            // Reclaim the pages, then drop the derived caches so a later search / slider
-            // preview rebuilds honestly.
-            let _ = writer.vacuum();
-            super::vector::cache::invalidate(&db_path);
-            super::coverage::invalidate(volume_id);
-            log::info!(
-                target: "media_index",
-                "reclaim prune on '{volume_id}' at threshold {threshold}: {} removed (~{freed_bytes} bytes)",
-                crate::pluralize::pluralize(deleted as u64, "row")
-            );
-        }
-        PruneOutcome {
-            deleted_rows: deleted as u64,
-            freed_bytes,
-        }
     }
 
     /// Run one CONSERVATIVE network enrichment pass for an opted-in SMB volume
