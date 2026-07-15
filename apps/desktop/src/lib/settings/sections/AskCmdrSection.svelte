@@ -8,6 +8,8 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import SettingRow from '../components/SettingRow.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import StatusBadge from '$lib/ui/StatusBadge.svelte'
+    import { getBadgeStatus } from '$lib/feature-status'
     import { getSetting, setSetting, onSpecificSettingChange, getSettingDefinition, type AiProvider } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
     import { tString } from '$lib/intl/messages.svelte'
@@ -25,6 +27,8 @@
     const { searchQuery }: Props = $props()
     const shouldShow = $derived(createShouldShow(searchQuery))
     const log = getAppLogger('askCmdr')
+
+    const askCmdrBadge = getBadgeStatus('ask-cmdr')
 
     // Enable state = consent (main.db). Refresh on mount so the toggle reflects the store,
     // even if the rail changed it in the main window.
@@ -93,6 +97,9 @@
 </script>
 
 <SettingsSection title={tString('settings.section.askCmdr')}>
+    {#snippet badge()}
+        {#if askCmdrBadge}<StatusBadge status={askCmdrBadge} />{/if}
+    {/snippet}
     <p class="intro">{tString('settings.askCmdr.intro')}</p>
 
     <!-- Enable / consent -->

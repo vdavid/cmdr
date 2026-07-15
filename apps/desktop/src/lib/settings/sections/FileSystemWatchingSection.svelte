@@ -43,6 +43,8 @@
     import MediaIndexNetworkVolumes from './MediaIndexNetworkVolumes.svelte'
     import MediaIndexImportanceSlider from './MediaIndexImportanceSlider.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
+    import StatusBadge from '$lib/ui/StatusBadge.svelte'
+    import { getBadgeStatus } from '$lib/feature-status'
     import Button from '$lib/ui/Button.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import Trans from '$lib/intl/Trans.svelte'
@@ -94,6 +96,8 @@
     const askForEachDriveDef = getSettingDefinition('indexing.askForEachDrive') ?? { label: '', description: '' }
     const staleNotifyDef = getSettingDefinition('indexing.staleNotify') ?? { label: '', description: '' }
     const imageIndexDef = getSettingDefinition('mediaIndex.enabled') ?? { label: '', description: '' }
+
+    const imageSearchBadge = getBadgeStatus('image-search')
 
     // Live master-toggle state, so the per-network-volume controls appear/disappear the
     // moment the user flips "Index image contents" (no restart, matches the live-apply rule).
@@ -363,6 +367,9 @@
 
     {#if shouldShow('mediaIndex.enabled')}
         <SectionCard label={tString('settings.mediaIndex.card')}>
+            {#snippet badge()}
+                {#if imageSearchBadge}<StatusBadge status={imageSearchBadge} />{/if}
+            {/snippet}
             <SettingRow
                 id="mediaIndex.enabled"
                 label={imageIndexDef.label}

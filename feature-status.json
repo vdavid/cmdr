@@ -20,6 +20,12 @@
       "note": "Wildcard and regex matching work well; AI selection is cloud-only and still misses edge cases."
     },
     {
+      "id": "image-search",
+      "name": "Image search",
+      "status": "alpha",
+      "note": "Search the words inside your photos and screenshots. Runs on your Mac and covers local drives for now."
+    },
+    {
       "id": "archives",
       "name": "Archives",
       "status": "alpha",

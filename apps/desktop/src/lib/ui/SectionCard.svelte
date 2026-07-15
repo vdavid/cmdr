@@ -4,6 +4,8 @@
     interface Props {
         /** Optional label rendered as an `<h3>` above the card. Omitted for unlabelled groupings. */
         label?: string
+        /** Optional inline element (e.g. a status badge) rendered next to the label. Needs a label. */
+        badge?: Snippet
         /** Optional id on the outer `<section>` for scroll anchoring. */
         id?: string
         /**
@@ -16,12 +18,15 @@
         children: Snippet
     }
 
-    const { label, id, gated = false, children }: Props = $props()
+    const { label, badge, id, gated = false, children }: Props = $props()
 </script>
 
 <section class="section-card-wrap" {id} data-gated={gated ? 'true' : undefined}>
     {#if label}
-        <h3 class="section-card-label">{label}</h3>
+        <div class="section-card-header">
+            <h3 class="section-card-label">{label}</h3>
+            {#if badge}{@render badge()}{/if}
+        </div>
     {/if}
     <div class="section-card">
         {@render children()}
@@ -37,8 +42,17 @@
         margin-bottom: 0;
     }
 
-    .section-card-label {
+    .section-card-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        /* Left inset + bottom gap that the bare label used to carry, so the card
+           title still lines up whether or not a badge sits beside it. */
         margin: 0 0 var(--spacing-sm) var(--spacing-md);
+    }
+
+    .section-card-label {
+        margin: 0;
         font-size: var(--font-size-sm);
         font-weight: 500;
         color: var(--color-text-secondary);

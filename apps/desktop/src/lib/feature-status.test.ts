@@ -15,11 +15,14 @@ describe('feature-status', () => {
   })
 
   it('the in-app alpha surfaces stay pinned to the JSON', () => {
-    // Search and the Selection dialog wear ALPHA badges in the app. If you
-    // graduate them in feature-status.json, this test reminds you the badges
-    // disappear with it (that's the point of the single source of truth).
+    // Search, the Selection dialog, the Ask Cmdr settings section, and the
+    // Image search settings card wear ALPHA badges in the app. If you graduate
+    // them in feature-status.json, this test reminds you the badges disappear
+    // with it (that's the point of the single source of truth).
     expect(getFeatureStatus('search')).toBe('alpha')
     expect(getFeatureStatus('select-files')).toBe('alpha')
+    expect(getFeatureStatus('ask-cmdr')).toBe('alpha')
+    expect(getFeatureStatus('image-search')).toBe('alpha')
   })
 
   it('getFeatureStatus returns undefined for unknown ids', () => {

@@ -30,6 +30,7 @@ import PartyPopper from '~icons/lucide/party-popper'
 import Pointer from '~icons/lucide/pointer'
 import Puzzle from '~icons/lucide/puzzle'
 import Rocket from '~icons/lucide/rocket'
+import ScanText from '~icons/lucide/scan-text'
 import Search from '~icons/lucide/search'
 import Server from '~icons/lucide/server'
 import Ship from '~icons/lucide/ship'
@@ -62,6 +63,7 @@ export const ICONS = {
   pointer: Pointer,
   puzzle: Puzzle,
   rocket: Rocket,
+  'scan-text': ScanText,
   search: Search,
   server: Server,
   ship: Ship,
