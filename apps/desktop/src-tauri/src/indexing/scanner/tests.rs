@@ -896,3 +896,45 @@ fn timed_out_dir_is_not_marked_listed() {
     assert_eq!(listed_epoch(ok_id), epoch_now, "healthy dir marked at current epoch");
     assert_eq!(listed_epoch(ROOT_ID), epoch_now, "root marked at current epoch");
 }
+
+#[test]
+fn volume_root_that_never_lists_surfaces_root_unlistable() {
+    use crate::indexing::scanner::walker::ReadDirFn;
+
+    // A volume-root scan whose ROOT read FAILS (the mount vanished mid-scan): the
+    // reader errors on every path, so the root is never listed (`dirs_read == 0`).
+    // `run_scan` must surface the typed `RootUnlistable` instead of silently
+    // "completing" with zero entries (which would false-complete an empty index).
+    // Distinct from an empty-but-readable root, which lists successfully.
+    let root = PathBuf::from("/vanished-volume-root");
+    let reader: ReadDirFn = Arc::new(|_p: &Path| {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "mount vanished (test)",
+        ))
+    });
+
+    let (writer, _db_path, _db_dir) = setup_writer();
+    let progress = Arc::new(ScanProgress::new());
+    let cancelled = AtomicBool::new(false);
+
+    let result = run_scan(
+        &root,
+        &cancelled,
+        &progress,
+        &writer,
+        100,
+        4,
+        true, // volume-root scan
+        ExclusionScope::BootDisk,
+        true,
+        reader,
+        Duration::from_millis(50),
+    );
+    writer.shutdown();
+
+    assert!(
+        matches!(result, Err(ScanError::RootUnlistable)),
+        "an unreadable volume root must surface RootUnlistable, got {result:?}"
+    );
+}

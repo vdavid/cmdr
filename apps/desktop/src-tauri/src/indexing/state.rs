@@ -1085,6 +1085,31 @@ pub(crate) fn volume_kind(volume_id: &str) -> Option<IndexVolumeKind> {
     INDEX_REGISTRY.lock().ok()?.get(volume_id).map(|i| i.kind)
 }
 
+/// Test-only: reserve a lightweight `Initializing` index instance for `volume_id`
+/// of the given `kind`, backed by a throwaway temp DB (returned so the caller keeps
+/// it alive). Stops short of building an `IndexManager` (which needs an
+/// `AppHandle`), so `stop_indexing` on it takes the fast `Initializing`-removal arm.
+/// Lets cross-module tests (the eject-stop ordering, the unmount cleanup) exercise
+/// the REAL registry + `stop_indexing` without a Tauri runtime.
+#[cfg(test)]
+pub(crate) fn reserve_initializing_index_for_test(volume_id: &str, kind: IndexVolumeKind) -> tempfile::TempDir {
+    let dir = tempfile::tempdir().expect("temp dir for test index");
+    let db_path = dir.path().join("test-index.db");
+    let store = IndexStore::open(&db_path).expect("open test store");
+    let pool = Arc::new(ReadPool::new(db_path.clone()).expect("test read pool"));
+    let pending = Arc::new(PendingSizes::new());
+    try_reserve_initializing_phase(
+        volume_id,
+        kind,
+        store,
+        pool,
+        pending,
+        Arc::new(std::sync::Mutex::new(Some(Freshness::Fresh))),
+    )
+    .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
+    dir
+}
+
 /// Check whether a volume's index is active (initializing or running).
 pub fn is_active(volume_id: &str) -> bool {
     INDEX_REGISTRY

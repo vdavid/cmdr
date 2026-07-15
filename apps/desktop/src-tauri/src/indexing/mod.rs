@@ -85,6 +85,8 @@ pub use queries::{
 pub(crate) use routing::{IndexPathSpace, index_read_path};
 pub(crate) use state::ROOT_VOLUME_ID;
 pub(crate) use state::get_freshness;
+#[cfg(test)]
+pub(crate) use state::reserve_initializing_index_for_test;
 pub(crate) use state::{IndexVolumeKind, all_registered_volume_ids, ready_volumes_with_kind, volume_kind};
 pub use state::{
     clear_index, force_scan, init, is_active, should_auto_start, should_auto_start_indexing, start_indexing,

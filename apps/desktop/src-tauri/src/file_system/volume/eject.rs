@@ -192,8 +192,56 @@ pub async fn eject(volume_id: &str) -> Result<(), EjectError> {
 
     match action {
         EjectAction::MtpDisconnect { device_id } => mtp_disconnect(&device_id).await,
-        EjectAction::DiskutilUnmount => diskutil_run("unmount", &mount_path).await,
-        EjectAction::DiskutilEject => diskutil_run("eject", &mount_path).await,
+        // For disk volumes, stop the index BEFORE the unmount (the wedge-safe point).
+        // MTP tears its index down through the disconnect hook, so it isn't stopped
+        // here.
+        EjectAction::DiskutilUnmount => {
+            stop_index_then_unmount(volume_id, || diskutil_run("unmount", &mount_path)).await
+        }
+        EjectAction::DiskutilEject => stop_index_then_unmount(volume_id, || diskutil_run("eject", &mount_path)).await,
+    }
+}
+
+/// Stop the volume's index (if any) BEFORE running the unmount/eject.
+///
+/// This is the ONE reliable wedge-safe point: releasing the FSEvents watcher +
+/// open SQLite handles while the filesystem is still healthy is the only thing that
+/// keeps an open stream/handle from wedging a FSKit (`msdos`) unmount (see
+/// `indexing/DETAILS.md` § the unmount/eject lifecycle and the 2026-07-15 kernel
+/// panic). The ordering is unconditional: the index stop is awaited to completion,
+/// then the unmount runs. `unmount` is a parameter so the ordering can be asserted
+/// in a test without a real volume or `diskutil`. No-op stop for an unindexed volume.
+async fn stop_index_then_unmount<F, Fut>(volume_id: &str, unmount: F) -> Result<(), EjectError>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<(), EjectError>>,
+{
+    stop_index_blocking(volume_id).await;
+    unmount().await
+}
+
+/// Stop `volume_id`'s index on the blocking pool, awaited so the stop COMPLETES
+/// before the caller unmounts. `stop_indexing` drains the writer/live-event task
+/// (up to a few seconds of blocking work), so it must not run on the async executor
+/// directly.
+///
+/// Only a `LocalExternal` index is stopped here: it's the one carrying an FSEvents
+/// watcher + open SQLite handles that can wedge a FSKit (`msdos`) unmount, and it's
+/// the kind whose DB stays usable via a later reconcile. SMB/MTP indexes tear down
+/// through their own disconnect paths and stay registered (Stale, offline-browsable)
+/// across an eject, so this must not remove them. No-op for a non-`LocalExternal` or
+/// unindexed volume.
+async fn stop_index_blocking(volume_id: &str) {
+    if crate::indexing::volume_kind(volume_id) != Some(crate::indexing::IndexVolumeKind::LocalExternal) {
+        return;
+    }
+    let vid = volume_id.to_string();
+    match tokio::task::spawn_blocking(move || crate::indexing::stop_indexing(&vid)).await {
+        Ok(Ok(())) => {}
+        Ok(Err(e)) => log::warn!(target: "eject", "stopping index for '{volume_id}' before unmount failed: {e}"),
+        Err(join_err) => {
+            log::warn!(target: "eject", "index-stop task for '{volume_id}' failed to join: {join_err}")
+        }
     }
 }
 
@@ -455,6 +503,41 @@ mod tests {
                 volume_id: "root".to_string(),
             }
         );
+    }
+
+    #[tokio::test]
+    async fn eject_stops_the_index_before_the_unmount() {
+        use crate::indexing;
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        // A LocalExternal drive with a live index is ejected: the index MUST be
+        // stopped (its FSEvents watcher + SQLite handles released) BEFORE the unmount
+        // runs — the wedge-safe ordering. Red before M6: the eject path never touched
+        // indexing, so a live index survived into the unmount. This drives the REAL
+        // `stop_indexing` through the ordering seam with a fake unmount that records
+        // whether the index was still active when it ran.
+        let vid = "volumes-cmdr-test-eject-stop-order";
+        let _tmp = indexing::reserve_initializing_index_for_test(vid, indexing::IndexVolumeKind::LocalExternal);
+        assert!(indexing::is_active(vid), "precondition: the index is active");
+
+        let active_when_unmount_ran = Arc::new(AtomicBool::new(true));
+        let observed = Arc::clone(&active_when_unmount_ran);
+        let vid_for_unmount = vid.to_string();
+
+        let result = stop_index_then_unmount(vid, || async move {
+            // Record the index state at the exact moment the unmount would run.
+            observed.store(indexing::is_active(&vid_for_unmount), Ordering::SeqCst);
+            Ok(())
+        })
+        .await;
+
+        assert!(result.is_ok(), "the ordering seam must propagate the unmount result");
+        assert!(
+            !active_when_unmount_ran.load(Ordering::SeqCst),
+            "the index must be stopped BEFORE the unmount runs"
+        );
+        assert!(!indexing::is_active(vid), "the index instance is gone after eject");
     }
 
     #[test]

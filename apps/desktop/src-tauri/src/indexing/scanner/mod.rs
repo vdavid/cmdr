@@ -182,6 +182,17 @@ pub enum ScanError {
     /// network path's `VolumeScanError::EmptyRoot`; see
     /// `indexing/DETAILS.md` § "No completion marker on an empty root".
     EmptyRoot,
+    /// The volume ROOT itself couldn't be listed (its read errored or timed out),
+    /// which for a mount-rooted external drive means the mount VANISHED mid-scan (a
+    /// yanked USB stick / SD card). Distinct from [`EmptyRoot`](ScanError::EmptyRoot):
+    /// an empty-but-readable root lists successfully (zero children), whereas a
+    /// vanished root can't be read at all. The completion handler treats this as an
+    /// aborted scan — it writes NO `scan_completed_at` and emits `index-scan-aborted`
+    /// so the frontend clears the stuck "scanning" row — mirroring the network path's
+    /// disconnect arm. Surfaced by the fresh jwalk scan (`run_scan`, when the root is
+    /// the only dir and never read) and the LOCAL reconcile walk (`local_reconcile`,
+    /// when its root read returns `None`).
+    RootUnlistable,
     /// The reconcile walk panicked. `local_reconcile::start_local_reconcile`
     /// wraps the walk in `catch_unwind` and converts the panic payload into this
     /// typed variant (carrying the panic message), so the thread's `JoinHandle`
@@ -197,6 +208,7 @@ impl std::fmt::Display for ScanError {
             ScanError::Io(e) => write!(f, "I/O error: {e}"),
             ScanError::WriterSend(msg) => write!(f, "Writer send failed: {msg}"),
             ScanError::EmptyRoot => write!(f, "root listing returned no children (treating as a failed rescan)"),
+            ScanError::RootUnlistable => write!(f, "volume root became unlistable (mount vanished mid-scan)"),
             ScanError::Panicked(msg) => write!(f, "reconcile walk panicked: {msg}"),
         }
     }
@@ -436,6 +448,19 @@ fn run_scan(
     }
 
     let was_cancelled = cancelled.load(Ordering::Relaxed);
+
+    // A volume-root scan whose ROOT never listed (`dirs_read == 0`) means the mount
+    // itself couldn't be read — it vanished or went unreadable mid-scan (a yanked
+    // external drive). This is distinct from an empty-but-readable root, which reads
+    // successfully (so `dirs_read == 1`). Surface it as the typed `RootUnlistable`
+    // abort so the completion handler writes no `scan_completed_at` (no
+    // false-complete of an empty index) and clears the stuck "scanning" row, instead
+    // of silently "completing" with zero entries. Only for a volume-root scan (`/`
+    // and mount roots); subtree scans have their own root handling.
+    if is_volume_root && !was_cancelled && walk_stats.dirs_read == 0 {
+        return Err(ScanError::RootUnlistable);
+    }
+
     // A cancelled scan emits no marks (the caller discards/heals the partial).
     let listed_ids = if was_cancelled {
         Vec::new()

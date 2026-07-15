@@ -14,6 +14,7 @@ use log::{debug, error};
 use objc2::rc::Retained;
 use objc2_app_kit::{
     NSWorkspace, NSWorkspaceDidMountNotification, NSWorkspaceDidUnmountNotification, NSWorkspaceVolumeURLKey,
+    NSWorkspaceWillUnmountNotification,
 };
 use objc2_foundation::{NSDictionary, NSNotification, NSString, NSURL};
 use std::ptr::NonNull;
@@ -69,6 +70,16 @@ fn install_observers() {
         }
     });
 
+    let will_unmount_block = RcBlock::new(|n: NonNull<NSNotification>| {
+        // SAFETY: NSNotificationCenter delivers a valid notification pointer.
+        let notification = unsafe { n.as_ref() };
+        if let Some(path) = volume_path_from_notification(notification) {
+            handle_volume_will_unmount(&path);
+        } else {
+            debug!("NSWorkspaceWillUnmountNotification missing NSWorkspaceVolumeURLKey");
+        }
+    });
+
     // SAFETY: the notification name constants are valid AppKit globals, and
     // `addObserverForName:object:queue:usingBlock:` retains the block for the
     // lifetime of the observer registration. We never remove the observer
@@ -86,6 +97,12 @@ fn install_observers() {
             None,
             None,
             &unmount_block,
+        );
+        center.addObserverForName_object_queue_usingBlock(
+            Some(NSWorkspaceWillUnmountNotification),
+            None,
+            None,
+            &will_unmount_block,
         );
     }
 
@@ -166,6 +183,17 @@ pub(crate) fn handle_volume_unmounted(volume_path: &str) {
         }
     };
 
+    // Cleanup (the volume is ALREADY gone — not wedge-prevention): a LocalExternal
+    // drive that unmounts leaves a dangling index instance holding an FSEvents
+    // watcher and open SQLite handles on a path that no longer exists. Stop it so
+    // those resources are released. The wedge-safe point is BEFORE the unmount
+    // (Cmdr's own eject-stop, and the best-effort `WillUnmount` handler); by here the
+    // unmount has already happened. SMB/MTP tear their indexes down through their own
+    // paths, so this acts only for a `LocalExternal`.
+    if let Some(id) = registered_id.as_deref() {
+        stop_local_external_index_off_main(id.to_string());
+    }
+
     unregister_volume_from_manager(volume_path, registered_id.as_deref());
 
     if let Some(app) = APP_HANDLE.get() {
@@ -178,6 +206,63 @@ pub(crate) fn handle_volume_unmounted(volume_path: &str) {
     }
 
     crate::volume_broadcast::emit_volumes_changed();
+}
+
+/// Handle a **pre-unmount** notification: best-effort stop of a `LocalExternal`
+/// index BEFORE the volume actually unmounts.
+///
+/// This is the earliest hook macOS offers for an OS/Finder-initiated eject. It's
+/// RACY — the OS doesn't wait for our observer, so the unmount can proceed
+/// concurrently — which is why Cmdr's own eject command (which stops the index
+/// synchronously before `diskutil`) is the RELIABLE wedge-safe path. Still worth
+/// doing: releasing the FSEvents watcher + SQLite handles before the unmount is the
+/// only thing that can keep an open stream/handle from wedging a FSKit (`msdos`)
+/// unmount. Acts only for a `LocalExternal` index (SMB/MTP have their own teardown).
+///
+/// Public for tests so the handler logic can be exercised without posting real
+/// `NSWorkspace` notifications.
+pub(crate) fn handle_volume_will_unmount(volume_path: &str) {
+    debug!("Volume will unmount: {}", volume_path);
+    // The volume is still mounted here, so look it up by root the same way the
+    // post-unmount path does (robust to SMB/case-folded ids).
+    if let Some((id, _volume)) =
+        crate::file_system::get_volume_manager().find_by_root(std::path::Path::new(volume_path))
+    {
+        stop_local_external_index_off_main(id);
+    }
+}
+
+/// Stop a registered `LocalExternal` index for `volume_id`, releasing its FSEvents
+/// watcher and SQLite handles. Returns whether one was stopped. No-op (false) for a
+/// non-`LocalExternal` or unindexed volume: SMB and MTP indexes tear down through
+/// their own disconnect paths, and stopping them here would fight those.
+///
+/// Synchronous. The `NSWorkspace` observer blocks run on the MAIN THREAD and
+/// `stop_indexing`'s drain can take a few seconds, so the observer callers wrap this
+/// via [`stop_local_external_index_off_main`]; tests call it directly for a
+/// deterministic result.
+fn stop_local_external_index(volume_id: &str) -> bool {
+    if crate::indexing::volume_kind(volume_id) != Some(crate::indexing::IndexVolumeKind::LocalExternal) {
+        return false;
+    }
+    if let Err(e) = crate::indexing::stop_indexing(volume_id) {
+        log::warn!(target: "volumes", "stopping LocalExternal index '{volume_id}' on unmount failed: {e}");
+    }
+    true
+}
+
+/// Run [`stop_local_external_index`] off the main thread. The `NSWorkspace` observer
+/// blocks fire on the main thread and `stop_indexing` blocks for the drain (up to a
+/// few seconds), so it must never run inline or the UI would hang mid-unmount.
+fn stop_local_external_index_off_main(volume_id: String) {
+    // Skip the thread spawn entirely for the common non-LocalExternal case (root,
+    // SMB, MTP): the kind check is a cheap registry lock.
+    if crate::indexing::volume_kind(&volume_id) != Some(crate::indexing::IndexVolumeKind::LocalExternal) {
+        return;
+    }
+    std::thread::spawn(move || {
+        stop_local_external_index(&volume_id);
+    });
 }
 
 /// Register a mounted volume with the `VolumeManager`.
@@ -455,5 +540,44 @@ mod tests {
 
         // Cleanup.
         get_volume_manager().unregister(&volume_id);
+    }
+
+    #[test]
+    fn stopping_a_registered_local_external_index_removes_its_instance() {
+        use crate::indexing;
+
+        // A LocalExternal drive whose volume unmounts: the cleanup must stop the
+        // index so its dangling FSEvents watcher + SQLite handles are released. Red
+        // before M6: the unmount path never touched indexing, so the instance
+        // survived (a leaked watcher/handles on a gone volume).
+        let vid = "volumes-cmdr-test-unmount-cleanup";
+        let _tmp = indexing::reserve_initializing_index_for_test(vid, indexing::IndexVolumeKind::LocalExternal);
+        assert!(indexing::is_active(vid), "precondition: the index is active");
+
+        assert!(
+            stop_local_external_index(vid),
+            "a registered LocalExternal index must be stopped on unmount"
+        );
+        assert!(!indexing::is_active(vid), "the instance must be removed after the stop");
+    }
+
+    #[test]
+    fn unmount_cleanup_leaves_a_non_local_external_index_alone() {
+        use crate::indexing;
+
+        // SMB/MTP indexes tear down through their own disconnect paths; the local
+        // unmount cleanup must never stop one (it would fight that teardown).
+        let vid = "volumes-cmdr-test-unmount-smb-like";
+        let _tmp = indexing::reserve_initializing_index_for_test(vid, indexing::IndexVolumeKind::Smb);
+        assert!(indexing::is_active(vid), "precondition: the SMB index is active");
+
+        assert!(
+            !stop_local_external_index(vid),
+            "the local-external unmount cleanup must not stop an SMB index"
+        );
+        assert!(indexing::is_active(vid), "the SMB instance must be left intact");
+
+        // Cleanup so the shared registry doesn't carry this test's instance.
+        let _ = indexing::stop_indexing(vid);
     }
 }

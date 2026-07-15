@@ -370,13 +370,15 @@ fn run_local_reconcile(
             Some(c) => c,
             None => {
                 if dir_path == *root {
-                    // The ROOT itself is unlistable (or its read timed out): nothing
-                    // to reconcile from.
-                    // Surface as a failed rescan so the completion handler writes no
-                    // `scan_completed_at`; the prior index is untouched.
-                    return Err(ScanError::Io(std::io::Error::other(
-                        "local reconcile: root directory is unlistable",
-                    )));
+                    // The ROOT itself is unlistable (its read errored or timed out):
+                    // for a mount-rooted drive this means the mount VANISHED
+                    // mid-reconcile (a yanked USB stick / SD card). Surface the typed
+                    // `RootUnlistable` so the completion handler writes no
+                    // `scan_completed_at` AND emits `index-scan-aborted` (clearing the
+                    // stuck "scanning" row); the prior index is untouched and heals on
+                    // a later pass. Distinct from `EmptyRoot` (a readable-but-empty
+                    // root), which does NOT abort.
+                    return Err(ScanError::RootUnlistable);
                 }
                 // A sub-directory we can't list: skip it. It keeps its old
                 // `listed_epoch` (honest "stale/unknown") and heals on a later pass.
@@ -1171,6 +1173,39 @@ mod tests {
             .unwrap()
             .expect("a resolves under ROOT_ID");
         assert!(a_id > ROOT_ID, "a is a real child entry of the mount root");
+    }
+
+    /// Vanished-volume (abort): a mount-rooted reconcile whose root can't be read
+    /// (the drive was unplugged) surfaces the typed `RootUnlistable`, distinct from
+    /// `EmptyRoot` (a readable-but-empty root). The completion handler maps
+    /// `RootUnlistable` to an aborted scan (no `scan_completed_at`, an
+    /// `index-scan-aborted` emit), while `EmptyRoot` keeps the prior index without
+    /// an abort. This pins the distinguisher for the yanked-drive case.
+    #[test]
+    fn reconcile_vanished_root_surfaces_root_unlistable_not_empty_root() {
+        let h = setup();
+        // A mount root that does not exist on disk (a vanished / unplugged drive).
+        // `mount_rooted` space resolves the root to `ROOT_ID` (the sentinel from
+        // `setup`), so the walk reaches the FS read — which fails because the path is
+        // gone — surfacing `RootUnlistable`. An `EmptyRoot` would instead require a
+        // readable-but-empty root, so the two cases are genuinely distinct.
+        let missing = std::env::temp_dir().join("cmdr-reconcile-vanished-root-does-not-exist");
+        let _ = std::fs::remove_dir_all(&missing);
+        assert!(!missing.exists(), "precondition: the mount root must be absent");
+
+        let progress = ScanProgress::new();
+        let flag = AtomicBool::new(false);
+        let result = run_local_reconcile(
+            &missing,
+            &IndexPathSpace::mount_rooted(missing.to_string_lossy().to_string()),
+            &h.writer,
+            &progress,
+            &flag,
+        );
+        assert!(
+            matches!(result, Err(ScanError::RootUnlistable)),
+            "a vanished mount root must surface RootUnlistable, got {result:?}"
+        );
     }
 
     /// Cancel (data-safety): a cancelled reconcile returns `was_cancelled`

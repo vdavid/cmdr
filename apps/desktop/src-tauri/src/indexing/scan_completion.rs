@@ -17,8 +17,8 @@ use tauri_specta::Event;
 use super::IndexPathSpace;
 use super::event_loop::run_live_event_loop;
 use super::events::{
-    ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanCompleteEvent,
-    RescanReason, emit_rescan_notification, set_phase_for,
+    ActivityPhase, DEBUG_STATS, IndexAggregationCompleteEvent, IndexDirUpdatedEvent, IndexScanAbortedEvent,
+    IndexScanCompleteEvent, RescanReason, emit_rescan_notification, set_phase_for,
 };
 use super::reconciler::{self, EventReconciler};
 use super::scanner::{ScanError, ScanSummary};
@@ -65,6 +65,15 @@ pub(super) struct ScanCompletion {
     pub live_event_task_slot: Arc<std::sync::Mutex<Option<tauri::async_runtime::JoinHandle<()>>>>,
     /// The watcher event id captured at scan start; the replay baseline.
     pub scan_start_event_id: u64,
+}
+
+/// Whether a failed local scan should emit `index-scan-aborted`: only when the
+/// volume VANISHED (its root became unlistable), never for a legitimately empty
+/// root or a walk panic. The abort event clears the frontend's stuck "scanning"
+/// row; an empty root and a panic keep the prior index visible-stale without an
+/// abort. Pure so the decision is unit-testable without an `AppHandle`.
+fn scan_failure_is_vanished_volume(err: &ScanError) -> bool {
+    matches!(err, ScanError::RootUnlistable)
 }
 
 /// Wait for the scan to finish, then run post-scan reconciliation and switch to
@@ -328,17 +337,37 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
         }
         Ok(Err(e)) => {
             log::warn!("Volume scan failed: {e}");
-            // The scan/reconcile bailed (e.g. `EmptyRoot`, or a
-            // `catch_unwind`-converted reconcile-walk `Panicked`). The
-            // prior index is untouched and stays visible, but `ScanStarted`
-            // already moved freshness to Scanning, so reset it to Stale —
-            // honest "rescan available" instead of a stuck spinner. Fire
-            // through the cloned handle, never the registry (no re-lock).
+            // The scan/reconcile bailed (e.g. `EmptyRoot`, `RootUnlistable`, or a
+            // `catch_unwind`-converted reconcile-walk `Panicked`). The prior index
+            // is untouched and stays visible, but `ScanStarted` already moved
+            // freshness to Scanning, so reset it to Stale — honest "rescan
+            // available" instead of a stuck spinner. Fire through the cloned handle,
+            // never the registry (no re-lock).
             super::state::apply_freshness_event_on(
                 &freshness,
                 &volume_id,
                 super::freshness::FreshnessEvent::ScanFailed,
             );
+
+            // If the failure is a VANISHED volume (its root went unlistable —
+            // a yanked external drive), the scan will never complete on its own, so
+            // clear the frontend's live activity and go Idle — mirroring the network
+            // disconnect arm (`network_scan.rs`). A legitimately empty root
+            // (`EmptyRoot`) or a panic is NOT a vanished volume, so it does not
+            // abort. No `scan_completed_at` was written (the meta writes live in the
+            // clean-completion arm only), so the index heals to a rescan on remount.
+            if scan_failure_is_vanished_volume(&e) {
+                set_phase_for(
+                    &app,
+                    &volume_id,
+                    ActivityPhase::Idle,
+                    "local scan aborted (volume vanished)",
+                );
+                let _ = IndexScanAbortedEvent {
+                    volume_id: volume_id.clone(),
+                }
+                .emit(&app);
+            }
         }
         Err(_) => {
             log::warn!("Volume scan thread panicked");
@@ -351,5 +380,34 @@ pub(super) async fn run_scan_completion(params: ScanCompletion) {
                 super::freshness::FreshnessEvent::ScanFailed,
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The abort decision fires ONLY for a vanished volume (`RootUnlistable`), so a
+    /// yanked drive clears its stuck "scanning" row — but a legitimately empty root
+    /// or a walk panic does NOT abort (the prior index stays visible-stale, no
+    /// spurious activity clear). Pins the distinguisher the completion arm relies on.
+    #[test]
+    fn only_a_vanished_root_triggers_the_scan_abort() {
+        assert!(
+            scan_failure_is_vanished_volume(&ScanError::RootUnlistable),
+            "a vanished (unlistable) root must abort"
+        );
+        assert!(
+            !scan_failure_is_vanished_volume(&ScanError::EmptyRoot),
+            "a legitimately empty root must NOT abort"
+        );
+        assert!(
+            !scan_failure_is_vanished_volume(&ScanError::Panicked("boom".to_string())),
+            "a walk panic must NOT abort"
+        );
+        assert!(
+            !scan_failure_is_vanished_volume(&ScanError::WriterSend("gone".to_string())),
+            "a writer-send failure must NOT abort"
+        );
     }
 }

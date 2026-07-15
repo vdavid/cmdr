@@ -15,10 +15,9 @@ Full per-file grouping: DETAILS § "Module structure". Subdirs: `scanner/`, `wri
 All invariants hold PER volume id (DETAILS).
 
 - **`INDEX_REGISTRY` (`Mutex<HashMap<VolumeId, IndexInstance>>`) is the authority** — absent key = disabled (no
-  `Disabled` phase). The mutex guards lifecycle ONLY; reads route through the per-volume `ReadPool` (never under it);
-  enrichment skips when `get_read_pool_for` is `None`.
-- **Phase transitions go through `events::set_phase_for(...)`, never raw `DEBUG_STATS.set_phase`.** Records the global +
-  per-volume timeline. DETAILS § "Per-volume pipeline phase event".
+  `Disabled` phase). The mutex guards lifecycle ONLY; reads route through the per-volume `ReadPool` (never under it).
+- **Phase transitions go through `events::set_phase_for(...)`, never raw `DEBUG_STATS.set_phase`.** DETAILS §
+  "Per-volume pipeline phase event".
 
 Writer discipline (one writer thread per DB):
 
@@ -30,39 +29,39 @@ Writer discipline (one writer thread per DB):
   double-assign).
 - **Live file upserts are throttled 60 s** (`reconciler/throttle.rs`): a file rewritten in place writes ≤1/window; a
   `pending` key is NEVER evictable. DETAILS § "Live per-file write throttle".
-- **The index is a disposable cache**: a schema mismatch or corruption deletes and rebuilds the DB (no migrations;
-  schema in [`store/CLAUDE.md`](store/CLAUDE.md)). Gate only `scan_completed_at` (absence ⇒ rescan).
-- **Defer `root` auto-start** (`should_auto_start_indexing`): scanning `/` stacks TCC popups. FDA gates ONLY `root`,
-  not SMB/MTP.
+- **The index is a disposable cache**: a schema mismatch or corruption deletes and rebuilds the DB (no migrations; schema
+  in [`store/CLAUDE.md`](store/CLAUDE.md)). Gate only `scan_completed_at`.
+- **Defer `root` auto-start** (`should_auto_start_indexing`): scanning `/` stacks TCC popups. FDA gates ONLY `root`.
 
 SMB/MTP indexing:
 
 - **Gated on a `direct` (smb2) connection; an `os_mount` upgrades first** (`start_indexing_for_smb` refuses with a TYPED
   `SmbIndexGateReason`); MTP has none.
-- **Manual rescan routes by TYPED kind** (`force_scan`): SMB/MTP → `start_volume_scan`, local → `start_scan`
-  (reconciles a populated index, truncate-walks a fresh one). ❌ Never `start_scan` a trait-scanned volume — walks
-  nothing, false-completes. DETAILS § "LOCAL full rescan reconciles in place".
-- **Never write `scan_completed_at` for an empty root** (an empty `/` must not blank the index; reconcile returns typed
-  `EmptyRoot`). DETAILS § "No completion marker on an empty root".
+- **Manual rescan routes by TYPED kind** (`force_scan`): SMB/MTP → `start_volume_scan`, local → `start_scan`. ❌ Never
+  `start_scan` a trait-scanned volume — walks nothing, false-completes. DETAILS § "LOCAL full rescan reconciles in place".
+- **Never write `scan_completed_at` for an empty root** (reconcile returns typed `EmptyRoot`). A yanked drive's
+  unlistable root → typed `RootUnlistable` (≠ `EmptyRoot`): abort event, no completion. DETAILS §§ "No completion marker
+  on an empty root", "Unmount/eject lifecycle".
 - **`should_exclude(path, ExclusionScope)` is scope-aware — derive scope from the volume kind, NEVER `is_volume_root`**
   (else `MountRooted` false-completes). DETAILS § "Scan-scope-aware exclusions".
 - **The LOCAL scan/reconcile/live pipeline is mount-relative via `IndexPathSpace`.** Strip the mount root ONLY at the
-  `resolve_abs` argument; keep path sets + the FE emit ABSOLUTE. Wrong space ⇒ dropped events. DETAILS § "The
-  mount-relative local pipeline".
+  `resolve_abs` argument; keep path sets + the FE emit ABSOLUTE. DETAILS § "The mount-relative local pipeline".
 - **Freshness has ONE transition table (`freshness.rs`); don't branch elsewhere.** No journal ⇒ loads **Stale** on
   launch.
 - **`resume_or_scan` gates journal replay on `has_event_journal()`, NOT `last_event_id.is_some()`** (`should_replay_journal`):
   a `LocalExternal` index persists an event id but has no journal to replay. DETAILS § "Capability axes".
 - **Live watch runs with NO pane open** (`apply_smb_change` hooks before the pane early-return; don't remove).
-- **Deletes resolve against the INDEX**: only a known entry (unknown = no-op); local `item_removed` stat-verifies.
+- **Deletes resolve against the INDEX** (unknown = no-op); local `item_removed` stat-verifies.
 - **FAT/exFAT (`LocalExternal`) store `inode: None`** (`IndexPathSpace::trust_inode`): a reused derived inode
   false-matches the rename pre-pass, corrupting `dir_stats`; don't restore it there. DETAILS § "Inode identity is nulled
   wholesale".
 - **Threads + resources.** GLOBAL 16 GB memory watchdog (`stop_all_indexing`). Wrap ObjC/Cocoa threads in
-  `objc2::rc::autoreleasepool` (else multi-GB leaks). Use `tauri::async_runtime::spawn` (`tokio::spawn` panics in `setup()`).
+  `objc2::rc::autoreleasepool`. Use `tauri::async_runtime::spawn` (`tokio::spawn` panics in `setup()`).
 
-- **External-drive tests: synthetic disk images ONLY, `hdiutil` calls timeout-guarded** (a real-card unmount once
-  kernel-panicked the machine). `indexing::external_drive_fixture`; DETAILS § "Testing external drives".
+- **The 2026-07-15 FSKit panic governs external drives.** Stop a `LocalExternal` index BEFORE its volume unmounts — an
+  open FSEvents watcher/handle at unmount can wedge FSKit and kernel-panic; Cmdr's eject stops it before `diskutil`
+  (reliable), `WillUnmount` best-effort, `DidUnmount` cleanup. Tests: synthetic images ONLY, `hdiutil` timeout-guarded
+  (`indexing::external_drive_fixture`). DETAILS §§ "Unmount/eject lifecycle", "Testing external drives".
 
 Flows, decisions, and gotchas: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.
