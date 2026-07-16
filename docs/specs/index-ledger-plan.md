@@ -1,6 +1,6 @@
 # Drive-index aggregate integrity: the dir_stats ledger
 
-2026-07-16. Worktree `index-ledger`, branch `david/index-ledger`. Reviewed 5× (fresh-eyes agents); rounds 1-4 findings folded in, round 5 clean.
+2026-07-16. Worktree `index-ledger`, branch `david/index-ledger`. Reviewed 6× (fresh-eyes agents): rounds 1-4 findings folded in, round 5 clean; round 6 covered the removal-storm-coalescing addition (root cause 7), 8 findings folded in.
 
 ## The incident that motivated this
 
@@ -73,6 +73,15 @@ then silently clamped. Drift is guaranteed; only its speed varies.
    returns on `must_scan_sub_dirs`, so `pending_paths` (which feeds both `pending_sizes.mark` and the
    `index-dir-updated` emit) never sees the affected dirs. The detached `reconcile_subtree` mutates the DB with no
    hourglass and no pane refresh; only navigation (the verifier + `getDirStatsBatch` refetch) made changes visible.
+7. **The slowness — a bulk delete is processed as a per-file event storm, minutes-scale.** `rm -rf` works depth-first
+   (unlink all files, THEN rmdir each emptied dir; the deleted root itself comes LAST), and FSEvents reports that
+   order faithfully — so the fast one-`DeleteSubtreeById` path fires only at the very END of the storm, after the
+   reconciler has already chewed through hundreds of thousands of individual removals (stat + resolve + delete +
+   O(depth) ancestor walk, each). Incident evidence: one writer batch carried 19,953 individual deletes; overall
+   throughput was ~1–3k events/s, so a 60 GB / ~500k-entry `target` costs 2–5 MINUTES of background churn (David
+   watched the ancestor size tick down ~1 GB per navigation). The 69k "unknown path" skips were the tail where
+   interleaved dir-removal events had already subtree-deleted chunks — proof the cheap mechanism exists but engages
+   too late because event order hands us the leaves first.
 
 Related but NOT bugs (verified, keep as-is):
 
@@ -276,6 +285,67 @@ backend lying in the data, not the FE rendering it wrong. (Deliberate non-fix: a
 "dirs > 0 but 0 bytes ⇒ reject" is WRONG — a tree of empty dirs legitimately looks like that. Drift detection stays
 arithmetic-evidence-based: the negative-delta trigger.)
 
+### Removal-storm coalescing (root cause 7 — the 2–5 minute chew)
+
+Intent: when the kernel doesn't coalesce a bulk delete for us, synthesize the coalescing ourselves and route it
+through the SAME machinery the coalesced case uses — one subtree reconcile with the hourglass held — instead of
+chewing hundreds of thousands of per-file removals. The design deliberately adds no new pipeline: it reuses
+`queue_must_scan_sub_dirs`, the held-roots pending tier, the completion emit, and the M4a stress invariant.
+
+Two composable pieces, in the live event loop's per-batch processing:
+
+1. **Storm detection → escalate to a subtree reconcile.** The hook is `process_live_batch` — live mode genuinely
+   forms a 1 s batch (`pending_events` drained on `LIVE_FLUSH_INTERVAL_MS`); the detector lives INSIDE that function
+   so BOTH live loops get it (`run_live_event_loop` AND the post-replay loop inside `run_replay_event_loop`). Per
+   batch, count removal events grouped by a shallow common prefix (component-truncated, depth cap ~6–8) — but the
+   capped prefix is ONLY the grouping key: the queued rescan anchors at the group's **deepest common ancestor**
+   (the incident path is ~11 components deep; anchoring at the cap would re-list a whole worktree, node_modules and
+   all, instead of `target` — the exact over-scope the cap was supposed to prevent). When a group exceeds
+   `REMOVAL_STORM_THRESHOLD` (initial ~200 — well above organic per-batch delete rates, far below storm scale; tune
+   by measurement), STOP per-file processing for that scope: `queue_must_scan_sub_dirs(anchor)` (hourglass via the
+   held tier, dedup + ancestor-collapse + 1-concurrent all inherited), and from then on removal events under a
+   queued-or-active rescan prefix are dropped. Three load-bearing rules on the drop:
+   - **The reconciler must be able to SEE the active rescan path.** Today `start_next_rescan` pops the path from
+     `pending_rescans` before spawning and `rescan_active` is a bare bool — the active path lives only in the task's
+     local. Retain it in a shared slot (`Arc<Mutex<Option<PathBuf>>>` set at spawn, cleared on completion) or the
+     drop rule reads an empty set and drops nothing.
+   - **Drop STRICT descendants only — never the scope's own removal event.** The deleted root's own `rmdir` arrives
+     LAST; it must take the normal per-file path (stat fails → `DeleteSubtreeById` — the cheap mechanism), because
+     `reconcile_subtree` on a root that's in the DB but gone from disk currently deletes nothing (resolves the id,
+     fails the listing, returns 0/0/0) and would strand the whole subtree.
+   - **Every dropped event re-queues the anchor into `pending_rescans`** (set-dedup makes it idempotent and ~free).
+     The existing re-queue rule fires only on `must_scan_sub_dirs` events; without this, a sub-threshold tail batch
+     dropped after the walk already listed those dirs leaves stale rows with no follow-up — and a created-then-
+     removed merge (which `merge_fs_events` collapses to `item_removed`) could otherwise eat a real change with no
+     recovery. This is also what makes M4a's fixed-point termination argument hold for storms.
+   A reconcile running while the `rm` is still in flight is safe: it diffs current disk state, and later events
+   re-queue the anchor. Why route through the rescan queue instead of a bespoke "big delete" path: it is EXACTLY the
+   kernel's `MustScanSubDirs` semantic ("too much changed here — go look"), produced in user space. One code path,
+   one set of invariants, one hourglass story, and the M4b visibility work covers it for free.
+   Creations/modifications under the scope keep flowing per-event (the drop rule keys on `item_removed`; a mixed
+   create+delete storm still converges — the reconcile sees final disk state).
+2. **Parent-first ordering within a batch** (cheap complement, below the threshold): sort each batch's removal
+   events dirs-before-files, shallower-paths-first, before per-event processing. `rm -rf` emits a dir's `rmdir`
+   AFTER its children's unlinks but usually in the SAME 1 s batch (small dirs empty fast), so processing the dir
+   first turns its children's events into cheap unknown-path skips — the mechanism the incident log shows working,
+   engaged early instead of accidentally. This is a ~3–5× saver on its own (each skip still pays a stat + resolve),
+   which is why the storm escalation above stays the headline fix. `item_is_dir` comes straight from FSEvents flags
+   (`parse_fsevent` maps `StreamFlags::IS_DIR`, no stat — valid for deleted paths, and `merge_fs_events` ORs it
+   through dedup) so the sort input is solid on macOS; on Linux the flag defaults false for removals (the notify
+   translation stats the gone path), so the sort degrades to a harmless no-op there — optionally map notify's
+   `RemoveKind::Folder/File` to fix that in passing.
+
+Expected effect on the incident scenario: storm detected in the first 1–2 batches → hourglass on `e2e-budget` and
+ancestors within ~2 s → `rm` runs at its own pace → one `reconcile_subtree` over the survivors (~5–15 s for 72k
+files) + aggregate (~3 s) + in-place emit. **Index latency ≈ 15–30 s after the `rm` finishes, versus 2–5 minutes of
+per-event churn — and ~20× less CPU/IO** (one re-list versus ~500k stat+resolve+delete+walk cycles), per the
+"respect the user's resources" principle.
+
+Perf caveat to respect: the escalation trades per-file precision for a re-list of the SURVIVING siblings under the
+prefix. Choosing the prefix too shallow (e.g. `/Users/x` because deletes were scattered) would re-list a huge tree —
+that's what the depth cap and the per-group threshold guard. The threshold/depth constants live next to the
+detector with a comment tying them to this section.
+
 ### Healing existing installs
 
 Every existing DB (David's dev instances, beta users) carries accumulated drift that the fixes prevent going forward
@@ -396,7 +466,7 @@ trips).
 
 M2 and M3 both touch `handle_compute_subtree_aggregates`, so run them sequentially (no parallel agents).
 
-### M4a — live-path escalation (Leak B) + the ledger stress invariant
+### M4a — live-path escalation (Leak B) + removal-storm coalescing + the ledger stress invariant
 
 Tests are integration-style (reconciler/event_loop test files); TDD where the assertion is cheap to write first:
 
@@ -405,6 +475,22 @@ Tests are integration-style (reconciler/event_loop test files); TDD where the as
    `space.resolve_abs`) + return-signal from `handle_creation_or_modification` to `process_live_event` +
    `queue_must_scan_sub_dirs`. Same treatment for `reconcile_subtree`'s skip branch. Replay-mode events defer into
    the existing deferred-rescan machinery (assert no live queueing during replay). Rework the skip-aggregator wording.
+1b. Removal-storm coalescing (design § "Removal-storm coalescing"). Test-observability first: the pre- and post-fix
+   DB end states are IDENTICAL for these behaviors (rows end up gone either way), so the assertions need message- or
+   counter-level probes — add writer delete/subtree-delete counters to `DEBUG_STATS` (or a test-only writer message
+   probe) and SEED the DB with the storm's rows (unseeded, per-file removals already no-op as unknown-path skips and
+   the test is green pre-fix for the wrong reason). The deterministic RED: pre-set `rescan_active = true` (the
+   existing `must_scan_sub_dirs_deduplication` trick) so the queued anchor stays visible in `pending_rescans`, feed
+   `REMOVAL_STORM_THRESHOLD`+1 removals under one prefix, assert ONE rescan queued at the deepest common ancestor
+   and zero per-file delete messages for the storm's events. Twin below-threshold test: removals process per-file,
+   no rescan queued. The batch-sort test needs the counters too (and a seeded dir + children in ONE batch): assert
+   one `DeleteSubtreeById` + zero `DeleteEntryById`, not N — and note the pre-fix run is order-flaky
+   (`process_live_batch` drains a `HashMap`), which the counter assertion tolerates by asserting the POST-fix
+   deterministic shape, with the RED run accepted as failing-or-flaky. Also assert the scope's OWN removal event is
+   NOT dropped (strict-descendants rule), and that a dropped event re-inserts the anchor into `pending_rescans`.
+   GREEN: detector in `process_live_batch` + active-path slot + strict-descendant drop with re-queue + the
+   parent-first batch sort. Storm-mode end state is covered by the stress oracle (3.): add a bulk-delete storm to
+   the mix and assert the invariant holds after quiescence.
 2. Ancestor-collapse in `start_next_rescan`: unit test — queue `/a/b/c` and `/a/b`; assert one reconcile at `/a/b`
    covers both. While in this function, fix the pre-existing connection-kind bug: it opens a WRITE connection for the
    reconcile's reads (`open_write_connection`, `reconciler.rs` ~442, with a log line that even says "read
@@ -445,8 +531,9 @@ Tests are integration-style (reconciler/event_loop test files); TDD where the as
    - `indexing/DETAILS.md`: new section "The dir_stats ledger" — the three principles, the repair primitive's
      contract (when delta vs repair, missing-child semantics), the escalation sites, the negative-delta warn as
      drift telemetry, the `source: Maps|Sql` sender contract (and why the subtree handler must NOT clear the
-     accumulator), the held-roots pending tier, the accepted cancel-drift window, and the healing latch. Update the
-     now-stale "after a reconcile the maps are empty" claim.
+     accumulator), the held-roots pending tier, removal-storm coalescing (threshold/depth-cap rationale), the
+     accepted cancel-drift window, and the healing latch. Update the now-stale "after a reconcile the maps are
+     empty" claim.
    - `indexing/CLAUDE.md` must-knows (concise): "Never clamp `dir_stats` arithmetic — a negative delta is drift
      evidence; escalate to `repair_dir_stats_upward` (DETAILS § ledger)." Plus one line each: structural rewrites
      repair ancestors on the writer (never off-writer read-then-credit), and full-aggregate senders declare
@@ -463,9 +550,10 @@ Tests are integration-style (reconciler/event_loop test files); TDD where the as
 
 Manual QA on the dev instance (David's data is the perfect fixture): after M5, relaunch → the one-shot heal should fix
 `e2e-budget` (1.21 GB) and `worktrees` (consistent with children) without a disk rescan; then repeat the incident
-(`rm -rf` a large built worktree `target`) and watch: hourglass appears on ancestors, sizes update in place without
-navigation, and the settled numbers match `du`-style truth. Check the log for the negative-delta warn staying silent
-during the exercise.
+(`rm -rf` a large built worktree `target`) and watch: hourglass appears on ancestors within ~2 s, sizes update in
+place without navigation, the settled numbers match `du`-style truth, and the whole thing lands ~15–30 s after the
+`rm` finishes (not minutes). Check the log for: the storm detector firing (one rescan queued, not thousands of
+per-file deletes), and the negative-delta warn staying silent during the exercise.
 
 ## Risks and rabbit holes
 
