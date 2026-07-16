@@ -200,10 +200,16 @@ impl MediaScheduler {
         });
 
         if summary.enriched > 0 || summary.gc_count > 0 {
-            // The volume's embeddings + qualifying set shifted; drop the derived caches so
-            // the next find-similar / slider preview rebuilds honestly (as the full pass does).
+            // The volume's embeddings changed; drop the resident vector cache so the next
+            // find-similar / dedup reloads (as the full pass does).
             super::super::vector::cache::invalidate(&super::super::store::media_db_path(&self.data_dir, volume_id));
-            super::super::coverage::invalidate(volume_id);
+            // The qualifying set shifted, but ONLY within the touched dirs — patch just those
+            // in the cached counts instead of invalidating the whole volume (a full rebuild is
+            // the O(entries) cold walk the cache exists to avoid). A GC'd deletion or a
+            // new/changed image both move a touched dir's qualifying count, so this runs on the
+            // same condition as the vector invalidate. `images` is the scoped walk over
+            // `touched_dirs`; a no-op if no counts are cached yet.
+            super::super::coverage::patch_touched_dirs(volume_id, touched_dirs, &images);
         }
         log::debug!(
             target: "media_index",

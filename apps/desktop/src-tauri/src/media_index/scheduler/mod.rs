@@ -343,9 +343,11 @@ impl MediaScheduler {
         if summary.enriched > 0 || summary.gc_count > 0 {
             super::vector::cache::invalidate(&super::store::media_db_path(&self.data_dir, volume_id));
         }
-        // The qualifying set may have shifted (a rescan added/removed files); refresh
-        // the covered-count cache so the slider preview stays honest.
-        super::coverage::invalidate(volume_id);
+        // Refill the covered-count cache from THIS pass's own walk instead of invalidating:
+        // the pass already ran the exact whole-volume `walk_image_entries`, so refilling keeps
+        // the slider preview warm rather than forcing the next preview to pay a fresh cold
+        // O(entries) walk. `images` is the full qualifying set (unfiltered by threshold).
+        super::coverage::replace_from_entries(volume_id, &images);
         log::info!(
             target: "media_index",
             "enrichment of '{volume_id}': {} of {} images enriched, {} rows GC'd",
@@ -549,6 +551,10 @@ impl MediaScheduler {
                 if summary.enriched > 0 || summary.gc_count > 0 {
                     super::vector::cache::invalidate(&super::store::media_db_path(&self.data_dir, volume_id));
                 }
+                // Refill coverage from this pass's whole-index walk (as the local pass does),
+                // so an opted-in SMB volume's slider preview also stays warm without a cold
+                // rewalk. `images` is the full qualifying set.
+                super::coverage::replace_from_entries(volume_id, &images);
                 terminal.set(MediaEnrichTerminalReason::Completed {
                     enriched: summary.enriched as u64,
                     gc_count: summary.gc_count as u64,

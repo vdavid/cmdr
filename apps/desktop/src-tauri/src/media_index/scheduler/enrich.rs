@@ -68,61 +68,87 @@ pub(crate) fn enrichable_totals(
     (total, bytes_total)
 }
 
+/// One file row carried through the streaming walk: the fields the sibling-aware
+/// predicate and the `(mtime, size)` staleness key need.
+struct FileRow {
+    name: String,
+    mtime: Option<u64>,
+    size: Option<u64>,
+}
+
 /// Walk every directory in a volume's index, qualify each directory's files
 /// (sibling-aware, via [`qualify_dir`]), and return the qualifying image entries
 /// with their `(mtime, size)` and kind.
 ///
-/// Directories are materialized once into an `id → row` map for path
-/// reconstruction (as `importance`'s walk does); files are read carrying their
-/// `modified_at` + `logical_size` (the staleness key) and grouped per parent so the
-/// sibling-aware predicate can run per directory.
+/// Directories are materialized once into an `id → row` map for path reconstruction (as
+/// `importance`'s walk does); files stream ordered by `parent_id` so each directory's
+/// children arrive as one contiguous group. The walk holds only the single in-flight group
+/// plus the output — never the whole file set at once, which on an 11.5M-row root index
+/// would materialize a transient `by_parent` map in the hundreds of MB. The
+/// `idx_parent_name_folded` index leads on `parent_id`, so SQLite can supply the order off
+/// the index. Output order therefore follows `parent_id`, not insertion order — no caller
+/// depends on it (coverage aggregates into a map; the passes re-sort via [`prioritized`]).
 pub(crate) fn walk_image_entries(conn: &rusqlite::Connection) -> Result<Vec<ImageEntry>, String> {
     let dirs = IndexStore::all_directories(conn).map_err(|e| e.to_string())?;
     let by_id: HashMap<i64, &crate::indexing::store::EntryRow> = dirs.iter().map(|e| (e.id, e)).collect();
 
-    // Group file children by parent, carrying the fields the predicate + staleness
-    // need. One row per file; grouped so the sibling-aware predicate sees a whole
-    // directory at once.
-    struct FileRow {
-        name: String,
-        mtime: Option<u64>,
-        size: Option<u64>,
+    let mut stmt = conn
+        .prepare_cached(
+            "SELECT parent_id, name, modified_at, logical_size FROM entries WHERE is_directory = 0 ORDER BY parent_id",
+        )
+        .map_err(|e| e.to_string())?;
+    let mut rows = stmt.query([]).map_err(|e| e.to_string())?;
+
+    // Accumulate the current parent's file group; when parent_id changes, qualify the
+    // completed group (sibling-aware) and emit its images, then reset for the next dir.
+    let mut out = Vec::new();
+    let mut group_parent: Option<i64> = None;
+    let mut group: Vec<FileRow> = Vec::new();
+    while let Some(row) = rows.next().map_err(|e| e.to_string())? {
+        let parent_id: i64 = row.get(0).map_err(|e| e.to_string())?;
+        let name: String = row.get(1).map_err(|e| e.to_string())?;
+        let mtime: Option<i64> = row.get(2).map_err(|e| e.to_string())?;
+        let size: Option<i64> = row.get(3).map_err(|e| e.to_string())?;
+        if group_parent != Some(parent_id) {
+            if let Some(pid) = group_parent {
+                emit_qualifying_group(pid, &group, &by_id, &mut out);
+            }
+            group_parent = Some(parent_id);
+            group.clear();
+        }
+        group.push(FileRow {
+            name,
+            mtime: mtime.map(|v| v as u64),
+            size: size.map(|v| v as u64),
+        });
     }
-    let mut by_parent: HashMap<i64, Vec<FileRow>> = HashMap::new();
-    {
-        let mut stmt = conn
-            .prepare_cached("SELECT parent_id, name, modified_at, logical_size FROM entries WHERE is_directory = 0")
-            .map_err(|e| e.to_string())?;
-        let mut rows = stmt.query([]).map_err(|e| e.to_string())?;
-        while let Some(row) = rows.next().map_err(|e| e.to_string())? {
-            let parent_id: i64 = row.get(0).map_err(|e| e.to_string())?;
-            let name: String = row.get(1).map_err(|e| e.to_string())?;
-            let mtime: Option<i64> = row.get(2).map_err(|e| e.to_string())?;
-            let size: Option<i64> = row.get(3).map_err(|e| e.to_string())?;
-            by_parent.entry(parent_id).or_default().push(FileRow {
-                name,
-                mtime: mtime.map(|v| v as u64),
-                size: size.map(|v| v as u64),
+    if let Some(pid) = group_parent {
+        emit_qualifying_group(pid, &group, &by_id, &mut out);
+    }
+    Ok(out)
+}
+
+/// Qualify one directory's COMPLETE file group (sibling-aware) and push its qualifying
+/// images onto `out`, reconstructing the dir path from the in-memory `id → row` map. The
+/// streaming [`walk_image_entries`] calls this once per parent group.
+fn emit_qualifying_group(
+    parent_id: i64,
+    files: &[FileRow],
+    by_id: &HashMap<i64, &crate::indexing::store::EntryRow>,
+    out: &mut Vec<ImageEntry>,
+) {
+    let dir_path = reconstruct_dir_path(parent_id, by_id);
+    let names: Vec<&str> = files.iter().map(|f| f.name.as_str()).collect();
+    for (file, qual) in files.iter().zip(qualify_dir(&names)) {
+        if let Qualification::Enrich(kind) = qual {
+            out.push(ImageEntry {
+                path: join_path(&dir_path, &file.name),
+                mtime: file.mtime,
+                size: file.size,
+                kind,
             });
         }
     }
-
-    let mut out = Vec::new();
-    for (parent_id, files) in &by_parent {
-        let dir_path = reconstruct_dir_path(*parent_id, &by_id);
-        let names: Vec<&str> = files.iter().map(|f| f.name.as_str()).collect();
-        for (file, qual) in files.iter().zip(qualify_dir(&names)) {
-            if let Qualification::Enrich(kind) = qual {
-                out.push(ImageEntry {
-                    path: join_path(&dir_path, &file.name),
-                    mtime: file.mtime,
-                    size: file.size,
-                    kind,
-                });
-            }
-        }
-    }
-    Ok(out)
 }
 
 /// Walk ONLY the given directories' qualifying images — the live-tick scoped walk,

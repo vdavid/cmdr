@@ -484,12 +484,26 @@ only guard.
 `media_index_covered_count(threshold, volume_ids)` powers the slider's live preview: across the ENABLED volumes
 (master on AND (local, or SMB opted-in); MTP never), how many folders score `≥ threshold` and how many images they hold
 — exactly `(importance ≥ threshold) AND opted-in`, never a non-opted-in SMB/MTP volume. The qualifying-image count per
-folder is an O(entries) index walk, so it's cached per volume (`coverage::get_or_build`, a `folder → count` map,
-invalidated on each pass) and the threshold is applied cheaply by intersecting with `above_threshold` — a debounced drag
+folder is an O(entries) index walk, so it's cached per volume (`coverage::get_or_build`, a `folder → count` map) and the
+threshold is applied cheaply by intersecting with `above_threshold` — a debounced drag
 only re-runs the cheap importance read + `covered_for_volume` (pure, unit-tested). `pending` is `true` when any enabled
 requested volume isn't ready (still scanning / not yet scored), so the UI voices "naspi still scanning" rather than a
 confident wrong number. `media_index_volume_state` gained `qualifying_count: Option<u64>` (the honest denominator for
 "12,000 of 38,900 images", `None` when offline/scanning); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
+
+**Keeping the cache warm, not cold.** The cache would go cold on every pass if a pass just invalidated it, so the next
+slider preview would pay the full O(entries) walk again (tens of seconds to minutes on a multi-million-entry root index)
+— even though the pass had just run that exact walk and thrown it away. So the pass that owns a walk refills from it
+instead: a full/network pass calls `coverage::replace_from_entries` with its whole-volume `walk_image_entries` result,
+and a live tick calls `coverage::patch_touched_dirs` to replace just the counts for the dirs it re-walked (a tick can't
+rebuild the whole cache — it only walked the touched dirs). `patch_touched_dirs` runs on the SAME
+`enriched > 0 || gc_count > 0` condition the live tick's vector-cache invalidate does: both a GC'd deletion and a
+new/changed image move a touched dir's qualifying count. The only remaining cold walk is the first preview after launch
+(or after a drive-index rescan, whose following pass refills). `coverage::invalidate` survives for the rare reclaim /
+retro-delete prunes: those change no index rows (only stored `media.db` rows), so the qualifying set is actually
+unchanged and invalidate is conservative — a cheap cold rebuild on a rare user action rather than a stale count. The
+streaming `walk_image_entries` (ordered by `parent_id`, one dir-group in memory at a time) keeps even that cold rebuild
+in constant memory instead of materializing every file row.
 
 ### Per-folder photo-search exclude + the privacy retro-delete
 

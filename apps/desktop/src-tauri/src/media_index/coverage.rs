@@ -5,18 +5,21 @@
 //! The qualifying-image count per folder comes from the drive index (the same
 //! image-qualification predicate the scheduler enriches by), which is an O(entries)
 //! walk — too heavy to run per slider-drag frame. So the per-folder counts are cached
-//! per volume ([`FolderImageCounts`]) and invalidated when a pass runs (the only time
-//! the qualifying set changes). The threshold is then applied cheaply: intersect the
-//! importance `above_threshold` folder set with the cached counts. The importance read
-//! itself is a single indexed query, so a debounced drag stays cheap.
+//! per volume ([`FolderImageCounts`]). Rather than go cold on every pass, the cache is kept
+//! warm by the pass that ALREADY did the walk: a full/network pass [`replace_from_entries`]
+//! from its own whole-volume walk, and a live tick [`patch_touched_dirs`] just the dirs it
+//! re-walked. The rare reclaim/retro-delete prunes still [`invalidate`] (they don't have a
+//! walk in hand). The threshold is then applied cheaply: intersect the importance
+//! `above_threshold` folder set with the cached counts. The importance read itself is a
+//! single indexed query, so a debounced drag stays cheap.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::{Arc, LazyLock, Mutex};
 
 use crate::ignore_poison::IgnorePoison;
 
-use super::scheduler::enrich::{parent_dir, walk_image_entries};
+use super::scheduler::enrich::{ImageEntry, parent_dir, walk_image_entries};
 
 /// The qualifying-image counts for one volume: how many images each folder holds, and
 /// the volume total. Built from one index walk, cached until the next pass.
@@ -41,22 +44,94 @@ pub fn get_or_build(volume_id: &str) -> Option<Arc<FolderImageCounts>> {
     }
     let pool = crate::indexing::get_read_pool_for(volume_id)?;
     let images = pool.with_conn(walk_image_entries).ok()?.ok()?;
-    let mut per_folder: HashMap<String, u64> = HashMap::new();
-    for image in &images {
-        *per_folder.entry(parent_dir(&image.path).to_string()).or_default() += 1;
-    }
-    let counts = Arc::new(FolderImageCounts {
-        total: images.len() as u64,
-        per_folder,
-    });
+    let counts = Arc::new(build_counts(&images));
     COUNTS
         .lock_ignore_poison()
         .insert(volume_id.to_string(), Arc::clone(&counts));
     Some(counts)
 }
 
-/// Drop a volume's cached counts (its qualifying set may have changed after a pass /
-/// a rescan). The next preview rebuilds them.
+/// Aggregate a full qualifying-image set into per-folder counts plus the volume total. The
+/// pure core both a cold [`get_or_build`] and a pass [`replace_from_entries`] share, so a
+/// rebuild and a refill produce identical counts.
+fn build_counts(entries: &[ImageEntry]) -> FolderImageCounts {
+    let mut per_folder: HashMap<String, u64> = HashMap::new();
+    for image in entries {
+        *per_folder.entry(parent_dir(&image.path).to_string()).or_default() += 1;
+    }
+    FolderImageCounts {
+        total: entries.len() as u64,
+        per_folder,
+    }
+}
+
+/// Refill a volume's cached counts DIRECTLY from a completed full/network pass's own walk,
+/// replacing any previous value. The pass already ran the exact whole-volume
+/// [`walk_image_entries`], so refilling from its result keeps the slider preview warm
+/// instead of forcing the next preview to pay a fresh cold O(entries) walk (tens of seconds
+/// on a multi-million-entry index). `entries` MUST be the pass's FULL qualifying set (the
+/// unfiltered walk), never a threshold-filtered or partially-consumed subset — coverage
+/// counts every qualifying image per folder, and the slider applies the threshold later.
+///
+/// [`walk_image_entries`]: super::scheduler::enrich::walk_image_entries
+pub(crate) fn replace_from_entries(volume_id: &str, entries: &[ImageEntry]) {
+    COUNTS
+        .lock_ignore_poison()
+        .insert(volume_id.to_string(), Arc::new(build_counts(entries)));
+}
+
+/// The pure patch: `existing` with exactly `touched_dirs` replaced by their fresh per-tick
+/// counts from `entries` (a live tick's scoped `walk_image_entries_in_dirs` result). Each
+/// touched dir's cached count becomes the tick's fresh count — dropped from `per_folder`
+/// when it falls to zero (the map only holds folders with ≥ 1 image) — and `total` moves by
+/// the net delta. Every other folder is untouched. Pure, so the arithmetic is unit-testable.
+fn patch_counts(
+    existing: &FolderImageCounts,
+    touched_dirs: &HashSet<String>,
+    entries: &[ImageEntry],
+) -> FolderImageCounts {
+    // Fresh per-dir counts from the tick's scoped walk. Its entries are direct children of
+    // the touched dirs, so every key here is one of `touched_dirs`; a touched dir now holding
+    // no qualifying image is simply absent (its fresh count is 0).
+    let mut fresh: HashMap<&str, u64> = HashMap::new();
+    for image in entries {
+        *fresh.entry(parent_dir(&image.path)).or_default() += 1;
+    }
+    let mut per_folder = existing.per_folder.clone();
+    let mut delta: i64 = 0;
+    for dir in touched_dirs {
+        let old = per_folder.get(dir.as_str()).copied().unwrap_or(0);
+        let new = fresh.get(dir.as_str()).copied().unwrap_or(0);
+        delta += new as i64 - old as i64;
+        if new == 0 {
+            per_folder.remove(dir.as_str());
+        } else {
+            per_folder.insert(dir.clone(), new);
+        }
+    }
+    FolderImageCounts {
+        per_folder,
+        total: (existing.total as i64 + delta).max(0) as u64,
+    }
+}
+
+/// Patch a volume's CACHED counts for exactly the `touched_dirs` a live tick re-walked,
+/// from that tick's scoped `entries` (see [`patch_counts`]). A tick walks only the touched
+/// dirs, so it can't rebuild the whole cache — it patches those dirs in place instead of
+/// invalidating (a full rebuild is the O(entries) cold walk this whole cache exists to
+/// avoid). A no-op when the volume has no cached counts yet: the next preview builds them.
+pub(crate) fn patch_touched_dirs(volume_id: &str, touched_dirs: &HashSet<String>, entries: &[ImageEntry]) {
+    let mut cache = COUNTS.lock_ignore_poison();
+    let Some(existing) = cache.get(volume_id) else {
+        return;
+    };
+    let patched = patch_counts(existing, touched_dirs, entries);
+    cache.insert(volume_id.to_string(), Arc::new(patched));
+}
+
+/// Drop a volume's cached counts. Used by the rare reclaim / retro-delete prunes, which
+/// don't have a fresh walk in hand to refill from; the background passes keep the cache warm
+/// instead ([`replace_from_entries`] / [`patch_touched_dirs`]). The next preview rebuilds.
 pub fn invalidate(volume_id: &str) {
     COUNTS.lock_ignore_poison().remove(volume_id);
 }
@@ -186,6 +261,99 @@ pub(crate) fn importance_scored(index: &crate::importance::ImportanceIndex) -> b
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ── The cache build / refill / patch (Fix: keep the cache warm, not cold) ──
+
+    fn img(path: &str) -> ImageEntry {
+        ImageEntry {
+            path: path.to_string(),
+            mtime: Some(1),
+            size: Some(2),
+            kind: crate::media_index::predicate::MediaKind::Image,
+        }
+    }
+
+    fn touched(dirs: &[&str]) -> HashSet<String> {
+        dirs.iter().map(|d| d.to_string()).collect()
+    }
+
+    #[test]
+    fn build_counts_aggregates_per_folder_and_total() {
+        let counts = build_counts(&[img("/p/a.jpg"), img("/p/b.jpg"), img("/q/c.jpg")]);
+        assert_eq!(counts.total, 3);
+        assert_eq!(counts.per_folder.get("/p").copied(), Some(2));
+        assert_eq!(counts.per_folder.get("/q").copied(), Some(1));
+    }
+
+    #[test]
+    fn patch_updates_only_the_touched_dir_and_moves_total() {
+        // /a re-walked to 1 image (was 3); /b is untouched. total moves by the /a delta only.
+        let existing = FolderImageCounts {
+            per_folder: [("/a".to_string(), 3u64), ("/b".to_string(), 5)].into_iter().collect(),
+            total: 8,
+        };
+        let patched = patch_counts(&existing, &touched(&["/a"]), &[img("/a/x.jpg")]);
+        assert_eq!(patched.per_folder.get("/a").copied(), Some(1), "/a re-counted");
+        assert_eq!(patched.per_folder.get("/b").copied(), Some(5), "/b untouched");
+        assert_eq!(patched.total, 6, "total moved by the /a delta (3 → 1)");
+    }
+
+    #[test]
+    fn patch_drops_a_dir_that_fell_to_zero() {
+        // Every qualifying image left /a (the tick walked it and found none) ⇒ /a leaves
+        // `per_folder` (which only holds folders with ≥ 1), and total drops by its old count.
+        let existing = FolderImageCounts {
+            per_folder: [("/a".to_string(), 3u64), ("/b".to_string(), 5)].into_iter().collect(),
+            total: 8,
+        };
+        let patched = patch_counts(&existing, &touched(&["/a"]), &[]);
+        assert!(!patched.per_folder.contains_key("/a"), "/a dropped at zero");
+        assert_eq!(patched.per_folder.get("/b").copied(), Some(5));
+        assert_eq!(patched.total, 5);
+    }
+
+    #[test]
+    fn patch_adds_a_newly_qualifying_dir() {
+        // A touched dir absent from the cache (a folder's first qualifying image) is added.
+        let existing = FolderImageCounts {
+            per_folder: [("/b".to_string(), 5u64)].into_iter().collect(),
+            total: 5,
+        };
+        let patched = patch_counts(&existing, &touched(&["/a"]), &[img("/a/x.jpg"), img("/a/y.jpg")]);
+        assert_eq!(patched.per_folder.get("/a").copied(), Some(2), "/a added");
+        assert_eq!(patched.total, 7);
+    }
+
+    #[test]
+    fn replace_then_patch_round_trips_through_the_global_cache() {
+        // A unique volume id keeps this isolated from the process-global cache other tests use.
+        let vid = "coverage-test-replace-patch";
+        replace_from_entries(vid, &[img("/a/x.jpg"), img("/a/y.jpg"), img("/b/z.jpg")]);
+        let after_replace = COUNTS.lock_ignore_poison().get(vid).cloned().expect("cached");
+        assert_eq!(after_replace.total, 3);
+        assert_eq!(after_replace.per_folder.get("/a").copied(), Some(2));
+
+        // A live tick re-walks /a and finds one image now: the cache patches /a in place.
+        patch_touched_dirs(vid, &touched(&["/a"]), &[img("/a/x.jpg")]);
+        let after_patch = COUNTS.lock_ignore_poison().get(vid).cloned().expect("cached");
+        assert_eq!(after_patch.per_folder.get("/a").copied(), Some(1), "/a patched");
+        assert_eq!(after_patch.per_folder.get("/b").copied(), Some(1), "/b untouched");
+        assert_eq!(after_patch.total, 2);
+        invalidate(vid);
+    }
+
+    #[test]
+    fn patch_is_a_noop_without_a_cached_volume() {
+        // No cached counts yet ⇒ the patch does nothing (the next preview builds them fresh),
+        // never inserting a partial (touched-dirs-only) entry that would undercount the volume.
+        let vid = "coverage-test-patch-noop";
+        invalidate(vid);
+        patch_touched_dirs(vid, &touched(&["/a"]), &[img("/a/x.jpg")]);
+        assert!(
+            !COUNTS.lock_ignore_poison().contains_key(vid),
+            "a patch with nothing cached inserts nothing"
+        );
+    }
 
     #[test]
     fn covered_counts_folders_and_images_above_threshold() {

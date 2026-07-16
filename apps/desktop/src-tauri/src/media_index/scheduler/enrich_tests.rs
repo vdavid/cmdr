@@ -121,6 +121,37 @@ fn walk_qualifies_images_only() {
 }
 
 #[test]
+fn walk_streams_multiple_dirs_grouped_by_parent() {
+    // The streaming walk qualifies each dir's COMPLETE file group independently even though
+    // rows arrive ordered by parent_id: RAW+JPEG pairs in two separate dirs each defer the
+    // RAW to its sibling JPEG, and a lone RAW in a third dir qualifies. Proves the group
+    // boundary is per-dir (sibling-aware), never smeared across the streamed parent groups.
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(
+        &index_path,
+        &[
+            ("/a", "one.cr2", 1, 10),
+            ("/a", "one.jpg", 2, 20),
+            ("/b", "two.cr2", 3, 30),
+            ("/b", "two.jpg", 4, 40),
+            ("/c", "lone.cr2", 5, 50),
+            ("/c", "note.txt", 6, 60),
+        ],
+    );
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let mut images = walk_image_entries(store.read_conn()).expect("walk");
+    images.sort_by(|a, b| a.path.cmp(&b.path));
+    let paths: Vec<&str> = images.iter().map(|i| i.path.as_str()).collect();
+    // /a + /b each keep only the JPEG (RAW defers to its sibling); /c's lone RAW qualifies;
+    // the txt is skipped.
+    assert_eq!(paths, vec!["/a/one.jpg", "/b/two.jpg", "/c/lone.cr2"]);
+    // The staleness key rode along per file across the streamed groups.
+    let lone = images.iter().find(|i| i.path == "/c/lone.cr2").expect("lone");
+    assert_eq!((lone.mtime, lone.size), (Some(5), Some(50)));
+}
+
+#[test]
 fn enrich_over_fake_backend_populates_ocr_for_images_only() {
     let dir = tempfile::tempdir().expect("temp");
     let index_path = dir.path().join("index-root.db");
