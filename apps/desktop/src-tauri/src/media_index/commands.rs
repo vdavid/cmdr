@@ -309,9 +309,19 @@ pub fn media_index_set_importance_threshold(app: AppHandle, threshold: f64) {
     let previous = gate::importance_threshold();
     gate::set_importance_threshold(threshold);
     let next = gate::importance_threshold();
-    if gate::threshold_decreased(previous, next) && gate::is_enabled() {
+    if threshold_change_should_kick(previous, next, gate::is_enabled()) {
         scheduler::kick_all_ready_passes(&app);
     }
+}
+
+/// Whether committing a threshold change from `previous` to `next` should kick an
+/// immediate pass: a DECREASE (broader coverage) while the feature is enabled. A raise
+/// only defers future work (forward-only semantics — nothing to enrich now, and the
+/// deferred rows persist), and a disabled feature has no pass to run. Extracted from
+/// [`media_index_set_importance_threshold`] so the decide-then-kick decision is testable
+/// without an `AppHandle`.
+fn threshold_change_should_kick(previous: f64, next: f64, enabled: bool) -> bool {
+    gate::threshold_decreased(previous, next) && enabled
 }
 
 /// The live preview behind the importance slider: across the ENABLED volumes in

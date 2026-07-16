@@ -671,10 +671,10 @@ fn walk_in_dirs_skips_a_dir_absent_from_the_index() {
 
 #[test]
 fn scoped_gc_spares_rows_in_untouched_dirs() {
-    // Finding 1, the data-safety regression: a live tick walks only /a, so its GC deletes a
+    // The scoped-GC data-safety regression: a live tick walks only /a, so its GC deletes a
     // vanished row UNDER /a but must NEVER touch the untouched-dir /b row — even though /b's
-    // row is absent from the scoped walk. Pre-fix (a whole-store GC over the scoped walk)
-    // this would delete /b/survivor.jpg (see the trap test below).
+    // row is absent from the scoped walk. A whole-store GC over the scoped walk would delete
+    // /b/survivor.jpg (see the trap test below).
     let dir = tempfile::tempdir().expect("temp");
     let index_path = dir.path().join("index-root.db");
     // The index holds /a/keep.jpg + /b/survivor.jpg now; /a/gone.jpg vanished.
@@ -717,7 +717,7 @@ fn scoped_gc_spares_rows_in_untouched_dirs() {
     );
     assert!(
         store.status_for("/b/survivor.jpg").expect("read").is_some(),
-        "the untouched /b row SURVIVES — the Finding-1 line"
+        "the untouched /b row SURVIVES — the scoped-GC data-safety line"
     );
     writer.shutdown();
 }

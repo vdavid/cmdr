@@ -503,7 +503,8 @@ OCR text stops being searchable at once (privacy is a hard requirement, not "eve
   `Completed` edge, tree whole — § The GC safety argument). The retro-delete is USER-EXPLICIT and derives ONLY from
   settings state (the exclusion the user just set), never scan/bus/gate state, so it can't wipe live coverage by
   mistiming — it needs no edge. This is the same doctrine the reclaim prune rides. The slider stays forward-only;
-  the ONLY row deletions are (a) vanished files via GC, (b) the reclaim prune, (c) this privacy retro-delete.
+  the ONLY row deletions are (a) vanished files via GC on a completed edge, (b) the reclaim prune, (c) this privacy
+  retro-delete, and (d) the live-tick scoped GC (index-confirmed removals under the touched dirs — § Live enrichment).
 - **Precedence + path mapping.** Exclusion beats coverage everywhere (enrichment gate AND retro-delete), same
   trailing-slash-safe `path_is_within` the veto uses. The exclusion config is OS-path keyed; local rows store index
   paths == OS paths, network rows store mount-stripped index paths — so the retro-delete maps the OS folder into each
@@ -538,7 +539,7 @@ Lowering the importance slider is forward-only: it never deletes rows, so a driv
 coverage after the user narrows the setting (the GC `current` set stays the full walked image set — § The GC safety
 argument). The reclaim UI surfaces that leftover coverage and offers to delete it. Like the privacy retro-delete, the
 prune is USER-EXPLICIT and derives ONLY from settings state, so it needs no `Completed` edge — it's deletion path (b) of
-the three the slider's forward-only contract allows.
+the four the slider's forward-only contract allows.
 
 - **One arithmetic source, or the numbers don't add up.** `MediaScheduler::stored_coverage(volume_id, mount_root,
   threshold)` computes THREE quantities from ONE pass so the reclaim preview, the prune, and the per-volume `keptCount` can never
@@ -643,7 +644,7 @@ only changed files would mis-qualify RAW+JPEG pairs and Live Photos; a dir gone 
 to the scoped GC). It then runs the SAME per-image enrich loop as the full pass through the shared `enrich_and_gc_scoped`
 core, honoring the coverage gates, the live exclusion veto, and the `(path, mtime, size)` + stamp staleness key.
 
-**The GC data-safety line (pre-review Finding 1).** `enrich_and_gc`'s GC is a whole-store set-difference against the walked
+**The GC data-safety line.** `enrich_and_gc`'s GC is a whole-store set-difference against the walked
 set — correct for a full pass (whole index walked), CATASTROPHIC for a scoped walk (it would delete every stored row
 OUTSIDE the touched dirs). So the GC target set is a parameter: `GcScope::WholeStore` (the full pass / Fresh sweep, via
 `enrich_and_gc`) vs `GcScope::TouchedDirs` (the live tick, via `enrich_and_gc_scoped`), which GCs only rows whose parent dir
@@ -663,7 +664,7 @@ the top-right indicator ONLY when its enrichable subset exceeds `LIVE_INDICATOR_
 terminal on a silent tick would clear a visible full-pass row). A tick does NOT `mark_deferred_for_importance` on an
 unscored volume — the full-pass bridge covers that, and marking would trigger a full re-walk on the next importance bump.
 Tests: `scheduler/live.rs` (pure `tick_is_loud` + `live_debounce_wait` + distinct key), `enrich_tests` (the scoped walk,
-the Finding-1 scoped GC vs the whole-store trap, the sibling re-qualify), `kick_tests` (the tick end to end over a
+the scoped GC vs the whole-store trap, the sibling re-qualify), `kick_tests` (the tick end to end over a
 registered read pool: re-enrich-on-modify, below-threshold defer, exclusion veto, index-confirmed GC, unmount deletes
 nothing).
 

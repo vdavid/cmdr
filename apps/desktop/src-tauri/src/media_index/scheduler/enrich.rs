@@ -224,7 +224,7 @@ pub(crate) struct EnrichGates<'a> {
     /// again right before the upsert (the in-flight-analyze TOCTOU).
     pub(crate) is_excluded: &'a dyn Fn(&str) -> bool,
     /// Which stored rows this pass may GC: the whole store (full pass) or only rows under
-    /// the touched dirs (live tick) — the Finding-1 data-safety line.
+    /// the touched dirs (live tick) — the scoped-GC data-safety line.
     pub(crate) gc_scope: GcScope<'a>,
 }
 
@@ -438,7 +438,7 @@ pub(crate) fn enrich_and_gc_scoped(
             // The full pass: every stored row absent from the complete walk vanished.
             GcScope::WholeStore => gc_targets(statuses.keys(), &current),
             // The live tick: only rows UNDER a walked (touched) dir are candidates, so a
-            // row in a dir this tick never visited is never GC'd (Finding 1).
+            // row in a dir this tick never visited is never GC'd.
             GcScope::TouchedDirs(dirs) => statuses
                 .keys()
                 .filter(|p| dirs.contains(parent_dir(p)) && !current.contains(*p))

@@ -251,6 +251,124 @@ pub(super) fn reset_gate() {
     network::config::set_config(NetworkEnrichConfig::default());
 }
 
+/// Poll `cond` up to `iters` × 20 ms, returning whether it ever held. The kick paths
+/// spawn their pass on the tauri runtime (off this test thread), so an assertion on the
+/// pass's effect has to wait for it.
+fn poll_until(iters: u32, mut cond: impl FnMut() -> bool) -> bool {
+    for _ in 0..iters {
+        if cond() {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    cond()
+}
+
+/// ~5 s — for a POSITIVE assertion. Far above the sub-millisecond real work, so a
+/// timeout means a genuine regression, never load.
+fn wait_until(cond: impl FnMut() -> bool) -> bool {
+    poll_until(250, cond)
+}
+
+/// ~1 s — for a NEGATIVE assertion (the condition must NEVER hold). A spurious
+/// enrichment would land in tens of milliseconds, so 1 s is ample without dragging the
+/// suite; the authoritative disabled-pass no-op proof is the synchronous
+/// `a_pass_no_ops_while_disabled_and_enriches_once_enabled`.
+fn never_within_a_second(cond: impl FnMut() -> bool) -> bool {
+    !poll_until(50, cond)
+}
+
+/// Whether `media.db` for `volume_id` under `data_dir` carries an enriched row for
+/// `path` — the "did a spawned pass enrich it?" probe the async kick tests poll on.
+fn has_enriched_row(data_dir: &std::path::Path, volume_id: &str, path: &str) -> bool {
+    MediaStore::open(&media_db_path(data_dir, volume_id))
+        .ok()
+        .and_then(|s| s.status_for(path).ok().flatten())
+        .is_some()
+}
+
+// ── Async: the dead-start kicks that actually start a pass ───────────────────
+
+#[test]
+fn wire_volume_kicks_an_initial_pass_for_a_fresh_at_launch_volume() {
+    // The restart race (item 1): `start()`'s sweep kick can run before a volume is
+    // ready; the volume then registers and `wire_volume` runs from the registration
+    // bus. Its lifecycle-bus subscription never kicks a Fresh-at-launch volume (the bus
+    // stays `Pending`, never `Completed`), and the importance bridge only re-kicks
+    // volumes that DEFERRED — so without an initial kick in `wire_volume` a persisted-on
+    // toggle enriches nothing until the user re-toggles. Importance is seeded SCORED so
+    // nothing defers: the ONLY path that can enrich here is the `wire_volume` kick.
+    // Pre-fix this stays un-enriched (the regression).
+    let _guard = crate::indexing::test_read_pool_lock();
+    reset_gate();
+    gate::set_enabled(true);
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/keep", "a.jpg")]);
+    crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
+    seed_importance_full_pass(dir.path(), &[("/keep", 0.9)]);
+
+    let sched = Arc::new(MediaScheduler::new(dir.path().to_path_buf(), fake_backend()));
+    // Wire the volume exactly as the registration bus would: its bus is Pending (we
+    // never publish a ScanCompleted) — the Fresh-at-launch shape the race hits.
+    wire_volume(Arc::clone(&sched), ROOT.to_string(), IndexVolumeKind::Local);
+
+    assert!(
+        wait_until(|| has_enriched_row(dir.path(), ROOT, "/keep/a.jpg")),
+        "wire_volume must kick an initial pass for a Fresh-at-launch volume (the restart race)"
+    );
+
+    crate::indexing::test_uninstall_root_read_pool();
+    reset_gate();
+}
+
+#[test]
+fn kick_runs_a_pass_for_a_ready_volume_only_when_enabled() {
+    // The dead-start end to end through the kick core (item 2a): a ready Local volume
+    // with the master toggle ON gets a real enrichment pass; with it OFF the spawned
+    // pass self-gates and enriches nothing; and an MTP entry in the ready list is never
+    // kicked (on-demand only). Driving the extracted `kick_ready_passes_from` with a
+    // controlled list keeps this hermetic — no process-global index registry.
+    let _guard = crate::indexing::test_read_pool_lock();
+    reset_gate();
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/keep", "a.jpg")]);
+    crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
+    seed_importance_full_pass(dir.path(), &[("/keep", 0.9)]);
+
+    let sched = Arc::new(MediaScheduler::new(dir.path().to_path_buf(), fake_backend()));
+    // A ready Local root plus an MTP volume that must never be kicked.
+    let ready = || {
+        vec![
+            (ROOT.to_string(), IndexVolumeKind::Local),
+            ("phone-mtp".to_string(), IndexVolumeKind::Mtp),
+        ]
+    };
+
+    // Gate OFF: kicking still spawns the passes, but each self-gates ⇒ nothing enriches.
+    kick_ready_passes_from(&sched, ready());
+    assert!(
+        never_within_a_second(|| has_enriched_row(dir.path(), ROOT, "/keep/a.jpg")),
+        "a disabled kick enriches nothing (the pass self-gates on the master toggle)"
+    );
+
+    // Gate ON: the ready Local volume enriches; the MTP entry never does.
+    gate::set_enabled(true);
+    kick_ready_passes_from(&sched, ready());
+    assert!(
+        wait_until(|| has_enriched_row(dir.path(), ROOT, "/keep/a.jpg")),
+        "an enabled kick runs the ready volume's pass (the dead-start fix)"
+    );
+    assert!(
+        !media_db_path(dir.path(), "phone-mtp").exists(),
+        "MTP is never kicked, so no media.db is created for it"
+    );
+
+    crate::indexing::test_uninstall_root_read_pool();
+    reset_gate();
+}
+
 // ── Scheduler-level: dead-start, defer→score→enrich, Fresh-sweep GC ─────────
 
 #[test]

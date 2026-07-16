@@ -626,7 +626,16 @@ pub fn kick_all_ready_passes(app: &AppHandle) {
 /// no-op, so there's no need to gate per volume (contrast importance, which gates on
 /// "store has no generation").
 pub fn kick_all_ready_passes_with(scheduler: &Arc<MediaScheduler>) {
-    for (volume_id, kind) in crate::indexing::ready_volumes_with_kind() {
+    kick_ready_passes_from(scheduler, crate::indexing::ready_volumes_with_kind());
+}
+
+/// Kick a coalesced pass for each `(volume_id, kind)` in `ready`, mapping the kind to a
+/// pass (Local → local, SMB → network which self-checks opt-in) and skipping the
+/// never-swept kinds. Split from [`kick_all_ready_passes_with`] so the kind mapping +
+/// spawn is testable against a controlled volume list, without the process-global index
+/// registry.
+fn kick_ready_passes_from(scheduler: &Arc<MediaScheduler>, ready: Vec<(String, IndexVolumeKind)>) {
+    for (volume_id, kind) in ready {
         let pass_kind = match kind {
             IndexVolumeKind::Local => PassKind::Local,
             IndexVolumeKind::Smb => PassKind::Network,
@@ -635,7 +644,7 @@ pub fn kick_all_ready_passes_with(scheduler: &Arc<MediaScheduler>) {
             // A LocalExternal (USB/SD) drive's index paths are MOUNT-RELATIVE, so the
             // local pass (which treats stored paths as OS paths) would hand Vision
             // relative paths — the phantom-path bug class. Skip it until mount-root
-            // mapping lands (parked follow-up; see the plan's parked-follow-up note).
+            // mapping lands (parked: mount-relative paths aren't mapped yet).
             IndexVolumeKind::LocalExternal => continue,
         };
         spawn_pass(Arc::clone(scheduler), volume_id, pass_kind);
@@ -758,7 +767,7 @@ fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVol
         // A LocalExternal (USB/SD) drive's index paths are MOUNT-RELATIVE, not OS paths,
         // so running the local pass (which reads stored paths as OS paths) would feed
         // Vision relative paths — the phantom-path bug class. NOT `PassKind::Local`. Skip
-        // it until mount-root mapping lands (parked follow-up; see the plan's note).
+        // it until mount-root mapping lands (parked: mount-relative paths aren't mapped yet).
         IndexVolumeKind::LocalExternal => {
             log::debug!(
                 target: "media_index",
@@ -767,6 +776,18 @@ fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVol
             return;
         }
     };
+
+    // The Fresh-at-launch dead-start: this volume's lifecycle bus stays `Pending` and
+    // never re-fires `ScanCompleted`, so the subscription below never kicks it — and the
+    // `start()`-time sweep kick can race the volume's registration (the sweep runs before
+    // the volume is ready, then the registration bus wires it here). So kick an initial
+    // coalesced pass for the volume we just wired when the master toggle is on, mirroring
+    // importance's `enqueue_initial_full_pass_if_unscored`. The `PassCoordinator` folds
+    // this with any sweep-time kick, so a double-kick is a harmless no-op; the network
+    // pass self-checks opt-in inside itself.
+    if gate::is_enabled() {
+        spawn_pass(Arc::clone(&scheduler), volume_id.clone(), pass_kind);
+    }
 
     // Live enrichment follows the index: a modified/new/deleted image under a
     // covered folder re-enriches (or GCs) within the throttle window, without waiting for

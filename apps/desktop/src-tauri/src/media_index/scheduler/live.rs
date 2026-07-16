@@ -20,7 +20,7 @@
 //!   removal is a fact about the tree (like importance's subtree clear), not a scan-state
 //!   inference, so deleting a confirmed-gone row here doesn't violate the
 //!   GC-needs-a-complete-tree doctrine. Crucially it must NEVER whole-store GC against a
-//!   scoped walk — that would delete every row outside the touched dirs (Finding 1).
+//!   scoped walk — that would delete every row outside the touched dirs.
 //!
 //! ## The guardrails
 //!
@@ -181,7 +181,7 @@ impl MediaScheduler {
                 should_enrich: &should_enrich,
                 is_excluded: &is_excluded,
                 // SCOPED GC: only rows under the touched dirs are candidates, so a row in a
-                // dir this tick never walked is never deleted (the data-safety trap, Finding 1).
+                // dir this tick never walked is never deleted (the scoped-GC data-safety trap).
                 gc_scope: GcScope::TouchedDirs(touched_dirs),
             },
             &hooks,

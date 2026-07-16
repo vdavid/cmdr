@@ -30,6 +30,12 @@ progress.**
   [52aeaef8](https://github.com/vdavid/cmdr/commit/52aeaef8),
   [f6ba31cb](https://github.com/vdavid/cmdr/commit/f6ba31cb))
 
+### Fixed
+
+- Image search reliably starts after you enable it, even right after an app update that rebuilt Cmdr's folder ranking.
+  Before, it could get stuck deciding what to cover (showing "working out how much this covers…") and never index a
+  thing ([53967443](https://github.com/vdavid/cmdr/commit/53967443)).
+
 ## [0.33.0] - 2026-07-09
 
 **Archives open like folders, the clipboard pastes straight into files, and search shows your best files first.**

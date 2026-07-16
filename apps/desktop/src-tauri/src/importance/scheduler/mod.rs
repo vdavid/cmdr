@@ -516,7 +516,7 @@ fn enqueue_initial_full_pass_if_unscored(
         let data_dir = scheduler.data_dir().to_path_buf();
         let vid = volume_id.clone();
         let needs =
-            tauri::async_runtime::spawn_blocking(move || super::store::needs_initial_full_pass(&data_dir, &vid)).await;
+            tauri::async_runtime::spawn_blocking(move || should_enqueue_initial_full_pass(kind, &data_dir, &vid)).await;
         match needs {
             Ok(Ok(true)) => {
                 log::info!(
@@ -530,6 +530,24 @@ fn enqueue_initial_full_pass_if_unscored(
             Err(e) => log::warn!(target: "importance", "initial-pass probe task for '{volume_id}' panicked: {e}"),
         }
     });
+}
+
+/// Whether a volume ready at launch needs an initial full recompute enqueued: its kind
+/// is background-scored (not MTP) AND its store carries no generation yet (fresh /
+/// schema-recreated / incremental-only). Binds the "unscored?" check to the write-path
+/// store open ([`super::store::needs_initial_full_pass`]), which forces any lazy schema
+/// recreate before reading the generation. Extracted from
+/// [`enqueue_initial_full_pass_if_unscored`] so the combined kind + store-state decision
+/// is testable without spawning the recompute (which needs a read pool).
+fn should_enqueue_initial_full_pass(
+    kind: IndexVolumeKind,
+    data_dir: &std::path::Path,
+    volume_id: &str,
+) -> Result<bool, super::store::ImportanceStoreError> {
+    if matches!(ScoringPolicy::for_kind(kind), ScoringPolicy::Excluded) {
+        return Ok(false); // MTP: on-demand only, never background-scored.
+    }
+    super::store::needs_initial_full_pass(data_dir, volume_id)
 }
 
 /// Wire one volume into the scheduler by its typed kind: skip MTP (on-demand
