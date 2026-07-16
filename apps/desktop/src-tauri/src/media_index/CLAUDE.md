@@ -22,19 +22,20 @@ tests.
 - **GC is deletion-driven + edge-triggered (data-safety).** GC ONLY on a `Completed` bus edge (`borrow_and_update`,
   never a `borrow()` poll) or the Fresh sweep; never on volume-absence. Deferred/below-threshold rows stay; only vanished
   files collect. Never persist the lifecycle-bus `generation` (a transient wake counter).
-- **Two USER-EXPLICIT deletions bypass the edge** (they derive from SETTINGS state, not scan/bus/gate state, so they
-  need no `Completed` edge): the privacy retro-delete (excluding a folder) and the reclaim prune (M4). Both go through
-  the writer (`prune_under_folder` / `prune_paths` + `VACUUM`), delete all four row kinds atomically, and drop the
-  vector + coverage caches. ❌ The exclusion veto reads LIVE `network::config::is_excluded`, NEVER the pass snapshot, and
-  re-checks before each upsert (the in-flight-analyze TOCTOU) — else a pass already running re-inserts what the
-  retro-delete removed. D.md § Privacy retro-delete.
+- **Three deletions bypass the edge** (no `Completed` edge needed): the privacy retro-delete + reclaim prune (M4,
+  settings-derived, via the writer `prune_under_folder` / `prune_paths` + `VACUUM`), and the M8 live-tick scoped GC
+  (index-CONFIRMED, `enrich_and_gc_scoped` + `GcScope::TouchedDirs`). ❌ The exclusion veto reads LIVE
+  `network::config::is_excluded`, NEVER the pass snapshot, and re-checks before each upsert (the in-flight-analyze
+  TOCTOU). ❌ NEVER whole-store `gc_targets` / `enrich_and_gc` on a live tick — it wipes every row OUTSIDE the touched
+  dirs. D.md §§ Privacy retro-delete, Live enrichment.
 - **Importance-prioritized (headline).** Filter + order by `ImportanceIndex` at the slider threshold. `folder_scores`
-  `None` (unscored) defers to override-only, NEVER enrich-all (forward-only, so a first-run race would over-index
-  permanently); the `wire_volume` importance-subscribe bridge re-kicks once scored. "Scored" = live weight rows OR a
-  generation (`coverage::importance_scored`). EXCLUDED = hard veto; floored junk has no row. D.md § Defer-until-scored.
+  `None` (unscored) defers to override-only, NEVER enrich-all (a first-run race would over-index permanently); the
+  `wire_volume` bridge re-kicks once scored. "Scored" = live weight rows OR a generation (`coverage::importance_scored`).
+  EXCLUDED = hard veto; floored junk has no row. D.md § Defer-until-scored.
 - **What starts a pass**: a `Completed` bus edge, or a user kick (`kick_all_ready_passes` on toggle-on / restart /
-  threshold DECREASE; `kick_network_pass` on opt-in). The sweep only WIRES subs (a Fresh-at-launch bus stays `Pending`),
-  so the kick, not the sweep, enriches.
+  threshold DECREASE; `kick_network_pass` on opt-in). The sweep only WIRES subs (a Fresh-at-launch bus stays Pending),
+  so the kick, not the sweep, enriches. Plus **live index updates** (M8, LOCAL only, `scheduler/live.rs`): a throttled,
+  touched-dirs-SCOPED tick on a DISTINCT `#live` coordinator key.
 - **`FakeVisionBackend` via `MediaScheduler::new`, never `start`.** Real backend: ALL Vision/ImageIO on ONE 8 MB-stack
   thread (never rayon); a hostile image gives a typed `VisionError`, never a panic.
 - **Off by default + ONE shared memory ceiling.** Scheduler no-ops until on; cancellation hooks the EXISTING indexing
@@ -42,11 +43,10 @@ tests.
 - **A disconnect is NOT a bad file.** A mid-pass SMB unmount PAUSES (keeps rows, no GC, no `Failed`).
 - **`search/` reaches `media.db` ONLY through `MediaIndex`.** Commands register in BOTH `ipc.rs` + `ipc_collectors.rs`
   (`pnpm bindings:regen`); events (`events.rs`) register in `ipc.rs`'s `collect_events!` only.
-- **A pass publishes progress to the top-right indicator** (`events.rs`, plan M5): throttled `media-enrich-progress` over
-  the ENRICHABLE subset (never `images.len()`) + one `media-enrich-terminal` on EVERY exit path (a `Drop`-guard emits
-  `Failed` on an error bubble). A VANISHED source (typed `VisionError::Missing`, ENOENT at analyze) is skipped quietly
-  (DEBUG, no row) and counts as processed. `run_pass_blocking` needs the `AppHandle` (`None` in unit tests ⇒ no emit).
-  D.md § Progress events.
+- **A pass publishes progress to the top-right indicator** (`events.rs`, M5): throttled `media-enrich-progress` over the
+  ENRICHABLE subset (never `images.len()`) + one `media-enrich-terminal` on EVERY exit path (a `Drop`-guard emits `Failed`
+  on an error bubble). A VANISHED source (`VisionError::Missing`, ENOENT) is skipped quietly (DEBUG, no row) but counts as
+  processed. A small live tick (M8) stays fully silent. D.md § Progress events.
 
 Still open: per-FOLDER always-index trigger (setter ready; the exclude trigger shipped as a folder context-menu item),
 MTP on-demand, CLIP/faces/captions.

@@ -12,7 +12,7 @@
 //! gate, so each holds `crate::indexing::test_read_pool_lock()` to serialize against
 //! parallel tests and resets the gate itself.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::*;
 use crate::importance::store::{ImportanceStore, importance_db_path};
@@ -491,4 +491,171 @@ fn retro_delete_maps_a_network_folder_into_the_volumes_index_space() {
         smb.status_for("/Docs/d.jpg").expect("read").is_some(),
         "other folder kept"
     );
+}
+
+// ── M8 live enrichment: the scoped tick end to end (over a registered read pool) ──
+
+fn touched(dirs: &[&str]) -> HashSet<String> {
+    dirs.iter().map(|d| d.to_string()).collect()
+}
+
+#[test]
+fn a_live_tick_re_enriches_a_modified_covered_image() {
+    // A modified covered image re-enriches on a live tick, no completed scan needed. The
+    // stored row's `(mtime, size)` is stale vs the index (10 vs the index's 1), so the
+    // staleness predicate marks it dirty and the tick re-analyzes it.
+    let _guard = crate::indexing::test_read_pool_lock();
+    reset_gate();
+    gate::set_enabled(true);
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/keep", "a.jpg")]);
+    crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
+    seed_importance_full_pass(dir.path(), &[("/keep", 0.9)]);
+    seed_media_row(dir.path(), "/keep/a.jpg"); // stored mtime 10 ≠ index mtime 1 ⇒ stale
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    let n = sched.run_live_tick_blocking(ROOT, &touched(&["/keep"])).expect("tick");
+    assert_eq!(n, 1, "the modified covered image re-enriches on a live tick");
+
+    let store = MediaStore::open(&media_db_path(dir.path(), ROOT)).expect("open");
+    let row = store.status_for("/keep/a.jpg").expect("read").expect("row present");
+    assert_eq!(
+        row.mtime,
+        Some(1),
+        "the row now carries the index's current mtime (re-enriched)"
+    );
+
+    crate::indexing::test_uninstall_root_read_pool();
+    reset_gate();
+}
+
+#[test]
+fn a_live_tick_defers_a_below_threshold_folder() {
+    // A folder below the slider threshold defers on a live tick, exactly like the full pass:
+    // /skip has no score at or above 0.5, so it's absent from the threshold-filtered map and
+    // never enriches.
+    let _guard = crate::indexing::test_read_pool_lock();
+    reset_gate();
+    gate::set_enabled(true);
+    gate::set_importance_threshold(0.5);
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/skip", "a.jpg")]);
+    crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
+    // Only /keep scores ≥ threshold; /skip has no row ⇒ not covered.
+    seed_importance_full_pass(dir.path(), &[("/keep", 0.9)]);
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    let n = sched.run_live_tick_blocking(ROOT, &touched(&["/skip"])).expect("tick");
+    assert_eq!(n, 0, "a below-threshold folder defers on a live tick");
+    assert!(
+        MediaStore::open(&media_db_path(dir.path(), ROOT))
+            .expect("open")
+            .status_for("/skip/a.jpg")
+            .expect("read")
+            .is_none(),
+        "no row for the deferred folder"
+    );
+
+    crate::indexing::test_uninstall_root_read_pool();
+    reset_gate();
+}
+
+#[test]
+fn a_live_tick_never_enriches_an_excluded_folder() {
+    // The privacy veto holds on a live tick: an excluded folder never enriches, even when
+    // importance covers it.
+    let _guard = crate::indexing::test_read_pool_lock();
+    reset_gate();
+    gate::set_enabled(true);
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/secret", "a.jpg")]);
+    crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
+    seed_importance_full_pass(dir.path(), &[("/secret", 0.9)]);
+    network::config::set_config(config_with(&[], &["/secret"]));
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    let n = sched
+        .run_live_tick_blocking(ROOT, &touched(&["/secret"]))
+        .expect("tick");
+    assert_eq!(n, 0, "an excluded folder never enriches on a live tick");
+    assert!(
+        MediaStore::open(&media_db_path(dir.path(), ROOT))
+            .expect("open")
+            .status_for("/secret/a.jpg")
+            .expect("read")
+            .is_none(),
+        "no row for the excluded folder"
+    );
+
+    crate::indexing::test_uninstall_root_read_pool();
+    reset_gate();
+}
+
+#[test]
+fn a_live_tick_gcs_an_index_confirmed_removal() {
+    // An index-confirmed removal is a fact about the tree (not a scan-state inference), so a
+    // live tick may delete its row: the index now holds only keep.jpg, so gone.jpg's stored
+    // row is scoped-GC'd — while keep.jpg (present) survives.
+    let _guard = crate::indexing::test_read_pool_lock();
+    reset_gate();
+    gate::set_enabled(true);
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/photos", "keep.jpg")]); // gone.jpg removed from the index
+    crate::indexing::test_install_root_read_pool(index_path).expect("install pool");
+    seed_importance_full_pass(dir.path(), &[("/photos", 0.9)]);
+    seed_media_row(dir.path(), "/photos/keep.jpg");
+    seed_media_row(dir.path(), "/photos/gone.jpg");
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    sched
+        .run_live_tick_blocking(ROOT, &touched(&["/photos"]))
+        .expect("tick");
+
+    let store = MediaStore::open(&media_db_path(dir.path(), ROOT)).expect("open");
+    assert!(
+        store.status_for("/photos/keep.jpg").expect("read").is_some(),
+        "present kept"
+    );
+    assert!(
+        store.status_for("/photos/gone.jpg").expect("read").is_none(),
+        "index-confirmed removal GC'd on the live tick"
+    );
+
+    crate::indexing::test_uninstall_root_read_pool();
+    reset_gate();
+}
+
+#[test]
+fn an_unmounted_volume_live_tick_deletes_nothing() {
+    // Unmount safety: with no read pool (the volume is gone), a live tick no-ops entirely —
+    // it never GCs, so a disconnect can't wipe a volume's coverage.
+    let _guard = crate::indexing::test_read_pool_lock();
+    reset_gate();
+    gate::set_enabled(true);
+    crate::indexing::test_uninstall_root_read_pool(); // ensure no pool is installed
+    let dir = tempfile::tempdir().expect("temp");
+    seed_media_row(dir.path(), "/photos/keep.jpg");
+    seed_media_row(dir.path(), "/photos/gone.jpg");
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    let n = sched
+        .run_live_tick_blocking(ROOT, &touched(&["/photos"]))
+        .expect("tick");
+    assert_eq!(n, 0, "no read pool ⇒ the tick no-ops");
+
+    let store = MediaStore::open(&media_db_path(dir.path(), ROOT)).expect("open");
+    assert!(
+        store.status_for("/photos/keep.jpg").expect("read").is_some(),
+        "row kept"
+    );
+    assert!(
+        store.status_for("/photos/gone.jpg").expect("read").is_some(),
+        "an absent pool never GCs — unmount deletes nothing"
+    );
+
+    reset_gate();
 }

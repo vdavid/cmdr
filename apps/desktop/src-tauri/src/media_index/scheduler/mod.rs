@@ -55,6 +55,8 @@ use crate::indexing::IndexVolumeKind;
 pub(crate) mod enrich;
 use enrich::{PassHooks, enrich_and_gc, load_statuses, walk_image_entries};
 
+mod live;
+
 use super::events::{EnrichTerminalGuard, MediaEnrichTerminalReason, TauriEnrichEmitter};
 use super::progress::{EnrichProgressSink, NoopProgressSink};
 
@@ -174,6 +176,11 @@ pub struct MediaScheduler {
     /// bridge so a normal volume (scored from the start) never re-kicks, and a later
     /// incremental bump doesn't re-walk the index for nothing.
     deferred_for_importance: Mutex<HashSet<String>>,
+    /// Per-volume accumulator of touched DIRECTORY paths awaiting a live enrichment
+    /// tick (plan M8). A burst of dir-changed batches coalesces here so overlapping
+    /// ticks drain one combined set, not one tick per batch — mirroring importance's
+    /// `pending_incremental`.
+    pending_touched_dirs: Mutex<HashMap<String, HashSet<String>>>,
 }
 
 impl MediaScheduler {
@@ -187,6 +194,7 @@ impl MediaScheduler {
             backend,
             app: None,
             deferred_for_importance: Mutex::new(HashSet::new()),
+            pending_touched_dirs: Mutex::new(HashMap::new()),
         }
     }
 
@@ -301,6 +309,9 @@ impl MediaScheduler {
             cancel: &gate::is_cancelled,
             progress: progress.as_ref(),
         };
+        // A full pass walks the whole index, so a stored row absent from the walk genuinely
+        // vanished: `enrich_and_gc` GCs the whole store. The scoped live tick (M8) uses
+        // `enrich_and_gc_scoped` with `GcScope::TouchedDirs` instead.
         let summary = enrich_and_gc(
             &ordered,
             &statuses,
@@ -756,6 +767,15 @@ fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVol
             return;
         }
     };
+
+    // Live enrichment follows the index (plan M8): a modified/new/deleted image under a
+    // covered folder re-enriches (or GCs) within the throttle window, without waiting for
+    // the next completed scan. LOCAL only: the tick treats stored paths as OS paths (no
+    // mount mapping), and SMB's live path never publishes dirs_changed anyway, so wiring
+    // it for network would be dead. MTP/LocalExternal already returned above.
+    if pass_kind == PassKind::Local {
+        live::start_live_follow(Arc::clone(&scheduler), volume_id.clone());
+    }
 
     // Privacy retro-delete re-fire (plan M3): a folder excluded while this volume was
     // OFFLINE never got purged (the retro-delete had no mount root then). On

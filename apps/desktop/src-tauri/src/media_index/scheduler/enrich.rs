@@ -8,7 +8,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::indexing::store::{IndexStore, ROOT_ID};
+use crate::indexing::store::{IndexStore, ROOT_ID, resolve_path};
 use crate::media_index::backend::{Analysis, ImageInput, VisionBackend, VisionError};
 use crate::media_index::predicate::{MediaKind, Qualification, qualify_dir};
 use crate::media_index::progress::{EnrichProgress, EnrichProgressSink};
@@ -125,6 +125,44 @@ pub(crate) fn walk_image_entries(conn: &rusqlite::Connection) -> Result<Vec<Imag
     Ok(out)
 }
 
+/// Walk ONLY the given directories' qualifying images — the live-tick scoped walk
+/// (plan M8), the incremental counterpart to [`walk_image_entries`]'s whole-index
+/// sweep. For each touched dir it resolves the dir's entry id and fetches ALL of that
+/// dir's file children, then runs the sibling-aware predicate over the COMPLETE name
+/// set — fetching only the changed files would mis-qualify (RAW+JPEG pairing and Live
+/// Photos are sibling-aware, so deleting `DSC.jpg` must promote the lone `DSC.cr2`).
+/// A dir absent from the index (removed since the change fired) is skipped — its
+/// stored rows fall to the scoped GC. `dirs` are absolute index paths; a network
+/// volume never reaches here (live-follow is Local-only), so no mount mapping.
+pub(crate) fn walk_image_entries_in_dirs(
+    conn: &rusqlite::Connection,
+    dirs: &HashSet<String>,
+) -> Result<Vec<ImageEntry>, String> {
+    let mut out = Vec::new();
+    for dir in dirs {
+        // A dir gone from the index resolves to `None`: skip it (its rows fall to the
+        // scoped GC). The bare `/` resolves to `ROOT_ID`, so listing its direct children
+        // is a cheap no-op rather than a whole-index walk.
+        let Some(dir_id) = resolve_path(conn, dir).map_err(|e| e.to_string())? else {
+            continue;
+        };
+        let children = IndexStore::list_children_on(dir_id, conn).map_err(|e| e.to_string())?;
+        let files: Vec<&crate::indexing::store::EntryRow> = children.iter().filter(|c| !c.is_directory).collect();
+        let names: Vec<&str> = files.iter().map(|f| f.name.as_str()).collect();
+        for (file, qual) in files.iter().zip(qualify_dir(&names)) {
+            if let Qualification::Enrich(kind) = qual {
+                out.push(ImageEntry {
+                    path: join_path(dir, &file.name),
+                    mtime: file.modified_at,
+                    size: file.logical_size,
+                    kind,
+                });
+            }
+        }
+    }
+    Ok(out)
+}
+
 /// Reconstruct a directory's absolute path from the in-memory `id → row` map,
 /// walking parent pointers up to the root sentinel. Returns `"/"` for the root.
 fn reconstruct_dir_path(id: i64, by_id: &HashMap<i64, &crate::indexing::store::EntryRow>) -> String {
@@ -153,6 +191,41 @@ fn join_path(dir: &str, name: &str) -> String {
     } else {
         format!("{dir}/{name}")
     }
+}
+
+/// Which stored rows a pass may GC — the data-safety line between the full pass and a
+/// scoped live tick (plan M8 pre-review Finding 1).
+///
+/// GC deletes a stored row whose source path is absent from the pass's `current`
+/// (walked) set. A FULL pass walks the WHOLE index, so every stored row absent from
+/// the walk genuinely vanished ⇒ [`WholeStore`](GcScope::WholeStore). A live tick walks
+/// ONLY the touched dirs, so a whole-store set-difference against its scoped walk would
+/// delete every row in every dir the tick never visited — the data-safety trap. A tick
+/// must therefore GC only rows UNDER the dirs it actually walked
+/// ⇒ [`TouchedDirs`](GcScope::TouchedDirs).
+#[derive(Clone, Copy)]
+pub(crate) enum GcScope<'a> {
+    /// GC every stored row absent from the (complete) walk. The full pass / Fresh sweep.
+    WholeStore,
+    /// GC only stored rows whose parent dir is in this set AND absent from the (scoped)
+    /// walk. The live tick, whose walk covers exactly these dirs — never the whole store.
+    TouchedDirs(&'a HashSet<String>),
+}
+
+/// The per-pass POLICY the enrich core applies: which images to enrich, which the privacy
+/// veto forbids, and which stored rows to GC. Bundled so the core stays under the
+/// argument-count lint (like [`PassHooks`]) and so the full pass and the scoped live tick
+/// differ in ONE value the caller supplies.
+pub(crate) struct EnrichGates<'a> {
+    /// The COVERAGE filter (importance threshold + "always index" override, snapshot):
+    /// a rejected image is DEFERRED but stays in the GC `current` set.
+    pub(crate) should_enrich: &'a dyn Fn(&str) -> bool,
+    /// The LIVE privacy veto (read fresh, beats coverage), checked before enriching AND
+    /// again right before the upsert (the in-flight-analyze TOCTOU).
+    pub(crate) is_excluded: &'a dyn Fn(&str) -> bool,
+    /// Which stored rows this pass may GC: the whole store (full pass) or only rows under
+    /// the touched dirs (live tick) — the Finding-1 data-safety line.
+    pub(crate) gc_scope: GcScope<'a>,
 }
 
 /// The stored paths whose source files no longer qualify as images in the CURRENT
@@ -193,16 +266,47 @@ pub(crate) fn prioritized(images: &[ImageEntry], folder_score: &dyn Fn(&str) -> 
     ordered
 }
 
-/// Enrich the stale images and GC vanished rows through `writer`, over a set of
-/// already-loaded `statuses` (path → row). Returns what the pass did.
+/// The whole-store entry point: enrich the stale covered images and GC every stored row
+/// the COMPLETE walk no longer holds. The full pass and the Fresh sweep call this — they
+/// walk the whole index, so a missing row genuinely vanished. Delegates to
+/// [`enrich_and_gc_scoped`] with [`GcScope::WholeStore`]; the scoped live tick (M8) passes
+/// [`GcScope::TouchedDirs`] instead. Both share the one per-image loop.
+pub(crate) fn enrich_and_gc(
+    images: &[ImageEntry],
+    statuses: &HashMap<String, MediaStatusRow>,
+    backend: &dyn VisionBackend,
+    writer: &MediaWriter,
+    should_enrich: &dyn Fn(&str) -> bool,
+    is_excluded: &dyn Fn(&str) -> bool,
+    hooks: &PassHooks,
+) -> Result<PassSummary, String> {
+    enrich_and_gc_scoped(
+        images,
+        statuses,
+        backend,
+        writer,
+        &EnrichGates {
+            should_enrich,
+            is_excluded,
+            gc_scope: GcScope::WholeStore,
+        },
+        hooks,
+    )
+}
+
+/// The shared enrich + GC core, over a set of already-loaded `statuses` (path → row).
+/// Parameterized by `gates.gc_scope` so the whole-store full pass and the touched-dirs live
+/// tick share ONE per-image loop (never a fork). Callers usually reach it via
+/// [`enrich_and_gc`] (whole store); the live tick calls it directly with
+/// [`GcScope::TouchedDirs`]. Returns what the pass did.
 ///
 /// - `images` is the caller's priority-ordered list ([`prioritized`]); enrichment
 ///   walks it in that order so high-importance folders land first.
-/// - `should_enrich(path)` is the COVERAGE filter (importance threshold + "always
+/// - `gates.should_enrich(path)` is the COVERAGE filter (importance threshold + "always
 ///   index" override, snapshot-based): an image it rejects is DEFERRED (not enriched)
 ///   but stays in the GC `current` set, so a below-threshold folder's existing rows
 ///   aren't wiped — only genuinely vanished files are GC'd.
-/// - `is_excluded(path)` is the LIVE privacy veto (read fresh, NOT from a pass
+/// - `gates.is_excluded(path)` is the LIVE privacy veto (read fresh, NOT from a pass
 ///   snapshot). It's a hard veto that beats coverage, checked BOTH before enriching
 ///   AND again immediately before the upsert: the second check closes the in-flight
 ///   TOCTOU where an exclusion lands DURING the slow `analyze`, so a just-excluded
@@ -218,17 +322,22 @@ pub(crate) fn prioritized(images: &[ImageEntry], folder_score: &dyn Fn(&str) -> 
 ///   rows are collected on the next completed scan — and returns `cancelled: true`.
 /// - Reports throttled progress through `hooks.progress` over the ENRICHABLE subset
 ///   (the honest denominator), so image indexing joins the top-right indicator.
-/// - GC uses the FULL walked image set as `current` (not just the freshly enriched
-///   ones), so a still-present image whose enrichment this pass skipped isn't GC'd.
-pub(crate) fn enrich_and_gc(
+/// - GC uses the walked image set as `current` (not just the freshly enriched ones), so
+///   a still-present image whose enrichment this pass skipped isn't GC'd. `gates.gc_scope`
+///   decides WHICH stored rows are GC candidates: a full pass considers the whole store
+///   ([`GcScope::WholeStore`]); a scoped live tick considers only rows under the touched
+///   dirs ([`GcScope::TouchedDirs`]), so it never wipes rows in dirs it didn't walk
+///   (the data-safety trap — plan M8 pre-review Finding 1).
+pub(crate) fn enrich_and_gc_scoped(
     images: &[ImageEntry],
     statuses: &HashMap<String, MediaStatusRow>,
     backend: &dyn VisionBackend,
     writer: &MediaWriter,
-    should_enrich: &dyn Fn(&str) -> bool,
-    is_excluded: &dyn Fn(&str) -> bool,
+    gates: &EnrichGates,
     hooks: &PassHooks,
 ) -> Result<PassSummary, String> {
+    let should_enrich = gates.should_enrich;
+    let is_excluded = gates.is_excluded;
     let stamp = backend.analysis_stamp();
     let current: HashSet<String> = images.iter().map(|i| i.path.clone()).collect();
 
@@ -325,7 +434,17 @@ pub(crate) fn enrich_and_gc(
     let gc_count = if cancelled {
         0
     } else {
-        let targets = gc_targets(statuses.keys(), &current);
+        let targets: Vec<String> = match gates.gc_scope {
+            // The full pass: every stored row absent from the complete walk vanished.
+            GcScope::WholeStore => gc_targets(statuses.keys(), &current),
+            // The live tick: only rows UNDER a walked (touched) dir are candidates, so a
+            // row in a dir this tick never visited is never GC'd (Finding 1).
+            GcScope::TouchedDirs(dirs) => statuses
+                .keys()
+                .filter(|p| dirs.contains(parent_dir(p)) && !current.contains(*p))
+                .cloned()
+                .collect(),
+        };
         let n = targets.len();
         writer.gc_paths(targets).map_err(|e| e.to_string())?;
         n

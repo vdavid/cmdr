@@ -63,6 +63,11 @@ walk. The safety comes entirely from **when** a pass (and thus its GC) runs, not
 - A cancelled pass (memory watchdog) skips GC entirely, yielding fully; vanished rows are collected on the next completed
   scan.
 
+Three deletion paths bypass this completed-scan edge, each for a reason the edge doesn't cover: the M3 privacy retro-delete
+and the M4 reclaim prune (both USER-EXPLICIT, settings-derived — § Per-folder photo-search exclude, § Reclaim space), and
+the M8 live-tick scoped GC (INDEX-CONFIRMED, scoped to the touched dirs — § Live enrichment). None may run the whole-store
+`gc_targets` outside a completed pass.
+
 ## Network-volume enrichment
 
 Making an opted-in NAS's images searchable by content is the headline use case (`/Volumes/naspi` over SMB). This is the
@@ -615,6 +620,52 @@ cache, so they can never disagree with the reclaim preview. `covered_qualifying_
 "N of M in your covered folders" (N = `enriched_count − kept_count`, capped); `kept_count` (= the M4 doomed count) drives
 the quiet "K more indexed from broader settings, still searchable" line, gated by the SAME `shouldOfferReclaim` floor so
 it never duplicates the reclaim offer. Both `None` when importance hasn't scored the volume.
+
+### Live enrichment: follow the index (M8)
+
+Before M8 the only enrichment triggers were scan-completion edges, user kicks, and the importance bridge — so a NEW or
+MODIFIED image waited for the next completed scan, and a DELETED image's rows lingered until a later pass GC'd them. M8
+follows the index live, mirroring importance's incremental rescore rather than inventing a new mechanism.
+
+`scheduler/live.rs` subscribes each LOCAL volume to `indexing::lifecycle_bus::subscribe_dirs_changed` (the SAME per-volume
+`watch<DirsChanged>` importance's `start_incremental` consumes) from `wire_volume`, AFTER its kind early-returns — so MTP
+and `LocalExternal` are auto-skipped, and SMB (which never publishes dir-changed batches; its live path only enqueues index
+writes) is left out too. Each batch's touched DIRECTORY paths accumulate into `pending_touched_dirs` and drive a coalesced,
+throttled tick (`LIVE_THROTTLE_WINDOW`, leading-edge-immediate then trailing-edge-spaced — `live_debounce_wait`, copied
+from importance's `INCREMENTAL_THROTTLE_WINDOW` / `incremental_debounce_wait`). `DirsChanged.paths` carries every changed
+file's parent PLUS its ancestor chain up to the ever-present `/`; ancestor re-checks are harmless (staleness makes them
+no-ops), and `/` resolves to a cheap direct-children walk, not a whole-index sweep. `watch` is last-value-wins, so a burst
+can drop intermediate batches — the accumulator plus the next full pass heal it.
+
+A tick (`run_live_tick_blocking`) walks ONLY the touched dirs (`walk_image_entries_in_dirs`: per dir, resolve its entry id
+via `store::resolve_path` from `ROOT_ID`, fetch the COMPLETE file-child set, run the sibling-aware `qualify_dir` — fetching
+only changed files would mis-qualify RAW+JPEG pairs and Live Photos; a dir gone from the index is skipped and its rows fall
+to the scoped GC). It then runs the SAME per-image enrich loop as the full pass through the shared `enrich_and_gc_scoped`
+core, honoring the coverage gates, the live exclusion veto, and the `(path, mtime, size)` + stamp staleness key.
+
+**The GC data-safety line (pre-review Finding 1).** `enrich_and_gc`'s GC is a whole-store set-difference against the walked
+set — correct for a full pass (whole index walked), CATASTROPHIC for a scoped walk (it would delete every stored row
+OUTSIDE the touched dirs). So the GC target set is a parameter: `GcScope::WholeStore` (the full pass / Fresh sweep, via
+`enrich_and_gc`) vs `GcScope::TouchedDirs` (the live tick, via `enrich_and_gc_scoped`), which GCs only rows whose parent dir
+is one of this tick's touched dirs AND absent from the scoped walk. This makes the live tick the THIRD deletion path that
+bypasses the completed-scan edge (§ The GC safety argument), alongside the M3 privacy retro-delete and the M4 reclaim
+prune. Unlike those two (USER-EXPLICIT, settings-derived), the live tick's deletion is INDEX-CONFIRMED: a removal from the
+live index is a fact about the tree (like importance's subtree clear), not a scan-state inference, so the complete-tree
+doctrine isn't violated. A disconnect/unmount still never deletes: no read pool ⇒ the tick no-ops before any GC. The
+sibling edge is where the whole-dir fetch earns its keep — deleting `DSC.jpg` promotes the lone `DSC.cr2` to enrich WHILE
+scoped-GCing the `.jpg` row, in one tick.
+
+**Guardrails.** The tick coalesces on a DISTINCT `#live` coordinator key (`live_key`), never the full-pass key — else a
+`ScanCompleted` full pass coalescing into a tick's slot would silently downgrade to a scoped tick. Before running, it SKIPS
+entirely if a full pass is running for the volume (the full pass covers the touched dirs). Progress honesty: a tick lights
+the top-right indicator ONLY when its enrichable subset exceeds `LIVE_INDICATOR_THRESHOLD` (25) AND no full pass runs
+(`tick_is_loud`); below that BOTH the progress sink and the terminal guard are suppressed together (a lone row-clearing
+terminal on a silent tick would clear a visible full-pass row). A tick does NOT `mark_deferred_for_importance` on an
+unscored volume — the full-pass bridge covers that, and marking would trigger a full re-walk on the next importance bump.
+Tests: `scheduler/live.rs` (pure `tick_is_loud` + `live_debounce_wait` + distinct key), `enrich_tests` (the scoped walk,
+the Finding-1 scoped GC vs the whole-store trap, the sibling re-qualify), `kick_tests` (the tick end to end over a
+registered read pool: re-enrich-on-modify, below-threshold defer, exclusion veto, index-confirmed GC, unmount deletes
+nothing).
 
 ### Read API + commands (tags, similarity, coverage)
 

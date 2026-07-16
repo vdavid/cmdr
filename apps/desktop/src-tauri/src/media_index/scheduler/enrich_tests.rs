@@ -6,8 +6,8 @@
 use std::collections::{HashMap, HashSet};
 
 use super::enrich::{
-    ImageEntry, PassHooks, enrich_and_gc, enrichable_totals, gc_targets, load_statuses, parent_dir, prioritized,
-    walk_image_entries,
+    EnrichGates, GcScope, ImageEntry, PassHooks, enrich_and_gc, enrich_and_gc_scoped, enrichable_totals, gc_targets,
+    load_statuses, parent_dir, prioritized, walk_image_entries, walk_image_entries_in_dirs,
 };
 use crate::indexing::store::{IndexStore, ROOT_ID};
 use crate::media_index::backend::fake::FakeVisionBackend;
@@ -611,6 +611,210 @@ fn a_vanished_image_still_completes_the_pass_at_done_equals_total() {
     assert!(
         media.status_for("/skip/b.jpg").expect("read").is_none(),
         "a deferred image writes no row"
+    );
+    writer.shutdown();
+}
+
+// ── M8 live enrichment: the scoped walk + scoped GC (Finding 1 data-safety) ──
+
+/// Seed a Done `media_status` row (with OCR text) for `path`.
+fn seed_media(writer: &MediaWriter, path: &str) {
+    writer
+        .upsert(
+            MediaStatusRow {
+                path: path.to_string(),
+                mtime: Some(1),
+                size: Some(2),
+                media_kind: MediaKind::Image,
+                state: EnrichmentState::Done,
+                engine_version: "fake-vision-1".to_string(),
+            },
+            Some(crate::media_index::writer::UpsertAnalysis::ocr_only("seed")),
+        )
+        .expect("seed row");
+}
+
+fn touched(dirs: &[&str]) -> HashSet<String> {
+    dirs.iter().map(|d| d.to_string()).collect()
+}
+
+#[test]
+fn walk_in_dirs_touches_only_the_given_dirs() {
+    // The scoped walk visits ONLY the touched dirs — never the whole index (the per-tick
+    // cost bound). Sibling-aware per dir, carrying the staleness key.
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(
+        &index_path,
+        &[("/a", "x.jpg", 1, 10), ("/b", "y.jpg", 2, 20), ("/c", "z.jpg", 3, 30)],
+    );
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let mut images = walk_image_entries_in_dirs(store.read_conn(), &touched(&["/a", "/b"])).expect("walk");
+    images.sort_by(|a, b| a.path.cmp(&b.path));
+    let paths: Vec<&str> = images.iter().map(|i| i.path.as_str()).collect();
+    assert_eq!(paths, vec!["/a/x.jpg", "/b/y.jpg"], "only /a + /b walked; /c untouched");
+    let x = images.iter().find(|i| i.path == "/a/x.jpg").expect("x");
+    assert_eq!((x.mtime, x.size), (Some(1), Some(10)), "the staleness key rode along");
+}
+
+#[test]
+fn walk_in_dirs_skips_a_dir_absent_from_the_index() {
+    // A touched dir that's since vanished from the index resolves to `None` ⇒ skipped
+    // quietly (no error). Its stored rows fall to the scoped GC instead.
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/a", "x.jpg", 1, 10)]);
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let images = walk_image_entries_in_dirs(store.read_conn(), &touched(&["/gone"])).expect("walk");
+    assert!(images.is_empty(), "a dir absent from the index yields no images");
+}
+
+#[test]
+fn scoped_gc_spares_rows_in_untouched_dirs() {
+    // Finding 1, the data-safety regression: a live tick walks only /a, so its GC deletes a
+    // vanished row UNDER /a but must NEVER touch the untouched-dir /b row — even though /b's
+    // row is absent from the scoped walk. Pre-fix (a whole-store GC over the scoped walk)
+    // this would delete /b/survivor.jpg (see the trap test below).
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    // The index holds /a/keep.jpg + /b/survivor.jpg now; /a/gone.jpg vanished.
+    build_index(&index_path, &[("/a", "keep.jpg", 1, 10), ("/b", "survivor.jpg", 2, 20)]);
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let touched_a = touched(&["/a"]);
+    let images = walk_image_entries_in_dirs(store.read_conn(), &touched_a).expect("walk");
+
+    let writer = media_writer(dir.path(), "root");
+    for path in ["/a/keep.jpg", "/a/gone.jpg", "/b/survivor.jpg"] {
+        seed_media(&writer, path);
+    }
+    writer.flush_blocking().expect("flush");
+    let statuses = load_statuses(dir.path(), "root");
+    let backend = FakeVisionBackend::new();
+
+    let summary = enrich_and_gc_scoped(
+        &images,
+        &statuses,
+        &backend,
+        &writer,
+        &EnrichGates {
+            should_enrich: &|_| true,
+            is_excluded: &|_| false,
+            gc_scope: GcScope::TouchedDirs(&touched_a),
+        },
+        &no_op_hooks(),
+    )
+    .expect("pass");
+    assert_eq!(summary.gc_count, 1, "only the vanished /a/gone.jpg is GC'd");
+
+    let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen media");
+    assert!(
+        store.status_for("/a/keep.jpg").expect("read").is_some(),
+        "present /a row kept"
+    );
+    assert!(
+        store.status_for("/a/gone.jpg").expect("read").is_none(),
+        "vanished /a row GC'd"
+    );
+    assert!(
+        store.status_for("/b/survivor.jpg").expect("read").is_some(),
+        "the untouched /b row SURVIVES — the Finding-1 line"
+    );
+    writer.shutdown();
+}
+
+#[test]
+fn whole_store_gc_over_a_scoped_walk_would_wipe_untouched_dirs() {
+    // The hazard scoped GC defends against (cf. `gc_over_an_empty_index_would_delete_...`):
+    // running the full-pass WholeStore GC against a SCOPED walk targets every stored row
+    // outside the touched dirs. This is exactly why a live tick uses `TouchedDirs`, never
+    // `WholeStore`. Pins the RED against a naive whole-store GC.
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/a", "keep.jpg", 1, 10), ("/b", "survivor.jpg", 2, 20)]);
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let touched_a = touched(&["/a"]);
+    let images = walk_image_entries_in_dirs(store.read_conn(), &touched_a).expect("walk");
+
+    let writer = media_writer(dir.path(), "root");
+    for path in ["/a/keep.jpg", "/b/survivor.jpg"] {
+        seed_media(&writer, path);
+    }
+    writer.flush_blocking().expect("flush");
+    let statuses = load_statuses(dir.path(), "root");
+    let backend = FakeVisionBackend::new();
+
+    // The whole-store entry point (`enrich_and_gc`) over a SCOPED walk — the trap.
+    let summary = enrich_and_gc(
+        &images,
+        &statuses,
+        &backend,
+        &writer,
+        &|_| true,
+        &|_| false,
+        &no_op_hooks(),
+    )
+    .expect("pass");
+    assert_eq!(
+        summary.gc_count, 1,
+        "WholeStore over a scoped walk wrongly targets the untouched /b row"
+    );
+    let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen media");
+    assert!(
+        store.status_for("/b/survivor.jpg").expect("read").is_none(),
+        "the trap deletes the untouched row — which scoped GC prevents"
+    );
+    writer.shutdown();
+}
+
+#[test]
+fn a_scoped_tick_promotes_a_lone_raw_and_gcs_the_deleted_jpg() {
+    // The sibling re-qualify edge: /photos held raw.cr2 + raw.jpg (the RAW deferred to its
+    // cheaper JPEG sibling). The JPEG is deleted, so /photos now holds only raw.cr2 — a LONE
+    // RAW that NOW qualifies. Because the scoped walk fetches the COMPLETE dir (not just the
+    // changed file), the tick enriches the promoted raw.cr2 AND scoped-GCs the vanished
+    // raw.jpg row — the whole-dir fetch is what makes this correct.
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/photos", "raw.cr2", 1, 10)]); // raw.jpg gone
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let touched_photos = touched(&["/photos"]);
+    let images = walk_image_entries_in_dirs(store.read_conn(), &touched_photos).expect("walk");
+    assert_eq!(
+        images.iter().map(|i| i.path.as_str()).collect::<Vec<_>>(),
+        vec!["/photos/raw.cr2"],
+        "the lone RAW now qualifies"
+    );
+
+    let writer = media_writer(dir.path(), "root");
+    seed_media(&writer, "/photos/raw.jpg"); // the old JPEG's stored row
+    writer.flush_blocking().expect("flush");
+    let statuses = load_statuses(dir.path(), "root");
+    let backend = FakeVisionBackend::new();
+
+    let summary = enrich_and_gc_scoped(
+        &images,
+        &statuses,
+        &backend,
+        &writer,
+        &EnrichGates {
+            should_enrich: &|_| true,
+            is_excluded: &|_| false,
+            gc_scope: GcScope::TouchedDirs(&touched_photos),
+        },
+        &no_op_hooks(),
+    )
+    .expect("pass");
+    assert_eq!(summary.enriched, 1, "the promoted lone RAW enriches");
+    assert_eq!(summary.gc_count, 1, "the deleted JPEG's row GCs");
+
+    let store = MediaStore::open(&media_db_path(dir.path(), "root")).expect("reopen media");
+    assert!(
+        store.status_for("/photos/raw.cr2").expect("read").is_some(),
+        "lone RAW enriched"
+    );
+    assert!(
+        store.status_for("/photos/raw.jpg").expect("read").is_none(),
+        "deleted JPEG GC'd"
     );
     writer.shutdown();
 }
