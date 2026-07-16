@@ -11,6 +11,8 @@
         "core:window:allow-close",
         "core:window:allow-theme",
         "core:window:allow-set-effects",
+        "core:window:allow-set-size",
+        "core:window:allow-set-position",
         "core:webview:allow-webview-close",
         "core:webview:allow-create-webview-window",
         "core:app:allow-set-app-theme",

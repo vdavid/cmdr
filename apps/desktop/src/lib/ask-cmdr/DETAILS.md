@@ -110,6 +110,27 @@ result rows into their assistant tool line by `callId`, so the thread shows one 
 - Rail open flag + width persist via `app-status-store.ts` (`askCmdrRailOpen`, `askCmdrRailWidth`, clamped 280–520),
   mirroring `leftPaneWidthPercent`. `hydrateRail` applies them once at startup from `loadPersistedState` (reopening
   bootstraps the active thread).
+
+## Window growth (panes keep their size)
+
+Opening the rail grows the MAIN window by the rail's width instead of squeezing the panes; closing shrinks it back.
+`rail-window.ts` is the Tauri wrapper (`growMainWindowForRail` / `shrinkMainWindowForRail`) over the pure geometry in
+`window-positioning-utils.ts` (`growRectForRail` / `shrinkRectForRail`, unit-tested). The main window's own
+`capabilities/default.json` grants `set-size` + `set-position` (the read getters and `available-monitors` are already in
+`core:default`).
+
+- **Grows rightward** (left edge put, so the panes don't jump), **slides left** only when the right edge would leave the
+  monitor, and **caps at the monitor width** — past that the panes do give up space (nowhere else to take it from). This
+  is the "max width = screen width" case.
+- **Fullscreen / maximized are left alone** (`fillsScreen` bails): the window already fills the screen, so the flex
+  layout shrinks the panes — the same capped fallback.
+- **Close reverses exactly what open did.** `growMainWindowForRail` records `{grewBy, shiftedLeftBy}`; close consumes
+  it, so a manual window resize or a rail-width drag (absorbed into the panes) between open and close is preserved —
+  only the rail's own contribution is removed. With no record (rail open at startup, so hydration never grew it — see
+  below), close falls back to removing one rail width so a persisted-open window still shrinks.
+- **Hydration must NOT grow.** `hydrateRail` calls `openRail({ resizeWindow: false })`: the window is restored by
+  `tauri-plugin-window-state` at its persisted (rail-inclusive) size, so growing again would double it. Re-opens (after
+  consenting) also skip growth via the `!wasOpen` guard in `openRail`.
 - The left-edge drag handle resizes (double-click resets to 340). Focus: an `$effect` focuses the composer on mount (the
   rail mounts on open); `markRailFocused` on composer focus; Escape → `returnFocusToPane`
   (`.dual-pane-explorer.focus()`).

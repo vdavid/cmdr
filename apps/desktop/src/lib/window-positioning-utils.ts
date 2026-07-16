@@ -68,6 +68,57 @@ export function clampToMonitor(rect: Rect, monitor: MonitorRect): Rect {
   return { x, y, width, height }
 }
 
+/**
+ * Plan the main window's new geometry when the Ask Cmdr rail opens. The rail
+ * sits on the right, so growing the window by the rail's width keeps the panes
+ * their current size instead of squeezing them. Grows rightward (left edge put,
+ * so the panes never jump), sliding left only when the right edge would leave
+ * `monitor`, and caps the width at the monitor width (the panes then absorb the
+ * shortfall).
+ *
+ * Returns the target rect plus how much it grew and slid left, so `shrinkRectForRail`
+ * can reverse exactly this when the rail closes.
+ */
+export function growRectForRail(
+  rect: Rect,
+  railWidth: number,
+  monitor: MonitorRect,
+): { rect: Rect; grewBy: number; shiftedLeftBy: number } {
+  const targetWidth = Math.min(rect.width + railWidth, monitor.width)
+  const grewBy = targetWidth - rect.width
+  const monitorRight = monitor.x + monitor.width
+  let x = rect.x
+  if (x + targetWidth > monitorRight) x = monitorRight - targetWidth
+  if (x < monitor.x) x = monitor.x
+  return {
+    rect: { x, y: rect.y, width: targetWidth, height: rect.height },
+    grewBy,
+    shiftedLeftBy: rect.x - x,
+  }
+}
+
+/**
+ * Reverse `growRectForRail` when the rail closes: shrink the window by the amount
+ * the rail grew it and slide it back right by the amount it slid left, clamped to
+ * stay on `monitor` and never below `minWidth`. Anything the user did to the window
+ * meanwhile (a manual resize, a rail-width drag absorbed into the panes) is preserved,
+ * since only the rail's own contribution is removed.
+ */
+export function shrinkRectForRail(
+  rect: Rect,
+  grewBy: number,
+  shiftedLeftBy: number,
+  monitor: MonitorRect,
+  minWidth: number,
+): Rect {
+  const targetWidth = Math.max(rect.width - grewBy, minWidth)
+  const monitorRight = monitor.x + monitor.width
+  let x = rect.x + shiftedLeftBy
+  if (x + targetWidth > monitorRight) x = monitorRight - targetWidth
+  if (x < monitor.x) x = monitor.x
+  return { x, y: rect.y, width: targetWidth, height: rect.height }
+}
+
 /** Position `size` so its center matches `main`'s center. */
 export function centerOnMain(main: Rect, size: ChildSize): Rect {
   return {

@@ -15,6 +15,8 @@ const listMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
 const getMock = vi.fn<(...a: unknown[]) => Promise<unknown>>()
 const recordMock = vi.fn<(id: number) => Promise<unknown>>()
 const saveMock = vi.fn()
+const growWindowMock = vi.fn<(w: number) => Promise<void>>()
+const shrinkWindowMock = vi.fn<(w: number) => Promise<void>>()
 
 vi.mock('$lib/tauri-commands', () => ({
   sendAskCmdrMessage: (c: number | null, t: string, a: unknown[], o: (e: AskCmdrStreamEvent) => void) =>
@@ -35,6 +37,10 @@ vi.mock('$lib/logging/logger', () => ({
 vi.mock('$lib/file-explorer/pane/explorer-state.svelte', () => ({
   explorerState: { setRailFocused: vi.fn() },
 }))
+vi.mock('./rail-window', () => ({
+  growMainWindowForRail: (w: number) => growWindowMock(w),
+  shrinkMainWindowForRail: (w: number) => shrinkWindowMock(w),
+}))
 // Consent is granted for these tests, so `openRail` proceeds past the gate to bootstrap.
 vi.mock('./ask-cmdr-consent.svelte', () => ({
   consentState: { accepted: true, acceptedAt: null },
@@ -51,6 +57,7 @@ import {
   isOverSoftCap,
   loadOlderMessages,
   MESSAGE_PAGE,
+  closeRail,
   newChat,
   noteModelSettingChanged,
   openRail,
@@ -82,6 +89,10 @@ beforeEach(() => {
   listMock.mockReset()
   getMock.mockReset()
   recordMock.mockReset()
+  growWindowMock.mockReset()
+  shrinkWindowMock.mockReset()
+  growWindowMock.mockResolvedValue()
+  shrinkWindowMock.mockResolvedValue()
   listMock.mockResolvedValue([])
   sendMock.mockImplementation((c, _t, _a, o) => {
     lastOnEvent = o
@@ -367,6 +378,32 @@ describe('openRail bootstrap + newChat + hydrate', () => {
     hydrateRail(true, 420)
     expect(askCmdrState.width).toBe(420)
     expect(askCmdrState.open).toBe(true)
+  })
+})
+
+describe('window growth wiring', () => {
+  it('grows the main window by the current rail width on a real open', async () => {
+    askCmdrState.width = 360
+    await openRail()
+    expect(growWindowMock).toHaveBeenCalledWith(360)
+  })
+
+  it('does not grow the window when the rail is already open', async () => {
+    askCmdrState.open = true
+    await openRail()
+    expect(growWindowMock).not.toHaveBeenCalled()
+  })
+
+  it('does not grow the window on startup hydration (the window is already rail-inclusive)', () => {
+    hydrateRail(true, 420)
+    expect(growWindowMock).not.toHaveBeenCalled()
+  })
+
+  it('shrinks the window back when the rail closes', () => {
+    askCmdrState.open = true
+    askCmdrState.width = 300
+    closeRail()
+    expect(shrinkWindowMock).toHaveBeenCalledWith(300)
   })
 })
 

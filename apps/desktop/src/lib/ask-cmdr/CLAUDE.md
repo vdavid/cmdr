@@ -23,15 +23,14 @@ path, layout, decisions): [DETAILS.md](DETAILS.md).
 
 ## Must-knows
 
-- **Assistant prose is the XSS boundary.** Model text is untrusted (and a crafted filename it echoes is an injection
-  vector). Render it ONLY through `renderAssistantMarkdown` (HTML-entity escape via `escapeForMarkdownLite`, then
-  snarkdown) before `{@html}`. Everything else — tool labels, paths, user text, error copy — renders as plain `{text}`
-  (Svelte auto-escapes), NEVER `{@html}`. `escapeForMarkdownLite` escapes only `& < > [ ]` (kills raw HTML + links) and
-  keeps
-  `* _ \`` so markdown-lite still renders; don't swap in `errors/markdown-escape.ts`(it escapes the formatting chars too, so nothing renders). Pinned by`ask-cmdr-markdown.test.ts`.
+- **Assistant prose is the XSS boundary.** Model text is untrusted (a crafted filename it echoes is an injection
+  vector). Render it ONLY through `renderAssistantMarkdown` before `{@html}`; everything else — tool labels, paths, user
+  text, error copy — renders as plain `{text}` (Svelte auto-escapes), NEVER `{@html}`. Don't swap its narrow
+  `escapeForMarkdownLite` for `errors/markdown-escape.ts` (that escapes the formatting chars too, so nothing renders).
+  Pinned by `ask-cmdr-markdown.test.ts`; rationale in [DETAILS.md](DETAILS.md) § Decisions.
 - **The rail gates on consent; it sends NOTHING until the user opts in.** `openRail` refreshes `consentState`: `false`
-  shows `AskCmdrConsent.svelte` (the §12 copy), `true` shows the chat, `null` shows neither (no flash). `AskCmdrSection`
-  is the other accept/revoke surface. Don't render the composer/thread outside the `consented` branch.
+  shows `AskCmdrConsent.svelte`, `true` shows the chat, `null` shows neither (no flash). Don't render the composer/thread
+  outside the `consented` branch.
 - **The rail is a THIRD focus region via a parallel flag.** `explorerState.getRailFocused()` / `setRailFocused()` is a
   boolean ALONGSIDE the `'left'|'right'` `focusedPane` union — never widen that union. The rail is NON-modal: do NOT add
   it to `isModalDialogOpen()` in `+page.svelte` (that would suppress every shortcut while it's open). Opening focuses
@@ -45,9 +44,12 @@ path, layout, decisions): [DETAILS.md](DETAILS.md).
   `askCmdr.toggle` handler; Rust `command_map.rs` + the `macos.rs`/`linux.rs` View submenus; `shortcuts-store.ts`
   `menuCommands`. Default `⌘⌥A`, registered Command-then-Option (⌥⌘-order strings are native-menu-only). Pinned by
   `ask-cmdr-shortcut.test.ts`.
+- **Opening the rail GROWS the main window so panes keep their size; closing shrinks it back** (`rail-window.ts`, skips
+  fullscreen/maximized). ❌ Don't grow on hydration or a re-open — the window is already rail-inclusive, so `hydrateRail`
+  passes `resizeWindow: false` and `openRail` grows only on `!wasOpen`. Doubling breaks. Depth:
+  [DETAILS.md](DETAILS.md) § Window growth.
 - **Attachments cross into the envelope as path + kind ONLY — never contents** (the read-only privacy line). Drag from a
-  pane is a NATIVE webview drag (`onDragDropEvent`), not HTML5 — a DOM `ondrop` never fires; the composer hit-tests its
-  rect and trusts the self-drag identity for local drags only. Message paging is tail-first with load-older prepend;
-  don't reintroduce a single big page. Details in [DETAILS.md](DETAILS.md) § Sessions, search, message paging.
+  pane is a NATIVE webview drag (`onDragDropEvent`), not HTML5, so a DOM `ondrop` never fires. Message paging is
+  tail-first with load-older prepend (don't reintroduce a single big page). Both detailed in [DETAILS.md](DETAILS.md).
 
 Depth: [DETAILS.md](DETAILS.md).

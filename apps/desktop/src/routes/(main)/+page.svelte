@@ -911,7 +911,9 @@
     }
 
     /* Panes + the Ask Cmdr rail sit in a row; the panes take the remainder, the rail its
-       fixed width. Below ~900px the rail overlays the right pane (see AskCmdrRail). */
+       fixed width. Opening the rail grows the whole window so the panes keep their size
+       (see ask-cmdr/rail-window.ts); the panes only give up space when the window is capped
+       at the screen width. Below ~900px the rail overlays the right pane (see AskCmdrRail). */
     .explorer-rail-row {
         display: flex;
         flex: 1;

@@ -16,6 +16,7 @@ import { saveAppStatus } from '$lib/app-status-store'
 import { explorerState } from '$lib/file-explorer/pane/explorer-state.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { consentState, refreshConsent } from './ask-cmdr-consent.svelte'
+import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
 import {
   cancelAskCmdr,
   getAskCmdrConversation,
@@ -115,20 +116,25 @@ export function hasOlderMessages(): boolean {
 
 // ── Open / close / focus ───────────────────────────────────────────────────────
 
-/** Apply persisted rail state at startup (called once from `loadPersistedState`). */
+/** Apply persisted rail state at startup (called once from `loadPersistedState`). The window
+ * is already at its persisted (rail-inclusive) size, so hydration must NOT grow it again. */
 export function hydrateRail(open: boolean, width: number): void {
   askCmdrState.width = clampWidth(width)
-  if (open) void openRail()
+  if (open) void openRail({ resizeWindow: false })
 }
 
-/** Open the rail, focus its composer, and bootstrap the most recent thread if empty. Also
- * refreshes the consent gate: the rail shows the consent screen until the user opts in, and
+/** Open the rail, focus its composer, and bootstrap the most recent thread if empty. Grows the
+ * main window so the panes keep their size (see `rail-window.ts`), except at startup hydration.
+ * Also refreshes the consent gate: the rail shows the consent screen until the user opts in, and
  * only then bootstraps history (no chat exists to load before consent). */
-export async function openRail(): Promise<void> {
+export async function openRail(opts: { resizeWindow?: boolean } = {}): Promise<void> {
   const wasOpen = askCmdrState.open
   askCmdrState.open = true
   explorerState.setRailFocused(true)
   saveAppStatus({ askCmdrRailOpen: true })
+  // Only a genuine closed→open transition grows the window; re-opens (e.g. after consenting) and
+  // startup hydration must not.
+  if (!wasOpen && opts.resizeWindow !== false) void growMainWindowForRail(askCmdrState.width)
   await refreshConsent()
   if (consentState.accepted !== true) return
   if (!wasOpen && askCmdrState.conversationId === null && askCmdrState.messages.length === 0) {
@@ -136,11 +142,12 @@ export async function openRail(): Promise<void> {
   }
 }
 
-/** Close the rail and return focus to the active pane. */
+/** Close the rail, shrink the window back to its pre-rail size, and return focus to the pane. */
 export function closeRail(): void {
   askCmdrState.open = false
   explorerState.setRailFocused(false)
   saveAppStatus({ askCmdrRailOpen: false })
+  void shrinkMainWindowForRail(askCmdrState.width)
   returnFocusToPane()
 }
 

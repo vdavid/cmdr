@@ -4,9 +4,11 @@ import {
   cascadeOffset,
   centerOnMain,
   clampToMonitor,
+  growRectForRail,
   isFullyOnScreen,
   nearestMonitor,
   resolveChildPosition,
+  shrinkRectForRail,
 } from './window-positioning-utils'
 
 const SINGLE_MONITOR = [{ x: 0, y: 0, width: 1920, height: 1080 }]
@@ -152,5 +154,54 @@ describe('resolveChildPosition', () => {
     const split = { x: 1700, y: 100, width: 800, height: 600 }
     const result = resolveChildPosition({ size: SIZE, main: MAIN, monitors: DUAL_MONITORS, saved: split })
     expect(isFullyOnScreen(result, DUAL_MONITORS)).toBe(true)
+  })
+})
+
+describe('growRectForRail', () => {
+  const MONITOR = { x: 0, y: 0, width: 1920, height: 1080 }
+
+  it('grows rightward by the rail width when there is room, leaving the left edge put', () => {
+    const rect = { x: 100, y: 100, width: 1080, height: 720 }
+    const { rect: grown, grewBy, shiftedLeftBy } = growRectForRail(rect, 340, MONITOR)
+    expect(grown).toEqual({ x: 100, y: 100, width: 1420, height: 720 })
+    expect(grewBy).toBe(340)
+    expect(shiftedLeftBy).toBe(0)
+  })
+
+  it('slides the window left when growing would push its right edge off the monitor', () => {
+    const rect = { x: 700, y: 100, width: 1080, height: 720 }
+    const { rect: grown, grewBy, shiftedLeftBy } = growRectForRail(rect, 340, MONITOR)
+    // 700 + 1420 = 2120 > 1920, so x moves to 1920 - 1420 = 500
+    expect(grown).toEqual({ x: 500, y: 100, width: 1420, height: 720 })
+    expect(grewBy).toBe(340)
+    expect(shiftedLeftBy).toBe(200)
+  })
+
+  it('caps the width at the monitor width, anchoring to the left edge', () => {
+    const rect = { x: 0, y: 0, width: 1700, height: 720 }
+    const { rect: grown, grewBy, shiftedLeftBy } = growRectForRail(rect, 340, MONITOR)
+    // 1700 + 340 = 2040, capped to 1920, so it only grows by 220
+    expect(grown).toEqual({ x: 0, y: 0, width: 1920, height: 720 })
+    expect(grewBy).toBe(220)
+    expect(shiftedLeftBy).toBe(0)
+  })
+})
+
+describe('shrinkRectForRail', () => {
+  const MONITOR = { x: 0, y: 0, width: 1920, height: 1080 }
+
+  it('reverses a plain grow: shrinks by the grown amount, leaving the left edge put', () => {
+    const rect = { x: 100, y: 100, width: 1420, height: 720 }
+    expect(shrinkRectForRail(rect, 340, 0, MONITOR, 950)).toEqual({ x: 100, y: 100, width: 1080, height: 720 })
+  })
+
+  it('reverses a slide: shrinks and moves back right by the slid amount', () => {
+    const rect = { x: 500, y: 100, width: 1420, height: 720 }
+    expect(shrinkRectForRail(rect, 340, 200, MONITOR, 950)).toEqual({ x: 700, y: 100, width: 1080, height: 720 })
+  })
+
+  it('never shrinks below the minimum window width', () => {
+    const rect = { x: 0, y: 0, width: 1000, height: 720 }
+    expect(shrinkRectForRail(rect, 340, 0, MONITOR, 950)).toEqual({ x: 0, y: 0, width: 950, height: 720 })
   })
 })
