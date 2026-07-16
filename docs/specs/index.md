@@ -7,15 +7,15 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 ## In progress
 
 - [ ] 2026-07-16 [index-ledger-plan.md](index-ledger-plan.md) - Drive-index aggregate integrity (the `dir_stats`
-      ledger): a real incident (60 GB `rm -rf` → stale size, no hourglass, then a stuck "0 bytes" for a 1.21 GB
-      folder) traced to four credit leaks in the incrementally delta-adjusted aggregates (off-writer subtree-scan
-      compensation that double-counts/skips, dropped missing-parent events, backfill not crediting ancestors,
-      accumulator-map pollution corrupting the next full aggregate) plus the `.max(0)` clamp that turns over-debits
-      into permanent lies. Fix: keep deltas as the fast path, add a `repair_dir_stats_upward` recompute-from-children
-      escalation primitive (fires on negative-delta detection and after structural rewrites, on the writer),
-      `source: Maps|Sql` on `ComputeAllAggregates`, missing-parent escalation to subtree rescans with storm control,
-      a held-roots pending tier so coalesced rescans show the hourglass, and a one-shot per-DB heal via a writer-side
-      latch. Reviewed 5× (fresh-eyes agents).
+      ledger): a real incident (60 GB `rm -rf` → stale size, no hourglass, then a stuck "0 bytes" for a 1.21 GB folder)
+      traced to four credit leaks in the incrementally delta-adjusted aggregates (off-writer subtree-scan compensation
+      that double-counts/skips, dropped missing-parent events, backfill not crediting ancestors, accumulator-map
+      pollution corrupting the next full aggregate) plus the `.max(0)` clamp that turns over-debits into permanent lies.
+      Fix: keep deltas as the fast path, add a `repair_dir_stats_upward` recompute-from-children escalation primitive
+      (fires on negative-delta detection and after structural rewrites, on the writer), `source: Maps|Sql` on
+      `ComputeAllAggregates`, missing-parent escalation to subtree rescans with storm control, a held-roots pending tier
+      so coalesced rescans show the hourglass, and a one-shot per-DB heal via a writer-side latch. Reviewed 6×
+      (fresh-eyes agents).
 - [ ] 2026-07-15 [local-drive-indexing-plan.md](local-drive-indexing-plan.md) - Index local external drives (USB sticks,
       SD cards): the missing `enable_drive_index` branch. Core is splitting `IndexVolumeKind`'s conflated "which
       scanner" vs "has a journal" axes and adding a `LocalExternal` variant — the first volume that is BOTH mount-rooted
