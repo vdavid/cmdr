@@ -6,6 +6,11 @@ this folder is and when it gets wiped. Shipped specs get wiped once their durabl
 
 ## In progress
 
+- [ ] 2026-07-16 [resource-use-plan.md](resource-use-plan.md) - Make media indexing fast, small, and honest at NAS
+      scale: 10 items in impact order (fix the network-pass read path + error classification, parallel enrichment
+      workers + a Settings slider, f16 embeddings, integer-id media-DB keying, CLIP model palettization, ANN vector
+      search, coverage cold-walk index, importance-read caching, WAL hygiene, Vision-embedding gating).
+
 - [ ] 2026-07-16 [index-ledger-plan.md](index-ledger-plan.md) - Drive-index aggregate integrity (the `dir_stats`
       ledger): a real incident (60 GB `rm -rf` → stale size, no hourglass, then a stuck "0 bytes" for a 1.21 GB folder)
       traced to four credit leaks in the incrementally delta-adjusted aggregates (off-writer subtree-scan compensation
