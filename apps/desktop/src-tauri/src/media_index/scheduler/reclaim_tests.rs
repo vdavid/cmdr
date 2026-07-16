@@ -55,6 +55,7 @@ fn seed_media_row(data_dir: &std::path::Path, volume_id: &str, path: &str) {
                 media_kind: MediaKind::Image,
                 state: EnrichmentState::Done,
                 engine_version: "fake-vision-1".to_string(),
+                clip_stamp: String::new(),
             },
             Some(UpsertAnalysis {
                 ocr_text: "some text".to_string(),

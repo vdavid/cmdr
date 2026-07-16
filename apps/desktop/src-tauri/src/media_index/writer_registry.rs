@@ -79,6 +79,7 @@ mod tests {
                 media_kind: MediaKind::Image,
                 state: EnrichmentState::Done,
                 engine_version: "e1".to_string(),
+                clip_stamp: String::new(),
             },
             Some(crate::media_index::writer::UpsertAnalysis::ocr_only("hello")),
         )

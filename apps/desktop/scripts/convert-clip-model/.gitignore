@@ -1,0 +1,6 @@
+# Generated artifacts + the throwaway venv (regenerate with convert.py — never checked in).
+dist/
+.venv/
+*.mlpackage/
+*.zip
+__pycache__/

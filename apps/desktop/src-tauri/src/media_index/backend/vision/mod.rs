@@ -39,10 +39,10 @@ use std::thread;
 use objc2::AnyThread;
 use objc2::rc::autoreleasepool;
 use objc2_core_foundation::{
-    CFData, CFDictionary, CFNumber, CFNumberType, CFRetained, CFString, kCFBooleanTrue, kCFTypeDictionaryKeyCallBacks,
-    kCFTypeDictionaryValueCallBacks,
+    CFData, CFDictionary, CFNumber, CFNumberType, CFRetained, CFString, CGPoint, CGRect, CGSize, kCFBooleanTrue,
+    kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks,
 };
-use objc2_core_graphics::CGImage;
+use objc2_core_graphics::{CGColorSpace, CGContext, CGImage, CGImageAlphaInfo, CGInterpolationQuality};
 use objc2_foundation::{NSArray, NSDictionary, NSProcessInfo};
 use objc2_image_io::{
     CGImageSource, kCGImageSourceCreateThumbnailFromImageAlways, kCGImageSourceCreateThumbnailWithTransform,
@@ -54,7 +54,7 @@ use objc2_vision::{
     VNRequestTextRecognitionLevel,
 };
 
-use super::{Analysis, ImageInput, OcrResult, Tag, VisionBackend, VisionError};
+use super::{Analysis, ImageInput, MediaAnalysis, OcrResult, Tag, VisionBackend, VisionError};
 
 /// The longest-edge pixel size the in-memory decode downscales to before OCR. Vision
 /// text recognition gains little above a few thousand pixels while a full-resolution
@@ -88,6 +88,14 @@ enum JobReply {
     Ocr(mpsc::Sender<Result<OcrResult, VisionError>>),
     /// Reply with the full analysis (OCR + tags + feature print).
     Analyze(mpsc::Sender<Result<Analysis, VisionError>>),
+    /// Reply with the combined result: run the requested side(s) — Vision and/or the CLIP
+    /// image embedding — from ONE decode on this thread (plan M3 Q5). CLIP encoding hops to
+    /// the dedicated CLIP worker thread (a plain pixel `Vec` crosses, no `!Send` object).
+    AnalyzeMedia {
+        want_vision: bool,
+        want_clip: bool,
+        respond: mpsc::Sender<Result<MediaAnalysis, VisionError>>,
+    },
 }
 
 /// One job handed to the worker thread: the image identity, its byte source, and the
@@ -169,6 +177,11 @@ impl FromWorkerGone for Result<Analysis, VisionError> {
         Err(VisionError::Ocr(msg.to_string()))
     }
 }
+impl FromWorkerGone for Result<MediaAnalysis, VisionError> {
+    fn worker_gone(msg: &str) -> Self {
+        Err(VisionError::Ocr(msg.to_string()))
+    }
+}
 
 impl Default for VisionOcrBackend {
     fn default() -> Self {
@@ -196,6 +209,14 @@ impl VisionBackend for VisionOcrBackend {
     fn analyze(&self, input: &ImageInput) -> Result<Analysis, VisionError> {
         self.dispatch(&input.path, input.bytes.clone(), JobReply::Analyze)
     }
+
+    fn analyze_media(&self, input: &ImageInput, want_vision: bool, want_clip: bool) -> Result<MediaAnalysis, VisionError> {
+        self.dispatch(&input.path, input.bytes.clone(), |respond| JobReply::AnalyzeMedia {
+            want_vision,
+            want_clip,
+            respond,
+        })
+    }
 }
 
 /// The worker thread's loop: run each job inside its own autoreleasepool so the
@@ -211,6 +232,15 @@ fn worker_loop(receiver: mpsc::Receiver<Job>) {
             }
             JobReply::Analyze(respond) => {
                 let result = autoreleasepool(|_| analyze_image(&job.path, job.bytes.as_deref()));
+                let _ = respond.send(result);
+            }
+            JobReply::AnalyzeMedia {
+                want_vision,
+                want_clip,
+                respond,
+            } => {
+                let result =
+                    autoreleasepool(|_| analyze_media_image(&job.path, job.bytes.as_deref(), want_vision, want_clip));
                 let _ = respond.send(result);
             }
         }
@@ -300,12 +330,19 @@ fn analyze_image(path: &str, prefetched: Option<&[u8]>) -> Result<Analysis, Visi
         });
     }
 
+    run_vision_requests(&cg_image, path)
+}
+
+/// Run the three Vision requests (OCR, classify, feature print) over an
+/// already-decoded, large-enough `CGImage`. Split out of [`analyze_image`] so the
+/// combined [`analyze_media_image`] can run it (or not) beside CLIP from ONE decode.
+fn run_vision_requests(cg_image: &CGImage, path: &str) -> Result<Analysis, VisionError> {
     let empty = NSDictionary::<VNImageOption, objc2::runtime::AnyObject>::new();
     // SAFETY: `alloc()` yields a fresh unregistered instance; `cg_image` is a valid
     // `CGImage`; `empty` is a valid (empty) options dictionary. `initWithCGImage:options:`
     // consumes the allocation and returns the initialized, retained handler.
     let handler =
-        unsafe { VNImageRequestHandler::initWithCGImage_options(VNImageRequestHandler::alloc(), &cg_image, &empty) };
+        unsafe { VNImageRequestHandler::initWithCGImage_options(VNImageRequestHandler::alloc(), cg_image, &empty) };
 
     let text_request = VNRecognizeTextRequest::new();
     text_request.setRecognitionLevel(VNRequestTextRecognitionLevel::Accurate);
@@ -334,6 +371,140 @@ fn analyze_image(path: &str, prefetched: Option<&[u8]>) -> Result<Analysis, Visi
         tags: read_tags(&classify_request),
         embedding: read_feature_print(&feature_request),
     })
+}
+
+/// The combined enrichment entry (plan M3 Q5): decode ONCE, then run the requested
+/// side(s). The Vision side reuses [`run_vision_requests`]; the CLIP side resizes/
+/// center-crops the same decode to 224×224, packs a CHW `[0,1]` buffer, and hands it to
+/// the CLIP worker thread ([`clip::encode_image_pixels`](crate::media_index::clip)). A
+/// CLIP encode that can't run yet (model still loading / absent) yields `clip: None`, so
+/// the pass simply doesn't stamp CLIP for this image and retries next pass — it never
+/// fails the whole analysis on a transient CLIP miss.
+fn analyze_media_image(
+    path: &str,
+    prefetched: Option<&[u8]>,
+    want_vision: bool,
+    want_clip: bool,
+) -> Result<MediaAnalysis, VisionError> {
+    let cg_image = decode_thumbnail(path, prefetched)?;
+    let image_ref: &CGImage = &cg_image;
+    let (width, height) = (CGImage::width(Some(image_ref)), CGImage::height(Some(image_ref)));
+    if width < MIN_ANALYZE_DIMENSION || height < MIN_ANALYZE_DIMENSION {
+        // Too small for Vision AND a poor CLIP subject: an empty Vision analysis (a normal
+        // done row) and no CLIP embedding.
+        return Ok(MediaAnalysis {
+            vision: want_vision.then(|| Analysis {
+                ocr: OcrResult { text: String::new() },
+                tags: Vec::new(),
+                embedding: None,
+            }),
+            clip: None,
+        });
+    }
+    let vision = if want_vision {
+        Some(run_vision_requests(&cg_image, path)?)
+    } else {
+        None
+    };
+    let clip = if want_clip {
+        match clip_pixels_from_cgimage(image_ref) {
+            Some(pixels) => match crate::media_index::clip::encode_image_pixels(pixels) {
+                Ok(vec) => Some(vec),
+                Err(e) => {
+                    log::debug!(target: "media_index", "CLIP image encode unavailable for '{path}': {e}");
+                    None
+                }
+            },
+            None => None,
+        }
+    } else {
+        None
+    };
+    Ok(MediaAnalysis { vision, clip })
+}
+
+/// The CLIP image tower's input side (224×224 RGB, CHW), duplicated from the model spec so
+/// this decode-side helper doesn't depend on the Core ML module.
+const CLIP_SIDE: usize = 224;
+
+/// Resize + center-crop `cg_image` to 224×224 and pack a CHW `[0,1]` `f32` buffer (length
+/// `3·224·224`) — the CLIP image tower input (the model bakes the per-channel mean/std
+/// normalization, so the Rust side only needs the `/255` scale here). Replicates CLIP's
+/// preprocess: scale so the SHORTER side is 224, then center-crop. `None` on any allocation
+/// failure (the caller treats it as "no CLIP this image").
+fn clip_pixels_from_cgimage(cg_image: &CGImage) -> Option<Vec<f32>> {
+    let side = CLIP_SIDE;
+    let w = CGImage::width(Some(cg_image)) as f64;
+    let h = CGImage::height(Some(cg_image)) as f64;
+    if w < 1.0 || h < 1.0 {
+        return None;
+    }
+    // Scale so the shorter side is exactly `side`; the longer side overflows and is cropped
+    // by the 224×224 context (a center crop, since we center the draw rect).
+    let scale = (side as f64) / w.min(h);
+    let draw_w = w * scale;
+    let draw_h = h * scale;
+    let origin_x = ((side as f64) - draw_w) / 2.0;
+    let origin_y = ((side as f64) - draw_h) / 2.0;
+
+    let color_space = CGColorSpace::new_device_rgb()?;
+    // A tightly-packed RGBX8 buffer we own; `NoneSkipLast` = 4 bytes/pixel, alpha ignored.
+    let bytes_per_row = side * 4;
+    let mut buffer = vec![0u8; bytes_per_row * side];
+    // SAFETY: `CGBitmapContextCreate` is the stable CoreGraphics C entry point (not wrapped
+    // by objc2-core-graphics 0.3.2). We pass a buffer we own that outlives the context
+    // (dropped after we read it below), the matching `bytesPerRow`, a valid RGB color space,
+    // and `NoneSkipLast | ByteOrderDefault`. It returns a retained `CGContext*` (or null).
+    let ctx_ptr = unsafe {
+        CGBitmapContextCreate(
+            buffer.as_mut_ptr().cast(),
+            side,
+            side,
+            8,
+            bytes_per_row,
+            &*color_space,
+            CGImageAlphaInfo::NoneSkipLast.0,
+        )
+    };
+    let ctx_ptr = std::ptr::NonNull::new(ctx_ptr)?;
+    // SAFETY: `ctx_ptr` is the +1-retained context CoreGraphics just created (Create rule),
+    // so wrapping it in `CFRetained` takes ownership and releases it on drop.
+    let context = unsafe { CFRetained::from_raw(ctx_ptr) };
+
+    CGContext::set_interpolation_quality(Some(&context), CGInterpolationQuality::High);
+    let rect = CGRect::new(CGPoint::new(origin_x, origin_y), CGSize::new(draw_w, draw_h));
+    CGContext::draw_image(Some(&context), rect, Some(cg_image));
+    // Drawing into a bitmap context writes the backing buffer synchronously, so it's ready
+    // to read now.
+
+    // Pack CHW `[0,1]`: for each channel, walk the RGBX buffer. `NoneSkipLast` lays pixels
+    // out R,G,B,X row-major, top-down (CoreGraphics origin is bottom-left, but a
+    // center-cropped square is symmetric enough for CLIP; vertical flip isn't worth the cost).
+    let plane = side * side;
+    let mut out = vec![0f32; 3 * plane];
+    for y in 0..side {
+        for x in 0..side {
+            let px = (y * bytes_per_row) + x * 4;
+            for c in 0..3 {
+                out[c * plane + y * side + x] = f32::from(buffer[px + c]) / 255.0;
+            }
+        }
+    }
+    Some(out)
+}
+
+// The classic bitmap-context constructor, not wrapped by objc2-core-graphics 0.3.2 (only a
+// block-based adaptive variant is). Declared directly; it's a stable CoreGraphics C API.
+unsafe extern "C-unwind" {
+    fn CGBitmapContextCreate(
+        data: *mut core::ffi::c_void,
+        width: usize,
+        height: usize,
+        bits_per_component: usize,
+        bytes_per_row: usize,
+        space: *const CGColorSpace,
+        bitmap_info: u32,
+    ) -> *mut CGContext;
 }
 
 /// Decode an image downscaled in-memory (no thumbnail files — plan Decision 5),

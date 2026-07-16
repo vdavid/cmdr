@@ -85,6 +85,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ahash"
+version = "0.8.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a15f179cd60c4584b8a8c596927aadc462e27f2ca70c04e0071964a73ba7a75"
+dependencies = [
+ "cfg-if",
+ "getrandom 0.3.4",
+ "once_cell",
+ "version_check",
+ "zerocopy",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1288,6 +1301,7 @@ dependencies = [
  "gix",
  "icns",
  "image",
+ "instant-clip-tokenizer",
  "keyring-core",
  "libc",
  "log",
@@ -1306,6 +1320,7 @@ dependencies = [
  "objc2-app-kit 0.3.2",
  "objc2-core-foundation",
  "objc2-core-graphics",
+ "objc2-core-ml",
  "objc2-foundation 0.3.2",
  "objc2-image-io",
  "objc2-quick-look-ui",
@@ -4795,6 +4810,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "instant-clip-tokenizer"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0da25dbe969d80a15bac118a46e8a372934595d3287195b473fe94cc209e902"
+dependencies = [
+ "ahash",
+ "regex",
+]
+
+[[package]]
 name = "interpolate_name"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6067,8 +6092,14 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "201b055e6acfa0f9f15568255d3f03ce2b54bc86d1814442dc69138e36813e18"
 dependencies = [
+ "bitflags 2.13.0",
+ "block2 0.6.2",
  "objc2 0.6.4",
+ "objc2-core-graphics",
+ "objc2-core-video",
  "objc2-foundation 0.3.2",
+ "objc2-image-io",
+ "objc2-metal 0.3.2",
 ]
 
 [[package]]

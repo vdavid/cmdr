@@ -37,6 +37,13 @@
 //!   filtering; the folded FTS rows above are its keyword-search index.
 //! - `media_embedding` — the image feature-print embedding (`path, dims, vector`
 //!   BLOB) for image↔image similarity + dedup (plan Decision 2).
+//! - `media_clip_embedding` — the CLIP image embedding (`path, dims, vector` BLOB) for
+//!   natural-language text→image search (plan M3). A SEPARATE table from
+//!   `media_embedding`: CLIP and the Vision feature print are DIFFERENT vector spaces,
+//!   so mixing them would let a similarity query silently compare across spaces. Its
+//!   staleness is the independent `clip_stamp` on `media_status` (below), NOT the
+//!   Vision `engine_version` — installing/upgrading the CLIP model re-embeds CLIP
+//!   without re-running OCR/tags for everyone, and vice versa.
 //! - `meta` — `schema_version`.
 
 mod connection;
@@ -55,7 +62,13 @@ use super::predicate::MediaKind;
 /// Bump to invalidate on-disk `media.db` files. A mismatch deletes the file and
 /// recreates it fresh (disposable cache, no migrations). Start at 1; bump on any
 /// change to the tables below OR to what rows/text the store persists.
-const SCHEMA_VERSION: &str = "2";
+///
+/// `3` added the `media_clip_embedding` table + the `media_status.clip_stamp` column
+/// (CLIP semantic search, plan M3). Because it's a disposable cache with no migrations,
+/// the bump delete-and-recreates every `media.db` on first launch after the upgrade, so
+/// beta users re-enrich from scratch (Vision recompute only, no re-download) — an
+/// accepted cost of the disposable-cache design.
+const SCHEMA_VERSION: &str = "3";
 
 /// The FTS5 `media_ocr` table is STANDALONE (its own copy of the text), not
 /// external-content. `agent/store`'s `messages_fts` is external-content because it
@@ -75,7 +88,8 @@ const CREATE_TABLES_SQL: &str = "
         size            INTEGER,
         media_kind      TEXT    NOT NULL,
         state           TEXT    NOT NULL,
-        engine_version  TEXT    NOT NULL DEFAULT ''
+        engine_version  TEXT    NOT NULL DEFAULT '',
+        clip_stamp      TEXT    NOT NULL DEFAULT ''
     ) WITHOUT ROWID;
 
     CREATE VIRTUAL TABLE IF NOT EXISTS media_ocr USING fts5(
@@ -94,6 +108,12 @@ const CREATE_TABLES_SQL: &str = "
     CREATE INDEX IF NOT EXISTS idx_media_tags_label ON media_tags(label);
 
     CREATE TABLE IF NOT EXISTS media_embedding (
+        path    TEXT PRIMARY KEY COLLATE platform_case,
+        dims    INTEGER NOT NULL,
+        vector  BLOB    NOT NULL
+    ) WITHOUT ROWID;
+
+    CREATE TABLE IF NOT EXISTS media_clip_embedding (
         path    TEXT PRIMARY KEY COLLATE platform_case,
         dims    INTEGER NOT NULL,
         vector  BLOB    NOT NULL
@@ -139,8 +159,12 @@ impl EnrichmentState {
 }
 
 /// One `media_status` row: path identity, the `(mtime, size)` staleness key, the
-/// typed kind and state, and the combined analyze provenance stamp (stored in the
-/// `engine_version` column: OCR engine + tag taxonomy + feature-print revision).
+/// typed kind and state, the combined analyze provenance stamp (`engine_version`: OCR
+/// engine + tag taxonomy + feature-print revision), and the INDEPENDENT CLIP provenance
+/// stamp (`clip_stamp`: the installed CLIP model id + OS version, empty when no model
+/// has embedded this row). The two stamps drive two-part staleness ([`needs_enrichment`]
+/// for Vision, [`needs_clip`] for CLIP) so each side re-runs on its own model change
+/// without disturbing the other.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MediaStatusRow {
     pub path: String,
@@ -149,6 +173,7 @@ pub struct MediaStatusRow {
     pub media_kind: MediaKind,
     pub state: EnrichmentState,
     pub engine_version: String,
+    pub clip_stamp: String,
 }
 
 /// Whether an image at `path` needs (re-)enrichment given its stored status row and
@@ -172,6 +197,27 @@ pub fn needs_enrichment(
     match stored {
         None => true,
         Some(row) => row.mtime != mtime || row.size != size || row.engine_version != engine_version,
+    }
+}
+
+/// Whether an image at `path` needs (re-)CLIP-embedding — the INDEPENDENT CLIP half of
+/// two-part staleness (plan M3). `clip_stamp` is the currently-installed CLIP model's
+/// provenance stamp, or `None` when NO CLIP model is installed.
+///
+/// - `None` ⇒ never stale: with no model there's nothing to embed, so an un-installed
+///   CLIP never forces a pass and a stored row's empty `clip_stamp` just stays empty.
+/// - `Some(current)` ⇒ stale when there's no row yet, or the row's stored `clip_stamp`
+///   differs from `current` (a first install stamps `""` → the model stamp; a model or
+///   OS change re-embeds). This is deliberately decoupled from the Vision
+///   `engine_version`: installing/upgrading CLIP must NOT re-run OCR/tags for everyone,
+///   and a Vision engine bump must NOT re-embed CLIP.
+pub fn needs_clip(stored: Option<&MediaStatusRow>, clip_stamp: Option<&str>) -> bool {
+    let Some(current) = clip_stamp else {
+        return false;
+    };
+    match stored {
+        None => true,
+        Some(row) => row.clip_stamp != current,
     }
 }
 
@@ -319,7 +365,7 @@ fn read_meta_value(conn: &Connection, key: &str) -> Result<Option<String>, Media
 /// Read one `media_status` row.
 pub(super) fn read_status(conn: &Connection, path: &str) -> Result<Option<MediaStatusRow>, MediaStoreError> {
     let mut stmt = conn.prepare_cached(
-        "SELECT path, mtime, size, media_kind, state, engine_version FROM media_status WHERE path = ?1",
+        "SELECT path, mtime, size, media_kind, state, engine_version, clip_stamp FROM media_status WHERE path = ?1",
     )?;
     let mut rows = stmt.query_map(rusqlite::params![path], row_to_status)?;
     match rows.next() {
@@ -332,8 +378,8 @@ pub(super) fn read_status(conn: &Connection, path: &str) -> Result<Option<MediaS
 /// Load every `media_status` row into a `path → row` map. The scheduler loads one
 /// snapshot per pass to decide staleness and to derive the stored-path set for GC.
 pub(crate) fn read_all_status(conn: &Connection) -> Result<Vec<MediaStatusRow>, MediaStoreError> {
-    let mut stmt =
-        conn.prepare_cached("SELECT path, mtime, size, media_kind, state, engine_version FROM media_status")?;
+    let mut stmt = conn
+        .prepare_cached("SELECT path, mtime, size, media_kind, state, engine_version, clip_stamp FROM media_status")?;
     let rows = stmt.query_map([], row_to_status)?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
@@ -365,6 +411,7 @@ pub(crate) fn sum_bytes_for_paths(
         "SELECT path, length(text) FROM media_ocr",
         "SELECT path, length(label) FROM media_tags",
         "SELECT path, length(vector) FROM media_embedding",
+        "SELECT path, length(vector) FROM media_clip_embedding",
     ] {
         let mut stmt = conn.prepare(sql)?;
         let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)))?;
@@ -386,6 +433,7 @@ fn row_to_status(row: &rusqlite::Row<'_>) -> rusqlite::Result<MediaStatusRow> {
         media_kind: MediaKind::from_token(&row.get::<_, String>(3)?),
         state: EnrichmentState::from_token(&row.get::<_, String>(4)?),
         engine_version: row.get(5)?,
+        clip_stamp: row.get(6)?,
     })
 }
 
@@ -425,9 +473,12 @@ pub(crate) struct EmbeddingRow {
 }
 
 /// Load every stored embedding for a volume (the resident vector cache's load-once
-/// source). A row whose BLOB can't be decoded is skipped, not fatal.
-pub(crate) fn read_all_embeddings(conn: &Connection) -> Result<Vec<EmbeddingRow>, MediaStoreError> {
-    let mut stmt = conn.prepare_cached("SELECT path, vector FROM media_embedding")?;
+/// source). A row whose BLOB can't be decoded is skipped, not fatal. `table` is the
+/// embedding table (`media_embedding` for the Vision feature print, or
+/// `media_clip_embedding` for CLIP) — the two live in DIFFERENT vector spaces and each
+/// backs its own resident cache, so the caller names which one it wants.
+pub(crate) fn read_all_embeddings_from(conn: &Connection, table: EmbeddingTable) -> Result<Vec<EmbeddingRow>, MediaStoreError> {
+    let mut stmt = conn.prepare_cached(&format!("SELECT path, vector FROM {}", table.name()))?;
     let rows = stmt.query_map([], |row| {
         let path: String = row.get(0)?;
         let blob: Vec<u8> = row.get(1)?;
@@ -441,6 +492,24 @@ pub(crate) fn read_all_embeddings(conn: &Connection) -> Result<Vec<EmbeddingRow>
         }
     }
     Ok(out)
+}
+
+/// Which embedding table a load/read targets. The two are separate vector spaces (plan
+/// M3): `FeaturePrint` = Vision `media_embedding` (image↔image similarity, dedup),
+/// `Clip` = `media_clip_embedding` (natural-language text→image). Never mixed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) enum EmbeddingTable {
+    FeaturePrint,
+    Clip,
+}
+
+impl EmbeddingTable {
+    fn name(self) -> &'static str {
+        match self {
+            EmbeddingTable::FeaturePrint => "media_embedding",
+            EmbeddingTable::Clip => "media_clip_embedding",
+        }
+    }
 }
 
 /// Read one image's stored embedding, or `None` if it has none (the source vector for

@@ -89,6 +89,20 @@ pub struct Analysis {
     pub embedding: Option<Vec<f32>>,
 }
 
+/// The combined per-image result of the enrichment worker's ONE decode (plan M3 Q5):
+/// the Vision [`Analysis`] when the Vision side was requested (and stale), and the CLIP
+/// image embedding when the CLIP side was requested (a model is installed and the row is
+/// CLIP-stale). Either side is `None` when it wasn't run, so a CLIP-only pass re-embeds
+/// CLIP without disturbing stored OCR/tags, and a Vision-only pass leaves CLIP alone.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MediaAnalysis {
+    /// The Vision analysis, or `None` when the Vision side wasn't requested.
+    pub vision: Option<Analysis>,
+    /// The CLIP image embedding, or `None` when the CLIP side wasn't requested (or no
+    /// model is installed).
+    pub clip: Option<Vec<f32>>,
+}
+
 /// A typed backend failure. Never string-matched for classification
 /// (`no-string-matching`): a caller branches on the variant, not the message.
 #[derive(Debug, Clone)]
@@ -157,4 +171,18 @@ pub trait VisionBackend: Send + Sync {
     /// `input.path`. A hostile/undecodable image fails closed to a typed
     /// [`VisionError`], never a panic (as [`ocr`](VisionBackend::ocr) does).
     fn analyze(&self, input: &ImageInput) -> Result<Analysis, VisionError>;
+
+    /// Run the requested enrichment side(s) over one image from a SINGLE decode (plan M3
+    /// Q5): the Vision analysis when `want_vision`, and the CLIP image embedding when
+    /// `want_clip`. The real macOS backend decodes once and runs whichever side(s) the
+    /// scheduler asked for on its dedicated worker thread; the CLIP side is a no-op
+    /// (`clip: None`) unless a CLIP model is loaded. This default implements the
+    /// Vision-only backend (no CLIP capability — the off-macOS fallback and any backend
+    /// without a model): it honors `want_vision` and always returns `clip: None`. A
+    /// backend that CAN embed CLIP overrides this.
+    fn analyze_media(&self, input: &ImageInput, want_vision: bool, want_clip: bool) -> Result<MediaAnalysis, VisionError> {
+        let _ = want_clip;
+        let vision = if want_vision { Some(self.analyze(input)?) } else { None };
+        Ok(MediaAnalysis { vision, clip: None })
+    }
 }

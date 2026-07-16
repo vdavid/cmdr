@@ -172,6 +172,9 @@ impl MediaScheduler {
             cancel: &gate::is_cancelled,
             progress: progress.as_ref(),
         };
+        // A live tick CLIP-embeds a new/changed image too (two-part staleness), so the
+        // just-indexed photo is semantically searchable without waiting for a full pass.
+        let clip_stamp = crate::media_index::clip::current_stamp(&self.data_dir);
         let summary = enrich_and_gc_scoped(
             &ordered,
             &statuses,
@@ -183,6 +186,7 @@ impl MediaScheduler {
                 // SCOPED GC: only rows under the touched dirs are candidates, so a row in a
                 // dir this tick never walked is never deleted (the scoped-GC data-safety trap).
                 gc_scope: GcScope::TouchedDirs(touched_dirs),
+                clip_stamp: clip_stamp.as_deref(),
             },
             &hooks,
         )?;

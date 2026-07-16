@@ -75,6 +75,7 @@ fn search_finds_the_image_by_ocr_text_and_survives_unmount() {
                 media_kind: MediaKind::Image,
                 state: EnrichmentState::Done,
                 engine_version: "e1".to_string(),
+                clip_stamp: String::new(),
             },
             Some(UpsertAnalysis::ocr_only("a sunset over the beach with palm trees")),
         )
@@ -125,6 +126,7 @@ fn tag_search_is_case_insensitive() {
                 media_kind: MediaKind::Image,
                 state: EnrichmentState::Done,
                 engine_version: "e1".to_string(),
+                clip_stamp: String::new(),
             },
             Some(UpsertAnalysis {
                 tags: vec![Tag {
@@ -153,4 +155,85 @@ fn tag_search_is_case_insensitive() {
         1,
         "FTS tokenization folds case, so uppercase keyword finds the folded tag"
     );
+}
+
+// ── Semantic (CLIP) search (plan M3) ───────────────────────────────────────
+
+/// Seed a status row + a CLIP embedding for `path` (CLIP requires an existing status row,
+/// since a real CLIP-only pass only runs for a Vision-current image).
+fn seed_clip(writer: &MediaWriter, path: &str, vector: Vec<f32>) {
+    writer
+        .upsert(
+            MediaStatusRow {
+                path: path.to_string(),
+                mtime: Some(1),
+                size: Some(1),
+                media_kind: MediaKind::Image,
+                state: EnrichmentState::Done,
+                engine_version: "e1".to_string(),
+                clip_stamp: String::new(),
+            },
+            Some(UpsertAnalysis::ocr_only("x")),
+        )
+        .expect("seed status");
+    writer
+        .upsert_clip(path.to_string(), "clip-v1".to_string(), Some(vector))
+        .expect("seed clip");
+}
+
+#[test]
+fn search_semantic_ranks_by_clip_cosine_and_honors_k() {
+    let dir = tempfile::tempdir().expect("temp");
+    let db_path = media_db_path(dir.path(), "root");
+    MediaStore::open(&db_path).expect("store");
+    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    // Three images at orthogonal directions in the (fake) CLIP space.
+    seed_clip(&writer, "/cat.jpg", vec![1.0, 0.0, 0.0]);
+    seed_clip(&writer, "/dog.jpg", vec![0.0, 1.0, 0.0]);
+    seed_clip(&writer, "/beach.jpg", vec![0.0, 0.0, 1.0]);
+    writer.flush_blocking().expect("flush");
+
+    let index = MediaIndex::open(dir.path(), "root");
+    // A query vector closest to /beach.jpg's direction.
+    let hits = index.search_semantic(&[0.1, 0.2, 0.9], 2);
+    assert_eq!(hits.len(), 2, "k caps the result count");
+    assert_eq!(hits[0].path, "/beach.jpg", "the nearest CLIP vector ranks first");
+    assert!(hits[0].score > hits[1].score, "sorted by cosine descending");
+
+    // The CLIP cache reads media.db directly, so it still answers with the volume gone.
+    crate::media_index::vector::cache::invalidate(&db_path);
+    writer.shutdown();
+    let offline = MediaIndex::open(dir.path(), "root").search_semantic(&[1.0, 0.0, 0.0], 1);
+    assert_eq!(offline.len(), 1);
+    assert_eq!(offline[0].path, "/cat.jpg", "semantic search answers offline from media.db");
+}
+
+#[test]
+fn search_semantic_is_empty_without_clip_embeddings() {
+    // A volume with OCR/tags but no CLIP model (no clip embeddings) returns nothing.
+    let dir = tempfile::tempdir().expect("temp");
+    let db_path = media_db_path(dir.path(), "root");
+    MediaStore::open(&db_path).expect("store");
+    let writer = MediaWriter::spawn(&db_path).expect("writer");
+    writer
+        .upsert(
+            MediaStatusRow {
+                path: "/x.jpg".to_string(),
+                mtime: Some(1),
+                size: Some(1),
+                media_kind: MediaKind::Image,
+                state: EnrichmentState::Done,
+                engine_version: "e1".to_string(),
+                clip_stamp: String::new(),
+            },
+            Some(UpsertAnalysis::ocr_only("beach")),
+        )
+        .expect("seed");
+    writer.flush_blocking().expect("flush");
+    let index = MediaIndex::open(dir.path(), "root");
+    assert!(
+        index.search_semantic(&[1.0, 0.0, 0.0], 5).is_empty(),
+        "no CLIP embeddings ⇒ no semantic hits"
+    );
+    writer.shutdown();
 }

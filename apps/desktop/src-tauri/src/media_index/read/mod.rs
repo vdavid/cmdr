@@ -131,6 +131,24 @@ impl MediaIndex {
         cache::get_or_load(&self.db_path).dedup_clusters(threshold)
     }
 
+    /// The `k` images whose CLIP embeddings are closest (by cosine) to an
+    /// already-encoded `query` text vector — natural-language text→image search (plan
+    /// M3). Brute-force ranks over the volume's resident CLIP cache (loaded once, kept
+    /// warm — plan § Query-time vector residency); the query text is tokenized +
+    /// text-encoded by the command layer (the warm CLIP text tower), which keeps this
+    /// method a pure vector query testable with deterministic vectors. Empty when the
+    /// volume has no CLIP embeddings (no model installed, un-enriched, or offline).
+    pub fn search_semantic(&self, query: &[f32], k: usize) -> Vec<SemanticHit> {
+        cache::get_or_load_clip(&self.db_path)
+            .top_k(query, k, None)
+            .into_iter()
+            .map(|hit| SemanticHit {
+                path: hit.path,
+                score: hit.score,
+            })
+            .collect()
+    }
+
     /// The images tagged `label` at or above `min_score`, each with the matching
     /// tag's score, highest first — the tag-score filter. Empty for a
     /// missing/never-enriched DB.
@@ -158,6 +176,19 @@ pub struct TagHit {
     /// The matched image's path.
     pub path: String,
     /// The matched tag's confidence in `[0.0, 1.0]`.
+    pub score: f32,
+}
+
+/// One semantic-search hit: the matched image's path and its CLIP cosine similarity to
+/// the text query. The grid renders these as snippet-less tiles with a "matched
+/// description" reason (there's no OCR snippet — the match is on the whole-image CLIP
+/// embedding). Crosses the IPC boundary, so it derives `Serialize` + `specta::Type`.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SemanticHit {
+    /// The matched image's path.
+    pub path: String,
+    /// CLIP cosine similarity to the query text in `[-1.0, 1.0]`.
     pub score: f32,
 }
 

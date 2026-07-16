@@ -53,7 +53,7 @@ use crate::ignore_poison::IgnorePoison;
 use crate::indexing::IndexVolumeKind;
 
 pub(crate) mod enrich;
-use enrich::{PassHooks, enrich_and_gc, load_statuses, walk_image_entries};
+use enrich::{EnrichGates, GcScope, PassHooks, enrich_and_gc_scoped, load_statuses, walk_image_entries};
 
 mod live;
 
@@ -310,15 +310,22 @@ impl MediaScheduler {
             progress: progress.as_ref(),
         };
         // A full pass walks the whole index, so a stored row absent from the walk genuinely
-        // vanished: `enrich_and_gc` GCs the whole store. The scoped live tick uses
-        // `enrich_and_gc_scoped` with `GcScope::TouchedDirs` instead.
-        let summary = enrich_and_gc(
+        // vanished: `GcScope::WholeStore` GCs the whole store. The scoped live tick uses
+        // `GcScope::TouchedDirs` instead. The installed CLIP stamp drives the CLIP half of
+        // two-part staleness (`None` = no model ⇒ Vision-only); `enrich_and_gc` (the
+        // Vision-only wrapper) can't carry it, so the full pass reaches the core directly.
+        let clip_stamp = crate::media_index::clip::current_stamp(&self.data_dir);
+        let summary = enrich_and_gc_scoped(
             &ordered,
             &statuses,
             self.backend.as_ref(),
             &writer,
-            &should_enrich,
-            &is_excluded,
+            &EnrichGates {
+                should_enrich: &should_enrich,
+                is_excluded: &is_excluded,
+                gc_scope: GcScope::WholeStore,
+                clip_stamp: clip_stamp.as_deref(),
+            },
             &hooks,
         )?;
         terminal.set(if summary.cancelled {
@@ -518,6 +525,7 @@ impl MediaScheduler {
         // Progress + terminal emitters; the guard's default `Failed` covers an
         // error bubble on the `?` below, so every exit path reports a terminal.
         let (progress, mut terminal) = self.pass_emitters(volume_id);
+        let clip_stamp = crate::media_index::clip::current_stamp(&self.data_dir);
         let ctx = NetworkEnrichCtx {
             volume_id,
             mount_root: &mount_root,
@@ -533,6 +541,7 @@ impl MediaScheduler {
             cancel: &cancel,
             sleep: &sleep,
             progress: progress.as_ref(),
+            clip_stamp: clip_stamp.as_deref(),
         };
         match enrich_network_and_gc(&ctx)? {
             NetworkPassOutcome::Completed(summary) => {
@@ -664,6 +673,10 @@ pub fn start(app: &AppHandle) {
             return;
         }
     };
+
+    // Tell the CLIP module where the model installs, so the query-time text tower and the
+    // enrichment image tower can load it (a no-op off macOS).
+    crate::media_index::clip::set_data_dir(&data_dir);
 
     // Seed the master toggle + the network opt-in / always-index overrides from
     // settings (all off/empty by default; sparse-persisted, so absent keys mean off).

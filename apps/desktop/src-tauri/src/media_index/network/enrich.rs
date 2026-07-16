@@ -21,8 +21,8 @@ use std::time::Duration;
 
 use crate::media_index::backend::{ImageInput, VisionBackend};
 use crate::media_index::progress::{EnrichProgress, EnrichProgressSink};
-use crate::media_index::scheduler::enrich::{ImageEntry, PassSummary, gc_targets, status_row, to_upsert_analysis};
-use crate::media_index::store::{EnrichmentState, MediaStatusRow, needs_enrichment};
+use crate::media_index::scheduler::enrich::{ImageEntry, PassSummary, apply_media_upsert, gc_targets, status_row};
+use crate::media_index::store::{EnrichmentState, MediaStatusRow, needs_clip, needs_enrichment};
 use crate::media_index::writer::MediaWriter;
 
 use super::fetch::{ByteFetcher, FetchError, os_join};
@@ -87,6 +87,10 @@ pub(crate) struct NetworkEnrichCtx<'a> {
     /// The throttled progress sink (the top-right indicator's second publisher).
     /// A no-op in tests that don't assert progress.
     pub(crate) progress: &'a dyn EnrichProgressSink,
+    /// The installed CLIP model's provenance stamp, or `None` when no model is installed —
+    /// the CLIP half of two-part staleness (an opted-in NAS's photos become semantically
+    /// searchable too). `None` ⇒ Vision-only, exactly like the local pass.
+    pub(crate) clip_stamp: Option<&'a str>,
 }
 
 /// Run one conservative network enrichment pass. See the module docs for the
@@ -137,9 +141,12 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
         done += 1;
         bytes_done += image.size.unwrap_or(0);
 
-        // Path-keyed staleness: unchanged images (same mtime/size/stamp) are skipped,
-        // but still count as processed (already-current).
-        if needs_enrichment(ctx.statuses.get(&image.path), image.mtime, image.size, &stamp) {
+        // Two-part path-keyed staleness: fetch + analyze when the Vision side OR the CLIP
+        // side is stale; unchanged images are skipped but still count as processed.
+        let stored = ctx.statuses.get(&image.path);
+        let want_vision = needs_enrichment(stored, image.mtime, image.size, &stamp);
+        let want_clip = needs_clip(stored, ctx.clip_stamp);
+        if want_vision || want_clip {
             match ctx.fetcher.fetch(&os_path, ctx.policy.read_timeout) {
                 Ok(bytes) => {
                     let fetched = bytes.len() as u64;
@@ -148,29 +155,35 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
                         kind: image.kind,
                         bytes: Some(bytes),
                     };
-                    let analysis = ctx.backend.analyze(&input);
+                    // ONE decode runs the requested side(s) from the fetched bytes.
+                    let analysis = ctx.backend.analyze_media(&input, want_vision, want_clip);
                     // Re-check the LIVE veto AFTER the slow analyze: an exclusion landing
                     // during it must not persist a row (the in-flight-analyze TOCTOU). The
                     // bytes were already fetched, so still throttle below for honest
                     // bandwidth accounting; only the upsert is skipped.
                     if !(ctx.is_excluded)(&os_path) {
                         match analysis {
-                            Ok(analysis) => {
-                                ctx.writer
-                                    .upsert(
-                                        status_row(image, EnrichmentState::Done, &stamp),
-                                        Some(to_upsert_analysis(analysis)),
-                                    )
-                                    .map_err(|e| e.to_string())?;
-                                summary.enriched += 1;
+                            Ok(media) => {
+                                if apply_media_upsert(ctx.writer, image, &stamp, ctx.clip_stamp, want_vision, media)? {
+                                    summary.enriched += 1;
+                                }
                             }
                             Err(e) => {
                                 // A GOOD read but a bad decode/analysis ⇒ a genuinely bad
                                 // file ⇒ `Failed` (same as the local pass). NOT a disconnect.
                                 log::warn!(target: "media_index", "network analysis failed for '{}': {e}", image.path);
-                                ctx.writer
-                                    .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
-                                    .map_err(|e| e.to_string())?;
+                                if want_vision {
+                                    ctx.writer
+                                        .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
+                                        .map_err(|e| e.to_string())?;
+                                }
+                                if want_clip
+                                    && let Some(clip_stamp) = ctx.clip_stamp
+                                {
+                                    ctx.writer
+                                        .upsert_clip(image.path.clone(), clip_stamp.to_string(), None)
+                                        .map_err(|e| e.to_string())?;
+                                }
                             }
                         }
                     }

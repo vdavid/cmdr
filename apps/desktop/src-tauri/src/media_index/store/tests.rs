@@ -12,6 +12,7 @@ fn row(mtime: Option<u64>, size: Option<u64>, engine: &str) -> MediaStatusRow {
         media_kind: MediaKind::Image,
         state: EnrichmentState::Done,
         engine_version: engine.to_string(),
+        clip_stamp: String::new(),
     }
 }
 
@@ -201,6 +202,7 @@ fn sum_bytes_for_paths_totals_the_doomed_rows_content_and_only_those() {
                 media_kind: MediaKind::Image,
                 state: EnrichmentState::Done,
                 engine_version: "e1".to_string(),
+                clip_stamp: String::new(),
             },
             Some(UpsertAnalysis {
                 ocr_text: "hello".to_string(),
@@ -220,6 +222,7 @@ fn sum_bytes_for_paths_totals_the_doomed_rows_content_and_only_those() {
                 media_kind: MediaKind::Image,
                 state: EnrichmentState::Done,
                 engine_version: "e1".to_string(),
+                clip_stamp: String::new(),
             },
             Some(UpsertAnalysis {
                 ocr_text: String::new(),
@@ -304,4 +307,44 @@ fn re_enrichment_replaces_prior_tags_and_embedding() {
         "stale embedding cleared"
     );
     writer.shutdown();
+}
+
+// ── needs_clip: the INDEPENDENT CLIP staleness half (plan M3) ───────────────
+
+fn row_with_clip(clip_stamp: &str) -> MediaStatusRow {
+    let mut r = row(Some(1), Some(2), "e1");
+    r.clip_stamp = clip_stamp.to_string();
+    r
+}
+
+#[test]
+fn no_installed_model_is_never_clip_stale() {
+    // clip_stamp None (no model) ⇒ nothing is ever CLIP-stale, even a row that never
+    // had a CLIP embedding.
+    assert!(!needs_clip(None, None));
+    assert!(!needs_clip(Some(&row_with_clip("")), None));
+}
+
+#[test]
+fn a_row_without_a_clip_embedding_is_stale_once_a_model_installs() {
+    // A fresh row (no CLIP stamp) becomes stale the moment a model is installed.
+    assert!(needs_clip(Some(&row_with_clip("")), Some("clip-v1")));
+    // A path with no row at all is stale too (a fresh image).
+    assert!(needs_clip(None, Some("clip-v1")));
+}
+
+#[test]
+fn a_matching_clip_stamp_is_current_and_a_bump_is_stale() {
+    // Same stamp ⇒ current (not stale); a different stamp (model or OS change) ⇒ stale.
+    assert!(!needs_clip(Some(&row_with_clip("clip-v1")), Some("clip-v1")));
+    assert!(needs_clip(Some(&row_with_clip("clip-v1")), Some("clip-v2")));
+}
+
+#[test]
+fn clip_and_vision_staleness_are_independent() {
+    // A Vision-current row can still be CLIP-stale (installing CLIP), and vice versa —
+    // the two predicates never conflate (plan M3 Q5).
+    let vision_current_clip_stale = row_with_clip(""); // engine e1 current, no clip yet
+    assert!(!needs_enrichment(Some(&vision_current_clip_stale), Some(1), Some(2), "e1"));
+    assert!(needs_clip(Some(&vision_current_clip_stale), Some("clip-v1")));
 }

@@ -6,11 +6,17 @@
 //!
 //! ## Command surface
 //!
-//! - [`upsert`](MediaWriter::upsert): record one image's enrichment — upsert its
-//!   `media_status` row and replace its searchable text (OCR + folded tag labels in
-//!   `media_ocr`), its structured `media_tags`, and its `media_embedding` in ONE
-//!   transaction. On a failure the text/tags/embedding are cleared (only the status
-//!   row records the failure).
+//! - [`upsert`](MediaWriter::upsert): record one image's VISION enrichment — upsert its
+//!   `media_status` row (identity + `engine_version`, NOT `clip_stamp`) and replace its
+//!   searchable text (OCR + folded tag labels in `media_ocr`), its structured
+//!   `media_tags`, and its `media_embedding` in ONE transaction. On a failure the
+//!   text/tags/embedding are cleared (only the status row records the failure).
+//! - [`upsert_clip`](MediaWriter::upsert_clip): record one image's CLIP embedding —
+//!   stamp `media_status.clip_stamp` and replace `media_clip_embedding`, WITHOUT touching
+//!   the Vision columns or tables. The two provenance stamps have two independent owners
+//!   (plan M3 two-part staleness): installing/upgrading the CLIP model re-embeds CLIP
+//!   without re-running OCR/tags, and a Vision engine bump re-runs OCR/tags without
+//!   re-embedding CLIP.
 //! - [`gc_paths`](MediaWriter::gc_paths): delete the `media_status` + `media_ocr` +
 //!   `media_tags` + `media_embedding` rows for a set of paths whose source files
 //!   vanished (deletion-driven GC, run ONLY on a completed-scan edge — see
@@ -51,6 +57,16 @@ enum WriteMessage {
     Upsert {
         row: MediaStatusRow,
         analysis: Option<UpsertAnalysis>,
+    },
+    /// Stamp one path's `media_status.clip_stamp` and replace its `media_clip_embedding`
+    /// (CLIP two-part staleness). `embedding` is `None` on a CLIP failure/skip (stamps
+    /// the row so it isn't retried, but stores no vector). Only ever runs for a path that
+    /// already has a `media_status` row (CLIP is eligible only when Vision is current), so
+    /// a missing row skips the embedding write rather than orphaning it. One transaction.
+    UpsertClip {
+        path: String,
+        clip_stamp: String,
+        embedding: Option<Vec<f32>>,
     },
     /// Delete the status + OCR rows for each path (deletion-driven GC). One
     /// transaction over the whole batch.
@@ -145,6 +161,23 @@ impl MediaWriter {
         self.send(WriteMessage::Upsert { row, analysis })
     }
 
+    /// Stamp `path`'s CLIP provenance and replace its `media_clip_embedding`. `embedding`
+    /// is `Some` on success and `None` on a CLIP failure/skip (stamps so it isn't retried,
+    /// stores no vector). Independent of [`upsert`](MediaWriter::upsert) — it touches only
+    /// `media_status.clip_stamp` and `media_clip_embedding`, never the Vision columns/tables.
+    pub fn upsert_clip(
+        &self,
+        path: String,
+        clip_stamp: String,
+        embedding: Option<Vec<f32>>,
+    ) -> Result<(), MediaStoreError> {
+        self.send(WriteMessage::UpsertClip {
+            path,
+            clip_stamp,
+            embedding,
+        })
+    }
+
     /// GC the status + OCR rows for `paths` (their source files vanished). A no-op
     /// on an empty batch.
     pub fn gc_paths(&self, paths: Vec<String>) -> Result<(), MediaStoreError> {
@@ -228,6 +261,15 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
             WriteMessage::Upsert { row, analysis } => {
                 if let Err(e) = apply_upsert(&mut conn, &row, analysis.as_ref()) {
                     log::warn!(target: "media_index", "upsert failed for '{}': {e}", row.path);
+                }
+            }
+            WriteMessage::UpsertClip {
+                path,
+                clip_stamp,
+                embedding,
+            } => {
+                if let Err(e) = apply_upsert_clip(&mut conn, &path, &clip_stamp, embedding.as_deref()) {
+                    log::warn!(target: "media_index", "clip upsert failed for '{path}': {e}");
                 }
             }
             WriteMessage::GcPaths { paths } => {
@@ -341,7 +383,41 @@ fn apply_upsert(
     Ok(())
 }
 
-/// Delete the status + text + tag + embedding rows for each path in one transaction.
+/// Stamp `path`'s `media_status.clip_stamp` and replace its `media_clip_embedding` in one
+/// transaction, touching NO Vision column or table. If no `media_status` row exists (CLIP
+/// only runs when Vision is current, so this shouldn't happen) the embedding write is
+/// skipped rather than orphaned.
+fn apply_upsert_clip(
+    conn: &mut Connection,
+    path: &str,
+    clip_stamp: &str,
+    embedding: Option<&[f32]>,
+) -> Result<(), MediaStoreError> {
+    let tx = conn.transaction()?;
+    {
+        let updated = tx.execute(
+            "UPDATE media_status SET clip_stamp = ?2 WHERE path = ?1",
+            rusqlite::params![path, clip_stamp],
+        )?;
+        tx.execute(
+            "DELETE FROM media_clip_embedding WHERE path = ?1",
+            rusqlite::params![path],
+        )?;
+        if updated > 0
+            && let Some(vector) = embedding
+        {
+            tx.execute(
+                "INSERT INTO media_clip_embedding (path, dims, vector) VALUES (?1, ?2, ?3)",
+                rusqlite::params![path, vector.len() as i64, encode_embedding(vector)],
+            )?;
+        }
+    }
+    tx.commit()?;
+    Ok(())
+}
+
+/// Delete the status + text + tag + embedding + clip-embedding rows for each path in one
+/// transaction.
 fn apply_gc(conn: &mut Connection, paths: &[String]) -> Result<(), MediaStoreError> {
     let tx = conn.transaction()?;
     {
@@ -349,11 +425,13 @@ fn apply_gc(conn: &mut Connection, paths: &[String]) -> Result<(), MediaStoreErr
         let mut del_ocr = tx.prepare_cached("DELETE FROM media_ocr WHERE path = ?1")?;
         let mut del_tags = tx.prepare_cached("DELETE FROM media_tags WHERE path = ?1")?;
         let mut del_emb = tx.prepare_cached("DELETE FROM media_embedding WHERE path = ?1")?;
+        let mut del_clip = tx.prepare_cached("DELETE FROM media_clip_embedding WHERE path = ?1")?;
         for path in paths {
             del_status.execute(rusqlite::params![path])?;
             del_ocr.execute(rusqlite::params![path])?;
             del_tags.execute(rusqlite::params![path])?;
             del_emb.execute(rusqlite::params![path])?;
+            del_clip.execute(rusqlite::params![path])?;
         }
     }
     tx.commit()?;
@@ -372,11 +450,13 @@ fn apply_prune_paths(conn: &mut Connection, paths: &[String]) -> Result<usize, M
         let mut del_ocr = tx.prepare_cached("DELETE FROM media_ocr WHERE path = ?1")?;
         let mut del_tags = tx.prepare_cached("DELETE FROM media_tags WHERE path = ?1")?;
         let mut del_emb = tx.prepare_cached("DELETE FROM media_embedding WHERE path = ?1")?;
+        let mut del_clip = tx.prepare_cached("DELETE FROM media_clip_embedding WHERE path = ?1")?;
         for path in paths {
             deleted += del_status.execute(rusqlite::params![path])?;
             del_ocr.execute(rusqlite::params![path])?;
             del_tags.execute(rusqlite::params![path])?;
             del_emb.execute(rusqlite::params![path])?;
+            del_clip.execute(rusqlite::params![path])?;
         }
     }
     tx.commit()?;
@@ -415,7 +495,7 @@ fn apply_vacuum(conn: &Connection) -> Result<(), MediaStoreError> {
 /// Drop every derived row. Schema stays.
 fn apply_purge(conn: &Connection) -> Result<(), MediaStoreError> {
     conn.execute_batch(
-        "DELETE FROM media_status; DELETE FROM media_ocr; DELETE FROM media_tags; DELETE FROM media_embedding;",
+        "DELETE FROM media_status; DELETE FROM media_ocr; DELETE FROM media_tags; DELETE FROM media_embedding; DELETE FROM media_clip_embedding;",
     )?;
     Ok(())
 }
@@ -446,6 +526,7 @@ mod tests {
                     media_kind: MediaKind::Image,
                     state: EnrichmentState::Done,
                     engine_version: "e1".to_string(),
+                    clip_stamp: String::new(),
                 },
                 Some(UpsertAnalysis {
                     ocr_text: "some text".to_string(),

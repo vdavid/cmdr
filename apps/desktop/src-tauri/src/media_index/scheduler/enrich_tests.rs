@@ -395,6 +395,7 @@ fn a_completed_pass_gcs_a_vanished_known_entry() {
                     media_kind: MediaKind::Image,
                     state: EnrichmentState::Done,
                     engine_version: "fake-vision-1".to_string(),
+                    clip_stamp: String::new(),
                 },
                 Some(crate::media_index::writer::UpsertAnalysis::ocr_only("some text")),
             )
@@ -468,6 +469,7 @@ fn a_cancelled_pass_enriches_nothing_and_skips_gc() {
                 media_kind: MediaKind::Image,
                 state: EnrichmentState::Done,
                 engine_version: "fake-vision-1".to_string(),
+                clip_stamp: String::new(),
             },
             Some(crate::media_index::writer::UpsertAnalysis::ocr_only("keep me")),
         )
@@ -628,6 +630,7 @@ fn seed_media(writer: &MediaWriter, path: &str) {
                 media_kind: MediaKind::Image,
                 state: EnrichmentState::Done,
                 engine_version: "fake-vision-1".to_string(),
+                clip_stamp: String::new(),
             },
             Some(crate::media_index::writer::UpsertAnalysis::ocr_only("seed")),
         )
@@ -700,6 +703,7 @@ fn scoped_gc_spares_rows_in_untouched_dirs() {
             should_enrich: &|_| true,
             is_excluded: &|_| false,
             gc_scope: GcScope::TouchedDirs(&touched_a),
+            clip_stamp: None,
         },
         &no_op_hooks(),
     )
@@ -800,6 +804,7 @@ fn a_scoped_tick_promotes_a_lone_raw_and_gcs_the_deleted_jpg() {
             should_enrich: &|_| true,
             is_excluded: &|_| false,
             gc_scope: GcScope::TouchedDirs(&touched_photos),
+            clip_stamp: None,
         },
         &no_op_hooks(),
     )
@@ -816,5 +821,149 @@ fn a_scoped_tick_promotes_a_lone_raw_and_gcs_the_deleted_jpg() {
         store.status_for("/photos/raw.jpg").expect("read").is_none(),
         "deleted JPEG GC'd"
     );
+    writer.shutdown();
+}
+
+// ── CLIP two-part staleness (plan M3) ──────────────────────────────────────
+
+/// The number of `media_clip_embedding` rows for a path (0 or 1), and the stored
+/// `media_status.clip_stamp`.
+fn clip_state(db_path: &std::path::Path, path: &str) -> (i64, String) {
+    let conn = crate::media_index::store::open_read_connection(db_path).expect("open read");
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM media_clip_embedding WHERE path = ?1",
+            rusqlite::params![path],
+            |r| r.get(0),
+        )
+        .expect("count clip");
+    let stamp: String = conn
+        .query_row(
+            "SELECT clip_stamp FROM media_status WHERE path = ?1",
+            rusqlite::params![path],
+            |r| r.get(0),
+        )
+        .unwrap_or_default();
+    (count, stamp)
+}
+
+/// One whole-store pass over `images` with the given CLIP stamp, over `backend`.
+fn clip_pass(
+    images: &[ImageEntry],
+    statuses: &HashMap<String, MediaStatusRow>,
+    backend: &FakeVisionBackend,
+    writer: &MediaWriter,
+    clip_stamp: Option<&str>,
+) -> super::enrich::PassSummary {
+    enrich_and_gc_scoped(
+        images,
+        statuses,
+        backend,
+        writer,
+        &EnrichGates {
+            should_enrich: &|_| true,
+            is_excluded: &|_| false,
+            gc_scope: GcScope::WholeStore,
+            clip_stamp,
+        },
+        &no_op_hooks(),
+    )
+    .expect("clip pass")
+}
+
+#[test]
+fn model_absent_is_vision_only_no_clip_embedding() {
+    // With NO CLIP model installed (clip_stamp None), a pass embeds Vision only — the
+    // CLIP table stays empty and the row's clip_stamp stays blank.
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/p", "beach.jpg", 1, 10)]);
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let images = walk_image_entries(store.read_conn()).expect("walk");
+    let backend = FakeVisionBackend::new();
+    let writer = media_writer(dir.path(), "root");
+    let db_path = media_db_path(dir.path(), "root");
+
+    let summary = clip_pass(&images, &HashMap::new(), &backend, &writer, None);
+    writer.flush_blocking().expect("flush");
+    assert_eq!(summary.enriched, 1, "Vision enriched the image");
+    let (clip_rows, stamp) = clip_state(&db_path, "/p/beach.jpg");
+    assert_eq!(clip_rows, 0, "no CLIP model ⇒ no CLIP embedding");
+    assert_eq!(stamp, "", "clip_stamp stays blank without a model");
+    writer.shutdown();
+}
+
+#[test]
+fn installing_clip_embeds_without_re_running_vision() {
+    // The data-safety-relevant case (plan M3 Q5): a Vision-enriched image, then CLIP is
+    // installed. The next pass must embed CLIP WITHOUT re-running OCR/tags — proven by
+    // scripting a DIFFERENT OCR text on the second backend and asserting the stored OCR
+    // text is unchanged (Vision was not re-run), while a CLIP embedding now exists.
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/p", "beach.jpg", 1, 10)]);
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let images = walk_image_entries(store.read_conn()).expect("walk");
+    let writer = media_writer(dir.path(), "root");
+    let db_path = media_db_path(dir.path(), "root");
+
+    // Pass 1: Vision only (no model). OCR text = "original beach".
+    let backend1 = FakeVisionBackend::new().with_text("/p/beach.jpg", "original beach");
+    clip_pass(&images, &HashMap::new(), &backend1, &writer, None);
+    writer.flush_blocking().expect("flush");
+
+    // Pass 2: CLIP now installed (clip_stamp Some), and a backend that WOULD produce
+    // different OCR if Vision re-ran. Vision is current (same mtime/size/engine), so only
+    // CLIP should run.
+    let backend2 = FakeVisionBackend::new().with_text("/p/beach.jpg", "CHANGED text");
+    let statuses = load_statuses(dir.path(), "root");
+    let summary = clip_pass(&images, &statuses, &backend2, &writer, Some("clip-v1"));
+    writer.flush_blocking().expect("flush");
+    assert_eq!(summary.enriched, 1, "the CLIP-only work counts as enriched");
+
+    // CLIP embedding now present; clip_stamp stamped.
+    let (clip_rows, stamp) = clip_state(&db_path, "/p/beach.jpg");
+    assert_eq!(clip_rows, 1, "CLIP embedding written");
+    assert_eq!(stamp, "clip-v1", "clip_stamp stamped to the installed model");
+
+    // Vision was NOT re-run: the OCR text is still the original, not "CHANGED text".
+    let index = MediaIndex::open(dir.path(), "root");
+    assert_eq!(index.search_ocr("original", 10).expect("s").len(), 1, "original OCR intact");
+    assert_eq!(
+        index.search_ocr("CHANGED", 10).expect("s").len(),
+        0,
+        "Vision was not re-run (no CHANGED text)"
+    );
+
+    // Pass 3: nothing stale now (Vision current, CLIP current) ⇒ no work.
+    let statuses = load_statuses(dir.path(), "root");
+    let again = clip_pass(&images, &statuses, &backend2, &writer, Some("clip-v1"));
+    assert_eq!(again.enriched, 0, "both sides current ⇒ nothing re-enriched");
+    writer.shutdown();
+}
+
+#[test]
+fn a_clip_model_bump_re_embeds_without_touching_vision() {
+    // A CLIP model/OS change bumps clip_stamp, so a fresh CLIP embedding is written while
+    // the Vision side (unchanged engine) is left alone.
+    let dir = tempfile::tempdir().expect("temp");
+    let index_path = dir.path().join("index-root.db");
+    build_index(&index_path, &[("/p", "beach.jpg", 1, 10)]);
+    let store = IndexStore::open(&index_path).expect("reopen");
+    let images = walk_image_entries(store.read_conn()).expect("walk");
+    let backend = FakeVisionBackend::new();
+    let writer = media_writer(dir.path(), "root");
+    let db_path = media_db_path(dir.path(), "root");
+
+    clip_pass(&images, &HashMap::new(), &backend, &writer, Some("clip-v1"));
+    writer.flush_blocking().expect("flush");
+    assert_eq!(clip_state(&db_path, "/p/beach.jpg").1, "clip-v1");
+
+    // Bump the CLIP stamp ⇒ re-embed.
+    let statuses = load_statuses(dir.path(), "root");
+    let summary = clip_pass(&images, &statuses, &backend, &writer, Some("clip-v2"));
+    writer.flush_blocking().expect("flush");
+    assert_eq!(summary.enriched, 1, "the model bump re-embeds CLIP");
+    assert_eq!(clip_state(&db_path, "/p/beach.jpg"), (1, "clip-v2".to_string()));
     writer.shutdown();
 }

@@ -12,6 +12,7 @@
 //! `docs/specs/media-ml-index-plan.md`.
 
 pub mod backend;
+pub mod clip;
 pub mod commands;
 pub mod coverage;
 pub mod events;

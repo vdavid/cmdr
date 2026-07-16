@@ -215,6 +215,7 @@ fn seed_media_row_for(data_dir: &std::path::Path, volume_id: &str, path: &str) {
                 media_kind: MediaKind::Image,
                 state: EnrichmentState::Done,
                 engine_version: "fake-vision-1".to_string(),
+                clip_stamp: String::new(),
             },
             Some(crate::media_index::writer::UpsertAnalysis::ocr_only("seeded")),
         )
@@ -237,6 +238,7 @@ fn seed_media_row(data_dir: &std::path::Path, path: &str) {
                 media_kind: MediaKind::Image,
                 state: EnrichmentState::Done,
                 engine_version: "fake-vision-1".to_string(),
+                clip_stamp: String::new(),
             },
             Some(crate::media_index::writer::UpsertAnalysis::ocr_only("seeded")),
         )

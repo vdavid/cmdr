@@ -292,8 +292,25 @@ objc2-vision = { version = "0.3.2", features = [
 objc2-image-io = { version = "0.3.2", features = [
     "CGImageSource", "objc2-core-graphics",
 ] }
-objc2-core-graphics = { version = "0.3.2", features = ["CGImage"] }
-objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary", "CFString", "CFNumber", "CFBase"] }
+objc2-core-graphics = { version = "0.3.2", features = [
+    "CGImage",
+    # CLIP image preprocessing: render the decoded CGImage into a 224x224 RGB bitmap
+    # (resize + center-crop) to feed the image tower (media_index/backend/vision).
+    "CGColorSpace", "CGContext", "CGBitmapContext",
+] }
+objc2-core-foundation = { version = "0.3.2", features = ["CFData", "CFDictionary", "CFString", "CFNumber", "CFBase", "CFCGTypes"] }
+# Media-index CLIP semantic search: on-device Core ML inference for the text + image towers
+# (media_index/clip/). 0.3.2, published 2025-10-04, same objc2 0.6 / 0.3.2 family as the
+# Vision bindings above; the CLIP spike proved this exact version round-trips bit-identically
+# (docs/notes/clip-coreml-rust-spike.md). Zlib OR Apache-2.0 OR MIT.
+objc2-core-ml = { version = "0.3.2", features = [
+    "MLModel", "MLModel_MLModelCompilation", "MLModelConfiguration", "MLModelDescription",
+    "MLFeatureDescription", "MLMultiArray", "MLFeatureValue", "MLFeatureProvider",
+    "MLDictionaryFeatureProvider", "MLPredictionOptions",
+] }
+# CLIP byte-pair text tokenizer (ctx 77) for the semantic-search query path. Bundles the
+# OpenAI CLIP BPE vocab; MIT, v0.1.0 published 2023-11-30 (far outside the 14-day gate).
+instant-clip-tokenizer = "0.1.0"
 
 
 [dev-dependencies]

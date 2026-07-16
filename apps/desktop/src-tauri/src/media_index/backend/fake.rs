@@ -9,7 +9,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::{Analysis, ImageInput, OcrResult, Tag, VisionBackend, VisionError};
+use super::{Analysis, ImageInput, MediaAnalysis, OcrResult, Tag, VisionBackend, VisionError};
+use crate::media_index::clip::backend::fake_clip_embedding;
 
 /// The dimensionality of the fake feature-print embedding. Small and fixed so cosine/
 /// top-k tests stay legible; the real backend's is far larger (a Vision feature print
@@ -30,6 +31,7 @@ pub struct FakeVisionBackend {
     scripted: HashMap<String, String>,
     scripted_tags: HashMap<String, Vec<Tag>>,
     scripted_embedding: HashMap<String, Vec<f32>>,
+    scripted_clip: HashMap<String, Vec<f32>>,
     failing: HashSet<String>,
     missing: HashSet<String>,
     engine_version: Option<String>,
@@ -57,6 +59,14 @@ impl FakeVisionBackend {
     /// Script the exact feature-print embedding for a path (precise cosine tests).
     pub fn with_embedding(mut self, path: impl Into<String>, embedding: Vec<f32>) -> Self {
         self.scripted_embedding.insert(path.into(), embedding);
+        self
+    }
+
+    /// Script the exact CLIP image embedding for a path (precise semantic-search tests).
+    /// Unscripted paths get [`fake_clip_embedding`] over the path (the shared bag-of-words
+    /// space the fake text encoder also projects onto, so text→image alignment holds).
+    pub fn with_clip_embedding(mut self, path: impl Into<String>, embedding: Vec<f32>) -> Self {
+        self.scripted_clip.insert(path.into(), embedding);
         self
     }
 
@@ -174,6 +184,25 @@ impl VisionBackend for FakeVisionBackend {
                 .unwrap_or_else(|| Self::default_embedding(&input.path)),
         );
         Ok(Analysis { ocr, tags, embedding })
+    }
+
+    fn analyze_media(&self, input: &ImageInput, want_vision: bool, want_clip: bool) -> Result<MediaAnalysis, VisionError> {
+        // One decode fails both sides, matching the real backend (a bad file can't be
+        // decoded for Vision OR CLIP).
+        if self.missing.contains(&input.path) {
+            return Err(VisionError::Missing(input.path.clone()));
+        }
+        if self.failing.contains(&input.path) {
+            return Err(VisionError::Decode(input.path.clone()));
+        }
+        let vision = if want_vision { Some(self.analyze(input)?) } else { None };
+        let clip = want_clip.then(|| {
+            self.scripted_clip
+                .get(&input.path)
+                .cloned()
+                .unwrap_or_else(|| fake_clip_embedding(&input.path))
+        });
+        Ok(MediaAnalysis { vision, clip })
     }
 }
 

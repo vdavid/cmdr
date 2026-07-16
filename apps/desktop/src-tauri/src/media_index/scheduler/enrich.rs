@@ -9,10 +9,10 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::indexing::store::{IndexStore, ROOT_ID, resolve_path};
-use crate::media_index::backend::{Analysis, ImageInput, VisionBackend, VisionError};
+use crate::media_index::backend::{Analysis, ImageInput, MediaAnalysis, VisionBackend, VisionError};
 use crate::media_index::predicate::{MediaKind, Qualification, qualify_dir};
 use crate::media_index::progress::{EnrichProgress, EnrichProgressSink};
-use crate::media_index::store::{EnrichmentState, MediaStatusRow, needs_enrichment};
+use crate::media_index::store::{EnrichmentState, MediaStatusRow, needs_clip, needs_enrichment};
 use crate::media_index::writer::{MediaWriter, UpsertAnalysis};
 
 /// One qualifying image discovered while walking the index: its absolute path, the
@@ -226,6 +226,12 @@ pub(crate) struct EnrichGates<'a> {
     /// Which stored rows this pass may GC: the whole store (full pass) or only rows under
     /// the touched dirs (live tick) — the scoped-GC data-safety line.
     pub(crate) gc_scope: GcScope<'a>,
+    /// The currently-installed CLIP model's provenance stamp, or `None` when no CLIP model
+    /// is installed. Drives the INDEPENDENT CLIP half of two-part staleness
+    /// ([`needs_clip`]): an image whose stored `clip_stamp` differs gets CLIP-embedded even
+    /// when its Vision analysis is current, so installing/upgrading CLIP re-embeds without
+    /// re-running OCR/tags. `None` ⇒ CLIP is never attempted.
+    pub(crate) clip_stamp: Option<&'a str>,
 }
 
 /// The stored paths whose source files no longer qualify as images in the CURRENT
@@ -271,6 +277,11 @@ pub(crate) fn prioritized(images: &[ImageEntry], folder_score: &dyn Fn(&str) -> 
 /// walk the whole index, so a missing row genuinely vanished. Delegates to
 /// [`enrich_and_gc_scoped`] with [`GcScope::WholeStore`]; the scoped live tick passes
 /// [`GcScope::TouchedDirs`] instead. Both share the one per-image loop.
+///
+/// Test-only now: production reaches [`enrich_and_gc_scoped`] directly with the installed
+/// CLIP stamp (this Vision-only wrapper can't carry it), so the OCR/tag tests keep a terse
+/// entry point without a model.
+#[cfg(test)]
 pub(crate) fn enrich_and_gc(
     images: &[ImageEntry],
     statuses: &HashMap<String, MediaStatusRow>,
@@ -289,6 +300,10 @@ pub(crate) fn enrich_and_gc(
             should_enrich,
             is_excluded,
             gc_scope: GcScope::WholeStore,
+            // The whole-store wrapper is CLIP-agnostic (Vision-only): the production full
+            // pass reaches the scoped core directly with the installed CLIP stamp, and the
+            // OCR/tag tests use this wrapper without a model.
+            clip_stamp: None,
         },
         hooks,
     )
@@ -378,27 +393,27 @@ pub(crate) fn enrich_and_gc_scoped(
         done += 1;
         bytes_done += image.size.unwrap_or(0);
 
-        if needs_enrichment(statuses.get(&image.path), image.mtime, image.size, &stamp) {
+        let stored = statuses.get(&image.path);
+        let want_vision = needs_enrichment(stored, image.mtime, image.size, &stamp);
+        let want_clip = needs_clip(stored, gates.clip_stamp);
+        if want_vision || want_clip {
             let input = ImageInput {
                 path: image.path.clone(),
                 kind: image.kind,
                 // Local volume: the backend reads the real on-disk path itself.
                 bytes: None,
             };
-            let analysis = backend.analyze(&input);
+            // ONE decode runs the requested side(s) (plan M3 Q5).
+            let analysis = backend.analyze_media(&input, want_vision, want_clip);
             // Re-check the LIVE veto AFTER the slow analyze: an exclusion that landed
             // during it must not persist a row (the in-flight-analyze TOCTOU — a later
             // pass wouldn't collect it, since the file is still in the GC `current` set).
             if !is_excluded(&image.path) {
                 match analysis {
-                    Ok(analysis) => {
-                        writer
-                            .upsert(
-                                status_row(image, EnrichmentState::Done, &stamp),
-                                Some(to_upsert_analysis(analysis)),
-                            )
-                            .map_err(|e| e.to_string())?;
-                        enriched += 1;
+                    Ok(media) => {
+                        if apply_media_upsert(writer, image, &stamp, gates.clip_stamp, want_vision, media)? {
+                            enriched += 1;
+                        }
                     }
                     // A VANISHED source (ENOENT-class) — a file deleted between the walk
                     // and its analyze, or an orphaned index row's phantom path: skip
@@ -410,12 +425,23 @@ pub(crate) fn enrich_and_gc_scoped(
                         log::debug!(target: "media_index", "skipping vanished image '{}': {msg}", image.path);
                     }
                     // A present-but-bad file (a good read, a decode/OCR failure) ⇒ a real
-                    // per-file failure ⇒ `Failed`.
+                    // per-file failure. Mark the Vision side `Failed` (if it was attempted),
+                    // and stamp the CLIP side so a bad file isn't re-decoded for CLIP every
+                    // pass (embedding `None` = stamp-without-vector).
                     Err(e) => {
                         log::warn!(target: "media_index", "analysis failed for '{}': {e}", image.path);
-                        writer
-                            .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
-                            .map_err(|e| e.to_string())?;
+                        if want_vision {
+                            writer
+                                .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
+                                .map_err(|e| e.to_string())?;
+                        }
+                        if want_clip
+                            && let Some(clip_stamp) = gates.clip_stamp
+                        {
+                            writer
+                                .upsert_clip(image.path.clone(), clip_stamp.to_string(), None)
+                                .map_err(|e| e.to_string())?;
+                        }
                     }
                 }
             }
@@ -468,7 +494,43 @@ pub(crate) fn status_row(image: &ImageEntry, state: EnrichmentState, stamp: &str
         media_kind: image.kind,
         state,
         engine_version: stamp.to_string(),
+        clip_stamp: String::new(),
     }
+}
+
+/// Persist the requested side(s) of a combined [`MediaAnalysis`] (plan M3 two-part
+/// writes): the Vision analysis (when `want_vision`) via the Vision `upsert`, and the CLIP
+/// embedding (when the backend produced one) via `upsert_clip` — each independent, so a
+/// CLIP-only pass never disturbs stored OCR/tags and vice versa. A CLIP side that couldn't
+/// encode yet (model still loading) leaves `clip_stamp` unstamped, so the next pass retries
+/// it. Returns whether anything was persisted (for the `enriched` counter).
+pub(crate) fn apply_media_upsert(
+    writer: &MediaWriter,
+    image: &ImageEntry,
+    stamp: &str,
+    clip_stamp: Option<&str>,
+    want_vision: bool,
+    media: MediaAnalysis,
+) -> Result<bool, String> {
+    let mut did = false;
+    if want_vision && let Some(vision) = media.vision {
+        writer
+            .upsert(
+                status_row(image, EnrichmentState::Done, stamp),
+                Some(to_upsert_analysis(vision)),
+            )
+            .map_err(|e| e.to_string())?;
+        did = true;
+    }
+    if let Some(clip_vec) = media.clip
+        && let Some(clip_stamp) = clip_stamp
+    {
+        writer
+            .upsert_clip(image.path.clone(), clip_stamp.to_string(), Some(clip_vec))
+            .map_err(|e| e.to_string())?;
+        did = true;
+    }
+    Ok(did)
 }
 
 /// Convert a backend [`Analysis`] into the writer's persistence shape: the OCR text,
