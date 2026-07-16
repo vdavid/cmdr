@@ -98,9 +98,9 @@ conversational and actionable and never use the words "error" or "failed". The w
 ## Checking
 
 Always use **`pnpm check`** at the repo root (never raw `cargo` / `vitest` / etc.); it's cache-aware. Cadence: `--fast`
-while iterating, plain `pnpm check` per milestone, `--include-slow` before wrapping; add **`-q`** to collapse passes to
-a one-line count. Scope by name (`pnpm check clippy`), tech (`rust` / `svelte` / `go`), or app (`desktop` / `website` /
-...). Full docs: [`scripts/check/CLAUDE.md`](scripts/check/CLAUDE.md). **Finish every unit of work by running the right
+while iterating, plain `pnpm check` per milestone, `--include-slow` before wrapping; prefer **`-q`** (`--quiet`), it
+collapses passes to one line. You can also scope by name (`pnpm check clippy`), tech (`rust` / `svelte` / `go`), or app
+(`desktop` / `website` / ...). [Full docs](scripts/check/CLAUDE.md). **Finish every unit of work by running the right
 checks.**
 
 ## Testing
@@ -129,6 +129,7 @@ agents should read them manually). Two facts worth stating directly: tool versio
   (`~/.claude/docs/worktree-move-changes.md`) rather than continuing. Desktop worktree setup (target clone, CodeGraph,
   data-dir cleanup) is in [`apps/desktop/CLAUDE.md`](apps/desktop/CLAUDE.md). For parallel-subagent efforts, see
   [`docs/guides/multi-agent-refactors.md`](docs/guides/multi-agent-refactors.md).
+- Before doing **legwork**, read the [guide](docs/guides/agent-legwork-guide.md).
 - **TDD where reasonable** (red → green); cover code with tests until confident, not beyond.
 - **No PRs.** Changes land on `main` via fast-forward merge from a worktree branch (`gh pr create` only if David
   explicitly asks; see [`.claude/rules/git-conventions.md`](.claude/rules/git-conventions.md)).
