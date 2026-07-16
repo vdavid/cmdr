@@ -198,6 +198,10 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
+  "queryUi.results.countOnly.label": "{count, plural, one {resultat} other {resultat}}",
+  "@queryUi.results.countOnly.label": {
+    "sourceHash": "8a25a98"
+  },
   "queryUi.results.criteria.query": "Sökfråga: {query}",
   "@queryUi.results.criteria.query": {
     "sourceHash": "4877824"
@@ -412,6 +416,14 @@
   "queryUi.filters.chip.scope": "Sök i",
   "@queryUi.filters.chip.scope": {
     "sourceHash": "fa79255"
+  },
+  "queryUi.filters.countOnly.label": "Räkna bara",
+  "@queryUi.filters.countOnly.label": {
+    "sourceHash": "a28dbfe"
+  },
+  "queryUi.filters.countOnly.tooltip": "Visa bara hur många filer som matchar, inte listan",
+  "@queryUi.filters.countOnly.tooltip": {
+    "sourceHash": "7351921"
   },
   "queryUi.filters.scope.includesSystemFolders": "inkluderar systemmappar",
   "@queryUi.filters.scope.includesSystemFolders": {

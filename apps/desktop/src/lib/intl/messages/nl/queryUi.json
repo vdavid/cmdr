@@ -199,6 +199,10 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
+  "queryUi.results.countOnly.label": "{count, plural, one {resultaat} other {resultaten}}",
+  "@queryUi.results.countOnly.label": {
+    "sourceHash": "8a25a98"
+  },
   "queryUi.results.criteria.query": "Zoekopdracht: {query}",
   "@queryUi.results.criteria.query": {
     "sourceHash": "4877824"
@@ -413,6 +417,14 @@
   "queryUi.filters.chip.scope": "Zoek in",
   "@queryUi.filters.chip.scope": {
     "sourceHash": "fa79255"
+  },
+  "queryUi.filters.countOnly.label": "Alleen tellen",
+  "@queryUi.filters.countOnly.label": {
+    "sourceHash": "a28dbfe"
+  },
+  "queryUi.filters.countOnly.tooltip": "Toon alleen hoeveel bestanden overeenkomen, niet de lijst",
+  "@queryUi.filters.countOnly.tooltip": {
+    "sourceHash": "7351921"
   },
   "queryUi.filters.scope.includesSystemFolders": "inclusief systeemmappen",
   "@queryUi.filters.scope.includesSystemFolders": {

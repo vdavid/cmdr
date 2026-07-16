@@ -63,6 +63,8 @@
         setScope,
         getExcludeSystemDirs,
         setExcludeSystemDirs,
+        getCountOnly,
+        setCountOnly,
         getResults,
         getTotalCount,
         getLastAiPrompt,
@@ -553,6 +555,7 @@
         caseSensitive: getCaseSensitive(),
         scope: getScope(),
         excludeSystemDirs: getExcludeSystemDirs(),
+        countOnly: getCountOnly(),
         searchableFolder,
         systemDirExcludeTooltip,
         aiPattern: lastAiPattern,
@@ -562,6 +565,9 @@
         },
         onToggleExcludeSystemDirs: () => {
             setExcludeSystemDirs(!getExcludeSystemDirs())
+        },
+        onToggleCountOnly: () => {
+            setCountOnly(!getCountOnly())
         },
         onSetScope: setScope,
         onClearAiPattern: clearAiPattern,

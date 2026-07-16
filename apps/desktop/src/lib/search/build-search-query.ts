@@ -24,5 +24,8 @@ export function buildSearchQuery(core: QueryFilterState, extras: SearchExtrasSta
   if (!extras.getExcludeSystemDirs()) {
     q.excludeSystemDirs = false
   }
+  if (extras.getCountOnly()) {
+    q.countOnly = true
+  }
   return q
 }

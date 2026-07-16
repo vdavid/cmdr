@@ -42,6 +42,7 @@ const baseProps = {
   entriesScanned: 0,
   totalCount: 0,
   indexEntryCount: 1000,
+  countOnly: false,
   iconCacheVersion: 0,
   aiEnabled: false,
   onResultClick: () => {},
@@ -250,5 +251,46 @@ describe('SearchResults row rendering (font-bump sizing)', () => {
     const cursorRows = target.querySelectorAll('.result-row.is-under-cursor')
     expect(cursorRows.length).toBe(1)
     expect(cursorRows[0].textContent).toContain('file-2.txt')
+  })
+})
+
+describe('SearchResults count-only mode', () => {
+  it('shows the grouped total plus a pluralized label instead of rows', async () => {
+    const target = mountWith({
+      countOnly: true,
+      hasSearched: true,
+      query: '*.jpg',
+      totalCount: 12345,
+    })
+    await tick()
+    const summary = target.querySelector('.count-only-summary')
+    expect(summary).toBeTruthy()
+    expect(summary?.querySelector('.count-only-number')?.textContent).toBe('12,345')
+    expect(summary?.textContent).toContain('results')
+    // No rows and no listbox role in count-only mode.
+    expect(target.querySelectorAll('.result-row').length).toBe(0)
+    expect(target.querySelector('[role="listbox"]')).toBeFalsy()
+  })
+
+  it('renders a zero-match count (not the no-results criteria list)', async () => {
+    const target = mountWith({ countOnly: true, hasSearched: true, query: 'nomatch', totalCount: 0 })
+    await tick()
+    expect(target.querySelector('.count-only-summary')?.querySelector('.count-only-number')?.textContent).toBe('0')
+    expect(target.querySelector('.no-results')).toBeFalsy()
+  })
+
+  it('uses the singular label for a count of one', async () => {
+    const target = mountWith({ countOnly: true, hasSearched: true, query: 'unique', totalCount: 1 })
+    await tick()
+    const summary = target.querySelector('.count-only-summary')
+    expect(summary?.querySelector('.count-only-number')?.textContent).toBe('1')
+    expect(summary?.textContent).toContain('result')
+    expect(summary?.textContent).not.toContain('results')
+  })
+
+  it('falls through to the empty state before any search runs', async () => {
+    const target = mountWith({ countOnly: true, hasSearched: false, query: '' })
+    await tick()
+    expect(target.querySelector('.count-only-summary')).toBeFalsy()
   })
 })

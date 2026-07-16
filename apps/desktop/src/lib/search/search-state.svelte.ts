@@ -165,6 +165,10 @@ export const getScope = (): string => extras.getScope()
 export const setScope = (v: string): void => {
   extras.setScope(v)
 }
+export const getCountOnly = (): boolean => extras.getCountOnly()
+export const setCountOnly = (v: boolean): void => {
+  extras.setCountOnly(v)
+}
 export const getExcludeSystemDirs = (): boolean => extras.getExcludeSystemDirs()
 export const setExcludeSystemDirs = (v: boolean): void => {
   extras.setExcludeSystemDirs(v)

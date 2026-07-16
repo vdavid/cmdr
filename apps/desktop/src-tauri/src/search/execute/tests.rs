@@ -81,6 +81,7 @@ fn plain_query(stem: &str) -> SearchQuery {
         include_paths: None,
         exclude_dir_names: None,
         include_path_ids: None,
+        count_only: false,
         limit: 30,
         case_sensitive: Some(false),
         exclude_system_dirs: Some(false),
@@ -206,4 +207,79 @@ fn unscoped_targets_are_not_from_scope() {
         targets.iter().all(|t| !t.from_scope),
         "unscoped targets never count as coverage gaps"
     );
+}
+
+// ── Count-only across volumes ────────────────────────────────────────
+
+#[test]
+fn count_only_sums_per_volume_totals_with_no_rows() {
+    // Count-only fans out the same as a normal search but returns just the total:
+    // each volume's engine pass yields no rows (no size filter on dirs) and its match
+    // count, and the orchestrator sums them with no k-way merge. Mirrors the count-only
+    // branch of `run_blocking` for two volumes.
+    let vol_a = one_file_index("a", "report.pdf", 100);
+    let vol_b = one_file_index("b", "report.txt", 200);
+    let mut query = plain_query("report");
+    query.count_only = true;
+
+    let mut total: u64 = 0;
+    let mut rows = 0usize;
+    for (vol, prefix) in [(&vol_a, ""), (&vol_b, "/Volumes/nas")] {
+        let (ranked, vtotal) =
+            engine::search_ranked(vol, &query, &ImportanceWeights::empty(), prefix).expect("search_ranked");
+        // No size filter ⇒ the engine materializes no rows and the total is exact.
+        assert!(
+            ranked.is_empty(),
+            "count-only returns no rows without a directory size filter"
+        );
+        rows += ranked.len();
+        total += count_only_volume_total(vtotal, &ranked, &query) as u64;
+    }
+    // Each volume matches its one `report*` file ⇒ summed total 2, nothing to merge.
+    assert_eq!(total, 2);
+    assert_eq!(rows, 0);
+}
+
+#[test]
+fn count_only_volume_total_subtracts_out_of_range_dirs() {
+    // Grab a valid RankKey from a real ranked pass, then hand-build two matching
+    // directories with filled sizes. The engine's volume total counts every match
+    // (say 3 files that passed the size filter + these 2 dirs = 5); after the size
+    // check, the 100-byte dir falls under the floor and drops, so the exact total is 4.
+    let vol = one_file_index("sub", "report.pdf", 100);
+    let key = ranked(&vol, &plain_query("report"), "")[0].key;
+    let dirs = vec![
+        RankedEntry {
+            key,
+            entry: crate::search::SearchResultEntry {
+                name: "big".to_string(),
+                path: "/big".to_string(),
+                parent_path: "/".to_string(),
+                is_directory: true,
+                size: Some(10_000),
+                modified_at: Some(1),
+                icon_id: "dir".to_string(),
+                entry_id: 98,
+            },
+        },
+        RankedEntry {
+            key,
+            entry: crate::search::SearchResultEntry {
+                name: "small".to_string(),
+                path: "/small".to_string(),
+                parent_path: "/".to_string(),
+                is_directory: true,
+                size: Some(100),
+                modified_at: Some(1),
+                icon_id: "dir".to_string(),
+                entry_id: 99,
+            },
+        },
+    ];
+    let mut q = plain_query("report");
+    q.count_only = true;
+    q.min_size = Some(1_000);
+    assert_eq!(count_only_volume_total(5, &dirs, &q), 4);
+    // No size filter ⇒ the volume total is already exact, nothing subtracted.
+    assert_eq!(count_only_volume_total(5, &dirs, &plain_query("report")), 5);
 }

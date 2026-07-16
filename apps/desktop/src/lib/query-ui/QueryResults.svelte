@@ -45,6 +45,11 @@
         entriesScanned: number
         totalCount: number
         indexEntryCount: number
+        /**
+         * Count-only mode (Search-only): the backend returned just a total, no rows. Replaces
+         * the results list with a prominent count. Defaults to `false` (Selection never sets it).
+         */
+        countOnly?: boolean
         iconCacheVersion: number
         /** True when AI mode is available (provider on + index ready). Drives the empty-state chip set. */
         aiEnabled: boolean
@@ -95,6 +100,7 @@
         entriesScanned,
         totalCount,
         indexEntryCount,
+        countOnly = false,
         iconCacheVersion: _iconVersionProp,
         aiEnabled,
         showPathColumn = true,
@@ -137,6 +143,9 @@
             // D4: status bar stays empty while the content area shows the criteria list.
             // Both states surface their info in the content; no duplication here.
             if (isSearching) return ''
+            // Count-only shows the total prominently in the content area, so the status
+            // bar stays empty (same content-is-source-of-truth rule as the spinner states).
+            if (showingCount) return ''
             if (!hasSearched || (!query.trim() && sizeFilter === 'any' && dateFilter === 'any')) {
                 return tString('queryUi.results.indexReadyStatus', { countText: formatEntryCount(indexEntryCount) })
             }
@@ -171,7 +180,21 @@
     // states (which replace the rows with a spinner or message) even when `results` still holds a
     // stale set. Gating on `results.length > 0` alone tripped axe's `aria-required-children` when
     // a reopened dialog re-ran (spinner showing, persisted results still in `results`).
-    const showingRows = $derived(isIndexAvailable && isIndexReady && !isSearching && results.length > 0)
+    const showingRows = $derived(
+        isIndexAvailable && isIndexReady && !isSearching && !countOnly && results.length > 0,
+    )
+
+    // Count-only shows a bare total instead of rows. Renders once a search has run (including a
+    // 0-match run), so an active count-only query that matches nothing reads "0 results", not the
+    // no-match criteria list. Before the first run it falls through to the empty state.
+    const showingCount = $derived(
+        isIndexAvailable &&
+            isIndexReady &&
+            !isSearching &&
+            countOnly &&
+            hasSearched &&
+            (query.trim() !== '' || sizeFilter !== 'any' || dateFilter !== 'any'),
+    )
 
     /** Scrolls the cursor row into view. Called by the parent after cursor changes. */
     export function scrollCursorIntoView(): void {
@@ -230,6 +253,15 @@
         <div class="loading-state">
             <Spinner size="md" />
             <div class="loading-label">{tString('queryUi.results.searching')}</div>
+        </div>
+    {:else if showingCount}
+        <!-- Count-only: the search ran but the backend returned no rows, just a total. Show it
+             prominently, thousands-separated, with a pluralized label. -->
+        <div class="count-only-summary" aria-live="polite">
+            <span class="count-only-number">{formatInteger(totalCount)}</span>
+            <span class="count-only-label">
+                {tString('queryUi.results.countOnly.label', { count: totalCount })}
+            </span>
         </div>
     {:else if results.length === 0 && hasSearched && !isSearching && (query.trim() || sizeFilter !== 'any' || dateFilter !== 'any')}
         <!-- D4: structured no-results state. Heading + bulleted criteria list. -->
@@ -422,6 +454,34 @@
     .no-results-heading {
         margin: 0;
         color: var(--color-text-primary);
+    }
+
+    /* Count-only summary: a big centered total with a quiet label beneath it. Fills the
+       results area (which would otherwise hold rows) so the number is unmissable. */
+    .count-only-summary {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-xl) var(--spacing-lg);
+        text-align: center;
+    }
+
+    .count-only-number {
+        /* Display-scale number: no matching --font-size-* token, so a raw px value is intentional. */
+        font-size: 40px;
+        font-weight: 600;
+        line-height: 1.1;
+        color: var(--color-text-primary);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .count-only-label {
+        font-size: var(--font-size-md);
+        color: var(--color-text-secondary);
     }
 
     .no-results-criteria {

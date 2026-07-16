@@ -198,6 +198,10 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
+  "queryUi.results.countOnly.label": "{count, plural, one {találat} other {találat}}",
+  "@queryUi.results.countOnly.label": {
+    "sourceHash": "8a25a98"
+  },
   "queryUi.results.criteria.query": "Lekérdezés: {query}",
   "@queryUi.results.criteria.query": {
     "sourceHash": "4877824"
@@ -412,6 +416,14 @@
   "queryUi.filters.chip.scope": "Keresés itt",
   "@queryUi.filters.chip.scope": {
     "sourceHash": "fa79255"
+  },
+  "queryUi.filters.countOnly.label": "Csak darabszám",
+  "@queryUi.filters.countOnly.label": {
+    "sourceHash": "a28dbfe"
+  },
+  "queryUi.filters.countOnly.tooltip": "Csak azt mutatja meg, hány fájl illeszkedik, a listát nem",
+  "@queryUi.filters.countOnly.tooltip": {
+    "sourceHash": "7351921"
   },
   "queryUi.filters.scope.includesSystemFolders": "rendszermappákkal együtt",
   "@queryUi.filters.scope.includesSystemFolders": {

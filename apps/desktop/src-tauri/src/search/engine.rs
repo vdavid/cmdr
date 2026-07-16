@@ -368,6 +368,49 @@ pub(crate) fn search_ranked(
 
     let total_count = matching_indices.len() as u32;
 
+    let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
+    let dirs_included = query.is_directory != Some(false);
+
+    // Count-only: skip ranking, truncation, and per-entry path materialization —
+    // the expensive parts — and return just the total.
+    //
+    // A size filter on directories is the one case that needs more work. Directory
+    // sizes live in `dir_stats` (the DB), not the in-memory index, so the engine
+    // can't size-filter directories here (that's why `total_count` still counts
+    // every matching directory). When a size filter is set and directories aren't
+    // excluded, hand the matching directories back in `entries` so the caller can
+    // fetch their sizes and subtract the ones outside the filter (see
+    // `query::finalize_count_only`). Files are already size-filtered above.
+    if query.count_only {
+        // Skip ranking and file materialization — the count is exact as-is. Exception: a
+        // size filter on directories needs their dir_stats sizes (the DB, filled by
+        // execute.rs), so hand the matching directories back — ranked, so they reuse the
+        // same materialization — for the caller to size-check and subtract. Files are
+        // already size-filtered above.
+        let entries: Vec<RankedEntry> = if has_size_filter && dirs_included {
+            let home_dir = dirs::home_dir().map(|p| p.to_string_lossy().to_string());
+            let dir_indices: Vec<usize> = matching_indices
+                .iter()
+                .copied()
+                .filter(|&idx| index.entries[idx].is_directory)
+                .collect();
+            let stem = ranking::stem_for(query);
+            ranking::rank_decorated(index, &dir_indices, &stem, case_insensitive, weights)
+                .into_iter()
+                .map(|(key, idx)| build_ranked_entry(index, key, idx, path_prefix, home_dir.as_deref()))
+                .collect()
+        } else {
+            Vec::new()
+        };
+        log::debug!(
+            "Count-only search: {} → {} matches, took {:?}",
+            summarize_query(query),
+            total_count,
+            t.elapsed()
+        );
+        return Ok((entries, total_count));
+    }
+
     // Rank by match-quality band first, then importance-boosted recency within a
     // band (empty weights ⇒ pure recency, today's order). See `ranking.rs`. Keep the
     // keys: the multi-volume merge k-way-merges each volume's slice on them.
@@ -379,8 +422,6 @@ pub(crate) fn search_ranked(
     // filtered out later in fill_directory_sizes (directory sizes come from
     // dir_stats, not the entries table).
     let base_limit = query.limit.min(1000) as usize;
-    let has_size_filter = query.min_size.is_some() || query.max_size.is_some();
-    let dirs_included = query.is_directory != Some(false);
     let limit = if has_size_filter && dirs_included {
         (base_limit * 3).max(base_limit + 100)
     } else {
@@ -393,43 +434,7 @@ pub(crate) fn search_ranked(
     let home_dir = dirs::home_dir().map(|p| p.to_string_lossy().to_string());
     let entries: Vec<RankedEntry> = ranked
         .iter()
-        .map(|&(key, idx)| {
-            let entry = &index.entries[idx];
-            let path = apply_path_prefix(path_prefix, &reconstruct_path_from_index(index, entry.id));
-            let parent_path = match path.rfind('/') {
-                Some(0) => "/".to_string(),
-                Some(pos) => {
-                    let parent = &path[..pos];
-                    // Replace home dir prefix with ~ (a no-op for a prefixed non-root
-                    // path, whose mount root is never the home dir).
-                    if let Some(ref home) = home_dir {
-                        if let Some(rest) = parent.strip_prefix(home.as_str()) {
-                            format!("~{rest}")
-                        } else {
-                            parent.to_string()
-                        }
-                    } else {
-                        parent.to_string()
-                    }
-                }
-                None => path.clone(),
-            };
-            let entry_name = index.name(entry);
-            let icon_id = derive_icon_id(entry_name, entry.is_directory);
-            RankedEntry {
-                key,
-                entry: SearchResultEntry {
-                    name: entry_name.to_string(),
-                    path,
-                    parent_path,
-                    is_directory: entry.is_directory,
-                    size: entry.size,
-                    modified_at: entry.modified_at,
-                    icon_id,
-                    entry_id: entry.id,
-                },
-            }
-        })
+        .map(|&(key, idx)| build_ranked_entry(index, key, idx, path_prefix, home_dir.as_deref()))
         .collect();
 
     log::debug!(
@@ -454,6 +459,55 @@ fn apply_path_prefix(prefix: &str, path: &str) -> String {
         prefix.to_string()
     } else {
         format!("{prefix}{path}")
+    }
+}
+
+/// Materialize one ranked hit into a `RankedEntry`: reconstruct its full path
+/// (prefixed into the volume's mount space, so a non-root volume's mount-relative
+/// index paths become absolute), derive the `~`-relative parent path, and pick an
+/// icon. `home_dir` is the absolute home directory (for the `~` substitution), passed
+/// in so a batch reconstructs it once.
+fn build_ranked_entry(
+    index: &SearchIndex,
+    key: ranking::RankKey,
+    idx: usize,
+    path_prefix: &str,
+    home_dir: Option<&str>,
+) -> RankedEntry {
+    let entry = &index.entries[idx];
+    let path = apply_path_prefix(path_prefix, &reconstruct_path_from_index(index, entry.id));
+    let parent_path = match path.rfind('/') {
+        Some(0) => "/".to_string(),
+        Some(pos) => {
+            let parent = &path[..pos];
+            // Replace home dir prefix with ~ (a no-op for a prefixed non-root path,
+            // whose mount root is never the home dir).
+            if let Some(home) = home_dir {
+                if let Some(rest) = parent.strip_prefix(home) {
+                    format!("~{rest}")
+                } else {
+                    parent.to_string()
+                }
+            } else {
+                parent.to_string()
+            }
+        }
+        None => path.clone(),
+    };
+    let entry_name = index.name(entry);
+    let icon_id = derive_icon_id(entry_name, entry.is_directory);
+    RankedEntry {
+        key,
+        entry: SearchResultEntry {
+            name: entry_name.to_string(),
+            path,
+            parent_path,
+            is_directory: entry.is_directory,
+            size: entry.size,
+            modified_at: entry.modified_at,
+            icon_id,
+            entry_id: entry.id,
+        },
     }
 }
 
@@ -643,6 +697,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -667,6 +722,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -692,6 +748,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -718,6 +775,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -741,6 +799,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -767,6 +826,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -793,6 +853,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -816,6 +877,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -841,6 +903,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -865,6 +928,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -888,6 +952,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -913,6 +978,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -936,6 +1002,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -959,6 +1026,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -984,6 +1052,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1009,6 +1078,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1036,6 +1106,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 3,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1061,6 +1132,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1085,6 +1157,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1137,6 +1210,92 @@ mod tests {
     #[test]
     fn icon_id_uppercase_extension() {
         assert_eq!(derive_icon_id("Photo.JPG", false), "ext:jpg");
+    }
+
+    // ── Count-only mode ──────────────────────────────────────────────
+
+    #[test]
+    fn count_only_returns_total_and_empty_entries() {
+        let index = make_test_index();
+        let query = SearchQuery {
+            name_pattern: Some("*.pdf".to_string()),
+            pattern_type: PatternType::Glob,
+            min_size: None,
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
+            include_path_ids: None,
+            count_only: true,
+            limit: 30,
+            case_sensitive: None,
+            exclude_system_dirs: Some(false),
+        };
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
+        // Exact total, no rows materialized.
+        assert_eq!(result.total_count, 2);
+        assert!(result.entries.is_empty());
+    }
+
+    #[test]
+    fn count_only_files_only_with_size_filter_is_exact() {
+        let index = make_test_index();
+        // Files-only: directories are excluded entirely, so no dir_stats round-trip
+        // is needed and the count is exact with empty entries.
+        let query = SearchQuery {
+            name_pattern: None,
+            pattern_type: PatternType::Glob,
+            min_size: Some(1_000_000),
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: Some(false),
+            include_paths: None,
+            exclude_dir_names: None,
+            include_path_ids: None,
+            count_only: true,
+            limit: 30,
+            case_sensitive: None,
+            exclude_system_dirs: Some(false),
+        };
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
+        // report.pdf (1M), photo.jpg (5M), Q1-report.pdf (2M); notes.txt (500) excluded.
+        assert_eq!(result.total_count, 3);
+        assert!(result.entries.is_empty());
+    }
+
+    #[test]
+    fn count_only_size_filter_with_dirs_hands_dirs_to_caller() {
+        let index = make_test_index();
+        // Size filter + directories included: engine can't size-filter directories
+        // (their sizes live in dir_stats, not the index), so it returns the matching
+        // directories in `entries` for the caller to size-check, and `total_count`
+        // counts every match (files already size-filtered + all matching dirs).
+        let query = SearchQuery {
+            name_pattern: None,
+            pattern_type: PatternType::Glob,
+            min_size: Some(1_000_000),
+            max_size: None,
+            modified_after: None,
+            modified_before: None,
+            is_directory: None,
+            include_paths: None,
+            exclude_dir_names: None,
+            include_path_ids: None,
+            count_only: true,
+            limit: 30,
+            case_sensitive: None,
+            exclude_system_dirs: Some(false),
+        };
+        let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
+        // 3 files pass the size filter + 3 directories (Users, alice, Documents) that
+        // the engine passes through unfiltered = 6.
+        assert_eq!(result.total_count, 6);
+        // The three directories are handed back for the caller's dir_stats size check.
+        assert_eq!(result.entries.len(), 3);
+        assert!(result.entries.iter().all(|e| e.is_directory));
     }
 
     // ── Scope filtering in search ───────────────────────────────────
@@ -1269,6 +1428,7 @@ mod tests {
             include_paths: Some(vec!["/Users/alice/projects".to_string()]),
             exclude_dir_names: None,
             include_path_ids: Some(vec![4]),
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1296,6 +1456,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: Some(vec!["node_modules".to_string()]),
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1323,6 +1484,7 @@ mod tests {
             include_paths: Some(vec!["/Users/alice/projects".to_string()]),
             exclude_dir_names: Some(vec!["node_modules".to_string()]),
             include_path_ids: Some(vec![4]),
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),
@@ -1347,6 +1509,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: Some(vec![".*".to_string()]),
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),

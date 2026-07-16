@@ -110,6 +110,19 @@ pub(crate) fn run_blocking(query: SearchQuery) -> Result<SearchResult, String> {
         let prefix = loaded.mount_root.as_deref().unwrap_or("");
         let (mut ranked, vtotal) = engine::search_ranked(&loaded.index, &vq, &weights, prefix)?;
 
+        if query.count_only {
+            // Count-only: sum exact per-volume totals; no k-way merge, no rows. `ranked`
+            // holds the matching directories only when a size filter applies to them (else
+            // it's empty and `vtotal` is already exact). Fill their dir_stats sizes and
+            // subtract the ones outside the filter. Files are already size-filtered by the
+            // engine, so `merged` stays empty and the final result carries just the count.
+            if !ranked.is_empty() {
+                fill_ranked_dir_sizes(&mut ranked, &loaded.pool);
+            }
+            total += count_only_volume_total(vtotal, &ranked, &vq) as u64;
+            continue;
+        }
+
         // Directory sizes live in `dir_stats`, not the entries table, so fill them
         // from this volume's pool, then drop dirs outside the size filter (the
         // engine over-fetched dir candidates to absorb this — see its limit bump).
@@ -167,25 +180,38 @@ fn filter_ranked_dirs_by_size(ranked: &mut Vec<RankedEntry>, query: &SearchQuery
     if query.min_size.is_none() && query.max_size.is_none() {
         return vtotal;
     }
-    ranked.retain(|r| {
-        if !r.entry.is_directory {
-            return true;
-        }
-        if let Some(min) = query.min_size {
-            match r.entry.size {
-                Some(s) if s >= min => {}
-                _ => return false,
-            }
-        }
-        if let Some(max) = query.max_size {
-            match r.entry.size {
-                Some(s) if s <= max => {}
-                _ => return false,
-            }
-        }
-        true
-    });
+    ranked.retain(|r| !r.entry.is_directory || size_in_range(r.entry.size, query.min_size, query.max_size));
     ranked.len() as u32
+}
+
+/// Whether a size (bytes) satisfies the query's min/max bounds. `None` (a directory
+/// whose `dir_stats` row is missing) fails any active bound.
+fn size_in_range(size: Option<u64>, min: Option<u64>, max: Option<u64>) -> bool {
+    if let Some(min) = min {
+        match size {
+            Some(s) if s >= min => {}
+            _ => return false,
+        }
+    }
+    if let Some(max) = max {
+        match size {
+            Some(s) if s <= max => {}
+            _ => return false,
+        }
+    }
+    true
+}
+
+/// Adjust a count-only volume total by subtracting the directories whose `dir_stats`
+/// size falls outside the query's size filter. `dirs` holds the matching directories
+/// the engine handed back for this check (empty when no size filter applies to them,
+/// in which case `vtotal` is already exact). Files are already size-filtered upstream.
+fn count_only_volume_total(vtotal: u32, dirs: &[RankedEntry], query: &SearchQuery) -> u32 {
+    let out_of_range = dirs
+        .iter()
+        .filter(|r| !size_in_range(r.entry.size, query.min_size, query.max_size))
+        .count() as u32;
+    vtotal.saturating_sub(out_of_range)
 }
 
 #[cfg(test)]

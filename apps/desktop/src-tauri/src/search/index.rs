@@ -217,6 +217,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),

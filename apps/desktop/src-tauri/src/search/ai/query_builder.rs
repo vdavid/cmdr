@@ -62,6 +62,7 @@ pub fn build_search_query(parsed: &ParsedLlmResponse) -> SearchQuery {
         include_paths: scope.as_ref().map(|s| s.paths.clone()),
         exclude_dir_names: exclude,
         include_path_ids: None,
+        count_only: false,
         limit: 30,
         case_sensitive: None,
         exclude_system_dirs: if include_system_dirs { Some(false) } else { None },

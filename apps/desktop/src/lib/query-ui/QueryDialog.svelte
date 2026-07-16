@@ -845,6 +845,8 @@
             aiPattern={config.filterChipsExtras.aiPattern}
             scopeChipVisible={config.visibleChips.scope}
             patternChipVisible={config.visibleChips.pattern}
+            countOnly={config.filterChipsExtras.countOnly ?? false}
+            onToggleCountOnly={config.filterChipsExtras.onToggleCountOnly}
             onInput={inputHandler}
             onToggleCaseSensitive={config.filterChipsExtras.onToggleCaseSensitive}
             onToggleExcludeSystemDirs={config.filterChipsExtras.onToggleExcludeSystemDirs}
@@ -869,6 +871,7 @@
             entriesScanned={config.entriesScanned}
             {totalCount}
             indexEntryCount={config.indexEntryCount}
+            countOnly={config.filterChipsExtras.countOnly ?? false}
             iconCacheVersion={iconVersion}
             aiEnabled={config.aiEnabled}
             showPathColumn={config.showPathColumn}

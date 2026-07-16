@@ -112,6 +112,35 @@ beforeEach(() => {
   })
 })
 
+describe('SearchFilterChips: count-only toggle (Search-only)', () => {
+  it('renders no count-only switch when onToggleCountOnly is absent (Selection)', async () => {
+    const { target, cleanup } = mountChips(baseProps())
+    await tick()
+    expect(target.querySelector('[role="switch"]')).toBeNull()
+    cleanup()
+  })
+
+  it('renders the switch when wired, reflecting the countOnly state via aria-checked', async () => {
+    const { target, cleanup } = mountChips(baseProps({ countOnly: true, onToggleCountOnly: () => {} }))
+    await tick()
+    const sw = target.querySelector('[role="switch"]')
+    expect(sw).not.toBeNull()
+    expect(sw?.getAttribute('aria-checked')).toBe('true')
+    cleanup()
+  })
+
+  it('clicking the switch toggles count-only and re-runs the search', async () => {
+    const onToggleCountOnly = vi.fn()
+    const scheduleSearch = vi.fn()
+    const { target, cleanup } = mountChips(baseProps({ countOnly: false, onToggleCountOnly, scheduleSearch }))
+    await tick()
+    target.querySelector<HTMLButtonElement>('[role="switch"]')?.click()
+    expect(onToggleCountOnly).toHaveBeenCalledOnce()
+    expect(scheduleSearch).toHaveBeenCalledOnce()
+    cleanup()
+  })
+})
+
 describe('SearchFilterChips: default rendering', () => {
   it('renders the type toggle and the three filter chips, with no Add filter chip', async () => {
     const { target, cleanup } = mountChips(baseProps())

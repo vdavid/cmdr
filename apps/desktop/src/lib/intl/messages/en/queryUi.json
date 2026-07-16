@@ -236,6 +236,13 @@
       "totalText": "the total number of matches found, already formatted for display (for example 1,234)"
     }
   },
+  "queryUi.results.countOnly.label": "{count, plural, one {result} other {results}}",
+  "@queryUi.results.countOnly.label": {
+    "description": "The word shown beneath the big match total in count-only search mode (the total itself is rendered separately, already formatted). Just the noun: for example the whole area reads '12,345' on one line and 'results' beneath it. Pick the plural form your language uses for the given count.",
+    "placeholders": {
+      "count": "the number of matches, passed only to choose the singular or plural word"
+    }
+  },
   "queryUi.results.criteria.query": "Query: {query}",
   "@queryUi.results.criteria.query": {
     "description": "One bullet in the 'No files match these criteria' list, echoing the search text the user typed. Shown when a search returns nothing.",
@@ -536,6 +543,16 @@
   "@queryUi.filters.chip.scope": {
     "description": "Label of the scope filter chip, which opens a popover to limit search to specific folders. Tight chip: keep it short.",
     "screenshot": "search-dialog.png"
+  },
+
+  "queryUi.filters.countOnly.label": "Count only",
+  "@queryUi.filters.countOnly.label": {
+    "description": "Label of a toggle switch at the end of the search filter strip. When on, the search shows only how many files match, not the list of results. Keep it short (it sits inline next to a small switch).",
+    "screenshot": "search-dialog.png"
+  },
+  "queryUi.filters.countOnly.tooltip": "Show just how many files match, not the list",
+  "@queryUi.filters.countOnly.tooltip": {
+    "description": "Tooltip on the 'Count only' toggle in the search filter strip, explaining what turning it on does."
   },
 
   "queryUi.filters.scope.includesSystemFolders": "includes system folders",

@@ -198,6 +198,10 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
+  "queryUi.results.countOnly.label": "{count, plural, other {kết quả}}",
+  "@queryUi.results.countOnly.label": {
+    "sourceHash": "8a25a98"
+  },
   "queryUi.results.criteria.query": "Truy vấn: {query}",
   "@queryUi.results.criteria.query": {
     "sourceHash": "4877824"
@@ -412,6 +416,14 @@
   "queryUi.filters.chip.scope": "Tìm trong",
   "@queryUi.filters.chip.scope": {
     "sourceHash": "fa79255"
+  },
+  "queryUi.filters.countOnly.label": "Chỉ đếm",
+  "@queryUi.filters.countOnly.label": {
+    "sourceHash": "a28dbfe"
+  },
+  "queryUi.filters.countOnly.tooltip": "Chỉ hiển thị số tệp phù hợp, không hiển thị danh sách",
+  "@queryUi.filters.countOnly.tooltip": {
+    "sourceHash": "7351921"
   },
   "queryUi.filters.scope.includesSystemFolders": "bao gồm thư mục hệ thống",
   "@queryUi.filters.scope.includesSystemFolders": {

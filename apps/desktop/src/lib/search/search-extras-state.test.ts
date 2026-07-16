@@ -9,21 +9,31 @@ import { createQueryFilterState } from '$lib/query-ui/query-filter-state.svelte'
 import { createSearchExtrasState } from './search-extras-state.svelte'
 
 describe('createSearchExtrasState: defaults + setters', () => {
-  it('starts with empty scope, excludeSystemDirs on, no AI pattern / label', () => {
+  it('starts with empty scope, excludeSystemDirs on, count-only off, no AI pattern / label', () => {
     const e = createSearchExtrasState()
     expect(e.getScope()).toBe('')
     expect(e.getExcludeSystemDirs()).toBe(true)
+    expect(e.getCountOnly()).toBe(false)
     expect(e.getLastAiLabel()).toBeNull()
     expect(e.getLastAiPattern()).toBeNull()
     expect(e.getLastAiPatternKind()).toBeNull()
   })
 
-  it('stores scope and the system-dirs flag', () => {
+  it('stores scope, the system-dirs flag, and count-only', () => {
     const e = createSearchExtrasState()
     e.setScope('~/projects, !node_modules')
     e.setExcludeSystemDirs(false)
+    e.setCountOnly(true)
     expect(e.getScope()).toBe('~/projects, !node_modules')
     expect(e.getExcludeSystemDirs()).toBe(false)
+    expect(e.getCountOnly()).toBe(true)
+  })
+
+  it('clearExtras resets count-only to off', () => {
+    const e = createSearchExtrasState()
+    e.setCountOnly(true)
+    e.clearExtras()
+    expect(e.getCountOnly()).toBe(false)
   })
 })
 

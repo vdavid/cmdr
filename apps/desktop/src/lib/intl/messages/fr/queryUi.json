@@ -200,6 +200,10 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
+  "queryUi.results.countOnly.label": "{count, plural, one {résultat} many {résultats} other {résultats}}",
+  "@queryUi.results.countOnly.label": {
+    "sourceHash": "8a25a98"
+  },
   "queryUi.results.criteria.query": "Requête : {query}",
   "@queryUi.results.criteria.query": {
     "sourceHash": "4877824"
@@ -413,6 +417,14 @@
   "queryUi.filters.chip.scope": "Rechercher dans",
   "@queryUi.filters.chip.scope": {
     "sourceHash": "fa79255"
+  },
+  "queryUi.filters.countOnly.label": "Compter seulement",
+  "@queryUi.filters.countOnly.label": {
+    "sourceHash": "a28dbfe"
+  },
+  "queryUi.filters.countOnly.tooltip": "Affiche seulement le nombre de fichiers correspondants, pas la liste",
+  "@queryUi.filters.countOnly.tooltip": {
+    "sourceHash": "7351921"
   },
   "queryUi.filters.scope.includesSystemFolders": "inclut les dossiers système",
   "@queryUi.filters.scope.includesSystemFolders": {

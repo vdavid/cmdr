@@ -34,6 +34,19 @@ Depth for the search backend. `CLAUDE.md` holds the must-knows; this file holds 
   `resolve_include_paths` is sync — the sync analog of `blocking_with_timeout`); a non-existent / timed-out path keeps
   its literal so an offline-index scope still gets a best-effort match. Applies to `search`, `ai_search`, and the FE
   search dialog — all route through the one `resolve_include_paths`.
+- **Count-only mode (`SearchQuery.count_only`) trades rows for an exact total, cheaply, across volumes**: when set,
+  `engine::search_ranked` computes each volume's `total_count` from the filtered matches but skips ranking, truncation,
+  and per-row path materialization (the expensive parts) and returns no rows; `execute.rs::run_blocking` sums the
+  per-volume totals and skips the k-way merge, returning an empty `entries`. The one wrinkle is directory size filters:
+  directory sizes live in `dir_stats` (the per-volume DB), not the in-memory index, so the pure engine can't size-filter
+  directories. So when a size filter is set AND directories aren't excluded (`is_directory != Some(false)`),
+  `search_ranked` hands that volume's matching directories back in its ranked slice (with the volume total still counting
+  every match, files already size-filtered), and `run_blocking` fills their sizes via `fill_ranked_dir_sizes` then calls
+  `count_only_volume_total`, which subtracts the directories outside the filter from that volume's total. Net: an exact
+  count in every case, materializing only the matching directories per volume (never the -- usually far larger -- file
+  set), and never merging or building rows. The MCP `search` tool formats the result as a bare line (`format_match_count`,
+  e.g. `1,234 files match`) with any `uncovered_scopes` coverage note appended; the dialog shows it as a prominent count
+  instead of the list (`QueryResults` count-only branch).
 - **`_schemaVersion` mismatch quarantines instead of migrating in place**: there's only schema v1, so a migrator would
   be speculative. When v2 lands, replace the quarantine branch with a `match` on the version calling a
   `migrate_v1_to_v2` helper.

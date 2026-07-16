@@ -665,11 +665,15 @@
       "name": "swap_panes"
     },
     {
-      "description": "Search the drive index by filename pattern, size, date, or type; returns paths (no UI). Prefer over ai_search when the query is a plain pattern or filter (no LLM call), and over open_search_dialog for a programmatic lookup. Needs an indexed volume.",
+      "description": "Search the drive index by filename pattern, size, date, or type; returns paths (no UI). Set countOnly:true for just the total. Prefer over ai_search for a plain pattern/filter, over open_search_dialog for programmatic lookup. Needs an indexed volume.",
       "inputSchema": {
         "properties": {
           "caseSensitive": {
             "description": "Case-sensitive matching. Default: false on macOS, true on Linux",
+            "type": "boolean"
+          },
+          "countOnly": {
+            "description": "Set true when you only need the total, not the results. Returns just the match count (for example, \"1,234 files match\") and skips the file list. Faster than a full search. Default: false",
             "type": "boolean"
           },
           "excludeSystemDirs": {

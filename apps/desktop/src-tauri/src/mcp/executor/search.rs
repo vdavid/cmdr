@@ -190,6 +190,7 @@ pub async fn execute_search(params: &Value) -> ToolResult {
 
     let case_sensitive = params.get("caseSensitive").and_then(|v| v.as_bool());
     let exclude_system_dirs = params.get("excludeSystemDirs").and_then(|v| v.as_bool());
+    let count_only = params.get("countOnly").and_then(|v| v.as_bool()).unwrap_or(false);
 
     let query = SearchQuery {
         name_pattern: pattern,
@@ -202,6 +203,7 @@ pub async fn execute_search(params: &Value) -> ToolResult {
         include_paths,
         exclude_dir_names,
         include_path_ids: None,
+        count_only,
         limit,
         case_sensitive,
         exclude_system_dirs,
@@ -209,12 +211,33 @@ pub async fn execute_search(params: &Value) -> ToolResult {
 
     let result = run_search(query).await?;
 
-    let table = format_search_results(&result, limit);
+    // Count-only replaces the table with a bare count; the coverage note (if any
+    // scope was unindexed) still rides along so the count isn't misread as complete.
+    let body = if count_only {
+        format_match_count(result.total_count, is_directory)
+    } else {
+        format_search_results(&result, limit)
+    };
     let output = match coverage_note(&result) {
-        Some(note) => format!("{note}\n\n{table}"),
-        None => table,
+        Some(note) => format!("{note}\n\n{body}"),
+        None => body,
     };
     Ok(json!(output))
+}
+
+/// Concise count-only response, e.g. "1,234 files match". The noun reflects the
+/// type filter (files / folders / items); singular for a count of one.
+fn format_match_count(count: u32, is_directory: Option<bool>) -> String {
+    let (singular, plural) = match is_directory {
+        Some(false) => ("file", "files"),
+        Some(true) => ("folder", "folders"),
+        None => ("item", "items"),
+    };
+    if count == 1 {
+        format!("1 {singular} matches")
+    } else {
+        format!("{count} {plural} match")
+    }
 }
 
 /// Build a `SearchQuery` from a `TranslateResult`, merging in caller-provided scope
@@ -254,6 +277,7 @@ fn build_search_query_from_translate(
         modified_before: translate_result.query.modified_before,
         is_directory: translate_result.query.is_directory,
         include_path_ids: None,
+        count_only: false,
         include_paths,
         exclude_dir_names,
         limit,
@@ -368,4 +392,20 @@ pub async fn execute_ai_search(params: &Value) -> ToolResult {
         output.len()
     );
     Ok(json!(output))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_match_count_reflects_type_and_plurality() {
+        assert_eq!(format_match_count(1234, Some(false)), "1234 files match");
+        assert_eq!(format_match_count(1, Some(false)), "1 file matches");
+        assert_eq!(format_match_count(3, Some(true)), "3 folders match");
+        assert_eq!(format_match_count(1, Some(true)), "1 folder matches");
+        assert_eq!(format_match_count(42, None), "42 items match");
+        assert_eq!(format_match_count(1, None), "1 item matches");
+        assert_eq!(format_match_count(0, None), "0 items match");
+    }
 }

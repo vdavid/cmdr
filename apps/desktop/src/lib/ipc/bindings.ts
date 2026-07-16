@@ -6496,6 +6496,12 @@ export type SearchQuery = {
    *  `None` or `Some(true)` = exclude, `Some(false)` = include everything.
    */
   excludeSystemDirs?: boolean | null
+  /**
+   *  Count-only mode: return just `total_count`, with an empty `entries` vec.
+   *  Skips ranking, truncation, and path materialization (the expensive parts).
+   *  See `engine::search` for the exact-count contract with directory size filters.
+   */
+  countOnly?: boolean
 }
 
 export type SearchResult = {

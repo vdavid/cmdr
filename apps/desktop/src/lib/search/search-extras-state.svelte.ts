@@ -17,6 +17,9 @@ export interface SearchExtrasState {
   setScope(value: string): void
   getExcludeSystemDirs(): boolean
   setExcludeSystemDirs(value: boolean): void
+  /** Count-only mode: run the search and show just the total, no result list. */
+  getCountOnly(): boolean
+  setCountOnly(value: boolean): void
 
   // Index lifecycle. Lives here (Search-only) because Selection has no whole-drive index.
   getIsIndexReady(): boolean
@@ -45,6 +48,7 @@ export interface SearchExtrasState {
 export function createSearchExtrasState(): SearchExtrasState {
   let scope = $state('')
   let excludeSystemDirs = $state(true)
+  let countOnly = $state(false)
   let isIndexReady = $state(false)
   let indexEntryCount = $state(0)
   let isIndexAvailable = $state(true)
@@ -60,6 +64,10 @@ export function createSearchExtrasState(): SearchExtrasState {
     getExcludeSystemDirs: () => excludeSystemDirs,
     setExcludeSystemDirs: (v) => {
       excludeSystemDirs = v
+    },
+    getCountOnly: () => countOnly,
+    setCountOnly: (v) => {
+      countOnly = v
     },
 
     getIsIndexReady: () => isIndexReady,
@@ -93,6 +101,7 @@ export function createSearchExtrasState(): SearchExtrasState {
     clearExtras: () => {
       scope = ''
       excludeSystemDirs = true
+      countOnly = false
       isIndexReady = false
       indexEntryCount = 0
       isIndexAvailable = true

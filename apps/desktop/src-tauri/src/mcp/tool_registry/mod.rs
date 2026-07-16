@@ -441,7 +441,7 @@ mcp_tools! {
 
     // ── Search ──────────────────────────────────────────────────────────────
     "search" => {
-        desc: "Search the drive index by filename pattern, size, date, or type; returns paths (no UI). Prefer over ai_search when the query is a plain pattern or filter (no LLM call), and over open_search_dialog for a programmatic lookup. Needs an indexed volume.",
+        desc: "Search the drive index by filename pattern, size, date, or type; returns paths (no UI). Set countOnly:true for just the total. Prefer over ai_search for a plain pattern/filter, over open_search_dialog for programmatic lookup. Needs an indexed volume.",
         schema: schemas::search_schema(),
         gate: TokenGate::Open,
         consumers: &[Consumer::AiClient],

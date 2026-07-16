@@ -29,6 +29,7 @@
     import DateFilterPopover from './DateFilterPopover.svelte'
     import ScopeFilterPopover from './ScopeFilterPopover.svelte'
     import ToggleGroup, { type ToggleGroupOption } from '$lib/ui/ToggleGroup.svelte'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
     import { deriveSizeChip, deriveDateChip, deriveScopeChip, derivePatternChip } from './filter-chip-state'
     import type { QueryFilterState, SizeFilter, SizeUnit, DateFilter, TypeFilter } from '../query-filter-state.svelte'
@@ -93,6 +94,9 @@
          * exists for future consumers that don't surface a pattern at all.
          */
         patternChipVisible?: boolean
+        /** Count-only mode state (Search-only). Undefined `onToggleCountOnly` hides the toggle. */
+        countOnly?: boolean
+        onToggleCountOnly?: () => void
         onInput: (setter: (v: string) => void, search?: boolean) => (e: Event) => void
         onToggleCaseSensitive: () => void
         onToggleExcludeSystemDirs: () => void
@@ -135,6 +139,8 @@
         aiPattern,
         scopeChipVisible = true,
         patternChipVisible = true,
+        countOnly = false,
+        onToggleCountOnly,
         onInput,
         onToggleCaseSensitive,
         onToggleExcludeSystemDirs,
@@ -302,6 +308,13 @@
         if (!excludeSystemDirs) onToggleExcludeSystemDirs()
         scheduleSearch()
     }
+
+    /** Flip count-only mode, then re-run so the results area switches to (or from) the count. */
+    function toggleCountOnly(): void {
+        if (disabled) return
+        onToggleCountOnly?.()
+        scheduleSearch()
+    }
 </script>
 
 <!-- Filter chip strip. The Type toggle leads the strip (one-click `Both | Files | Folders`),
@@ -383,6 +396,24 @@
             />
         {/if}
     {/each}
+    {#if onToggleCountOnly}
+        <!-- Count-only toggle: a `role="switch"` so a bare count has clear on/off semantics
+             (Search-only; Selection omits `onToggleCountOnly`). Sits at the trailing end of
+             the strip, set apart from the filter chips it modifies the OUTPUT of, not a filter. -->
+        <button
+            type="button"
+            class="count-only-toggle"
+            class:is-on={countOnly}
+            role="switch"
+            aria-checked={countOnly}
+            {disabled}
+            onclick={toggleCountOnly}
+            use:tooltip={tString('queryUi.filters.countOnly.tooltip')}
+        >
+            <span class="count-only-track" aria-hidden="true"><span class="count-only-thumb"></span></span>
+            {tString('queryUi.filters.countOnly.label')}
+        </button>
+    {/if}
 </div>
 
 {#if sizeChipEl}
@@ -486,5 +517,69 @@
        `ToggleGroup` renders its `.tg-*` nodes via `:global` (see ToggleGroup.svelte). */
     .type-toggle-flash :global(.tg-root .tg-item) {
         font-size: var(--font-size-md);
+    }
+
+    /* Count-only toggle. Trailing control (margin-left:auto pushes it to the strip's far end),
+       set apart from the filter chips because it changes what the results area SHOWS rather than
+       what the search matches. A compact pill-switch: track + sliding thumb + text label. */
+    .count-only-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        margin-left: auto;
+        padding: var(--spacing-xxs) var(--spacing-sm);
+        font-size: var(--font-size-md);
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: var(--radius-sm);
+        white-space: nowrap;
+        transition:
+            background var(--transition-base),
+            color var(--transition-base);
+    }
+
+    .count-only-toggle:not(:disabled):hover {
+        background: var(--color-bg-tertiary);
+        color: var(--color-text-primary);
+    }
+
+    .count-only-toggle.is-on {
+        color: var(--color-text-primary);
+    }
+
+    .count-only-toggle:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .count-only-track {
+        position: relative;
+        display: inline-block;
+        width: 28px;
+        height: 16px;
+        border-radius: var(--radius-full);
+        background: var(--color-border);
+        transition: background var(--transition-base);
+    }
+
+    .count-only-toggle.is-on .count-only-track {
+        background: var(--color-accent);
+    }
+
+    .count-only-thumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: var(--radius-full);
+        background: var(--color-bg-primary);
+        transition: transform var(--transition-base);
+    }
+
+    .count-only-toggle.is-on .count-only-thumb {
+        transform: translateX(12px);
     }
 </style>

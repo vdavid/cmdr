@@ -33,6 +33,11 @@ pub struct SearchQuery {
     /// `None` or `Some(true)` = exclude, `Some(false)` = include everything.
     #[serde(default)]
     pub exclude_system_dirs: Option<bool>,
+    /// Count-only mode: return just `total_count`, with an empty `entries` vec.
+    /// Skips ranking, truncation, and path materialization (the expensive parts).
+    /// See `engine::search` for the exact-count contract with directory size filters.
+    #[serde(default)]
+    pub count_only: bool,
 }
 
 pub(crate) fn default_limit() -> u32 {
@@ -105,6 +110,7 @@ mod tests {
             include_paths: None,
             exclude_dir_names: None,
             include_path_ids: None,
+            count_only: false,
             limit: 30,
             case_sensitive: None,
             exclude_system_dirs: Some(false),

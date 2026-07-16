@@ -30,6 +30,9 @@ Flow: `execute.rs` routes a query to its volume(s) → per volume: `query.rs` re
 
 - **`engine.rs` is pure: no I/O, no DB access.** Keep it that way; it's the hot path isolated from side effects and
   trivially testable with synthetic data.
+- **Count-only (`count_only`): `search_ranked` returns exact per-volume totals with no rows; `execute.rs` sums them,
+  no merge.** With a dir size filter, `search_ranked` returns that volume's matching dirs so `run_blocking` MUST
+  `fill_ranked_dir_sizes` then `count_only_volume_total` (else over-count). DETAILS.md § Decisions.
 - **`types.rs` stays free of logic.** It's imported by everything (`engine.rs`, `query.rs`, `ai/`); adding logic risks
   circular dependencies.
 - **`search/` is a read-only, one-way consumer of `indexing/`** (`search → indexing`, never reverse). It imports

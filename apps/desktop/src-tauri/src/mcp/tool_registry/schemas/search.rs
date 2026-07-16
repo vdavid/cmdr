@@ -48,6 +48,10 @@ pub fn search_schema() -> Value {
                 "type": "boolean",
                 "description": "Exclude system/build/cache folders (node_modules, .git, Caches, etc). Default: true"
             },
+            "countOnly": {
+                "type": "boolean",
+                "description": "Set true when you only need the total, not the results. Returns just the match count (for example, \"1,234 files match\") and skips the file list. Faster than a full search. Default: false"
+            },
             "limit": {
                 "type": "integer",
                 "description": "Max results to return. Default: 30"

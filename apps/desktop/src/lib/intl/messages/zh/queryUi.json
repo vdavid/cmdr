@@ -196,6 +196,10 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
+  "queryUi.results.countOnly.label": "{count, plural, other {个结果}}",
+  "@queryUi.results.countOnly.label": {
+    "sourceHash": "8a25a98"
+  },
   "queryUi.results.criteria.query": "查询：{query}",
   "@queryUi.results.criteria.query": {
     "sourceHash": "4877824"
@@ -409,6 +413,14 @@
   "queryUi.filters.chip.scope": "搜索范围",
   "@queryUi.filters.chip.scope": {
     "sourceHash": "fa79255"
+  },
+  "queryUi.filters.countOnly.label": "仅计数",
+  "@queryUi.filters.countOnly.label": {
+    "sourceHash": "a28dbfe"
+  },
+  "queryUi.filters.countOnly.tooltip": "仅显示匹配的文件数量，而非列表",
+  "@queryUi.filters.countOnly.tooltip": {
+    "sourceHash": "7351921"
   },
   "queryUi.filters.scope.includesSystemFolders": "包含系统文件夹",
   "@queryUi.filters.scope.includesSystemFolders": {

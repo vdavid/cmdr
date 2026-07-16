@@ -101,6 +101,14 @@ export interface QueryDialogFilterChipsExtras {
   onToggleExcludeSystemDirs: () => void
   onSetScope: (path: string) => void
   onClearAiPattern: () => void
+  /**
+   * Count-only mode: current state. Search wires it; Selection omits it (its results
+   * are always a listable set, so a bare count has no meaning there). When
+   * `onToggleCountOnly` is undefined the toggle doesn't render.
+   */
+  countOnly?: boolean
+  /** Toggles count-only mode. Presence gates the toggle's render (Search-only). */
+  onToggleCountOnly?: () => void
 }
 
 /** Optional action button: primary (⌥⏎ in Search), secondary (⏎ in Search). */

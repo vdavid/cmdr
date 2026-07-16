@@ -26,6 +26,8 @@ import {
   getDateFilter,
   getDateValue,
   getCaseSensitive,
+  getCountOnly,
+  setCountOnly,
   searchQueryState,
 } from './search-state.svelte'
 import type { HistoryEntry } from '$lib/tauri-commands'
@@ -196,6 +198,22 @@ describe('buildSearchQuery', () => {
 
     searchQueryState.setTypeFilter('both')
     expect(buildSearchQuery().isDirectory).toBeNull()
+  })
+
+  it('omits countOnly by default and sets it when count-only mode is on', () => {
+    clearSearchState()
+    // Off by default: the field is absent so serde defaults it to false backend-side.
+    expect(buildSearchQuery().countOnly).toBeUndefined()
+    setCountOnly(true)
+    expect(getCountOnly()).toBe(true)
+    expect(buildSearchQuery().countOnly).toBe(true)
+  })
+
+  it('clearSearchState turns count-only back off', () => {
+    setCountOnly(true)
+    clearSearchState()
+    expect(getCountOnly()).toBe(false)
+    expect(buildSearchQuery().countOnly).toBeUndefined()
   })
 })
 
