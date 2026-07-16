@@ -280,6 +280,7 @@ pub(crate) fn collect_cross_platform_types(types: &mut Types) -> Vec<Function> {
         crate::commands::selection::apply_recent_selections_max_count,
         crate::commands::e2e::get_e2e_start_path,
         crate::commands::e2e::is_e2e_mode,
+        crate::commands::e2e::ask_cmdr_fake_active,
         crate::commands::e2e::is_force_onboarding,
         crate::commands::clipboard::copy_files_to_clipboard,
         crate::commands::clipboard::cut_files_to_clipboard,

@@ -425,7 +425,7 @@ fn resolve_agent_llm(app: &AppHandle) -> Result<(ResolvedAgentLlm, ProviderTag, 
     // E2E harness path: drive a deterministic scripted assistant with zero network, so the
     // rail's send-and-render can be tested without a provider. Guarded by an explicit env
     // flag so it never activates in a normal run.
-    if std::env::var("CMDR_E2E_ASK_CMDR_FAKE").is_ok() {
+    if crate::test_mode::ask_cmdr_fake_active() {
         return Ok((
             ResolvedAgentLlm::Fake(scripted_fake_llm()),
             ProviderTag::Local,
@@ -462,7 +462,7 @@ fn scripted_fake_llm() -> FakeAgentLlm {
 /// interactive override when set, else the shared `ai/` model — the same resolution a
 /// send performs. `None` when AI is off (nothing will run, so nothing to record).
 fn effective_model_for_event(app: &AppHandle) -> Option<String> {
-    if std::env::var("CMDR_E2E_ASK_CMDR_FAKE").is_ok() {
+    if crate::test_mode::ask_cmdr_fake_active() {
         return Some("fake".to_string());
     }
     if crate::ai::state::get_provider() == "off" {

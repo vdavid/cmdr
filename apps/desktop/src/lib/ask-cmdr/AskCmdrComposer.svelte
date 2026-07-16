@@ -12,7 +12,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getSetting, onSpecificSettingChange, type AiProvider } from '$lib/settings'
-    import { askCmdrSelectionAttachments } from '$lib/tauri-commands'
+    import { askCmdrSelectionAttachments, askCmdrFakeActive } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
     import AskCmdrAttachmentChip from './AskCmdrAttachmentChip.svelte'
     import { installComposerDrop } from './ask-cmdr-drop'
@@ -40,6 +40,10 @@
     })
 
     // Subscribe the composer as a native drag-drop target (no-op outside a Tauri webview).
+    // Under E2E the scripted fake LLM serves the send, so it counts as an active
+    // provider for the gate below (resolved once; false in prod and non-Tauri contexts).
+    let fakeActive = $state(false)
+
     onMount(() => {
         let unlisten: (() => void) | null = null
         void installComposerDrop(
@@ -47,15 +51,17 @@
             (active) => (dragOver = active),
             (refs) => { addAttachments(refs); },
         ).then((u) => (unlisten = u))
+        void askCmdrFakeActive().then((v) => (fakeActive = v))
         return () => unlisten?.()
     })
 
     // Which AI provider Ask Cmdr uses, read live so flipping it in settings gates Send
     // immediately (no restart). Provider off ⇒ can't start a new turn; an in-flight turn
-    // is unaffected (Send is already disabled while streaming).
+    // is unaffected (Send is already disabled while streaming). The E2E fake counts as a
+    // provider (`fakeActive`), so send-and-render is testable with no real provider.
     let provider = $state<AiProvider>(getSetting('ai.provider'))
     $effect(() => onSpecificSettingChange('ai.provider', (_id, v) => { provider = v }))
-    const providerOff = $derived(provider === 'off')
+    const providerOff = $derived(provider === 'off' && !fakeActive)
 
     const streaming = $derived(askCmdrState.streaming)
     const canSend = $derived(text.trim().length > 0 && !providerOff)

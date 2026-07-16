@@ -172,6 +172,18 @@ export async function resolveAskCmdrAttachments(paths: string[]): Promise<Attach
   return commands.askCmdrResolveAttachments(paths)
 }
 
+/** True when the Ask Cmdr send path is served by the deterministic scripted fake LLM
+ * (`CMDR_E2E_ASK_CMDR_FAKE`, E2E only). The composer treats the fake as an active
+ * provider so Send isn't gated off while `ai.provider` is `off` under E2E. Returns
+ * false when not, or when the backend isn't reachable (non-Tauri context, like Vitest). */
+export async function askCmdrFakeActive(): Promise<boolean> {
+  try {
+    return await commands.askCmdrFakeActive()
+  } catch {
+    return false
+  }
+}
+
 /** Whether the user has opted into the CURRENT Ask Cmdr consent copy, plus the audit of
  * what/when they accepted. The rail gates on `accepted`. */
 export async function askCmdrConsentStatus(): Promise<AskCmdrConsentStatus> {

@@ -321,6 +321,7 @@ export {
   archiveAskCmdrConversation,
   askCmdrSelectionAttachments,
   resolveAskCmdrAttachments,
+  askCmdrFakeActive,
   askCmdrConsentStatus,
   acceptAskCmdrConsent,
   revokeAskCmdrConsent,

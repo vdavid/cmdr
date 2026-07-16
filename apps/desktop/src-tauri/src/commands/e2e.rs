@@ -19,6 +19,18 @@ pub fn is_e2e_mode() -> bool {
     crate::test_mode::is_e2e_mode()
 }
 
+/// Returns `true` when the Ask Cmdr send path is served by the deterministic
+/// scripted fake LLM (`CMDR_E2E_ASK_CMDR_FAKE`). The composer reads this to treat
+/// the fake as an active provider, so send isn't gated off during E2E even though
+/// `ai.provider` is `off`. Consults the same accessor `agent::resolve_agent_llm`
+/// uses, so the send-allowed and send-answered decisions share one source of truth.
+/// Always compiled in; reading an unset env var is a no-op in production.
+#[tauri::command]
+#[specta::specta]
+pub fn ask_cmdr_fake_active() -> bool {
+    crate::test_mode::ask_cmdr_fake_active()
+}
+
 /// Returns `true` when `CMDR_FORCE_ONBOARDING` is set, regardless of value.
 ///
 /// The frontend uses this to bypass the `isOnboarded` gate and force the

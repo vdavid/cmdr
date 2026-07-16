@@ -125,6 +125,12 @@ full event model (tool lines, stop, soft cap, message paging, attachments) with 
 end-to-end (create two threads, search finds the right one via real FTS over the persisted messages, switch works) — it
 seeds a per-run nonce into the message text so search never matches a thread left by an earlier run.
 
+The composer's Send gate (`AskCmdrComposer.svelte`) disables sending when `ai.provider` is `off` (its default), so the
+fake path — which never sets a real provider — needs the gate to treat the fake as an active provider. It reads
+`ask_cmdr_fake_active()` (the `commands/e2e.rs` command over `test_mode::ask_cmdr_fake_active`, the SAME accessor
+`resolve_agent_llm` gates on), so "send is allowed" and "send is answered" can't drift. Off E2E the command returns
+`false` and the gate behaves normally.
+
 ## Consent gate, cost, and settings
 
 - **Consent** (`ask-cmdr-consent.svelte.ts` + `AskCmdrConsent.svelte`): the opt-in gate. `consentState.accepted` is

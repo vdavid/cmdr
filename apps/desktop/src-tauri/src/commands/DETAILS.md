@@ -126,7 +126,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`sync_status.rs`**: `get_sync_status`: macOS delegates to `file_system::sync_status`; non-macOS returns an empty map
   via `#[cfg]` on the function itself (not the module).
 - **`e2e.rs`**: E2E/test-support hooks, always compiled in (reading an unset env var is a no-op in production):
-  `get_e2e_start_path`, `is_e2e_mode`, `is_force_onboarding`, `set_test_throttle`, `flush_file_watcher`.
+  `get_e2e_start_path`, `is_e2e_mode`, `ask_cmdr_fake_active`, `is_force_onboarding`, `set_test_throttle`,
+  `flush_file_watcher`.
 
 ## Decisions
 

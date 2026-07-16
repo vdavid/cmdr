@@ -73,6 +73,18 @@ pub fn is_e2e_mode() -> bool {
     std::env::var("CMDR_E2E_MODE").as_deref() == Ok("1")
 }
 
+/// `CMDR_E2E_ASK_CMDR_FAKE` routes the Ask Cmdr send path through the deterministic
+/// scripted fake LLM (`agent::resolve_agent_llm`), so the rail's send-and-render can
+/// be tested with no real provider. This is the single source of truth for "the fake
+/// backend is serving": both `resolve_agent_llm` (which answers the send) and the
+/// composer's provider gate (which allows the send, via the `ask_cmdr_fake_active`
+/// command) key off it, so the two can't disagree.
+///
+/// **Strictly additive**: code must keep working with the var unset.
+pub fn ask_cmdr_fake_active() -> bool {
+    std::env::var("CMDR_E2E_ASK_CMDR_FAKE").is_ok()
+}
+
 /// Pure core of [`guard_e2e_requires_data_dir`]: true when E2E mode is on but no usable
 /// `CMDR_DATA_DIR` is set. Empty is treated as unset, matching `config::data_dir_from_env`.
 fn e2e_data_dir_missing(is_e2e: bool, data_dir: Option<&str>) -> bool {
