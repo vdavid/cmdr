@@ -138,20 +138,32 @@ pub struct MediaIndexVolumeState {
 #[tauri::command]
 #[specta::specta]
 pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Result<MediaIndexVolumeState, String> {
+    volume_state(&app, &volume_id).await
+}
+
+/// The honest per-volume enrichment state — the shared derivation behind both the
+/// `media_index_volume_state` command (the search UI) and the Ask Cmdr / MCP
+/// `search_photos` tool (`mcp::executor::photos`). Generic over the Tauri runtime so
+/// the agent tool dispatch (also generic) reuses this ONE source rather than deriving
+/// coverage a second time (the reuse-the-core rule).
+pub(crate) async fn volume_state<R: tauri::Runtime>(
+    app: &AppHandle<R>,
+    volume_id: &str,
+) -> Result<MediaIndexVolumeState, String> {
     let enabled = gate::is_enabled();
     // The scheduler is `app.manage`d only once `media_index::scheduler::start` ran; a
     // missing state (e.g. an early call) honestly reads as "not enriching".
     let scheduler = app.try_state::<Arc<MediaScheduler>>().map(|s| Arc::clone(s.inner()));
-    let indexing = scheduler.as_ref().is_some_and(|s| s.is_enriching(&volume_id));
+    let indexing = scheduler.as_ref().is_some_and(|s| s.is_enriching(volume_id));
 
-    let data_dir = crate::config::resolved_app_data_dir(&app)?;
+    let data_dir = crate::config::resolved_app_data_dir(app)?;
     let threshold = gate::importance_threshold();
-    let vid = volume_id.clone();
+    let vid = volume_id.to_string();
     // The threshold-aware stored-coverage split (`covered_qualifying_count` + `kept_count`)
     // needs the volume's OS mount root to map override/exclude config; resolving
     // it here (a reclaim-eligible enabled volume only) keeps the split `None` for a
     // volume that isn't background-enriched.
-    let mount_root = resolve_reclaim_volumes(std::slice::from_ref(&volume_id))
+    let mount_root = resolve_reclaim_volumes(std::slice::from_ref(&vid))
         .0
         .into_iter()
         .next()
@@ -193,9 +205,9 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
         indexing,
         enriched_count,
         qualifying_count,
-        network_opt_in: network_config::is_opted_in(&volume_id),
-        always_indexed: network_config::snapshot().always_index_volumes.contains(&volume_id),
-        paused: network_config::is_paused(&volume_id),
+        network_opt_in: network_config::is_opted_in(volume_id),
+        always_indexed: network_config::snapshot().always_index_volumes.contains(volume_id),
+        paused: network_config::is_paused(volume_id),
         waiting_for_importance,
         covered_qualifying_count: coverage_counts.as_ref().map(|c| c.covered_qualifying),
         kept_count: coverage_counts.as_ref().map(|c| c.doomed_stored),

@@ -8,7 +8,7 @@ The read-only toolset the Ask Cmdr chat agent dispatches in-process. Must-knows:
 
 There is ONE authored tool table (`mcp/tool_registry/mod.rs`, `mcp_tools!`). Each entry declares `consumers`
 (`AiClient` / `Agent`) and `access` (`Read` / `Write`). The agent's tools are `consumers: [Agent], access: Read`
-entries; `operations_list` / `operations_get` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
+entries; `operations_list` / `operations_get` / `search_photos` are shared `[AiClient, Agent]`. `agent_tool_view()` is the agent's slice;
 `get_all_tools()` is the ai-client slice (agent-only entries filtered out, so the ai-client wire snapshot is unchanged).
 `execute_tool(app, Consumer::Agent, name, params)` dispatches only the agent view. See
 [`mcp/tool_registry` + `mcp/DETAILS.md`](../../mcp/DETAILS.md) § Consumer and access views for the mechanism.
@@ -44,6 +44,12 @@ and returns a typed serde shape as the tool-result JSON the model reads. Every t
   SMB, `smbConnectionState` (`direct`/`os_mount`/`disconnected`), straight from `snapshot_volumes` so tokens can't drift.
 - **`operations_list` / `operations_get`** — the shipped executors (`mcp/executor/operation_log.rs`), shared into the
   agent view unchanged (their schemas + coverage flags already fit an agent reader).
+- **`search_photos`** (`mcp/executor/photos.rs`, shared `[AiClient, Agent]`) — photo search by description (CLIP),
+  in-image text (OCR), or Vision tag. Shapes the `media_index` read API into a TEXT-ONLY DTO (path + volume + typed
+  `matchKind` + optional score + optional OCR snippet / no image bytes), reuses `media_index`'s own `volume_state` for
+  per-volume coverage honesty, and returns a typed status when indexing is off, still building, or the CLIP model isn't
+  installed. Privacy: the OCR snippet + tags it returns are image-derived text that egresses to the provider — named in
+  the Ask Cmdr consent copy (see `mcp/executor/photos.rs` and `docs/security.md`).
 
 ## The honesty (coverage) contract
 

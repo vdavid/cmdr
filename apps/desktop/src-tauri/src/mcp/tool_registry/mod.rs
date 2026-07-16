@@ -44,8 +44,8 @@ use serde_json::Value;
 
 use super::executor::{ToolError, ToolResult};
 use super::executor::{
-    app, async_tools, dialogs, downloads, eject, favorites, file_ops, indexing, nav, operation_log, queue, search,
-    tags, view,
+    app, async_tools, dialogs, downloads, eject, favorites, file_ops, indexing, nav, operation_log, photos, queue,
+    search, tags, view,
 };
 use super::tools::Tool;
 
@@ -588,6 +588,21 @@ mcp_tools! {
         consumers: &[Consumer::AiClient],
         access: Access::Write,
         run: app_params operation_log::execute_operations_rollback
+    },
+
+    // ── Photo search ──────────────────────────────────────────────────────────
+    // Shared read (agent-spec D49: one authored entry, both consumer views). The in-app
+    // Ask Cmdr agent AND external MCP clients search enriched photos. `access: Read` — it
+    // only reads the media index. Handler shapes the `media_index` read API and never emits
+    // image bytes (text-only DTO). PRIVACY: paths + the in-image OCR snippet / tag it returns
+    // are image-derived text that egresses to the agent's provider — see `executor/photos.rs`.
+    "search_photos" => {
+        desc: "Find the user's photos by content: a scene description, text inside the image (OCR), or a tag. Returns matching file paths plus a short reason, read from the on-device index (no uploads). Omit mode to combine description + OCR. Needs image indexing on.",
+        schema: photos::search_photos_schema(),
+        gate: TokenGate::Open,
+        consumers: &[Consumer::AiClient, Consumer::Agent],
+        access: Access::Read,
+        run: app_params photos::execute_search_photos
     },
 
     // ── Agent read-only tools ─────────────────────────────────────────────────

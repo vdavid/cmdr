@@ -17,6 +17,7 @@ pub(crate) mod file_ops;
 pub(crate) mod indexing;
 pub(crate) mod nav;
 pub(crate) mod operation_log;
+pub(crate) mod photos;
 pub(crate) mod queue;
 pub(crate) mod search;
 pub(crate) mod tags;

@@ -29,6 +29,11 @@ progress.**
   [bf2ffe5d](https://github.com/vdavid/cmdr/commit/bf2ffe5d),
   [c8da01f0](https://github.com/vdavid/cmdr/commit/c8da01f0),
   [cb91d647](https://github.com/vdavid/cmdr/commit/cb91d647))
+- Ask a photo question in Ask Cmdr, or from any connected AI agent: a new `search_photos` tool finds your images by
+  description, by the text inside them, or by tag, and answers with the matching file paths. It reads the on-device
+  image index only, never uploads your photos, and says so honestly when image indexing is off or still building. Text
+  found inside your images and their tags are sent to your AI provider when you use it, so the Ask Cmdr consent screen
+  now spells that out.
 
 ### Fixed
 

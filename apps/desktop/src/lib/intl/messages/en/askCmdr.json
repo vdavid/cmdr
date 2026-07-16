@@ -279,9 +279,9 @@
   "@askCmdr.consent.item.attachments": {
     "description": "Consent list item: files or folders the user attaches to a question are sent by reference (name and path), never their contents. Sentence case, no period."
   },
-  "askCmdr.consent.noContents": "Cmdr never sends the contents of your files. It can’t: in this version there’s no tool that reads them. Ask Cmdr only looks and speaks; it never changes anything.",
+  "askCmdr.consent.noContents": "Cmdr doesn’t send the files themselves: no file contents, no photos, no thumbnails. Photo search is the one thing that reaches inside your images, and only when you have it search them: the text Cmdr recognized inside the matching photos and their tags go to your provider so it can find them. Ask Cmdr only looks and speaks; it never changes anything.",
   "@askCmdr.consent.noContents": {
-    "description": "Reassurance paragraph on the Ask Cmdr consent screen: file contents are never sent, and the assistant is read-only. The apostrophes are U+2019."
+    "description": "Reassurance paragraph on the Ask Cmdr consent screen: the files themselves (contents, photos, thumbnails) are never sent; the one exception is photo search, which sends image-derived text (recognized text and tags) when used; and the assistant is read-only. The apostrophes are U+2019."
   },
   "askCmdr.consent.local": "Your chats stay on your Mac, in a local database you can open and read. You pick the provider and model, and you can see what each conversation costs.",
   "@askCmdr.consent.local": {

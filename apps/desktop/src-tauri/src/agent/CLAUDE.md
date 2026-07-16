@@ -26,9 +26,12 @@ surface, so later proactive slices (proposals, notifications) grow here too. Ful
 
 ## Must-knows
 
-- **Read-only by construction.** The chat agent has NO write tool and no content-read tool — only names, paths, and
-  metadata ever reach the provider (spec §2.1). This is a structural privacy line, not a runtime check; don't add a tool
-  that breaks it without revisiting the whole consent + gating story.
+- **Read-only by construction.** The chat agent has NO write tool and no arbitrary file-content-read tool. Names,
+  paths, and metadata reach the provider (spec §2.1); the ONE derived-content egress is `search_photos`, which returns
+  in-image OCR snippets + Vision tags (image-derived TEXT, never image bytes — see `mcp/executor/photos.rs`). That
+  egress is named in the consent copy (`askCmdr.consent.*`), so bump `CONSENT_COPY_VERSION` if what it can send changes.
+  This is a structural privacy line, not a runtime check; don't add a tool that widens it without revisiting the whole
+  consent + gating story.
 - **The runtime drives the seams, and the IPC is wired.** `chat::runtime` consumes the `AgentLlm` seam, the store
   queries, and the tool dispatch, and `agent::start` registers `ChatRuntime` in state.
   [`commands/agent.rs`](../commands/agent.rs) is the thin frontend surface: `ask_cmdr_send_message` (streaming over a

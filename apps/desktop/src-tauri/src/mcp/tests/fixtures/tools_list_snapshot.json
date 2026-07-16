@@ -1126,6 +1126,40 @@
         "type": "object"
       },
       "name": "operations_rollback"
+    },
+    {
+      "description": "Find the user's photos by content: a scene description, text inside the image (OCR), or a tag. Returns matching file paths plus a short reason, read from the on-device index (no uploads). Omit mode to combine description + OCR. Needs image indexing on.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "description": "Max hits to return (default 30, capped at 200).",
+            "type": "integer"
+          },
+          "mode": {
+            "description": "How to match. semantic: by visual description (needs the on-device model). ocr: by text recognized inside the image. tag: by a Vision object/scene tag. Omit to combine semantic + ocr (semantic leads), which is best for most 'find the photo of…' questions.",
+            "enum": [
+              "semantic",
+              "ocr",
+              "tag"
+            ],
+            "type": "string"
+          },
+          "query": {
+            "description": "What to look for. In semantic mode, a natural description of the scene ('two people on a beach at sunset'); in ocr mode, words expected to appear IN the image (a receipt total, a sign, a passport field); in tag mode, a single object/scene label ('dog', 'sky').",
+            "type": "string"
+          },
+          "volumeId": {
+            "description": "Restrict to one volume id (see list_volumes / cmdr://state). Omit to search every local and SMB volume that's indexed.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "search_photos"
     }
   ]
 }

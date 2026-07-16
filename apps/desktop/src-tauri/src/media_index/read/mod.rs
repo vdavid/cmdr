@@ -1,8 +1,9 @@
 //! `MediaIndex`: the consumable read API over a volume's `media.db`.
 //!
 //! Ported from `importance/read` (`ImportanceIndex`): the ONE way a consumer
-//! (`search/`, later the agent + MCP) reaches image-enrichment results (plan
-//! Decision 8). No consumer takes a raw `rusqlite` dep on `media.db`; they call
+//! (`search/`, and the Ask Cmdr / MCP `search_photos` tool via
+//! `mcp::executor::photos`) reaches image-enrichment results (plan Decision 8). No
+//! consumer takes a raw `rusqlite` dep on `media.db`; they call
 //! this. It owns a `platform_case`-registered read connection and reads the DB
 //! directly, so it answers OFFLINE from `media.db` after the volume unmounts.
 //!

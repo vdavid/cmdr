@@ -111,3 +111,21 @@ file activity (what was copied, moved, trashed, renamed, and where). Privacy pos
   backpressure (lossless) and drops a single row on a DB error rather than failing the file op; the finalize-time
   completeness check then degrades that op to "can't undo" or "search marked partial" rather than silently
   under-reversing or claiming false coverage.
+
+## Ask Cmdr agent egress (to the user's LLM provider)
+
+Ask Cmdr is the one subsystem that deliberately sends user data OFF the Mac — to the AI provider the user configured,
+with their own API key. Privacy posture:
+
+- **Consent-gated, fail-closed.** Every send checks `agent::consent::has_current_consent` in the backend before it
+  resolves the LLM; an absent or stale acceptance refuses the send (not just a UI affordance). The consent copy
+  (`askCmdr.consent.*`) enumerates exactly what egresses; bump `CONSENT_COPY_VERSION` when that set changes so users
+  re-accept.
+- **Read-only, no arbitrary file contents.** The agent has no write tool and no tool that reads a file's bytes. What
+  reaches the provider is file/folder names, paths, sizes, dates, and the app-state envelope (spec §2.1).
+- **Photo search sends image-derived TEXT, not "just metadata".** The `search_photos` tool (`mcp/executor/photos.rs`)
+  returns matched image paths plus the in-image OCR snippet and Vision tags — a passport scan's OCR snippet IS the
+  passport number, so this is sensitive derived content, gated by the same consent above and named in its copy. Image
+  bytes and thumbnails NEVER egress: the result DTO is text-only by construction (pinned by a test).
+- **Chats and optional call logs stay local.** Conversations live in a local `main.db`; the optional LLM call log writes
+  to a local folder and is never transmitted.

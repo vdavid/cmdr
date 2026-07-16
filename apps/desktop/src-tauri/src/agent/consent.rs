@@ -13,7 +13,7 @@ use crate::agent::store;
 /// whenever the `askCmdr.consent.*` copy changes materially**, so a stale acceptance no
 /// longer counts and users re-consent to the new wording. The copy itself lives in the
 /// frontend catalog; this integer is its machine-checkable version, recorded in `main.db`.
-pub const CONSENT_COPY_VERSION: u32 = 1;
+pub const CONSENT_COPY_VERSION: u32 = 2;
 
 /// Whether the user has accepted the CURRENT consent copy. Fails CLOSED: an absent record,
 /// a stale version, or an unreadable store all read as "not consented", so a send is

@@ -19,7 +19,7 @@ use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 
 /// The CLIP model identifier baked into the provenance stamp. A change here (a new model)
-/// bumps every row's `clip_stamp` and re-embeds (plan M3 two-part staleness).
+/// bumps every row's `clip_stamp` and re-embeds (the two-part staleness contract).
 pub const CLIP_MODEL_ID: &str = "openai-clip-vit-b32";
 
 /// One downloadable tower: the artifact name, its pinned download URL, the byte size, and
