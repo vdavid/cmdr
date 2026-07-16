@@ -177,9 +177,7 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
                                         .upsert(status_row(image, EnrichmentState::Failed, &stamp), None)
                                         .map_err(|e| e.to_string())?;
                                 }
-                                if want_clip
-                                    && let Some(clip_stamp) = ctx.clip_stamp
-                                {
+                                if want_clip && let Some(clip_stamp) = ctx.clip_stamp {
                                     ctx.writer
                                         .upsert_clip(image.path.clone(), clip_stamp.to_string(), None)
                                         .map_err(|e| e.to_string())?;

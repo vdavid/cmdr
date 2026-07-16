@@ -210,7 +210,12 @@ impl VisionBackend for VisionOcrBackend {
         self.dispatch(&input.path, input.bytes.clone(), JobReply::Analyze)
     }
 
-    fn analyze_media(&self, input: &ImageInput, want_vision: bool, want_clip: bool) -> Result<MediaAnalysis, VisionError> {
+    fn analyze_media(
+        &self,
+        input: &ImageInput,
+        want_vision: bool,
+        want_clip: bool,
+    ) -> Result<MediaAnalysis, VisionError> {
         self.dispatch(&input.path, input.bytes.clone(), |respond| JobReply::AnalyzeMedia {
             want_vision,
             want_clip,

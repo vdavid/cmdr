@@ -13,6 +13,8 @@ import type { MediaIndexVolumeState, OcrHit, SimilarImage } from '$lib/ipc/bindi
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 const searchOcr = vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<OcrHit[]>>()
+const searchSemantic =
+  vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<{ path: string; score: number }[]>>()
 const volumeState = vi.fn<(volumeId: string) => Promise<MediaIndexVolumeState>>()
 const thumbnailToken = vi.fn<(path: string) => Promise<string | null>>()
 const dropTokens = vi.fn<(tokens: string[]) => Promise<void>>()
@@ -20,6 +22,7 @@ const findSimilar = vi.fn<(volumeId: string, sourcePath: string, limit: number |
 
 vi.mock('$lib/tauri-commands', () => ({
   mediaIndexSearchOcr: (v: string, q: string, l: number | null) => searchOcr(v, q, l),
+  mediaIndexSearchSemantic: (v: string, q: string, l: number | null) => searchSemantic(v, q, l),
   mediaIndexVolumeState: (v: string) => volumeState(v),
   mediaIndexThumbnailToken: (p: string) => thumbnailToken(p),
   mediaIndexDropThumbnailTokens: (t: string[]) => dropTokens(t),
@@ -79,6 +82,7 @@ describe('ImageSearchResults a11y', () => {
     masterEnabled = true
     vi.useFakeTimers()
     searchOcr.mockResolvedValue([])
+    searchSemantic.mockResolvedValue([])
     volumeState.mockResolvedValue(state())
     thumbnailToken.mockResolvedValue('tok123')
     dropTokens.mockResolvedValue()

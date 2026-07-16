@@ -38,8 +38,14 @@ let autoApplySetting = true
 const autoApplyListeners = new Set<(id: string, value: boolean) => void>()
 
 // vi.mock is hoisted above all top-level `const`s; use vi.hoisted for shared mock instances.
-const { translateSearchQueryMock, searchFilesMock, addRecentSearchMock, mediaSearchOcrMock, mediaVolumeStateMock } =
-  vi.hoisted(() => ({
+const {
+  translateSearchQueryMock,
+  searchFilesMock,
+  addRecentSearchMock,
+  mediaSearchOcrMock,
+  mediaSearchSemanticMock,
+  mediaVolumeStateMock,
+} = vi.hoisted(() => ({
     translateSearchQueryMock: vi.fn(() => Promise.resolve({ display: {}, query: {} } as TranslateResult)),
     searchFilesMock: vi.fn(
       (): Promise<{ entries: SearchResultEntry[]; totalCount: number }> =>
@@ -50,6 +56,11 @@ const { translateSearchQueryMock, searchFilesMock, addRecentSearchMock, mediaSea
     // queries the passed volume (its state gates all work). Path is index-relative.
     mediaSearchOcrMock: vi.fn((_v: string, _q: string, _l: number | null) =>
       Promise.resolve([{ path: '/DCIM/photo.png', snippet: 'an [invoice] scan' }]),
+    ),
+    // No CLIP model in these tests: semantic search returns nothing, so the grid runs
+    // OCR-only (the degraded path).
+    mediaSearchSemanticMock: vi.fn((_v: string, _q: string, _l: number | null) =>
+      Promise.resolve([] as { path: string; score: number }[]),
     ),
     mediaVolumeStateMock: vi.fn((_v: string) =>
       Promise.resolve({
@@ -84,6 +95,7 @@ vi.mock('$lib/tauri-commands', () => ({
   trackEvent: vi.fn(() => Promise.resolve()),
   // The image-OCR grid (`ImageSearchResults`, rendered via `resultsExtra`) reaches these.
   mediaIndexSearchOcr: mediaSearchOcrMock,
+  mediaIndexSearchSemantic: mediaSearchSemanticMock,
   mediaIndexVolumeState: mediaVolumeStateMock,
   mediaIndexThumbnailToken: vi.fn(() => Promise.resolve(null)),
   mediaIndexDropThumbnailTokens: vi.fn(() => Promise.resolve()),

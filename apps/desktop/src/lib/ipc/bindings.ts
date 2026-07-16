@@ -1963,6 +1963,32 @@ export const commands = {
   mediaIndexSearchTag: (volumeId: string, label: string, minScore: number | null) =>
     typedError<TagHit[], string>(__TAURI_INVOKE('media_index_search_tag', { volumeId, label, minScore })),
   /**
+   *  Natural-language semantic image search (plan M3): encode `query` with the CLIP text
+   *  tower and return the up-to-`limit` images whose CLIP embeddings are closest by cosine —
+   *  the headline "search photos by description". Each hit is a snippet-less tile with a
+   *  "matched description" reason (the match is on the whole-image embedding, not text).
+   *
+   *  Runs OFF the IPC thread (`spawn_blocking`): the tokenize + warm-text-tower encode hops to
+   *  the CLIP worker thread, then a brute-force top-k over the resident CLIP cache. Returns an
+   *  empty list (never an error) when image indexing is off, no CLIP model is installed, or
+   *  the volume has no CLIP embeddings — so the UI voices coverage rather than failing.
+   */
+  mediaIndexSearchSemantic: (volumeId: string, query: string, limit: number | null) =>
+    typedError<SemanticHit[], string>(__TAURI_INVOKE('media_index_search_semantic', { volumeId, query, limit })),
+  /**
+   *  Report the CLIP model install state for the settings download affordance. Cheap (a few
+   *  `is_dir` checks); still hops off the IPC thread to be safe.
+   */
+  mediaIndexClipModelStatus: () => typedError<ClipModelStatus, string>(__TAURI_INVOKE('media_index_clip_model_status')),
+  /**
+   *  Download + checksum-verify + install the CLIP towers on demand (plan M3, Decision 9),
+   *  then kick a pass so already-enriched images gain CLIP embeddings. Each tower is fetched
+   *  via the shared resumable HTTP GET (`ai::download`), verified against its pinned SHA-256
+   *  BEFORE unpacking (a truncated download never installs), and unzipped into the model dir.
+   *  The intermediate zip is removed after a successful unpack.
+   */
+  mediaIndexDownloadClipModel: () => typedError<null, string>(__TAURI_INVOKE('media_index_download_clip_model')),
+  /**
    *  Called when the search dialog opens. Starts loading the index in the background.
    *  Returns immediately with `{ ready, entryCount }`.
    */
@@ -3405,6 +3431,27 @@ export type ClientMetricsDto = {
   reconnects: number
   dfs_referrals_resolved: number
   dfs_cache_hits: number
+}
+
+/**
+ *  The CLIP model's install state, for the settings download affordance. Crosses the IPC
+ *  boundary, so it derives `Serialize` + `specta::Type` (camelCase).
+ */
+export type ClipModelStatus = {
+  /**
+   *  Whether the device can run CLIP at all (Apple Silicon — the Neural Engine path).
+   *  The download affordance hides on unsupported hardware.
+   */
+  supported: boolean
+  // Whether both towers are installed on disk (ready for semantic search).
+  installed: boolean
+  /**
+   *  Whether a real artifact is configured (a pinned, non-placeholder checksum). `false`
+   *  means the model isn't published yet, so the UI shows "coming soon", not a download.
+   */
+  configured: boolean
+  // The total download size in bytes, for the honest "~X MB" copy.
+  downloadBytes: number
 }
 
 export type ClipboardReadResult = {
@@ -6522,6 +6569,19 @@ export type SelectionTranslateResult = {
   caveat: string | null
   // Short label (≤40 chars) for breadcrumb / history UX.
   label: string | null
+}
+
+/**
+ *  One semantic-search hit: the matched image's path and its CLIP cosine similarity to
+ *  the text query. The grid renders these as snippet-less tiles with a "matched
+ *  description" reason (there's no OCR snippet — the match is on the whole-image CLIP
+ *  embedding). Crosses the IPC boundary, so it derives `Serialize` + `specta::Type`.
+ */
+export type SemanticHit = {
+  // The matched image's path.
+  path: string
+  // CLIP cosine similarity to the query text in `[-1.0, 1.0]`.
+  score: number
 }
 
 /**

@@ -560,6 +560,37 @@
     "description": "Title of the settings card that groups image-content indexing (searching the text inside images). In Settings > AI > Image search."
   },
   "settings.mediaIndex.privacyNote": "This runs entirely on your Mac using Apple''s built-in Vision framework. Your images never leave your computer, and no AI provider or API key is involved.",
+  "settings.mediaIndex.clip.title": "Semantic search",
+  "@settings.mediaIndex.clip.title": {
+    "description": "Title of the control (inside the Image search settings card) for the natural-language photo search feature, where you find a photo by describing what''s in it."
+  },
+  "settings.mediaIndex.clip.description": "Find photos by describing what''s in them, like ''beach sunset'', using an on-device AI model.",
+  "@settings.mediaIndex.clip.description": {
+    "description": "Explains the semantic-search feature: you search by describing a photo''s contents, and it runs locally on the Mac. Keep ''beach sunset'' as a concrete example of a description."
+  },
+  "settings.mediaIndex.clip.ready": "Ready — search your photos by description.",
+  "@settings.mediaIndex.clip.ready": {
+    "description": "Shown once the semantic-search model is downloaded and installed: the feature is ready to use."
+  },
+  "settings.mediaIndex.clip.comingSoon": "Coming soon.",
+  "@settings.mediaIndex.clip.comingSoon": {
+    "description": "Shown when the semantic-search model isn''t published for download yet, so the feature can''t be enabled right now."
+  },
+  "settings.mediaIndex.clip.download": "Download model (~{sizeText} MB)",
+  "@settings.mediaIndex.clip.download": {
+    "description": "Label for the button that downloads the on-device semantic-search AI model. The ~ means ''about''; MB is the megabytes unit (leave as ''MB'').",
+    "placeholders": {
+      "sizeText": "the download size in whole megabytes, locale-formatted (for example ''276''); the unit MB follows it in the message"
+    }
+  },
+  "settings.mediaIndex.clip.downloading": "Downloading…",
+  "@settings.mediaIndex.clip.downloading": {
+    "description": "Shown on the download button while the semantic-search model is downloading."
+  },
+  "settings.mediaIndex.clip.failed": "The download didn''t finish. Check your connection and try again.",
+  "@settings.mediaIndex.clip.failed": {
+    "description": "Shown when the semantic-search model download didn''t complete. Avoid the words ''error'' and ''failed'' per the app''s copy style."
+  },
   "@settings.mediaIndex.privacyNote": {
     "description": "Privacy reassurance shown in Settings > AI > Image search, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple''s framework name (do not translate); \"API key\" is a credential for a cloud AI provider."
   },

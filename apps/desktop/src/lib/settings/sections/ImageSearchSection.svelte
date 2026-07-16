@@ -21,6 +21,7 @@
     import { getBadgeStatus } from '$lib/feature-status'
     import MediaIndexImportanceSlider from './MediaIndexImportanceSlider.svelte'
     import MediaIndexNetworkVolumes from './MediaIndexNetworkVolumes.svelte'
+    import MediaIndexClipModel from './MediaIndexClipModel.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getSetting, getSettingDefinition, onSpecificSettingChange } from '$lib/settings'
     import { createShouldShow } from '$lib/settings/settings-search'
@@ -76,6 +77,12 @@
                  indexing is on. -->
             {#if imageIndexEnabled}
                 <MediaIndexImportanceSlider />
+            {/if}
+
+            <!-- The on-device CLIP model for natural-language semantic search (plan M3).
+                 Self-gates on Apple Silicon + shows its own download state. -->
+            {#if imageIndexEnabled}
+                <MediaIndexClipModel />
             {/if}
 
             <!-- Per-network-volume opt-in + "always index" overrides (network enrichment). Only

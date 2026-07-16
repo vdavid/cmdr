@@ -186,7 +186,12 @@ impl VisionBackend for FakeVisionBackend {
         Ok(Analysis { ocr, tags, embedding })
     }
 
-    fn analyze_media(&self, input: &ImageInput, want_vision: bool, want_clip: bool) -> Result<MediaAnalysis, VisionError> {
+    fn analyze_media(
+        &self,
+        input: &ImageInput,
+        want_vision: bool,
+        want_clip: bool,
+    ) -> Result<MediaAnalysis, VisionError> {
         // One decode fails both sides, matching the real backend (a bad file can't be
         // decoded for Vision OR CLIP).
         if self.missing.contains(&input.path) {

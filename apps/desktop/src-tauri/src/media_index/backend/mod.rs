@@ -180,7 +180,12 @@ pub trait VisionBackend: Send + Sync {
     /// Vision-only backend (no CLIP capability — the off-macOS fallback and any backend
     /// without a model): it honors `want_vision` and always returns `clip: None`. A
     /// backend that CAN embed CLIP overrides this.
-    fn analyze_media(&self, input: &ImageInput, want_vision: bool, want_clip: bool) -> Result<MediaAnalysis, VisionError> {
+    fn analyze_media(
+        &self,
+        input: &ImageInput,
+        want_vision: bool,
+        want_clip: bool,
+    ) -> Result<MediaAnalysis, VisionError> {
         let _ = want_clip;
         let vision = if want_vision { Some(self.analyze(input)?) } else { None };
         Ok(MediaAnalysis { vision, clip: None })

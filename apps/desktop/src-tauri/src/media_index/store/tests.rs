@@ -345,6 +345,11 @@ fn clip_and_vision_staleness_are_independent() {
     // A Vision-current row can still be CLIP-stale (installing CLIP), and vice versa —
     // the two predicates never conflate (plan M3 Q5).
     let vision_current_clip_stale = row_with_clip(""); // engine e1 current, no clip yet
-    assert!(!needs_enrichment(Some(&vision_current_clip_stale), Some(1), Some(2), "e1"));
+    assert!(!needs_enrichment(
+        Some(&vision_current_clip_stale),
+        Some(1),
+        Some(2),
+        "e1"
+    ));
     assert!(needs_clip(Some(&vision_current_clip_stale), Some("clip-v1")));
 }

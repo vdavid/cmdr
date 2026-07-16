@@ -201,11 +201,14 @@ fn search_semantic_ranks_by_clip_cosine_and_honors_k() {
     assert!(hits[0].score > hits[1].score, "sorted by cosine descending");
 
     // The CLIP cache reads media.db directly, so it still answers with the volume gone.
-    crate::media_index::vector::cache::invalidate(&db_path);
+    cache::invalidate(&db_path);
     writer.shutdown();
     let offline = MediaIndex::open(dir.path(), "root").search_semantic(&[1.0, 0.0, 0.0], 1);
     assert_eq!(offline.len(), 1);
-    assert_eq!(offline[0].path, "/cat.jpg", "semantic search answers offline from media.db");
+    assert_eq!(
+        offline[0].path, "/cat.jpg",
+        "semantic search answers offline from media.db"
+    );
 }
 
 #[test]

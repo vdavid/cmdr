@@ -928,7 +928,11 @@ fn installing_clip_embeds_without_re_running_vision() {
 
     // Vision was NOT re-run: the OCR text is still the original, not "CHANGED text".
     let index = MediaIndex::open(dir.path(), "root");
-    assert_eq!(index.search_ocr("original", 10).expect("s").len(), 1, "original OCR intact");
+    assert_eq!(
+        index.search_ocr("original", 10).expect("s").len(),
+        1,
+        "original OCR intact"
+    );
     assert_eq!(
         index.search_ocr("CHANGED", 10).expect("s").len(),
         0,

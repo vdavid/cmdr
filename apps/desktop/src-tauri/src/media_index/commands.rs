@@ -14,10 +14,11 @@ use std::sync::Arc;
 
 use tauri::{AppHandle, Manager};
 
+use super::clip;
 use super::coverage;
 use super::gate;
 use super::network::config as network_config;
-use super::read::{MediaIndex, OcrHit, TagHit};
+use super::read::{MediaIndex, OcrHit, SemanticHit, TagHit};
 use super::scheduler::{self, MediaScheduler};
 use super::vector::{DedupCluster, SimilarImage};
 
@@ -720,6 +721,117 @@ fn read_head_bytes(path: &std::path::Path, max: usize) -> Vec<u8> {
         }
         Err(_) => Vec::new(),
     }
+}
+
+/// Natural-language semantic image search (plan M3): encode `query` with the CLIP text
+/// tower and return the up-to-`limit` images whose CLIP embeddings are closest by cosine —
+/// the headline "search photos by description". Each hit is a snippet-less tile with a
+/// "matched description" reason (the match is on the whole-image embedding, not text).
+///
+/// Runs OFF the IPC thread (`spawn_blocking`): the tokenize + warm-text-tower encode hops to
+/// the CLIP worker thread, then a brute-force top-k over the resident CLIP cache. Returns an
+/// empty list (never an error) when image indexing is off, no CLIP model is installed, or
+/// the volume has no CLIP embeddings — so the UI voices coverage rather than failing.
+#[tauri::command]
+#[specta::specta]
+pub async fn media_index_search_semantic(
+    app: AppHandle,
+    volume_id: String,
+    query: String,
+    limit: Option<u32>,
+) -> Result<Vec<SemanticHit>, String> {
+    if !gate::is_enabled() || query.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    let data_dir = crate::config::resolved_app_data_dir(&app)?;
+    let limit = resolve_limit(limit);
+    tauri::async_runtime::spawn_blocking(move || {
+        // Encode the query to a CLIP text vector; a missing/unavailable model yields no hits.
+        let Ok(query_vec) = clip::encode_text_query(&query) else {
+            return Ok(Vec::new());
+        };
+        Ok(MediaIndex::open(&data_dir, &volume_id).search_semantic(&query_vec, limit))
+    })
+    .await
+    .map_err(|e| format!("semantic search task panicked: {e}"))?
+}
+
+/// The CLIP model's install state, for the settings download affordance. Crosses the IPC
+/// boundary, so it derives `Serialize` + `specta::Type` (camelCase).
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ClipModelStatus {
+    /// Whether the device can run CLIP at all (Apple Silicon — the Neural Engine path).
+    /// The download affordance hides on unsupported hardware.
+    pub supported: bool,
+    /// Whether both towers are installed on disk (ready for semantic search).
+    pub installed: bool,
+    /// Whether a real artifact is configured (a pinned, non-placeholder checksum). `false`
+    /// means the model isn't published yet, so the UI shows "coming soon", not a download.
+    pub configured: bool,
+    /// The total download size in bytes, for the honest "~X MB" copy.
+    pub download_bytes: u64,
+}
+
+/// Report the CLIP model install state for the settings download affordance. Cheap (a few
+/// `is_dir` checks); still hops off the IPC thread to be safe.
+#[tauri::command]
+#[specta::specta]
+pub async fn media_index_clip_model_status(app: AppHandle) -> Result<ClipModelStatus, String> {
+    let data_dir = crate::config::resolved_app_data_dir(&app)?;
+    let supported = crate::ai::is_local_ai_supported();
+    tauri::async_runtime::spawn_blocking(move || {
+        Ok(ClipModelStatus {
+            supported,
+            installed: clip::install::is_installed(&data_dir),
+            configured: clip::install::CLIP_TOWERS
+                .iter()
+                .all(|t| t.sha256 != clip::install::PLACEHOLDER_SHA),
+            download_bytes: clip::install::total_download_bytes(),
+        })
+    })
+    .await
+    .map_err(|e| format!("clip status task panicked: {e}"))?
+}
+
+/// Download + checksum-verify + install the CLIP towers on demand (plan M3, Decision 9),
+/// then kick a pass so already-enriched images gain CLIP embeddings. Each tower is fetched
+/// via the shared resumable HTTP GET (`ai::download`), verified against its pinned SHA-256
+/// BEFORE unpacking (a truncated download never installs), and unzipped into the model dir.
+/// The intermediate zip is removed after a successful unpack.
+#[tauri::command]
+#[specta::specta]
+pub async fn media_index_download_clip_model(app: AppHandle) -> Result<(), String> {
+    if !crate::ai::is_local_ai_supported() {
+        return Err("CLIP semantic search needs Apple Silicon".to_string());
+    }
+    let data_dir = crate::config::resolved_app_data_dir(&app)?;
+    let model_dir = clip::install::clip_model_dir(&data_dir);
+    std::fs::create_dir_all(&model_dir).map_err(|e| format!("create model dir: {e}"))?;
+
+    for tower in clip::install::CLIP_TOWERS {
+        if tower.sha256 == clip::install::PLACEHOLDER_SHA {
+            return Err("The CLIP model isn't published yet".to_string());
+        }
+        let zip_path = model_dir.join(tower.artifact);
+        // Fetch (resumable); the shared GET emits generic download-progress events.
+        crate::ai::download::download_file(&app, tower.url, &zip_path, || false).await?;
+        // Verify + unzip OFF the IPC thread (a blocking hash + extract).
+        let (zip, sha, mdir) = (zip_path.clone(), tower.sha256, model_dir.clone());
+        tauri::async_runtime::spawn_blocking(move || {
+            clip::install::install_tower(&zip, sha, &mdir).map_err(|e| e.to_string())
+        })
+        .await
+        .map_err(|e| format!("clip install task panicked: {e}"))??;
+        let _ = std::fs::remove_file(&zip_path);
+    }
+
+    // Newly installed ⇒ every already-enriched image is CLIP-stale: kick the ready passes so
+    // they embed CLIP now (Vision stays current — two-part staleness), like a threshold drop.
+    if gate::is_enabled() {
+        scheduler::kick_all_ready_passes(&app);
+    }
+    Ok(())
 }
 
 #[cfg(test)]

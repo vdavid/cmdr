@@ -17,6 +17,7 @@ import ImageSearchResults from './ImageSearchResults.svelte'
 // component module — and thus the mocked deps — evaluate.
 const h = vi.hoisted(() => ({
   searchOcr: vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<OcrHit[]>>(),
+  searchSemantic: vi.fn<(volumeId: string, query: string, limit: number | null) => Promise<{ path: string; score: number }[]>>(),
   volumeState: vi.fn<(volumeId: string) => Promise<MediaIndexVolumeState>>(),
   thumbnailToken: vi.fn<(path: string) => Promise<string | null>>(),
   dropTokens: vi.fn<(tokens: string[]) => Promise<void>>(),
@@ -29,6 +30,7 @@ const h = vi.hoisted(() => ({
 
 vi.mock('$lib/tauri-commands', () => ({
   mediaIndexSearchOcr: (v: string, q: string, l: number | null) => h.searchOcr(v, q, l),
+  mediaIndexSearchSemantic: (v: string, q: string, l: number | null) => h.searchSemantic(v, q, l),
   mediaIndexVolumeState: (v: string) => h.volumeState(v),
   mediaIndexThumbnailToken: (p: string) => h.thumbnailToken(p),
   mediaIndexDropThumbnailTokens: (t: string[]) => h.dropTokens(t),
@@ -91,6 +93,9 @@ describe('ImageSearchResults master-toggle gating', () => {
     h.searchOcr.mockResolvedValue([
       { path: '/photos/receipt.png', snippet: 'total [invoice] amount' },
     ] satisfies OcrHit[])
+    // No CLIP model in these tests: semantic search returns nothing, so the grid runs
+    // OCR-only (the degraded path).
+    h.searchSemantic.mockResolvedValue([])
     h.volumeState.mockResolvedValue(state())
     h.thumbnailToken.mockResolvedValue('tok123')
     h.dropTokens.mockResolvedValue()

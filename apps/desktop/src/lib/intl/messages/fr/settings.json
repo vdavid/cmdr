@@ -456,6 +456,34 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Tout cela fonctionne entièrement sur votre Mac grâce au framework Vision intégré d''Apple. Vos images ne quittent jamais votre ordinateur, et aucun fournisseur d''IA ni clé d''API n''est impliqué.",
+  "settings.mediaIndex.clip.title": "Recherche sémantique",
+  "@settings.mediaIndex.clip.title": {
+    "sourceHash": "e1a8427"
+  },
+  "settings.mediaIndex.clip.description": "Trouvez des photos en décrivant ce qu''elles contiennent, comme ''coucher de soleil sur la plage'', grâce à un modèle d''IA sur l''appareil.",
+  "@settings.mediaIndex.clip.description": {
+    "sourceHash": "d8b25d3"
+  },
+  "settings.mediaIndex.clip.ready": "Prêt : recherchez vos photos par description.",
+  "@settings.mediaIndex.clip.ready": {
+    "sourceHash": "c17e03d"
+  },
+  "settings.mediaIndex.clip.comingSoon": "Bientôt disponible.",
+  "@settings.mediaIndex.clip.comingSoon": {
+    "sourceHash": "9e3090d"
+  },
+  "settings.mediaIndex.clip.download": "Télécharger le modèle (~{sizeText} MB)",
+  "@settings.mediaIndex.clip.download": {
+    "sourceHash": "1eced44"
+  },
+  "settings.mediaIndex.clip.downloading": "Téléchargement…",
+  "@settings.mediaIndex.clip.downloading": {
+    "sourceHash": "a778d34"
+  },
+  "settings.mediaIndex.clip.failed": "Le téléchargement ne s''est pas terminé. Vérifiez votre connexion et réessayez.",
+  "@settings.mediaIndex.clip.failed": {
+    "sourceHash": "5feb349"
+  },
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"
   },

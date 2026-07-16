@@ -21,6 +21,7 @@
         clock: 'Timed-out-host status marker in the network (SMB) browser.',
         copy: 'Type marker for a copy operation row in the transfer queue window.',
         'corner-down-left': 'Back-to-presets button in the settings custom-value input (returns to the preset dropdown).',
+        download: 'Download button for the on-device CLIP semantic-search model in the Image search settings card.',
         eject: 'Eject control for removable and network volumes in the volume breadcrumb.',
         eye: 'Reveal-password toggle in settings password fields.',
         'eye-off': 'Hide-password toggle in settings password fields.',

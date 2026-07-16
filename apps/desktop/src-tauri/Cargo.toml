@@ -50,6 +50,10 @@ notify = "8"
 dirs = "6"
 uzers = "0.12.2"
 image = "0.25.10"
+# CLIP byte-pair text tokenizer (ctx 77) for the semantic-search query path (cross-platform,
+# pure Rust — the query path isn't macOS-gated). Bundles the OpenAI CLIP BPE vocab; MIT,
+# v0.1.0 published 2023-11-30 (far outside the 14-day gate).
+instant-clip-tokenizer = "0.1.0"
 base64 = "0.22.1"
 rayon = "1.11.0"
 regex = "1"
@@ -308,9 +312,6 @@ objc2-core-ml = { version = "0.3.2", features = [
     "MLFeatureDescription", "MLMultiArray", "MLFeatureValue", "MLFeatureProvider",
     "MLDictionaryFeatureProvider", "MLPredictionOptions",
 ] }
-# CLIP byte-pair text tokenizer (ctx 77) for the semantic-search query path. Bundles the
-# OpenAI CLIP BPE vocab; MIT, v0.1.0 published 2023-11-30 (far outside the 14-day gate).
-instant-clip-tokenizer = "0.1.0"
 
 
 [dev-dependencies]

@@ -459,6 +459,34 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Dit draait volledig op je Mac met Apples ingebouwde Vision-framework. Je afbeeldingen verlaten je computer nooit, en er komt geen AI-aanbieder of API-sleutel aan te pas.",
+  "settings.mediaIndex.clip.title": "Semantisch zoeken",
+  "@settings.mediaIndex.clip.title": {
+    "sourceHash": "e1a8427"
+  },
+  "settings.mediaIndex.clip.description": "Vind foto''s door te beschrijven wat erop staat, zoals ''strand bij zonsondergang'', met een AI-model op het apparaat.",
+  "@settings.mediaIndex.clip.description": {
+    "sourceHash": "d8b25d3"
+  },
+  "settings.mediaIndex.clip.ready": "Klaar – zoek je foto''s op beschrijving.",
+  "@settings.mediaIndex.clip.ready": {
+    "sourceHash": "c17e03d"
+  },
+  "settings.mediaIndex.clip.comingSoon": "Binnenkort beschikbaar.",
+  "@settings.mediaIndex.clip.comingSoon": {
+    "sourceHash": "9e3090d"
+  },
+  "settings.mediaIndex.clip.download": "Model downloaden (~{sizeText} MB)",
+  "@settings.mediaIndex.clip.download": {
+    "sourceHash": "1eced44"
+  },
+  "settings.mediaIndex.clip.downloading": "Bezig met downloaden…",
+  "@settings.mediaIndex.clip.downloading": {
+    "sourceHash": "a778d34"
+  },
+  "settings.mediaIndex.clip.failed": "De download is niet voltooid. Controleer je verbinding en probeer het opnieuw.",
+  "@settings.mediaIndex.clip.failed": {
+    "sourceHash": "5feb349"
+  },
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"
   },

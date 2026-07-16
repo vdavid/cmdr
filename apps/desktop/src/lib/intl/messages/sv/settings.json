@@ -456,6 +456,34 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Det här körs helt på din Mac med Apples inbyggda Vision-ramverk. Dina bilder lämnar aldrig din dator, och ingen AI-leverantör eller API-nyckel är inblandad.",
+  "settings.mediaIndex.clip.title": "Semantisk sökning",
+  "@settings.mediaIndex.clip.title": {
+    "sourceHash": "e1a8427"
+  },
+  "settings.mediaIndex.clip.description": "Hitta foton genom att beskriva vad de föreställer, som ''solnedgång på stranden'', med en AI-modell på enheten.",
+  "@settings.mediaIndex.clip.description": {
+    "sourceHash": "d8b25d3"
+  },
+  "settings.mediaIndex.clip.ready": "Klart – sök bland dina foton med en beskrivning.",
+  "@settings.mediaIndex.clip.ready": {
+    "sourceHash": "c17e03d"
+  },
+  "settings.mediaIndex.clip.comingSoon": "Kommer snart.",
+  "@settings.mediaIndex.clip.comingSoon": {
+    "sourceHash": "9e3090d"
+  },
+  "settings.mediaIndex.clip.download": "Ladda ner modell (~{sizeText} MB)",
+  "@settings.mediaIndex.clip.download": {
+    "sourceHash": "1eced44"
+  },
+  "settings.mediaIndex.clip.downloading": "Laddar ner…",
+  "@settings.mediaIndex.clip.downloading": {
+    "sourceHash": "a778d34"
+  },
+  "settings.mediaIndex.clip.failed": "Nedladdningen slutfördes inte. Kontrollera din anslutning och försök igen.",
+  "@settings.mediaIndex.clip.failed": {
+    "sourceHash": "5feb349"
+  },
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"
   },

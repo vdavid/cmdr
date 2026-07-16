@@ -643,10 +643,14 @@ export {
   mediaIndexReclaimPreview,
   mediaIndexPruneBelowThreshold,
   mediaIndexFindSimilar,
+  mediaIndexSearchSemantic,
+  mediaIndexClipModelStatus,
+  mediaIndexDownloadClipModel,
   onMediaEnrichProgress,
   onMediaEnrichTerminal,
 } from './media-index'
 export type {
+  ClipModelStatus,
   CoveredCount,
   MediaEnrichProgressEvent,
   MediaEnrichTerminalEvent,
@@ -655,6 +659,7 @@ export type {
   OcrHit,
   ReclaimPreview,
   ReclaimResult,
+  SemanticHit,
   SimilarImage,
 } from './media-index'
 

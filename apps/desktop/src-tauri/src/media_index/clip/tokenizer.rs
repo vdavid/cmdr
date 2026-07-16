@@ -80,7 +80,11 @@ mod tests {
         ];
         for (text, content) in cases {
             let got = tokenize(text);
-            assert_eq!(got.len(), CONTEXT_LENGTH, "always padded to context length for {text:?}");
+            assert_eq!(
+                got.len(),
+                CONTEXT_LENGTH,
+                "always padded to context length for {text:?}"
+            );
             assert_eq!(&got, &expected(content), "token ids for {text:?}");
         }
     }
@@ -97,6 +101,10 @@ mod tests {
         let ids = tokenize(&long);
         assert_eq!(ids.len(), CONTEXT_LENGTH);
         assert_eq!(ids[0], BOS, "starts with start-of-text");
-        assert_eq!(ids[CONTEXT_LENGTH - 1], EOS, "the last slot is end-of-text even when truncated");
+        assert_eq!(
+            ids[CONTEXT_LENGTH - 1],
+            EOS,
+            "the last slot is end-of-text even when truncated"
+        );
     }
 }

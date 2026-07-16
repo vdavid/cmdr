@@ -454,6 +454,34 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "这一切完全在你的 Mac 上通过 Apple 内置的 Vision 框架运行。你的图像绝不离开你的电脑，也不涉及任何 AI 提供商或 API 密钥。",
+  "settings.mediaIndex.clip.title": "语义搜索",
+  "@settings.mediaIndex.clip.title": {
+    "sourceHash": "e1a8427"
+  },
+  "settings.mediaIndex.clip.description": "通过描述照片中的内容来查找照片，例如''海滩日落''，使用设备本地的 AI 模型。",
+  "@settings.mediaIndex.clip.description": {
+    "sourceHash": "d8b25d3"
+  },
+  "settings.mediaIndex.clip.ready": "已就绪 — 通过描述搜索你的照片。",
+  "@settings.mediaIndex.clip.ready": {
+    "sourceHash": "c17e03d"
+  },
+  "settings.mediaIndex.clip.comingSoon": "即将推出。",
+  "@settings.mediaIndex.clip.comingSoon": {
+    "sourceHash": "9e3090d"
+  },
+  "settings.mediaIndex.clip.download": "下载模型（~{sizeText} MB）",
+  "@settings.mediaIndex.clip.download": {
+    "sourceHash": "1eced44"
+  },
+  "settings.mediaIndex.clip.downloading": "正在下载…",
+  "@settings.mediaIndex.clip.downloading": {
+    "sourceHash": "a778d34"
+  },
+  "settings.mediaIndex.clip.failed": "下载未完成。请检查网络连接后重试。",
+  "@settings.mediaIndex.clip.failed": {
+    "sourceHash": "5feb349"
+  },
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"
   },

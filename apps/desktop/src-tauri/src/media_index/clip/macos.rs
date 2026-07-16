@@ -17,17 +17,17 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::thread;
 
+use objc2::AnyThread;
 use objc2::rc::{Retained, autoreleasepool};
 use objc2::runtime::{AnyObject, ProtocolObject};
-use objc2::AnyThread;
 use objc2_core_ml::{
-    MLDictionaryFeatureProvider, MLFeatureProvider, MLFeatureValue, MLModel, MLModelConfiguration,
-    MLMultiArray, MLMultiArrayDataType, MLComputeUnits,
+    MLComputeUnits, MLDictionaryFeatureProvider, MLFeatureProvider, MLFeatureValue, MLModel, MLModelConfiguration,
+    MLMultiArray, MLMultiArrayDataType,
 };
 use objc2_foundation::{NSArray, NSDictionary, NSNumber, NSString, NSURL};
 
-use super::install::{CLIP_TOWERS, clip_model_dir};
 use super::ClipError;
+use super::install::{CLIP_TOWERS, clip_model_dir};
 use super::tokenizer::CONTEXT_LENGTH;
 
 /// The CLIP embedding dimensionality (OpenAI CLIP ViT-B/32). Both towers output this.
@@ -133,6 +133,8 @@ fn load_towers(model_dir: &Path) -> Result<ClipModels, ClipError> {
 fn load_one(pkg_path: &Path) -> Result<Retained<MLModel>, ClipError> {
     autoreleasepool(|_| {
         let compiled = compiled_url_for(pkg_path)?;
+        // SAFETY: `new()` constructs a valid, fresh `MLModelConfiguration` (no arguments,
+        // no preconditions); the returned handle is retained and owned here.
         let config = unsafe { MLModelConfiguration::new() };
         // SAFETY: `config` is a freshly created, valid configuration; `All` is a valid
         // enum value. Sets the compute units before load so Core ML picks the ANE.
@@ -155,16 +157,18 @@ fn compiled_url_for(pkg_path: &Path) -> Result<Retained<NSURL>, ClipError> {
         return Ok(file_url(&cache));
     }
     let pkg_url = file_url(pkg_path);
-    // SAFETY: `pkg_url` is a valid file URL to an `.mlpackage`; the `_error` variant
-    // returns `Err(NSError)` on a bad package rather than throwing. Core ML writes the
-    // compiled model to a temporary URL it returns (owned by us, +1 retain).
     // The synchronous compile is deprecated in favor of the async completion-handler
     // variant, but we WANT to block here (the worker thread serializes load anyway), so a
     // completion handler would only add a channel round-trip. `allow(deprecated)` is the
     // documented exception (no-ignored-warnings): the sync form is correct for this use.
-    #[allow(deprecated)]
-    let temp = unsafe { MLModel::compileModelAtURL_error(&pkg_url) }
-        .map_err(|e| ClipError::Load(e.to_string()))?;
+    #[allow(
+        deprecated,
+        reason = "objc2-core-ml deprecates the direct sync form in favor of a heavier async/closure API; the direct form is exactly what the CLIP spike proved and is correct on this serialized worker thread"
+    )]
+    // SAFETY: `pkg_url` is a valid file URL to an `.mlpackage`; the `_error` variant
+    // returns `Err(NSError)` on a bad package rather than throwing. Core ML writes the
+    // compiled model to a temporary URL it returns (owned by us, +1 retain).
+    let temp = unsafe { MLModel::compileModelAtURL_error(&pkg_url) }.map_err(|e| ClipError::Load(e.to_string()))?;
     let temp_path = url_to_path(&temp).ok_or_else(|| ClipError::Load("compiled model URL had no path".into()))?;
     // Cache the compiled bundle beside the package so later launches skip compilation.
     // Best-effort: if the copy fails, load straight from the temp URL for this session.
@@ -204,13 +208,14 @@ fn predict(model: &MLModel, input_name: &str, arr: &MLMultiArray) -> Result<Vec<
     let dict = NSDictionary::<NSString, AnyObject>::from_slices::<NSString>(&[&name], &[value_any]);
     // SAFETY: `dict` is a valid `{NSString: MLFeatureValue}` dictionary (the correct value
     // type for a feature provider); the `_error` variant returns a typed error.
-    let provider = unsafe { MLDictionaryFeatureProvider::initWithDictionary_error(MLDictionaryFeatureProvider::alloc(), &dict) }
-        .map_err(|e| ClipError::Predict(e.to_string()))?;
+    let provider =
+        unsafe { MLDictionaryFeatureProvider::initWithDictionary_error(MLDictionaryFeatureProvider::alloc(), &dict) }
+            .map_err(|e| ClipError::Predict(e.to_string()))?;
     let provider_proto = ProtocolObject::from_ref(&*provider);
     // SAFETY: `provider_proto` conforms to MLFeatureProvider; the `_error` predict variant
     // returns `Err(NSError)` on failure rather than throwing.
-    let out = unsafe { model.predictionFromFeatures_error(provider_proto) }
-        .map_err(|e| ClipError::Predict(e.to_string()))?;
+    let out =
+        unsafe { model.predictionFromFeatures_error(provider_proto) }.map_err(|e| ClipError::Predict(e.to_string()))?;
     read_embedding(&out)
 }
 
@@ -219,11 +224,12 @@ fn read_embedding(out: &ProtocolObject<dyn MLFeatureProvider>) -> Result<Vec<f32
     let key = NSString::from_str("embedding");
     // SAFETY: `out` is the valid provider Core ML returned; `featureValueForName` is a
     // plain accessor returning `Option` (null-checked below).
-    let value = unsafe { out.featureValueForName(&key) }
-        .ok_or_else(|| ClipError::Predict("no 'embedding' output".into()))?;
+    let value =
+        unsafe { out.featureValueForName(&key) }.ok_or_else(|| ClipError::Predict("no 'embedding' output".into()))?;
     // SAFETY: `value` is a valid feature value; `multiArrayValue` returns `Option`
     // (null when the value isn't a multi-array — null-checked).
-    let arr = unsafe { value.multiArrayValue() }.ok_or_else(|| ClipError::Predict("embedding not a multiarray".into()))?;
+    let arr =
+        unsafe { value.multiArrayValue() }.ok_or_else(|| ClipError::Predict("embedding not a multiarray".into()))?;
     read_f32_multiarray(&arr)
 }
 
@@ -232,7 +238,10 @@ fn read_embedding(out: &ProtocolObject<dyn MLFeatureProvider>) -> Result<Vec<f32
 // direct contiguous-pointer access is exactly what the CLIP spike proved
 // (`docs/notes/clip-coreml-rust-spike.md`) and is far simpler than a closure round-trip
 // for a one-shot fill/read. `allow(deprecated)` is the documented exception.
-#[allow(deprecated)]
+#[allow(
+    deprecated,
+    reason = "objc2-core-ml deprecates the direct sync form in favor of a heavier async/closure API; the direct form is exactly what the CLIP spike proved and is correct on this serialized worker thread"
+)]
 fn int32_multiarray(shape: &[isize], ids: &[i32]) -> Result<Retained<MLMultiArray>, ClipError> {
     let arr = new_multiarray(shape, MLMultiArrayDataType::Int32)?;
     // SAFETY: `dataPointer` is the array's contiguous first-major backing store; we sized
@@ -246,7 +255,10 @@ fn int32_multiarray(shape: &[isize], ids: &[i32]) -> Result<Retained<MLMultiArra
 }
 
 /// Build a Float32 MLMultiArray of `shape` filled with `values`.
-#[allow(deprecated)] // direct `dataPointer` fill — see `int32_multiarray`.
+#[allow(
+    deprecated,
+    reason = "objc2-core-ml deprecates the direct sync form in favor of a heavier async/closure API; the direct form is exactly what the CLIP spike proved and is correct on this serialized worker thread"
+)] // direct `dataPointer` fill — see `int32_multiarray`.
 fn float32_multiarray(shape: &[isize], values: &[f32]) -> Result<Retained<MLMultiArray>, ClipError> {
     let arr = new_multiarray(shape, MLMultiArrayDataType::Float32)?;
     // SAFETY: as `int32_multiarray`, but f32 — the array is sized to `values.len()`.
@@ -269,7 +281,10 @@ fn new_multiarray(shape: &[isize], dtype: MLMultiArrayDataType) -> Result<Retain
 
 /// Read a Float32 MLMultiArray into a `Vec<f32>` (the output embedding). Assumes a
 /// contiguous first-major layout, which Core ML guarantees for a freshly produced output.
-#[allow(deprecated)] // direct `dataPointer` read — see `int32_multiarray`.
+#[allow(
+    deprecated,
+    reason = "objc2-core-ml deprecates the direct sync form in favor of a heavier async/closure API; the direct form is exactly what the CLIP spike proved and is correct on this serialized worker thread"
+)] // direct `dataPointer` read — see `int32_multiarray`.
 fn read_f32_multiarray(arr: &MLMultiArray) -> Result<Vec<f32>, ClipError> {
     // SAFETY: `count` is the element count; `dataPointer` is the contiguous backing store.
     // We read exactly `count` f32s (the output is Float32 for our towers). The array is

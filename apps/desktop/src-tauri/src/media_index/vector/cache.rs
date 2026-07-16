@@ -26,11 +26,13 @@ use crate::media_index::store::{EmbeddingTable, open_read_connection, read_all_e
 
 use super::BruteForceVectorStore;
 
+/// The per-`(volume db path, embedding space)` warm-store map.
+type CacheMap = HashMap<(PathBuf, EmbeddingTable), Arc<BruteForceVectorStore>>;
+
 /// The process-global cache, keyed by `(media.db path, embedding space)` so each volume
 /// has its own warm store per space. The `Arc` lets a query clone out a snapshot and drop
 /// the lock immediately.
-static CACHE: LazyLock<Mutex<HashMap<(PathBuf, EmbeddingTable), Arc<BruteForceVectorStore>>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
+static CACHE: LazyLock<Mutex<CacheMap>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// Get the warm Vision feature-print store for a volume's `media.db` (find-similar / dedup),
 /// loading it on first use.

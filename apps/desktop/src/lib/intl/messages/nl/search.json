@@ -79,6 +79,10 @@
   "@search.imageResults.findSimilar": {
     "sourceHash": "708c3bd"
   },
+  "search.imageResults.matchedDescription": "Komt overeen met je beschrijving",
+  "@search.imageResults.matchedDescription": {
+    "sourceHash": "3b30350"
+  },
   "search.imageResults.similarTo": "Vergelijkbaar met {name}",
   "@search.imageResults.similarTo": {
     "sourceHash": "fc94bbb"

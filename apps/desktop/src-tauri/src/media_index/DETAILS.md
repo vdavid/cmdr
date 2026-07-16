@@ -208,8 +208,10 @@ its menu-event handler is a small backend follow-up rather than an FE change.
 
 ## Schema (`store/`)
 
-`SCHEMA_VERSION` is a disposable-cache version: a mismatch delete-and-recreates `media-{volume_id}.db`. It's now `2`
-(the tag + embedding tables and the FTS `source` column arrived with tags and embeddings). Objects:
+`SCHEMA_VERSION` is a disposable-cache version: a mismatch delete-and-recreates `media-{volume_id}.db`. It's now `3`
+(v2 added the tag + embedding tables and the FTS `source` column; v3 added the `media_clip_embedding` table + the
+`media_status.clip_stamp` column for CLIP semantic search — § CLIP semantic search). A bump re-enriches every beta user's
+cache on next launch (Vision recompute only, no re-download — an accepted disposable-cache cost). Objects:
 
 - `media_status` — `WITHOUT ROWID`, `path TEXT PRIMARY KEY COLLATE platform_case`; `mtime`, `size` (the `(path, mtime,
   size)` staleness key); `media_kind` + `state` (typed TEXT tokens, `sqlite3`-inspectable, parsed back to typed enums —
@@ -712,14 +714,114 @@ The user-facing surface lives in the Svelte frontend, not here; this section is 
   already matches tag words and shows them in the snippet. `OcrHit` carries no `source`, so the grid can't label a hit
   as "matched a tag" without a backend field — deferred, not needed now.
 
+## CLIP semantic search (M3)
+
+Natural-language text→image search ("beach sunset" → the photo). CLIP maps images and text into ONE shared 512-d vector
+space, so a typed query is encoded to a vector and cosine-matched against stored image embeddings. Everything lives under
+`clip/`; the enrichment + query plumbing rides the existing subsystem unchanged.
+
+### The model (evidence-anchored)
+
+- **OpenAI CLIP ViT-B/32**, HF `openai/clip-vit-base-patch32`, **MIT-licensed** weights (a commercial product can ship
+  them; Apple's MobileCLIP is research-only and can't — `docs/notes/clip-coreml-rust-spike.md`). Embedding dim 512, image
+  224×224, text context 77.
+- **Two Core ML `.mlpackage` towers**, fp16, NON-palettized. Sizes + SHA-256 are pinned in `clip/install.rs`
+  (`CLIP_TOWERS`): image ~208 MB, text ~184 MB, combined ~392 MB. **Conversion fidelity cosine 1.0000** vs the torch
+  reference (verified 2026-07-16). 8-bit k-means palettization would shrink this to ~138 MB but computed NaN on the text
+  tower, so it's off; a per-layer palettization exclusion is a future size optimization.
+- **Conversion is an out-of-tree dev script** (`apps/desktop/scripts/convert-clip-model/`), NEVER run by CI/pnpm: a
+  throwaway `uv` venv (Python 3.11–3.12; coremltools/torch have no cp314 wheels), pinned `requirements.txt`. It bakes
+  CLIP's per-channel `(x-mean)/std` normalization INTO the image model and prints each zip's SHA-256 + size + the
+  David-upload handoff. `reference-tokenization.json` + `reference-vectors.json` are checked in (they back the Rust tests).
+- **Both towers feed an `MLMultiArray`** (the exact path the spike proved), NOT a Core ML `ImageType` — a deliberate
+  deviation that drops the CVPixelBuffer/MLImageConstraint FFI surface. So the image tower takes a float `[1,3,224,224]`
+  CHW `[0,1]` tensor; the Rust side resizes + center-crops the decoded CGImage to 224 and divides by 255
+  (`clip_pixels_from_cgimage` in `backend/vision`), and the model bakes the normalization.
+- **Upload is David-only** (agents never upload): the pinned `url` (`https://models.getcmdr.com/<artifact>`) must serve
+  the exact pinned bytes. Until then the checksum-verified download fails and the feature stays honestly gated off. A
+  public HuggingFace repo under David's account is the zero-setup alternative host.
+
+### Two vector spaces, two-part staleness
+
+CLIP's space is DIFFERENT from the Vision feature print, so its embeddings live in a SEPARATE `media_clip_embedding`
+table (schema v3 added it + the `media_status.clip_stamp` column). NEVER cosine-compare across the two — mixing them
+would silently rank across incompatible spaces.
+
+Staleness is two-part (`store::needs_enrichment` for Vision by `engine_version`; `store::needs_clip` for CLIP by
+`clip_stamp`), decoupled on purpose (plan M3 Q5): installing/upgrading the CLIP model re-embeds CLIP for every image
+WITHOUT re-running OCR/tags for everyone, and a Vision engine bump re-runs OCR/tags WITHOUT re-embedding CLIP.
+`clip_stamp` is `clip;model={id};os={major.minor.patch}` (the OS component re-embeds after an upgrade, which recompiles
+`.mlmodelc` and can drift ANE output); `None` when no model is installed ⇒ CLIP is never attempted.
+
+### One decode, two writer paths
+
+The enrich core (`enrich_and_gc_scoped`, and the network core) computes `want_vision || want_clip` per image and calls
+`backend.analyze_media(input, want_vision, want_clip)` — ONE decode runs the requested side(s). The macOS backend decodes
+via ImageIO, runs the Vision requests when `want_vision`, and (when `want_clip`) resizes/center-crops the same decode to
+224 and hands the pixel buffer to the CLIP worker thread. Persistence is two INDEPENDENT writer messages (`apply_media_upsert`):
+`upsert` writes the Vision row (identity + `engine_version` + OCR/tags/feature-print); `upsert_clip` stamps `clip_stamp`
++ replaces `media_clip_embedding`, touching NO Vision column. A CLIP encode that can't run yet (model still loading) yields
+`clip: None`, so the pass leaves `clip_stamp` unstamped and retries next pass — it never fails the whole analysis on a
+transient CLIP miss. The `clip_stamp` reaches the passes via `EnrichGates.clip_stamp` / `NetworkEnrichCtx.clip_stamp`,
+read once per pass from `clip::current_stamp(data_dir)`. The whole-store `enrich_and_gc` wrapper is Vision-only (CLIP-agnostic,
+`clip_stamp: None`) and test-only now; production reaches the scoped core directly with the installed stamp.
+
+### The Core ML towers + worker thread (`clip/macos.rs`)
+
+Mirrors the Vision backend's threading discipline: `MLModel` is `!Send` and a synchronous ANE predict is an XPC round-trip
+that can overrun a small stack, so ONE dedicated 8 MB-stack `clip-worker` thread owns both loaded towers and SERIALIZES
+every predict (Apple's pooled-inference recommendation). `encode_text` (query-time) and `encode_image` (from the Vision
+worker) both send a job to it and block for the reply, so no `!Send` object crosses a boundary — only the input ids /
+pixel `Vec` in and the embedding `Vec<f32>` out. `.mlpackage` is compiled to `.mlmodelc` on-device at first load
+(`compileModelAtURL:error:`) and the compiled bundle is cached beside the model so later launches skip the 1–2 s compile.
+Every `unsafe` block carries a per-site `// SAFETY:` (the objc2-core-ml `MLMultiArray` fills/reads via `dataPointer`, the
+`MLDictionaryFeatureProvider` build, the CoreGraphics `CGBitmapContextCreate` render). The tokenizer (`clip/tokenizer.rs`,
+`instant-clip-tokenizer`) produces the fixed `[1,77]` int32 sequence (`[BOS] content [EOS]`, EOS-padded), pinned bit-exact
+to the HuggingFace reference.
+
+### Model install (`clip/install.rs`, plan Decision 9)
+
+New code reusing only `ai::download::download_file` (the resumable HTTP GET). Distinct from the GGUF two-flag gate: Core ML
+models are `.mlpackage` DIRECTORY bundles (zipped), so this adds a zip extractor (with a zip-slip guard) and — unlike
+`ai/`'s size-only check — a **SHA-256 verify BEFORE unpacking**. A truncated/tampered download never reaches the extractor,
+so a half-model can never load and mis-embed (data safety, `verify_checksum` red→green tests). `is_installed` (both
+`.mlpackage` dirs present) seeds the gate; `installed_stamp` builds the `clip_stamp`.
+
+### The query path
+
+`media_index_search_semantic(volume_id, query, limit)` (IPC, registered in both `ipc.rs` + `ipc_collectors.rs`) runs OFF
+the IPC thread (`spawn_blocking`): tokenize + warm-text-tower encode (`clip::encode_text_query`, which hops to the CLIP
+worker) → `MediaIndex::search_semantic(query_vec, limit)` brute-force top-k over a SECOND resident CLIP cache
+(`vector::cache::get_or_load_clip`, keyed `(db_path, EmbeddingTable::Clip)`, invalidated per completed pass, dropped by the
+memory watchdog with the feature-print cache). The read API takes the already-encoded query VECTOR, so it's a pure vector
+query testable with deterministic vectors; the command owns the encode. `[]` (never an error) when indexing is off, no
+model is installed, or the volume has no CLIP embeddings — so the UI voices coverage. Answers offline from `media.db`.
+
+**Latency:** the text tower is kept warm (a cold Core ML load is 1–2 s; a warm encode ~2 ms — spike numbers); brute-force
+top-k over a single user's library is low-ms. Measure on a real corpus and record in `docs/notes/` before adopting
+`sqlite-vec` (the deferred decision rule stands: >~100k vectors AND over budget; it's a signing project, not a flag).
+
+### Frontend
+
+- **`search_semantic` is the PRIMARY text→image signal** in the Search dialog's image grid (`ImageSearchResults.svelte`):
+  each keystroke runs semantic + OCR in parallel, semantic hits lead (snippet-less tiles with a "matched description"
+  reason via `search.imageResults.matchedDescription`), then OCR keyword hits not already shown (dedup by path). With no
+  model, semantic returns `[]` and the grid degrades to OCR-only. The three test mocks
+  (`ImageSearchResults.{gating,a11y}.test.ts`, `SearchDialog.svelte.test.ts`) stub `mediaIndexSearchSemantic → []`.
+- **Settings download** (`MediaIndexClipModel.svelte` in the Image search card): self-gates on Apple Silicon
+  (`is_local_ai_supported`), shows install state + a "Download model (~X MB)" button (honest size from
+  `media_index_clip_model_status`), and downloads/installs via `media_index_download_clip_model`, which kicks a pass so
+  already-enriched images gain CLIP embeddings (like a threshold decrease). "Coming soon" until the artifact is published.
+
 ## What's left for later
 
 - **Per-folder "always index" UI (FE trigger):** the backend setter (`media_index_set_always_index_folder`) + the
   `mediaIndex.alwaysIndexFolders` setting are ready, but no FE control sets them yet. The natural trigger is a folder
   right-click action, the same native-menu shape the exclude trigger now uses (§ Per-folder photo-search exclude), so
   it's a small backend/menu follow-up.
-- **Later:** CLIP text→image semantic search, the model-install path, faces (detect/embed/cluster/name), the durable
-  identity store, and LLM captions.
+- **CLIP model size:** the shipped towers are non-palettized (~392 MB) because 8-bit palettization NaN'd the text tower;
+  a per-layer palettization exclusion would cut it toward ~138 MB.
+- **Later:** faces (detect/embed/cluster/name), the durable identity store, and LLM captions.
 
 ## Testing
 

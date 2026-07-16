@@ -31,7 +31,10 @@ mod client_real_openai_test;
 #[cfg(test)]
 mod client_streaming_test;
 pub mod connection_check;
-mod download;
+// `pub(crate)`: the media-index CLIP model install reuses the resumable HTTP GET
+// (`download_file`) — the one piece of the AI install path that's genuinely generic
+// (plan M3, Decision 9).
+pub(crate) mod download;
 pub mod extract;
 pub mod install;
 pub mod llm_log;

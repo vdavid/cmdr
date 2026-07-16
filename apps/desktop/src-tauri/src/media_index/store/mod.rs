@@ -477,7 +477,10 @@ pub(crate) struct EmbeddingRow {
 /// embedding table (`media_embedding` for the Vision feature print, or
 /// `media_clip_embedding` for CLIP) — the two live in DIFFERENT vector spaces and each
 /// backs its own resident cache, so the caller names which one it wants.
-pub(crate) fn read_all_embeddings_from(conn: &Connection, table: EmbeddingTable) -> Result<Vec<EmbeddingRow>, MediaStoreError> {
+pub(crate) fn read_all_embeddings_from(
+    conn: &Connection,
+    table: EmbeddingTable,
+) -> Result<Vec<EmbeddingRow>, MediaStoreError> {
     let mut stmt = conn.prepare_cached(&format!("SELECT path, vector FROM {}", table.name()))?;
     let rows = stmt.query_map([], |row| {
         let path: String = row.get(0)?;

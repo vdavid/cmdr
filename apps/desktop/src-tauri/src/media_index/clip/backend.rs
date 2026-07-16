@@ -26,8 +26,22 @@ pub trait ClipTextEncoder: Send + Sync {
 /// is a bag-of-words indicator over these terms, so a query "a cat on the beach" and an
 /// image path "/trip/beach/cat.jpg" land close in cosine.
 const FAKE_VOCAB: &[&str] = &[
-    "cat", "dog", "beach", "sunset", "car", "street", "game", "screenshot", "person", "food",
-    "mountain", "flower", "water", "building", "tree", "sky",
+    "cat",
+    "dog",
+    "beach",
+    "sunset",
+    "car",
+    "street",
+    "game",
+    "screenshot",
+    "person",
+    "food",
+    "mountain",
+    "flower",
+    "water",
+    "building",
+    "tree",
+    "sky",
 ];
 
 /// A deterministic CLIP-space embedding for the fake backends: a bag-of-words indicator
@@ -39,6 +53,7 @@ pub fn fake_clip_embedding(text: &str) -> Vec<f32> {
     let lower = text.to_lowercase();
     FAKE_VOCAB
         .iter()
+        // allowed-error-string-match: a fake bag-of-words embedding (does the query mention a vocab word?), not error/state classification — it never inspects an error.
         .map(|w| if lower.contains(w) { 1.0 } else { 0.0 })
         .collect()
 }

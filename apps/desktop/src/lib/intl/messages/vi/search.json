@@ -79,6 +79,10 @@
   "@search.imageResults.findSimilar": {
     "sourceHash": "708c3bd"
   },
+  "search.imageResults.matchedDescription": "Khớp với mô tả của bạn",
+  "@search.imageResults.matchedDescription": {
+    "sourceHash": "3b30350"
+  },
   "search.imageResults.similarTo": "Tương tự {name}",
   "@search.imageResults.similarTo": {
     "sourceHash": "fc94bbb"

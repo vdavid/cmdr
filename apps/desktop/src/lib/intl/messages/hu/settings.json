@@ -454,6 +454,34 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Ez teljes egészében a Macen fut az Apple beépített Vision keretrendszerével. A képeid soha nem hagyják el a számítógépedet, és nincs benne AI-szolgáltató vagy API-kulcs.",
+  "settings.mediaIndex.clip.title": "Szemantikus keresés",
+  "@settings.mediaIndex.clip.title": {
+    "sourceHash": "e1a8427"
+  },
+  "settings.mediaIndex.clip.description": "Találd meg a fotókat a tartalmuk leírásával, például ''naplemente a tengerparton'', egy eszközön futó MI-modellel.",
+  "@settings.mediaIndex.clip.description": {
+    "sourceHash": "d8b25d3"
+  },
+  "settings.mediaIndex.clip.ready": "Kész – keress a fotóid között leírás alapján.",
+  "@settings.mediaIndex.clip.ready": {
+    "sourceHash": "c17e03d"
+  },
+  "settings.mediaIndex.clip.comingSoon": "Hamarosan.",
+  "@settings.mediaIndex.clip.comingSoon": {
+    "sourceHash": "9e3090d"
+  },
+  "settings.mediaIndex.clip.download": "Modell letöltése (~{sizeText} MB)",
+  "@settings.mediaIndex.clip.download": {
+    "sourceHash": "1eced44"
+  },
+  "settings.mediaIndex.clip.downloading": "Letöltés…",
+  "@settings.mediaIndex.clip.downloading": {
+    "sourceHash": "a778d34"
+  },
+  "settings.mediaIndex.clip.failed": "A letöltés nem fejeződött be. Ellenőrizd a kapcsolatot, és próbáld újra.",
+  "@settings.mediaIndex.clip.failed": {
+    "sourceHash": "5feb349"
+  },
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"
   },

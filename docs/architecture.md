@@ -146,7 +146,9 @@ All under `apps/desktop/src-tauri/src/`.
   (queryable even for an unmounted volume). See its [`CLAUDE.md`](../apps/desktop/src-tauri/src/importance/CLAUDE.md)
   and [`docs/specs/importance-subsystem-plan.md`](specs/importance-subsystem-plan.md)
 - `media_index/`: Image-ML enrichment — makes a volume's images searchable by their content (OCR text, Vision scene/
-  object tags, and image-similarity "find similar" via feature-print embeddings). A read-consumer of `indexing/`, ported
+  object tags, image-similarity "find similar" via feature-print embeddings, and natural-language semantic search via an
+  on-demand on-device CLIP model — `clip/`, macOS Core ML, a SEPARATE vector space with independent two-part staleness).
+  A read-consumer of `indexing/`, ported
   from `importance/`, with its own per-volume disposable `media.db` (path-keyed, FTS5 OCR + tags, structured tags, and a
   brute-force cosine vector store over feature-print embeddings), a scheduler that enriches on the lifecycle-bus
   scan-completion edge, importance-prioritized (high-importance folders first, below the settings slider threshold

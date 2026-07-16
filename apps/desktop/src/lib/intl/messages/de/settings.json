@@ -456,6 +456,34 @@
     "sourceHash": "a4a68f1"
   },
   "settings.mediaIndex.privacyNote": "Das läuft vollständig auf deinem Mac über Apples integriertes Vision-Framework. Deine Bilder verlassen deinen Computer nie, und es sind kein KI-Anbieter und kein API-Schlüssel beteiligt.",
+  "settings.mediaIndex.clip.title": "Semantische Suche",
+  "@settings.mediaIndex.clip.title": {
+    "sourceHash": "e1a8427"
+  },
+  "settings.mediaIndex.clip.description": "Finde Fotos, indem du beschreibst, was darauf zu sehen ist, etwa ''Strand bei Sonnenuntergang'', mit einem KI-Modell auf dem Gerät.",
+  "@settings.mediaIndex.clip.description": {
+    "sourceHash": "d8b25d3"
+  },
+  "settings.mediaIndex.clip.ready": "Bereit – suche deine Fotos per Beschreibung.",
+  "@settings.mediaIndex.clip.ready": {
+    "sourceHash": "c17e03d"
+  },
+  "settings.mediaIndex.clip.comingSoon": "Demnächst verfügbar.",
+  "@settings.mediaIndex.clip.comingSoon": {
+    "sourceHash": "9e3090d"
+  },
+  "settings.mediaIndex.clip.download": "Modell herunterladen (~{sizeText} MB)",
+  "@settings.mediaIndex.clip.download": {
+    "sourceHash": "1eced44"
+  },
+  "settings.mediaIndex.clip.downloading": "Wird heruntergeladen…",
+  "@settings.mediaIndex.clip.downloading": {
+    "sourceHash": "a778d34"
+  },
+  "settings.mediaIndex.clip.failed": "Der Download wurde nicht abgeschlossen. Prüfe deine Verbindung und versuche es erneut.",
+  "@settings.mediaIndex.clip.failed": {
+    "sourceHash": "5feb349"
+  },
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"
   },

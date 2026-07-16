@@ -7,6 +7,7 @@ import { type UnlistenFn } from '@tauri-apps/api/event'
 import {
   commands,
   events,
+  type ClipModelStatus,
   type CoveredCount,
   type MediaEnrichProgressEvent,
   type MediaEnrichTerminalEvent,
@@ -15,11 +16,13 @@ import {
   type OcrHit,
   type ReclaimPreview,
   type ReclaimResult,
+  type SemanticHit,
   type SimilarImage,
 } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
 
 export type {
+  ClipModelStatus,
   CoveredCount,
   MediaEnrichProgressEvent,
   MediaEnrichTerminalEvent,
@@ -28,6 +31,7 @@ export type {
   OcrHit,
   ReclaimPreview,
   ReclaimResult,
+  SemanticHit,
   SimilarImage,
 }
 
@@ -200,6 +204,44 @@ export async function mediaIndexFindSimilar(
   const res = await commands.mediaIndexFindSimilar(volumeId, sourcePath, limit)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
+}
+
+/**
+ * Natural-language semantic image search (plan M3): encode `query` with the on-device CLIP
+ * text tower and return the images whose visual content best matches it (cosine), highest
+ * first. Returns `[]` (never an error) when image indexing is off, no CLIP model is
+ * installed, or the volume has no CLIP embeddings — so the grid degrades to OCR keywords.
+ * `limit` caps the result count (backend default when `null`). Answers offline from `media.db`.
+ */
+export async function mediaIndexSearchSemantic(
+  volumeId: string,
+  query: string,
+  limit: number | null = null,
+): Promise<SemanticHit[]> {
+  const res = await commands.mediaIndexSearchSemantic(volumeId, query, limit)
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * The CLIP semantic-search model's install state for the settings download affordance:
+ * whether the device supports it (Apple Silicon), whether it's installed, whether a real
+ * artifact is published yet, and the total download size in bytes.
+ */
+export async function mediaIndexClipModelStatus(): Promise<ClipModelStatus> {
+  const res = await commands.mediaIndexClipModelStatus()
+  if (res.status === 'error') throwIpcError(res.error)
+  return res.data
+}
+
+/**
+ * Download, checksum-verify, and install the on-device CLIP model, then kick a pass so
+ * already-indexed images gain semantic embeddings. Rejects (so the UI can show a retry) if
+ * the hardware is unsupported, the model isn't published, or the download/verify fails.
+ */
+export async function mediaIndexDownloadClipModel(): Promise<void> {
+  const res = await commands.mediaIndexDownloadClipModel()
+  if (res.status === 'error') throwIpcError(res.error)
 }
 
 // A typed wrapper for the per-folder override (`media_index_set_always_index_folder`) is

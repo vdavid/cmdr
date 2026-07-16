@@ -33,6 +33,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import {
         mediaIndexSearchOcr,
+        mediaIndexSearchSemantic,
         mediaIndexVolumeState,
         mediaIndexThumbnailToken,
         mediaIndexDropThumbnailTokens,
@@ -78,6 +79,9 @@
     const MAX_TILES = 48
     const DEBOUNCE_MS = 300
 
+    /** Why a tile matched: a CLIP semantic (description) match, or an OCR keyword match. */
+    type MatchReason = 'semantic' | 'ocr'
+
     interface Tile {
         /** Openable OS path (mount root prepended) — for the open action + thumbnail token. */
         path: string
@@ -85,14 +89,18 @@
         storedPath: string
         name: string
         segments: ReturnType<typeof parseOcrSnippet>
+        /** Why this tile matched — drives the "matched description" vs OCR-snippet reason line. */
+        reason: MatchReason
         /** `cmdr-media://` URL, or null when the image couldn't be tokenized (icon fallback). */
         thumbUrl: string | null
     }
 
-    /** One entry to render as a tile: its stored (index-relative) path + optional OCR snippet. */
+    /** One entry to render as a tile: its stored (index-relative) path, why it matched, and
+     *  its OCR snippet (only for an OCR match). */
     interface TileEntry {
         storedPath: string
         snippet: string | null
+        reason: MatchReason
     }
 
     // The master "Index image contents" toggle (`mediaIndex.enabled`), read reactively and
@@ -137,21 +145,34 @@
         totalHits = 0
     }
 
-    async function runOcrSearch(seq: number): Promise<void> {
+    async function runTextSearch(seq: number): Promise<void> {
         loading = true
         try {
-            // Volume state first, so the coverage-honesty copy is right even for zero hits.
-            const [state, hits] = await Promise.all([
+            // Semantic (CLIP description) search is the PRIMARY text→image signal; OCR is the
+            // keyword signal alongside it. Both run in parallel with the volume state (so the
+            // coverage copy is right even for zero hits). Semantic returns nothing when no CLIP
+            // model is installed, so this gracefully degrades to OCR-only.
+            const [state, semanticHits, ocrHits] = await Promise.all([
                 mediaIndexVolumeState(volumeId),
+                mediaIndexSearchSemantic(volumeId, query, null),
                 mediaIndexSearchOcr(volumeId, query, null),
             ])
             if (seq !== requestSeq) return
             volumeState = state
-            totalHits = hits.length
-            const entries: TileEntry[] = hits
-                .slice(0, MAX_TILES)
-                .map((hit: OcrHit) => ({ storedPath: hit.path, snippet: hit.snippet }))
-            await buildTiles(entries, seq)
+            // Merge: semantic hits first (description matches lead), then OCR keyword hits not
+            // already shown by the semantic pass (dedup by stored path).
+            const seen = new Set(semanticHits.map((h) => h.path))
+            const semanticEntries: TileEntry[] = semanticHits.map((h) => ({
+                storedPath: h.path,
+                snippet: null,
+                reason: 'semantic',
+            }))
+            const ocrEntries: TileEntry[] = ocrHits
+                .filter((h: OcrHit) => !seen.has(h.path))
+                .map((h: OcrHit) => ({ storedPath: h.path, snippet: h.snippet, reason: 'ocr' }))
+            const combined = [...semanticEntries, ...ocrEntries]
+            totalHits = combined.length
+            await buildTiles(combined.slice(0, MAX_TILES), seq)
         } catch {
             if (seq !== requestSeq) return
             // A failed search reads as "no results" honestly; the volume-state line still
@@ -169,7 +190,8 @@
             const hits = await mediaIndexFindSimilar(volumeId, source.storedPath, MAX_TILES)
             if (seq !== requestSeq) return
             totalHits = hits.length
-            const entries: TileEntry[] = hits.map((hit) => ({ storedPath: hit.path, snippet: null }))
+            // Similar tiles carry no reason line (an image-similarity match, not text).
+            const entries: TileEntry[] = hits.map((hit) => ({ storedPath: hit.path, snippet: null, reason: 'ocr' }))
             await buildTiles(entries, seq)
         } catch {
             if (seq !== requestSeq) return
@@ -204,6 +226,7 @@
                     storedPath: entry.storedPath,
                     name: fileName(osPath),
                     segments: entry.snippet === null ? [] : parseOcrSnippet(entry.snippet),
+                    reason: entry.reason,
                     thumbUrl,
                 }
             }),
@@ -233,7 +256,7 @@
             return
         }
         const seq = ++requestSeq
-        void runOcrSearch(seq)
+        void runTextSearch(seq)
     }
 
     // Debounced fetch on query / visibility change. An empty query or a hidden dialog
@@ -257,7 +280,7 @@
         }
         const seq = ++requestSeq
         debounceTimer = setTimeout(() => {
-            void runOcrSearch(seq)
+            void runTextSearch(seq)
         }, DEBOUNCE_MS)
     })
 
@@ -387,11 +410,15 @@
                                         tooltipWhenTruncated: true,
                                     }}
                                 ></span>
-                                <span class="ir-snippet">
-                                    {#each tile.segments as seg (seg)}
-                                        {#if seg.matched}<mark>{seg.text}</mark>{:else}{seg.text}{/if}
-                                    {/each}
-                                </span>
+                                {#if tile.reason === 'semantic'}
+                                    <span class="ir-reason">{tString('search.imageResults.matchedDescription')}</span>
+                                {:else}
+                                    <span class="ir-snippet">
+                                        {#each tile.segments as seg (seg)}
+                                            {#if seg.matched}<mark>{seg.text}</mark>{:else}{seg.text}{/if}
+                                        {/each}
+                                    </span>
+                                {/if}
                             </button>
                             <button
                                 type="button"
@@ -618,5 +645,14 @@
         color: var(--color-text-primary);
         border-radius: var(--radius-sm);
         padding: 0 var(--spacing-xxs);
+    }
+
+    /* A CLIP semantic match has no text snippet — the whole image matched the description —
+       so a quiet reason label stands in for the highlighted snippet. */
+    .ir-reason {
+        font-size: var(--font-size-sm);
+        font-style: italic;
+        color: var(--color-text-tertiary);
+        line-height: 1.35;
     }
 </style>

@@ -79,6 +79,10 @@
   "@search.imageResults.findSimilar": {
     "sourceHash": "708c3bd"
   },
+  "search.imageResults.matchedDescription": "与你的描述匹配",
+  "@search.imageResults.matchedDescription": {
+    "sourceHash": "3b30350"
+  },
   "search.imageResults.similarTo": "与 {name} 相似",
   "@search.imageResults.similarTo": {
     "sourceHash": "fc94bbb"

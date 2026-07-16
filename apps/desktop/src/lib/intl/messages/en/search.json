@@ -107,6 +107,10 @@
   "@search.imageResults.findSimilar": {
     "description": "Label for the action (a button on each image tile) that re-runs the grid to show images that look like this one, using on-device image similarity."
   },
+  "search.imageResults.matchedDescription": "Matched your description",
+  "@search.imageResults.matchedDescription": {
+    "description": "A quiet reason line under an image tile when the image matched the search text by its VISUAL CONTENT (an on-device AI describing the photo), not by any text printed inside it. It stands in for the highlighted text snippet the keyword matches show."
+  },
   "search.imageResults.similarTo": "Similar to {name}",
   "@search.imageResults.similarTo": {
     "description": "Heading shown above the grid when it's showing images similar to a chosen one, instead of text-match results.",

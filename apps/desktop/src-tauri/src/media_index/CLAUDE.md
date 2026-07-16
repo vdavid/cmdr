@@ -47,9 +47,15 @@ tests.
   ENRICHABLE subset (never `images.len()`) + one `media-enrich-terminal` on EVERY exit path (a `Drop`-guard emits `Failed`
   on an error bubble). A VANISHED source (`VisionError::Missing`, ENOENT) is skipped quietly (DEBUG, no row) but counts as
   processed. A small live tick stays fully silent. D.md § Progress events.
+- **CLIP semantic search (M3) is a SEPARATE vector space** (`clip/`, macOS Core ML): `media_clip_embedding` + a
+  `clip_stamp` column with INDEPENDENT staleness (`needs_clip`, decoupled from Vision's `engine_version`). Installing/
+  upgrading CLIP re-embeds CLIP WITHOUT re-running OCR/tags, and vice versa — the pass runs the stale side(s) from ONE
+  decode via `backend.analyze_media(want_vision, want_clip)`; the two writer paths are `upsert` (Vision) + `upsert_clip`.
+  NEVER compare CLIP against the Vision feature print (different spaces). Off unless a model is installed (on-demand
+  download, SHA-256-verified BEFORE unzip); `search_semantic` returns `[]` with no model. D.md § CLIP semantic search.
 
 Still open: per-FOLDER always-index trigger (setter ready; the exclude trigger shipped as a folder context-menu item),
-MTP on-demand, CLIP/faces/captions.
+MTP on-demand, faces/captions.
 
 Architecture, flows, and decisions: [DETAILS.md](DETAILS.md). Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

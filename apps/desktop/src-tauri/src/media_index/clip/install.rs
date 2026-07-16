@@ -49,28 +49,30 @@ pub struct ClipTowerSpec {
 pub const PLACEHOLDER_SHA: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 
 /// The two towers the semantic-search feature needs: the image tower (enrichment embeds
-/// every photo) and the text tower (query encoding).
+/// every photo) and the text tower (query encoding). Hash + size are the conversion
+/// script's printed output (OpenAI CLIP ViT-B/32, fp16, non-palettized; conversion
+/// fidelity cosine 1.0000 vs the torch reference — verified 2026-07-16). Combined ~392 MB.
 ///
-/// **Hashes pending a corrected conversion.** The 8-bit-palettized towers (~138 MB) that
-/// the conversion script first produced computed NaN embeddings on the text tower
-/// (verified 2026-07-16), so those bytes are NOT trustworthy. The script now defaults to a
-/// non-palettized fp16 conversion (correct, larger); paste its printed SHA-256 + sizes here
-/// once the fidelity check passes, and re-enable palettization (with a per-layer exclusion
-/// for the text tower) later to shrink the download. Until then the hash is the placeholder,
-/// so install refuses — the feature stays honestly gated off rather than pulling a bad model.
+/// Bigger than a palettized model would be (8-bit palettization computed NaN on the text
+/// tower — see the conversion script), so it's the honest correct-but-larger download;
+/// shrinking it via a per-layer palettization exclusion is a future optimization.
+///
+/// **David must upload these bytes** to the URLs below (agents never upload); until the URL
+/// serves the exact pinned bytes, the checksum-verified download fails and the feature stays
+/// gated off. The hash guarantees whatever downloads is exactly the converted, verified model.
 pub const CLIP_TOWERS: &[ClipTowerSpec] = &[
     ClipTowerSpec {
         artifact: "clip-image.mlpackage.zip",
         url: "https://models.getcmdr.com/clip-image.mlpackage.zip",
-        sha256: PLACEHOLDER_SHA,
-        size_bytes: 160_000_000,
+        sha256: "b3e3a3fe9a2268a05ea0d9e97f60e3a905d07f83a51678a467b03a629f77b237",
+        size_bytes: 207_920_562,
         package_dir: "clip-image.mlpackage",
     },
     ClipTowerSpec {
         artifact: "clip-text.mlpackage.zip",
         url: "https://models.getcmdr.com/clip-text.mlpackage.zip",
-        sha256: PLACEHOLDER_SHA,
-        size_bytes: 120_000_000,
+        sha256: "d48091c587b32033920870dfb9db3d30866162e46f3e69d07e79df1a99e5d7d3",
+        size_bytes: 183_694_108,
         package_dir: "clip-text.mlpackage",
     },
 ];
@@ -253,8 +255,11 @@ mod tests {
         {
             let file = std::fs::File::create(&zip_path).unwrap();
             let mut w = zip::ZipWriter::new(file);
-            w.start_file::<_, ()>("clip-image.mlpackage/Manifest.json", zip::write::SimpleFileOptions::default())
-                .unwrap();
+            w.start_file::<_, ()>(
+                "clip-image.mlpackage/Manifest.json",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             w.write_all(body).unwrap();
             w.finish().unwrap();
         }
