@@ -29,8 +29,8 @@ path, layout, decisions): [DETAILS.md](DETAILS.md).
   `escapeForMarkdownLite` for `errors/markdown-escape.ts` (that escapes the formatting chars too, so nothing renders).
   Pinned by `ask-cmdr-markdown.test.ts`; rationale in [DETAILS.md](DETAILS.md) § Decisions.
 - **The rail gates on consent; it sends NOTHING until the user opts in.** `openRail` refreshes `consentState`: `false`
-  shows `AskCmdrConsent.svelte`, `true` shows the chat, `null` shows neither (no flash). Don't render the composer/thread
-  outside the `consented` branch.
+  shows `AskCmdrConsent.svelte`, `true` shows the chat, `null` shows neither (no flash). Don't render the
+  composer/thread outside the `consented` branch.
 - **The rail is a THIRD focus region via a parallel flag.** `explorerState.getRailFocused()` / `setRailFocused()` is a
   boolean ALONGSIDE the `'left'|'right'` `focusedPane` union — never widen that union. The rail is NON-modal: do NOT add
   it to `isModalDialogOpen()` in `+page.svelte` (that would suppress every shortcut while it's open). Opening focuses
@@ -45,8 +45,8 @@ path, layout, decisions): [DETAILS.md](DETAILS.md).
   `menuCommands`. Default `⌘⌥A`, registered Command-then-Option (⌥⌘-order strings are native-menu-only). Pinned by
   `ask-cmdr-shortcut.test.ts`.
 - **Opening the rail GROWS the main window so panes keep their size; closing shrinks it back** (`rail-window.ts`, skips
-  fullscreen/maximized). ❌ Don't grow on hydration or a re-open — the window is already rail-inclusive, so `hydrateRail`
-  passes `resizeWindow: false` and `openRail` grows only on `!wasOpen`. Doubling breaks. Depth:
+  fullscreen/maximized). ❌ Don't grow on hydration or a re-open — the window is already rail-inclusive, so
+  `hydrateRail` passes `resizeWindow: false` and `openRail` grows only on `!wasOpen`. Doubling breaks. Depth:
   [DETAILS.md](DETAILS.md) § Window growth.
 - **Attachments cross into the envelope as path + kind ONLY — never contents** (the read-only privacy line). Drag from a
   pane is a NATIVE webview drag (`onDragDropEvent`), not HTML5, so a DOM `ondrop` never fires. Message paging is
