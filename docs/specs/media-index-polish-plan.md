@@ -411,8 +411,15 @@ proven pattern rather than inventing a new one.
 - **A live tick runs a SCOPED incremental pass**: walk only the touched directories' qualifying images (not the full
   index), apply the normal coverage + override + live-exclusion gates and the staleness predicate
   (`(path, mtime, size)` + stamp — this is what makes a modified image re-enrich and an untouched one a no-op), enrich
-  through the same writer. Reuse `enrich_and_gc`'s core with a scoped image set, or extract the shared per-image step —
-  don't fork the enrichment logic.
+  through the same writer. **NEVER call `enrich_and_gc` with a scoped image set as-is** — its GC is a whole-store
+  set-difference against the walked set, so a scoped walk would delete every stored row OUTSIDE the touched dirs (the
+  2026-07-16 pre-review's Finding 1, a data-safety trap). Refactor so the GC target set is a parameter: the full pass
+  passes "all stored", the live tick passes "stored rows under the touched dirs only", both sharing the identical
+  per-image enrich loop — don't fork the enrichment logic. The pre-review report (delivered to the executor verbatim)
+  carries the full build list: distinct live coordinator key + touched-dirs accumulator, skip-while-full-pass-runs,
+  silent ticks suppress BOTH the progress sink and the terminal guard, a sibling-aware per-directory walk variant,
+  `subscribe_dirs_changed` semantics (ancestor chains, the ever-present `/`, last-value-wins), and Local-only wiring
+  after `wire_volume`'s kind early-returns.
 - **Deletions: rows for index-CONFIRMED removals may be deleted in the live path** (the index removal is a fact about
   the tree, like importance's subtree clear — NOT a scan-state inference, so the GC-needs-a-complete-tree doctrine isn't
   violated). A disconnect/unmount still never deletes (the existing pause semantics stand). When in doubt, defer to the
