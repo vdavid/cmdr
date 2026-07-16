@@ -31,7 +31,7 @@ use crate::indexing::metadata::extract_metadata;
 use crate::indexing::scanner;
 use crate::indexing::store::{self, IndexStore, IndexStoreError};
 use crate::indexing::watcher::FsChangeEvent;
-use crate::indexing::writer::{IndexWriter, WriteMessage};
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::indexing::{DEBUG_STATS, IndexPathSpace};
 use crate::pluralize::pluralize;
 
@@ -702,7 +702,11 @@ pub(super) fn send_marks(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -
 /// entry rows. The only failure is a writer send; the caller maps it.
 pub(super) fn finish_reconcile(listed_ids: &[i64], epoch: u64, writer: &IndexWriter) -> Result<(), IndexStoreError> {
     send_marks(listed_ids, epoch, writer)?;
-    writer.send(WriteMessage::ComputeAllAggregates)?;
+    // `Sql`, not `Maps`: a reconcile writes via `UpsertEntryV2` (maps empty in the
+    // happy case), but a verification subtree scan's `InsertEntriesV2` can leave
+    // the shared writer's accumulator polluted with subtree-only data. Declaring
+    // `Sql` recomputes from committed rows and can't be poisoned by that (Leak D).
+    writer.send(WriteMessage::ComputeAllAggregates { source: AggSource::Sql })?;
     Ok(())
 }
 

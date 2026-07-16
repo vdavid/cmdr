@@ -606,7 +606,7 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
     writer
         .send(writer::WriteMessage::ComputePartialAggregates {
             hot_paths: vec![],
-            source: writer::PartialAggSource::Maps,
+            source: writer::AggSource::Maps,
         })
         .unwrap();
     writer.flush_blocking().unwrap();
@@ -638,7 +638,7 @@ fn partial_aggregation_is_visible_to_enrichment_mid_scan() {
     writer
         .send(writer::WriteMessage::ComputePartialAggregates {
             hot_paths: vec![],
-            source: writer::PartialAggSource::Maps,
+            source: writer::AggSource::Maps,
         })
         .unwrap();
     writer.flush_blocking().unwrap();

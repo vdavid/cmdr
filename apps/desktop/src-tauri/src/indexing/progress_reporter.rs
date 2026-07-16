@@ -27,7 +27,7 @@ use super::events::IndexScanProgressEvent;
 use super::partial_agg;
 use super::routing;
 use super::scanner::ScanProgress;
-use super::writer::{IndexWriter, PartialAggSource, WriteMessage};
+use super::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::file_system::listing::caching;
 
 /// Drives the periodic scan-progress events and mid-scan partial aggregation for
@@ -53,7 +53,7 @@ pub(super) struct ScanProgressReporter {
     /// caller per scan kind: `Maps` for a fresh scan (accumulator maps populated
     /// by `InsertEntriesV2`), `Sql` for a reconcile rescan (maps empty, recompute
     /// from committed rows).
-    partial_agg_source: PartialAggSource,
+    partial_agg_source: AggSource,
     /// Tick counter; gates partial-aggregation passes via `partial_agg`.
     tick: u64,
 }
@@ -68,7 +68,7 @@ impl ScanProgressReporter {
         writer: IndexWriter,
         app: AppHandle,
         volume_id: String,
-        partial_agg_source: PartialAggSource,
+        partial_agg_source: AggSource,
     ) -> Self {
         Self {
             progress,

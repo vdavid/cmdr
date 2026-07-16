@@ -551,7 +551,11 @@ fn scan_sets_recursive_has_symlinks_for_symlink_only_dir() {
     let _summary = join_handle.join().expect("scan thread panicked").unwrap();
 
     // Trigger aggregation, then flush
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
     writer.shutdown();
 
@@ -862,7 +866,11 @@ fn timed_out_dir_is_not_marked_listed() {
 
     // Emit the marks exactly as scan_volume does, then flush.
     send_marks(&listed_ids, epoch, &writer);
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
     writer.shutdown();
 

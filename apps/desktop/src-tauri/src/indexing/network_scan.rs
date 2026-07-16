@@ -24,7 +24,7 @@ use super::manager::{IndexManager, ScanCalibration};
 use super::progress_reporter::ScanProgressReporter;
 use super::state::IndexVolumeKind;
 use super::store::IndexStore;
-use super::writer::{PartialAggSource, WriteMessage};
+use super::writer::{AggSource, WriteMessage};
 
 /// Replay the changes the live watcher buffered during a `Volume`-trait scan,
 /// dispatching to the right per-backend buffer (SMB `CHANGE_NOTIFY` vs. MTP PTP
@@ -246,11 +246,7 @@ impl IndexManager {
         // FRESH `scan_volume_via_trait` populates the maps via `InsertEntriesV2`
         // (`Maps`).
         let scan_done = Arc::new(AtomicBool::new(false));
-        let partial_agg_source = if reconcile {
-            PartialAggSource::Sql
-        } else {
-            PartialAggSource::Maps
-        };
+        let partial_agg_source = if reconcile { AggSource::Sql } else { AggSource::Maps };
         ScanProgressReporter::new(
             Arc::clone(&progress),
             self.writer.clone(),

@@ -14,7 +14,7 @@ use crate::indexing::enrichment::{self, ReadPool};
 use crate::indexing::reconciler::{self, EventReconciler};
 use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
 use crate::indexing::watcher::{FsChangeEvent, FsEventFlags};
-use crate::indexing::writer::WriteMessage;
+use crate::indexing::writer::{AggSource, WriteMessage};
 use crate::pluralize::pluralize;
 
 use super::stress_test_helpers::{build_synthetic_tree, check_db_consistency, make_file_entry, setup_writer};
@@ -55,7 +55,11 @@ fn concurrent_scan_with_buffered_events_and_replay() {
             writer_a.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
         }
         // Post-scan: compute aggregates
-        writer_a.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer_a
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer_a.flush_blocking().unwrap();
     });
 
@@ -271,7 +275,11 @@ fn concurrent_batch_inserts_with_aggregation() {
     }
 
     // Compute aggregates
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     // Verify consistency
@@ -322,7 +330,11 @@ fn concurrent_scan_with_enrichment_reads() {
     for chunk in tree.chunks(20) {
         writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     // Verify consistency after initial population
@@ -418,8 +430,16 @@ fn concurrent_scan_with_enrichment_reads() {
     // The writer's accumulator maps only have wave2 data (partial). The first
     // ComputeAllAggregates consumes and clears those partial maps; the second
     // runs the SQL fallback path against the full DB, producing correct stats.
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     let fresh_conn = IndexStore::open_read_connection(&db_path).expect("open fresh conn");
@@ -459,7 +479,11 @@ fn live_event_storm_with_concurrent_reads() {
     for chunk in tree.chunks(20) {
         writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     let check_conn = IndexStore::open_read_connection(&db_path).expect("open check conn");
@@ -598,7 +622,11 @@ fn live_event_storm_with_concurrent_reads() {
 
     // Phase 3: flush, backfill, and verify
     writer.send(WriteMessage::BackfillMissingDirStats).unwrap();
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     let fresh_conn = IndexStore::open_read_connection(&db_path).expect("open fresh conn");
@@ -788,7 +816,11 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
     for chunk in entries.chunks(50) {
         writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     // Build a ReadPool; listings enrich through this.
@@ -854,7 +886,9 @@ fn test_listings_complete_under_reconciler_load_and_rapid_navigation() {
                         let _ = writer.send(WriteMessage::BackfillMissingDirStats);
                     }
                     if thread_idx == 1 && counter.is_multiple_of(800) {
-                        let _ = writer.send(WriteMessage::ComputeAllAggregates);
+                        let _ = writer.send(WriteMessage::ComputeAllAggregates {
+                            source: AggSource::Maps,
+                        });
                     }
                 }
             })

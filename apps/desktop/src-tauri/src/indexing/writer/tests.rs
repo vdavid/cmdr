@@ -196,7 +196,11 @@ fn root_coverage_epoch_tracks_current_epoch_across_a_continuity_break() {
             epoch: 1,
         })
         .unwrap();
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     let conn = IndexStore::open_read_connection(&db_path).unwrap();
@@ -491,7 +495,7 @@ fn try_send_enqueues_and_tracks_queue_depth() {
     let sent = writer
         .try_send(WriteMessage::ComputePartialAggregates {
             hot_paths: vec![],
-            source: PartialAggSource::Maps,
+            source: AggSource::Maps,
         })
         .expect("try_send on a live writer should not error");
     assert!(sent, "try_send into an empty channel should enqueue (Ok(true))");
@@ -523,7 +527,7 @@ fn try_send_after_shutdown_errors_and_undoes_depth() {
     let depth_before = writer.queue_depth();
     let result = writer.try_send(WriteMessage::ComputePartialAggregates {
         hot_paths: vec![],
-        source: PartialAggSource::Maps,
+        source: AggSource::Maps,
     });
     assert!(
         result.is_err(),
@@ -550,7 +554,7 @@ fn try_send_with_depth_undoes_bump_on_full() {
         &depth,
         WriteMessage::ComputePartialAggregates {
             hot_paths: vec![],
-            source: PartialAggSource::Maps,
+            source: AggSource::Maps,
         },
     )
     .expect("first send into an open channel should not error");
@@ -562,7 +566,7 @@ fn try_send_with_depth_undoes_bump_on_full() {
         &depth,
         WriteMessage::ComputePartialAggregates {
             hot_paths: vec![],
-            source: PartialAggSource::Maps,
+            source: AggSource::Maps,
         },
     )
     .expect("a full channel is Ok(false), not Err");

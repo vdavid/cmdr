@@ -18,7 +18,7 @@ use std::time::{Duration, Instant};
 use crate::ignore_poison::IgnorePoison;
 use crate::indexing::firmlinks;
 use crate::indexing::store::{EntryRow, IndexStore, resolve_scan_root};
-use crate::indexing::writer::{IndexWriter, WriteMessage};
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::pluralize::{pluralize, pluralize_with};
 
 mod exclusions;
@@ -273,7 +273,9 @@ pub fn scan_volume(
                 && !summary.was_cancelled
             {
                 send_marks(listed_ids, *epoch, &writer);
-                if let Err(e) = writer.send(WriteMessage::ComputeAllAggregates) {
+                if let Err(e) = writer.send(WriteMessage::ComputeAllAggregates {
+                    source: AggSource::Maps,
+                }) {
                     log::warn!("Scanner: failed to send ComputeAllAggregates: {e}");
                 } else if let Err(e) = writer.send(WriteMessage::WalCheckpoint) {
                     log::warn!("Scanner: failed to send post-scan WalCheckpoint: {e}");

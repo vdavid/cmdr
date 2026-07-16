@@ -19,7 +19,7 @@ use super::scanner::{self, ScanConfig};
 use super::state::{INDEX_REGISTRY, IndexPhase, IndexVolumeKind};
 use super::store::IndexStore;
 use super::watcher::{self, DriveWatcher};
-use super::writer::{IndexWriter, PartialAggSource, WriteMessage};
+use super::writer::{AggSource, IndexWriter, WriteMessage};
 use crate::ignore_poison::IgnorePoison;
 use crate::pluralize::pluralize;
 
@@ -754,11 +754,7 @@ impl IndexManager {
         // Source by scan kind: a RECONCILE rescan leaves the accumulator maps empty
         // (it's all `UpsertEntryV2`), so it must recompute partial sizes from
         // committed rows (`Sql`); a FRESH guarded-walker scan populates the maps (`Maps`).
-        let partial_agg_source = if reconcile {
-            PartialAggSource::Sql
-        } else {
-            PartialAggSource::Maps
-        };
+        let partial_agg_source = if reconcile { AggSource::Sql } else { AggSource::Maps };
         ScanProgressReporter::new(
             Arc::clone(&scan_handle.progress),
             self.writer.clone(),

@@ -128,18 +128,27 @@ impl MutationTracker {
 /// providing natural backpressure instead of unbounded memory growth.
 const WRITER_CHANNEL_CAPACITY: usize = 20_000;
 
-/// Which source a `ComputePartialAggregates` pass computes its sizes from.
+/// Which source a `Compute*Aggregates` pass computes its sizes from.
 ///
-/// The source is carried on the message (NOT sniffed from `propagate_deltas` or
-/// map emptiness) so the handler routes deterministically:
+/// Carried on both `ComputeAllAggregates` and `ComputePartialAggregates` (NOT
+/// sniffed from `propagate_deltas` or map emptiness) so the handler routes
+/// deterministically — the key defense against Leak D, where a verification
+/// subtree scan's `InsertEntriesV2` leaves the accumulator maps holding
+/// subtree-only data and a `Maps`-sniffing full aggregate would then roll every
+/// out-of-subtree dir up from zero.
 ///
 /// - `Maps`: the writer's in-memory accumulator maps, populated only by
-///   `InsertEntriesV2`. Correct for fresh guarded-walker scans; the maps are empty on the
-///   reconcile / network paths, where this source is a no-op by design.
-/// - `Sql`: the committed `entries` / `dir_stats` rows, scoped to the hot dirs.
-///   Works for ALL write paths (the guarded walker, `UpsertEntryV2` reconcile, network).
+///   `InsertEntriesV2`. Correct for fresh guarded-walker scans (the full scan's
+///   completion). On `ComputeAllAggregates`, empty maps fall back to the SQL path
+///   (an explicitly-`Maps` sender whose maps got consumed must not treat "empty"
+///   as "everything is zero"); on `ComputePartialAggregates`, empty maps are a
+///   deliberate no-op (see that handler).
+/// - `Sql`: the committed `entries` / `dir_stats` rows. Ignores the accumulator
+///   entirely, so it works for ALL write paths (the guarded walker, `UpsertEntryV2`
+///   reconcile, network) AND stays correct even when the maps are polluted by an
+///   interleaving subtree scan. The reconcile finish and the one-shot heal send this.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PartialAggSource {
+pub enum AggSource {
     Maps,
     Sql,
 }
@@ -194,12 +203,22 @@ pub enum WriteMessage {
     /// (`UpsertEntryV2`/delete/move) call `propagate_min_subtree_epoch` directly
     /// and don't need this message. Coverage-only, so no generation bump.
     PropagateMinSubtreeEpoch(i64),
-    /// Full scan complete: trigger bottom-up aggregation for all directories.
-    ComputeAllAggregates,
+    /// Full scan / reconcile complete: trigger bottom-up aggregation for all
+    /// directories.
+    ///
+    /// `source` selects where the sizes come from (see [`AggSource`]). `Maps`
+    /// (fresh full-scan completions) uses the in-memory accumulator, falling back
+    /// to SQL when the maps are empty; `Sql` (the reconcile finish, the one-shot
+    /// heal) recomputes from committed rows and ignores the accumulator — the
+    /// Leak-D defense, since a verification subtree scan can leave the maps holding
+    /// subtree-only data. The subtree handler deliberately does NOT clear the
+    /// accumulator, so declaring the source is what keeps a polluted map from
+    /// poisoning this aggregate.
+    ComputeAllAggregates { source: AggSource },
     /// Mid-scan: compute partial recursive sizes and write a bounded subset of
     /// dir_stats rows so visible listings can show growing sizes during the scan.
     ///
-    /// `source` selects where the sizes come from (see [`PartialAggSource`]):
+    /// `source` selects where the sizes come from (see [`AggSource`]):
     /// `Maps` borrows the in-memory accumulator maps read-only (MUST NOT clear or
     /// mutate them — the final ComputeAllAggregates depends on them; no SQL
     /// fallback on empty maps), `Sql` recomputes from committed rows scoped to the
@@ -212,7 +231,7 @@ pub enum WriteMessage {
         hot_paths: Vec<String>,
         /// Which source to compute from. `Maps` preserves today's behavior
         /// byte-for-byte; `Sql` is the unified path.
-        source: PartialAggSource,
+        source: AggSource,
     },
     /// Subtree scan complete: trigger aggregation for a subtree only, keyed by
     /// the subtree root's entry id. The id (not a path) is carried so a rename or
@@ -618,7 +637,7 @@ impl WriterStats {
             WriteMessage::PropagateDeltaById { .. } | WriteMessage::PropagateMinSubtreeEpoch(_) => {
                 self.current.propagate_delta += 1;
             }
-            WriteMessage::ComputeAllAggregates | WriteMessage::ComputeSubtreeAggregates { .. } => {
+            WriteMessage::ComputeAllAggregates { .. } | WriteMessage::ComputeSubtreeAggregates { .. } => {
                 self.current.compute_aggregates += 1;
             }
             WriteMessage::ComputePartialAggregates { .. } => self.current.compute_partial += 1,
@@ -1030,8 +1049,8 @@ fn process_message(
         WriteMessage::TruncateData => {
             handle_truncate_data(conn, accumulator, expected_total_entries, next_id, mutation_tracker);
         }
-        WriteMessage::ComputeAllAggregates => {
-            handle_compute_all_aggregates(conn, accumulator, app_handle, volume_id, expected_total_entries);
+        WriteMessage::ComputeAllAggregates { source } => {
+            handle_compute_all_aggregates(conn, accumulator, app_handle, volume_id, expected_total_entries, source);
         }
         WriteMessage::ComputePartialAggregates { hot_paths, source } => {
             handle_compute_partial_aggregates(conn, accumulator, app_handle, hot_paths, source);

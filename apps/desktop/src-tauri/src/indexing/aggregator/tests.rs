@@ -362,7 +362,7 @@ fn backfill_fills_missing_stats() {
     .unwrap();
 
     // Backfill should fill in root sentinel (id=1) and /a (id=2)
-    let count = backfill_missing_dir_stats(&conn).unwrap();
+    let count = backfill_missing_dir_stats(&conn).unwrap().backfilled;
     assert_eq!(count, 2); // root sentinel + /a
 
     // /a should now have correct recursive stats
@@ -409,7 +409,7 @@ fn backfill_sets_min_subtree_epoch() {
     )
     .unwrap();
 
-    let count = backfill_missing_dir_stats(&conn).unwrap();
+    let count = backfill_missing_dir_stats(&conn).unwrap().backfilled;
     assert_eq!(count, 2); // root sentinel + /a
 
     assert_eq!(
@@ -430,7 +430,7 @@ fn backfill_noop_when_all_stats_present() {
     compute_all_aggregates(&conn).unwrap();
 
     // Backfill should find nothing to do
-    let count = backfill_missing_dir_stats(&conn).unwrap();
+    let count = backfill_missing_dir_stats(&conn).unwrap().backfilled;
     assert_eq!(count, 0);
 }
 

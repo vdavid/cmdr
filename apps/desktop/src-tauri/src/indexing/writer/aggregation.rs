@@ -16,7 +16,7 @@ use crate::indexing::store::IndexStore;
 use crate::pluralize::{pluralize, pluralize_with};
 
 use super::repair::repair_dir_stats_upward;
-use super::{AccumulatorMaps, AggregationProgressEvent, PartialAggSource, phase_to_str};
+use super::{AccumulatorMaps, AggSource, AggregationProgressEvent, phase_to_str};
 
 /// Log severity for the count of rows a full scan skipped on a UNIQUE
 /// `(parent_id, name_folded)` conflict (the `INSERT OR IGNORE` path).
@@ -114,13 +114,13 @@ pub(super) fn handle_compute_partial_aggregates(
     accumulator: &AccumulatorMaps,
     app_handle: &Option<AppHandle>,
     hot_paths: Vec<String>,
-    source: PartialAggSource,
+    source: AggSource,
 ) {
     let t = Instant::now();
     let hot_paths_count = hot_paths.len();
 
     let result = match source {
-        PartialAggSource::Maps => {
+        AggSource::Maps => {
             if accumulator.direct_stats.is_empty() {
                 log::debug!("ComputePartialAggregates(Maps): maps empty, no-op");
                 return;
@@ -133,9 +133,7 @@ pub(super) fn handle_compute_partial_aggregates(
                 PARTIAL_AGG_MAX_DEPTH,
             )
         }
-        PartialAggSource::Sql => {
-            aggregator::compute_partial_aggregates_sql(conn, &hot_paths, PARTIAL_AGG_SQL_MAX_SUBTREE)
-        }
+        AggSource::Sql => aggregator::compute_partial_aggregates_sql(conn, &hot_paths, PARTIAL_AGG_SQL_MAX_SUBTREE),
     };
 
     match result {
@@ -170,12 +168,19 @@ pub(super) fn handle_compute_all_aggregates(
     app_handle: &Option<AppHandle>,
     volume_id: &str,
     expected_total_entries: &AtomicU64,
+    source: AggSource,
 ) {
     let t = Instant::now();
-    let use_maps = !accumulator.direct_stats.is_empty();
+    // Only a `Maps` sender may read the accumulator, and only when it's non-empty
+    // (an empty `Maps` sender whose maps were already consumed falls back to SQL,
+    // never treats "empty" as "everything is zero"). A `Sql` sender ignores the
+    // accumulator entirely — the Leak-D defense: a verification subtree scan can
+    // leave the maps holding subtree-only data, and rolling every out-of-subtree
+    // dir up from that would zero the whole tree outside the subtree.
+    let use_maps = matches!(source, AggSource::Maps) && !accumulator.direct_stats.is_empty();
     log::info!(
-        "ComputeAllAggregates: using {} (direct_stats={} parents, child_dirs={} parents)",
-        if use_maps { "in-memory maps" } else { "SQL fallback" },
+        "ComputeAllAggregates({source:?}): using {} (direct_stats={} parents, child_dirs={} parents)",
+        if use_maps { "in-memory maps" } else { "SQL" },
         accumulator.direct_stats.len(),
         accumulator.child_dirs.len(),
     );
@@ -207,9 +212,12 @@ pub(super) fn handle_compute_all_aggregates(
             pct = skipped as f64 / (inserted + skipped) as f64 * 100.0,
         ),
     }
-    // Maps are consumed; clear to free memory.
-    // Reset expected_total so subtree-scan inserts don't emit
-    // spurious saving_entries progress events after the full scan.
+    // Clear the accumulator to free memory. A `Maps` run consumed it; a `Sql` run
+    // ignored it, but clearing here is still correct — a full aggregate ends a
+    // scan phase, and dropping any subtree-scan pollution left behind is harmless
+    // (the next fresh scan's `TruncateData` clears it anyway, and the subtree
+    // handler deliberately doesn't). Reset expected_total so subtree-scan inserts
+    // don't emit spurious saving_entries progress events after the full scan.
     accumulator.clear();
     expected_total_entries.store(0, Ordering::Relaxed);
     match result {
@@ -255,13 +263,22 @@ pub(super) fn handle_compute_subtree_aggregates(conn: &rusqlite::Connection, roo
 pub(super) fn handle_backfill_missing_dir_stats(conn: &rusqlite::Connection) {
     let t = Instant::now();
     match aggregator::backfill_missing_dir_stats(conn) {
-        Ok(0) => {
+        Ok(outcome) if outcome.backfilled == 0 => {
             log::debug!("BackfillMissingDirStats: no dirs missing stats");
+            debug_assert!(outcome.parents_to_repair.is_empty());
         }
-        Ok(count) => {
+        Ok(outcome) => {
+            // Leak C: backfill wrote the missing rows but never credited the
+            // ancestors above them (a missing row means no delta ever walked
+            // through that dir). Repair each missing root's parent upward on the
+            // writer thread — idempotent, so the deduped chains just short-circuit
+            // where they already agree.
+            for parent_id in outcome.parents_to_repair {
+                repair_dir_stats_upward(conn, parent_id);
+            }
             log::info!(
                 "BackfillMissingDirStats: computed stats for {} in {:.1}s",
-                pluralize(count, "dir"),
+                pluralize(outcome.backfilled, "dir"),
                 t.elapsed().as_secs_f64(),
             );
         }
@@ -290,5 +307,7 @@ fn build_progress_callback<'a>(
 
 // ── Tests ────────────────────────────────────────────────────────────
 
+#[cfg(test)]
+mod partial_tests;
 #[cfg(test)]
 mod tests;

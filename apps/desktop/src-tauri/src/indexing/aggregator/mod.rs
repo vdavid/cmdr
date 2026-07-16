@@ -678,16 +678,34 @@ fn is_proper_path_ancestor(ancestor: &str, descendant: &str) -> bool {
     }
 }
 
+/// What a [`backfill_missing_dir_stats`] pass produced.
+pub struct BackfillOutcome {
+    /// Number of missing `dir_stats` rows written this pass.
+    pub backfilled: u64,
+    /// Deduped ancestor dirs the writer must `repair_dir_stats_upward` from — the
+    /// parents of the "missing roots" (missing dirs whose parent already had a
+    /// row). By construction that chain was never credited for the just-filled
+    /// subtree (a missing row means no delta ever walked through it — Leak C), so
+    /// backfill alone would leave those ancestors under-counted. Dedup is a perf
+    /// nicety only: `repair_dir_stats_upward` is idempotent, so correctness never
+    /// depends on it.
+    pub parents_to_repair: Vec<i64>,
+}
+
 /// Backfill `dir_stats` for directories that have entries but no stats row.
 ///
 /// Finds all directories missing a `dir_stats` row and computes their stats
 /// bottom-up. This catches directories created by reconciler/live events
-/// after the last full aggregation. Returns the number of dirs backfilled.
-pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreError> {
+/// after the last full aggregation. Returns the count written plus the ancestor
+/// dirs the caller must repair upward (see [`BackfillOutcome`]).
+pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<BackfillOutcome, IndexStoreError> {
     // Find directories without dir_stats
     let missing_ids = load_dirs_missing_stats(conn)?;
     if missing_ids.is_empty() {
-        return Ok(0);
+        return Ok(BackfillOutcome {
+            backfilled: 0,
+            parents_to_repair: Vec::new(),
+        });
     }
 
     let start = std::time::Instant::now();
@@ -742,13 +760,34 @@ pub fn backfill_missing_dir_stats(conn: &Connection) -> Result<u64, IndexStoreEr
         IndexStore::upsert_dir_stats_by_id(conn, chunk)?;
     }
 
+    // Leak C: a missing dir whose parent is NOT missing is a "missing root" —
+    // the parent already had a row, so the chain above it was never credited for
+    // this subtree. Collect those parents (deduped) for the writer to repair
+    // upward from. The 0 sentinel (a volume-root's parent) is skipped: nothing to
+    // credit above the root.
+    let mut parents_to_repair: Vec<i64> = Vec::new();
+    let mut seen_parents: std::collections::HashSet<i64> = std::collections::HashSet::new();
+    for &(id, parent_id) in &all_dir_entries {
+        if missing_set.contains(&id)
+            && parent_id != 0
+            && !missing_set.contains(&parent_id)
+            && seen_parents.insert(parent_id)
+        {
+            parents_to_repair.push(parent_id);
+        }
+    }
+
     log::debug!(
-        "Backfill: wrote {} dir_stats rows in {:.1}s",
+        "Backfill: wrote {} dir_stats rows, {} ancestor chains to repair in {:.1}s",
         to_write.len(),
+        parents_to_repair.len(),
         start.elapsed().as_secs_f64(),
     );
 
-    Ok(to_write.len() as u64)
+    Ok(BackfillOutcome {
+        backfilled: to_write.len() as u64,
+        parents_to_repair,
+    })
 }
 
 /// Topological sort: returns directory IDs in bottom-up order (leaves first).

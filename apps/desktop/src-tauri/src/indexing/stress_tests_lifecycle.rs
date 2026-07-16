@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::indexing::store::{IndexStore, ROOT_ID};
-use crate::indexing::writer::{IndexWriter, WriteMessage};
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
 use super::stress_test_helpers::{build_synthetic_tree, check_db_consistency, setup_writer};
 
@@ -39,7 +39,11 @@ fn lifecycle_transitions_under_load() {
     for chunk in tree.chunks(20) {
         writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     check_db_consistency(&read_conn);
@@ -86,7 +90,11 @@ fn lifecycle_transitions_under_load() {
     for chunk in tree3.chunks(20) {
         writer2.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer2.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer2
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer2.flush_blocking().unwrap();
 
     // Re-open read connection to see committed data.
@@ -120,7 +128,10 @@ fn lifecycle_transitions_under_load() {
         for chunk in small_tree.chunks(10) {
             w.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
         }
-        w.send(WriteMessage::ComputeAllAggregates).unwrap();
+        w.send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
 
         // shutdown() joins the thread, ensuring it fully exits and
         // releases the DB write lock before we spawn the next writer.
@@ -191,7 +202,11 @@ fn lifecycle_clean_start_populate_shutdown() {
     for chunk in tree.chunks(20) {
         writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     // Verify consistency while writer is still alive
@@ -278,7 +293,11 @@ fn double_start_guard_prevents_concurrent_scans() {
     for chunk in tree.chunks(10) {
         writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     let conn = IndexStore::open_read_connection(&db_path).expect("open conn");
@@ -375,7 +394,11 @@ fn rapid_start_stop_start_produces_clean_state() {
     for chunk in tree_a.chunks(15) {
         writer1.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer1.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer1
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer1.flush_blocking().unwrap();
 
     let conn1 = IndexStore::open_read_connection(&db_path).expect("open conn 1");
@@ -402,7 +425,11 @@ fn rapid_start_stop_start_produces_clean_state() {
     for chunk in tree_b.chunks(15) {
         writer2.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer2.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer2
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer2.flush_blocking().unwrap();
 
     let conn2 = IndexStore::open_read_connection(&db_path).expect("open conn 2");
@@ -461,7 +488,11 @@ fn shutdown_with_mixed_queued_work() {
     for chunk in tree.chunks(10) {
         writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
     }
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.send(WriteMessage::BackfillMissingDirStats).unwrap();
     writer
         .send(WriteMessage::UpdateMeta {
@@ -565,7 +596,11 @@ fn disconnect_storm_writer_drain_holds_across_volumes() {
                     .send(WriteMessage::InsertEntriesV2(chunk.to_vec()))
                     .expect("send must land on a live writer");
             }
-            writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+            writer
+                .send(WriteMessage::ComputeAllAggregates {
+                    source: AggSource::Maps,
+                })
+                .unwrap();
             // Disconnect: shutdown joins the writer thread (no panic = clean drain).
             writer.shutdown();
         }
@@ -581,7 +616,11 @@ fn disconnect_storm_writer_drain_holds_across_volumes() {
         for chunk in tree.chunks(16) {
             writer.send(WriteMessage::InsertEntriesV2(chunk.to_vec())).unwrap();
         }
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
 
         let conn = IndexStore::open_read_connection(db_path).expect("open read conn after storm");

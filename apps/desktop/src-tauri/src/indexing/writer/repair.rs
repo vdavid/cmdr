@@ -161,7 +161,7 @@ mod tests {
     use crate::indexing::store::{DirStatsById, EntryRow, ROOT_ID};
     use crate::indexing::stress_test_helpers::check_db_consistency;
     use crate::indexing::writer::tests::setup_db;
-    use crate::indexing::writer::{IndexWriter, WriteMessage};
+    use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
     // ── The incident fingerprint: negative-delta escalation ──────────
 
@@ -187,7 +187,11 @@ mod tests {
             file_entry(31, 30, "f31", 500),
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
 
         // Drift A low: under-credited (true A = 2500 bytes / 3 files / 2 dirs).
@@ -231,7 +235,11 @@ mod tests {
         // ROOT(1) → X(40) → f41(300)
         let entries = vec![dir_entry(40, ROOT_ID, "X"), file_entry(41, 40, "f41", 300)];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
 
         // Simulate the missing row: drop X's dir_stats (a dir that has entries but
@@ -320,7 +328,11 @@ mod tests {
             file_entry(21, 20, "f", 700),
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
 
         // Drift the MIDDLE row B and (independently) A, leaving ROOT stale too.
@@ -351,7 +363,11 @@ mod tests {
             file_entry(21, 20, "f", 700),
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
 
         // Poison A (a level ABOVE B) with a sentinel. B is already correct, so a
@@ -572,7 +588,11 @@ mod tests {
             file_entry(21, 20, "f", 900),
         ];
         writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
 
         drift_dir_stats_low(&db_path, 10, 100, 0, 0);

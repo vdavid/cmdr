@@ -420,6 +420,7 @@ mod tests {
     use crate::indexing::enrichment::{READ_POOL, READ_POOL_TEST_MUTEX, ReadPool};
     use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
     use crate::indexing::stress_test_helpers::check_db_consistency;
+    use crate::indexing::writer::AggSource;
     use crate::indexing::writer::IndexWriter;
     use std::fs;
     use std::sync::Arc;
@@ -672,7 +673,11 @@ mod tests {
         let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
         insert_children_from_disk(&writer, parent_id, fs_root.path());
         // Exact baseline for the whole ancestor chain.
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
         install_read_pool(&db_path);
 

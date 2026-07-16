@@ -56,7 +56,7 @@ use futures_util::stream::FuturesUnordered;
 
 use crate::file_system::volume::Volume;
 use crate::indexing::store::{EntryRow, IndexStore, ScanContext};
-use crate::indexing::writer::{IndexWriter, WriteMessage};
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
 use super::scanner::{ScanProgress, ScanSummary};
 
@@ -812,7 +812,9 @@ fn finish_partial_scan(
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
     // (c) Aggregate over what's present.
     writer
-        .send(WriteMessage::ComputeAllAggregates)
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
         .map_err(|e| VolumeScanError::WriterSend(e.to_string()))?;
     Ok(())
 }

@@ -40,7 +40,7 @@ mod bench {
 
     use crate::indexing::store::{EntryRow, IndexStore, ROOT_ID};
     use crate::indexing::stress_test_helpers::{build_synthetic_tree, setup_writer};
-    use crate::indexing::writer::{IndexWriter, WriteMessage};
+    use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
     /// Tree shape for the bench. `build_synthetic_tree(levels, dirs_per_level, files_per_dir, size)`
     /// branches `dirs_per_level` per parent each level, so dir count is
@@ -95,7 +95,11 @@ mod bench {
                 epoch: listed_epoch,
             })
             .unwrap();
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
         (writer, read_conn, dir)
     }
@@ -226,7 +230,11 @@ mod bench {
                 .unwrap();
         }
         // Single bottom-up recompute (sizes unchanged but coverage re-mins in one O(dirs) pass).
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
         let mark_and_agg_ms = ms(tb.elapsed());
         eprintln!("  no-op(single-aggregate) breakdown: diff(read)={diff_ms}ms  mark+aggregate={mark_and_agg_ms}ms");
@@ -244,7 +252,11 @@ mod bench {
                 epoch,
             })
             .unwrap();
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
     }
 

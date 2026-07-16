@@ -3,7 +3,7 @@ use std::path::Path;
 use super::*;
 use crate::indexing::store::ROOT_ID;
 use crate::indexing::writer::tests::{open_read, setup_db};
-use crate::indexing::writer::{IndexWriter, WriteMessage};
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
 // ── Integer-keyed variant tests ──────────────────────────────────
 
@@ -1150,7 +1150,11 @@ fn upsert_symlink_propagates_recursive_has_symlinks_up() {
         },
     ];
     writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     // Confirm baseline: no symlinks anywhere
@@ -1239,7 +1243,11 @@ fn delete_last_symlink_clears_recursive_has_symlinks_up() {
         },
     ];
     writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     // Baseline: outer has the flag set
@@ -1327,7 +1335,11 @@ fn delete_subtree_with_symlinks_clears_parent_flag() {
         },
     ];
     writer.send(WriteMessage::InsertEntriesV2(entries)).unwrap();
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     // Baseline: top has the flag
@@ -2098,7 +2110,11 @@ fn bulk_reconcile_suppresses_per_entry_propagation_until_final_aggregate() {
     }
 
     // 2. The single final aggregate recomputes everything correctly.
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
     writer.send(WriteMessage::SetDeltaPropagation(true)).unwrap();
     writer.flush_blocking().unwrap();

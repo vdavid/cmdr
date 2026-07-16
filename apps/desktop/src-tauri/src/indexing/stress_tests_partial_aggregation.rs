@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use rusqlite::Connection;
 
 use crate::indexing::store::{DirStatsById, EntryRow, IndexStore, ROOT_ID, resolve_path};
-use crate::indexing::writer::{IndexWriter, PartialAggSource, WriteMessage};
+use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 
 use super::stress_test_helpers::{
     build_synthetic_tree_with_symlinks_and_hardlinks, check_db_consistency, check_recursive_has_symlinks, setup_writer,
@@ -142,7 +142,11 @@ fn partial_passes_never_change_final_state() {
                 epoch: listed_epoch,
             })
             .unwrap();
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
         let snap = snapshot_dir_stats(&read_conn);
         writer.shutdown();
@@ -158,7 +162,7 @@ fn partial_passes_never_change_final_state() {
         writer
             .send(WriteMessage::ComputePartialAggregates {
                 hot_paths: hot_paths.clone(),
-                source: PartialAggSource::Maps,
+                source: AggSource::Maps,
             })
             .unwrap();
     }
@@ -168,7 +172,11 @@ fn partial_passes_never_change_final_state() {
             epoch: listed_epoch,
         })
         .unwrap();
-    writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+    writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: AggSource::Maps,
+        })
+        .unwrap();
     writer.flush_blocking().unwrap();
 
     // Primary oracle: ground-truth recompute on the partial-pass arm.
@@ -313,7 +321,7 @@ fn sql_partial_passes_grow_sizes_mid_reconcile_without_corrupting_final() {
                 writer
                     .send(WriteMessage::ComputePartialAggregates {
                         hot_paths: vec!["/a/b".to_string()],
-                        source: PartialAggSource::Sql,
+                        source: AggSource::Sql,
                     })
                     .unwrap();
                 writer.flush_blocking().unwrap();
@@ -340,7 +348,11 @@ fn sql_partial_passes_grow_sizes_mid_reconcile_without_corrupting_final() {
                 epoch: LISTED_EPOCH,
             })
             .unwrap();
-        writer.send(WriteMessage::ComputeAllAggregates).unwrap();
+        writer
+            .send(WriteMessage::ComputeAllAggregates {
+                source: AggSource::Maps,
+            })
+            .unwrap();
         writer.flush_blocking().unwrap();
 
         let snap = snapshot_dir_stats(&read_conn);
@@ -388,7 +400,7 @@ fn partial_passes_are_idempotent() {
     writer
         .send(WriteMessage::ComputePartialAggregates {
             hot_paths: vec![],
-            source: PartialAggSource::Maps,
+            source: AggSource::Maps,
         })
         .unwrap();
     writer.flush_blocking().unwrap();
@@ -397,7 +409,7 @@ fn partial_passes_are_idempotent() {
     writer
         .send(WriteMessage::ComputePartialAggregates {
             hot_paths: vec![],
-            source: PartialAggSource::Maps,
+            source: AggSource::Maps,
         })
         .unwrap();
     writer.flush_blocking().unwrap();
@@ -420,7 +432,7 @@ fn partial_pass_after_truncate_is_no_op() {
         writer
             .send(WriteMessage::ComputePartialAggregates {
                 hot_paths: vec![],
-                source: PartialAggSource::Maps,
+                source: AggSource::Maps,
             })
             .unwrap();
         writer.flush_blocking().unwrap();
@@ -440,7 +452,7 @@ fn partial_pass_after_truncate_is_no_op() {
         writer
             .send(WriteMessage::ComputePartialAggregates {
                 hot_paths: vec![],
-                source: PartialAggSource::Maps,
+                source: AggSource::Maps,
             })
             .unwrap();
         writer.flush_blocking().unwrap();
