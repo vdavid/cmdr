@@ -37,6 +37,15 @@ progress.**
 
 ### Fixed
 
+- Folder sizes stay accurate after large deletes. Deleting a big folder used to leave its parents showing a stale size,
+  then sometimes settle on a confident but wrong "0 bytes" for a folder that still held gigabytes. The numbers also took
+  minutes of background work to catch up. Now a big delete shows the "size updating" hourglass within a couple of
+  seconds and the sizes settle within seconds, not minutes. Existing drives repair their stored sizes automatically on
+  the next launch, with no rescan ([3d13ab7d](https://github.com/vdavid/cmdr/commit/3d13ab7d),
+  [c2ebf500](https://github.com/vdavid/cmdr/commit/c2ebf500),
+  [e410951c](https://github.com/vdavid/cmdr/commit/e410951c),
+  [7e64e716](https://github.com/vdavid/cmdr/commit/7e64e716),
+  [ac24bca7](https://github.com/vdavid/cmdr/commit/ac24bca7)).
 - Image search reliably starts after you enable it, even right after an app update that rebuilt Cmdr's folder ranking.
   Before, it could get stuck deciding what to cover (showing "working out how much this covers…") and never index a
   thing ([6b56d195](https://github.com/vdavid/cmdr/commit/6b56d195)).

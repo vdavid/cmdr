@@ -42,11 +42,21 @@
 //! **Read** (`DirStats` build in `state.rs`): a single `is_pending` test per
 //! directory, carried to the frontend on `DirStats.recursive_size_pending`.
 //!
+//! **Per-volume routing (both tiers).** Marks, holds, releases, and the
+//! writer-drain clear all target the OWNING volume's tracker via
+//! `get_pending_sizes_for(volume_id)` (root → the `PENDING_SIZES` global,
+//! non-root → the registry instance). A root-only `get_pending_sizes()` from a
+//! non-root writer would wipe root's hourglass on a non-root drain AND never
+//! clear its own — so the volume id is threaded through `queue_must_scan_sub_dirs`
+//! and the writer loop rather than defaulting to root.
+//!
 //! The tradeoff is coarse granularity: during a storm every touched ancestor
 //! stays flagged until the writer fully drains (transient) or the rescan
 //! completes (held), then they clear. For the target scenario (mass delete, "is
 //! it settled yet?") that's the right granularity — it answers exactly that
-//! question.
+//! question. The hourglass's role in the wider size-integrity story, and the
+//! release-before-emit completion sequence, are in `indexing/DETAILS.md`
+//! § "The dir_stats ledger".
 
 use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};

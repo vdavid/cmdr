@@ -193,7 +193,7 @@ pub struct EventReconciler {
     /// completion). `start_next_rescan` pops the path out of `pending_rescans`
     /// before spawning, so without this slot the removal-storm drop rule would see
     /// an empty set and drop nothing while a rescan is in flight. Also the seam
-    /// M4b's held-hourglass tier reads. `None` when no rescan runs.
+    /// the held-hourglass tier reads. `None` when no rescan runs.
     active_rescan_path: Arc<Mutex<Option<PathBuf>>>,
     /// Per-file throttle for live upserts (leading + trailing, 60 s window). Only
     /// consulted on the live path; the trailing flush runs off the event loop's

@@ -22,7 +22,9 @@ pulling shared items via `use super::*`):
 - `entries.rs`: entry-tree reads and writes — child listings, lookups by id / inode / component, insert / update /
   rename / move / delete, counts, `get_next_id`.
 - `dir_stats.rs`: `dir_stats` reads and writes plus `recompute_min_subtree_epoch`.
-- `meta.rs`: meta-table + epoch helpers, `mark_dirs_listed`, `get_all_directory_paths`, `clear_all`.
+- `meta.rs`: meta-table + epoch helpers, `mark_dirs_listed`, `get_all_directory_paths`, `clear_all`, and the ledger-heal
+  marker (`ledger_heal_done` / `mark_ledger_heal_done`, keyed on `LEDGER_HEAL_KEY`; see the parent `DETAILS.md` § "The
+  dir_stats ledger" for the one-shot heal).
 
 `resolve_component` always queries by `(parent_id, name_folded)` using the `idx_parent_name_folded` composite **UNIQUE**
 index. On Linux/Windows `normalize_for_comparison()` is the identity function, so `name_folded = name` and the index

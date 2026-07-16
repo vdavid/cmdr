@@ -675,7 +675,7 @@ fn make_file_entry_row(id: i64, parent_id: i64, name: &str) -> EntryRow {
     }
 }
 
-/// The whole-effort invariant (index-ledger plan, M4a item 3): after a bulk
+/// The whole-effort ledger invariant: after a bulk
 /// delete processed as a removal storm, a concurrent subtree rescan, and mixed
 /// live events, once the writer drains AND rescans quiesce, `dir_stats` ≡
 /// recompute-from-`entries` (the `check_db_consistency` oracle). Exercises the
