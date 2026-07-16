@@ -19,7 +19,9 @@ const win = {
   setPosition: vi.fn<(p: unknown) => Promise<void>>(),
 }
 const readMonitorsMock = vi.fn<() => Promise<MonitorRect[]>>()
+const getAppModeMock = vi.fn<() => 'prod' | 'dev' | 'e2e'>()
 
+vi.mock('$lib/app-mode', () => ({ getAppMode: () => getAppModeMock() }))
 vi.mock('@tauri-apps/api/window', () => ({ getCurrentWindow: () => win }))
 vi.mock('@tauri-apps/api/dpi', () => ({
   LogicalSize: class {
@@ -58,12 +60,14 @@ function setWindow(
 
 beforeEach(async () => {
   vi.clearAllMocks()
+  getAppModeMock.mockReturnValue('prod')
   readMonitorsMock.mockResolvedValue([MONITOR])
   // Reset the module-level growth record to null: a screen-filling grow bails and clears it,
   // without touching setSize/setPosition — so each test starts with no recorded growth.
   setWindow({ x: 0, y: 0, width: 1920, height: 1080 }, { fullscreen: true })
   await growMainWindowForRail(0)
   vi.clearAllMocks()
+  getAppModeMock.mockReturnValue('prod')
   readMonitorsMock.mockResolvedValue([MONITOR])
 })
 
@@ -113,5 +117,17 @@ describe('shrinkMainWindowForRail', () => {
     setWindow({ x: 0, y: 0, width: 1920, height: 1080 }, { fullscreen: true })
     await shrinkMainWindowForRail(340)
     expect(win.setSize).not.toHaveBeenCalled()
+  })
+})
+
+describe('E2E mode', () => {
+  it('never touches the window under E2E (backgrounded runs must not be re-fronted)', async () => {
+    getAppModeMock.mockReturnValue('e2e')
+    setWindow({ x: 100, y: 100, width: 1080, height: 720 })
+    await growMainWindowForRail(340)
+    setWindow({ x: 100, y: 100, width: 1420, height: 720 })
+    await shrinkMainWindowForRail(340)
+    expect(win.setSize).not.toHaveBeenCalled()
+    expect(win.setPosition).not.toHaveBeenCalled()
   })
 })

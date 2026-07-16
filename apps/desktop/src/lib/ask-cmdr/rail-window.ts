@@ -13,11 +13,15 @@
  *
  * Fullscreen and maximized are left alone: the window already fills the screen,
  * so it can't grow and the flex layout shrinks the panes instead (the capped
- * case). See `lib/ask-cmdr/DETAILS.md` § Window growth.
+ * case). E2E runs are skipped entirely: they deliberately keep the window
+ * ordered to the back (`show_main_window`), and resizing it re-fronts the window
+ * over the developer's work — the whole point of the E2E backgrounding. See
+ * `lib/ask-cmdr/DETAILS.md` § Window growth.
  */
 
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi'
+import { getAppMode } from '$lib/app-mode'
 import { getAppLogger } from '$lib/logging/logger'
 import { readMonitors } from '$lib/window-positioning'
 import { growRectForRail, nearestMonitor, shrinkRectForRail, type Rect } from '$lib/window-positioning-utils'
@@ -49,6 +53,7 @@ async function fillsScreen(win: ReturnType<typeof getCurrentWindow>): Promise<bo
  * fallback. Records the applied growth for {@link shrinkMainWindowForRail}.
  */
 export async function growMainWindowForRail(railWidth: number): Promise<void> {
+  if (getAppMode() === 'e2e') return
   try {
     const win = getCurrentWindow()
     if (await fillsScreen(win)) {
@@ -79,6 +84,7 @@ export async function growMainWindowForRail(railWidth: number): Promise<void> {
  * width so a persisted-open window still shrinks on close.
  */
 export async function shrinkMainWindowForRail(railWidth: number): Promise<void> {
+  if (getAppMode() === 'e2e') return
   const growth = lastGrowth ?? { grewBy: railWidth, shiftedLeftBy: 0 }
   lastGrowth = null
   if (growth.grewBy <= 0 && growth.shiftedLeftBy === 0) return

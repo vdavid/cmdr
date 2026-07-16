@@ -124,6 +124,10 @@ Opening the rail grows the MAIN window by the rail's width instead of squeezing 
   is the "max width = screen width" case.
 - **Fullscreen / maximized are left alone** (`fillsScreen` bails): the window already fills the screen, so the flex
   layout shrinks the panes — the same capped fallback.
+- **E2E runs skip the resize entirely** (`getAppMode() === 'e2e'` guards both functions). E2E deliberately keeps the
+  main window ordered to the back (`show_main_window` → `orderBack:`); a `setSize` / `setPosition` re-fronts the window,
+  so it would pop over the developer's work and intercept clicks mid-run — the exact disruption the backgrounding exists
+  to avoid. Skipping it costs nothing (no E2E spec asserts the window size).
 - **Close reverses exactly what open did.** `growMainWindowForRail` records `{grewBy, shiftedLeftBy}`; close consumes
   it, so a manual window resize or a rail-width drag (absorbed into the panes) between open and close is preserved —
   only the rail's own contribution is removed. With no record (rail open at startup, so hydration never grew it — see
