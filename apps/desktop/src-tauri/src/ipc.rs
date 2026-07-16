@@ -757,7 +757,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             IndexMemoryWarningEvent,       // event_name = "index-memory-warning"
             IndexFreshnessChangedEvent,    // event_name = "index-freshness-changed"
             SearchIndexReadyEvent,         // event_name = "search-index-ready"
-            // Image enrichment progress (media_index/events.rs, plan M5): image
+            // Image enrichment progress (media_index/events.rs): image
             // indexing joins the top-right indicator as a second publisher.
             MediaEnrichProgressEvent, // event_name = "media-enrich-progress"
             MediaEnrichTerminalEvent, // event_name = "media-enrich-terminal"

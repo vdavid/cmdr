@@ -177,7 +177,7 @@
     // Image indexing is deferred on the local disk because importance hasn't scored
     // its folders yet (drive scanned + enabled, but the ranking that decides indexing
     // order isn't ready). Voiced honestly, and it REPLACES the generic covered-count
-    // spinner so the panel never shows two spinners for one wait (plan M1).
+    // spinner so the panel never shows two spinners for one wait.
     const waitingForImportance = $derived(localState?.waitingForImportance ?? false)
 
     // The incremental hint: the signed image delta vs the last settled bucket. Shown only while
@@ -187,7 +187,7 @@
         return covered.images - baselineImages
     })
 
-    // Progress line for the local disk, threshold-aware (plan M5): "N of M in your
+    // Progress line for the local disk, threshold-aware: "N of M in your
     // covered folders", where M is `coveredQualifyingCount` (the folders the current
     // slider setting includes) and N is the indexed rows INSIDE that coverage
     // (`enrichedCount - keptCount`). It can honestly reach done at any slider position,
@@ -230,7 +230,7 @@
         })
     })
 
-    // The quiet kept-rows line (plan M5): images indexed under a BROADER past setting,
+    // The quiet kept-rows line: images indexed under a BROADER past setting,
     // kept searchable (the slider is forward-only). Shown only when the fuller reclaim
     // line ISN'T offered, so the two never duplicate — they're ONE narrative (the kept
     // line frames the value; the reclaim line adds the delete-to-free tradeoff). Keys on

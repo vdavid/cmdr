@@ -109,20 +109,20 @@ pub struct MediaIndexVolumeState {
     /// ("Working out which folders matter — image indexing starts right after")
     /// instead of the generic covered-count spinner, so a persistently-failing
     /// importance recompute surfaces as a visible wait rather than a silent "0 of N"
-    /// (plan M1: the residual risk must be VISIBLE, never silent).
+    /// (defer-until-scored: the residual risk must be VISIBLE, never silent).
     pub waiting_for_importance: bool,
     /// How many drive-index qualifying images fall in the folders COVERED at the
     /// current slider threshold — the honest denominator for the settings progress line
     /// "N of M in your covered folders", which can reach done at any slider position
     /// (unlike `qualifying_count`, the full volume total). `None` when importance hasn't
-    /// scored the volume yet (the same `stored_coverage` single source as M4's reclaim
-    /// numbers, so they never disagree; plan M5).
+    /// scored the volume yet (the same `stored_coverage` single source as the reclaim
+    /// numbers, so they never disagree).
     pub covered_qualifying_count: Option<u64>,
     /// How many STORED rows fall OUTSIDE current coverage — indexed under a broader past
     /// setting and kept searchable (the slider is forward-only). Drives the quiet
     /// kept-rows line "K more indexed from broader settings — still searchable", which
-    /// composes with M4's reclaim line as one narrative. `None` when importance is
-    /// unscored (plan M5).
+    /// composes with the reclaim line as one narrative. `None` when importance is
+    /// unscored.
     pub kept_count: Option<u64>,
 }
 
@@ -146,8 +146,8 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
     let threshold = gate::importance_threshold();
     let vid = volume_id.clone();
-    // The threshold-aware stored-coverage split (`covered_qualifying_count` + `kept_count`,
-    // plan M5) needs the volume's OS mount root to map override/exclude config; resolving
+    // The threshold-aware stored-coverage split (`covered_qualifying_count` + `kept_count`)
+    // needs the volume's OS mount root to map override/exclude config; resolving
     // it here (a reclaim-eligible enabled volume only) keeps the split `None` for a
     // volume that isn't background-enriched.
     let mount_root = resolve_reclaim_volumes(std::slice::from_ref(&volume_id))
@@ -172,7 +172,7 @@ pub async fn media_index_volume_state(app: AppHandle, volume_id: String) -> Resu
                 coverage::importance_scored(&index)
             };
             // The threshold-aware split (`None` unless the volume is reclaim-eligible AND
-            // importance has scored it — the SAME single source as M4's reclaim numbers,
+            // importance has scored it — the SAME single source as the reclaim numbers,
             // via `stored_coverage_counts`, so they never disagree).
             let coverage_counts = match (&scheduler, &mount_root) {
                 (Some(scheduler), Some(mount)) => scheduler.stored_coverage_counts(&vid, mount, threshold),
@@ -302,7 +302,7 @@ pub async fn media_index_set_excluded_folder(app: AppHandle, folder: String, exc
 /// future work (forward-only semantics: nothing to enrich now, and the deferred rows
 /// persist), so kicking on a raise would re-walk the index for nothing. The comparison
 /// reads the stored value BEFORE and AFTER the (clamped) set, so a clamp can't
-/// misclassify the direction (plan M1).
+/// misclassify the direction.
 #[tauri::command]
 #[specta::specta]
 pub fn media_index_set_importance_threshold(app: AppHandle, threshold: f64) {
@@ -401,8 +401,8 @@ pub async fn media_index_covered_count(
     .map_err(|e| format!("covered-count task panicked: {e}"))?
 }
 
-/// The reclaim-space preview behind the settings "delete the extra entries" line (plan
-/// M4): across the ENABLED volumes in `volume_ids`, how many stored image rows fall
+/// The reclaim-space preview behind the settings "delete the extra entries" line:
+/// across the ENABLED volumes in `volume_ids`, how many stored image rows fall
 /// inside the current setting vs outside it, and the bytes the outside set would free.
 /// `totalStored = coveredStored + doomedCount` (the single-source partition invariant),
 /// so the copy's "you have N indexed; your setting covers M; delete the extra K" always
@@ -426,7 +426,7 @@ pub struct ReclaimPreview {
     pub pending: bool,
 }
 
-/// What a reclaim prune freed (plan M4): the rows deleted and the bytes reclaimed.
+/// What a reclaim prune freed: the rows deleted and the bytes reclaimed.
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ReclaimResult {
@@ -477,8 +477,8 @@ fn resolve_reclaim_volumes(volume_ids: &[String]) -> (Vec<(String, String)>, boo
     (enabled, pending)
 }
 
-/// Preview the reclaim-space split across `volume_ids` at the CURRENT `threshold` (plan
-/// M4). Thin: resolves the enabled volumes and aggregates the scheduler's single-source
+/// Preview the reclaim-space split across `volume_ids` at the CURRENT `threshold`.
+/// Thin: resolves the enabled volumes and aggregates the scheduler's single-source
 /// `stored_coverage` per volume (the doomed-row SELECTION is Rust-side, the same
 /// precedence enrichment uses; only the byte SUM over the chosen set is a `media.db`
 /// query). Runs OFF the IPC thread; answers offline from `media.db`.
@@ -535,8 +535,8 @@ pub async fn media_index_reclaim_preview(
     .map_err(|e| format!("reclaim-preview task panicked: {e}"))?
 }
 
-/// Prune the stored image rows OUTSIDE the current `threshold` across `volume_ids` (plan
-/// M4 reclaim). Thin: delegates to the scheduler's `prune_below_threshold` per volume,
+/// Prune the stored image rows OUTSIDE the current `threshold` across `volume_ids`
+/// (reclaim). Thin: delegates to the scheduler's `prune_below_threshold` per volume,
 /// which selects the doomed set Rust-side, deletes it through the volume's ONE writer
 /// thread (the serialization guarantee), `VACUUM`s, and drops the vector + coverage
 /// caches. A USER-EXPLICIT deletion (derives only from settings state), so it needs no

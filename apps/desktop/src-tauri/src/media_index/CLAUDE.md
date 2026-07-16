@@ -9,7 +9,7 @@ tests.
 
 - `predicate.rs` PURE `qualify_dir`. `store/` per-volume `media.db` + ONE writer thread (`writer_registry`). `backend/`
   the `VisionBackend` seam (`FakeVisionBackend`, macOS `vision/`).
-- `scheduler/` bus-driven coalesced pass + `enrich.rs` + `reclaim.rs` (M4 stored-coverage split + prune). `network/` SMB byte-fetch + `config`
+- `scheduler/` bus-driven coalesced pass + `enrich.rs` + `reclaim.rs` (the reclaim stored-coverage split + prune). `network/` SMB byte-fetch + `config`
   (opt-in/override/exclude/paused). `vector/` `VectorStore` + resident `cache`; `coverage.rs` covered-count.
 - `read/` `MediaIndex` (the ONLY consumer entry). `commands.rs` IPC; `gate.rs` toggle + threshold atomics.
 
@@ -22,8 +22,8 @@ tests.
 - **GC is deletion-driven + edge-triggered (data-safety).** GC ONLY on a `Completed` bus edge (`borrow_and_update`,
   never a `borrow()` poll) or the Fresh sweep; never on volume-absence. Deferred/below-threshold rows stay; only vanished
   files collect. Never persist the lifecycle-bus `generation` (a transient wake counter).
-- **Three deletions bypass the edge** (no `Completed` edge needed): the privacy retro-delete + reclaim prune (M4,
-  settings-derived, via the writer `prune_under_folder` / `prune_paths` + `VACUUM`), and the M8 live-tick scoped GC
+- **Three deletions bypass the edge** (no `Completed` edge needed): the privacy retro-delete + reclaim prune
+  (settings-derived, via the writer `prune_under_folder` / `prune_paths` + `VACUUM`), and the live-tick scoped GC
   (index-CONFIRMED, `enrich_and_gc_scoped` + `GcScope::TouchedDirs`). ❌ The exclusion veto reads LIVE
   `network::config::is_excluded`, NEVER the pass snapshot, and re-checks before each upsert (the in-flight-analyze
   TOCTOU). ❌ NEVER whole-store `gc_targets` / `enrich_and_gc` on a live tick — it wipes every row OUTSIDE the touched
@@ -34,7 +34,7 @@ tests.
   EXCLUDED = hard veto; floored junk has no row. D.md § Defer-until-scored.
 - **What starts a pass**: a `Completed` bus edge, or a user kick (`kick_all_ready_passes` on toggle-on / restart /
   threshold DECREASE; `kick_network_pass` on opt-in). The sweep only WIRES subs (a Fresh-at-launch bus stays Pending),
-  so the kick, not the sweep, enriches. Plus **live index updates** (M8, LOCAL only, `scheduler/live.rs`): a throttled,
+  so the kick, not the sweep, enriches. Plus **live index updates** (LOCAL only, `scheduler/live.rs`): a throttled,
   touched-dirs-SCOPED tick on a DISTINCT `#live` coordinator key.
 - **`FakeVisionBackend` via `MediaScheduler::new`, never `start`.** Real backend: ALL Vision/ImageIO on ONE 8 MB-stack
   thread (never rayon); a hostile image gives a typed `VisionError`, never a panic.
@@ -43,10 +43,10 @@ tests.
 - **A disconnect is NOT a bad file.** A mid-pass SMB unmount PAUSES (keeps rows, no GC, no `Failed`).
 - **`search/` reaches `media.db` ONLY through `MediaIndex`.** Commands register in BOTH `ipc.rs` + `ipc_collectors.rs`
   (`pnpm bindings:regen`); events (`events.rs`) register in `ipc.rs`'s `collect_events!` only.
-- **A pass publishes progress to the top-right indicator** (`events.rs`, M5): throttled `media-enrich-progress` over the
+- **A pass publishes progress to the top-right indicator** (`events.rs`): throttled `media-enrich-progress` over the
   ENRICHABLE subset (never `images.len()`) + one `media-enrich-terminal` on EVERY exit path (a `Drop`-guard emits `Failed`
   on an error bubble). A VANISHED source (`VisionError::Missing`, ENOENT) is skipped quietly (DEBUG, no row) but counts as
-  processed. A small live tick (M8) stays fully silent. D.md § Progress events.
+  processed. A small live tick stays fully silent. D.md § Progress events.
 
 Still open: per-FOLDER always-index trigger (setter ready; the exclude trigger shipped as a folder context-menu item),
 MTP on-demand, CLIP/faces/captions.

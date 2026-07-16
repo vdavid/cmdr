@@ -109,7 +109,7 @@ const CREATE_TABLES_SQL: &str = "
 /// recreate fires on the first incremental write — generation gone, trigger already
 /// passed, the volume stuck at "never scored" forever. Opening the store here forces
 /// the recreate FIRST, so the generation we read reflects the CURRENT schema. This is
-/// the exact prod-upgrade ordering (plan M2); a sweep-time read probe is the trap this
+/// the exact prod-upgrade ordering; a sweep-time read probe is the trap this
 /// avoids.
 pub fn needs_initial_full_pass(data_dir: &Path, volume_id: &str) -> Result<bool, ImportanceStoreError> {
     let store = ImportanceStore::open(&importance_db_path(data_dir, volume_id))?;

@@ -5,12 +5,12 @@
 //! `network/enrich.rs`) can report progress without depending on an `AppHandle` — a
 //! test injects a recording sink, production injects the throttled Tauri emitter
 //! (`events.rs`). Progress rides the top-right indexing indicator as a second
-//! publisher alongside the drive indexer (plan M5); see
+//! publisher alongside the drive indexer; see
 //! [`media_index/DETAILS.md`](DETAILS.md) § Progress events.
 
 /// A snapshot of one pass's progress WITHIN its enrichable subset (images passing the
 /// coverage gates, never the full walked set — a raw walked-set denominator rebuilds
-/// the never-finishes bug inside the indicator, plan M5). `done` counts every subset
+/// the never-finishes bug inside the indicator). `done` counts every subset
 /// image the pass has finished handling (enriched, already-current, or quietly skipped
 /// — vanished / too-small / phantom), so it reaches `total` on a completed pass.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -28,7 +28,7 @@ pub(crate) struct EnrichProgress {
 
 /// The seam the enrich cores report progress through. Called once per processed subset
 /// image (cheap — the implementation throttles the actual emission), so it stays out of
-/// the per-image hot path except a counter + time check (plan M5). Tests inject a
+/// the per-image hot path except a counter + time check. Tests inject a
 /// recorder; production injects the throttled Tauri emitter.
 pub(crate) trait EnrichProgressSink {
     /// Report cumulative progress. The sink decides whether to actually emit.

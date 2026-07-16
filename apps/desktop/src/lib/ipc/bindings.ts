@@ -1543,7 +1543,7 @@ export const commands = {
    *  the media-ML enrichment subsystem. Enabling clears any prior memory-watchdog stop
    *  so enrichment resumes AND kicks an immediate pass for every ready volume, so work
    *  starts the moment the user flips it on rather than waiting for the next scan
-   *  completion (plan M1; mirrors `media_index_set_network_volume_enabled`).
+   *  completion (mirrors `media_index_set_network_volume_enabled`).
    *  Runtime-toggleable, no restart.
    */
   setImageIndexEnabled: (enabled: boolean) => __TAURI_INVOKE<void>('set_image_index_enabled', { enabled }),
@@ -1915,15 +1915,15 @@ export const commands = {
    *  future work (forward-only semantics: nothing to enrich now, and the deferred rows
    *  persist), so kicking on a raise would re-walk the index for nothing. The comparison
    *  reads the stored value BEFORE and AFTER the (clamped) set, so a clamp can't
-   *  misclassify the direction (plan M1).
+   *  misclassify the direction.
    */
   mediaIndexSetImportanceThreshold: (threshold: number) =>
     __TAURI_INVOKE<void>('media_index_set_importance_threshold', { threshold }),
   mediaIndexCoveredCount: (threshold: number, volumeIds: string[]) =>
     typedError<CoveredCount, string>(__TAURI_INVOKE('media_index_covered_count', { threshold, volumeIds })),
   /**
-   *  Preview the reclaim-space split across `volume_ids` at the CURRENT `threshold` (plan
-   *  M4). Thin: resolves the enabled volumes and aggregates the scheduler's single-source
+   *  Preview the reclaim-space split across `volume_ids` at the CURRENT `threshold`.
+   *  Thin: resolves the enabled volumes and aggregates the scheduler's single-source
    *  `stored_coverage` per volume (the doomed-row SELECTION is Rust-side, the same
    *  precedence enrichment uses; only the byte SUM over the chosen set is a `media.db`
    *  query). Runs OFF the IPC thread; answers offline from `media.db`.
@@ -1931,8 +1931,8 @@ export const commands = {
   mediaIndexReclaimPreview: (threshold: number, volumeIds: string[]) =>
     typedError<ReclaimPreview, string>(__TAURI_INVOKE('media_index_reclaim_preview', { threshold, volumeIds })),
   /**
-   *  Prune the stored image rows OUTSIDE the current `threshold` across `volume_ids` (plan
-   *  M4 reclaim). Thin: delegates to the scheduler's `prune_below_threshold` per volume,
+   *  Prune the stored image rows OUTSIDE the current `threshold` across `volume_ids`
+   *  (reclaim). Thin: delegates to the scheduler's `prune_below_threshold` per volume,
    *  which selects the doomed set Rust-side, deletes it through the volume's ONE writer
    *  thread (the serialization guarantee), `VACUUM`s, and drops the vector + coverage
    *  caches. A USER-EXPLICIT deletion (derives only from settings state), so it needs no
@@ -5076,7 +5076,7 @@ export type MediaDimensions = {
  *  Throttled progress for one volume's enrichment pass. `total` / `bytes_total` are the
  *  ENRICHABLE-subset denominators (images passing the coverage gates), NEVER the full
  *  walked set — a raw walked-set denominator rebuilds the never-finishes bug inside the
- *  indicator (plan M5). Wire name pinned (the `…Event` suffix wouldn't kebab-case to it).
+ *  indicator. Wire name pinned (the `…Event` suffix wouldn't kebab-case to it).
  */
 export type MediaEnrichProgressEvent = {
   volumeId: string
@@ -5187,7 +5187,7 @@ export type MediaIndexVolumeState = {
    *  ("Working out which folders matter — image indexing starts right after")
    *  instead of the generic covered-count spinner, so a persistently-failing
    *  importance recompute surfaces as a visible wait rather than a silent "0 of N"
-   *  (plan M1: the residual risk must be VISIBLE, never silent).
+   *  (defer-until-scored: the residual risk must be VISIBLE, never silent).
    */
   waitingForImportance: boolean
   /**
@@ -5195,16 +5195,16 @@ export type MediaIndexVolumeState = {
    *  current slider threshold — the honest denominator for the settings progress line
    *  "N of M in your covered folders", which can reach done at any slider position
    *  (unlike `qualifying_count`, the full volume total). `None` when importance hasn't
-   *  scored the volume yet (the same `stored_coverage` single source as M4's reclaim
-   *  numbers, so they never disagree; plan M5).
+   *  scored the volume yet (the same `stored_coverage` single source as the reclaim
+   *  numbers, so they never disagree).
    */
   coveredQualifyingCount: number | null
   /**
    *  How many STORED rows fall OUTSIDE current coverage — indexed under a broader past
    *  setting and kept searchable (the slider is forward-only). Drives the quiet
    *  kept-rows line "K more indexed from broader settings — still searchable", which
-   *  composes with M4's reclaim line as one narrative. `None` when importance is
-   *  unscored (plan M5).
+   *  composes with the reclaim line as one narrative. `None` when importance is
+   *  unscored.
    */
   keptCount: number | null
 }
@@ -5985,8 +5985,8 @@ export type RecentPathEntry = {
 }
 
 /**
- *  The reclaim-space preview behind the settings "delete the extra entries" line (plan
- *  M4): across the ENABLED volumes in `volume_ids`, how many stored image rows fall
+ *  The reclaim-space preview behind the settings "delete the extra entries" line:
+ *  across the ENABLED volumes in `volume_ids`, how many stored image rows fall
  *  inside the current setting vs outside it, and the bytes the outside set would free.
  *  `totalStored = coveredStored + doomedCount` (the single-source partition invariant),
  *  so the copy's "you have N indexed; your setting covers M; delete the extra K" always
@@ -6013,7 +6013,7 @@ export type ReclaimPreview = {
   pending: boolean
 }
 
-// What a reclaim prune freed (plan M4): the rows deleted and the bytes reclaimed.
+// What a reclaim prune freed: the rows deleted and the bytes reclaimed.
 export type ReclaimResult = {
   // The image rows deleted across the enabled volumes.
   deletedRows: number

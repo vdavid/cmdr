@@ -68,7 +68,7 @@ impl FakeVisionBackend {
 
     /// Script a vanished-source failure for a path (an ENOENT-class read failure): the
     /// backend returns [`VisionError::Missing`], as the real backend does when a file
-    /// disappears between the index walk and its analyze (plan M5).
+    /// disappears between the index walk and its analyze.
     pub fn missing_for(mut self, path: impl Into<String>) -> Self {
         self.missing.insert(path.into());
         self

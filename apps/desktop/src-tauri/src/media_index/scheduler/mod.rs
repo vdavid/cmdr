@@ -20,10 +20,10 @@
 //!   so [`kick_all_ready_passes_with`] at the end of [`start`] (master toggle on) is what
 //!   actually enriches on a persisted-on restart.
 //! - **User actions** ([`kick_all_ready_passes`] / [`kick_network_pass`]): toggle-on, a
-//!   threshold DECREASE, or a network opt-in kicks an immediate pass (plan M1).
+//!   threshold DECREASE, or a network opt-in kicks an immediate pass.
 //! - **The importance bridge** ([`wire_volume`]'s subscriber): a pass that DEFERRED its
 //!   gated remainder (importance unscored) is re-kicked when importance first scores
-//!   (plan M1 defer-until-scored). **The registration bus** wires a late-registered volume.
+//!   (defer-until-scored). **The registration bus** wires a late-registered volume.
 //!
 //! Local volumes enrich by default when the master toggle is on; opted-in SMB volumes
 //! run the CONSERVATIVE network pass ([`MediaScheduler::run_network_pass_blocking`]);
@@ -165,7 +165,7 @@ pub struct MediaScheduler {
     writers: super::writer_registry::WriterRegistry,
     backend: Arc<dyn VisionBackend>,
     /// The app handle used to emit `media-enrich-progress` / `media-enrich-terminal`
-    /// events (plan M5). `None` in unit tests (constructed via [`MediaScheduler::new`],
+    /// events. `None` in unit tests (constructed via [`MediaScheduler::new`],
     /// no app), so a pass emits nothing; production wires it in [`start`].
     app: Option<AppHandle>,
     /// Volume ids whose last pass DEFERRED its importance-gated remainder because
@@ -177,7 +177,7 @@ pub struct MediaScheduler {
     /// incremental bump doesn't re-walk the index for nothing.
     deferred_for_importance: Mutex<HashSet<String>>,
     /// Per-volume accumulator of touched DIRECTORY paths awaiting a live enrichment
-    /// tick (plan M8). A burst of dir-changed batches coalesces here so overlapping
+    /// tick. A burst of dir-changed batches coalesces here so overlapping
     /// ticks drain one combined set, not one tick per batch — mirroring importance's
     /// `pending_incremental`.
     pending_touched_dirs: Mutex<HashMap<String, HashSet<String>>>,
@@ -198,7 +198,7 @@ impl MediaScheduler {
         }
     }
 
-    /// Construct a scheduler wired to `app`, so its passes emit the M5 progress +
+    /// Construct a scheduler wired to `app`, so its passes emit the progress +
     /// terminal events onto the top-right indicator. Used by [`start`].
     fn new_with_app(data_dir: PathBuf, backend: Arc<dyn VisionBackend>, app: AppHandle) -> Self {
         Self {
@@ -207,7 +207,7 @@ impl MediaScheduler {
         }
     }
 
-    /// Build the throttled progress sink + terminal guard for a pass (plan M5). When the
+    /// Build the throttled progress sink + terminal guard for a pass. When the
     /// scheduler has an app, the sink emits `media-enrich-progress` and the guard emits
     /// `media-enrich-terminal` on drop (its default `Failed` reason covers an error
     /// bubble); without an app (unit tests) both are no-ops.
@@ -301,7 +301,7 @@ impl MediaScheduler {
         let folder_score = |dir: &str| -> f64 { scores.as_ref().and_then(|m| m.get(dir)).copied().unwrap_or(0.0) };
         let ordered = enrich::prioritized(&images, &folder_score);
 
-        // Progress + terminal emitters (plan M5). The guard emits `Failed` on drop if the
+        // Progress + terminal emitters. The guard emits `Failed` on drop if the
         // pass bubbles an error before we set a clean reason below (the `?` on
         // `enrich_and_gc`), so EVERY exit path reports a terminal.
         let (progress, mut terminal) = self.pass_emitters(volume_id);
@@ -310,7 +310,7 @@ impl MediaScheduler {
             progress: progress.as_ref(),
         };
         // A full pass walks the whole index, so a stored row absent from the walk genuinely
-        // vanished: `enrich_and_gc` GCs the whole store. The scoped live tick (M8) uses
+        // vanished: `enrich_and_gc` GCs the whole store. The scoped live tick uses
         // `enrich_and_gc_scoped` with `GcScope::TouchedDirs` instead.
         let summary = enrich_and_gc(
             &ordered,
@@ -515,7 +515,7 @@ impl MediaScheduler {
         let cancel = || gate::is_cancelled();
         let sleep = |d: Duration| std::thread::sleep(d);
 
-        // Progress + terminal emitters (plan M5); the guard's default `Failed` covers an
+        // Progress + terminal emitters; the guard's default `Failed` covers an
         // error bubble on the `?` below, so every exit path reports a terminal.
         let (progress, mut terminal) = self.pass_emitters(volume_id);
         let ctx = NetworkEnrichCtx {
@@ -559,7 +559,7 @@ impl MediaScheduler {
                     network::config::mark_paused(volume_id);
                 }
                 // The terminal event re-voices the row (paused) or clears it (cancelled),
-                // so it never sticks at "enriching" — the stuck-row bug (plan M5).
+                // so it never sticks at "enriching" — the stuck-row bug.
                 terminal.set(match reason {
                     PauseReason::NotIdle => MediaEnrichTerminalReason::PausedWaitingForIdle,
                     PauseReason::Disconnected => MediaEnrichTerminalReason::PausedDisconnected,
@@ -607,7 +607,7 @@ fn local_should_enrich(
 
 /// Kick a coalesced enrichment pass for every volume ready to enrich right now —
 /// the user-action entry point behind the master toggle, a persisted-on restart, and
-/// a threshold decrease (plan M1). Resolves the managed scheduler and delegates to
+/// a threshold decrease. Resolves the managed scheduler and delegates to
 /// [`kick_all_ready_passes_with`]. A no-op when the scheduler isn't managed yet (an
 /// early call before [`start`]).
 pub fn kick_all_ready_passes(app: &AppHandle) {
@@ -624,7 +624,7 @@ pub fn kick_all_ready_passes(app: &AppHandle) {
 /// each pass self-gates on the master toggle, so an errant kick while disabled is a
 /// cheap no-op. Unconditional by design: staleness makes a redundant pass a fast
 /// no-op, so there's no need to gate per volume (contrast importance, which gates on
-/// "store has no generation" — plan M2).
+/// "store has no generation").
 pub fn kick_all_ready_passes_with(scheduler: &Arc<MediaScheduler>) {
     for (volume_id, kind) in crate::indexing::ready_volumes_with_kind() {
         let pass_kind = match kind {
@@ -717,7 +717,7 @@ pub fn start(app: &AppHandle) {
 
     // The persisted-on restart case: with the master toggle already on, kick every
     // ready volume now. Without this, a user whose toggle is on gets "0 of N indexed"
-    // after every restart until some volume happens to rescan (plan M1). Each pass
+    // after every restart until some volume happens to rescan. Each pass
     // self-gates, and coalescing folds this into any pass a concurrent scan starts.
     if gate::is_enabled() {
         kick_all_ready_passes_with(&scheduler);
@@ -768,7 +768,7 @@ fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVol
         }
     };
 
-    // Live enrichment follows the index (plan M8): a modified/new/deleted image under a
+    // Live enrichment follows the index: a modified/new/deleted image under a
     // covered folder re-enriches (or GCs) within the throttle window, without waiting for
     // the next completed scan. LOCAL only: the tick treats stored paths as OS paths (no
     // mount mapping), and SMB's live path never publishes dirs_changed anyway, so wiring
@@ -777,7 +777,7 @@ fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVol
         live::start_live_follow(Arc::clone(&scheduler), volume_id.clone());
     }
 
-    // Privacy retro-delete re-fire (plan M3): a folder excluded while this volume was
+    // Privacy retro-delete re-fire: a folder excluded while this volume was
     // OFFLINE never got purged (the retro-delete had no mount root then). On
     // (re)registration the volume is mounted, so purge any currently-excluded folder
     // that falls under it now. Idempotent and cheap: skipped entirely when nothing is
@@ -800,7 +800,7 @@ fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVol
         }
     }
 
-    // The unscored → scored bridge (plan M1 defer-until-scored). Subscribe to
+    // The unscored → scored bridge (defer-until-scored). Subscribe to
     // importance's recompute-completed `watch` SYNCHRONOUSLY here — BEFORE and
     // independent of the first pass. Watch semantics: a receiver is caught up to the
     // current version at subscribe time, so `changed()` fires only on the NEXT bump. A

@@ -72,7 +72,7 @@ pub fn importance_threshold() -> f64 {
 /// broadens). Only a decrease should kick an immediate pass: the newly-covered
 /// folders start enriching now, while a raise merely defers future work
 /// (forward-only — nothing to enrich now), so kicking on a raise would re-walk the
-/// index for nothing (plan M1). Both operands are already-clamped stored values, so
+/// index for nothing. Both operands are already-clamped stored values, so
 /// the comparison can't be fooled by an out-of-range incoming request.
 pub fn threshold_decreased(previous: f64, next: f64) -> bool {
     next < previous

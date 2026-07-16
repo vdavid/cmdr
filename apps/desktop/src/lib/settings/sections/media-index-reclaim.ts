@@ -3,8 +3,8 @@
  * enough beyond the current setting to bother offering a cleanup?
  *
  * Lowering the slider is forward-only — it never deletes rows, so a drive indexed at a
- * broad setting keeps those rows searchable after the user narrows the setting (plan M4
- * design intention). The reclaim line surfaces that leftover coverage and offers to
+ * broad setting keeps those rows searchable after the user narrows the setting (the
+ * forward-only slider contract). The reclaim line surfaces that leftover coverage and offers to
  * delete it, but ONLY when it's meaningfully large: a handful of leftover rows isn't
  * worth a destructive prompt. Kept pure so the threshold is unit-testable without a
  * component.

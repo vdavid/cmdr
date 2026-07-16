@@ -194,7 +194,7 @@ right-anchored, viewport-clamped box and clipping off the window edge.
 The hourglass is a ~14px `<Icon>` (the same icon as the size-column stale indicator), `position: absolute` top/right at
 `var(--spacing-sm)`, tertiary text color, gentle opacity pulse gated behind `prefers-reduced-motion: reduce`.
 
-## Image-enrichment publisher (plan M5)
+## Image-enrichment publisher
 
 Image indexing (`media_index/`, the on-device Vision OCR + tags + embeddings pass) joins the SAME top-right indicator as
 a second publisher, alongside the drive indexer — not a second corner widget. `media-enrich-state.svelte.ts` is its
@@ -221,8 +221,8 @@ another reason (the settings panel also voices `paused` via `media_index_volume_
 reconciliation of "terminal events clear the row" with "paused states voiced": a pause re-labels rather than clears, and
 the gate keeps it from lighting the corner on its own.
 
-**Listen-first-then-query at init** (`initMediaEnrichState`): with plan M1, enrichment can start at backend setup BEFORE
-the frontend mounts, so the pass-start event is lost. After registering the listeners, seed the ROOT volume from
+**Listen-first-then-query at init** (`initMediaEnrichState`): because enrichment can start at backend setup BEFORE the
+frontend mounts, so the pass-start event is lost. After registering the listeners, seed the ROOT volume from
 `media_index_volume_state` if it's enriching (`done = enrichedCount − keptCount` capped,
 `total = coveredQualifyingCount`), mirroring `initIndexState`'s root-only backfill; network volumes hydrate from their
 next progress tick.

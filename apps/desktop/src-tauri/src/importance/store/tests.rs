@@ -402,7 +402,7 @@ fn record_visit_accumulates_count_and_recency() {
     writer.shutdown();
 }
 
-/// The prod schema-3 upgrade ordering trap (plan M2). A prod user's `importance.db`
+/// The prod schema-3 upgrade ordering trap. A prod user's `importance.db`
 /// arrives at the upgrade launch on the OLD schema WITH a stamped generation, so a
 /// naive sweep-time READ of the generation reads "already scored" and skips the full
 /// recompute — and THEN the schema recreate fires on the first write-path open,

@@ -1,4 +1,4 @@
-//! Reclaim-space (plan M4): the single-source stored-coverage split and the
+//! Reclaim-space: the single-source stored-coverage split and the
 //! user-explicit prune that frees the disk left behind when the user narrows the
 //! image-index depth slider.
 //!
@@ -6,7 +6,7 @@
 //! it's a self-contained concern hung off [`MediaScheduler`]: one function partitions a
 //! volume's stored rows into surviving vs doomed by the SAME precedence enrichment uses,
 //! and the prune deletes the doomed set through the volume's ONE writer thread. The
-//! reclaim commands (`commands.rs`) and M5's `keptCount` both call [`stored_coverage`],
+//! reclaim commands (`commands.rs`) and the per-volume `keptCount` both call [`stored_coverage`],
 //! so the three user-facing quantities can never disagree. Full rationale (the
 //! single-source arithmetic, the partition rule, why the writer thread is the race
 //! guarantee): [`media_index/DETAILS.md`](../DETAILS.md) § Reclaim space.
@@ -21,15 +21,15 @@ use super::MediaScheduler;
 
 /// The threshold-aware split of a volume's STORED media rows plus the drive-index
 /// coverage count — all from ONE computation ([`MediaScheduler::stored_coverage`]) so the
-/// reclaim preview, the prune, and M5's per-volume state can never disagree (plan M4
+/// reclaim preview, the prune, and the per-volume state can never disagree (the
 /// single-source arithmetic).
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct StoredCoverage {
     /// Stored rows INSIDE current coverage (they stay). `surviving_stored +
     /// doomed_stored` is the total stored-row count (the partition invariant).
     pub surviving_stored: u64,
-    /// Stored rows OUTSIDE current coverage — the reclaim prune's "delete N" AND M5's
-    /// `keptCount` (the same set).
+    /// Stored rows OUTSIDE current coverage — the reclaim prune's "delete N" AND the
+    /// per-volume `keptCount` (the same set).
     pub doomed_stored: u64,
     /// Drive-index qualifying images in covered folders — what WOULD be indexed (the
     /// slider-preview number), a DIFFERENT thing from `surviving_stored` (a
@@ -39,14 +39,14 @@ pub struct StoredCoverage {
     pub doomed_paths: Vec<String>,
 }
 
-/// The counts-only stored-coverage split (no `doomed_paths` allocation): what the M5
+/// The counts-only stored-coverage split (no `doomed_paths` allocation): what the
 /// per-volume state poll needs. Same three quantities as [`StoredCoverage`], shared
 /// through the one canonical survival rule.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct StoredCoverageCounts {
     /// Stored rows INSIDE current coverage.
     pub surviving_stored: u64,
-    /// Stored rows OUTSIDE current coverage (M5's `keptCount`).
+    /// Stored rows OUTSIDE current coverage (the `keptCount`).
     pub doomed_stored: u64,
     /// Drive-index qualifying images in covered folders (the slider-preview number).
     pub covered_qualifying: u64,
@@ -63,24 +63,24 @@ pub struct PruneOutcome {
 }
 
 impl MediaScheduler {
-    /// The single-source stored-coverage split for `volume_id` at `threshold` (plan
-    /// M4): how many stored `media.db` rows fall INSIDE the current setting
+    /// The single-source stored-coverage split for `volume_id` at `threshold`:
+    /// how many stored `media.db` rows fall INSIDE the current setting
     /// (`surviving_stored`) vs OUTSIDE it (`doomed_stored` + the `doomed_paths` a reclaim
     /// prune would delete), plus `covered_qualifying` (the drive-index qualifying images
     /// in covered folders — the slider-preview number, a DIFFERENT quantity from stored
-    /// rows). BOTH the reclaim commands and M5's `keptCount` call this, so the three
+    /// rows). BOTH the reclaim commands and the per-volume `keptCount` call this, so the three
     /// numbers can never disagree.
     ///
     /// `mount_root` maps a stored (index-relative) path into OS space for the
     /// override/exclude config lookup ("/" on a local volume, the mount root on a network
     /// one), exactly as enrichment does; importance keys on the index identity directly.
-    /// Returns `None` when importance hasn't scored the volume (M2 makes that transient) —
+    /// Returns `None` when importance hasn't scored the volume (importance's scoring makes that transient) —
     /// the partition can't be computed safely, so the caller reports pending rather than
     /// proposing a destructive count. The selection reuses [`coverage::partition_stored`]
     /// (the enrichment precedence) and the [`coverage`] cache (the slider's qualifying
     /// counts), never a second derivation.
     pub fn stored_coverage(&self, volume_id: &str, mount_root: &str, threshold: f64) -> Option<StoredCoverage> {
-        // Importance must be scored to partition safely (plan M4 depends on M2).
+        // Importance must be scored to partition safely.
         let scores = coverage::importance_scores(&self.data_dir, volume_id)?;
 
         // The stored-row paths (empty when the volume was never enriched).
@@ -111,9 +111,9 @@ impl MediaScheduler {
         })
     }
 
-    /// The counts-only stored-coverage split for `volume_id` at `threshold` (plan M5):
+    /// The counts-only stored-coverage split for `volume_id` at `threshold`:
     /// `surviving_stored` / `doomed_stored` (= `keptCount`) / `covered_qualifying`,
-    /// WITHOUT allocating the doomed-path list. The M5 `media_index_volume_state` poll
+    /// WITHOUT allocating the doomed-path list. The `media_index_volume_state` poll
     /// calls this every few seconds while the settings panel is open, so it avoids the
     /// 200k-path `Vec` [`stored_coverage`](Self::stored_coverage) builds for a prune. It
     /// reuses the ONE canonical survival rule ([`coverage::stored_row_survives`]) and the
@@ -177,7 +177,7 @@ impl MediaScheduler {
     }
 
     /// Prune the stored rows OUTSIDE the current setting for `volume_id` at `threshold`
-    /// (plan M4 reclaim): compute the doomed set via [`stored_coverage`], estimate the
+    /// (reclaim): compute the doomed set via [`stored_coverage`], estimate the
     /// content bytes it frees, delete it through the volume's ONE writer thread (the
     /// serialization guarantee — the prune and any concurrent pass can't interleave
     /// mid-batch, and a concurrent pass only enriches ABOVE-threshold rows, a disjoint

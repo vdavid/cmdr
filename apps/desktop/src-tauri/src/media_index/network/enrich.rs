@@ -84,8 +84,8 @@ pub(crate) struct NetworkEnrichCtx<'a> {
     /// The bandwidth-throttle sleep (real `thread::sleep` in production; a recorder /
     /// no-op in tests so the pass never actually sleeps).
     pub(crate) sleep: &'a dyn Fn(Duration),
-    /// The throttled progress sink (the top-right indicator's second publisher, plan
-    /// M5). A no-op in tests that don't assert progress.
+    /// The throttled progress sink (the top-right indicator's second publisher).
+    /// A no-op in tests that don't assert progress.
     pub(crate) progress: &'a dyn EnrichProgressSink,
 }
 
@@ -98,7 +98,7 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
     let current: HashSet<String> = ctx.images.iter().map(|i| i.path.clone()).collect();
     let mut summary = PassSummary::default();
 
-    // The honest progress denominator (plan M5): the enrichable subset (images passing
+    // The honest progress denominator: the enrichable subset (images passing
     // the coverage gates over their OS path), never the full walked set — a NAS archive
     // mostly deferred below the slider would otherwise stick the bar. `done` counts every
     // subset image the pass finishes handling (enriched, already-current, vanished, or
@@ -215,7 +215,7 @@ pub(crate) fn enrich_network_and_gc(ctx: &NetworkEnrichCtx) -> Result<NetworkPas
 
 /// The ENRICHABLE-subset denominators for a network pass: the count and total bytes of
 /// images passing the coverage gates over their OS path (`should_enrich` AND not
-/// `is_excluded`), the honest progress denominator (never the full walked set — plan M5).
+/// `is_excluded`), the honest progress denominator (never the full walked set).
 fn network_enrichable_totals(ctx: &NetworkEnrichCtx) -> (u64, u64) {
     let mut total = 0u64;
     let mut bytes_total = 0u64;

@@ -338,7 +338,7 @@ pub(crate) fn read_all_status(conn: &Connection) -> Result<Vec<MediaStatusRow>, 
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
-/// Every stored `media_status` path (the reclaim partition's stored-row set — plan M4).
+/// Every stored `media_status` path (the reclaim partition's stored-row set).
 /// A cheap `path`-only scan; the partition then classifies each in Rust.
 pub(crate) fn read_status_paths(conn: &Connection) -> Result<Vec<String>, MediaStoreError> {
     let mut stmt = conn.prepare_cached("SELECT path FROM media_status")?;
@@ -349,7 +349,7 @@ pub(crate) fn read_status_paths(conn: &Connection) -> Result<Vec<String>, MediaS
 /// Sum the on-disk content bytes of the rows for `paths` across `media_ocr` (the OCR +
 /// folded-tag FTS text), `media_tags` (the structured tag labels), and `media_embedding`
 /// (the feature-print BLOBs) — the honest "about" byte estimate a reclaim prune would
-/// free (plan M4). Streams each table once and sums only the paths in the set, so it
+/// free. Streams each table once and sums only the paths in the set, so it
 /// needs no giant `IN (…)` for a doomed set of hundreds of thousands and no temp table
 /// on the read connection. It's a content estimate (excludes FTS index + page overhead),
 /// so a `VACUUM` reclaims at least this much on disk.

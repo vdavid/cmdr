@@ -134,7 +134,7 @@ describe('MediaIndexImportanceSlider', () => {
     expect(preview.toLowerCase()).toContain('nothing')
   })
 
-  it('shows the threshold-aware covered progress and the quiet kept-rows line (plan M5)', async () => {
+  it('shows the threshold-aware covered progress and the quiet kept-rows line', async () => {
     // 1,000 stored, 50 outside coverage (kept), 900 qualifying in covered folders ⇒
     // 950 indexed inside coverage caps to the 900 covered total (done), and the 50 kept
     // rows show as a quiet still-searchable line (below the reclaim-offer floor).

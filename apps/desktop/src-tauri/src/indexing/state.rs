@@ -1020,7 +1020,7 @@ pub fn stop_scan(volume_id: &str) -> Result<(), String> {
 
 /// Snapshot the ready-to-score volume ids WITH their typed kind. The importance and
 /// media-index schedulers' startup sweeps use this to branch typed on the kind (score
-/// Local + SMB, exclude MTP — plan M4) without re-deriving the kind from the volume-id
+/// Local + SMB, exclude MTP) without re-deriving the kind from the volume-id
 /// string (`no-string-matching`). Readiness filter: a registered instance whose
 /// freshness is `Fresh` (an authoritative completed scan). `Scanning`/`Stale` volumes
 /// are excluded (a `Scanning` one fires `ScanCompleted` on the bus when it finishes; a

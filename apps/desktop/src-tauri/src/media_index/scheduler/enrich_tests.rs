@@ -509,7 +509,7 @@ fn a_cancelled_pass_enriches_nothing_and_skips_gc() {
     writer.shutdown();
 }
 
-// ── Progress denominator + vanished-file handling (plan M5) ─────────────────
+// ── Progress denominator + vanished-file handling ─────────────────
 
 /// A progress sink that records the last reported snapshot, so a test can assert the
 /// enrichable-subset denominator and that `done` reaches `total`.
@@ -615,7 +615,7 @@ fn a_vanished_image_still_completes_the_pass_at_done_equals_total() {
     writer.shutdown();
 }
 
-// ── M8 live enrichment: the scoped walk + scoped GC (Finding 1 data-safety) ──
+// ── Live enrichment: the scoped walk + scoped GC (data-safety) ──
 
 /// Seed a Done `media_status` row (with OCR text) for `path`.
 fn seed_media(writer: &MediaWriter, path: &str) {

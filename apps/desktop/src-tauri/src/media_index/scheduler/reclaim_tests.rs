@@ -1,4 +1,4 @@
-//! Reclaim-space tests (TDD targets for plan M4): the single-source stored-coverage
+//! Reclaim-space tests: the single-source stored-coverage
 //! partition over a seeded `media.db` + importance store, and the prune round-trip
 //! (doomed rows gone, surviving rows intact, honest counts returned). Deletion is
 //! data-safety-critical, so these are real red→green.

@@ -518,7 +518,7 @@
             isAiEnabled: () => getSetting('ai.provider') !== 'off',
         })
         await initIndexState()
-        // Image-enrichment progress joins the same top-right indicator (plan M5), a
+        // Image-enrichment progress joins the same top-right indicator, a
         // second publisher; listen-first-then-query, like initIndexState.
         await initMediaEnrichState()
         await setupWindowFocusListener(listenerSetupCtx)

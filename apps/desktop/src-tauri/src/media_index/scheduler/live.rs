@@ -1,4 +1,4 @@
-//! Live enrichment: follow the index (plan M8).
+//! Live enrichment: follow the index.
 //!
 //! Today a full pass enriches on a `ScanCompleted` edge, a user kick, or the importance
 //! bridge — so a NEW or MODIFIED image waits for the next completed scan, and a DELETED
@@ -52,7 +52,7 @@ use super::{
 };
 
 /// Above this many enrichable images, a live tick joins the top-right indicator like a
-/// full pass; at or below it the tick stays fully silent (plan M8 — the indicator is for
+/// full pass; at or below it the tick stays fully silent (the indicator is for
 /// sweeps, not blips). A silent tick still enriches and scoped-GCs; only the UI is
 /// suppressed.
 const LIVE_INDICATOR_THRESHOLD: u64 = 25;
@@ -73,8 +73,8 @@ fn live_key(volume_id: &str) -> String {
     format!("{volume_id}#live")
 }
 
-/// Whether a live tick should light up the top-right indicator, or stay fully silent
-/// (plan M8 pre-review Finding 3). Loud ONLY when the enrichable subset is a real sweep
+/// Whether a live tick should light up the top-right indicator, or stay fully silent.
+/// Loud ONLY when the enrichable subset is a real sweep
 /// (`> LIVE_INDICATOR_THRESHOLD`) AND no full pass is running for the volume (whose own
 /// indicator row this tick must not stomp). The threshold gates BOTH the progress sink and
 /// the terminal guard together: a lone row-clearing terminal on an otherwise-silent tick
@@ -119,7 +119,7 @@ impl MediaScheduler {
     /// Gated on the master toggle (off ⇒ no-op) and skip-on-`None` for an unregistered
     /// read pool, like the full pass. It does NOT `mark_deferred_for_importance` on an
     /// unscored volume: the full-pass bridge covers that, and marking here would trigger a
-    /// full re-walk on the next importance bump (plan M8 pre-review minor 4).
+    /// full re-walk on the next importance bump.
     pub(crate) fn run_live_tick_blocking(
         &self,
         volume_id: &str,
@@ -153,7 +153,7 @@ impl MediaScheduler {
         let folder_score = |dir: &str| -> f64 { scores.as_ref().and_then(|m| m.get(dir)).copied().unwrap_or(0.0) };
         let ordered = enrich::prioritized(&images, &folder_score);
 
-        // Progress honesty (plan M8): light up the indicator ONLY when the enrichable
+        // Progress honesty: light up the indicator ONLY when the enrichable
         // subset is a real sweep, and never over a running full pass (whose own row this
         // tick must not stomp). The threshold gates BOTH the progress sink and the terminal
         // guard together — a row-clearing terminal on a silent tick would clear a visible
@@ -213,7 +213,7 @@ impl MediaScheduler {
 }
 
 /// Subscribe a LOCAL volume to its dir-changed bus and run a scoped live tick for each
-/// batch of listing changes (plan M8). Coalesces overlapping batches per volume
+/// batch of listing changes. Coalesces overlapping batches per volume
 /// (accumulating their touched dirs) so a burst of FSEvents collapses to one tick plus at
 /// most one re-run, never a tick per event — mirroring importance's `start_incremental`.
 pub(crate) fn start_live_follow(scheduler: Arc<MediaScheduler>, volume_id: String) {

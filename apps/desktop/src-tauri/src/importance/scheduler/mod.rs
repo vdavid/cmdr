@@ -18,7 +18,7 @@
 //!    recompute IFF the store then carries no generation. Gating on "no generation"
 //!    (not an unconditional kick) means an already-scored volume isn't rescored on
 //!    every launch, while a fresh / schema-recreated / incremental-only store finally
-//!    gets its full pass (plan M2). Each carries its typed kind (MTP excluded, SMB
+//!    gets its full pass. Each carries its typed kind (MTP excluded, SMB
 //!    degraded).
 //! 3. **The registration bus** ([`crate::indexing::lifecycle_bus::subscribe_registrations`]):
 //!    a volume that registers AFTER the sweep (a share mounted mid-session) is
@@ -492,8 +492,8 @@ pub fn start(app: &AppHandle) {
 /// full recompute IFF its store has no generation yet — a fresh install, a
 /// schema-recreated store (the prod schema-3 upgrade), or one maintained only by
 /// incremental rescores (which never stamp a generation). An already-scored volume is
-/// left alone; an unconditional kick would rescore every volume on every launch (plan
-/// M2 — importance's policy differs from media's cheap unconditional kick).
+/// left alone; an unconditional kick would rescore every volume on every launch
+/// (importance's policy differs from media's cheap unconditional kick).
 ///
 /// The "unscored?" decision binds to the WRITE-path store open via
 /// [`super::store::needs_initial_full_pass`], which forces the lazy schema recreate

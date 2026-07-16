@@ -1,6 +1,6 @@
 /**
  * Unit tests for the image-enrichment activity store (`media-enrich-state.svelte`),
- * the second publisher on the top-right indexing indicator (plan M5).
+ * the second publisher on the top-right indexing indicator.
  *
  * Mirrors `index-state.svelte.test.ts`: mock the typed event wrappers to capture the
  * registered callbacks, fire them directly, and read the reactive getters. Pins the

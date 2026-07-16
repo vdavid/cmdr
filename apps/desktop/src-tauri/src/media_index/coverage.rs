@@ -89,7 +89,7 @@ pub struct StoredPartition {
     /// How many stored rows fall INSIDE current coverage (they stay).
     pub surviving: u64,
     /// The stored paths OUTSIDE current coverage — the reclaim prune's doomed set
-    /// (also M5's `keptCount`, the same rows framed as "still searchable").
+    /// (also the per-volume `keptCount`, the same rows framed as "still searchable").
     pub doomed: Vec<String>,
 }
 
@@ -132,7 +132,7 @@ pub fn partition_stored(
 
 /// Whether a single stored row SURVIVES the current setting — the one canonical
 /// survival rule, shared by [`partition_stored`] (which collects the doomed paths for a
-/// prune) and the counts-only [`MediaScheduler::stored_coverage_counts`] (which the M5
+/// prune) and the counts-only [`MediaScheduler::stored_coverage_counts`] (which the
 /// volume-state poll calls without allocating a 200k-path list). A row survives when
 /// it's NOT under an excluded folder AND (covered by an "always index" override OR its
 /// parent folder scores at or above `threshold`); keys on score-MAP MEMBERSHIP, so a
@@ -229,7 +229,7 @@ mod tests {
         assert_eq!(covered_for_volume(&counts, &scores, 0.5), (2, 10));
     }
 
-    // ── The reclaim partition (M4): stored rows inside vs outside coverage ──────
+    // ── The reclaim partition: stored rows inside vs outside coverage ──────
 
     fn scores(entries: &[(&str, f64)]) -> HashMap<String, f64> {
         entries.iter().map(|(p, s)| (p.to_string(), *s)).collect()

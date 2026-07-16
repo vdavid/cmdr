@@ -1,5 +1,4 @@
-//! Kick + defer-until-scored + read-side "has scored" fallback tests (TDD targets
-//! for plan M1/M2). Two layers:
+//! Kick + defer-until-scored + read-side "has scored" fallback tests. Two layers:
 //!
 //! - **Pure** (no globals): the per-image `local_should_enrich` gate and the
 //!   per-volume "was deferred" flag — the defer-until-scored contract at its core.
@@ -45,7 +44,7 @@ fn config_with(always_folders: &[&str], excluded: &[&str]) -> NetworkEnrichConfi
 
 #[test]
 fn unscored_local_defers_the_gated_remainder_but_honors_overrides() {
-    // The M1 slider-integrity contract: importance hasn't scored the volume
+    // The slider-integrity contract: importance hasn't scored the volume
     // (`scores` None), so a normal folder DEFERS (never "enrich all"), while an
     // explicit always-index override still enriches. Pre-fix this returned `true`
     // for everything (enrich-all), which over-indexed the whole volume permanently.
@@ -398,11 +397,11 @@ fn a_kicked_pass_gcs_a_vanished_row_against_the_walked_set() {
     reset_gate();
 }
 
-// ── M2 read-side fallback: incremental-only / empty importance store ─────────
+// ── Read-side "has scored" fallback: incremental-only / empty importance store ─────────
 
 #[test]
 fn folder_scores_reads_an_incremental_only_store_as_scored() {
-    // The core M2 detection bug: a store with weight rows but NO generation (only
+    // The core has-scored detection bug: a store with weight rows but NO generation (only
     // incremental rescores ran) must read as SCORED, not "never scored". Pre-fix
     // `folder_scores` gated on `recompute_generation() == 0` and returned `None`,
     // reporting "0 covered" at every threshold despite usable weights.
@@ -429,7 +428,7 @@ fn folder_scores_is_none_for_a_genuinely_empty_store() {
     assert!(sched.folder_scores(ROOT, 0.0).is_none(), "a missing store is unscored");
 }
 
-// ── M3 privacy retro-delete: across path spaces, and only reachable volumes ──
+// ── Privacy retro-delete: across path spaces, and only reachable volumes ──
 
 #[test]
 fn retro_delete_prunes_a_local_folder_and_skips_volumes_it_isnt_under() {
@@ -493,7 +492,7 @@ fn retro_delete_maps_a_network_folder_into_the_volumes_index_space() {
     );
 }
 
-// ── M8 live enrichment: the scoped tick end to end (over a registered read pool) ──
+// ── Live enrichment: the scoped tick end to end (over a registered read pool) ──
 
 fn touched(dirs: &[&str]) -> HashSet<String> {
     dirs.iter().map(|d| d.to_string()).collect()

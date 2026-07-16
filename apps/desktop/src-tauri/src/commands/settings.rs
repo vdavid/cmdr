@@ -145,7 +145,7 @@ pub fn set_log_llm_calls(enabled: bool) {
 /// the media-ML enrichment subsystem. Enabling clears any prior memory-watchdog stop
 /// so enrichment resumes AND kicks an immediate pass for every ready volume, so work
 /// starts the moment the user flips it on rather than waiting for the next scan
-/// completion (plan M1; mirrors `media_index_set_network_volume_enabled`).
+/// completion (mirrors `media_index_set_network_volume_enabled`).
 /// Runtime-toggleable, no restart.
 #[tauri::command]
 #[specta::specta]

@@ -95,7 +95,7 @@ pub struct Analysis {
 pub enum VisionError {
     /// The source file was gone at read time (an ENOENT-class read failure) — a file
     /// deleted between the index walk and its analyze, or an orphaned index row that
-    /// reconstructs to a path that can never read (plan M5). The enrich core skips it
+    /// reconstructs to a path that can never read. The enrich core skips it
     /// QUIETLY (DEBUG, not WARN): it writes no row (the file is gone, so a later
     /// completed pass's GC collects any stale row) and counts it as processed. Distinct
     /// from [`Decode`](VisionError::Decode), which is a present-but-bad file.

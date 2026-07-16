@@ -1,6 +1,6 @@
 <script lang="ts">
     // One "Image indexing" block in the multi-drive indexing tooltip: a volume's
-    // image-enrichment progress (plan M5). A sibling row kind to `IndexingDriveRow`,
+    // image-enrichment progress. A sibling row kind to `IndexingDriveRow`,
     // rendered by `IndexingStatusIndicator` alongside the drive rows.
     //
     // Like `IndexingDriveRow`, this WRAPPER owns the stateful glue the presentation

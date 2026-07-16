@@ -281,7 +281,7 @@ fn recognize_text(path: &str, prefetched: Option<&[u8]>) -> Result<OcrResult, Vi
 fn analyze_image(path: &str, prefetched: Option<&[u8]>) -> Result<Analysis, VisionError> {
     let cg_image = decode_thumbnail(path, prefetched)?;
 
-    // Skip a too-small image QUIETLY (plan M3): Vision would refuse it ("too small in at
+    // Skip a too-small image QUIETLY: Vision would refuse it ("too small in at
     // least one dimension"), so without this it'd log a WARN per file per pass. Detect it
     // by the decoded dimensions (typed, never a string-match on the Vision message) and
     // return an EMPTY analysis — a normal done row that never re-tries (unchanged
@@ -353,8 +353,8 @@ fn decode_thumbnail(path: &str, prefetched: Option<&[u8]>) -> Result<CFRetained<
                 // An ENOENT-class read failure is a VANISHED source (a file deleted
                 // between the index walk and its analyze, or an orphaned index row's
                 // phantom path), not a bad image: a typed `Missing` so the enrich core
-                // skips it quietly (DEBUG, no row) rather than a WARN + `Failed` row
-                // (plan M5). Classified by the io error KIND, never a message match.
+                // skips it quietly (DEBUG, no row) rather than a WARN + `Failed` row.
+                // Classified by the io error KIND, never a message match.
                 if e.kind() == std::io::ErrorKind::NotFound {
                     VisionError::Missing(format!("read '{path}': {e}"))
                 } else {

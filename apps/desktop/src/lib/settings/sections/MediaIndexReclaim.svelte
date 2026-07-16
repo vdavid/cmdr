@@ -1,13 +1,13 @@
 <script lang="ts">
     /**
-     * The reclaim-space line + button under the importance slider (plan M4). Lowering the
+     * The reclaim-space line + button under the importance slider. Lowering the
      * slider is forward-only: it never deletes rows, so a drive indexed at a broad setting
      * keeps that coverage searchable. This surfaces the leftover ("you have N indexed, your
      * setting covers M, the extra K stay searchable") and offers to delete it to free disk.
      *
      * Value first, tradeoff second: the line frames the extra entries as still useful, and
      * the button offers the space-vs-reindex tradeoff — never two sentences in tension (it
-     * composes as one narrative with M5's kept-rows line once that lands).
+     * composes as one narrative with the kept-rows line).
      *
      * Only shown once counts have settled: the parent passes `blocked` while it's waiting on
      * importance or a scan, and the backend `pending` flag guards the rest, so the reclaim

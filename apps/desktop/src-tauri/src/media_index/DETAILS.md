@@ -63,9 +63,9 @@ walk. The safety comes entirely from **when** a pass (and thus its GC) runs, not
 - A cancelled pass (memory watchdog) skips GC entirely, yielding fully; vanished rows are collected on the next completed
   scan.
 
-Three deletion paths bypass this completed-scan edge, each for a reason the edge doesn't cover: the M3 privacy retro-delete
-and the M4 reclaim prune (both USER-EXPLICIT, settings-derived — § Per-folder photo-search exclude, § Reclaim space), and
-the M8 live-tick scoped GC (INDEX-CONFIRMED, scoped to the touched dirs — § Live enrichment). None may run the whole-store
+Three deletion paths bypass this completed-scan edge, each for a reason the edge doesn't cover: the privacy retro-delete
+and the reclaim prune (both USER-EXPLICIT, settings-derived — § Per-folder photo-search exclude, § Reclaim space), and
+the live-tick scoped GC (INDEX-CONFIRMED, scoped to the touched dirs — § Live enrichment). None may run the whole-store
 `gc_targets` outside a completed pass.
 
 ## Network-volume enrichment
@@ -437,7 +437,7 @@ Threshold lives in `gate` as an `f64`-bits atomic (`set_importance_threshold` / 
 Default `0.0` (`DEFAULT_IMPORTANCE_THRESHOLD`): enrich every scored folder, the slider raises it to defer low-importance
 folders. Importance keys on the INDEX identity, so the network gate strips the mount root off the OS path before the lookup.
 
-### Defer-until-scored (M1)
+### Defer-until-scored
 
 When `folder_scores` is `None` (importance unavailable), BOTH the local and network passes DEFER their
 importance-gated remainder while still honoring an explicit `config.covers` override — `local_should_enrich` and the
@@ -458,14 +458,14 @@ The **unscored → scored bridge** re-kicks the deferred remainder once importan
   the lifecycle bus and incremental rescores bump the recompute watch, so scoping the re-kick to the flag keeps a normal
   (already-scored) volume from re-kicking and a later incremental bump from re-walking the index for nothing.
 
-The residual risk is made VISIBLE, never silent: M2 guarantees the recompute *trigger*, not its *success* (a read-pool
+The residual risk is made VISIBLE, never silent: the importance "has scored" detection guarantees the recompute *trigger*, not its *success* (a read-pool
 or write error leaves generation 0 with no notify). Under defer-until-scored that would mean image indexing silently
 never starts. So `media_index_volume_state` exposes `waiting_for_importance` (enabled + index ready + not scored), and the
 settings slider voices it ("Working out which folders matter…") REPLACING the generic covered-count spinner — one honest
 line for one wait, never two spinners. There is deliberately NO silent fallback to enrich-all on timeout: a persistently
 failing recompute is an importance bug to surface, not to paper over.
 
-### The importance "has scored" detection (M2)
+### The importance "has scored" detection
 
 `media_index` decides "has importance scored this volume?" via `coverage::importance_scored` — used by BOTH
 `MediaScheduler::folder_scores` and `coverage::importance_scores`. It returns `true` when a full pass stamped a
@@ -489,7 +489,7 @@ requested volume isn't ready (still scanning / not yet scored), so the UI voices
 confident wrong number. `media_index_volume_state` gained `qualifying_count: Option<u64>` (the honest denominator for
 "12,000 of 38,900 images", `None` when offline/scanning); ETA math lives UI-side off `(enriched_count, qualifying_count)`.
 
-### Per-folder photo-search exclude + the privacy retro-delete (M3)
+### Per-folder photo-search exclude + the privacy retro-delete
 
 `network::config` gained `excluded_folders` (seeded from `mediaIndex.excludedFolders`, live-applied by
 `media_index_set_excluded_folder`): an image at or under an excluded folder never enriches, a HARD veto that beats any
@@ -502,7 +502,7 @@ OCR text stops being searchable at once (privacy is a hard requirement, not "eve
 - **Why it's a new deletion path (vs the GC-safety doctrine).** GC's safety comes from *when* it runs (only a
   `Completed` edge, tree whole — § The GC safety argument). The retro-delete is USER-EXPLICIT and derives ONLY from
   settings state (the exclusion the user just set), never scan/bus/gate state, so it can't wipe live coverage by
-  mistiming — it needs no edge. This is the same doctrine the reclaim prune (M4) rides. The slider stays forward-only;
+  mistiming — it needs no edge. This is the same doctrine the reclaim prune rides. The slider stays forward-only;
   the ONLY row deletions are (a) vanished files via GC, (b) the reclaim prune, (c) this privacy retro-delete.
 - **Precedence + path mapping.** Exclusion beats coverage everywhere (enrichment gate AND retro-delete), same
   trailing-slash-safe `path_is_within` the veto uses. The exclusion config is OS-path keyed; local rows store index
@@ -532,7 +532,7 @@ OCR text stops being searchable at once (privacy is a hard requirement, not "eve
   rollback pattern from `network-volume-prefs.ts`, in `src/lib/media-index/excluded-folders.ts`, wired in the main
   route's `setupMenuListeners`.
 
-### Reclaim space (M4)
+### Reclaim space
 
 Lowering the importance slider is forward-only: it never deletes rows, so a drive indexed at a broad setting keeps that
 coverage after the user narrows the setting (the GC `current` set stays the full walked image set — § The GC safety
@@ -541,12 +541,12 @@ prune is USER-EXPLICIT and derives ONLY from settings state, so it needs no `Com
 the three the slider's forward-only contract allows.
 
 - **One arithmetic source, or the numbers don't add up.** `MediaScheduler::stored_coverage(volume_id, mount_root,
-  threshold)` computes THREE quantities from ONE pass so the reclaim preview, the prune, and M5's `keptCount` can never
-  disagree: `surviving_stored` (stored rows inside coverage), `doomed_stored` (outside it — M4's "delete N" AND M5's
+  threshold)` computes THREE quantities from ONE pass so the reclaim preview, the prune, and the per-volume `keptCount` can never
+  disagree: `surviving_stored` (stored rows inside coverage), `doomed_stored` (outside it — the reclaim "delete N" AND the
   `keptCount`, the SAME set), and `covered_qualifying` (drive-index qualifying images in covered folders — the slider
   preview's number, a DIFFERENT thing: it counts what WOULD be indexed, not what IS). It guarantees `total_stored =
   surviving_stored + doomed_stored`, and reuses the `coverage.rs` cache path for `covered_qualifying` (never a second
-  derivation). It returns `None` when importance hasn't scored the volume (M2 makes that transient) — the partition
+  derivation). It returns `None` when importance hasn't scored the volume (importance's scoring makes that transient) — the partition
   can't be computed safely, so the command reports `pending` and the UI hides the reclaim line rather than proposing a
   destructive count off a lower bound.
 - **The partition rule** (`coverage::partition_stored`, pure) reuses the SAME precedence enrichment does: a stored row
@@ -575,10 +575,10 @@ the three the slider's forward-only contract allows.
   slider preview). It shows the line + button only once counts settle (parent-passed `blocked` while waiting on
   importance / a scan, plus the backend `pending`) AND the leftover clears the pure `shouldOfferReclaim` floor (> 100
   rows AND > 5% of stored). The copy frames value first (the extra entries "stay searchable"), then the button offers
-  the space-vs-reindex tradeoff — one narrative, composing with M5's kept-rows line, never two sentences in tension. A
+  the space-vs-reindex tradeoff — one narrative, composing with the kept-rows line, never two sentences in tension. A
   confirm dialog (recoverable, but re-reading costs time) precedes the prune; an honest toast reports the freed space.
 
-### Progress events + vanished-file skip (M5)
+### Progress events + vanished-file skip
 
 A pass joins the top-right indexing indicator as a second publisher (the FE side is `lib/indexing/DETAILS.md` §
 Image-enrichment publisher). `events.rs` defines two typed Tauri events + the emission machinery:
@@ -606,25 +606,25 @@ orphaned index row whose reconstructed path can never read, surfaces at analyze 
 real backend classifies the local `std::fs::read` ENOENT by io kind, never a message match; the fake scripts it via
 `missing_for`). The local core skips it QUIETLY (DEBUG), writes NO row (not `Failed` — the file is gone, so a later
 completed pass's GC collects any stale row), and counts it as processed so `done` still reaches `total`. The network
-core already handles a vanished source via `FetchError::NotFound` (same quiet skip). The too-small-image skip (M3) is a
+core already handles a vanished source via `FetchError::NotFound` (same quiet skip). The too-small-image skip is a
 sibling quiet case: it writes an empty `Done` row instead. Pinned by
 `enrich_tests::a_vanished_image_still_completes_the_pass_at_done_equals_total` and
 `enrichable_totals_excludes_deferred_and_excluded_images`.
 
-### Threshold-aware volume state (M5)
+### Threshold-aware volume state
 
 `media_index_volume_state` gained `covered_qualifying_count` + `kept_count`, from `MediaScheduler::stored_coverage_counts`
-— a counts-only sibling of the M4 `stored_coverage` that does NOT allocate the doomed-path `Vec` (the settings poll runs
+— a counts-only sibling of the reclaim `stored_coverage` that does NOT allocate the doomed-path `Vec` (the settings poll runs
 it every few seconds). Both share the ONE canonical survival rule (`coverage::stored_row_survives`) and the `coverage`
 cache, so they can never disagree with the reclaim preview. `covered_qualifying_count` drives the settings progress line
-"N of M in your covered folders" (N = `enriched_count − kept_count`, capped); `kept_count` (= the M4 doomed count) drives
+"N of M in your covered folders" (N = `enriched_count − kept_count`, capped); `kept_count` (= the reclaim doomed count) drives
 the quiet "K more indexed from broader settings, still searchable" line, gated by the SAME `shouldOfferReclaim` floor so
 it never duplicates the reclaim offer. Both `None` when importance hasn't scored the volume.
 
-### Live enrichment: follow the index (M8)
+### Live enrichment: follow the index
 
-Before M8 the only enrichment triggers were scan-completion edges, user kicks, and the importance bridge — so a NEW or
-MODIFIED image waited for the next completed scan, and a DELETED image's rows lingered until a later pass GC'd them. M8
+Without live enrichment, the only enrichment triggers are scan-completion edges, user kicks, and the importance bridge — so a NEW or
+MODIFIED image would wait for the next completed scan, and a DELETED image's rows would linger until a later pass GC'd them. Live enrichment
 follows the index live, mirroring importance's incremental rescore rather than inventing a new mechanism.
 
 `scheduler/live.rs` subscribes each LOCAL volume to `indexing::lifecycle_bus::subscribe_dirs_changed` (the SAME per-volume
@@ -648,7 +648,7 @@ set — correct for a full pass (whole index walked), CATASTROPHIC for a scoped 
 OUTSIDE the touched dirs). So the GC target set is a parameter: `GcScope::WholeStore` (the full pass / Fresh sweep, via
 `enrich_and_gc`) vs `GcScope::TouchedDirs` (the live tick, via `enrich_and_gc_scoped`), which GCs only rows whose parent dir
 is one of this tick's touched dirs AND absent from the scoped walk. This makes the live tick the THIRD deletion path that
-bypasses the completed-scan edge (§ The GC safety argument), alongside the M3 privacy retro-delete and the M4 reclaim
+bypasses the completed-scan edge (§ The GC safety argument), alongside the privacy retro-delete and the reclaim
 prune. Unlike those two (USER-EXPLICIT, settings-derived), the live tick's deletion is INDEX-CONFIRMED: a removal from the
 live index is a fact about the tree (like importance's subtree clear), not a scan-state inference, so the complete-tree
 doctrine isn't violated. A disconnect/unmount still never deletes: no read pool ⇒ the tick no-ops before any GC. The
@@ -741,7 +741,7 @@ arithmetic over a synthetic counts+scores map (`coverage.rs`); the fake backend'
 (`backend/fake.rs`). **macOS-gated real FFI** (`backend/vision/tests.rs`): `analyze` returns real OCR + well-formed tags
 + a stable-length feature print off the fixture, and a real feature print's self-cosine is ~1.0.
 
-**Privacy retro-delete tests (M3, all real red→green — deletion is data-safety-critical):** the writer prune primitives
+**Privacy retro-delete tests (all real red→green — deletion is data-safety-critical):** the writer prune primitives
 (`writer.rs`) — `prune_under_folder` deletes rows at or under a folder across ALL four tables and only those,
 trailing-slash-safe (`/Photos2` survives pruning `/Photos`); `prune_paths` deletes only the explicit set; prune + VACUUM
 round-trips. The live privacy veto (`scheduler/enrich_tests.rs` + `network/tests.rs`): exclusion beats an override-covered

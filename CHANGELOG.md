@@ -5,6 +5,31 @@ All notable changes to Cmdr will be documented in this file.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+**Search the text inside your images, with on-device indexing that starts when you enable it and shows honest
+progress.**
+
+1. Turn on image search under AI › Image search and Cmdr starts indexing your photos right away, again after every
+   restart.
+2. Follow live progress with an ETA in the top-right indicator, and choose how much to index with a fast, honest depth
+   preview.
+3. Exclude folders to keep photos out of search (already-indexed ones are erased too), and reclaim the disk space when
+   you narrow what you index.
+
+### Added
+
+- Search the text inside your images, powered by on-device indexing you control (AI › Image search, off by default).
+  Indexing starts the moment you turn it on and resumes after every restart, shows live progress with an ETA in the
+  top-right indicator, and re-indexes a changed photo within seconds. Choose how much to index with a fast, honest depth
+  preview; exclude any folder to keep its photos out of search, which erases the ones already indexed; and reclaim the
+  disk space left behind when you narrow the depth ([53967443](https://github.com/vdavid/cmdr/commit/53967443),
+  [186d8e78](https://github.com/vdavid/cmdr/commit/186d8e78),
+  [38a425c7](https://github.com/vdavid/cmdr/commit/38a425c7),
+  [77b1a5f4](https://github.com/vdavid/cmdr/commit/77b1a5f4),
+  [52aeaef8](https://github.com/vdavid/cmdr/commit/52aeaef8),
+  [f6ba31cb](https://github.com/vdavid/cmdr/commit/f6ba31cb))
+
 ## [0.33.0] - 2026-07-09
 
 **Archives open like folders, the clipboard pastes straight into files, and search shows your best files first.**

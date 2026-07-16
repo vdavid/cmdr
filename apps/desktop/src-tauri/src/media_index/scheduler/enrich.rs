@@ -41,8 +41,8 @@ pub(crate) struct PassSummary {
 pub(crate) struct PassHooks<'a> {
     /// The emergency-stop check (memory watchdog), checked between images.
     pub(crate) cancel: &'a dyn Fn() -> bool,
-    /// The throttled progress sink (the top-right indicator's second publisher, plan
-    /// M5). A no-op in unit tests that don't assert progress.
+    /// The throttled progress sink (the top-right indicator's second publisher).
+    /// A no-op in unit tests that don't assert progress.
     pub(crate) progress: &'a dyn EnrichProgressSink,
 }
 
@@ -50,7 +50,7 @@ pub(crate) struct PassHooks<'a> {
 /// coverage gates (`should_enrich` AND not `is_excluded`) and their total bytes
 /// (`ImageEntry.size`, a `None` counting 0). This is the honest progress denominator —
 /// NEVER `images.len()`, which would leave the bar stuck at "150 of 223,228" for a
-/// volume most of whose images are deferred below the slider threshold (plan M5). Pure,
+/// volume most of whose images are deferred below the slider threshold. Pure,
 /// so the denominator rule is unit-testable.
 pub(crate) fn enrichable_totals(
     images: &[ImageEntry],
@@ -125,8 +125,8 @@ pub(crate) fn walk_image_entries(conn: &rusqlite::Connection) -> Result<Vec<Imag
     Ok(out)
 }
 
-/// Walk ONLY the given directories' qualifying images — the live-tick scoped walk
-/// (plan M8), the incremental counterpart to [`walk_image_entries`]'s whole-index
+/// Walk ONLY the given directories' qualifying images — the live-tick scoped walk,
+/// the incremental counterpart to [`walk_image_entries`]'s whole-index
 /// sweep. For each touched dir it resolves the dir's entry id and fetches ALL of that
 /// dir's file children, then runs the sibling-aware predicate over the COMPLETE name
 /// set — fetching only the changed files would mis-qualify (RAW+JPEG pairing and Live
@@ -194,7 +194,7 @@ fn join_path(dir: &str, name: &str) -> String {
 }
 
 /// Which stored rows a pass may GC — the data-safety line between the full pass and a
-/// scoped live tick (plan M8 pre-review Finding 1).
+/// scoped live tick.
 ///
 /// GC deletes a stored row whose source path is absent from the pass's `current`
 /// (walked) set. A FULL pass walks the WHOLE index, so every stored row absent from
@@ -269,7 +269,7 @@ pub(crate) fn prioritized(images: &[ImageEntry], folder_score: &dyn Fn(&str) -> 
 /// The whole-store entry point: enrich the stale covered images and GC every stored row
 /// the COMPLETE walk no longer holds. The full pass and the Fresh sweep call this — they
 /// walk the whole index, so a missing row genuinely vanished. Delegates to
-/// [`enrich_and_gc_scoped`] with [`GcScope::WholeStore`]; the scoped live tick (M8) passes
+/// [`enrich_and_gc_scoped`] with [`GcScope::WholeStore`]; the scoped live tick passes
 /// [`GcScope::TouchedDirs`] instead. Both share the one per-image loop.
 pub(crate) fn enrich_and_gc(
     images: &[ImageEntry],
@@ -316,7 +316,7 @@ pub(crate) fn enrich_and_gc(
 /// - Enriches only images the staleness predicate marks stale ([`needs_enrichment`]).
 /// - A VANISHED source (a typed [`VisionError::Missing`], an ENOENT-class read
 ///   failure) is skipped QUIETLY (DEBUG, no row) but still counts toward `done` —
-///   the plan-M5 vanished/phantom-file handling.
+///   the vanished/phantom-file handling.
 /// - Checks `hooks.cancel` BETWEEN images so an emergency stop (the memory watchdog)
 ///   yields promptly; a cancelled pass ALSO skips GC (yield fully) — the vanished
 ///   rows are collected on the next completed scan — and returns `cancelled: true`.
@@ -327,7 +327,7 @@ pub(crate) fn enrich_and_gc(
 ///   decides WHICH stored rows are GC candidates: a full pass considers the whole store
 ///   ([`GcScope::WholeStore`]); a scoped live tick considers only rows under the touched
 ///   dirs ([`GcScope::TouchedDirs`]), so it never wipes rows in dirs it didn't walk
-///   (the data-safety trap — plan M8 pre-review Finding 1).
+///   (the data-safety trap).
 pub(crate) fn enrich_and_gc_scoped(
     images: &[ImageEntry],
     statuses: &HashMap<String, MediaStatusRow>,
@@ -341,7 +341,7 @@ pub(crate) fn enrich_and_gc_scoped(
     let stamp = backend.analysis_stamp();
     let current: HashSet<String> = images.iter().map(|i| i.path.clone()).collect();
 
-    // The honest progress denominator (plan M5): the enrichable subset, never the full
+    // The honest progress denominator: the enrichable subset, never the full
     // walked set. `done` counts every subset image the pass finishes handling — enriched,
     // already-current, or a quiet vanished skip — so it reaches `total` on completion.
     let (total, bytes_total) = enrichable_totals(images, should_enrich, is_excluded);
@@ -404,8 +404,8 @@ pub(crate) fn enrich_and_gc_scoped(
                     // and its analyze, or an orphaned index row's phantom path: skip
                     // QUIETLY (DEBUG, never WARN), write NO row (the file is gone; a
                     // later completed pass's GC collects any stale row). It already
-                    // counted toward `done` above, so the bar still reaches `total`
-                    // (plan M5). Typed variant, never a message match.
+                    // counted toward `done` above, so the bar still reaches `total`.
+                    // Typed variant, never a message match.
                     Err(VisionError::Missing(msg)) => {
                         log::debug!(target: "media_index", "skipping vanished image '{}': {msg}", image.path);
                     }

@@ -23,7 +23,7 @@
     import { getVolumes } from '$lib/stores/volume-store.svelte'
 
     // The hourglass shows whenever a drive is indexing OR any volume is actively
-    // enriching images (the plan-M5 second publisher ORs into the gate). A paused-only
+    // enriching images (the second publisher ORs into the gate). A paused-only
     // enrichment doesn't light it on its own — see `isAnyVolumeEnriching`.
     const visible = $derived(isAnyVolumeIndexing() || isAnyVolumeEnriching())
     const enrichVolumes = $derived<VolumeEnrichActivity[]>(getEnrichingVolumes())
@@ -112,7 +112,7 @@
                     />
                 {/if}
             {/each}
-            <!-- Image indexing joins as a sibling row kind (plan M5): one block per
+            <!-- Image indexing joins as a sibling row kind: one block per
                  actively-enriching or paused volume, below the drive rows. -->
             {#each enrichVolumes as enrich (enrich.volumeId)}
                 <IndexingEnrichRow activity={enrich} driveName={driveName(enrich.volumeId)} showHeading={true} />

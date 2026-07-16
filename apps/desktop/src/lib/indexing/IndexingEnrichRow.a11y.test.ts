@@ -1,7 +1,7 @@
 /**
  * Tier 3 a11y tests for `IndexingEnrichRow.svelte`.
  *
- * The "Image indexing" block in the multi-drive indexing tooltip (plan M5). A pure
+ * The "Image indexing" block in the multi-drive indexing tooltip. A pure
  * props-driven presentational component (no store / Tauri deps), so each state is a
  * `mount` with the right props: actively enriching with the images + bytes double bar,
  * paused (both reasons), and with the drive heading. `tString` resolves the real `en`

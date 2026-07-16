@@ -33,8 +33,8 @@ fn input(path: &str) -> ImageInput {
 fn analyze_skips_a_too_small_image_quietly() {
     // A 2×2 image is under Vision's 3 px floor. Rather than erroring (which the pass
     // would log as a per-file WARN and record as `Failed`), `analyze` returns an EMPTY
-    // analysis — a done, empty row that never re-tries and never shows in search (plan
-    // M3, David-requested).
+    // analysis — a done, empty row that never re-tries and never shows in search
+    // (David-requested).
     let backend = VisionOcrBackend::new();
     let path = tiny_fixture_path();
     assert!(path.exists(), "tiny fixture missing at {}", path.display());
@@ -141,7 +141,7 @@ fn an_empty_file_returns_a_typed_decode_error() {
 fn a_missing_file_returns_a_typed_missing_error() {
     // An ENOENT-class read failure is a VANISHED source, not a bad image: a typed
     // `Missing` so the enrich core skips it quietly (DEBUG, no row) rather than a WARN +
-    // `Failed` row (plan M5). Classified by the io error kind, never a message match.
+    // `Failed` row. Classified by the io error kind, never a message match.
     let backend = VisionOcrBackend::new();
     let err = backend
         .ocr(&input("/no/such/path/definitely-missing.png"))

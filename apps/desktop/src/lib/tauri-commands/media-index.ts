@@ -35,7 +35,7 @@ export type {
  * Fires (throttled) while a volume's image-enrichment pass runs, carrying the honest
  * per-volume progress: `done` / `total` over the ENRICHABLE subset (never the full
  * walked set), plus the bytes double-bar. Drives the "Image indexing" row in the
- * top-right indexing indicator (plan M5). Call the returned `UnlistenFn` on teardown.
+ * top-right indexing indicator. Call the returned `UnlistenFn` on teardown.
  */
 export function onMediaEnrichProgress(callback: (payload: MediaEnrichProgressEvent) => void): Promise<UnlistenFn> {
   return events.mediaEnrichProgress.listen((event) => {

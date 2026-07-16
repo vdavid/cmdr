@@ -1,4 +1,4 @@
-//! Typed Tauri progress + terminal events for image enrichment (plan M5): image
+//! Typed Tauri progress + terminal events for image enrichment: image
 //! indexing joins the top-right indexing indicator as a SECOND publisher alongside the
 //! drive indexer, so the user sees honest per-volume progress + ETA and knows when a
 //! sweep is running.
@@ -29,7 +29,7 @@ use crate::ignore_poison::IgnorePoison;
 
 use super::progress::{EnrichProgress, EnrichProgressSink, should_emit_progress};
 
-/// The throttle cadence (plan M5 suggestion): emit at pass start, then at most every
+/// The throttle cadence: emit at pass start, then at most every
 /// [`MIN_INTERVAL_MS`] or every [`MIN_STEP`] processed images (and the caller adds a
 /// final tick). Keeps emission off the per-image hot path bar a counter + time check.
 const MIN_INTERVAL_MS: u64 = 500;
@@ -38,7 +38,7 @@ const MIN_STEP: u64 = 100;
 /// Throttled progress for one volume's enrichment pass. `total` / `bytes_total` are the
 /// ENRICHABLE-subset denominators (images passing the coverage gates), NEVER the full
 /// walked set — a raw walked-set denominator rebuilds the never-finishes bug inside the
-/// indicator (plan M5). Wire name pinned (the `…Event` suffix wouldn't kebab-case to it).
+/// indicator. Wire name pinned (the `…Event` suffix wouldn't kebab-case to it).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[tauri_specta(event_name = "media-enrich-progress")]
 #[serde(rename_all = "camelCase")]
@@ -154,8 +154,8 @@ impl EnrichProgressSink for TauriEnrichEmitter {
 type TerminalEmit = Box<dyn FnOnce(MediaEnrichTerminalReason) + Send>;
 
 /// Emits a [`MediaEnrichTerminalEvent`] on drop, so EVERY pass exit path (a clean
-/// return, a pause, a cancel, or a `?`-error bubble) reports exactly one terminal event
-/// (plan M5). Defaults to [`MediaEnrichTerminalReason::Failed`]; the pass overrides the
+/// return, a pause, a cancel, or a `?`-error bubble) reports exactly one terminal event.
+/// Defaults to [`MediaEnrichTerminalReason::Failed`]; the pass overrides the
 /// reason via [`set`](Self::set) before a clean / paused / cancelled exit, so only a
 /// genuinely error-bubbled exit keeps `Failed`.
 pub(crate) struct EnrichTerminalGuard {

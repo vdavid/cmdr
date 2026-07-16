@@ -1,6 +1,6 @@
 /**
  * Reactive state for image-enrichment activity — the SECOND publisher on the top-right
- * indexing indicator (plan M5), alongside the drive indexer's `index-state.svelte`.
+ * indexing indicator, alongside the drive indexer's `index-state.svelte`.
  *
  * A per-volume map keyed by `volumeId`, fed by the throttled `media-enrich-progress`
  * event and cleared / re-voiced by the `media-enrich-terminal` event. The corner
@@ -113,7 +113,7 @@ export async function initMediaEnrichState(): Promise<void> {
   })
   unlistenHandles.push(unlistenTerminal)
 
-  // Listen-first-then-query (the module invariant): with M1, enrichment can start at
+  // Listen-first-then-query (the module invariant): enrichment can start at
   // backend setup BEFORE the frontend mounts, so the pass-start event is lost. Seed the
   // root volume from its snapshot if it's enriching, so an in-flight pass renders at
   // mount. Root-only, mirroring `initIndexState`; network volumes hydrate from their next
